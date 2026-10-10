@@ -53,11 +53,13 @@ public final class AppIcons {
      * while the switch unlocks the icons. Never throws.
      */
     public static boolean entitled(boolean facebook) {
-        if (facebook) {
+        if (!facebook) return unlock("picker's benefit set");
+        try {
             HookStatus.invoked(FamilyNames.APP_ICONS);
-            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.APP_ICONS, "picker's benefit set", failure);
         }
-        return unlock("picker's benefit set");
+        return true;
     }
 
     /** True while the switch unlocks the icons, counted under [hook]. Never throws. */

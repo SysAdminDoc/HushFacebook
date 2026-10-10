@@ -49,14 +49,14 @@ class UnlockAppIconsFixtureTest {
         assertEquals("$name: benefit checks in ${provider.type}", 1, checks.size)
         val check = checks.single()
 
-        // The App icon page and the start-up job that puts the default icon back both ask the check for the benefit.
+        // Some class that loads the benefit name calls the check (on 582, the start-up job that puts the default icon back).
         val askers = FixtureDex.classesHolding(bundle, BENEFIT)
         val asking = askers.filter { classDef ->
             classDef.methods.any { method ->
                 method.implementation?.instructions?.any { it.calls(provider.type, check.name) } == true
             }
         }
-        assertTrue("$name: no class asks ${provider.type}->${check.name} near $BENEFIT", asking.isNotEmpty())
+        assertTrue("$name: no class that loads $BENEFIT calls ${provider.type}->${check.name}", asking.isNotEmpty())
 
         val looks = askers.flatMap { classDef -> classDef.methods.mapNotNull { m -> pickerBenefitLook(m)?.let { Triple(classDef, m, it) } } }
         assertEquals("$name: App icon page looks at $BENEFIT", 1, looks.size)
