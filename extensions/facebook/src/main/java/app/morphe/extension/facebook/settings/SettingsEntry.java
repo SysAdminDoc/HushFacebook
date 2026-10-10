@@ -51,6 +51,7 @@ import app.morphe.extension.facebook.misc.ScreenTransitions;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.navigation.ReelsTab;
 import app.morphe.extension.facebook.stories.StorySeenButton;
+import app.morphe.extension.facebook.theme.AccentResources;
 import app.morphe.extension.facebook.theme.MaterialYouTheme;
 
 /**
@@ -103,7 +104,8 @@ public final class SettingsEntry {
      * Injected before each return of the application's {@code onCreate}, after Facebook's own
      * startup. Watches every Facebook activity, so a pending open lands on whichever one resumes next:
      * signed out, the launcher hands straight over to the login screen. With Material You in the
-     * build, each activity's dark window background takes the palette from here on. Also where the release
+     * build, each activity's dark window background takes the palette from here on, and with Accent
+     * color each activity's resources take the accent's colour table. Also where the release
      * check, when it's on, asks at most once a day, on a worker, and where what a save cut short
      * by Android left behind is removed, on a worker too. In Facebook's other processes it only
      * starts Lock Facebook's watch ({@link AppLock#watch}).
@@ -129,6 +131,8 @@ public final class SettingsEntry {
             TextSize.application(context);
             // Only with the theme in the build, so its class and palette aren't loaded otherwise.
             if (SettingsStatus.materialYouTheme()) MaterialYouTheme.watchWindows(context);
+            // Accent color's route five, for the colours views inflated from XML read themselves.
+            if (SettingsStatus.accentColor()) AccentResources.watchActivities(context);
         } catch (Throwable ex) {
             // Throwable, as in every hook: an Error here, from a class that fails to load or set
             // itself up, would end Facebook at every start, paused or not.

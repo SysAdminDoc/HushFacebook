@@ -248,7 +248,7 @@ private const val DEFAULT_VALUES = "res/values"
 private const val EMPTY_RESOURCES = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n</resources>\n"
 
 /** A decoded resource file parsed for reading only, so nothing writes it back. */
-private fun readOnly(file: File): Document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
+internal fun readOnly(file: File): Document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
 
 /**
  * The colours given a night value in [res], a decoded resource folder: every values folder with a
@@ -262,7 +262,7 @@ internal fun nightValuedColours(res: File): Set<String> =
         .flatMapTo(sortedSetOf()) { readOnly(it).colourValues().keys }
 
 /** Each colour in a decoded colours file, by name, with its value as written. */
-private fun Document.colourValues(): Map<String, String> {
+internal fun Document.colourValues(): Map<String, String> {
     val colors = getElementsByTagName("color")
     return (0 until colors.length).mapNotNull { colors.item(it) as? Element }
         .associate { it.getAttribute("name") to it.textContent.trim() }

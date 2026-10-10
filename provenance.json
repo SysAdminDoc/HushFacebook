@@ -235,12 +235,15 @@
     {
       "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/AccentColor.java",
-        "patches/src/main/kotlin/app/morphe/patches/facebook/layout/theme/AccentColorPatch.kt"
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/AccentResources.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/ColourTable.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/layout/theme/AccentColorPatch.kt",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/layout/theme/AccentResourceBlues.kt"
       ],
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook: Accent color, which swaps Facebook's blues on a chosen set of FDS tokens for a preset's tonal ramp at the lightness each had, holding text roles to 4.5:1. It rides the colour resolver hooks the themes share and steps aside for the Material You theme."
+      "changes": "Written for Hushfacebook: Accent color, which swaps Facebook's blues on a chosen set of FDS tokens for a preset's tonal ramp at the lightness each had, holding text roles to 4.5:1. It rides the colour resolver hooks the themes share and steps aside for the Material You theme. Its route five lists the colour resources Facebook's FDS styles give the tokens, when they hold a blue, and gives each activity's resources a colour table for them through a ResourcesLoader (the way Material Components overrides colours), so views inflated from layout XML take the accent too, while route one turns the table's colours back into Facebook's before it decides. Its route six hands the fill of each Bloks box, which Facebook's server sends as a hex colour, to the same rules as a primary button's fill as the box's drawable is built, and the colour of each span of Bloks text (a profile's bio link) to the link rules before the span is made. Its route seven gives the blues of React Native text and backgrounds (Marketplace) the accent through the React hooks the themes share."
     },
     {
       "paths": [

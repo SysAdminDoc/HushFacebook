@@ -4,6 +4,7 @@
  */
 package app.morphe.patches.facebook.layout.theme
 
+import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -124,21 +125,37 @@ internal var tokenAttributeNames: Map<String, String> = emptyMap()
  */
 internal var plainTokens: Set<String> = emptySet()
 
-/** Reads [tokenAttributeNames] and [plainTokens] out of the token enum FDSColors resolves. */
-internal val fdsTokenAttributesPatch = bytecodePatch {
+/** The token enum FDSColors resolves, and its constants. */
+private fun BytecodePatchContext.fdsTokens(): Pair<ClassDef, TokenConstants> {
+    val source = classDefBy(FDS_COLORS).methods.singleOrNull { method ->
+        AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Ljava/lang/Integer;" &&
+            method.parameterTypes.size == 3 && method.parameterTypes[0].toString() == "Landroid/content/Context;"
+    } ?: error("FDSColors has no single Integer colour source taking a Context, a token and a palette")
+    val tokenType = source.parameterTypes[1].toString()
+    val tokenClass = classDefBy(tokenType)
+    return tokenClass to tokenConstants(tokenClass.methods.single { it.name == "<clinit>" }, tokenType)
+}
+
+/**
+ * Reads [tokenAttributeNames] out of the token enum FDSColors resolves. On its own for Accent
+ * color, which needs the names and not [plainTokens]' scan of the whole app.
+ */
+internal val fdsTokenNamesPatch = bytecodePatch {
     execute {
-        val source = classDefBy(FDS_COLORS).methods.singleOrNull { method ->
-            AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Ljava/lang/Integer;" &&
-                method.parameterTypes.size == 3 && method.parameterTypes[0].toString() == "Landroid/content/Context;"
-        } ?: error("FDSColors has no single Integer colour source taking a Context, a token and a palette")
-        val tokenType = source.parameterTypes[1].toString()
-        val tokenClass = classDefBy(tokenType)
-        val constants = tokenConstants(tokenClass.methods.single { it.name == "<clinit>" }, tokenType)
-        tokenAttributeNames = constants.attributes.entries
+        tokenAttributeNames = fdsTokens().second.attributes.entries
             .associate { (token, attribute) -> "attr_0x%08x".format(attribute) to token }
         check(tokenAttributeNames.size > FULL_THEME_ITEMS) {
             "The FDS token enum has too few constants with a theme attribute, so no style item can be matched"
         }
+    }
+}
+
+/** Reads [tokenAttributeNames] and [plainTokens] out of the token enum FDSColors resolves. */
+internal val fdsTokenAttributesPatch = bytecodePatch {
+    dependsOn(fdsTokenNamesPatch)
+
+    execute {
+        val (tokenClass, constants) = fdsTokens()
         plainTokens = dataReadTokens({ visit -> classDefForEach { visit(it) } }, constants, tokenAttributeField(tokenClass)).tokens
     }
 }

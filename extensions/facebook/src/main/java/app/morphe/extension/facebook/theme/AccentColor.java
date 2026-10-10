@@ -45,6 +45,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * ({@link #MIG_TEXT_TOKENS}) are held to the dark palette's. Fills keep Facebook's own lightness, so
  * the label on a button has the contrast Facebook gave it.
  *
+ * <p>What Facebook inflates from layout XML reads its colour resources inside the framework, where
+ * route one doesn't reach: {@link AccentResources} (route five) answers for those resources instead.
+ * The fills of Bloks boxes and the colours of Bloks text ({@link #bloksFill}, {@link #bloksText},
+ * route six) and of React Native text and views ({@link #reactText}, route seven) come from
+ * Facebook's server or a screen's JavaScript, and get the same rules.
+ *
  * <p>While the Material You theme is in the build it decides every colour this class would, so this
  * steps aside.
  */
@@ -109,8 +115,8 @@ public final class AccentColor {
      */
     static final String MIG_TEXT_TOKENS = "LINK,SECONDARY_EMPHASIZED;DECORATIVE_BLUE,TERTIARY";
 
-    private static final Set<String> TOKEN_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(TOKENS.split(";"))));
-    private static final Set<String> TEXT_TOKEN_SET =
+    static final Set<String> TOKEN_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(TOKENS.split(";"))));
+    static final Set<String> TEXT_TOKEN_SET =
             Collections.unmodifiableSet(new HashSet<>(Arrays.asList(TEXT_TOKENS.split(";"))));
     /** Whether each Mig token enum is text or icons ({@link #MIG_TEXT_TOKENS}), as first seen. */
     private static final Map<Class<?>, Boolean> MIG_TEXT_ENUMS = new ConcurrentHashMap<>();
@@ -143,7 +149,8 @@ public final class AccentColor {
     private AccentColor() {}
 
     /**
-     * Route one, for FDS: a colour a resolver returns for {@code token}.
+     * Route one, for FDS: a colour a resolver returns for {@code token}. A colour route five's
+     * table gave the resource it came from is Facebook's again first ({@link AccentResources#facebookColour}).
      *
      * @return the accent for one of Facebook's blues on a token in {@link #TOKENS}, otherwise {@code color}
      */
@@ -152,7 +159,8 @@ public final class AccentColor {
         if (!Utils.settingsReady() || !(token instanceof Enum)) return color;
         Preset preset = chosen();
         if (preset == null) return color;
-        return fds(color, ((Enum<?>) token).name(), preset, DarkMode.hasAnswered(), DarkMode.on());
+        return fds(AccentResources.facebookColour(color, preset), ((Enum<?>) token).name(), preset,
+                DarkMode.hasAnswered(), DarkMode.on());
     }
 
     /**
@@ -165,12 +173,73 @@ public final class AccentColor {
         if (!Utils.settingsReady() || (color >>> 24) != 0xFF) return color;
         Preset preset = chosen();
         if (preset == null) return color;
-        return mig(color, preset, token);
+        return mig(AccentResources.facebookColour(color, preset), preset, token);
+    }
+
+    /** The FDS token a Bloks box's fill is themed as: a primary button's, which keeps the lightness Facebook gave it. */
+    static final String BLOKS_FILL_TOKEN = "PRIMARY_BUTTON_BACKGROUND";
+
+    /**
+     * Route six: the fill of a Bloks box (582 {@code LX/4Nl;}), such as the profile's Add to story
+     * button. Facebook's server sends those fills as hex colours, so no resolver or resource gives
+     * them. One of Facebook's blues becomes the accent the way a primary button's fill does.
+     */
+    public static int bloksFill(int color) {
+        HookStatus.invoked(FamilyNames.ACCENT_COLOR);
+        if (!Utils.settingsReady()) return color;
+        Preset preset = chosen();
+        if (preset == null) return color;
+        return bloksFill(AccentResources.facebookColour(color, preset), preset);
+    }
+
+    static int bloksFill(int color, Preset preset) {
+        return fds(color, BLOKS_FILL_TOKEN, preset, false, false);
+    }
+
+    /**
+     * The FDS token text from Bloks and React Native is themed as: a link's, held to 4.5:1 on the
+     * palette it was drawn from.
+     */
+    static final String LINK_TEXT_TOKEN = "BLUE_LINK";
+
+    /**
+     * Route six for Bloks text: the colour of a span of Bloks text (582 {@code LX/4MC;}), such as a
+     * profile's bio link, which Facebook's server sends as a hex colour for light mode and one for
+     * dark. One of Facebook's blues becomes the accent the way a link does.
+     */
+    public static int bloksText(int color) {
+        return linkText(color);
+    }
+
+    /**
+     * Route seven, through {@link ReactColours}: a colour React Native text is drawn in, such as
+     * Marketplace's. The screen's JavaScript sends it as an int, so no resolver or resource gives
+     * it, and no token comes with it. One of Facebook's blues becomes the accent the way a link does.
+     */
+    static int reactText(int color) {
+        return linkText(color);
+    }
+
+    private static int linkText(int color) {
+        HookStatus.invoked(FamilyNames.ACCENT_COLOR);
+        if (!Utils.settingsReady()) return color;
+        Preset preset = chosen();
+        if (preset == null) return color;
+        return fds(color, LINK_TEXT_TOKEN, preset, DarkMode.hasAnswered(), DarkMode.on());
+    }
+
+    /** Route seven for a React Native view's background, such as a button's: themed as a Bloks box's fill is. */
+    static int reactBackground(int color) {
+        HookStatus.invoked(FamilyNames.ACCENT_COLOR);
+        if (!Utils.settingsReady()) return color;
+        Preset preset = chosen();
+        if (preset == null) return color;
+        return bloksFill(color, preset);
     }
 
     /** The accent in force, or null for Facebook's own blue: unset, paused, or the Material You theme in charge. */
     @Nullable
-    private static Preset chosen() {
+    static Preset chosen() {
         Preset preset = Settings.ACCENT_COLOR.get();
         if (preset == Preset.FACEBOOK || SettingsStatus.materialYouTheme()) return null;
         return preset;

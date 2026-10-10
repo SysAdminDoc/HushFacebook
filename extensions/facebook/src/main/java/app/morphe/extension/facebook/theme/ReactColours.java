@@ -17,7 +17,8 @@ import app.morphe.extension.facebook.settings.SettingsStatus;
  * <p>No token comes with them, so the colour alone decides, as in route four. AMOLED goes first
  * for a background and leaves text and borders alone, and Material You follows with the dark
  * surfaces and Facebook's blues it knows, and for a background the greys its dark token table
- * lists as well. Either one runs only when its patch is in the build.
+ * lists as well. Either one runs only when its patch is in the build. Without Material You, Accent
+ * color (route seven) gives Facebook's blues on text and backgrounds the chosen accent.
  */
 public final class ReactColours {
     private ReactColours() {
@@ -25,12 +26,19 @@ public final class ReactColours {
 
     /** A view's background colour. */
     public static int background(int color) {
-        return background(color, SettingsStatus.amoledTheme(), SettingsStatus.materialYouTheme());
+        boolean materialYou = SettingsStatus.materialYouTheme();
+        int themed = background(color, SettingsStatus.amoledTheme(), materialYou);
+        return materialYou || !SettingsStatus.accentColor() ? themed : AccentColor.reactBackground(themed);
     }
 
     /** A text span's colour. */
     public static int text(int color) {
-        return text(color, SettingsStatus.materialYouTheme());
+        return text(color, SettingsStatus.materialYouTheme(), SettingsStatus.accentColor());
+    }
+
+    /** {@link #text(int)} with the themes in the build given: Material You decides when it's there. */
+    static int text(int color, boolean materialYou, boolean accent) {
+        return materialYou || !accent ? text(color, materialYou) : AccentColor.reactText(color);
     }
 
     /** A border's or an image tint's colour, or null when the screen set none. */
