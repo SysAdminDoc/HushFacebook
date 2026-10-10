@@ -14,6 +14,7 @@ import static org.junit.Assert.assertTrue;
 import android.app.Activity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.junit.After;
@@ -30,6 +31,7 @@ import org.robolectric.shadows.ShadowLooper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import app.morphe.extension.facebook.settings.Settings;
@@ -73,6 +75,77 @@ public class StorySeenButtonTest {
             }
         }
         return null;
+    }
+
+    /** The eye's top-left in the window. */
+    private static int[] eyeAt(ImageView eye) {
+        return new int[] {Math.round(eye.getLeft() + eye.getTranslationX()), Math.round(eye.getTop() + eye.getTranslationY())};
+    }
+
+    private static void frame(Activity activity) {
+        activity.getWindow().getDecorView().getViewTreeObserver().dispatchOnPreDraw();
+    }
+
+    /**
+     * Issue #117: Facebook letterboxes the 9:16 story card on a taller screen, so the eye goes on the
+     * card's header, not a place measured from the window's top. It hides while the card moves, as
+     * when the viewer turns to the next person's stories or is dragged closed, and comes back once
+     * the card has stayed put.
+     */
+    @Test
+    public void theEyeSitsOnTheCardsHeaderAndHidesWhileTheCardMoves() {
+        Settings.MARK_STORIES_SEEN.save(true);
+        ActivityController<StoryViewerActivity> controller = Robolectric.buildActivity(StoryViewerActivity.class).setup();
+        StoryViewerActivity viewer = controller.get();
+        FrameLayout content = viewer.findViewById(android.R.id.content);
+        View card = new View(viewer);
+        FrameLayout.LayoutParams letterboxed = new FrameLayout.LayoutParams(270, 480);
+        letterboxed.topMargin = 60;
+        content.addView(card, letterboxed);
+        StorySeenButton.activityResumed(viewer);
+        StorySeenButton.onCard(StorySeenForTests.ACCOUNT, null, "c1");
+        ShadowLooper.idleMainLooper();
+        assertSame(card, StorySeenButton.findCard(viewer.getWindow().getDecorView()));
+
+        ImageView eye = eyeIn(viewer);
+        assertNotNull(eye);
+        frame(viewer);
+        assertEquals("the eye showed while the card was still coming in", View.INVISIBLE, eye.getVisibility());
+        ShadowLooper.idleMainLooper(StorySeenButton.SETTLE_MS, TimeUnit.MILLISECONDS);
+        assertEquals(View.VISIBLE, eye.getVisibility());
+        float density = viewer.getResources().getDisplayMetrics().density;
+        int[] cardAt = new int[2];
+        card.getLocationInWindow(cardAt);
+        int size = Math.round(StorySeenButton.SIZE_DP * density);
+        assertEquals("not left of the card's ⌄ and ⋯", cardAt[0] + 270 - Math.round(StorySeenButton.END_DP * density) - size, eyeAt(eye)[0]);
+        assertEquals("not on the card's header", cardAt[1] + Math.round(StorySeenButton.CARD_TOP_DP * density), eyeAt(eye)[1]);
+
+        // Turned away for the next person's stories: the card is no longer at the window's left.
+        card.setTranslationX(150);
+        frame(viewer);
+        assertEquals("the eye stayed while the card turned away", View.INVISIBLE, eye.getVisibility());
+        ShadowLooper.idleMainLooper(StorySeenButton.STILL_TRANSFORMED_MS, TimeUnit.MILLISECONDS);
+        frame(viewer);
+        assertEquals(View.INVISIBLE, eye.getVisibility());
+
+        // Dragged down to close: the card is still found, but moved, so the eye waits.
+        card.setTranslationX(0);
+        card.setTranslationY(300);
+        frame(viewer);
+        assertEquals("the eye stayed over the feed while the viewer was dragged closed", View.INVISIBLE, eye.getVisibility());
+        ShadowLooper.idleMainLooper(StorySeenButton.SETTLE_MS, TimeUnit.MILLISECONDS);
+        assertEquals("a card moved from its place counted as put after a moment", View.INVISIBLE, eye.getVisibility());
+
+        // Back in place, it shows on the header again.
+        card.setTranslationY(0);
+        frame(viewer);
+        ShadowLooper.idleMainLooper(StorySeenButton.SETTLE_MS, TimeUnit.MILLISECONDS);
+        assertEquals(View.VISIBLE, eye.getVisibility());
+        assertEquals(cardAt[1] + Math.round(StorySeenButton.CARD_TOP_DP * density), eyeAt(eye)[1]);
+
+        StorySeenButton.activityPaused(viewer);
+        assertEquals(View.GONE, eye.getVisibility());
+        controller.pause().stop().destroy();
     }
 
     @Test

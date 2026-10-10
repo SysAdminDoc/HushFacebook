@@ -14,10 +14,12 @@ import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.SystemClock;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.WindowInsets;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -26,6 +28,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayDeque;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -42,8 +45,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * The second switch of View stories anonymously: a Mark as seen button over the story viewer.
  *
  * <p>Facebook draws the story viewer's header with Litho, so there's no row of views to put a
- * button in. The eye goes on the story viewer's window instead, at the top end, left of where the
- * header's menu and close buttons sit. The patch calls {@link #onCard} first thing in the seen
+ * button in. The eye goes on the story viewer's window instead and {@link Follower} keeps it on the
+ * story card's header, left of its menu and close buttons: Facebook letterboxes the 9:16 card on a
+ * taller screen, turns it away for the next person's stories and slides it down when the viewer is
+ * dragged closed, and the eye stays out of the way while it moves (issue #117). The patch calls {@link #onCard} first thing in the seen
  * helper's per-card method, which runs for each card Facebook is about to count as viewed, with the
  * account's session, so the button always speaks for the card on screen. It shows where that card
  * stands ({@link StoryMarks}): an eye with a slash while it's held back, a solid eye once marked,
@@ -76,10 +81,21 @@ public final class StorySeenButton {
 
     static final String HOOK = "story seen button";
 
-    /** The eye's size, and its place from the window's top end, in dp: left of the menu and close buttons. */
+    /**
+     * The eye's size, and its place in dp: [CARD_TOP_DP] below the story card's top and [END_DP] in
+     * from its end, centred on the header's ⌄ and ⋯ buttons and left of them. With no card found,
+     * [TOP_DP] below the status bar and [END_DP] in from the window's end.
+     */
     static final int SIZE_DP = 40;
     static final int TOP_DP = 14;
+    static final int CARD_TOP_DP = 16;
     static final int END_DP = 92;
+
+    /** How long the card stays put before the eye shows on it again, after a swipe, a turn or a drag. */
+    static final long SETTLE_MS = 150;
+
+    /** The same for a card still turned, moved or scaled, like one held mid-drag, which a turn in passes through. */
+    static final long STILL_TRANSFORMED_MS = 1000;
 
     /** The card on screen: the account it's viewed on, its id and the story viewer it was named for. */
     static final class Shown {
@@ -362,7 +378,9 @@ public final class StorySeenButton {
             }
             eye.setTag(now);
             show(eye, StorySeen.MARKS.state(now.account, now.card));
-            eye.setVisibility(View.VISIBLE);
+            Follower follower = followers.get(eye);
+            if (follower != null) follower.place();
+            else eye.setVisibility(View.VISIBLE);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_SEEN, HOOK, failure);
         }
@@ -450,7 +468,142 @@ public final class StorySeenButton {
         params.topMargin = (insets == null ? 0 : insets.getSystemWindowInsetTop()) + Math.round(TOP_DP * density);
         params.setMarginEnd(Math.round(END_DP * density));
         ((ViewGroup) decor).addView(eye, params);
+        Follower follower = new Follower(eye, decor);
+        followers.put(eye, follower);
+        decor.getViewTreeObserver().addOnPreDrawListener(follower);
         return eye;
+    }
+
+    /** Each eye's follower, while the eye lives. Main thread. */
+    private static final Map<ImageView, Follower> followers = new WeakHashMap<>();
+
+    /**
+     * Keeps a bound eye on the story card's header (issue #117). Before each frame it finds the card
+     * ({@link #findCard}). While the card moves, turning away for the next person's stories, sliding
+     * down as the viewer is dragged closed or growing out of the tray as it opens, the eye hides.
+     * Once the card has stayed put for {@link #SETTLE_MS} the eye shows at its top end. With no card
+     * found the eye keeps its place on the window. An eye that isn't bound to a card is left alone.
+     */
+    static final class Follower implements ViewTreeObserver.OnPreDrawListener, Runnable {
+        private final ImageView eye;
+        private final View root;
+        private final int[] at = new int[2];
+        @Nullable
+        private View card;
+        /** Whether a card was ever found, after which losing it means it's moving, not that there's none. */
+        private boolean sawCard;
+        private int cardX = Integer.MIN_VALUE;
+        private int cardY = Integer.MIN_VALUE;
+        private long movedAt;
+
+        Follower(ImageView eye, View root) {
+            this.eye = eye;
+            this.root = root;
+        }
+
+        @Override
+        public boolean onPreDraw() {
+            place();
+            return true;
+        }
+
+        /** The settle check after the card stopped, for when no frame comes to run it. */
+        @Override
+        public void run() {
+            place();
+        }
+
+        /** Shows, hides or moves the eye for where the card is now. Never throws. */
+        void place() {
+            try {
+                if (!(eye.getTag() instanceof Shown) || eye.getParent() == null) return;
+                View now = findCard(root);
+                if (now == null) {
+                    card = null;
+                    if (sawCard) {
+                        // Turned or slid away. The frames that bring the next card in find it.
+                        visible(View.INVISIBLE);
+                        return;
+                    }
+                    eye.setTranslationX(0);
+                    eye.setTranslationY(0);
+                    visible(View.VISIBLE);
+                    return;
+                }
+                sawCard = true;
+                now.getLocationInWindow(at);
+                long clock = SystemClock.uptimeMillis();
+                if (now != card || at[0] != cardX || at[1] != cardY) {
+                    card = now;
+                    cardX = at[0];
+                    cardY = at[1];
+                    movedAt = clock;
+                }
+                // A card turning in on its left edge keeps its corner where it is, so a turned,
+                // moved or scaled card has to stay that way a while before it counts as put.
+                long needed = transformed(now, root) ? STILL_TRANSFORMED_MS : SETTLE_MS;
+                long still = clock - movedAt;
+                if (still < needed) {
+                    visible(View.INVISIBLE);
+                    eye.removeCallbacks(this);
+                    eye.postDelayed(this, needed - still);
+                    return;
+                }
+                float density = eye.getResources().getDisplayMetrics().density;
+                int[] origin = new int[2];
+                root.getLocationInWindow(origin);
+                float left = cardX - origin[0] + now.getWidth() - END_DP * density - eye.getWidth();
+                float top = cardY - origin[1] + CARD_TOP_DP * density;
+                eye.setTranslationX(Math.round(left - eye.getLeft()));
+                eye.setTranslationY(Math.round(top - eye.getTop()));
+                visible(View.VISIBLE);
+            } catch (Throwable failure) {
+                HookStatus.threw(FamilyNames.STORY_SEEN, HOOK, failure);
+            }
+        }
+
+        private void visible(int visibility) {
+            if (eye.getVisibility() != visibility) eye.setVisibility(visibility);
+        }
+    }
+
+    /** Whether [view] or a parent below [root] is turned, moved or scaled from where its layout puts it. */
+    private static boolean transformed(View view, View root) {
+        for (View at = view; at != null && at != root; at = at.getParent() instanceof View ? (View) at.getParent() : null) {
+            if (!at.getMatrix().isIdentity()) return true;
+        }
+        return false;
+    }
+
+    /**
+     * The story card under [root]: the outermost view shown at 9:16 (within 3%), at least 60% as
+     * wide as [root], whose left edge is at [root]'s (within 5% of its width), so a card turned or
+     * slid away for the next one isn't it. Null when there's none.
+     */
+    @Nullable
+    static View findCard(View root) {
+        int width = root.getWidth();
+        if (width <= 0) return null;
+        int[] origin = new int[2];
+        root.getLocationInWindow(origin);
+        int[] at = new int[2];
+        ArrayDeque<View> queue = new ArrayDeque<>();
+        queue.add(root);
+        while (!queue.isEmpty()) {
+            View view = queue.poll();
+            if (view.getVisibility() != View.VISIBLE) continue;
+            int w = view.getWidth();
+            int h = view.getHeight();
+            if (view != root && w >= width * 0.6f && h > 0 && Math.abs(h * 9f - w * 16f) <= h * 9f * 0.03f) {
+                view.getLocationInWindow(at);
+                if (Math.abs(at[0] - origin[0]) <= width * 0.05f) return view;
+            }
+            if (view instanceof ViewGroup) {
+                ViewGroup group = (ViewGroup) view;
+                for (int i = 0; i < group.getChildCount(); i++) queue.add(group.getChildAt(i));
+            }
+        }
+        return null;
     }
 
     /** Hides [eye] and forgets its card, so nothing can mark it until a card shows it again. */
