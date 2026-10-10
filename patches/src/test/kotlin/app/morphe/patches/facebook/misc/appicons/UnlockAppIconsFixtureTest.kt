@@ -10,6 +10,7 @@ import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -23,8 +24,8 @@ import java.io.File
 /**
  * Unlock app icons' anchors on every declared Facebook build: one benefit provider with one check of
  * a benefit name, which the App icon page and the start-up job both ask for [BENEFIT], and one App
- * icon page callback that looks for [BENEFIT] in each synced set. Then both hooks go in on the real
- * classes, which also assembles their smali.
+ * icon page callback that looks for [BENEFIT] in each synced set, and one component manager state
+ * call. Then the three hooks go in on the real classes, which also assembles their smali.
  */
 class UnlockAppIconsFixtureTest {
     @Test
@@ -80,6 +81,22 @@ class UnlockAppIconsFixtureTest {
         assertEquals("$name: the register handed over", answer, (hook as RegisterRangeInstruction).startRegister)
         assertEquals("$name: the answer goes back where it came from", answer, (patched[result + 2] as OneRegisterInstruction).registerA)
         assertEquals("$name: the page's own code after the hook", code.size + 2, patched.size)
+
+        // The component manager sets every state with one call, which goes through the extension with the same registers.
+        val resets = FixtureDex.classesHolding(bundle, COMPONENT_MANAGER_KEY)
+            .flatMap { classDef -> classDef.methods.flatMap { m -> componentStateCalls(m).map { Triple(classDef, m, it) } } }
+        assertEquals("$name: component manager state calls", 1, resets.size)
+        val (managerClass, manager, at) = resets.single()
+        val before = manager.implementation!!.instructions.toList()
+        val registers = (before[at] as FiveRegisterInstruction).let { listOf(it.registerC, it.registerD, it.registerE, it.registerF) }
+        val managerContext = PatchContexts.of(listOf(managerClass))
+        managerContext.mutableClassDefBy(managerClass.type).findMutableMethodOf(manager).passComponentState(at)
+        val after = managerContext.mutableClassDefBy(managerClass.type).findMutableMethodOf(manager).implementation!!.instructions.toList()
+        assertEquals("$name: the manager's call", COMPONENT_STATE, after[at].call())
+        assertEquals("$name: the manager's call is static", Opcode.INVOKE_STATIC, after[at].opcode)
+        assertEquals("$name: the registers handed over", registers,
+            (after[at] as FiveRegisterInstruction).let { listOf(it.registerC, it.registerD, it.registerE, it.registerF) })
+        assertEquals("$name: the manager's own code around it", before.size, after.size)
     }
 
     private fun Instruction.calls(type: String, method: String): Boolean =

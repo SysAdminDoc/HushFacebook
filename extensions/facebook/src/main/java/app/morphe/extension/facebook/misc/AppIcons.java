@@ -4,6 +4,9 @@
  */
 package app.morphe.extension.facebook.misc;
 
+import android.content.ComponentName;
+import android.content.pm.PackageManager;
+
 import androidx.annotation.Nullable;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -26,12 +29,20 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * {@link #entitled} answers the picker's look yes, so every icon applies the way a free one does and
  * stays. Every other benefit is Facebook's answer.
  *
+ * <p>The first start after an update also runs Facebook's component manager, which puts every
+ * component back to its manifest state: the launcher entry on and each icon alias off, so a picked
+ * icon was lost on every repatch. While the switch is on, {@link #componentState} skips the launcher
+ * entry and its aliases there and passes every other component through.
+ *
  * <p>It fails closed to Facebook: the switch off, a pause, settings that aren't ready yet, or a
  * failure in here, and Facebook's own answer stands.
  */
 public final class AppIcons {
     /** The benefit name Facebook gives its paid app icons. */
     public static final String BENEFIT = "CUSTOM_APP_ICON";
+
+    /** The launcher entry. Every app icon is an activity-alias of it named {@code LAUNCHER + ".<icon>"}. */
+    public static final String LAUNCHER = "com.facebook.katana.LoginActivity";
 
     /** The diagnostic counter route: each check Facebook made, and the ones answered yes. */
     static final String ROUTE = "App icons";
@@ -60,6 +71,31 @@ public final class AppIcons {
             HookStatus.threw(FamilyNames.APP_ICONS, "picker's benefit set", failure);
         }
         return true;
+    }
+
+    /**
+     * Injection point, in place of the component manager's PackageManager.setComponentEnabledSetting
+     * call. Makes that call unless {@link #keepsIcon} keeps the component as it is, so the call's own
+     * errors still reach the manager.
+     */
+    public static void componentState(PackageManager manager, ComponentName component, int state, int flags) {
+        if (keepsIcon(component)) return;
+        manager.setComponentEnabledSetting(component, state, flags);
+    }
+
+    /**
+     * Whether the component manager leaves [component] as it is: the launcher entry or one of its
+     * icon aliases, while the switch is on. Never throws.
+     */
+    public static boolean keepsIcon(@Nullable ComponentName component) {
+        try {
+            String name = component == null ? null : component.getClassName();
+            if (name == null || !(name.equals(LAUNCHER) || name.startsWith(LAUNCHER + "."))) return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.APP_ICONS, "update reset", failure);
+            return false;
+        }
+        return unlock("update reset");
     }
 
     /** True while the switch unlocks the icons, counted under [hook]. Never throws. */

@@ -9,12 +9,16 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.content.ComponentName;
+import android.content.pm.PackageManager;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -101,5 +105,52 @@ public class AppIconsTest {
         assertFalse(AppIcons.entitled(false));
         PauseForTests.resume();
         assertTrue(AppIcons.unlocked(AppIcons.BENEFIT));
+    }
+
+    private static ComponentName component(String className) {
+        return new ComponentName(RuntimeEnvironment.getApplication().getPackageName(), className);
+    }
+
+    /** The update reset keeps the launcher entry and every alias of it, and nothing else. */
+    @Test
+    public void theUpdateResetKeepsTheLauncherEntryAndItsAliases() {
+        assertEquals("Facebook 582's launcher entry", "com.facebook.katana.LoginActivity", AppIcons.LAUNCHER);
+        assertTrue(AppIcons.keepsIcon(component(AppIcons.LAUNCHER)));
+        assertTrue(AppIcons.keepsIcon(component(AppIcons.LAUNCHER + ".vaporwave_ic")));
+        assertTrue(AppIcons.keepsIcon(component(AppIcons.LAUNCHER + ".blue_fb")));
+        assertTrue(AppIcons.keepsIcon(component(AppIcons.LAUNCHER + ".katana")));
+        String line = counterLine();
+        assertTrue(line, line.startsWith(AppIcons.ROUTE + ": 4 lists, 4 items, 4 removed. Last reason: update reset"));
+
+        assertFalse(AppIcons.keepsIcon(component(AppIcons.LAUNCHER + "Alias")));
+        assertFalse(AppIcons.keepsIcon(component("com.facebook.katana.activity.FbMainTabActivity")));
+        assertFalse(AppIcons.keepsIcon(component("com.facebook.composer.shareintent.AddToStoryAlias")));
+        assertFalse(AppIcons.keepsIcon(null));
+        assertTrue("other components aren't counted", counterLine().startsWith(AppIcons.ROUTE + ": 4 lists, 4 items, 4 removed"));
+    }
+
+    /** Off or paused, the manager's reset reaches the icons as it does in Facebook. Other components always reach it. */
+    @Test
+    public void theManagersCallGoesThroughUnlessAnIconIsKept() {
+        PackageManager manager = RuntimeEnvironment.getApplication().getPackageManager();
+        ComponentName alias = component(AppIcons.LAUNCHER + ".vaporwave_ic");
+        ComponentName other = component("com.facebook.composer.shareintent.AddToStoryAlias");
+        int off = PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+
+        AppIcons.componentState(manager, alias, off, PackageManager.DONT_KILL_APP);
+        AppIcons.componentState(manager, other, off, PackageManager.DONT_KILL_APP);
+        assertEquals("a picked icon stays", PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, manager.getComponentEnabledSetting(alias));
+        assertEquals("another component is set", off, manager.getComponentEnabledSetting(other));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        AppIcons.componentState(manager, alias, off, PackageManager.DONT_KILL_APP);
+        assertEquals("paused, Facebook resets the icon", off, manager.getComponentEnabledSetting(alias));
+        PauseForTests.resume();
+
+        ComponentName entry = component(AppIcons.LAUNCHER);
+        Settings.UNLOCK_APP_ICONS.save(false);
+        AppIcons.componentState(manager, entry, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+        assertEquals("off, Facebook resets the launcher entry", PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                manager.getComponentEnabledSetting(entry));
     }
 }

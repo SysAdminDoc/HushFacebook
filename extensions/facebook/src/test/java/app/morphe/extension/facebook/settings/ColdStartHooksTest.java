@@ -12,6 +12,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
@@ -240,6 +241,8 @@ public class ColdStartHooksTest {
         assertTrue("a tab before the context lost its slide", ScreenTransitionsForTests.slides());
         assertFalse("the app icon benefit before the context was answered yes", AppIcons.unlocked(AppIcons.BENEFIT));
         assertFalse("the picker's benefit set before the context was answered yes", AppIcons.entitled(false));
+        assertFalse("an app icon before the context was kept from the update reset",
+                AppIcons.keepsIcon(new ComponentName("com.facebook.katana", AppIcons.LAUNCHER)));
         assertFalse("a picture-in-picture check before the context said yes", PictureInPictureForTests.allowsWithTheFeature());
         assertFalse("the Reels viewer's gate before the context said yes", PictureInPictureForTests.surfaceAllows());
         assertFalse("the Watch viewer's flag before the context said yes", PictureInPictureForTests.immersiveAllows());

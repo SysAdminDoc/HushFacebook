@@ -7,6 +7,7 @@ package app.morphe.patches.facebook.misc.appicons
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
@@ -39,6 +40,13 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  * - The App icon page also re-reads each synced set itself: a `(Set)V` callback that loads
  *   [BENEFIT], calls Set.contains with it on the set and keeps the answer as the page's unlocked
  *   flag. The hook passes that answer through the extension right after its move-result.
+ *
+ * A picked icon also has to outlive an update. Every icon alias and the launcher entry carry
+ * `default-state` and `enable-stage` meta-data, and on the first start after an update Facebook's
+ * component manager (it logs as AppComponentManager and keeps its progress under
+ * [COMPONENT_MANAGER_KEY]) puts each component back to that state with one
+ * PackageManager.setComponentEnabledSetting call. That call goes through the extension instead,
+ * which skips the launcher entry and its aliases while the switch is on.
  */
 
 internal const val PATCH = "Unlock app icons"
@@ -50,12 +58,18 @@ internal const val BENEFIT = "CUSTOM_APP_ICON"
 internal const val PROVIDER_TAG = "SUBSBenefitDataProvider"
 internal const val PROVIDER_KEY = "subs_active_benefits"
 
+/** The key Facebook's component manager keeps its progress under, loaded by the method that sets each state. */
+internal const val COMPONENT_MANAGER_KEY = "cmp_manager.persist_state"
+
 private const val SET = "Ljava/util/Set;"
 private const val SET_CONTAINS = "$SET->contains(Ljava/lang/Object;)Z"
+private const val COMPONENT_ARGS = "Landroid/content/pm/PackageManager;Landroid/content/ComponentName;II"
+private const val SET_COMPONENT_STATE = "Landroid/content/pm/PackageManager;->setComponentEnabledSetting(Landroid/content/ComponentName;II)V"
 
 private const val APP_ICONS = "$EXTENSION_PACKAGE/misc/AppIcons;"
 internal const val UNLOCKED = "$APP_ICONS->unlocked(Ljava/lang/String;)Z"
 internal const val ENTITLED = "$APP_ICONS->entitled(Z)Z"
+internal const val COMPONENT_STATE = "$APP_ICONS->componentState(${COMPONENT_ARGS})V"
 
 private fun MethodReference.signature() = "$definingClass->$name(${parameterTypes.joinToString("")})$returnType"
 
@@ -94,6 +108,31 @@ internal fun pickerBenefitLook(method: Method): Int? {
             call.registerC == set && call.registerD == loaded && code.getOrNull(index + 2)?.opcode == Opcode.MOVE_RESULT
     }
     return found.singleOrNull()?.let { it + 2 }
+}
+
+/**
+ * The indexes of the PackageManager.setComponentEnabledSetting calls in [method] when it's the
+ * component manager's: it loads [COMPONENT_MANAGER_KEY]. Empty for any other method.
+ */
+internal fun componentStateCalls(method: Method): List<Int> {
+    if (!holdsString(method, COMPONENT_MANAGER_KEY)) return emptyList()
+    val code = method.implementation?.instructions?.toList() ?: return emptyList()
+    return code.indices.filter { index ->
+        code[index].opcode == Opcode.INVOKE_VIRTUAL &&
+            ((code[index] as ReferenceInstruction).reference as? MethodReference)?.signature() == SET_COMPONENT_STATE
+    }
+}
+
+/** Sends the component manager's call at [index] through [COMPONENT_STATE], with the same four registers. */
+internal fun MutableMethod.passComponentState(index: Int) {
+    val call = getInstruction(index) as? FiveRegisterInstruction
+    if (call == null || getInstruction(index).opcode != Opcode.INVOKE_VIRTUAL || call.registerCount != 4) {
+        throw PatchException("$PATCH: instruction $index of $definingClass->$name isn't the component manager's state call")
+    }
+    replaceInstruction(
+        index,
+        "invoke-static { v${call.registerC}, v${call.registerD}, v${call.registerE}, v${call.registerF} }, $COMPONENT_STATE",
+    )
 }
 
 /** First in the benefit check: [UNLOCKED] answers yes for the benefit asked, and the check answers true at once. */

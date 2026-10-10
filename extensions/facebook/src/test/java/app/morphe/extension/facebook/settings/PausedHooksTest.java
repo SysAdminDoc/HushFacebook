@@ -10,6 +10,7 @@ import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -656,9 +657,11 @@ public class PausedHooksTest {
         probes.put(PatchFamily.PROGRESS_BAR, Arrays.asList(ProgressBar::keepsReelBar, ProgressBar::keepsControls));
         // A tab asked for shows without its slide.
         probes.put(PatchFamily.SCREEN_TRANSITIONS, Collections.singletonList(() -> !ScreenTransitionsForTests.slides()));
-        // The app icon benefit is answered yes, at the provider's check and at the picker's own look.
+        // The app icon benefit is answered yes, at the provider's check and at the picker's own look,
+        // and the update reset leaves a picked icon alone.
         probes.put(PatchFamily.APP_ICONS, Arrays.asList(
-                () -> AppIcons.unlocked(AppIcons.BENEFIT), () -> AppIcons.entitled(false)));
+                () -> AppIcons.unlocked(AppIcons.BENEFIT), () -> AppIcons.entitled(false),
+                () -> AppIcons.keepsIcon(new ComponentName("com.facebook.katana", AppIcons.LAUNCHER + ".vaporwave_ic"))));
         // A window's secure flag comes out.
         probes.put(PatchFamily.SCREENSHOTS, Collections.singletonList(
                 () -> Screenshots.layoutFlags(0x2000) == 0));

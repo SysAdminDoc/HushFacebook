@@ -16,8 +16,9 @@ import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.iface.Method
 
 /**
- * Unlocks the app icons Facebook keeps for Facebook Plus on its App icon page. See
- * UnlockAppIconsAnchors.kt for the two checks it answers, and the extension's AppIcons for when.
+ * Unlocks the app icons Facebook keeps for Facebook Plus on its App icon page, and keeps the pick
+ * through an update. See UnlockAppIconsAnchors.kt for the two checks it answers and the reset it
+ * skips, and the extension's AppIcons for when.
  *
  * In the default selection with its switch off: it changes what Facebook's own page offers, so
  * it's a choice to make. Everything is found before anything changes.
@@ -50,8 +51,17 @@ val unlockAppIconsPatch = bytecodePatch(
         val look = looks.singleOrNull()
             ?: throw PatchException("$PATCH: expected one App icon page look at $BENEFIT, found ${looks.map { it.first }}")
 
+        val resets = mutableListOf<Triple<String, Method, Int>>()
+        for (classDef in classDefByStrings(COMPONENT_MANAGER_KEY, StringComparisonType.EQUALS).distinctBy { it.type }) {
+            if (classDef.type.startsWith(EXTENSION_PACKAGE)) continue
+            for (method in classDef.methods) componentStateCalls(method).forEach { resets += Triple(classDef.type, method, it) }
+        }
+        val reset = resets.singleOrNull()
+            ?: throw PatchException("$PATCH: expected one component manager state call, found ${resets.map { "${it.first}->${it.second.name}" }}")
+
         mutableClassDefBy(provider.type).findMutableMethodOf(check).unlockFirst()
         mutableClassDefBy(look.first).findMutableMethodOf(look.second).passPickerBenefit(look.third)
+        mutableClassDefBy(reset.first).findMutableMethodOf(reset.second).passComponentState(reset.third)
         enableStatus("unlockAppIcons")
     }
 }
