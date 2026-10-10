@@ -47,7 +47,7 @@ class LinkBoxColourFixtureTest {
     }
 
     @Test
-    fun `the link box's dark colour is parsed once in each of two methods, and that parse goes to Material You's stand-in`() {
+    fun `each method reading the link box's dark colour parses it once, and that parse goes to Material You's stand-in`() {
         val checked = mutableSetOf<String>()
         for (version in versions) {
             for (bundle in bundles(version)) {
