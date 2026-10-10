@@ -814,6 +814,11 @@ Adds Saved to the menu you get by holding Facebook's icon, if there's room. Exis
 Adds Saved to the menu you get by holding Facebook's icon, if there's room, and a Saved row in Settings and privacy. Existing shortcuts stay.	Adiciona Salvos ao menu que aparece ao segurar o ícone do Facebook, se houver espaço, e uma linha Salvos em Configurações e privacidade. Os atalhos existentes ficam.
 Your launcher has no room for another shortcut.	Seu launcher não tem espaço para outro atalho.
 Saved isn't available in this build.	Salvos não está disponível nesta versão.
+Watch history	Histórico de vídeos
+Watch history shortcut	Atalho para o Histórico de vídeos
+Watch history isn't available in this build.	Histórico de vídeos não está disponível nesta versão.
+Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room, and a Watch history row in Settings and privacy. Existing shortcuts stay.	Adiciona Histórico de vídeos, os vídeos e Reels que você assistiu, ao menu que aparece ao segurar o ícone do Facebook, se houver espaço, e uma linha Histórico de vídeos em Configurações e privacidade. Os atalhos existentes ficam.
+Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Adiciona Histórico de vídeos, os vídeos e Reels que você assistiu, ao menu que aparece ao segurar o ícone do Facebook, se houver espaço. Os atalhos existentes ficam.
 # context: The optional matching mode for both post word lists.
 Match whole words	Corresponder palavras inteiras
 Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.	Combina apenas palavras inteiras, nas duas listas. Por exemplo, hat combina com hat! mas não com what nem hats.

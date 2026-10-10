@@ -87,6 +87,19 @@ final class AppPages {
             return true;
         });
         menu.addPreference(saved);
+        SwitchPreference watched = toggle(context, Settings.WATCH_HISTORY_SHORTCUT,
+                build.contains(PatchFamily.MENU_SETTINGS_ROW)
+                ? L10n.t("Adds Watch history, the videos and reels you've watched, to the menu you get by holding "
+                        + "Facebook's icon, if there's room, and a Watch history row in Settings and privacy. Existing "
+                        + "shortcuts stay.")
+                : L10n.t("Adds Watch history, the videos and reels you've watched, to the menu you get by holding "
+                        + "Facebook's icon, if there's room. Existing shortcuts stay."));
+        watched.setOnPreferenceChangeListener((preference, value) -> {
+            Settings.WATCH_HISTORY_SHORTCUT.save((Boolean) value);
+            WatchHistoryShortcut.changed(context);
+            return true;
+        });
+        menu.addPreference(watched);
         if (build.contains(PatchFamily.MENU_PROMOTIONS)) {
             menu.addPreference(toggle(context, Settings.HIDE_MENU_UPGRADES,
                     L10n.t("The Upgrades section and its offers leave Facebook's Menu. Settings, Help and support "

@@ -155,6 +155,7 @@ public final class SettingsEntry {
             ReelsTab.removePublished(app);
             publishShortcutNow(app);
             SavedShortcut.refreshNow(app);
+            WatchHistoryShortcut.refreshNow(app);
         });
     }
 
@@ -312,6 +313,7 @@ public final class SettingsEntry {
                 keepFirstQueued.set(false);
                 keepFirstNow(app);
                 SavedShortcut.refreshNow(app);
+                WatchHistoryShortcut.refreshNow(app);
             });
             if (!queued) keepFirstQueued.set(false);
         } catch (Throwable t) {
@@ -505,6 +507,7 @@ public final class SettingsEntry {
             if (openPending) openWhenSettled(activity);
             relabelIfStale(activity);
             SavedShortcut.refresh(activity);
+            WatchHistoryShortcut.refresh(activity);
         }
 
         @Override

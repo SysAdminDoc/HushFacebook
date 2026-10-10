@@ -216,6 +216,7 @@ public final class SettingsBackup {
             Settings.OPEN_ON_CHOSEN_TAB,
             Settings.FOLLOWING_FEED_HOME,
             Settings.SAVED_SHORTCUT,
+            Settings.WATCH_HISTORY_SHORTCUT,
             Settings.APP_LOCK,
             Settings.MARKETPLACE_ONLY,
             Settings.MARKETPLACE_QUIET_NOTIFICATIONS,

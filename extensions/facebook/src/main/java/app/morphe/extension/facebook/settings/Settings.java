@@ -930,6 +930,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_saved_shortcut", FALSE);
 
     /**
+     * A launcher shortcut and a Menu row to the videos you've watched, reels included (Facebook's
+     * Activity log, Videos you've watched), added only when the shortcut won't displace an existing
+     * entry.
+     */
+    public static final BooleanSetting WATCH_HISTORY_SHORTCUT =
+            new BooleanSetting("hushfacebook_watch_history_shortcut", FALSE);
+
+    /**
      * A cold start, and a return after {@link #APP_LOCK_AFTER}, ask for the phone's screen lock
      * before Facebook shows ({@link app.morphe.extension.facebook.misc.AppLock}). The settings
      * entry's own switch, so every build has it ({@link PatchFamily#ENTRY_SWITCHES}). Off by default.

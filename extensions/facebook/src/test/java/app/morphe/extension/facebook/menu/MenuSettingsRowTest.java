@@ -284,4 +284,91 @@ public class MenuSettingsRowTest {
         assertEquals(FamilyNames.MENU_SETTINGS_ROW + ": invoked 2, 2 found, 0 missing", statusLine());
         assertEquals("Hushfacebook in the Menu", FamilyNames.MENU_SETTINGS_ROW);
     }
+
+    /** Facebook's Activity log route to the videos you've watched, taken by an activity of the app's own package. */
+    private static void addWatchHistoryRoute(Context context) {
+        ResolveInfo info = new ResolveInfo();
+        info.activityInfo = new ActivityInfo();
+        info.activityInfo.packageName = context.getPackageName();
+        info.activityInfo.name = context.getPackageName() + ".IntentUriHandler";
+        shadowOf(context.getPackageManager()).addResolveInfoForIntent(new Intent(Intent.ACTION_VIEW,
+                Uri.parse("fb://activitylog?category_key=VIDEOWATCH")).setPackage(context.getPackageName()), info);
+    }
+
+    @Test
+    public void withBothShortcutsOnWatchHistoryComesAfterSavedAndBeforeTheSettingsRow() {
+        addSavedRoute(RuntimeEnvironment.getApplication());
+        addWatchHistoryRoute(RuntimeEnvironment.getApplication());
+        Settings.SAVED_SHORTCUT.save(true);
+        Settings.WATCH_HISTORY_SHORTCUT.save(true);
+        try {
+            List<?> rows = MenuSettingsRow.withRow(Arrays.asList(settings, language));
+            assertEquals(5, rows.size());
+            assertEquals(MenuSettingsRow.SAVED_ROW_ID, ((Row) rows.get(2)).id);
+            Row watched = (Row) rows.get(3);
+            assertEquals("Watch history", watched.title.toString());
+            assertEquals(MenuSettingsRow.WATCH_HISTORY_ROW_ID, watched.id);
+            assertEquals("the row has the first row's icon", 17, watched.icon);
+            assertNull("the row has an address Facebook would open", watched.address);
+            assertEquals(MenuSettingsRow.ROW_ID, ((Row) rows.get(4)).id);
+            assertSame("a list holding our rows is handed back as it is", rows, MenuSettingsRow.withRow(rows));
+
+            Settings.SAVED_SHORTCUT.save(false);
+            List<?> alone = MenuSettingsRow.withRow(Arrays.asList(settings, language));
+            assertEquals(4, alone.size());
+            assertEquals(MenuSettingsRow.WATCH_HISTORY_ROW_ID, ((Row) alone.get(2)).id);
+        } finally {
+            Settings.WATCH_HISTORY_SHORTCUT.resetToDefault();
+        }
+    }
+
+    @Test
+    public void theWatchHistoryRowIsKnownByAnIdFacebookNeverUses() {
+        assertTrue(MenuSettingsRow.WATCH_HISTORY_ROW_ID < 0);
+        assertTrue(MenuSettingsRow.WATCH_HISTORY_ROW_ID != MenuSettingsRow.ROW_ID);
+        assertTrue(MenuSettingsRow.WATCH_HISTORY_ROW_ID != MenuSettingsRow.SAVED_ROW_ID);
+        assertTrue(MenuSettingsRow.isRow(MenuSettingsRow.WATCH_HISTORY_ROW_ID));
+    }
+
+    @Test
+    public void theWatchHistoryRowNeedsTheSwitchTheRouteAndNoPause() {
+        Settings.WATCH_HISTORY_SHORTCUT.save(true);
+        try {
+            assertEquals("no route", 3, MenuSettingsRow.withRow(Arrays.asList(settings, language)).size());
+            addWatchHistoryRoute(RuntimeEnvironment.getApplication());
+            Settings.WATCH_HISTORY_SHORTCUT.save(false);
+            assertEquals("switch off", 3, MenuSettingsRow.withRow(Arrays.asList(settings, language)).size());
+            Settings.WATCH_HISTORY_SHORTCUT.save(true);
+            PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+            assertEquals("paused", 3, MenuSettingsRow.withRow(Arrays.asList(settings, language)).size());
+            PauseForTests.resume();
+            assertEquals(4, MenuSettingsRow.withRow(Arrays.asList(settings, language)).size());
+        } finally {
+            Settings.WATCH_HISTORY_SHORTCUT.resetToDefault();
+        }
+    }
+
+    @Test
+    public void aTapOnTheWatchHistoryRowOpensTheVideosYouWatchedInsideTheTask() {
+        addWatchHistoryRoute(RuntimeEnvironment.getApplication());
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            assertTrue(MenuSettingsRow.onTap(new View(activity), MenuSettingsRow.WATCH_HISTORY_ROW_ID));
+            Intent started = shadowOf(activity).getNextStartedActivity();
+            assertNotNull("Watch history didn't open", started);
+            assertEquals(Uri.parse("fb://activitylog?category_key=VIDEOWATCH"), started.getData());
+            assertEquals(activity.getPackageName(), started.getComponent().getPackageName());
+            assertEquals("Watch history opened in a new task", 0, started.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK);
+            ShadowLooper.idleMainLooper();
+            assertNull("the settings opened instead", activity.getFragmentManager().findFragmentByTag("hushfacebook_settings"));
+            assertNull("a toast said it couldn't open", ShadowToast.getTextOfLatestToast());
+        }
+    }
+
+    @Test
+    public void aWatchHistoryTapWithNoRouteSaysSoAndStaysOurs() {
+        assertTrue(MenuSettingsRow.onTap(null, MenuSettingsRow.WATCH_HISTORY_ROW_ID));
+        ShadowLooper.idleMainLooper();
+        assertEquals("Watch history isn't available in this build.", ShadowToast.getTextOfLatestToast());
+    }
 }

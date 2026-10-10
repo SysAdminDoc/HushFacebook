@@ -920,6 +920,11 @@ Adds Saved to the menu you get by holding Facebook's icon, if there's room. Exis
 Adds Saved to the menu you get by holding Facebook's icon, if there's room, and a Saved row in Settings and privacy. Existing shortcuts stay.	Facebook simgesine basılı tutunca açılan menüye, yer varsa Kaydedilenler seçeneğini ve Ayarlar ve gizlilik içine bir Kaydedilenler satırı ekler. Mevcut kısayollar kalır.
 Your launcher has no room for another shortcut.	Başlatıcınızda başka bir kısayol için yer yok.
 Saved isn't available in this build.	Kaydedilenler bu sürümde kullanılamıyor.
+Watch history	İzleme geçmişi
+Watch history shortcut	İzleme geçmişi kısayolu
+Watch history isn't available in this build.	İzleme geçmişi bu sürümde kullanılamıyor.
+Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room, and a Watch history row in Settings and privacy. Existing shortcuts stay.	Facebook simgesine basılı tutunca açılan menüye, yer varsa İzleme geçmişi seçeneğini (izlediğin videolar ve reels) ve Ayarlar ve gizlilik içine bir İzleme geçmişi satırı ekler. Mevcut kısayollar kalır.
+Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Facebook simgesine basılı tutunca açılan menüye, yer varsa İzleme geçmişi seçeneğini (izlediğin videolar ve reels) ekler. Mevcut kısayollar kalır.
 # context: The optional matching mode for both post word lists.
 Match whole words	Tam sözcükleri eşleştir
 Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.	Her iki listede de yalnızca tam sözcükleri eşleştirir. Örneğin hat, hat! ile eşleşir ama what veya hats ile eşleşmez.

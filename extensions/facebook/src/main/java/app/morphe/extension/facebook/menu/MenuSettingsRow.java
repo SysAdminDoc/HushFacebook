@@ -19,6 +19,7 @@ import java.util.List;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.SavedShortcut;
 import app.morphe.extension.facebook.settings.SettingsEntry;
+import app.morphe.extension.facebook.settings.WatchHistoryShortcut;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
@@ -43,6 +44,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>With the Saved shortcut switch on, a Saved row ({@link #SAVED_ROW_ID}) goes just before it and
  * opens Facebook's own Saved route. One UI's launcher hides the appended launcher entry, so this
  * row is the way to Saved that every phone shows. Pause turns the switch off, and the row with it.
+ * The Watch history shortcut switch adds a Watch history row ({@link #WATCH_HISTORY_ROW_ID}) the
+ * same way, after Saved, which opens the videos you've watched.
  */
 public final class MenuSettingsRow {
     /**
@@ -53,6 +56,9 @@ public final class MenuSettingsRow {
 
     /** The Saved row's id, next to {@link #ROW_ID} and as far from Facebook's. */
     public static final long SAVED_ROW_ID = -0x4855534846420002L;
+
+    /** The Watch history row's id, next to the Saved row's. */
+    public static final long WATCH_HISTORY_ROW_ID = -0x4855534846420003L;
 
     /** The static factory the patch adds to the row item class: (template, title, id) to a new row. */
     static final String FACTORY = "hushfacebookRow";
@@ -122,11 +128,16 @@ public final class MenuSettingsRow {
             Object ours = found.factory.invoke(null, template, L10n.t(context, "Hushfacebook settings"), ROW_ID);
             if (ours == null) return rows;
             HookStatus.bound(FamilyNames.MENU_SETTINGS_ROW, LIST_HOOK);
-            List<Object> withOurs = new ArrayList<>(rows.size() + 2);
+            List<Object> withOurs = new ArrayList<>(rows.size() + 3);
             withOurs.addAll(rows);
             if (SavedShortcut.wanted(context)) {
                 Object saved = found.factory.invoke(null, template, L10n.t(context, "Saved"), SAVED_ROW_ID);
                 if (saved != null) withOurs.add(saved);
+            }
+            if (WatchHistoryShortcut.wanted(context)) {
+                Object watched = found.factory.invoke(null, template, L10n.t(context, "Watch history"),
+                        WATCH_HISTORY_ROW_ID);
+                if (watched != null) withOurs.add(watched);
             }
             withOurs.add(ours);
             return withOurs;
@@ -153,6 +164,12 @@ public final class MenuSettingsRow {
                     Logger.printInfo(() -> "Saved shortcut: the Menu row couldn't open Saved");
                     if (context != null) Utils.showToastShort(L10n.t(context, "Saved isn't available in this build."));
                 }
+            } else if (id == WATCH_HISTORY_ROW_ID) {
+                Context context = activity != null ? activity : Utils.getContext();
+                if (context == null || !WatchHistoryShortcut.open(context)) {
+                    Logger.printInfo(() -> "Watch history shortcut: the Menu row couldn't open the videos you've watched");
+                    if (context != null) Utils.showToastShort(WatchHistoryShortcut.unavailable());
+                }
             } else if (activity == null || !SettingsEntry.open(activity)) {
                 Logger.printInfo(() -> "Hushfacebook in the Menu: the settings didn't open over "
                         + (activity == null ? "no activity" : activity.getClass().getSimpleName()));
@@ -170,7 +187,7 @@ public final class MenuSettingsRow {
 
     /** Injection point, first thing in the row's loggers. True for the rows of ours, which they skip. */
     public static boolean isRow(long id) {
-        return id == ROW_ID || id == SAVED_ROW_ID;
+        return id == ROW_ID || id == SAVED_ROW_ID || id == WATCH_HISTORY_ROW_ID;
     }
 
     /** The activity a view's context wraps, or null. The depth guards against a wrapper that wraps itself. */

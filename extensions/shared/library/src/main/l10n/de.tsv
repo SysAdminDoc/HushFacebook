@@ -920,6 +920,11 @@ Adds Saved to the menu you get by holding Facebook's icon, if there's room. Exis
 Adds Saved to the menu you get by holding Facebook's icon, if there's room, and a Saved row in Settings and privacy. Existing shortcuts stay.	Fügt Gespeichert zum Menü hinzu, das beim langen Drücken des Facebook-Symbols erscheint, wenn Platz ist, sowie eine Zeile Gespeichert unter Einstellungen und Privatsphäre. Vorhandene Verknüpfungen bleiben.
 Your launcher has no room for another shortcut.	Dein Launcher hat keinen Platz für eine weitere Verknüpfung.
 Saved isn't available in this build.	Gespeichert ist in dieser Version nicht verfügbar.
+Watch history	Wiedergabeverlauf
+Watch history shortcut	Verknüpfung zum Wiedergabeverlauf
+Watch history isn't available in this build.	Wiedergabeverlauf ist in dieser Version nicht verfügbar.
+Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room, and a Watch history row in Settings and privacy. Existing shortcuts stay.	Fügt Wiedergabeverlauf, also die Videos und Reels, die du angesehen hast, zum Menü hinzu, das beim langen Drücken des Facebook-Symbols erscheint, wenn Platz ist, sowie eine Zeile Wiedergabeverlauf unter Einstellungen und Privatsphäre. Vorhandene Verknüpfungen bleiben.
+Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Fügt Wiedergabeverlauf, also die Videos und Reels, die du angesehen hast, zum Menü hinzu, das beim langen Drücken des Facebook-Symbols erscheint, wenn Platz ist. Vorhandene Verknüpfungen bleiben.
 # context: The optional matching mode for both post word lists.
 Match whole words	Ganze Wörter abgleichen
 Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.	Gleicht nur ganze Wörter ab, in beiden Listen. Zum Beispiel passt hat zu hat!, aber nicht zu what oder hats.
