@@ -10,6 +10,8 @@ import android.app.Application;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.shadows.ShadowPackageManager;
@@ -39,9 +41,34 @@ public final class MessengerIconForTests {
         packages.addIntentFilterForActivity(HOME, launcher);
     }
 
-    /** Takes Messenger off again, its launcher entry with it. */
+    /** HushMessenger installed beside Meta's apps: another package name, Messenger's class names. */
+    static final String CLONE_PACKAGE = "com.facebook.orca.hush";
+    static final ComponentName CLONE_HOME = new ComponentName(CLONE_PACKAGE, HOME.getClassName());
+
+    /** Another app's launcher entry, one with no Messenger class. */
+    static final ComponentName OTHER_HOME = new ComponentName("org.telegram.messenger", "org.telegram.ui.LaunchActivity");
+
+    /** Installs an app named [home]'s package with [home] as its MAIN and LAUNCHER activity. */
+    static void installLauncher(ComponentName home) {
+        PackageInfo info = new PackageInfo();
+        info.packageName = home.getPackageName();
+        info.applicationInfo = new ApplicationInfo();
+        info.applicationInfo.packageName = home.getPackageName();
+        info.applicationInfo.enabled = true;
+        ShadowPackageManager packages = shadowOf(app().getPackageManager());
+        packages.installPackage(info);
+        packages.addActivityIfNotPresent(home);
+        IntentFilter launcher = new IntentFilter(Intent.ACTION_MAIN);
+        launcher.addCategory(Intent.CATEGORY_LAUNCHER);
+        packages.addIntentFilterForActivity(home, launcher);
+    }
+
+    /** Takes Messenger off again, its launcher entry with it, and the clone and other app too. */
     public static void uninstall() {
         MessengerCardForTests.uninstall();
+        ShadowPackageManager packages = shadowOf(app().getPackageManager());
+        packages.removePackage(CLONE_PACKAGE);
+        packages.removePackage(OTHER_HOME.getPackageName());
     }
 
     /** The next activity the app started, or null, taking it off Robolectric's list. */

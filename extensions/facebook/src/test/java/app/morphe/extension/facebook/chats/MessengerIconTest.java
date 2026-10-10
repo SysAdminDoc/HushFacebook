@@ -166,6 +166,56 @@ public class MessengerIconTest {
                 + MessengerIcon.NO_MESSENGER + " 1", statusLine());
     }
 
+    /**
+     * HushMessenger installed beside Meta's apps has another package name and Messenger's class
+     * names. Without Meta's Messenger, a tap opens it in a task of its own (issue #116).
+     */
+    @Test
+    public void aMessengerUnderAnotherPackageNameOpensWithoutMetas() {
+        Settings.OPEN_MESSENGER_APP.save(true);
+        MessengerIconForTests.installLauncher(MessengerIconForTests.OTHER_HOME);
+        MessengerIconForTests.installLauncher(MessengerIconForTests.CLONE_HOME);
+
+        assertTrue(MessengerIcon.open(app, false));
+        Intent started = MessengerIconForTests.nextStarted();
+        assertNotNull("nothing was started", started);
+        assertEquals(MessengerIconForTests.CLONE_HOME, started.getComponent());
+        assertEquals(Intent.ACTION_MAIN, started.getAction());
+        assertTrue(started.toString(), started.hasCategory(Intent.CATEGORY_LAUNCHER));
+        assertTrue("the copy doesn't get a task of its own", (started.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK) != 0);
+        assertEquals(FamilyNames.MESSENGER_ICON + ": invoked 1, 0 found, 0 missing. Counted: "
+                + MessengerIcon.OPENED + " 1", statusLine());
+    }
+
+    /** With Meta's Messenger and a copy both installed, Meta's opens. */
+    @Test
+    public void metasMessengerComesBeforeACopy() {
+        Settings.OPEN_MESSENGER_APP.save(true);
+        MessengerIconForTests.installLauncher(MessengerIconForTests.CLONE_HOME);
+        MessengerIconForTests.install();
+        assertTrue(MessengerIcon.open(app, false));
+        assertEquals(MessengerIconForTests.HOME, MessengerIconForTests.nextStarted().getComponent());
+    }
+
+    /** Another app's launcher entry, or Facebook's own Messenger classes, never stand in for Messenger. */
+    @Test
+    public void onlyMessengersClassesInAnotherAppCount() {
+        Settings.OPEN_MESSENGER_APP.save(true);
+        MessengerIconForTests.installLauncher(MessengerIconForTests.OTHER_HOME);
+        PackageManager packages = app.getPackageManager();
+        assertNull(MessengerIcon.messengerLaunch(packages, app.getPackageName()));
+        MessengerIconForTests.installLauncher(MessengerIconForTests.CLONE_HOME);
+        assertNull("the running app's own entry was taken",
+                MessengerIcon.messengerLaunch(packages, MessengerIconForTests.CLONE_PACKAGE));
+        assertFalse(MessengerIcon.open(new ContextWrapper(app) {
+            @Override
+            public String getPackageName() {
+                return MessengerIconForTests.CLONE_PACKAGE;
+            }
+        }, false));
+        assertNull(MessengerIconForTests.nextStarted());
+    }
+
     /** A Messenger with no home screen entry has nothing public to open, so Chats opens. */
     @Test
     public void aMessengerWithNoLauncherEntryIsLeftAlone() {

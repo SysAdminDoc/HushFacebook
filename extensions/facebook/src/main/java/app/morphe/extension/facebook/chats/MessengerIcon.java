@@ -7,6 +7,9 @@ package app.morphe.extension.facebook.chats;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
@@ -14,6 +17,7 @@ import android.view.ViewConfiguration;
 import androidx.annotation.Nullable;
 
 import java.util.Arrays;
+import java.util.List;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -30,7 +34,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * runs {@link #open} first in the icon's tap, and in the Messenger button handler the older title
  * bar shares with it. While the switch is on and Messenger is installed, a tap starts Messenger's
  * launcher entry, the intent its home screen icon sends, and Facebook's own handling is skipped.
- * Any app may start a launcher entry, so nothing about the key Messenger is signed with matters.
+ * Without Meta's Messenger, a copy installed under another package name, as HushMessenger's
+ * install beside Meta's apps makes, opens instead (see {@link #messengerLaunch}). Any app may start
+ * a launcher entry, so nothing about the key Messenger is signed with matters.
  *
  * <p>It fails open: with the switch off, a pause, settings that aren't ready, a long press (Facebook
  * has its own use for that), no Messenger with a launcher entry, a start Messenger turns down, or
@@ -168,9 +174,7 @@ public final class MessengerIcon {
                 countDecline(LONG_PRESS);
                 return false;
             }
-            // Null unless Messenger is installed, enabled and has a MAIN/LAUNCHER (or INFO) activity.
-            // The intent comes with FLAG_ACTIVITY_NEW_TASK, so Messenger opens in its own task.
-            Intent launch = context.getPackageManager().getLaunchIntentForPackage(MessengerCard.MESSENGER);
+            Intent launch = messengerLaunch(context.getPackageManager(), context.getPackageName());
             if (launch == null) {
                 countDecline(NO_MESSENGER);
                 return false;
@@ -192,5 +196,30 @@ public final class MessengerIcon {
             HookStatus.threw(FamilyNames.MESSENGER_ICON, "Messenger icon", failure);
             return false;
         }
+    }
+
+    /**
+     * The launcher entry a tap starts, or null when there's no Messenger to open. Messenger's own
+     * comes first: null from Android unless it's installed, enabled and has a MAIN/LAUNCHER (or
+     * INFO) activity, and with FLAG_ACTIVITY_NEW_TASK, so Messenger opens in its own task. Without
+     * it, the first launcher entry of another app whose activity is one of Messenger's classes, in a
+     * task of its own too: HushMessenger installed beside Meta's apps takes another package name
+     * ({@code com.facebook.orca.hush} unless the user picks one) and keeps Messenger's class names.
+     * Facebook sees launcher entries through its manifest's plain launcher query.
+     */
+    @Nullable
+    static Intent messengerLaunch(PackageManager packages, @Nullable String self) {
+        Intent launch = packages.getLaunchIntentForPackage(MessengerCard.MESSENGER);
+        if (launch != null) return launch;
+        Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
+        List<ResolveInfo> entries = packages.queryIntentActivities(home, 0);
+        if (entries == null) return null;
+        for (ResolveInfo entry : entries) {
+            ActivityInfo activity = entry == null ? null : entry.activityInfo;
+            if (activity == null || activity.packageName == null || activity.name == null) continue;
+            if (activity.packageName.equals(self) || !activity.name.startsWith(MessengerCard.MESSENGER + ".")) continue;
+            return new Intent(home).setClassName(activity.packageName, activity.name).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        return null;
     }
 }
