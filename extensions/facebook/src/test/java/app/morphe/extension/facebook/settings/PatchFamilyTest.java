@@ -140,6 +140,21 @@ public class PatchFamilyTest {
     }
 
     @Test
+    public void theTimeSwitchStartingOnDoesNotClaimTheBarIsKept() {
+        try {
+            Settings.KEEP_PROGRESS_BAR.save(false);
+            assertTrue(Settings.KEEP_PROGRESS_BAR_TIME.savedValue());
+            String line = PatchFamily.reportLines(EnumSet.of(PatchFamily.PROGRESS_BAR), false).get(0);
+            assertTrue(line, line.startsWith(FamilyNames.PROGRESS_BAR + ": disabled by its switch ("));
+            Settings.KEEP_PROGRESS_BAR.save(true);
+            assertTrue(PatchFamily.reportLines(EnumSet.of(PatchFamily.PROGRESS_BAR), false).get(0)
+                    .startsWith(FamilyNames.PROGRESS_BAR + ": on ("));
+        } finally {
+            Settings.KEEP_PROGRESS_BAR.resetToDefault();
+        }
+    }
+
+    @Test
     public void marketplaceExtrasDoNotClaimTheDisabledModeIsOn() {
         try {
             Settings.MARKETPLACE_ONLY.save(false);

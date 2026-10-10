@@ -8,7 +8,8 @@ import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
 
-import java.lang.ref.WeakReference;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -51,8 +52,8 @@ public final class ProgressBar {
     /** Counted each time the time label is hidden after the active look. */
     static final String TIME_LABEL_HIDDEN = "Reel time label hidden";
 
-    /** Counted each time a reel Facebook finds too short for a bar is given one. */
-    static final String SHORT_REEL_BAR = "Short reel given a bar";
+    /** Counted each time a reel's length check for a bar is answered yes, whatever the reel's length. */
+    static final String SHORT_REEL_BAR = "Reel passed the bar's length check";
 
     /** Counted each time the time label is shown after the active look. */
     static final String TIME_LABEL_SHOWN = "Reel time label shown";
@@ -60,8 +61,8 @@ public final class ProgressBar {
     /** Counted each time the kept bar's next move is set a frame away instead of Facebook's wait. */
     static final String BAR_SMOOTHED = "Reel bar moved every frame";
 
-    /** Counted each time a short reel's caption is given the room a longer reel's leaves for the bar. */
-    static final String SHORT_REEL_ROOM = "Short reel caption given room for the bar";
+    /** Counted each time a reel's caption is laid out with room for the bar, whatever the reel's length. */
+    static final String SHORT_REEL_ROOM = "Reel caption given room for the bar";
 
     /**
      * The least time between two refreshes of one time label. Facebook updates the bar many times a
@@ -72,8 +73,11 @@ public final class ProgressBar {
 
     private static final String FAMILY = FamilyNames.PROGRESS_BAR;
 
-    private static WeakReference<ViewGroup> lastLabel = new WeakReference<>(null);
-    private static long lastRefresh;
+    /**
+     * Each label's last refresh. Two scrubbers can update at once (the reel on screen and the next
+     * one being readied), and each is held to {@link #TIME_REFRESH_MS} on its own.
+     */
+    private static final Map<View, Long> lastRefresh = new WeakHashMap<>();
 
     private ProgressBar() {
     }
@@ -136,16 +140,24 @@ public final class ProgressBar {
      */
     public static boolean refreshesTime(ViewGroup label) {
         try {
-            if (label == null || label.getVisibility() != View.VISIBLE || !showsTime()) return false;
+            if (label == null || !visible(label) || !showsTime()) return false;
             long now = SystemClock.uptimeMillis();
-            if (lastLabel.get() == label && now - lastRefresh < TIME_REFRESH_MS) return false;
-            lastLabel = new WeakReference<>(label);
-            lastRefresh = now;
+            Long last = lastRefresh.get(label);
+            if (last != null && now - last < TIME_REFRESH_MS) return false;
+            lastRefresh.put(label, now);
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel time", failure);
             return false;
         }
+    }
+
+    /** Whether [view] and every view above it are visible. A view not in a window yet counts by its own. */
+    private static boolean visible(View view) {
+        for (Object at = view; at instanceof View; at = ((View) at).getParent()) {
+            if (((View) at).getVisibility() != View.VISIBLE) return false;
+        }
+        return true;
     }
 
     /**

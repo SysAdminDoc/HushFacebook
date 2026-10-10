@@ -188,6 +188,33 @@ public class ProgressBarTest {
     }
 
     @Test
+    public void twoReelsUpdatingTogetherEachRefreshAFewTimesASecond() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        LinearLayout shown = new LinearLayout(RuntimeEnvironment.getApplication());
+        LinearLayout readied = new LinearLayout(RuntimeEnvironment.getApplication());
+        assertTrue(ProgressBar.refreshesTime(shown));
+        assertTrue(ProgressBar.refreshesTime(readied));
+        assertFalse("the first label was refreshed again because a second one updated in between",
+                ProgressBar.refreshesTime(shown));
+        assertFalse(ProgressBar.refreshesTime(readied));
+        ShadowSystemClock.advanceBy(ProgressBar.TIME_REFRESH_MS, TimeUnit.MILLISECONDS);
+        assertTrue(ProgressBar.refreshesTime(shown));
+        assertTrue(ProgressBar.refreshesTime(readied));
+    }
+
+    @Test
+    public void aLabelInsideAHiddenReelIsNotRefreshed() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        LinearLayout reel = new LinearLayout(RuntimeEnvironment.getApplication());
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+        reel.addView(label);
+        reel.setVisibility(View.GONE);
+        assertFalse("a label whose reel is hidden was refreshed", ProgressBar.refreshesTime(label));
+        reel.setVisibility(View.VISIBLE);
+        assertTrue(ProgressBar.refreshesTime(label));
+    }
+
+    @Test
     public void withoutTheTimeSwitchTheLabelHidesAndIsNeverRefreshed() {
         Settings.KEEP_PROGRESS_BAR.save(true);
         Settings.KEEP_PROGRESS_BAR_TIME.save(false);

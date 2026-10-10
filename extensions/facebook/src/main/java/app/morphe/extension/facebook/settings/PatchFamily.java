@@ -442,6 +442,7 @@ public enum PatchFamily {
         if (this == MARKETPLACE_ONLY) anyOn = Settings.MARKETPLACE_ONLY.savedValue();
         if (this == VIDEO_DOWNLOAD) anyOn = Settings.DOWNLOAD_VIDEOS.savedValue();
         if (this == TAP_TO_PLAY) anyOn = Settings.TAP_TO_PLAY.savedValue();
+        if (this == PROGRESS_BAR) anyOn = Settings.KEEP_PROGRESS_BAR.savedValue();
         if (this == PROMO_NOTIFICATIONS) {
             anyOn = false;
             for (BooleanSetting setting : switches) {
