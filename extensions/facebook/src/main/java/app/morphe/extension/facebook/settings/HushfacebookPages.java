@@ -78,7 +78,7 @@ final class HushfacebookPages {
         ReleaseCheck.watch(page);
     }
 
-    /** Appearance, in every build for Text size: the font, the emoji, where the tab bar goes, dark mode, haptics and screen transitions. */
+    /** Appearance, in every build for Text size: the font, the emoji, where the tab bar goes, dark mode, haptics, screen transitions and the app icons. */
     static void appearance(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context,
             Set<PatchFamily> build) {
         PreferenceCategory appearance = category(screen, L10n.t("Appearance"));
@@ -153,6 +153,12 @@ final class HushfacebookPages {
             appearance.addPreference(toggle(context, Settings.TURN_OFF_SCREEN_TRANSITIONS,
                     L10n.t("Tabs, the Menu and screens that open over Facebook appear at once instead of sliding in. Swiping "
                             + "between tabs still works.")));
+        }
+        if (build.contains(PatchFamily.APP_ICONS)) {
+            // The App icon page asks as it opens, and Facebook's start-up check asks once per start.
+            appearance.addPreference(toggle(context, Settings.UNLOCK_APP_ICONS,
+                    L10n.t("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, "
+                            + "Facebook puts its own icon back the next time it starts.")));
         }
     }
 

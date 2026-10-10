@@ -778,6 +778,17 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/AppIcons.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/UnlockAppIconsAnchors.kt",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/UnlockAppIconsPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Unlock app icons, the idea of HushMessenger's patch of the same name, written here from Facebook 582 for issue #109. The subscription benefit provider, found by the strings SUBSBenefitDataProvider and subs_active_benefits it keeps, has one (String)Z instance method that checks a benefit name against its Set; the hook goes first in it and answers true for CUSTOM_APP_ICON while the switch is on. The App icon page's (Set)V callback that loads CUSTOM_APP_ICON and calls Set.contains with it on each synced set passes that answer through the extension, which answers true while the switch is on."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/AppLock.java"
       ],
       "origin": "original",

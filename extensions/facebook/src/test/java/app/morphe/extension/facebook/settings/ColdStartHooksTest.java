@@ -75,6 +75,7 @@ import app.morphe.extension.facebook.menu.MenuSectionsForTests;
 import app.morphe.extension.facebook.misc.MetaUpsells;
 import app.morphe.extension.facebook.menu.MenuSettingsRow;
 import app.morphe.extension.facebook.misc.AnalyticsUploads;
+import app.morphe.extension.facebook.misc.AppIcons;
 import app.morphe.extension.facebook.misc.ScreenshotDetection;
 import app.morphe.extension.facebook.misc.Haptics;
 import app.morphe.extension.facebook.misc.ScreenTransitionsForTests;
@@ -237,6 +238,8 @@ public class ColdStartHooksTest {
         assertTrue("a Papaya job before the context was held back", AnalyticsUploads.papayaOn(true));
         assertEquals("a window's secure flag before the context was taken out", 0x2000, Screenshots.layoutFlags(0x2000));
         assertTrue("a tab before the context lost its slide", ScreenTransitionsForTests.slides());
+        assertFalse("the app icon benefit before the context was answered yes", AppIcons.unlocked(AppIcons.BENEFIT));
+        assertFalse("the picker's benefit set before the context was answered yes", AppIcons.entitled(false));
         assertFalse("a picture-in-picture check before the context said yes", PictureInPictureForTests.allowsWithTheFeature());
         assertFalse("the Reels viewer's gate before the context said yes", PictureInPictureForTests.surfaceAllows());
         assertFalse("the Watch viewer's flag before the context said yes", PictureInPictureForTests.immersiveAllows());

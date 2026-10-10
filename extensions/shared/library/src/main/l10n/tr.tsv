@@ -937,6 +937,8 @@ Turn off haptics	Dokunsal titreşimi kapat
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	Facebook'un dokunma veya kaydırma sırasında yaptığı küçük titreşimleri durdurur. Klavyenizin ve telefonunuzun titreşimleri etkilenmez.
 Turn off screen transitions	Ekran geçişlerini kapat
 Tabs, the Menu and screens that open over Facebook appear at once instead of sliding in. Swiping between tabs still works.	Sekmeler, Menü ve Facebook'un üzerinde açılan ekranlar kayarak gelmek yerine hemen görünür. Sekmeler arasında kaydırma yine çalışır.
+Unlock app icons	Uygulama simgelerinin kilidini aç
+Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, Facebook puts its own icon back the next time it starts.	Facebook'un Uygulama simgesi sayfasında Facebook Plus'a ayırdığı simgeleri seçmenizi sağlar. Kapatılırsa Facebook bir sonraki açılışında kendi simgesini geri koyar.
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	Pencere içinde pencere
 # context: summary of that switch

@@ -44,7 +44,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildDe() {
-        Map<String, String> table = new HashMap<>(1822);
+        Map<String, String> table = new HashMap<>(1826);
         fillDe0(table);
         fillDe1(table);
         fillDe2(table);
@@ -1030,6 +1030,8 @@ public final class L10nTranslations {
                 "Ausgeblendet lassen f\u00fcr");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "H\u00e4lt Facebook immer dunkel, egal was seine eigene Einstellung sagt. Gedacht f\u00fcr Tablets, auf denen Facebook keinen Dunkelmodus-Schalter hat. Starte Facebook neu, um die \u00c4nderung zu sehen.");
+        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, Facebook puts its own icon back the next time it starts.",
+                "Du kannst auf Facebooks Seite \u201eApp-Symbol\u201c auch die Symbole w\u00e4hlen, die Facebook f\u00fcr Facebook Plus vorbeh\u00e4lt. Ausgeschaltet setzt Facebook beim n\u00e4chsten Start sein eigenes Symbol wieder ein.");
         table.put("Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.",
                 "Du kannst Screenshots und Bildschirmaufnahmen auf Seiten machen, auf denen Facebook sie sperrt. \u00d6ffne eine bereits offene Seite erneut.");
         table.put("Licenses",
@@ -1044,11 +1046,11 @@ public final class L10nTranslations {
                 "Link kopiert");
         table.put("Link expired. Reopen the item and try again.",
                 "Link abgelaufen. \u00d6ffne den Inhalt neu und versuche es noch einmal.");
-        table.put("Links",
-                "Links");
     }
 
     private static void fillDe8(Map<String, String> table) {
+        table.put("Links",
+                "Links");
         table.put("Links go to %1$s. When it isn't installed, Android asks which app.",
                 "Links gehen an %1$s. Ist sie nicht installiert, fragt Android nach der App.");
         table.put("Links that open in Facebook's own browser aren't recorded for your link history or sent to Facebook as pages you visited. Applies to the next link you open.",
@@ -1167,11 +1169,11 @@ public final class L10nTranslations {
                 "Keine Webadresse von Facebook ist f\u00fcr diese App ausgew\u00e4hlt, deshalb \u00f6ffnen sich ihre Links woanders. Tippe, um sie in den Android-Einstellungen auszuw\u00e4hlen.");
         table.put("None. The share sheet shows everything Facebook offers.",
                 "Keine. Beim Teilen zeigt Facebook alles, was es anbietet.");
-        table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
-                "Nicht in diesem Build. Um das zu blockieren, w\u00e4hle in Morphe Manager den Patch %1$s und patche erneut.");
     }
 
     private static void fillDe9(Map<String, String> table) {
+        table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
+                "Nicht in diesem Build. Um das zu blockieren, w\u00e4hle in Morphe Manager den Patch %1$s und patche erneut.");
         table.put("Not in this build: %1$s. Morphe Manager selects it by default. Patch again with it selected to get what it does.",
                 "Nicht in diesem Build: %1$s. Morphe Manager w\u00e4hlt diesen Patch standardm\u00e4\u00dfig aus. W\u00e4hle ihn aus und patche erneut, um zu bekommen, was er tut.");
         table.put("Not in this build: %1$s. Morphe Manager selects them by default. Patch again with them selected to get what they do.",
@@ -1290,11 +1292,11 @@ public final class L10nTranslations {
                 "Wiedergabe");
         table.put("Playback quality",
                 "Wiedergabequalit\u00e4t");
-        table.put("Playback quality will be set to %1$s.",
-                "Die Wiedergabequalit\u00e4t wird auf %1$s gesetzt.");
     }
 
     private static void fillDe10(Map<String, String> table) {
+        table.put("Playback quality will be set to %1$s.",
+                "Die Wiedergabequalit\u00e4t wird auf %1$s gesetzt.");
         table.put("Politics",
                 "Politik");
         table.put("Posts and reel captions stay in the language they were written in. Facebook's See translation link stays under them.",
@@ -1413,11 +1415,11 @@ public final class L10nTranslations {
                 "Foto speichern im Beitragsmen\u00fc");
         table.put("Save the full report in Download/Morphe.",
                 "Vollst\u00e4ndigen Bericht unter Download/Morphe speichern.");
-        table.put("Save to",
-                "Speichern in");
     }
 
     private static void fillDe11(Map<String, String> table) {
+        table.put("Save to",
+                "Speichern in");
         table.put("Save to phone",
                 "Aufs Handy speichern");
         table.put("Save videos other apps can open",
@@ -1536,11 +1538,11 @@ public final class L10nTranslations {
                 "Langsamere Geschwindigkeiten");
         table.put("Smallest",
                 "Kleinste");
-        table.put("Source code and issues",
-                "Quellcode und Issues");
     }
 
     private static void fillDe12(Map<String, String> table) {
+        table.put("Source code and issues",
+                "Quellcode und Issues");
         table.put("Sports",
                 "Sport");
         table.put("Stays in while paused",
@@ -1659,11 +1661,11 @@ public final class L10nTranslations {
                 "Der Kommentar, den Facebook unter einem Reel als Vorschau zeigt, und die Blasen der Freunde, die reagiert haben. \u00d6ffne die Kommentare, um alle zu sehen.");
         table.put("The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.",
                 "Das Kommentarfeld verliert seine GIF- und Sticker-Schaltfl\u00e4chen. Schreiben, Fotos und Posten funktionieren wie bisher.");
-        table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
-                "Der Diagnosebericht lie\u00df sich noch nicht speichern. Versuche es gleich noch einmal.");
     }
 
     private static void fillDe13(Map<String, String> table) {
+        table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
+                "Der Diagnosebericht lie\u00df sich noch nicht speichern. Versuche es gleich noch einmal.");
         table.put("The diagnostic report couldn't be saved. Try again.",
                 "Der Diagnosebericht lie\u00df sich nicht speichern. Versuche es noch einmal.");
         table.put("The feed will hide posts with more than %1$s reactions.",
@@ -1738,6 +1740,8 @@ public final class L10nTranslations {
                 "Entsperren");
         table.put("Unlock Facebook",
                 "Facebook entsperren");
+        table.put("Unlock app icons",
+                "App-Symbole freischalten");
         table.put("Until you resume, every switch but Debug logging and Lock Facebook acts as if it were off. Changes made when you patched stay in.",
                 "Bis zum Fortsetzen verh\u00e4lt sich jeder Schalter au\u00dfer der Debug-Protokollierung und \u201eFacebook sperren\u201c, als w\u00e4re er aus. Was beim Patchen festgelegt wurde, bleibt aktiv.");
         table.put("Up to %1$s",
@@ -1780,13 +1784,13 @@ public final class L10nTranslations {
                 "Videos und Fotos landen in %1$s, neben denen der Kamera. Was du schon gespeichert hast, bleibt, wo es ist.");
         table.put("Videos and photos go to %1$s, with the phone's other downloads. Saves you already have stay where they are.",
                 "Videos und Fotos landen in %1$s, bei den anderen Downloads des Handys. Was du schon gespeichert hast, bleibt, wo es ist.");
+    }
+
+    private static void fillDe14(Map<String, String> table) {
         table.put("Videos and photos go to %1$s.",
                 "Videos und Fotos landen in %1$s.");
         table.put("Videos and photos will go to %1$s.",
                 "Videos und Fotos landen dann in %1$s.");
-    }
-
-    private static void fillDe14(Map<String, String> table) {
         table.put("Videos are named %1$s.",
                 "Videos hei\u00dfen %1$s.");
         table.put("Videos go to %1$s and photos to %2$s, as Facebook's own saves do. Some galleries don't show %1$s.",
@@ -1903,13 +1907,13 @@ public final class L10nTranslations {
                 "facebook.com- und m.me-Links \u00f6ffnen sich jetzt hier.");
         table.put("facebook.com links open here now.",
                 "facebook.com-Links \u00f6ffnen sich jetzt hier.");
+    }
+
+    private static void fillDe15(Map<String, String> table) {
         table.put("failed (%1$s)",
                 "fehlgeschlagen (%1$s)");
         table.put("no answer",
                 "keine Antwort");
-    }
-
-    private static void fillDe15(Map<String, String> table) {
         table.put("the Audience Network block",
                 "die Sperre f\u00fcr das Audience Network");
         table.put("the black background in dark mode",
@@ -1935,7 +1939,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildEs() {
-        Map<String, String> table = new HashMap<>(1822);
+        Map<String, String> table = new HashMap<>(1826);
         fillEs0(table);
         fillEs1(table);
         fillEs2(table);
@@ -2921,6 +2925,8 @@ public final class L10nTranslations {
                 "Mantenerlas ocultas durante");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "Mantiene Facebook oscuro sin importar su propio ajuste. Pensado para tabletas en las que Facebook no tiene el interruptor de modo oscuro. Reinicia Facebook para ver el cambio.");
+        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, Facebook puts its own icon back the next time it starts.",
+                "Te deja elegir en la p\u00e1gina \u00cdcono de la app los \u00edconos que Facebook reserva para Facebook Plus. Si lo desactivas, Facebook vuelve a poner su propio \u00edcono la pr\u00f3xima vez que se inicie.");
         table.put("Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.",
                 "Te deja hacer capturas y grabaciones de pantalla en las p\u00e1ginas donde Facebook las bloquea. Vuelve a abrir una p\u00e1gina que ya est\u00e9 abierta.");
         table.put("Licenses",
@@ -2935,11 +2941,11 @@ public final class L10nTranslations {
                 "Enlace copiado");
         table.put("Link expired. Reopen the item and try again.",
                 "El enlace expir\u00f3. Vuelve a abrir el contenido e int\u00e9ntalo de nuevo.");
-        table.put("Links",
-                "Enlaces");
     }
 
     private static void fillEs8(Map<String, String> table) {
+        table.put("Links",
+                "Enlaces");
         table.put("Links go to %1$s. When it isn't installed, Android asks which app.",
                 "Los enlaces van a %1$s. Si no est\u00e1 instalada, Android pregunta qu\u00e9 app usar.");
         table.put("Links that open in Facebook's own browser aren't recorded for your link history or sent to Facebook as pages you visited. Applies to the next link you open.",
@@ -3058,11 +3064,11 @@ public final class L10nTranslations {
                 "Ninguna direcci\u00f3n web de Facebook est\u00e1 seleccionada para esta app, as\u00ed que sus enlaces se abren en otro sitio. Toca para seleccionarlas en los ajustes de Android.");
         table.put("None. The share sheet shows everything Facebook offers.",
                 "Ninguna. Al compartir se muestra todo lo que ofrece Facebook.");
-        table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
-                "No est\u00e1 en esta compilaci\u00f3n. Para bloquearlo, elige el parche %1$s en Morphe Manager y vuelve a parchear.");
     }
 
     private static void fillEs9(Map<String, String> table) {
+        table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
+                "No est\u00e1 en esta compilaci\u00f3n. Para bloquearlo, elige el parche %1$s en Morphe Manager y vuelve a parchear.");
         table.put("Not in this build: %1$s. Morphe Manager selects it by default. Patch again with it selected to get what it does.",
                 "No est\u00e1 en esta compilaci\u00f3n: %1$s. Morphe Manager lo selecciona por defecto. Selecci\u00f3nalo y vuelve a parchear para obtener lo que hace.");
         table.put("Not in this build: %1$s. Morphe Manager selects them by default. Patch again with them selected to get what they do.",
@@ -3181,11 +3187,11 @@ public final class L10nTranslations {
                 "Reproducci\u00f3n");
         table.put("Playback quality",
                 "Calidad de reproducci\u00f3n");
-        table.put("Playback quality will be set to %1$s.",
-                "La calidad de reproducci\u00f3n ser\u00e1 %1$s.");
     }
 
     private static void fillEs10(Map<String, String> table) {
+        table.put("Playback quality will be set to %1$s.",
+                "La calidad de reproducci\u00f3n ser\u00e1 %1$s.");
         table.put("Politics",
                 "Pol\u00edtica");
         table.put("Posts and reel captions stay in the language they were written in. Facebook's See translation link stays under them.",
@@ -3304,11 +3310,11 @@ public final class L10nTranslations {
                 "Guardar foto en los men\u00fas de publicaciones");
         table.put("Save the full report in Download/Morphe.",
                 "Guarda el informe completo en Download/Morphe.");
-        table.put("Save to",
-                "Guardar en");
     }
 
     private static void fillEs11(Map<String, String> table) {
+        table.put("Save to",
+                "Guardar en");
         table.put("Save to phone",
                 "Guardar en el tel\u00e9fono");
         table.put("Save videos other apps can open",
@@ -3427,11 +3433,11 @@ public final class L10nTranslations {
                 "Velocidades m\u00e1s lentas");
         table.put("Smallest",
                 "La m\u00e1s peque\u00f1a");
-        table.put("Source code and issues",
-                "C\u00f3digo fuente e incidencias");
     }
 
     private static void fillEs12(Map<String, String> table) {
+        table.put("Source code and issues",
+                "C\u00f3digo fuente e incidencias");
         table.put("Sports",
                 "Deportes");
         table.put("Stays in while paused",
@@ -3550,11 +3556,11 @@ public final class L10nTranslations {
                 "El comentario que Facebook muestra como vista previa debajo de un reel y las burbujas de los amigos que reaccionaron. Abre los comentarios para verlos todos.");
         table.put("The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.",
                 "El cuadro de comentarios pierde sus botones de GIF y stickers. Escribir, a\u00f1adir fotos y publicar funcionan como antes.");
-        table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
-                "Todav\u00eda no se pudo guardar el informe de diagn\u00f3stico. Int\u00e9ntalo de nuevo en un momento.");
     }
 
     private static void fillEs13(Map<String, String> table) {
+        table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
+                "Todav\u00eda no se pudo guardar el informe de diagn\u00f3stico. Int\u00e9ntalo de nuevo en un momento.");
         table.put("The diagnostic report couldn't be saved. Try again.",
                 "No se pudo guardar el informe de diagn\u00f3stico. Int\u00e9ntalo de nuevo.");
         table.put("The feed will hide posts with more than %1$s reactions.",
@@ -3629,6 +3635,8 @@ public final class L10nTranslations {
                 "Desbloquear");
         table.put("Unlock Facebook",
                 "Desbloquear Facebook");
+        table.put("Unlock app icons",
+                "Desbloquear \u00edconos de la app");
         table.put("Until you resume, every switch but Debug logging and Lock Facebook acts as if it were off. Changes made when you patched stay in.",
                 "Hasta que reanudes, todos los interruptores, salvo el Registro de depuraci\u00f3n y \u201cBloquear Facebook\u201d, funcionan como si estuvieran desactivados. Lo que se aplic\u00f3 al parchear se mantiene.");
         table.put("Up to %1$s",
@@ -3671,13 +3679,13 @@ public final class L10nTranslations {
                 "Los videos y las fotos van a %1$s, junto a los de la c\u00e1mara. Lo que ya guardaste se queda donde est\u00e1.");
         table.put("Videos and photos go to %1$s, with the phone's other downloads. Saves you already have stay where they are.",
                 "Los videos y las fotos van a %1$s, con las dem\u00e1s descargas del tel\u00e9fono. Lo que ya guardaste se queda donde est\u00e1.");
+    }
+
+    private static void fillEs14(Map<String, String> table) {
         table.put("Videos and photos go to %1$s.",
                 "Los videos y las fotos van a %1$s.");
         table.put("Videos and photos will go to %1$s.",
                 "Los videos y las fotos ir\u00e1n a %1$s.");
-    }
-
-    private static void fillEs14(Map<String, String> table) {
         table.put("Videos are named %1$s.",
                 "Los videos se llaman %1$s.");
         table.put("Videos go to %1$s and photos to %2$s, as Facebook's own saves do. Some galleries don't show %1$s.",
@@ -3794,13 +3802,13 @@ public final class L10nTranslations {
                 "Los enlaces de facebook.com y m.me ahora se abren aqu\u00ed.");
         table.put("facebook.com links open here now.",
                 "Los enlaces de facebook.com ahora se abren aqu\u00ed.");
+    }
+
+    private static void fillEs15(Map<String, String> table) {
         table.put("failed (%1$s)",
                 "fall\u00f3 (%1$s)");
         table.put("no answer",
                 "sin respuesta");
-    }
-
-    private static void fillEs15(Map<String, String> table) {
         table.put("the Audience Network block",
                 "el bloqueo de Audience Network");
         table.put("the black background in dark mode",
@@ -3826,7 +3834,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildIn() {
-        Map<String, String> table = new HashMap<>(1822);
+        Map<String, String> table = new HashMap<>(1826);
         fillIn0(table);
         fillIn1(table);
         fillIn2(table);
@@ -4812,6 +4820,8 @@ public final class L10nTranslations {
                 "Sembunyikan selama");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "Membuat Facebook tetap gelap apa pun pengaturannya sendiri. Untuk tablet yang di Facebook-nya tidak ada sakelar mode gelap. Mulai ulang Facebook untuk melihat perubahannya.");
+        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, Facebook puts its own icon back the next time it starts.",
+                "Memungkinkan memilih ikon aplikasi yang disediakan Facebook khusus untuk Facebook Plus di halaman Ikon aplikasi. Jika dimatikan, Facebook mengembalikan ikonnya sendiri saat dimulai lagi.");
         table.put("Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.",
                 "Memungkinkan tangkapan layar dan rekaman layar di halaman yang diblokir Facebook. Buka ulang halaman yang sudah terbuka.");
         table.put("Licenses",
@@ -4826,11 +4836,11 @@ public final class L10nTranslations {
                 "Tautan disalin");
         table.put("Link expired. Reopen the item and try again.",
                 "Tautan kedaluwarsa. Buka ulang kontennya lalu coba lagi.");
-        table.put("Links",
-                "Tautan");
     }
 
     private static void fillIn8(Map<String, String> table) {
+        table.put("Links",
+                "Tautan");
         table.put("Links go to %1$s. When it isn't installed, Android asks which app.",
                 "Tautan dikirim ke %1$s. Jika tidak terpasang, Android menanyakan aplikasinya.");
         table.put("Links that open in Facebook's own browser aren't recorded for your link history or sent to Facebook as pages you visited. Applies to the next link you open.",
@@ -4949,11 +4959,11 @@ public final class L10nTranslations {
                 "Tidak ada alamat web Facebook yang dipilih untuk aplikasi ini, jadi tautannya terbuka di tempat lain. Ketuk untuk memilihnya di pengaturan Android.");
         table.put("None. The share sheet shows everything Facebook offers.",
                 "Tidak ada. Menu berbagi menampilkan semua yang ditawarkan Facebook.");
-        table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
-                "Tidak ada di build ini. Untuk memblokirnya, pilih tambalan %1$s di Morphe Manager lalu tambal ulang.");
     }
 
     private static void fillIn9(Map<String, String> table) {
+        table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
+                "Tidak ada di build ini. Untuk memblokirnya, pilih tambalan %1$s di Morphe Manager lalu tambal ulang.");
         table.put("Not in this build: %1$s. Morphe Manager selects it by default. Patch again with it selected to get what it does.",
                 "Tidak ada di build ini: %1$s. Morphe Manager memilihnya secara default. Pilih tambalan itu lalu tambal ulang untuk mendapatkan fungsinya.");
         table.put("Not in this build: %1$s. Morphe Manager selects them by default. Patch again with them selected to get what they do.",
@@ -5072,11 +5082,11 @@ public final class L10nTranslations {
                 "Pemutaran");
         table.put("Playback quality",
                 "Kualitas pemutaran");
-        table.put("Playback quality will be set to %1$s.",
-                "Kualitas pemutaran akan diatur ke %1$s.");
     }
 
     private static void fillIn10(Map<String, String> table) {
+        table.put("Playback quality will be set to %1$s.",
+                "Kualitas pemutaran akan diatur ke %1$s.");
         table.put("Politics",
                 "Politik");
         table.put("Posts and reel captions stay in the language they were written in. Facebook's See translation link stays under them.",
@@ -5195,11 +5205,11 @@ public final class L10nTranslations {
                 "Simpan foto di menu postingan");
         table.put("Save the full report in Download/Morphe.",
                 "Simpan laporan lengkap di Download/Morphe.");
-        table.put("Save to",
-                "Simpan ke");
     }
 
     private static void fillIn11(Map<String, String> table) {
+        table.put("Save to",
+                "Simpan ke");
         table.put("Save to phone",
                 "Simpan ke ponsel");
         table.put("Save videos other apps can open",
@@ -5318,11 +5328,11 @@ public final class L10nTranslations {
                 "Kecepatan lebih lambat");
         table.put("Smallest",
                 "Terkecil");
-        table.put("Source code and issues",
-                "Kode sumber dan laporan masalah");
     }
 
     private static void fillIn12(Map<String, String> table) {
+        table.put("Source code and issues",
+                "Kode sumber dan laporan masalah");
         table.put("Sports",
                 "Olahraga");
         table.put("Stays in while paused",
@@ -5441,11 +5451,11 @@ public final class L10nTranslations {
                 "Komentar yang ditampilkan Facebook sebagai pratinjau di bawah reel, dan gelembung teman yang memberi reaksi. Buka komentar untuk melihat semuanya.");
         table.put("The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.",
                 "Kotak komentar tidak lagi menampilkan tombol GIF dan stiker. Mengetik, foto, dan mengirim tetap berfungsi seperti biasa.");
-        table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
-                "Laporan diagnostik belum dapat disimpan. Coba lagi dalam beberapa saat.");
     }
 
     private static void fillIn13(Map<String, String> table) {
+        table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
+                "Laporan diagnostik belum dapat disimpan. Coba lagi dalam beberapa saat.");
         table.put("The diagnostic report couldn't be saved. Try again.",
                 "Laporan diagnostik tidak dapat disimpan. Coba lagi.");
         table.put("The feed will hide posts with more than %1$s reactions.",
@@ -5520,6 +5530,8 @@ public final class L10nTranslations {
                 "Buka kunci");
         table.put("Unlock Facebook",
                 "Buka kunci Facebook");
+        table.put("Unlock app icons",
+                "Buka ikon aplikasi");
         table.put("Until you resume, every switch but Debug logging and Lock Facebook acts as if it were off. Changes made when you patched stay in.",
                 "Sampai Anda melanjutkan, semua sakelar kecuali Pencatatan debug dan \u201cKunci Facebook\u201d dianggap nonaktif. Yang diatur saat Anda menambal tetap aktif.");
         table.put("Up to %1$s",
@@ -5562,13 +5574,13 @@ public final class L10nTranslations {
                 "Video dan foto masuk ke %1$s, di samping milik kamera. Simpanan Anda yang sudah ada tetap di tempatnya.");
         table.put("Videos and photos go to %1$s, with the phone's other downloads. Saves you already have stay where they are.",
                 "Video dan foto masuk ke %1$s, bersama unduhan lain di ponsel. Simpanan Anda yang sudah ada tetap di tempatnya.");
+    }
+
+    private static void fillIn14(Map<String, String> table) {
         table.put("Videos and photos go to %1$s.",
                 "Video dan foto masuk ke %1$s.");
         table.put("Videos and photos will go to %1$s.",
                 "Video dan foto akan masuk ke %1$s.");
-    }
-
-    private static void fillIn14(Map<String, String> table) {
         table.put("Videos are named %1$s.",
                 "Video diberi nama %1$s.");
         table.put("Videos go to %1$s and photos to %2$s, as Facebook's own saves do. Some galleries don't show %1$s.",
@@ -5685,13 +5697,13 @@ public final class L10nTranslations {
                 "Tautan facebook.com dan m.me kini terbuka di sini.");
         table.put("facebook.com links open here now.",
                 "Tautan facebook.com kini terbuka di sini.");
+    }
+
+    private static void fillIn15(Map<String, String> table) {
         table.put("failed (%1$s)",
                 "gagal (%1$s)");
         table.put("no answer",
                 "tidak ada jawaban");
-    }
-
-    private static void fillIn15(Map<String, String> table) {
         table.put("the Audience Network block",
                 "pemblokir Audience Network");
         table.put("the black background in dark mode",
@@ -5717,7 +5729,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildPt_rBR() {
-        Map<String, String> table = new HashMap<>(1822);
+        Map<String, String> table = new HashMap<>(1826);
         fillPt_rBR0(table);
         fillPt_rBR1(table);
         fillPt_rBR2(table);
@@ -6703,6 +6715,8 @@ public final class L10nTranslations {
                 "Manter ocultas por");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "Mant\u00e9m o Facebook escuro independentemente da configura\u00e7\u00e3o dele. Feito para tablets em que o Facebook n\u00e3o tem a op\u00e7\u00e3o de modo escuro. Reinicie o Facebook para ver a mudan\u00e7a.");
+        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, Facebook puts its own icon back the next time it starts.",
+                "Permite escolher na p\u00e1gina \u00cdcone do app os \u00edcones que o Facebook reserva para o Facebook Plus. Desativado, o Facebook volta a usar o pr\u00f3prio \u00edcone na pr\u00f3xima vez que for iniciado.");
         table.put("Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.",
                 "Permite capturas e grava\u00e7\u00f5es de tela nas p\u00e1ginas em que o Facebook as bloqueia. Reabra uma p\u00e1gina que j\u00e1 esteja aberta.");
         table.put("Licenses",
@@ -6717,11 +6731,11 @@ public final class L10nTranslations {
                 "Link copiado");
         table.put("Link expired. Reopen the item and try again.",
                 "Link expirado. Reabra o item e tente novamente.");
-        table.put("Links",
-                "Links");
     }
 
     private static void fillPt_rBR8(Map<String, String> table) {
+        table.put("Links",
+                "Links");
         table.put("Links go to %1$s. When it isn't installed, Android asks which app.",
                 "Os links v\u00e3o para %1$s. Se ele n\u00e3o estiver instalado, o Android pergunta qual app usar.");
         table.put("Links that open in Facebook's own browser aren't recorded for your link history or sent to Facebook as pages you visited. Applies to the next link you open.",
@@ -6840,11 +6854,11 @@ public final class L10nTranslations {
                 "Nenhum endere\u00e7o web do Facebook est\u00e1 selecionado para este app, ent\u00e3o os links deles abrem em outro lugar. Toque para selecion\u00e1-los nas configura\u00e7\u00f5es do Android.");
         table.put("None. The share sheet shows everything Facebook offers.",
                 "Nenhum. Ao compartilhar, aparece tudo o que o Facebook oferece.");
-        table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
-                "N\u00e3o faz parte desta vers\u00e3o. Para bloquear isso, escolha o patch %1$s no Morphe Manager e aplique os patches novamente.");
     }
 
     private static void fillPt_rBR9(Map<String, String> table) {
+        table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
+                "N\u00e3o faz parte desta vers\u00e3o. Para bloquear isso, escolha o patch %1$s no Morphe Manager e aplique os patches novamente.");
         table.put("Not in this build: %1$s. Morphe Manager selects it by default. Patch again with it selected to get what it does.",
                 "N\u00e3o faz parte desta vers\u00e3o: %1$s. O Morphe Manager o seleciona por padr\u00e3o. Selecione-o e aplique os patches novamente para ter o que ele faz.");
         table.put("Not in this build: %1$s. Morphe Manager selects them by default. Patch again with them selected to get what they do.",
@@ -6963,11 +6977,11 @@ public final class L10nTranslations {
                 "Reprodu\u00e7\u00e3o");
         table.put("Playback quality",
                 "Qualidade de reprodu\u00e7\u00e3o");
-        table.put("Playback quality will be set to %1$s.",
-                "A qualidade de reprodu\u00e7\u00e3o ser\u00e1 %1$s.");
     }
 
     private static void fillPt_rBR10(Map<String, String> table) {
+        table.put("Playback quality will be set to %1$s.",
+                "A qualidade de reprodu\u00e7\u00e3o ser\u00e1 %1$s.");
         table.put("Politics",
                 "Pol\u00edtica");
         table.put("Posts and reel captions stay in the language they were written in. Facebook's See translation link stays under them.",
@@ -7086,11 +7100,11 @@ public final class L10nTranslations {
                 "Salvar foto no menu das publica\u00e7\u00f5es");
         table.put("Save the full report in Download/Morphe.",
                 "Salve o relat\u00f3rio completo em Download/Morphe.");
-        table.put("Save to",
-                "Salvar em");
     }
 
     private static void fillPt_rBR11(Map<String, String> table) {
+        table.put("Save to",
+                "Salvar em");
         table.put("Save to phone",
                 "Salvar no celular");
         table.put("Save videos other apps can open",
@@ -7209,11 +7223,11 @@ public final class L10nTranslations {
                 "Velocidades mais lentas");
         table.put("Smallest",
                 "A menor");
-        table.put("Source code and issues",
-                "C\u00f3digo-fonte e relatos de problemas");
     }
 
     private static void fillPt_rBR12(Map<String, String> table) {
+        table.put("Source code and issues",
+                "C\u00f3digo-fonte e relatos de problemas");
         table.put("Sports",
                 "Esportes");
         table.put("Stays in while paused",
@@ -7332,11 +7346,11 @@ public final class L10nTranslations {
                 "O coment\u00e1rio que o Facebook mostra como pr\u00e9via abaixo de um Reel e as bolhas dos amigos que reagiram. Abra os coment\u00e1rios para ver todos.");
         table.put("The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.",
                 "A caixa de coment\u00e1rio perde os bot\u00f5es de GIF e figurinhas. Digitar, enviar fotos e publicar continuam como antes.");
-        table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
-                "O relat\u00f3rio de diagn\u00f3stico ainda n\u00e3o p\u00f4de ser salvo. Tente de novo em instantes.");
     }
 
     private static void fillPt_rBR13(Map<String, String> table) {
+        table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
+                "O relat\u00f3rio de diagn\u00f3stico ainda n\u00e3o p\u00f4de ser salvo. Tente de novo em instantes.");
         table.put("The diagnostic report couldn't be saved. Try again.",
                 "N\u00e3o foi poss\u00edvel salvar o relat\u00f3rio de diagn\u00f3stico. Tente de novo.");
         table.put("The feed will hide posts with more than %1$s reactions.",
@@ -7411,6 +7425,8 @@ public final class L10nTranslations {
                 "Desbloquear");
         table.put("Unlock Facebook",
                 "Desbloquear o Facebook");
+        table.put("Unlock app icons",
+                "Desbloquear \u00edcones do app");
         table.put("Until you resume, every switch but Debug logging and Lock Facebook acts as if it were off. Changes made when you patched stay in.",
                 "At\u00e9 voc\u00ea retomar, todas as op\u00e7\u00f5es, menos o Registro de depura\u00e7\u00e3o e \u201cBloquear o Facebook\u201d, funcionam como se estivessem desligadas. O que foi definido ao aplicar os patches continua ativo.");
         table.put("Up to %1$s",
@@ -7453,13 +7469,13 @@ public final class L10nTranslations {
                 "V\u00eddeos e fotos v\u00e3o para %1$s, junto com os da c\u00e2mera. O que voc\u00ea j\u00e1 salvou fica onde est\u00e1.");
         table.put("Videos and photos go to %1$s, with the phone's other downloads. Saves you already have stay where they are.",
                 "V\u00eddeos e fotos v\u00e3o para %1$s, com os outros downloads do celular. O que voc\u00ea j\u00e1 salvou fica onde est\u00e1.");
+    }
+
+    private static void fillPt_rBR14(Map<String, String> table) {
         table.put("Videos and photos go to %1$s.",
                 "V\u00eddeos e fotos v\u00e3o para %1$s.");
         table.put("Videos and photos will go to %1$s.",
                 "Os v\u00eddeos e as fotos v\u00e3o para %1$s.");
-    }
-
-    private static void fillPt_rBR14(Map<String, String> table) {
         table.put("Videos are named %1$s.",
                 "Os v\u00eddeos ser\u00e3o nomeados como %1$s.");
         table.put("Videos go to %1$s and photos to %2$s, as Facebook's own saves do. Some galleries don't show %1$s.",
@@ -7576,13 +7592,13 @@ public final class L10nTranslations {
                 "Os links de facebook.com e m.me agora abrem aqui.");
         table.put("facebook.com links open here now.",
                 "Os links de facebook.com agora abrem aqui.");
+    }
+
+    private static void fillPt_rBR15(Map<String, String> table) {
         table.put("failed (%1$s)",
                 "falhou (%1$s)");
         table.put("no answer",
                 "sem resposta");
-    }
-
-    private static void fillPt_rBR15(Map<String, String> table) {
         table.put("the Audience Network block",
                 "o bloqueio do Audience Network");
         table.put("the black background in dark mode",
@@ -7608,7 +7624,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildTr() {
-        Map<String, String> table = new HashMap<>(1822);
+        Map<String, String> table = new HashMap<>(1826);
         fillTr0(table);
         fillTr1(table);
         fillTr2(table);
@@ -8594,6 +8610,8 @@ public final class L10nTranslations {
                 "Gizli kalma s\u00fcresi");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "Facebook'un kendi ayar\u0131 ne olursa olsun karanl\u0131k kalmas\u0131n\u0131 sa\u011flar. Facebook'ta Karanl\u0131k mod anahtar\u0131 olmayan tabletler i\u00e7in. De\u011fi\u015fikli\u011fi g\u00f6rmek i\u00e7in Facebook'u yeniden ba\u015flat\u0131n.");
+        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, Facebook puts its own icon back the next time it starts.",
+                "Facebook'un Uygulama simgesi sayfas\u0131nda Facebook Plus'a ay\u0131rd\u0131\u011f\u0131 simgeleri se\u00e7menizi sa\u011flar. Kapat\u0131l\u0131rsa Facebook bir sonraki a\u00e7\u0131l\u0131\u015f\u0131nda kendi simgesini geri koyar.");
         table.put("Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.",
                 "Facebook'un engelledi\u011fi sayfalarda ekran g\u00f6r\u00fcnt\u00fcs\u00fc ve ekran kayd\u0131 alman\u0131z\u0131 sa\u011flar. Zaten a\u00e7\u0131k olan bir sayfay\u0131 yeniden a\u00e7\u0131n.");
         table.put("Licenses",
@@ -8608,11 +8626,11 @@ public final class L10nTranslations {
                 "Ba\u011flant\u0131 kopyaland\u0131");
         table.put("Link expired. Reopen the item and try again.",
                 "Ba\u011flant\u0131n\u0131n s\u00fcresi doldu. \u00d6\u011feyi yeniden a\u00e7\u0131p tekrar dene.");
-        table.put("Links",
-                "Ba\u011flant\u0131lar");
     }
 
     private static void fillTr8(Map<String, String> table) {
+        table.put("Links",
+                "Ba\u011flant\u0131lar");
         table.put("Links go to %1$s. When it isn't installed, Android asks which app.",
                 "Ba\u011flant\u0131lar %1$s uygulamas\u0131na gider. Y\u00fckl\u00fc de\u011filse Android hangi uygulaman\u0131n kullan\u0131laca\u011f\u0131n\u0131 sorar.");
         table.put("Links that open in Facebook's own browser aren't recorded for your link history or sent to Facebook as pages you visited. Applies to the next link you open.",
@@ -8731,11 +8749,11 @@ public final class L10nTranslations {
                 "Facebook'un web adreslerinden hi\u00e7biri bu uygulama i\u00e7in se\u00e7ili de\u011fil, bu y\u00fczden ba\u011flant\u0131lar\u0131 ba\u015fka yerde a\u00e7\u0131l\u0131r. Android ayarlar\u0131nda se\u00e7mek i\u00e7in dokunun.");
         table.put("None. The share sheet shows everything Facebook offers.",
                 "Hi\u00e7biri. Payla\u015f\u0131m men\u00fcs\u00fc Facebook'un sundu\u011fu her \u015feyi g\u00f6sterir.");
-        table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
-                "Bu s\u00fcr\u00fcmde yok. Bunu engellemek i\u00e7in Morphe Manager'da %1$s yamas\u0131n\u0131 se\u00e7 ve yeniden yamala.");
     }
 
     private static void fillTr9(Map<String, String> table) {
+        table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
+                "Bu s\u00fcr\u00fcmde yok. Bunu engellemek i\u00e7in Morphe Manager'da %1$s yamas\u0131n\u0131 se\u00e7 ve yeniden yamala.");
         table.put("Not in this build: %1$s. Morphe Manager selects it by default. Patch again with it selected to get what it does.",
                 "Bu s\u00fcr\u00fcmde yok: %1$s. Morphe Manager bunu varsay\u0131lan olarak se\u00e7er. Yapt\u0131\u011f\u0131 i\u015fi almak i\u00e7in onu se\u00e7ip yeniden yamala.");
         table.put("Not in this build: %1$s. Morphe Manager selects them by default. Patch again with them selected to get what they do.",
@@ -8854,11 +8872,11 @@ public final class L10nTranslations {
                 "Oynatma");
         table.put("Playback quality",
                 "Oynatma kalitesi");
-        table.put("Playback quality will be set to %1$s.",
-                "Oynatma kalitesi %1$s olarak ayarlanacak.");
     }
 
     private static void fillTr10(Map<String, String> table) {
+        table.put("Playback quality will be set to %1$s.",
+                "Oynatma kalitesi %1$s olarak ayarlanacak.");
         table.put("Politics",
                 "Siyaset");
         table.put("Posts and reel captions stay in the language they were written in. Facebook's See translation link stays under them.",
@@ -8977,11 +8995,11 @@ public final class L10nTranslations {
                 "G\u00f6nderi men\u00fclerinde foto\u011fraf\u0131 kaydet");
         table.put("Save the full report in Download/Morphe.",
                 "Tam raporu Download/Morphe konumuna kaydeder.");
-        table.put("Save to",
-                "Kaydetme yeri");
     }
 
     private static void fillTr11(Map<String, String> table) {
+        table.put("Save to",
+                "Kaydetme yeri");
         table.put("Save to phone",
                 "Telefona kaydet");
         table.put("Save videos other apps can open",
@@ -9100,11 +9118,11 @@ public final class L10nTranslations {
                 "Daha yava\u015f h\u0131zlar");
         table.put("Smallest",
                 "En k\u00fc\u00e7\u00fck");
-        table.put("Source code and issues",
-                "Kaynak kodu ve sorunlar");
     }
 
     private static void fillTr12(Map<String, String> table) {
+        table.put("Source code and issues",
+                "Kaynak kodu ve sorunlar");
         table.put("Sports",
                 "Spor");
         table.put("Stays in while paused",
@@ -9223,11 +9241,11 @@ public final class L10nTranslations {
                 "Facebook'un bir Reels videosunun alt\u0131nda \u00f6nizleme olarak g\u00f6sterdi\u011fi yorum ve tepki veren arkada\u015flar\u0131n\u0131n baloncuklar\u0131. Hepsini g\u00f6rmek i\u00e7in yorumlar\u0131 a\u00e7.");
         table.put("The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.",
                 "Yorum kutusu GIF ve \u00e7\u0131kartma d\u00fc\u011fmelerini kaybeder. Yazmak, foto\u011fraf eklemek ve payla\u015fmak eskisi gibi \u00e7al\u0131\u015f\u0131r.");
-        table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
-                "Tan\u0131lama raporu hen\u00fcz kaydedilemedi. Birazdan tekrar dene.");
     }
 
     private static void fillTr13(Map<String, String> table) {
+        table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
+                "Tan\u0131lama raporu hen\u00fcz kaydedilemedi. Birazdan tekrar dene.");
         table.put("The diagnostic report couldn't be saved. Try again.",
                 "Tan\u0131lama raporu kaydedilemedi. Tekrar dene.");
         table.put("The feed will hide posts with more than %1$s reactions.",
@@ -9302,6 +9320,8 @@ public final class L10nTranslations {
                 "Kilidi a\u00e7");
         table.put("Unlock Facebook",
                 "Facebook'un kilidini a\u00e7");
+        table.put("Unlock app icons",
+                "Uygulama simgelerinin kilidini a\u00e7");
         table.put("Until you resume, every switch but Debug logging and Lock Facebook acts as if it were off. Changes made when you patched stay in.",
                 "Devam ettirene kadar Hata ay\u0131klama g\u00fcnl\u00fc\u011f\u00fc ve \u201cFacebook'u kilitle\u201d d\u0131\u015f\u0131ndaki her anahtar kapal\u0131ym\u0131\u015f gibi davran\u0131r. Yamalad\u0131\u011f\u0131nda ayarlananlar devrede kal\u0131r.");
         table.put("Up to %1$s",
@@ -9344,13 +9364,13 @@ public final class L10nTranslations {
                 "Videolar ve foto\u011fraflar kameran\u0131nkilerin yan\u0131na, %1$s klas\u00f6r\u00fcne kaydedilir. \u00d6nceden kaydettiklerin oldu\u011fu yerde kal\u0131r.");
         table.put("Videos and photos go to %1$s, with the phone's other downloads. Saves you already have stay where they are.",
                 "Videolar ve foto\u011fraflar telefonun di\u011fer indirmeleriyle birlikte %1$s klas\u00f6r\u00fcne kaydedilir. \u00d6nceden kaydettiklerin oldu\u011fu yerde kal\u0131r.");
+    }
+
+    private static void fillTr14(Map<String, String> table) {
         table.put("Videos and photos go to %1$s.",
                 "Videolar ve foto\u011fraflar %1$s klas\u00f6r\u00fcne kaydedilir.");
         table.put("Videos and photos will go to %1$s.",
                 "Videolar ve foto\u011fraflar %1$s klas\u00f6r\u00fcne gidecek.");
-    }
-
-    private static void fillTr14(Map<String, String> table) {
         table.put("Videos are named %1$s.",
                 "Videolar\u0131n ad\u0131 %1$s olur.");
         table.put("Videos go to %1$s and photos to %2$s, as Facebook's own saves do. Some galleries don't show %1$s.",
@@ -9467,13 +9487,13 @@ public final class L10nTranslations {
                 "facebook.com ve m.me ba\u011flant\u0131lar\u0131 art\u0131k burada a\u00e7\u0131l\u0131yor.");
         table.put("facebook.com links open here now.",
                 "facebook.com ba\u011flant\u0131lar\u0131 art\u0131k burada a\u00e7\u0131l\u0131yor.");
+    }
+
+    private static void fillTr15(Map<String, String> table) {
         table.put("failed (%1$s)",
                 "ba\u015far\u0131s\u0131z (%1$s)");
         table.put("no answer",
                 "yan\u0131t yok");
-    }
-
-    private static void fillTr15(Map<String, String> table) {
         table.put("the Audience Network block",
                 "Audience Network engeli");
         table.put("the black background in dark mode",

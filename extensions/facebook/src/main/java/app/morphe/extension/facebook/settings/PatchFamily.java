@@ -134,6 +134,8 @@ public enum PatchFamily {
             Settings.TURN_OFF_HAPTICS),
     SCREEN_TRANSITIONS(FamilyNames.SCREEN_TRANSITIONS, "turnOffScreenTransitions", null,
             Settings.TURN_OFF_SCREEN_TRANSITIONS),
+    APP_ICONS(FamilyNames.APP_ICONS, "unlockAppIcons", null,
+            Settings.UNLOCK_APP_ICONS),
     EXTERNAL_BROWSER(FamilyNames.EXTERNAL_BROWSER, "externalBrowser", null,
             Settings.OPEN_LINKS_EXTERNALLY, Settings.HOLD_LINK_HISTORY),
     SANITIZE_SHARING_LINKS(FamilyNames.SANITIZE_SHARING_LINKS, "sanitizeSharingLinks", null,

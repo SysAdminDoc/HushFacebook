@@ -170,6 +170,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean unlockAppIcons() {
+        return false;
+    }
+
     public static boolean turnOffScreenTransitions() {
         return false;
     }

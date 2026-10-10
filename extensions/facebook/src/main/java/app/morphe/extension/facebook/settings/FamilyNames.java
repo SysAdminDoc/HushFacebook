@@ -66,6 +66,7 @@ public final class FamilyNames {
     public static final String SYSTEM_EMOJI = "Use the phone's emoji";
     public static final String HAPTICS = "Turn off haptics";
     public static final String SCREEN_TRANSITIONS = "Turn off screen transitions";
+    public static final String APP_ICONS = "Unlock app icons";
     public static final String EXTERNAL_BROWSER = "Open links in external browser";
     public static final String SANITIZE_SHARING_LINKS = "Sanitize sharing links";
     public static final String UPDATE_PROMPTS = "Stop update prompts";

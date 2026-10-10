@@ -831,6 +831,8 @@ Turn off haptics	Desativar a vibração tátil
 Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	Para as pequenas vibrações que o Facebook faz quando você toca ou desliza. As do teclado e do celular não mudam.
 Turn off screen transitions	Desativar as transições de tela
 Tabs, the Menu and screens that open over Facebook appear at once instead of sliding in. Swiping between tabs still works.	As abas, o Menu e as telas que abrem sobre o Facebook aparecem na hora, sem deslizar. Deslizar entre abas continua funcionando.
+Unlock app icons	Desbloquear ícones do app
+Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, Facebook puts its own icon back the next time it starts.	Permite escolher na página Ícone do app os ícones que o Facebook reserva para o Facebook Plus. Desativado, o Facebook volta a usar o próprio ícone na próxima vez que for iniciado.
 # context: switch title under Playback; Android's own name for the floating video window
 Picture-in-picture	Picture-in-picture
 # context: summary of that switch

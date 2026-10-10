@@ -171,6 +171,7 @@ public final class SettingsBackup {
             Settings.ALLOW_SCREENSHOTS,
             Settings.TURN_OFF_HAPTICS,
             Settings.TURN_OFF_SCREEN_TRANSITIONS,
+            Settings.UNLOCK_APP_ICONS,
             Settings.BLOCK_SCREENSHOT_DETECTION,
             Settings.HIDE_CHAT_TYPING,
             Settings.HIDE_COMMENT_TYPING,

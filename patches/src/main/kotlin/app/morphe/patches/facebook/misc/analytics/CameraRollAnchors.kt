@@ -30,8 +30,9 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  * Where Facebook decides to run its camera roll cloud processing, on 582.
  *
  * The processing behind camera roll sharing suggestions looks through the phone's photos and
- * videos, runs models on them and uploads photos, video details and the model output. No setting on
- * the phone gates it. One static config check, `(FbUserSession)Z` on a renamed class, decides
+ * videos, runs models on them and uploads photos, video details and the model output. No local
+ * preference gates it: the opt-in on the Camera roll sharing suggestions page is applied on
+ * Facebook's server. One static config check, `(FbUserSession)Z` on a renamed class, decides
  * whether it runs: the scheduling app job cancels all its workers when the check says no, and the
  * pipeline's run, the media insights and the photo upload each stop on a no. The pipeline's run
  * keeps its coroutine name and loads the kept reason `adv_pro_app_job_disabled` next to its one call

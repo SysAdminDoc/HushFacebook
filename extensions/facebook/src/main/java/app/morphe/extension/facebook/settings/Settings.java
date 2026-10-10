@@ -435,6 +435,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_allow_screenshots", FALSE);
 
     /**
+     * Facebook's Facebook Plus app icons on its App icon page ({@link app.morphe.extension.facebook.misc.AppIcons}).
+     * Starts off. The picker reads it each time it opens, and turned off, Facebook's own start-up
+     * check puts the default icon back the next time Facebook starts.
+     */
+    public static final BooleanSetting UNLOCK_APP_ICONS =
+            new BooleanSetting("hushfacebook_unlock_app_icons", FALSE);
+
+    /**
      * Facebook's haptics on its own taps and gestures ({@link app.morphe.extension.facebook.misc.Haptics}).
      * Starts off.
      */
