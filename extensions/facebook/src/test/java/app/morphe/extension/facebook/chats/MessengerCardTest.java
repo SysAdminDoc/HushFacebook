@@ -115,6 +115,30 @@ public class MessengerCardTest {
         assertTrue(MessengerCard.hide());
     }
 
+    /** HushMessenger installed beside Meta's apps is a Messenger too, so the card goes without Meta's. */
+    @Test
+    public void aMessengerUnderAnotherPackageNameCounts() {
+        try {
+            MessengerIconForTests.installLauncher(MessengerIconForTests.CLONE_HOME);
+            assertFalse(MessengerCard.lookUp(RuntimeEnvironment.getApplication().getPackageManager()));
+            assertTrue(MessengerCard.hide());
+        } finally {
+            MessengerIconForTests.uninstall();
+        }
+    }
+
+    /** Another app's launcher entry isn't Messenger, so the card keeps its way to install it. */
+    @Test
+    public void anotherAppsLauncherEntryLeavesTheCard() {
+        try {
+            MessengerIconForTests.installLauncher(MessengerIconForTests.OTHER_HOME);
+            assertFalse(MessengerCard.hide());
+            assertEquals(MessengerCard.ROUTE + ": 1 lists, 1 items, 0 removed", counterLine());
+        } finally {
+            MessengerIconForTests.uninstall();
+        }
+    }
+
     @Test
     public void offTheCardIsFacebooksToShow() {
         MessengerCardForTests.install(true);

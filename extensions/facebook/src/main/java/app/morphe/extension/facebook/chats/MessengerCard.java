@@ -25,7 +25,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * when Messenger is signed with Facebook's own key. A re-signed Facebook never matches, so the card
  * stays at the top of Chats with Messenger right there. The patch runs {@link #hide} first in the
  * question the card's plugin answers before it shows, and answers no for Facebook while the switch
- * is on and Messenger is installed and enabled, whoever signed it.
+ * is on and Messenger is installed and enabled, whoever signed it. A copy under another package
+ * name, as HushMessenger's install beside Meta's apps makes, counts too, the same one the top bar's
+ * Messenger icon opens.
  *
  * <p>Whether Messenger is installed is looked up once per process start and kept. The manifest's
  * queries already let Facebook see it (Messenger has a launcher activity, and Facebook asks for
@@ -75,7 +77,8 @@ public final class MessengerCard {
         Context context = Utils.getContext();
         // No context yet: say no without keeping it, so a later call can still look.
         if (context == null) return false;
-        boolean found = lookUp(context.getPackageManager());
+        PackageManager packages = context.getPackageManager();
+        boolean found = lookUp(packages) || MessengerIcon.copyLaunch(packages, context.getPackageName()) != null;
         installed = found;
         Logger.printDebug(() -> found
                 ? "Get Messenger card: Messenger is installed, so Chats leaves the card out"

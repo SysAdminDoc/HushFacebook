@@ -210,7 +210,15 @@ public final class MessengerIcon {
     @Nullable
     static Intent messengerLaunch(PackageManager packages, @Nullable String self) {
         Intent launch = packages.getLaunchIntentForPackage(MessengerCard.MESSENGER);
-        if (launch != null) return launch;
+        return launch != null ? launch : copyLaunch(packages, self);
+    }
+
+    /**
+     * The launcher entry of a Messenger installed under another package name, or null: the first
+     * one, not [self]'s, whose activity is one of Messenger's classes, in a task of its own.
+     */
+    @Nullable
+    static Intent copyLaunch(PackageManager packages, @Nullable String self) {
         Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
         List<ResolveInfo> entries = packages.queryIntentActivities(home, 0);
         if (entries == null) return null;
