@@ -125,7 +125,7 @@ public enum PatchFamily {
     HDR_BRIGHTNESS(FamilyNames.HDR_BRIGHTNESS, "turnOffHdrBrightness", null,
             Settings.TURN_OFF_HDR_BRIGHTNESS),
     PROGRESS_BAR(FamilyNames.PROGRESS_BAR, "keepProgressBar", null,
-            Settings.KEEP_PROGRESS_BAR),
+            Settings.KEEP_PROGRESS_BAR, Settings.KEEP_PROGRESS_BAR_TIME),
     SYSTEM_FONT(FamilyNames.SYSTEM_FONT, "systemFont", null,
             Settings.USE_SYSTEM_FONT),
     SYSTEM_EMOJI(FamilyNames.SYSTEM_EMOJI, "systemEmoji", null,

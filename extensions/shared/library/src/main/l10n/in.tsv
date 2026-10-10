@@ -951,6 +951,8 @@ HDR videos and photos stay at your screen's usual brightness instead of turning 
 Keep the progress bar	Pertahankan bilah progres
 # context: summary of that switch; a reel is a short vertical video
 A reel's progress bar stays full size, ready to drag. A full-screen video's controls stay until you tap.	Bilah progres reel tetap berukuran penuh, siap digeser. Kontrol video layar penuh tetap tampil sampai Anda mengetuk.
+Show a reel's time	Tampilkan waktu reel
+With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.	Dengan Pertahankan bilah progres aktif, waktu berjalan dan total reel tetap tampil di atas bilah. Jika nonaktif, waktu hanya tampil saat Anda menggeser bilah.
 # context: switch title under Marketplace; View profile is Facebook's own button on a seller's Marketplace page that opens their regular Facebook profile, so use Facebook's label for it in this language
 Show View profile on Marketplace sellers	Tampilkan Lihat profil pada penjual Marketplace
 # context: summary of that switch

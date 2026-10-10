@@ -195,6 +195,9 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.KEEP_PROGRESS_BAR,
                         L10n.t("A reel's progress bar stays full size, ready to drag. A full-screen video's controls "
                                 + "stay until you tap.")));
+                playback.addPreference(toggle(context, Settings.KEEP_PROGRESS_BAR_TIME,
+                        L10n.t("With Keep the progress bar on, a reel's elapsed and total time stay above the bar. "
+                                + "Off, they show only while you drag it.")));
             }
         }
     }

@@ -845,6 +845,8 @@ HDR videos and photos stay at your screen's usual brightness instead of turning 
 Keep the progress bar	Manter a barra de progresso
 # context: summary of that switch; a reel is a short vertical video
 A reel's progress bar stays full size, ready to drag. A full-screen video's controls stay until you tap.	A barra de progresso de um Reel fica no tamanho cheio, pronta para arrastar. Os controles de um vídeo em tela cheia ficam até você tocar.
+Show a reel's time	Mostrar o tempo do Reel
+With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.	Com Manter a barra de progresso ativado, o tempo decorrido e o total do Reel ficam acima da barra. Desativado, eles só aparecem enquanto você arrasta a barra.
 # context: switch title under Marketplace; View profile is Facebook's own button on a seller's Marketplace page that opens their regular Facebook profile, so use Facebook's label for it in this language
 Show View profile on Marketplace sellers	Mostrar Ver perfil nos vendedores do Marketplace
 # context: summary of that switch

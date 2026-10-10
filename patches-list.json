@@ -2208,7 +2208,7 @@
     },
     {
       "name": "Keep the progress bar",
-      "description": "Keeps a reel's progress bar full size, so you can drag it without tapping first, and keeps a full-screen video's controls on screen until you tap. Starts off. Turn it on in Hushfacebook settings > Playback.",
+      "description": "Keeps every reel's progress bar full size and moving smoothly, with the time above it, so you can drag it without tapping first. Also keeps a full-screen video's controls on screen until you tap. Starts off. Turn it on in Hushfacebook settings > Playback.",
       "category": "Playback",
       "use": true,
       "dependencies": [

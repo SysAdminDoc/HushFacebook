@@ -665,6 +665,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_keep_progress_bar", FALSE);
 
     /**
+     * With {@link #KEEP_PROGRESS_BAR} on, a reel's elapsed and total time stay up above the bar and
+     * keep counting ({@link app.morphe.extension.facebook.media.ProgressBar}). Starts on. Off, the
+     * time shows only while you drag the bar, as Facebook has it.
+     */
+    public static final BooleanSetting KEEP_PROGRESS_BAR_TIME =
+            new BooleanSetting("hushfacebook_keep_progress_bar_time", TRUE);
+
+    /**
      * Facebook's own text, React Native screens' included, drawn in the font {@link #FONT_SOURCE}
      * names instead of Meta's Optimistic, at the same weight and slant. A typeface already on
      * screen keeps its font until Facebook restarts.

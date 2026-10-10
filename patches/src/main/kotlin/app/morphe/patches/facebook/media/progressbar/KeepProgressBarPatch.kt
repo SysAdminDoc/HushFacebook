@@ -5,6 +5,7 @@
 package app.morphe.patches.facebook.media.progressbar
 
 import app.morphe.patcher.StringComparisonType
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
@@ -43,6 +44,22 @@ internal const val REEL_SEEK_BAR_PLUGIN = "FbShortsViewerBottomSeekBarPlugin"
 internal const val SCRUBBER_ACTIVE = "VDDScrubberPlugin.updateToActiveScrubber"
 internal const val SCRUBBER_PASSIVE = "VDDScrubberPlugin.updateToPassiveScrubber"
 
+/** The trace name of the scrubber base's progress update, a kept literal. */
+internal const val SCRUBBER_UPDATE = "UDDScrubberBasePlugin.updateProgress"
+
+/** The surface name both of the scrubber's `(IZ)Z` length checks compare first, a kept literal. */
+internal const val LENGTH_CHECK_SURFACE = "ai_styles_drafts"
+
+/** The log tag of the Reels viewer's footer, which lays out the caption above the bar, a kept literal. */
+internal const val REEL_FOOTER = "FbShortsViewerFooterParamsFactory"
+
+internal const val INT_VALUE = "Ljava/lang/Number;->intValue()I"
+
+/** How long, in ms, the kept bar waits between moves: about a frame, where Facebook's default is 100. */
+internal const val SMOOTH_FRAME_DELAY_MS = 16
+
+internal const val TEXT_VIEW_SET_TEXT = "Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V"
+
 /** A kept class whose superclass is the full-screen video controls every such player builds on. */
 internal const val FULLSCREEN_CONTROLS = "Lcom/facebook/feed/video/fullscreen/orion/FeedFullscreenVideoControlsPlugin;"
 
@@ -63,6 +80,10 @@ internal const val PROGRESS_BAR = "$EXTENSION_PACKAGE/media/ProgressBar;"
 internal const val KEEPS_REEL_BAR = "$PROGRESS_BAR->keepsReelBar()Z"
 internal const val KEEPS_CONTROLS = "$PROGRESS_BAR->keepsControls()Z"
 internal const val HIDE_TIME_LABEL = "$PROGRESS_BAR->hideTimeLabel(Landroid/view/ViewGroup;)V"
+internal const val BARS_EVERY_REEL = "$PROGRESS_BAR->barsEveryReel()Z"
+internal const val REFRESHES_TIME = "$PROGRESS_BAR->refreshesTime(Landroid/view/ViewGroup;)Z"
+internal const val SMOOTHS_BAR = "$PROGRESS_BAR->smoothsBar()Z"
+internal const val REEL_LENGTH = "$PROGRESS_BAR->reelLength(I)I"
 internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
 
 /**
@@ -78,7 +99,16 @@ internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
  * holding the elapsed and total time, `A09` of the scrubber's views holder) and the active one
  * shows it, and only a drag updates the times, so without the hide the label would sit frozen at
  * 0:00 over the reel's author row. A drag still shows it, as the touch path calls the active look
- * itself and the seek bar listener sets the label's visibility.
+ * itself and the seek bar listener sets the label's visibility. With the time switch on, the label
+ * stays instead, and the scrubber's progress update has Facebook's own time writer refresh it a few
+ * times a second, which Facebook does only during a drag.
+ *
+ * Three more hooks finish the Reels bar (582, issue #73). The scrubber's minimum length check
+ * answers yes, so a reel Facebook finds too short for a bar gets one. The Reels footer's own bar
+ * check reads such a reel's length as long enough, so its caption leaves the same room above the bar
+ * as a longer reel's instead of sitting where the bar now goes. And the wait before the scrubber's
+ * next progress update, Facebook's `defaultFrameDelayMs` of 100 ms, drops to about a frame, so the
+ * bar moves smoothly instead of in visible steps.
  *
  * Older builds' Reels viewer used a bottom bar plugin, named [REEL_SEEK_BAR_PLUGIN], sizes its SeekBar with two
  * static (SeekBar, plugin) methods (581 `LX/8sg;->A00` and `A01`, still present on every declared
@@ -115,9 +145,9 @@ internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
 val keepProgressBarPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Keep the progress bar",
-    description = "Keeps a reel's progress bar full size, so you can drag it without tapping first, and keeps a " +
-        "full-screen video's controls on screen until you tap. Starts off. Turn it on in Hushfacebook settings > " +
-        "Playback.",
+    description = "Keeps every reel's progress bar full size and moving smoothly, with the time above it, so you can " +
+        "drag it without tapping first. Also keeps a full-screen video's controls on screen until you tap. Starts " +
+        "off. Turn it on in Hushfacebook settings > Playback.",
     default = true,
 ) {
     category("Playback")
@@ -147,12 +177,34 @@ val keepProgressBarPatch = bytecodePatch(
             classDefByStrings(PLAYER_CONTROL_UPDATE, StringComparisonType.EQUALS)
                 .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
         ) { classDefByOrNull(it) }
+        val scrubberClass = classDefByOrNull(scrubber.type) ?: refuse("${scrubber.type} went missing")
+        val lengthCheck = minimumLengthCheck(scrubberClass)
+        val progress = progressUpdate(
+            classDefByStrings(SCRUBBER_UPDATE, StringComparisonType.EQUALS)
+                .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+        )
+        if (progress.base.type != scrubberClass.superclass || !scrubber.viewsField.startsWith("${progress.base.type}->")) {
+            refuse("${progress.base.type}, which updates the progress, isn't the base holding ${scrubber.type}'s views")
+        }
+        val delay = frameDelay(progress)
+        val footerCheck = footerBarCheck(
+            classDefByStrings(REEL_FOOTER, StringComparisonType.EQUALS)
+                .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+        ) { classDefByOrNull(it) }
         val controllers = mutableListOf<ClassDef>()
-        classDefForEach { if (!it.type.startsWith(EXTENSION_CLASSES) && takesUpdater(it, updater)) controllers += it }
+        classDefForEach {
+            if (it.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
+            if (takesUpdater(it, updater)) controllers += it
+        }
         val (hider, hiderRun) = controlsHideRunnable(controllers) { classDefByOrNull(it) }
 
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(scrubber.passive) }
             .activeInstead(scrubber)
+        mutableClassDefBy(scrubber.type).methods.single { it.sameAs(lengthCheck) }.longEnoughWhileKept()
+        mutableClassDefBy(progress.base.type).methods.single { it.sameAs(progress.update) }
+            .refreshesTimeFirst(progress, scrubber)
+        mutableClassDefBy(progress.base.type).methods.single { it.sameAs(delay) }.smoothWhileKept()
+        mutableClassDefBy(footerCheck.first.type).methods.single { it.sameAs(footerCheck.second) }.roomForEveryReel()
         if (plugin != null && sizes != null) {
             mutableClassDefBy(plugin.type).methods.single { it.sameAs(sizes.shrink) }
                 .fullSizeInstead(plugin.type, sizes.fullSize)
@@ -239,6 +291,117 @@ internal fun timeLabelFields(scrubber: ClassDef, passive: Method): Pair<String, 
     }.distinct()
     return found.singleOrNull()
         ?: refuse("${scrubber.type}->${passive.name} reads ${found.size} view group fields off the scrubber's views, expected the one time label")
+}
+
+/**
+ * The scrubber's check that a reel is long enough for a bar (582 `LX/9d9;->A1O`). The scrubber has
+ * two instance `(IZ)Z` length checks, each loading [LENGTH_CHECK_SURFACE] first. This one answers no
+ * through an `if-lt` of the reel's length, its int parameter, against Facebook's minimum, and its
+ * answer decides between the passive look and no bar at all. The other (`A1N`) asks whether a reel
+ * is long enough for the long-video look and compares the other way. Refuses unless there's
+ * exactly one such check.
+ */
+internal fun minimumLengthCheck(scrubber: ClassDef): Method {
+    val checks = methodsHolding(scrubber, LENGTH_CHECK_SURFACE).filter {
+        !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
+            it.parameterTypes.map(CharSequence::toString) == listOf("I", "Z")
+    }
+    val minimum = checks.filter { check ->
+        val implementation = check.implementation!!
+        // The parameters take the last three registers: this, the length, then the boolean.
+        val length = implementation.registerCount - 2
+        implementation.instructions.any { it.opcode == Opcode.IF_LT && (it as TwoRegisterInstruction).registerA == length }
+    }
+    return minimum.singleOrNull()
+        ?: refuse("${scrubber.type} has ${minimum.size} length check(s) failing a reel shorter than a minimum, expected one")
+}
+
+/** The scrubber base's progress update and the method writing its time. */
+internal class ProgressUpdate(val base: ClassDef, val update: Method, val writeTime: Method)
+
+/**
+ * The scrubber base's progress update (582 `LX/9c4;->A04`), the one static `(base)V` method of
+ * [holders] tracing [SCRUBBER_UPDATE], and its time writer (`A06`), the one static `(base)V` method
+ * of the same class that sets text. The writer puts the elapsed and total time into the time label
+ * and moves the bar to where the reel is. Facebook's update only calls it while you drag. Refuses
+ * unless there's exactly one of each.
+ */
+internal fun progressUpdate(holders: List<ClassDef>): ProgressUpdate {
+    fun ClassDef.takesItself(method: Method) = AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" &&
+        method.parameterTypes.map(CharSequence::toString) == listOf(type)
+    val updates = holders.distinctBy { it.type }.flatMap { holder ->
+        methodsHolding(holder, SCRUBBER_UPDATE).filter { holder.takesItself(it) }.map { holder to it }
+    }
+    val (base, update) = updates.singleOrNull()
+        ?: refuse("expected one static method tracing \"$SCRUBBER_UPDATE\" on the class it takes, found ${updates.size}")
+    val writers = base.methods.filter { base.takesItself(it) && it.calls(TEXT_VIEW_SET_TEXT) }
+    val writer = writers.singleOrNull()
+        ?: refuse("${base.type} has ${writers.size} static methods setting text, expected one, its time writer")
+    return ProgressUpdate(base, update, writer)
+}
+
+/**
+ * The wait before the scrubber's next progress update (582 `LX/9c4;->A02`): the one static
+ * `(base)J` method of the base that its update calls. The update hands that wait to a frame
+ * callback that runs it again, and it's Facebook's `defaultFrameDelayMs` (100 ms on the S25), or
+ * longer for a video over 30 seconds, so the bar moves in steps several times a second. Refuses
+ * unless the update calls exactly one such method.
+ */
+internal fun frameDelay(progress: ProgressUpdate): Method {
+    val base = progress.base
+    val calls = progress.update.implementation!!.instructions.mapNotNull { instruction ->
+        ((instruction as? ReferenceInstruction)?.takeIf { instruction.opcode == Opcode.INVOKE_STATIC }?.reference as? MethodReference)
+            ?.takeIf {
+                it.definingClass == base.type && it.returnType == "J" &&
+                    it.parameterTypes.map(CharSequence::toString) == listOf(base.type)
+            }
+    }.distinctBy { it.toString() }
+    val call = calls.singleOrNull()
+        ?: refuse("${base.type}->${progress.update.name} asks ${calls.size} static methods for a wait, expected one")
+    return base.methods.singleOrNull { it.name == call.name && it.returnType == "J" && it.parameterTypes.size == 1 }
+        ?: refuse("$call, the wait before the next progress update, isn't declared on ${base.type}")
+}
+
+/**
+ * The footer's check that a reel gets a bar (582 `LX/90Q;->A0N`), which decides whether the
+ * caption leaves room for one: the one method called from [holders]' methods loading [REEL_FOOTER]
+ * that returns `Z` and takes the reel's length last, as an Integer. It answers no for a reel under
+ * Facebook's minimum length, which then gets its caption laid out right down where the bar goes.
+ * Returns its class, found with [classOf], and the method. Refuses unless there's exactly one, and
+ * unless it still compares that length with an `if-lt`.
+ */
+internal fun footerBarCheck(holders: List<ClassDef>, classOf: (String) -> ClassDef?): Pair<ClassDef, Method> {
+    val calls = holders.distinctBy { it.type }.flatMap { methodsHolding(it, REEL_FOOTER) }.flatMap { method ->
+        method.implementation!!.instructions.mapNotNull { instruction ->
+            ((instruction as? ReferenceInstruction)?.takeIf { instruction.opcode.name.startsWith("invoke") }?.reference as? MethodReference)
+                ?.takeIf { it.returnType == "Z" && it.parameterTypes.lastOrNull()?.toString() == "Ljava/lang/Integer;" }
+        }
+    }.distinctBy { it.toString() }
+    val call = calls.singleOrNull()
+        ?: refuse("expected the methods loading \"$REEL_FOOTER\" to ask one method about a reel's length, found ${calls.size}")
+    val owner = classOf(call.definingClass) ?: refuse("${call.definingClass}, the footer's bar check, isn't in this APK")
+    val check = owner.methods.singleOrNull {
+        it.name == call.name && it.returnType == "Z" &&
+            it.parameterTypes.map(CharSequence::toString) == call.parameterTypes.map(CharSequence::toString)
+    } ?: refuse("$call, the footer's bar check, isn't declared on ${owner.type}")
+    lengthRead(check) ?: refuse("$call no longer compares the reel's length with an if-lt")
+    return owner to check
+}
+
+/**
+ * Where [method] has the reel's length: the index of the one `move-result` after an [INT_VALUE]
+ * call whose register a later `if-lt` compares first, against the minimum.
+ */
+internal fun lengthRead(method: Method): Int? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val reads = code.indices.filter { index ->
+        val result = code.getOrNull(index + 1)?.takeIf { it.opcode == Opcode.MOVE_RESULT } as? OneRegisterInstruction
+        code[index].opcode == Opcode.INVOKE_VIRTUAL && (code[index] as ReferenceInstruction).reference.toString() == INT_VALUE &&
+            result != null && code.drop(index + 2).any {
+                it.opcode == Opcode.IF_LT && (it as TwoRegisterInstruction).registerA == result.registerA
+            }
+    }
+    return reads.singleOrNull()?.plus(1)
 }
 
 /** The plugin's two size methods. */
@@ -393,6 +556,88 @@ internal fun MutableMethod.activeInstead(looks: ScrubberLooks) {
             return-void
         """,
         ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * First thing in the scrubber's minimum length check: while the extension keeps the bar, answer
+ * yes, so a short reel gets the passive look (which the hook above turns into the active one)
+ * instead of no bar. Otherwise Facebook's own code runs from its first instruction.
+ */
+internal fun MutableMethod.longEnoughWhileKept() {
+    requireLocals(PATCH, 1)
+    addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { }, $BARS_EVERY_REEL
+            move-result v0
+            if-eqz v0, :facebook
+            const/4 v0, 0x1
+            return v0
+        """,
+        ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * First thing in the scrubber's progress update: read the time label off the scrubber the update
+ * takes, and when the extension asks for the time, have Facebook's own writer refresh it before the
+ * update runs as always. A views holder that isn't there yet skips straight to Facebook's code.
+ */
+internal fun MutableMethod.refreshesTimeFirst(progress: ProgressUpdate, looks: ScrubberLooks) {
+    requireLocals(PATCH, 1)
+    val base = progress.base.type
+    addInstructionsWithLabels(
+        0,
+        """
+            move-object/from16 v0, p0
+            iget-object v0, v0, ${looks.viewsField}
+            if-eqz v0, :facebook
+            iget-object v0, v0, ${looks.labelField}
+            invoke-static { v0 }, $REFRESHES_TIME
+            move-result v0
+            if-eqz v0, :facebook
+            invoke-static/range { p0 .. p0 }, $base->${progress.writeTime.name}($base)V
+        """,
+        ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * First thing in the wait before the scrubber's next progress update: while the extension keeps
+ * the bar, answer [SMOOTH_FRAME_DELAY_MS], so the bar moves about once a frame instead of in steps.
+ * Otherwise Facebook's own code runs from its first instruction.
+ */
+internal fun MutableMethod.smoothWhileKept() {
+    requireLocals(PATCH, 2)
+    addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { }, $SMOOTHS_BAR
+            move-result v0
+            if-eqz v0, :facebook
+            const-wide/16 v0, $SMOOTH_FRAME_DELAY_MS
+            return-wide v0
+        """,
+        ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * Right after the footer's bar check reads the reel's length: hand it to the extension, which
+ * answers a length past any minimum while it keeps the bar, so a short reel's caption leaves the
+ * same room for the bar as a longer one's. The hook works in the length's own register, so no
+ * other register is borrowed.
+ */
+internal fun MutableMethod.roomForEveryReel() {
+    val at = lengthRead(this) ?: refuse("$definingClass->$name no longer compares the reel's length with an if-lt")
+    val register = (getInstruction(at) as OneRegisterInstruction).registerA
+    addInstructions(
+        at + 1,
+        """
+            invoke-static/range { v$register .. v$register }, $REEL_LENGTH
+            move-result v$register
+        """,
     )
 }
 
