@@ -781,7 +781,12 @@ public final class MediaDownload {
 
         DashManifest.Track video = pick.video;
         DashManifest.Track audio = pick.audio;
-        boolean reencodeSound = pick.reencodeSound;
+        // Sound is xHE-AAC only when the manifest offers no AAC-LC or HE-AAC, and Messenger, gallery
+        // players and many editors turn it down (HushMessenger #38, #14). So a phone that can make
+        // it AAC-LC does, with saves other apps can open off too. A re-encode that fails fails the
+        // join, and the single file follows as with the switch on.
+        boolean reencodeSound = pick.reencodeSound
+            || (audio != null && AacReencode.isXhe(audio.codecs) && AacReencode.available());
         boolean transcodeVideo = pick.transcodeVideo;
         boolean keptCompatible = kept != null && compatible;
 

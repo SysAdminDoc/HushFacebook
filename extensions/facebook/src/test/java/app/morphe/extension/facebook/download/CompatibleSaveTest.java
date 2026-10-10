@@ -9,6 +9,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
+import android.media.MediaFormat;
 
 import org.junit.After;
 import org.junit.Before;
@@ -18,6 +19,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.MediaCodecInfoBuilder;
+import org.robolectric.shadows.ShadowMediaCodecList;
 import org.robolectric.util.ReflectionHelpers;
 
 import java.net.InetAddress;
@@ -283,6 +286,43 @@ public class CompatibleSaveTest {
                 assertFalse(which + report, report.contains("mp4a.40.42 0x0 84kbps, instead of"));
                 assertFalse(which + report, report.contains("xHE-AAC"));
             }
+        }
+    }
+
+    /** What a DASH save line adds when its xHE-AAC sound is made AAC-LC before the join. */
+    private static final String MADE_LC = ", the sound is xHE-AAC because the manifest offers no AAC-LC or HE-AAC, "
+            + "made AAC-LC for apps that turn xHE-AAC down";
+
+    /**
+     * Messenger won't send a video whose sound is xHE-AAC (HushMessenger #38) and some gallery
+     * players play it silent (#14), so a phone with an AAC decoder and encoder makes that sound
+     * AAC-LC with the switch off too. Beside AAC-LC there's nothing to re-encode.
+     */
+    @Test
+    public void xheOnlySoundIsMadeAacLcWithTheSwitchOffWhereThePhoneCan() throws Exception {
+        MediaFormat aac = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, 48_000, 2);
+        try {
+            ShadowMediaCodecList.addCodec(MediaCodecInfoBuilder.newBuilder().setName("test.aac.decoder")
+                    .setCapabilities(MediaCodecInfoBuilder.CodecCapabilitiesBuilder.newBuilder()
+                            .setMediaFormat(aac).build())
+                    .build());
+            ShadowMediaCodecList.addCodec(MediaCodecInfoBuilder.newBuilder().setName("test.aac.encoder")
+                    .setIsEncoder(true)
+                    .setCapabilities(MediaCodecInfoBuilder.CodecCapabilitiesBuilder.newBuilder()
+                            .setMediaFormat(aac).setIsEncoder(true).build())
+                    .build());
+            assertTrue("the test phone can't re-encode", AacReencode.available());
+
+            String xheOnly = manifest(representation(AV1, 1080, 1920, 1_265_000, "1080p", "v1080"),
+                    sound("mp4a.40.42", 39_000, "xhe39") + sound("mp4a.40.42", 120_000, "xhe120"));
+            String report = reelSave(false, new ReelSource(HD, null, xheOnly));
+            assertTrue(report, report.contains(" + audio/mp4 mp4a.40.42 0x0 120kbps, instead of mp4 (720p)" + MADE_LC + "\n"));
+
+            report = reelSave(false, new ReelSource(null, null, MANIFEST));
+            assertTrue(report, report.contains(" + audio/mp4 mp4a.40.2 0x0 64kbps, instead of nothing"));
+            assertFalse(report, report.contains("xHE-AAC"));
+        } finally {
+            ShadowMediaCodecList.reset();
         }
     }
 
