@@ -23,7 +23,9 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 import org.w3c.dom.Document
@@ -380,6 +382,9 @@ val materialYouThemePatch = bytecodePatch(
             "No call to TypedArray.getColor found, so the comment list's rows would stay grey"
         }
 
+        // The box under a link post's picture (issue #37), whose dark-mode colour MobileConfig sends.
+        check(hookLinkBoxColour() > 0) { "No parse of the link box's colour found, so link posts would keep a grey box" }
+
         // The comment list's rows (issue #37): a theme attribute resolved into a TypedValue and read as
         // its `data`, which SURFACE_BACKGROUND's night item (#252728) reaches without a colour call.
         check(readColourData() > 0) { "No TypedValue.data read found, so rows that read a theme colour that way would stay grey" }
@@ -393,6 +398,57 @@ val materialYouThemePatch = bytecodePatch(
         // the hooks in already, and ReactColours runs both themes.
         hookReactColours()
     }
+}
+
+/**
+ * The MobileConfig colour the box under a link post's picture takes in Facebook's dark mode (issue
+ * #37). On 582 ten methods read it, one for each kind of link attachment: the attachment footer's
+ * (arm64 `LX/4sz;->A0E` and `A0J`), FDSPostLinkAttachment's render (`LX/Vzq;->render`) and seven
+ * more renders. In dark mode each reads this config's string first and parses it when it isn't
+ * empty, and only then falls back to a grey a second config picks or to CARD_BACKGROUND_FLAT's
+ * token, which route one already themes. The string came out #333334, a grey light mode draws too,
+ * so route four's parser leaves it.
+ */
+internal const val LINK_BOX_COLOUR_CONFIG = 0x103074c000203a8L
+
+/** Where the parse of [LINK_BOX_COLOUR_CONFIG]'s string goes instead of route four's parser. */
+internal const val PARSE_LINK_BOX = "$MATERIAL_YOU->parseLinkBox(Ljava/lang/String;)I"
+
+/** Whether [method] loads [LINK_BOX_COLOUR_CONFIG]. */
+internal fun readsLinkBoxColour(method: Method): Boolean =
+    method.implementation?.instructions?.any { (it as? WideLiteralInstruction)?.wideLiteral == LINK_BOX_COLOUR_CONFIG } == true
+
+/**
+ * In each method that reads [LINK_BOX_COLOUR_CONFIG], sends its one call to route four's parser to
+ * [PARSE_LINK_BOX] on the same register. Runs after route four, so the call is already Material
+ * You's stand-in, AMOLED's included. Answers how many it changed. A method that reads the config
+ * with no parser call, or more than one, is refused: the parse to change would be a guess.
+ */
+internal fun BytecodePatchContext.hookLinkBoxColour(): Int {
+    val parser = standIn(MATERIAL_YOU, PARSE_COLOR)
+    val owners = mutableSetOf<String>()
+    classDefForEach { classDef ->
+        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEach
+        if (classDef.methods.any(::readsLinkBoxColour)) owners += classDef.type
+    }
+    var changed = 0
+    for (type in owners) {
+        for (method in mutableClassDefBy(type).methods.filter(::readsLinkBoxColour)) {
+            val parses = method.implementation!!.instructions.withIndex().filter { it.value.referenceText() == parser }
+            check(parses.size == 1) {
+                "${method.definingClass}->${method.name} reads the link box's colour with ${parses.size} calls to $parser"
+            }
+            val (index, call) = parses.single()
+            val text = when (call) {
+                is RegisterRangeInstruction -> call.startRegister
+                is FiveRegisterInstruction -> call.registerC
+                else -> error("${method.definingClass}->${method.name}: unexpected call form ${call.opcode}")
+            }
+            method.replaceInstruction(index, "invoke-static/range { v$text .. v$text }, $PARSE_LINK_BOX")
+            changed++
+        }
+    }
+    return changed
 }
 
 /**

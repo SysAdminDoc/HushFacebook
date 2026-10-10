@@ -274,6 +274,20 @@ public final class MaterialYouTheme {
     }
 
     /**
+     * Route four for the box under a link post's picture, its site and title (issue #37). In
+     * Facebook's dark mode each kind of link attachment picks that colour by parsing one MobileConfig
+     * sends before it looks at a token, and the box came out #333334, CARD_BACKGROUND's dark grey.
+     * That grey is no {@link #SURFACES} colour, light mode drawing it too, so {@link #parseColor}
+     * alone leaves it. The patch sends only those parses here, and the box is a background like a
+     * React card's ({@link #reactBackground}): once Facebook has said dark mode is on, a grey
+     * {@link #FDS_DARK} lists takes the palette's neutral at the same lightness. With AMOLED in the
+     * build its near black stays.
+     */
+    public static int parseLinkBox(String text) {
+        return darkBackground(parseColor(text));
+    }
+
+    /**
      * Route two's counterpart: Facebook reading a colour resource with {@code Context.getColor}. The
      * patch sends every such call here, including the ones AMOLED already sent to its own, and
      * AMOLED goes first.

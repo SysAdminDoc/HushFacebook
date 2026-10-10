@@ -398,6 +398,29 @@ public class MaterialYouThemeTest {
     }
 
     /**
+     * Issue #37: the box under a link post's picture is #333334 from a colour MobileConfig sends in
+     * dark mode. Its own parse takes the palette's neutral once Facebook says dark mode is on, as a
+     * grey the dark theme lists. Light mode, the time before Facebook answers, and a colour that
+     * isn't one of those greys keep what they parse to.
+     */
+    @Test
+    public void theLinkBoxsGreyTakesThePaletteOnceFacebookSaysDark() {
+        DarkMode.answer(true);
+        assertEquals(palette.sameLightness(TonePalette.NEUTRAL, 0xFF333334), MaterialYouTheme.parseLinkBox("#333334"));
+        assertEquals("the other grey a config can pick", palette.sameLightness(TonePalette.NEUTRAL, 0xFF3B3C3E),
+                MaterialYouTheme.parseLinkBox("#3B3C3E"));
+        assertEquals("a dark surface, as route four", palette.sameLightness(TonePalette.NEUTRAL, 0xFF252728),
+                MaterialYouTheme.parseLinkBox("#252728"));
+        assertEquals("a colour that isn't Facebook's grey", 0xFF123456, MaterialYouTheme.parseLinkBox("#123456"));
+        assertEquals("the plain parse still leaves it", 0xFF333334, MaterialYouTheme.parseColor("#333334"));
+
+        DarkMode.answer(false);
+        assertEquals("light mode", 0xFF333334, MaterialYouTheme.parseLinkBox("#333334"));
+        DarkMode.forget();
+        assertEquals("before Facebook answers", 0xFF333334, MaterialYouTheme.parseLinkBox("#333334"));
+    }
+
+    /**
      * Issue #37: the profile's Add to story button and Marketplace's chips come from Facebook's
      * server as "#0866FF", and some icons read a #3E93F8 colour resource. Once Facebook says dark
      * mode is on, those exact blues take the palette's accent at the same lightness and keep their
