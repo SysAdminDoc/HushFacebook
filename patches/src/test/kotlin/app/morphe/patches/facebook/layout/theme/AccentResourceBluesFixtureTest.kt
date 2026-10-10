@@ -54,7 +54,7 @@ class AccentResourceBluesFixtureTest {
         val tokens = tokenAttributes(initializer, tokenType).entries.associate { (token, attribute) -> "attr_0x%08x".format(attribute) to token }
 
         val decoded = decode(bundle)
-        val table = resourceBluesTable(decoded.styles, decoded.colours, decoded.nightColours, emptySet(), tokens, ::decodedColourId)
+        val table = resourceBluesTable(decoded.styles, decoded.colours, decoded.nightColours, decoded.otherConfigured, tokens, ::decodedColourId)
         val entries = table.split(";").associate { entry ->
             val (colours, forTokens) = entry.substringAfter('=').split(":")
             entry.substringBefore('=') to (colours to forTokens.split(",").toSet())
@@ -69,12 +69,19 @@ class AccentResourceBluesFixtureTest {
         assertTrue("$name: ${entries.size} colour resources", entries.size in 2..64)
     }
 
-    private class Decoded(val colours: Map<String, String>, val nightColours: Map<String, String>, val styles: List<Document>)
+    private class Decoded(
+        val colours: Map<String, String>,
+        val nightColours: Map<String, String>,
+        val otherConfigured: Set<String>,
+        val styles: List<Document>,
+    )
 
     /**
      * The default and night colours and the default styles of the bundle's base APK, as the
      * resource decoder writes them for names Facebook strips: `color_0x7f0601d5`, `attr_0x7f0405bd`.
-     * A style item keeps a colour or a colour reference and is `@null` otherwise.
+     * A style item keeps a colour or a colour reference and is `@null` otherwise. The colours another
+     * configuration gives its own value are kept apart, as the patch reads them from the other values
+     * folders, since the table leaves those out.
      */
     private fun decode(bundle: File): Decoded {
         val table = ZipFile(bundle).use { zip ->
@@ -99,6 +106,7 @@ class AccentResourceBluesFixtureTest {
 
         val colours = mutableMapOf<String, String>()
         val nightColours = mutableMapOf<String, String>()
+        val otherConfigured = mutableSetOf<String>()
         val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument()
         val resources = document.createElement("resources").also { document.appendChild(it) }
         for (resource in byId.values.sortedBy { it.resourceId }) {
@@ -107,6 +115,9 @@ class AccentResourceBluesFixtureTest {
                 entries.firstOrNull { it.resConfig.isDefault && !it.isComplex }?.let { colours[name(resource)] = text(it.resValue) }
                 entries.firstOrNull { it.resConfig.qualifiers.trim('-') in setOf("night", "night-v8") && !it.isComplex }
                     ?.let { nightColours[name(resource)] = text(it.resValue) }
+                if (entries.any { !it.resConfig.isDefault && it.resConfig.qualifiers.trim('-') !in setOf("night", "night-v8") && !it.isComplex }) {
+                    otherConfigured += name(resource)
+                }
             } else if (resource.type.startsWith("style")) {
                 val bag = entries.firstOrNull { it.resConfig.isDefault && it.isComplex }?.tableEntry as? ResTableMapEntry ?: continue
                 val style = document.createElement("style").also { it.setAttribute("name", name(resource)) }
@@ -119,6 +130,6 @@ class AccentResourceBluesFixtureTest {
                 resources.appendChild(style)
             }
         }
-        return Decoded(colours, nightColours, listOf(document))
+        return Decoded(colours, nightColours, otherConfigured, listOf(document))
     }
 }

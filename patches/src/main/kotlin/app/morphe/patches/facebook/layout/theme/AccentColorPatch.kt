@@ -103,7 +103,7 @@ internal fun isBoxBuilder(method: Method, border: Method): Boolean {
         val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: continue
         if (call.definingClass == border.definingClass && call.name == border.name && call.returnType == "I") asksBorder = true
         if (call.definingClass == "Landroid/graphics/Paint;" && call.name == "setColor" &&
-            (instruction as FiveRegisterInstruction).registerD == fill
+            (instruction as? FiveRegisterInstruction)?.registerD == fill
         ) {
             paintsFill = true
         }

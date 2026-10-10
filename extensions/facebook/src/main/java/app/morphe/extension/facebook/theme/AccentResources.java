@@ -122,7 +122,11 @@ public final class AccentResources {
         return null;
     }
 
-    /** The table's colours whose tokens include one of the accent's, each with the token it's drawn for. */
+    /**
+     * The table's colours whose tokens include one of the accent's, each with the token it's drawn for.
+     * An entry it can't read is left out: this runs as the class loads, where a throw would fail
+     * every colour route one resolves.
+     */
     static List<Blue> parse(@Nullable String table) {
         if (table == null || table.isEmpty()) return Collections.emptyList();
         List<Blue> blues = new ArrayList<>();
@@ -132,11 +136,15 @@ public final class AccentResources {
             if (equals < 0 || colon < equals) continue;
             String token = drawnFor(entry.substring(colon + 1).split(","));
             if (token == null) continue;
-            String[] values = entry.substring(equals + 1, colon).split("/");
-            int id = (int) Long.parseLong(entry.substring(0, equals), 16);
-            boolean hasNight = values.length > 1;
-            blues.add(new Blue(id, (int) Long.parseLong(values[0], 16), hasNight,
-                    hasNight ? (int) Long.parseLong(values[1], 16) : 0, token));
+            try {
+                String[] values = entry.substring(equals + 1, colon).split("/");
+                int id = (int) Long.parseLong(entry.substring(0, equals), 16);
+                boolean hasNight = values.length > 1;
+                blues.add(new Blue(id, (int) Long.parseLong(values[0], 16), hasNight,
+                        hasNight ? (int) Long.parseLong(values[1], 16) : 0, token));
+            } catch (NumberFormatException unreadable) {
+                Logger.printInfo(() -> "Accent color: left out an unreadable colour table entry", unreadable);
+            }
         }
         return Collections.unmodifiableList(blues);
     }
