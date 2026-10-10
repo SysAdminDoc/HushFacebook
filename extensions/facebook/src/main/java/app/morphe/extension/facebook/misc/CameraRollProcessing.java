@@ -17,8 +17,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>The processing behind camera roll sharing suggestions looks through the photos and videos on
  * the phone, runs models on them and uploads photos, video details and the model output. On 582 no
- * setting on the phone gates it. One config check decides whether it runs, and a no makes Facebook
- * cancel the work it scheduled, so the patch puts {@link #holdProcessing} first in that check. A
+ * local preference gates it: the opt-in on Facebook's Camera roll sharing suggestions page is applied
+ * on Facebook's server. One config check decides whether it runs, and a no makes Facebook cancel the
+ * work it scheduled, so the patch puts {@link #holdProcessing} first in that check. A run started
+ * straight from opting in on that page skips the check (582 {@code $didJustUserOptedIn}). A
  * separate job reports how many photos and videos the phone holds. Its first config read is a
  * kill switch, and {@link #stopMediaCount} answers it as set while the switch holds, which cancels
  * that job the way Facebook's own kill switch does.
