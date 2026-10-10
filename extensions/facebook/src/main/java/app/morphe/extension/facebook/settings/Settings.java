@@ -436,8 +436,9 @@ public class Settings extends BaseSettings {
 
     /**
      * Facebook's Facebook Plus app icons on its App icon page ({@link app.morphe.extension.facebook.misc.AppIcons}).
-     * Starts off. The picker reads it each time it opens, and turned off, Facebook's own start-up
-     * check puts the default icon back the next time Facebook starts.
+     * Starts off. The App icon page reads it each time it opens. An icon picked while it's on is a
+     * launcher alias, so it stays when the switch goes off, unless Facebook's start-up rollback (behind
+     * a server flag, off on the accounts seen so far) puts the blue one back.
      */
     public static final BooleanSetting UNLOCK_APP_ICONS =
             new BooleanSetting("hushfacebook_unlock_app_icons", FALSE);

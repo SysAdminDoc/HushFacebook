@@ -1030,8 +1030,8 @@ public final class L10nTranslations {
                 "Ausgeblendet lassen f\u00fcr");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "H\u00e4lt Facebook immer dunkel, egal was seine eigene Einstellung sagt. Gedacht f\u00fcr Tablets, auf denen Facebook keinen Dunkelmodus-Schalter hat. Starte Facebook neu, um die \u00c4nderung zu sehen.");
-        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, Facebook puts its own icon back the next time it starts.",
-                "Du kannst auf Facebooks Seite \u201eApp-Symbol\u201c auch die Symbole w\u00e4hlen, die Facebook f\u00fcr Facebook Plus vorbeh\u00e4lt. Ausgeschaltet setzt Facebook beim n\u00e4chsten Start sein eigenes Symbol wieder ein.");
+        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Your pick stays if you turn this off, so pick the blue one first to go back.",
+                "Du kannst auf Facebooks Seite \u201eApp-Symbol\u201c auch die Symbole w\u00e4hlen, die Facebook f\u00fcr Facebook Plus vorbeh\u00e4lt. Deine Wahl bleibt, wenn du das ausschaltest. W\u00e4hle also zuerst das blaue, um zur\u00fcckzuwechseln.");
         table.put("Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.",
                 "Du kannst Screenshots und Bildschirmaufnahmen auf Seiten machen, auf denen Facebook sie sperrt. \u00d6ffne eine bereits offene Seite erneut.");
         table.put("Licenses",
@@ -2925,8 +2925,8 @@ public final class L10nTranslations {
                 "Mantenerlas ocultas durante");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "Mantiene Facebook oscuro sin importar su propio ajuste. Pensado para tabletas en las que Facebook no tiene el interruptor de modo oscuro. Reinicia Facebook para ver el cambio.");
-        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, Facebook puts its own icon back the next time it starts.",
-                "Te deja elegir en la p\u00e1gina \u00cdcono de la app los \u00edconos que Facebook reserva para Facebook Plus. Si lo desactivas, Facebook vuelve a poner su propio \u00edcono la pr\u00f3xima vez que se inicie.");
+        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Your pick stays if you turn this off, so pick the blue one first to go back.",
+                "Te deja elegir en la p\u00e1gina \u00cdcono de la app los \u00edconos que Facebook reserva para Facebook Plus. Tu elecci\u00f3n se mantiene si desactivas esto, as\u00ed que elige primero el azul para volver.");
         table.put("Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.",
                 "Te deja hacer capturas y grabaciones de pantalla en las p\u00e1ginas donde Facebook las bloquea. Vuelve a abrir una p\u00e1gina que ya est\u00e9 abierta.");
         table.put("Licenses",
@@ -4820,8 +4820,8 @@ public final class L10nTranslations {
                 "Sembunyikan selama");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "Membuat Facebook tetap gelap apa pun pengaturannya sendiri. Untuk tablet yang di Facebook-nya tidak ada sakelar mode gelap. Mulai ulang Facebook untuk melihat perubahannya.");
-        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, Facebook puts its own icon back the next time it starts.",
-                "Memungkinkan memilih ikon aplikasi yang disediakan Facebook khusus untuk Facebook Plus di halaman Ikon aplikasi. Jika dimatikan, Facebook mengembalikan ikonnya sendiri saat dimulai lagi.");
+        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Your pick stays if you turn this off, so pick the blue one first to go back.",
+                "Memungkinkan memilih ikon aplikasi yang disediakan Facebook khusus untuk Facebook Plus di halaman Ikon aplikasi. Pilihan tetap berlaku meski ini dimatikan, jadi pilih ikon biru dulu untuk kembali.");
         table.put("Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.",
                 "Memungkinkan tangkapan layar dan rekaman layar di halaman yang diblokir Facebook. Buka ulang halaman yang sudah terbuka.");
         table.put("Licenses",
@@ -6715,8 +6715,8 @@ public final class L10nTranslations {
                 "Manter ocultas por");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "Mant\u00e9m o Facebook escuro independentemente da configura\u00e7\u00e3o dele. Feito para tablets em que o Facebook n\u00e3o tem a op\u00e7\u00e3o de modo escuro. Reinicie o Facebook para ver a mudan\u00e7a.");
-        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, Facebook puts its own icon back the next time it starts.",
-                "Permite escolher na p\u00e1gina \u00cdcone do app os \u00edcones que o Facebook reserva para o Facebook Plus. Desativado, o Facebook volta a usar o pr\u00f3prio \u00edcone na pr\u00f3xima vez que for iniciado.");
+        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Your pick stays if you turn this off, so pick the blue one first to go back.",
+                "Permite escolher na p\u00e1gina \u00cdcone do app os \u00edcones que o Facebook reserva para o Facebook Plus. Sua escolha continua se voc\u00ea desativar isto, ent\u00e3o escolha o azul antes para voltar.");
         table.put("Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.",
                 "Permite capturas e grava\u00e7\u00f5es de tela nas p\u00e1ginas em que o Facebook as bloqueia. Reabra uma p\u00e1gina que j\u00e1 esteja aberta.");
         table.put("Licenses",
@@ -8610,8 +8610,8 @@ public final class L10nTranslations {
                 "Gizli kalma s\u00fcresi");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "Facebook'un kendi ayar\u0131 ne olursa olsun karanl\u0131k kalmas\u0131n\u0131 sa\u011flar. Facebook'ta Karanl\u0131k mod anahtar\u0131 olmayan tabletler i\u00e7in. De\u011fi\u015fikli\u011fi g\u00f6rmek i\u00e7in Facebook'u yeniden ba\u015flat\u0131n.");
-        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Turned off, Facebook puts its own icon back the next time it starts.",
-                "Facebook'un Uygulama simgesi sayfas\u0131nda Facebook Plus'a ay\u0131rd\u0131\u011f\u0131 simgeleri se\u00e7menizi sa\u011flar. Kapat\u0131l\u0131rsa Facebook bir sonraki a\u00e7\u0131l\u0131\u015f\u0131nda kendi simgesini geri koyar.");
+        table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Your pick stays if you turn this off, so pick the blue one first to go back.",
+                "Facebook'un Uygulama simgesi sayfas\u0131nda Facebook Plus'a ay\u0131rd\u0131\u011f\u0131 simgeleri se\u00e7menizi sa\u011flar. Bunu kapatsan\u0131z da se\u00e7iminiz kal\u0131r, geri d\u00f6nmek i\u00e7in \u00f6nce mavi olan\u0131 se\u00e7in.");
         table.put("Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.",
                 "Facebook'un engelledi\u011fi sayfalarda ekran g\u00f6r\u00fcnt\u00fcs\u00fc ve ekran kayd\u0131 alman\u0131z\u0131 sa\u011flar. Zaten a\u00e7\u0131k olan bir sayfay\u0131 yeniden a\u00e7\u0131n.");
         table.put("Licenses",
