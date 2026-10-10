@@ -556,15 +556,17 @@ public final class ReleaseCheck {
     /**
      * A newer release than [running], and the Facebook build the latest release targets when it
      * isn't [facebook], or null when neither holds. Compared when shown, so the line goes once
-     * Hushfacebook has been updated, with no new try.
+     * Hushfacebook has been updated, with no new try. A kept answer older than [running], from a
+     * try before an update, says nothing: its target was an older release's Facebook.
      */
     @Nullable
     static String statusLine(@Nullable String newest, @Nullable String target, @Nullable String running,
                              @Nullable String facebook) {
         if (newest == null || newest.isEmpty()) return null;
+        Integer againstRunning = compare(newest, running);
+        if (againstRunning != null && againstRunning < 0) return null;
         Integer againstFacebook = target == null || target.isEmpty() ? null : compare(target, facebook);
         boolean otherTarget = againstFacebook != null && againstFacebook != 0;
-        Integer againstRunning = compare(newest, running);
         if (againstRunning != null && againstRunning > 0) {
             String out = L10n.f("Hushfacebook %1$s is out. Update it in Morphe Manager.", L10n.isolate(newest));
             return otherTarget ? out + " " + L10n.f("It targets Facebook %1$s.", L10n.isolate(target)) : out;
