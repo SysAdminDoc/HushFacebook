@@ -120,7 +120,17 @@ final class RouteShortcut {
         return unavailable.get();
     }
 
-    synchronized SavedShortcut.Result refreshNow(Context context) {
+    /**
+     * Every route shortcut refreshes under one lock: each reads the launcher's list to find a free
+     * rank and room, so two at once could take the same rank or both count the last free slot.
+     */
+    SavedShortcut.Result refreshNow(Context context) {
+        synchronized (RouteShortcut.class) {
+            return refreshLocked(context);
+        }
+    }
+
+    private SavedShortcut.Result refreshLocked(Context context) {
         try {
             ShortcutManager manager = context.getSystemService(ShortcutManager.class);
             if (manager == null) return SavedShortcut.Result.UNAVAILABLE;
