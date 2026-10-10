@@ -30,7 +30,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>It rides route one of the themes ({@link MaterialYouTheme}): the colours Facebook's FDS and Mig
  * resolvers answer. A colour changes only when it is one of Facebook's blues
- * ({@link MaterialYouTheme#isFacebookBlue}) and, for FDS, comes with one of the {@link #TOKENS}, so a
+ * ({@link MaterialYouTheme#isFacebookBlue}, or for FDS one of its pale {@link #FACEBOOK_TINTS}) and,
+ * for FDS, comes with one of the {@link #TOKENS}, so a
  * chart, a badge or a colour somebody picked for a post keeps its own. It becomes the accent at the
  * lightness it had, in light mode and in dark, and keeps its alpha, so a tint stays a tint.
  *
@@ -245,8 +246,25 @@ public final class AccentColor {
         return preset;
     }
 
+    /**
+     * Facebook's own pale blues in light mode, too grey for {@link MaterialYouTheme#isFacebookBlue}:
+     * a selected chip and Marketplace's pill (#DDEDFE on 582), the deemphasized accent (#EBF5FF) and a
+     * new notification's row (#E7F3FF). Only these values, so any other pale blue keeps its colour.
+     * AccentResourceBlues.kt's FACEBOOK_TINTS is the same list, which AccentTintParityTest holds.
+     */
+    static final int[] FACEBOOK_TINTS = {0xDDEDFE, 0xE7F3FF, 0xEBF5FF};
+
+    /** One of Facebook's blues, or one of its {@link #FACEBOOK_TINTS} at any alpha. */
+    static boolean isAccentBlue(int color) {
+        if (MaterialYouTheme.isFacebookBlue(color)) return true;
+        for (int tint : FACEBOOK_TINTS) {
+            if ((color & 0xFFFFFF) == tint) return true;
+        }
+        return false;
+    }
+
     static int fds(int color, String token, Preset preset, boolean answered, boolean dark) {
-        if (preset == Preset.FACEBOOK || !TOKEN_SET.contains(token) || !MaterialYouTheme.isFacebookBlue(color)) return color;
+        if (preset == Preset.FACEBOOK || !TOKEN_SET.contains(token) || !isAccentBlue(color)) return color;
         int themed = palette(preset).sameLightness(TonePalette.ACCENT, color);
         if (!TEXT_TOKEN_SET.contains(token)) return themed;
         Boolean fromDark = darkPalette(token, color, answered, dark);

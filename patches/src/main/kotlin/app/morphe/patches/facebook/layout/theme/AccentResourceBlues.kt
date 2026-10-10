@@ -76,8 +76,15 @@ internal fun resourceBluesTable(
 }
 
 /**
- * A colour value as an int when it's one of Facebook's blues, following `@color/` references through
- * [first], then [fallback], or null for anything else.
+ * Facebook's own pale blues in light mode (a selected chip, the deemphasized accent, a new
+ * notification's row), which [isFacebookBlue] finds too grey. AccentColor.FACEBOOK_TINTS in the
+ * extension is the same list.
+ */
+internal val FACEBOOK_TINTS = intArrayOf(0xDDEDFE, 0xE7F3FF, 0xEBF5FF)
+
+/**
+ * A colour value as an int when it's one of Facebook's blues or [FACEBOOK_TINTS], following `@color/`
+ * references through [first], then [fallback], or null for anything else.
  */
 private fun blue(value: String?, first: Map<String, String>, fallback: Map<String, String>, depth: Int = 0): Int? {
     val text = value?.trim() ?: return null
@@ -87,7 +94,7 @@ private fun blue(value: String?, first: Map<String, String>, fallback: Map<Strin
         return blue(first[name] ?: fallback[name], first, fallback, depth + 1)
     }
     val colour = argb(text) ?: return null
-    return colour.takeIf { isFacebookBlue((it shr 16) and 0xFF, (it shr 8) and 0xFF, it and 0xFF) }
+    return colour.takeIf { isFacebookBlue((it shr 16) and 0xFF, (it shr 8) and 0xFF, it and 0xFF) || (it and 0xFFFFFF) in FACEBOOK_TINTS }
 }
 
 /**
