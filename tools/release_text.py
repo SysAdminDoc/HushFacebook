@@ -334,7 +334,9 @@ def github_notes(root: Path, version: str, checked: str | None, draft: bool = Fa
     said, sentence = target_in(notes)
     if said is None and not draft:
         fail(f"nothing in the notes says which Facebook build this release targets, and the app's update check "
-             f"reads it from them. Say \"All N patches applied ... to Facebook {newest}\" in the checked paragraph.")
+             f"reads it from them. Say \"All N patches applied ... to Facebook {newest}\" in the checked paragraph, "
+             f"with \"Facebook\" right after \"to\" (\"to both Facebook {newest} builds\" isn't read: installed "
+             f"builds parse the same phrase, so the checker can't loosen it).")
     if said is not None and said != newest:
         fail(f"the app's update check would read Facebook {said} as this release's target, from \"{sentence}\". "
              f"It's {newest}: reword that sentence, or say {newest} first.")

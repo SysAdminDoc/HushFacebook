@@ -21,7 +21,8 @@
                patches/build/fixture-apply) and SHA256SUMS.txt, into build/release-assets/<version>.
     publish    Notes from the whole CHANGELOG section with -Checked as What was checked, a
                lightweight tag, the GitHub release with the five assets, each downloaded back and
-               compared.
+               compared. -Checked must say "applied ... to Facebook <version>" with "Facebook"
+               right after "to": the app's update check reads the target from that phrase.
     index      patches-bundle.json, the README's latest-release sentence and the bug form, from the
                published release and the gate's test results, and the repository description. Then
                commit "chore(release): point Manager to the verified X.Y.Z bundle" and push.
