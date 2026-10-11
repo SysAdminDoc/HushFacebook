@@ -250,7 +250,7 @@ final class ValueRows {
             packs.setAllCaps(false);
             packs.setTextSize(14);
             packs.setTextColor(colors.heading);
-            packs.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+            ScreenColors.pressFeedback(packs, colors.heading, false);
             int touch = Math.round(48 * context.getResources().getDisplayMetrics().density);
             packs.setMinHeight(touch);
             packs.setMinimumHeight(touch);

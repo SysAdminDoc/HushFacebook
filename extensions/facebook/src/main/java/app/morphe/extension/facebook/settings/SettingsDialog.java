@@ -139,7 +139,7 @@ public final class SettingsDialog extends DialogFragment {
         arrow.setLayoutDirection(rightToLeft() ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
         back.setImageDrawable(arrow);
         back.setPadding(dp(12), dp(12), dp(12), dp(12));
-        back.setBackgroundColor(Color.TRANSPARENT);
+        ScreenColors.pressFeedback(back, foreground(), true);
         back.setMinimumWidth(dp(48));
         back.setMinimumHeight(dp(48));
         back.setContentDescription(L10n.t(getContext(), "Back"));
@@ -218,7 +218,7 @@ public final class SettingsDialog extends DialogFragment {
         searchBox.addView(search, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         android.widget.ImageButton clear = new android.widget.ImageButton(getContext());
         clear.setImageDrawable(SettingsIcons.icon(getContext(), SettingsIcons.CLOSE, palette.summary));
-        clear.setBackgroundColor(Color.TRANSPARENT);
+        ScreenColors.pressFeedback(clear, palette.summary, true);
         clear.setPadding(dp(12), dp(12), dp(12), dp(12));
         clear.setContentDescription(L10n.t("Clear search"));
         // At large text sizes an empty button's reserved width cuts off the search hint.

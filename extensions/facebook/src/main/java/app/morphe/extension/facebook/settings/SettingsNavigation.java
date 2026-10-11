@@ -440,7 +440,7 @@ final class SettingsNavigation extends BaseAdapter {
         action.setAllCaps(false);
         action.setTextSize(14);
         action.setTextColor(palette().heading);
-        action.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        ScreenColors.pressFeedback(action, palette().heading, false);
         action.setMinWidth(dp(48));
         action.setMinHeight(dp(48));
         action.setMinimumWidth(dp(48));

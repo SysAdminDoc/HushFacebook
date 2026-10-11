@@ -173,6 +173,40 @@ public class ActiveSavesTest {
         assertEquals(0, savesListed());
     }
 
+    /**
+     * Cancel sits on the row with no surface of its own, and a tap on it still shows a ripple, kept
+     * to the button. The page's Back arrow, an icon button, gets one bounded by a disc.
+     */
+    @Test public void cancelAnswersATapWithARipple() {
+        int id = SavesForTests.begin(RuntimeEnvironment.getApplication(), true);
+        show();
+        View row = row(id);
+        assertNotNull("the running save isn't on the Downloads page", row);
+        assertTrue("Cancel has no press feedback",
+                cancelOf(row).getBackground() instanceof android.graphics.drawable.RippleDrawable);
+        android.graphics.drawable.RippleDrawable ripple = (android.graphics.drawable.RippleDrawable) cancelOf(row).getBackground();
+        assertNotNull("Cancel's ripple isn't kept to the button", ripple.findDrawableByLayerId(android.R.id.mask));
+        View back = withDescription(dialog.getView(), "Back");
+        assertNotNull("the page has no Back arrow", back);
+        assertTrue("Back has no press feedback", back.getBackground() instanceof android.graphics.drawable.RippleDrawable);
+        android.graphics.drawable.Drawable disc = ((android.graphics.drawable.RippleDrawable) back.getBackground())
+                .findDrawableByLayerId(android.R.id.mask);
+        assertTrue("Back's ripple isn't a disc", disc instanceof android.graphics.drawable.GradientDrawable
+                && ((android.graphics.drawable.GradientDrawable) disc).getShape() == android.graphics.drawable.GradientDrawable.OVAL);
+    }
+
+    private static View withDescription(View root, String description) {
+        if (description.contentEquals(String.valueOf(root.getContentDescription()))) return root;
+        if (root instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) root;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View found = withDescription(group.getChildAt(i), description);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
     /** Only the saves channel switched off: no notification, and the page lists the save as before. */
     @Test public void withOnlyTheSavesChannelOffTheSaveIsStillListed() {
         notifications().createNotificationChannel(new NotificationChannel("hushfacebook_saves", "Hushfacebook saves",

@@ -152,7 +152,7 @@ final class SettingsRows {
             cancel.setTextSize(14);
             ScreenColors colors = ScreenColors.shown == null ? ScreenColors.DEFAULT : ScreenColors.shown;
             cancel.setTextColor(colors.heading);
-            cancel.setBackgroundColor(Color.TRANSPARENT);
+            ScreenColors.pressFeedback(cancel, colors.heading, false);
             int touch = Math.round(48 * view.getResources().getDisplayMetrics().density);
             cancel.setMinWidth(touch);
             cancel.setMinimumWidth(touch);

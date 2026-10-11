@@ -16,6 +16,7 @@ import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.InsetDrawable;
@@ -623,5 +624,23 @@ final class ScreenColors {
     /** A switch's track: the thumb's colour at half strength, as Material's own switch draws it. */
     static int half(int color) {
         return (color & 0x00FFFFFF) | 0x80000000;
+    }
+
+    /**
+     * The press ripple of a button drawn straight on the page, with no surface of its own: Material's
+     * borderless button, in [color] at half strength and kept inside the button's bounds, a disc for
+     * an icon button when [round]. A plain transparent background showed nothing when tapped.
+     */
+    static void pressFeedback(View button, int color, boolean round) {
+        Drawable mask;
+        if (round) {
+            GradientDrawable disc = new GradientDrawable();
+            disc.setShape(GradientDrawable.OVAL);
+            disc.setColor(Color.WHITE);
+            mask = disc;
+        } else {
+            mask = new ColorDrawable(Color.WHITE);
+        }
+        button.setBackground(new RippleDrawable(ColorStateList.valueOf(half(color)), null, mask));
     }
 }
