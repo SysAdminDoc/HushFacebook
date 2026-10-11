@@ -441,6 +441,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/resignedtrust/FbnsSignersPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: the push service's package check (582's FbnsServiceDelegateV2 hashes PackageInfo.signatures and stops the service when the hash isn't Meta's) gets Facebook's original certificate for this app's own package, so a re-signed build's push process stops restarting. The same fix was first written for HushThreads (its issue #6) by the same author."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/emoji/**",
         "patches/src/main/kotlin/app/morphe/patches/facebook/emoji/**"
       ],

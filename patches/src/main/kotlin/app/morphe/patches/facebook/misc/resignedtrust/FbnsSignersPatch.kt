@@ -2,8 +2,8 @@
  * Copyright 2026 Hushfacebook contributors
  * https://github.com/SysAdminDoc/Hushfacebook
  *
- * Ported back from SysAdminDoc/HushThreads (FbnsSignersPatch.kt, HushThreads #6), where the push
- * process's signer read was found by measuring a re-signed Threads.
+ * The same fix was first written for HushThreads (its FbnsSignersPatch.kt, HushThreads #6), where
+ * the push process's signer read was found by measuring a re-signed Threads.
  */
 package app.morphe.patches.facebook.misc.resignedtrust
 
