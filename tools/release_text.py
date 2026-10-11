@@ -44,7 +44,8 @@ VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 DASHES = ("—", "–")
 # Morphe Manager's scope: "Facebook", or "Facebook - <area>", and the development-only "Tooling".
 BULLET = re.compile(r"^\* \*\*(?P<scope>Facebook(?: - [^*]+)?|Tooling):\*\* (?P<text>\S.*)$")
-GROUPS = {"Added": "New in this release", "Fixed": "Fixes", "Changed": "Other changes", "Removed": "Removed"}
+GROUPS = {"Added": "New in this release", "Fixed": "Fixes", "Changed": "Other changes", "Removed": "Removed",
+          "Reported issues": "Reported issues"}
 TOOLING_GROUP = "Behind the scenes"
 ABI_NAMES = {"ARM64_V8A": "arm64-v8a", "ARMEABI_V7A": "armeabi-v7a", "X86_64": "x86_64", "X86": "x86"}
 

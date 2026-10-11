@@ -230,6 +230,14 @@ class NotesTest(Repo):
         self.cut()
         self.refused(self.notes, "### Security")
 
+    def test_maps_reported_issues_after_the_changes(self):
+        write(self.root / "CHANGELOG.md", CHANGELOG.replace(
+            "## 0.1.0", "### Reported issues\n\n* **Facebook:** #12 Reels froze: fixed, see Other changes.\n\n## 0.1.0"))
+        self.cut()
+        notes = self.notes()
+        self.assertIn("- Reels open on the `first` frame.\n\nReported issues\n\n"
+                      "- #12 Reels froze: fixed, see Other changes.\n\nBehind the scenes\n\n", notes)
+
     def test_refuses_a_dash_in_the_checked_paragraph(self):
         self.cut()
         self.refused(lambda: self.notes(checked=self.CHECKED + " Done – all of it."), "dash")
