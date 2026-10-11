@@ -103,6 +103,72 @@ public class TapToPlayTest {
                 decide(new Object(), Trigger.BY_SHORT_FORM_VIDEO_FULLY_VISIBLE, now + 200));
     }
 
+    /** A Facebook screen whose picture-in-picture state the test sets, in and back out. */
+    public static class WindowScreen extends Activity {
+        boolean inWindow;
+
+        @Override
+        public boolean isInPictureInPictureMode() {
+            return inWindow;
+        }
+    }
+
+    /** A reel let through in the window of [screen], which then opens back out: Facebook pauses it. */
+    private static Object reelPlayedInTheWindow(WindowScreen screen, long now) {
+        TapToPlay.activityResumed(screen);
+        Object reel = new Object();
+        assertFalse("a reel coming into view on the screen", TapToPlay.decide(reel, Trigger.BY_AUTOPLAY.name(), true, now, ""));
+        screen.inWindow = true;
+        assertTrue("the reel in the window", decide(reel, Trigger.BY_SHORT_FORM_VIDEO_FULLY_VISIBLE, now + 100));
+        return reel;
+    }
+
+    @Test
+    public void aReelThatPlayedInTheWindowGoesOnWhenTheWindowOpensBackOutOnce() {
+        long now = SystemClock.uptimeMillis();
+        WindowScreen screen = Robolectric.buildActivity(WindowScreen.class).setup().get();
+        Object reel = reelPlayedInTheWindow(screen, now);
+        screen.inWindow = false;
+        TapToPlay.paused(reel);
+        TapToPlay.activityResumed(screen);
+        assertFalse("another reel isn't the window's", TapToPlay.decide(new Object(), Trigger.BY_AUTOPLAY.name(), true, now + 400, ""));
+        assertTrue("the window's reel starting again as the window opens back out (#90)",
+                TapToPlay.decide(reel, Trigger.BY_AUTOPLAY.name(), true, now + 500, ""));
+
+        TapToPlay.paused(reel);
+        assertFalse("a pause after that waits for a tap, like any",
+                TapToPlay.decide(reel, Trigger.BY_AUTOPLAY.name(), true, now + 900, ""));
+    }
+
+    @Test
+    public void theWindowsReelWaitsWhenPausedInTheWindowClosedWithItsXOrStartedLate() {
+        long now = SystemClock.uptimeMillis();
+        WindowScreen screen = Robolectric.buildActivity(WindowScreen.class).setup().get();
+
+        Object pausedThere = reelPlayedInTheWindow(screen, now);
+        TapToPlay.paused(pausedThere);
+        screen.inWindow = false;
+        TapToPlay.activityResumed(screen);
+        assertFalse("a reel paused in the window waits once it opens back out",
+                TapToPlay.decide(pausedThere, Trigger.BY_AUTOPLAY.name(), true, now + 500, ""));
+
+        Object closed = reelPlayedInTheWindow(screen, now + 1000);
+        screen.inWindow = false;
+        TapToPlay.paused(closed);
+        TapToPlay.activityStopped(screen);
+        TapToPlay.activityResumed(screen);
+        assertFalse("a window closed with its X leaves its reel waiting",
+                TapToPlay.decide(closed, Trigger.BY_AUTOPLAY.name(), true, now + 1500, ""));
+
+        Object late = reelPlayedInTheWindow(screen, now + 2000);
+        screen.inWindow = false;
+        TapToPlay.paused(late);
+        TapToPlay.activityResumed(screen);
+        long back = SystemClock.uptimeMillis();
+        assertFalse("a start long after the window opened back out waits",
+                TapToPlay.decide(late, Trigger.BY_AUTOPLAY.name(), true, back + TapToPlay.BACK_FROM_WINDOW_MS + 1, ""));
+    }
+
     @Test
     public void playingClearsTheHeldStartButtonEvenWhenFacebooksViewerFlagIsOff() {
         assertTrue(TapToPlay.showReelPlayButton(false));

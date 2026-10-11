@@ -534,7 +534,10 @@ public final class SettingsEntry {
         }
 
         @Override public void onActivityStarted(Activity activity) { }
-        @Override public void onActivityStopped(Activity activity) { }
+        @Override
+        public void onActivityStopped(Activity activity) {
+            TapToPlay.activityStopped(activity);
+        }
 
         @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
         @Override

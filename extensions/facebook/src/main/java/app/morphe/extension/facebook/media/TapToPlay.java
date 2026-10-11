@@ -89,6 +89,16 @@ public final class TapToPlay {
      */
     static final long LINK_WINDOW_MS = 15_000;
 
+    /**
+     * How long after the picture-in-picture window opens back out into Facebook the reel it played
+     * may start again with no tap. Facebook pauses it on the way out and starts it again about half a
+     * second later (#90).
+     */
+    static final long BACK_FROM_WINDOW_MS = 3000;
+
+    /** No window closed back into Facebook since the last start it let through. */
+    private static final long NOT_BACK = Long.MIN_VALUE;
+
     /** The trigger Facebook's player gets when it opens a video a link asked for. */
     private static final String BY_USER = "BY_USER";
 
@@ -140,6 +150,10 @@ public final class TapToPlay {
     private static volatile WeakReference<Object> heldReel = new WeakReference<>(null);
     /** Whether a run of reels is going: a tap played a waiting reel, and nothing was held since. */
     private static volatile boolean reelRun;
+    /** The player last let through while Facebook showed in the picture-in-picture window, weakly. */
+    private static volatile WeakReference<Object> windowPlayer = new WeakReference<>(null);
+    /** When the screen came back from that window, on the uptime clock, or {@link #NOT_BACK}. */
+    private static volatile long backFromWindowAt = NOT_BACK;
     private static final Object LOG_LOCK = new Object();
     private static int decisions;
     private static int allowedSinceSummary;
@@ -212,12 +226,21 @@ public final class TapToPlay {
         return fbShorts(params);
     }
 
-    /** The hook, first thing in each player's pause. A paused player waits for a tap again. */
+    /**
+     * The hook, first thing in each player's pause. A paused player waits for a tap again. The
+     * window's player paused inside the window was paused there by the person, so it waits too when
+     * the window opens back out. Paused outside it, the window is opening back out, and Facebook's
+     * start right after may go ahead ({@link #backFromWindow}).
+     */
     public static void paused(Object player) {
         try {
             HookStatus.invoked(FamilyNames.TAP_TO_PLAY);
             HookStatus.bound(FamilyNames.TAP_TO_PLAY, "player pause");
             ARMED.disarm(player);
+            if (player != null && player == windowPlayer.get()) {
+                if (inPictureInPicture()) forgetWindow();
+                else backFromWindowAt = SystemClock.uptimeMillis();
+            }
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.TAP_TO_PLAY, "player pause", failure);
         }
@@ -409,20 +432,46 @@ public final class TapToPlay {
         // A tap or a control is the person at work, so a link waiting is no longer what started
         // this. An armed player's own restart leaves it for the player the link opened.
         if (tapped || control) dropLink();
-        boolean window = !armed && !control && !tapped && inPictureInPicture();
-        boolean linked = !armed && !control && !tapped && !window && BY_USER.equals(trigger) && takeLink(now);
+        boolean inWindow = inPictureInPicture();
+        boolean window = !armed && !control && !tapped && inWindow;
+        boolean back = !armed && !control && !tapped && !inWindow && backFromWindow(player, now);
+        boolean linked = !armed && !control && !tapped && !window && !back && BY_USER.equals(trigger) && takeLink(now);
         // A swipe forgets the last tap, so a reel that starts right after one came from that tap, on
         // the Reels tab say, not from swiping through Reels, and it waits.
-        boolean run = !armed && !control && !tapped && !window && !linked && reelRun && !recentTap
+        boolean run = !armed && !control && !tapped && !window && !back && !linked && reelRun && !recentTap
                 && (REEL_IN_VIEW.equals(trigger) || autoplayedReel) && Settings.TAP_TO_PLAY_REELS_AFTER_FIRST.get();
-        boolean allowed = armed || control || linked || tapped || window || run;
+        boolean allowed = armed || control || linked || tapped || window || back || run;
         if (allowed && (!armed || control)) ARMED.arm(player, now);
+        if (allowed && inWindow && player != null) windowPlayer = new WeakReference<>(player);
         noteReelRun(player, autoplayedReel || trigger != null && trigger.startsWith(REEL_TRIGGERS), allowed,
                 tapped || control);
         logDecision(allowed, trigger, sinceTap, armed, linked ? path + " (a link asked for it)"
-                : window ? path + " (in picture-in-picture)" : run ? path + " (a reel after one you played)"
+                : window ? path + " (in picture-in-picture)" : back ? path + " (back from picture-in-picture)"
+                : run ? path + " (a reel after one you played)"
                 : autoplayedReel ? path + " (a reel)" : path);
         return allowed;
+    }
+
+    /**
+     * Whether [player] is the one the picture-in-picture window played and the window opened back
+     * out into Facebook no more than {@link #BACK_FROM_WINDOW_MS} before [now]. Facebook pauses the
+     * reel as the window opens out and starts it again with BY_AUTOPLAY, and held there it sat with
+     * its play button over the time it had played in the window (#90). One start takes it.
+     */
+    private static boolean backFromWindow(Object player, long now) {
+        long at = backFromWindowAt;
+        if (player == null || player != windowPlayer.get() || at == NOT_BACK || now < at
+                || now - at > BACK_FROM_WINDOW_MS) {
+            return false;
+        }
+        forgetWindow();
+        return true;
+    }
+
+    /** Forgets the window's player: it played on, was paused in the window, or the window went away. */
+    private static void forgetWindow() {
+        windowPlayer = new WeakReference<>(null);
+        backFromWindowAt = NOT_BACK;
     }
 
     /**
@@ -495,9 +544,24 @@ public final class TapToPlay {
         Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> logged);
     }
 
-    /** Hushfacebook's activity watcher, as each Facebook screen comes to the front. */
+    /**
+     * Hushfacebook's activity watcher, as each Facebook screen comes to the front. A screen that
+     * comes back full size while the window's player is remembered is the window opening back out:
+     * a screen in the window is paused, not stopped, and resumes when it fills the screen again.
+     */
     public static void activityResumed(Activity activity) {
         front = new WeakReference<>(activity);
+        if (activity != null && windowPlayer.get() != null && !activity.isInPictureInPictureMode()) {
+            backFromWindowAt = SystemClock.uptimeMillis();
+        }
+    }
+
+    /**
+     * Hushfacebook's activity watcher, as each Facebook screen is stopped. A window closed with its
+     * X stops its screen, as leaving Facebook does, so its reel waits for a tap when you come back.
+     */
+    public static void activityStopped(Activity activity) {
+        if (activity != null && activity == front.get()) forgetWindow();
     }
 
     /**
@@ -516,6 +580,7 @@ public final class TapToPlay {
         front = new WeakReference<>(null);
         heldReel = new WeakReference<>(null);
         reelRun = false;
+        forgetWindow();
         LINK_OPENED_AT.set(NO_LINK);
         synchronized (LOG_LOCK) {
             decisions = 0;
