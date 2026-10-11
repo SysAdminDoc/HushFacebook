@@ -348,6 +348,25 @@ public class CompletedSaveActionsTest {
         assertEquals(two, second.getData());
     }
 
+    /**
+     * After a run of saves nobody cleared, the oldest cards go, so Android's limit on an app's
+     * notifications never swallows the next save's own progress card.
+     */
+    @Test public void onlyTheNewestCompletedCardsStayUp() throws Exception {
+        List<Uri> saved = new ArrayList<>();
+        for (int i = 0; i < SaveControl.COMPLETED_KEPT + 3; i++) {
+            saved.add(entry(save(true, "video/mp4"), 0).getData());
+        }
+        assertEquals(SaveControl.COMPLETED_KEPT, completed().size());
+        for (int i = 0; i < saved.size(); i++) {
+            boolean up = false;
+            for (StatusBarNotification note : notifications().getActiveNotifications()) {
+                if ((COMPLETED + ":" + saved.get(i)).equals(note.getTag())) up = true;
+            }
+            assertEquals("card " + i + " of " + saved.size(), i >= 3, up);
+        }
+    }
+
     @Test public void aPendingWriterAndAnUnclaimedSaveExposeNoFileHandle() throws Exception {
         MediaStoreWriter writer = new MediaStoreWriter(context, true);
         assertNull(writer.publishedUri());

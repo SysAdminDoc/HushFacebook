@@ -14,6 +14,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.drawable.Icon;
 import android.os.Build;
+import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
 
 import java.util.ArrayList;
@@ -68,6 +69,16 @@ public final class SaveControl {
     static final String SAVED_TAG = "hushfacebook-saved";
     /** One note at a time: the next save's replaces it rather than stacking up. */
     static final int SAVED_ID = 1;
+    /**
+     * The most finished-save cards ({@link #showCompleted}) kept up at once. Android lets an app hold
+     * about fifty notifications and drops the next without a word, so after a run of saves nobody
+     * cleared, the next save's progress card, Cancel and all, would never show. Facebook's own count
+     * towards the same fifty.
+     */
+    static final int COMPLETED_KEPT = 20;
+    /** Which finished-save card came first, for {@link #trimCompleted} when two were posted in the same instant. */
+    static final String EXTRA_COMPLETED_ORDER = "app.morphe.extension.facebook.COMPLETED_ORDER";
+    private static final AtomicInteger COMPLETED_ORDER = new AtomicInteger();
 
     /** Unguessable, and new in every process. */
     private static final String TOKEN = UUID.randomUUID().toString();
@@ -246,6 +257,8 @@ public final class SaveControl {
         try {
             PendingIntent open = SavedFileActions.button(save.application, writer.publishedUri(), writer.publishedMime(), false);
             PendingIntent share = SavedFileActions.button(save.application, writer.publishedUri(), writer.publishedMime(), true);
+            Bundle order = new Bundle(1);
+            order.putInt(EXTRA_COMPLETED_ORDER, COMPLETED_ORDER.getAndIncrement());
             Notification note = new Notification.Builder(save.application, CHANNEL)
                 .setSmallIcon(android.R.drawable.stat_sys_download_done)
                 .setContentTitle(save.video ? L10n.t(save.application, "Video saved") : L10n.t(save.application, "Photo saved"))
@@ -256,14 +269,50 @@ public final class SaveControl {
                 .setContentIntent(open)
                 .addAction(new Notification.Action.Builder((Icon) null, L10n.t(save.application, "Open"), open).build())
                 .addAction(new Notification.Action.Builder((Icon) null, L10n.t(save.application, "Share"), share).build())
+                .addExtras(order)
                 .build();
             // URI identity also survives a process restarting its numeric running-save counter.
-            manager.notify(SavedFileActions.TAG + writer.publishedUri(), 0, note);
+            String tag = SavedFileActions.TAG + writer.publishedUri();
+            manager.notify(tag, 0, note);
+            trimCompleted(manager, tag);
         } catch (Throwable failure) {
             // An exception's message may contain the local URI. Report only its class.
             String kind = failure.getClass().getSimpleName();
             MediaDownload.failure(() -> "could not show completed save actions (" + kind + ")", null);
         }
+    }
+
+    /**
+     * Takes down the oldest finished-save cards so that, with [posted] (the one just sent, which
+     * the system may not list yet), {@link #COMPLETED_KEPT} stay up. Never throws.
+     */
+    static void trimCompleted(NotificationManager manager, String posted) {
+        try {
+            List<StatusBarNotification> others = new ArrayList<>();
+            for (StatusBarNotification shown : manager.getActiveNotifications()) {
+                String tag = shown.getTag();
+                if (tag != null && tag.startsWith(SavedFileActions.TAG) && !tag.equals(posted)) others.add(shown);
+            }
+            int keep = COMPLETED_KEPT - 1;
+            if (others.size() <= keep) return;
+            // Oldest first: by when the system took it, then by the order this process posted them
+            // in, since the system's clock has a coarser grain than two saves ending together.
+            others.sort((a, b) -> {
+                int byTime = Long.compare(a.getPostTime(), b.getPostTime());
+                return byTime != 0 ? byTime : Integer.compare(order(a), order(b));
+            });
+            for (int i = 0; i < others.size() - keep; i++) {
+                manager.cancel(others.get(i).getTag(), others.get(i).getId());
+            }
+        } catch (Throwable failure) {
+            String kind = failure.getClass().getSimpleName();
+            MediaDownload.failure(() -> "could not take down old finished-save cards (" + kind + ")", null);
+        }
+    }
+
+    private static int order(StatusBarNotification card) {
+        Bundle extras = card.getNotification().extras;
+        return extras == null ? -1 : extras.getInt(EXTRA_COMPLETED_ORDER, -1);
     }
 
     /** Facebook's notification service, when this channel may post, else {@code null}. */
