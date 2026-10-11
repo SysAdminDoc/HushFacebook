@@ -377,7 +377,7 @@ public class CompletedSaveActionsTest {
         try {
             assertTrue(save.publishing());
             save.published(true);
-            Thread poster = new Thread(() -> SaveControl.showCompleted(save, writer));
+            Thread poster = new Thread(() -> SaveControl.showCompleted(save, writer, null));
             synchronized (SaveControl.COMPLETED_LOCK) {
                 // Another save is posting its card and trimming: this one waits its turn.
                 poster.start();
@@ -406,7 +406,7 @@ public class CompletedSaveActionsTest {
         assertEquals("video/mp4", writer.publishedMime());
         SaveControl.Save save = SaveControl.begin(context, true);
         try {
-            SaveControl.showCompleted(save, writer);
+            SaveControl.showCompleted(save, writer, null);
             assertTrue(completed().isEmpty());
         } finally { save.end(); }
     }

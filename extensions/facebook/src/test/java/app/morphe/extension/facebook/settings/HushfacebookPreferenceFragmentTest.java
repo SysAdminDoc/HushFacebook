@@ -1517,7 +1517,8 @@ public class HushfacebookPreferenceFragmentTest {
             assertEquals("Keep seen posts hidden for", String.valueOf(keep.getTitle()));
             String greyed = String.valueOf(keep.getSummary());
             assertTrue("the greyed keep time doesn't say why: " + greyed,
-                    greyed.contains("Turn on") && greyed.contains("Hide seen posts") && greyed.endsWith("to use this."));
+                    greyed.contains("Turn on") && greyed.contains(SwitchLabels.title(Settings.HIDE_SEEN_POSTS))
+                            && greyed.endsWith("to use this."));
             assertTrue("Forget seen posts is greyed out with the switch off", forget.isEnabled());
 
             SeenPostsForTests.rememberAndWrite("left from before");
