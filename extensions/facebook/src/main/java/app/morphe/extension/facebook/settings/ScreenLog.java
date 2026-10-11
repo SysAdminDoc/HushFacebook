@@ -94,9 +94,10 @@ final class ScreenLog {
             if (!metaLink(link)) {
                 line.append(" (outside link)");
             } else {
+                // A host is the same whatever its case, so the report writes it one way.
                 String host = link.getHost();
                 String path = link.getPath();
-                String where = (host == null ? "" : host) + (path == null ? "" : path);
+                String where = (host == null ? "" : host.toLowerCase(Locale.ROOT)) + (path == null ? "" : path);
                 if (!where.isEmpty()) line.append(' ').append(where);
             }
         }
