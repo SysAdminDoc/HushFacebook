@@ -2,7 +2,9 @@
 
 Every Hushfacebook release, newest first.
 
-## Unreleased
+## 0.10.0 (2026-10-10)
+
+* **Facebook:** This release gathers everything since v0.9.0 and brings 87 patches for Facebook 582.0.0.50.54, up from 86. The new one is `Unlock app icons`, which lets you pick any icon on Facebook's App icon page. New switches add a Watch history shortcut, keep a reel's time above its progress bar, stop link history in Facebook's browser and hold back camera roll processing. Saves whose only sound is xHE-AAC now get sound most players can play, and the Reported issues list below maps each report this release touches.
 
 ### Added
 
