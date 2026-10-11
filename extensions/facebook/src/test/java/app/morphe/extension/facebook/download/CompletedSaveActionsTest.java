@@ -367,6 +367,32 @@ public class CompletedSaveActionsTest {
         }
     }
 
+    @Test public void aFinishedSaveWaitsForTheOneBeforeItToPostAndTrim() throws Exception {
+        MediaStoreWriter writer = new MediaStoreWriter(context, true);
+        Uri uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, gallery.next);
+        shadowOf(context.getContentResolver()).registerOutputStream(uri, new ByteArrayOutputStream());
+        writer.open("application/octet-stream").write(1);
+        writer.commit();
+        SaveControl.Save save = SaveControl.begin(context, true);
+        try {
+            assertTrue(save.publishing());
+            save.published(true);
+            Thread poster = new Thread(() -> SaveControl.showCompleted(save, writer));
+            synchronized (SaveControl.COMPLETED_LOCK) {
+                // Another save is posting its card and trimming: this one waits its turn.
+                poster.start();
+                long until = System.currentTimeMillis() + 10_000;
+                while (poster.getState() != Thread.State.BLOCKED && poster.isAlive() && System.currentTimeMillis() < until) {
+                    Thread.sleep(5);
+                }
+                assertEquals("the second save didn't wait", Thread.State.BLOCKED, poster.getState());
+                assertTrue("a card went up while another save trimmed", completed().isEmpty());
+            }
+            poster.join(10_000);
+            assertEquals(1, completed().size());
+        } finally { save.end(); }
+    }
+
     @Test public void aPendingWriterAndAnUnclaimedSaveExposeNoFileHandle() throws Exception {
         MediaStoreWriter writer = new MediaStoreWriter(context, true);
         assertNull(writer.publishedUri());
@@ -408,21 +434,21 @@ public class CompletedSaveActionsTest {
         assertEquals("Save canceled", ShadowToast.getTextOfLatestToast());
     }
 
-    @Test public void theCompatibilityAdviceAndFileActionsCoexist() throws Exception {
+    @Test public void theCompatibilityAdviceAndFileActionsShareOneCard() throws Exception {
         Uri uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, gallery.next);
         shadowOf(context.getContentResolver()).registerOutputStream(uri, new ByteArrayOutputStream());
         finish(MediaDownload.start(context, true,
                 (writer, progress) -> Downloader.publish(file, "video/mp4", writer, progress).refused()));
         assertEquals(1, completed().size());
-        Notification advice = null;
-        for (StatusBarNotification note : notifications().getActiveNotifications()) {
-            if (SaveControl.SAVED_TAG.equals(note.getTag())) advice = note.getNotification();
-        }
-        assertNotNull(advice);
-        assertEquals(1, advice.actions.length);
-        assertEquals("Open the setting", advice.actions[0].title.toString());
+        assertEquals("one save, one card", 1, notifications().getActiveNotifications().length);
+        Notification card = completed().get(0);
+        assertEquals(3, card.actions.length);
+        assertEquals("Open", card.actions[0].title.toString());
+        assertEquals("Share", card.actions[1].title.toString());
+        assertEquals("Open the setting", card.actions[2].title.toString());
+        assertEquals(uri, new Intent(shadowOf(card.actions[0].actionIntent).getSavedIntent()).getData());
         assertEquals(Settings.DOWNLOAD_COMPATIBLE.key,
-                shadowOf(advice.actions[0].actionIntent).getSavedIntent().getStringExtra(SettingsEntry.EXTRA_SHOW_SETTING));
+                shadowOf(card.actions[2].actionIntent).getSavedIntent().getStringExtra(SettingsEntry.EXTRA_SHOW_SETTING));
         assertEquals("Saved, but WhatsApp and some editors may not accept it", ShadowToast.getTextOfLatestToast());
     }
 

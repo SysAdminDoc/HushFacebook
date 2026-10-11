@@ -140,12 +140,20 @@ public class RefusedFormatTest {
         return context.getSystemService(NotificationManager.class);
     }
 
-    /** The note a refused save leaves, or null. */
+    /** The finished card of a save the card says may be refused, or null. Fails when a save left two cards. */
     private Notification note() {
+        Notification found = null;
+        int cards = 0;
         for (StatusBarNotification up : notifications().getActiveNotifications()) {
-            if (SaveControl.SAVED_TAG.equals(up.getTag())) return up.getNotification();
+            if (up.getTag() == null || !up.getTag().startsWith(SavedFileActions.TAG)) continue;
+            Notification card = up.getNotification();
+            if (card.actions != null && card.actions.length == 3) {
+                found = card;
+                cards++;
+            }
         }
-        return null;
+        assertTrue("more than one card says a save may be refused", cards <= 1);
+        return found;
     }
 
     @Test
@@ -164,8 +172,9 @@ public class RefusedFormatTest {
     }
 
     /**
-     * #11's AV1 reel: the toast says WhatsApp and some editors may refuse it, and the note under it
-     * says where it went and has a button that opens the settings at the switch.
+     * #11's AV1 reel: the toast says WhatsApp and some editors may refuse it, and the save's one
+     * card says where it went, keeps Open and Share, and has a third button that opens the
+     * settings at the switch.
      */
     @Test
     public void anAv1SaveWithTheSwitchOffSaysSoAndLinksTheSwitch() throws Exception {
@@ -173,22 +182,26 @@ public class RefusedFormatTest {
         assertEquals(REFUSED, save(picture("video/av01"), sound(LC)));
 
         Notification note = note();
-        assertNotNull("no note with a button to the switch", note);
+        assertNotNull("no card with a button to the switch", note);
+        assertEquals("one save, one card", 1, notifications().getActiveNotifications().length);
         assertEquals("WhatsApp and some editors may not accept this video",
                 String.valueOf(note.extras.getCharSequence(Notification.EXTRA_TITLE)));
         String text = String.valueOf(note.extras.getCharSequence(Notification.EXTRA_BIG_TEXT));
         assertTrue(text, text.startsWith("Saved to "));
         assertTrue(text, text.endsWith("\nTurn on \u2068Save videos other apps can open\u2069 to save videos that WhatsApp and these editors accept."));
-        assertEquals(1, note.actions.length);
-        assertEquals("Open the setting", String.valueOf(note.actions[0].title));
+        assertEquals("Open", String.valueOf(note.actions[0].title));
+        assertEquals("Share", String.valueOf(note.actions[1].title));
+        assertEquals("Open the setting", String.valueOf(note.actions[2].title));
 
-        Intent open = Shadows.shadowOf(note.actions[0].actionIntent).getSavedIntent();
-        assertTrue(Shadows.shadowOf(note.actions[0].actionIntent).isActivityIntent());
+        Intent open = Shadows.shadowOf(note.actions[2].actionIntent).getSavedIntent();
+        assertTrue(Shadows.shadowOf(note.actions[2].actionIntent).isActivityIntent());
         assertTrue(open.getBooleanExtra(SettingsEntry.EXTRA_OPEN_SETTINGS, false));
         assertEquals(Settings.DOWNLOAD_COMPATIBLE.key, open.getStringExtra(SettingsEntry.EXTRA_SHOW_SETTING));
         assertEquals("com.facebook.katana.LoginActivity", open.getComponent().getClassName());
         assertEquals(context.getPackageName(), open.getComponent().getPackageName());
-        assertTrue(Shadows.shadowOf(note.contentIntent).getSavedIntent().filterEquals(open));
+        // A tap on the card itself opens the file, as on every finished card.
+        assertTrue(Shadows.shadowOf(note.contentIntent).getSavedIntent()
+                .filterEquals(Shadows.shadowOf(note.actions[0].actionIntent).getSavedIntent()));
 
         String report = LogBufferManager.buildExportText();
         assertTrue(report, report.contains("the saved file has a track WhatsApp and some editors refuse, with Save "

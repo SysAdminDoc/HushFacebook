@@ -965,12 +965,12 @@ public final class MediaDownload {
                     if (result.ok() || cancelled) info(() -> "save finished: " + result);
                     else failure(() -> "save finished: " + result, null);
                     String text = message(application, result.status, writer.savedLocation(), result.lower);
-                    if (result.ok()) SaveControl.showCompleted(save, writer);
-                    if (result.ok() && result.refused && !compatibleSaves()) {
+                    boolean refused = result.ok() && result.refused && !compatibleSaves();
+                    boolean carded = result.ok() && SaveControl.showCompleted(save, writer, refused ? text : null);
+                    if (refused) {
                         info(() -> "the saved file has a track WhatsApp and some editors refuse, with Save videos "
                             + "other apps can open off");
-                        Feedback.show(application, refusedMessage(application, SaveControl.showRefused(application, text)),
-                            true);
+                        Feedback.show(application, refusedMessage(application, carded), true);
                     } else {
                         Feedback.show(application, text, !result.ok() && !cancelled);
                     }
