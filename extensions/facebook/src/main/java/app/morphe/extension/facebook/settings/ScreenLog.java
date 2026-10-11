@@ -26,9 +26,10 @@ import app.morphe.extension.shared.settings.preference.LogBufferManager;
  * on. Tracing #76 and #18 took screen-by-screen guesses, and this list says which screen a tap
  * opened and what link it carried.
  *
- * <p>Each line keeps the screen's class, the intent's action, and the link's host and path. A
- * link's query, fragment and user part are never kept, and the report's redaction runs over every
- * line as it does over every section. With Debug logging off nothing is recorded.
+ * <p>Each line keeps the screen's class, the intent's action, and a Meta link's host and path; any
+ * other link is written as an outside link and nothing more. A link's query, fragment and user part
+ * are never kept, and the report's redaction runs over every line as it does over every section.
+ * With Debug logging off nothing is recorded.
  */
 final class ScreenLog {
     /** The screens kept, oldest dropped first. */
@@ -80,17 +81,47 @@ final class ScreenLog {
         }
     }
 
-    /** The screen's class, then the intent's action and the link's host and path when it has them. */
+    /**
+     * The screen's class, then the intent's action and the link's host and path when it has them.
+     * A link that isn't Facebook's own or to a Meta site is written as "(outside link)" and nothing
+     * more: Facebook opens outside links in its own browser, and a file or a page someone opened
+     * there is theirs, not a report's.
+     */
     static String describe(String screen, @Nullable String action, @Nullable Uri link) {
         StringBuilder line = new StringBuilder(screen);
         if (action != null && !action.isEmpty()) line.append(' ').append(action);
         if (link != null) {
-            String host = link.getHost();
-            String path = link.getPath();
-            String where = (host == null ? "" : host) + (path == null ? "" : path);
-            if (!where.isEmpty()) line.append(' ').append(where);
+            if (!metaLink(link)) {
+                line.append(" (outside link)");
+            } else {
+                String host = link.getHost();
+                String path = link.getPath();
+                String where = (host == null ? "" : host) + (path == null ? "" : path);
+                if (!where.isEmpty()) line.append(' ').append(where);
+            }
         }
         return line.toString();
+    }
+
+    /** The web hosts Meta runs. */
+    private static final String[] META_SITES = {"facebook.com", "fb.com", "fb.me", "fb.watch", "fb.gg", "fbcdn.net",
+            "fbsbx.com", "messenger.com", "m.me", "instagram.com", "threads.net", "threads.com", "whatsapp.com",
+            "meta.com"};
+
+    /** Whether [link] is one of Facebook's own ({@code fb://} and its {@code fb-} siblings) or a web link to a Meta site. */
+    static boolean metaLink(Uri link) {
+        String scheme = link.getScheme();
+        if (scheme == null) return false;
+        scheme = scheme.toLowerCase(Locale.ROOT);
+        if (scheme.startsWith("fb")) return true;
+        if (!scheme.equals("http") && !scheme.equals("https")) return false;
+        String host = link.getHost();
+        if (host == null) return false;
+        host = host.toLowerCase(Locale.ROOT);
+        for (String site : META_SITES) {
+            if (host.equals(site) || host.endsWith("." + site)) return true;
+        }
+        return false;
     }
 
     /** Oldest first, each with how long before the report it came to the front. */

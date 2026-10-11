@@ -79,6 +79,20 @@ public class ScreenLogTest {
         assertEquals("X fb_shorts/viewer", ScreenLog.describe("X", "", Uri.parse("fb://fb_shorts/viewer?ref=1")));
     }
 
+    /** A link that isn't Meta's is written as an outside link and nothing more: what was opened there is nobody's business. */
+    @Test
+    public void anOutsideLinkKeepsNeitherHostNorPath() {
+        assertEquals("X android.intent.action.VIEW (outside link)",
+                ScreenLog.describe("X", "android.intent.action.VIEW", Uri.parse("https://example.com/private/page?x=1")));
+        assertEquals("X (outside link)", ScreenLog.describe("X", null, Uri.parse("content://media/external/images/media/12")));
+        assertEquals("X (outside link)", ScreenLog.describe("X", null, Uri.parse("file:///storage/emulated/0/Download/results.pdf")));
+        assertEquals("a lookalike host counts as outside", "X (outside link)",
+                ScreenLog.describe("X", null, Uri.parse("https://facebook.com.example.net/a")));
+        assertEquals("X www.facebook.com/groups/42", ScreenLog.describe("X", null, Uri.parse("https://www.facebook.com/groups/42")));
+        assertEquals("X fb.watch/abc", ScreenLog.describe("X", null, Uri.parse("HTTPS://FB.watch/abc")));
+        assertEquals("X messenger/share", ScreenLog.describe("X", null, Uri.parse("fb-messenger://messenger/share")));
+    }
+
     @Test
     public void onlyTheLastFiftyAreKept() {
         for (int i = 0; i < ScreenLog.LIMIT + 7; i++) ScreenLog.add(0, "screen " + i);
