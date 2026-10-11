@@ -129,10 +129,14 @@ sole-call Lapp/morphe/extension/facebook/reels/ReelWatchHistory;->send(Ljava/uti
 start-call Lapp/morphe/extension/facebook/navigation/ReelsTabDot;->clear(Ljava/lang/Object;)Z in static (Lcom/facebook/auth/usersession/FbUserSession;*Lcom/facebook/navigation/tabbar/state/model/TabTag;I)I holding FbMainTabActivityJewelController.getTrackedCountWithLogging
 # Hide tabs and Hide the Reels tab leave a tab a switch took off the bar still configured, and three
 # places Facebook decides a link is a tab look in the configured tabs. The startActivity lookup is
-# the one static method that takes an Intent and an FbUserSession, returns a TabTag and loads the
-# launch URI's extra; the Friends link's switch and the target_tab_id check are each the one method
-# of a kept helper loading their string. Each asks the extension once, so a hidden tab's page opens
-# on its own screen. Left out, the Menu shortcut or link switches to the missing tab and nothing opens.
-once-call Lapp/morphe/extension/facebook/navigation/TabBarFilter;->launchedTab(Ljava/lang/Object;)Ljava/lang/Object; in static (Landroid/content/Intent;Lcom/facebook/auth/usersession/FbUserSession;)Lcom/facebook/navigation/tabbar/state/model/TabTag; holding extra_launch_uri
+# the one method of a Redex singleton (582: LX/8Lx; on arm64, LX/8Ol; on armeabi-v7a) that takes an
+# Intent and an FbUserSession, returns a TabTag and loads the launch URI's extra; up to 581 it was
+# static. The Friends link's switch is the one link helper method loading its string. The
+# target_tab_id check is FbMainTabActivityUriHelper's one link method, which arm64 582 has read
+# "target_tab_id" through a string table, so the rule names two strings only that method loads on
+# both builds: the link's key_uri extra and the /menu/bookmarks path it routes. Each asks the
+# extension once, so a hidden tab's page opens on its own screen. Left out, the Menu shortcut or
+# link switches to the missing tab and nothing opens.
+once-call Lapp/morphe/extension/facebook/navigation/TabBarFilter;->launchedTab(Ljava/lang/Object;)Ljava/lang/Object; in instance (Landroid/content/Intent;Lcom/facebook/auth/usersession/FbUserSession;)Lcom/facebook/navigation/tabbar/state/model/TabTag; holding extra_launch_uri
 once-call Lapp/morphe/extension/facebook/navigation/TabBarFilter;->friendsTab(Ljava/lang/Object;)Ljava/lang/Object; in instance (Landroid/content/Context;Landroid/content/Intent;*)Landroid/content/Intent; holding DEEPLINK
-once-call Lapp/morphe/extension/facebook/navigation/TabBarFilter;->configuresTab(ZLjava/lang/Object;)Z in instance (Landroid/content/Context;Landroid/content/Intent;*)Landroid/content/Intent; holding target_tab_id
+once-call Lapp/morphe/extension/facebook/navigation/TabBarFilter;->configuresTab(ZLjava/lang/Object;)Z in instance (Landroid/content/Context;Landroid/content/Intent;*)Landroid/content/Intent; holding key_uri /menu/bookmarks

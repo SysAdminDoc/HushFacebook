@@ -1088,17 +1088,19 @@ public class BadDexFixture {
     }
 
     /**
-     * The three places Facebook asks its configured tabs about a link, each holding its string in v0
-     * with no tab in v1: the startActivity lookup, static, taking an Intent and a session and
-     * returning a TabTag; the Friends link and the target_tab_id check, instance methods taking a
-     * context, an Intent and a session and returning the Intent. Each asks the extension when its
+     * The three places Facebook asks its configured tabs about a link, each holding its strings in v0
+     * with no tab in v1: the startActivity lookup, an instance method of a singleton on 582, taking
+     * an Intent and a session and returning a TabTag; the Friends link and the target_tab_id check,
+     * instance methods taking a context, an Intent and a session and returning the Intent. The
+     * target_tab_id check also holds the key_uri extra and the /menu/bookmarks path its rule names,
+     * since arm64 582 reads "target_tab_id" through a string table. Each asks the extension when its
      * flag says so, as the tab links patch does.
      */
     private static ClassDef tabLinks(boolean launched, boolean friends, boolean configured) {
         return new ImmutableClassDef(TAB_LINKS, AccessFlags.PUBLIC.getValue(), OBJECT, null, null, null, null,
                 Arrays.asList(
-                        define(TAB_LINKS, "launchTab", TAB_TAG, true,
-                                tabLinkBody("extra_launch_uri", launched ? LAUNCHED_TAB : null, 4, 1), INTENT, FB_USER_SESSION),
+                        define(TAB_LINKS, "launchTab", TAB_TAG, false,
+                                tabLinkBody("extra_launch_uri", launched ? LAUNCHED_TAB : null, 5, 1), INTENT, FB_USER_SESSION),
                         define(TAB_LINKS, "friendsLink", INTENT, false,
                                 tabLinkBody("DEEPLINK", friends ? FRIENDS_TAB : null, 6, 4), CONTEXT, INTENT, FB_USER_SESSION),
                         define(TAB_LINKS, "targetTabLink", INTENT, false, configuredTabBody(configured),
@@ -1120,10 +1122,15 @@ public class BadDexFixture {
         return new ImmutableMethodImplementation(registers, instructions, null, null);
     }
 
-    /** "target_tab_id" in v0, then a yes in v0 and no tab in v1, the extension asked about both when [hooked], and the Intent returned. */
+    /**
+     * "target_tab_id", "key_uri" and "/menu/bookmarks" in v0, then a yes in v0 and no tab in v1, the extension asked about both
+     * when [hooked], and the Intent returned.
+     */
     private static ImmutableMethodImplementation configuredTabBody(boolean hooked) {
         List<Instruction> instructions = new ArrayList<>();
         instructions.add(new ImmutableInstruction21c(Opcode.CONST_STRING, 0, new ImmutableStringReference("target_tab_id")));
+        instructions.add(new ImmutableInstruction21c(Opcode.CONST_STRING, 0, new ImmutableStringReference("key_uri")));
+        instructions.add(new ImmutableInstruction21c(Opcode.CONST_STRING, 0, new ImmutableStringReference("/menu/bookmarks")));
         instructions.add(new ImmutableInstruction11n(Opcode.CONST_4, 0, 1));
         instructions.add(new ImmutableInstruction11n(Opcode.CONST_4, 1, 0));
         if (hooked) {
