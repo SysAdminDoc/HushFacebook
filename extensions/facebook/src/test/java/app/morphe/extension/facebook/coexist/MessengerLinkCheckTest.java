@@ -6,9 +6,11 @@ package app.morphe.extension.facebook.coexist;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
+import android.os.Looper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -17,13 +19,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowToast;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.SettingsContextRule;
+import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.settings.BaseSettings;
 import app.morphe.extension.shared.settings.preference.LogBufferManager;
 
@@ -101,6 +106,17 @@ public class MessengerLinkCheckTest {
     public void restore() {
         MessengerLinkCheck.forget();
         BaseSettings.DEBUG.resetToDefault();
+    }
+
+    @Test
+    public void theReportGoesToTheRowWholeAndNoToastShows() throws Exception {
+        List<String> shown = new ArrayList<>();
+        ShadowToast.reset();
+        MessengerLinkCheck.start(context, shown::add);
+        Utils.awaitBackgroundTasksForTests();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(List.of("Opt-out read: answered. Triggered read: answered."), shown);
+        assertNull("the report went to a toast as well", ShadowToast.getLatestToast());
     }
 
     @Test

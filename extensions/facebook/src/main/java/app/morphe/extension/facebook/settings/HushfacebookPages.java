@@ -240,11 +240,13 @@ final class HushfacebookPages {
         if (build.contains(PatchFamily.RESTORE_TRUST) && BaseSettings.DEBUG.get() && MessengerLinkCheck.available()) {
             Preference link = new Row(context);
             link.setTitle(L10n.t("Test the Messenger link"));
-            link.setSummary(L10n.t("Checks now whether Facebook can reach Messenger, the way it does at startup, and shows each result. "
-                    + "Appears while Debug logging is on."));
+            String about = L10n.t("Checks now whether Facebook can reach Messenger, the way it does at startup, and shows each result. "
+                    + "Appears while Debug logging is on.");
+            link.setSummary(about);
             link.setPersistent(false);
+            // The result goes under the description, whole: a toast that long gets cut on some phones.
             link.setOnPreferenceClickListener(p -> {
-                MessengerLinkCheck.start(context);
+                MessengerLinkCheck.start(context, report -> p.setSummary(about + "\n" + report));
                 return true;
             });
             hushfacebook.addPreference(mark(link, SettingsIcons.BUG));

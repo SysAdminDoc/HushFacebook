@@ -9,6 +9,7 @@ import android.content.Context;
 import androidx.annotation.Nullable;
 
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
@@ -125,17 +126,27 @@ public final class MessengerLinkCheck {
     }
 
     /**
-     * Runs the test off the main thread, since Facebook's reads refuse the main thread, and shows
-     * the answer as a toast. The log gets the same line.
+     * Runs the test off the main thread, since Facebook's reads refuse the main thread, and hands
+     * the answer to [shown] on the main thread: the settings row shows it in its summary, where it
+     * stays whole, since a toast that long gets cut on some phones. With no row it's a toast. The
+     * log gets the same line.
      */
-    public static void start(Context context) {
+    public static void start(Context context, @Nullable Consumer<String> shown) {
         Context app = context.getApplicationContext() != null ? context.getApplicationContext() : context;
         boolean queued = Utils.runOnBackgroundThread(() -> {
             String report = run(app);
             Logger.printInfo(() -> "Messenger link test: " + report);
-            Utils.showToastLong(report);
+            show(report, shown);
         });
-        if (!queued) Utils.showToastLong(L10n.t("The Messenger link test couldn't start. Try again."));
+        if (!queued) show(L10n.t("The Messenger link test couldn't start. Try again."), shown);
+    }
+
+    private static void show(String report, @Nullable Consumer<String> shown) {
+        if (shown == null) {
+            Utils.showToastLong(report);
+            return;
+        }
+        Utils.runOnMainThread(() -> shown.accept(report));
     }
 
     /** The test itself, on the calling thread. Says whether each read answered, never what. */
