@@ -154,6 +154,129 @@ public class Mp4JoinTest {
     }
 
     /**
+     * The AAC-LC sound AacReencode makes of an xHE-AAC track comes from MediaMuxer as a plain M4A:
+     * the data first, then a moov whose sample tables list every sample, and no fragments. A VP9
+     * picture joins it the way it joins Facebook's own fragmented sound, sample for sample, with
+     * 32-bit chunk offsets and 64-bit ones.
+     */
+    @Test
+    public void aPlainSoundTheKindMediaMuxerWritesJoinsAVp9Picture() throws IOException {
+        FragmentedMp4ForTests picture = vp9Picture();
+        FragmentedMp4ForTests sound = aacSound();
+        for (boolean wide : new boolean[] {false, true}) {
+            File audio = temp.newFile("plain-" + wide + ".m4a");
+            Files.write(audio.toPath(), plainSound(sound, 7, wide));
+
+            File out = joined(write(picture, "video-" + wide), audio, Downloader.SILENT);
+            PlainMp4ForTests.Movie movie = PlainMp4ForTests.read(Files.readAllBytes(out.toPath()));
+
+            assertEquals(2, movie.tracks.size());
+            assertEquals("soun", movie.tracks.get(1).handler);
+            assertArrayEquals(sound.sampleDescriptions(), movie.tracks.get(1).sampleDescriptions);
+            assertSamples(picture, movie.tracks.get(0), movie, 1e-9);
+            assertSamples(sound, movie.tracks.get(1), movie, 1e-9);
+        }
+    }
+
+    @Test
+    public void aPlainSoundWhoseTablesPointOutsideItsDataIsRefused() throws IOException {
+        File video = write(vp9Picture(), "video");
+
+        byte[] outside = plainSound(aacSound(), 7, false);
+        // The first chunk's offset, made to point at the ftyp.
+        ByteBuffer.wrap(outside).putInt(indexOf(outside, "stco", indexOf(outside, "moov")) + 16, 0);
+        File early = temp.newFile("early.m4a");
+        Files.write(early.toPath(), outside);
+        assertRefused("lie outside the audio file's media data", video, early);
+
+        byte[] short_ = plainSound(aacSound(), 7, false);
+        // stts times one sample fewer than stsz lists: its one run, 131 samples, made 130.
+        ByteBuffer.wrap(short_).putInt(indexOf(short_, "stts", indexOf(short_, "moov")) + 16, 130);
+        File disagree = temp.newFile("disagree.m4a");
+        Files.write(disagree.toPath(), short_);
+        assertRefused("sample tables disagree", video, disagree);
+    }
+
+    /**
+     * [sound]'s samples as a plain M4A laid out the way MediaMuxer writes one: ftyp, one mdat, then
+     * a moov with no mvex whose tables list every sample in chunks of [perChunk], their offsets
+     * 64-bit with [wide].
+     */
+    private static byte[] plainSound(FragmentedMp4ForTests sound, int perChunk, boolean wide) {
+        List<FragmentedMp4ForTests.Sample> samples = sound.samples();
+        FragmentedMp4ForTests.Box file = new FragmentedMp4ForTests.Box();
+        file.box("ftyp", new FragmentedMp4ForTests.Box().ascii("isom").u32(0).ascii("isom").ascii("mp42").bytes());
+        FragmentedMp4ForTests.Box mdat = new FragmentedMp4ForTests.Box();
+        for (int i = 0; i < samples.size(); i++) mdat.put(sound.content(i));
+        long dataStart = file.size() + 8;
+        file.box("mdat", mdat.bytes());
+
+        List<long[]> times = new ArrayList<>();
+        FragmentedMp4ForTests.Box sizes = new FragmentedMp4ForTests.Box();
+        for (FragmentedMp4ForTests.Sample sample : samples) {
+            long[] last = times.isEmpty() ? null : times.get(times.size() - 1);
+            if (last != null && last[1] == sample.duration) last[0]++;
+            else times.add(new long[] {1, sample.duration});
+            sizes.u32(sample.size);
+        }
+        FragmentedMp4ForTests.Box stts = new FragmentedMp4ForTests.Box().u32(0).u32(times.size());
+        for (long[] run : times) stts.u32(run[0]).u32(run[1]);
+
+        int chunks = (samples.size() + perChunk - 1) / perChunk;
+        int lastChunk = samples.size() - (chunks - 1) * perChunk;
+        FragmentedMp4ForTests.Box stsc = new FragmentedMp4ForTests.Box();
+        if (lastChunk == perChunk) {
+            stsc.u32(0).u32(1).u32(1).u32(perChunk).u32(1);
+        } else {
+            stsc.u32(0).u32(2).u32(1).u32(perChunk).u32(1).u32(chunks).u32(lastChunk).u32(1);
+        }
+        FragmentedMp4ForTests.Box offsets = new FragmentedMp4ForTests.Box().u32(0).u32(chunks);
+        long at = dataStart;
+        for (int i = 0; i < samples.size(); i++) {
+            if (i % perChunk == 0) {
+                if (wide) offsets.u64(at);
+                else offsets.u32(at);
+            }
+            at += samples.get(i).size;
+        }
+
+        FragmentedMp4ForTests.Box stbl = new FragmentedMp4ForTests.Box();
+        stbl.box("stsd", sound.sampleDescriptions());
+        stbl.box("stts", stts.bytes());
+        stbl.box("stsc", stsc.bytes());
+        stbl.box("stsz", new FragmentedMp4ForTests.Box().u32(0).u32(0).u32(samples.size()).put(sizes.bytes()).bytes());
+        stbl.box(wide ? "co64" : "stco", offsets.bytes());
+        FragmentedMp4ForTests.Box minf = new FragmentedMp4ForTests.Box();
+        minf.box("smhd", new FragmentedMp4ForTests.Box().u32(0).u32(0).bytes());
+        minf.box("dinf", new FragmentedMp4ForTests.Box().box("dref", new FragmentedMp4ForTests.Box().u32(0).u32(1)
+                .box("url ", new FragmentedMp4ForTests.Box().u32(1).bytes()).bytes()).bytes());
+        minf.box("stbl", stbl.bytes());
+        FragmentedMp4ForTests.Box mdia = new FragmentedMp4ForTests.Box();
+        mdia.box("mdhd", new FragmentedMp4ForTests.Box().u32(0).u32(0).u32(0).u32(sound.timescale).u32(0).u16(0x55C4)
+                .u16(0).bytes());
+        mdia.box("hdlr", new FragmentedMp4ForTests.Box().u32(0).u32(0).ascii("soun").zeros(12)
+                .put("SoundHandle\0".getBytes(StandardCharsets.US_ASCII)).bytes());
+        mdia.box("minf", minf.bytes());
+
+        byte[] matrix = new FragmentedMp4ForTests.Box().u32(0x00010000).u32(0).u32(0).u32(0).u32(0x00010000).u32(0)
+                .u32(0).u32(0).u32(0x40000000).bytes();
+        FragmentedMp4ForTests.Box trak = new FragmentedMp4ForTests.Box();
+        trak.box("tkhd", new FragmentedMp4ForTests.Box().u32(7).u32(0).u32(0).u32(1).u32(0).u32(0).zeros(8).u16(0)
+                .u16(0).u16(0x0100).u16(0).put(matrix).u32(0).u32(0).bytes());
+        FragmentedMp4ForTests.Box elst = new FragmentedMp4ForTests.Box().u32(0).u32(sound.edits.length);
+        for (long[] edit : sound.edits) elst.u32(edit[0]).u32(edit[1]).u32(edit[2]);
+        trak.box("edts", new FragmentedMp4ForTests.Box().box("elst", elst.bytes()).bytes());
+        trak.box("mdia", mdia.bytes());
+
+        FragmentedMp4ForTests.Box moov = new FragmentedMp4ForTests.Box();
+        moov.box("mvhd", new FragmentedMp4ForTests.Box().u32(0).u32(0).u32(0).u32(sound.movieTimescale).u32(0)
+                .u32(0x00010000).u16(0x0100).zeros(10).put(matrix).zeros(24).u32(2).bytes());
+        moov.box("trak", trak.bytes());
+        file.box("moov", moov.bytes());
+        return file.bytes();
+    }
+
+    /**
      * Pictures in B-frame order keep their composition offsets, and the edit list that starts them
      * at their first shown frame. When the picture shows and when its sound plays both stay where
      * they were, so the two stay in sync.
@@ -706,6 +829,40 @@ public class Mp4JoinTest {
             assertEquals(kind[0] + " didn't decode cleanly", "", run(ffmpeg.getPath(), "-v", "error", "-xerror", "-i",
                     out.getPath(), "-f", "null", "-"));
         }
+    }
+
+    /**
+     * A real plain AAC-LC M4A, its moov after its data the way MediaMuxer writes AacReencode's
+     * sound, joins a real VP9 picture: FFmpeg reads both tracks' packets back unchanged, sees AAC-LC,
+     * and decodes the join cleanly.
+     */
+    @Test
+    public void ffmpegReadsAPlainSoundJoinedToRealVp9() throws Exception {
+        File ffmpeg = codecTool("ffmpeg");
+        File ffprobe = codecTool("ffprobe");
+        Assume.assumeTrue("Codec verification skipped (1 test): "
+                + (ffmpeg == null ? "ffmpeg " : "") + (ffprobe == null ? "ffprobe " : "")
+                + "not found. Set HUSHFACEBOOK_TEST_FFMPEG and HUSHFACEBOOK_TEST_FFPROBE or add both to PATH.",
+                ffmpeg != null && ffprobe != null);
+        File folder = temp.newFolder("plain");
+        File sound = encode(ffmpeg, folder, "sound.m4a", "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=44100",
+                "-t", "3", "-c:a", "aac", "-b:a", "64k", "-f", "mp4");
+        File picture = encode(ffmpeg, folder, "vp9.mp4", "-f", "lavfi", "-i", "testsrc2=size=320x240:rate=30", "-t", "3",
+                "-c:v", "libvpx-vp9", "-deadline", "realtime", "-cpu-used", "8", "-b:v", "300k", "-g", "30", "-f", "mp4",
+                "-movflags", "+dash+global_sidx");
+        byte[] plain = Files.readAllBytes(sound.toPath());
+        assertTrue("the M4A's moov comes after its data", indexOf(plain, "mdat") < indexOf(plain, "moov"));
+        File out = new File(folder, "joined.mp4");
+        assertTrue(Mp4Join.join(picture, sound, out, Downloader.SILENT));
+
+        assertEquals(packets(ffprobe, picture, "v:0"), packets(ffprobe, out, "v:0"));
+        assertEquals(packets(ffprobe, sound, "a:0"), packets(ffprobe, out, "a:0"));
+        assertEquals("vp9,320,240\naac\n", run(ffprobe.getPath(), "-v", "error", "-show_entries",
+                "stream=codec_name,width,height", "-of", "csv=p=0", out.getPath()).replace("\r", ""));
+        assertEquals("LC", run(ffprobe.getPath(), "-v", "error", "-select_streams", "a:0", "-show_entries",
+                "stream=profile", "-of", "csv=p=0", out.getPath()).trim());
+        assertEquals("the join didn't decode cleanly", "", run(ffmpeg.getPath(), "-v", "error", "-xerror", "-i",
+                out.getPath(), "-f", "null", "-"));
     }
 
     /** Column [index] of every line of [csv], as numbers. */
