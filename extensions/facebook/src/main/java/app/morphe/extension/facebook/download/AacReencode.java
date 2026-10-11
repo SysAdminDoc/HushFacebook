@@ -150,10 +150,16 @@ final class AacReencode {
                     int index = decoder.dequeueOutputBuffer(info, WAIT_US);
                     if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                         MediaFormat pcm = decoder.getOutputFormat();
-                        sampleRate = pcm.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-                        int channels = pcm.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-                        frameBytes = 2 * channels;
-                        if (encoder == null) encoder = startEncoder(sampleRate, channels);
+                        int rate = pcm.containsKey(MediaFormat.KEY_SAMPLE_RATE) ? pcm.getInteger(MediaFormat.KEY_SAMPLE_RATE) : 0;
+                        int channels = pcm.containsKey(MediaFormat.KEY_CHANNEL_COUNT) ? pcm.getInteger(MediaFormat.KEY_CHANNEL_COUNT) : 0;
+                        if (rate <= 0 || channels <= 0) throw new IOException("the decoder gave no sample rate or channel count");
+                        if (encoder == null) {
+                            sampleRate = rate;
+                            frameBytes = 2 * channels;
+                            encoder = startEncoder(rate, channels);
+                        } else {
+                            sameFormat(rate, channels, sampleRate, frameBytes);
+                        }
                         worked = true;
                     } else if (index >= 0) {
                         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) decoderDone = true;
@@ -264,6 +270,14 @@ final class AacReencode {
                     closing);
             }
         }
+    }
+
+    /**
+     * A later format from the decoder has to repeat the first: the encoder was made for that one,
+     * and sound at another rate or channel count through it would come out wrong.
+     */
+    static void sameFormat(int rate, int channels, int sampleRate, int frameBytes) throws IOException {
+        if (rate != sampleRate || 2 * channels != frameBytes) throw new IOException("the decoder changed its sound format");
     }
 
     private static MediaCodec startEncoder(int sampleRate, int channels) throws IOException {

@@ -47,9 +47,12 @@ public class AacReencodeTest {
     static final AtomicInteger decoded = new AtomicInteger();
     static final AtomicInteger encoded = new AtomicInteger();
 
-    /** A sound file of [SAMPLES] samples, one xHE-AAC track at 48 kHz stereo. */
+    /** A sound file of [SAMPLES] samples, one xHE-AAC track at [sampleRate] stereo. */
     @Implements(MediaExtractor.class)
     public static class SoundFile {
+        /** What the track says its rate is; the shadow decoder's sound comes out at the same rate. */
+        static int sampleRate = 48_000;
+
         private boolean selected;
         private int at;
 
@@ -65,7 +68,7 @@ public class AacReencodeTest {
 
         @Implementation
         protected MediaFormat getTrackFormat(int index) {
-            MediaFormat format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, 48_000, 2);
+            MediaFormat format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, sampleRate, 2);
             format.setInteger(MediaFormat.KEY_AAC_PROFILE, AacReencode.XHE_OBJECT_TYPE);
             return format;
         }
@@ -117,6 +120,7 @@ public class AacReencodeTest {
     public void codecs() {
         decoded.set(0);
         encoded.set(0);
+        SoundFile.sampleRate = 48_000;
         ShadowMediaCodec.clearCodecs();
         // 1,024 stereo 16-bit frames of PCM for each sample, as an AAC decoder gives.
         ShadowMediaCodec.addDecoder(MediaFormat.MIMETYPE_AUDIO_AAC, new ShadowMediaCodec.CodecConfig(4_096, 4_096,
@@ -175,6 +179,28 @@ public class AacReencodeTest {
         File out = folder.newFile("sound.m4a");
         IOException silent = assertThrows(IOException.class, () -> AacReencode.reencode(sound, out, new Progress()));
         assertEquals("the re-encode made no sound", silent.getMessage());
+    }
+
+    /**
+     * A decoder that names no sample rate can't have its sound timed. The re-encode says so, where it
+     * used to divide by zero and leave the save with a bare "try again".
+     */
+    @Test
+    public void aDecoderWithNoSampleRateFailsWithAReason() throws IOException {
+        SoundFile.sampleRate = 0;
+        File sound = sound();
+        File out = folder.newFile("sound.m4a");
+        IOException why = assertThrows(IOException.class, () -> AacReencode.reencode(sound, out, new Progress()));
+        assertEquals("the decoder gave no sample rate or channel count", why.getMessage());
+    }
+
+    /** A later decoder format that repeats the first passes; one that differs ends the re-encode with a reason. */
+    @Test
+    public void aChangedDecoderFormatIsRefused() throws IOException {
+        AacReencode.sameFormat(48_000, 2, 48_000, 4);
+        IOException rate = assertThrows(IOException.class, () -> AacReencode.sameFormat(44_100, 2, 48_000, 4));
+        assertEquals("the decoder changed its sound format", rate.getMessage());
+        assertThrows(IOException.class, () -> AacReencode.sameFormat(48_000, 1, 48_000, 4));
     }
 
     @Test
