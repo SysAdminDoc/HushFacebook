@@ -66,6 +66,9 @@ public final class PictureInPicture {
     /** Counted each time a paused reel turns auto-enter off. */
     static final String HELD = "paused reel held";
 
+    /** Counted each time a start Tap to play holds turns auto-enter off. */
+    static final String START_HELD = "held start kept out of the window";
+
     /** Counted each time Facebook's own change of auto-enter is set aside. */
     static final String SET_ASIDE = "facebook change set aside";
 
@@ -192,6 +195,38 @@ public final class PictureInPicture {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "player pause", failure);
         }
+    }
+
+    /**
+     * Tap to play, as it holds the start of [player], a video nobody chose to play. Facebook arms
+     * the window for each reel as it starts, auto-enter on, a moment before that start is held, and
+     * nothing pauses a start that never went ahead. So leaving Facebook opened the window and played
+     * the held reel there, and back in Facebook it showed time gone that nobody watched (#90). While
+     * the window is armed and closed, auto-enter goes off as it does for a paused reel, and the tap
+     * that plays a reel turns it back on ({@link #playerPlaying}).
+     */
+    public static void startHeld(Object player) {
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || player == null) return;
+            Activity screen = holdingStart();
+            if (screen == null) return;
+            autoEnter(screen, false);
+            HookStatus.counted(FAMILY, START_HELD);
+            Logger.printDebug(() -> "Picture-in-picture: player " + System.identityHashCode(player) + " held by Tap to play, held");
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "held start", failure);
+        }
+    }
+
+    /**
+     * The armed screen when a held start should hold auto-enter, marked held: whichever player the
+     * window was armed for, since the reel on screen is the held one and nothing plays.
+     */
+    private static synchronized Activity holdingStart() {
+        Activity screen = armedScreen.get();
+        if (screen == null || screen.isInPictureInPictureMode() || !on()) return null;
+        held = true;
+        return screen;
     }
 
     /**

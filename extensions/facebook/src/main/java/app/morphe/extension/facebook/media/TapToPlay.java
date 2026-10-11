@@ -381,6 +381,8 @@ public final class TapToPlay {
             boolean reel = groot && playsReel(player);
             boolean allowed = decide(player, name, reel && BY_AUTOPLAY.equals(name), SystemClock.uptimeMillis(), path);
             if (reel) notePosition(position(player), name, allowed);
+            // A held FbGrootPlayer start mustn't open in Picture-in-picture's window when Facebook is left (#90).
+            if (groot && !allowed) PictureInPicture.startHeld(player);
             return allowed;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.TAP_TO_PLAY, hook, failure);

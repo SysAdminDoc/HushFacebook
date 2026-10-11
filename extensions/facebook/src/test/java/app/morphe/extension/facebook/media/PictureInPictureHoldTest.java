@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.media;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -136,6 +137,55 @@ public class PictureInPictureHoldTest {
         PictureInPicture.armed(screen, player, null);
         PictureInPicture.playerPlaying(player);
         assertEquals("a play after Facebook's arming set auto-enter again", Collections.singletonList(false), screen.autoEnter);
+    }
+
+    @Test
+    public void aHeldStartKeepsTheReelOutOfTheWindowUntilATapPlaysIt() {
+        // #90: Facebook arms the window for the reel coming into view, then Tap to play holds its start.
+        PictureInPicture.armed(screen, player, null);
+        PictureInPicture.startHeld(player);
+        assertEquals("the held reel left auto-enter on", Collections.singletonList(false), screen.autoEnter);
+        PictureInPicture.playerPlaying(player);
+        assertEquals("a tap's play turned it back on", Arrays.asList(false, true), screen.autoEnter);
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + PictureInPicture.START_HELD + " 1"));
+    }
+
+    /** The triggers Facebook's player start names, as Tap to play reads them. */
+    private enum Trigger { BY_AUTOPLAY, BY_USER }
+
+    @Test
+    public void tapToPlayHoldingAStartHoldsTheWindow() {
+        Settings.TAP_TO_PLAY.save(true);
+        TapToPlay.forget();
+        TapClock.forget();
+        try {
+            PictureInPicture.armed(screen, player, null);
+            assertFalse("the start went ahead", TapToPlay.allowStart(player, Trigger.BY_AUTOPLAY));
+            assertEquals("Tap to play's hold left auto-enter on", Collections.singletonList(false), screen.autoEnter);
+        } finally {
+            Settings.TAP_TO_PLAY.resetToDefault();
+        }
+    }
+
+    @Test
+    public void aHeldStartOfTheNextReelHoldsTooAndItsPlayArmsItsOwnWindow() {
+        // The window still armed for the last reel, a swipe's next reel is held at its start.
+        PictureInPicture.armed(screen, player, null);
+        PictureInPicture.startHeld(other);
+        PictureInPicture.playerPlaying(other);
+        assertEquals("held, then played", Arrays.asList(false, true), screen.autoEnter);
+    }
+
+    @Test
+    public void aHeldStartWithNothingArmedAnOpenWindowOrTheSwitchOffHoldsNothing() {
+        PictureInPicture.startHeld(player);
+        PictureInPicture.armed(screen, player, null);
+        Settings.PICTURE_IN_PICTURE.save(false);
+        PictureInPicture.startHeld(player);
+        Settings.PICTURE_IN_PICTURE.save(true);
+        screen.enterPictureInPictureMode();
+        PictureInPicture.startHeld(player);
+        assertEquals("a held start set auto-enter", Collections.emptyList(), screen.autoEnter);
     }
 
     @Test
