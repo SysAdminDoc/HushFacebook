@@ -2,6 +2,15 @@
 
 Every Hushfacebook release, newest first.
 
+## Unreleased
+
+### Fixed
+
+* **Facebook:** A link to a site that isn't Meta's shows up in the diagnostic report's list of screens opened as "(outside link)" and nothing more. The list used to keep the site and the page's path, so a report could name a page you read in Facebook's browser or a file you opened from it.
+* **Facebook:** Finished-save cards don't pile up any more. The shade keeps the newest twenty "Video saved" and "Photo saved" cards and lets the oldest go. Android stops an app at about fifty notifications and drops the next without a word, which could leave the next save's progress card, Cancel button and all, with no room to show.
+* **Facebook:** When the phone's decoder gives no sample rate for a reel's xHE-AAC sound, or changes its format part way through, the save falls back to Facebook's single file where there is one and the log says why. The first case used to end in a division by zero. The second would have gone on into sound that comes out wrong.
+* **Facebook:** Cancel, Pause, Resume, Undo, Add a topic pack, Back and Clear search in the settings show a ripple when tapped. They showed nothing before.
+
 ## 0.10.0 (2026-10-10)
 
 * **Facebook:** This release gathers everything since v0.9.0 and brings 87 patches for Facebook 582.0.0.50.54, up from 86. The new one is `Unlock app icons`, which lets you pick any icon on Facebook's App icon page. New switches add a Watch history shortcut, keep a reel's time above its progress bar, stop link history in Facebook's browser and hold back camera roll processing. Saves whose only sound is xHE-AAC now get sound most players can play, and the Reported issues list below maps each report this release touches.
