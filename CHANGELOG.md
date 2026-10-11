@@ -10,6 +10,17 @@ Every Hushfacebook release, newest first.
 * **Facebook:** Finished-save cards don't pile up any more. The shade keeps the newest twenty "Video saved" and "Photo saved" cards and lets the oldest go. Android stops an app at about fifty notifications and drops the next without a word, which could leave the next save's progress card, Cancel button and all, with no room to show.
 * **Facebook:** When the phone's decoder gives no sample rate for a reel's xHE-AAC sound, or changes its format part way through, the save falls back to Facebook's single file where there is one and the log says why. The first case used to end in a division by zero. The second would have gone on into sound that comes out wrong.
 * **Facebook:** Cancel, Pause, Resume, Undo, Add a topic pack, Back and Clear search in the settings show a ripple when tapped. They showed nothing before.
+* **Facebook:** **Turn off HDR brightness** also asks the phone's video decoder to bring an HDR video down to the usual range on Android 12 and newer (issue #93). Until now only the window was told to stay in the usual range, and a video the phone's own decoder plays, like a VP9 HLG reel, could still light the screen up. A decoder that turns the request down is set up again without it, so the video still plays, and the diagnostic report counts which way each decoder answered.
+* **Facebook:** With **Tap to play** on, a reel that's waiting for your tap no longer goes into picture-in-picture when you leave Facebook (issue #90). The window used to stay armed from the reel before, so going home opened a floating player for a reel you hadn't started. Once you tap play, leaving works as it did.
+* **Facebook:** A save WhatsApp may refuse shows one card in the shade. It has Open and Share like any finished save, says why the video may be refused and adds an **Open the setting** button. It used to post a second card next to the finished-save one.
+* **Facebook:** Two saves finishing in the same moment keep twenty finished-save cards. Each one trimmed the shade on its own, so they could both let a card go and leave nineteen.
+* **Facebook:** The Messenger link test under Links writes its result into its own row, where it stays readable. It used to show as a long toast that some phones cut short.
+
+### Changed
+
+* **Facebook:** Summaries and toasts call the Marketplace switch's state Marketplace only, like the switch does. Some said "Marketplace mode", which isn't a name you'd find in the settings search.
+* **Facebook:** The seen posts row is called **Keep seen posts hidden for**, so it makes sense on its own in the settings search. While **Hide seen posts** is off, its summary says to turn that on first.
+* **Tooling:** When the release notes check turns down the phrase about which Facebook builds a release was tried on, its error says the word Facebook has to come right after "to". The 0.10.0 notes were refused once for "to both Facebook" with no hint why.
 
 ## 0.10.0 (2026-10-10)
 
