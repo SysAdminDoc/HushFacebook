@@ -190,7 +190,12 @@ public class MenuLayoutDumpTest {
         assertTrue(report, report.contains(MenuLayoutDump.REEL_MENU + ", Litho tree"));
         assertTrue(report, report.contains("litho.ShareTarget{3"));
         assertTrue("the row holding Muse was left out: " + report, report.contains("litho.HScroll{2"));
-        assertFalse("another target was written: " + report, report.contains("Messenger"));
+        // Only the dump's own lines: the report's other sections name Messenger too (the patch list,
+        // the links section) once another test has registered them in this process.
+        String dump = report.substring(report.indexOf(MenuLayoutDump.REEL_MENU + ", Litho tree"));
+        int end = dump.indexOf("\n\n");
+        if (end >= 0) dump = dump.substring(0, end);
+        assertFalse("another target was written: " + dump, dump.contains("Messenger"));
 
         LogBufferManager.clearLogBuffer();
         shadowOf(Looper.getMainLooper()).idleFor(MenuLayoutDump.GAP_MS, TimeUnit.MILLISECONDS);
