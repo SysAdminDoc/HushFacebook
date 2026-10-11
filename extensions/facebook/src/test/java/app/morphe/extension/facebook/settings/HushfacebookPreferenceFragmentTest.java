@@ -1496,7 +1496,7 @@ public class HushfacebookPreferenceFragmentTest {
     }
 
     /**
-     * Hide seen posts' rows. Keep them hidden for follows the switch, Forget seen posts works with the
+     * Hide seen posts' rows. Keep seen posts hidden for follows the switch, Forget seen posts works with the
      * switch off too, and turning the switch off forgets the list and its file.
      */
     @Test
@@ -1514,6 +1514,10 @@ public class HushfacebookPreferenceFragmentTest {
             assertEquals(Settings.SEEN_POSTS_KEEP.key, keep.getKey());
             assertEquals("Forget seen posts", String.valueOf(forget.getTitle()));
             assertFalse("the keep time is open with the switch off", keep.isEnabled());
+            assertEquals("Keep seen posts hidden for", String.valueOf(keep.getTitle()));
+            String greyed = String.valueOf(keep.getSummary());
+            assertTrue("the greyed keep time doesn't say why: " + greyed,
+                    greyed.contains("Turn on") && greyed.contains("Hide seen posts") && greyed.endsWith("to use this."));
             assertTrue("Forget seen posts is greyed out with the switch off", forget.isEnabled());
 
             SeenPostsForTests.rememberAndWrite("left from before");
@@ -1524,6 +1528,8 @@ public class HushfacebookPreferenceFragmentTest {
 
             assertTrue(seen.getOnPreferenceChangeListener().onPreferenceChange(seen, true));
             assertTrue(keep.isEnabled());
+            assertFalse("the open keep time still says to turn the switch on",
+                    String.valueOf(keep.getSummary()).contains("Turn on"));
             assertTrue(forget.isEnabled());
             SeenPostsForTests.rememberAndWrite("seen with it on");
             assertTrue(file.exists());

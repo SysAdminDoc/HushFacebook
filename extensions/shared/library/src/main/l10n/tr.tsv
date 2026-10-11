@@ -634,26 +634,26 @@ Hides posts featuring Meta's AI characters, the chatbots people make with Meta A
 Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Untested on a real feed, so it starts off.	Yalnızca Facebook'un kendi tespit ettiklerini değil, yaratıcısının yapay zekayla üretildi olarak işaretlediği gönderileri de gizler. Gerçek bir akışta henüz denenmedi, bu yüzden kapalı başlar.
 Return to regular Facebook	Normal Facebook'a dön
 Restore the normal tabs at the next restart. Your other settings stay saved.	Bir sonraki yeniden başlatmada normal sekmeleri geri getirir. Diğer ayarlarınız kayıtlı kalır.
-Marketplace mode is off. Restart Facebook to restore its normal tabs.	Marketplace modu kapalı. Normal sekmeleri geri getirmek için Facebook'u yeniden başlatın.
+Marketplace only is off. Restart Facebook to restore its normal tabs.	Marketplace modu kapalı. Normal sekmeleri geri getirmek için Facebook'u yeniden başlatın.
 Couldn't save the change. Try again.	Değişiklik kaydedilemedi. Tekrar deneyin.
-Marketplace mode chooses the opening tab. Your previous choice stays saved.	Açılış sekmesini Marketplace modu belirler. Önceki seçiminiz kayıtlı kalır.
-Restart needed. Marketplace mode will turn on the next time Facebook starts.	Yeniden başlatma gerekiyor. Marketplace modu, Facebook bir sonraki açılışında etkinleşecek.
+Marketplace only chooses the opening tab. Your previous choice stays saved.	Açılış sekmesini Marketplace modu belirler. Önceki seçiminiz kayıtlı kalır.
+Restart needed. Marketplace only will turn on the next time Facebook starts.	Yeniden başlatma gerekiyor. Marketplace modu, Facebook bir sonraki açılışında etkinleşecek.
 Restart needed. The normal tabs will return the next time Facebook starts.	Yeniden başlatma gerekiyor. Normal sekmeler, Facebook bir sonraki açılışında geri gelecek.
 Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.	Marketplace, Facebook'un sekme ayarlarında gizli. Ayarlar, Sekme çubuğu, Çubuğu özelleştir bölümünden gösterin. Normal sekmeleriniz kullanılabilir.
 Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.	Marketplace kullanılamıyor. Facebook bu hesap için bir Marketplace sekmesi sağlamadı. Normal sekmeleriniz kullanılabilir.
 Couldn't check the tab bar. Your normal tabs stay available. Restart Facebook to try again.	Sekme çubuğu kontrol edilemedi. Normal sekmeleriniz kullanılabilir. Tekrar denemek için Facebook'u yeniden başlatın.
-Waiting for Facebook's tab bar. Marketplace mode will apply when Facebook builds it.	Facebook'un sekme çubuğu bekleniyor. Facebook çubuğu oluşturduğunda Marketplace modu uygulanacak.
+Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.	Facebook'un sekme çubuğu bekleniyor. Facebook çubuğu oluşturduğunda Marketplace modu uygulanacak.
 Off. Turn on to open Marketplace and hide the feed and other social tabs after restarting Facebook.	Kapalı. Facebook'u yeniden başlattıktan sonra Marketplace'i açmak ve akışı ve diğer sosyal sekmeleri gizlemek için etkinleştirin.
 Quiet social notifications	Sosyal bildirimleri sustur
 Skip feed preloading	Akış ön yüklemesini atla
-Marketplace mode is off.	Marketplace modu kapalı.
+Marketplace only is off.	Marketplace modu kapalı.
 Paused with Hushfacebook. Your Marketplace choice stays saved. Tabs already hidden return after a restart while paused.	Hushfacebook ile duraklatıldı. Marketplace seçiminiz kayıtlı kalır. Gizlenen sekmeler, duraklatma sürerken yeniden başlattığınızda geri gelir.
-While Marketplace mode is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.	Marketplace modu açıkken video önerilerini, anıları, doğum günlerini ve arkadaş önerilerini sessize alır. Mesajlar ve alım satım bildirimleri yine gelir.
-While Marketplace mode is on, loads less of the feed in the background. Some loading still happens at startup.	Marketplace modu açıkken akışın arka planda daha az yüklenmesini sağlar. Açılışta yine de biraz yükleme olur.
+While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.	Marketplace modu açıkken video önerilerini, anıları, doğum günlerini ve arkadaş önerilerini sessize alır. Mesajlar ve alım satım bildirimleri yine gelir.
+While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.	Marketplace modu açıkken akışın arka planda daha az yüklenmesini sağlar. Açılışta yine de biraz yükleme olur.
 Active. Marketplace, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.	Etkin. Marketplace, Bildirimler ve Profil/Menü kalır. Hushfacebook ayarları Menü içindeki Ayarlar ve gizlilik bölümündedir.
 
 # context: Settings overview, category navigation and search.
-Marketplace mode and your start tab	Marketplace modu ve başlangıç sekmesi
+Marketplace only and your start tab	Marketplace modu ve başlangıç sekmesi
 Ads, suggestions and word filters	Reklamlar, öneriler ve kelime filtreleri
 Suggestions, saving, auto-advance and viewing anonymously	Öneriler, kaydetme, otomatik ilerleme ve anonim izleme
 Cleaner reels and video controls	Daha sade Reels ve video kontrolleri
@@ -1254,7 +1254,8 @@ Hide posts you've already seen	Daha önce gördüğün gönderileri gizle
 # context: description of that switch; Facebook decides what counts as seen, the list never leaves the phone; turning the switch off empties the list
 Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.	Üzerinden kaydırdığınız gönderiler akış yeniden yüklendiğinde görünmez. Liste bu telefonda kalır. Bunu kapatmak listeyi boşaltır.
 # context: title of the row under that switch that picks how many days a seen post stays hidden
-Keep them hidden for	Gizli kalma süresi
+Keep seen posts hidden for	Görülen gönderilerin gizli kalma süresi
+Turn on %1$s to use this.	Bunu kullanmak için %1$s seçeneğini açın.
 # context: choice in that row
 1 day	1 gün
 # context: choice in that row

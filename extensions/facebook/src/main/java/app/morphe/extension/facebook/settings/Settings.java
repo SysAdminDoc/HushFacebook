@@ -1011,11 +1011,11 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting MARKETPLACE_ONLY =
             new BooleanSetting("hushfacebook_marketplace_only", FALSE, true);
 
-    /** Silences only recognized social promotions while Marketplace mode is selected. */
+    /** Silences only recognized social promotions while Marketplace only is selected. */
     public static final BooleanSetting MARKETPLACE_QUIET_NOTIFICATIONS =
             new BooleanSetting("hushfacebook_marketplace_quiet_notifications", FALSE);
 
-    /** Skip only confirmed feed warm-ups once the tab bar has applied Marketplace mode. */
+    /** Skip only confirmed feed warm-ups once the tab bar has applied Marketplace only. */
     public static final BooleanSetting MARKETPLACE_SKIP_FEED_PREFETCH =
             new BooleanSetting("hushfacebook_marketplace_skip_feed_prefetch", FALSE);
 

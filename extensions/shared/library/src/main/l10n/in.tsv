@@ -634,26 +634,26 @@ Hides posts featuring Meta's AI characters, the chatbots people make with Meta A
 Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Untested on a real feed, so it starts off.	Juga menyembunyikan postingan yang ditandai pembuatnya sebagai buatan AI, bukan hanya yang dideteksi Facebook sendiri. Belum diuji di feed sungguhan, jadi awalnya mati.
 Return to regular Facebook	Kembali ke Facebook biasa
 Restore the normal tabs at the next restart. Your other settings stay saved.	Pulihkan tab biasa saat aplikasi dimulai ulang. Setelan lainnya tetap tersimpan.
-Marketplace mode is off. Restart Facebook to restore its normal tabs.	Mode Marketplace nonaktif. Mulai ulang Facebook untuk memulihkan tab biasa.
+Marketplace only is off. Restart Facebook to restore its normal tabs.	Mode Marketplace nonaktif. Mulai ulang Facebook untuk memulihkan tab biasa.
 Couldn't save the change. Try again.	Perubahan tidak dapat disimpan. Coba lagi.
-Marketplace mode chooses the opening tab. Your previous choice stays saved.	Mode Marketplace menentukan tab awal. Pilihan sebelumnya tetap tersimpan.
-Restart needed. Marketplace mode will turn on the next time Facebook starts.	Perlu dimulai ulang. Mode Marketplace akan aktif saat Facebook dimulai lagi.
+Marketplace only chooses the opening tab. Your previous choice stays saved.	Mode Marketplace menentukan tab awal. Pilihan sebelumnya tetap tersimpan.
+Restart needed. Marketplace only will turn on the next time Facebook starts.	Perlu dimulai ulang. Mode Marketplace akan aktif saat Facebook dimulai lagi.
 Restart needed. The normal tabs will return the next time Facebook starts.	Perlu dimulai ulang. Tab biasa akan kembali saat Facebook dimulai lagi.
 Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.	Marketplace disembunyikan di pengaturan tab Facebook. Tampilkan melalui Pengaturan, Bilah tab, Sesuaikan bilah. Tab biasa tetap tersedia.
 Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.	Marketplace tidak tersedia. Facebook belum menyediakan tab Marketplace untuk akun ini. Tab biasa tetap tersedia.
 Couldn't check the tab bar. Your normal tabs stay available. Restart Facebook to try again.	Bilah tab tidak dapat diperiksa. Tab biasa tetap tersedia. Mulai ulang Facebook untuk mencoba lagi.
-Waiting for Facebook's tab bar. Marketplace mode will apply when Facebook builds it.	Menunggu bilah tab Facebook. Mode Marketplace akan diterapkan saat Facebook membuatnya.
+Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.	Menunggu bilah tab Facebook. Mode Marketplace akan diterapkan saat Facebook membuatnya.
 Off. Turn on to open Marketplace and hide the feed and other social tabs after restarting Facebook.	Nonaktif. Aktifkan untuk membuka Marketplace dan menyembunyikan beranda serta tab sosial lainnya setelah Facebook dimulai ulang.
 Quiet social notifications	Senyapkan notifikasi sosial
 Skip feed preloading	Lewati pramuat beranda
-Marketplace mode is off.	Mode Marketplace nonaktif.
+Marketplace only is off.	Mode Marketplace nonaktif.
 Paused with Hushfacebook. Your Marketplace choice stays saved. Tabs already hidden return after a restart while paused.	Dijeda bersama Hushfacebook. Pilihan Marketplace tetap tersimpan. Tab yang sudah disembunyikan kembali setelah aplikasi dimulai ulang saat masih dijeda.
-While Marketplace mode is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.	Selama mode Marketplace menyala, membisukan saran video, kenangan, ulang tahun, dan saran teman. Pesan dan kabar jual beli tetap masuk.
-While Marketplace mode is on, loads less of the feed in the background. Some loading still happens at startup.	Selama mode Marketplace menyala, memuat lebih sedikit feed di latar belakang. Sebagian masih dimuat saat Facebook dibuka.
+While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.	Selama mode Marketplace menyala, membisukan saran video, kenangan, ulang tahun, dan saran teman. Pesan dan kabar jual beli tetap masuk.
+While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.	Selama mode Marketplace menyala, memuat lebih sedikit feed di latar belakang. Sebagian masih dimuat saat Facebook dibuka.
 Active. Marketplace, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.	Aktif. Marketplace, Notifikasi, dan Profil/Menu tetap ada. Setelan Hushfacebook ada di Menu, pada Pengaturan dan privasi.
 
 # context: Settings overview, category navigation and search.
-Marketplace mode and your start tab	Mode Marketplace dan tab awal
+Marketplace only and your start tab	Mode Marketplace dan tab awal
 Ads, suggestions and word filters	Iklan, saran, dan filter kata
 Suggestions, saving, auto-advance and viewing anonymously	Saran, penyimpanan, perpindahan otomatis, dan melihat secara anonim
 Cleaner reels and video controls	Reels lebih bersih dan kontrol video
@@ -1254,7 +1254,8 @@ Hide posts you've already seen	Sembunyikan kiriman yang sudah dilihat
 # context: description of that switch; Facebook decides what counts as seen, the list never leaves the phone; turning the switch off empties the list
 Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.	Postingan yang sudah kamu lewati tidak muncul lagi saat feed dimuat ulang. Daftarnya tetap di ponsel ini. Mematikannya akan mengosongkan daftar.
 # context: title of the row under that switch that picks how many days a seen post stays hidden
-Keep them hidden for	Sembunyikan selama
+Keep seen posts hidden for	Sembunyikan kiriman yang dilihat selama
+Turn on %1$s to use this.	Nyalakan %1$s untuk menggunakannya.
 # context: choice in that row
 1 day	1 hari
 # context: choice in that row

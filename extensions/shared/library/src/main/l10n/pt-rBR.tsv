@@ -534,24 +534,24 @@ Hides posts featuring Meta's AI characters, the chatbots people make with Meta A
 Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Untested on a real feed, so it starts off.	Oculta também as publicações que o criador marcou como feitas com IA, e não só as que o Facebook detecta. Ainda não testado em um feed real, por isso começa desligado.
 Return to regular Facebook	Voltar ao Facebook normal
 Restore the normal tabs at the next restart. Your other settings stay saved.	Restaura as abas normais ao reiniciar. Suas outras configurações são mantidas.
-Marketplace mode is off. Restart Facebook to restore its normal tabs.	O modo Marketplace está desativado. Reinicie o Facebook para restaurar as abas normais.
+Marketplace only is off. Restart Facebook to restore its normal tabs.	O modo Marketplace está desativado. Reinicie o Facebook para restaurar as abas normais.
 Couldn't save the change. Try again.	Não foi possível salvar a alteração. Tente novamente.
-Marketplace mode chooses the opening tab. Your previous choice stays saved.	O modo Marketplace define a aba inicial. Sua escolha anterior é mantida.
-Restart needed. Marketplace mode will turn on the next time Facebook starts.	É preciso reiniciar. O modo Marketplace será ativado na próxima vez que o Facebook for iniciado.
+Marketplace only chooses the opening tab. Your previous choice stays saved.	O modo Marketplace define a aba inicial. Sua escolha anterior é mantida.
+Restart needed. Marketplace only will turn on the next time Facebook starts.	É preciso reiniciar. O modo Marketplace será ativado na próxima vez que o Facebook for iniciado.
 Restart needed. The normal tabs will return the next time Facebook starts.	É preciso reiniciar. As abas normais voltarão na próxima vez que o Facebook for iniciado.
 Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.	O Marketplace está oculto nas configurações de abas do Facebook. Exiba em Configurações, Barra de abas, Personalizar a barra. Suas abas normais continuam disponíveis.
 Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.	Marketplace indisponível. O Facebook não forneceu uma aba do Marketplace para esta conta. Suas abas normais continuam disponíveis.
 Couldn't check the tab bar. Your normal tabs stay available. Restart Facebook to try again.	Não foi possível verificar a barra de abas. Suas abas normais continuam disponíveis. Reinicie o Facebook para tentar novamente.
-Waiting for Facebook's tab bar. Marketplace mode will apply when Facebook builds it.	Aguardando a barra de abas do Facebook. O modo Marketplace será aplicado quando o Facebook a criar.
+Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.	Aguardando a barra de abas do Facebook. O modo Marketplace será aplicado quando o Facebook a criar.
 Off. Turn on to open Marketplace and hide the feed and other social tabs after restarting Facebook.	Desativado. Ative para abrir o Marketplace e ocultar o feed e outras abas sociais após reiniciar o Facebook.
 Quiet social notifications	Silenciar notificações sociais
 Skip feed preloading	Ignorar o pré-carregamento do feed
-Marketplace mode is off.	O modo Marketplace está desativado.
+Marketplace only is off.	O modo Marketplace está desativado.
 Paused with Hushfacebook. Your Marketplace choice stays saved. Tabs already hidden return after a restart while paused.	Pausado com o Hushfacebook. Sua escolha do Marketplace é mantida. As abas ocultas voltam após reiniciar enquanto o Hushfacebook estiver pausado.
-While Marketplace mode is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.	Enquanto o modo Marketplace está ligado, silencia sugestões de vídeos, lembranças, aniversários e sugestões de amizade. Mensagens e novidades de compra e venda continuam chegando.
-While Marketplace mode is on, loads less of the feed in the background. Some loading still happens at startup.	Enquanto o modo Marketplace está ligado, carrega menos do feed em segundo plano. Ainda há algum carregamento ao abrir.
+While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.	Enquanto o modo Marketplace está ligado, silencia sugestões de vídeos, lembranças, aniversários e sugestões de amizade. Mensagens e novidades de compra e venda continuam chegando.
+While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.	Enquanto o modo Marketplace está ligado, carrega menos do feed em segundo plano. Ainda há algum carregamento ao abrir.
 Active. Marketplace, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.	Ativo. Marketplace, Notificações e Perfil/Menu são mantidos. As configurações do Hushfacebook ficam no Menu, em Configurações e privacidade.
-Marketplace mode and your start tab	Modo Marketplace e aba inicial
+Marketplace only and your start tab	Modo Marketplace e aba inicial
 Ads, suggestions and word filters	Anúncios, sugestões e filtros de palavras
 Suggestions, saving, auto-advance and viewing anonymously	Sugestões, salvamento, avanço automático e visualização anônima
 Cleaner reels and video controls	Reels mais limpos e controles de vídeo
@@ -1148,7 +1148,8 @@ Hide posts you've already seen	Ocultar publicações que você já viu
 # context: description of that switch; Facebook decides what counts as seen, the list never leaves the phone; turning the switch off empties the list
 Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.	As publicações pelas quais você já rolou ficam fora do feed quando ele carrega de novo. A lista fica neste celular. Desligar esta opção esvazia a lista.
 # context: title of the row under that switch that picks how many days a seen post stays hidden
-Keep them hidden for	Manter ocultas por
+Keep seen posts hidden for	Manter publicações vistas ocultas por
+Turn on %1$s to use this.	Ligue %1$s para usar isto.
 # context: choice in that row
 1 day	1 dia
 # context: choice in that row

@@ -51,7 +51,7 @@ final class FeedPages {
                 // Facebook builds the tab bar once, and the hook is asked then and not again.
                 opening.addPreference(toggle(context, Settings.MARKETPLACE_ONLY, ""));
                 opening.addPreference(toggle(context, Settings.MARKETPLACE_QUIET_NOTIFICATIONS,
-                        L10n.t("While Marketplace mode is on, silences video suggestions, memories, birthdays and friend "
+                        L10n.t("While Marketplace only is on, silences video suggestions, memories, birthdays and friend "
                                 + "suggestions. Messages and trading updates still arrive.")));
                 Row regular = new Row(context);
                 regular.actsAtOnce = true;
@@ -62,8 +62,8 @@ final class FeedPages {
                     if (Settings.MARKETPLACE_ONLY.save(false)) {
                         page.refreshSwitches();
                         Utils.showToastLong(MarketplaceOnly.state() == MarketplaceOnly.State.RESTART_NEEDED
-                                ? L10n.t("Marketplace mode is off. Restart Facebook to restore its normal tabs.")
-                                : L10n.t("Marketplace mode is off."));
+                                ? L10n.t("Marketplace only is off. Restart Facebook to restore its normal tabs.")
+                                : L10n.t("Marketplace only is off."));
                     } else {
                         Utils.showToastLong(L10n.t("Couldn't save the change. Try again."));
                     }
@@ -71,7 +71,7 @@ final class FeedPages {
                 });
                 opening.addPreference(regular);
                 opening.addPreference(toggle(context, Settings.MARKETPLACE_SKIP_FEED_PREFETCH,
-                        L10n.t("While Marketplace mode is on, loads less of the feed in the background. Some loading still happens "
+                        L10n.t("While Marketplace only is on, loads less of the feed in the background. Some loading still happens "
                                 + "at startup.")));
             }
             if (build.contains(PatchFamily.START_TAB)) {

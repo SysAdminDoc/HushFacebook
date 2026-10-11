@@ -44,7 +44,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildDe() {
-        Map<String, String> table = new HashMap<>(1840);
+        Map<String, String> table = new HashMap<>(1842);
         fillDe0(table);
         fillDe1(table);
         fillDe2(table);
@@ -1024,14 +1024,14 @@ public final class L10nTranslations {
                 "Feedposition beim Zur\u00fcckkehren beibehalten");
         table.put("Keep post dates",
                 "Beitragsdatum behalten");
+        table.put("Keep seen posts hidden for",
+                "Gesehene Beitr\u00e4ge ausgeblendet lassen f\u00fcr");
         table.put("Keep the progress bar",
                 "Fortschrittsbalken behalten");
         table.put("Keep the reel speed",
                 "Reel-Geschwindigkeit beibehalten");
         table.put("Keep the video speed",
                 "Video-Geschwindigkeit beibehalten");
-        table.put("Keep them hidden for",
-                "Ausgeblendet lassen f\u00fcr");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "H\u00e4lt Facebook immer dunkel, egal was seine eigene Einstellung sagt. Gedacht f\u00fcr Tablets, auf denen Facebook keinen Dunkelmodus-Schalter hat. Starte Facebook neu, um die \u00c4nderung zu sehen.");
         table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Your pick stays if you turn this off, so pick the blue one first to go back.",
@@ -1083,16 +1083,16 @@ public final class L10nTranslations {
                 "Marketplace");
         table.put("Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.",
                 "Marketplace ist in Facebooks Tab-Einstellungen ausgeblendet. Blende es unter Einstellungen, Tab-Leiste, Leiste anpassen ein. Deine normalen Tabs bleiben verf\u00fcgbar.");
-        table.put("Marketplace mode and your start tab",
-                "Marketplace-Modus und Starttab");
-        table.put("Marketplace mode chooses the opening tab. Your previous choice stays saved.",
-                "Der Marketplace-Modus bestimmt den Start-Tab. Deine bisherige Auswahl bleibt gespeichert.");
-        table.put("Marketplace mode is off.",
-                "Marketplace-Modus ist aus.");
-        table.put("Marketplace mode is off. Restart Facebook to restore its normal tabs.",
-                "Marketplace-Modus ist aus. Starte Facebook neu, um die normalen Tabs wiederherzustellen.");
         table.put("Marketplace only",
                 "Nur Marketplace");
+        table.put("Marketplace only and your start tab",
+                "Marketplace-Modus und Starttab");
+        table.put("Marketplace only chooses the opening tab. Your previous choice stays saved.",
+                "Der Marketplace-Modus bestimmt den Start-Tab. Deine bisherige Auswahl bleibt gespeichert.");
+        table.put("Marketplace only is off.",
+                "Marketplace-Modus ist aus.");
+        table.put("Marketplace only is off. Restart Facebook to restore its normal tabs.",
+                "Marketplace-Modus ist aus. Starte Facebook neu, um die normalen Tabs wiederherzustellen.");
         table.put("Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.",
                 "Marketplace nicht verf\u00fcgbar. Facebook hat f\u00fcr dieses Konto keinen Marketplace-Tab bereitgestellt. Deine normalen Tabs bleiben verf\u00fcgbar.");
         table.put("Match whole words",
@@ -1379,7 +1379,7 @@ public final class L10nTranslations {
                 "Entfernt diesen Tab aus der Tab-Leiste. Seine Seite bleibt im Men\u00fc. Starte Facebook neu, um die \u00c4nderung zu sehen.");
         table.put("Removes tracking tags like mibextid from links you share or copy. A facebook.com/share/ link is unique to each share, so Facebook can still trace it.",
                 "Entfernt Tracking-Zus\u00e4tze wie mibextid aus Links, die du teilst oder kopierst. Ein facebook.com/share/-Link gilt nur f\u00fcr ein Teilen, daher kann Facebook ihn weiterhin zur\u00fcckverfolgen.");
-        table.put("Restart needed. Marketplace mode will turn on the next time Facebook starts.",
+        table.put("Restart needed. Marketplace only will turn on the next time Facebook starts.",
                 "Neustart erforderlich. Der Marketplace-Modus wird beim n\u00e4chsten Start von Facebook aktiviert.");
         table.put("Restart needed. The normal tabs will return the next time Facebook starts.",
                 "Neustart erforderlich. Die normalen Tabs kehren beim n\u00e4chsten Start von Facebook zur\u00fcck.");
@@ -1738,6 +1738,8 @@ public final class L10nTranslations {
                 "Bildschirm\u00fcberg\u00e4nge ausschalten");
         table.put("Turn on %1$s to save videos that WhatsApp and these editors accept.",
                 "Schalte %1$s ein, um Videos zu speichern, die WhatsApp und diese Editoren annehmen.");
+        table.put("Turn on %1$s to use this.",
+                "Schalte %1$s ein, um das zu nutzen.");
         table.put("Type @ before Facebook suggests someone to tag in posts or comments. Your text stays unchanged.",
                 "Facebook schl\u00e4gt Personen in Beitr\u00e4gen und Kommentaren erst nach @ vor. Dein Text bleibt unver\u00e4ndert.");
         table.put("Undo",
@@ -1782,11 +1784,11 @@ public final class L10nTranslations {
                 "Video gespeichert");
         table.put("Video stories play at the playback quality above.",
                 "Video-Stories laufen in der Wiedergabequalit\u00e4t oben.");
-        table.put("Video stories will play at the same quality as other videos.",
-                "Video-Stories laufen dann in derselben Qualit\u00e4t wie andere Videos.");
     }
 
     private static void fillDe14(Map<String, String> table) {
+        table.put("Video stories will play at the same quality as other videos.",
+                "Video-Stories laufen dann in derselben Qualit\u00e4t wie andere Videos.");
         table.put("Video subfolder",
                 "Unterordner f\u00fcr Videos");
         table.put("Videos and photos go to %1$s, next to the camera's. Saves you already have stay where they are.",
@@ -1829,7 +1831,7 @@ public final class L10nTranslations {
                 "Videos, Reels, Stories und Musik warten auf dein Antippen, statt von selbst zu starten. Facebooks eigene Autoplay-Einstellung zeigt Aus, solange das aktiv ist.");
         table.put("View stories anonymously",
                 "Stories anonym ansehen");
-        table.put("Waiting for Facebook's tab bar. Marketplace mode will apply when Facebook builds it.",
+        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
                 "Warten auf Facebooks Tab-Leiste. Der Marketplace-Modus wird angewendet, sobald Facebook sie erstellt.");
         table.put("Watch history",
                 "Wiedergabeverlauf");
@@ -1851,9 +1853,9 @@ public final class L10nTranslations {
                 "Beim Tippen auf Download");
         table.put("Where ads and tracking are blocked",
                 "Wo Anzeigen und Tracking blockiert werden");
-        table.put("While Marketplace mode is on, loads less of the feed in the background. Some loading still happens at startup.",
+        table.put("While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.",
                 "Solange der Marktplatz-Modus an ist, wird weniger vom Feed im Hintergrund geladen. Beim Start wird trotzdem noch etwas geladen.");
-        table.put("While Marketplace mode is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.",
+        table.put("While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.",
                 "Solange der Marktplatz-Modus an ist, werden Videovorschl\u00e4ge, Erinnerungen, Geburtstage und Freundschaftsvorschl\u00e4ge stummgeschaltet. Nachrichten und Handelsmeldungen kommen weiterhin an.");
         table.put("With Block Instant Games ads on, a game's rewarded ad counts as watched. No ad plays and the game still gives its reward.",
                 "Bei eingeschaltetem \u201eWerbung in Instant Games blockieren\u201c z\u00e4hlt die Werbung mit Belohnung als angesehen. Es l\u00e4uft keine Werbung, und das Spiel gibt trotzdem die Belohnung.");
@@ -1905,11 +1907,11 @@ public final class L10nTranslations {
                 "Deine Liste der W\u00f6rter, bei denen ein Beitrag bleibt, ist dann leer.");
         table.put("Your list of words that keep a post will hold %1$d word or phrase.",
                 "Deine Liste der W\u00f6rter, bei denen ein Beitrag bleibt, enth\u00e4lt dann %1$d Wort oder Wortfolge.");
-        table.put("Your list of words that keep a post will hold %1$d words or phrases.",
-                "Deine Liste der W\u00f6rter, bei denen ein Beitrag bleibt, enth\u00e4lt dann %1$d W\u00f6rter oder Wortfolgen.");
     }
 
     private static void fillDe15(Map<String, String> table) {
+        table.put("Your list of words that keep a post will hold %1$d words or phrases.",
+                "Deine Liste der W\u00f6rter, bei denen ein Beitrag bleibt, enth\u00e4lt dann %1$d W\u00f6rter oder Wortfolgen.");
         table.put("Your list of words to hide will be empty.",
                 "Deine Liste der W\u00f6rter zum Ausblenden ist dann leer.");
         table.put("Your list of words to hide will hold %1$d word or phrase.",
@@ -1953,7 +1955,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildEs() {
-        Map<String, String> table = new HashMap<>(1840);
+        Map<String, String> table = new HashMap<>(1842);
         fillEs0(table);
         fillEs1(table);
         fillEs2(table);
@@ -2933,14 +2935,14 @@ public final class L10nTranslations {
                 "Mantener la posici\u00f3n del feed al volver");
         table.put("Keep post dates",
                 "Mantener la fecha de las publicaciones");
+        table.put("Keep seen posts hidden for",
+                "Mantener ocultas las publicaciones vistas durante");
         table.put("Keep the progress bar",
                 "Mantener la barra de progreso");
         table.put("Keep the reel speed",
                 "Mantener la velocidad de los reels");
         table.put("Keep the video speed",
                 "Mantener la velocidad de los videos");
-        table.put("Keep them hidden for",
-                "Mantenerlas ocultas durante");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "Mantiene Facebook oscuro sin importar su propio ajuste. Pensado para tabletas en las que Facebook no tiene el interruptor de modo oscuro. Reinicia Facebook para ver el cambio.");
         table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Your pick stays if you turn this off, so pick the blue one first to go back.",
@@ -2992,16 +2994,16 @@ public final class L10nTranslations {
                 "Marketplace");
         table.put("Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.",
                 "Marketplace est\u00e1 oculto en los ajustes de pesta\u00f1as de Facebook. Mu\u00e9stralo en Configuraci\u00f3n, Barra de pesta\u00f1as, Personalizar la barra. Tus pesta\u00f1as normales siguen disponibles.");
-        table.put("Marketplace mode and your start tab",
-                "Modo Marketplace y pesta\u00f1a de inicio");
-        table.put("Marketplace mode chooses the opening tab. Your previous choice stays saved.",
-                "El modo Marketplace elige la pesta\u00f1a de inicio. Tu selecci\u00f3n anterior se conserva.");
-        table.put("Marketplace mode is off.",
-                "El modo Marketplace est\u00e1 desactivado.");
-        table.put("Marketplace mode is off. Restart Facebook to restore its normal tabs.",
-                "El modo Marketplace est\u00e1 desactivado. Reinicia Facebook para restaurar sus pesta\u00f1as normales.");
         table.put("Marketplace only",
                 "Solo Marketplace");
+        table.put("Marketplace only and your start tab",
+                "Modo Marketplace y pesta\u00f1a de inicio");
+        table.put("Marketplace only chooses the opening tab. Your previous choice stays saved.",
+                "El modo Marketplace elige la pesta\u00f1a de inicio. Tu selecci\u00f3n anterior se conserva.");
+        table.put("Marketplace only is off.",
+                "El modo Marketplace est\u00e1 desactivado.");
+        table.put("Marketplace only is off. Restart Facebook to restore its normal tabs.",
+                "El modo Marketplace est\u00e1 desactivado. Reinicia Facebook para restaurar sus pesta\u00f1as normales.");
         table.put("Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.",
                 "Marketplace no est\u00e1 disponible. Facebook no ha proporcionado una pesta\u00f1a de Marketplace para esta cuenta. Tus pesta\u00f1as normales siguen disponibles.");
         table.put("Match whole words",
@@ -3288,7 +3290,7 @@ public final class L10nTranslations {
                 "Quita esta pesta\u00f1a de la barra de pesta\u00f1as. Su p\u00e1gina sigue en el Men\u00fa. Reinicia Facebook para ver el cambio.");
         table.put("Removes tracking tags like mibextid from links you share or copy. A facebook.com/share/ link is unique to each share, so Facebook can still trace it.",
                 "Quita las etiquetas de seguimiento como mibextid de los enlaces que compartes o copias. Un enlace facebook.com/share/ es \u00fanico para cada vez que compartes, as\u00ed que Facebook a\u00fan puede rastrearlo.");
-        table.put("Restart needed. Marketplace mode will turn on the next time Facebook starts.",
+        table.put("Restart needed. Marketplace only will turn on the next time Facebook starts.",
                 "Es necesario reiniciar. El modo Marketplace se activar\u00e1 la pr\u00f3xima vez que se inicie Facebook.");
         table.put("Restart needed. The normal tabs will return the next time Facebook starts.",
                 "Es necesario reiniciar. Las pesta\u00f1as normales volver\u00e1n la pr\u00f3xima vez que se inicie Facebook.");
@@ -3647,6 +3649,8 @@ public final class L10nTranslations {
                 "Desactivar las transiciones de pantalla");
         table.put("Turn on %1$s to save videos that WhatsApp and these editors accept.",
                 "Activa %1$s para guardar v\u00eddeos que WhatsApp y estos editores acepten.");
+        table.put("Turn on %1$s to use this.",
+                "Activa %1$s para usar esto.");
         table.put("Type @ before Facebook suggests someone to tag in posts or comments. Your text stays unchanged.",
                 "Escribe @ para que Facebook sugiera a qui\u00e9n etiquetar en publicaciones o comentarios. Tu texto no cambia.");
         table.put("Undo",
@@ -3691,11 +3695,11 @@ public final class L10nTranslations {
                 "Video guardado");
         table.put("Video stories play at the playback quality above.",
                 "Las historias en video se reproducen con la calidad de reproducci\u00f3n de arriba.");
-        table.put("Video stories will play at the same quality as other videos.",
-                "Las historias en video se reproducir\u00e1n con la misma calidad que los dem\u00e1s videos.");
     }
 
     private static void fillEs14(Map<String, String> table) {
+        table.put("Video stories will play at the same quality as other videos.",
+                "Las historias en video se reproducir\u00e1n con la misma calidad que los dem\u00e1s videos.");
         table.put("Video subfolder",
                 "Subcarpeta de videos");
         table.put("Videos and photos go to %1$s, next to the camera's. Saves you already have stay where they are.",
@@ -3738,7 +3742,7 @@ public final class L10nTranslations {
                 "Los v\u00eddeos, reels, historias y la m\u00fasica esperan a que los toques, en lugar de reproducirse solos. El ajuste Reproducci\u00f3n autom\u00e1tica de Facebook muestra Desactivado mientras esto est\u00e1 activo.");
         table.put("View stories anonymously",
                 "Ver historias de forma an\u00f3nima");
-        table.put("Waiting for Facebook's tab bar. Marketplace mode will apply when Facebook builds it.",
+        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
                 "Esperando la barra de pesta\u00f1as de Facebook. El modo Marketplace se aplicar\u00e1 cuando Facebook la cree.");
         table.put("Watch history",
                 "Historial de reproducciones");
@@ -3760,9 +3764,9 @@ public final class L10nTranslations {
                 "Al tocar Descargar");
         table.put("Where ads and tracking are blocked",
                 "D\u00f3nde se bloquean los anuncios y el seguimiento");
-        table.put("While Marketplace mode is on, loads less of the feed in the background. Some loading still happens at startup.",
+        table.put("While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.",
                 "Mientras el modo Marketplace est\u00e1 activo, carga menos del feed en segundo plano. Al iniciar sigue carg\u00e1ndose algo.");
-        table.put("While Marketplace mode is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.",
+        table.put("While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.",
                 "Mientras el modo Marketplace est\u00e1 activo, silencia las sugerencias de v\u00eddeos, los recuerdos, los cumplea\u00f1os y las sugerencias de amistad. Los mensajes y las novedades de compraventa siguen llegando.");
         table.put("With Block Instant Games ads on, a game's rewarded ad counts as watched. No ad plays and the game still gives its reward.",
                 "Con \u00abBloquear anuncios de Instant Games\u00bb activado, el anuncio con recompensa de un juego cuenta como visto. No se muestra ning\u00fan anuncio y el juego da igualmente su premio.");
@@ -3814,11 +3818,11 @@ public final class L10nTranslations {
                 "Tu lista de palabras que mantienen una publicaci\u00f3n quedar\u00e1 vac\u00eda.");
         table.put("Your list of words that keep a post will hold %1$d word or phrase.",
                 "Tu lista de palabras que mantienen una publicaci\u00f3n tendr\u00e1 %1$d palabra o frase.");
-        table.put("Your list of words that keep a post will hold %1$d words or phrases.",
-                "Tu lista de palabras que mantienen una publicaci\u00f3n tendr\u00e1 %1$d palabras o frases.");
     }
 
     private static void fillEs15(Map<String, String> table) {
+        table.put("Your list of words that keep a post will hold %1$d words or phrases.",
+                "Tu lista de palabras que mantienen una publicaci\u00f3n tendr\u00e1 %1$d palabras o frases.");
         table.put("Your list of words to hide will be empty.",
                 "Tu lista de palabras para ocultar quedar\u00e1 vac\u00eda.");
         table.put("Your list of words to hide will hold %1$d word or phrase.",
@@ -3862,7 +3866,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildIn() {
-        Map<String, String> table = new HashMap<>(1840);
+        Map<String, String> table = new HashMap<>(1842);
         fillIn0(table);
         fillIn1(table);
         fillIn2(table);
@@ -4842,14 +4846,14 @@ public final class L10nTranslations {
                 "Pertahankan posisi beranda saat kembali");
         table.put("Keep post dates",
                 "Pertahankan tanggal postingan");
+        table.put("Keep seen posts hidden for",
+                "Sembunyikan kiriman yang dilihat selama");
         table.put("Keep the progress bar",
                 "Pertahankan bilah progres");
         table.put("Keep the reel speed",
                 "Pertahankan kecepatan reel");
         table.put("Keep the video speed",
                 "Pertahankan kecepatan video");
-        table.put("Keep them hidden for",
-                "Sembunyikan selama");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "Membuat Facebook tetap gelap apa pun pengaturannya sendiri. Untuk tablet yang di Facebook-nya tidak ada sakelar mode gelap. Mulai ulang Facebook untuk melihat perubahannya.");
         table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Your pick stays if you turn this off, so pick the blue one first to go back.",
@@ -4901,16 +4905,16 @@ public final class L10nTranslations {
                 "Marketplace");
         table.put("Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.",
                 "Marketplace disembunyikan di pengaturan tab Facebook. Tampilkan melalui Pengaturan, Bilah tab, Sesuaikan bilah. Tab biasa tetap tersedia.");
-        table.put("Marketplace mode and your start tab",
-                "Mode Marketplace dan tab awal");
-        table.put("Marketplace mode chooses the opening tab. Your previous choice stays saved.",
-                "Mode Marketplace menentukan tab awal. Pilihan sebelumnya tetap tersimpan.");
-        table.put("Marketplace mode is off.",
-                "Mode Marketplace nonaktif.");
-        table.put("Marketplace mode is off. Restart Facebook to restore its normal tabs.",
-                "Mode Marketplace nonaktif. Mulai ulang Facebook untuk memulihkan tab biasa.");
         table.put("Marketplace only",
                 "Hanya Marketplace");
+        table.put("Marketplace only and your start tab",
+                "Mode Marketplace dan tab awal");
+        table.put("Marketplace only chooses the opening tab. Your previous choice stays saved.",
+                "Mode Marketplace menentukan tab awal. Pilihan sebelumnya tetap tersimpan.");
+        table.put("Marketplace only is off.",
+                "Mode Marketplace nonaktif.");
+        table.put("Marketplace only is off. Restart Facebook to restore its normal tabs.",
+                "Mode Marketplace nonaktif. Mulai ulang Facebook untuk memulihkan tab biasa.");
         table.put("Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.",
                 "Marketplace tidak tersedia. Facebook belum menyediakan tab Marketplace untuk akun ini. Tab biasa tetap tersedia.");
         table.put("Match whole words",
@@ -5197,7 +5201,7 @@ public final class L10nTranslations {
                 "Menghapus tab ini dari bilah tab. Halamannya masih ada di Menu. Mulai ulang Facebook untuk melihat perubahannya.");
         table.put("Removes tracking tags like mibextid from links you share or copy. A facebook.com/share/ link is unique to each share, so Facebook can still trace it.",
                 "Menghapus tag pelacak seperti mibextid dari tautan yang kamu bagikan atau salin. Tautan facebook.com/share/ unik untuk setiap pembagian, jadi Facebook masih bisa melacaknya.");
-        table.put("Restart needed. Marketplace mode will turn on the next time Facebook starts.",
+        table.put("Restart needed. Marketplace only will turn on the next time Facebook starts.",
                 "Perlu dimulai ulang. Mode Marketplace akan aktif saat Facebook dimulai lagi.");
         table.put("Restart needed. The normal tabs will return the next time Facebook starts.",
                 "Perlu dimulai ulang. Tab biasa akan kembali saat Facebook dimulai lagi.");
@@ -5556,6 +5560,8 @@ public final class L10nTranslations {
                 "Matikan transisi layar");
         table.put("Turn on %1$s to save videos that WhatsApp and these editors accept.",
                 "Nyalakan %1$s untuk menyimpan video yang diterima WhatsApp dan editor-editor ini.");
+        table.put("Turn on %1$s to use this.",
+                "Nyalakan %1$s untuk menggunakannya.");
         table.put("Type @ before Facebook suggests someone to tag in posts or comments. Your text stays unchanged.",
                 "Ketik @ sebelum Facebook menyarankan orang untuk ditandai dalam postingan atau komentar. Teks Anda tidak berubah.");
         table.put("Undo",
@@ -5600,11 +5606,11 @@ public final class L10nTranslations {
                 "Video tersimpan");
         table.put("Video stories play at the playback quality above.",
                 "Cerita video diputar dengan kualitas pemutaran di atas.");
-        table.put("Video stories will play at the same quality as other videos.",
-                "Cerita video akan diputar dengan kualitas yang sama seperti video lainnya.");
     }
 
     private static void fillIn14(Map<String, String> table) {
+        table.put("Video stories will play at the same quality as other videos.",
+                "Cerita video akan diputar dengan kualitas yang sama seperti video lainnya.");
         table.put("Video subfolder",
                 "Subfolder video");
         table.put("Videos and photos go to %1$s, next to the camera's. Saves you already have stay where they are.",
@@ -5647,7 +5653,7 @@ public final class L10nTranslations {
                 "Video, reel, cerita, dan musik menunggu ketukanmu, tidak diputar sendiri. Pengaturan Putar otomatis milik Facebook menampilkan Mati selama ini menyala.");
         table.put("View stories anonymously",
                 "Lihat cerita secara anonim");
-        table.put("Waiting for Facebook's tab bar. Marketplace mode will apply when Facebook builds it.",
+        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
                 "Menunggu bilah tab Facebook. Mode Marketplace akan diterapkan saat Facebook membuatnya.");
         table.put("Watch history",
                 "Riwayat tontonan");
@@ -5669,9 +5675,9 @@ public final class L10nTranslations {
                 "Saat mengetuk Unduh");
         table.put("Where ads and tracking are blocked",
                 "Tempat iklan dan pelacakan diblokir");
-        table.put("While Marketplace mode is on, loads less of the feed in the background. Some loading still happens at startup.",
+        table.put("While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.",
                 "Selama mode Marketplace menyala, memuat lebih sedikit feed di latar belakang. Sebagian masih dimuat saat Facebook dibuka.");
-        table.put("While Marketplace mode is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.",
+        table.put("While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.",
                 "Selama mode Marketplace menyala, membisukan saran video, kenangan, ulang tahun, dan saran teman. Pesan dan kabar jual beli tetap masuk.");
         table.put("With Block Instant Games ads on, a game's rewarded ad counts as watched. No ad plays and the game still gives its reward.",
                 "Saat \u201cBlokir iklan Instant Games\u201d menyala, iklan berhadiah di game dianggap sudah ditonton. Tidak ada iklan yang diputar dan game tetap memberi hadiahnya.");
@@ -5723,11 +5729,11 @@ public final class L10nTranslations {
                 "Daftar kata yang mempertahankan postingan akan kosong.");
         table.put("Your list of words that keep a post will hold %1$d word or phrase.",
                 "Daftar kata yang mempertahankan postingan akan berisi %1$d kata atau frasa.");
-        table.put("Your list of words that keep a post will hold %1$d words or phrases.",
-                "Daftar kata yang mempertahankan postingan akan berisi %1$d kata atau frasa.");
     }
 
     private static void fillIn15(Map<String, String> table) {
+        table.put("Your list of words that keep a post will hold %1$d words or phrases.",
+                "Daftar kata yang mempertahankan postingan akan berisi %1$d kata atau frasa.");
         table.put("Your list of words to hide will be empty.",
                 "Daftar kata untuk disembunyikan akan kosong.");
         table.put("Your list of words to hide will hold %1$d word or phrase.",
@@ -5771,7 +5777,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildPt_rBR() {
-        Map<String, String> table = new HashMap<>(1840);
+        Map<String, String> table = new HashMap<>(1842);
         fillPt_rBR0(table);
         fillPt_rBR1(table);
         fillPt_rBR2(table);
@@ -6751,14 +6757,14 @@ public final class L10nTranslations {
                 "Manter a posi\u00e7\u00e3o no feed ao voltar");
         table.put("Keep post dates",
                 "Manter a data das publica\u00e7\u00f5es");
+        table.put("Keep seen posts hidden for",
+                "Manter publica\u00e7\u00f5es vistas ocultas por");
         table.put("Keep the progress bar",
                 "Manter a barra de progresso");
         table.put("Keep the reel speed",
                 "Manter a velocidade dos reels");
         table.put("Keep the video speed",
                 "Manter a velocidade dos v\u00eddeos");
-        table.put("Keep them hidden for",
-                "Manter ocultas por");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "Mant\u00e9m o Facebook escuro independentemente da configura\u00e7\u00e3o dele. Feito para tablets em que o Facebook n\u00e3o tem a op\u00e7\u00e3o de modo escuro. Reinicie o Facebook para ver a mudan\u00e7a.");
         table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Your pick stays if you turn this off, so pick the blue one first to go back.",
@@ -6810,16 +6816,16 @@ public final class L10nTranslations {
                 "Marketplace");
         table.put("Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.",
                 "O Marketplace est\u00e1 oculto nas configura\u00e7\u00f5es de abas do Facebook. Exiba em Configura\u00e7\u00f5es, Barra de abas, Personalizar a barra. Suas abas normais continuam dispon\u00edveis.");
-        table.put("Marketplace mode and your start tab",
-                "Modo Marketplace e aba inicial");
-        table.put("Marketplace mode chooses the opening tab. Your previous choice stays saved.",
-                "O modo Marketplace define a aba inicial. Sua escolha anterior \u00e9 mantida.");
-        table.put("Marketplace mode is off.",
-                "O modo Marketplace est\u00e1 desativado.");
-        table.put("Marketplace mode is off. Restart Facebook to restore its normal tabs.",
-                "O modo Marketplace est\u00e1 desativado. Reinicie o Facebook para restaurar as abas normais.");
         table.put("Marketplace only",
                 "S\u00f3 Marketplace");
+        table.put("Marketplace only and your start tab",
+                "Modo Marketplace e aba inicial");
+        table.put("Marketplace only chooses the opening tab. Your previous choice stays saved.",
+                "O modo Marketplace define a aba inicial. Sua escolha anterior \u00e9 mantida.");
+        table.put("Marketplace only is off.",
+                "O modo Marketplace est\u00e1 desativado.");
+        table.put("Marketplace only is off. Restart Facebook to restore its normal tabs.",
+                "O modo Marketplace est\u00e1 desativado. Reinicie o Facebook para restaurar as abas normais.");
         table.put("Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.",
                 "Marketplace indispon\u00edvel. O Facebook n\u00e3o forneceu uma aba do Marketplace para esta conta. Suas abas normais continuam dispon\u00edveis.");
         table.put("Match whole words",
@@ -7106,7 +7112,7 @@ public final class L10nTranslations {
                 "Remove esta aba da barra de abas. A p\u00e1gina dela continua no Menu. Reinicie o Facebook para ver a mudan\u00e7a.");
         table.put("Removes tracking tags like mibextid from links you share or copy. A facebook.com/share/ link is unique to each share, so Facebook can still trace it.",
                 "Remove marcas de rastreamento como mibextid dos links que voc\u00ea compartilha ou copia. Um link facebook.com/share/ \u00e9 \u00fanico para cada compartilhamento, ent\u00e3o o Facebook ainda consegue rastre\u00e1-lo.");
-        table.put("Restart needed. Marketplace mode will turn on the next time Facebook starts.",
+        table.put("Restart needed. Marketplace only will turn on the next time Facebook starts.",
                 "\u00c9 preciso reiniciar. O modo Marketplace ser\u00e1 ativado na pr\u00f3xima vez que o Facebook for iniciado.");
         table.put("Restart needed. The normal tabs will return the next time Facebook starts.",
                 "\u00c9 preciso reiniciar. As abas normais voltar\u00e3o na pr\u00f3xima vez que o Facebook for iniciado.");
@@ -7465,6 +7471,8 @@ public final class L10nTranslations {
                 "Desativar as transi\u00e7\u00f5es de tela");
         table.put("Turn on %1$s to save videos that WhatsApp and these editors accept.",
                 "Ligue %1$s para salvar v\u00eddeos que o WhatsApp e esses editores aceitem.");
+        table.put("Turn on %1$s to use this.",
+                "Ligue %1$s para usar isto.");
         table.put("Type @ before Facebook suggests someone to tag in posts or comments. Your text stays unchanged.",
                 "Digite @ para o Facebook sugerir quem marcar em publica\u00e7\u00f5es ou coment\u00e1rios. Seu texto n\u00e3o \u00e9 alterado.");
         table.put("Undo",
@@ -7509,11 +7517,11 @@ public final class L10nTranslations {
                 "V\u00eddeo salvo");
         table.put("Video stories play at the playback quality above.",
                 "Os stories em v\u00eddeo usam a qualidade de reprodu\u00e7\u00e3o acima.");
-        table.put("Video stories will play at the same quality as other videos.",
-                "Os stories em v\u00eddeo v\u00e3o usar a mesma qualidade dos outros v\u00eddeos.");
     }
 
     private static void fillPt_rBR14(Map<String, String> table) {
+        table.put("Video stories will play at the same quality as other videos.",
+                "Os stories em v\u00eddeo v\u00e3o usar a mesma qualidade dos outros v\u00eddeos.");
         table.put("Video subfolder",
                 "Subpasta de v\u00eddeos");
         table.put("Videos and photos go to %1$s, next to the camera's. Saves you already have stay where they are.",
@@ -7556,7 +7564,7 @@ public final class L10nTranslations {
                 "V\u00eddeos, reels, stories e m\u00fasicas esperam o seu toque, em vez de tocar sozinhos. A configura\u00e7\u00e3o Reprodu\u00e7\u00e3o autom\u00e1tica do pr\u00f3prio Facebook mostra Desativada enquanto isto estiver ligado.");
         table.put("View stories anonymously",
                 "Ver Stories anonimamente");
-        table.put("Waiting for Facebook's tab bar. Marketplace mode will apply when Facebook builds it.",
+        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
                 "Aguardando a barra de abas do Facebook. O modo Marketplace ser\u00e1 aplicado quando o Facebook a criar.");
         table.put("Watch history",
                 "Hist\u00f3rico de v\u00eddeos");
@@ -7578,9 +7586,9 @@ public final class L10nTranslations {
                 "Ao tocar em Baixar");
         table.put("Where ads and tracking are blocked",
                 "Onde an\u00fancios e rastreamento s\u00e3o bloqueados");
-        table.put("While Marketplace mode is on, loads less of the feed in the background. Some loading still happens at startup.",
+        table.put("While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.",
                 "Enquanto o modo Marketplace est\u00e1 ligado, carrega menos do feed em segundo plano. Ainda h\u00e1 algum carregamento ao abrir.");
-        table.put("While Marketplace mode is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.",
+        table.put("While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.",
                 "Enquanto o modo Marketplace est\u00e1 ligado, silencia sugest\u00f5es de v\u00eddeos, lembran\u00e7as, anivers\u00e1rios e sugest\u00f5es de amizade. Mensagens e novidades de compra e venda continuam chegando.");
         table.put("With Block Instant Games ads on, a game's rewarded ad counts as watched. No ad plays and the game still gives its reward.",
                 "Com \u201cBloquear an\u00fancios do Instant Games\u201d ligado, o an\u00fancio premiado de um jogo conta como assistido. Nenhum an\u00fancio \u00e9 exibido e o jogo ainda d\u00e1 a recompensa.");
@@ -7632,11 +7640,11 @@ public final class L10nTranslations {
                 "Sua lista de palavras que mant\u00eam uma publica\u00e7\u00e3o ficar\u00e1 vazia.");
         table.put("Your list of words that keep a post will hold %1$d word or phrase.",
                 "Sua lista de palavras que mant\u00eam uma publica\u00e7\u00e3o ter\u00e1 %1$d palavra ou frase.");
-        table.put("Your list of words that keep a post will hold %1$d words or phrases.",
-                "Sua lista de palavras que mant\u00eam uma publica\u00e7\u00e3o ter\u00e1 %1$d palavras ou frases.");
     }
 
     private static void fillPt_rBR15(Map<String, String> table) {
+        table.put("Your list of words that keep a post will hold %1$d words or phrases.",
+                "Sua lista de palavras que mant\u00eam uma publica\u00e7\u00e3o ter\u00e1 %1$d palavras ou frases.");
         table.put("Your list of words to hide will be empty.",
                 "Sua lista de palavras a ocultar ficar\u00e1 vazia.");
         table.put("Your list of words to hide will hold %1$d word or phrase.",
@@ -7680,7 +7688,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildTr() {
-        Map<String, String> table = new HashMap<>(1840);
+        Map<String, String> table = new HashMap<>(1842);
         fillTr0(table);
         fillTr1(table);
         fillTr2(table);
@@ -8660,14 +8668,14 @@ public final class L10nTranslations {
                 "Geri d\u00f6n\u00fcnce ak\u0131\u015f konumunu koru");
         table.put("Keep post dates",
                 "G\u00f6nderi tarihlerini koru");
+        table.put("Keep seen posts hidden for",
+                "G\u00f6r\u00fclen g\u00f6nderilerin gizli kalma s\u00fcresi");
         table.put("Keep the progress bar",
                 "\u0130lerleme \u00e7ubu\u011funu koru");
         table.put("Keep the reel speed",
                 "Reel h\u0131z\u0131n\u0131 koru");
         table.put("Keep the video speed",
                 "Video h\u0131z\u0131n\u0131 koru");
-        table.put("Keep them hidden for",
-                "Gizli kalma s\u00fcresi");
         table.put("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.",
                 "Facebook'un kendi ayar\u0131 ne olursa olsun karanl\u0131k kalmas\u0131n\u0131 sa\u011flar. Facebook'ta Karanl\u0131k mod anahtar\u0131 olmayan tabletler i\u00e7in. De\u011fi\u015fikli\u011fi g\u00f6rmek i\u00e7in Facebook'u yeniden ba\u015flat\u0131n.");
         table.put("Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page. Your pick stays if you turn this off, so pick the blue one first to go back.",
@@ -8719,16 +8727,16 @@ public final class L10nTranslations {
                 "Marketplace");
         table.put("Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.",
                 "Marketplace, Facebook'un sekme ayarlar\u0131nda gizli. Ayarlar, Sekme \u00e7ubu\u011fu, \u00c7ubu\u011fu \u00f6zelle\u015ftir b\u00f6l\u00fcm\u00fcnden g\u00f6sterin. Normal sekmeleriniz kullan\u0131labilir.");
-        table.put("Marketplace mode and your start tab",
-                "Marketplace modu ve ba\u015flang\u0131\u00e7 sekmesi");
-        table.put("Marketplace mode chooses the opening tab. Your previous choice stays saved.",
-                "A\u00e7\u0131l\u0131\u015f sekmesini Marketplace modu belirler. \u00d6nceki se\u00e7iminiz kay\u0131tl\u0131 kal\u0131r.");
-        table.put("Marketplace mode is off.",
-                "Marketplace modu kapal\u0131.");
-        table.put("Marketplace mode is off. Restart Facebook to restore its normal tabs.",
-                "Marketplace modu kapal\u0131. Normal sekmeleri geri getirmek i\u00e7in Facebook'u yeniden ba\u015flat\u0131n.");
         table.put("Marketplace only",
                 "Yaln\u0131zca Marketplace");
+        table.put("Marketplace only and your start tab",
+                "Marketplace modu ve ba\u015flang\u0131\u00e7 sekmesi");
+        table.put("Marketplace only chooses the opening tab. Your previous choice stays saved.",
+                "A\u00e7\u0131l\u0131\u015f sekmesini Marketplace modu belirler. \u00d6nceki se\u00e7iminiz kay\u0131tl\u0131 kal\u0131r.");
+        table.put("Marketplace only is off.",
+                "Marketplace modu kapal\u0131.");
+        table.put("Marketplace only is off. Restart Facebook to restore its normal tabs.",
+                "Marketplace modu kapal\u0131. Normal sekmeleri geri getirmek i\u00e7in Facebook'u yeniden ba\u015flat\u0131n.");
         table.put("Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.",
                 "Marketplace kullan\u0131lam\u0131yor. Facebook bu hesap i\u00e7in bir Marketplace sekmesi sa\u011flamad\u0131. Normal sekmeleriniz kullan\u0131labilir.");
         table.put("Match whole words",
@@ -9015,7 +9023,7 @@ public final class L10nTranslations {
                 "Bu sekmeyi sekme \u00e7ubu\u011fundan kald\u0131r\u0131r. Sayfas\u0131 Men\u00fc'de durur. De\u011fi\u015fikli\u011fi g\u00f6rmek i\u00e7in Facebook'u yeniden ba\u015flat\u0131n.");
         table.put("Removes tracking tags like mibextid from links you share or copy. A facebook.com/share/ link is unique to each share, so Facebook can still trace it.",
                 "Payla\u015ft\u0131\u011f\u0131n\u0131z veya kopyalad\u0131\u011f\u0131n\u0131z ba\u011flant\u0131lardan mibextid gibi izleme etiketlerini kald\u0131r\u0131r. facebook.com/share/ ba\u011flant\u0131s\u0131 her payla\u015f\u0131ma \u00f6zeldir, bu y\u00fczden Facebook yine de izini s\u00fcrebilir.");
-        table.put("Restart needed. Marketplace mode will turn on the next time Facebook starts.",
+        table.put("Restart needed. Marketplace only will turn on the next time Facebook starts.",
                 "Yeniden ba\u015flatma gerekiyor. Marketplace modu, Facebook bir sonraki a\u00e7\u0131l\u0131\u015f\u0131nda etkinle\u015fecek.");
         table.put("Restart needed. The normal tabs will return the next time Facebook starts.",
                 "Yeniden ba\u015flatma gerekiyor. Normal sekmeler, Facebook bir sonraki a\u00e7\u0131l\u0131\u015f\u0131nda geri gelecek.");
@@ -9374,6 +9382,8 @@ public final class L10nTranslations {
                 "Ekran ge\u00e7i\u015flerini kapat");
         table.put("Turn on %1$s to save videos that WhatsApp and these editors accept.",
                 "WhatsApp ve bu d\u00fczenleyicilerin kabul etti\u011fi videolar\u0131 kaydetmek i\u00e7in %1$s se\u00e7ene\u011fini a\u00e7\u0131n.");
+        table.put("Turn on %1$s to use this.",
+                "Bunu kullanmak i\u00e7in %1$s se\u00e7ene\u011fini a\u00e7\u0131n.");
         table.put("Type @ before Facebook suggests someone to tag in posts or comments. Your text stays unchanged.",
                 "Facebook'un g\u00f6nderi ve yorumlarda etiketlenecek ki\u015fi \u00f6nermesi i\u00e7in @ yaz\u0131n. Metniniz de\u011fi\u015fmez.");
         table.put("Undo",
@@ -9418,11 +9428,11 @@ public final class L10nTranslations {
                 "Video kaydedildi");
         table.put("Video stories play at the playback quality above.",
                 "Video hikayeler yukar\u0131daki oynatma kalitesinde oynat\u0131l\u0131r.");
-        table.put("Video stories will play at the same quality as other videos.",
-                "Video hikayeler, di\u011fer videolarla ayn\u0131 kalitede oynat\u0131lacak.");
     }
 
     private static void fillTr14(Map<String, String> table) {
+        table.put("Video stories will play at the same quality as other videos.",
+                "Video hikayeler, di\u011fer videolarla ayn\u0131 kalitede oynat\u0131lacak.");
         table.put("Video subfolder",
                 "Video alt klas\u00f6r\u00fc");
         table.put("Videos and photos go to %1$s, next to the camera's. Saves you already have stay where they are.",
@@ -9465,7 +9475,7 @@ public final class L10nTranslations {
                 "Videolar, reeller, hikayeler ve m\u00fczik kendili\u011finden oynamak yerine dokunu\u015funuzu bekler. Bu a\u00e7\u0131kken Facebook'un kendi Otomatik oynat ayar\u0131 Kapal\u0131 g\u00f6r\u00fcn\u00fcr.");
         table.put("View stories anonymously",
                 "Hikayeleri anonim olarak izle");
-        table.put("Waiting for Facebook's tab bar. Marketplace mode will apply when Facebook builds it.",
+        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
                 "Facebook'un sekme \u00e7ubu\u011fu bekleniyor. Facebook \u00e7ubu\u011fu olu\u015fturdu\u011funda Marketplace modu uygulanacak.");
         table.put("Watch history",
                 "\u0130zleme ge\u00e7mi\u015fi");
@@ -9487,9 +9497,9 @@ public final class L10nTranslations {
                 "\u0130ndir'e dokundu\u011funuzda");
         table.put("Where ads and tracking are blocked",
                 "Reklamlar\u0131n ve takibin engellendi\u011fi yerler");
-        table.put("While Marketplace mode is on, loads less of the feed in the background. Some loading still happens at startup.",
+        table.put("While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.",
                 "Marketplace modu a\u00e7\u0131kken ak\u0131\u015f\u0131n arka planda daha az y\u00fcklenmesini sa\u011flar. A\u00e7\u0131l\u0131\u015fta yine de biraz y\u00fckleme olur.");
-        table.put("While Marketplace mode is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.",
+        table.put("While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.",
                 "Marketplace modu a\u00e7\u0131kken video \u00f6nerilerini, an\u0131lar\u0131, do\u011fum g\u00fcnlerini ve arkada\u015f \u00f6nerilerini sessize al\u0131r. Mesajlar ve al\u0131m sat\u0131m bildirimleri yine gelir.");
         table.put("With Block Instant Games ads on, a game's rewarded ad counts as watched. No ad plays and the game still gives its reward.",
                 "\u201cInstant Games reklamlar\u0131n\u0131 engelle\u201d a\u00e7\u0131kken oyunun \u00f6d\u00fcll\u00fc reklam\u0131 izlenmi\u015f say\u0131l\u0131r. Reklam oynat\u0131lmaz ve oyun \u00f6d\u00fcl\u00fcn\u00fc yine de verir.");
@@ -9541,11 +9551,11 @@ public final class L10nTranslations {
                 "G\u00f6nderiyi tutan kelimeler listen bo\u015f olacak.");
         table.put("Your list of words that keep a post will hold %1$d word or phrase.",
                 "G\u00f6nderiyi tutan kelimeler listende %1$d kelime veya ifade olacak.");
-        table.put("Your list of words that keep a post will hold %1$d words or phrases.",
-                "G\u00f6nderiyi tutan kelimeler listende %1$d kelime veya ifade olacak.");
     }
 
     private static void fillTr15(Map<String, String> table) {
+        table.put("Your list of words that keep a post will hold %1$d words or phrases.",
+                "G\u00f6nderiyi tutan kelimeler listende %1$d kelime veya ifade olacak.");
         table.put("Your list of words to hide will be empty.",
                 "Gizlenecek kelimeler listen bo\u015f olacak.");
         table.put("Your list of words to hide will hold %1$d word or phrase.",

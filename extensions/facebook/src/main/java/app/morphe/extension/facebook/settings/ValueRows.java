@@ -788,12 +788,23 @@ final class ValueRows {
             showSummary();
         }
 
+        /** It's greyed out while Hide seen posts is off, and its summary then says so. */
+        @Override
+        public void setEnabled(boolean enabled) {
+            super.setEnabled(enabled);
+            showSummary();
+        }
+
         void showSummary() {
             SeenPosts.Keep keep = SeenPosts.Keep.SEVEN_DAYS;
             for (SeenPosts.Keep candidate : SeenPosts.Keep.values()) {
                 if (candidate.name().equals(getValue())) keep = candidate;
             }
-            setSummary(seenKeepSummary(keep));
+            String summary = seenKeepSummary(keep);
+            if (!isEnabled()) {
+                summary += " " + L10n.f("Turn on %1$s to use this.", L10n.isolate(SwitchLabels.title(Settings.HIDE_SEEN_POSTS)));
+            }
+            setSummary(summary);
         }
 
         @Override
