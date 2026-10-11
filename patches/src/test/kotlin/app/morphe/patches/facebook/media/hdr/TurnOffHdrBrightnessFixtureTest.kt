@@ -83,11 +83,17 @@ class TurnOffHdrBrightnessFixtureTest {
         assertTrue("${bundle.name}: $isHdr isHdr calls", isHdr >= 3)
         assertTrue("${bundle.name}: $modeTypes mode type reads", modeTypes >= 4)
         assertTrue("${bundle.name}: $capabilityTypes capability type reads", capabilityTypes >= 5)
+        // Probed on 582 (2026-10-11): ExoPlayer's platform adapter (SyncMediaCodecAdapterExt), the
+        // player's codec helper, webrtc, the camera roll and the encoders, about 25 in all.
+        val decoders = calls(OWN_CODEC_CONFIGURE)
+        assertTrue("${bundle.name}: $decoders decoder set-ups", decoders >= 15)
+        val adapter = callers.filter { method -> method.name == "configure" && method.implementation!!.instructions.any { ownWindowCall(it) == OWN_CODEC_CONFIGURE } }
+        assertTrue("${bundle.name}: no playback adapter's configure sets up a MediaCodec", adapter.isNotEmpty())
 
         val owners = FixtureDex.classes(bundle, callers.map { it.definingClass }.toSet())
         val context = PatchContexts.of(owners.values)
         assertEquals("${bundle.name}: the callers", owners.keys, context.windowCallers())
-        assertEquals("${bundle.name}: calls sent", modes + headrooms + isHdr + modeTypes + capabilityTypes,
+        assertEquals("${bundle.name}: calls sent", modes + headrooms + isHdr + modeTypes + capabilityTypes + decoders,
             context.hookWindowCalls(owners.keys))
         for ((type, original) in owners) {
             for (method in context.mutableClassDefBy(type).methods) {
@@ -209,6 +215,24 @@ class TurnOffHdrBrightnessFixtureTest {
         assertEquals(Opcode.INVOKE_STATIC_RANGE, call.opcode)
         assertEquals(OWN_SET_COLOR_MODE, (call as ReferenceInstruction).reference.toString())
         assertEquals(listOf(0, 1), registers(call))
+    }
+
+    @Test
+    fun `a decoder's set-up goes to the extension with its five registers`() {
+        val decoder = type(
+            "LX/decoder;",
+            method(
+                "LX/decoder;", listOf(MEDIA_CODEC, MEDIA_FORMAT, "Landroid/view/Surface;", "Landroid/media/MediaCrypto;", "I"), "V", 5,
+                "invoke-virtual { p0, p1, p2, p3, p4 }, $CODEC_CONFIGURE\nreturn-void",
+            ),
+        )
+        val context = PatchContexts.of(listOf(decoder, windowCaller("LX/app;", "invoke-virtual { p0, p1 }, $SET_COLOR_MODE")))
+        assertEquals(setOf("LX/decoder;", "LX/app;"), context.windowCallers())
+        assertEquals(2, context.hookWindowCalls())
+        val call = context.mutableClassDefBy("LX/decoder;").methods.single().implementation!!.instructions.first()
+        assertEquals(Opcode.INVOKE_STATIC, call.opcode)
+        assertEquals(OWN_CODEC_CONFIGURE, (call as ReferenceInstruction).reference.toString())
+        assertEquals(listOf(0, 1, 2, 3, 4), registers(call))
     }
 
     @Test

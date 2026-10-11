@@ -13,8 +13,13 @@ import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
+import android.graphics.SurfaceTexture;
 import android.hardware.display.DisplayManager;
+import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
+import android.media.MediaFormat;
 import android.view.Display;
+import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.Window;
 
@@ -26,6 +31,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowMediaCodec;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -160,6 +166,103 @@ public class HdrBrightnessTest {
                 ActivityInfo.COLOR_MODE_DEFAULT, asked(ActivityInfo.COLOR_MODE_HDR));
     }
 
+    /** A video format as Facebook's player hands its decoder one: VP9, with [transfer] when it isn't -1. */
+    private static MediaFormat video(int transfer) {
+        MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_VP9, 720, 1280);
+        if (transfer != -1) format.setInteger(MediaFormat.KEY_COLOR_TRANSFER, transfer);
+        return format;
+    }
+
+    private static Surface surface() {
+        return new Surface(new SurfaceTexture(0));
+    }
+
+    @Test
+    public void anHdrVideoDecoderIsAskedForTheUsualRange() {
+        for (int transfer : new int[] {MediaFormat.COLOR_TRANSFER_HLG, MediaFormat.COLOR_TRANSFER_ST2084}) {
+            MediaFormat format = video(transfer);
+            assertTrue("transfer " + transfer, HdrBrightness.askForUsualRange(format, surface(), 0));
+            assertEquals("transfer " + transfer, MediaFormat.COLOR_TRANSFER_SDR_VIDEO,
+                    format.getInteger(MediaFormat.KEY_COLOR_TRANSFER_REQUEST));
+        }
+    }
+
+    @Test
+    public void onlyAnHdrVideoDecodingToASurfaceIsAsked() {
+        assertNotAsked("an SDR video", video(MediaFormat.COLOR_TRANSFER_SDR_VIDEO), surface(), 0);
+        assertNotAsked("a video naming no transfer or profile", video(-1), surface(), 0);
+        assertNotAsked("no surface", video(MediaFormat.COLOR_TRANSFER_HLG), null, 0);
+        assertNotAsked("an encoder", video(MediaFormat.COLOR_TRANSFER_HLG), surface(), MediaCodec.CONFIGURE_FLAG_ENCODE);
+        MediaFormat sound = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, 48_000, 2);
+        sound.setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_HLG);
+        assertNotAsked("sound", sound, surface(), 0);
+        MediaFormat facebooks = video(MediaFormat.COLOR_TRANSFER_HLG);
+        facebooks.setInteger(MediaFormat.KEY_COLOR_TRANSFER_REQUEST, MediaFormat.COLOR_TRANSFER_HLG);
+        assertFalse("a request of Facebook's own", HdrBrightness.askForUsualRange(facebooks, surface(), 0));
+        assertEquals("Facebook's own request", MediaFormat.COLOR_TRANSFER_HLG,
+                facebooks.getInteger(MediaFormat.KEY_COLOR_TRANSFER_REQUEST));
+        assertNull("something was counted", statusLine());
+    }
+
+    private static void assertNotAsked(String what, MediaFormat format, Surface surface, int flags) {
+        assertFalse(what, HdrBrightness.askForUsualRange(format, surface, flags));
+        assertFalse(what + " holds a request", format.containsKey(MediaFormat.KEY_COLOR_TRANSFER_REQUEST));
+    }
+
+    @Test
+    public void anHdrProfileCountsWhenNoTransferIsNamed() {
+        MediaFormat hevc = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_HEVC, 1080, 1920);
+        hevc.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10);
+        assertTrue("HEVC HDR10", HdrBrightness.hdrVideo(hevc));
+        MediaFormat vp9 = video(-1);
+        vp9.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.VP9Profile2HDR);
+        assertTrue("VP9 profile 2 HDR", HdrBrightness.hdrVideo(vp9));
+        vp9.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.VP9Profile0);
+        assertFalse("VP9 profile 0", HdrBrightness.hdrVideo(vp9));
+        MediaFormat labelled = video(MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
+        labelled.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.VP9Profile2HDR);
+        assertFalse("an SDR transfer beats the profile", HdrBrightness.hdrVideo(labelled));
+        assertTrue("Dolby Vision", HdrBrightness.hdrVideo(
+                MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION, 1080, 1920)));
+    }
+
+    @Test
+    public void aDecoderIsSetUpAndItsAnswerCounted() throws Exception {
+        ShadowMediaCodec.clearCodecs();
+        ShadowMediaCodec.addDecoder(MediaFormat.MIMETYPE_VIDEO_VP9, new ShadowMediaCodec.CodecConfig(1_024, 1_024, (in, out) -> { }));
+        try {
+            MediaCodec codec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_VP9);
+            HdrBrightness.configure(codec, video(MediaFormat.COLOR_TRANSFER_HLG), surface(), null, 0);
+            // Robolectric's decoder keeps what it's given, as one that tone-maps does.
+            assertEquals(MediaFormat.COLOR_TRANSFER_SDR_VIDEO, codec.getInputFormat().getInteger(MediaFormat.KEY_COLOR_TRANSFER_REQUEST));
+            assertEquals(FamilyNames.HDR_BRIGHTNESS + ": invoked 1, 1 found, 0 missing. Counted: "
+                    + HdrBrightness.DECODER_TONE_MAPS + " 1", statusLine());
+            codec.release();
+
+            MediaCodec plain = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_VP9);
+            HdrBrightness.configure(plain, video(MediaFormat.COLOR_TRANSFER_SDR_VIDEO), surface(), null, 0);
+            assertFalse("an SDR video was asked", plain.getInputFormat().containsKey(MediaFormat.KEY_COLOR_TRANSFER_REQUEST));
+            plain.release();
+        } finally {
+            ShadowMediaCodec.clearCodecs();
+        }
+    }
+
+    @Test
+    public void aDecoderThatDropsTheRequestCantToneMap() {
+        assertFalse("no request kept", HdrBrightness.keptRequest(video(MediaFormat.COLOR_TRANSFER_HLG)));
+        assertFalse("no input format", HdrBrightness.keptRequest(null));
+        MediaFormat kept = video(MediaFormat.COLOR_TRANSFER_HLG);
+        kept.setInteger(MediaFormat.KEY_COLOR_TRANSFER_REQUEST, MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
+        assertTrue("the request kept", HdrBrightness.keptRequest(kept));
+    }
+
+    @Test
+    @Config(sdk = 30)
+    public void beforeAndroid12NoDecoderIsAsked() {
+        assertNotAsked("Android 11", video(MediaFormat.COLOR_TRANSFER_HLG), surface(), 0);
+    }
+
     private void assertFacebooks(String when) {
         HookStatus.clear();
         assertEquals(when + ", an HDR window", ActivityInfo.COLOR_MODE_HDR, asked(ActivityInfo.COLOR_MODE_HDR));
@@ -171,7 +274,8 @@ public class HdrBrightnessTest {
                 HdrBrightness.getSupportedHdrTypes(display.getHdrCapabilities()));
         assertArrayEquals(when + ", the mode's types", display.getMode().getSupportedHdrTypes(),
                 HdrBrightness.getSupportedHdrTypes(display.getMode()));
+        assertNotAsked(when + ", an HDR video decoder", video(MediaFormat.COLOR_TRANSFER_HLG), surface(), 0);
         String line = statusLine();
-        assertEquals(when + ", the report", FamilyNames.HDR_BRIGHTNESS + ": invoked 6, 0 found, 0 missing", line);
+        assertEquals(when + ", the report", FamilyNames.HDR_BRIGHTNESS + ": invoked 7, 0 found, 0 missing", line);
     }
 }

@@ -30,7 +30,6 @@ private const val EVIDENCE = "Playback format evidence"
 internal const val DAV1D_ADAPTER = "Lexoplayer2/av1/src/Dav1dMediaCodecAdapter;"
 internal const val FORMAT_EVIDENCE = "$EXTENSION_PACKAGE/media/PlaybackFormatEvidence;"
 internal const val MEDIA_FORMAT = "Landroid/media/MediaFormat;"
-private const val MEDIA_CODEC = "Landroid/media/MediaCodec;"
 private val CONFIGURE_PARAMETERS = listOf(MEDIA_FORMAT, "Landroid/view/Surface;", "Landroid/media/MediaCrypto;", "I", "Ljava/lang/Object;")
 
 /** Whether [method] is a playback adapter's configure: (MediaFormat, Surface, MediaCrypto, int, Object)V, not static. */
@@ -51,10 +50,12 @@ private fun Method.calls(owner: String, name: String): Int = implementation?.ins
  * Whether [candidate] is the adapter for Android's own decoder on the playback interface
  * [adapterInterface]: it implements it, and its configure and getOutputFormat each call
  * MediaCodec's once. A wrapper that hands both on to another adapter calls neither, and an
- * encoder isn't on that interface.
+ * encoder isn't on that interface. A configure Turn off HDR brightness already sent to the
+ * extension still counts, whichever patch runs first.
  */
 internal fun isPlatformPlaybackAdapter(candidate: ClassDef, adapterInterface: String): Boolean =
-    adapterInterface in candidate.interfaces && candidate.methods.count { isPlaybackConfigure(it) && it.calls(MEDIA_CODEC, "configure") == 1 } == 1 &&
+    adapterInterface in candidate.interfaces &&
+        candidate.methods.count { isPlaybackConfigure(it) && it.calls(MEDIA_CODEC, "configure") + it.calls(HDR_BRIGHTNESS, "configure") == 1 } == 1 &&
         candidate.methods.count { isPlaybackOutput(it) && it.calls(MEDIA_CODEC, "getOutputFormat") == 1 } == 1
 
 /** One decoder's configure and getOutputFormat, and the [route] its lines name ("platform" or "dav1d"). */

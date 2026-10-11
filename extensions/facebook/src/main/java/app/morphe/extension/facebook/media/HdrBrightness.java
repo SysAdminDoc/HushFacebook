@@ -5,11 +5,17 @@
 package app.morphe.extension.facebook.media;
 
 import android.content.pm.ActivityInfo;
+import android.media.MediaCodec;
+import android.media.MediaCodecInfo.CodecProfileLevel;
+import android.media.MediaCrypto;
+import android.media.MediaFormat;
 import android.os.Build;
 import android.view.Display;
+import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.Window;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -44,6 +50,16 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * Display.isHdrSdrRatioAvailable} stays Facebook's: the AV1 decoder backs its own lift off only
  * when it can read a low ratio.
  *
+ * <p>On Android 14 none of that reaches an HDR video: #93's report showed a VP9 HLG reel set up on
+ * Android's own decoder, drawn on Facebook's surface, with not one of the calls above made. So
+ * each of Facebook's calls of {@code MediaCodec.configure} comes here as well, and while the switch
+ * is on, a video decoder drawing an HDR video (PQ, HLG, Dolby Vision or an HDR profile) to a
+ * surface is asked, on Android 12 and newer, to hand its pictures over in the usual range ({@code
+ * color-transfer-request} set to SDR). A phone whose decoder can do that keeps the request in the
+ * decoder's input format, and the report counts which way each one answered. One that can't
+ * ignores it, and the video plays as before. dav1d's AV1 decoder isn't Android's, so it isn't
+ * asked. A decoder that fails to set up with the request is set up again exactly as Facebook asked.
+ *
  * <p>A switch change shows from the next screen Facebook brings to the front. Nothing here may
  * throw into Facebook's screen: off, paused, before the settings are ready or when anything here
  * fails, Facebook's request goes through unchanged.
@@ -61,6 +77,15 @@ public final class HdrBrightness {
     /** Counted for each time Facebook asked what the screen shows and heard that it shows no HDR. */
     static final String SCREEN_HELD = "screen answered as showing no HDR";
 
+    /** Counted for each HDR video decoder that said it would hand its pictures over in the usual range. */
+    static final String DECODER_TONE_MAPS = "HDR video decoder tone-maps to the usual range";
+
+    /** Counted for each HDR video decoder asked and not saying yes: this phone's decoder can't. */
+    static final String DECODER_CANNOT = "HDR video decoder can't tone-map";
+
+    /** Counted for each HDR video decoder that failed to set up with the request, and was set up without it. */
+    static final String DECODER_REFUSED = "HDR video decoder refused the request";
+
     /** No headroom over the screen's usual white, so nothing on screen goes brighter than it. */
     static final float NO_HEADROOM = 1f;
 
@@ -70,8 +95,125 @@ public final class HdrBrightness {
     private static final String FAMILY = FamilyNames.HDR_BRIGHTNESS;
 
     private static volatile boolean windowLogged;
+    private static volatile boolean decoderLogged;
 
     private HdrBrightness() {
+    }
+
+    /**
+     * Injection point, in place of each of Facebook's calls of {@code MediaCodec.configure}. Asks an
+     * HDR video decoder for the usual range first while the switch is on ({@link #askForUsualRange}),
+     * then sets it up as Facebook asked and counts the decoder's answer. Anything else is set up
+     * exactly as Facebook asked.
+     */
+    public static void configure(MediaCodec codec, @Nullable MediaFormat format, @Nullable Surface surface,
+                                 @Nullable MediaCrypto crypto, int flags) {
+        if (!askForUsualRange(format, surface, flags)) {
+            codec.configure(format, surface, crypto, flags);
+            return;
+        }
+        try {
+            codec.configure(format, surface, crypto, flags);
+        } catch (IllegalArgumentException | MediaCodec.CodecException refused) {
+            // The request must never cost a video: set it up again exactly as Facebook asked. If
+            // that can't be done, Facebook hears what went wrong the first time.
+            if (!withdraw(format)) throw refused;
+            try {
+                codec.reset();
+            } catch (RuntimeException stuck) {
+                throw refused;
+            }
+            codec.configure(format, surface, crypto, flags);
+            count(DECODER_REFUSED);
+            return;
+        }
+        count(toneMaps(codec) ? DECODER_TONE_MAPS : DECODER_CANNOT);
+    }
+
+    /**
+     * Whether [format] was just asked to come out in the usual range: an HDR video ({@link
+     * #hdrVideo}) going to [surface] on a decoder, on Android 12 or newer, with the switch on and
+     * no request of Facebook's own. Adds the request to [format] when it answers yes.
+     */
+    static boolean askForUsualRange(@Nullable MediaFormat format, @Nullable Surface surface, int flags) {
+        if (Build.VERSION.SDK_INT < 31 || format == null || surface == null
+                || (flags & MediaCodec.CONFIGURE_FLAG_ENCODE) != 0) return false;
+        try {
+            if (!hdrVideo(format) || format.containsKey(MediaFormat.KEY_COLOR_TRANSFER_REQUEST) || !on()) return false;
+            format.setInteger(MediaFormat.KEY_COLOR_TRANSFER_REQUEST, MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
+            HookStatus.bound(FAMILY, "decoder");
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "decoder", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Whether [format] is a video in HDR: a PQ or HLG transfer, Dolby Vision, or, when it names no
+     * transfer, an HDR profile of HEVC, VP9 or AV1. A transfer that's neither says it isn't.
+     */
+    static boolean hdrVideo(MediaFormat format) {
+        String mime = format.getString(MediaFormat.KEY_MIME);
+        if (mime == null || !mime.startsWith("video/")) return false;
+        if (MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION.equals(mime)) return true;
+        if (format.containsKey(MediaFormat.KEY_COLOR_TRANSFER)) {
+            int transfer = format.getInteger(MediaFormat.KEY_COLOR_TRANSFER);
+            return transfer == MediaFormat.COLOR_TRANSFER_ST2084 || transfer == MediaFormat.COLOR_TRANSFER_HLG;
+        }
+        if (!format.containsKey(MediaFormat.KEY_PROFILE)) return false;
+        int profile = format.getInteger(MediaFormat.KEY_PROFILE);
+        switch (mime) {
+            case MediaFormat.MIMETYPE_VIDEO_HEVC:
+                return profile == CodecProfileLevel.HEVCProfileMain10HDR10 || profile == CodecProfileLevel.HEVCProfileMain10HDR10Plus;
+            case MediaFormat.MIMETYPE_VIDEO_VP9:
+                return profile == CodecProfileLevel.VP9Profile2HDR || profile == CodecProfileLevel.VP9Profile3HDR
+                        || profile == CodecProfileLevel.VP9Profile2HDR10Plus || profile == CodecProfileLevel.VP9Profile3HDR10Plus;
+            case MediaFormat.MIMETYPE_VIDEO_AV1:
+                return profile == CodecProfileLevel.AV1ProfileMain10HDR10 || profile == CodecProfileLevel.AV1ProfileMain10HDR10Plus;
+            default:
+                return false;
+        }
+    }
+
+    /** Whether [codec], just set up with the request, kept it: a decoder that will tone-map does. */
+    private static boolean toneMaps(MediaCodec codec) {
+        try {
+            return keptRequest(codec.getInputFormat());
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "decoder answer", failure);
+            return false;
+        }
+    }
+
+    /** Whether a decoder's input format [input] holds the request for the usual range. */
+    static boolean keptRequest(@Nullable MediaFormat input) {
+        return Build.VERSION.SDK_INT >= 31 && input != null && input.containsKey(MediaFormat.KEY_COLOR_TRANSFER_REQUEST)
+                && input.getInteger(MediaFormat.KEY_COLOR_TRANSFER_REQUEST) == MediaFormat.COLOR_TRANSFER_SDR_VIDEO;
+    }
+
+    /** Takes the request back out of [format]. False when it can't. */
+    private static boolean withdraw(@Nullable MediaFormat format) {
+        try {
+            if (format == null || Build.VERSION.SDK_INT < 31) return false;
+            format.removeKey(MediaFormat.KEY_COLOR_TRANSFER_REQUEST);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "decoder retry", failure);
+            return false;
+        }
+    }
+
+    private static void count(String what) {
+        try {
+            HookStatus.counted(FAMILY, what);
+            if (!decoderLogged) {
+                decoderLogged = true;
+                Logger.printDebug(() -> "Turn off HDR brightness: " + what);
+            }
+        } catch (Throwable ignored) {
+            // Counting is for the report only; Facebook's decoder is already set up.
+        }
     }
 
     /** Injection point, in place of each of Facebook's calls of {@code Window.setColorMode}. */

@@ -41,6 +41,10 @@ internal const val CAPABILITY_HDR_TYPES = "$HDR_CAPABILITIES->getSupportedHdrTyp
 internal const val OWN_IS_HDR = "$HDR_BRIGHTNESS->isHdr($DISPLAY)Z"
 internal const val OWN_MODE_HDR_TYPES = "$HDR_BRIGHTNESS->getSupportedHdrTypes($DISPLAY_MODE)[I"
 internal const val OWN_CAPABILITY_HDR_TYPES = "$HDR_BRIGHTNESS->getSupportedHdrTypes($HDR_CAPABILITIES)[I"
+internal const val MEDIA_CODEC = "Landroid/media/MediaCodec;"
+private const val CONFIGURE_SHAPE = "Landroid/media/MediaFormat;Landroid/view/Surface;Landroid/media/MediaCrypto;I"
+internal const val CODEC_CONFIGURE = "$MEDIA_CODEC->configure(${CONFIGURE_SHAPE})V"
+internal const val OWN_CODEC_CONFIGURE = "$HDR_BRIGHTNESS->configure($MEDIA_CODEC${CONFIGURE_SHAPE})V"
 
 /**
  * Keeps HDR video and photos from turning the screen up to full brightness. Facebook asks Android
@@ -55,6 +59,12 @@ internal const val OWN_CAPABILITY_HDR_TYPES = "$HDR_BRIGHTNESS->getSupportedHdrT
  * Android 15 Facebook doesn't lift ordinary videos into HDR and a Dolby Vision video takes its
  * fallback track. Display.isHdrSdrRatioAvailable stays Facebook's: the AV1 decoder backs its
  * own HDR lift off only when it can read a low ratio.
+ *
+ * On Android 14 and older nothing above reaches a video Facebook draws on its own surface (#93:
+ * a VP9 HLG reel on 582 went to the panel as HDR with none of those calls made), so each of
+ * Facebook's calls of MediaCodec.configure goes to the extension too, which asks an HDR video
+ * decoder drawing to a surface for the usual range (Android 12's color-transfer-request) before
+ * setting it up, and counts whether the phone's decoder said yes.
  *
  * In the default selection with its switch off: HDR is how Facebook means those videos to look,
  * and some people want it.
@@ -83,8 +93,9 @@ val turnOffHdrBrightnessPatch = bytecodePatch(
 
 /**
  * The extension method taking the place of [instruction], when it's one of Facebook's calls of
- * [SET_COLOR_MODE] or [SET_HDR_HEADROOM], or one of its questions of the screen ([IS_HDR],
- * [MODE_HDR_TYPES], [CAPABILITY_HDR_TYPES]). Null for anything else.
+ * [SET_COLOR_MODE] or [SET_HDR_HEADROOM], one of its questions of the screen ([IS_HDR],
+ * [MODE_HDR_TYPES], [CAPABILITY_HDR_TYPES]), or a decoder's set-up ([CODEC_CONFIGURE]). Null for
+ * anything else.
  */
 internal fun ownWindowCall(instruction: Instruction): String? {
     if (instruction.opcode != Opcode.INVOKE_VIRTUAL && instruction.opcode != Opcode.INVOKE_VIRTUAL_RANGE) return null
@@ -94,14 +105,15 @@ internal fun ownWindowCall(instruction: Instruction): String? {
         IS_HDR -> OWN_IS_HDR
         MODE_HDR_TYPES -> OWN_MODE_HDR_TYPES
         CAPABILITY_HDR_TYPES -> OWN_CAPABILITY_HDR_TYPES
+        CODEC_CONFIGURE -> OWN_CODEC_CONFIGURE
         else -> null
     }
 }
 
 /**
- * The classes outside the extension that make one of Facebook's window calls or screen questions
- * ([ownWindowCall]). Throws when none of them sets a colour mode: Facebook asks for its HDR window
- * somewhere else then.
+ * The classes outside the extension that make one of Facebook's window calls, screen questions or
+ * decoder set-ups ([ownWindowCall]). Throws when none of them sets a colour mode: Facebook asks
+ * for its HDR window somewhere else then. The fixture test holds each build's decoder set-ups.
  */
 internal fun BytecodePatchContext.windowCallers(): Set<String> {
     val owners = mutableSetOf<String>()
