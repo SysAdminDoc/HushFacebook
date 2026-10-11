@@ -10,6 +10,24 @@ package app.morphe.patches.facebook.misc.resignedtrust
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.fieldAccess
 import app.morphe.patcher.methodCall
+import app.morphe.patcher.string
+
+/**
+ * Facebook's push service package check (582: `LX/0J4;->A00(Context, PackageInfo holder)V`), which
+ * hashes a package's one signer with SHA-256 and looks the hash up among Meta's. Its log tag and
+ * error strings are literals Facebook keeps; the class and method names are Redex names.
+ */
+internal object FbnsPackageCheckFingerprint : Fingerprint(
+    returnType = "V",
+    filters = listOf(
+        fieldAccess(
+            definingClass = "Landroid/content/pm/PackageInfo;",
+            name = "signatures",
+        ),
+        string("PackageInfoUtil"),
+        string("Failed to create SHA-256 hash"),
+    ),
+)
 
 /**
  * The method that gives Facebook's security code the signers of a package.

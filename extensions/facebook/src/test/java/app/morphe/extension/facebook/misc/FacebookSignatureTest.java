@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.misc;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -143,6 +144,28 @@ public class FacebookSignatureTest {
         } finally {
             ShadowProcess.setUid(app);
         }
+    }
+
+    /**
+     * The push service's own read (#112): this app, under its name or a clone's, gets Facebook's
+     * certificate in place of what the system read, and any other package keeps the system's array,
+     * the very one it was handed.
+     */
+    @Test
+    public void thePushServiceCheckGetsTheOriginalCertificateForThisAppOnly() throws Exception {
+        Signature[] reported = {new Signature(new byte[] {1, 2, 3})};
+        for (String name : new String[] {"com.facebook.katana", "com.facebook.katana.morphe"}) {
+            Signature[] answered = FacebookSignature.fbnsSigners(self(name), reported);
+            assertEquals(name, 1, answered.length);
+            byte[] sha1 = MessageDigest.getInstance("SHA-1").digest(answered[0].toByteArray());
+            assertEquals(name, (byte) 0x8a, sha1[0]);
+            assertEquals(name, (byte) 0x3c, sha1[1]);
+        }
+        for (PackageInfo other : new PackageInfo[] {
+                installed("com.facebook.katana", OTHER_UID), installed("com.facebook.orca", OTHER_UID), null}) {
+            assertSame(other == null ? "null" : other.packageName, reported, FacebookSignature.fbnsSigners(other, reported));
+        }
+        assertNull("a missing array stays missing", FacebookSignature.fbnsSigners(installed("com.facebook.orca", OTHER_UID), null));
     }
 
     /**

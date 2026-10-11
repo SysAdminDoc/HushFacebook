@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.media.hdr.playbackFormatEvidencePatch
 import app.morphe.patches.facebook.misc.extension.FACEBOOK_APPLICATION
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.resignedtrust.fbnsSignersPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.superclassChain
 import com.android.tools.smali.dexlib2.Opcode
@@ -89,6 +90,9 @@ val settingsPatch = bytecodePatch(
     // With Debug logging on, a report names the video formats Facebook's decoders were set up
     // with, so it says whether a video was HDR whatever was picked. See PlaybackFormatEvidencePatch.kt.
     dependsOn(playbackFormatEvidencePatch)
+    // A re-signed build's push service rejects Facebook and restarts itself in a loop unless its
+    // signer read gets the original certificate, whatever was picked. See FbnsSignersPatch.kt.
+    dependsOn(fbnsSignersPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {

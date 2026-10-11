@@ -86,6 +86,20 @@ public final class FacebookSignature {
         return null;
     }
 
+    /**
+     * The signers Facebook's push service package check hashes: Facebook's original certificate
+     * when [info] is this app, and [reported], what the system read, for any other package. The
+     * check reads {@code PackageInfo.signatures} itself rather than through the method
+     * {@link #originalSigners} answers for. On a re-signed build it failed for Facebook's own
+     * package, and the push service stopped and was started again in a loop that left threads
+     * running each round (#112, HushThreads #6). It runs in Facebook's {@code :notification}
+     * process, so it counts nothing in a report the main process writes.
+     */
+    public static Signature[] fbnsSigners(PackageInfo info, Signature[] reported) {
+        if (!isThisApp(info)) return reported;
+        return meta().toArray(new Signature[0]);
+    }
+
     /** Facebook's original certificate, read once. */
     private static List<Signature> meta() {
         List<Signature> signers = original;
