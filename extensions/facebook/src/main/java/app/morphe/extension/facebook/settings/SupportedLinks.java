@@ -49,7 +49,11 @@ final class SupportedLinks {
      */
     static final String APP_MANAGER = "com.facebook.appmanager";
 
-    /** Messenger, verified for facebook.com, www.facebook.com, m.me and www.m.me (#78). */
+    /**
+     * Messenger, verified for facebook.com, www.facebook.com, m.me and www.m.me (#78). Messenger
+     * 582's manifest also lists fb.me and www.fb.me (paths /msg), but only in a filter without
+     * autoVerify, so Android never verifies Messenger for them and they stay this app's to select.
+     */
     static final String MESSENGER = "com.facebook.orca";
 
     /** Instagram, verified for facebook.com, www.facebook.com and m.facebook.com (#78). */
