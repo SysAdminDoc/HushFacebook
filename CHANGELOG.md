@@ -40,6 +40,17 @@ Every Hushfacebook release, newest first.
 * **Facebook:** The **Messenger** and **Instagram** rows under Links say what to pick on newer Android, where that app's Open by default page offers **In the app** and **In your browser** instead of an **Open supported links** switch. Picking **In your browser** for the official Messenger frees facebook.com and www.facebook.com, so they stay selected for Hushfacebook (issue #111).
 * **Facebook:** Block ad telemetry also stops several of the ways Facebook sends your phone's advertising ID. The job that posts it with your limit-tracking choice is stopped, and so are the launch event that carries it next to your device id, the GraphQL report of it and the install event sent from the first login screen. Other apps on your phone that ask Facebook for the ID get the empty answer Facebook gives when Google Play services has none, and Facebook no longer logs which app asked. The code that registers ad views and clicks with Android's own ad measurement returns right away, and so do the check of that measurement's status and the test ad audience job. A Facebook build that moved one of these still gets the rest, and the patch log says which one kept running.
 
+### Reported issues
+
+* **Facebook:** #109 Unlock the paid Facebook icons: the new `Unlock app icons` patch under Appearance lets you pick any icon on Facebook's App icon page.
+* **Facebook:** #114 Shortcuts for Reels and Watch history: the new **Watch history shortcut** switch under Menu adds a Watch history shortcut to Facebook's icon and a Watch history row to the Menu.
+* **Facebook:** #73 Keep the reel progress bar visible: **Keep the progress bar** covers short reels too and moves smoothly, and the new **Show a reel's time** switch keeps the elapsed and total time above it.
+* **Facebook:** #117 Mark as seen button glitch: the eye sits in the story's top row and hides while a story is moving.
+* **Facebook:** #37 Material You in dark mode: the comments under a post and the box under a link post's picture take your palette.
+* **Facebook:** #14 Saved videos playing silent in some gallery apps: saves whose only sound is xHE-AAC get AAC-LC sound, with the picture at full quality.
+* **Facebook:** #111 Links from Messenger opening in Messenger's browser: the Messenger and Instagram rows under Links say what to pick on newer Android so facebook.com links stay with Hushfacebook.
+* **Facebook:** Already in Hushfacebook and seen working since the last release: #84 **Hide the tab bar while scrolling** (AMOLED too), #65 the Material You colors on the tab bar, #98 **Share the post's own link**, #104 **Hide group buttons in the share sheet** and #107 **Hide the Follow link on posts**.
+
 ## 0.9.0 (2026-10-10)
 
 * **Facebook:** This release gathers everything since v0.8.0 and brings 86 patches for Facebook 582.0.0.50.54, up from 85. The new one is `Share sheet items`, which takes the items you pick off Facebook's share sheet. Morphe Manager's default selection now holds every patch but three, and after an update the settings page tells you which switches start off now. New switches hide the share sheet's Send to group buttons, share a post's own link instead of a /share/ link, play reels once and hide the Follow link on posts. Morphe Manager 1.34.0 or newer is required.
