@@ -1,0 +1,1859 @@
+# Traditional Chinese (Taiwan) for Hushfacebook: the English key, a tab, the translation. One row per string.
+# After editing, run python scripts/gen-l10n.py from the repository root.
+Build %1$s	建置版本 %1$s
+Hides "Pages you may like" cards, cards promoting Facebook's own features, and surveys in the feed.	隱藏動態消息中的「你可能喜歡的粉絲專頁」卡片、推廣 Facebook 自家功能的卡片，以及問卷調查。
+%1$d item in that file isn't a setting this version of Hushfacebook knows, so it'll be left out.	該檔案中有 %1$d 個項目不屬於此版本 Hushfacebook 可辨識的設定，因此會略過。
+%1$d items in that file aren't settings this version of Hushfacebook knows, so they'll be left out.	該檔案中有 %1$d 個項目不屬於此版本 Hushfacebook 可辨識的設定，因此會略過。
+%1$d switch will change.	將變更 %1$d 個開關。
+%1$d switches will change.	將變更 %1$d 個開關。
+%1$s of %2$s	%1$s / %2$s
+%1$s so far	目前已完成 %1$s
+%1$s a second	每秒 %1$s
+%1$s elapsed	已用時間 %1$s
+Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return.	在 Reels 新增「下載」按鈕，使用你設定的下載畫質。停用或暫停後，會恢復 Facebook 原有的按鈕。
+A file named %1$s in %2$s paused Hushfacebook.	%2$s 中名為 %1$s 的檔案使 Hushfacebook 暫停。
+About	關於
+Hides ad cards between people's stories.	隱藏他人限時動態之間的廣告卡片。
+Add Download to phone to feed and Watch video menus. Uses the quality below. Off or paused, Facebook's menu returns.	在動態消息與 Watch 影片的選單中新增「下載到手機」，使用下方的畫質設定。停用或暫停後，會恢復 Facebook 原有的選單。
+Add Save to every story menu, using your download quality. Off or paused, Facebook only saves your own stories.	在每則限時動態的選單中新增「儲存」，使用你設定的下載畫質。停用或暫停後，Facebook 只允許儲存你自己的限時動態。
+# context: switch title on the Stories page, under Save any story; offers the Save photo menu item on more stories than before
+Save photo on more stories	儲存更多限時動態的相片
+# context: summary of that switch; "Save photo" is the menu item's name, keep it as translated for that item; the cover picture is the still image shown before a video plays
+Adds Save photo to any story that carries a picture beside its video, like a photo story with music that Facebook didn't mark as one. On a video story it saves the cover picture. Off by default, since it hasn't been tried on a real account yet.	在影片之外還帶有圖片的限時動態中新增「儲存相片」，例如 Facebook 未辨識為相片限時動態的配樂相片。若是影片限時動態，則儲存封面圖片。預設停用，因為尚未使用真實帳號測試。
+Hides ads in Reels, starting with the next batch Facebook loads. Banner ads, mid-video ads and other ads added by the app stay blocked even while paused.	隱藏 Reels 中的廣告，從 Facebook 載入下一批內容起生效。橫幅廣告、影片插播廣告及應用程式加入的其他廣告，即使暫停時仍會封鎖。
+AMOLED black theme	AMOLED 純黑主題
+Appearance	外觀
+Back	返回
+Cancel	取消
+Cancel saving this photo	取消儲存這張相片
+Cancel saving this video	取消儲存這部影片
+Changing these	將變更以下項目
+Choose a settings file you saved earlier. You'll see how many switches it changes before anything is applied.	選擇先前儲存的設定檔。套用之前，會先顯示將變更的開關數量。
+Clear diagnostic data	清除診斷資料
+Copy or save a report to send with a bug report. Links, IDs, cookies and sign-in details are left out. Check it before sharing.	複製或儲存報告，以便回報問題時附上。報告不含連結、ID、Cookie 與登入資料。分享前請先檢查。
+Copy quick report	複製簡要報告
+Copying to the gallery	正在複製到相片庫
+Couldn't import the settings, and couldn't put back the ones you had. Check the switches on this screen.	無法匯入設定，也無法還原原有設定。請檢查此畫面上的開關。
+Couldn't import the settings. Nothing was changed.	無法匯入設定。未變更任何內容。
+Couldn't open or share that saved file. Try again.	無法開啟或分享該已儲存的檔案。請再試一次。
+Couldn't open that file. Nothing was changed.	無法開啟該檔案。未變更任何內容。
+Couldn't open the file picker. Try again.	無法開啟檔案選擇器。請再試一次。
+Couldn't put back the diagnostic data. Try again.	無法還原診斷資料。請再試一次。
+Couldn't save the settings file. Try again.	無法儲存設定檔。請再試一次。
+Couldn't save this video. Play it for a moment, then try again.	無法儲存這部影片。請先播放片刻，再試一次。
+Couldn't start that. Try again in a moment.	無法啟動。請稍後再試。
+Couldn't start the report export. Try again shortly.	無法開始匯出報告。請稍後再試。
+Couldn't turn Hushfacebook back on. Try again.	無法重新啟用 Hushfacebook。請再試一次。
+Dark mode uses black instead of dark gray. Turn on dark mode in Facebook to see it.	深色模式使用黑色取代深灰色。請在 Facebook 啟用深色模式以查看效果。
+Dark mode uses %1$s instead of dark gray. Turn on dark mode in Facebook to see it.	深色模式使用 %1$s 取代深灰色。請在 Facebook 啟用深色模式以查看效果。
+Debug logging	偵錯記錄
+Diagnostic data cleared. Tap again to put it back.	已清除診斷資料。再次點按可還原。
+Diagnostic data put back.	已還原診斷資料。
+Diagnostic report copied to the clipboard.	已將診斷報告複製到剪貼簿。
+Download	下載
+Download button on reels	Reels 下載按鈕
+Download failed. Try again in a moment.	下載失敗。請稍後再試。
+Download feed and Watch videos	下載動態消息與 Watch 影片
+Save any photo	儲存任何相片
+Shows Save photo on every photo you open, even where saving is turned off, and saves the biggest size. Off or paused, Facebook decides again.	在你開啟的每張相片上顯示「儲存相片」，即使原本不允許儲存，也能儲存最大尺寸。停用或暫停後，會恢復由 Facebook 決定。
+Download to phone	下載到手機
+Downloading	下載中
+Downloads	下載
+Erases the activity log and the counts of hidden items that a report would include.	清除活動記錄，以及報告中會包含的已隱藏項目計數。
+# context: second sentence of the paused card on the settings overview, after the reason it's paused; Lock Facebook keeps working while paused
+Every switch but Debug logging and Lock Facebook acts as if it were off, and what was set when you patched stays in. Your settings stay as they are.	除了「偵錯記錄」與「鎖定 Facebook」，所有開關都視為停用；修補時套用的變更仍會生效。你的設定會保留。
+Export diagnostic report	匯出診斷報告
+Export settings	匯出設定
+Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook 連續三次在啟動後一分鐘內當機或停止回應，因此 Hushfacebook 已自行暫停。
+Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook 不再於背景下載廣告或用於挑選廣告的資料。
+Facebook doesn't show its ads inside other apps on this phone.	Facebook 不會在這支手機上的其他應用程式中顯示自己的廣告。
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	深色模式與此畫面使用桌布的配色（Android 11 使用藍色）。請在 Facebook 啟用深色模式以查看效果。
+Hide Stories between posts	隱藏貼文之間的限時動態
+Joining the picture and sound	正在合併影像與聲音
+# context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working
+Try Facebook without Hushfacebook. From the next start, switches act as if off, except Debug logging and Lock Facebook. Your choices stay saved.	暫時停用 Hushfacebook，試用 Facebook。下次啟動起，除了「偵錯記錄」與「鎖定 Facebook」，所有開關都視為停用。你的選擇仍會儲存。
+Hides Stories shown between posts, from the next time the feed loads. The Stories tray at the top has its own switch.	從下次載入動態消息起，隱藏貼文之間的限時動態。頂端的限時動態橫幅有獨立的開關。
+Open	開啟
+Photo saved	已儲存相片
+Settings exported. Hushfacebook couldn't read the file back to check it.	已匯出設定，但 Hushfacebook 無法重新讀取檔案以檢查內容。
+Share	分享
+That saved file is no longer available.	該已儲存的檔案已無法使用。
+The app holding that file is taking too long, so Hushfacebook stopped waiting. Nothing was changed.	提供該檔案的應用程式回應過慢，Hushfacebook 已停止等待。未變更任何內容。
+The app holding the last settings file still hasn't answered. Try again later.	提供上一個設定檔的應用程式仍未回應。請稍後再試。
+The app holding the settings file is taking too long, so Hushfacebook stopped waiting. That app may still finish saving it, so check the file before you rely on it.	提供設定檔的應用程式回應過慢，Hushfacebook 已停止等待。該應用程式仍可能完成儲存，請先檢查檔案再使用。
+The file %1$s couldn't be removed. Delete it from %2$s, then tap Resume again.	無法刪除檔案 %1$s。請從 %2$s 刪除它，再次點按「繼續」。
+The settings file was saved, but it doesn't match what Hushfacebook wrote. Save it again as a new file.	已儲存設定檔，但內容與 Hushfacebook 寫入的不符。請重新另存為新檔案。
+There's no app here that can open or share this saved file.	這支手機上沒有可開啟或分享該已儲存檔案的應用程式。
+# context: line at the top of a settings page while paused; Lock Facebook keeps working while paused
+Until you resume, every switch but Debug logging and Lock Facebook acts as if it were off. Changes made when you patched stay in.	繼續之前，除了「偵錯記錄」與「鎖定 Facebook」，所有開關都視為停用。修補時套用的變更仍會生效。
+Shows your phone's own emoji instead of Facebook's. Reactions and stickers don't change. Restart Facebook to see the change.	顯示手機的表情符號，取代 Facebook 的表情符號。心情與貼圖不受影響。重新啟動 Facebook 後生效。
+# context: switch title under Appearance; the tab bar is Facebook's row of tabs, Home, Video, Marketplace and the rest
+Tab bar at the bottom	將分頁列移至底部
+# context: switch title under Appearance, next to Tab bar at the bottom; puts Facebook's row of tabs at the top of the screen
+Tab bar at the top	將分頁列移至頂端
+# context: description of that switch; Facebook shows the tab bar at the top of the screen on some accounts and at the bottom on others
+Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.	若帳號的 Facebook 分頁列顯示在頂端，將其移至底部，方便拇指操作。重新啟動 Facebook 後生效。
+# context: summary of that switch; the search row is the top bar with the Facebook logo, search and Messenger
+Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.	將 Facebook 分頁列移至頂端的搜尋列下方，如同舊版 Facebook。重新啟動 Facebook 後生效。
+# context: switch title under Appearance, right after Tab bar at the bottom; the bar slides off the screen while you scroll the feed down
+Hide the tab bar while scrolling	捲動時隱藏分頁列
+# context: description of that switch; it does nothing while the tab bar is at the top of the screen
+The bottom tab bar hides as you scroll down and returns when you scroll up, for more room. Restart Facebook to see the change.	向下捲動時隱藏底部分頁列，向上捲動時再次顯示，以增加顯示空間。重新啟動 Facebook 後生效。
+# context: switch title under Appearance, after Hide the tab bar while scrolling; the bottom bar never slides off the screen
+Keep the tab bar on screen	保持顯示分頁列
+# context: description of that switch; it greys out while Hide the tab bar while scrolling is on
+The bottom tab bar stays put while you scroll, on accounts where Facebook slides it away. Restart Facebook to see the change.	若帳號的 Facebook 會在捲動時收起底部分頁列，讓它保持顯示。重新啟動 Facebook 後生效。
+# context: switch title right after it; the bar at the top with search and Messenger never slides off the screen
+Keep the top bar on screen	保持顯示頂端列
+# context: description of that switch
+The top bar with search and Messenger stays put while you scroll down, instead of sliding away.	向下捲動時，含有搜尋與 Messenger 的頂端列會保持顯示，不再滑出畫面。
+# context: switch title under Appearance, after Keep the top bar on screen; a big screen is a tablet or the inner screen of a folding phone, and the phone layout is the one Facebook shows on a normal phone
+Phone layout on big screens	在大螢幕使用手機版面配置
+# context: description of that switch; on a big screen Facebook keeps the tab bar at the top in a wider layout, so the tab bar switches above it do nothing there
+A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the tab bar switches above work on the big screen too. Facebook's wider big screen layout goes away. Off by default, since it hasn't been tried on a big screen yet. Restart Facebook to see the change.	平板或展開的摺疊手機會使用 Facebook 的手機版面配置，讓上方的分頁列開關也能在大螢幕生效，並取代 Facebook 較寬的大螢幕版面配置。預設停用，因為尚未在大螢幕上測試。重新啟動 Facebook 後生效。
+# context: switch title under Appearance, after Phone layout on big screens; it makes Facebook's top bar (search and Messenger) and its tab bar partly transparent
+See-through bars	透明列
+# context: description of that switch; the feed is the list of posts on Home, and blurred means frosted like glass
+The top bar and the tab bar turn see-through, so the feed shows through them as you scroll. On Android 12 and newer the feed behind them is blurred.	將頂端列與分頁列設為透明，捲動時可透過它們看到動態消息。Android 12 以上版本會模糊處理後方的動態消息。
+# context: switch title under Appearance; it keeps Facebook's dark mode on whatever Facebook's own Dark mode setting says
+Force dark mode	強制深色模式
+# context: description of that switch; on some tablets Facebook's own Settings page has no Dark mode row
+Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.	無論 Facebook 本身如何設定，都保持深色模式。適用於 Facebook 沒有深色模式開關的平板。重新啟動 Facebook 後生效。
+# context: switch title under Appearance, shown with the AMOLED black theme; it makes cards, comments and menus pure black like the page
+Black cards	黑色卡片
+# context: description of that switch; a card is a raised panel such as a post or the Menu's profile box, near black is the dark gray the theme gives it
+Cards and menus take the page's own color instead of the near black that sets them apart. Buttons and search fields keep a dark gray fill, so you can still see them. Restart Facebook to see the change.	卡片與選單使用頁面本身的顏色，取代原本用於區隔的近黑色。按鈕與搜尋框仍保留深灰色底色，方便辨識。重新啟動 Facebook 後生效。
+# context: switch title under Appearance, shown with the AMOLED black theme; it draws a thin gray line in the gap between posts in the feed
+Lines between posts	貼文之間的分隔線
+# context: description of that switch; the black page is the AMOLED theme's pure black background
+A thin gray line between posts in the feed, so posts without photos don't run together on the black page.	在動態消息的貼文之間顯示細灰線，避免沒有相片的貼文在黑色頁面上連成一片。
+Draws Facebook's text in your phone's font, or in a font file you choose below. Restart Facebook to see the change.	使用手機字型或下方選擇的字型檔顯示 Facebook 文字。重新啟動 Facebook 後生效。
+Font file	字型檔
+Use your phone's font	使用手機字型
+Copying the font file	正在複製字型檔
+That isn't a .ttf or .otf font file. Your font didn't change.	這不是 .ttf 或 .otf 字型檔。字型未變更。
+That font file is over %1$d MB. Your font didn't change.	該字型檔超過 %1$d MB。字型未變更。
+Android couldn't use that font file. Your font didn't change.	Android 無法使用該字型檔。字型未變更。
+Couldn't save a copy of that font. Check that the phone has room, then try again.	無法儲存該字型的副本。請確認手機空間足夠，再試一次。
+Couldn't open that file. Your font didn't change.	無法開啟該檔案。字型未變更。
+Couldn't go back to your phone's font. Try again.	無法恢復使用手機字型。請再試一次。
+The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your font didn't change.	提供該字型檔的應用程式回應過慢，Hushfacebook 已停止等待。字型未變更。
+The app holding the last font file still hasn't answered. Try again later.	提供上一個字型檔的應用程式仍未回應。請稍後再試。
+Full report saved to %1$s	已將完整報告儲存至 %1$s
+The GPL-3.0 license, plus notices for the projects this is built on	GPL-3.0 授權條款，以及本專案所依據之專案的聲明
+Hide "People you may know"	隱藏「你可能認識的朋友」
+Hide "Suggested for you" posts	隱藏「為你推薦」貼文
+Hide AI-detected posts	隱藏偵測為 AI 製作的貼文
+Hide promoted posts	隱藏推廣貼文
+Hide Reels in the feed	隱藏動態消息中的 Reels
+Hide sponsored posts	隱藏贊助貼文
+Hide sponsored reels	隱藏贊助 Reels
+Hide sponsored stories	隱藏贊助限時動態
+Hide page suggestions and Facebook's own promos	隱藏粉絲專頁推薦與 Facebook 自家推廣
+Hide the Stories tray	隱藏限時動態橫幅
+How far a photo or video you're saving has got, with a button to cancel it	顯示相片或影片的儲存進度，並提供取消按鈕
+Hushfacebook %1$s on Facebook %2$s	Facebook %2$s 上的 Hushfacebook %1$s
+Hushfacebook is on	Hushfacebook 已啟用
+Hushfacebook is paused	Hushfacebook 已暫停
+Hushfacebook saves	Hushfacebook 儲存項目
+Hushfacebook settings	Hushfacebook 設定
+Hushfacebook settings couldn't open	無法開啟 Hushfacebook 設定
+Hushfacebook turns back on when Facebook restarts.	重新啟動 Facebook 後，Hushfacebook 會重新啟用。
+Import	匯入
+Import settings	匯入設定
+Importing settings	正在匯入設定
+Licenses	授權條款
+Link expired. Reopen the item and try again.	連結已過期。請重新開啟該項目，再試一次。
+Links	連結
+Privacy	隱私
+Material You theme	Material You 主題
+News feed	動態消息
+Facebook doesn't watch for screenshots to target ads, and doesn't report which apps you install.	Facebook 不會為了投放廣告而偵測截圖，也不會回報你安裝了哪些應用程式。
+Not saved: that isn't a Facebook photo or video	未儲存：這不是 Facebook 相片或影片
+Not saved: the file is over 512 MB	未儲存：檔案超過 512 MB
+OK	確認
+Choose a folder name under Movies and Pictures. Invalid characters become underscores. Leave it blank to use the default folder, %1$s.	選擇 Movies 與 Pictures 底下的資料夾名稱。無效字元會以底線取代。留白則使用預設資料夾 %1$s。
+Open links in your browser	在瀏覽器中開啟連結
+Hides paid ads in the feed. They're removed before they appear, so no gap is left.	隱藏動態消息中的付費廣告。廣告會在顯示前移除，因此不會留下空白。
+Pause Hushfacebook	暫停 Hushfacebook
+Hides posts Facebook labels as promotions rather than ads.	隱藏 Facebook 標示為推廣而非廣告的貼文。
+Hides posts Facebook adds from people and Pages you don't follow and groups you haven't joined.	隱藏 Facebook 加入的貼文，來源包括你未追蹤的人和粉絲專頁，以及尚未加入的社團。
+Hides posts that Facebook's own detection marks as made with AI. Posts only their creator labeled stay. Off by default, since it hasn't been tried on a real feed yet.	隱藏 Facebook 自行偵測並標示為 AI 製作的貼文。僅由創作者自行標示的貼文仍會保留。預設停用，因為尚未在實際動態消息中測試。
+On a patched Facebook, profiles, photos, posts and some Settings pages wouldn't open. This fixes that.	修補後的 Facebook 曾無法開啟個人檔案、相片、貼文與部分設定頁面。此修補項目可解決這個問題。
+Profiles, photos and posts won't open	無法開啟個人檔案、相片與貼文
+Patch again with %1$s selected. A patched Facebook needs it to open profiles, photos, posts and some of Facebook's Settings pages.	請選取 %1$s 後重新修補。修補後的 Facebook 需要此項目，才能開啟個人檔案、相片、貼文與部分 Facebook 設定頁面。
+Profiles and posts work again	個人檔案與貼文已恢復正常
+Reading the settings file	正在讀取設定檔
+Reels and Watch	Reels 與 Watch
+# context: the How to block Reels map at the top of Reels and Watch; the last row's %1$s is a patch name as Morphe Manager shows it, kept in English
+How to block Reels	如何封鎖 Reels
+Reels show up in four places, and each one has its own control.	Reels 會出現在四個地方，每個地方都有獨立的控制項。
+Reels in the feed	動態消息中的 Reels
+In News feed, Hide Reels in the feed blocks the rows of reels between posts.	在「動態消息」中，「隱藏動態消息中的 Reels」可封鎖貼文之間成列顯示的 Reels。
+Reels that play by themselves	自動播放的 Reels
+In Playback, Tap to play blocks autoplay, so reels and other videos wait for your tap.	在「播放」中，「點按播放」可阻止自動播放，讓 Reels 與其他影片等你點按後才播放。
+The Reels tab	Reels 分頁
+# context: map line without the patch; %1$s is the patch's English name in Morphe Manager
+Facebook's own setting blocks it. Open Settings, Tab bar, Customize the bar and choose Hide next to Reels, which some accounts call Video. If neither is listed, choose the %1$s patch in Morphe Manager and patch again.	可透過 Facebook 本身的設定隱藏。開啟「設定」，進入「分頁列」與「自訂分頁列」，在 Reels（部分帳號稱為「影片」）旁選擇「隱藏」。若兩者都未列出，請在 Morphe Manager 選取 %1$s 修補項目並重新修補。
+# context: map line with the patch; Reels and Watch is this settings section, Hide the Reels tab is the switch below
+In Reels and Watch, Hide the Reels tab blocks it after a restart.	在「Reels 與 Watch」中，啟用「隱藏 Reels 分頁」並重新啟動後即可隱藏。
+# context: switch title under Reels and Watch; the tab some accounts call Video
+Hide the Reels tab	隱藏 Reels 分頁
+# context: summary of that switch
+Removes the Reels tab, called Video on some accounts, from the tab bar. Reels in the feed and reel links still open. Restart Facebook to see the change.	從分頁列移除 Reels 分頁（部分帳號稱為「影片」）。動態消息中的 Reels 與 Reels 連結仍可開啟。重新啟動 Facebook 後生效。
+# context: start tab row summary when Video is the chosen tab and Hide the Reels tab is on; Home and Video are tab names
+Facebook opens on Home while Hide the Reels tab is on, since Video is off the tab bar. Your choice stays saved.	啟用「隱藏 Reels 分頁」時，由於「影片」已不在分頁列，Facebook 會開啟首頁。你的選擇仍會儲存。
+Everything except Marketplace	Marketplace 以外的所有內容
+In Opening Facebook, Marketplace only blocks the feed, the Reels tab and the other social tabs after a restart.	在「開啟 Facebook」中，啟用「僅使用 Marketplace」並重新啟動後，可封鎖動態消息、Reels 分頁與其他社交分頁。
+Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.	此建置版本未包含這項功能。若要封鎖，請在 Morphe Manager 選取 %1$s 修補項目並重新修補。
+Remove tracking from shared links	移除分享連結中的追蹤資訊
+Retry	重試
+Save any story	儲存任何限時動態
+Save canceled	已取消儲存
+Save folder	儲存資料夾
+Save full report	儲存完整報告
+Saved to %1$s	已儲存至 %1$s
+Saved to the gallery	已儲存至相片庫
+Saved to %1$s in lower quality than on Facebook	已儲存至 %1$s，畫質低於 Facebook 上的版本
+Saved to the gallery in lower quality than on Facebook	已儲存至相片庫，畫質低於 Facebook 上的版本
+# context: a video save's end message when the best file was over 512 MB and a smaller one was saved instead; %1$s is the folder, %2$s the smaller file's quality, such as 480p
+Saved to %1$s at %2$s, since the bigger file is over 512 MB	已以 %2$s 儲存至 %1$s，因為較大的檔案超過 512 MB
+# context: a video save's end message when the best file was over 512 MB and a smaller one was saved instead; %1$s is the smaller file's quality, such as 480p
+Saved to the gallery at %1$s, since the bigger file is over 512 MB	已以 %1$s 儲存至相片庫，因為較大的檔案超過 512 MB
+Saved. Restart Facebook to see the change.	已儲存。重新啟動 Facebook 後生效。
+Saves your switches and download choices to a file, to back up or copy to another phone. Pause, Debug logging and the update check aren't included.	將開關與下載選項儲存為檔案，以便備份或複製到其他手機。不包含暫停、偵錯記錄與更新檢查設定。
+# The release check: its switch and Check now row under Updates, the status card's line about a newer release, and what a failed try says.
+Check for new Hushfacebook releases	檢查 Hushfacebook 新版本
+Once a day, when Facebook starts, checks GitHub for a newer Hushfacebook and tells you at the top of this page. Nothing downloads on its own.	每天啟動 Facebook 時，會向 GitHub 檢查一次 Hushfacebook 新版本，並在此頁頂端通知你。不會自動下載任何內容。
+Check now	立即檢查
+Asks GitHub for the newest release right now, even with the switch above off.	立即向 GitHub 查詢最新版本，即使上方開關停用也可使用。
+Checking GitHub now.	正在向 GitHub 查詢。
+Hushfacebook %1$s is out. Update it in Morphe Manager.	Hushfacebook %1$s 已推出。請在 Morphe Manager 更新。
+It targets Facebook %1$s.	適用於 Facebook %1$s。
+Hushfacebook %1$s targets Facebook %2$s.	Hushfacebook %1$s 適用於 Facebook %2$s。
+Video saved	已儲存影片
+You have the newest Hushfacebook release.	你使用的已是最新版 Hushfacebook。
+The newest Hushfacebook release is %1$s.	最新版 Hushfacebook 為 %1$s。
+Couldn't reach GitHub. Try again later.	無法連線至 GitHub。請稍後再試。
+GitHub is limiting requests from this network right now. Try again later.	GitHub 目前限制此網路的請求次數。請稍後再試。
+GitHub sent a reply Hushfacebook couldn't understand. Try again later.	GitHub 傳回 Hushfacebook 無法辨識的回應。請稍後再試。
+Saves will go to a folder named %1$s.	將儲存至名為 %1$s 的資料夾。
+Saving a photo	正在儲存相片
+Saving a video	正在儲存影片
+Saving the settings file	正在儲存設定檔
+Saving...	儲存中…
+Set when you patched	修補時設定
+Settings couldn't open	無法開啟設定
+Settings couldn't refresh completely. Reopen settings and try again.	無法完整重新整理設定。請重新開啟設定，再試一次。
+Settings exported.	已匯出設定。
+Settings imported. %1$d switch changed.	已匯入設定。已變更 %1$d 個開關。
+Settings imported. %1$d switches changed.	已匯入設定。已變更 %1$d 個開關。
+Settings imported. Saves will go to a folder named %1$s.	已匯入設定。將儲存至名為 %1$s 的資料夾。
+Source code and issues	原始碼與問題回報
+Stays in while paused	暫停時仍生效
+Stories	限時動態
+Removes tracking tags like mibextid from links you share or copy. A facebook.com/share/ link is unique to each share, so Facebook can still trace it.	移除分享或複製連結中的 mibextid 等追蹤標記。facebook.com/share/ 連結每次分享都不同，因此 Facebook 仍能追蹤。
+Tap to turn it back on.	點按以重新啟用。
+That file is too large to be a settings file. Nothing was changed.	該檔案過大，不像是設定檔。未變更任何內容。
+That file isn't readable text, so it may have been damaged on the way. Nothing was changed.	該檔案不是可讀取的文字，可能在傳輸過程中損毀。未變更任何內容。
+That file lists a setting twice, so Hushfacebook can't tell which value to use. Nothing was changed.	該檔案重複列出同一項設定，Hushfacebook 無法判斷要使用哪個值。未變更任何內容。
+That isn't a Hushfacebook settings file. Nothing was changed.	這不是 Hushfacebook 設定檔。未變更任何內容。
+That settings file holds a value Hushfacebook can't read. Nothing was changed.	該設定檔包含 Hushfacebook 無法讀取的值。未變更任何內容。
+# context: a settings file refused on import: its word lists, beside one it leaves as it is, take more than the room the two lists share
+The word lists in that file are longer than the two lists have room for. Nothing was changed.	該檔案中的字詞清單超過兩份清單的容量上限。未變更任何內容。
+That settings file is damaged or only partly downloaded. Nothing was changed.	該設定檔已損毀或尚未下載完整。未變更任何內容。
+That settings file was written by a newer Hushfacebook than this one. Nothing was changed.	該設定檔由較新版的 Hushfacebook 建立。未變更任何內容。
+The diagnostic report couldn't be saved yet. Try again in a moment.	目前尚無法儲存診斷報告。請稍後再試。
+The diagnostic report couldn't be saved. Try again.	無法儲存診斷報告。請再試一次。
+The file %1$s couldn't be removed. Delete it from %2$s to turn Hushfacebook back on.	無法刪除檔案 %1$s。請從 %2$s 刪除它，以重新啟用 Hushfacebook。
+Hides friend suggestions between posts and on your own profile.	隱藏貼文之間與你個人檔案上的交友推薦。
+Hides the row of stories at the top of the feed, including Create story.	隱藏動態消息頂端的限時動態橫幅，包含「建立限時動態」。
+Hides rows of reels between posts, and the reels Facebook adds where your feed ends.	隱藏貼文之間成列顯示的 Reels，以及 Facebook 在動態消息結尾加入的 Reels。
+The setting couldn't finish updating. Its saved value is shown.	無法完成設定更新。目前顯示的是已儲存的值。
+There's no diagnostic data to clear.	沒有可清除的診斷資料。
+There's no diagnostic data to put back.	沒有可還原的診斷資料。
+They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off. Patch again to change them.	這些項目是在修補時於 Morphe Manager 中選擇，暫停不會停用它們。若要變更，請重新修補。
+This phone has no file picker, so there's no way to choose a file here.	這支手機沒有檔案選擇器，因此無法在此選擇檔案。
+Try again, or go back to Facebook.	請再試一次，或返回 Facebook。
+A change shows the next time you pull down to refresh.	變更會在下次下拉重新整理時生效。
+Use the system font	使用系統字型
+Use the phone's emoji	使用手機表情符號
+Version	版本
+Videos go to %1$s and photos to %2$s.	影片儲存至 %1$s，相片儲存至 %2$s。
+Open web links in your browser. Facebook's own pages stay in the app.	在瀏覽器開啟網頁連結。Facebook 本身的頁面仍在應用程式內開啟。
+Records what the patches do and shows error messages, to help with a bug report. Leave it off for everyday use.	記錄修補項目的運作並顯示錯誤訊息，以協助回報問題。日常使用時請保持停用。
+You paused Hushfacebook.	你已暫停 Hushfacebook。
+Keep feed position on return	返回時保留動態消息位置
+Returning to Facebook within ten minutes, or switching back to Home, keeps your place. Pull to refresh still works.	在十分鐘內返回 Facebook，或切換回首頁時，保留原本的瀏覽位置。仍可下拉重新整理。
+No time limit	不限時間
+With the switch above on, your place stays however long you're away. Pull to refresh and a fresh start still load new posts.	啟用上方開關後，無論離開多久都會保留位置。下拉重新整理或重新啟動仍會載入新貼文。
+A finished story stays on screen until you tap or swipe. Turn this off for Facebook's timing.	限時動態播放完畢後會停留在畫面上，直到你點按或滑動。停用後恢復 Facebook 原有的切換時間。
+View stories anonymously	匿名觀看限時動態
+Facebook isn't told which stories you watch, so you stay off their viewer lists. Replying or reacting still shows you. Stories you watch to the end show as watched on this phone only, until that person posts a new one.	不向 Facebook 回報你看過哪些限時動態，因此你不會出現在觀看名單上。回覆或留下心情仍會顯示你的身分。完整看過的限時動態只會在這支手機上標示為已觀看，直到對方發布新的限時動態。
+Stop Story auto-advance	停用自動切換限時動態
+Copy a short report to the clipboard.	將簡要報告複製到剪貼簿。
+Save the full report in Download/Hushfacebook.	將完整報告儲存至 Download/Hushfacebook。
+Folder set to %1$s.	資料夾已設為 %1$s。
+Save	儲存
+Folder name	資料夾名稱
+Hide prompts and promos under reels	隱藏 Reels 下方的提示與推廣
+Hides prompts and promos under reels, like Remix, Use template, Add yours, Edits, Stars, games, partner apps and outside links. The song label stays.	隱藏 Reels 下方的提示與推廣，例如 Remix、使用範本、換你了、Edits、星賞、遊戲、合作應用程式與外部連結。歌曲標籤仍會保留。
+Hide the Follow button on reels	隱藏 Reels 的追蹤按鈕
+The Follow button next to the reel's author. You can still follow them from their profile.	Reels 作者旁的「追蹤」按鈕。你仍可從對方的個人檔案追蹤。
+Hide comment and reaction previews	隱藏留言與心情預覽
+The comment Facebook previews under a reel and the bubbles of friends who reacted. Open the comments to see them all.	Facebook 在 Reels 下方預覽的留言，以及留下心情的朋友泡泡。開啟留言即可查看全部內容。
+Hide Threads cards between reels	隱藏 Reels 之間的 Threads 卡片
+Hides the "Threads you might like" card between reels. Off by default, since it hasn't been tried on a real account yet.	隱藏 Reels 之間的「你可能喜歡的 Threads」卡片。預設停用，因為尚未使用真實帳號測試。
+Download quality	下載畫質
+Best	最佳
+Smallest	最小
+Each video saves at the best quality the player streams.	每部影片皆以播放器串流提供的最佳畫質儲存。
+Each video saves at its lowest quality, for the smallest file.	每部影片皆以最低畫質儲存，讓檔案最小。
+Each video saves at %1$s or the closest quality below it. A video with nothing that low saves at the closest quality above.	每部影片皆以 %1$s 或最接近且低於此值的畫質儲存。若無此值以下的畫質，則使用最接近且高於此值的畫質。
+Videos will save at the best quality.	影片將以最佳畫質儲存。
+Videos will save at their lowest quality, for the smallest files.	影片將以最低畫質儲存，讓檔案最小。
+Videos will save at %1$s or the closest quality below it. A video with nothing that low will save at the closest quality above.	影片將以 %1$s 或最接近且低於此值的畫質儲存。若無此值以下的畫質，則使用最接近且高於此值的畫質。
+Settings imported.	已匯入設定。
+Video file name	影片檔名
+%1$s becomes the date and time of the save, %2$s the video's number on Facebook, %3$s who posted it, %4$s their profile's number on Facebook and %5$s the day it was posted. What a save doesn't know is left out, and a name with none of these gets the date added. When the name is already in the folder, the time of the save goes on the end. Invalid characters become underscores. Leave it blank to use the default, %6$s.	%1$s 代表儲存日期與時間，%2$s 代表影片的 Facebook 編號，%3$s 代表發布者，%4$s 代表發布者的 Facebook 個人檔案編號，%5$s 代表發布日期。無法取得的資訊會略過；若檔名未包含上述項目，會加上日期。若資料夾已有同名檔案，會在結尾加上儲存時間。無效字元會以底線取代。留白則使用預設值 %6$s。
+Photo file name	相片檔名
+%1$s becomes the date and time of the save, %2$s the photo's number on Facebook, %3$s who posted it, %4$s their profile's number on Facebook and %5$s the day it was posted. What a save doesn't know is left out, and a name with none of these gets the date added. When the name is already in the folder, the time of the save goes on the end. Invalid characters become underscores. Leave it blank to use the default, %6$s.	%1$s 代表儲存日期與時間，%2$s 代表相片的 Facebook 編號，%3$s 代表發布者，%4$s 代表發布者的 Facebook 個人檔案編號，%5$s 代表發布日期。無法取得的資訊會略過；若檔名未包含上述項目，會加上日期。若資料夾已有同名檔案，會在結尾加上儲存時間。無效字元會以底線取代。留白則使用預設值 %6$s。
+Videos are named %1$s.	影片檔名為 %1$s。
+Photos are named %1$s.	相片檔名為 %1$s。
+Saved videos will be named %1$s.	儲存的影片將命名為 %1$s。
+Saved photos will be named %1$s.	儲存的相片將命名為 %1$s。
+File name	檔名
+File name set to %1$s.	檔名已設為 %1$s。
+Hide AI-detected reels and videos	隱藏偵測為 AI 製作的 Reels 與影片
+No app on this phone can open the link. The address is %1$s.	這支手機上沒有應用程式可開啟此連結。網址為 %1$s。
+Hushfacebook pauses when Facebook restarts.	重新啟動 Facebook 後，Hushfacebook 會暫停。
+Pause, backup and diagnostics	暫停、備份與診斷
+Updates	更新
+Stop update prompts	停用更新提示
+Stops update nagging through Meta App Manager and hides chat promotions for older versions. A patched Facebook can't use Meta's updates anyway.	停止 Meta App Manager 的更新催促，並隱藏舊版的聊天推廣訊息。修補後的 Facebook 原本就無法使用 Meta 的更新。
+Hides reels and Watch videos that Facebook marks as made with AI. Ones only their creator labeled stay. Off by default, since it hasn't been tried on a real account yet.	隱藏 Facebook 標示為 AI 製作的 Reels 與 Watch 影片。僅由創作者自行標示的內容仍會保留。預設停用，因為尚未使用真實帳號測試。
+Don't send reel watch history	不傳送 Reels 觀看紀錄
+Hold back analytics uploads	阻止上傳分析資料
+Stops Facebook sending usage statistics in the background and running its on-phone learning tasks. Restart Facebook to see the change.	阻止 Facebook 在背景傳送使用統計資料及執行手機上的學習工作。重新啟動 Facebook 後生效。
+# context: switch title under Privacy; camera roll means the photos and videos saved on the phone, and sharing suggestions is Facebook's own feature name, so use Facebook's wording in your language if you know it
+Hold back camera roll processing	阻止處理相機膠卷
+# context: description of that switch; the report is a count of the photos and videos on the phone
+Stops the camera roll processing behind sharing suggestions, which goes through your photos and videos and uploads photos and details about them, and stops the report of how many you have. Restart Facebook to see the change.	阻止分享建議背後的相機膠卷處理作業，包括掃描相片與影片、上傳相片及相關資訊，以及回報相片與影片數量。重新啟動 Facebook 後生效。
+# context: switch title under Privacy; link history is Facebook's own name for its list of links you opened in its built-in browser, so use Facebook's wording in your language if you know it
+Stop link history in Facebook's browser	停用 Facebook 瀏覽器的連結紀錄
+# context: description of that switch; Facebook's own browser is the one built into the app
+Links that open in Facebook's own browser aren't recorded for your link history or sent to Facebook as pages you visited. Applies to the next link you open.	在 Facebook 內建瀏覽器開啟的連結，不會加入連結紀錄或以造訪過的網頁回報給 Facebook。從下次開啟的連結起生效。
+Allow screenshots	允許截圖
+Lets you take screenshots and screen recordings on pages where Facebook blocks them. Reopen a page that's already open.	允許在 Facebook 禁止的頁面擷取螢幕截圖與錄製螢幕。已開啟的頁面需重新開啟。
+Block screenshot detection	封鎖截圖偵測
+Hide typing in chats	隱藏聊天中的輸入狀態
+Hide typing in comments	隱藏留言中的輸入狀態
+People you chat with in Facebook's own chats can't see when you're typing. Messages send as usual.	在 Facebook 內建聊天室中，對方無法看到你正在輸入。訊息仍會正常傳送。
+People looking at a post don't see that you're writing a comment.	查看貼文的人不會看到你正在撰寫留言。
+Hide read receipts	隱藏已讀標記
+People you chat with in Facebook's own chats can't see that you've read their messages. The chat can stay unread on this phone.	在 Facebook 內建聊天室中，對方無法看到你已讀訊息。聊天室在這支手機上可能仍顯示為未讀。
+Facebook can't tell when you take a screenshot or record your screen, so it can't react.	Facebook 無法得知你何時截圖或錄製螢幕，因此無法作出相應處理。
+Stops sending Facebook your list of watched reels. It uses the list to rank your feed, so reels you've watched may come back.	停止向 Facebook 傳送已觀看的 Reels 清單。Facebook 會用此清單排序動態消息，因此你看過的 Reels 可能再次出現。
+# context: switch title under Reels and Watch; the Reels tab shows the most recently posted reels before older ones
+Newest reels first	優先播放最新 Reels
+# context: summary of that switch; "loaded" means the reels the app has already downloaded in the background, "placed" means reels already lined up as the next ones
+The Reels tab plays the newest posted of the reels Facebook has loaded for you first, instead of its own pick. It can't fetch newer ones, and reels already placed stay put. Off by default, since it hasn't been tried on a real account yet.	Reels 分頁會優先播放 Facebook 已為你載入的 Reels 中發布時間最新的內容，取代原有排序。無法取得更新的內容，也不會移動已排好的 Reels。預設停用，因為尚未使用真實帳號測試。
+# context: what stays in while Hushfacebook is paused, shown before the patch's name in brackets; the patch raises the app's version number so Google Play never offers an update
+Meta's apps can install beside this one	允許與其他 Meta 應用程式並存
+Messenger, Facebook Lite, Business Suite and Workplace can install next to this Facebook. Their shared permissions no longer clash.	Messenger、Facebook Lite、Business Suite 與 Workplace 可與這個 Facebook 同時安裝，共用權限不再互相衝突。
+# context: settings section heading for the Open on a chosen tab rows
+Opening Facebook	開啟 Facebook
+# context: switch title; the list below it picks the tab
+Open on a chosen tab	開啟指定分頁
+Choose where Facebook opens from its icon. Notifications and links still open their destination.	選擇從圖示啟動 Facebook 時開啟的位置。通知與連結仍會開啟各自的目的地。
+# context: title of the list of tabs Facebook can open on
+Tab to open on	啟動分頁
+# context: the names of Facebook's own tabs, as its tab bar shows them
+Home	首頁
+Feeds	動態消息
+Video	影片
+Friends	朋友
+Marketplace	Marketplace
+# context: a tab's name, as Facebook's tab bar shows it; the list of tabs Facebook can open on
+Events	活動
+Notifications	通知
+Menu	選單
+# context: summary of the tab list; %1$s is one of the tab names above
+Facebook opens on %1$s. If your tab bar doesn't have it, Facebook opens on Home.	Facebook 會開啟 %1$s。若分頁列沒有此分頁，則開啟首頁。
+# context: summary of the tab list when Feeds is picked; off the tab bar, Feeds opens as its own page over Home
+Facebook opens on Feeds. If your tab bar doesn't have it, the Feeds page opens over Home.	Facebook 會開啟「動態消息」。若分頁列沒有此分頁，則在首頁上方開啟動態消息頁面。
+# context: a sentence in the settings import preview and its toast; %1$s is a tab name
+Facebook will open on %1$s.	Facebook 將開啟 %1$s。
+# context: switch title under Opening Facebook; Following is Facebook's feed of the friends, Pages and groups you follow, and Home is the tab
+Following feed on Home	在首頁顯示追蹤中的動態
+# context: summary of that switch; the ranked feed is the one Facebook orders for you, and the Feeds tab has its own filters
+Home shows the newest posts from friends, groups and Pages you follow, like All in the Feeds tab, or the filter you pick below. The Feeds tab's filters don't change.	首頁顯示朋友、社團與已追蹤粉絲專頁的最新貼文，如同「動態消息」分頁的「全部」，或使用你在下方選擇的篩選條件。「動態消息」分頁的篩選條件不受影響。
+Jump to a section	跳至設定區段
+Go straight to one group of settings. Back returns to where you were.	直接前往一組設定。返回時會回到原本的位置。
+# context: switch title under Downloads; on, every video save keeps to formats other apps accept
+Save videos other apps can open	儲存其他應用程式可開啟的影片
+# context: summary of that switch; WhatsApp is a name and stays as it is, and saves are the videos the user saved to the phone
+Fixes saved videos that play without sound in WhatsApp, video editors such as CapCut and InShot, or some galleries and players. May lower quality.	修正儲存的影片在 WhatsApp、CapCut 與 InShot 等影片編輯器，或部分相片庫與播放器中播放時沒有聲音的問題。可能降低畫質。
+# context: title of a switch under Downloads; convert means re-encoding the video on the phone
+Convert to keep the full size	轉換以保留完整尺寸
+# context: summary of that switch; Save videos other apps can open is the switch above it, VP9, AV1 and H.264 are video formats and stay as they are
+With Save videos other apps can open on, a full size video Facebook only has as VP9 or AV1 is converted to H.264 on your phone instead of saved smaller. Slower, and videos over 10 minutes stay smaller.	啟用「儲存其他應用程式可開啟的影片」後，若 Facebook 僅提供 VP9 或 AV1 的完整尺寸影片，會在手機上轉換為 H.264，而非儲存較小尺寸。處理較慢，超過 10 分鐘的影片仍使用較小尺寸。
+# context: switch title under Downloads; on, a save shows no message when it starts, finishes or is canceled
+Quiet saves	靜默儲存
+# context: summary of that switch; a toast is Android's short message at the bottom of the screen
+No toast when a save starts, finishes or is canceled. A save that fails still says why.	開始、完成或取消儲存時不顯示提示。儲存失敗時仍會說明原因。
+# context: section title for the Chats settings, named like Facebook's own Chats screen
+Chats	聊天
+# context: switch title under Chats; the card is Facebook's own "Get the Messenger app" card
+Hide the Get Messenger card	隱藏取得 Messenger 卡片
+# context: summary of that switch; Messenger is the app's name and stays as it is
+Hides the card at the top of Chats that asks you to get Messenger, once Messenger is installed. Without Messenger, the card stays.	安裝 Messenger 後，隱藏聊天頁面頂端要求取得 Messenger 的卡片。未安裝 Messenger 時仍會顯示。
+# context: switch title under Chats; the notes and active now row is the row of friends' notes and who's active above the chat list in Chats inside Facebook
+Hide the notes and active now row	隱藏便利貼與上線中橫列
+# context: summary of that switch
+Removes the row above your chats that shows friends' notes and who's active. Your own note tile may go too. Your chats stay.	移除聊天室上方顯示朋友便利貼與上線狀態的橫列。你的便利貼方塊也可能一併移除。聊天室仍會保留。
+# context: switch title under Chats; promotions are the banners Facebook puts at the top of the chat list
+Hide chat list promotions	隱藏聊天清單推廣
+# context: summary of that switch
+Hides the banners at the top of Chats, like the one asking you to turn on notifications.	隱藏聊天頁面頂端的橫幅，例如要求開啟通知的提示。
+# context: switch title under Chats; Meta AI is Meta's assistant and keeps its name; the button sits beside the search box at the top of Chats and on Chats' search screen
+Hide the Meta AI button in Chats	隱藏聊天中的 Meta AI 按鈕
+# context: summary of that switch; your chats with Meta AI are conversations with the assistant, which stay in the list
+Removes the Meta AI button beside the search box in Chats, at the top of the list and on the search screen. The search box stays, and so do your chats with Meta AI.	移除聊天清單頂端與搜尋畫面中，搜尋框旁的 Meta AI 按鈕。搜尋框與你和 Meta AI 的聊天仍會保留。
+# context: switch title under Chats; on, Facebook's Messenger icon opens the Messenger app
+Open the Messenger app	開啟 Messenger 應用程式
+# context: summary of that switch; Messenger is the app's name, Chats is Facebook's own chat screen as named above
+Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without Messenger, Chats opens as before.	點按 Facebook 頂端的 Messenger 圖示時，開啟 Messenger 應用程式，取代內建聊天。未安裝 Messenger 時，仍照常開啟內建聊天。
+# context: switch title under Chats; on, Facebook leaves ringing for calls and notifying about chats to the Messenger app
+Leave calls and chats to Messenger	由 Messenger 處理通話與聊天
+# context: summary of that switch; signed out means not logged in to the Messenger app, turned off means the app is disabled in Android's settings
+Facebook leaves calls and chat notifications to Messenger while Messenger is installed and enabled. Restart Facebook after changing this switch, or after installing, removing, enabling or disabling Messenger, so call routing updates. If you're signed out of Messenger, you'll miss calls and messages.	安裝並啟用 Messenger 時，由 Messenger 處理通話與聊天通知。變更此開關，或安裝、移除、啟用或停用 Messenger 後，請重新啟動 Facebook 以更新通話處理方式。若你已登出 Messenger，將會漏接通話與訊息。
+# context: settings section heading for the Tap to play switch
+Playback	播放
+# context: switch title; on, videos and music wait for a tap before they play
+Tap to play	點按播放
+# context: summary of that switch; Autoplay and Off are the name and value of Facebook's own setting, as Facebook shows them in this language
+Videos, reels, stories and music wait for your tap instead of playing by themselves. Facebook's own Autoplay setting shows Off while this is on.	影片、Reels、限時動態與音樂會等你點按後才播放，不再自動播放。啟用時，Facebook 本身的「自動播放」設定會顯示為關閉。
+# context: switch title under Opening Facebook; Marketplace is Facebook's tab and keeps its name
+Marketplace only	僅使用 Marketplace
+# context: switch title under Opening Facebook, next to Marketplace only; Events is Facebook's tab and keeps its name
+Events only	僅使用活動
+# context: summary of that switch; the tab names are Facebook's own, as its tab bar shows them
+# context: switch title under Menu; Upgrades is the name of a section in Facebook's own Menu
+Hide Upgrades	隱藏升級項目
+# context: summary of that switch; Settings and Help and support are Facebook's own Menu sections
+The Upgrades section and its offers leave Facebook's Menu. Settings, Help and support and the rest of the Menu stay.	從 Facebook 選單移除「升級項目」區段與其中的優惠。「設定」、「使用說明和支援」及其餘選單仍會保留。
+# context: switch title under Menu; Also from Meta is the name of a section in Facebook's own Menu
+Hide Also from Meta	隱藏 Meta 旗下其他產品
+Hide the Muse card	隱藏 Muse 卡片
+The Muse card, Meta's ad for its AI agent app, leaves the top of Facebook's Menu.	從 Facebook 選單頂端移除 Muse 卡片，也就是 Meta 的 AI 代理應用程式廣告。
+# context: summary of that switch; the section links to Meta's other apps and shows ads for its devices
+The Also from Meta section leaves Facebook's Menu, with its links to Meta's other apps and its ads for Meta's devices. Your own shortcuts stay.	從 Facebook 選單移除「Meta 旗下其他產品」區段，包含 Meta 其他應用程式的連結與 Meta 裝置廣告。你的捷徑仍會保留。
+# context: switch title under Menu; Help and support is the name of a section in Facebook's own Menu
+Hide Help and support	隱藏使用說明和支援
+# context: summary of that switch; Settings and privacy is Facebook's own Menu section
+The Help and support section leaves Facebook's Menu, header and all. Settings and privacy stays.	從 Facebook 選單移除整個「使用說明和支援」區段，包含標題。「設定和隱私」仍會保留。
+# context: switch title under Menu; Settings and privacy is a section of Facebook's own Menu that folds and unfolds when its header is tapped
+Keep Settings and privacy expanded	保持展開設定和隱私
+# context: summary of that switch
+Settings and privacy in Facebook's Menu stays open, so its rows show without a tap.	Facebook 選單中的「設定和隱私」保持展開，不必點按即可看到其中的項目。
+# context: section title for the search settings, named like Facebook's own search
+Search	搜尋
+# context: switch title under Search; Meta AI is Meta's assistant and keeps its name
+Hide Meta AI in search	隱藏搜尋中的 Meta AI
+# context: summary of that switch; Meta AI and Ask Meta AI are Meta's own names, as Facebook shows them
+Search no longer shows Meta AI answers or Ask Meta AI prompts, or sends your search to Meta AI. Results for people, groups, pages and posts stay.	搜尋不再顯示 Meta AI 回答或「詢問 Meta AI」提示，也不會將搜尋內容傳送給 Meta AI。人物、社團、粉絲專頁與貼文的搜尋結果仍會保留。
+# context: settings section heading for the Default comment order switch and its list
+Comments	留言
+# context: switch title; on, a post's comments open in the order chosen in the list below it
+Default comment order	預設留言排序
+# context: summary of that switch; a link to a comment is one from a notification, say
+Use the order below. A choice made on a post lasts until restart. Links to comments keep Facebook's order.	使用下方的排序方式。在貼文中另選的排序會保留至重新啟動為止。留言連結仍使用 Facebook 原有排序。
+# context: switch title under Comments; Meta AI writes a short summary of what a post's comments say
+Hide Meta AI comment summaries	隱藏 Meta AI 留言摘要
+# context: summary of that switch; the buttons are a post's Like, Comment and Share row
+Hides Meta AI's summary at the top of comments and the comment summary under a post's buttons. The comments themselves stay.	隱藏留言頂端的 Meta AI 摘要，以及貼文按鈕下方的留言摘要。留言本身仍會保留。
+# context: switch title under Comments; Like is the button under a post or a comment
+Like only	僅使用讚
+# context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens
+A long press on Like doesn't open the reactions. A tap still likes.	長按「讚」不會開啟心情選單。點按仍可按讚。
+# context: switch title under Comments; GIF and sticker are two buttons in the box where you type a comment
+Hide GIF and sticker buttons	隱藏 GIF 與貼圖按鈕
+# context: summary of that switch; the comment box is where you type a comment
+The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.	從留言框移除 GIF 與貼圖按鈕。輸入文字、加入相片與發布留言仍照常運作。
+# context: switch title under Comments: hides the Add a comment field at the bottom of the full-screen video viewer
+Hide the video comment box	隱藏影片留言框
+The Add a comment box under a full-screen video goes away. Comment boxes on posts stay.	移除全螢幕影片下方的「新增留言」框。貼文上的留言框仍會保留。
+# context: switch title under Comments; a reply thread is the replies under a comment, which Facebook folds behind View replies
+Open every reply thread	展開所有留言回覆
+# context: summary of that switch; View replies is the link Facebook shows under a comment that has replies
+Comments show their replies right away, so there's no View replies to tap.	立即顯示留言的回覆，不必點按「查看回覆」。
+# context: switch title under Comments; it makes an open reply thread load the rest of its replies by itself as the list is scrolled
+Load whole reply threads	載入完整留言回覆
+# context: summary of that switch; View more replies is the row Facebook shows under an open thread that has more replies to load
+An open reply thread keeps loading as you scroll, so there's no View more replies to tap.	展開的留言回覆會隨捲動持續載入，不必點按「查看更多回覆」。
+# context: switch title under Comments; View more replies is the row under an open reply thread that loads more replies, and this makes the whole row take the tap instead of only its words
+Tap anywhere on View more replies	點按查看更多回覆整列皆可展開
+# context: summary of that switch
+The whole View more replies row opens the replies, not just its words.	點按「查看更多回覆」整列的任何位置皆可展開，不限於文字。
+Hide related groups	隱藏相關社團
+A group post's comments end without the Related groups list and its Join buttons.	社團貼文的留言結尾不再顯示「相關社團」清單與加入按鈕。
+# context: row title under Comments that opens Facebook's own settings; reaction counts are the numbers next to the reactions on a post
+Hide reaction counts	隱藏心情數量
+# context: summary of that row; Preferences and Reaction preferences are the names Facebook's own settings use
+Facebook has its own setting for this. Open Facebook's settings, then Preferences and Reaction preferences.	Facebook 本身已有這項設定。請開啟 Facebook 設定，進入「偏好設定」與「心情偏好設定」。
+# context: message shown when Facebook's own settings could not be opened from that row
+Facebook's settings didn't open. You'll find Reaction preferences in its Settings, under Preferences.	無法開啟 Facebook 設定。你可在其「設定」的「偏好設定」下找到「心情偏好設定」。
+# context: title of the list of comment orders, and of its dialog
+Comment order	留言排序
+# context: entry of that list: the order Facebook's servers pick, which is what happens without Hushfacebook
+Facebook's choice	由 Facebook 決定
+# context: entry of that list; Facebook's own name for this order in the sort menu of a post's comments
+Most relevant	最相關
+# context: entry of that list; Facebook's own name for this order in the sort menu of a post's comments
+Newest	最新
+# context: entry of that list; Facebook's own name for this order in the sort menu of a post's comments
+All comments	所有留言
+# context: summary of the list when Facebook's choice is picked; Most relevant is Facebook's own name for that order
+Comments open in the order Facebook picks, which is usually Most relevant.	留言使用 Facebook 選擇的排序，通常是「最相關」。
+# context: summary of the list; %1$s is one of the order names above, as Facebook's sort menu shows it
+A post's comments open with %1$s picked in their sort menu, where the post offers it.	若貼文提供此選項，開啟留言時會在排序選單中選取 %1$s。
+# context: sentence in the import preview and the toast after an import that sets the comment order to Facebook's choice
+Comments will open in the order Facebook picks.	留言將使用 Facebook 選擇的排序。
+# context: sentence in the import preview and the toast after an import that sets the comment order; %1$s is one of the order names above
+Comments will open with %1$s picked in their sort menu.	開啟留言時，將在排序選單中選取 %1$s。
+# context: switch title under Search; the ads Facebook puts between search results
+Hide sponsored search results	隱藏贊助搜尋結果
+# context: summary of that switch
+Hides ads between your search results. The results you searched for stay.	隱藏搜尋結果之間的廣告。你搜尋的結果仍會保留。
+# context: switch title under News feed; the ads between the posts on a person's profile or a Page
+Hide sponsored profile posts	隱藏個人檔案上的贊助貼文
+# context: summary of that switch; Page is Facebook's name for a business or public figure's page
+Hides ads between posts on someone's profile or a Page. Their own posts stay.	隱藏個人檔案或粉絲專頁貼文之間的廣告。對方自己的貼文仍會保留。
+# context: switch title under News feed; a note is the short text bubble (or a 'Drop a thought' prompt) Facebook shows over a person's profile picture
+Hide profile notes	隱藏個人檔案便利貼
+# context: summary of that switch
+Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	隱藏個人檔案相片上的便利貼泡泡。從下次開啟個人檔案起生效。
+# context: what stays in while Hushfacebook is paused, followed by the patch name in brackets; the row in Facebook's own Menu that opens Hushfacebook settings
+# context: a short message when the Hushfacebook row in Facebook's Menu couldn't open the settings
+Hushfacebook settings can't open here. Long-press the Facebook logo instead.	無法從這裡開啟 Hushfacebook 設定。請改為長按 Facebook 標誌。
+# context: switch title under News feed; the row of groups Facebook suggests joining, shown between posts
+Hide suggested groups	隱藏推薦社團
+# context: summary of that switch; Discover more groups is the label of Facebook's own button under that row
+Hides the row of groups to join between posts. Posts from groups you're in stay.	隱藏貼文之間推薦加入社團的橫列。你已加入社團的貼文仍會保留。
+# context: switch title under News feed; Facebook's own header of a row of Stories from people you don't know, shown between posts
+Hide "Stories you might like"	隱藏「你可能喜歡的限時動態」
+Hide Memories in the feed	隱藏動態消息中的回顧
+Hide friend requests in the feed	隱藏動態消息中的交友邀請
+Hide friends' locations	隱藏朋友的位置
+# context: switch title under News feed, part of Hide suggested and promoted posts; a post opened by tapping a notification
+Hide more posts under notification posts	隱藏通知貼文下方的更多貼文
+Hides Memories between posts, like "On this day" and friendship anniversaries. Your Memories page stays.	隱藏貼文之間的回顧，例如「動態時報上的今天」與友誼週年紀念。「回顧」頁面仍會保留。
+Hides friend requests shown between posts. Your requests stay under Friends.	隱藏貼文之間的交友邀請。邀請仍可在「朋友」中查看。
+Hides the card between posts that shows where your friends are.	隱藏貼文之間顯示朋友位置的卡片。
+# context: summary of that switch; "More from your friends" is the heading Facebook shows over that list
+A post you open from a notification ends without the "More from your friends" list Facebook adds under it, which can carry ads.	從通知開啟的貼文下方，不再顯示 Facebook 加入的「朋友的更多貼文」清單，該清單可能包含廣告。
+Hide the Find friends card	隱藏尋找朋友卡片
+Hides the "Want to see more posts from friends?" card with its Find friends button where your friends' posts run out.	隱藏朋友貼文結尾的「想看到更多朋友的貼文嗎？」卡片及其「尋找朋友」按鈕。
+# context: summary of that switch; the Stories tray is the row of Stories at the top of the feed
+Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories and the Stories tray stay.	隱藏貼文之間由未建立連結的人發布的限時動態橫列。朋友的限時動態與頂端橫幅仍會保留。
+# context: switch title under Notifications; trending videos Facebook sends as push notifications
+Block trending video notifications	封鎖熱門影片通知
+# context: summary of that switch; reels are Facebook's short videos
+Trending videos and the reels Facebook picked for you stop showing up in your notifications.	通知中不再出現熱門影片與 Facebook 為你挑選的 Reels。
+# context: switch title under Notifications; memories are Facebook's posts from past years on the same day
+Block memory notifications	封鎖回顧通知
+# context: summary of that switch; On this day is the name Facebook gives its memories feature
+Facebook's "On this day" memories stop showing up in your notifications.	通知中不再出現 Facebook「動態時報上的今天」回顧。
+# context: switch title under Notifications; reminders of friends' birthdays
+Block birthday notifications	封鎖生日通知
+# context: summary of that switch
+No more reminders that it's a friend's birthday.	不再提醒朋友的生日。
+# context: switch title under Notifications; Page is Facebook's name for a business or public figure's page
+Block group and Page highlights	封鎖社團與粉絲專頁精選通知
+# context: summary of that switch; creators are the people and Pages who post videos and posts you follow
+Digests of what's going on in groups, Pages and creators you follow stop. Comments, replies and mentions still come through.	停止顯示你追蹤的社團、粉絲專頁與創作者動態摘要。留言、回覆與提及通知仍會送達。
+# context: switch title under Notifications; People you may know is Facebook's name for its friend suggestions, as in Hide "People you may know"
+Block "People you may know"	封鎖「你可能認識的朋友」
+# context: summary of that switch; friend requests are other notifications, which always come through
+Friend suggestions stop showing up in your notifications. Friend requests still come through.	通知中不再出現交友推薦。交友邀請仍會送達。
+# context: switch title under Notifications; places near you and weather alerts Facebook sends
+Block nearby and weather notifications	封鎖附近地點與天氣通知
+# context: summary of that switch
+Alerts about places near you and about the weather stop.	停止顯示附近地點與天氣提醒。
+Block account setup reminders	封鎖帳號設定提醒
+Reminders to finish setting up a Facebook account stop. Login and security alerts still come through.	停止提醒你完成 Facebook 帳號設定。登入與安全性警示仍會送達。
+# context: switch title under Notifications; group activity is the notifications about new posts and activity in groups you're in
+Block group activity notifications	封鎖社團動態通知
+# context: summary of the group activity switch
+Notifications about new activity in your groups stop. Comments, replies and mentions in groups still come through.	停止顯示社團最新動態的通知。社團中的留言、回覆與提及通知仍會送達。
+# context: switch title under Notifications; an event invite is someone inviting you to a Facebook event
+Block event invites	封鎖活動邀請
+# context: summary of the event invites switch
+Invites to events stop showing up in your notifications.	通知中不再出現活動邀請。
+# context: switch title under Notifications; a live video is a broadcast someone is streaming right now
+Block live video notifications	封鎖直播通知
+# context: summary of the live video switch; the ones you asked Facebook for are live notifications you turned on for a person or Page
+Notifications that someone is live stop, including the ones you asked Facebook for.	停止顯示他人開播的通知，包含你曾向 Facebook 訂閱的直播通知。
+# context: switch title under Notifications; reactions are likes and the other reaction buttons on posts and comments
+Block reaction notifications	封鎖心情通知
+# context: summary of the reactions switch
+Likes and reactions to your posts and comments stop showing up in your notifications. Comments still come through.	通知中不再出現貼文與留言獲得的讚和心情。留言通知仍會送達。
+# context: switch title under Notifications; quiet hours is a stretch of the day when the picked notification kinds are blocked
+Quiet hours	勿擾時段
+# context: summary of the quiet hours switch; the switches above are the notification switches, the two times below are the start and end rows
+The switches above block their kinds only between the two times below. The rest of the day those kinds come through.	上方開關只會在下方指定的兩個時間之間封鎖對應通知。其他時間仍會收到這些通知。
+# context: row title and list title; the time quiet hours begin
+Quiet hours start	勿擾時段開始
+# context: row title and list title; the time quiet hours finish
+Quiet hours end	勿擾時段結束
+# context: title of a note under Notifications, below the switches; what no switch there blocks
+What always comes through	一律接收的通知
+# context: text of that note; Android's own settings are the phone's per-app notification categories, which Facebook's server defines
+Messages, friend requests, comments, mentions, calls, login alerts and any kind not listed above always arrive. Android's notification settings for Facebook can block more.	訊息、交友邀請、留言、提及、通話、登入警示與上方未列出的通知一律會送達。你可在 Android 的 Facebook 通知設定中封鎖更多類型。
+# context: switch title under Stories; the stories Facebook suggests in the Stories tray from accounts you don't follow
+Hide suggested stories	隱藏推薦限時動態
+# context: summary of that switch; Suggested is the label Facebook shows under such a story in the tray, and the tray reloads on its own schedule
+Shows only friends and followed Pages in the Stories tray. Applies when Facebook next loads the tray.	限時動態橫幅只顯示朋友與已追蹤的粉絲專頁。從 Facebook 下次載入橫幅起生效。
+# context: switch title under Marketplace; the ads Facebook puts between the things people sell in Marketplace's feed
+Hide sponsored Marketplace listings	隱藏 Marketplace 贊助商品
+Block Instant Games ads	封鎖即時遊戲廣告
+Games you play in Facebook show no ads. A game that asks for one is told there's none, so rewarded ads give no reward.	在 Facebook 遊玩的遊戲不再顯示廣告。遊戲要求廣告時，會收到沒有廣告的回應，因此獎勵廣告不會提供獎勵。
+# context: summary of that switch; a boosted listing is one its seller paid Facebook to show to more people
+Hides ads and boosted listings in Marketplace's feed and search results. Regular listings stay.	隱藏 Marketplace 動態與搜尋結果中的廣告及加強推廣商品。一般商品仍會保留。
+# context: switch title under News feed; hides posts whose text holds a word or phrase the person listed
+Hide posts with words you choose	隱藏包含指定字詞的貼文
+Hide posts from people, Pages and sites	隱藏指定人物、粉絲專頁與網站的貼文
+Hides posts by people or Pages on your list below, or linking to sites on it, including shares. Your list stays on this phone unless you export it.	隱藏下方清單中人物或粉絲專頁的貼文，以及連至清單內網站的貼文，包含分享的內容。除非匯出，否則清單只儲存在這支手機上。
+People, Pages and sites to hide	要隱藏的人物、粉絲專頁與網站
+One per line, up to %1$d: a name as Facebook shows it, a profile or Page ID, or a site like example.com, which also covers addresses like m.example.com. Capital letters don't matter. A Facebook link works when it has the ID in it.	每行一項，最多 %1$d 項：可輸入 Facebook 顯示的名稱、個人檔案或粉絲專頁 ID，或 example.com 等網站，也會涵蓋 m.example.com 等網址。不區分大小寫。Facebook 連結須包含 ID 才能使用。
+One name, ID or site per line	每行一個名稱、ID 或網站
+Nobody listed yet, so no post is hidden.	尚未列出任何項目，因此不會隱藏貼文。
+%1$d person, Page or site.	%1$d 個人物、粉絲專頁或網站。
+%1$d people, Pages or sites.	%1$d 個人物、粉絲專頁或網站。
+Your list of people, Pages and sites to hide will be empty.	要隱藏的人物、粉絲專頁與網站清單將會清空。
+Your list of people, Pages and sites to hide will hold %1$d entry.	要隱藏的人物、粉絲專頁與網站清單將包含 %1$d 個項目。
+Your list of people, Pages and sites to hide will hold %1$d entries.	要隱藏的人物、粉絲專頁與網站清單將包含 %1$d 個項目。
+# context: summary of that switch; the keep list is the second list under it, and a settings file is the one Export settings writes
+Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them.	隱藏包含下方清單中字詞或片語的貼文。「保留貼文的字詞」優先。除非匯出，否則字詞只儲存在這支手機上。
+# context: title of the row and dialog holding the list of words and phrases that hide a post
+Words to hide	要隱藏的字詞
+# context: title of the row and dialog holding the list of words and phrases that keep a post even when it has a word to hide
+Words that keep a post	保留貼文的字詞
+# context: message of the Words to hide dialog; %1$d is how many phrases a list holds (50), %2$d and %3$d the shortest and longest phrase in characters (2 and 60)
+One word or phrase per line, up to %1$d lines, each %2$d to %3$d characters long. A single emoji or Chinese, Japanese or Korean character is enough on its own. Capital letters don't matter, and a phrase matches anywhere in a post's text, even inside longer words.	每行一個字詞或片語，最多 %1$d 行，每項 %2$d 至 %3$d 個字元。單一表情符號或中、日、韓文字元也可使用。不區分大小寫，片語可比對貼文文字中的任何位置，包含較長單字的一部分。
+# context: message of the Words that keep a post dialog; %1$d is how many phrases a list holds (50), %2$d and %3$d the shortest and longest phrase in characters (2 and 60)
+A post with any of these stays, even when it also has a word to hide. One per line, up to %1$d lines, each %2$d to %3$d characters long. A single emoji or Chinese, Japanese or Korean character is enough on its own.	包含任一字詞的貼文皆會保留，即使同時包含要隱藏的字詞。每行一項，最多 %1$d 行，每項 %2$d 至 %3$d 個字元。單一表情符號或中、日、韓文字元也可使用。
+# context: hint in the empty text box of both word list dialogs
+One word or phrase per line	每行一個字詞或片語
+# context: toast after saving a word list, one line left out; %2$d and %3$d are the shortest and longest phrase in characters
+%1$d line was left out. A phrase needs %2$d to %3$d characters, but a single emoji or Chinese, Japanese or Korean character is enough. One given twice counts once.	已略過 %1$d 行。片語須有 %2$d 至 %3$d 個字元，但單一表情符號或中、日、韓文字元也可使用。重複項目只計算一次。
+# context: toast after saving a word list, several lines left out; %2$d and %3$d are the shortest and longest phrase in characters
+%1$d lines were left out. A phrase needs %2$d to %3$d characters, but a single emoji or Chinese, Japanese or Korean character is enough. One given twice counts once.	已略過 %1$d 行。片語須有 %2$d 至 %3$d 個字元，但單一表情符號或中、日、韓文字元也可使用。重複項目只計算一次。
+# context: summary of the Words to hide row while it's empty
+No words yet, so no post is hidden.	尚未加入字詞，因此不會隱藏貼文。
+# context: summary of the Words that keep a post row while it's empty
+No words yet.	尚未加入字詞。
+# context: summary of a word list row holding one phrase
+%1$d word or phrase.	%1$d 個字詞或片語。
+# context: summary of a word list row holding several phrases
+%1$d words or phrases.	%1$d 個字詞或片語。
+# context: line under a word list being edited: how full the room both lists share would be; %1$d is a whole percent
+Both lists together fill %1$d%% of the room they share.	兩份清單合計使用共用容量的 %1$d%%。
+# context: under a word list being edited, and when its Save is refused: more phrases than a list holds; %1$d is the most a list holds
+A list holds up to %1$d phrases, and this one has more. Remove some, then save again.	每份清單最多可容納 %1$d 個片語，此清單已超過上限。請移除部分項目後重新儲存。
+# context: under a word list being edited, and when its Save is refused: both lists would take more than the room they share; %1$d is a whole percent past 100
+Both lists together would fill %1$d%% of the room they share. Remove or shorten some phrases, then save again.	兩份清單合計將使用共用容量的 %1$d%%。請移除或縮短部分片語後重新儲存。
+# context: added to the Words to hide summary: posts the filter hid since Facebook last started, one
+Hid %1$d post since Facebook started.	自 Facebook 啟動以來已隱藏 %1$d 則貼文。
+# context: added to the Words to hide summary: posts the filter hid since Facebook last started, several
+Hid %1$d posts since Facebook started.	自 Facebook 啟動以來已隱藏 %1$d 則貼文。
+# context: sentence in the import preview and the toast after an import that empties the list of words to hide
+Your list of words to hide will be empty.	要隱藏的字詞清單將會清空。
+# context: sentence in the import preview and the toast after an import; the list of words to hide will hold one phrase
+Your list of words to hide will hold %1$d word or phrase.	要隱藏的字詞清單將包含 %1$d 個字詞或片語。
+# context: sentence in the import preview and the toast after an import; the list of words to hide will hold several phrases
+Your list of words to hide will hold %1$d words or phrases.	要隱藏的字詞清單將包含 %1$d 個字詞或片語。
+# context: sentence in the import preview and the toast after an import that empties the keep list
+Your list of words that keep a post will be empty.	保留貼文的字詞清單將會清空。
+# context: sentence in the import preview and the toast after an import; the keep list will hold one phrase
+Your list of words that keep a post will hold %1$d word or phrase.	保留貼文的字詞清單將包含 %1$d 個字詞或片語。
+# context: sentence in the import preview and the toast after an import; the keep list will hold several phrases
+Your list of words that keep a post will hold %1$d words or phrases.	保留貼文的字詞清單將包含 %1$d 個字詞或片語。
+# context: section title for the settings about writing posts and comments
+Writing	撰寫
+# context: switch title under Writing; @ is the at sign that starts a mention and stays as it is
+Tag suggestions only after @	輸入 @ 後才顯示標註建議
+# context: summary of that switch; the list is Facebook's list of people to tag, and @ stays as it is
+Type @ before Facebook suggests someone to tag in posts or comments. Your text stays unchanged.	在貼文或留言中輸入 @ 後，Facebook 才會建議可標註的人。你的文字不受影響。
+# context: switch title under Playback; on, a long video you left partway starts again where you left it
+Resume long videos	接續播放長影片
+# context: summary of that switch; the seek bar is the bar under a video you drag to move through it; Reels is Facebook's name for its short videos
+Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.	超過兩分鐘的影片會從上次離開的位置繼續播放。可拖曳進度列從其他位置開始。短 Reels、直播與廣告照常播放。
+# context: switch title under Playback; a frame is one still picture of a video
+Frame step	逐格播放
+# context: summary of that switch; Reels is Facebook's name for its short videos
+With a reel or video paused, tap its right side to step one frame forward and its left side to step one frame back. Tap the middle to play.	Reels 或影片暫停時，點按右側前進一格，點按左側後退一格。點按中央可繼續播放。
+# context: switch title under News feed, right below Hide AI-detected posts; on, posts their creator labelled as AI go too
+Also hide posts labeled as AI	同時隱藏自行標示為 AI 的貼文
+Hide Meta AI in the feed	隱藏動態消息中的 Meta AI
+Hides Meta AI cards between posts and cards promoting the Vibes app. People's posts stay, whatever they say about AI.	隱藏貼文之間的 Meta AI 卡片與 Vibes 應用程式推廣卡片。使用者貼文仍會保留，無論內容如何談論 AI。
+Hide AI character posts	隱藏 AI 角色貼文
+Hides posts featuring Meta's AI characters, the chatbots people make with Meta AI Studio. Off by default, since it hasn't been tried on a real feed yet.	隱藏以 Meta AI 角色為主角的貼文，也就是使用者透過 Meta AI Studio 建立的聊天機器人。預設停用，因為尚未在實際動態消息中測試。
+# context: summary of that switch; the AI label is the one Facebook shows next to the poster's name on such posts
+Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Off by default, since it hasn't been tried on a real feed yet.	除了 Facebook 自行偵測的貼文，也隱藏創作者自行標示為 AI 製作的貼文。預設停用，因為尚未在實際動態消息中測試。
+Return to regular Facebook	恢復一般 Facebook
+Restore the normal tabs at the next restart. Your other settings stay saved.	下次重新啟動時恢復正常分頁。其他設定仍會儲存。
+Marketplace only and Events only are off. Restart Facebook to restore its normal tabs.	「僅使用 Marketplace」與「僅使用活動」已停用。請重新啟動 Facebook 以恢復正常分頁。
+Couldn't save the change. Try again.	無法儲存變更。請再試一次。
+Marketplace only chooses the opening tab. Your previous choice stays saved.	「僅使用 Marketplace」會決定啟動分頁。你原本的選擇仍會儲存。
+# context: summary of the tab rows under Opening Facebook while Events only is on
+Events only chooses the opening tab. Your previous choice stays saved.	「僅使用活動」會決定啟動分頁。你原本的選擇仍會儲存。
+Restart needed. Marketplace only will turn on the next time Facebook starts.	需要重新啟動。下次啟動 Facebook 時會啟用「僅使用 Marketplace」。
+# context: status line under the Events only switch
+Restart needed. Events only will turn on the next time Facebook starts.	需要重新啟動。下次啟動 Facebook 時會啟用「僅使用活動」。
+Restart needed. The normal tabs will return the next time Facebook starts.	需要重新啟動。下次啟動 Facebook 時會恢復正常分頁。
+Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.	Marketplace 已在 Facebook 的分頁設定中隱藏。請在「設定」、「分頁列」、「自訂分頁列」中顯示它。正常分頁仍可使用。
+# context: status line under the Events only switch; Settings, Tab bar and Customize the bar are Facebook's own names
+Events is hidden in Facebook's tab settings. Pin it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.	「活動」已在 Facebook 的分頁設定中隱藏。請在「設定」、「分頁列」、「自訂分頁列」中釘選它。正常分頁仍可使用。
+Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.	Marketplace 無法使用。Facebook 未提供此帳號的 Marketplace 分頁。正常分頁仍可使用。
+# context: status line under the Events only switch
+Events isn't on your tab bar. Pin it under Settings, Tab bar, Customize the bar, then restart Facebook. Your normal tabs stay available.	分頁列沒有「活動」。請在「設定」、「分頁列」、「自訂分頁列」中釘選它，再重新啟動 Facebook。正常分頁仍可使用。
+Couldn't check the tab bar. Your normal tabs stay available. Restart Facebook to try again.	無法檢查分頁列。正常分頁仍可使用。請重新啟動 Facebook 再試一次。
+Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.	正在等待 Facebook 分頁列。Facebook 建立分頁列後，會套用「僅使用 Marketplace」。
+# context: status line under the Events only switch
+Waiting for Facebook's tab bar. Events only will apply when Facebook builds it.	正在等待 Facebook 分頁列。Facebook 建立分頁列後，會套用「僅使用活動」。
+Off. Turn on to open Marketplace and hide the feed and other social tabs after restarting Facebook.	已停用。啟用並重新啟動 Facebook 後，會開啟 Marketplace，並隱藏動態消息與其他社交分頁。
+# context: status line under the Events only switch
+Off. Turn on to open Events and hide the feed and other social tabs after restarting Facebook.	已停用。啟用並重新啟動 Facebook 後，會開啟「活動」，並隱藏動態消息與其他社交分頁。
+Quiet social notifications	停用社交通知
+Skip feed preloading	略過動態消息預先載入
+Marketplace only and Events only are off.	「僅使用 Marketplace」與「僅使用活動」已停用。
+Paused with Hushfacebook. Your Marketplace choice stays saved. Tabs already hidden return after a restart while paused.	已隨 Hushfacebook 暫停。你的 Marketplace 選擇仍會儲存。暫停期間重新啟動後，已隱藏的分頁會恢復。
+# context: status line under the Events only switch
+Paused with Hushfacebook. Your Events choice stays saved. Tabs already hidden return after a restart while paused.	已隨 Hushfacebook 暫停。你的「活動」選擇仍會儲存。暫停期間重新啟動後，已隱藏的分頁會恢復。
+While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.	啟用「僅使用 Marketplace」時，停止影片推薦、回顧、生日與交友推薦通知。訊息與交易更新仍會送達。
+While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.	啟用「僅使用 Marketplace」時，減少背景載入的動態消息。啟動時仍會載入部分內容。
+Active. Marketplace, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.	已生效。保留 Marketplace、通知與個人檔案／選單。可在選單的「設定和隱私」中找到 Hushfacebook 設定。
+# context: status line under the Events only switch; Menu is Facebook's tab
+Active. Events, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.	已生效。保留活動、通知與個人檔案／選單。可在選單的「設定和隱私」中找到 Hushfacebook 設定。
+
+# context: Settings overview, category navigation and search.
+Marketplace only, Events only and your start tab	僅使用 Marketplace、僅使用活動與啟動分頁
+Ads, suggestions and word filters	廣告、推薦與字詞篩選
+Suggestions, saving, auto-advance and viewing anonymously	推薦、儲存、自動切換與匿名觀看
+Cleaner reels and video controls	簡化 Reels 與影片控制項
+Tap to play, quality and resume	點按播放、畫質與接續播放
+Quality, format and file names	畫質、格式與檔名
+Settings	設定
+Browse settings	瀏覽設定
+More settings	更多設定
+Additional Facebook preferences	其他 Facebook 偏好設定
+No matching settings	找不到符合的設定
+%1$d setting found	找到 %1$d 項設定
+%1$d settings found	找到 %1$d 項設定
+Try a different word or clear the search.	請嘗試其他字詞，或清除搜尋。
+Search settings	搜尋設定
+Clear search	清除搜尋
+Your controls are active.	你的控制項已生效。
+Pause	暫停
+Resume	繼續
+Undo	復原
+
+# context: Settings overview, category navigation and search.
+Example without post details	不含貼文詳細資料的範例
+
+# context: Links section, the Supported links row. It reads Android's own per-app selection of Facebook's web addresses (Android 12 and later) and opens Android's Open by default page for this app. Use the phone's own names for Open supported links, Open by default and App info.
+Supported links	支援的連結
+Android verified this app for Facebook's web addresses, so their links open here.	Android 已驗證此應用程式可處理 Facebook 網址，因此這些連結會在此開啟。
+Facebook's web addresses are selected for this app in Android's settings, so their links open here.	你已在 Android 設定中為此應用程式選取 Facebook 網址，因此這些連結會在此開啟。
+Only some of Facebook's web addresses are selected for this app, and links to the rest open elsewhere. Tap to select them in Android's settings.	此應用程式只選取了部分 Facebook 網址，其餘連結會在其他地方開啟。點按以在 Android 設定中選取。
+None of Facebook's web addresses are selected for this app, so their links open elsewhere. Tap to select them in Android's settings.	此應用程式尚未選取任何 Facebook 網址，因此這些連結會在其他地方開啟。點按以在 Android 設定中選取。
+Opening supported links is off for this app in Android's settings. Tap to turn it on.	此應用程式的「開啟支援的連結」已在 Android 設定中關閉。點按以開啟。
+Android didn't say which links open here. Tap to check in Android's settings.	Android 未提供哪些連結會在此開啟的資訊。點按以在 Android 設定中檢查。
+Android 11 doesn't say which links open here. Tap to open this app's settings, then Open by default.	Android 11 未提供哪些連結會在此開啟的資訊。點按以開啟此應用程式的設定，再進入「預設開啟」。
+Choose which links open here	選擇在此開啟的連結
+Android can't verify a patched Facebook for Facebook links. Selecting the addresses yourself sends those links here. Your other link settings stay.	Android 無法驗證修補後的 Facebook 是否可處理 Facebook 連結。手動選取網址後，這些連結便會在此開啟。其他連結設定仍會保留。
+Android's settings for this app didn't open. Open App info from Facebook's icon, then Open by default.	無法開啟此應用程式的 Android 設定。請從 Facebook 圖示開啟「應用程式資訊」，再進入「預設開啟」。
+# context: title of a row under Links; Meta App Manager is the name of Meta's preinstalled app, keep it as is
+Meta App Manager	Meta App Manager
+# context: that row once Facebook's web addresses go to this app
+Facebook's web addresses open here now.	Facebook 網址現在會在此開啟。
+# context: that row's description; "Open supported links" is Android's own switch, "Supported links" is the row above
+Meta App Manager can claim Facebook's web addresses for itself, so their links skip this app. Tap, turn off Open supported links there, then recheck Supported links above.	Meta App Manager 可能將 Facebook 網址設為由自己開啟，使連結略過此應用程式。點按後，在該處關閉「開啟支援的連結」，再重新檢查上方的「支援的連結」。
+# context: message when Android's page for Meta App Manager doesn't open; "Open by default" is Android's page name
+Meta App Manager's settings didn't open. Find it in Android's app list with system apps shown, then Open by default.	無法開啟 Meta App Manager 設定。請在 Android 應用程式清單中顯示系統應用程式，找到它後進入「預設開啟」。
+# context: title of a row under Links; Messenger is the name of Meta's app, keep it as is
+Messenger	Messenger
+# context: title of a row under Links; Instagram is the name of Meta's app, keep it as is
+Instagram	Instagram
+# context: the Messenger row's description; "Open supported links" is Android's own switch, "Supported links" is the row above
+Messenger can claim facebook.com and m.me links for itself, which turns this app's link switches back off. Tap, turn off Open supported links there (on newer Android, pick In your browser), then recheck Supported links above.	Messenger 可能將 facebook.com 與 m.me 連結設為由自己開啟，使此應用程式的連結開關再次關閉。點按後，在該處關閉「開啟支援的連結」（新版 Android 請選「在瀏覽器中開啟」），再重新檢查上方的「支援的連結」。
+# context: the Instagram row's description; "Open supported links" is Android's own switch, "Supported links" is the row above
+Instagram can claim facebook.com links for itself, which turns this app's link switches back off. Tap, turn off Open supported links there (on newer Android, pick In your browser), then recheck Supported links above.	Instagram 可能將 facebook.com 連結設為由自己開啟，使此應用程式的連結開關再次關閉。點按後，在該處關閉「開啟支援的連結」（新版 Android 請選「在瀏覽器中開啟」），再重新檢查上方的「支援的連結」。
+# context: message when Android's page for Messenger doesn't open; "App info" and "Open by default" are Android's page names
+Messenger's settings didn't open. Open App info from Messenger's icon, then Open by default.	無法開啟 Messenger 設定。請從 Messenger 圖示開啟「應用程式資訊」，再進入「預設開啟」。
+# context: message when Android's page for Instagram doesn't open; "App info" and "Open by default" are Android's page names
+Instagram's settings didn't open. Open App info from Instagram's icon, then Open by default.	無法開啟 Instagram 設定。請從 Instagram 圖示開啟「應用程式資訊」，再進入「預設開啟」。
+# context: the Messenger row's description once both addresses open in this app; keep facebook.com and m.me as is
+facebook.com and m.me links open here now.	facebook.com 與 m.me 連結現在會在此開啟。
+# context: the Instagram row's description once its addresses open in this app; keep facebook.com as is
+facebook.com links open here now.	facebook.com 連結現在會在此開啟。
+# context: message when a save starts and its notification can't show (Facebook's notifications or the saves channel are off); Downloads is the settings section that lists running saves, each with its own Cancel
+Saving... To cancel, open Downloads in Hushfacebook settings.	儲存中…如要取消，請開啟 Hushfacebook 設定中的「下載」。
+# context: switch title under Reels and Watch; on, a double tap on a reel or a video doesn't like it
+Turn off double tap to like	停用雙擊按讚
+# context: summary of that switch; Like is the name of Facebook's own button, as Facebook shows it in this language
+A double tap on a reel or video no longer likes it or shows a heart. A single tap and the Like button work as before.	雙擊 Reels 或影片不再按讚或顯示愛心。單次點按與「讚」按鈕照常運作。
+Keep the reel speed	保留 Reels 播放速度
+# context: summary of that switch
+A playback speed you pick in a reel's menu stays for the next reels, after a restart too, until you pick another. Off, every reel starts at normal speed.	在 Reels 選單選擇的播放速度會沿用至後續 Reels，重新啟動後也會保留，直到你選擇其他速度。停用時，每則 Reels 都以正常速度開始。
+Hold a reel for 2x	長按 Reels 以 2 倍速播放
+# context: summary of that switch; more button is the reel's own button with three dots
+Holding a reel plays it at double speed until you let go, in place of Facebook's long-press menu. The reel's more button still opens that menu.	長按 Reels 時以兩倍速度播放，放開後恢復，取代 Facebook 原有的長按選單。仍可使用 Reels 的更多按鈕開啟該選單。
+# context: label of a switch under Hold a reel for 2x that keeps the hold to the reel's right edge
+Only on the right edge	僅限右側邊緣
+# context: summary of that switch; the right third is the right-hand third of the reel's width, the long-press menu is Facebook's menu on a long press
+With the switch above on, only a hold on the right third of a reel plays it at double speed. Hold anywhere else and Facebook's long-press menu opens.	啟用上方開關後，只有長按 Reels 右側三分之一的區域才會以兩倍速度播放。長按其他位置仍會開啟 Facebook 的長按選單。
+Default playback quality	預設播放畫質
+Play videos, reels and stories at the quality below. A quality picked in a video's own menu still wins.	以指定畫質播放影片、Reels 與限時動態。在影片本身選單選擇的畫質仍優先使用。
+Playback quality	播放畫質
+Auto	自動
+Data saver	節省數據用量
+Up to %1$s	最高 %1$s
+Highest	最高
+Facebook picks the quality as each video plays, from your connection.	Facebook 會依網路連線狀況決定每部影片的播放畫質。
+Videos play at the lowest quality Facebook offers for each.	每部影片皆以 Facebook 提供的最低畫質播放。
+Videos play at the best quality up to %1$s that Facebook offers for each, or the closest above.	每部影片皆以 Facebook 提供且不超過 %1$s 的最佳畫質播放，若無則使用最接近且高於此值的畫質。
+Videos play at the highest quality Facebook offers for each.	每部影片皆以 Facebook 提供的最高畫質播放。
+Facebook will pick the quality videos play at.	Facebook 將決定影片播放畫質。
+Playback quality will be set to %1$s.	播放畫質將設為 %1$s。
+# context: import preview and toast sentence when a settings file sets the Reels quality to follow the playback quality
+Reels will play at the same quality as other videos.	Reels 將使用與其他影片相同的播放畫質。
+# context: import preview and toast sentence; %1$s is a Reels quality choice such as Up to 720p
+Reels quality will be set to %1$s.	Reels 畫質將設為 %1$s。
+# context: import preview and toast sentence when a settings file sets the Stories quality to follow the playback quality
+Video stories will play at the same quality as other videos.	影片限時動態將使用與其他影片相同的播放畫質。
+# context: import preview and toast sentence; %1$s is a Stories quality choice such as Up to 720p
+Stories quality will be set to %1$s.	限時動態畫質將設為 %1$s。
+# context: after a settings import; %1$s is a time of day such as 10:00 PM
+Quiet hours will start at %1$s.	勿擾時段將於 %1$s 開始。
+# context: after a settings import; %1$s is a time of day such as 7:00 AM
+Quiet hours will end at %1$s.	勿擾時段將於 %1$s 結束。
+# context: import preview and toast sentence; %1$s is the folder inside the save folder that videos will go in
+Videos will go in a subfolder named %1$s.	影片將儲存至名為 %1$s 的子資料夾。
+# context: import preview and toast sentence when a settings file clears the Video subfolder
+Videos will go in the save folder itself.	影片將直接儲存至儲存資料夾。
+# context: import preview and toast sentence; %1$s is the folder inside the save folder that photos will go in
+Photos will go in a subfolder named %1$s.	相片將儲存至名為 %1$s 的子資料夾。
+# context: import preview and toast sentence when a settings file clears the Photo subfolder
+Photos will go in the save folder itself.	相片將直接儲存至儲存資料夾。
+Reels and videos will save to this phone when you tap Download.	點按「下載」時，Reels 與影片將儲存至這支手機。
+Tapping Download on a reel or video will send its link to an app.	點按 Reels 或影片上的「下載」時，會將連結傳送至應用程式。
+Android will ask which app gets the links each time.	Android 每次都會詢問要使用哪個應用程式接收連結。
+Links will go to %1$s.	連結將傳送至 %1$s。
+Save to	儲存至
+Movies and Pictures	Movies 與 Pictures
+Videos and photos go to %1$s, next to the camera's. Saves you already have stay where they are.	影片與相片儲存至 %1$s，與相機拍攝的內容放在一起。已儲存的內容保留在原處。
+Videos and photos go to %1$s, with the phone's other downloads. Saves you already have stay where they are.	影片與相片儲存至 %1$s，與手機的其他下載項目放在一起。已儲存的內容保留在原處。
+Videos go to %1$s and photos to %2$s, as Facebook's own saves do. Some galleries don't show %1$s.	影片儲存至 %1$s，相片儲存至 %2$s，如同 Facebook 本身的儲存方式。部分相片庫不會顯示 %1$s。
+Choose a folder name under %1$s. Invalid characters become underscores. Leave it blank to use the default folder, %2$s.	選擇 %1$s 底下的資料夾名稱。無效字元會以底線取代。留白則使用預設資料夾 %2$s。
+Videos and photos go to %1$s.	影片與相片儲存至 %1$s。
+Videos will go to %1$s and photos to %2$s.	影片將儲存至 %1$s，相片將儲存至 %2$s。
+Videos and photos will go to %1$s.	影片與相片將儲存至 %1$s。
+# context: row title under Pause, backup and diagnostics, shown only while Debug logging is on
+Test the Messenger link	測試 Messenger 連線
+# context: summary of that row; Debug logging is the switch's name as this table gives it
+Checks now whether Facebook can reach Messenger, the way it does at startup, and shows each result. Appears while Debug logging is on.	立即以啟動時的方式檢查 Facebook 是否能連線至 Messenger，並顯示各項結果。啟用「偵錯記錄」時顯示。
+# context: toast when the test can't begin
+The Messenger link test couldn't start. Try again.	無法開始 Messenger 連線測試。請再試一次。
+# context: toast on a build without the test
+This build can't run the Messenger link test.	此建置版本無法執行 Messenger 連線測試。
+# context: toast when Facebook has no signed-in account
+No signed-in account to test with. Sign in to Facebook and try again.	沒有已登入的帳號可供測試。請登入 Facebook 再試一次。
+# context: toast with the test's result; each placeholder is one of: answered, no answer, failed (...)
+Opt-out read: %1$s. Triggered read: %2$s.	Opt-out 旗標讀取：%1$s。Triggered 旗標讀取：%2$s。
+# context: a read's result in that toast
+no answer	未回應
+# context: a read's result in that toast
+answered	已回應
+# context: a read's result in that toast; the placeholder is an error's class name, left in English
+failed (%1$s)	失敗（%1$s）
+# context: switch title under Reels and Watch; the dot is the tab bar's new-item badge
+Hide the Reels tab dot	隱藏 Reels 分頁提示點
+Hide the Feeds tab	隱藏動態消息分頁
+Hide the Friends tab	隱藏朋友分頁
+Hide the Marketplace tab	隱藏 Marketplace 分頁
+Hide the Groups tab	隱藏社團分頁
+Hide the Gaming tab	隱藏遊戲分頁
+Hide the Events tab	隱藏活動分頁
+Hide the Dating tab	隱藏交友分頁
+Hide the Professional dashboard tab	隱藏專業主控板分頁
+Hide the Saved tab	隱藏珍藏分頁
+Hide the Ad Center tab	隱藏廣告中心分頁
+Hide the Create tab	隱藏建立分頁
+Hide the Explore tab	隱藏探索分頁
+Hide the Jobs tab	隱藏工作機會分頁
+Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.	從分頁列移除此分頁。仍可在選單中找到其頁面。重新啟動 Facebook 後生效。
+Facebook opens on Home while %1$s is on, since %2$s is off the tab bar. Your choice stays saved.	啟用 %1$s 時，由於 %2$s 已不在分頁列，Facebook 會開啟首頁。你的選擇仍會儲存。
+# context: summary of that switch; Video is Facebook's name for the tab on some accounts
+No dot or new count on the Reels tab, called Video on some accounts. Other tabs keep theirs.	不顯示 Reels 分頁（部分帳號稱為「影片」）上的提示點與新增數量。其他分頁不受影響。
+# context: title of the overview row under the status card when the build lacks one patch Morphe Manager selects by default
+%1$d default patch isn't in this build	此建置版本缺少 %1$d 個預設修補項目
+# context: title of that row when several default patches are missing
+%1$d default patches aren't in this build	此建置版本缺少 %1$d 個預設修補項目
+# context: summary of that row while its list of patch names is closed; a tap opens it
+Tap to see which.	點按以查看項目。
+# context: that row's summary once opened, one patch missing; the placeholder is the patch's English name as Morphe Manager lists it
+Not in this build: %1$s. Morphe Manager selects it by default. Patch again with it selected to get what it does.	此建置版本未包含：%1$s。Morphe Manager 預設會選取此項目。請選取後重新修補，以使用其功能。
+# context: that row's summary once opened, several patches missing; the placeholder is their English names joined as a list
+Not in this build: %1$s. Morphe Manager selects them by default. Patch again with them selected to get what they do.	此建置版本未包含：%1$s。Morphe Manager 預設會選取這些項目。請選取後重新修補，以使用其功能。
+# context: Toast at the end of a video save whose file uses a codec WhatsApp and some video editors can't open (AV1, VP9, HEVC or xHE-AAC). A notification with a button to the fix is showing too. Keep it short: Android shows two lines at most.
+Saved, but WhatsApp and some editors may not accept it	已儲存，但 WhatsApp 與部分編輯器可能不支援
+# context: Toast at the end of a video save whose file WhatsApp may not open, when no notification can be shown. Downloads is the section of Hushfacebook settings with the fix. Two lines at most.
+Saved, but WhatsApp may not accept it. Open Downloads in Hushfacebook settings to fix that.	已儲存，但 WhatsApp 可能不支援。請開啟 Hushfacebook 設定中的「下載」以修正。
+# context: Second line of the notification after such a save. %1$s is the switch's name, Save videos other apps can open. They: WhatsApp and the editors.
+Turn on %1$s to save videos that WhatsApp and these editors accept.	啟用 %1$s，即可儲存 WhatsApp 與這些編輯器支援的影片。
+# context: Title of the notification after a video save whose file uses a codec WhatsApp and some video editors can't open.
+WhatsApp and some editors may not accept this video	WhatsApp 與部分編輯器可能不支援這部影片
+# context: Button on that notification. It opens Hushfacebook settings at the switch Save videos other apps can open.
+Open the setting	開啟設定
+# context: switch title under News feed; the prompts are the strip Facebook puts under some posts, such as "Are you interested in this post?"
+Hide post prompts	隱藏貼文提示
+# context: description of that switch; the quoted texts are Facebook's own prompts, so use Facebook's wording in your language if you know it
+Hides the strip on some posts, like "Are you interested in this post?" or who recently commented, plus follow and chat suggestions there. The post stays.	隱藏部分貼文上的提示列，例如「你對這則貼文感興趣嗎？」或最近留言的人，以及該處的追蹤與聊天建議。貼文仍會保留。
+# context: switch title under News feed; the Follow link is the small "Follow" text after a poster's name in a post's header
+Hide the Follow link on posts	隱藏貼文上的追蹤連結
+# context: description of that switch; "Follow" is Facebook's own word for the link, so use Facebook's wording in your language if you know it
+Hides the "Follow" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.	隱藏未追蹤人物或粉絲專頁貼文中，名稱旁的「追蹤」連結。點按名稱仍可開啟個人檔案。變更後繪製的貼文才會生效。
+# context: switch title under News feed; Meta AI is the name of Meta's assistant, and the questions are the row of suggested questions for it that Facebook puts under some posts
+Hide Meta AI questions under posts	隱藏貼文下方的 Meta AI 問題
+# context: description of that switch; a link card is the preview of a shared link inside a post
+Hides the row of Meta AI questions under some posts. The post, its link card and its buttons stay.	隱藏部分貼文下方的 Meta AI 問題列。貼文、連結卡片與按鈕仍會保留。
+# context: switch title under News feed; it keeps the date shown under the name of whoever posted
+Keep post dates	保留貼文日期
+# context: description of that switch; the rotating details are the texts Facebook's newer post header takes turns showing on that line
+Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.	在發布者名稱下顯示貼文日期，取代 Facebook 輪流顯示的詳細資訊，後者可能在部分手機上變成空白。
+# context: switch title under News feed; the Feeds header is the row at the top of the Feeds tab with Feeds, the menu and search, and the filters under it, All, Favorites, Friends, Groups and Pages
+Hide the Feeds header	隱藏動態消息標題列
+# context: description of that switch; the Feeds tab is where Facebook lists posts by those filters, and the title row is the one with the tab's name
+Shows the Feeds tab straight on its posts, without the title row or the filters. Restart Facebook to see the change.	「動態消息」分頁直接顯示貼文，不顯示標題列與篩選器。重新啟動 Facebook 後生效。
+# context: switch title under Reels and Watch; the prompt is Facebook's "Are you interested in this reel?" question on a reel
+Hide reel interest prompts	隱藏 Reels 興趣提示
+# context: description of that switch; the quoted text is Facebook's own prompt, so use Facebook's wording in your language if you know it
+No "Are you interested in this reel?" prompt on reels. The reel plays as usual.	Reels 不再顯示「你對這則 Reels 感興趣嗎？」提示。Reels 仍照常播放。
+# context: switch title under News feed; affiliate product links are the shop links creators add to their posts to earn a commission
+Hide affiliate product links	隱藏聯盟行銷商品連結
+# context: description of that switch; "Commission eligible" is Facebook's own label, so use Facebook's wording in your language if you know it
+Hides product cards from shopping links that creators add to posts, reels and comments. The "Commission eligible" label stays.	隱藏創作者加入貼文、Reels 與留言的購物連結商品卡片。「可獲得佣金」標籤仍會保留。
+# context: The reel button and the video menu item while links are sent to another app (#41)
+Send to app	傳送至應用程式
+# context: Title of Android's app chooser when a video's link is sent
+Send the link to	將連結傳送至
+# context: Toast when no app could take a video's link
+Couldn't open an app for this link	無法開啟可處理此連結的應用程式
+# context: Clipboard label of a copied video link
+Video link	影片連結
+# context: Toast after a long press on the reel button copied its link
+Link copied	已複製連結
+# context: Toast when a reel's link can't be built
+Couldn't find this reel's link	找不到這則 Reels 的連結
+# context: Toast when a feed video's link can't be built
+Couldn't find this video's link	找不到這部影片的連結
+# context: Settings row title: what the Download button does
+When you tap Download	點按下載時
+# context: Choice of the download action row
+Save to phone	儲存至手機
+# context: Choice of the download action row
+Send the link to an app	將連結傳送至應用程式
+# context: Summary of the download action row while links are sent
+Reels and videos go to the app below as a facebook.com link. Hold the reel Download button to copy the link instead. Stories still save to this phone.	將 Reels 與影片以 facebook.com 連結傳送至下方應用程式。長按 Reels 的下載按鈕可改為複製連結。限時動態仍會儲存至這支手機。
+# context: Summary of the download action row while saving, the default
+Reels, videos and stories save to this phone.	Reels、影片與限時動態會儲存至這支手機。
+# context: Settings row title: the app links are sent to
+App to send to	接收的應用程式
+# context: Dialog message of the send-to app row; %1$s and %2$s are package names
+The ID of the app that gets the links, such as %1$s for YTDLnis or %2$s for Seal. Leave it blank to pick an app each time.	接收連結的應用程式 ID，例如 YTDLnis 的 %1$s 或 Seal 的 %2$s。留白則每次選擇應用程式。
+# context: Hint in the send-to app field
+App ID	應用程式 ID
+# context: Toast when what was typed in the send-to app row isn't a package name; %1$s is what was typed
+%1$s isn't a valid app ID, so the app stays as it was.	%1$s 不是有效的應用程式 ID，原有設定未變更。
+# context: Summary of the send-to app row with no app named
+Android asks which app each time.	Android 每次都會詢問要使用哪個應用程式。
+# context: Summary of the send-to app row; %1$s is the package name
+Links go to %1$s. When it isn't installed, Android asks which app.	連結會傳送至 %1$s。未安裝時，Android 會詢問要使用哪個應用程式。
+# context: switch title under Stories; Find friends from contacts is the Stories tray card that asks to upload your contacts
+Hide "Find friends from contacts"	隱藏「從聯絡人尋找朋友」
+# context: summary of that switch
+Hides the Stories tray card that asks to upload your contacts. Applies when Facebook next loads the tray.	隱藏限時動態橫幅中要求上傳聯絡人的卡片。從 Facebook 下次載入橫幅起生效。
+# context: switch title under Stories; the prompts are the cards beside Create story that suggest a kind of story to make. Keep it distinct from Hide suggested stories
+Hide story prompts	隱藏限時動態提示
+# context: summary of that switch; Share music you love is the name of one such card
+Hides cards beside Create story that suggest a story to make, like Share music you love. Applies when Facebook next loads the tray.	隱藏「建立限時動態」旁建議製作限時動態的卡片，例如「分享你喜愛的音樂」。從 Facebook 下次載入橫幅起生效。
+# context: summary of Hide "People you may know" when the build also hides tray cards; Add is the card's button
+Hides friend suggestions between posts, on your own profile, and as cards with an Add button in the Stories tray.	隱藏貼文之間、你個人檔案上，以及限時動態橫幅中附有「加朋友」按鈕的交友推薦。
+Feeds opens on	動態消息預設篩選
+All	全部
+Favorites	最愛
+Groups	社團
+Pages	粉絲專頁
+When Facebook opens on Feeds, the Feeds tab opens on the filter Facebook picks.	Facebook 啟動時若開啟「動態消息」，該分頁會使用 Facebook 選擇的篩選條件。
+When Facebook opens on Feeds, the Feeds tab opens on %1$s. If your Feeds tab doesn't have it, it opens as usual.	Facebook 啟動時若開啟「動態消息」，該分頁會使用 %1$s。若你的動態消息分頁沒有此選項，則照常開啟。
+The Feeds tab will open on the filter Facebook picks.	「動態消息」分頁將使用 Facebook 選擇的篩選條件。
+The Feeds tab will open on %1$s.	「動態消息」分頁將開啟 %1$s。
+# context: title of the list under Following feed on Home that picks which Feeds tab filter Home shows
+Home shows	首頁顯示內容
+Home shows the same posts as All in the Feeds tab.	首頁顯示與「動態消息」分頁中「全部」相同的貼文。
+# context: %1$s is a Feeds tab filter's name, like Friends or Groups; %2$s is the Hide "Suggested for you" posts switch and %3$s the Hide Reels in the feed switch
+Home asks Facebook for the posts %1$s shows in the Feeds tab. When there's nothing new there, Facebook can fill Home with suggested posts and reels, which %2$s and %3$s take out. If Facebook doesn't have that feed, Home shows All.	首頁會向 Facebook 要求「動態消息」分頁中 %1$s 顯示的貼文。若沒有新內容，Facebook 可能以推薦貼文與 Reels 填滿首頁，可用 %2$s 與 %3$s 移除。若 Facebook 未提供該動態，首頁會顯示「全部」。
+# context: settings import preview; %1$s is the Following feed on Home switch, %2$s a Feeds tab filter
+With %1$s on, Home will show the same posts as %2$s in the Feeds tab.	啟用 %1$s 時，首頁將顯示與「動態消息」分頁中 %2$s 相同的貼文。
+Saved	珍藏
+Saved shortcut	珍藏捷徑
+Adds Saved to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	若有空間，在長按 Facebook 圖示的選單中新增「珍藏」。既有捷徑仍會保留。
+Adds Saved to the menu you get by holding Facebook's icon, if there's room, and a Saved row in Settings and privacy. Existing shortcuts stay.	若有空間，在長按 Facebook 圖示的選單中新增「珍藏」，並在「設定和隱私」中新增「珍藏」項目。既有捷徑仍會保留。
+Your launcher has no room for another shortcut.	你的啟動器已無空間新增捷徑。
+Saved isn't available in this build.	此建置版本無法使用「珍藏」。
+Watch history	觀看紀錄
+Watch history shortcut	觀看紀錄捷徑
+Watch history isn't available in this build.	此建置版本無法使用「觀看紀錄」。
+Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room, and a Watch history row in Settings and privacy. Existing shortcuts stay.	若有空間，在長按 Facebook 圖示的選單中新增「觀看紀錄」，顯示你看過的影片與 Reels，並在「設定和隱私」中新增「觀看紀錄」項目。既有捷徑仍會保留。
+Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	若有空間，在長按 Facebook 圖示的選單中新增「觀看紀錄」，顯示你看過的影片與 Reels。既有捷徑仍會保留。
+# context: The optional matching mode for both post word lists.
+Match whole words	比對完整字詞
+Matches whole words only, in both lists. For example, "hat" matches "hat!" but not "what" or "hats".	兩份清單都只比對完整字詞。例如「hat」會符合「hat!」，但不符合「what」或「hats」。
+Off	停用
+On	啟用
+Saved now %1$s. After import %2$s.	目前儲存：%1$s。匯入後：%2$s。
+
+# context: Compact overview identity and the order for resuming. Source known does not mean signed or safe.
+Version %1$s	版本 %1$s
+Build %1$s (modified)	建置版本 %1$s（已修改）
+Build %1$s (source known)	建置版本 %1$s（來源已知）
+Build %1$s (source unknown)	建置版本 %1$s（來源不明）
+Tap Resume, then restart Facebook.	點按「繼續」，再重新啟動 Facebook。
+Turn off haptics	停用觸覺回饋
+Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations aren't affected.	停止 Facebook 在點按或滑動時產生的輕微震動。鍵盤與手機本身的震動不受影響。
+Turn off screen transitions	停用畫面轉場動畫
+Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.	分頁、選單、相片與疊加在 Facebook 上的畫面會立即顯示，不再滑入或縮放。仍可滑動切換分頁。
+Unlock app icons	解鎖應用程式圖示
+Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. The Pick an app icon row opens that page. Your pick stays if you turn this off, so pick the blue one first to go back.	允許在 Facebook 的「應用程式圖示」頁面選擇原本限定 Facebook Plus 使用的圖示。「選擇應用程式圖示」可開啟該頁面。停用後仍會保留所選圖示，如要還原，請先選回藍色圖示。
+# context: settings row under Appearance, right below the Unlock app icons switch; opens Facebook's own App icon page, so use Facebook's name for that page in this language
+Pick an app icon	選擇應用程式圖示
+Opens Facebook's App icon page, even on accounts where Facebook doesn't list it in Settings and privacy.	開啟 Facebook 的「應用程式圖示」頁面，即使該帳號的「設定和隱私」未列出此頁面也可使用。
+Use the icon at the top of Home	在首頁頂端使用所選圖示
+Shows the app icon you picked at the top of Home instead of the Facebook wordmark. Needs Unlock app icons and a pick other than the blue one. Restart Facebook to see the change.	在首頁頂端顯示你選擇的應用程式圖示，取代 Facebook 文字標誌。需要啟用「解鎖應用程式圖示」並選擇藍色以外的圖示。重新啟動 Facebook 後生效。
+# context: toast when the row above finds no App icon page in this Facebook build
+This Facebook build has no App icon page.	此 Facebook 建置版本沒有「應用程式圖示」頁面。
+# context: switch title under Playback; Android's own name for the floating video window
+Picture-in-picture	子母畫面
+# context: summary of that switch
+A playing reel or full-screen video keeps going in a small window when you leave Facebook. Android 12 or later.	離開 Facebook 時，正在播放的 Reels 或全螢幕影片會在小視窗中繼續播放。需要 Android 12 以上版本。
+# context: switch title under Playback; HDR is the high-contrast video and photo format some screens show brighter than everything else
+Turn off HDR brightness	停用 HDR 亮度提升
+# context: summary of that switch
+HDR videos and photos stay at your screen's usual brightness instead of turning it up to full. They keep their resolution.	HDR 影片與相片維持螢幕平常的亮度，不再提高至最高亮度。解析度不受影響。
+# context: switch title under Playback, below Turn off HDR brightness; when a video comes in both HDR and SDR, the SDR copy plays. Keep HDR and SDR as they are
+Play SDR versions of HDR videos	播放 HDR 影片的 SDR 版本
+# context: summary of that switch; "the same size" means the same resolution; "the switch above" is Turn off HDR brightness
+When Facebook also sends an HDR video in SDR at the same size, play that version instead. The screen doesn't brighten and the picture stays as sharp. Works with the switch above on or off.	若 Facebook 同時提供相同尺寸的 SDR 版本，改為播放該版本。螢幕不會變亮，畫面仍保持清晰。無論上方開關啟用或停用皆可使用。
+# context: switch title under Playback; it makes videos play past the silent stretches of their sound
+Skip silent parts	略過無聲片段
+# context: summary of that switch; how-tos are tutorial videos
+Videos, reels and stories jump past the quiet stretches in their sound, so talks and how-tos get to the point sooner.	自動跳過影片、Reels 與限時動態中的安靜片段，讓談話與教學更快進入重點。
+# context: switch title under Playback; feed videos stay silent until the user turns their sound on
+Keep feed videos muted	保持動態消息影片靜音
+# context: summary of that switch; the speaker is the sound button on a video, volume up is the phone's key
+Videos in your feed start with the sound off every time you open Facebook, and only you turn it on. Tap a video's speaker or press volume up to hear it.	每次開啟 Facebook 時，動態消息中的影片皆以靜音開始，只有你能開啟聲音。點按影片的喇叭或按提高音量鍵即可聆聽。
+# context: switch title under Playback; keeps a video's progress bar (the line showing how far it has played) on screen
+Keep the progress bar	保持顯示進度列
+# context: summary of that switch; a reel is a short vertical video
+A reel's progress bar stays full size, ready to drag. A full-screen video's controls stay until you tap.	Reels 進度列保持完整大小，隨時可拖曳。全螢幕影片的控制項會持續顯示，直到你點按。
+Show a reel's time	顯示 Reels 時間
+With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.	啟用「保持顯示進度列」後，Reels 的已播放時間與總時間會持續顯示在進度列上方。停用時只會在拖曳進度列時顯示。
+# context: switch title under Playback, after Show a reel's time; a tap on the video's progress bar jumps to that point
+Tap the bar to seek	點按進度列跳轉
+# context: description of that switch; the dot is the bar's round handle you drag
+Tap anywhere on a reel's or video's progress bar to jump there, instead of dragging the dot.	點按 Reels 或影片進度列的任何位置即可跳轉，不必拖曳圓點。
+# context: switch title under Marketplace; View profile is Facebook's own button on a seller's Marketplace page that opens their regular Facebook profile, so use Facebook's label for it in this language
+Show View profile on Marketplace sellers	顯示 Marketplace 賣家的查看個人檔案按鈕
+# context: summary of that switch
+Adds a View profile button to every seller's Marketplace page, opening their Facebook profile. Facebook only shows it to some accounts.	在每位賣家的 Marketplace 頁面新增「查看個人檔案」按鈕，開啟其 Facebook 個人檔案。Facebook 原本只對部分帳號顯示此按鈕。
+# context: the Save Facebook's notification sound row under Notifications and its toasts (#83)
+Save Facebook's notification sound	儲存 Facebook 通知音效
+Adds Facebook's chime to your phone's notification sounds, for categories set to None. Then pick it in Android's notification settings for Facebook, under Sound.	將 Facebook 提示音加入手機的通知音效，供音效設為「無」的類別使用。之後可在 Android 的 Facebook 通知設定中，於「音效」選取。
+Saved as %1$s in the Notifications folder. Pick it under Sound in Android's notification settings for Facebook.	已以 %1$s 儲存至 Notifications 資料夾。請在 Android 的 Facebook 通知設定中，於「音效」選取。
+%1$s is already in your notification sounds.	%1$s 已在你的通知音效中。
+This build has no notification sound to save.	此建置版本沒有可儲存的通知音效。
+Couldn't save the sound. Try again.	無法儲存音效。請再試一次。
+# context: switch title on the Feed page; the composer row is the "What's on your mind?" box at the top of Home where a post starts
+Hide the composer row	隱藏貼文撰寫列
+# context: summary of that switch; use the wording Facebook itself uses in this language for "What's on your mind?" and Home
+Hides the "What's on your mind?" row at the top of Home. The create button in the top bar still starts a post.	隱藏首頁頂端的「在想些什麼？」橫列。仍可用頂端列的建立按鈕撰寫貼文。
+# context: switch title under Reels and Watch; Clean mode is Facebook's own three-dot menu item on a reel or video that hides the buttons down the side, so use Facebook's name for it in this language (#75)
+Always use Clean mode	一律使用簡潔模式
+# context: summary of that switch; "the usual way" means Facebook's own way out of Clean mode
+Opens reels and videos in Facebook's Clean mode, which hides the buttons down the side. You can still leave Clean mode as usual. Off by default, since it hasn't been tried on a real account yet.	以 Facebook 的簡潔模式開啟 Reels 與影片，隱藏側邊按鈕。仍可照常離開簡潔模式。預設停用，因為尚未使用真實帳號測試。
+# context: switch title under Reels and Watch, part of Clean up Reels; each reel plays to its end one time and stops there instead of starting over
+Play reels once	Reels 僅播放一次
+# context: summary of that switch; "last frame" is the final picture of the video, which stays on screen
+A reel stops on its last frame instead of starting over. Tap it to watch again, or swipe to the next one. Feed videos and stories aren't changed. Off by default, since it hasn't been tried on a real account yet.	Reels 會停在最後一格，不再重播。點按可再次觀看，或滑動至下一則。動態消息影片與限時動態不受影響。預設停用，因為尚未使用真實帳號測試。
+# context: switch title under Reels and Watch, part of Clean up Reels; reels and videos play in the language they were recorded in instead of an audio track Facebook translated
+Keep the original audio	保留原始音訊
+# context: summary of that switch; "dubbed" means the spoken audio was replaced by a translated voice; Meta AI is the company's AI assistant, keep the name
+Reels and videos play with the sound they were made with, not a version Facebook dubbed into your language with Meta AI. Off by default, since it hasn't been tried on a real account yet.	Reels 與影片使用製作時的原始音訊，不播放 Facebook 透過 Meta AI 配成你所用語言的版本。預設停用，因為尚未使用真實帳號測試。
+# context: settings section title on the App page, above the switches of Hide Meta upsells; Meta is the company
+Meta's other products	Meta 其他產品
+# context: switch title; Edits is Meta's video editing app, keep its name
+Hide Edits promotions	隱藏 Edits 推廣
+# context: switch title; Threads is Meta's app, keep its name; cross-posting means sharing a Facebook post to Threads as well
+Hide Threads cross-posting prompts	隱藏 Threads 跨平台發布提示
+# context: switch title under Meta's other products; Threads is Meta's app, keep its name; the share sheet is the panel that opens when you tap Share on a post, use Facebook's own word for it in this language
+Hide Threads in the share sheet	隱藏分享面板中的 Threads
+# context: switch title under Meta's other products; Muse is Meta's AI agent app, keep its name; the share sheet is the panel that opens when you tap Share on a post, use Facebook's own word for it in this language
+Hide Muse in the share sheet	隱藏分享面板中的 Muse
+# context: switch title; Meta Verified is Meta's paid subscription, keep its name
+Hide Meta Verified offers	隱藏 Meta Verified 推廣
+# context: switch title; avatar stickers are stickers made from your Facebook avatar
+Hide avatar sticker promotions	隱藏虛擬替身貼圖推廣
+# context: summary of the Edits switch; the pill is a small button under a video in the feed that opens Edits
+Hides the Edits button in the Reels composer and the Edits pill under videos. You can still make reels in Facebook.	隱藏 Reels 編輯器中的 Edits 按鈕與影片下方的 Edits 標籤。仍可在 Facebook 製作 Reels。
+# context: summary of the Threads switch; the composer is where you write a new post
+Facebook stops asking whether to share your post to Threads too. Posting to Facebook works as before.	Facebook 不再詢問是否同時將貼文分享到 Threads。在 Facebook 發布貼文的方式不變。
+# context: summary of the Threads share sheet switch; the share sheet is the panel that opens when you tap Share on a post
+Removes the Threads button when you share something. All other ways to share stay, in the same order.	分享時移除 Threads 按鈕。其他分享方式與順序皆保留。
+# context: summary of the Muse share sheet switch; Muse is Meta's AI agent app, keep its name
+Removes Muse, Meta's AI agent app, when you share something. All other ways to share stay, in the same order.	分享時移除 Meta 的 AI 代理應用程式 Muse。其他分享方式與順序皆保留。
+# context: summary of the Meta Verified switch; the label is a line Facebook adds under the poster's name on some posts
+No Meta Verified offer after you post, and no Meta Verified label under the names on posts. Posting works as usual.	發布貼文後不再顯示 Meta Verified 推廣，也不在貼文名稱下顯示 Meta Verified 標籤。發布功能照常運作。
+# context: summary of the avatar sticker switch; promotion slots are the cards Facebook uses to suggest its own features
+Hides avatar sticker promotions in comments and elsewhere, and the prompt to make an avatar. Stickers still send.	隱藏留言等處的虛擬替身貼圖推廣與建立虛擬替身提示。仍可傳送貼圖。
+# context: switch title under Meta's other products; Imagine is Meta AI's image maker, keep its name
+Hide Meta AI's Imagine	隱藏 Meta AI 的 Imagine
+# context: switch title under Meta's other products; Meta AI is Meta's assistant and keeps its name; the buttons sit under some posts
+Hide other Meta AI buttons under posts	隱藏貼文下方的其他 Meta AI 按鈕
+# context: summary of the Imagine switch; Imagine me is a button Facebook puts under some posts, keep its name; Create story is Facebook's screen for making a story, use Facebook's own name for it in this language
+Hides the Imagine me button on posts and the Imagine option when you write a post or create a story. Everything else works as before.	隱藏貼文上的「Imagine me」按鈕，以及撰寫貼文或建立限時動態時的「Imagine」選項。其他功能照常運作。
+# context: summary of the switch that hides the other Meta AI buttons; these are buttons Facebook puts under some posts that open Meta AI; the next button is whatever other button the post would show there
+Hides the other Meta AI buttons Facebook puts under posts. The post's next button shows instead, if it has one.	隱藏 Facebook 放在貼文下方的其他 Meta AI 按鈕。若貼文還有下一個按鈕，則改為顯示該按鈕。
+# context: label of a switch under Stories that replays a finished story; it works together with the Stop Story auto-advance switch
+Loop stories	循環播放限時動態
+# context: summary of the Loop stories switch; "Stop Story auto-advance" is the label of the switch above it, so use its translation
+With Stop Story auto-advance on, a finished story plays again from the start instead of waiting on its last frame. Tap or swipe to move on.	啟用「停用自動切換限時動態」後，播放完畢的限時動態會從頭重播，而非停留在最後一格。點按或滑動可切換至下一則。
+# context: label of a switch under Downloads that adds a Save photo item to the three-dot menu of posts with photos
+Save photo in post menus	在貼文選單加入儲存相片
+# context: summary of the Save photo in post menus switch; "Save any photo" is the label of the switch above it and "Save photo" is the menu item, so use their translations
+With Save any photo on, a post with photos gets Save photo in its three-dot menu too. A post with several saves each one, one after another.	啟用「儲存任何相片」後，含有相片的貼文也會在三點選單中顯示「儲存相片」。若有多張相片，會依序儲存每一張。
+# context: menu item in a post's three-dot menu that saves the post's one photo to the phone
+Save photo	儲存相片
+# context: menu item in a post's three-dot menu that saves every photo of a post with several photos
+Save all photos	儲存所有相片
+# context: short message shown when the photos of a post could not start saving
+Couldn't save this post's photos. Try again in a moment.	無法儲存這則貼文的相片。請稍後再試。
+Couldn't save this story's photo. Try again in a moment.	無法儲存這則限時動態的相片。請稍後再試。
+Too many saves at once. Try again when one finishes.	同時儲存的項目過多。請等其中一項完成後再試。
+# context: settings switch under Block Instant Games ads that makes a game's rewarded ad count as watched
+Answer rewarded game ads as watched	將遊戲獎勵廣告回報為已觀看
+# context: description under that switch
+With Block Instant Games ads on, a game's rewarded ad counts as watched. No ad plays and the game still gives its reward.	啟用「封鎖即時遊戲廣告」後，遊戲的獎勵廣告會視為已觀看。不播放廣告，遊戲仍會提供獎勵。
+# context: title of the list that picks the quality reels start at
+Reels quality	Reels 畫質
+# context: title of the list that picks the quality video stories start at
+Stories quality	限時動態畫質
+# context: first choice in the Reels and Stories quality lists: follow the Playback quality row; use this language's name for that row
+Same as Playback quality	與播放畫質相同
+# context: summary of the Reels quality list when it follows the Playback quality row
+Reels follow the Playback quality row.	Reels 使用「播放畫質」的設定。
+# context: summary of the Stories quality list when it follows the Playback quality row
+Video stories follow the Playback quality row.	影片限時動態使用「播放畫質」的設定。
+# context: summary of the Reels quality list when it has a quality of its own; %1$s is that choice, such as Highest or Up to 720p
+%1$s for reels, whatever Playback quality is set to.	Reels 使用 %1$s，不受「播放畫質」設定影響。
+# context: summary of the Stories quality list when it has a quality of its own; %1$s is that choice, such as Highest or Up to 720p
+%1$s for video stories, whatever Playback quality is set to.	影片限時動態使用 %1$s，不受「播放畫質」設定影響。
+# context: title of the row naming a folder inside the save folder that video saves go in
+Video subfolder	影片子資料夾
+# context: title of the row naming a folder inside the save folder that photo saves go in
+Photo subfolder	相片子資料夾
+# context: dialog text of the Video subfolder row
+Choose a folder for videos inside the save folder. Invalid characters become underscores. Leave it blank to keep videos in the save folder itself.	在儲存資料夾內選擇影片資料夾。無效字元會以底線取代。留白則將影片直接放在儲存資料夾內。
+# context: dialog text of the Photo subfolder row
+Choose a folder for photos inside the save folder. Invalid characters become underscores. Leave it blank to keep photos in the save folder itself.	在儲存資料夾內選擇相片資料夾。無效字元會以底線取代。留白則將相片直接放在儲存資料夾內。
+# context: summary of the Video subfolder row; %1$s is a folder path such as Movies/Facebook/Clips
+Videos go to %1$s.	影片儲存至 %1$s。
+# context: summary of the Photo subfolder row; %1$s is a folder path such as Pictures/Facebook/Photos
+Photos go to %1$s.	相片儲存至 %1$s。
+# context: switch that takes the new-item dot and count off the Home tab
+Hide the Home tab badge	隱藏首頁分頁標記
+# context: switch that takes the new-item dot and count off the Friends tab
+Hide the Friends tab badge	隱藏朋友分頁標記
+# context: switch that takes the new-item dot and count off the Marketplace tab
+Hide the Marketplace tab badge	隱藏 Marketplace 分頁標記
+# context: switch that takes the new-item dot and count off the Notifications tab
+Hide the Notifications tab badge	隱藏通知分頁標記
+# context: switch that takes the new-item dot and count off the Menu tab
+Hide the Menu tab badge	隱藏選單分頁標記
+# context: switch that takes the new-item dot and count off the Groups tab
+Hide the Groups tab badge	隱藏社團分頁標記
+# context: switch that takes the new-item dot and count off every tab without a switch of its own
+Hide other tabs' badges	隱藏其他分頁標記
+# context: switch that keeps Facebook from putting its count on the launcher icon
+Hide the app icon count	隱藏應用程式圖示計數
+# context: summary of the switch for the badges on every tab without a switch of its own
+No dot or count on Feeds, Gaming, Events and the other tabs not listed here. The Reels tab has its own switch.	不顯示動態消息、遊戲、活動與此處未列出分頁的提示點或計數。Reels 分頁有獨立的開關。
+# context: summary of each tab's badge switch
+No dot or count on this tab. Its page still shows what's new when you open it.	不顯示此分頁的提示點或計數。開啟後仍可在頁面查看新內容。
+# context: summary of the app icon count switch
+No number on Facebook's app icon. Notifications still arrive. Some launchers add their own count, which this can't remove.	不顯示 Facebook 應用程式圖示上的數字。通知仍會送達。部分啟動器會自行加入計數，此功能無法移除。
+# context: switch title under News feed; it shows posts and reel captions in their original language instead of Facebook's automatic translation
+Turn off auto-translation	停用自動翻譯
+# context: description of that switch; See translation is the name of Facebook's own link under a post that translates it on request
+Posts and reel captions stay in the language they were written in. Facebook's See translation link stays under them.	貼文與 Reels 說明保留原本撰寫的語言。下方仍會顯示 Facebook 的「查看翻譯」連結。
+# context: switch title under Reels and Watch, below Keep the reel speed; it keeps a playback speed picked on a feed or Watch video for the next videos
+Keep the video speed	保留影片播放速度
+# context: description of that switch; the gear menu is the settings button on a video's player, where Playback speed is picked
+The speed you pick in a feed or Watch video's menu carries over to the next videos. Reels keep their own speed. Off by default, since it hasn't been tried on a real account yet.	在動態消息或 Watch 影片選單選擇的速度會沿用至後續影片。Reels 保留自己的速度設定。預設停用，因為尚未使用真實帳號測試。
+# context: switch title under Downloads, below Download feed and Watch videos; it offers to download a reel or video whose link the user copied
+Offer to download copied links	提示下載已複製的連結
+# context: description of that switch; Download feed and Watch videos is the name of the switch above it
+With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.	啟用「下載動態消息與 Watch 影片」後，複製 Reels 或影片連結並返回 Facebook 時，會提示下載，每個連結只提示一次。停用時，Facebook 不會查看你複製的內容。
+# context: title of the dialog that offers to download the video whose link is on the clipboard; the link shows under it
+Download the video you copied?	要下載你複製的影片嗎？
+# context: button of that dialog that declines; the same link is never offered again
+No thanks	不用了
+# context: toast when a copied share link couldn't be followed to a video, so Facebook opened the link itself
+Couldn't find the video in that link, so it opened in Facebook instead.	找不到該連結中的影片，已改為在 Facebook 開啟。
+# context: toast when Download on a copied link opens the video first, so Facebook loads it and the save can start
+Opening the video to save it	正在開啟影片以儲存
+# context: switch title under Stories, View stories anonymously's second switch; it adds an eye button over each story
+Mark as seen button	標記為已觀看按鈕
+# context: description of the Mark as seen button switch
+Adds an eye button to the top of each story while you view anonymously. Tap it to show up on that story's viewer list. The other stories stay hidden.	匿名觀看時，在每則限時動態頂端新增眼睛按鈕。點按後，你會出現在該則限時動態的觀看名單上。其他限時動態的觀看狀態仍會隱藏。
+# context: what TalkBack reads for the eye button over a story while that story is still hidden from its viewer list
+Mark as seen	標記為已觀看
+# context: what TalkBack reads for the eye button once the story is marked and waiting to be sent; a second tap takes the mark back
+Marked as seen. Tap again to undo.	已標記為已觀看。再次點按可復原。
+# context: what TalkBack reads for the eye button once the marked story was sent as seen
+Marked as seen and sent	已標記為已觀看並送出
+# context: the word lists' dialogs, after their first paragraph: a line between slashes is a regular expression; %1$d is how many a list holds, %2$d the most characters each
+A line between slashes, like /gr[ae]y/, is a pattern that can match several spellings (a regular expression). A list holds up to %1$d, each up to %2$d characters.	將一行文字放在斜線之間，例如 /gr[ae]y/，即可作為比對多種拼寫的模式（正規表示式）。每份清單最多 %1$d 個模式，每個最多 %2$d 個字元。
+# context: under a word list being edited, and when its Save is refused: a line written between slashes isn't a pattern the app can read; %1$d is the line's number
+Line %1$d isn't a pattern Hushfacebook can read. Fix it or remove it, then save again.	第 %1$d 行不是 Hushfacebook 可辨識的模式。請修正或移除後重新儲存。
+# context: under a word list being edited, and when its Save is refused: more patterns than a list holds; %1$d is the most a list holds
+A list holds up to %1$d patterns, and this one has more. Remove some, then save again.	每份清單最多可容納 %1$d 個模式，此清單已超過上限。請移除部分項目後重新儲存。
+# context: switch title: hides feed posts whose attachment is a photo or an album
+Hide photo posts	隱藏相片貼文
+# context: switch title: hides feed posts whose attachment is a video
+Hide video posts	隱藏影片貼文
+# context: switch title: hides feed posts that share a link to a website
+Hide link posts	隱藏連結貼文
+# context: switch title: hides short text posts Facebook draws on a colored background
+Hide posts on a colored background	隱藏彩色背景貼文
+# context: summary of the Hide photo posts switch
+Hides posts with a photo or album, including shares.	隱藏包含相片或相簿的貼文，包含分享的內容。
+# context: summary of the Hide video posts switch
+Hides posts with a video, including shares. Reels in the feed have their own switch.	隱藏包含影片的貼文，包含分享的內容。動態消息中的 Reels 有獨立的開關。
+# context: summary of the Hide link posts switch
+Hides posts that share a link to a website, with its preview card.	隱藏分享網站連結並帶有預覽卡片的貼文。
+# context: summary of the Hide posts on a colored background switch
+Hides short posts shown as big text on a colored background.	隱藏以彩色背景與大字顯示的短貼文。
+# context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language
+Hide reposts	隱藏轉發貼文
+# context: summary of the Hide reposts switch; a caption is what the sharer wrote above the shared post
+Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	隱藏分享其他貼文的貼文，無論是否附上說明。原創貼文仍會保留。預設停用，因為尚未在實際動態消息中測試。
+# context: switch title in Privacy: asks for the phone's own screen lock before Facebook shows
+Lock Facebook	鎖定 Facebook
+Save crashes to Downloads	將當機記錄儲存至下載資料夾
+When Facebook crashes, the error goes in a text file in Download/Hushfacebook, so you can send it with a bug report even if Facebook won't open. Links and IDs are left out. The newest five are kept.	Facebook 當機時，將錯誤儲存為 Download/Hushfacebook 中的文字檔，即使無法開啟 Facebook，也能附在問題回報中。不包含連結與 ID。保留最新五份記錄。
+# context: switch title in Privacy: Facebook quits fully a few seconds after you switch away from it
+Close Facebook when you leave it	離開時關閉 Facebook
+A few seconds after you leave Facebook, it closes all the way and leaves your recent apps, so it isn't running in the background. It waits for uploads and saves to finish first. Notifications may come late, or not until you open Facebook again.	離開 Facebook 幾秒後，會完全關閉並從最近使用的應用程式移除，不再於背景執行。會先等待上傳與儲存完成。通知可能延遲，或直到再次開啟 Facebook 才會送達。
+# context: summary of the Lock Facebook switch; the time below is the Lock after row under it
+Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.	Facebook 啟動時，以及離開達下方時間後返回時，會要求使用指紋、臉部辨識或螢幕鎖定驗證。手機需已設定螢幕鎖定。
+# context: toast when Lock Facebook is turned on and the phone has no screen lock to ask for
+Set a screen lock in your phone's settings first, so Facebook has something to ask for.	請先在手機設定中設定螢幕鎖定，Facebook 才能要求驗證。
+# context: title of the row and list that picks how long Facebook may be away before it locks
+Lock after	鎖定時間
+# context: Lock after choice: Facebook locks the moment you leave it
+As soon as you leave	離開後立即鎖定
+# context: Lock after choice, and the %1$s of the lock sentences: a minute away
+1 minute	1 分鐘
+# context: Lock after choice, and the %1$s of the lock sentences: five minutes away
+5 minutes	5 分鐘
+# context: Lock after choice, and the %1$s of the lock sentences: fifteen minutes away
+15 minutes	15 分鐘
+# context: Lock after choice, and the %1$s of the lock sentences: an hour away
+1 hour	1 小時
+# context: summary of the Lock after row when it locks the moment you leave
+Facebook locks as soon as you leave it.	離開 Facebook 後立即鎖定。
+# context: summary of the Lock after row; %1$s is a time such as 5 minutes
+Facebook locks once you've been away for %1$s.	離開 Facebook 達 %1$s 後鎖定。
+# context: what a settings import changes: the lock will happen the moment Facebook is left
+With Lock Facebook on, it will lock as soon as you leave it.	啟用「鎖定 Facebook」後，離開時會立即鎖定。
+# context: what a settings import changes; %1$s is a time such as 5 minutes
+With Lock Facebook on, it will lock once you've been away for %1$s.	啟用「鎖定 Facebook」後，離開達 %1$s 時會鎖定。
+# context: title of Android's fingerprint, face or screen lock prompt that Lock Facebook shows
+Unlock Facebook	解鎖 Facebook
+# context: title on the screen that covers Facebook until the screen lock check passes
+Facebook is locked	Facebook 已鎖定
+# context: text under it on the cover
+Use your fingerprint, face or screen lock to open it.	使用指紋、臉部辨識或螢幕鎖定來開啟。
+# context: button on the cover that asks for the screen lock again
+Unlock	解鎖
+# context: title of the row and list that picks how large Facebook's text is, as a share of the phone's font size
+Text size	文字大小
+# context: Text size choice for no change: Facebook's text stays at the size the phone's font size setting gives it
+As Facebook has it	依 Facebook 原有設定
+# context: summary of the Text size row at its default
+Facebook's text is the size your phone's font size setting gives it.	Facebook 文字使用手機字型大小設定所決定的尺寸。
+# context: summary of the Text size row; %1$s is a percentage such as 115%
+Facebook's text is %1$s of the size your phone's font size setting gives it. Restart Facebook to see the change.	Facebook 文字使用手機字型大小設定所決定尺寸的 %1$s。重新啟動 Facebook 後生效。
+# context: what a settings import changes: Facebook's text goes back to the phone's font size
+Facebook's text will be the size your phone's font size setting gives it.	Facebook 文字將使用手機字型大小設定所決定的尺寸。
+# context: what a settings import changes; %1$s is a percentage such as 115%
+Facebook's text will be %1$s of the size your phone's font size setting gives it.	Facebook 文字將使用手機字型大小設定所決定尺寸的 %1$s。
+# context: title of the row and list that picks the color that stands in for Facebook's blue
+Accent color	強調色
+# context: Accent color choice and color name: Facebook's own blue, no change
+Facebook blue	Facebook 藍
+# context: Accent color choice, a blue-green
+Teal	藍綠色
+# context: Accent color choice
+Green	綠色
+# context: Accent color choice
+Purple	紫色
+# context: Accent color choice
+Pink	粉紅色
+# context: Accent color choice
+Orange	橘色
+# context: Accent color choice
+Red	紅色
+# context: Accent color choice, a blue-violet
+Indigo	靛藍色
+# context: Accent color choice, a yellow-orange
+Amber	琥珀色
+# context: summary of the Accent color row, greyed out because the Material You theme patch is in the build
+Material You theme is in this build and picks Facebook's colors, so this has no effect.	此建置版本包含 Material You 主題，Facebook 配色由該主題決定，因此此設定不生效。
+# context: summary of the Accent color row at its default
+Links, buttons, switches and the selected tab keep Facebook's blue.	連結、按鈕、開關與已選取分頁保留 Facebook 原有的藍色。
+# context: summary of the Accent color row; %1$s is a color name such as Teal
+Links, buttons, switches and the selected tab use %1$s instead of Facebook's blue. Restart Facebook to see the change. If the Material You theme is added, it takes over.	連結、按鈕、開關與已選取分頁使用 %1$s，取代 Facebook 原有的藍色。重新啟動 Facebook 後生效。若加入 Material You 主題，則由該主題決定配色。
+# context: what a settings import changes: Facebook goes back to its own blue
+Facebook will keep its own blue.	Facebook 將保留原有的藍色。
+# context: what a settings import changes; %1$s is a color name such as Teal
+If your patched Facebook includes Accent color, Facebook's blue will be %1$s.	若修補後的 Facebook 包含「強調色」，Facebook 的藍色將改為 %1$s。
+# context: switch title under Chats; photos and videos sent from a chat inside Facebook go out as the originals
+Send photos and videos at original quality	以原始畫質傳送相片與影片
+# context: description of that switch; the 20 and 25 MB limits are where Facebook's own shrinking takes over again; a video with a location tag is shrunk by Facebook, which drops the tag
+Sends photos and videos in Facebook chats at full quality. Photos lose location and camera details. Big files and videos with a location tag are still shrunk.	在 Facebook 聊天中以完整畫質傳送相片與影片。相片會移除位置與相機資訊。大型檔案與帶有位置標記的影片仍會壓縮。
+# context: button in the Words to hide editor that opens a list of ready-made word lists for common topics
+Add a topic pack	加入主題字詞包
+# context: topic pack name: words about politics
+Politics	政治
+# context: topic pack name: words about elections and voting
+Elections	選舉
+# context: topic pack name: words about cryptocurrency
+Crypto	加密貨幣
+# context: topic pack name: words about sports
+Sports	運動
+# context: topic pack name: words about celebrity gossip
+Celebrity gossip	名人八卦
+# context: topic pack name: words that weight loss advertisements use
+Weight loss ads	減重廣告
+# context: topic pack name: words that giveaway posts and engagement bait use
+Giveaways and engagement bait	抽獎與互動誘餌
+# context: toast after adding a topic pack: one word went in; %2$s is the pack's name
+Added %1$d word from %2$s.	已從 %2$s 加入 %1$d 個字詞。
+# context: toast after adding a topic pack: several words went in; %2$s is the pack's name
+Added %1$d words from %2$s.	已從 %2$s 加入 %1$d 個字詞。
+# context: added to the topic pack toast: one word of the pack was in the list already
+%1$d was already in the list.	%1$d 個字詞已在清單中。
+# context: added to the topic pack toast: several words of the pack were in the list already
+%1$d were already in the list.	%1$d 個字詞已在清單中。
+# context: added to the topic pack toast: the list or its shared room ran out partway through the pack
+The list is full, so the rest weren't added.	清單已滿，其餘字詞未加入。
+# context: topic pack toast when the list had no room for even the first word
+The list is full, so nothing was added.	清單已滿，未加入任何字詞。
+# context: topic pack toast when the pack's words were all in the list; %1$s is the pack's name
+Every word from %1$s is already in the list.	%1$s 的所有字詞都已在清單中。
+# context: last sentence of the topic pack toast: the words are only typed into the editor until Save
+Tap Save to keep the list.	點按「儲存」以保留清單。
+# context: row title and dialog title under News feed: posts with more reactions than the chosen count are hidden
+Hide posts with more reactions than	隱藏心情數量超過指定值的貼文
+# context: a choice in the reaction ceiling list; %1$s is a number such as 5,000
+%1$s reactions	%1$s 個心情
+# context: summary of the reaction ceiling row while it is off
+Posts stay however many reactions they have.	無論有多少個心情，都會保留貼文。
+# context: summary of the reaction ceiling row while a count is chosen; %1$s is a number such as 5,000
+Hides posts with more than %1$s reactions, read from the count Facebook shows under a post.	依 Facebook 在貼文下方顯示的數量，隱藏超過 %1$s 個心情的貼文。
+# context: settings import preview and result: the file turns the reaction ceiling off
+The feed won't hide posts for how many reactions they have.	動態消息不會依心情數量隱藏貼文。
+# context: settings import preview and result: the file sets a reaction ceiling; %1$s is a number such as 5,000
+The feed will hide posts with more than %1$s reactions.	動態消息將隱藏超過 %1$s 個心情的貼文。
+# context: switch title under News feed; it keeps posts you scrolled past out of the feed on later loads
+Hide posts you've already seen	隱藏已看過的貼文
+# context: description of that switch; Facebook decides what counts as seen, the list never leaves the phone; turning the switch off empties the list
+Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.	你已捲動瀏覽過的貼文，在動態消息重新載入時不會再次出現。清單只儲存在這支手機上。停用後會清空清單。
+# context: title of the row under that switch that picks how many days a seen post stays hidden
+Keep seen posts hidden for	已看過貼文的隱藏期限
+Turn on %1$s to use this.	啟用 %1$s 以使用此功能。
+# context: added to a greyed-out switch's summary; %1$s is the title of another switch that overrides it while on
+Turn off %1$s to use this.	停用 %1$s 以使用此功能。
+# context: choice in that row
+1 day	1 天
+# context: choice in that row
+3 days	3 天
+# context: choice in that row
+7 days	7 天
+# context: choice in that row
+30 days	30 天
+# context: summary of that row; %1$s is a time such as 7 days
+A post you've scrolled past stays out of the feed for %1$s.	已捲動瀏覽過的貼文會從動態消息中隱藏 %1$s。
+# context: title of the row that empties the list of seen posts
+Forget seen posts	清除已看過的貼文紀錄
+# context: description of that row
+Empties the list of posts you've seen, so they can show up again.	清空已看過的貼文清單，讓這些貼文可以再次出現。
+# context: toast after tapping that row
+Seen posts forgotten.	已清除看過的貼文紀錄。
+# context: what a settings import changes; %1$s is a time such as 7 days
+Posts you've seen will stay hidden for %1$s.	已看過的貼文將持續隱藏 %1$s。
+# context: settings row under Pause, backup and diagnostics that opens Facebook's own Whitehat screen; Whitehat is Facebook's name for its security researcher program, keep it
+Facebook's Whitehat settings	Facebook 白帽設定
+# context: summary of that row when Facebook's screen is on the phone
+Facebook's own screen for security testing. It can make Facebook trust security certificates you installed, or send its data through a proxy (a go-between server). Hushfacebook doesn't change anything there.	Facebook 本身提供的安全性測試畫面，可讓 Facebook 信任你安裝的安全性憑證，或透過 Proxy（中介伺服器）傳送資料。Hushfacebook 不會變更其中的設定。
+# context: summary of that row when Facebook hasn't downloaded the screen, so the row opens a web page
+Facebook hasn't downloaded this screen to this phone, so a tap opens the Whitehat page on the web instead.	Facebook 尚未將此畫面下載至這支手機，點按後會改為開啟網頁版白帽頁面。
+# context: toast when the Facebook version has no such screen
+This Facebook build has no Whitehat settings screen.	此 Facebook 建置版本沒有白帽設定畫面。
+Only the first reel waits	僅第一則 Reels 等待點按
+With the switch above on, after you play one reel, the reels you swipe to play on their own. The feed, Watch and stories always wait.	啟用上方開關後，播放過一則 Reels，接著滑到的 Reels 就會自動播放。動態消息、Watch 與限時動態一律等待點按。
+Slower speeds	更慢的播放速度
+Adds 0.1x and 0.25x to the speed menu of reels and of feed and Watch videos, for slowing down a fast moment.	在 Reels、動態消息與 Watch 影片的速度選單中新增 0.1 倍與 0.25 倍，方便放慢快速片段。
+Share now	立即分享
+Send in Messenger	在 Messenger 傳送
+Share to your story	分享到你的限時動態
+Share to a group	分享到社團
+Share to a Page	分享到粉絲專頁
+Copy link	複製連結
+Share sheet items to hide	要隱藏的分享面板項目
+None picked yet.	尚未選擇任何項目。
+Hidden: %s	已隱藏：%s
+Hide from the share sheet	從分享面板隱藏
+# context: last item of the opened list of default patches a build lacks, after eight names; the count of patches not named, always 2 or more
+%1$d more	其他 %1$d 項
+# context: title of the one-time note under the status card after an update, one switch: a switch that started on in earlier versions starts off now
+%1$d switch starts off now	%1$d 個開關的預設狀態現已改為停用
+# context: title of that note when several switches start off now
+%1$d switches start off now	%1$d 個開關的預設狀態現已改為停用
+# context: summary of that note while its list of switch names is closed; a tap opens it
+After this update, a switch you had on may be off now. Tap to see which.	更新後，原本啟用的開關可能已停用。點按以查看項目。
+# context: that note's summary once opened, one switch; the placeholder is the switch's title as the settings show it
+Now off: %1$s. Turn it back on in its section if you want it. Tap again to hide this note.	目前已停用：%1$s。如有需要，請到對應區段重新啟用。再次點按可隱藏此提示。
+# context: that note's summary once opened, several switches; the placeholder is their titles joined as a list
+Now off: %1$s. Turn back on the ones you want in their sections. Tap again to hide this note.	目前已停用：%1$s。請到各自區段重新啟用你需要的項目。再次點按可隱藏此提示。
+# context: import preview and toast when a settings file empties the list picked under Share sheet items to hide
+Your list of share sheet items to hide will be empty.	要隱藏的分享面板項目清單將會清空。
+# context: import preview and toast, one share sheet item will be in that list after the import
+Your list of share sheet items to hide will hold %1$d item.	要隱藏的分享面板項目清單將包含 %1$d 個項目。
+# context: the same with several share sheet items
+Your list of share sheet items to hide will hold %1$d items.	要隱藏的分享面板項目清單將包含 %1$d 個項目。
+# context: title of the last row on the settings home page; a tap opens the maintainer's Ko-fi page in a browser
+Support Hushfacebook	支持 Hushfacebook
+# context: heading row at the end of the Privacy settings page, above a list of the places Facebook shows ads or reports usage
+Where ads and tracking are blocked	廣告與追蹤封鎖範圍
+# context: that heading's summary; build means this patched copy of Facebook, switch is a settings toggle
+The places Facebook shows ads or reports what you do, and what this build does about each. A line with a switch takes you to it.	列出 Facebook 顯示廣告或回報你活動的位置，以及此建置版本如何處理各項內容。點按有開關的項目可前往該設定。
+# context: a line of that list: ads between posts in the news feed
+Ads in the feed	動態消息中的廣告
+# context: a line of that list: ads among the posts on someone's profile
+Ads on profiles	個人檔案上的廣告
+# context: a line of that list: ads between stories
+Ads in Stories	限時動態中的廣告
+# context: a line of that list: ads between and inside reels
+Ads in Reels	Reels 中的廣告
+# context: a line of that list: ads among Facebook search results
+Ads in search results	搜尋結果中的廣告
+# context: a line of that list: sponsored listings in Marketplace, a product name
+Ads in Marketplace	Marketplace 中的廣告
+# context: a line of that list: ads inside Facebook's Instant Games, a product name
+Ads in Instant Games	即時遊戲中的廣告
+# context: a line of that list: ads Facebook downloads in the background before showing them
+Ads downloaded in advance	預先下載的廣告
+# context: a line of that list: Facebook's reports used to target ads
+Ad tracking	廣告追蹤
+# context: a line of that list: ads Facebook serves inside other apps on the phone (Audience Network)
+# context: added to that line's summary: what blocking it does to those other apps; rewarded ads give a reward for watching
+Those apps show their own ads or none, and their rewarded ads may fail.	這些應用程式會顯示自己的廣告或不顯示廣告，獎勵廣告可能無法運作。
+# context: a line of that list: the usage statistics Facebook uploads in the background
+Usage statistics uploads	使用統計資料上傳
+# context: added to that line's summary: what else holding the uploads stops, and when a change of its switch takes effect
+Facebook's on-phone learning jobs stop too, and a change applies after Facebook restarts.	Facebook 在手機上的學習工作也會停止，變更在重新啟動 Facebook 後生效。
+# context: a line of that list: the list of watched reels Facebook is sent
+Reel watch history	Reels 觀看紀錄
+# context: added to that line's summary: what not sending the history costs
+Reels you've already seen may come back.	已看過的 Reels 可能再次出現。
+# context: summary of a line in that list whose patch works with no switch, from the moment the app was patched
+Blocked since you patched. There's no switch for it.	自修補完成起便已封鎖，沒有對應開關。
+# context: summary of a line in that list with a switch; %1$s is the switch's name, %2$s the settings page it's on
+Its switch is %1$s, in %2$s.	對應開關是 %2$s 中的 %1$s。
+# context: switch title under Links in Hushfacebook settings, next to Share sheet items to hide
+Hide group buttons in the share sheet	隱藏分享面板中的群組按鈕
+# context: that switch's summary. Send to group and Send separately are the buttons Facebook's share sheet shows when two or more people are picked
+Takes away Send to group when you pick two or more people, and the share sheet's own ways to start a new group, so nothing you share makes a group chat by accident. Send separately stays.	選取兩人以上時移除「傳送至群組」，也移除分享面板內建立新群組的方式，避免分享時意外建立群組聊天室。「分別傳送」仍會保留。
+# context: switch title under Links in Hushfacebook settings, right after Remove tracking from shared links
+Share the post's own link	分享貼文本身的連結
+# context: that switch's summary. Copy link is the share sheet item of that name; facebook.com/share/ is a web address and stays as written
+Copy link and the share sheet's other link shares give the post's own facebook.com address instead of a facebook.com/share/ link made for that one share.	「複製連結」與分享面板中的其他連結分享方式，會提供貼文本身的 facebook.com 網址，取代該次分享專用的 facebook.com/share/ 連結。
+# context: switch title under Comments in Hushfacebook settings, after Hide related groups
+Hide comments with shop links	隱藏含購物連結的留言
+# context: that switch's summary. Shopee, Lazada and Amazon are online shops and stay as written
+Hides comments that link to a shop like Shopee, Lazada or Amazon, along with their replies.	隱藏連至蝦皮、Lazada 或 Amazon 等購物網站的留言，包含其回覆。
+# context: switch title under Comments, right after Hide comments with shop links
+Hide comments with your words	隱藏包含指定字詞的留言
+# context: that switch's summary. Words to hide is the word list row under News feed and Words that keep a post its second list; use the same translations as those rows
+Hides comments containing a word from your Words to hide list in News feed, along with their replies. Words that keep a post keep a comment too.	隱藏包含「動態消息」中「要隱藏的字詞」清單字詞的留言，包含其回覆。「保留貼文的字詞」也會保留留言。
+
+# context: Editor limits, font selection and background action results
+%1$d of %2$d people, Pages or sites. The list fills %3$d%% of its room.	%1$d / %2$d 個人物、粉絲專頁或網站。清單已使用容量的 %3$d%%。
+A diagnostic report is already being exported.	已有診斷報告正在匯出。
+Copying diagnostic report...	正在複製診斷報告…
+Diagnostic report copied.	已複製診斷報告。
+Diagnostic report saved.	已儲存診斷報告。
+Font file cleared. Restart Facebook to apply the font change.	已清除字型檔。請重新啟動 Facebook 以套用字型變更。
+Last save	上次儲存
+Line %1$d can't be saved. Check its length or use the profile or Page ID, then save again.	無法儲存第 %1$d 行。請檢查長度或改用個人檔案或粉絲專頁 ID，再次儲存。
+No file chosen. Choose a .ttf or .otf font file of up to %1$d MB.	尚未選擇檔案。請選擇不超過 %1$d MB 的 .ttf 或 .otf 字型檔。
+Removes the saved font file. Restart Facebook to use your phone's font.	移除已儲存的字型檔。重新啟動 Facebook 後會使用手機字型。
+Removes the saved font file. Use the system font stays off.	移除已儲存的字型檔。「使用系統字型」仍保持停用。
+Saving diagnostic report...	正在儲存診斷報告…
+Selected %1$s. Font changes apply after restarting Facebook.	已選擇 %1$s。字型變更在重新啟動 Facebook 後生效。
+Selected %1$s. Restart Facebook to apply the font change.	已選擇 %1$s。請重新啟動 Facebook 以套用字型變更。
+Selected %1$s. Turn on Use the system font and restart Facebook to use it.	已選擇 %1$s。請啟用「使用系統字型」並重新啟動 Facebook 以使用此字型。
+Selected %1$s. Use the system font is off. Turn it on and restart Facebook to use this file.	已選擇 %1$s。「使用系統字型」已停用。請啟用並重新啟動 Facebook 以使用此檔案。
+The diagnostic report couldn't be copied. Try again.	無法複製診斷報告。請再試一次。
+The list holds up to %1$d people, Pages or sites. Remove some, then save again.	清單最多可容納 %1$d 個人物、粉絲專頁或網站。請移除部分項目後重新儲存。
+The photo wasn't saved. Try again.	未儲存相片。請再試一次。
+The report couldn't be copied. Try again.	無法複製報告。請再試一次。
+The report couldn't be saved. Try again.	無法儲存報告。請再試一次。
+The saved copy of %1$s is missing. Choose the file again.	找不到 %1$s 已儲存的副本。請重新選擇檔案。
+The video wasn't saved. Try again.	未儲存影片。請再試一次。
+This list needs more room than it has. Shorten it, then save again.	此清單超過可用容量。請縮短後重新儲存。
+Your settings already match that file, so nothing will change.	你的設定已與該檔案相同，不會變更任何內容。
+# context: title of the row that restarts Facebook, shown while one change waits for a restart
+Restart Facebook to apply this change	重新啟動 Facebook 以套用此變更
+# context: the same row with two or more changes waiting
+Restart Facebook to apply %1$d changes	重新啟動 Facebook 以套用 %1$d 項變更
+# context: summary of that row; after the restart the settings screen opens again on the same page
+Facebook closes and reopens on this page.	Facebook 會關閉並重新開啟此頁面。
+# context: title of the row just above Support at the end of the settings home page; a tap restarts Facebook at any time
+Restart Facebook	重新啟動 Facebook
+# context: row near the end of the settings home page; opens a new bug report on GitHub
+Report a problem	回報問題
+Opens a GitHub report with your versions and settings filled in. Add what happened.	開啟已填入版本與設定資訊的 GitHub 問題回報。請補充發生的情況。
+# context: row near the top of the settings home page; a list of ready-made sets of switches
+Quick setups	快速設定
+Turn on a set of switches in one tap, or put every switch back the way it started. Press and hold to hide this row.	一次啟用一組開關，或將所有開關恢復為初始狀態。長按可隱藏此列。
+# context: toast after a long press hides the Quick setups row from the settings home page; the page name is the one holding the row that brings it back
+Quick setups hidden. Bring it back from %1$s.	已隱藏快速設定。可從 %1$s 恢復顯示。
+# context: row on the Pause, backup and diagnostics page; shows or hides the Quick setups row on the settings home page
+Quick setups on the home page	在首頁顯示快速設定
+Shown. Tap to hide it.	已顯示。點按可隱藏。
+Hidden. Tap to show it again.	已隱藏。點按可再次顯示。
+# context: name of a Quick setups choice that hides ads and nags; an adjective, as in a quiet feed
+Quiet	安靜模式
+Hides ads, suggestions, promos and prompts, and stops nagging notifications.	隱藏廣告、推薦、推廣與提示，並停止惱人的通知。
+# context: what the Privacy choice of Quick setups turns on; camera roll scans are Hold back camera roll processing
+Holds back usage reports and camera roll scans, removes link tracking, and hides your typing and screenshots.	阻止使用情況回報與相機膠卷掃描，移除連結追蹤，並隱藏你的輸入狀態與截圖行為。
+# context: name of the Quick setups choice that puts the switches back as they were after install
+Back to defaults	恢復預設
+# context: Lock Facebook is the name of the app lock switch, left as it is
+Puts every feature switch but Lock Facebook back the way it started.	將「鎖定 Facebook」以外的所有功能開關恢復為初始狀態。
+# context: toast after a Quick setups choice changed one switch
+Changed %1$d setting	已變更 %1$d 項設定
+# context: the same toast for none, or for two or more
+Changed %1$d settings	已變更 %1$d 項設定
+# context: toast and Last save row: a save failed for want of a connection
+The connection failed. Check your internet and try again.	連線失敗。請檢查網路後再試。
+# context: toast and Last save row: the server answered a save with an error, not the file
+Facebook's server didn't send the file. Try again in a moment.	Facebook 伺服器未傳送檔案。請稍後再試。
+# context: toast and Last save row: the file a save fetched came empty or cut short
+The download ended before the whole file arrived. Try again.	檔案尚未完整接收，下載便已結束。請再試一次。
+# context: toast and Last save row: a save's work file couldn't be written, for a reason the phone didn't give
+Your phone couldn't write the file. Check your free space and try again.	手機無法寫入檔案。請檢查可用空間後再試。
+# context: toast and Last save row: the phone was measured and has too little free space for a save
+Not enough free space to save this. Free some up and try again.	可用空間不足，無法儲存。請釋放空間後再試。
+# context: toast and Last save row: a video's picture and sound couldn't be converted or joined; Download quality is the setting's name
+Your phone couldn't put this video together. Try another Download quality.	手機無法合併此影片。請嘗試其他「下載畫質」。
+# context: toast and Last save row: the gallery refused a finished photo or video
+The file couldn't be copied into your phone's gallery. Try again in a moment.	無法將檔案複製到手機相片庫。請稍後再試。
+# context: title of a switch on the Menu settings page: whether the Hushfacebook settings shortcut shows when you hold Facebook's launcher icon
+Settings shortcut on the app icon	應用程式圖示上的設定捷徑
+# context: title of a switch on the Menu settings page: whether a long press on the Facebook logo opens the Hushfacebook settings
+Open settings from the logo	從標誌開啟設定
+# context: title of a switch on the Menu settings page: whether the Hushfacebook settings row shows at the end of Settings and privacy in Facebook's Menu
+Settings row in Menu	在選單顯示設定項目
+# context: summary of the switch for the Hushfacebook settings shortcut in the launcher icon's menu
+Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu.	在長按 Facebook 圖示的選單中加入 Hushfacebook 設定。停用後會從該選單移除。
+# context: summary of the switch for opening the settings with a long press on the Facebook logo
+A long press on the Facebook logo at the top of the home feed opens these settings. Off, the long press goes back to Facebook.	長按動態消息首頁頂端的 Facebook 標誌可開啟這些設定。停用後，長按操作會恢復由 Facebook 處理。
+# context: summary of the switch for the Hushfacebook settings row in Facebook's Menu
+Adds a Hushfacebook settings row at the end of Settings and privacy in Facebook's Menu. Off, the row leaves the Menu.	在 Facebook 選單的「設定和隱私」結尾新增 Hushfacebook 設定項目。停用後會從選單移除。
+# context: summary shown instead of a switch's usual one while it is the only one of the three ways into the settings still on, so it is greyed out
+The last way into these settings stays on.	最後一個設定入口會保持啟用。
+# context: switch title on the Appearance settings page: hides Facebook Flex's Data mode bar under the top bar; Data mode is Facebook's own name for paid mode on Flex carriers
+Hide the Data mode banner	隱藏數據模式橫幅
+# context: switch title on the Appearance settings page: hides Facebook Flex's purple Free mode bar; Free mode is Facebook's own name for the free text-only mode
+Hide the Free mode banner	隱藏免費模式橫幅
+# context: summary of the Hide the Data mode banner switch
+On carriers with Facebook Flex, hides the Data mode bar under the top bar and its button to buy mobile data.	若電信業者提供 Facebook Flex，隱藏頂端列下方的數據模式列及其購買行動數據按鈕。
+# context: summary of the Hide the Free mode banner switch; the purple bar is also where you switch back to Data mode
+On carriers with Facebook Flex, hides the purple Free mode bar. That bar is also how you go back to Data mode, so turn this off when you want to switch.	若電信業者提供 Facebook Flex，隱藏紫色的免費模式列。該列也是切回數據模式的入口，因此需要切換時請停用此功能。
+# context: switch title under Picture-in-picture on the Playback page: the small window opens only from the Picture-in-picture row this adds to a reel's three-dot More menu, not when you leave Facebook
+Only from a reel's More menu	僅從 Reels 的更多選單開啟
+# context: summary of that switch; Picture-in-picture is the name of the row in the reel's menu, translated as the row is; the three dots are the reel's own menu button
+Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one. That row is there whenever Picture-in-picture is on.	離開 Facebook 不會開啟小視窗。需要時，請點按 Reels 更多選單（三點）中的「子母畫面」。只要啟用「子母畫面」，就會顯示該項目。
+# context: switch title under Picture-in-picture on the Playback page; the button floats over a reel or video and opens the small window when tapped
+Picture-in-picture button	子母畫面按鈕
+# context: summary of that switch; "the window" is the small picture-in-picture window
+Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open the window right away. Works with Picture-in-picture on.	在已準備好小視窗的 Reels 或影片左側邊緣顯示小按鈕，點按即可立即開啟視窗。需啟用「子母畫面」。
+# context: switch title under Stories; it makes videos you post to your own Story ask for high quality when they upload
+Upload Stories in HD	以 HD 畫質上傳限時動態
+# context: summary of that switch; standard is the normal upload quality, high the better one
+Videos you post to your Story ask Facebook for its high upload quality instead of standard. Applies to the next Story you post.	發布影片限時動態時，向 Facebook 要求使用高畫質上傳，取代標準畫質。從下一則發布的限時動態起生效。
+# context: switch title under Stories; a photo story is a still picture posted to your own Story, and a song added to it plays while the picture shows
+Longer music on photo stories	延長相片限時動態的音樂
+# context: summary of that switch; 15 seconds is how long Facebook lets the song on a photo play, and the song's length can be shorter than 30
+A song you add to a photo for your Story plays for up to 30 seconds instead of 15. Applies to the next song you pick.	加入相片限時動態的歌曲最多可播放 30 秒，取代原本的 15 秒。從下一首選擇的歌曲起生效。
+# context: switch title under Stories; two fingers spread apart on a story or a profile photo make it bigger
+Pinch to zoom	雙指縮放
+# context: summary of that switch; "let go" means lifting your fingers off the screen
+Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.	以雙指縮放限時動態或他人個人檔案上的相片。放開後會恢復原狀。
+# context: switch title under Stories, right below Pinch to zoom; the zoomed picture stays zoomed after the fingers lift
+Stay zoomed	保持縮放
+# context: summary of that switch; "Pinch to zoom" is the label of the switch above it, so use its translation; "Back" is the phone's Back button
+With Pinch to zoom on, the photo or story stays zoomed when you let go, and a story stays paused. Drag with one finger or pinch again. Tap or press Back when you're done.	啟用「雙指縮放」後，放開時相片或限時動態會維持縮放，限時動態也會保持暫停。可用單指拖曳或再次雙指縮放。完成後點按或按返回鍵。
+# context: switch title under Stories, right below Stay zoomed; two quick taps on a photo zoom it in where you tapped
+Double tap to zoom	雙擊縮放
+# context: summary of that switch; "Pinch to zoom" is the label of the switch two rows above it, so use its translation; a story is the full-screen picture or video someone shares for a day
+With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. A single tap still opens the photo, a moment later.	啟用「雙指縮放」後，雙擊個人檔案上的相片可放大點按位置，再次雙擊可還原。單次點按仍會開啟相片，但稍有延遲。
+No ads downloaded in advance	不預先下載廣告
+No ad tracking	不進行廣告追蹤
+No Facebook ads in other apps	不在其他應用程式顯示 Facebook 廣告
+Facebook ads in other apps	其他應用程式中的 Facebook 廣告
+Part of the Reels ad blocking	Reels 廣告封鎖的一部分
+Start-up fix for x86 phones	x86 手機啟動修正
+Version number Google Play sees	Google Play 識別的版本號碼
+Hushfacebook in the Menu	選單中的 Hushfacebook
+Set when you patched, so Pause can't turn it off:\n%1$s\nTo rule it out, patch again and leave out its patch.	此項目在修補時設定，暫停無法停用：\n%1$s\n若要排除其影響，請重新修補並取消選取對應修補項目。
+Set when you patched, so Pause can't turn these off:\n%1$s\nTo rule one out, patch again and leave out its patch.	這些項目在修補時設定，暫停無法停用：\n%1$s\n若要排除其中一項的影響，請重新修補並取消選取對應修補項目。
+For when Marketplace only or Events only is on. Neither is on now.	適用於啟用「僅使用 Marketplace」或「僅使用活動」時。目前兩者皆未啟用。
+Hide the Meta AI shortcut	隱藏 Meta AI 捷徑
+The Meta AI shortcut leaves the Menu's list with Feeds, Marketplace, Reels and Groups, and the next shortcut moves up into its place.	從選單中含有動態消息、Marketplace、Reels 與社團的清單移除 Meta AI 捷徑，下一個捷徑會往上填補位置。
+Hide people to send to in the share sheet	隱藏分享面板中的建議收件人
+Takes the row of profile pictures off the share sheet, the people Facebook suggests sending a post to. The search box and the other ways to share stay.	移除分享面板中的個人檔案相片橫列，也就是 Facebook 建議傳送貼文的對象。搜尋框與其他分享方式仍會保留。
+Hide who is typing in comments	隱藏他人的留言輸入狀態
+Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	移除顯示他人正在輸入留言的提示列。你自己的輸入狀態可由「隱私」中的獨立開關控制。
+Hide the search pill on reels	隱藏 Reels 搜尋提示
+Hides the search suggestion under a reel's caption, the magnifier with a question to look up, the one at the top of its comments and the search bar over reels you open from a profile.	隱藏 Reels 說明下方帶有放大鏡與建議查詢問題的搜尋提示、留言頂端的搜尋提示，以及從個人檔案開啟 Reels 時上方的搜尋列。
+# context: switch title under Appearance; the button is Facebook's Messenger icon in the top bar of Home
+Hide the Messenger button	隱藏 Messenger 按鈕
+# context: summary of that switch; the other top bar buttons move over to fill the space; Hushfacebook is the app's name
+Takes the Messenger button out of the top bar, and the buttons beside it close up the gap. Restart Facebook to see the change.	從頂端列移除 Messenger 按鈕，旁邊的按鈕會填補空隙。重新啟動 Facebook 後生效。
+# context: switch title under Appearance; the count is the unread number badge on the Messenger icon
+Hide the Messenger count	隱藏 Messenger 計數
+# context: summary of that switch; the Messenger icon stays in the top bar
+Keeps the Messenger button but drops the unread count on it.	保留 Messenger 按鈕，但移除上面的未讀計數。
+# context: switch title under Appearance; the logo is the Facebook wordmark or icon at the left of the top bar
+Hide the Facebook logo	隱藏 Facebook 標誌
+# context: summary of that switch; Hushfacebook is the app's name and stays as it is; press and hold is a long press
+Hides the Facebook logo in the top bar. The empty spot is the same size and still opens Hushfacebook settings when you press and hold it. Restart Facebook to see the change.	隱藏頂端列的 Facebook 標誌。空白區域大小不變，長按仍可開啟 Hushfacebook 設定。重新啟動 Facebook 後生效。
+# context: switch title under News feed; the counts are the numbers on the Like, Comment and Share buttons under a post
+Hide counts on posts	隱藏貼文上的計數
+# context: summary of that switch; Like, Comment and Share are Facebook's own button labels, so use Facebook's wording in your language
+Takes the numbers off the Like, Comment and Share buttons under posts, so each shows just its word. The buttons stay where they are. A change shows on the posts drawn after it.	移除貼文下方「讚」、「留言」與「分享」按鈕上的數字，只保留文字。按鈕位置不變。變更後繪製的貼文才會生效。
+# context: switch title under Reels and Watch; the counts are the numbers under the Like, Comment and Share icons down a reel's right side
+Hide counts on reels	隱藏 Reels 上的計數
+# context: summary of that switch; Like, Comment and Share are Facebook's own button labels, so use Facebook's wording in your language
+Takes the numbers away from under a reel's Like, Comment and Share icons. The icons stay where they are. A change shows from the next reel.	移除 Reels「讚」、「留言」與「分享」圖示下方的數字。圖示位置不變。從下一則 Reels 起生效。
+# context: switch title under Reels and Watch; Save is Facebook's own label for the bookmark button down a reel's right side, so use Facebook's wording in your language
+Hide Save on reels	隱藏 Reels 儲存按鈕
+# context: summary of that switch; the buttons under it are Download and More
+Takes the Save button off the side of reels. The buttons above it move down. A change shows from the next reel.	移除 Reels 側邊的「儲存」按鈕，上方按鈕會向下移動。從下一則 Reels 起生效。
+# context: switch title under Reels and Watch; the speaker is the sound on and off button at the bottom of the row of buttons down a reel's right side
+Hide the speaker button on reels	隱藏 Reels 喇叭按鈕
+# context: summary of that switch
+Takes the speaker button off the bottom of the side of reels. A change shows from the next reel.	移除 Reels 側邊底部的喇叭按鈕。從下一則 Reels 起生效。
+# context: switch title under News feed; the reaction preview is the stack of reaction icons and the line with the number of reactions under a post
+Hide the reaction preview on posts	隱藏貼文上的心情預覽
+# context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
+Hides the stacked reaction icons and the reactions count under posts. The space stays, so a tap where they were still opens the list of reactions. To take the number off the Like button too, turn on Hide counts on posts.	隱藏貼文下方重疊的心情圖示與心情數量。空間仍會保留，點按原本的位置仍可開啟心情清單。若也要移除「讚」按鈕上的數字，請啟用「隱藏貼文上的計數」。
+# context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
+Hide the reaction preview on comments	隱藏留言上的心情預覽
+# context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
+Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	隱藏留言角落重疊的心情圖示。空間仍會保留，點按原本的位置仍可開啟心情清單。
+# context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
+Download first in post menus	在貼文選單優先顯示下載
+# context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
+Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.	將「下載到手機」與「儲存相片」從貼文三點選單的選項清單結尾移至開頭。Facebook 原有的頂端項目仍位於其上方（相片貼文的清單位於「更多選項」頁面）。沒有可儲存內容的貼文不會顯示這兩項。
+# context: row title under Menu; opens a list of the Menu's tiles to hide, such as Marketplace and Gaming
+Menu tiles to hide	要隱藏的選單方塊
+# context: title of the list of Menu tiles to hide
+Hide from the Menu	從選單隱藏
+# context: a row's name in the list of Menu tiles to hide; "Help and support" is Facebook's own Menu heading, use Facebook's wording; %s is the row's name, such as Report a problem
+Help and support: %s	使用說明和支援：%s
+# context: a row's name in the list of Menu tiles to hide; "Settings and privacy" is Facebook's own Menu heading, use Facebook's wording; %s is the row's name, such as Orders and payments
+Settings and privacy: %s	設定和隱私：%s
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; Facebook's short videos
+Reels	Reels
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the games section
+Gaming	遊戲
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the look-back posts from past years
+Memories	回顧
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the friends' birthdays page
+Birthdays	生日
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the charity fundraisers page
+Fundraisers	募款活動
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; job listings
+Jobs	工作機會
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the Finds shopping tab, a product name Facebook keeps in English
+Finds	好物特搜
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; Facebook's dating feature
+Dating	交友
+# context: import preview and toast, no Menu tile will be in that list after the import
+Your list of Menu tiles to hide will be empty.	要隱藏的選單方塊清單將會清空。
+# context: import preview and toast, one Menu tile will be in that list after the import
+Your list of Menu tiles to hide will hold %1$d tile.	要隱藏的選單方塊清單將包含 %1$d 個方塊。
+# context: import preview and toast, several Menu tiles will be in that list after the import
+Your list of Menu tiles to hide will hold %1$d tiles.	要隱藏的選單方塊清單將包含 %1$d 個方塊。
+# context: switch title under Reels and Watch; on, a double tap on a reel opens its comments
+Double tap opens comments	雙擊開啟留言
+# context: switch title under Reels and Watch; on, holding a reel opens its comments
+Long press opens comments	長按開啟留言
+# context: summary of the double tap switch
+A double tap on a reel opens its comments instead of liking it. Turn off double tap to like still wins when it's on. Off by default, since it hasn't been tried on a real account yet.	雙擊 Reels 時開啟留言，而非按讚。若已啟用「停用雙擊按讚」，仍以該設定為優先。預設停用，因為尚未使用真實帳號測試。
+# context: summary of the long press switch
+Holding a reel opens its comments instead of Facebook's long-press menu or the 2x hold. The reel's more button still opens that menu. Holding a feed post's photo or the line with its name opens that post's comments, and holding its text or a profile picture works as before. Off by default, since it hasn't been tried on a real account yet.	長按 Reels 時開啟留言，取代 Facebook 的長按選單或長按 2 倍速播放。仍可使用 Reels 的更多按鈕開啟該選單。長按動態消息貼文的相片或名稱列可開啟該貼文的留言；長按文字或個人檔案相片則維持原有功能。預設停用，因為尚未使用真實帳號測試。
+# context: switch title under Downloads; the switch adds the post menu row "Open in another app" to feed and Watch videos
+Open videos in another app	在其他應用程式開啟影片
+# context: summary of that switch; "Open in another app" is the menu row; VLC and Web Video Caster are app names, keep them
+Adds Open in another app to feed and Watch video menus. It hands the video to a player or casting app, such as VLC or Web Video Caster. A video with no single file to hand over says so.	在動態消息與 Watch 影片選單中新增「在其他應用程式開啟」，將影片交給 VLC 或 Web Video Caster 等播放器或投放應用程式。若影片沒有可交付的單一檔案，會顯示提示。
+# context: post menu row that hands the video to a player or casting app, next to the row "Download to phone"
+Open in another app	在其他應用程式開啟
+# context: title of Android's app chooser, shown over the apps that can play a video
+Open the video with	選擇開啟影片的應用程式
+# context: toast when the video has no single file to hand to another app
+Couldn't find a file for this video. Play it for a moment, then try again.	找不到此影片的檔案。請先播放片刻，再試一次。
+# context: toast when Android has no app that plays a video file
+No app on this phone can open this video	這支手機上沒有應用程式可開啟此影片
+New	新
+# context: label of the switch that keeps a list of the reels, videos and stories you watched
+Remember what you watch	記住觀看內容
+# context: summary of the Remember what you watch switch
+Keeps a list on this phone of the reels, videos and stories you watch, so you can find one again after the feed refreshes. Nothing leaves your phone.	在這支手機上保留你看過的 Reels、影片與限時動態清單，方便動態消息重新整理後再次尋找。資料不會傳出手機。
+# context: title of the row and the list of the reels, videos and stories you watched, newest first; not Facebook's own Watch history
+Recently watched	最近觀看
+# context: summary of the Recently watched row
+Reels, videos and stories you watched, newest first. Tap one to open it again.	你看過的 Reels、影片與限時動態，依時間由新到舊排列。點按可再次開啟。
+# context: chip in the Recently watched list that shows only videos
+Videos	影片
+# context: kind of one entry in the Recently watched list: a reel
+Reel	Reels
+# context: kind of one entry in the Recently watched list: a story
+Story	限時動態
+# context: button that empties the Recently watched list at once
+Clear	清除
+Just now	剛剛
+# context: toast after Clear empties the Recently watched list
+List cleared	已清除清單
+# context: shown in the Recently watched list while it's empty; names the Remember what you watch switch
+Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	目前沒有內容。啟用「記住觀看內容」後，你看過的 Reels、影片與限時動態會顯示在這裡。
+# context: shown in the Recently watched list when the picked chip has no entries
+Nothing of this kind yet.	目前沒有此類內容。
+# context: switch title under Comments; on, the comment sheet opens at the full height of the screen
+Open comments at full height	以全螢幕高度開啟留言
+# context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
+Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	留言會在填滿螢幕的面板中開啟，不再停留於部分高度。在 Reels 與影片中，點按「留言」會開啟此面板，取代上方顯示影片的分割畫面。
+# context: switch title under Appearance; on, Android's status bar (clock, battery) is hidden on Facebook's main screen
+Hide the status bar	隱藏狀態列
+# context: summary of that switch; a swipe down from the top edge shows the bar briefly
+Takes the phone's status bar, with the time and battery, off Facebook's main screen, so the app gets the whole screen. Swipe down from the top edge to see it for a moment.	從 Facebook 主畫面移除顯示時間與電量的手機狀態列，讓應用程式使用整個螢幕。從頂端邊緣向下滑動可暫時顯示。
+# context: switch title under Reels and Watch; on, a video tapped in the news feed opens alone in the full-screen player instead of leading into endless reels
+Open feed videos on their own	單獨開啟動態消息影片
+# context: summary of that switch; the Reels tab itself still scrolls normally
+A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. The Reels tab keeps scrolling. Off by default, since it hasn't been tried on a real account yet.	點按動態消息中的影片後，會單獨以全螢幕開啟，結束後沒有可滑動切換的 Reels。Reels 分頁仍可持續捲動。預設停用，因為尚未使用真實帳號測試。
+Hide the new comments pop-up	隱藏新留言彈出提示
+# context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
+The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	閱讀留言時不再彈出「新留言」泡泡。新留言仍會顯示在清單中。
+# context: the name of a launcher shortcut and a Menu row that open Marketplace's free listings (Facebook's website calls that category Free Stuff)
+Free stuff	免費物品
+Free stuff shortcut	免費物品捷徑
+Free stuff isn't available in this build.	此建置版本無法使用「免費物品」。
+Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing shortcuts stay.	若有空間，在長按 Facebook 圖示的選單中新增「免費物品」，顯示 Marketplace 的免費刊登商品，並在「設定和隱私」中新增「免費物品」項目。既有捷徑仍會保留。
+Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	若有空間，在長按 Facebook 圖示的選單中新增「免費物品」，顯示 Marketplace 的免費刊登商品。既有捷徑仍會保留。
+# context: row in a video's menu while Skip silent parts is on; the video's silent parts are skipped
+Skip silent parts: on	略過無聲片段：啟用
+# context: the same row after a tap; this one video keeps its silent parts
+Skip silent parts: off for this video	略過無聲片段：此影片停用
+# context: short message after tapping the row; this video now plays its silent parts
+Silent parts play in this video	此影片會播放無聲片段
+# context: short message after tapping the row again; silent parts are skipped again
+Skipping silent parts again	已恢復略過無聲片段
+# context: switch title under News feed; posts Facebook shows from groups the user hasn't joined, which come with a Join button next to the group's name
+Hide posts from groups you're not in	隱藏未加入社團的貼文
+# context: summary of that switch; a friend's share of a group post is a post on the friend's own profile that shares a group post, and it stays
+Hides posts from groups you haven't joined, like a friend's post in a public group. Posts from your groups and a friend's share of a group post stay.	隱藏你尚未加入社團的貼文，例如朋友在公開社團中的貼文。你已加入社團的貼文，以及朋友分享的社團貼文仍會保留。
+# context: switch title under Search; For you is the section of searches Facebook suggests on the search screen before anything is typed, under a header that reads For you
+Hide For you in search	隱藏搜尋中的為你推薦
+# context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
+Hides the For you searches Facebook suggests when you open search. Your recent searches and the suggestions as you type stay.	隱藏開啟搜尋時 Facebook 建議的「為你推薦」搜尋內容。最近的搜尋與輸入時的建議仍會保留。
+# context: switch title under Search; People you may know is Facebook's row of friend suggestions on the search screen before anything is typed, as in Hide "People you may know"
+Hide "People you may know" in search	隱藏搜尋中的「你可能認識的朋友」
+# context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
+Hides the People you may know row Facebook shows when you open search. Your recent searches and the suggestions as you type stay.	隱藏開啟搜尋時 Facebook 顯示的「你可能認識的朋友」橫列。最近的搜尋與輸入時的建議仍會保留。
+# context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
+Don't save search history	不儲存搜尋紀錄
+# context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them
+What you search for, and the pages and profiles you open from a search, aren't added to your Facebook search history. Searches already there stay until you delete them.	搜尋內容，以及從搜尋開啟的粉絲專頁與個人檔案，不會加入 Facebook 搜尋紀錄。既有搜尋紀錄會保留，直到你手動刪除。
+# context: switch title under Reels and Watch; the audio line is the scrolling line at the bottom of a reel naming its sound, like "Name · Original audio" or a song title
+Hide the audio line on reels	隱藏 Reels 音訊列
+# context: summary of that switch; "Original audio" is Facebook's own label, so use the wording Facebook shows in this language
+Takes the line with the reel's sound, "Original audio" or a song, off the bottom of reels. Other info stays. A change shows from the next reel.	移除 Reels 底部顯示「原始音訊」或歌曲的音訊列。其他資訊仍會保留。從下一則 Reels 起生效。
+# context: switch title under Reels and Watch; the message is Facebook's own "This is taking a while. Try checking your network connection." that pops up while a video or GIF loads slowly
+Hide the slow connection message	隱藏連線緩慢訊息
+# context: summary of that switch; "This is taking a while" is Facebook's own message, so use the wording Facebook shows in this language
+Stops the "This is taking a while" message about your network connection when a video or GIF is slow to load. It keeps loading as before.	影片或 GIF 載入緩慢時，不再顯示網路連線「這需要一點時間」的訊息。內容仍會照常繼續載入。
+# context: title of the row on the Appearance page, with AMOLED in the build, that takes a color code for dark mode's backgrounds; also its dialog's title
+Background color	背景顏色
+# context: text in that row's dialog above the field; %1$s is the lightest gray code it takes, %2$s the color code the patch wrote, both like #0D1117; keep #RRGGBB and #0D1117 as they are
+A color code (#RRGGBB) for dark mode's backgrounds, like #0D1117. Grays up to about %1$s work. Leave it blank for %2$s, the color Hushfacebook was patched with.	深色模式背景的色碼（#RRGGBB），例如 #0D1117。灰色約可使用至 %1$s。留白則使用 %2$s，也就是修補 Hushfacebook 時指定的顏色。
+# context: summary of that row while it's blank; %1$s is the color code the patch wrote, like #0D1117
+Uses %1$s, the color Hushfacebook was patched with. Type a color code to change it.	使用修補 Hushfacebook 時指定的顏色 %1$s。輸入色碼即可變更。
+# context: summary of that row with a color saved; %1$s is that color code, like #0D1117
+Dark mode's backgrounds use %1$s. Restart Facebook to see the change.	深色模式背景使用 %1$s。重新啟動 Facebook 後生效。
+# context: shown when Save is tapped on that row with text that isn't a color code; %1$s is what was typed; keep #RRGGBB and #0D1117 as they are
+"%1$s" isn't a color. Type a six-digit color code (#RRGGBB), like #0D1117, or leave it blank for the color Hushfacebook was patched with.	「%1$s」不是顏色。請輸入六位數色碼（#RRGGBB），例如 #0D1117，或留白以使用修補 Hushfacebook 時指定的顏色。
+# context: shown when Save is tapped on that row with an eight-digit code that isn't fully opaque; %1$s is what was typed; keep #RRGGBB and #0D1117 as they are
+%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #0D1117.	%1$s 帶有透明度。請輸入不透明的六位數色碼（#RRGGBB），例如 #0D1117。
+# context: shown when Save is tapped on that row with a color too light for Facebook's white text; %1$s is what was typed, %2$s the lightest gray code it takes
+%1$s is too light for Facebook's text to stay readable. Pick a darker color. Grays up to about %2$s work.	%1$s 太亮，會使 Facebook 文字難以閱讀。請選擇較深的顏色。灰色約可使用至 %2$s。
+# context: import preview sentence: the file sets AMOLED's Background color row back to blank; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be the color it was patched with.	若修補後的 Facebook 包含「AMOLED 純黑主題」，深色模式背景將使用修補時指定的顏色。
+# context: import preview sentence: the file sets AMOLED's Background color row; %1$s is a color code like #0D1117; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be %1$s.	若修補後的 Facebook 包含「AMOLED 純黑主題」，深色模式背景將使用 %1$s。
+# context: title of the row on the Appearance page, with AMOLED in the build, that takes a color code for light mode's backgrounds in place of white; also its dialog's title
+Light background color	淺色背景顏色
+# context: message in that row's dialog; %1$s is a gray color code like #A6A6A6; keep #RRGGBB and #FFF8E7 as they are
+A color code (#RRGGBB) for light mode's backgrounds in place of white, like #FFF8E7. Grays down to about %1$s work, and text gets darker where it needs to. Leave it blank for Facebook's own white.	以色碼（#RRGGBB）取代淺色模式的白色背景，例如 #FFF8E7。灰色約可深至 %1$s，必要時文字會隨之加深。留白則使用 Facebook 原有的白色。
+# context: summary of that row while it's blank, so Facebook's light mode keeps its own white backgrounds
+Uses Facebook's own white. Type a color code to change it.	使用 Facebook 原有的白色。輸入色碼即可變更。
+# context: summary of that row once a color is saved; %1$s is the color code
+Light mode's backgrounds use %1$s. Restart Facebook to see the change.	淺色模式背景使用 %1$s。重新啟動 Facebook 後生效。
+# context: shown when Save is tapped on that row with text that isn't a color code; %1$s is what was typed; keep #RRGGBB and #FFF8E7 as they are
+"%1$s" isn't a color. Type a six-digit color code (#RRGGBB), like #FFF8E7, or leave it blank for Facebook's own white.	「%1$s」不是顏色。請輸入六位數色碼（#RRGGBB），例如 #FFF8E7，或留白以使用 Facebook 原有的白色。
+# context: shown when Save is tapped on that row with an eight-digit code that isn't fully opaque; %1$s is what was typed; keep #RRGGBB and #FFF8E7 as they are
+%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #FFF8E7.	%1$s 帶有透明度。請輸入不透明的六位數色碼（#RRGGBB），例如 #FFF8E7。
+# context: shown when Save is tapped on that row with a color too dark for light mode's dark text; %1$s is what was typed, %2$s a gray color code like #A6A6A6
+%1$s is too dark for Facebook's light mode text to stay readable. Pick a lighter color. Grays down to about %2$s work.	%1$s 太暗，會使 Facebook 的淺色模式文字難以閱讀。請選擇較淺的顏色。灰色約可深至 %2$s。
+# context: import preview sentence: the file sets AMOLED's Light background color row back to blank; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, light mode's backgrounds will be Facebook's own white.	若修補後的 Facebook 包含「AMOLED 純黑主題」，淺色模式背景將使用 Facebook 原有的白色。
+# context: import preview sentence: the file sets AMOLED's Light background color row; %1$s is a color code like #FFF8E7; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, light mode's backgrounds will be %1$s.	若修補後的 Facebook 包含「AMOLED 純黑主題」，淺色模式背景將使用 %1$s。
