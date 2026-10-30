@@ -45,7 +45,7 @@ import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
  * on its way: a new search, the next page and a refresh each send their variables again. A
  * Marketplace search request with no query text in it leaves those rules as they were.
  *
- * <p>{@code in:melbourne} or {@code in:"weir views"} keeps listings whose location holds that
+ * <p>{@code in:melbourne} or {@code in:"north end"} keeps listings whose location holds that
  * place; with more than one, any of them. The search screen's Adv. Filters button ({@link
  * app.morphe.extension.facebook.navigation.MarketplaceFilterButton}) is a dialog for these: it
  * reads the rules out of the last search and writes its lists back into the search box as rules,

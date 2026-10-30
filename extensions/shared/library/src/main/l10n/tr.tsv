@@ -2088,15 +2088,18 @@ If your patched Facebook includes Badge and logo colors, badges will be %1$s.	Ya
 If your patched Facebook includes Badge and logo colors, the logo will be %1$s.	Yamalı Facebook'unuz Rozet ve logo renkleri'ni içeriyorsa logo %1$s olur.
 # context: Marketplace search, the Advanced Marketplace search switch and its Adv. Filters button and dialog
 Advanced Marketplace search	Gelişmiş Marketplace araması
-Type rules into Marketplace search: "ram" keeps titles with ram, -dell hides titles with dell, and in:melbourne keeps listings in Melbourne. An Adv. Filters button under Filters writes them for you.	Marketplace aramasına kural yazın: "ram" başlığında ram olanları tutar, -dell başlığında dell olanları gizler ve in:melbourne Melbourne'daki ilanları tutar. Filtreler'in altındaki Gel. Filtreler düğmesi bunları sizin için yazar.
+Lets you type rules into Marketplace search. Put a word in quotes, like "word", to keep only titles with it, put a minus in front, like -word, to hide titles with it, and add in:place to keep listings in that place.	Marketplace aramasına kural yazmanızı sağlar. Yalnızca o kelimeyi içeren başlıkları tutmak için kelimeyi "kelime" gibi tırnak içine alın, o kelimeyi içeren başlıkları gizlemek için önüne -kelime gibi eksi koyun ve yalnızca o yerdeki ilanları tutmak için in:yer ekleyin.
+Adv. Filters button	Gel. Filtreler düğmesi
+Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	Arama sonuçlarında Marketplace'in Filtreler'inin altına bir Gel. Filtreler düğmesi ekler. Tutulacak kelimeler, gizlenecek kelimeler ve yerler listelerini açar ve kuralları sizin için aramaya yazar.
+How Adv. Filters works	Gel. Filtreler nasıl çalışır
+Type a word or a phrase and tap Add. A phrase of more than one word has to be in the title as written. A term matches anywhere in a title, so cat also matches cats. Put it in quotes with a space after it, like "cat ", to leave out cats. Go puts these into the search box and searches again.	Bir kelime veya ifade yazıp Ekle'ye dokunun. Birden fazla kelimeden oluşan bir ifade başlıkta yazıldığı gibi geçmelidir. Bir terim başlığın herhangi bir yerinde eşleşir, yani cat, cats ile de eşleşir. cats'i dışarıda bırakmak için "cat " gibi arkasında boşlukla tırnak içine alın. Git bunları arama kutusuna koyar ve yeniden arar.
+You can also type "word", -word or in:place straight into the search box.	Arama kutusuna doğrudan "kelime", -kelime veya in:yer da yazabilirsiniz.
 Adv. Filters	Gel. Filtreler
 Adv. Filters (%1$d)	Gel. Filtreler (%1$d)
 Advanced Marketplace filters	Gelişmiş Marketplace filtreleri
 Advanced Marketplace filters, %1$d on	Gelişmiş Marketplace filtreleri, %1$d açık
-Type a word or a phrase and tap Add. A phrase like red wing has to be in the title as written. A term matches anywhere in a title, so 128 matches 128GB, and "128 " with a space in quotes matches it on its own. Go puts these into the search box and searches again.	Bir kelime veya ifade yazıp Ekle'ye dokunun. red wing gibi bir ifade başlıkta yazıldığı gibi geçmelidir. Bir terim başlığın herhangi bir yerinde eşleşir, yani 128, 128GB ile de eşleşir; tırnak içinde boşluklu "128 " yalnızca kendisiyle eşleşir. Git bunları arama kutusuna koyar ve yeniden arar.
 Add	Ekle
 Remove %1$s	%1$s kaldır
-You can also type "ram", -dell or in:melbourne straight into the search box.	Arama kutusuna doğrudan "ram", -dell veya in:melbourne da yazabilirsiniz.
 Title must include	Başlıkta olması gereken
 Hide titles with	Şunları içeren başlıkları gizle
 Only show listings in	Yalnızca şuradaki ilanları göster

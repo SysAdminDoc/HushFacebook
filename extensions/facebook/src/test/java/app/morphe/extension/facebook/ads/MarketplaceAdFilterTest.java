@@ -58,6 +58,7 @@ public class MarketplaceAdFilterTest {
         PauseForTests.resume();
         Settings.HIDE_SPONSORED_MARKETPLACE_LISTINGS.resetToDefault();
         Settings.MARKETPLACE_ADVANCED_SEARCH.resetToDefault();
+        Settings.MARKETPLACE_FILTERS_BUTTON.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         FeedFilterCounters.clear();
         HookStatus.clear();
@@ -123,6 +124,20 @@ public class MarketplaceAdFilterTest {
         MarketplaceAdFilterForTests.forget();
         assertSame(typed, MarketplaceAdFilterForTests.requestBody(query, typed));
         assertNull(MarketplaceSearchSyntax.active());
+    }
+
+    /** The Adv. Filters button has a switch of its own under advanced search; off, typed rules still work. */
+    @Test
+    public void theButtonHasItsOwnSwitch() {
+        assertTrue("the button starts off", Settings.MARKETPLACE_FILTERS_BUTTON.get());
+        Settings.MARKETPLACE_ADVANCED_SEARCH.save(false);
+        assertFalse("it needs advanced search", Settings.MARKETPLACE_FILTERS_BUTTON.isAvailable());
+        Settings.MARKETPLACE_ADVANCED_SEARCH.save(true);
+        Settings.MARKETPLACE_FILTERS_BUTTON.save(false);
+        String sent = MarketplaceAdFilterForTests.requestBody("MarketplaceSearchFeedPaginationQuery",
+                body("{\"query\":\"ram -corsair\"}"));
+        assertFalse(sent.contains("corsair"));
+        assertNotNull(MarketplaceSearchSyntax.active());
     }
 
     /** A video ad that reaches Marketplace's feed isn't drawn, and the report counts it. */

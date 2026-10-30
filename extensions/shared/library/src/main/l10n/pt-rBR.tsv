@@ -1974,15 +1974,18 @@ If your patched Facebook includes Badge and logo colors, badges will be %1$s.	Se
 If your patched Facebook includes Badge and logo colors, the logo will be %1$s.	Se o seu Facebook com patches incluir Cores dos selos e do logo, o logo ficará %1$s.
 # context: Marketplace search, the Advanced Marketplace search switch and its Adv. Filters button and dialog
 Advanced Marketplace search	Pesquisa avançada no Marketplace
-Type rules into Marketplace search: "ram" keeps titles with ram, -dell hides titles with dell, and in:melbourne keeps listings in Melbourne. An Adv. Filters button under Filters writes them for you.	Digite regras na pesquisa do Marketplace: "ram" mantém títulos com ram, -dell oculta títulos com dell e in:melbourne mantém anúncios em Melbourne. Um botão Filtros av. abaixo de Filtros escreve isso para você.
+Lets you type rules into Marketplace search. Put a word in quotes, like "word", to keep only titles with it, put a minus in front, like -word, to hide titles with it, and add in:place to keep listings in that place.	Permite digitar regras na pesquisa do Marketplace. Coloque uma palavra entre aspas, como "palavra", para manter só os títulos com ela, coloque um sinal de menos na frente, como -palavra, para ocultar os títulos com ela, e adicione in:lugar para manter os anúncios desse lugar.
+Adv. Filters button	Botão Filtros av.
+Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	Adiciona um botão Filtros av. abaixo dos Filtros do Marketplace nos resultados da pesquisa. Ele abre listas de palavras para manter, palavras para ocultar e lugares, e escreve as regras na pesquisa para você.
+How Adv. Filters works	Como os Filtros av. funcionam
+Type a word or a phrase and tap Add. A phrase of more than one word has to be in the title as written. A term matches anywhere in a title, so cat also matches cats. Put it in quotes with a space after it, like "cat ", to leave out cats. Go puts these into the search box and searches again.	Digite uma palavra ou frase e toque em Adicionar. Uma frase com mais de uma palavra precisa estar no título do jeito que foi escrita. Um termo corresponde em qualquer parte do título, então cat também corresponde a cats. Coloque entre aspas com um espaço depois, como "cat ", para deixar cats de fora. Ir coloca isso na caixa de pesquisa e pesquisa de novo.
+You can also type "word", -word or in:place straight into the search box.	Você também pode digitar "palavra", -palavra ou in:lugar direto na caixa de pesquisa.
 Adv. Filters	Filtros av.
 Adv. Filters (%1$d)	Filtros av. (%1$d)
 Advanced Marketplace filters	Filtros avançados do Marketplace
 Advanced Marketplace filters, %1$d on	Filtros avançados do Marketplace, %1$d ativos
-Type a word or a phrase and tap Add. A phrase like red wing has to be in the title as written. A term matches anywhere in a title, so 128 matches 128GB, and "128 " with a space in quotes matches it on its own. Go puts these into the search box and searches again.	Digite uma palavra ou frase e toque em Adicionar. Uma frase como red wing precisa estar no título do jeito que foi escrita. Um termo corresponde em qualquer parte do título, então 128 corresponde a 128GB, e "128 " com um espaço entre aspas corresponde só a ele. Ir coloca isso na caixa de pesquisa e pesquisa de novo.
 Add	Adicionar
 Remove %1$s	Remover %1$s
-You can also type "ram", -dell or in:melbourne straight into the search box.	Você também pode digitar "ram", -dell ou in:melbourne direto na caixa de pesquisa.
 Title must include	O título precisa incluir
 Hide titles with	Ocultar títulos com
 Only show listings in	Mostrar apenas anúncios em

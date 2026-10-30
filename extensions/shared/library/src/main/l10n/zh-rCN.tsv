@@ -2083,15 +2083,18 @@ If your patched Facebook includes Badge and logo colors, badges will be %1$s.	�
 If your patched Facebook includes Badge and logo colors, the logo will be %1$s.	如果你修补的 Facebook 包含“徽章和标志颜色”，标志将为 %1$s。
 # context: Marketplace search, the Advanced Marketplace search switch and its Adv. Filters button and dialog
 Advanced Marketplace search	Marketplace 高级搜索
-Type rules into Marketplace search: "ram" keeps titles with ram, -dell hides titles with dell, and in:melbourne keeps listings in Melbourne. An Adv. Filters button under Filters writes them for you.	在 Marketplace 搜索中输入规则："ram" 保留标题含 ram 的商品，-dell 隐藏标题含 dell 的商品，in:melbourne 保留位于 Melbourne 的商品。“筛选”下方的“高级筛选”按钮可以帮你写好这些规则。
+Lets you type rules into Marketplace search. Put a word in quotes, like "word", to keep only titles with it, put a minus in front, like -word, to hide titles with it, and add in:place to keep listings in that place.	让你在 Marketplace 搜索中输入规则。给词语加上引号，例如 "词语"，只保留标题含有它的商品；在前面加减号，例如 -词语，隐藏标题含有它的商品；添加 in:地点，只保留位于该地点的商品。
+Adv. Filters button	高级筛选按钮
+Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	在搜索结果中 Marketplace 的“筛选”下方添加“高级筛选”按钮。它会打开要保留的词语、要隐藏的词语和地点的列表，并帮你把规则写进搜索。
+How Adv. Filters works	高级筛选的用法
+Type a word or a phrase and tap Add. A phrase of more than one word has to be in the title as written. A term matches anywhere in a title, so cat also matches cats. Put it in quotes with a space after it, like "cat ", to leave out cats. Go puts these into the search box and searches again.	输入一个词或短语，然后点按“添加”。由多个词组成的短语必须按原样出现在标题中。词语可匹配标题中的任意位置，所以 cat 也会匹配 cats。给它加上引号并在后面加一个空格，例如 "cat "，就能排除 cats。“搜索”会把这些放进搜索框并重新搜索。
+You can also type "word", -word or in:place straight into the search box.	你也可以直接在搜索框中输入 "词语"、-词语 或 in:地点。
 Adv. Filters	高级筛选
 Adv. Filters (%1$d)	高级筛选 (%1$d)
 Advanced Marketplace filters	Marketplace 高级筛选
 Advanced Marketplace filters, %1$d on	Marketplace 高级筛选，已开启 %1$d 项
-Type a word or a phrase and tap Add. A phrase like red wing has to be in the title as written. A term matches anywhere in a title, so 128 matches 128GB, and "128 " with a space in quotes matches it on its own. Go puts these into the search box and searches again.	输入一个词或短语，然后点按“添加”。像 red wing 这样的短语必须按原样出现在标题中。词语可匹配标题中的任意位置，所以 128 也会匹配 128GB，而带空格并加引号的 "128 " 只匹配它本身。“搜索”会把这些放进搜索框并重新搜索。
 Add	添加
 Remove %1$s	移除 %1$s
-You can also type "ram", -dell or in:melbourne straight into the search box.	你也可以直接在搜索框中输入 "ram"、-dell 或 in:melbourne。
 Title must include	标题必须包含
 Hide titles with	隐藏标题含有
 Only show listings in	只显示位于以下地点的商品

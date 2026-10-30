@@ -2088,15 +2088,18 @@ If your patched Facebook includes Badge and logo colors, badges will be %1$s.	We
 If your patched Facebook includes Badge and logo colors, the logo will be %1$s.	Wenn dein gepatchtes Facebook Badge- und Logofarben enthält, ist das Logo %1$s.
 # context: Marketplace search, the Advanced Marketplace search switch and its Adv. Filters button and dialog
 Advanced Marketplace search	Erweiterte Marketplace-Suche
-Type rules into Marketplace search: "ram" keeps titles with ram, -dell hides titles with dell, and in:melbourne keeps listings in Melbourne. An Adv. Filters button under Filters writes them for you.	Regeln in die Marketplace-Suche tippen: "ram" behält Titel mit ram, -dell blendet Titel mit dell aus, und in:melbourne behält Angebote in Melbourne. Eine Schaltfläche Erw. Filter unter Filter schreibt sie für dich.
+Lets you type rules into Marketplace search. Put a word in quotes, like "word", to keep only titles with it, put a minus in front, like -word, to hide titles with it, and add in:place to keep listings in that place.	Lässt dich Regeln in die Marketplace-Suche tippen. Setze ein Wort in Anführungszeichen, etwa "wort", um nur Titel damit zu behalten, setze ein Minus davor, etwa -wort, um Titel damit auszublenden, und füge in:ort hinzu, um nur Angebote an diesem Ort zu behalten.
+Adv. Filters button	Schaltfläche Erw. Filter
+Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	Fügt in den Suchergebnissen unter den Filtern des Marketplace eine Schaltfläche Erw. Filter hinzu. Sie öffnet Listen mit Wörtern zum Behalten, Wörtern zum Ausblenden und Orten und schreibt die Regeln für dich in die Suche.
+How Adv. Filters works	So funktionieren Erw. Filter
+Type a word or a phrase and tap Add. A phrase of more than one word has to be in the title as written. A term matches anywhere in a title, so cat also matches cats. Put it in quotes with a space after it, like "cat ", to leave out cats. Go puts these into the search box and searches again.	Tippe ein Wort oder eine Wortgruppe und tippe auf Hinzufügen. Eine Wortgruppe aus mehreren Wörtern muss so im Titel stehen. Ein Begriff passt überall im Titel, also passt cat auch zu cats. Setze ihn mit einem Leerzeichen dahinter in Anführungszeichen, etwa "cat ", um cats auszulassen. Los setzt diese in das Suchfeld und sucht erneut.
+You can also type "word", -word or in:place straight into the search box.	Du kannst auch "wort", -wort oder in:ort direkt ins Suchfeld tippen.
 Adv. Filters	Erw. Filter
 Adv. Filters (%1$d)	Erw. Filter (%1$d)
 Advanced Marketplace filters	Erweiterte Marketplace-Filter
 Advanced Marketplace filters, %1$d on	Erweiterte Marketplace-Filter, %1$d aktiv
-Type a word or a phrase and tap Add. A phrase like red wing has to be in the title as written. A term matches anywhere in a title, so 128 matches 128GB, and "128 " with a space in quotes matches it on its own. Go puts these into the search box and searches again.	Tippe ein Wort oder eine Wortgruppe und tippe auf Hinzufügen. Eine Wortgruppe wie red wing muss so im Titel stehen. Ein Begriff passt überall im Titel, also passt 128 auch zu 128GB, und "128 " mit Leerzeichen in Anführungszeichen passt nur für sich. Los setzt diese in das Suchfeld und sucht erneut.
 Add	Hinzufügen
 Remove %1$s	%1$s entfernen
-You can also type "ram", -dell or in:melbourne straight into the search box.	Du kannst auch "ram", -dell oder in:melbourne direkt ins Suchfeld tippen.
 Title must include	Titel muss enthalten
 Hide titles with	Titel ausblenden mit
 Only show listings in	Nur Angebote zeigen in

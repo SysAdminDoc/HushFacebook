@@ -247,9 +247,13 @@ final class AppPages {
             marketplace.addPreference(toggle(context, Settings.HIDE_SPONSORED_MARKETPLACE_LISTINGS,
                     L10n.t("Hides ads and boosted listings in Marketplace's feed and search results. Regular listings stay.")));
             marketplace.addPreference(toggle(context, Settings.MARKETPLACE_ADVANCED_SEARCH,
-                    L10n.t("Type rules into Marketplace search: \"ram\" keeps titles with ram, -dell hides titles with "
-                            + "dell, and in:melbourne keeps listings in Melbourne. An Adv. Filters button under Filters "
-                            + "writes them for you.")));
+                    L10n.t("Lets you type rules into Marketplace search. Put a word in quotes, like \"word\", to keep "
+                            + "only titles with it, put a minus in front, like -word, to hide titles with it, and add "
+                            + "in:place to keep listings in that place.")));
+            marketplace.addPreference(toggle(context, Settings.MARKETPLACE_FILTERS_BUTTON,
+                    L10n.t("Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of "
+                            + "words to keep, words to hide and places, and writes the rules into the search for you."))
+                    .needs(Settings.MARKETPLACE_ADVANCED_SEARCH));
         }
         if (build.contains(PatchFamily.SELLER_VIEW_PROFILE)) {
             // Read as a seller's page opens, so a change shows on the next one.

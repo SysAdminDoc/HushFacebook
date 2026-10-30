@@ -209,7 +209,9 @@ public final class MarketplaceAdFilter {
                 // text the others don't. Only a page of results puts the button up.
                 if (advancedSearch()) {
                     body = MarketplaceSearchSyntax.request(query, body);
-                    if (resultsQuery(query)) MarketplaceFilterButton.searchSeen();
+                    if (resultsQuery(query) && Settings.MARKETPLACE_FILTERS_BUTTON.get()) {
+                        MarketplaceFilterButton.searchSeen();
+                    }
                 }
             } else if (listingQuery(query)) {
                 MarketplaceFilterButton.listingSeen();

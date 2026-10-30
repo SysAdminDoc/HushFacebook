@@ -2088,15 +2088,18 @@ If your patched Facebook includes Badge and logo colors, badges will be %1$s.	N�
 If your patched Facebook includes Badge and logo colors, the logo will be %1$s.	Nếu Facebook đã vá có Màu huy hiệu và logo, logo sẽ có màu %1$s.
 # context: Marketplace search, the Advanced Marketplace search switch and its Adv. Filters button and dialog
 Advanced Marketplace search	Tìm kiếm Marketplace nâng cao
-Type rules into Marketplace search: "ram" keeps titles with ram, -dell hides titles with dell, and in:melbourne keeps listings in Melbourne. An Adv. Filters button under Filters writes them for you.	Nhập quy tắc vào ô tìm kiếm Marketplace: "ram" giữ tiêu đề có ram, -dell ẩn tiêu đề có dell, và in:melbourne giữ tin đăng ở Melbourne. Nút Bộ lọc NC dưới Bộ lọc sẽ viết chúng cho bạn.
+Lets you type rules into Marketplace search. Put a word in quotes, like "word", to keep only titles with it, put a minus in front, like -word, to hide titles with it, and add in:place to keep listings in that place.	Cho phép bạn nhập quy tắc vào ô tìm kiếm Marketplace. Đặt một từ trong ngoặc kép, như "từ", để chỉ giữ tiêu đề có từ đó, thêm dấu trừ phía trước, như -từ, để ẩn tiêu đề có từ đó, và thêm in:nơi để chỉ giữ tin đăng ở nơi đó.
+Adv. Filters button	Nút Bộ lọc NC
+Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	Thêm nút Bộ lọc NC dưới Bộ lọc của Marketplace trong kết quả tìm kiếm. Nút này mở danh sách từ cần giữ, từ cần ẩn và nơi chốn, rồi viết quy tắc vào ô tìm kiếm cho bạn.
+How Adv. Filters works	Cách Bộ lọc NC hoạt động
+Type a word or a phrase and tap Add. A phrase of more than one word has to be in the title as written. A term matches anywhere in a title, so cat also matches cats. Put it in quotes with a space after it, like "cat ", to leave out cats. Go puts these into the search box and searches again.	Nhập một từ hoặc cụm từ rồi nhấn Thêm. Cụm từ có nhiều hơn một từ phải có trong tiêu đề đúng như đã viết. Một từ khớp ở bất kỳ đâu trong tiêu đề, nên cat cũng khớp với cats. Đặt nó trong ngoặc kép với một dấu cách phía sau, như "cat ", để loại cats ra. Đi sẽ đưa những mục này vào ô tìm kiếm và tìm lại.
+You can also type "word", -word or in:place straight into the search box.	Bạn cũng có thể nhập "từ", -từ hoặc in:nơi thẳng vào ô tìm kiếm.
 Adv. Filters	Bộ lọc NC
 Adv. Filters (%1$d)	Bộ lọc NC (%1$d)
 Advanced Marketplace filters	Bộ lọc Marketplace nâng cao
 Advanced Marketplace filters, %1$d on	Bộ lọc Marketplace nâng cao, %1$d đang bật
-Type a word or a phrase and tap Add. A phrase like red wing has to be in the title as written. A term matches anywhere in a title, so 128 matches 128GB, and "128 " with a space in quotes matches it on its own. Go puts these into the search box and searches again.	Nhập một từ hoặc cụm từ rồi nhấn Thêm. Cụm từ như red wing phải có trong tiêu đề đúng như đã viết. Một từ khớp ở bất kỳ đâu trong tiêu đề, nên 128 khớp với 128GB, còn "128 " có dấu cách trong ngoặc kép chỉ khớp riêng nó. Đi sẽ đưa những mục này vào ô tìm kiếm và tìm lại.
 Add	Thêm
 Remove %1$s	Xóa %1$s
-You can also type "ram", -dell or in:melbourne straight into the search box.	Bạn cũng có thể nhập "ram", -dell hoặc in:melbourne thẳng vào ô tìm kiếm.
 Title must include	Tiêu đề phải có
 Hide titles with	Ẩn tiêu đề có
 Only show listings in	Chỉ hiện tin đăng ở

@@ -2088,15 +2088,18 @@ If your patched Facebook includes Badge and logo colors, badges will be %1$s.	Ji
 If your patched Facebook includes Badge and logo colors, the logo will be %1$s.	Jika Facebook yang ditambal menyertakan Warna lencana dan logo, logo akan berwarna %1$s.
 # context: Marketplace search, the Advanced Marketplace search switch and its Adv. Filters button and dialog
 Advanced Marketplace search	Pencarian Marketplace lanjutan
-Type rules into Marketplace search: "ram" keeps titles with ram, -dell hides titles with dell, and in:melbourne keeps listings in Melbourne. An Adv. Filters button under Filters writes them for you.	Ketik aturan di pencarian Marketplace: "ram" menyimpan judul yang berisi ram, -dell menyembunyikan judul yang berisi dell, dan in:melbourne menyimpan iklan di Melbourne. Tombol Filter lanj. di bawah Filter menuliskannya untukmu.
+Lets you type rules into Marketplace search. Put a word in quotes, like "word", to keep only titles with it, put a minus in front, like -word, to hide titles with it, and add in:place to keep listings in that place.	Memungkinkanmu mengetik aturan di pencarian Marketplace. Beri tanda kutip pada kata, seperti "kata", untuk hanya menyimpan judul yang berisi kata itu, beri tanda minus di depannya, seperti -kata, untuk menyembunyikan judul yang berisi kata itu, dan tambahkan in:tempat untuk hanya menyimpan iklan di tempat itu.
+Adv. Filters button	Tombol Filter lanj.
+Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	Menambahkan tombol Filter lanj. di bawah Filter Marketplace pada hasil pencarian. Tombol ini membuka daftar kata yang disimpan, kata yang disembunyikan, dan tempat, lalu menuliskan aturannya ke pencarian untukmu.
+How Adv. Filters works	Cara kerja Filter lanj.
+Type a word or a phrase and tap Add. A phrase of more than one word has to be in the title as written. A term matches anywhere in a title, so cat also matches cats. Put it in quotes with a space after it, like "cat ", to leave out cats. Go puts these into the search box and searches again.	Ketik kata atau frasa lalu ketuk Tambah. Frasa yang terdiri dari lebih dari satu kata harus ada di judul persis seperti itu. Istilah cocok di bagian mana pun dari judul, jadi cat juga cocok dengan cats. Beri tanda kutip dengan spasi di belakangnya, seperti "cat ", agar cats tidak ikut. Buka memasukkan ini ke kotak pencarian dan mencari lagi.
+You can also type "word", -word or in:place straight into the search box.	Kamu juga bisa mengetik "kata", -kata, atau in:tempat langsung di kotak pencarian.
 Adv. Filters	Filter lanj.
 Adv. Filters (%1$d)	Filter lanj. (%1$d)
 Advanced Marketplace filters	Filter Marketplace lanjutan
 Advanced Marketplace filters, %1$d on	Filter Marketplace lanjutan, %1$d aktif
-Type a word or a phrase and tap Add. A phrase like red wing has to be in the title as written. A term matches anywhere in a title, so 128 matches 128GB, and "128 " with a space in quotes matches it on its own. Go puts these into the search box and searches again.	Ketik kata atau frasa lalu ketuk Tambah. Frasa seperti red wing harus ada di judul persis seperti itu. Istilah cocok di bagian mana pun dari judul, jadi 128 cocok dengan 128GB, dan "128 " dengan spasi dalam tanda kutip hanya cocok dengan istilah itu sendiri. Buka memasukkan ini ke kotak pencarian dan mencari lagi.
 Add	Tambah
 Remove %1$s	Hapus %1$s
-You can also type "ram", -dell or in:melbourne straight into the search box.	Kamu juga bisa mengetik "ram", -dell, atau in:melbourne langsung di kotak pencarian.
 Title must include	Judul harus berisi
 Hide titles with	Sembunyikan judul dengan
 Only show listings in	Hanya tampilkan iklan di

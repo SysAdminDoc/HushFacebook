@@ -6,7 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
-* **Facebook:** Marketplace search reads rules now. Put a word in quotes, like `"ram"`, to keep only listings with it in the title, put a minus in front, like `-dell` or `-1500`, to hide listings with it, and add `in:melbourne` (or `in:"weir views"`) to keep listings in that place. A term matches anywhere in a title, so `-128` hides 128GB too, and `"128 "` with a space matches 128 on its own. Facebook is sent only the plain words. An `Adv. Filters` button under Marketplace's own Filters opens three lists, include, exclude and location, read from the search, and Go writes them back into the search box and searches again. `Advanced Marketplace search` under Marketplace turns it off, and it comes with `Hide sponsored Marketplace listings`. Contributed by Psychoninja1623.
+* **Facebook:** Marketplace search reads rules now. Put a word in quotes, like `"word"`, to keep only listings with it in the title, put a minus in front, like `-word`, to hide listings with it, and add `in:place` (or `in:"two words"`) to keep listings in that place. A term matches anywhere in a title, so `-cat` hides cats too, and `"cat "` with a space after it leaves cats out. Facebook is sent only the plain words. An `Adv. Filters` button under Marketplace's own Filters opens three lists, words to keep, words to hide and places, each added as a tile you can take out again, and Go writes them into the search box and searches again. `Advanced Marketplace search` under Marketplace turns the rules off, and `Adv. Filters button` takes the button away and leaves typed rules working. Both come with `Hide sponsored Marketplace listings`. Contributed by Psychoninja1623.
 
 ## 0.19.0 (2026-10-27)
 

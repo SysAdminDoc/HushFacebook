@@ -274,8 +274,8 @@ public class MarketplaceSearchSyntaxTest {
 
     @Test
     public void theDialogWritesItsListsAsRules() {
-        assertEquals("ram \"ddr5\" -corsair -\"gaming pc\" in:melbourne in:\"weir views\"",
-                compose("ram", "DDR5", "corsair, Gaming PC", "Melbourne, Weir Views"));
+        assertEquals("ram \"ddr5\" -corsair -\"gaming pc\" in:melbourne in:\"north end\"",
+                compose("ram", "DDR5", "corsair, Gaming PC", "Melbourne, North End"));
         // The rules it held give way to the lists; its own words stay.
         assertEquals("ram -dell", compose("ram -corsair \"ddr4\" in:vic", "", "dell", ""));
         assertEquals("ram", compose("ram -corsair", "", "", ""));

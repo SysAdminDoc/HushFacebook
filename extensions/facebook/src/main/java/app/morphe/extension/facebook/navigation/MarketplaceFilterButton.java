@@ -44,6 +44,7 @@ import java.util.List;
 
 import app.morphe.extension.facebook.ads.MarketplaceSearchSyntax;
 import app.morphe.extension.facebook.settings.FamilyNames;
+import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
@@ -217,6 +218,9 @@ public final class MarketplaceFilterButton {
         try {
             Activity target = searchScreen.get();
             if (target != null && (onListing || target != resumed.get() || target.isFinishing())) target = null;
+            // The switch turned off in settings takes it down as Facebook comes back.
+            if (target != null && !(Settings.MARKETPLACE_ADVANCED_SEARCH.get()
+                    && Settings.MARKETPLACE_FILTERS_BUTTON.get())) target = null;
             TextView current = button.get();
             if (current != null && (target == null || current.getContext() != target || current.getParent() == null)) {
                 remove(current);
@@ -586,15 +590,6 @@ public final class MarketplaceFilterButton {
             box.setOrientation(LinearLayout.VERTICAL);
             box.setPadding(pad, Math.round(8 * density), pad, 0);
 
-            TextView intro = new TextView(themed);
-            intro.setText(L10n.t("Type a word or a phrase and tap Add. A phrase like red wing has to be in the title "
-                    + "as written. A term matches anywhere in a title, so 128 matches 128GB, and \"128 \" with a "
-                    + "space in quotes matches it on its own. Go puts these into the search box and searches again.")
-                    + "\n" + L10n.t("You can also type \"ram\", -dell or in:melbourne straight into the search box."));
-            intro.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-            intro.setAlpha(0.8f);
-            box.addView(intro);
-
             Section include = new Section(themed, box, L10n.t("Title must include"),
                     MarketplaceSearchSyntax.rules(last, MarketplaceSearchSyntax.INCLUDE),
                     night ? 0xFF263951 : 0xFFE7F3FF, night ? 0xFFB8D6FF : 0xFF0A58CA);
@@ -608,7 +603,7 @@ public final class MarketplaceFilterButton {
             ScrollView scroll = new ScrollView(themed);
             scroll.addView(box);
 
-            builder.setTitle(L10n.t("Advanced Marketplace filters"))
+            builder.setCustomTitle(title(themed, pad))
                     .setView(scroll)
                     .setPositiveButton(L10n.t("Go"), (dialog, which) -> {
                         include.addTyped();
@@ -624,6 +619,43 @@ public final class MarketplaceFilterButton {
             HookStatus.threw(FAMILY, "filter dialog", failure);
             Logger.printException(() -> "Marketplace filters dialog didn't open", failure);
         }
+    }
+
+    /** The dialog's title, with a ? beside it that opens how the lists work. */
+    private static View title(Context themed, int pad) {
+        float density = themed.getResources().getDisplayMetrics().density;
+        LinearLayout row = new LinearLayout(themed);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(pad, pad, Math.round(12 * density), 0);
+        TextView title = new TextView(themed);
+        title.setText(L10n.t("Advanced Marketplace filters"));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        row.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+
+        TextView help = new TextView(themed);
+        int size = Math.round(32 * density);
+        help.setText("?");
+        help.setGravity(Gravity.CENTER);
+        help.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        help.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        GradientDrawable circle = new GradientDrawable();
+        circle.setShape(GradientDrawable.OVAL);
+        circle.setStroke(Math.round(1.5f * density), title.getCurrentTextColor());
+        help.setBackground(circle);
+        help.setContentDescription(L10n.t("How Adv. Filters works"));
+        help.setOnClickListener(tapped -> new AlertDialog.Builder(themed)
+                .setTitle(L10n.t("How Adv. Filters works"))
+                .setMessage(L10n.t("Type a word or a phrase and tap Add. A phrase of more than one word has to be in "
+                        + "the title as written. A term matches anywhere in a title, so cat also matches cats. Put it in "
+                        + "quotes with a space after it, like \"cat \", to leave out cats. Go puts these into the "
+                        + "search box and searches again.")
+                        + "\n\n" + L10n.t("You can also type \"word\", -word or in:place straight into the search box."))
+                .setPositiveButton(L10n.t("OK"), null)
+                .show());
+        row.addView(help, new LinearLayout.LayoutParams(size, size));
+        return row;
     }
 
     /** Searches the last search's own words with the lists as its rules. */

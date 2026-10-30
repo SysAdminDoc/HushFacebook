@@ -44,8 +44,8 @@ val hideSponsoredMarketplaceListingsPatch = bytecodePatch(
     name = "Hide sponsored Marketplace listings",
     description = "Removes ads and boosted listings from Marketplace's feed and search results, so you see more " +
         "of what people are selling. Listings people post stay. It also reads rules typed into Marketplace " +
-        "search: \"ram\" keeps titles with ram, -dell hides titles with dell and in:melbourne keeps listings " +
-        "in Melbourne, and an Adv. Filters button writes them for you. On by default. Turn either off in " +
+        "search: \"word\" keeps titles with the word, -word hides titles with it and in:place keeps " +
+        "listings in that place, and an Adv. Filters button writes them for you. On by default. Turn either off in " +
         "Hushfacebook settings > Marketplace.",
     default = true,
 ) {
