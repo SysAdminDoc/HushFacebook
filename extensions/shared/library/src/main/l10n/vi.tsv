@@ -2093,7 +2093,9 @@ Adv. Filters	Bộ lọc NC
 Adv. Filters (%1$d)	Bộ lọc NC (%1$d)
 Advanced Marketplace filters	Bộ lọc Marketplace nâng cao
 Advanced Marketplace filters, %1$d on	Bộ lọc Marketplace nâng cao, %1$d đang bật
-Go puts these into the search box and searches again. Separate terms with commas. A term matches anywhere in a title, so 128 matches 128GB. Put it in quotes with a space, like "128 ", to match it on its own.	Đi sẽ đưa những mục này vào ô tìm kiếm và tìm lại. Phân tách các từ bằng dấu phẩy. Một từ khớp ở bất kỳ đâu trong tiêu đề, nên 128 khớp với 128GB. Đặt nó trong ngoặc kép kèm dấu cách, như "128 ", để chỉ khớp riêng nó.
+Type a word or a phrase and tap Add. A phrase like red wing has to be in the title as written. A term matches anywhere in a title, so 128 matches 128GB, and "128 " with a space in quotes matches it on its own. Go puts these into the search box and searches again.	Nhập một từ hoặc cụm từ rồi nhấn Thêm. Cụm từ như red wing phải có trong tiêu đề đúng như đã viết. Một từ khớp ở bất kỳ đâu trong tiêu đề, nên 128 khớp với 128GB, còn "128 " có dấu cách trong ngoặc kép chỉ khớp riêng nó. Đi sẽ đưa những mục này vào ô tìm kiếm và tìm lại.
+Add	Thêm
+Remove %1$s	Xóa %1$s
 You can also type "ram", -dell or in:melbourne straight into the search box.	Bạn cũng có thể nhập "ram", -dell hoặc in:melbourne thẳng vào ô tìm kiếm.
 Title must include	Tiêu đề phải có
 Hide titles with	Ẩn tiêu đề có

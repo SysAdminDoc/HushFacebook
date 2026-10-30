@@ -2093,7 +2093,9 @@ Adv. Filters	Filter lanj.
 Adv. Filters (%1$d)	Filter lanj. (%1$d)
 Advanced Marketplace filters	Filter Marketplace lanjutan
 Advanced Marketplace filters, %1$d on	Filter Marketplace lanjutan, %1$d aktif
-Go puts these into the search box and searches again. Separate terms with commas. A term matches anywhere in a title, so 128 matches 128GB. Put it in quotes with a space, like "128 ", to match it on its own.	Buka memasukkan ini ke kotak pencarian dan mencari lagi. Pisahkan istilah dengan koma. Istilah cocok di bagian mana pun dari judul, jadi 128 cocok dengan 128GB. Beri tanda kutip dengan spasi, seperti "128 ", agar hanya cocok dengan istilah itu sendiri.
+Type a word or a phrase and tap Add. A phrase like red wing has to be in the title as written. A term matches anywhere in a title, so 128 matches 128GB, and "128 " with a space in quotes matches it on its own. Go puts these into the search box and searches again.	Ketik kata atau frasa lalu ketuk Tambah. Frasa seperti red wing harus ada di judul persis seperti itu. Istilah cocok di bagian mana pun dari judul, jadi 128 cocok dengan 128GB, dan "128 " dengan spasi dalam tanda kutip hanya cocok dengan istilah itu sendiri. Buka memasukkan ini ke kotak pencarian dan mencari lagi.
+Add	Tambah
+Remove %1$s	Hapus %1$s
 You can also type "ram", -dell or in:melbourne straight into the search box.	Kamu juga bisa mengetik "ram", -dell, atau in:melbourne langsung di kotak pencarian.
 Title must include	Judul harus berisi
 Hide titles with	Sembunyikan judul dengan

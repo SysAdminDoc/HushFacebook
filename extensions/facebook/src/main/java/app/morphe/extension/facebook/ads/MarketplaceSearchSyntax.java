@@ -199,11 +199,20 @@ public final class MarketplaceSearchSyntax {
         }
     }
 
-    /** The Adv. Filters dialog's three lists as [text] holds them: include, exclude, location. */
-    public static String[] lists(@Nullable String text) {
+    /** Which of the Adv. Filters dialog's lists {@link #rules} reads. */
+    public static final int INCLUDE = 0;
+    public static final int EXCLUDE = 1;
+    public static final int PLACES = 2;
+
+    /**
+     * One of the Adv. Filters dialog's lists as [text] holds it: {@link #INCLUDE}, the terms a title
+     * must hold, {@link #EXCLUDE}, those it mustn't, or {@link #PLACES}. Empty when it holds none.
+     */
+    public static List<String> rules(@Nullable String text, int which) {
         Parsed parsed = parse(text);
-        if (parsed == null) return new String[] {"", "", ""};
-        return new String[] {listed(parsed.filter.required), listed(parsed.filter.excluded), listed(parsed.filter.places)};
+        if (parsed == null) return new ArrayList<>();
+        Filter filter = parsed.filter;
+        return new ArrayList<>(which == INCLUDE ? filter.required : which == EXCLUDE ? filter.excluded : filter.places);
     }
 
     /** How many rules [text] holds, for the Adv. Filters button's label. */
@@ -212,28 +221,24 @@ public final class MarketplaceSearchSyntax {
         return parsed == null ? 0 : parsed.filter.required.size() + parsed.filter.excluded.size() + parsed.filter.places.size();
     }
 
-    /** [terms] as a list for the dialog: by commas, quoted where a space at an end counts. */
-    private static String listed(List<String> terms) {
-        StringBuilder out = new StringBuilder();
-        for (String term : terms) {
-            if (out.length() > 0) out.append(", ");
-            out.append(term.equals(term.trim()) ? term : "\"" + term + "\"");
-        }
-        return out.toString();
+    /** [term] as the dialog shows it: as it is, or in quotes when a space at an end counts. */
+    public static String shown(String term) {
+        return term.equals(term.trim()) ? term : "\"" + term + "\"";
     }
 
     /**
      * The search text for [text]'s own words with the dialog's lists as its rules, in place of the
      * rules it held: {@code "ddr5"} for each term a title must hold, {@code -corsair} for each it
-     * mustn't, {@code in:melbourne} for each place.
+     * mustn't, {@code in:melbourne} for each place. A term of more than one word stays one phrase:
+     * {@code "red wing"}, {@code -"red wing"}. The terms are as {@link #terms} gives them.
      */
-    public static String compose(@Nullable String text, String include, String exclude, String location) {
+    public static String compose(@Nullable String text, List<String> include, List<String> exclude, List<String> places) {
         String base = text == null ? "" : text.trim();
         Parsed parsed = parse(base);
         StringBuilder out = new StringBuilder(parsed == null ? base : parsed.loose);
-        for (String term : terms(include)) append(out, "\"" + term + "\"");
-        for (String term : terms(exclude)) append(out, "-" + rule(term));
-        for (String term : terms(location)) append(out, PLACE + rule(term));
+        for (String term : include) append(out, "\"" + term + "\"");
+        for (String term : exclude) append(out, "-" + rule(term));
+        for (String term : places) append(out, PLACE + rule(term));
         return out.toString();
     }
 
@@ -244,9 +249,10 @@ public final class MarketplaceSearchSyntax {
 
     /**
      * [list]'s terms: split by commas and lines, a leading minus dropped. A term in quotes keeps the
-     * spaces at its ends, as typed in the search box; any other is {@link #normalized}.
+     * spaces at its ends, as typed in the search box; any other is {@link #normalized}. Each is one
+     * term however many words it has, so red wing is the phrase "red wing".
      */
-    static List<String> terms(@Nullable String list) {
+    public static List<String> terms(@Nullable String list) {
         List<String> out = new ArrayList<>();
         if (list == null) return out;
         for (String each : list.split("[,\\n;]")) {

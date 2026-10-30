@@ -2093,7 +2093,9 @@ Adv. Filters	Gel. Filtreler
 Adv. Filters (%1$d)	Gel. Filtreler (%1$d)
 Advanced Marketplace filters	Gelişmiş Marketplace filtreleri
 Advanced Marketplace filters, %1$d on	Gelişmiş Marketplace filtreleri, %1$d açık
-Go puts these into the search box and searches again. Separate terms with commas. A term matches anywhere in a title, so 128 matches 128GB. Put it in quotes with a space, like "128 ", to match it on its own.	Git bunları arama kutusuna koyar ve yeniden arar. Terimleri virgülle ayırın. Bir terim başlığın herhangi bir yerinde eşleşir, yani 128, 128GB ile de eşleşir. Yalnızca kendisiyle eşleşmesi için "128 " gibi boşlukla tırnak içine alın.
+Type a word or a phrase and tap Add. A phrase like red wing has to be in the title as written. A term matches anywhere in a title, so 128 matches 128GB, and "128 " with a space in quotes matches it on its own. Go puts these into the search box and searches again.	Bir kelime veya ifade yazıp Ekle'ye dokunun. red wing gibi bir ifade başlıkta yazıldığı gibi geçmelidir. Bir terim başlığın herhangi bir yerinde eşleşir, yani 128, 128GB ile de eşleşir; tırnak içinde boşluklu "128 " yalnızca kendisiyle eşleşir. Git bunları arama kutusuna koyar ve yeniden arar.
+Add	Ekle
+Remove %1$s	%1$s kaldır
 You can also type "ram", -dell or in:melbourne straight into the search box.	Arama kutusuna doğrudan "ram", -dell veya in:melbourne da yazabilirsiniz.
 Title must include	Başlıkta olması gereken
 Hide titles with	Şunları içeren başlıkları gizle

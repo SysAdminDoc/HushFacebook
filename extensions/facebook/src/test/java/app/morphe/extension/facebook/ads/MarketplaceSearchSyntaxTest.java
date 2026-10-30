@@ -267,22 +267,32 @@ public class MarketplaceSearchSyntaxTest {
         assertTrue(MarketplaceSearchSyntax.terms(" , ").isEmpty());
     }
 
+    private static String compose(String text, String include, String exclude, String places) {
+        return MarketplaceSearchSyntax.compose(text, MarketplaceSearchSyntax.terms(include),
+                MarketplaceSearchSyntax.terms(exclude), MarketplaceSearchSyntax.terms(places));
+    }
+
     @Test
     public void theDialogWritesItsListsAsRules() {
         assertEquals("ram \"ddr5\" -corsair -\"gaming pc\" in:melbourne in:\"weir views\"",
-                MarketplaceSearchSyntax.compose("ram", "DDR5", "corsair, Gaming PC", "Melbourne, Weir Views"));
+                compose("ram", "DDR5", "corsair, Gaming PC", "Melbourne, Weir Views"));
         // The rules it held give way to the lists; its own words stay.
-        assertEquals("ram -dell", MarketplaceSearchSyntax.compose("ram -corsair \"ddr4\" in:vic", "", "dell", ""));
-        assertEquals("ram", MarketplaceSearchSyntax.compose("ram -corsair", "", "", ""));
-        assertEquals("ram \"128 \"", MarketplaceSearchSyntax.compose("ram", "\"128 \"", "", ""));
+        assertEquals("ram -dell", compose("ram -corsair \"ddr4\" in:vic", "", "dell", ""));
+        assertEquals("ram", compose("ram -corsair", "", "", ""));
+        assertEquals("ram \"128 \"", compose("ram", "\"128 \"", "", ""));
+        // A term of two words, as a tile holds it, stays one phrase.
+        assertEquals("boots \"red wing\" -\"red wing\"", compose("boots", "red wing", "red wing", ""));
     }
 
     @Test
     public void theDialogReadsTheListsOutOfTheSearch() {
-        String[] lists = MarketplaceSearchSyntax.lists("ram \"ddr5\" \"128 \" -corsair -\"gaming pc\" in:melbourne");
-        assertEquals("ddr5, \"128 \"", lists[0]);
-        assertEquals("corsair, gaming pc", lists[1]);
-        assertEquals("melbourne", lists[2]);
+        String text = "ram \"ddr5\" \"128 \" -corsair -\"gaming pc\" in:melbourne";
+        assertEquals(Arrays.asList("ddr5", "128 "), MarketplaceSearchSyntax.rules(text, MarketplaceSearchSyntax.INCLUDE));
+        assertEquals(Arrays.asList("corsair", "gaming pc"), MarketplaceSearchSyntax.rules(text, MarketplaceSearchSyntax.EXCLUDE));
+        assertEquals(Arrays.asList("melbourne"), MarketplaceSearchSyntax.rules(text, MarketplaceSearchSyntax.PLACES));
+        assertTrue(MarketplaceSearchSyntax.rules("ram", MarketplaceSearchSyntax.INCLUDE).isEmpty());
+        assertEquals("\"128 \"", MarketplaceSearchSyntax.shown("128 "));
+        assertEquals("red wing", MarketplaceSearchSyntax.shown("red wing"));
         assertEquals(5, MarketplaceSearchSyntax.ruleCount("ram \"ddr5\" \"128 \" -corsair -\"gaming pc\" in:melbourne"));
         assertEquals(0, MarketplaceSearchSyntax.ruleCount("ram"));
     }

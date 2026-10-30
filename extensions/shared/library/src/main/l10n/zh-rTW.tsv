@@ -2097,7 +2097,9 @@ Adv. Filters	進階篩選
 Adv. Filters (%1$d)	進階篩選 (%1$d)
 Advanced Marketplace filters	Marketplace 進階篩選
 Advanced Marketplace filters, %1$d on	Marketplace 進階篩選，已開啟 %1$d 項
-Go puts these into the search box and searches again. Separate terms with commas. A term matches anywhere in a title, so 128 matches 128GB. Put it in quotes with a space, like "128 ", to match it on its own.	「搜尋」會把這些放進搜尋框並重新搜尋。用逗號分隔詞語。詞語可比對標題中的任何位置，所以 128 也會比對到 128GB。為它加上引號和空格，例如 "128 "，就只比對它本身。
+Type a word or a phrase and tap Add. A phrase like red wing has to be in the title as written. A term matches anywhere in a title, so 128 matches 128GB, and "128 " with a space in quotes matches it on its own. Go puts these into the search box and searches again.	輸入一個詞或片語，然後點按「新增」。像 red wing 這樣的片語必須照原樣出現在標題中。詞語可比對標題中的任何位置，所以 128 也會比對到 128GB，而帶空格並加引號的 "128 " 只比對它本身。「搜尋」會把這些放進搜尋框並重新搜尋。
+Add	新增
+Remove %1$s	移除 %1$s
 You can also type "ram", -dell or in:melbourne straight into the search box.	你也可以直接在搜尋框中輸入 "ram"、-dell 或 in:melbourne。
 Title must include	標題必須包含
 Hide titles with	隱藏標題含有

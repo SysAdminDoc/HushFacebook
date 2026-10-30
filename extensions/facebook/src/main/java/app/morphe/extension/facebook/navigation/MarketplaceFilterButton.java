@@ -28,6 +28,7 @@ import android.view.WindowInsets;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -38,6 +39,8 @@ import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 
 import app.morphe.extension.facebook.ads.MarketplaceSearchSyntax;
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -563,7 +566,11 @@ public final class MarketplaceFilterButton {
                 : L10n.f("Advanced Marketplace filters, %1$d on", count));
     }
 
-    /** The dialog of the three lists. */
+    /**
+     * The dialog of the three lists. Each shows its terms as tiles with an x that takes one out, and
+     * a field with an Add button below for a new one: what's typed there is one term however many
+     * words it has. Go adds what's still in a field, then searches.
+     */
     static void open(Activity screen) {
         try {
             AlertDialog.Builder builder = new AlertDialog.Builder(screen, night(screen)
@@ -572,33 +579,45 @@ public final class MarketplaceFilterButton {
             Context themed = builder.getContext();
             float density = themed.getResources().getDisplayMetrics().density;
             int pad = Math.round(20 * density);
+            boolean night = night(screen);
+            String last = MarketplaceSearchSyntax.lastText();
 
-            String[] lists = MarketplaceSearchSyntax.lists(MarketplaceSearchSyntax.lastText());
             LinearLayout box = new LinearLayout(themed);
             box.setOrientation(LinearLayout.VERTICAL);
             box.setPadding(pad, Math.round(8 * density), pad, 0);
 
             TextView intro = new TextView(themed);
-            intro.setText(L10n.t("Go puts these into the search box and searches again. Separate terms with "
-                    + "commas. A term matches anywhere in a title, so 128 matches 128GB. Put it in quotes "
-                    + "with a space, like \"128 \", to match it on its own.") + "\n"
-                    + L10n.t("You can also type \"ram\", -dell or in:melbourne straight into the search box."));
+            intro.setText(L10n.t("Type a word or a phrase and tap Add. A phrase like red wing has to be in the title "
+                    + "as written. A term matches anywhere in a title, so 128 matches 128GB, and \"128 \" with a "
+                    + "space in quotes matches it on its own. Go puts these into the search box and searches again.")
+                    + "\n" + L10n.t("You can also type \"ram\", -dell or in:melbourne straight into the search box."));
             intro.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
             intro.setAlpha(0.8f);
             box.addView(intro);
 
-            EditText include = field(themed, box, L10n.t("Title must include"), "ram, ddr4", lists[0]);
-            EditText exclude = field(themed, box, L10n.t("Hide titles with"), "pc, dell, \"128 \"", lists[1]);
-            EditText location = field(themed, box, L10n.t("Only show listings in"), "Melbourne, VIC", lists[2]);
+            Section include = new Section(themed, box, L10n.t("Title must include"),
+                    MarketplaceSearchSyntax.rules(last, MarketplaceSearchSyntax.INCLUDE),
+                    night ? 0xFF263951 : 0xFFE7F3FF, night ? 0xFFB8D6FF : 0xFF0A58CA);
+            Section exclude = new Section(themed, box, L10n.t("Hide titles with"),
+                    MarketplaceSearchSyntax.rules(last, MarketplaceSearchSyntax.EXCLUDE),
+                    night ? 0xFF4A2626 : 0xFFFDECEC, night ? 0xFFFFB4B4 : 0xFFB3261E);
+            Section places = new Section(themed, box, L10n.t("Only show listings in"),
+                    MarketplaceSearchSyntax.rules(last, MarketplaceSearchSyntax.PLACES),
+                    night ? 0xFF3A3B3C : 0xFFE4E6EB, night ? 0xFFE4E6EB : 0xFF050505);
 
             ScrollView scroll = new ScrollView(themed);
             scroll.addView(box);
 
             builder.setTitle(L10n.t("Advanced Marketplace filters"))
                     .setView(scroll)
-                    .setPositiveButton(L10n.t("Go"), (dialog, which) -> go(screen, include.getText().toString(),
-                            exclude.getText().toString(), location.getText().toString()))
-                    .setNeutralButton(L10n.t("Clear all"), (dialog, which) -> go(screen, "", "", ""))
+                    .setPositiveButton(L10n.t("Go"), (dialog, which) -> {
+                        include.addTyped();
+                        exclude.addTyped();
+                        places.addTyped();
+                        go(screen, include.terms, exclude.terms, places.terms);
+                    })
+                    .setNeutralButton(L10n.t("Clear all"), (dialog, which) -> go(screen,
+                            new ArrayList<>(), new ArrayList<>(), new ArrayList<>()))
                     .setNegativeButton(L10n.t("Cancel"), null)
                     .show();
         } catch (Throwable failure) {
@@ -608,9 +627,145 @@ public final class MarketplaceFilterButton {
     }
 
     /** Searches the last search's own words with the lists as its rules. */
-    private static void go(Activity screen, String include, String exclude, String location) {
-        String text = MarketplaceSearchSyntax.compose(MarketplaceSearchSyntax.lastText(), include, exclude, location);
+    private static void go(Activity screen, List<String> include, List<String> exclude, List<String> places) {
+        String text = MarketplaceSearchSyntax.compose(MarketplaceSearchSyntax.lastText(), include, exclude, places);
         main.postDelayed(() -> searchAgain(screen, text), 300);
+    }
+
+    /** One of the dialog's lists: its heading, its terms as tiles, and a field with an Add button. */
+    private static final class Section {
+        final List<String> terms = new ArrayList<>();
+        private final Context themed;
+        private final Tiles tiles;
+        private final EditText field;
+        private final int fill;
+        private final int ink;
+
+        Section(Context themed, LinearLayout box, String title, List<String> start, int fill, int ink) {
+            this.themed = themed;
+            this.fill = fill;
+            this.ink = ink;
+            float density = themed.getResources().getDisplayMetrics().density;
+            TextView label = new TextView(themed);
+            label.setText(title);
+            label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+            label.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            label.setPadding(0, Math.round(16 * density), 0, Math.round(6 * density));
+            box.addView(label);
+
+            tiles = new Tiles(themed, Math.round(6 * density));
+            box.addView(tiles, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            LinearLayout row = new LinearLayout(themed);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            field = new EditText(themed);
+            field.setSingleLine(true);
+            field.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+            field.setImeOptions(EditorInfo.IME_ACTION_DONE);
+            field.setOnEditorActionListener((view, action, event) -> {
+                addTyped();
+                return true;
+            });
+            row.addView(field, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            Button add = new Button(themed);
+            add.setText(L10n.t("Add"));
+            add.setOnClickListener(tapped -> addTyped());
+            row.addView(add, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            box.addView(row);
+
+            for (String term : start) add(term);
+        }
+
+        /** Adds what's typed in the field as terms, a comma between two, and empties the field. */
+        void addTyped() {
+            for (String term : MarketplaceSearchSyntax.terms(field.getText().toString())) add(term);
+            field.setText("");
+        }
+
+        private void add(String term) {
+            if (terms.contains(term)) return;
+            terms.add(term);
+            float density = themed.getResources().getDisplayMetrics().density;
+            String shown = MarketplaceSearchSyntax.shown(term);
+            TextView tile = new TextView(themed);
+            tile.setText(shown + "  \u2715");
+            tile.setTextColor(ink);
+            tile.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+            tile.setSingleLine(true);
+            int h = Math.round(12 * density);
+            int v = Math.round(6 * density);
+            tile.setPadding(h, v, h, v);
+            GradientDrawable background = new GradientDrawable();
+            background.setColor(fill);
+            background.setCornerRadius(16 * density);
+            tile.setBackground(background);
+            tile.setContentDescription(L10n.f("Remove %1$s", shown));
+            tile.setOnClickListener(tapped -> {
+                terms.remove(term);
+                tiles.removeView(tile);
+            });
+            tiles.addView(tile);
+        }
+    }
+
+    /** Lays its children out in rows, left to right, starting a new row when one is full. */
+    private static final class Tiles extends ViewGroup {
+        private final int gap;
+
+        Tiles(Context context, int gap) {
+            super(context);
+            this.gap = gap;
+        }
+
+        @Override
+        protected void onMeasure(int widthSpec, int heightSpec) {
+            int width = MeasureSpec.getMode(widthSpec) == MeasureSpec.UNSPECIFIED
+                    ? Integer.MAX_VALUE : MeasureSpec.getSize(widthSpec);
+            int x = 0;
+            int y = 0;
+            int row = 0;
+            int widest = 0;
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                if (child.getVisibility() == GONE) continue;
+                child.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.UNSPECIFIED);
+                if (x > 0 && x + child.getMeasuredWidth() > width) {
+                    x = 0;
+                    y += row + gap;
+                    row = 0;
+                }
+                x += child.getMeasuredWidth() + gap;
+                widest = Math.max(widest, x - gap);
+                row = Math.max(row, child.getMeasuredHeight());
+            }
+            int height = row == 0 ? 0 : y + row + gap;
+            setMeasuredDimension(resolveSize(widest, widthSpec), resolveSize(height, heightSpec));
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+            int width = right - left;
+            int x = 0;
+            int y = 0;
+            int row = 0;
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                if (child.getVisibility() == GONE) continue;
+                int w = child.getMeasuredWidth();
+                int h = child.getMeasuredHeight();
+                if (x > 0 && x + w > width) {
+                    x = 0;
+                    y += row + gap;
+                    row = 0;
+                }
+                child.layout(x, y, x + w, y + h);
+                x += w + gap;
+                row = Math.max(row, h);
+            }
+        }
     }
 
     /**
@@ -761,21 +916,5 @@ public final class MarketplaceFilterButton {
             }
         }
         return null;
-    }
-
-    private static EditText field(Context themed, LinearLayout box, String title, String hint, String value) {
-        float density = themed.getResources().getDisplayMetrics().density;
-        TextView label = new TextView(themed);
-        label.setText(title);
-        label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-        label.setPadding(0, Math.round(16 * density), 0, 0);
-        box.addView(label);
-        EditText edit = new EditText(themed);
-        edit.setHint(hint);
-        edit.setText(value);
-        edit.setSingleLine(true);
-        edit.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        box.addView(edit);
-        return edit;
     }
 }
