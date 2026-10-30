@@ -2,6 +2,12 @@
 
 Changes in each Hushfacebook version, newest first.
 
+## Unreleased
+
+### Added
+
+* **Facebook:** Marketplace search reads rules now. Put a word in quotes, like `"ram"`, to keep only listings with it in the title, put a minus in front, like `-dell` or `-1500`, to hide listings with it, and add `in:melbourne` (or `in:"weir views"`) to keep listings in that place. A term matches anywhere in a title, so `-128` hides 128GB too, and `"128 "` with a space matches 128 on its own. Facebook is sent only the plain words. An `Adv. Filters` button under Marketplace's own Filters opens three lists, include, exclude and location, read from the search, and Go writes them back into the search box and searches again. `Advanced Marketplace search` under Marketplace turns it off, and it comes with `Hide sponsored Marketplace listings`. Contributed by Psychoninja1623.
+
 ## 0.19.0 (2026-10-27)
 
 * **Facebook:** This one needs Morphe Manager 2.2.0 or newer, so update Manager before you patch. Posts can get Save and Download buttons under them, and new switches take Like, Comment, Share or Send off posts and reels, hide posts from Pages or drop the dislike on comments. Feed videos can get a cast button, downloads can go to an SD card, and 32-bit phones work now. You can also pick your own badge and logo colors, sort reels by most liked and copy a reel's whole caption.
