@@ -130,6 +130,8 @@ public class MarketplaceAdFilterTest {
     @Test
     public void theButtonHasItsOwnSwitch() {
         assertTrue("the button starts off", Settings.MARKETPLACE_FILTERS_BUTTON.get());
+        assertTrue("Facebook keeps results it has seen", Settings.MARKETPLACE_ADVANCED_SEARCH.rebootApp);
+        assertTrue(Settings.MARKETPLACE_FILTERS_BUTTON.rebootApp);
         Settings.MARKETPLACE_ADVANCED_SEARCH.save(false);
         assertFalse("it needs advanced search", Settings.MARKETPLACE_FILTERS_BUTTON.isAvailable());
         Settings.MARKETPLACE_ADVANCED_SEARCH.save(true);
