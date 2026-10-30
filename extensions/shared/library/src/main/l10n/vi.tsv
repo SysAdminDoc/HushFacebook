@@ -2086,3 +2086,19 @@ If your patched Facebook includes Badge and logo colors, the logo will be Facebo
 If your patched Facebook includes Badge and logo colors, badges will be %1$s.	Nếu Facebook đã vá có Màu huy hiệu và logo, huy hiệu sẽ có màu %1$s.
 # context: import preview sentence: the file sets the Logo color row; %1$s is a color code like #2ECC71; "Badge and logo colors" is the patch's name, keep it as translated for that patch
 If your patched Facebook includes Badge and logo colors, the logo will be %1$s.	Nếu Facebook đã vá có Màu huy hiệu và logo, logo sẽ có màu %1$s.
+# context: Marketplace search, the Advanced Marketplace search switch and its Adv. Filters button and dialog
+Advanced Marketplace search	Tìm kiếm Marketplace nâng cao
+Type rules into Marketplace search: "ram" keeps titles with ram, -dell hides titles with dell, and in:melbourne keeps listings in Melbourne. An Adv. Filters button under Filters writes them for you.	Nhập quy tắc vào ô tìm kiếm Marketplace: "ram" giữ tiêu đề có ram, -dell ẩn tiêu đề có dell, và in:melbourne giữ tin đăng ở Melbourne. Nút Bộ lọc NC dưới Bộ lọc sẽ viết chúng cho bạn.
+Adv. Filters	Bộ lọc NC
+Adv. Filters (%1$d)	Bộ lọc NC (%1$d)
+Advanced Marketplace filters	Bộ lọc Marketplace nâng cao
+Advanced Marketplace filters, %1$d on	Bộ lọc Marketplace nâng cao, %1$d đang bật
+Go puts these into the search box and searches again. Separate terms with commas. A term matches anywhere in a title, so 128 matches 128GB. Put it in quotes with a space, like "128 ", to match it on its own.	Đi sẽ đưa những mục này vào ô tìm kiếm và tìm lại. Phân tách các từ bằng dấu phẩy. Một từ khớp ở bất kỳ đâu trong tiêu đề, nên 128 khớp với 128GB. Đặt nó trong ngoặc kép kèm dấu cách, như "128 ", để chỉ khớp riêng nó.
+You can also type "ram", -dell or in:melbourne straight into the search box.	Bạn cũng có thể nhập "ram", -dell hoặc in:melbourne thẳng vào ô tìm kiếm.
+Title must include	Tiêu đề phải có
+Hide titles with	Ẩn tiêu đề có
+Only show listings in	Chỉ hiện tin đăng ở
+Go	Đi
+Clear all	Xóa hết
+Search box not found. Type the search again.	Không tìm thấy ô tìm kiếm. Hãy nhập lại tìm kiếm.
+The search box didn't open. Type the search again.	Ô tìm kiếm không mở ra. Hãy nhập lại tìm kiếm.

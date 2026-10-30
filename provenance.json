@@ -774,6 +774,8 @@
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/ads/MarketplaceAdFilter.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/ads/MarketplaceResponseDiagnostics.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/ads/MarketplaceSearchAds.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/ads/MarketplaceSearchSyntax.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/navigation/MarketplaceFilterButton.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/ads/MarketplacePathRemapper.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/ads/sponsoredmarketplace/HideSponsoredMarketplaceListingsPatch.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/ads/sponsoredmarketplace/MarketplaceRequestAnchors.kt",

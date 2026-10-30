@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import app.morphe.extension.facebook.navigation.MarketplaceFilterButton;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.facebook.settings.SettingsStatus;
@@ -21,6 +22,7 @@ import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
 import app.morphe.extension.shared.diagnostics.FeedFilterCounters;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.HushfacebookPause;
 
 /**
  * What the Hide sponsored Marketplace listings patch does to the requests Marketplace's feed sends.
@@ -202,6 +204,16 @@ public final class MarketplaceAdFilter {
                 log("held back " + query + ", " + heldBack + ".");
                 return null;
             }
+            if (searchQuery(RELAY + query) != null) {
+                // Every search query has its text rewritten alike, so none of them tells Facebook a
+                // text the others don't. Only a page of results puts the button up.
+                if (advancedSearch()) {
+                    body = MarketplaceSearchSyntax.request(query, body);
+                    if (resultsQuery(query)) MarketplaceFilterButton.searchSeen();
+                }
+            } else if (listingQuery(query)) {
+                MarketplaceFilterButton.listingSeen();
+            }
             Rewrite rewrite = skipAds(body, on);
             if (rewrite.body != body) FeedFilterCounters.removed(ROUTE, 1, SKIPPED);
             log(query + " " + rewrite.note);
@@ -318,7 +330,22 @@ public final class MarketplaceAdFilter {
             throw failure;
         }
         HookStatus.bound(FamilyNames.SPONSORED_MARKETPLACE, SEARCH_ANSWER);
-        return new MarketplaceSearchAds.Answer(query, switchedOn());
+        return new MarketplaceSearchAds.Answer(query, switchedOn(),
+                advancedSearch() ? MarketplaceSearchSyntax.active() : null);
+    }
+
+    /**
+     * Whether Marketplace search reads its advanced syntax (see {@link MarketplaceSearchSyntax}).
+     * It has no switch of its own, since a search without quotes or minus words is left alone, but
+     * it stays out while Hushfacebook is paused or its settings aren't ready.
+     */
+    private static boolean advancedSearch() {
+        try {
+            return Utils.settingsReady() && !HushfacebookPause.isPaused() && Settings.MARKETPLACE_ADVANCED_SEARCH.get();
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.SPONSORED_MARKETPLACE, "advanced search read", failure);
+            return false;
+        }
     }
 
     /**
@@ -331,6 +358,20 @@ public final class MarketplaceAdFilter {
         String query = marketplaceQuery(trackingName);
         if (query == null || !query.contains(SEARCH) || query.contains(TYPEAHEAD) || query.endsWith(MUTATION)) return null;
         return query;
+    }
+
+    /**
+     * Whether [query] fetches a page of search results: the head of the results feed or its next
+     * page. Facebook also fetches these while a search is still being typed, so the button checks
+     * for the keyboard itself before it shows.
+     */
+    static boolean resultsQuery(String query) {
+        return searchQuery(RELAY + query) != null && query.contains("SearchFeed");
+    }
+
+    /** Whether [query] is one a listing's own page sends for its listing, which takes the Filters button down. */
+    static boolean listingQuery(String query) {
+        return query.startsWith("MarketplacePDP") || query.startsWith("MarketplaceProductDetailsPage");
     }
 
     /** The query's name when [trackingName] is a Relay query of Marketplace's, else null. */
@@ -655,6 +696,7 @@ public final class MarketplaceAdFilter {
     static void forget() {
         lines.set(0);
         MarketplaceSearchAds.forget();
+        MarketplaceSearchSyntax.forget();
         MarketplaceResponseDiagnostics.forget();
         synchronized (answers) {
             answers.clear();

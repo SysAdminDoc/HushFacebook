@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.ads;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -56,6 +57,7 @@ public class MarketplaceAdFilterTest {
         MarketplaceAdFilterForTests.forget();
         PauseForTests.resume();
         Settings.HIDE_SPONSORED_MARKETPLACE_LISTINGS.resetToDefault();
+        Settings.MARKETPLACE_ADVANCED_SEARCH.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         FeedFilterCounters.clear();
         HookStatus.clear();
@@ -106,6 +108,21 @@ public class MarketplaceAdFilterTest {
                 + MarketplaceAdFilter.SKIPPED + ". Removed: " + MarketplaceAdFilter.SKIPPED + " 1. Kinds: " + FEED + " 1",
                 counterLine());
         assertEquals(FamilyNames.SPONSORED_MARKETPLACE + ": invoked 1, 1 found, 0 missing", statusLine());
+    }
+
+    /** Advanced search starts on and sends a search's plain words; off, the search goes out as typed. */
+    @Test
+    public void advancedSearchHasItsOwnSwitch() {
+        String query = "MarketplaceSearchFeedPaginationQuery";
+        String typed = body("{\"query\":\"ram -corsair\"}");
+        assertTrue("advanced search starts off", Settings.MARKETPLACE_ADVANCED_SEARCH.get());
+        String sent = MarketplaceAdFilterForTests.requestBody(query, typed);
+        assertFalse(sent.contains("corsair"));
+        assertNotNull(MarketplaceSearchSyntax.active());
+        Settings.MARKETPLACE_ADVANCED_SEARCH.save(false);
+        MarketplaceAdFilterForTests.forget();
+        assertSame(typed, MarketplaceAdFilterForTests.requestBody(query, typed));
+        assertNull(MarketplaceSearchSyntax.active());
     }
 
     /** A video ad that reaches Marketplace's feed isn't drawn, and the report counts it. */

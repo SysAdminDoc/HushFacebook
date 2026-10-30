@@ -2086,3 +2086,19 @@ If your patched Facebook includes Badge and logo colors, the logo will be Facebo
 If your patched Facebook includes Badge and logo colors, badges will be %1$s.	Yamalı Facebook'unuz Rozet ve logo renkleri'ni içeriyorsa rozetler %1$s olur.
 # context: import preview sentence: the file sets the Logo color row; %1$s is a color code like #2ECC71; "Badge and logo colors" is the patch's name, keep it as translated for that patch
 If your patched Facebook includes Badge and logo colors, the logo will be %1$s.	Yamalı Facebook'unuz Rozet ve logo renkleri'ni içeriyorsa logo %1$s olur.
+# context: Marketplace search, the Advanced Marketplace search switch and its Adv. Filters button and dialog
+Advanced Marketplace search	Gelişmiş Marketplace araması
+Type rules into Marketplace search: "ram" keeps titles with ram, -dell hides titles with dell, and in:melbourne keeps listings in Melbourne. An Adv. Filters button under Filters writes them for you.	Marketplace aramasına kural yazın: "ram" başlığında ram olanları tutar, -dell başlığında dell olanları gizler ve in:melbourne Melbourne'daki ilanları tutar. Filtreler'in altındaki Gel. Filtreler düğmesi bunları sizin için yazar.
+Adv. Filters	Gel. Filtreler
+Adv. Filters (%1$d)	Gel. Filtreler (%1$d)
+Advanced Marketplace filters	Gelişmiş Marketplace filtreleri
+Advanced Marketplace filters, %1$d on	Gelişmiş Marketplace filtreleri, %1$d açık
+Go puts these into the search box and searches again. Separate terms with commas. A term matches anywhere in a title, so 128 matches 128GB. Put it in quotes with a space, like "128 ", to match it on its own.	Git bunları arama kutusuna koyar ve yeniden arar. Terimleri virgülle ayırın. Bir terim başlığın herhangi bir yerinde eşleşir, yani 128, 128GB ile de eşleşir. Yalnızca kendisiyle eşleşmesi için "128 " gibi boşlukla tırnak içine alın.
+You can also type "ram", -dell or in:melbourne straight into the search box.	Arama kutusuna doğrudan "ram", -dell veya in:melbourne da yazabilirsiniz.
+Title must include	Başlıkta olması gereken
+Hide titles with	Şunları içeren başlıkları gizle
+Only show listings in	Yalnızca şuradaki ilanları göster
+Go	Git
+Clear all	Tümünü temizle
+Search box not found. Type the search again.	Arama kutusu bulunamadı. Aramayı yeniden yazın.
+The search box didn't open. Type the search again.	Arama kutusu açılmadı. Aramayı yeniden yazın.

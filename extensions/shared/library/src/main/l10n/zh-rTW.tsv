@@ -2090,3 +2090,19 @@ If your patched Facebook includes Badge and logo colors, the logo will be Facebo
 If your patched Facebook includes Badge and logo colors, badges will be %1$s.	如果你修補的 Facebook 包含「徽章和標誌顏色」，徽章將為 %1$s。
 # context: import preview sentence: the file sets the Logo color row; %1$s is a color code like #2ECC71; "Badge and logo colors" is the patch's name, keep it as translated for that patch
 If your patched Facebook includes Badge and logo colors, the logo will be %1$s.	如果你修補的 Facebook 包含「徽章和標誌顏色」，標誌將為 %1$s。
+# context: Marketplace search, the Advanced Marketplace search switch and its Adv. Filters button and dialog
+Advanced Marketplace search	Marketplace 進階搜尋
+Type rules into Marketplace search: "ram" keeps titles with ram, -dell hides titles with dell, and in:melbourne keeps listings in Melbourne. An Adv. Filters button under Filters writes them for you.	在 Marketplace 搜尋中輸入規則："ram" 保留標題含 ram 的商品，-dell 隱藏標題含 dell 的商品，in:melbourne 保留位於 Melbourne 的商品。「篩選」下方的「進階篩選」按鈕可以幫你寫好這些規則。
+Adv. Filters	進階篩選
+Adv. Filters (%1$d)	進階篩選 (%1$d)
+Advanced Marketplace filters	Marketplace 進階篩選
+Advanced Marketplace filters, %1$d on	Marketplace 進階篩選，已開啟 %1$d 項
+Go puts these into the search box and searches again. Separate terms with commas. A term matches anywhere in a title, so 128 matches 128GB. Put it in quotes with a space, like "128 ", to match it on its own.	「搜尋」會把這些放進搜尋框並重新搜尋。用逗號分隔詞語。詞語可比對標題中的任何位置，所以 128 也會比對到 128GB。為它加上引號和空格，例如 "128 "，就只比對它本身。
+You can also type "ram", -dell or in:melbourne straight into the search box.	你也可以直接在搜尋框中輸入 "ram"、-dell 或 in:melbourne。
+Title must include	標題必須包含
+Hide titles with	隱藏標題含有
+Only show listings in	只顯示位於以下地點的商品
+Go	搜尋
+Clear all	全部清除
+Search box not found. Type the search again.	找不到搜尋框。請重新輸入搜尋內容。
+The search box didn't open. Type the search again.	搜尋框沒有開啟。請重新輸入搜尋內容。

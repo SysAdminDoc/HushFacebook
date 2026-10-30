@@ -107,10 +107,43 @@ final class MarketplaceSearchAds {
         /** Each list's ads taken out so far, by the indices the server gave them. */
         private final Map<String, TreeSet<Integer>> taken = new HashMap<>();
 
+        /** Whether ads come out, with Hide sponsored Marketplace listings on. */
+        private final boolean ads;
+        /** The advanced search's title rules for this answer, or null. */
+        @Nullable private final MarketplaceSearchSyntax.Filter filter;
+
         Answer(String query, boolean reading) {
+            this(query, reading, null);
+        }
+
+        Answer(String query, boolean ads, @Nullable MarketplaceSearchSyntax.Filter filter) {
             this.query = query;
-            this.reading = reading;
+            this.ads = ads;
+            this.filter = filter;
+            this.reading = ads || filter != null;
             if (!reading) log(query + " answer went on unread, the switch is off.");
+            else if (filter != null) log(query + " answer: titles filtered by " + filter + (ads ? "" : ", ads left in") + ".");
+        }
+
+        /**
+         * Why [result] leaves its list: it's an ad and ads come out, or its title breaks a rule of
+         * the advanced search. Null when it stays.
+         */
+        @Nullable
+        private String why(String s, Value result) {
+            if (ads) {
+                String ad = adReason(s, result);
+                if (ad != null) return ad;
+            }
+            if (filter == null) return null;
+            String title = MarketplaceSearchSyntax.title(s, result);
+            if (title == null) return null;
+            return filter.broken(title, filter.places.isEmpty() ? null : MarketplaceSearchSyntax.location(s, result));
+        }
+
+        /** What the counter says [why] took a result out for. */
+        private String counted(String why) {
+            return why.startsWith(MarketplaceSearchSyntax.RULE) ? MarketplaceSearchSyntax.REMOVED : REMOVED;
         }
 
         /**
@@ -279,11 +312,11 @@ final class MarketplaceSearchAds {
                 }
                 if (removing) {
                     FeedFilterCounters.sawList(ROUTE, 1);
-                    String why = adReason(s, data);
+                    String why = why(s, data);
                     if (why != null) {
                         out.add(index);
                         payload.replace(emptied(s, payload));
-                        FeedFilterCounters.removed(ROUTE, 1, REMOVED);
+                        FeedFilterCounters.removed(ROUTE, 1, counted(why));
                         log(query + " answer, part " + parts + ": streamed listing " + index + ", took it out (" + why + ").");
                         return;
                     }
@@ -334,20 +367,23 @@ final class MarketplaceSearchAds {
                 TreeSet<Integer> list = at == null ? null : listOf(key(at, at.size()));
                 int seen = 0;
                 int took = 0;
+                int titles = 0;
                 for (int i = 0; i < value.items.size(); i++) {
                     Value item = value.items.get(i);
                     if (item.kind != '{') continue;
                     seen++;
-                    String why = adReason(s, item);
+                    String why = why(s, item);
                     if (why == null) continue;
                     item.remove();
                     if (list != null) list.add(i);
-                    took++;
+                    if (REMOVED.equals(counted(why))) took++;
+                    else titles++;
                     part.took(why);
                 }
                 part.listings += seen;
                 FeedFilterCounters.sawList(ROUTE, seen);
                 FeedFilterCounters.removed(ROUTE, took, REMOVED);
+                if (titles > 0) FeedFilterCounters.removed(ROUTE, titles, MarketplaceSearchSyntax.REMOVED);
             }
             for (int i = 0; i < value.items.size(); i++) {
                 Value item = value.items.get(i);

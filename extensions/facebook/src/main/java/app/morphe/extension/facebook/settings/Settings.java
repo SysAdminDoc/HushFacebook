@@ -433,6 +433,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_sponsored_marketplace_listings", TRUE);
 
     /**
+     * Marketplace search reads rules in what's typed: a quoted term a title must hold, a minus term
+     * it mustn't, and a place after in: the listing must be in, and the results show an Adv. Filters
+     * button that writes them ({@link app.morphe.extension.facebook.ads.MarketplaceSearchSyntax}).
+     * Off, a search goes out as typed and no button shows.
+     */
+    public static final BooleanSetting MARKETPLACE_ADVANCED_SEARCH =
+            new BooleanSetting("hushfacebook_marketplace_advanced_search", TRUE);
+
+    /**
      * A seller's Marketplace page always offers View profile, which opens the seller's regular
      * Facebook profile ({@link app.morphe.extension.facebook.navigation.MarketplaceSellerProfile}).
      * Off or paused, the page asks Facebook's experiment flag again, which shows it to some accounts.
