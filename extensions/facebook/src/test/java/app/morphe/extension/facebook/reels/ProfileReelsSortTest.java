@@ -16,8 +16,11 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.lang.reflect.Method;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -30,6 +33,7 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * Most viewed first on a profile's Reels tab (#232): off, the list is Facebook's. On, the loaded
  * reel nodes are sorted in place by the play count Facebook's own reader gives, equal counts and
  * reels with no count keep their places, and a list the reader can't make sense of is left alone.
+ * The Reels tab's rows, each holding its tab item, come back sorted as the same kind of list.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -85,6 +89,47 @@ public class ProfileReelsSortTest {
 
     /** A node whose shape the sort can't follow. */
     public static final class Odd {
+    }
+
+    /** Where a Reels tab item's own branch ends: the tree object answering the play count getter. */
+    public interface Badge {
+        int views();
+    }
+
+    /** A branch of a Reels tab item, answering its badge. */
+    public interface Own {
+        Badge badge();
+    }
+
+    /**
+     * A Reels tab item shaped like Facebook's on a Page: the reader's branch is the shortest and
+     * empty, one branch to the badge is empty too, and the count sits on the item's own branch.
+     */
+    public static final class TabNode {
+        final Integer views;
+        final String tag;
+
+        TabNode(String tag, Integer views) {
+            this.tag = tag;
+            this.views = views;
+        }
+
+        public Story story() {
+            return null;
+        }
+
+        public Own early() {
+            return () -> null;
+        }
+
+        public Own own() {
+            return () -> views == null ? null : () -> views;
+        }
+
+        @Override
+        public String toString() {
+            return tag;
+        }
     }
 
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
@@ -222,5 +267,113 @@ public class ProfileReelsSortTest {
     public void theNodePathIsFoundThroughSeveralInterfaces() {
         assertEquals(2, ProfileReelsSort.search(Node.class, Story.class).length);
         assertTrue(ProfileReelsSort.search(Odd.class, Story.class) == null);
+    }
+
+    private static List<Object> tabNodes() {
+        return new ArrayList<>(Arrays.<Object>asList(
+                new TabNode("a", 5), new TabNode("none", null), new TabNode("b", 90), new TabNode("c", 5), new TabNode("d", 1200)));
+    }
+
+    @Test
+    public void aTabItemIsReadByFacebooksOwnGetterPastItsEmptyBranches() {
+        List<Method[]> chains = ProfileReelsSort.search(TabNode.class, Story.class, "views");
+        assertEquals("both ways to the badge, then the reader's branch", 3, chains.size());
+        assertEquals("views", chains.get(0)[2].getName());
+        assertEquals("views", chains.get(1)[2].getName());
+        assertEquals("story", chains.get(2)[0].getName());
+
+        Settings.PROFILE_REELS_MOST_VIEWED.save(true);
+        Paged paged = new Paged(tabNodes(), true);
+        Paged copy = (Paged) ProfileReelsSort.list(paged, Reader.class, "read/views");
+        assertEquals("d b a c none", order(copy.rows));
+        assertTrue(statusLine().contains(ProfileReelsSort.SORTED + " 1"));
+
+        // The reader alone only reaches the empty branch, and the report says so.
+        Paged again = new Paged(tabNodes(), true);
+        assertTrue(ProfileReelsSort.list(again, Reader.class, "read") == again);
+        assertTrue(statusLine().contains(ProfileReelsSort.NO_COUNT));
+    }
+
+    /** A Reels tab row: Facebook's tab holds each tab item in a one-field row. */
+    static final class Row {
+        final TabNode item;
+
+        Row(TabNode item) {
+            this.item = item;
+        }
+
+        @Override
+        public String toString() {
+            return item.toString();
+        }
+    }
+
+    /** The model's frozen list: no ArrayList will do, but it copies from a collection. */
+    public static final class Frozen extends AbstractList<Object> {
+        final Object[] items;
+
+        Frozen(Collection<?> items) {
+            this.items = items.toArray();
+        }
+
+        public static Frozen copyOf(Collection<?> items) {
+            return new Frozen(items);
+        }
+
+        @Override
+        public Object get(int index) {
+            return items[index];
+        }
+
+        @Override
+        public int size() {
+            return items.length;
+        }
+    }
+
+    private static Frozen tabRows() {
+        List<Object> rows = new ArrayList<>();
+        for (Object node : tabNodes()) rows.add(new Row((TabNode) node));
+        return new Frozen(rows);
+    }
+
+    @Test
+    public void theTabsRowsComeBackSortedAsTheSameKindOfList() {
+        Frozen rows = tabRows();
+        assertTrue("off, Facebook's rows", ProfileReelsSort.rows(rows, Reader.class, "read/views") == rows);
+
+        Settings.PROFILE_REELS_MOST_VIEWED.save(true);
+        List<?> sorted = ProfileReelsSort.rows(rows, Reader.class, "read/views");
+        assertTrue(sorted instanceof Frozen);
+        assertEquals("d b a c none", order(sorted));
+        assertEquals("Facebook's own rows are left as they were", "a none b c d", order(rows));
+        assertTrue(statusLine().contains(ProfileReelsSort.SORTED + " 1"));
+    }
+
+    @Test
+    public void tabRowsLeftAloneSaysWhy() {
+        Settings.PROFILE_REELS_MOST_VIEWED.save(true);
+        assertTrue(ProfileReelsSort.rows(null, Reader.class, "read/views") == null);
+        assertTrue(statusLine().contains(ProfileReelsSort.NO_LIST));
+
+        Frozen one = new Frozen(Arrays.<Object>asList(new Row(new TabNode("x", 3))));
+        assertTrue(ProfileReelsSort.rows(one, Reader.class, "read/views") == one);
+        assertTrue(statusLine().contains(ProfileReelsSort.TOO_SHORT));
+
+        Frozen ordered = new Frozen(Arrays.<Object>asList(new Row(new TabNode("p", 9)), new Row(new TabNode("q", 2))));
+        assertTrue(ProfileReelsSort.rows(ordered, Reader.class, "read/views") == ordered);
+        assertTrue(statusLine().contains(ProfileReelsSort.IN_ORDER));
+
+        Frozen odd = new Frozen(Arrays.<Object>asList(new Odd(), new Odd()));
+        assertTrue(ProfileReelsSort.rows(odd, Reader.class, "read/views") == odd);
+        assertTrue(statusLine().contains(ProfileReelsSort.NO_PATH));
+    }
+
+    @Test
+    public void aNodeWithoutTheGetterIsReadByTheReader() {
+        Settings.PROFILE_REELS_MOST_VIEWED.save(true);
+        List<Object> list = nodes();
+        ProfileReelsSort.sort(list, Reader.class, "read/views");
+        assertEquals("d b a c none", order(list));
     }
 }
