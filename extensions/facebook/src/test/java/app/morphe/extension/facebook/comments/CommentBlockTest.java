@@ -32,8 +32,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
  * Block button on comments (#271): off, every hook leaves Facebook's own; on, a tap on the
- * thumbs-down hands the commenter's id and name to Facebook's profile Block helper, as a profile
- * that asks for the block sheet, and never dislikes. A comment with no readable author opens
+ * thumbs-down hands the commenter's id and name to Facebook's profile Block helper, as an
+ * ordinary profile that gets Facebook's own "Block name?" dialog, and never dislikes. A comment with no readable author opens
  * nothing, and says so.
  */
 @RunWith(RobolectricTestRunner.class)
@@ -44,6 +44,18 @@ public class CommentBlockTest {
         String getName();
 
         boolean CIY();
+
+        Header AyU();
+    }
+
+    /** The nested model the helper's own dialog reads off the profile. */
+    public interface Header {
+        Names Fog();
+    }
+
+    /** The innermost model: a joined name the dialog shows when there is one. */
+    public interface Names {
+        String Fx3();
     }
 
     /** The places the helper is opened from. */
@@ -158,7 +170,9 @@ public class CommentBlockTest {
         assertEquals(0L, Helper.first);
         assertTrue("the context is the tapped view's", Helper.context == scope.view.getContext());
         assertEquals("Sam Rivers", Helper.profile.getName());
-        assertTrue("the profile asks for the block sheet", Helper.profile.CIY());
+        assertFalse("an ordinary profile gets Facebook's own dialog, not the server's sheet", Helper.profile.CIY());
+        assertTrue("the dialog reads a nested model", Helper.profile.AyU() != null);
+        assertNull("and finds no name in it", Helper.profile.AyU().Fog().Fx3());
         assertTrue(statusLine().contains(CommentBlock.BLOCK_OPENED + " 1"));
     }
 

@@ -98,6 +98,7 @@ import app.morphe.extension.facebook.feed.TypedFeedUnit;
 import app.morphe.extension.facebook.feed.WhoSharedForTests;
 import app.morphe.extension.facebook.font.OwnFont;
 import app.morphe.extension.facebook.comments.DefaultCommentOrderForTests;
+import app.morphe.extension.facebook.comments.CommentBlock;
 import app.morphe.extension.facebook.comments.CommentSheetOptions;
 import app.morphe.extension.facebook.comments.FullHeightComments;
 import app.morphe.extension.facebook.comments.MetaAiSummaries;
@@ -873,7 +874,16 @@ public class PausedHooksTest {
                 () -> !CommentSheetOptions.viewMoreRepliesTextOnly(true),
                 () -> CommentSheetOptions.holdsBottomContent(CommentSheetOptions.RELATED_GROUPS),
                 () -> CommentSheetOptions.holdsPostComments(CommentSheetOptions.INLINE_COMMENTS),
-                CommentSheetOptions::holdsCommentDislike,
+                () -> {
+                    // Block button on comments keeps the dislike it redraws (#271).
+                    Settings.COMMENT_BLOCK_BUTTON.save(false);
+                    try {
+                        return CommentSheetOptions.holdsCommentDislike();
+                    } finally {
+                        Settings.COMMENT_BLOCK_BUTTON.save(true);
+                    }
+                },
+                CommentBlock::blockIcon,
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("https://s.shopee.vn/9zKs")),
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("Big SPOILER inside")),
                 () -> CommentSheetOptions.incomingTypers(3) == 0,

@@ -378,13 +378,17 @@ public final class CommentSheetOptions {
      * nothing while Hide Dislike on comments is on, so the row keeps Like, Reply, the reaction icons
      * and their count as Facebook lays them out next to a Dislike; false leaves the button to
      * Facebook, and otherwise. Answering no for the plugin in the socket's own check instead took
-     * the reaction icons with it (#241).
+     * the reaction icons with it (#241). Block button on comments wins over it: that button is the
+     * Dislike button redrawn, so it's built whenever Block is on (#271).
      */
     public static boolean holdsCommentDislike() {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, COMMENT_DISLIKE);
-            if (!Utils.settingsReady() || !Settings.HIDE_COMMENT_DOWNVOTE_BUTTON.get()) return false;
+            if (!Utils.settingsReady() || !Settings.HIDE_COMMENT_DOWNVOTE_BUTTON.get()
+                    || Settings.COMMENT_BLOCK_BUTTON.get()) {
+                return false;
+            }
             HookStatus.counted(FAMILY, DOWNVOTE_HIDDEN);
             return true;
         } catch (Throwable failure) {

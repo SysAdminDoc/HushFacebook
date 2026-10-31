@@ -338,6 +338,15 @@ public class CommentSheetOptionsTest {
     }
 
     @Test
+    public void theBlockButtonWinsOverHidingTheDislike() {
+        Settings.HIDE_COMMENT_DOWNVOTE_BUTTON.save(true);
+        Settings.COMMENT_BLOCK_BUTTON.save(true);
+        assertFalse("both on, the dislike was held, so there was no Block button", CommentSheetOptions.holdsCommentDislike());
+        Settings.COMMENT_BLOCK_BUTTON.save(false);
+        assertTrue("Block off again, the dislike stayed", CommentSheetOptions.holdsCommentDislike());
+    }
+
+    @Test
     public void offPausedOrColdACommentsDislikeIsFacebooks() {
         assertFalse("Hide dislike on comments doesn't start off", Settings.HIDE_COMMENT_DOWNVOTE_BUTTON.get());
         assertFalse("off, the dislike was held", CommentSheetOptions.holdsCommentDislike());

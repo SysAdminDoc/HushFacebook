@@ -370,12 +370,21 @@ public final class CommentBlock {
     }
 
     /**
-     * A stand-in for the profile Facebook's helper reads: its name is the commenter's, its one
-     * boolean says to load the block sheet by the person's id, and everything else is empty.
+     * A stand-in for the profile Facebook's helper reads: its name is the commenter's and
+     * everything else is empty. Its one boolean answers false, as an ordinary person's profile
+     * does, so the helper shows its own "Block name?" dialog. True asks the server for the block
+     * sheet of profiles that have one, and for anyone else that answer has no block action and
+     * Facebook shows "There was a problem blocking this user" (#271, "Null action" on 585). The
+     * dialog reads a nested model off the profile, so each interface it asks for is an empty
+     * stand-in too.
      */
     static Object profileFor(Class<?> profile, String name) {
+        return standIn(profile, name);
+    }
+
+    private static Object standIn(Class<?> type, @Nullable String name) {
         InvocationHandler handler = (proxy, method, args) -> {
-            Class<?> type = method.getReturnType();
+            Class<?> answer = method.getReturnType();
             if (method.getDeclaringClass() == Object.class) {
                 switch (method.getName()) {
                     case "hashCode":
@@ -386,12 +395,13 @@ public final class CommentBlock {
                         return "BlockProfile";
                 }
             }
-            if (type == boolean.class) return Boolean.TRUE;
-            if (type == String.class) return "getName".equals(method.getName()) ? name : null;
-            if (type == int.class) return 0;
-            if (type == long.class) return 0L;
+            if (answer == boolean.class) return Boolean.FALSE;
+            if (answer == String.class) return name != null && "getName".equals(method.getName()) ? name : null;
+            if (answer == int.class) return 0;
+            if (answer == long.class) return 0L;
+            if (answer.isInterface()) return standIn(answer, null);
             return null;
         };
-        return Proxy.newProxyInstance(profile.getClassLoader(), new Class<?>[] {profile}, handler);
+        return Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler);
     }
 }
