@@ -5,7 +5,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License GPL-3.0"></a>
   <img src="https://img.shields.io/badge/platform-Android%2011%2B-3DDC84" alt="Platform Android 11+">
   <img src="https://img.shields.io/badge/Facebook-585.0.0.47.54-0866FF" alt="Facebook 585.0.0.47.54">
-  <img src="https://img.shields.io/badge/for-Morphe%20Manager%202.2.0%2B-8A2BE2" alt="For Morphe Manager 2.2.0 or newer">
+  <img src="https://img.shields.io/badge/for-Morphe%20Manager%202.3.0%2B-8A2BE2" alt="For Morphe Manager 2.3.0 or newer">
 </p>
 
 <p align="center">
@@ -31,7 +31,7 @@ The latest release is [v0.19.0](https://github.com/SysAdminDoc/Hushfacebook/rele
 
 ## Install
 
-1. Install [Morphe Manager](https://github.com/MorpheApp/morphe-manager) 2.2.0 or newer.
+1. Install [Morphe Manager](https://github.com/MorpheApp/morphe-manager) 2.3.0 or newer.
 2. Add Hushfacebook as a patch source: https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook
 3. Download Facebook 585.0.0.47.54 from [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/). Take the bundle labelled (arm64-v8a) (120-640dpi) (Android 11+), build 476015655, or on a phone with only a 32-bit processor the one labelled (arm-v7a) (320dpi) (Android 11+), build 476015543. Both are .apkm files.
 4. In Morphe Manager, tap **Select other apps**, then **Open APK file**, and pick that file. Android may ask for file access the first time.

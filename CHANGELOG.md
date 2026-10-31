@@ -46,6 +46,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* **Facebook:** You need Morphe Manager 2.3.0 or newer now. The patches are built on Morphe patcher 2.1.0, the one Manager 2.3.0 ships with, and older Managers refuse a bundle built on it, so update Manager first. Desktop patching needs morphe-desktop 1.20.0 or newer.
 * **Facebook:** A build without `AMOLED black theme` says so under Appearance, in Colors and theme, so dark mode staying gray isn't a mystery. The row explains that Morphe Manager doesn't pick the theme by default and how to add it with Expert mode. The README also warns that **Enable recommended patches** unticks the theme, so it needs picking again after (Refs #275).
 * **Facebook:** Hushfacebook now patches Facebook 585.0.0.47.54 and no longer takes 584. On a 64-bit phone download the (arm64-v8a) (120-640dpi) (Android 11+) bundle, build 476015655, and on a 32-bit phone the (arm-v7a) (320dpi) (Android 11+) bundle, build 476015543. Update Facebook before you patch (Refs #309).
 * **Facebook:** The play/pause and cast buttons on feed videos are smaller now and look like Facebook's own speaker icon, a white symbol on a see-through round background instead of a big dark square. They sit closer to the video's corners and still take a tap as easily (Refs #301).

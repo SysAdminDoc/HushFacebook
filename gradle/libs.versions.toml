@@ -1,21 +1,22 @@
 [versions]
 # Align with morphe-patches-template (Compatibility / Manager display names). Hold the patcher
 # at the version the oldest supported Morphe Manager bundles: a newer pin trips the manager's
-# Patcher-Version gate and it refuses the bundle. Manager 2.2.0 (stable 2026-10-25) bundles 2.0.1,
-# and so does desktop CLI 1.19.1, which the fixture gates run; Manager 2.0.0 and 2.1.0 bundle
-# 2.0.0. 2.0.1 only lowers patching memory and pulls in MorpheApp's ARSCLib 4695b583ef. The 2.0
+# Patcher-Version gate and it refuses the bundle. Manager 2.3.0 (stable 2026-10-30) bundles 2.1.0,
+# and so does desktop CLI 1.20.0, which the fixture gates run; Manager 2.2.0 bundles 2.0.1 and
+# refuses a 2.1.0 bundle. 2.1.0 reads bundle signatures and refuses Java classes newer than 17,
+# with the same smali and ARSCLib as 2.0.1. The 2.0
 # line matches a fingerprint string against the whole literal, decodes only the resources a patch
 # asks for, and hides compatiblePackages behind compatibility (PatchListGenerator rebuilds the old
 # field). Manager 1.x refuses a 2.0 bundle with its update prompt.
-morphe-patcher = "2.0.1"
+morphe-patcher = "2.1.0"
 # First stable Manager release that bundled the patcher above. The release fact check holds the
 # README's stated floor to this value.
-manager-floor = "2.2.0"
+manager-floor = "2.3.0"
 # Read by the app.morphe.patches settings plugin, not by anything in this repo: remove it and
 # configuration fails with "Version with alias smali not found in version catalog". The commit
 # resolves as com.github.MorpheApp.smali through JitPack. It is not waiting on an official
 # release, which google/smali 3.0.10 delivered on 2026-08-20. Keep it the commit the patcher
-# above requests (2.0.1 asks for ac700e1942, 2.0.0 for 4220ae75f7; 1.14.1 to 1.15.1 asked for d856bad65f). Gradle merges
+# above requests (2.1.0 and 2.0.1 ask for ac700e1942, 2.0.0 for 4220ae75f7; 1.14.1 to 1.15.1 asked for d856bad65f). Gradle merges
 # the two requests into one module and keeps the version that sorts higher, not the newer commit:
 # the old pin d92701d947, one commit behind d856bad65f, sorted higher and silently replaced the
 # patcher's dexlib2 in every compile, test and R8 graph. Another group's smali would instead put
