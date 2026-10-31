@@ -74,6 +74,7 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_COMMENT_BUTTON.resetToDefault();
         Settings.HIDE_REEL_SHARE_BUTTON.resetToDefault();
         Settings.SHOW_REEL_COMMENT_BUTTON.resetToDefault();
+        Settings.SHOW_REEL_POST_DATE.resetToDefault();
         Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON.resetToDefault();
         Settings.HIDE_REEL_SOUND_BUTTON.resetToDefault();
         Settings.HIDE_REEL_AUDIO_LINE.resetToDefault();
@@ -348,6 +349,37 @@ public class ReelDeclutterTest {
         Settings.SHOW_REEL_COMMENT_BUTTON.save(false);
         assertFalse("turning the switch off didn't take the button away", ReelDeclutter.showsCommentButton(false));
         assertTrue(ReelDeclutter.showsCommentButton(true));
+    }
+
+    /**
+     * A reel's post date (#296) keeps the server's no until the switch is on, then shows, and the no
+     * comes back paused, before the settings are ready, once the switch is off again and when it
+     * can't be read. A yes stays yes throughout.
+     */
+    @Test
+    public void thePostDateShowsOnlyWithTheSwitchOn() {
+        assertFalse(Settings.SHOW_REEL_POST_DATE.defaultValue);
+        assertFalse("asked as each reel's footer is built, so no restart", Settings.SHOW_REEL_POST_DATE.rebootApp);
+        assertTrue(ReelDeclutter.showsPostDate(true));
+        assertFalse(ReelDeclutter.showsPostDate(false));
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertTrue(ReelDeclutter.showsPostDate(false));
+        assertTrue(ReelDeclutter.showsPostDate(true));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("the date showed while paused", ReelDeclutter.showsPostDate(false));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("the date showed before the settings were ready", ReelDeclutter.showsPostDate(false)));
+        SettingReadsForTests.breakReads(Settings.SHOW_REEL_POST_DATE);
+        try {
+            assertFalse("a switch that can't be read showed the date", ReelDeclutter.showsPostDate(false));
+            assertTrue(ReelDeclutter.showsPostDate(true));
+        } finally {
+            SettingReadsForTests.mend(Settings.SHOW_REEL_POST_DATE);
+        }
+        Settings.SHOW_REEL_POST_DATE.save(false);
+        assertFalse("turning the switch off didn't take the date away", ReelDeclutter.showsPostDate(false));
+        assertTrue(ReelDeclutter.showsPostDate(true));
     }
 
     /**

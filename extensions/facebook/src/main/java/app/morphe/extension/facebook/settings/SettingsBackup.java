@@ -225,6 +225,7 @@ public final class SettingsBackup {
             Settings.HIDE_REEL_COMMENT_BUTTON,
             Settings.HIDE_REEL_SHARE_BUTTON,
             Settings.SHOW_REEL_COMMENT_BUTTON,
+            Settings.SHOW_REEL_POST_DATE,
             Settings.HIDE_REEL_SOUND_BUTTON,
             Settings.HIDE_REEL_AUDIO_LINE,
             Settings.HIDE_SLOW_CONNECTION_MESSAGE,

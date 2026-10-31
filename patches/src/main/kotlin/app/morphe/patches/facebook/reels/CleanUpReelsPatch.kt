@@ -73,7 +73,9 @@ private const val PATCH = "Clean up Reels"
  * top of a video or reel opened full screen (#311, see ViewerTopBar.kt). A nineteenth, Burn-in
  * guard, also off, fades the buttons, caption and bars around a video filling the screen once
  * they're left alone (#288). It has no hook here: the extension's BurnInGuard watches the activity
- * in front from SettingsEntry while this patch is in. With Debug
+ * in front from SettingsEntry while this patch is in. A twentieth, also off, shows when a reel or
+ * full-screen video was posted under its author, a line Facebook builds behind a server switch
+ * that's off for most accounts (#296, see ReelPostDate.kt). With Debug
  * logging on, it also reports whether a reel that ends
  * is on the player the Reels auto-advance controller holds (see ReelBinding.kt), with no switch.
  *
@@ -90,7 +92,7 @@ val cleanUpReelsPatch = bytecodePatch(
     name = "Clean up Reels",
     description = "Hides clutter on reels, such as the Follow button, comment previews, Remix and Use template " +
         "buttons and Threads cards between reels, so more of the video shows, and can play each reel once " +
-        "instead of over and over, keep its original audio instead of a Meta AI dub, drop the search suggestions under the caption, over the comments and at the top of a profile's reels, or hide the like, comment and share counts, the Like, Comment, Share, Save or speaker button, or the line naming the reel's sound. It can also open a video you tap in the feed on its own, with no reels after it, stop the \"This is taking a while\" message when a video is slow to load, and play whole reels in the feed's Reels row instead of the same second over and over, or keep the Comment button on reels with comments turned off so you can read them, and hide the one-tap Subscribe button some authors get instead of Follow, or Search and the button beside it at the top of a video you open. Its Burn-in guard can fade a reel's buttons, caption and bars when you leave them alone, so they don't burn into the screen. Starts off. Turn on the parts you want in Hushfacebook settings > Reels and Watch.",
+        "instead of over and over, keep its original audio instead of a Meta AI dub, drop the search suggestions under the caption, over the comments and at the top of a profile's reels, or hide the like, comment and share counts, the Like, Comment, Share, Save or speaker button, or the line naming the reel's sound. It can also open a video you tap in the feed on its own, with no reels after it, stop the \"This is taking a while\" message when a video is slow to load, and play whole reels in the feed's Reels row instead of the same second over and over, or keep the Comment button on reels with comments turned off so you can read them, and hide the one-tap Subscribe button some authors get instead of Follow, or Search and the button beside it at the top of a video you open, and show when a reel or video was posted. Its Burn-in guard can fade a reel's buttons, caption and bars when you leave them alone, so they don't burn into the screen. Starts off. Turn on the parts you want in Hushfacebook settings > Reels and Watch.",
 ) {
     category("Reels")
     dependsOn(settingsPatch)
@@ -125,6 +127,8 @@ val cleanUpReelsPatch = bytecodePatch(
         hideReelSaveButton()
         // #299: the Comment button on a reel whose comments are turned off.
         showReelCommentButton()
+        // #296: the post date under a reel's author, behind a server switch.
+        showReelPostDate()
         // #291: the Subscribe pill beside a video's author, in the viewer's row and wherever the shared builder's lands.
         hideSubscribePill()
         // #311: Search and the button beside it at the top of the full-screen player, by the bar's id.

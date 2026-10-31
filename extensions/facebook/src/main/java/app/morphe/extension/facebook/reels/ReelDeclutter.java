@@ -76,6 +76,9 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  *       its feed post still shows one that opens them to read. {@link #showsCommentButton} is
  *       handed Facebook's can-comment answer in each sidebar builder, and true draws the button
  *       (#299).
+ *   <li>The date a reel or full-screen video was posted is built under its author only when a
+ *       server switch says so, and it's off for most accounts. {@link #showsPostDate} is handed
+ *       that answer, and true draws the date (#296).
  * </ul>
  *
  * <p>Every hook fails open: until the settings are ready, while Hushfacebook is paused, with a
@@ -144,6 +147,10 @@ public final class ReelDeclutter {
     /** Counted under its own name each time a reel with comments turned off gets its Comment button anyway. */
     static final String COMMENT_ROUTE = "Reel Comment button";
     static final String COMMENTS_OFF = "comments off";
+
+    /** Counted under its own name each time a reel's post date is drawn where the server left it out. */
+    static final String DATE_ROUTE = "Reel post date";
+    static final String DATE_HIDDEN = "date left out";
 
     /** What the tile's player reads as no stop position: the default its settings builder starts with. */
     static final int NO_END = -1;
@@ -516,6 +523,25 @@ public final class ReelDeclutter {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, COMMENTS_OFF, failure);
             return canComment;
+        }
+    }
+
+    /**
+     * Injection point, in the helper that builds the post date under a reel's or a full-screen
+     * video's author, handed the server switch's answer to whether that line is drawn, right before
+     * the helper draws nothing for a no (#296). True while the switch is on, so the date shows.
+     * Never throws: anything going wrong answers what it was handed.
+     */
+    public static boolean showsPostDate(boolean shown) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (shown || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return shown;
+            FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_HIDDEN);
+            logOnce(DATE_HIDDEN, () -> "Reel post date: drawn where the server left it out");
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, DATE_HIDDEN, failure);
+            return shown;
         }
     }
 

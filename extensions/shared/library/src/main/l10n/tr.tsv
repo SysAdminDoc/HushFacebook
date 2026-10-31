@@ -2127,6 +2127,8 @@ If your patched Facebook includes Badge and logo colors, the selected tab will b
 Hide the emoji row on comments	Yorumlardaki emoji satırını gizle
 The row of emoji over the comment box goes away. You can still type emoji from your keyboard.	Yorum kutusunun üstündeki emoji satırı kaybolur. Emojileri yine klavyenden yazabilirsin.
 Show Comment when comments are off	Yorumlar kapalıyken Yorum Yap'ı göster
+Show the post date on reels	Reels'te paylaşım tarihini göster
+Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.	Bir reel'in ya da tam ekran açtığın bir videonun ne zaman paylaşıldığını, paylaşan kişinin adının altında gösterir. Değişiklik bir sonraki reel'den itibaren görünür.
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	Yorumları kapatılmış reels'te Yorum Yap düğmesini tutar, böylece mevcut yorumları okumaya devam edebilirsin. Değişiklik bir sonraki reel'den itibaren görünür.
 Select part of a post's text	Gönderi metninin bir kısmını seç
 Holding a post's text still copies all of it, and also opens the text in a box where you can select just the part you want and copy that.	Bir gönderinin metnine basılı tutmak yine metnin tamamını kopyalar, ayrıca metni yalnızca istediğin kısmı seçip kopyalayabileceğin bir kutuda açar.

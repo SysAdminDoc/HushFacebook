@@ -712,6 +712,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_show_reel_comment_button", FALSE);
 
     /**
+     * The date a reel or full-screen video was posted shows under its author, a line Facebook
+     * builds behind a server switch that's off for most accounts
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#showsPostDate}, #296). Off by
+     * default. A change shows from the next reel.
+     */
+    public static final BooleanSetting SHOW_REEL_POST_DATE =
+            new BooleanSetting("hushfacebook_show_reel_post_date", FALSE);
+
+    /**
      * The speaker button at the bottom of a reel's right side isn't built
      * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#showsSoundButton}, #190). Off by
      * default. A change shows from the next reel.
