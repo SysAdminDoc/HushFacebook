@@ -41,6 +41,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* **Facebook:** A build without `AMOLED black theme` says so under Appearance, in Colors and theme, so dark mode staying gray isn't a mystery. The row explains that Morphe Manager doesn't pick the theme by default and how to add it with Expert mode. The README also warns that **Enable recommended patches** unticks the theme, so it needs picking again after (Refs #275).
 * **Facebook:** Hushfacebook now patches Facebook 585.0.0.47.54 and no longer takes 584. On a 64-bit phone download the (arm64-v8a) (120-640dpi) (Android 11+) bundle, build 476015655, and on a 32-bit phone the (arm-v7a) (320dpi) (Android 11+) bundle, build 476015543. Update Facebook before you patch (Refs #309).
 * **Facebook:** The play/pause and cast buttons on feed videos are smaller now and look like Facebook's own speaker icon, a white symbol on a see-through round background instead of a big dark square. They sit closer to the video's corners and still take a tap as easily (Refs #301).
 * **Facebook:** The Hushfacebook settings take their colors and spacing from Astryx, Meta's own design kit. Cards are a soft neutral gray on the black page, the text and blue match Facebook's dark mode, and dialogs and buttons have rounder corners. Text on the blue (switches, the main dialog button) is dark now so it stays easy to read. The layout's the same, and the Material You theme still follows your wallpaper (Refs #302).

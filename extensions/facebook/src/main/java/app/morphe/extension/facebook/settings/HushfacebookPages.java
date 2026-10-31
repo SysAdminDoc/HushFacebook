@@ -211,6 +211,12 @@ final class HushfacebookPages {
             appearance.addPreference(toggle(context, Settings.AMOLED_FEED_GAPS,
                     L10n.t("A thin gray line between posts in the feed, so posts without photos don't run together on "
                             + "the black page.")));
+        } else if (!build.contains(PatchFamily.MATERIAL_YOU_THEME)) {
+            // Morphe Manager leaves the theme out unless it's picked, so dark mode staying gray says why (#275).
+            appearance.addPreference(info(context, L10n.t(FamilyNames.AMOLED_THEME),
+                    L10n.f("Not in this build, so dark mode stays Facebook's dark gray. Morphe Manager doesn't pick it "
+                            + "by default. Turn on Expert mode in Manager, choose the %1$s patch and patch again.",
+                            L10n.isolate(FamilyNames.AMOLED_THEME))));
         }
         subheading(appearance, L10n.t("Screen and motion"));
         if (build.contains(PatchFamily.BOTTOM_TAB_BAR)) {

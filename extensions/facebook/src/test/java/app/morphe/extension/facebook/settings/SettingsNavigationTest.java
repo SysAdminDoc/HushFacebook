@@ -1511,6 +1511,49 @@ public class SettingsNavigationTest {
         assertEquals(before, savedValues());
     }
 
+    /**
+     * Morphe Manager leaves the AMOLED theme out unless it's picked, so a build without it says so
+     * under Colors and theme and on a search. A build with it, or with Material You, which recolours
+     * the same grays, has no such row (#275).
+     */
+    @Test public void aBuildWithoutTheAmoledThemeSaysHowToAddIt() {
+        String hint = "Not in this build, so dark mode stays Facebook's dark gray. Morphe Manager doesn't pick it by "
+                + "default. Turn on Expert mode in Manager, choose the " + L10n.isolate("AMOLED black theme")
+                + " patch and patch again.";
+        page.navigation.navigate("Appearance");
+        assertFalse(summaries().contains(hint));
+
+        controller.close();
+        PatchFamily.inBuildForTests.remove(PatchFamily.AMOLED_THEME);
+        controller = Robolectric.buildActivity(Activity.class).setup().visible();
+        dialog = SettingsL10nTest.show(controller.get());
+        page = page(dialog);
+        page.navigation.navigate("Appearance");
+        assertEquals(hint, summaryOf("AMOLED black theme"));
+        assertFalse("the hint can be tapped", list().getAdapter().isEnabled(titles().indexOf("AMOLED black theme")));
+        page.navigation.navigate("");
+        findSearch(dialog.getView()).setText("amoled");
+        ShadowLooper.idleMainLooper();
+        assertTrue(titles().contains("AMOLED black theme"));
+
+        controller.close();
+        PatchFamily.inBuildForTests.add(PatchFamily.MATERIAL_YOU_THEME);
+        controller = Robolectric.buildActivity(Activity.class).setup().visible();
+        dialog = SettingsL10nTest.show(controller.get());
+        page = page(dialog);
+        page.navigation.navigate("Appearance");
+        assertFalse(summaries().contains(hint));
+    }
+
+    /** The summary of every row the list shows now. */
+    private List<String> summaries() {
+        List<String> summaries = new ArrayList<>();
+        for (int position = 0; position < list().getCount(); position++) {
+            summaries.add(String.valueOf(((Preference) list().getItemAtPosition(position)).getSummary()));
+        }
+        return summaries;
+    }
+
     private static final List<String> ADS_MAP = Arrays.asList("Where ads and tracking are blocked", "Ads in the feed",
             "Ads on profiles", "Ads in Stories", "Ads in Reels", "Ads in search results", "Ads in Marketplace",
             "Ads in Instant Games", "Ads downloaded in advance", "Ad tracking", "Facebook ads in other apps",
