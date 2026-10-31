@@ -45,6 +45,7 @@ class ObfuscatedIdentityTest {
     fun `real names of the same shape are not`() {
         assertTrue(identitiesIn("""category("Ads")""", extensionTree = false).isEmpty())
         assertTrue(identitiesIn("""member.name == "set"""", extensionTree = false).isEmpty())
+        assertTrue(identitiesIn("""math.name == "abs"""", extensionTree = false).isEmpty())
         assertTrue(identitiesIn("""route.name().equals("FCM")""", extensionTree = true).isEmpty())
         assertTrue(identitiesIn("""return L10n.t("All");""", extensionTree = true).isEmpty())
         assertTrue(identitiesIn("""if (name.startsWith("X.")) walk()""", extensionTree = true).isEmpty())
@@ -136,6 +137,6 @@ class ObfuscatedIdentityTest {
          * Names that match a shape above and are nobody's invention: the patch category, the Feeds
          * filter's label, framework members compared by name, kept push routes, and file extensions.
          */
-        val REAL_NAMES = setOf("Add", "Ads", "All", "FCM", "add", "get", "put", "set", "run", "id", "raw", "mp3", "mp4", "m4a", "m4v")
+        val REAL_NAMES = setOf("Add", "Ads", "All", "FCM", "abs", "add", "get", "put", "set", "run", "id", "raw", "mp3", "mp4", "m4a", "m4v")
     }
 }
