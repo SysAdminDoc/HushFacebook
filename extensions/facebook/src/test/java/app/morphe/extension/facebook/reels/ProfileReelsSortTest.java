@@ -158,4 +158,69 @@ public class ProfileReelsSortTest {
         ProfileReelsSort.sort(one, Reader.class, "read");
         assertEquals("x", order(one));
     }
+
+    /** The profile's paginated list: its loaded rows plus a paging flag the copy must keep. */
+    public static final class Paged {
+        final List<Object> rows;
+        final boolean more;
+
+        Paged(List<Object> rows, boolean more) {
+            this.rows = rows;
+            this.more = more;
+        }
+
+        public List<Object> underlyingList() {
+            return rows;
+        }
+
+        public static Paged withMetadata(List<Object> rows, Paged from) {
+            return new Paged(rows, from.more);
+        }
+    }
+
+    @Test
+    public void listOffHandsBackFacebooksList() {
+        Paged paged = new Paged(nodes(), true);
+        assertTrue(ProfileReelsSort.list(paged, Reader.class, "read") == paged);
+        assertFalse(statusLine().contains(ProfileReelsSort.SORTED));
+    }
+
+    @Test
+    public void listOnHandsBackASortedCopyWithTheSamePaging() {
+        Settings.PROFILE_REELS_MOST_VIEWED.save(true);
+        Paged paged = new Paged(nodes(), true);
+        Paged copy = (Paged) ProfileReelsSort.list(paged, Reader.class, "read");
+        assertEquals("d b a c none", order(copy.rows));
+        assertTrue(copy.more);
+        assertEquals("Facebook's own list is left as it was", "a none b c d", order(paged.rows));
+        assertTrue(statusLine().contains(ProfileReelsSort.SORTED + " 1"));
+    }
+
+    @Test
+    public void listLeftAloneSaysWhy() {
+        Settings.PROFILE_REELS_MOST_VIEWED.save(true);
+        assertTrue(ProfileReelsSort.list(null, Reader.class, "read") == null);
+        assertTrue(statusLine().contains(ProfileReelsSort.NO_LIST));
+
+        Paged one = new Paged(new ArrayList<>(Arrays.<Object>asList(new Node("x", 3))), false);
+        assertTrue(ProfileReelsSort.list(one, Reader.class, "read") == one);
+        assertTrue(statusLine().contains(ProfileReelsSort.TOO_SHORT));
+
+        Paged odd = new Paged(new ArrayList<>(Arrays.<Object>asList(new Odd(), new Odd())), false);
+        assertTrue(ProfileReelsSort.list(odd, Reader.class, "read") == odd);
+        assertTrue(statusLine().contains(ProfileReelsSort.NO_PATH));
+
+        Paged ordered = new Paged(new ArrayList<>(Arrays.<Object>asList(new Node("p", 9), new Node("q", 2))), false);
+        assertTrue(ProfileReelsSort.list(ordered, Reader.class, "read") == ordered);
+        assertTrue(statusLine().contains(ProfileReelsSort.IN_ORDER));
+
+        assertTrue(ProfileReelsSort.list(ordered, Reader.class, "missing") == ordered);
+        assertTrue(statusLine().contains("threw"));
+    }
+
+    @Test
+    public void theNodePathIsFoundThroughSeveralInterfaces() {
+        assertEquals(2, ProfileReelsSort.search(Node.class, Story.class).length);
+        assertTrue(ProfileReelsSort.search(Odd.class, Story.class) == null);
+    }
 }

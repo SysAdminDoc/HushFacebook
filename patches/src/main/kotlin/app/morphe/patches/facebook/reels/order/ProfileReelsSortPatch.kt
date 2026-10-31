@@ -21,6 +21,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -114,6 +115,66 @@ internal fun hookProfileReels(sites: ProfileReelsSites, mutable: (String) -> Cla
     )
 }
 
+
+/** The kept name of the section that draws a profile's Reels tab as a grid of tiles. */
+internal const val PROFILE_GRID_SECTION = "FbShortsVideoGridContentSection"
+
+private const val PAGINABLE = "Lcom/facebook/graphservice/interfaces/PaginableList;"
+private const val LIST_CALL =
+    "$SORT_CLASS->list(Ljava/lang/Object;Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Object;"
+
+/** Where the grid hook goes: right after [method] keeps its paginated list in [list], at [after]. */
+internal class ProfileGridSite(
+    val method: Method,
+    val after: Int,
+    val list: Int,
+    val classRegister: Int,
+    val nameRegister: Int,
+    val holder: String,
+    val reader: String,
+)
+
+/**
+ * The grid hook's site, from [sections] (the methods loading [PROFILE_GRID_SECTION]) and [readers].
+ * It is the first no-argument call in the one section method of one parameter that answers a
+ * paginated list, with its result kept. Refuses unless each part is found exactly once.
+ */
+internal fun profileGridSite(sections: List<Method>, readers: List<Method>): ProfileGridSite {
+    val candidates = sections.filter {
+        !AccessFlags.STATIC.isSet(it.accessFlags) && it.name != "<init>" && it.parameterTypes.size == 1 &&
+            it.implementation != null
+    }
+    val section = candidates.singleOrNull() ?: refuseProfile("expected one grid method of one parameter loading \"$PROFILE_GRID_SECTION\", found ${candidates.size}")
+    val code = section.implementation!!.instructions.toList()
+    val at = code.indices.firstOrNull { index ->
+        val call = code[index]
+        if (call.opcode != Opcode.INVOKE_VIRTUAL && call.opcode != Opcode.INVOKE_INTERFACE) return@firstOrNull false
+        val ref = (call as ReferenceInstruction).reference as? MethodReference ?: return@firstOrNull false
+        ref.returnType == PAGINABLE && ref.parameterTypes.isEmpty() &&
+            code.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+    } ?: refuseProfile("${section.name} never keeps a paginated list")
+    val list = (code[at + 1] as OneRegisterInstruction).registerA
+    if (list > 15) refuseProfile("the grid list is in v$list, past the registers an invoke can name")
+    val free = section.freeLocalsAt(PROFILE_SORT, at + 2, 2)
+    val reader = readers.singleOrNull() ?: refuseProfile("expected one play count reader, found ${readers.size}")
+    return ProfileGridSite(section, at + 2, list, free[0], free[1], reader.definingClass, reader.name)
+}
+
+/** Hands the grid's list to the extension and keeps its answer as the list. */
+internal fun hookProfileGrid(site: ProfileGridSite, mutable: (String) -> ClassDef) {
+    val method = mutable(site.method.definingClass).methods.single { it.descriptor() == site.method.descriptor() } as MutableMethod
+    method.addInstructions(
+        site.after,
+        """
+            const-class v${site.classRegister}, ${site.holder}
+            const-string v${site.nameRegister}, "${site.reader}"
+            invoke-static {v${site.list}, v${site.classRegister}, v${site.nameRegister}}, $LIST_CALL
+            move-result-object v${site.list}
+            check-cast v${site.list}, $PAGINABLE
+        """,
+    )
+}
+
 /**
  * The profile Reels sort goes in. Nameless: Newest reels first carries it, and its fixture tests
  * run it on its own. Everything is found before anything changes.
@@ -130,6 +191,12 @@ internal val profileReelsSortPatch = bytecodePatch {
             if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
             readers += classDef.methods.filter { isPlayCountReader(it) }
         }
-        hookProfileReels(profileReelsSites(sections, readers)) { type -> mutableClassDefBy(type) }
+        val grids = classDefByStrings(PROFILE_GRID_SECTION, StringComparisonType.EQUALS)
+            .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+            .flatMap { owner -> owner.methods.filter { holdsString(it, PROFILE_GRID_SECTION) } }
+        val gridSite = profileGridSite(grids, readers)
+        val sites = profileReelsSites(sections, readers)
+        hookProfileReels(sites) { type -> mutableClassDefBy(type) }
+        hookProfileGrid(gridSite) { type -> mutableClassDefBy(type) }
     }
 }

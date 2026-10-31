@@ -84,7 +84,46 @@ class ProfileReelsSortFixtureTest {
     }
 
     @Test
+    fun `each declared build hands the profile Reels grid's paginated list to the extension`() = bundles { bundle ->
+        val name = bundle.name
+        val owners = FixtureDex.classesHolding(bundle, PROFILE_GRID_SECTION).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        val grids = owners.flatMap { owner -> owner.methods.filter { holdsString(it, PROFILE_GRID_SECTION) } }
+        val readers = FixtureDex.methodsWhere(bundle, dexFilter = { true }, wanted = { isPlayCountReader(it) })
+        val site = profileGridSite(grids, readers)
+
+        val before = site.method.implementation!!.instructions.toList()
+        val context = PatchContexts.of(owners)
+        hookProfileGrid(site) { type -> context.mutableClassDefBy(type) }
+        val after = context.mutableClassDefBy(site.method.definingClass).methods
+            .single { it.descriptor() == site.method.descriptor() }.implementation!!.instructions.toList()
+            .filter { it.opcode != Opcode.NOP }
+        val stock = before.filter { it.opcode != Opcode.NOP }
+
+        assertEquals("$name: five instructions are added", stock.size + 5, after.size)
+        val at = site.after - before.take(site.after).count { it.opcode == Opcode.NOP }
+        assertEquals(
+            "$name: the class, the name, the extension, its answer kept and cast",
+            listOf(Opcode.CONST_CLASS, Opcode.CONST_STRING, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT_OBJECT, Opcode.CHECK_CAST),
+            after.subList(at, at + 5).map { it.opcode },
+        )
+        assertEquals("$name: the reader's class", site.holder, after[at].reference())
+        assertEquals(
+            "$name: the extension is asked",
+            "$CLASS->list(Ljava/lang/Object;Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Object;",
+            after[at + 2].reference(),
+        )
+        assertEquals("$name: the list is asked for first", Opcode.MOVE_RESULT_OBJECT, after[at - 1].opcode)
+        assertEquals(
+            "$name: Facebook's code stays in order",
+            stock.map { it.opcode },
+            after.filterIndexed { i, _ -> i !in at until at + 5 }.map { it.opcode },
+        )
+    }
+
+    @Test
     fun `the extension has the hook`() {
+        val list = ExtensionDex.classDef(CLASS).methods.single { it.name == "list" }
+        assertEquals("(Ljava/lang/Object;Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Object;", "(" + list.parameterTypes.joinToString("") + ")" + list.returnType)
         val sort = ExtensionDex.classDef(CLASS).methods.single { it.name == "sort" }
         assertEquals(
             "(Ljava/util/List;Ljava/lang/Class;Ljava/lang/String;)V",
