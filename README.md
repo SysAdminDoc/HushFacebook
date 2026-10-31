@@ -65,6 +65,8 @@ The settings follow the language Facebook shows. German, Spanish, Indonesian, Br
 
 To keep Reel downloads in More without the sidebar button, leave **Download** on under **Reels and Watch** and turn off **Download button on reels** on the same page.
 
+**Cast button on reels**, on the same page, adds a cast button under Download on a reel's sidebar. Like the feed one below, it hands the reel to a casting app you have, and it works with Download off too. It starts off.
+
 **Hide WhatsApp on reels**, also under **Reels and Watch**, removes the direct WhatsApp button beside a reel or video. It starts off. WhatsApp stays available in the Share menu.
 
 **Inline feed video controls**, under **Video and audio**, adds a separate play/pause button to feed videos. It starts off. With **Tap to play** on as well, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for you. Tap the video itself for full screen. Live videos and ads keep their own controls.

@@ -507,22 +507,29 @@ public class PatchFamilyTest {
         Settings.AMOLED_FLAT_CARDS.resetToDefault();
         // The reel button has a switch now, so the report says what it's set to.
         assertEquals("Download any reel: on (hushfacebook_download_reels=on, hushfacebook_show_reel_download_button=on, "
-                        + "hushfacebook_copy_reel_caption=on)",
+                        + "hushfacebook_reel_cast_button=off, hushfacebook_copy_reel_caption=on)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.REEL_DOWNLOAD), false).get(0));
         Settings.SHOW_REEL_DOWNLOAD_BUTTON.save(false);
         assertEquals("Download any reel: on (hushfacebook_download_reels=on, hushfacebook_show_reel_download_button=off, "
-                        + "hushfacebook_copy_reel_caption=on)",
+                        + "hushfacebook_reel_cast_button=off, hushfacebook_copy_reel_caption=on)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.REEL_DOWNLOAD), false).get(0));
         Settings.SHOW_REEL_DOWNLOAD_BUTTON.resetToDefault();
         // Copy caption saves nothing, so with downloads off it still keeps the patch on (#240).
         Settings.DOWNLOAD_REELS.save(false);
         assertEquals("Download any reel: on (hushfacebook_download_reels=off, hushfacebook_show_reel_download_button=on, "
-                        + "hushfacebook_copy_reel_caption=on)",
+                        + "hushfacebook_reel_cast_button=off, hushfacebook_copy_reel_caption=on)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.REEL_DOWNLOAD), false).get(0));
         Settings.COPY_REEL_CAPTION.save(false);
         assertEquals("Download any reel: disabled by its switch (hushfacebook_download_reels=off, "
-                        + "hushfacebook_show_reel_download_button=on, hushfacebook_copy_reel_caption=off)",
+                        + "hushfacebook_show_reel_download_button=on, hushfacebook_reel_cast_button=off, "
+                        + "hushfacebook_copy_reel_caption=off)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.REEL_DOWNLOAD), false).get(0));
+        // Neither does the Cast button (#182), so on alone it keeps the patch on too.
+        Settings.REEL_CAST_BUTTON.save(true);
+        assertEquals("Download any reel: on (hushfacebook_download_reels=off, hushfacebook_show_reel_download_button=on, "
+                        + "hushfacebook_reel_cast_button=on, hushfacebook_copy_reel_caption=off)",
+                PatchFamily.reportLines(EnumSet.of(PatchFamily.REEL_DOWNLOAD), false).get(0));
+        Settings.REEL_CAST_BUTTON.resetToDefault();
         Settings.COPY_REEL_CAPTION.resetToDefault();
         Settings.DOWNLOAD_REELS.resetToDefault();
         // So has the video menu's item, and a pause takes it out whole.

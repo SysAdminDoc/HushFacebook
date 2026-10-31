@@ -267,6 +267,8 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SHOW_REEL_DOWNLOAD_BUTTON,
                     L10n.t("Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return."))
                     .needs(Settings.DOWNLOAD_REELS));
+            reels.addPreference(toggle(context, Settings.REEL_CAST_BUTTON,
+                    L10n.t("Adds a cast button to reels, under Download. It hands the reel to a casting app you have, such as Web Video Caster, which sends it to your TV.")));
             reels.addPreference(toggle(context, Settings.COPY_REEL_CAPTION,
                     L10n.t("A reel's More menu gets Copy caption, which copies the whole caption, even the part behind See more.")));
         }

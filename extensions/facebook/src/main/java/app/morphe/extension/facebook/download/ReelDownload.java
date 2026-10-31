@@ -44,6 +44,9 @@ import kotlin.jvm.functions.Function1;
  * slot fires once per press with an event that carries nothing but the {@code View}. That last one
  * is the tap, and it is the only slot that saves. The others are kept rather than left null. The
  * factory is not documented to accept null, and a silent handler costs nothing.
+ *
+ * <p>The same class sits behind the Cast button the patch adds under it (#182). A cast handler's
+ * tap hands the reel's file to a casting app ({@link OpenInAnotherApp#castReel}) instead of saving.
  */
 public final class ReelDownload implements Function1<Object, Object> {
 
@@ -82,6 +85,9 @@ public final class ReelDownload implements Function1<Object, Object> {
      */
     private final Object story;
 
+    /** Whether this is a handler of the Cast button, whose tap casts rather than saves. */
+    private final boolean cast;
+
     /** A handler with no story of the reel: the name then has no poster and no post day. */
     public ReelDownload(
         Object playerParams,
@@ -105,6 +111,20 @@ public final class ReelDownload implements Function1<Object, Object> {
         boolean saves,
         Object story
     ) {
+        this(playerParams, context, hdField, sdField, manifestField, slot, saves, story, false);
+    }
+
+    public ReelDownload(
+        Object playerParams,
+        Context context,
+        String hdField,
+        String sdField,
+        String manifestField,
+        int slot,
+        boolean saves,
+        Object story,
+        boolean cast
+    ) {
         this.playerParams = playerParams;
         this.context = context;
         this.hdField = hdField;
@@ -113,6 +133,7 @@ public final class ReelDownload implements Function1<Object, Object> {
         this.slot = slot;
         this.saves = saves;
         this.story = story;
+        this.cast = cast;
     }
 
     /*
@@ -125,6 +146,7 @@ public final class ReelDownload implements Function1<Object, Object> {
     static final String SIDEBAR_HIDDEN = "UDD sidebar without Download, hidden";
     static final String SIDEBAR_PAUSED = "UDD sidebar without Download, paused";
     static final String SIDEBAR_NOT_READY = "UDD sidebar without Download, settings not ready";
+    static final String SIDEBAR_WITH_CAST = "UDD sidebar with Cast";
     static final String OTHER_SIDEBAR = "FbShorts sidebar, which gets no Download";
     static final String LAYOUT_NEWER = "newer reel button layout from Facebook";
     static final String LAYOUT_SWITCHED = "older reel button layout switched for Download";
@@ -146,8 +168,9 @@ public final class ReelDownload implements Function1<Object, Object> {
                 HookStatus.counted(FamilyNames.REEL_DOWNLOAD, LAYOUT_NEWER);
                 return true;
             }
-            boolean shows = Utils.settingsReady() && Settings.DOWNLOAD_REELS.get()
-                    && Settings.SHOW_REEL_DOWNLOAD_BUTTON.get();
+            // The Cast button goes in the same sidebar, so it wants the newer layout too (#182).
+            boolean shows = Utils.settingsReady() && (Settings.DOWNLOAD_REELS.get()
+                    && Settings.SHOW_REEL_DOWNLOAD_BUTTON.get() || Settings.REEL_CAST_BUTTON.get());
             HookStatus.counted(FamilyNames.REEL_DOWNLOAD, shows ? LAYOUT_SWITCHED : LAYOUT_OLDER);
             return shows;
         } catch (Throwable t) {
@@ -159,10 +182,12 @@ public final class ReelDownload implements Function1<Object, Object> {
     }
 
     /**
-     * Whether the sidebar Facebook is building for a reel gets the Download button. The patch asks
-     * before it builds the button, so off, hidden, paused, or before the settings are ready, the reel
-     * has only Facebook's own buttons. Hiding this button leaves the More menu's download alone. Each answer
-     * and its reason are counted in Hook status. Never throws: false is Facebook's own path.
+     * Whether the sidebar Facebook is building for a reel gets the Download button, the Cast button
+     * (#182) or both. The patch asks before it builds either, so with both off, paused, or before the
+     * settings are ready, the reel has only Facebook's own buttons; the helper then asks
+     * {@link #downloadButton} and {@link #castButton} for each one. Hiding the Download button leaves
+     * the More menu's download alone. Each answer and its reason are counted in Hook status. Never
+     * throws: false is Facebook's own path.
      */
     public static boolean showsButton() {
         try {
@@ -176,7 +201,9 @@ public final class ReelDownload implements Function1<Object, Object> {
             HookStatus.counted(FamilyNames.REEL_DOWNLOAD, shows ? SIDEBAR_WITH_BUTTON
                     : HushfacebookPause.isPaused() ? SIDEBAR_PAUSED
                     : enabled ? SIDEBAR_HIDDEN : SIDEBAR_SWITCH_OFF);
-            return shows;
+            boolean casts = Settings.REEL_CAST_BUTTON.get();
+            if (casts) HookStatus.counted(FamilyNames.REEL_DOWNLOAD, SIDEBAR_WITH_CAST);
+            return shows || casts;
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "button switch", t);
             Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, SOURCE,
@@ -211,6 +238,36 @@ public final class ReelDownload implements Function1<Object, Object> {
         }
     }
 
+    /** The Cast button's name, in the phone's language, the way {@link #label} names Download. Never throws. */
+    public static String castLabel() {
+        try {
+            return L10n.t("Cast this video");
+        } catch (Throwable t) {
+            return "Cast";
+        }
+    }
+
+    /**
+     * Whether the helper builds the Download button, asked after {@link #showsButton} said yes, so a
+     * sidebar with only the Cast button on gets no Download. Never throws.
+     */
+    public static boolean downloadButton() {
+        try {
+            return Settings.DOWNLOAD_REELS.get() && Settings.SHOW_REEL_DOWNLOAD_BUTTON.get();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** Whether the helper builds the Cast button, asked the same way. Never throws. */
+    public static boolean castButton() {
+        try {
+            return Settings.REEL_CAST_BUTTON.get();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     /**
      * Answers null rather than {@code kotlin.Unit}. Facebook renames its own copy of Unit, so the
      * name does not resolve inside the app, and the sidebar's callers discard what a handler
@@ -219,6 +276,12 @@ public final class ReelDownload implements Function1<Object, Object> {
     @Override
     public Object invoke(Object argument) {
         try {
+            // A Cast button's tap slot casts and its other slots stay silent. A long press copies
+            // nothing there, since that's the Download button's.
+            if (cast) {
+                if (saves) castTap();
+                return null;
+            }
             // Only the tap slot saves. The others get the same object, so that no parameter of
             // the factory is null, and they return without a word. They fire on every touch and
             // every visibility change, which buries the log that this feature needs. While links
@@ -243,6 +306,15 @@ public final class ReelDownload implements Function1<Object, Object> {
         }
 
         return null;
+    }
+
+    /** Hands this reel's file to a casting app: the file its player recorded, or the two addresses its source holds. */
+    private void castTap() {
+        HookStatus.invoked(FamilyNames.REEL_DOWNLOAD);
+        Object source = sourceOf(playerParams);
+        OpenInAnotherApp.castReel(context, videoIdOf(playerParams),
+            source == null ? null : RenditionPicker.fieldValue(source, hdField),
+            source == null ? null : RenditionPicker.fieldValue(source, sdField));
     }
 
     private void save() {

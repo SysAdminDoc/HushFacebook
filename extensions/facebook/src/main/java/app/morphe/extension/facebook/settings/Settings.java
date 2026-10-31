@@ -1893,6 +1893,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_show_reel_download_button", TRUE, Setting.parent(DOWNLOAD_REELS));
 
     /**
+     * A Cast button on reels, under where Download goes (#182). Its tap hands the reel to a casting
+     * app the way {@link #FEED_VIDEO_CAST_BUTTON} does for feed videos. Starts off. It saves nothing,
+     * so it stands apart from DOWNLOAD_REELS.
+     */
+    public static final BooleanSetting REEL_CAST_BUTTON =
+            new BooleanSetting("hushfacebook_reel_cast_button", FALSE);
+
+    /**
      * Copy caption in a reel's More sheet, which copies the reel's whole caption (#240). Starts on.
      * It saves nothing, so it stands apart from DOWNLOAD_REELS.
      */

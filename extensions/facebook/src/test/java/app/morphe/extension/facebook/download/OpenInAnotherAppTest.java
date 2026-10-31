@@ -71,6 +71,8 @@ public class OpenInAnotherAppTest {
         Settings.OPEN_IN_ANOTHER_APP.resetToDefault();
         Settings.DOWNLOAD_VIDEOS.resetToDefault();
         Settings.FEED_VIDEO_CAST_BUTTON.resetToDefault();
+        Settings.REEL_CAST_BUTTON.resetToDefault();
+        Settings.DOWNLOAD_REELS.resetToDefault();
         Shadows.shadowOf((Application) context).checkActivities(false);
         LogBufferManager.clearLogBuffer();
         HookStatus.clear();
@@ -271,6 +273,49 @@ public class OpenInAnotherAppTest {
 
         assertNull(Shadows.shadowOf((Application) context).getNextStartedActivity());
         assertEquals(0, ShadowToast.shownToastCount());
+    }
+
+    private void castReel(String hd, String sd) {
+        OpenInAnotherApp.castReel(context, "2236067977499789", hd, sd);
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+    }
+
+    /** Issue #182: the reel Cast button hands over the better of the two files the reel's player holds. */
+    @Test
+    public void reelCastHandsOverTheBetterFileWithDownloadsOff() {
+        Settings.DOWNLOAD_REELS.save(false);
+        Settings.REEL_CAST_BUTTON.save(true);
+
+        castReel(HD, SD);
+
+        Intent started = Shadows.shadowOf((Application) context).getNextStartedActivity();
+        assertNotNull("the reel Cast switch alone hands the reel over", started);
+        Intent view = started.getParcelableExtra(Intent.EXTRA_INTENT);
+        assertEquals(HD, view.getData().toString());
+        assertEquals(OpenInAnotherApp.VIDEO_TYPE, view.getType());
+    }
+
+    @Test
+    public void reelCastWithItsSwitchOffOrPausedDoesNothing() {
+        Settings.REEL_CAST_BUTTON.save(false);
+        castReel(HD, SD);
+        Settings.REEL_CAST_BUTTON.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        castReel(HD, SD);
+
+        assertNull(Shadows.shadowOf((Application) context).getNextStartedActivity());
+        assertEquals(0, ShadowToast.shownToastCount());
+    }
+
+    @Test
+    public void reelCastWithNoFileSaysSo() {
+        Settings.REEL_CAST_BUTTON.save(true);
+
+        castReel(null, "https://example.com/clip.mp4");
+
+        assertNull(Shadows.shadowOf((Application) context).getNextStartedActivity());
+        assertEquals("Couldn't find a file for this video. Play it for a moment, then try again.",
+                ShadowToast.getTextOfLatestToast());
     }
 
     private static MenuItem menuTitled(Menu menu, String title) {

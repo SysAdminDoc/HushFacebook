@@ -9,6 +9,7 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.refresh.enumConstant
 import app.morphe.patches.facebook.media.resume.TRACK_START
 import app.morphe.patches.facebook.media.resume.paramsGetters
 import app.morphe.patches.facebook.media.resume.reportedValues
@@ -24,12 +25,14 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -42,7 +45,8 @@ import org.junit.Test
  * fixture loads the whole chain. The block goes in at the first instruction of the assembly call's
  * straight run where six consecutive locals are dead and every value it reads is what the call
  * gets (the player from its parked register), and it calls the helper over those six registers. The
- * helper builds the button and adds it and its marker to the two lists itself. The build's
+ * helper builds the button and adds it and its marker to the two lists itself, then the Cast button
+ * the same way from the build's GOOGLE_CAST icon (#182), each behind its own switch. The build's
  * one FbShortsSideBarComponent render, which the button can't go in, gets a counter as its first
  * instruction and nothing else (#18). And the More sheet's builder asks for a Download row first
  * thing, through a helper on its class, with the handler made to take the row's click interface
@@ -56,6 +60,7 @@ class DownloadReelFixtureTest {
     private val otherSidebarName = "FbShortsSideBarComponent"
     private val showsButton = "Lapp/morphe/extension/facebook/download/ReelDownload;->showsButton()Z"
     private val helperName = "hushfacebookDownloadButton"
+    private val reelDownload = "Lapp/morphe/extension/facebook/download/ReelDownload;"
 
     private val verticalUfi = "Lapp/morphe/extension/facebook/download/ReelDownload;->verticalUfi(Z)Z"
 
@@ -298,17 +303,28 @@ class DownloadReelFixtureTest {
                 }
                 actual[abi] = "before=${assemblyAt - (injectAt - hookShift)} scratch=$scratch sources=$sources layout=$layoutOriginal v$flagRegister"
 
-                // The helper builds the button and adds it and its marker itself.
+                // The helper builds the Download and Cast buttons (#182), each behind its own switch,
+                // and adds each and its marker itself.
                 val helperMethod = patchedClass.methods.single { it.name == helperName }
                 assertTrue("${bundle.name}: the helper is static", AccessFlags.STATIC.isSet(helperMethod.accessFlags))
                 assertEquals("${bundle.name}: the helper takes six values", 6, helperMethod.parameterTypes.size)
                 assertEquals("${bundle.name}: and answers nothing", "V", helperMethod.returnType)
                 val helperBody = helperMethod.implementation!!.instructions.toList()
                 assertEquals("${bundle.name}: the helper returns void", Opcode.RETURN_VOID, helperBody.last().opcode)
-                assertEquals("${bundle.name}: it makes one button", 1, helperBody.count { it.called()?.toString() == factory.toString() })
+                assertEquals("${bundle.name}: it makes two buttons", 2, helperBody.count { it.called()?.toString() == factory.toString() })
+                val gates = helperBody.mapNotNull { it.called()?.toString() }.filter { it.endsWith("Button()Z") }
                 assertEquals(
-                    "${bundle.name}: it adds the button and its marker",
-                    2,
+                    "${bundle.name}: each behind its own switch, Download first",
+                    listOf("$reelDownload->downloadButton()Z", "$reelDownload->castButton()Z"),
+                    gates,
+                )
+                val handlerFlags = helperBody.indices.filter { at ->
+                    helperBody[at].called()?.let { it.definingClass == reelDownload && it.name == "<init>" } == true
+                }.map { at -> (helperBody[at - 1] as NarrowLiteralInstruction).narrowLiteral }
+                assertEquals("${bundle.name}: seven handlers that save, then seven that cast", List(7) { 0 } + List(7) { 1 }, handlerFlags)
+                assertEquals(
+                    "${bundle.name}: it adds both buttons and their markers",
+                    4,
                     helperBody.count { instruction ->
                         instruction.opcode == Opcode.INVOKE_INTERFACE &&
                             instruction.called()?.let { it.definingClass == "Ljava/util/List;" && it.name == "add" } == true
@@ -321,12 +337,18 @@ class DownloadReelFixtureTest {
                     .filter { it.type == modeType }.map(FieldReference::toString).distinct().single()
                 assertTrue("${bundle.name}: the helper passes the mode every button of Facebook's gets", factoryMode in helperFields)
                 val marker = helperBody.filter { it.opcode == Opcode.INVOKE_STATIC }.mapNotNull { it.called() }
-                    .single { it.parameterTypes.size == 1 && it.returnType != "V" }
+                    .filter { it.parameterTypes.size == 1 && it.returnType != "V" }.distinctBy(MethodReference::toString).single()
                 val iconEnum = marker.parameterTypes.single().toString()
                 val rowIcon = rowHolders.flatMap { holder -> holder.methods.filter { holdsString(it, "fds_control_download_video") } }
                     .flatMap { it.body() }.filter { it.opcode == Opcode.SGET_OBJECT }.mapNotNull { it.field() }
                     .first { it.type == iconEnum }
                 assertTrue("${bundle.name}: the helper draws the icon Facebook's download row draws", rowIcon.toString() in helperFields)
+                val castIcon = enumConstant(context.classDefBy(iconEnum), CAST_ICON)
+                assertTrue("${bundle.name}: and Facebook's own cast icon for the Cast button, $castIcon", castIcon != null && castIcon in helperFields)
+                assertTrue(
+                    "${bundle.name}: the Cast button has its own slot name",
+                    helperBody.any { (it as? ReferenceInstruction)?.reference?.let { ref -> ref is StringReference && ref.string == "cast_button" } == true },
+                )
 
                 val otherRender = context.mutableClassDefBy(other.type).methods.single { rendersLike(it, render) }
                 val otherOriginal = other.methods.single { rendersLike(it, render) }

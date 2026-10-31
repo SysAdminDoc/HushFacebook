@@ -101,6 +101,25 @@ public final class OpenInAnotherApp {
         }
     }
 
+    /**
+     * The reel Cast button's tap (#182): opens the chooser for the reel with [videoId], from the
+     * file its player recorded or the [hd] and [sd] addresses its own player holds, or says why it
+     * couldn't. A tap after the switch went off does nothing. Never throws.
+     */
+    static void castReel(@Nullable Context context, @Nullable String videoId, @Nullable String hd, @Nullable String sd) {
+        try {
+            if (!Utils.settingsReady() || !Settings.REEL_CAST_BUTTON.get()) {
+                Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE,
+                    () -> "reel cast button tapped after its switch went off");
+                return;
+            }
+            Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "reel cast button tapped");
+            handOff(context, bestFile(videoId, hd, sd));
+        } catch (Throwable t) {
+            Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "reel cast button failed", t);
+        }
+    }
+
     private static void handOff(@Nullable Context context, @Nullable String url) {
         Context application = context == null ? Utils.getContext() : context.getApplicationContext();
         if (application == null) return;

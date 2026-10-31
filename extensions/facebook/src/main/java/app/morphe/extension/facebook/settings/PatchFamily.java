@@ -204,7 +204,8 @@ public enum PatchFamily {
     STORY_DOWNLOAD(FamilyNames.STORY_DOWNLOAD, "storyDownload", null,
             Settings.DOWNLOAD_STORIES, Settings.SAVE_STORY_PHOTOS),
     REEL_DOWNLOAD(FamilyNames.REEL_DOWNLOAD, "reelDownload", null,
-            Settings.DOWNLOAD_REELS, Settings.SHOW_REEL_DOWNLOAD_BUTTON, Settings.COPY_REEL_CAPTION),
+            Settings.DOWNLOAD_REELS, Settings.SHOW_REEL_DOWNLOAD_BUTTON, Settings.REEL_CAST_BUTTON,
+            Settings.COPY_REEL_CAPTION),
     VIDEO_DOWNLOAD(FamilyNames.VIDEO_DOWNLOAD, "videoDownload", null,
             Settings.DOWNLOAD_VIDEOS, Settings.CLIPBOARD_DOWNLOAD, Settings.POST_MENU_DOWNLOAD_FIRST,
             Settings.OPEN_IN_ANOTHER_APP),
@@ -529,7 +530,8 @@ public enum PatchFamily {
         for (BooleanSetting setting : switches) anyOn |= setting.savedValue();
         // Options cannot enable these families without their main switch.
         if (this == MARKETPLACE_ONLY) anyOn = Settings.MARKETPLACE_ONLY.savedValue() || Settings.EVENTS_ONLY.savedValue();
-        if (this == REEL_DOWNLOAD) anyOn = Settings.DOWNLOAD_REELS.savedValue() || Settings.COPY_REEL_CAPTION.savedValue();
+        if (this == REEL_DOWNLOAD) anyOn = Settings.DOWNLOAD_REELS.savedValue() || Settings.COPY_REEL_CAPTION.savedValue()
+                || Settings.REEL_CAST_BUTTON.savedValue();
         if (this == VIDEO_DOWNLOAD) anyOn = Settings.DOWNLOAD_VIDEOS.savedValue() || Settings.OPEN_IN_ANOTHER_APP.savedValue();
         if (this == TAP_TO_PLAY) anyOn = Settings.TAP_TO_PLAY.savedValue() || Settings.INLINE_FEED_VIDEO_CONTROLS.savedValue()
                 || Settings.FEED_VIDEO_CAST_BUTTON.savedValue();

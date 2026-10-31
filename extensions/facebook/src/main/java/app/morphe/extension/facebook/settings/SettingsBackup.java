@@ -314,6 +314,7 @@ public final class SettingsBackup {
             Settings.SAVE_STORY_PHOTOS,
             Settings.DOWNLOAD_REELS,
             Settings.SHOW_REEL_DOWNLOAD_BUTTON,
+            Settings.REEL_CAST_BUTTON,
             Settings.COPY_REEL_CAPTION,
             Settings.DOWNLOAD_VIDEOS,
             Settings.CLIPBOARD_DOWNLOAD,

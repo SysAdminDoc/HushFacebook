@@ -2355,3 +2355,5 @@ this person	这个人
 Most viewed on profile Reels	主页 Reels 按观看次数排序
 A profile's Reels tab lists its most viewed reels first instead of the newest. Off keeps Facebook's order. Only the reels the tab has loaded are sorted, and a reel with no view count stays after the rest.	主页的 Reels 标签页先列出观看次数最多的 Reels，而不是最新的。关闭时保持 Facebook 的顺序。只会排序标签页已加载的 Reels，没有观看次数的 Reels 排在其余之后。
 Not in this build, so dark mode stays Facebook's dark gray. Morphe Manager doesn't pick it by default. Turn on Expert mode in Manager, choose the %1$s patch and patch again.	此版本中没有，所以深色模式仍是 Facebook 的深灰色。Morphe Manager 默认不选它。请在 Manager 中开启专家模式，选择 %1$s 修补项，然后重新修补。
+Cast button on reels	短视频上的投屏按钮
+Adds a cast button to reels, under Download. It hands the reel to a casting app you have, such as Web Video Caster, which sends it to your TV.	在短视频的“下载”按钮下方添加投屏按钮。它会把短视频交给你已安装的投屏应用（如 Web Video Caster），由它发送到电视。

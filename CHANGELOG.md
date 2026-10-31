@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* **Facebook:** New `Cast button on reels` under Reels and Watch. It puts a cast button on a reel's sidebar, under Download, and a tap hands the reel to a casting app you have, like Web Video Caster, the same way `Cast button on feed videos` does. It works with reel downloads off and starts off. (#182)
 * **Facebook:** New `Local profile counts` under News feed. Type the friends, followers and following numbers you want and your own profile shows them on this phone, for fun. Nothing is sent anywhere, other people's profiles keep Facebook's real numbers, and leaving a row blank shows the real one. It starts off, and it changes numbers only when they sit next to the word Facebook shows for them, so a profile laid out another way may not change. A verified badge isn't part of it yet. (#280)
 * **Facebook:** New `Round stories tray` under Stories. It draws the stories row on Home as round pictures, like Instagram, at a width you pick in dp. It starts off, and switched off the row looks exactly as Facebook draws it. Facebook has no round tile of its own, so the tiles are clipped to a circle cut from the middle and shrunk, and the row keeps its height. (#260)
 * **Facebook:** New `Most viewed on profile Reels` under Reels and Watch, part of `Newest reels first`. A profile's Reels tab lists the reels it has loaded with the most viewed first, using the same view count Facebook shows on a reel. Reels with no count stay after the rest, and off keeps Facebook's order. It starts off. (Refs #232)

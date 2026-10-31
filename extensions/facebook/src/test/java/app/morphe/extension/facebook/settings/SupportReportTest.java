@@ -121,7 +121,7 @@ public class SupportReportTest {
         assertTrue("no supported-link state: " + report, report.contains("\n[SUPPORTED LINKS]\n"));
         assertTrue("no network use: " + report, report.contains("\n[NETWORK]\n"));
         if (Build.VERSION.SDK_INT == 30) assertTrue(report, report.contains("availability: not_reported (API below 31)"));
-        assertTrue(report, report.contains("\nDownload any reel: on (hushfacebook_download_reels=on, hushfacebook_show_reel_download_button=on, hushfacebook_copy_reel_caption=on)\n"));
+        assertTrue(report, report.contains("\nDownload any reel: on (hushfacebook_download_reels=on, hushfacebook_show_reel_download_button=on, hushfacebook_reel_cast_button=off, hushfacebook_copy_reel_caption=on)\n"));
         assertFalse("events without Debug logging: " + report, report.contains("[SELECTED EVENTS]"));
     }
 
@@ -206,7 +206,7 @@ public class SupportReportTest {
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         for (String report : bothExports()) {
             assertTrue(report, report.contains("\nhushfacebook: paused (switch)"));
-            assertTrue(report, report.contains("\nDownload any reel: disabled while paused (saved hushfacebook_download_reels=on, hushfacebook_show_reel_download_button=on, hushfacebook_copy_reel_caption=on)\n"));
+            assertTrue(report, report.contains("\nDownload any reel: disabled while paused (saved hushfacebook_download_reels=on, hushfacebook_show_reel_download_button=on, hushfacebook_reel_cast_button=off, hushfacebook_copy_reel_caption=on)\n"));
         }
     }
 }
