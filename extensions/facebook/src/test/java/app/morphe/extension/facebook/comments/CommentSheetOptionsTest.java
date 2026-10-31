@@ -77,6 +77,7 @@ public class CommentSheetOptionsTest {
         Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS.resetToDefault();
         Settings.HIDE_POST_COMMENT_PREVIEWS.resetToDefault();
         Settings.HIDE_COMMENT_DOWNVOTE_BUTTON.resetToDefault();
+        Settings.COMMENT_BLOCK_BUTTON.resetToDefault();
         HookStatus.clear();
     }
 

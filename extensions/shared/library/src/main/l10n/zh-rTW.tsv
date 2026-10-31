@@ -2356,3 +2356,8 @@ Round picture size	圓形圖片大小
 Width in dp, from %1$s to %2$s. Leave it blank for %3$s.	寬度，單位 dp，範圍 %1$s 到 %2$s。留空則使用 %3$s。
 # context: summary of that row; %1$s is the width in dp
 Round pictures are %1$s dp wide.	圓形圖片寬 %1$s dp。
+Block button on comments	留言上的封鎖按鈕
+The thumbs-down on a comment becomes Block. One tap opens Facebook's own block screen for that person.	留言上的倒讚按鈕會變成封鎖。點一下就會為這個人開啟 Facebook 自己的封鎖畫面。
+Block	封鎖
+Couldn't open Block for this comment.	無法為這則留言開啟封鎖。
+this person	這個人

@@ -2347,3 +2347,8 @@ Round picture size	圆形图片大小
 Width in dp, from %1$s to %2$s. Leave it blank for %3$s.	宽度，单位 dp，范围 %1$s 到 %2$s。留空则使用 %3$s。
 # context: summary of that row; %1$s is the width in dp
 Round pictures are %1$s dp wide.	圆形图片宽 %1$s dp。
+Block button on comments	评论上的屏蔽按钮
+The thumbs-down on a comment becomes Block. One tap opens Facebook's own block screen for that person.	评论上的踩按钮变成屏蔽。点一下就会为这个人打开 Facebook 自己的屏蔽页面。
+Block	屏蔽
+Couldn't open Block for this comment.	无法为这条评论打开屏蔽。
+this person	这个人

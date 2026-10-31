@@ -2352,3 +2352,8 @@ Round picture size	Yuvarlak resim boyutu
 Width in dp, from %1$s to %2$s. Leave it blank for %3$s.	dp cinsinden genişlik, %1$s ile %2$s arası. %3$s için boş bırakın.
 # context: summary of that row; %1$s is the width in dp
 Round pictures are %1$s dp wide.	Yuvarlak resimler %1$s dp genişliğinde.
+Block button on comments	Yorumlarda Engelle düğmesi
+The thumbs-down on a comment becomes Block. One tap opens Facebook's own block screen for that person.	Yorumdaki beğenmeme düğmesi Engelle olur. Bir dokunuş, o kişi için Facebook'un kendi engelleme ekranını açar.
+Block	Engelle
+Couldn't open Block for this comment.	Bu yorum için Engelle açılamadı.
+this person	bu kişi

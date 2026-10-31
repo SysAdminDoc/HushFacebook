@@ -1,0 +1,195 @@
+/*
+ * Copyright 2026 Hushfacebook contributors
+ * https://github.com/SysAdminDoc/Hushfacebook
+ */
+package app.morphe.extension.facebook.comments;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import android.content.Context;
+import android.view.View;
+
+import com.facebook.auth.usersession.FbUserSession;
+import com.facebook.graphql.model.GraphQLActor;
+import com.facebook.graphql.model.GraphQLComment;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.annotation.Config;
+
+import app.morphe.extension.facebook.settings.FamilyNames;
+import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.SettingsContextRule;
+import app.morphe.extension.shared.diagnostics.HookStatus;
+
+/**
+ * Block button on comments (#271): off, every hook leaves Facebook's own; on, a tap on the
+ * thumbs-down hands the commenter's id and name to Facebook's profile Block helper, as a profile
+ * that asks for the block sheet, and never dislikes. A comment with no readable author opens
+ * nothing, and says so.
+ */
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = 30)
+public class CommentBlockTest {
+    /** The profile Facebook's helper reads, the shape the real interface has. */
+    public interface Profile {
+        String getName();
+
+        boolean CIY();
+    }
+
+    /** The places the helper is opened from. */
+    public enum Source {
+        FRIEND_LIST, PROFILE
+    }
+
+    /** Facebook's block helper, recording what it was handed. */
+    public static final class Helper {
+        static Context context;
+        static Source source;
+        static FbUserSession session;
+        static Profile profile;
+        static long first;
+        static long second;
+        static int calls;
+
+        public Helper() {
+        }
+
+        public void A01(Context c, Source s, FbUserSession u, Profile p, long a, long b, boolean z) {
+            context = c;
+            source = s;
+            session = u;
+            profile = p;
+            first = a;
+            second = b;
+            calls++;
+        }
+    }
+
+    /** The Dislike component: the comment and the session, among other fields. */
+    public static final class Component {
+        final String label = "x";
+        final GraphQLComment comment;
+        final FbUserSession session = new FbUserSession();
+
+        Component(GraphQLComment comment) {
+            this.comment = comment;
+        }
+    }
+
+    /** The click's lambda, holding the component. */
+    public static final class Lambda {
+        final Object other = new Object();
+        final Component component;
+
+        Lambda(Component component) {
+            this.component = component;
+        }
+    }
+
+    /** The click's scope, answering the tapped View. */
+    public static final class Scope {
+        final View view = new View(RuntimeEnvironment.getApplication());
+
+        public View A00() {
+            return view;
+        }
+    }
+
+    @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
+
+    @Before
+    public void start() {
+        HookStatus.clear();
+        Helper.calls = 0;
+        Helper.profile = null;
+    }
+
+    @After
+    public void restore() {
+        Settings.COMMENT_BLOCK_BUTTON.resetToDefault();
+        HookStatus.clear();
+    }
+
+    private static String statusLine() {
+        for (String line : HookStatus.report()) {
+            if (line.startsWith(FamilyNames.COMMENT_SHEET_OPTIONS + ":")) return line;
+        }
+        return "";
+    }
+
+    private static Lambda lambdaFor(String id, String name) {
+        GraphQLComment comment = new GraphQLComment("hello").writtenBy(new GraphQLActor(id, name));
+        return new Lambda(new Component(comment));
+    }
+
+    private static boolean tap(Lambda lambda, Object scope) {
+        return CommentBlock.tap(lambda, scope, Component.class, Helper.class, Profile.class, Source.class);
+    }
+
+    @Test
+    public void offLeavesEverythingToFacebook() {
+        assertFalse(Settings.COMMENT_BLOCK_BUTTON.get());
+        assertFalse(CommentBlock.blockIcon());
+        assertEquals("Dislike", CommentBlock.blockLabel("Dislike"));
+        assertFalse(tap(lambdaFor("123", "Sam"), new Scope()));
+        assertEquals(0, Helper.calls);
+    }
+
+    @Test
+    public void onTheTapOpensFacebooksBlockHelperForTheCommenter() {
+        Settings.COMMENT_BLOCK_BUTTON.save(true);
+        assertTrue(CommentBlock.blockIcon());
+        assertEquals("Block", CommentBlock.blockLabel("Dislike"));
+        Scope scope = new Scope();
+        assertTrue(tap(lambdaFor("1234567890", "Sam Rivers"), scope));
+        assertEquals(1, Helper.calls);
+        assertEquals(Source.PROFILE, Helper.source);
+        assertEquals(1234567890L, Helper.second);
+        assertEquals(0L, Helper.first);
+        assertTrue("the context is the tapped view's", Helper.context == scope.view.getContext());
+        assertEquals("Sam Rivers", Helper.profile.getName());
+        assertTrue("the profile asks for the block sheet", Helper.profile.CIY());
+        assertTrue(statusLine().contains(CommentBlock.BLOCK_OPENED + " 1"));
+    }
+
+    @Test
+    public void aCommentWithNoReadableAuthorOpensNothing() {
+        Settings.COMMENT_BLOCK_BUTTON.save(true);
+        assertTrue(tap(lambdaFor("not-a-number", "Sam"), new Scope()));
+        assertTrue(tap(lambdaFor(null, "Sam"), new Scope()));
+        assertTrue(tap(new Lambda(new Component(new GraphQLComment("hi"))), new Scope()));
+        assertEquals(0, Helper.calls);
+    }
+
+    @Test
+    public void aLambdaWithoutTheComponentIsFacebooks() {
+        Settings.COMMENT_BLOCK_BUTTON.save(true);
+        assertFalse(CommentBlock.tap(new Object(), new Scope(), Component.class, Helper.class, Profile.class, Source.class));
+        assertEquals(0, Helper.calls);
+    }
+
+    @Test
+    public void aMissingNameFallsBackToTheShortName() {
+        Settings.COMMENT_BLOCK_BUTTON.save(true);
+        GraphQLActor actor = new GraphQLActor("55", null);
+        actor.with("short_name", "Sam");
+        assertTrue(tap(new Lambda(new Component(new GraphQLComment("x").writtenBy(actor))), new Scope()));
+        assertEquals("Sam", Helper.profile.getName());
+    }
+
+    @Test
+    public void helperIsFoundByItsParameterTypes() {
+        assertTrue(CommentBlock.helperMethod(Helper.class, Profile.class, Source.class) != null);
+        assertNull(CommentBlock.helperMethod(Helper.class, Runnable.class, Source.class));
+    }
+}

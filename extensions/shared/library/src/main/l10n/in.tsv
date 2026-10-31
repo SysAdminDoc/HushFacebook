@@ -2352,3 +2352,8 @@ Round picture size	Ukuran gambar bulat
 Width in dp, from %1$s to %2$s. Leave it blank for %3$s.	Lebar dalam dp, dari %1$s sampai %2$s. Biarkan kosong untuk %3$s.
 # context: summary of that row; %1$s is the width in dp
 Round pictures are %1$s dp wide.	Gambar bulat selebar %1$s dp.
+Block button on comments	Tombol blokir di komentar
+The thumbs-down on a comment becomes Block. One tap opens Facebook's own block screen for that person.	Jempol ke bawah pada komentar menjadi Blokir. Satu ketukan membuka layar blokir Facebook untuk orang itu.
+Block	Blokir
+Couldn't open Block for this comment.	Tidak bisa membuka Blokir untuk komentar ini.
+this person	orang ini

@@ -1088,6 +1088,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_comment_downvote_button", FALSE);
 
     /**
+     * The thumbs-down under a comment becomes a Block button that opens Facebook's own block
+     * sheet for the commenter, confirmation included
+     * ({@link app.morphe.extension.facebook.comments.CommentBlock}, #271). Off by default. A
+     * change shows on comments drawn after it.
+     */
+    public static final BooleanSetting COMMENT_BLOCK_BUTTON =
+            new BooleanSetting("hushfacebook_comment_block_button", FALSE);
+
+    /**
      * Comments whose words link to an online shop, like the Shopee links pasted under reels, are
      * left out with their replies ({@link app.morphe.extension.facebook.comments.CommentSheetOptions},
      * #118). Off by default. A change shows on the next comments drawn.

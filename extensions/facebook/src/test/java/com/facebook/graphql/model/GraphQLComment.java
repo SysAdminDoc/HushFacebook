@@ -16,4 +16,17 @@ public class GraphQLComment extends BaseModelWithTree {
         super(0);
         if (text != null) withModel("body", new GraphQLTextWithEntities(text));
     }
+
+    private GraphQLActor author;
+
+    /** This comment, written by [actor]. */
+    public GraphQLComment writtenBy(GraphQLActor actor) {
+        author = actor;
+        return this;
+    }
+
+    /** The author, under the obfuscated name Facebook gives the getter. */
+    public GraphQLActor A00() {
+        return author;
+    }
 }
