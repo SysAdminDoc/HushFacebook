@@ -281,8 +281,41 @@ class PreSearchSectionsFixtureTest {
     }
 
     @Test
+    fun `each declared build hands the section's paginated list to the extension`() = forEachBundle { name, bundle, entry, classes ->
+        val sections = FixtureDex.classesHolding(bundle, PRE_SEARCH_SECTION).filterNot { it.type.startsWith(EXTENSION_PACKAGE) }
+        val context = PatchContexts.of((classes + sections).distinctBy { it.type })
+        val section = context.preSearchSections().single()
+        val sites = preSearchListSites(section)
+        assertEquals("$name: places the section keeps its paginated list", 1, sites.size)
+        val site = sites.single()
+        val code = site.method.code()
+        // Positive control: the list is then handed to the section builder.
+        assertEquals("$name: the list read", PRE_SEARCH_PAGINABLE, code[site.read - 1].call()?.returnType)
+        assertTrue("$name: the list isn't handed on", code.subList(site.read + 1, minOf(code.size, site.read + 30)).any {
+            it.call()?.parameterTypes?.map(CharSequence::toString)?.contains(PRE_SEARCH_PAGINABLE) == true
+        })
+        // The register the hook borrows is written again right after, on every path.
+        assertTrue("$name: the borrowed register is written next", code[site.read + 1] is OneRegisterInstruction &&
+            (code[site.read + 1] as OneRegisterInstruction).registerA == site.scratch)
+        context.hookPreSearchList()
+        val patched = patched(context, section.type, site.method)
+        assertEquals("$name: four instructions added", code.opcodes().size + 4, patched.opcodes().size)
+        val hand = patched[site.read + 2] as FiveRegisterInstruction
+        assertEquals("$name: the extension handed the list and the accessor",
+            listOf(Opcode.CONST_STRING, Opcode.INVOKE_STATIC, PRE_SEARCH_LIST_HOOK, 2, site.list, site.scratch),
+            listOf(patched[site.read + 1].opcode, hand.opcode, hand.call().toString(), hand.registerCount, hand.registerC, hand.registerD))
+        assertEquals("$name: the answer is kept as the list and cast back",
+            listOf(Opcode.MOVE_RESULT_OBJECT, site.list, Opcode.CHECK_CAST, site.list, PRE_SEARCH_PAGINABLE),
+            listOf(patched[site.read + 3].opcode, (patched[site.read + 3] as OneRegisterInstruction).registerA,
+                patched[site.read + 4].opcode, (patched[site.read + 4] as OneRegisterInstruction).registerA,
+                ((patched[site.read + 4] as ReferenceInstruction).reference as TypeReference).type))
+        assertEquals("$name: the rest is Facebook's", code.opcodes(),
+            patched.filterIndexed { index, _ -> index !in site.read + 1..site.read + 4 }.opcodes())
+    }
+
+    @Test
     fun `the extension has the hooks`() {
-        for (descriptor in listOf(PRE_SEARCH_ENTRY, PRE_SEARCH_NODE, PRE_SEARCH_HEAD_NODE, PRE_SEARCH_QUERY_NODE)) {
+        for (descriptor in listOf(PRE_SEARCH_LIST_HOOK, PRE_SEARCH_ENTRY, PRE_SEARCH_NODE, PRE_SEARCH_HEAD_NODE, PRE_SEARCH_QUERY_NODE)) {
             val type = descriptor.substringBefore("->")
             val name = descriptor.substringAfter("->").substringBefore("(")
             val hook = ExtensionDex.classDef(type).methods.singleOrNull { it.name == name }

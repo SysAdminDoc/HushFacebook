@@ -120,6 +120,8 @@ internal data class PreSearchSite(
     val module: Int,
     val type: String,
     val byNode: Boolean = false,
+    /** The entry class's no-argument node accessor the site read. */
+    val accessor: String = "",
 ) {
     /** The register the hook's answer goes back into. */
     val kept get() = if (byNode) node else module
@@ -190,7 +192,7 @@ private fun siteAt(method: Method, code: List<Instruction>, index: Int, entry: S
     if (code.getOrNull(index + 2)?.opcode != Opcode.IF_EQZ || (code[index + 2] as OneRegisterInstruction).registerA != node) {
         return null
     }
-    nodeSiteAt(method, code, index, nodeRead.returnType, node)?.let { return it }
+    nodeSiteAt(method, code, index, nodeRead.returnType, node)?.let { return it.copy(accessor = nodeRead.name) }
     val reader = (index + 3 until minOf(code.size, index + 9)).firstOrNull { at ->
         val instruction = code[at]
         val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
@@ -205,7 +207,7 @@ private fun siteAt(method: Method, code: List<Instruction>, index: Int, entry: S
     if (module == node) return null
     val moduleType = ((code[reader] as ReferenceInstruction).reference as MethodReference).returnType
     if (!moduleType.startsWith("L")) return null
-    return PreSearchSite(method, reader + 1, node, module, moduleType)
+    return PreSearchSite(method, reader + 1, node, module, moduleType, accessor = nodeRead.name)
 }
 
 /**
@@ -398,3 +400,64 @@ private fun Instruction.string() = ((this as? ReferenceInstruction)?.reference a
 
 private fun holds(method: Method, string: String) =
     method.implementation?.instructions?.any { it.string() == string } == true
+
+internal const val PRE_SEARCH_PAGINABLE = "Lcom/facebook/graphservice/interfaces/PaginableList;"
+
+internal const val PRE_SEARCH_LIST_HOOK =
+    "$EXTENSION_PACKAGE/search/PreSearchSections;->list(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
+
+/** Where the section keeps the paginated list it was just handed: the [list] register, set at [read]. */
+internal data class PreSearchListSite(val method: Method, val read: Int, val list: Int, val scratch: Int)
+
+/**
+ * Each place in [section]'s own methods that asks something with no arguments for the paginated
+ * list (an invoke answering [PRE_SEARCH_PAGINABLE]) and keeps the answer, with the asked object's register
+ * written again by the very next instruction, so it can carry the hook's string meanwhile (#235).
+ */
+internal fun preSearchListSites(section: ClassDef): List<PreSearchListSite> =
+    section.methods.filterNot { AccessFlags.STATIC.isSet(it.accessFlags) }.flatMap { method ->
+        val code = method.implementation?.instructions?.toList() ?: return@flatMap emptyList()
+        code.indices.mapNotNull { at ->
+            val call = code[at].takeIf { it.opcode == Opcode.INVOKE_INTERFACE || it.opcode == Opcode.INVOKE_VIRTUAL }
+                as? FiveRegisterInstruction ?: return@mapNotNull null
+            val ref = (call as ReferenceInstruction).reference as? MethodReference ?: return@mapNotNull null
+            if (ref.returnType != PRE_SEARCH_PAGINABLE || ref.parameterTypes.isNotEmpty() || call.registerCount != 1) return@mapNotNull null
+            if (code.getOrNull(at + 1)?.opcode != Opcode.MOVE_RESULT_OBJECT) return@mapNotNull null
+            val list = (code[at + 1] as OneRegisterInstruction).registerA
+            val scratch = call.registerC
+            val next = code.getOrNull(at + 2) as? OneRegisterInstruction ?: return@mapNotNull null
+            val writes = code[at + 2].opcode in setOf(Opcode.CONST, Opcode.CONST_WIDE, Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST_WIDE_16,
+                Opcode.CONST_WIDE_32, Opcode.CONST_HIGH16, Opcode.CONST_WIDE_HIGH16)
+            if (!writes || next.registerA != scratch || scratch == list || scratch > 15 || list > 15) return@mapNotNull null
+            PreSearchListSite(method, at + 1, list, scratch)
+        }
+    }
+
+/**
+ * Right after the section keeps its paginated list, hand the list and the entry's node accessor name
+ * to the extension and keep its answer as the list, so a list of only hidden rows says it has no
+ * next page (#235). A jump onto the next instruction (the null-list path) keeps its target there and
+ * skips the call, which is right: it has no list. Refuses unless the section and one site are found.
+ */
+internal fun BytecodePatchContext.hookPreSearchList() {
+    val entry = preSearchEntryType() ?: throw PatchException("no single entry class for \"$PRE_SEARCH_LIST\"")
+    val sections = preSearchSections()
+    val section = sections.singleOrNull()
+        ?: throw PatchException("expected one section naming itself \"$PRE_SEARCH_SECTION\", found ${sections.size}")
+    val entryInterfaces = classDefByOrNull(entry)?.interfaces?.toSet() ?: emptySet()
+    val accessors = preSearchSites(section, entry, entryInterfaces).map { it.accessor }.distinct()
+    val accessor = accessors.singleOrNull()?.takeIf { it.isNotEmpty() }
+        ?: throw PatchException("${section.type} reads an entry's node through ${accessors.size} accessors, expected one")
+    val sites = preSearchListSites(section)
+    val site = sites.singleOrNull()
+        ?: throw PatchException("${section.type} reads its paginated list in ${sites.size} places, expected one")
+    mutableClassDefBy(site.method.definingClass).findMutableMethodOf(site.method).addInstructions(
+        site.read + 1,
+        """
+            const-string v${site.scratch}, "$accessor"
+            invoke-static { v${site.list}, v${site.scratch} }, $PRE_SEARCH_LIST_HOOK
+            move-result-object v${site.list}
+            check-cast v${site.list}, $PRE_SEARCH_PAGINABLE
+        """,
+    )
+}

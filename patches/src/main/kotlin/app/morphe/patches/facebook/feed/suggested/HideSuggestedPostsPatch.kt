@@ -57,6 +57,7 @@ import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.search.hookPreSearchHead
+import app.morphe.patches.facebook.search.hookPreSearchList
 import app.morphe.patches.facebook.search.hookPreSearchQuery
 import app.morphe.patches.facebook.search.hookPreSearchSections
 import app.morphe.util.classDefForEachReferencing
@@ -226,6 +227,12 @@ val hideSuggestedPostsPatch = bytecodePatch(
             fillStoryTargetClassStub()
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so Hide posts from groups you're not in can't read a group a post's title names.")
+        }
+        // A list of only hidden rows loads page after page without end (#235). Before the section hook, which changes the shape this reads.
+        try {
+            hookPreSearchList()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so the search screen can keep loading while every row is hidden.")
         }
         // The search screen's For you and People you may know rows, and Debug logging's names for every row there (#80).
         try {

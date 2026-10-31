@@ -73,6 +73,9 @@ public final class PreSearchSections {
     /** Counted under the patch's name each time the People you may know entry is drawn empty. */
     static final String HIDDEN_PEOPLE = "Search screen drawn without People you may know";
 
+    /** Counted and logged each time the list is handed to Facebook without a next page (#235). */
+    static final String PAGING_STOPPED = "Search screen: stopped paging, every loaded row hidden";
+
     /** How the Debug line names the builder that handed a node over. */
     static final String FROM_LIST = "list";
     static final String FROM_HEAD = "head";
@@ -141,6 +144,58 @@ public final class PreSearchSections {
     @Nullable
     public static Object queryNode(@Nullable Object node) {
         return byNode(node, FROM_QUERY);
+    }
+
+    /**
+     * Injection point in the section's build, right after it reads its paginated list and before it
+     * hands the list to Facebook's paging (#235). A hidden row is drawn with no height, so a list whose
+     * every row is hidden keeps its end in view, loads the next page, gets the same hidden rows back
+     * and loops with a spinner under "No recent searches". While a hide switch is on and every row
+     * loaded so far is hidden, this answers a copy of the list that says it has no next page. Any
+     * visible row, both switches off, Hushfacebook paused or anything unreadable leaves Facebook's
+     * list as it is. Never throws.
+     *
+     * @param list     the paginated list, null when the section has none.
+     * @param accessor the name of the entry's no-argument node accessor, as the patch read it.
+     * @return the list to page, Facebook's own unless every row of it is hidden.
+     */
+    @Nullable
+    public static Object list(@Nullable Object list, @Nullable String accessor) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (list == null || accessor == null || !Utils.settingsReady()) return list;
+            boolean forYou = Settings.HIDE_SEARCH_FOR_YOU.get();
+            boolean people = Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW.get();
+            Object stopped = withoutPaging(list, accessor, forYou, people);
+            if (stopped == list) return list;
+            HookStatus.bound(FAMILY, HOOK);
+            HookStatus.counted(FAMILY, PAGING_STOPPED);
+            Logger.printDebug(() -> PAGING_STOPPED);
+            return stopped;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, HOOK, failure);
+            return list;
+        }
+    }
+
+    /**
+     * [list] itself, or a copy without paging when it has a next page, has rows, and every row is
+     * one a switch hides (an entry with no node is drawn empty too). Reads nothing with both off.
+     */
+    static Object withoutPaging(Object list, String accessor, boolean forYou, boolean people) throws Exception {
+        if (!forYou && !people) return list;
+        Class<?> type = list.getClass();
+        if (!Boolean.TRUE.equals(type.getMethod("hasNextPage").invoke(list))) return list;
+        Method rows = type.getMethod("underlyingList");
+        Object loaded = rows.invoke(list);
+        if (!(loaded instanceof List) || ((List<?>) loaded).isEmpty()) return list;
+        for (Object entry : (List<?>) loaded) {
+            if (entry == null) continue;
+            Object node = entry.getClass().getMethod(accessor).invoke(entry);
+            if (node != null && hidden(node, forYou, people) == null) return list;
+        }
+        Object copy = type.getMethod("withoutPaging", rows.getReturnType()).invoke(null, loaded);
+        return copy == null ? list : copy;
     }
 
     private static Object byNode(@Nullable Object node, String from) {
