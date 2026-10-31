@@ -129,10 +129,10 @@
       "adopted": {
         "commit": "5db2e57e133aede5297c48b419168cf30fd89953",
         "fixtures": {
-          "receipt": "https://github.com/SysAdminDoc/Hushfacebook/releases/download/v0.19.0/release-receipt-0.19.0.json",
+          "receipt": "https://github.com/SysAdminDoc/Hushfacebook/releases/download/v0.20.0/release-receipt-0.20.0.json",
           "builds": [
-            "584.0.0.51.56 (475817393)",
-            "584.0.0.51.56 (475817404)"
+            "585.0.0.47.54 (476015655)",
+            "585.0.0.47.54 (476015543)"
           ]
         }
       },
@@ -281,10 +281,10 @@
       "adopted": {
         "commit": "319cde236e373ff8feb66fa30e99028e3d9dff6e",
         "fixtures": {
-          "receipt": "https://github.com/SysAdminDoc/Hushfacebook/releases/download/v0.19.0/release-receipt-0.19.0.json",
+          "receipt": "https://github.com/SysAdminDoc/Hushfacebook/releases/download/v0.20.0/release-receipt-0.20.0.json",
           "builds": [
-            "584.0.0.51.56 (475817393)",
-            "584.0.0.51.56 (475817404)"
+            "585.0.0.47.54 (476015655)",
+            "585.0.0.47.54 (476015543)"
           ]
         }
       },
