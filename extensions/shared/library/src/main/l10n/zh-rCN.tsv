@@ -1488,6 +1488,8 @@ Only the first reel waits	只有第一个 Reels 等待点按
 With the switch above on, after you play one reel, the reels you swipe to play on their own. The feed, Watch and stories always wait.	开启上面的开关后，你播放一个 Reels 之后，滑动到的 Reels 会自动播放。动态消息、Watch 和快拍始终等待点按。
 Slower speeds	更慢的速度
 Adds 0.1x and 0.25x to the speed menu of reels and of feed and Watch videos, for slowing down a fast moment.	在 Reels 以及动态消息和 Watch 视频的速度菜单中添加 0.1 倍和 0.25 倍，用于放慢精彩瞬间。
+Speed on finished live videos	已结束直播视频的播放速度
+A live video that has ended gets Playback speed in its gear menu, like other videos. Videos that are still live, and ads, keep Facebook's menu.	已结束的直播视频会像其他视频一样，在齿轮菜单中提供播放速度。仍在直播的视频和广告保留 Facebook 的菜单。
 Share now	立即分享
 Send in Messenger	在 Messenger 中发送
 Share to your story	分享到你的快拍

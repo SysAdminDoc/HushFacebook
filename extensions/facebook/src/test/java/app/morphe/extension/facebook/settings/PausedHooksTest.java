@@ -111,6 +111,7 @@ import app.morphe.extension.facebook.media.ProgressBar;
 import app.morphe.extension.facebook.media.QualityChoiceForTests;
 import app.morphe.extension.facebook.media.SkipSilence;
 import app.morphe.extension.facebook.media.ReelSpeedForTests;
+import app.morphe.extension.facebook.media.ReplaySpeed;
 import app.morphe.extension.facebook.media.RecentlyWatchedForTests;
 import app.morphe.extension.facebook.media.ResumePlaybackForTests;
 import app.morphe.extension.facebook.media.TapToPlay;
@@ -697,10 +698,11 @@ public class PausedHooksTest {
                 // With Hide the pull down to lock hint on, the 2x pill's hint is drawn as the plain pill.
                 ReelHoldForTests::hidesTheLockHint));
         // A speed picked on a reel is set on the next reel the viewer starts, and one picked on a
-        // feed video on the next feed video.
+        // feed video on the next feed video. A full-screen video that isn't live, and isn't an ad,
+        // gets Playback speed in its gear menu (#238).
         probes.put(PatchFamily.KEEP_REEL_SPEED, Arrays.asList(ReelSpeedForTests::keepsAPickedSpeed,
                 ReelSpeedForTests::keepsAPickedVideoSpeed, ReelSpeedForTests::offersSlowerSpeeds,
-                ReelSpeedForTests::gearOffersSlowerSpeeds));
+                ReelSpeedForTests::gearOffersSlowerSpeeds, () -> ReplaySpeed.offerSpeed(0)));
         // A player's start with no tap before it is held, and Facebook's Autoplay setting reads Off.
         probes.put(PatchFamily.TAP_TO_PLAY, Arrays.asList(
                 () -> {

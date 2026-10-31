@@ -81,6 +81,7 @@ import app.morphe.extension.facebook.media.PinchZoomForTests;
 import app.morphe.extension.facebook.media.QualityChoiceForTests;
 import app.morphe.extension.facebook.media.SkipSilence;
 import app.morphe.extension.facebook.media.ReelSpeedForTests;
+import app.morphe.extension.facebook.media.ReplaySpeed;
 import app.morphe.extension.facebook.media.ResumePlaybackForTests;
 import app.morphe.extension.facebook.misc.AppLockForTests;
 import app.morphe.extension.facebook.misc.TextSizeForTests;
@@ -483,6 +484,8 @@ public class ColdStartHooksTest {
         assertFalse("a speed menu built before the context offered slower speeds", ReelSpeedForTests.offersSlowerSpeeds());
         assertFalse("a gear speed sheet built before the context offered slower speeds",
                 ReelSpeedForTests.gearOffersSlowerSpeeds());
+        assertFalse("a gear menu built before the context offered Playback speed on a finished live video",
+                ReplaySpeed.offerSpeed(0));
         assertFalse("a video started before the context played at the chosen quality",
                 QualityChoiceForTests.playsTheChosenQuality());
         String shared = "https://www.facebook.com/share/p/1AbCdEf/?mibextid=WC7FNe";

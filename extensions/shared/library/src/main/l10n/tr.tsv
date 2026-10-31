@@ -1492,6 +1492,8 @@ Only the first reel waits	Yalnızca ilk reel bekler
 With the switch above on, after you play one reel, the reels you swipe to play on their own. The feed, Watch and stories always wait.	Yukarıdaki anahtar açıkken bir reel oynattıktan sonra kaydırdığınız reeller kendiliğinden oynar. Akış, Watch ve hikayeler her zaman bekler.
 Slower speeds	Daha yavaş hızlar
 Adds 0.1x and 0.25x to the speed menu of reels and of feed and Watch videos, for slowing down a fast moment.	Reellerin ve akış ile Watch videolarının hız menüsüne 0,1x ve 0,25x seçeneklerini ekler; hızlı geçen bir anı yavaşlatmak için.
+Speed on finished live videos	Biten canlı videolarda hız
+A live video that has ended gets Playback speed in its gear menu, like other videos. Videos that are still live, and ads, keep Facebook's menu.	Sona ermiş bir canlı video, diğer videolar gibi dişli menüsünde Oynatma hızı seçeneğini alır. Hâlâ canlı olan videolar ve reklamlar Facebook'un menüsünü korur.
 Share now	Şimdi paylaş
 Send in Messenger	Messenger'da gönder
 Share to your story	Hikayenizde paylaş

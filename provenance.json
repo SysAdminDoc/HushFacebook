@@ -1046,13 +1046,15 @@
     {
       "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/media/ReelSpeed.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/media/ReplaySpeed.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/media/reelspeed/KeepReelSpeedPatch.kt",
-        "patches/src/main/kotlin/app/morphe/patches/facebook/media/reelspeed/ReelSpeedAnchors.kt"
+        "patches/src/main/kotlin/app/morphe/patches/facebook/media/reelspeed/ReelSpeedAnchors.kt",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/media/reelspeed/ReplaySpeedSite.kt"
       ],
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook: keep the reel speed. The patch finds, in Facebook 577 and 580, FbGrootPlayer by its play trace, then its speed setter as the one instance (F)V method reading HeroPlayerSetting.enableLastPlaybackSpeedCacheUpdate, its PlayerOrigin getter as the one method answering a PlayerOrigin, its bind by its bindVideoSources trace and its kept-name maybeTrackVideoStart, and the Reels menu's speed toast as the one static (Context, float) method holding InlinePlaybackSpeedAttributeSelector. The setter, the bind, the start and the toast hand the extension their arguments first thing, and the extension's stubs are filled with the setter and the origin getter. The extension keeps a speed picked in the Reels menu, in memory only, with the origin of the player it was set on, and sets it on the first start after each bind of a player with that origin."
+      "changes": "Written for Hushfacebook: keep the reel speed. The patch finds, in Facebook 577 and 580, FbGrootPlayer by its play trace, then its speed setter as the one instance (F)V method reading HeroPlayerSetting.enableLastPlaybackSpeedCacheUpdate, its PlayerOrigin getter as the one method answering a PlayerOrigin, its bind by its bindVideoSources trace and its kept-name maybeTrackVideoStart, and the Reels menu's speed toast as the one static (Context, float) method holding InlinePlaybackSpeedAttributeSelector. The setter, the bind, the start and the toast hand the extension their arguments first thing, and the extension's stubs are filled with the setter and the origin getter. The extension keeps a speed picked in the Reels menu, in memory only, with the origin of the player it was set on, and sets it on the first start after each bind of a player with that origin. For issue #238, from Facebook 585, the gear menu builder (the one method holding UNIFIED_PLAYER_VDD_ENGAGEMENT_STATE that casts to the class holding video_player_control_gear_playback_speed_tap) asks the extension right before it leaves Playback speed out of a full-screen video that is not live, found as an if-nez, an if-eqz and a goto onto the speed row, and the extension says yes unless the video is an ad or its switch is off."
     },
     {
       "paths": [

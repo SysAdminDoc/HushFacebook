@@ -2572,7 +2572,7 @@
     },
     {
       "name": "Keep the reel speed",
-      "description": "A speed you pick in a reel's menu stays for the next reels, even after Facebook restarts, so you don't set it every time. Pick normal speed to go back. On by default. A second switch for feed and Watch videos starts off. Both are in Hushfacebook settings > Reels and Watch.",
+      "description": "A speed you pick in a reel's menu stays for the next reels, even after Facebook restarts, so you don't set it every time. Pick normal speed to go back. On by default. A second switch for feed and Watch videos starts off. Live videos that have ended get Playback speed in their gear menu too, also on by default. All of it is in Hushfacebook settings > Reels and Watch.",
       "category": "Playback",
       "use": true,
       "dependencies": [

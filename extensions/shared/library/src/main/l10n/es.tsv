@@ -1492,6 +1492,8 @@ Only the first reel waits	Solo espera el primer reel
 With the switch above on, after you play one reel, the reels you swipe to play on their own. The feed, Watch and stories always wait.	Con el interruptor de arriba activado, después de reproducir un reel, los reels a los que deslizas se reproducen solos. El feed, Watch y las historias siempre esperan.
 Slower speeds	Velocidades más lentas
 Adds 0.1x and 0.25x to the speed menu of reels and of feed and Watch videos, for slowing down a fast moment.	Añade 0,1x y 0,25x al menú de velocidad de los reels y de los vídeos del feed y de Watch, para ralentizar un momento rápido.
+Speed on finished live videos	Velocidad en vídeos en directo terminados
+A live video that has ended gets Playback speed in its gear menu, like other videos. Videos that are still live, and ads, keep Facebook's menu.	Un vídeo en directo que ya terminó tiene Velocidad de reproducción en su menú de engranaje, como los demás vídeos. Los vídeos que siguen en directo y los anuncios mantienen el menú de Facebook.
 Share now	Compartir ahora
 Send in Messenger	Enviar por Messenger
 Share to your story	Compartir en tu historia

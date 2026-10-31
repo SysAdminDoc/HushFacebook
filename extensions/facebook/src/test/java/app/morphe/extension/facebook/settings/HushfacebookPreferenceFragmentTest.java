@@ -1987,6 +1987,29 @@ public class HushfacebookPreferenceFragmentTest {
         }
     }
 
+    /** #238: Speed on finished live videos follows Slower speeds and starts on. */
+    @Test
+    public void speedOnFinishedLiveVideosFollowsSlowerSpeeds() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.KEEP_REEL_SPEED);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(controller);
+            int slowerAt = indexOfKey(rows, Settings.SLOWER_REEL_SPEEDS.key);
+            SwitchPreference replays = (SwitchPreference) rows.get(slowerAt + 1);
+            assertEquals(Settings.SPEED_ON_REPLAYS.key, replays.getKey());
+            assertEquals("Speed on finished live videos", String.valueOf(replays.getTitle()));
+            assertEquals("A live video that has ended gets Playback speed in its gear menu, like other videos. "
+                    + "Videos that are still live, and ads, keep Facebook's menu.", String.valueOf(replays.getSummary()));
+            assertTrue("it starts on", replays.isChecked());
+            assertTrue(replays.isEnabled());
+
+            replays.setChecked(false);
+            ShadowLooper.idleMainLooper();
+            assertFalse(Settings.SPEED_ON_REPLAYS.savedValue());
+        } finally {
+            Settings.SPEED_ON_REPLAYS.resetToDefault();
+        }
+    }
+
     private static List<Preference> rowsOf(ActivityController<Activity> controller) {
         HushfacebookPreferenceFragment fragment = new HushfacebookPreferenceFragment();
         controller.get().getFragmentManager().beginTransaction()

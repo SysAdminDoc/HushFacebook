@@ -67,13 +67,19 @@ internal const val PATCH = "Keep the reel speed"
  * The gear menu's speed sheet checks Normal when it can't find its player, and its checked row
  * can't be picked, so the sheet asks the extension which speed to check there ([checkGearSheetSpeed]),
  * and Normal can be picked to forget a kept speed (#199).
+ *
+ * Speed on finished live videos, the fourth switch, is the gear menu of a full-screen video that
+ * isn't live asking the extension before it leaves Playback speed out ([offerReplaySpeed], see
+ * ReplaySpeedSite.kt), since Facebook's live player opens a live video that has ended with no
+ * speed row (#238). Videos that are still live and ads keep Facebook's menu.
  */
 @Suppress("unused")
 val keepReelSpeedPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Keep the reel speed",
     description = "A speed you pick in a reel's menu stays for the next reels, even after Facebook restarts, " +
-        "so you don't set it every time. Pick normal speed to go back. On by default. A second switch for feed and Watch videos starts off. Both are " +
+        "so you don't set it every time. Pick normal speed to go back. On by default. A second switch for feed and Watch videos starts off. " +
+        "Live videos that have ended get Playback speed in their gear menu too, also on by default. All of it is " +
         "in Hushfacebook settings > Reels and Watch.",
     default = true,
 ) {
@@ -106,6 +112,11 @@ val keepReelSpeedPatch = bytecodePatch(
             lowerSpeedFloor()
         } catch (moved: PatchException) {
             patchLog.warning("${moved.message}. The patch goes on, and 0.1x plays at Facebook's slowest, 0.25x.")
+        }
+        try {
+            offerReplaySpeed(anchors.flags.getValue("sponsored"))
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on, and a finished live video's gear menu keeps Facebook's rows.")
         }
         enableStatus("keepReelSpeed")
     }

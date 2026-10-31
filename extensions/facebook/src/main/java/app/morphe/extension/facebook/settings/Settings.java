@@ -969,6 +969,16 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_slower_reel_speeds", FALSE);
 
     /**
+     * The gear menu offers Playback speed on a full-screen video that isn't live, a finished live
+     * video among them, where Facebook's full-screen player leaves it out behind a server flag
+     * (#238). It rides on Keep the reel speed's patch
+     * ({@link app.morphe.extension.facebook.media.ReplaySpeed}). Ads and videos that are still
+     * live keep Facebook's menu, and so does everything while it's off or paused.
+     */
+    public static final BooleanSetting SPEED_ON_REPLAYS =
+            new BooleanSetting("hushfacebook_speed_on_replays", TRUE);
+
+    /**
      * A reel you hold plays at double speed until you let go, through the speed-up Facebook's Reels
      * controls already have, in place of Facebook's long-press menu
      * ({@link app.morphe.extension.facebook.reels.ReelHold}). Starts off. Off or paused, a long press

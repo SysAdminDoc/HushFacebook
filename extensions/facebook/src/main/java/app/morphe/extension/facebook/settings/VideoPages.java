@@ -246,6 +246,9 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SLOWER_REEL_SPEEDS,
                     L10n.t("Adds 0.1x and 0.25x to the speed menu of reels and of feed and Watch videos, for slowing down a "
                             + "fast moment.")));
+            reels.addPreference(toggle(context, Settings.SPEED_ON_REPLAYS,
+                    L10n.t("A live video that has ended gets Playback speed in its gear menu, like other videos. "
+                            + "Videos that are still live, and ads, keep Facebook's menu.")));
         }
         if (build.contains(PatchFamily.REEL_HOLD)) {
             reels.addPreference(toggle(context, Settings.HOLD_REEL_FOR_2X,

@@ -1492,6 +1492,8 @@ Only the first reel waits	Chỉ reel đầu tiên chờ
 With the switch above on, after you play one reel, the reels you swipe to play on their own. The feed, Watch and stories always wait.	Khi công tắc phía trên bật, sau khi bạn phát một reel, các reel bạn vuốt đến sẽ tự phát. Bảng tin, Watch và tin luôn chờ bạn nhấn.
 Slower speeds	Tốc độ chậm hơn
 Adds 0.1x and 0.25x to the speed menu of reels and of feed and Watch videos, for slowing down a fast moment.	Thêm 0,1x và 0,25x vào menu tốc độ của reel cũng như video trên bảng tin và Watch, để xem chậm những khoảnh khắc nhanh.
+Speed on finished live videos	Tốc độ cho video trực tiếp đã kết thúc
+A live video that has ended gets Playback speed in its gear menu, like other videos. Videos that are still live, and ads, keep Facebook's menu.	Video trực tiếp đã kết thúc có mục Tốc độ phát trong menu bánh răng, giống các video khác. Video vẫn đang trực tiếp và quảng cáo giữ nguyên menu của Facebook.
 Share now	Chia sẻ ngay
 Send in Messenger	Gửi bằng Messenger
 Share to your story	Chia sẻ lên tin của bạn
