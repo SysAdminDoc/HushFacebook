@@ -3177,6 +3177,44 @@
       "options": []
     },
     {
+      "name": "Round stories tray",
+      "description": "Draws the stories row on Home as round pictures at a size you pick, like Instagram. Starts off. Turn it on in Hushfacebook settings > Stories.",
+      "category": "Interface",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "585.0.0.47.54"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "585.0.0.47.54",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 476015655,
+                "ARMEABI_V7A": 476015543
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Sanitize sharing links",
       "description": "Takes Facebook's tracking tags off links you share or copy, so you share a clean link. A facebook.com/share/ link is made for one share, so Facebook can still trace that kind back to you, and a switch that starts off shares the post's own link in its place. On by default. Both are in Hushfacebook settings > Links and sharing.",
       "category": "Privacy",

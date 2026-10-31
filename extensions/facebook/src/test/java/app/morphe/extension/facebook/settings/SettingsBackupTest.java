@@ -152,6 +152,8 @@ public class SettingsBackupTest {
         out.put("hushfacebook_header_picture",
                 "it names the picture at the top of Home, whose shrunk copy only this install holds. A settings file "
                         + "can't carry the picture itself, and the name alone would point at nothing on another phone.");
+        out.put("hushfacebook_stories_tray_size",
+                "it is a width in dp picked for this phone's screen, which reads differently on another phone.");
         for (String count : new String[] {"friends", "followers", "following"}) {
             out.put("hushfacebook_local_" + count,
                     "it's a number typed for your own profile on this phone, for fun. It stays here and isn't "

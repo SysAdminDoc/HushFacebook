@@ -2342,3 +2342,13 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	Facebooks echte Zahl wird angezeigt. Gib Ziffern ein, um deine eigene zu zeigen.
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	Dein Profil zeigt auf diesem Handy %1$s.
+# context: switch title under Stories; the stories row at the top of Home shown as round pictures
+Round stories tray	Runde Stories-Leiste
+# context: summary of that switch
+Draws the stories row on Home as round pictures, like Instagram. Applies the next time Home loads its stories.	Zeigt die Stories-Leiste auf der Startseite als runde Bilder, wie bei Instagram. Gilt, sobald die Startseite ihre Stories das nächste Mal lädt.
+# context: row title and dialog title; how wide each round story picture is
+Round picture size	Größe der runden Bilder
+# context: message in that row's edit dialog; dp is the Android density-independent size unit; %1$s is the smallest, %2$s the largest, %3$s the default
+Width in dp, from %1$s to %2$s. Leave it blank for %3$s.	Breite in dp, von %1$s bis %2$s. Leer lassen für %3$s.
+# context: summary of that row; %1$s is the width in dp
+Round pictures are %1$s dp wide.	Die runden Bilder sind %1$s dp breit.

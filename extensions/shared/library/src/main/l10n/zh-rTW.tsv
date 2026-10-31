@@ -2346,3 +2346,13 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	顯示 Facebook 的真實數字。輸入數字即可顯示你自己的數字。
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	你的檔案在這支手機上顯示 %1$s。
+# context: switch title under Stories; the stories row at the top of Home shown as round pictures
+Round stories tray	圓形限時動態列
+# context: summary of that switch
+Draws the stories row on Home as round pictures, like Instagram. Applies the next time Home loads its stories.	把首頁頂端的限時動態列顯示為圓形圖片，類似 Instagram。下次首頁載入限時動態時生效。
+# context: row title and dialog title; how wide each round story picture is
+Round picture size	圓形圖片大小
+# context: message in that row's edit dialog; dp is the Android density-independent size unit; %1$s is the smallest, %2$s the largest, %3$s the default
+Width in dp, from %1$s to %2$s. Leave it blank for %3$s.	寬度，單位 dp，範圍 %1$s 到 %2$s。留空則使用 %3$s。
+# context: summary of that row; %1$s is the width in dp
+Round pictures are %1$s dp wide.	圓形圖片寬 %1$s dp。

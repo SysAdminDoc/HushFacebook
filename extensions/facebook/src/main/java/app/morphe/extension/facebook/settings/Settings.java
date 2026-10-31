@@ -406,6 +406,17 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting LONGER_STORY_MUSIC =
             new BooleanSetting("hushfacebook_longer_story_music", FALSE);
 
+    /**
+     * Home's stories row drawn as round pictures ({@link app.morphe.extension.facebook.stories.StoriesTrayCircles},
+     * #260). Starts off. Read as each tile appears.
+     */
+    public static final BooleanSetting STORIES_TRAY_CIRCLES =
+            new BooleanSetting("hushfacebook_stories_tray_circles", FALSE);
+
+    /** The diameter of those pictures in dp, digits only, blank for the default. Not a switch. */
+    public static final StringSetting STORIES_TRAY_SIZE =
+            new StringSetting("hushfacebook_stories_tray_size", "");
+
     /** The two page filters that take server-inlined ads out of Reels and Watch. */
     public static final BooleanSetting HIDE_SPONSORED_REELS =
             new BooleanSetting("hushfacebook_hide_sponsored_reels", TRUE);

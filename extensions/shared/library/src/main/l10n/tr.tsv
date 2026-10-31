@@ -2342,3 +2342,13 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	Facebook'un gerçek sayısı görünüyor. Kendi sayını göstermek için rakam yaz.
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	Profilin bu telefonda %1$s gösteriyor.
+# context: switch title under Stories; the stories row at the top of Home shown as round pictures
+Round stories tray	Yuvarlak hikaye çubuğu
+# context: summary of that switch
+Draws the stories row on Home as round pictures, like Instagram. Applies the next time Home loads its stories.	Ana sayfadaki hikaye satırını Instagram gibi yuvarlak resimler olarak gösterir. Ana sayfa hikayeleri bir sonraki yüklediğinde geçerli olur.
+# context: row title and dialog title; how wide each round story picture is
+Round picture size	Yuvarlak resim boyutu
+# context: message in that row's edit dialog; dp is the Android density-independent size unit; %1$s is the smallest, %2$s the largest, %3$s the default
+Width in dp, from %1$s to %2$s. Leave it blank for %3$s.	dp cinsinden genişlik, %1$s ile %2$s arası. %3$s için boş bırakın.
+# context: summary of that row; %1$s is the width in dp
+Round pictures are %1$s dp wide.	Yuvarlak resimler %1$s dp genişliğinde.

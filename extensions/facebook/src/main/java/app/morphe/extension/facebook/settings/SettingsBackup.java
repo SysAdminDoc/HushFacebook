@@ -183,6 +183,7 @@ public final class SettingsBackup {
             Settings.MARK_STORIES_SEEN,
             Settings.UPLOAD_STORIES_IN_HD,
             Settings.LONGER_STORY_MUSIC,
+            Settings.STORIES_TRAY_CIRCLES,
             Settings.PINCH_TO_ZOOM,
             Settings.PINCH_TO_ZOOM_KEEP,
             Settings.PINCH_TO_ZOOM_DOUBLE_TAP,

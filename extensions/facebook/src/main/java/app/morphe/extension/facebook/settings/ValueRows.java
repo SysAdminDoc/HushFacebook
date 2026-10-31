@@ -988,6 +988,34 @@ final class ValueRows {
         }
     }
 
+    /** The Round stories tray's size row (#260). Its summary follows its text, whoever sets it. */
+    static final class SizeRow extends EditTextPreference {
+        SizeRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setText(String text) {
+            super.setText(text);
+            setSummary(HushfacebookPreferenceFragment.sizeSummary(text));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+            fitAboveKeyboard(getDialog());
+        }
+    }
+
     /**
      * The start tab's row. Its summary follows its value, whoever sets it: the person, the shared
      * page syncing it from the setting, or an import.

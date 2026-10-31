@@ -88,6 +88,7 @@ final class SwitchLabels {
         if (setting == Settings.MARK_STORIES_SEEN) return L10n.t("Mark as seen button");
         if (setting == Settings.UPLOAD_STORIES_IN_HD) return L10n.t("Upload Stories in HD");
         if (setting == Settings.LONGER_STORY_MUSIC) return L10n.t("Longer music on photo stories");
+        if (setting == Settings.STORIES_TRAY_CIRCLES) return L10n.t("Round stories tray");
         if (setting == Settings.PINCH_TO_ZOOM) return L10n.t("Pinch to zoom");
         if (setting == Settings.PINCH_TO_ZOOM_KEEP) return L10n.t("Stay zoomed");
         if (setting == Settings.PINCH_TO_ZOOM_DOUBLE_TAP) return L10n.t("Double tap to zoom");

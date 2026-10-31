@@ -67,6 +67,7 @@ import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.misc.HeaderText;
 import app.morphe.extension.facebook.profile.LocalProfileCounts;
+import app.morphe.extension.facebook.stories.StoriesTrayCircles;
 import app.morphe.extension.facebook.misc.OpeningPause;
 import app.morphe.extension.facebook.menu.MenuTiles;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
@@ -2218,6 +2219,41 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         String digits = LocalProfileCounts.clean(text);
         if (digits.isEmpty()) return L10n.t("Facebook's real number shows. Type digits to show your own.");
         return L10n.f("Your profile shows %1$s on this phone.", L10n.isolate(LocalProfileCounts.formatted(digits)));
+    }
+
+    /**
+     * Round stories tray (#260): how wide each round picture is, in dp. What's saved is digits only,
+     * blank for the default size.
+     */
+    static ValueRows.SizeRow sizeRow(Context context) {
+        StringSetting setting = Settings.STORIES_TRAY_SIZE;
+        ValueRows.SizeRow row = new ValueRows.SizeRow(context);
+        row.setKey(setting.key);
+        row.setTitle(L10n.t("Round picture size"));
+        row.setDialogTitle(L10n.t("Round picture size"));
+        row.setDialogMessage(L10n.f("Width in dp, from %1$s to %2$s. Leave it blank for %3$s.",
+                StoriesTrayCircles.MIN_DP, StoriesTrayCircles.MAX_DP, StoriesTrayCircles.DEFAULT_DP));
+        row.setPositiveButtonText(L10n.t("Save"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        EditText field = row.getEditText();
+        keepEditorInDialog(field, false);
+        field.setInputType(InputType.TYPE_CLASS_NUMBER);
+        field.setFilters(new InputFilter[] {new InputFilter.LengthFilter(3)});
+        field.setHint(String.valueOf(StoriesTrayCircles.DEFAULT_DP));
+        row.setText(setting.savedValue());
+        row.setOnPreferenceChangeListener((preference, typed) -> {
+            String raw = typed == null ? "" : typed.toString().trim();
+            String clean = LocalProfileCounts.clean(raw);
+            if (clean.equals(raw)) return true;
+            ((ValueRows.SizeRow) preference).setText(clean);
+            return false;
+        });
+        return row;
+    }
+
+    /** What the Round picture size row says for [text], the digits typed there. */
+    static String sizeSummary(String text) {
+        return L10n.f("Round pictures are %1$s dp wide.", StoriesTrayCircles.diameterDp(text));
     }
 
     /** What the Home header text row says for [text], the words typed there. */

@@ -2342,3 +2342,13 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	Angka asli Facebook ditampilkan. Ketik angka untuk menampilkan angka Anda sendiri.
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	Profil Anda menampilkan %1$s di ponsel ini.
+# context: switch title under Stories; the stories row at the top of Home shown as round pictures
+Round stories tray	Baris cerita bulat
+# context: summary of that switch
+Draws the stories row on Home as round pictures, like Instagram. Applies the next time Home loads its stories.	Menampilkan baris cerita di Beranda sebagai gambar bulat, seperti Instagram. Berlaku saat Beranda memuat ceritanya berikutnya.
+# context: row title and dialog title; how wide each round story picture is
+Round picture size	Ukuran gambar bulat
+# context: message in that row's edit dialog; dp is the Android density-independent size unit; %1$s is the smallest, %2$s the largest, %3$s the default
+Width in dp, from %1$s to %2$s. Leave it blank for %3$s.	Lebar dalam dp, dari %1$s sampai %2$s. Biarkan kosong untuk %3$s.
+# context: summary of that row; %1$s is the width in dp
+Round pictures are %1$s dp wide.	Gambar bulat selebar %1$s dp.

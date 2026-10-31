@@ -156,3 +156,6 @@ Keeping Facebook from noticing screenshots is ReVanced's universal Prevent scree
 Hiding single tabs is something Loukious does for the Marketplace and Games tabs. Hide tabs is written here, as one more rule of the tab bar filter Marketplace only and Hide the Reels tab already use, and it covers Feeds, Friends, Groups and Events too, each by the tab class Facebook keeps the name of.
 
 If you know of a Facebook patch source we missed, open an issue with a link.
+
+Drawing Home's stories row as round pictures, which issue #260 asked for, is Round stories tray, written here from the 585 build with no code from any other project. Facebook builds the row as a horizontal list of Litho tiles and has no round tile, so the patch styles views. The row's render method is found by the string it writes into its trace, and the list view id it stores is read from that same method, so no id is written down. Every static factory that wraps a new list in a pull to refresh layout hands its wrapper to the extension, which clips and scales the tiles of the list that carries that id.
+

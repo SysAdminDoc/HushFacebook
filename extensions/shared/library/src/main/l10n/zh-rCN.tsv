@@ -2337,3 +2337,13 @@ Digits only, up to 10. Your own profile shows this number on this phone. Leave i
 Facebook's real number shows. Type digits to show your own.	显示 Facebook 的真实数字。输入数字即可显示你自己的数字。
 # context: summary of that row; %1$s is the number typed, already grouped for the language
 Your profile shows %1$s on this phone.	你的主页在这部手机上显示 %1$s。
+# context: switch title under Stories; the stories row at the top of Home shown as round pictures
+Round stories tray	圆形快拍栏
+# context: summary of that switch
+Draws the stories row on Home as round pictures, like Instagram. Applies the next time Home loads its stories.	把主页顶部的快拍栏显示为圆形图片，类似 Instagram。下次主页加载快拍时生效。
+# context: row title and dialog title; how wide each round story picture is
+Round picture size	圆形图片大小
+# context: message in that row's edit dialog; dp is the Android density-independent size unit; %1$s is the smallest, %2$s the largest, %3$s the default
+Width in dp, from %1$s to %2$s. Leave it blank for %3$s.	宽度，单位 dp，范围 %1$s 到 %2$s。留空则使用 %3$s。
+# context: summary of that row; %1$s is the width in dp
+Round pictures are %1$s dp wide.	圆形图片宽 %1$s dp。

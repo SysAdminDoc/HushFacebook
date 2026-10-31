@@ -664,6 +664,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/StoriesTrayCircles.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/stories/tray/StoriesTrayCirclesPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Home's stories row drawn as round pictures at a chosen size. Facebook 585 builds the row as Litho tiles in a list with no round variant, so the patch finds the row's render method by its trace string, reads the list view id it stores, and hands every pull to refresh wrapper a list factory returns to the extension, which clips each tile of that list to a circle and scales it."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/profile/ProfileNotes.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/profile/HideProfileNotesPatch.kt"
       ],

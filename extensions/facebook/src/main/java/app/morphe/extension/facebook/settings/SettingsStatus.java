@@ -90,6 +90,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean storiesTrayCircles() {
+        return false;
+    }
+
     public static boolean localProfileCounts() {
         return false;
     }

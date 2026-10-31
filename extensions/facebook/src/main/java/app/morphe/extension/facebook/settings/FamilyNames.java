@@ -45,6 +45,7 @@ public final class FamilyNames {
     public static final String STORY_SEEN = "View stories anonymously";
     public static final String STORY_UPLOAD_HD = "Upload Stories in HD";
     public static final String STORY_MUSIC_LENGTH = "Longer music on photo stories";
+    public static final String STORIES_TRAY_CIRCLES = "Round stories tray";
     public static final String SPONSORED_REELS = "Hide sponsored reels";
     public static final String SPONSORED_SEARCH = "Hide sponsored search results";
     public static final String SPONSORED_PROFILE_POSTS = "Hide sponsored profile posts";
