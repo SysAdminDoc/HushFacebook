@@ -402,4 +402,80 @@ class ReturnRefreshShapesTest {
             assertEquals(count, refused.first.body().size)
         }
     }
+
+    private val feed = "Lfixture/NewsFeed;"
+
+    /** NewsFeedFragment's onBackPressed as 584 and 585 have it: is the feed at the top, then the refresh there or the scroll. */
+    private fun homeBack(
+        ask: String = "invoke-virtual { p0 }, $feed->isAtTop()Z",
+        beforeTest: String = "",
+        test: String = "if-eqz v0, :scroll",
+        scroll: String = "invoke-virtual { p0 }, $feed->scrollToTop()V",
+        name: String = "onBackPressed",
+        parameters: List<String> = emptyList(),
+        static: Boolean = false,
+    ) = method(
+        """
+            invoke-virtual { p0 }, $feed->dispatchOnBackPressed()Z
+            move-result v0
+            const/4 v1, 0x1
+            if-nez v0, :done
+            $ask
+            move-result v0
+            $beforeTest
+            $test
+            const-string v2, "$BACK_AT_TOP"
+            invoke-virtual { p0 }, $feed->A0R()V
+            return v1
+            :scroll
+            invoke-static { p0 }, $feed->A0C(Lfixture/NewsFeed;)Lfixture/Bar;
+            $scroll
+            :done
+            return v1
+        """,
+        parameters, "Z", static, registers = 4, name = name, owner = feed,
+    )
+
+    @Test
+    fun `onBackPressed asks right before a feed that isn't at the top scrolls there and a yes ends the press`() {
+        assertTrue(isHomeBack(homeBack()))
+        assertFalse(isHomeBack(homeBack(name = "onBackPressedAtTop")))
+        assertFalse(isHomeBack(homeBack(parameters = listOf(feed), static = true)))
+        assertFalse(isHomeBack(homeBack(parameters = listOf("Z"))))
+        assertEquals(6, homeBackToTop(homeBack()))
+
+        val back = homeBack()
+        val before = back.body()
+        back.holdBackToTopBeforeIt()
+        val after = back.body()
+        assertEquals(listOf(Opcode.IF_NEZ, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.RETURN,
+            Opcode.IF_EQZ), after.subList(6, 12).map { it.opcode })
+        assertEquals("Lapp/morphe/extension/facebook/feed/HomeBack;->holdScrollToTop()Z",
+            (after[7] as ReferenceInstruction).reference.toString())
+        assertEquals(List(5) { 0 }, listOf(6, 8, 9, 10, 11).map { (after[it] as OneRegisterInstruction).registerA })
+        val flow = ControlFlow.of(back)
+        assertEquals("a feed at the top goes on to Facebook's test", setOf(7, 11), flow.normal[6].toSet())
+        assertEquals("a no goes on to Facebook's test", setOf(10, 11), flow.normal[9].toSet())
+        assertEquals("Facebook's test still jumps to the scroll", setOf(12, 15), flow.normal[11].toSet())
+        assertEquals(before.map { it.opcode }, after.filterIndexed { index, _ -> index !in 6..10 }.map { it.opcode })
+
+        val refused = mapOf(
+            "another class's isAtTop" to homeBack(ask = "invoke-virtual { p0 }, Lfixture/Other;->isAtTop()Z"),
+            "something between the answer and its test" to homeBack(beforeTest = "const/4 v3, 0x0"),
+            "an if-nez test" to homeBack(test = "if-nez v0, :scroll"),
+            "no scrollToTop where the test jumps" to homeBack(scroll = "invoke-virtual { p0 }, $feed->A0D()V"),
+            "scrollToTop too far into the block" to homeBack(
+                scroll = "nop\nnop\nnop\ninvoke-virtual { p0 }, $feed->scrollToTop()V",
+            ),
+            "a jump to the test" to homeBack(
+                beforeTest = ":again",
+                scroll = "invoke-virtual { p0 }, $feed->scrollToTop()V\nif-eqz v1, :again",
+            ),
+        )
+        for ((shape, method) in refused) {
+            val count = method.body().size
+            assertThrows(shape, PatchException::class.java) { method.holdBackToTopBeforeIt() }
+            assertEquals("$shape changed", count, method.body().size)
+        }
+    }
 }

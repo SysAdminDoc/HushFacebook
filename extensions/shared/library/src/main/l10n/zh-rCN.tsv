@@ -287,6 +287,9 @@ Keep feed position on return	返回时保持动态消息位置
 Returning to Facebook within ten minutes, or switching back to Home, keeps your place. Pull to refresh still works.	十分钟内回到 Facebook，或切换回主页，都会保留你的位置。下拉刷新仍然有效。
 No time limit	无时间限制
 With the switch above on, your place stays however long you're away. Pull to refresh and a fresh start still load new posts.	开启上面的开关后，无论你离开多久都会保留位置。下拉刷新和重新启动仍会加载新帖子。
+Back leaves Home where it is	返回键不改变主页位置
+Pressing Back on a scrolled Home no longer jumps to the top and reloads the feed. Press Back again within two seconds to do that.	在已向下滚动的主页上按返回键，不会再跳到顶部并重新加载动态消息。两秒内再按一次返回键即可这样做。
+Press Back again to go to the top	再按一次返回键回到顶部
 A finished story stays on screen until you tap or swipe. Turn this off for Facebook's timing.	播放完的快拍会停留在屏幕上，直到你点按或滑动。关闭此项则采用 Facebook 的计时。
 View stories anonymously	匿名查看快拍
 Facebook isn't told which stories you watch, so you stay off their viewer lists. Replying or reacting still shows you. Stories you watch to the end show as watched on this phone only, until that person posts a new one.	Facebook 不会得知你看了哪些快拍，因此你不会出现在对方的查看者名单中。回复或回应仍会暴露你。看完的快拍只会在这部手机上显示为已看过，直到对方发布新的快拍。

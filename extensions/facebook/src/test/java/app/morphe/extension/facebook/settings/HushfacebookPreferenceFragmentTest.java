@@ -1962,6 +1962,31 @@ public class HushfacebookPreferenceFragmentTest {
         }
     }
 
+    /** #247: Back leaves Home where it is follows No time limit and works with Keep feed position on return off. */
+    @Test
+    public void backLeavesHomeWhereItIsStandsOnItsOwn() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.RETURN_REFRESH);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(controller);
+            int noLimitAt = indexOfKey(rows, Settings.RETURN_REFRESH_NO_LIMIT.key);
+            SwitchPreference back = (SwitchPreference) rows.get(noLimitAt + 1);
+            assertEquals(Settings.BACK_KEEPS_HOME.key, back.getKey());
+            assertEquals("Back leaves Home where it is", String.valueOf(back.getTitle()));
+            assertEquals("Pressing Back on a scrolled Home no longer jumps to the top and reloads the feed. "
+                    + "Press Back again within two seconds to do that.", String.valueOf(back.getSummary()));
+            assertFalse(Settings.BLOCK_RETURN_REFRESH.savedValue());
+            assertTrue("Back leaves Home where it is is greyed out with Keep feed position on return off", back.isEnabled());
+            assertFalse("it starts on", back.isChecked());
+
+            back.setChecked(true);
+            ShadowLooper.idleMainLooper();
+            assertTrue(Settings.BACK_KEEPS_HOME.savedValue());
+            assertFalse("turning it on turned Keep feed position on return on", Settings.BLOCK_RETURN_REFRESH.savedValue());
+        } finally {
+            Settings.BACK_KEEPS_HOME.resetToDefault();
+        }
+    }
+
     private static List<Preference> rowsOf(ActivityController<Activity> controller) {
         HushfacebookPreferenceFragment fragment = new HushfacebookPreferenceFragment();
         controller.get().getFragmentManager().beginTransaction()

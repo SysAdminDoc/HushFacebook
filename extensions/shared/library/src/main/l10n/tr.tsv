@@ -287,6 +287,9 @@ Keep feed position on return	Geri dönünce akış konumunu koru
 Returning to Facebook within ten minutes, or switching back to Home, keeps your place. Pull to refresh still works.	Facebook'a on dakika içinde dönersen ya da Ana Sayfa'ya geri geçersen kaldığın yer korunur. Yenilemek için aşağı çekmeye devam edebilirsin.
 No time limit	Süre sınırı yok
 With the switch above on, your place stays however long you're away. Pull to refresh and a fresh start still load new posts.	Yukarıdaki anahtar açıkken ne kadar uzun süre uzakta kalırsan kal yerin korunur. Yenilemek için çekmek ve uygulamayı yeniden başlatmak yine yeni gönderileri yükler.
+Back leaves Home where it is	Geri, Ana Sayfa'yı olduğu yerde bırakır
+Pressing Back on a scrolled Home no longer jumps to the top and reloads the feed. Press Back again within two seconds to do that.	Kaydırılmış Ana Sayfa'da Geri'ye basmak artık başa atlayıp akışı yenilemez. Bunu yapmak için iki saniye içinde yeniden Geri'ye bas.
+Press Back again to go to the top	Başa gitmek için yeniden Geri'ye bas
 A finished story stays on screen until you tap or swipe. Turn this off for Facebook's timing.	Biten bir hikaye, dokunana veya kaydırana kadar ekranda kalır. Facebook'un zamanlamasını kullanmak için bunu kapat.
 View stories anonymously	Hikayeleri anonim olarak izle
 Facebook isn't told which stories you watch, so you stay off their viewer lists. Replying or reacting still shows you. Stories you watch to the end show as watched on this phone only, until that person posts a new one.	Facebook hangi hikayeleri izlediğini öğrenmez, bu yüzden izleyici listelerinde yer almazsın. Yanıt vermek veya tepki bırakmak yine de seni gösterir. Sonuna kadar izlediğin hikayeler, o kişi yenisini paylaşana kadar yalnızca bu telefonda izlenmiş görünür.

@@ -186,6 +186,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_return_refresh_no_limit", FALSE, Setting.parent(BLOCK_RETURN_REFRESH));
 
     /**
+     * Back on a scrolled-down Home leaves the feed where it is instead of scrolling to the top and
+     * refreshing, and a second Back within two seconds does that (#247). Independent of the switches above.
+     */
+    public static final BooleanSetting BACK_KEEPS_HOME =
+            new BooleanSetting("hushfacebook_back_keeps_home", FALSE);
+
+    /**
      * Feed posts Facebook's own detection marked as made with AI. Off until one AI-labeled and one
      * ordinary post have been recorded on a signed-in feed and the rule told them apart.
      */

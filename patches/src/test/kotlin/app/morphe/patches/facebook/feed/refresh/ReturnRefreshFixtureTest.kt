@@ -48,6 +48,7 @@ class ReturnRefreshFixtureTest {
     private val holdStalePost = "$extension->holdStalePost()Z"
     private val holdTabAutoRefresh = "$extension->holdTabAutoRefresh()Z"
     private val holdTabEntryHotLoad = "$extension->holdTabEntryHotLoad()Z"
+    private val holdScrollToTop = "Lapp/morphe/extension/facebook/feed/HomeBack;->holdScrollToTop()Z"
 
     /** What the dex files holding the in-app checks' callers load: two kept method names and the pause worker's event. */
     private val callerTexts = setOf("onSetUserVisibleHint", "refreshForRevisit", "refresh_stale_post_on_pause")
@@ -73,10 +74,9 @@ class ReturnRefreshFixtureTest {
 
     @Test
     fun `the extension has the entries the patch calls, public and static`() {
-        val methods = ExtensionDex.classDef(extension).methods.associateBy(::signature)
         for (entry in listOf(skip, holdWarmStart, resetToFeed, keepFeedWhileAway, holdAutoScroll, noteHotStart,
-            holdStalePost, holdTabAutoRefresh, holdTabEntryHotLoad)) {
-            val method = methods[entry]
+            holdStalePost, holdTabAutoRefresh, holdTabEntryHotLoad, holdScrollToTop)) {
+            val method = ExtensionDex.classDef(entry.substringBefore("->")).methods.associateBy(::signature)[entry]
             assertTrue("the extension has no $entry", method != null)
             assertTrue("$entry isn't public static",
                 AccessFlags.PUBLIC.isSet(method!!.accessFlags) && AccessFlags.STATIC.isSet(method.accessFlags))
@@ -175,6 +175,17 @@ class ReturnRefreshFixtureTest {
         val hotLoad = tabEntryHotLoad(entry, friendlyLoaders) { entryTypes[it] }
         val hotLoadRegister = (entry.body()[hotLoad] as OneRegisterInstruction).registerA
 
+        // Back on a scrolled Home (#247): NewsFeedFragment's onBackPressed, the one method loading its
+        // refresh-at-the-top text, sends a feed that isn't at the top to its scroll there.
+        val backOwners = FixtureDex.classesHolding(bundle, BACK_AT_TOP)
+        val backs = backOwners.flatMap { owner -> owner.methods.filter { holdsString(it, BACK_AT_TOP) } }
+        assertEquals("$name: methods loading \"$BACK_AT_TOP\": ${backs.map(::signature)}", 1, backs.size)
+        val back = backs.single()
+        assertTrue("$name: ${signature(back)} isn't onBackPressed", isHomeBack(back))
+        // Throws on a shape the hook can't go into: see homeBackToTop.
+        val backTest = homeBackToTop(back)
+        val atTop = (back.body()[backTest] as OneRegisterInstruction).registerA
+
         // The tab's visibility change and the worker the feed posts on pause hand the executor their
         // decision, and the visibility change and the revisit refresh ask the hot-start check.
         val targets = setOf(signature(executor), signature(hotStart))
@@ -192,7 +203,7 @@ class ReturnRefreshFixtureTest {
             callersOf(hotStart).any { it.name == "refreshForRevisit" })
 
         val owners = (controllers + warmOwners + logOwners + teardownOwners + scrollTypes.values + executorOwners +
-            hotOwners + fetchOwners + entryOwners + friendlyOwners + entryTypes.values).distinctBy { it.type }
+            hotOwners + fetchOwners + entryOwners + friendlyOwners + entryTypes.values + backOwners).distinctBy { it.type }
         val context = PatchContexts.of(owners + ExtensionDex.classDef(SETTINGS_STATUS))
         blockReturnRefreshPatch.execute(context)
         fun patched(method: Method) = context.mutableClassDefBy(method.definingClass).methods.single {
@@ -297,5 +308,22 @@ class ReturnRefreshFixtureTest {
         assertEquals("$name: one tab entry question", 1, entryBody.count { it.call() == holdTabEntryHotLoad })
         assertEquals("$name: the rest of the tab entry", entry.body().map { it.opcode },
             entryBody.filterIndexed { index, _ -> index !in hotLoad..hotLoad + 2 }.map { it.opcode })
+
+        // Right before onBackPressed's not-at-the-top jump: a feed at the top goes on to it, one that
+        // isn't asks, and a yes answers the press handled. Both no's land on Facebook's own test.
+        val backBody = patched(back).body()
+        val backHook = backBody.subList(backTest, backTest + 5)
+        assertEquals("$name: the Back hook", listOf(Opcode.IF_NEZ, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ,
+            Opcode.RETURN), backHook.map { it.opcode })
+        assertEquals("$name: the Back question", holdScrollToTop, backHook[1].call())
+        assertEquals("$name: the Back registers", List(4) { atTop },
+            listOf(backHook[0], backHook[2], backHook[3], backHook[4]).map { (it as OneRegisterInstruction).registerA })
+        val backFlow = ControlFlow.of(patched(back))
+        assertTrue("$name: a feed at the top doesn't go on to Facebook's test", backTest + 5 in backFlow.normal[backTest])
+        assertTrue("$name: a no doesn't reach Facebook's test", backTest + 5 in backFlow.normal[backTest + 3])
+        assertEquals("$name: Facebook's test", Opcode.IF_EQZ, backBody[backTest + 5].opcode)
+        assertEquals("$name: one Back question", 1, backBody.count { it.call() == holdScrollToTop })
+        assertEquals("$name: the rest of onBackPressed", back.body().map { it.opcode },
+            backBody.filterIndexed { index, _ -> index !in backTest until backTest + 5 }.map { it.opcode })
     }
 }

@@ -145,6 +145,7 @@ public final class SettingsBackup {
             Settings.HIDE_FEED_REELS,
             Settings.BLOCK_RETURN_REFRESH,
             Settings.RETURN_REFRESH_NO_LIMIT,
+            Settings.BACK_KEEPS_HOME,
             Settings.HIDE_AI_DETECTED_POSTS,
             Settings.HIDE_AI_LABELLED_POSTS,
             Settings.HIDE_META_AI_FEED_UNITS,

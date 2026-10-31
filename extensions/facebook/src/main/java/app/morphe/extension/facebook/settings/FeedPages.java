@@ -342,6 +342,9 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.RETURN_REFRESH_NO_LIMIT,
                         L10n.t("With the switch above on, your place stays however long you're away. Pull to refresh and a fresh start still load new posts."))
                         .needs(Settings.BLOCK_RETURN_REFRESH));
+                feed.addPreference(toggle(context, Settings.BACK_KEEPS_HOME,
+                        L10n.t("Pressing Back on a scrolled Home no longer jumps to the top and reloads the feed. "
+                                + "Press Back again within two seconds to do that.")));
             }
             subheading(feed, L10n.t("Content filters"));
             if (build.contains(PatchFamily.SEEN_POSTS)) {

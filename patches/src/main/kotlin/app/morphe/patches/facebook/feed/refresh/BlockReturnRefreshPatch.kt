@@ -103,6 +103,21 @@ internal const val HOT_LOAD = "HOT_LOAD"
 private const val HOLD_TAB_ENTRY_HOT_LOAD = "$EXTENSION_PACKAGE/feed/ReturnRefresh;->holdTabEntryHotLoad()Z"
 
 /**
+ * What NewsFeedFragment's onBackPressed logs as it refreshes a feed already at the top, which no
+ * other method of 584 or 585 loads.
+ */
+internal const val BACK_AT_TOP = "handleFeedRefreshOnBackPressedAtTop"
+private const val ON_BACK_PRESSED = "onBackPressed"
+
+/** The feed's is-it-at-the-top question and its scroll there, which keep their names. */
+internal const val IS_AT_TOP = "isAtTop"
+internal const val SCROLL_TO_TOP = "scrollToTop"
+
+/** How far into the not-at-the-top block onBackPressed calls scrollToTop: 585 calls it second. */
+internal const val SCROLL_TO_TOP_REACH = 4
+private const val HOLD_SCROLL_TO_TOP = "$EXTENSION_PACKAGE/feed/HomeBack;->holdScrollToTop()Z"
+
+/**
  * Stops what Facebook does to the feed when it returns to view: the refresh FeedRefreshTriggerController
  * fires, the feed's warm-start check, which NewsFeedFragment's onResume reaches and which refreshes
  * a feed left alone for a few minutes, and NewsFeedFragment's foreground auto-scroll. Each asks the
@@ -123,6 +138,11 @@ private const val HOLD_TAB_ENTRY_HOT_LOAD = "$EXTENSION_PACKAGE/feed/ReturnRefre
  * still loads. The friendly feed's first load of a launch, which onTabEntered starts on the first
  * entry, is left alone: it's what fills the feed.
  *
+ * Back on Home has a switch of its own (#247). NewsFeedFragment's onBackPressed scrolls a feed that
+ * isn't at the top back to it and refreshes there, which loses the post you came back to. Right
+ * after it learns the feed isn't at the top, it asks the extension, and a yes ends the press as
+ * handled with the feed where it is. A feed at the top goes on to Facebook's code without asking.
+ *
  * Every anchor is found and checked before anything changes, so a build that moved one refuses
  * the whole patch rather than keeping some hooks with its switch row hidden.
  */
@@ -130,8 +150,9 @@ private const val HOLD_TAB_ENTRY_HOT_LOAD = "$EXTENSION_PACKAGE/feed/ReturnRefre
 val blockReturnRefreshPatch = bytecodePatch(
     name = "Block background-return feed refresh",
     description = "Keeps your place in the feed when you come back to Facebook within ten minutes, or any time " +
-        "with No time limit on, so you don't lose what you were reading. Starts off. Turn it on in Hushfacebook " +
-        "settings > News feed.",
+        "with No time limit on, so you don't lose what you were reading. A second switch, Back leaves Home where it " +
+        "is, stops Back on a scrolled Home from jumping to the top and reloading. Both start off. Turn them on in " +
+        "Hushfacebook settings > News feed.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -203,6 +224,13 @@ val blockReturnRefreshPatch = bytecodePatch(
         val friendlyLoaders = classDefByStrings(FRIENDLY_FEED_PREFETCH, StringComparisonType.EQUALS).map { it.type }.toSet()
         val classDefOf = { type: String -> classDefByOrNull(type) }
 
+        val backs = classDefByStrings(BACK_AT_TOP, StringComparisonType.EQUALS)
+            .flatMap { it.methods.filter(::isHomeBack) }
+        val back = backs.singleOrNull() ?: throw PatchException(
+            "Expected one $ON_BACK_PRESSED()Z holding $BACK_AT_TOP, found ${backs.size}",
+        )
+        homeBackToTop(back)
+
         val warmStartCheck = mutableClassDefBy(check.definingClass).findMutableMethodOf(check)
         val resetLog = mutableClassDefBy(log.definingClass).findMutableMethodOf(log)
         val teardownRun = mutableClassDefBy(teardown.definingClass).findMutableMethodOf(teardown)
@@ -212,6 +240,7 @@ val blockReturnRefreshPatch = bytecodePatch(
         val hotStartCheck = mutableClassDefBy(hotStart.definingClass).findMutableMethodOf(hotStart)
         val tabFetch = mutableClassDefBy(fetch.definingClass).findMutableMethodOf(fetch)
         val tabEntry = mutableClassDefBy(entry.definingClass).findMutableMethodOf(entry)
+        val homeBack = mutableClassDefBy(back.definingClass).findMutableMethodOf(back)
         for (method in listOf(callback, teardownRun, autoScroll, stalePost)) method.requireLocals(PATCH, 1)
         emptyFeedAnswer(warmStartCheck)
         noAutoScrollAnswer(autoScroll, noScroll)
@@ -227,6 +256,7 @@ val blockReturnRefreshPatch = bytecodePatch(
         hotStartCheck.noteHotStartFirst()
         tabFetch.holdTabAutoRefreshBeforeIt()
         tabEntry.holdTabEntryHotLoadBeforeIt(friendlyLoaders, classDefOf)
+        homeBack.holdBackToTopBeforeIt()
         enableStatus("returnRefresh")
     }
 }
@@ -653,6 +683,74 @@ internal fun MutableMethod.holdTabEntryHotLoadBeforeIt(friendlyLoaders: Set<Stri
             if-nez v$register, :entered
         """,
         ExternalLabel("entered", getInstruction(load + 2)),
+    )
+}
+
+/** Whether [method] is NewsFeedFragment's onBackPressed: an instance boolean of no parameters that logs its refresh at the top. */
+internal fun isHomeBack(method: Method): Boolean =
+    !AccessFlags.STATIC.isSet(method.accessFlags) && method.name == ON_BACK_PRESSED && method.returnType == "Z" &&
+        method.parameterTypes.isEmpty() && method.implementation != null && holdsString(method, BACK_AT_TOP)
+
+/**
+ * The index of the if-eqz in NewsFeedFragment's onBackPressed that sends a feed that isn't at the
+ * top to its scroll there. It tests the answer of the method's first call of its own [IS_AT_TOP],
+ * kept by the move-result right before it, and jumps to a block that calls its own [SCROLL_TO_TOP]
+ * within [SCROLL_TO_TOP_REACH] instructions. Only that move-result reaches the test, so code put in
+ * front of it runs on every way in. Throws naming what differs.
+ */
+internal fun homeBackToTop(method: Method): Int {
+    val what = "Block background-return feed refresh: ${method.definingClass}->${method.name}"
+    val instructions = method.implementation?.instructions?.toList() ?: throw PatchException("$what has no body")
+    fun callsOwn(at: Int, name: String, returnType: String): Boolean {
+        val instruction = instructions.getOrNull(at) ?: return false
+        val target = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+        return (instruction.opcode == Opcode.INVOKE_VIRTUAL || instruction.opcode == Opcode.INVOKE_VIRTUAL_RANGE) &&
+            target.definingClass == method.definingClass && target.name == name &&
+            target.parameterTypes.isEmpty() && target.returnType == returnType
+    }
+    val ask = instructions.indices.firstOrNull { callsOwn(it, IS_AT_TOP, "Z") }
+        ?: throw PatchException("$what never asks its own $IS_AT_TOP")
+    val keep = instructions.getOrNull(ask + 1)
+    if (keep?.opcode != Opcode.MOVE_RESULT) throw PatchException("$what doesn't keep the $IS_AT_TOP answer")
+    val answer = (keep as OneRegisterInstruction).registerA
+    val test = ask + 2
+    val branch = instructions.getOrNull(test)
+    if (branch?.opcode != Opcode.IF_EQZ || (branch as OneRegisterInstruction).registerA != answer) {
+        throw PatchException("$what doesn't test the $IS_AT_TOP answer with an if-eqz right away")
+    }
+    val flow = ControlFlow.of(method)
+    val notAtTop = flow.normal[test].singleOrNull { it != test + 1 }
+        ?: throw PatchException("$what's $IS_AT_TOP test jumps nowhere")
+    if ((notAtTop until notAtTop + SCROLL_TO_TOP_REACH).none { callsOwn(it, SCROLL_TO_TOP, "V") }) {
+        throw PatchException("$what doesn't call its own $SCROLL_TO_TOP where a feed that isn't at the top goes")
+    }
+    val arrivals = flow.instructions.indices.filter { test in flow.normal[it] || test in flow.exceptional[it] }
+    if (arrivals != listOf(test - 1)) {
+        throw PatchException("$what reaches its $IS_AT_TOP test from ${arrivals.joinToString()}, not only its move-result")
+    }
+    return test
+}
+
+/**
+ * Asks the extension right before onBackPressed sends a feed that isn't at the top to its scroll
+ * there and, on a yes, answers true, the press handled, with the feed where it is. A feed at the top
+ * goes on without asking. The question borrows the register the is-at-the-top answer sits in: it's
+ * 0 whenever the question is asked and 0 again, the same false, whenever Facebook's test runs on
+ * after it (see [homeBackToTop]).
+ */
+internal fun MutableMethod.holdBackToTopBeforeIt() {
+    val test = homeBackToTop(this)
+    val answer = getInstruction<OneRegisterInstruction>(test).registerA
+    addInstructionsWithLabels(
+        test,
+        """
+            if-nez v$answer, :facebook
+            invoke-static { }, $HOLD_SCROLL_TO_TOP
+            move-result v$answer
+            if-eqz v$answer, :facebook
+            return v$answer
+        """,
+        ExternalLabel("facebook", getInstruction(test)),
     )
 }
 

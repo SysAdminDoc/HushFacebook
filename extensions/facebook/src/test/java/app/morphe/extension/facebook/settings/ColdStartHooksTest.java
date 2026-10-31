@@ -62,6 +62,7 @@ import app.morphe.extension.facebook.emoji.SystemEmoji;
 import app.morphe.extension.facebook.feed.FeedFilter;
 import app.morphe.extension.facebook.feed.SeenPostsForTests;
 import app.morphe.extension.facebook.feed.FeedGuardForTests;
+import app.morphe.extension.facebook.feed.HomeBack;
 import app.morphe.extension.facebook.feed.ProfileSuggestionsForTests;
 import app.morphe.extension.facebook.feed.RelatedPosts;
 import app.morphe.extension.facebook.feed.ReturnRefresh;
@@ -209,6 +210,7 @@ public class ColdStartHooksTest {
         assertFalse("a return before the context held the foreground auto-scroll", ReturnRefresh.holdAutoScroll());
         assertFalse("a feed left before the context skipped its teardown", ReturnRefresh.keepFeedWhileAway());
         assertFalse("a Home tab entry before the context held its hot load", ReturnRefresh.holdTabEntryHotLoad());
+        assertFalse("a Back on Home before the context kept the feed where it was", HomeBack.holdScrollToTop());
         assertFalse(FeedGuardForTests.hides(Category.ORGANIC, new GraphQLStory(), FeedGuardForTests.detectedInfo(true)));
         assertFalse(FeedGuardForTests.hidesLabelled(Category.ORGANIC, new GraphQLStory(),
                 FeedGuardForTests.detectedInfo(false), FeedGuardForTests.selfDisclosureInfo(true)));

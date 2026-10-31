@@ -284,7 +284,7 @@
     },
     {
       "name": "Block background-return feed refresh",
-      "description": "Keeps your place in the feed when you come back to Facebook within ten minutes, or any time with No time limit on, so you don't lose what you were reading. Starts off. Turn it on in Hushfacebook settings > News feed.",
+      "description": "Keeps your place in the feed when you come back to Facebook within ten minutes, or any time with No time limit on, so you don't lose what you were reading. A second switch, Back leaves Home where it is, stops Back on a scrolled Home from jumping to the top and reloading. Both start off. Turn them on in Hushfacebook settings > News feed.",
       "category": "Feed",
       "use": true,
       "dependencies": [

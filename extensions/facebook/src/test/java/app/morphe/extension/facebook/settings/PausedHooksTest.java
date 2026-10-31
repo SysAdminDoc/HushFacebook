@@ -83,6 +83,7 @@ import app.morphe.extension.facebook.feed.SeenPostsForTests;
 import app.morphe.extension.facebook.feed.FeedsHeader;
 import app.morphe.extension.facebook.feed.FollowingHome;
 import app.morphe.extension.facebook.feed.GroupPosts;
+import app.morphe.extension.facebook.feed.HomeBack;
 import app.morphe.extension.facebook.feed.ReturnRefresh;
 import app.morphe.extension.facebook.feed.FeedGuardForTests;
 import app.morphe.extension.facebook.feed.FullPostText;
@@ -435,7 +436,12 @@ public class PausedHooksTest {
                 },
                 ReturnRefresh::holdStalePost,
                 ReturnRefresh::holdTabAutoRefresh,
-                ReturnRefresh::holdTabEntryHotLoad));
+                ReturnRefresh::holdTabEntryHotLoad,
+                () -> {
+                    // A Back on a scrolled Home (#247), past the last one's two seconds so it's a first Back.
+                    SystemClock.sleep(3_000);
+                    return HomeBack.holdScrollToTop();
+                }));
         // A story Facebook's own detection marked as made with AI, one only its creator labelled as AI,
         // and a reel whose GenAI attribution carries the detected flag, at both levels a page of reels
         // enters.
