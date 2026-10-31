@@ -131,7 +131,7 @@ public enum PatchFamily {
     REEL_WATCH_HISTORY(FamilyNames.REEL_WATCH_HISTORY, "reelWatchHistory", null,
             Settings.DONT_SEND_REEL_WATCH_HISTORY),
     NEWEST_REELS_FIRST(FamilyNames.NEWEST_REELS_FIRST, "newestReelsFirst", null,
-            Settings.NEWEST_REELS_FIRST),
+            Settings.NEWEST_REELS_FIRST, Settings.PROFILE_REELS_MOST_VIEWED),
     DOUBLE_TAP_LIKE(FamilyNames.DOUBLE_TAP_LIKE, "doubleTapLike", null,
             Settings.TURN_OFF_DOUBLE_TAP_LIKE),
     DOUBLE_TAP_SKIP(FamilyNames.DOUBLE_TAP_SKIP, "doubleTapSkip", null,

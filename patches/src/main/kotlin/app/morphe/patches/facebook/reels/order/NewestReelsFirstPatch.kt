@@ -31,11 +31,11 @@ val newestReelsFirstPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Newest reels first",
     description = "Plays the newest posted of the reels Facebook has loaded for you first in the Reels tab, " +
-        "instead of Facebook's own pick. It can't fetch newer reels. Starts off. Turn it on in Hushfacebook " +
-        "settings > Reels and Watch.",
+        "instead of Facebook's own pick. It can't fetch newer reels. A second switch lists a profile's Reels tab with its most viewed " +
+        "reels first. Starts off. Turn it on in Hushfacebook settings > Reels and Watch.",
 ) {
     category("Reels")
-    dependsOn(settingsPatch)
+    dependsOn(settingsPatch, profileReelsSortPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {

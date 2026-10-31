@@ -774,6 +774,15 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushfacebook_reels_order", ReelsOrder.NEWEST);
 
     /**
+     * A profile's Reels tab lists its most viewed reels first
+     * ({@link app.morphe.extension.facebook.reels.ProfileReelsSort}, #232), by the play count
+     * Facebook reads for each tile. Off is Facebook's own order, newest first. Starts off. A
+     * profile opened after the change picks it up.
+     */
+    public static final BooleanSetting PROFILE_REELS_MOST_VIEWED =
+            new BooleanSetting("hushfacebook_profile_reels_most_viewed", FALSE);
+
+    /**
      * Facebook's own analytics uploads ({@link app.morphe.extension.facebook.misc.AnalyticsUploads}):
      * the XAnalytics event uploader and the Papaya on-device learning jobs. Starts off.
      * The uploader is resumed as Facebook starts, so a change shows fully after a restart.

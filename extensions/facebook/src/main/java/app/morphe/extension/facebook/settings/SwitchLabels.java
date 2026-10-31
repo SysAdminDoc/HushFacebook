@@ -166,6 +166,7 @@ final class SwitchLabels {
         if (setting == Settings.PLAY_FEED_REELS_WHOLE) return L10n.t("Play whole reels in the feed's Reels row");
         if (setting == Settings.DONT_SEND_REEL_WATCH_HISTORY) return L10n.t("Don't send reel watch history");
         if (setting == Settings.NEWEST_REELS_FIRST) return L10n.t("Sort loaded reels");
+        if (setting == Settings.PROFILE_REELS_MOST_VIEWED) return L10n.t("Most viewed on profile Reels");
         if (setting == Settings.HOLD_ANALYTICS_UPLOADS) return L10n.t("Hold back analytics uploads");
         if (setting == Settings.HOLD_CAMERA_ROLL_PROCESSING) return L10n.t("Hold back camera roll processing");
         if (setting == Settings.ALLOW_SCREENSHOTS) return L10n.t("Allow screenshots");

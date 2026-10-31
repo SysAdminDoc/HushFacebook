@@ -203,6 +203,10 @@ final class VideoPages {
             SettingsRows.alias(sort, L10n.t("Newest reels first"));
             reels.addPreference(sort);
             reels.addPreference(reelsOrderRow(context));
+            reels.addPreference(toggle(context, Settings.PROFILE_REELS_MOST_VIEWED,
+                    L10n.t("A profile's Reels tab lists its most viewed reels first instead of the newest. Off keeps "
+                            + "Facebook's order. Only the reels the tab has loaded are sorted, and a reel with no view count "
+                            + "stays after the rest.")));
         }
         subheading(reels, L10n.t("Video controls"));
         if (build.contains(PatchFamily.DOUBLE_TAP_LIKE)) {
