@@ -111,14 +111,33 @@ public final class StoriesTrayCircles {
         return Math.min(1f, diameter / (float) side);
     }
 
-    /** Clips [tile] to a circle cut from its middle and scales it to the chosen diameter. */
+    /**
+     * Where the story's card sits inside [tile], as left, top, right, bottom. Facebook wraps the card
+     * in a tile a few pixels wider and taller than it, so a circle cut from the tile ran past the
+     * card's sides and came out with flat edges on a phone. A tile holding one laid out view is cut
+     * from that view, any other from inside its padding.
+     */
+    static int[] card(View tile) {
+        if (tile instanceof ViewGroup && ((ViewGroup) tile).getChildCount() == 1) {
+            View card = ((ViewGroup) tile).getChildAt(0);
+            if (card.getWidth() > 0 && card.getHeight() > 0) {
+                return new int[] {card.getLeft(), card.getTop(), card.getRight(), card.getBottom()};
+            }
+        }
+        return new int[] {tile.getPaddingLeft(), tile.getPaddingTop(),
+            tile.getWidth() - tile.getPaddingRight(), tile.getHeight() - tile.getPaddingBottom()};
+    }
+
+    /** Clips [tile] to a circle cut from the middle of its card and scales it to the chosen diameter. */
     static void round(View tile) {
-        int width = tile.getWidth();
-        int height = tile.getHeight();
+        if (tile.getWidth() <= 0 || tile.getHeight() <= 0) return;
+        int[] card = card(tile);
+        int width = card[2] - card[0];
+        int height = card[3] - card[1];
         if (width <= 0 || height <= 0) return;
         final int side = Math.min(width, height);
-        final int left = (width - side) / 2;
-        final int top = (height - side) / 2;
+        final int left = card[0] + (width - side) / 2;
+        final int top = card[1] + (height - side) / 2;
         float density = tile.getResources().getDisplayMetrics().density;
         int diameter = Math.round(diameterDp(Settings.STORIES_TRAY_SIZE.get()) * density);
         float scale = scale(diameter, side);
@@ -129,8 +148,8 @@ public final class StoriesTrayCircles {
             }
         });
         tile.setClipToOutline(true);
-        tile.setPivotX(width / 2f);
-        tile.setPivotY(height / 2f);
+        tile.setPivotX(left + side / 2f);
+        tile.setPivotY(top + side / 2f);
         if (tile.getScaleX() != scale) {
             tile.setScaleX(scale);
             tile.setScaleY(scale);

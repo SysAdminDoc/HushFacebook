@@ -8,7 +8,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.graphics.Outline;
+import android.graphics.Rect;
 import android.view.View;
+import android.view.ViewGroup;
 
 import org.junit.After;
 import org.junit.Before;
@@ -49,7 +52,23 @@ public class StoriesTrayCirclesTest {
         assertEquals(Math.min(1f, 80 * density / 332f), tile.getScaleX(), 0.001f);
         assertEquals(tile.getScaleX(), tile.getScaleY(), 0f);
         assertEquals(166f, tile.getPivotX(), 0.01f);
-        assertEquals(317.5f, tile.getPivotY(), 0.01f);
+        assertEquals(317f, tile.getPivotY(), 0.01f);
+    }
+
+    @Test
+    public void theCircleIsCutFromTheCardNotTheWiderTile() {
+        Settings.STORIES_TRAY_SIZE.save("80");
+        ViewGroup tile = StoriesTrayCirclesForTests.tileWithCard();
+        float density = tile.getResources().getDisplayMetrics().density;
+        Outline outline = new Outline();
+        tile.getOutlineProvider().getOutline(tile, outline);
+        Rect circle = new Rect();
+        assertTrue("the outline is a circle", outline.getRect(circle));
+        // The card is 320 by 590 at 6, 23: the circle is 320 across, inside the card's sides.
+        assertEquals(new Rect(6, 158, 326, 478), circle);
+        assertEquals(Math.min(1f, 80 * density / 320f), tile.getScaleX(), 0.001f);
+        assertEquals(166f, tile.getPivotX(), 0.01f);
+        assertEquals(318f, tile.getPivotY(), 0.01f);
     }
 
     @Test
