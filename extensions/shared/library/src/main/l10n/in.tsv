@@ -2326,3 +2326,19 @@ Mute stories	Bisukan Cerita
 Video stories wait for a tap	Cerita video menunggu ketukan
 Stories start with the sound off every time you open Facebook. Tap a speaker or press volume up to hear them, and they stay on until you mute again.	Cerita selalu mulai tanpa suara setiap kali kamu membuka Facebook. Ketuk ikon speaker atau tekan tombol volume naik untuk mendengarnya, dan suara tetap menyala sampai kamu membisukannya lagi.
 Video stories don't start by themselves. Touch and hold a story, then let go, to play it. Works with Tap to play on or off.	Cerita video tidak mulai sendiri. Tekan lama sebuah cerita, lalu lepaskan, untuk memutarnya. Berfungsi saat "Ketuk untuk memutar" menyala maupun mati.
+# context: switch title under News feed; the numbers are the friends, followers and following counts at the top of your own profile
+Local profile counts	Angka profil sendiri
+# context: summary of that switch; 'below' means the three rows right under it
+Shows the friends, followers and following numbers you type below on your own profile, on this phone only. Other profiles and Facebook's real numbers aren't touched. Applies the next time you open your profile.	Menampilkan angka teman, pengikut, dan yang diikuti yang Anda ketik di bawah pada profil Anda sendiri, hanya di ponsel ini. Profil lain dan angka asli Facebook tidak diubah. Berlaku saat Anda membuka profil berikutnya.
+# context: row title; the number of friends your own profile shows on this phone
+Friends shown	Teman yang ditampilkan
+# context: row title; the number of followers your own profile shows on this phone
+Followers shown	Pengikut yang ditampilkan
+# context: row title; the number of people your own profile follows, shown on this phone
+Following shown	Mengikuti yang ditampilkan
+# context: message in that row's edit dialog
+Digits only, up to 10. Your own profile shows this number on this phone. Leave it blank for Facebook's real one.	Hanya angka, maksimal 10. Profil Anda sendiri menampilkan angka ini di ponsel ini. Biarkan kosong untuk angka asli Facebook.
+# context: summary of that row when it is blank
+Facebook's real number shows. Type digits to show your own.	Angka asli Facebook ditampilkan. Ketik angka untuk menampilkan angka Anda sendiri.
+# context: summary of that row; %1$s is the number typed, already grouped for the language
+Your profile shows %1$s on this phone.	Profil Anda menampilkan %1$s di ponsel ini.

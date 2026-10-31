@@ -20,6 +20,7 @@ import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
 import android.preference.SwitchPreference;
+import android.text.InputFilter;
 import android.text.InputType;
 import android.view.ContextThemeWrapper;
 import android.view.View;
@@ -65,6 +66,7 @@ import app.morphe.extension.facebook.media.SurfaceQuality;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.misc.HeaderText;
+import app.morphe.extension.facebook.profile.LocalProfileCounts;
 import app.morphe.extension.facebook.misc.OpeningPause;
 import app.morphe.extension.facebook.menu.MenuTiles;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
@@ -97,6 +99,7 @@ import app.morphe.extension.facebook.settings.ValueRows.BurnInGuardRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInWaitRow;
 import app.morphe.extension.facebook.settings.ValueRows.AccentRow;
 import app.morphe.extension.facebook.settings.ValueRows.BackgroundRow;
+import app.morphe.extension.facebook.settings.ValueRows.CountRow;
 import app.morphe.extension.facebook.settings.ValueRows.HeaderTextRow;
 import app.morphe.extension.facebook.settings.ValueRows.MarkColorRow;
 import app.morphe.extension.facebook.settings.ValueRows.ReactionCeilingRow;
@@ -2166,6 +2169,55 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             return false;
         });
         return row;
+    }
+
+    /** The setting a Local profile counts row keeps its digits in. */
+    static StringSetting countSetting(LocalProfileCounts.Count count) {
+        switch (count) {
+            case FOLLOWERS: return Settings.LOCAL_FOLLOWERS;
+            case FOLLOWING: return Settings.LOCAL_FOLLOWING;
+            default: return Settings.LOCAL_FRIENDS;
+        }
+    }
+
+    /**
+     * Local profile counts (#280): the number your own profile shows for [count] on this phone. What's
+     * saved is its digits, without leading zeros, blank for Facebook's own.
+     */
+    static CountRow countRow(Context context, LocalProfileCounts.Count count) {
+        StringSetting setting = countSetting(count);
+        CountRow row = new CountRow(context, count);
+        row.setKey(setting.key);
+        String title = count == LocalProfileCounts.Count.FOLLOWERS ? L10n.t("Followers shown")
+                : count == LocalProfileCounts.Count.FOLLOWING ? L10n.t("Following shown") : L10n.t("Friends shown");
+        row.setTitle(title);
+        row.setDialogTitle(title);
+        row.setDialogMessage(L10n.t("Digits only, up to 10. Your own profile shows this number on this phone. Leave it "
+                + "blank for Facebook's real one."));
+        row.setPositiveButtonText(L10n.t("Save"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        EditText field = row.getEditText();
+        keepEditorInDialog(field, false);
+        field.setInputType(InputType.TYPE_CLASS_NUMBER);
+        field.setFilters(new InputFilter[] {new InputFilter.LengthFilter(LocalProfileCounts.MAX_DIGITS)});
+        field.setHint("1234");
+        row.setText(setting.savedValue());
+        row.setOnPreferenceChangeListener((preference, typed) -> {
+            String raw = typed == null ? "" : typed.toString().trim();
+            String clean = LocalProfileCounts.clean(raw);
+            if (clean.equals(raw)) return true;
+            // Keeps the digits as they're saved in place of what was typed, as the header text row does.
+            ((CountRow) preference).setText(clean);
+            return false;
+        });
+        return row;
+    }
+
+    /** What a Local profile counts row says for [text], the digits typed there. */
+    static String countSummary(LocalProfileCounts.Count count, String text) {
+        String digits = LocalProfileCounts.clean(text);
+        if (digits.isEmpty()) return L10n.t("Facebook's real number shows. Type digits to show your own.");
+        return L10n.f("Your profile shows %1$s on this phone.", L10n.isolate(LocalProfileCounts.formatted(digits)));
     }
 
     /** What the Home header text row says for [text], the words typed there. */

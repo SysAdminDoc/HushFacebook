@@ -23,6 +23,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_PROMOTED_POSTS) return L10n.t("Hide promoted posts");
         if (setting == Settings.HIDE_SPONSORED_PROFILE_POSTS) return L10n.t("Hide sponsored profile posts");
         if (setting == Settings.HIDE_PROFILE_NOTES) return L10n.t("Hide profile notes");
+        if (setting == Settings.LOCAL_PROFILE_COUNTS) return L10n.t("Local profile counts");
         if (setting == Settings.POST_SAVE_BUTTON) return L10n.t("Save button under posts");
         if (setting == Settings.POST_DOWNLOAD_BUTTON) return L10n.t("Download button under posts");
         if (setting == Settings.HIDE_POST_LIKE_BUTTON) return L10n.t("Hide Like under posts");

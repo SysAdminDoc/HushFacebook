@@ -2321,3 +2321,19 @@ Mute stories	快拍静音
 Video stories wait for a tap	视频快拍等待点按
 Stories start with the sound off every time you open Facebook. Tap a speaker or press volume up to hear them, and they stay on until you mute again.	每次打开 Facebook 时，快拍都会静音播放。点按扬声器或按音量加键即可听到声音，声音会一直开启，直到你再次静音。
 Video stories don't start by themselves. Touch and hold a story, then let go, to play it. Works with Tap to play on or off.	视频快拍不会自动开始播放。长按快拍然后松开即可播放。无论“点按播放”开启还是关闭都有效。
+# context: switch title under News feed; the numbers are the friends, followers and following counts at the top of your own profile
+Local profile counts	自定义个人主页数字
+# context: summary of that switch; 'below' means the three rows right under it
+Shows the friends, followers and following numbers you type below on your own profile, on this phone only. Other profiles and Facebook's real numbers aren't touched. Applies the next time you open your profile.	在你自己的个人主页上显示你在下方输入的好友、粉丝和关注数量，仅在这部手机上生效。其他人的主页和 Facebook 的真实数字不会改变。下次打开你的主页时生效。
+# context: row title; the number of friends your own profile shows on this phone
+Friends shown	显示的好友数
+# context: row title; the number of followers your own profile shows on this phone
+Followers shown	显示的粉丝数
+# context: row title; the number of people your own profile follows, shown on this phone
+Following shown	显示的关注数
+# context: message in that row's edit dialog
+Digits only, up to 10. Your own profile shows this number on this phone. Leave it blank for Facebook's real one.	只能输入数字，最多 10 位。你自己的主页会在这部手机上显示这个数字。留空则显示 Facebook 的真实数字。
+# context: summary of that row when it is blank
+Facebook's real number shows. Type digits to show your own.	显示 Facebook 的真实数字。输入数字即可显示你自己的数字。
+# context: summary of that row; %1$s is the number typed, already grouped for the language
+Your profile shows %1$s on this phone.	你的主页在这部手机上显示 %1$s。

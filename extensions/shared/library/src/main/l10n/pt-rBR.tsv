@@ -2212,3 +2212,19 @@ Mute stories	Silenciar Stories
 Video stories wait for a tap	Stories em vídeo esperam um toque
 Stories start with the sound off every time you open Facebook. Tap a speaker or press volume up to hear them, and they stay on until you mute again.	Os Stories começam sem som toda vez que você abre o Facebook. Toque em um alto-falante ou aperte o volume para cima para ouvi-los, e o som continua ligado até você silenciar de novo.
 Video stories don't start by themselves. Touch and hold a story, then let go, to play it. Works with Tap to play on or off.	Stories em vídeo não começam sozinhos. Toque e segure um story e depois solte para reproduzi-lo. Funciona com "Tocar para reproduzir" ligado ou desligado.
+# context: switch title under News feed; the numbers are the friends, followers and following counts at the top of your own profile
+Local profile counts	Números do próprio perfil
+# context: summary of that switch; 'below' means the three rows right under it
+Shows the friends, followers and following numbers you type below on your own profile, on this phone only. Other profiles and Facebook's real numbers aren't touched. Applies the next time you open your profile.	Mostra no seu próprio perfil os números de amigos, seguidores e seguindo que você digitar abaixo, só neste celular. Outros perfis e os números reais do Facebook não são alterados. Vale na próxima vez que você abrir seu perfil.
+# context: row title; the number of friends your own profile shows on this phone
+Friends shown	Amigos exibidos
+# context: row title; the number of followers your own profile shows on this phone
+Followers shown	Seguidores exibidos
+# context: row title; the number of people your own profile follows, shown on this phone
+Following shown	Seguindo exibidos
+# context: message in that row's edit dialog
+Digits only, up to 10. Your own profile shows this number on this phone. Leave it blank for Facebook's real one.	Só dígitos, até 10. Seu próprio perfil mostra este número neste celular. Deixe em branco para ver o número real do Facebook.
+# context: summary of that row when it is blank
+Facebook's real number shows. Type digits to show your own.	O número real do Facebook aparece. Digite números para mostrar o seu.
+# context: summary of that row; %1$s is the number typed, already grouped for the language
+Your profile shows %1$s on this phone.	Seu perfil mostra %1$s neste celular.

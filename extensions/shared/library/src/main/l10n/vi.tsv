@@ -2326,3 +2326,19 @@ Mute stories	Tắt tiếng tin
 Video stories wait for a tap	Tin video chờ bạn nhấn
 Stories start with the sound off every time you open Facebook. Tap a speaker or press volume up to hear them, and they stay on until you mute again.	Tin luôn bắt đầu không có tiếng mỗi khi bạn mở Facebook. Nhấn vào biểu tượng loa hoặc nhấn tăng âm lượng để nghe, và âm thanh sẽ bật cho đến khi bạn tắt tiếng lại.
 Video stories don't start by themselves. Touch and hold a story, then let go, to play it. Works with Tap to play on or off.	Tin video không tự phát. Nhấn giữ một tin rồi thả ra để phát. Hoạt động dù "Nhấn để phát" bật hay tắt.
+# context: switch title under News feed; the numbers are the friends, followers and following counts at the top of your own profile
+Local profile counts	Số liệu hồ sơ của riêng bạn
+# context: summary of that switch; 'below' means the three rows right under it
+Shows the friends, followers and following numbers you type below on your own profile, on this phone only. Other profiles and Facebook's real numbers aren't touched. Applies the next time you open your profile.	Hiện số bạn bè, người theo dõi và đang theo dõi mà bạn nhập bên dưới trên hồ sơ của chính bạn, chỉ trên điện thoại này. Hồ sơ khác và số thật của Facebook không bị thay đổi. Có hiệu lực lần tới khi bạn mở hồ sơ.
+# context: row title; the number of friends your own profile shows on this phone
+Friends shown	Số bạn bè hiển thị
+# context: row title; the number of followers your own profile shows on this phone
+Followers shown	Số người theo dõi hiển thị
+# context: row title; the number of people your own profile follows, shown on this phone
+Following shown	Số đang theo dõi hiển thị
+# context: message in that row's edit dialog
+Digits only, up to 10. Your own profile shows this number on this phone. Leave it blank for Facebook's real one.	Chỉ nhập chữ số, tối đa 10. Hồ sơ của bạn hiện số này trên điện thoại này. Để trống để dùng số thật của Facebook.
+# context: summary of that row when it is blank
+Facebook's real number shows. Type digits to show your own.	Đang hiện số thật của Facebook. Nhập chữ số để hiện số của bạn.
+# context: summary of that row; %1$s is the number typed, already grouped for the language
+Your profile shows %1$s on this phone.	Hồ sơ của bạn hiện %1$s trên điện thoại này.

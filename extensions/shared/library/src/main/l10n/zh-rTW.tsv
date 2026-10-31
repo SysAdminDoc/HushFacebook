@@ -2330,3 +2330,19 @@ Mute stories	限時動態靜音
 Video stories wait for a tap	影片限時動態等待點按
 Stories start with the sound off every time you open Facebook. Tap a speaker or press volume up to hear them, and they stay on until you mute again.	每次開啟 Facebook 時，限時動態都會以靜音播放。點按喇叭或按下音量增加鍵即可聽到聲音，聲音會保持開啟，直到你再次靜音。
 Video stories don't start by themselves. Touch and hold a story, then let go, to play it. Works with Tap to play on or off.	影片限時動態不會自動開始播放。長按限時動態後放開即可播放。無論「點按播放」開啟或關閉皆可使用。
+# context: switch title under News feed; the numbers are the friends, followers and following counts at the top of your own profile
+Local profile counts	自訂個人檔案數字
+# context: summary of that switch; 'below' means the three rows right under it
+Shows the friends, followers and following numbers you type below on your own profile, on this phone only. Other profiles and Facebook's real numbers aren't touched. Applies the next time you open your profile.	在你自己的個人檔案上顯示你在下方輸入的朋友、粉絲和追蹤數量，只在這支手機上生效。其他人的檔案和 Facebook 的真實數字不會改變。下次開啟你的檔案時生效。
+# context: row title; the number of friends your own profile shows on this phone
+Friends shown	顯示的朋友數
+# context: row title; the number of followers your own profile shows on this phone
+Followers shown	顯示的粉絲數
+# context: row title; the number of people your own profile follows, shown on this phone
+Following shown	顯示的追蹤數
+# context: message in that row's edit dialog
+Digits only, up to 10. Your own profile shows this number on this phone. Leave it blank for Facebook's real one.	只能輸入數字，最多 10 位。你自己的檔案會在這支手機上顯示這個數字。留空則顯示 Facebook 的真實數字。
+# context: summary of that row when it is blank
+Facebook's real number shows. Type digits to show your own.	顯示 Facebook 的真實數字。輸入數字即可顯示你自己的數字。
+# context: summary of that row; %1$s is the number typed, already grouped for the language
+Your profile shows %1$s on this phone.	你的檔案在這支手機上顯示 %1$s。

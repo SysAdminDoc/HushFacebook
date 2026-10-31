@@ -2326,3 +2326,19 @@ Mute stories	Hikayeleri sessize al
 Video stories wait for a tap	Video hikayeler dokunmanı bekler
 Stories start with the sound off every time you open Facebook. Tap a speaker or press volume up to hear them, and they stay on until you mute again.	Hikayeler Facebook'u her açtığında sessiz başlar. Duymak için bir hoparlöre dokun veya sesi açma tuşuna bas. Ses, yeniden sessize alana kadar açık kalır.
 Video stories don't start by themselves. Touch and hold a story, then let go, to play it. Works with Tap to play on or off.	Video hikayeler kendiliğinden başlamaz. Oynatmak için bir hikayeye basılı tut, sonra bırak. "Oynatmak için dokun" açıkken de kapalıyken de çalışır.
+# context: switch title under News feed; the numbers are the friends, followers and following counts at the top of your own profile
+Local profile counts	Kendi profil sayıları
+# context: summary of that switch; 'below' means the three rows right under it
+Shows the friends, followers and following numbers you type below on your own profile, on this phone only. Other profiles and Facebook's real numbers aren't touched. Applies the next time you open your profile.	Aşağıya yazdığın arkadaş, takipçi ve takip edilen sayılarını yalnızca bu telefonda kendi profilinde gösterir. Diğer profillere ve Facebook'un gerçek sayılarına dokunulmaz. Profilini bir sonraki açışında geçerli olur.
+# context: row title; the number of friends your own profile shows on this phone
+Friends shown	Gösterilen arkadaş sayısı
+# context: row title; the number of followers your own profile shows on this phone
+Followers shown	Gösterilen takipçi sayısı
+# context: row title; the number of people your own profile follows, shown on this phone
+Following shown	Gösterilen takip edilen sayısı
+# context: message in that row's edit dialog
+Digits only, up to 10. Your own profile shows this number on this phone. Leave it blank for Facebook's real one.	Yalnızca rakam, en çok 10. Kendi profilin bu sayıyı bu telefonda gösterir. Facebook'un gerçek sayısı için boş bırak.
+# context: summary of that row when it is blank
+Facebook's real number shows. Type digits to show your own.	Facebook'un gerçek sayısı görünüyor. Kendi sayını göstermek için rakam yaz.
+# context: summary of that row; %1$s is the number typed, already grouped for the language
+Your profile shows %1$s on this phone.	Profilin bu telefonda %1$s gösteriyor.

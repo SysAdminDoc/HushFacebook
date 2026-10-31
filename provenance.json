@@ -654,6 +654,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/profile/LocalProfileCounts.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/profile/LocalProfileCountsPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: your own friends, followers and following numbers on your own profile, on this phone only. The design follows Hushfeed's local profile counts (digits only, blank keeps the real number) with no shared code. Facebook 585 lays the top of a profile out with Bloks, so the patch passes every string the Bloks node classes' getString returns to the extension, which swaps a number that sits before a friends, followers or following word. The profile screen is the class named com.facebook.timeline.fragment.ProfileFragment, whose onFragmentCreate hands the extension the screen so it can compare the profile id argument with the user id of the ViewerContext the screen holds."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/profile/ProfileNotes.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/profile/HideProfileNotesPatch.kt"
       ],

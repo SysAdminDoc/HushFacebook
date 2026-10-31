@@ -427,6 +427,26 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_profile_notes", FALSE);
 
     /**
+     * Friends, followers and following counts of your own profile that you type yourself, shown on this
+     * phone only ({@link app.morphe.extension.facebook.profile.LocalProfileCounts}, #280). Starts off.
+     * Read each time Facebook lays the profile out, so a change shows the next time a profile opens.
+     */
+    public static final BooleanSetting LOCAL_PROFILE_COUNTS =
+            new BooleanSetting("hushfacebook_local_profile_counts", FALSE);
+
+    /** The count shown for Friends on your own profile: digits only, blank keeps Facebook's own. Not a switch. */
+    public static final StringSetting LOCAL_FRIENDS =
+            new StringSetting("hushfacebook_local_friends", "");
+
+    /** The count shown for Followers on your own profile: digits only, blank keeps Facebook's own. Not a switch. */
+    public static final StringSetting LOCAL_FOLLOWERS =
+            new StringSetting("hushfacebook_local_followers", "");
+
+    /** The count shown for Following on your own profile: digits only, blank keeps Facebook's own. Not a switch. */
+    public static final StringSetting LOCAL_FOLLOWING =
+            new StringSetting("hushfacebook_local_following", "");
+
+    /**
      * Facebook's own Save button in the row under a post, beside Like, Comment and Share (issue
      * #265, {@link app.morphe.extension.facebook.feed.PostSaveButton}). Starts off. Read each time
      * a post's row is built, so a change shows on posts drawn after it.

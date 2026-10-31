@@ -2326,3 +2326,19 @@ Mute stories	Stories stummschalten
 Video stories wait for a tap	Video-Stories warten auf Antippen
 Stories start with the sound off every time you open Facebook. Tap a speaker or press volume up to hear them, and they stay on until you mute again.	Stories starten jedes Mal ohne Ton, wenn du Facebook öffnest. Tippe auf einen Lautsprecher oder drücke Lauter, um sie zu hören. Der Ton bleibt an, bis du wieder stummschaltest.
 Video stories don't start by themselves. Touch and hold a story, then let go, to play it. Works with Tap to play on or off.	Video-Stories starten nicht von selbst. Halte eine Story gedrückt und lass dann los, um sie abzuspielen. Funktioniert mit „Zum Abspielen tippen“ an oder aus.
+# context: switch title under News feed; the numbers are the friends, followers and following counts at the top of your own profile
+Local profile counts	Eigene Profilzahlen
+# context: summary of that switch; 'below' means the three rows right under it
+Shows the friends, followers and following numbers you type below on your own profile, on this phone only. Other profiles and Facebook's real numbers aren't touched. Applies the next time you open your profile.	Zeigt auf deinem eigenen Profil die Zahlen für Freunde, Follower und Gefolgte, die du unten einträgst, nur auf diesem Handy. Andere Profile und Facebooks echte Zahlen bleiben unberührt. Gilt beim nächsten Öffnen deines Profils.
+# context: row title; the number of friends your own profile shows on this phone
+Friends shown	Angezeigte Freunde
+# context: row title; the number of followers your own profile shows on this phone
+Followers shown	Angezeigte Follower
+# context: row title; the number of people your own profile follows, shown on this phone
+Following shown	Angezeigte Gefolgte
+# context: message in that row's edit dialog
+Digits only, up to 10. Your own profile shows this number on this phone. Leave it blank for Facebook's real one.	Nur Ziffern, bis zu 10. Dein eigenes Profil zeigt diese Zahl auf diesem Handy. Lass das Feld leer, um Facebooks echte Zahl zu sehen.
+# context: summary of that row when it is blank
+Facebook's real number shows. Type digits to show your own.	Facebooks echte Zahl wird angezeigt. Gib Ziffern ein, um deine eigene zu zeigen.
+# context: summary of that row; %1$s is the number typed, already grouped for the language
+Your profile shows %1$s on this phone.	Dein Profil zeigt auf diesem Handy %1$s.

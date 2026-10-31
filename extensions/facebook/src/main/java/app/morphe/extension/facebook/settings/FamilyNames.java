@@ -49,6 +49,7 @@ public final class FamilyNames {
     public static final String SPONSORED_SEARCH = "Hide sponsored search results";
     public static final String SPONSORED_PROFILE_POSTS = "Hide sponsored profile posts";
     public static final String PROFILE_NOTES = "Hide profile notes";
+    public static final String LOCAL_PROFILE_COUNTS = "Local profile counts";
     public static final String POST_ACTION_BUTTONS = "Post action buttons";
     public static final String SPONSORED_MARKETPLACE = "Hide sponsored Marketplace listings";
     public static final String AFFILIATE_LINKS = "Hide affiliate product links";

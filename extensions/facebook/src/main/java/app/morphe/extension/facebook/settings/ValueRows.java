@@ -953,6 +953,42 @@ final class ValueRows {
     }
 
     /**
+     * One of the Local profile counts rows (#280): digits for the friends, followers or following
+     * count of your own profile. Its summary follows its text, whoever sets it.
+     */
+    static final class CountRow extends EditTextPreference {
+        /** Which count the row keeps. */
+        final app.morphe.extension.facebook.profile.LocalProfileCounts.Count count;
+
+        CountRow(Context context, app.morphe.extension.facebook.profile.LocalProfileCounts.Count count) {
+            super(context);
+            this.count = count;
+        }
+
+        @Override
+        public void setText(String text) {
+            super.setText(text);
+            setSummary(HushfacebookPreferenceFragment.countSummary(count, text));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its edit dialog takes the screen's colors, as the other rows' dialogs do. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+            fitAboveKeyboard(getDialog());
+        }
+    }
+
+    /**
      * The start tab's row. Its summary follows its value, whoever sets it: the person, the shared
      * page syncing it from the setting, or an import.
      */
