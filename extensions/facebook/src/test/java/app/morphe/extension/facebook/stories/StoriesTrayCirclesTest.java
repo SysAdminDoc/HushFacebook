@@ -72,6 +72,25 @@ public class StoriesTrayCirclesTest {
     }
 
     @Test
+    public void tilesComeOutOneCircleWideAndTall() {
+        Settings.STORIES_TRAY_SIZE.save("80");
+        android.content.Context context = org.robolectric.RuntimeEnvironment.getApplication();
+        float density = context.getResources().getDisplayMetrics().density;
+        assertEquals(Math.round(80 * density), StoriesTrayCircles.tileWidth(context, 320));
+        // Facebook's tiles are about 1.84 times as tall as wide: a round tile is square, so the row loses its blank band.
+        assertEquals(203, StoriesTrayCircles.tileHeight(203, 374));
+    }
+
+    @Test
+    public void switchedOffTilesKeepFacebooksSize() {
+        Settings.STORIES_TRAY_CIRCLES.save(false);
+        android.content.Context context = org.robolectric.RuntimeEnvironment.getApplication();
+        assertEquals(320, StoriesTrayCircles.tileWidth(context, 320));
+        assertEquals(590, StoriesTrayCircles.tileHeight(320, 590));
+        assertEquals(320, StoriesTrayCircles.tileWidth(null, 320));
+    }
+
+    @Test
     public void anotherListIsLeftAlone() {
         View tile = StoriesTrayCirclesForTests.tileInRow(7);
         assertFalse(tile.getClipToOutline());

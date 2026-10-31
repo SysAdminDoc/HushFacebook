@@ -4,6 +4,7 @@
  */
 package app.morphe.extension.facebook.stories;
 
+import android.content.Context;
 import android.graphics.Outline;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,8 +29,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the look is applied to the views. The patch tells {@link #trayId} which view id the row's list
  * has and hands {@link #container} every pull-to-refresh wrapper around a new list. A tile added to
  * the list that carries that id is clipped to a circle cut from the middle of the tile and scaled
- * to the diameter chosen in settings. Every other list is left alone, and so is the row when the
- * switch is off. Any failure here leaves the tile as Facebook drew it.
+ * to the diameter chosen in settings. Facebook's own tile size is asked of {@link #tileWidth} and
+ * {@link #tileHeight} too, so the tiles, and the row with them, come out one circle tall. Every
+ * other list is left alone, and so is the row when the switch is off. Any failure here leaves the
+ * tile as Facebook drew it.
  */
 public final class StoriesTrayCircles {
     /** The diameter used when the setting is blank, in dp. */
@@ -92,6 +95,37 @@ public final class StoriesTrayCircles {
             public void onChildViewRemoved(View parent, View child) {
             }
         });
+    }
+
+    /**
+     * Injection point, as Facebook works out how wide a story tile is, in pixels: the chosen diameter
+     * while the switch is on, so the row holds circles of that size instead of tall cards. Never throws.
+     */
+    public static int tileWidth(@Nullable Context context, int width) {
+        try {
+            if (context == null || !Utils.settingsReady() || !Settings.STORIES_TRAY_CIRCLES.get()) return width;
+            float density = context.getResources().getDisplayMetrics().density;
+            HookStatus.bound(FamilyNames.STORIES_TRAY_CIRCLES, "tile size");
+            return Math.round(diameterDp(Settings.STORIES_TRAY_SIZE.get()) * density);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORIES_TRAY_CIRCLES, "tile width", failure);
+            return width;
+        }
+    }
+
+    /**
+     * Injection point, as Facebook turns a tile's width into its height: as tall as it is wide while
+     * the switch is on. Facebook's tiles are almost twice as tall as wide, so a circle cut from one
+     * left a blank band under the row. Never throws.
+     */
+    public static int tileHeight(int width, int height) {
+        try {
+            if (width <= 0 || !Utils.settingsReady() || !Settings.STORIES_TRAY_CIRCLES.get()) return height;
+            return width;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORIES_TRAY_CIRCLES, "tile height", failure);
+            return height;
+        }
     }
 
     /** The diameter in dp a setting value means: its digits kept inside the allowed range, the default if blank. */
