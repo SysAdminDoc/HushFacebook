@@ -63,8 +63,10 @@ class CommentBlockFixtureTest {
         }
         val clicks = holders(bundle, DOWNVOTE_CLICK).flatMap { owner -> owner.methods.filter { holdsString(it, DOWNVOTE_CLICK) } }
         val helpers = holders(bundle, BLOCK_SHEET_QUERY).flatMap { owner -> owner.methods.filter { holdsString(it, BLOCK_SHEET_QUERY) } }
-        val sites = commentBlockSites(dislikeBuilder(plugin), clicks, helpers, classOf)
-        val owners = listOf(sites.render.definingClass, sites.click.definingClass).distinct().mapNotNull(classOf)
+        val failures = holders(bundle, BLOCK_FAILED).flatMap { owner -> owner.methods.filter { holdsString(it, BLOCK_FAILED) } }
+        val sites = commentBlockSites(dislikeBuilder(plugin), clicks, helpers, failures, classOf)
+        val owners = listOfNotNull(sites.render.definingClass, sites.click.definingClass, sites.failure?.definingClass)
+            .distinct().mapNotNull(classOf)
         return Found(sites, owners)
     }
 
@@ -75,6 +77,9 @@ class CommentBlockFixtureTest {
         val sites = found.sites
         val renderBefore = sites.render.code()
         val clickBefore = sites.click.code()
+        val failure = sites.failure
+        assertNotNull("$name: no single block sheet failure handler", failure)
+        val failureBefore = failure!!.code()
 
         assertTrue("$name: the icon isn't a static load", renderBefore[sites.iconAt].opcode == Opcode.SGET_OBJECT)
         assertTrue("$name: the label call isn't a direct call", renderBefore[sites.labelAt].opcode == Opcode.INVOKE_DIRECT)
@@ -119,6 +124,11 @@ class CommentBlockFixtureTest {
         assertEquals("$name: the extension is asked", "$CLASS->tap(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;)Z", click[6].reference())
         assertEquals("$name: a yes returns Unit", sites.unit, click[9].reference())
         assertEquals("$name: Facebook's click stays", clickBefore.map { it.opcode }, click.drop(11).map { it.opcode })
+
+        val handler = context.mutableClassDefBy(failure.definingClass).methods.single { it.descriptor() == failure.descriptor() }.code()
+        assertEquals("$name: the failure handler gains one call", failureBefore.size + 1, handler.size)
+        assertEquals("$name: the throwable goes to the extension first", "$CLASS->sheetFailed(Ljava/lang/Throwable;)V", handler[0].reference())
+        assertEquals("$name: Facebook's failure handler stays", failureBefore.map { it.opcode }, handler.drop(1).map { it.opcode })
     }
 
     @Test
@@ -128,6 +138,7 @@ class CommentBlockFixtureTest {
             methods["tap"]?.let { "(" + it.parameterTypes.joinToString("") + ")" + it.returnType })
         assertNotNull(methods["blockIcon"])
         assertNotNull(methods["blockLabel"])
+        assertEquals("(Ljava/lang/Throwable;)V", methods["sheetFailed"]?.let { "(" + it.parameterTypes.joinToString("") + ")" + it.returnType })
     }
 
     private companion object {

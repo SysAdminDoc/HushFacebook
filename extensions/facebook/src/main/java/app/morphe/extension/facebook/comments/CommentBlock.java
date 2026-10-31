@@ -15,6 +15,7 @@ import java.lang.reflect.Proxy;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.facebook.stories.StorySeen;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
@@ -56,7 +57,16 @@ public final class CommentBlock {
     /** Counted each time a tap opens Facebook's block sheet. */
     static final String BLOCK_OPENED = "Comment Block sheet opened";
 
+    /** Counted, with the reason, each time Facebook's block sheet fails after a tap here. */
+    static final String BLOCK_FAILED = "Comment Block sheet failed";
+
+    /** How long after a tap a block sheet failure is taken to be that tap's. */
+    static final long TAP_WINDOW_MS = 15_000;
+
     private static final String FAMILY = FamilyNames.COMMENT_SHEET_OPTIONS;
+
+    /** When a tap last handed a comment's author to the helper, 0 once its failure was read. */
+    static volatile long tappedAt;
 
     private CommentBlock() {
     }
@@ -229,9 +239,118 @@ public final class CommentBlock {
         constructor.setAccessible(true);
         Object instance = constructor.newInstance();
         call.setAccessible(true);
-        Logger.printDebug(() -> "Comment block: the block sheet opens for a comment's author");
-        call.invoke(instance, context, sourceConstant, author.session, stand, 0L, Long.parseLong(author.id), Boolean.FALSE);
+        long viewer = viewerId(author.session);
+        Logger.printDebug(() -> "Comment block: the block sheet opens for a comment's author, the session "
+                + (viewer == 0L ? "names no user" : "names its user"));
+        tappedAt = System.currentTimeMillis();
+        call.invoke(instance, context, sourceConstant, author.session, stand, viewer, Long.parseLong(author.id), Boolean.FALSE);
         return true;
+    }
+
+    /** The signed-in user's id, as the profile's own Block row passes it first, or 0 when [session] doesn't say. */
+    static long viewerId(@Nullable Object session) {
+        String id = StorySeen.account(session);
+        return id != null && id.matches("\\d{1,18}") ? Long.parseLong(id) : 0L;
+    }
+
+    /**
+     * The hook, first thing in the failure handler of Facebook's block sheet (the one that shows
+     * "There was a problem blocking this user"). Within {@link #TAP_WINDOW_MS} of a tap here it
+     * counts the failure in the report and writes the reason Facebook got to the log, long digit
+     * runs masked so no id is written. Facebook's handler runs as written either way.
+     */
+    public static void sheetFailed(@Nullable Throwable failure) {
+        try {
+            long at = tappedAt;
+            if (at == 0L || System.currentTimeMillis() - at > TAP_WINDOW_MS) return;
+            tappedAt = 0L;
+            String reason = reason(failure);
+            HookStatus.counted(FAMILY, BLOCK_FAILED);
+            Logger.printInfo(() -> "Comment block: Facebook's block sheet failed: " + reason);
+        } catch (Throwable unexpected) {
+            HookStatus.threw(FAMILY, "comment block failure", unexpected);
+        }
+    }
+
+    /**
+     * [failure]'s chain as "Type: message" parts, each with the plain fields of a service result
+     * or API error it carries, digit runs of six or more masked.
+     */
+    static String reason(@Nullable Throwable failure) {
+        StringBuilder out = new StringBuilder();
+        Throwable at = failure;
+        for (int depth = 0; at != null && depth < 4; depth++) {
+            if (out.length() > 0) out.append(" <- ");
+            String type = at.getClass().getSimpleName();
+            out.append(type.isEmpty() ? at.getClass().getName() : type);
+            if (at.getMessage() != null) out.append(": ").append(at.getMessage());
+            Throwable next = at.getCause();
+            Object result = field(at, "result");
+            if (result != null) {
+                out.append(" {").append(fields(result)).append('}');
+                Object inner = field(result, "errorThrowable");
+                if (inner instanceof Throwable) next = (Throwable) inner;
+            }
+            Object api = apiError(at);
+            if (api != null) out.append(" {").append(fields(api)).append('}');
+            if (next == at) break;
+            at = next;
+        }
+        String text = out.length() == 0 ? "no reason given" : out.toString().replaceAll("\\d{6,}", "#");
+        return text.length() > 400 ? text.substring(0, 400) : text;
+    }
+
+    /** The value of [holder]'s instance field called [name], declared on it or a superclass, or null. */
+    @Nullable
+    private static Object field(Object holder, String name) {
+        for (Class<?> at = holder.getClass(); at != null && at != Object.class; at = at.getSuperclass()) {
+            try {
+                java.lang.reflect.Field field = at.getDeclaredField(name);
+                field.setAccessible(true);
+                return field.get(holder);
+            } catch (NoSuchFieldException absent) {
+                // Try the superclass.
+            } catch (ReflectiveOperationException | RuntimeException unreadable) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /** The ApiErrorResult [failure] answers through a no-argument method, or null. */
+    @Nullable
+    private static Object apiError(Throwable failure) {
+        for (Method method : failure.getClass().getMethods()) {
+            if (method.getParameterTypes().length != 0 || !"ApiErrorResult".equals(method.getReturnType().getSimpleName())) continue;
+            try {
+                return method.invoke(failure);
+            } catch (ReflectiveOperationException | RuntimeException unreadable) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /** [holder]'s own number, flag, enum and text fields as "name=value". */
+    static String fields(Object holder) {
+        StringBuilder out = new StringBuilder();
+        for (java.lang.reflect.Field field : holder.getClass().getDeclaredFields()) {
+            Class<?> type = field.getType();
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers())
+                    || !(type.isPrimitive() || type == String.class || type.isEnum())) {
+                continue;
+            }
+            try {
+                field.setAccessible(true);
+                Object value = field.get(holder);
+                if (value == null) continue;
+                if (out.length() > 0) out.append(' ');
+                out.append(field.getName()).append('=').append(value);
+            } catch (ReflectiveOperationException | RuntimeException skipped) {
+                // Leave it out.
+            }
+        }
+        return out.toString();
     }
 
     /** The helper's (Context, source, session, profile, long, long, boolean) method, found by those types. */

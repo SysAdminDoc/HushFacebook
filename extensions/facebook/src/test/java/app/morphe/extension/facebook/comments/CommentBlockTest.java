@@ -187,6 +187,97 @@ public class CommentBlockTest {
         assertEquals("Sam", Helper.profile.getName());
     }
 
+    /** A session that writes its user id first, as Facebook's does. */
+    public static final class ParcelSession extends FbUserSession implements android.os.Parcelable {
+        final String user;
+
+        ParcelSession(String user) {
+            this.user = user;
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(android.os.Parcel out, int flags) {
+            out.writeString(user);
+        }
+    }
+
+    @Test
+    public void theViewerIdComesFromTheSessionLikeTheProfilesOwnBlockRow() {
+        assertEquals(100004321L, CommentBlock.viewerId(new ParcelSession("100004321")));
+        assertEquals(0L, CommentBlock.viewerId(new ParcelSession("")));
+        assertEquals(0L, CommentBlock.viewerId(new ParcelSession("abc")));
+        assertEquals(0L, CommentBlock.viewerId(new FbUserSession()));
+        assertEquals(0L, CommentBlock.viewerId(null));
+    }
+
+    /** Facebook's service failure, carrying a result with the error that came back. */
+    public static final class ServiceFailure extends Exception {
+        final Result result;
+
+        ServiceFailure(Result result) {
+            super("service failed");
+            this.result = result;
+        }
+    }
+
+    /** The service result's shape: an error code, a description and the throwable behind it. */
+    public static final class Result {
+        final Code errorCode = Code.API_ERROR;
+        final String errorDescription = "Blockee 100001234567 can't be blocked";
+        final Throwable errorThrowable;
+
+        Result(Throwable errorThrowable) {
+            this.errorThrowable = errorThrowable;
+        }
+    }
+
+    public enum Code {
+        API_ERROR
+    }
+
+    @Test
+    public void aFailureReasonCarriesTheServiceErrorWithNoIds() {
+        String reason = CommentBlock.reason(new ServiceFailure(new Result(new IllegalStateException("Null action"))));
+        assertTrue(reason, reason.startsWith("ServiceFailure: service failed {"));
+        assertTrue(reason, reason.contains("errorCode=API_ERROR"));
+        assertTrue(reason, reason.endsWith(" <- IllegalStateException: Null action"));
+        assertFalse("an id reached the reason: " + reason, reason.contains("100001234567"));
+        assertEquals("no reason given", CommentBlock.reason(null));
+    }
+
+    @Test
+    public void aFailedSheetAfterATapIsCountedOnce() {
+        CommentBlock.tappedAt = System.currentTimeMillis();
+        CommentBlock.sheetFailed(new IllegalStateException("Null action"));
+        CommentBlock.sheetFailed(new IllegalStateException("Null action"));
+        assertTrue(statusLine(), statusLine().contains(CommentBlock.BLOCK_FAILED + " 1"));
+        assertEquals("a reason is read once per tap", 0L, CommentBlock.tappedAt);
+    }
+
+    @Test
+    public void aFailedSheetWithNoTapHereIsLeftAlone() {
+        CommentBlock.tappedAt = 0L;
+        CommentBlock.sheetFailed(new RuntimeException("Null viewer"));
+        CommentBlock.tappedAt = System.currentTimeMillis() - CommentBlock.TAP_WINDOW_MS - 1;
+        CommentBlock.sheetFailed(new RuntimeException("Null viewer"));
+        assertFalse(statusLine().contains(CommentBlock.BLOCK_FAILED));
+    }
+
+    @Test
+    public void aTapStartsTheFailureWindow() {
+        Settings.COMMENT_BLOCK_BUTTON.save(true);
+        CommentBlock.tappedAt = 0L;
+        assertTrue(tap(lambdaFor("1234567890", "Sam Rivers"), new Scope()));
+        assertTrue(CommentBlock.tappedAt > 0L);
+        CommentBlock.sheetFailed(new RuntimeException("Null viewer"));
+        assertTrue(statusLine().contains(CommentBlock.BLOCK_FAILED + " 1"));
+    }
+
     @Test
     public void helperIsFoundByItsParameterTypes() {
         assertTrue(CommentBlock.helperMethod(Helper.class, Profile.class, Source.class) != null);

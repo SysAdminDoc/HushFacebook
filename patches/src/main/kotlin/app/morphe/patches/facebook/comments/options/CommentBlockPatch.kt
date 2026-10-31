@@ -47,6 +47,12 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * label goes through the extension, and the click asks the extension first. The extension builds a
  * stand-in profile, so the helper is never handed anything but a name, and the confirmation sheet
  * stays Facebook's.
+ *
+ * A fourth hook only reads: the block sheet's failure handler, the one method loading
+ * "timeline_block_user_failed" (LX/0ONh;->Hxd(Throwable)), hands its throwable to the extension
+ * first, so a sheet that fails after a tap here leaves its reason in the report. Facebook's
+ * "There was a problem blocking this user" toast is all the screen says, and its own reports
+ * never reach the log.
  */
 
 private const val PATCH = "Comment sheet options (block button)"
@@ -56,6 +62,10 @@ private const val BLOCK_LABEL_CALL = "$COMMENT_BLOCK_CLASS->blockLabel(Ljava/lan
 private const val BLOCK_TAP_CALL =
     "$COMMENT_BLOCK_CLASS->tap(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Class;Ljava/lang/Class;" +
         "Ljava/lang/Class;Ljava/lang/Class;)Z"
+private const val BLOCK_FAILED_CALL = "$COMMENT_BLOCK_CLASS->sheetFailed(Ljava/lang/Throwable;)V"
+
+/** The string only the block sheet's failure handler loads. */
+internal const val BLOCK_FAILED = "timeline_block_user_failed"
 
 /** The string the thumbs-down's click loads, once. */
 internal const val DOWNVOTE_CLICK = "CommentsDownvotePluginKComponent.undoReactionThenDownvote"
@@ -69,7 +79,7 @@ private const val PROFILE_SOURCE = "PROFILE"
 
 private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
 
-/** Where the three hooks go, and the classes the extension is handed. */
+/** Where the four hooks go, and the classes the extension is handed. */
 internal class CommentBlockSites(
     val render: Method,
     val iconAt: Int,
@@ -84,17 +94,21 @@ internal class CommentBlockSites(
     val helper: String,
     val profile: String,
     val source: String,
+    val failure: Method?,
 )
 
 /**
  * Everything the block button needs, from [builder] (the dislike plugin's builder), [clicks] (the
- * methods loading [DOWNVOTE_CLICK]), [helpers] (the methods loading [BLOCK_SHEET_QUERY]) and
- * [classOf]. Refuses unless each is found exactly once.
+ * methods loading [DOWNVOTE_CLICK]), [helpers] (the methods loading [BLOCK_SHEET_QUERY]),
+ * [failures] (the methods loading [BLOCK_FAILED]) and [classOf]. Refuses unless each part of the
+ * button is found exactly once; the failure handler only reads, so without a single one it's left
+ * out.
  */
 internal fun commentBlockSites(
     builder: Method,
     clicks: List<Method>,
     helpers: List<Method>,
+    failures: List<Method>,
     classOf: (String) -> ClassDef?,
 ): CommentBlockSites {
     val component = classOf(builder.returnType) ?: refuse("no class ${builder.returnType}")
@@ -164,14 +178,21 @@ internal fun commentBlockSites(
     if (!AccessFlags.INTERFACE.isSet(profile.accessFlags)) refuse("$profileType isn't an interface")
     if (helper.definingClass == click.definingClass) refuse("the helper and the click are in one class")
 
+    // The sheet's failure handler: an instance (Throwable)V method.
+    val failure = failures.singleOrNull {
+        !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
+            it.parameterTypes.map { type -> type.toString() } == listOf("Ljava/lang/Throwable;")
+    }
+
     return CommentBlockSites(
         render, icon.index, iconRegister, scratch, "${iconField.definingClass}->$blockName:${iconField.type}",
         label.index, labelRegister, click, unit, component.type, helper.definingClass, profileType, sourceType,
+        failure,
     )
 }
 
 /**
- * The block button's three hooks go in. Nameless, so Comment sheet options carries it and its
+ * The block button's hooks go in. Nameless, so Comment sheet options carries it and its
  * fixture tests run it on its own. Everything is found before anything changes.
  */
 internal val commentBlockPatch = bytecodePatch {
@@ -182,6 +203,7 @@ internal val commentBlockPatch = bytecodePatch {
             dislikeBuilder(classDefByOrNull(COMMENT_DOWNVOTE)),
             blockHolders(DOWNVOTE_CLICK).flatMap { holder -> holder.methods.filter { holdsString(it, DOWNVOTE_CLICK) } },
             blockHolders(BLOCK_SHEET_QUERY).flatMap { holder -> holder.methods.filter { holdsString(it, BLOCK_SHEET_QUERY) } },
+            blockHolders(BLOCK_FAILED).flatMap { holder -> holder.methods.filter { holdsString(it, BLOCK_FAILED) } },
         ) { type -> classDefByOrNull(type) }
         hookCommentBlock(sites) { type -> mutableClassDefBy(type) }
     }
@@ -190,7 +212,7 @@ internal val commentBlockPatch = bytecodePatch {
 private fun BytecodePatchContext.blockHolders(string: String) =
     classDefByStrings(string, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
 
-/** Puts the three hooks into [sites]' methods, [mutable] reading the class to change. */
+/** Puts the hooks into [sites]' methods, [mutable] reading the class to change. */
 internal fun hookCommentBlock(sites: CommentBlockSites, mutable: (String) -> ClassDef) {
     val render = mutable(sites.render.definingClass).methods.single { it.descriptor() == sites.render.descriptor() } as MutableMethod
     // Later spot first, so the earlier index stays where it was.
@@ -230,5 +252,8 @@ internal fun hookCommentBlock(sites: CommentBlockSites, mutable: (String) -> Cla
         """,
         ExternalLabel("tap", click.getInstruction(0)),
     )
+    val failure = sites.failure ?: return
+    val handler = mutable(failure.definingClass).methods.single { it.descriptor() == failure.descriptor() } as MutableMethod
+    handler.addInstructions(0, "invoke-static/range {p1 .. p1}, $BLOCK_FAILED_CALL")
 }
 

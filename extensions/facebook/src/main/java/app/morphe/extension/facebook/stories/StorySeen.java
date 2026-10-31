@@ -288,7 +288,7 @@ public final class StorySeen {
      * writes to a Parcel. Null for anything else.
      */
     @Nullable
-    static String account(@Nullable Object session) {
+    public static String account(@Nullable Object session) {
         if (!(session instanceof Parcelable)) return null;
         Parcel parcel = Parcel.obtain();
         try {
