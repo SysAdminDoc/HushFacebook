@@ -28,8 +28,11 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import java.lang.ref.WeakReference;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.navigation.FacebookTabs;
@@ -143,6 +146,16 @@ public final class PictureInPicture {
     /** How long Facebook gets to arm the window itself once its screen comes back full screen. */
     static final long REARM_AFTER_WINDOW_MS = 1000;
 
+    /** Counted each time a reel keeps its place where Facebook put it back at its start as its screen came back. */
+    static final String PLACE_KEPT = "reel kept its place as its screen came back";
+
+    /** How long after its screen resumes a seek to a reel's start still belongs to the screen coming back. */
+    static final long RETURN_MS = 1500;
+
+    /** The triggers of the seeks that put a reel back at its start: the viewer's for a reel out of sight, and the bind's. */
+    static final Set<String> REWINDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "BY_SHORT_FORM_VIDEO_INVISIBLE", "BY_GROOT_TRANSITION")));
+
     /**
      * The narrowest and widest window Facebook arms for a reel, width to height, as its arming
      * checks it: 1 by 2.39, Android's own narrowest, up to square.
@@ -248,6 +261,12 @@ public final class PictureInPicture {
 
     /** The armed screen while the page watch saw it in the window, until it comes back full screen. */
     private static WeakReference<Activity> floating = new WeakReference<>(null);
+
+    /** The armed screen while it's paused, floating in the window or behind something else. */
+    private static WeakReference<Activity> away = new WeakReference<>(null);
+
+    /** When a screen last came back from being {@link #away}. */
+    private static long backAt = -RETURN_MS;
 
     /** Goes up with each arming and disarm, so a later look can tell whether Facebook did either. */
     private static int armings;
@@ -563,13 +582,16 @@ public final class PictureInPicture {
 
         @Override
         public void onActivityResumed(Activity activity) {
+            screenBack(activity, SystemClock.uptimeMillis());
             cameBack(activity);
             PictureInPictureButton.sync();
         }
 
         @Override
         public void onActivityPaused(Activity activity) {
-            if (activity != null && activity == armedScreen()) Utils.runOnMainThreadDelayed(() -> floats(activity), FLOAT_CHECK_MS);
+            if (activity == null || activity != armedScreen()) return;
+            screenAway(activity);
+            Utils.runOnMainThreadDelayed(() -> floats(activity), FLOAT_CHECK_MS);
         }
 
         @Override
@@ -780,6 +802,48 @@ public final class PictureInPicture {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "disarm", failure);
         }
+    }
+
+    private static synchronized void screenAway(Activity activity) {
+        away = new WeakReference<>(activity);
+    }
+
+    private static synchronized void screenBack(Activity activity, long now) {
+        if (activity == null || activity != away.get()) return;
+        away = new WeakReference<>(null);
+        backAt = now;
+    }
+
+    /**
+     * The hook, first in the seek every seek of FbGrootPlayer goes through. Facebook puts a reel back
+     * at its start as its screen comes back, from the window or from another app, with Hushfacebook
+     * paused too, so it started over every time (#44). Answering yes drops that seek and the armed
+     * reel goes on from where it was. Only a seek to 0 by one of {@link #REWINDS} counts, while the
+     * screen is away or within {@link #RETURN_MS} of its return, so a swipe still rewinds the reel it
+     * leaves and a drag to the start is left alone.
+     */
+    public static boolean keepPlace(Object trigger, Object player, int positionMs) {
+        try {
+            if (positionMs != 0 || player == null || !comingBack(player, SystemClock.uptimeMillis())) return false;
+            String name = trigger instanceof Enum ? ((Enum<?>) trigger).name() : null;
+            if (!REWINDS.contains(name)) {
+                Logger.printDebug(() -> "Picture-in-picture: a seek to the start by " + name + " left alone as the screen came back");
+                return false;
+            }
+            HookStatus.counted(FAMILY, PLACE_KEPT);
+            Logger.printDebug(() -> "Picture-in-picture: player " + System.identityHashCode(player) + " kept its place, " + name);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "seek as the screen came back", failure);
+            return false;
+        }
+    }
+
+    /** Whether [player] is the armed reel, with the switch on, and its screen is away or came back just before [now]. */
+    private static synchronized boolean comingBack(Object player, long now) {
+        Activity screen = armedScreen.get();
+        if (screen == null || player != current.get() || !on()) return false;
+        return screen == away.get() || now - backAt < RETURN_MS;
     }
 
     /** Facebook just set auto-enter itself, on or off, so nothing is held any more. */
@@ -1159,6 +1223,8 @@ public final class PictureInPicture {
             sentAwayAt = -SENT_AWAY_GAP_MS;
             floating = new WeakReference<>(null);
             underSettings = new WeakReference<>(null);
+            away = new WeakReference<>(null);
+            backAt = -RETURN_MS;
         }
     }
 }

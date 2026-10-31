@@ -9,6 +9,7 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.media.resume.safeSeeks
 import app.morphe.patches.facebook.media.taptoplay.GROOT_PLAY
 import app.morphe.patches.facebook.media.taptoplay.grootPauses
 import app.morphe.patches.facebook.media.taptoplay.grootPlays
@@ -277,7 +278,8 @@ class PictureInPictureFixtureTest {
                 assertEquals("$name: the stub returns what it took", (stub[1] as OneRegisterInstruction).registerA,
                     (stub[2] as OneRegisterInstruction).registerA)
                 // #126: the view stub reads the one public ViewGroup the player's attach writes.
-                val viewField = context.playerViewField(Player(play, pause!!))
+                val seek = safeSeeks(owner, play.parameterTypes.single().toString()).single()
+                val viewField = context.playerViewField(Player(play, pause!!, seek))
                 assertEquals("$name: the view field's owner", play.definingClass, viewField.definingClass)
                 val viewStub = context.mutableClassDefBy(PICTURE_IN_PICTURE).methods.single { it.name == PLAYER_VIEW_STUB }.code()
                 assertEquals("$name: the view stub's shape", listOf(Opcode.CHECK_CAST, Opcode.IGET_OBJECT, Opcode.RETURN_OBJECT),
@@ -298,6 +300,13 @@ class PictureInPictureFixtureTest {
                 assertEquals("$name: the play hands over this", play.localRegisterCount(),
                     (played[trace + 1] as RegisterRangeInstruction).startRegister)
                 assertEquals("$name: the play's own code around it", originalPlay.size + 1, played.size)
+                val seeked = patchedOf(seek).code()
+                assertEquals("$name: the seek's first call", KEEP_PLACE, seeked[0].call.toString())
+                assertEquals("$name: the seek hands over its trigger, player and place", seek.localRegisterCount(),
+                    (seeked[0] as RegisterRangeInstruction).startRegister)
+                assertEquals("$name: the seek's yes branch", Opcode.IF_EQZ, seeked[2].opcode)
+                assertEquals("$name: a no runs Facebook's seek", 4, seeked.target(2))
+                assertEquals("$name: a yes drops the seek", Opcode.RETURN_VOID, seeked[3].opcode)
 
                 val ran = patchedOf(run).code()
                 assertEquals("$name: the runnable's first call", SET_ASIDE, ran[0].call.toString())

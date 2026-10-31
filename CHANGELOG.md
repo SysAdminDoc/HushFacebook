@@ -93,6 +93,7 @@ Changes in each Hushfacebook version, newest first.
 * **Tooling:** The file listing the supported Facebook builds and the patch list generator credit where they really came from, De-Vanced, by way of tiktok-patches-for-morphe and Hushfeed. Their old notices pointed at ReVanced files that never existed. NOTICE and the app's Licenses page name De-Vanced now, and the mirror check fails a cited file that GitLab sends to a folder page instead.
 * **Tooling:** The build moves to Gradle 9.8.2, still pinned by checksum. It's a bug-fix release, and the wrapper jar is the same file as 9.8.1's.
 * **Facebook:** `Turn off HDR brightness` turns PQ videos down on Snapdragon phones again, apart from the Snapdragon 8 Gen 1. Every Snapdragon was left out after that chip's video service crashed when asked to turn HDR down, and a Snapdragon 8 Elite turns out to do the job fine in HEVC, VP9 and AV1. HLG videos are handled as they were.
+* **Facebook:** With `Picture-in-picture` on, a reel keeps its place when you come back to it, from the window's expand button or from another app (#44). Facebook put it back at the start every time its screen returned, and that's the seek Hushfacebook drops now. A reel you swipe away from still starts over when you swipe back, like it always has.
 
 ## 0.19.0 (2026-10-27)
 

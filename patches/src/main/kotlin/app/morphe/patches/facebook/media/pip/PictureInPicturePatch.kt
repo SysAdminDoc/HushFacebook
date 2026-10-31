@@ -22,6 +22,7 @@ import app.morphe.patches.facebook.media.framestep.VIEW
 import app.morphe.patches.facebook.media.framestep.VIEW_GROUP
 import app.morphe.patches.facebook.media.framestep.grootAttaches
 import app.morphe.patches.facebook.media.framestep.playerViewFields
+import app.morphe.patches.facebook.media.resume.safeSeeks
 import app.morphe.patches.facebook.media.taptoplay.GROOT_PLAY
 import app.morphe.patches.facebook.media.taptoplay.grootPauses
 import app.morphe.patches.facebook.media.taptoplay.grootPlays
@@ -92,6 +93,8 @@ internal const val DISARMED = "$PICTURE_IN_PICTURE->disarmed()V"
 internal const val PLAYER_PLAYING = "$PICTURE_IN_PICTURE->playerPlaying(Ljava/lang/Object;)V"
 
 internal const val PLAYER_PAUSED = "$PICTURE_IN_PICTURE->playerPaused(Ljava/lang/Object;)V"
+
+internal const val KEEP_PLACE = "$PICTURE_IN_PICTURE->keepPlace(Ljava/lang/Object;Ljava/lang/Object;I)Z"
 
 internal const val SET_ASIDE = "$PICTURE_IN_PICTURE->setAside()Z"
 
@@ -376,10 +379,13 @@ internal fun BytecodePatchContext.applySurfaceGate(gate: Method) {
     )
 }
 
-/** FbGrootPlayer's play and the pause every other pause hands on to, the two Tap to play gates. */
-internal class Player(val play: Method, val pause: Method)
+/**
+ * FbGrootPlayer's play and the pause every other pause hands on to, the two Tap to play gates, and
+ * the seek every seek goes through.
+ */
+internal class Player(val play: Method, val pause: Method, val seek: Method)
 
-/** FbGrootPlayer's play and inner pause. Changes nothing. */
+/** FbGrootPlayer's play, inner pause and static seek. Changes nothing. */
 internal fun BytecodePatchContext.findPlayer(): Player {
     val plays = classDefByStrings(GROOT_PLAY, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
@@ -389,7 +395,9 @@ internal fun BytecodePatchContext.findPlayer(): Player {
     val pauses = grootPauses(owner, play.parameterTypes.single().toString())
     val pause = innerPause(pauses)
         ?: refuse("expected one pause in ${owner.type} that every other one hands on to, found ${pauses.size} pauses")
-    return Player(play, pause)
+    val seeks = safeSeeks(owner, play.parameterTypes.single().toString())
+    val seek = seeks.singleOrNull() ?: refuse("expected one static seek in ${owner.type}, found ${seeks.size}")
+    return Player(play, pause, seek)
 }
 
 private fun Method.shape() = parameterTypes.map(CharSequence::toString)
@@ -582,11 +590,24 @@ internal fun BytecodePatchContext.applyDisarm(disarm: Method) {
 
 /**
  * The pause tells the extension first. The play tells it right after its trace, behind anything a
- * patch put in front, so a start Tap to play holds back isn't heard as playing.
+ * patch put in front, so a start Tap to play holds back isn't heard as playing. The seek asks it
+ * first, and a yes drops the seek.
  */
 internal fun BytecodePatchContext.applyPlayer(player: Player) {
     val owner = mutableClassDefBy(player.play.definingClass)
     owner.findMutableMethodOf(player.pause).addInstruction(0, "invoke-static/range { p0 .. p0 }, $PLAYER_PAUSED")
+    val seek = owner.findMutableMethodOf(player.seek)
+    seek.requireLocals(PATCH, 1)
+    seek.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p0 .. p2 }, $KEEP_PLACE
+            move-result v0
+            if-eqz v0, :facebook
+            return-void
+        """,
+        ExternalLabel("facebook", seek.getInstruction(0)),
+    )
     val play = owner.findMutableMethodOf(player.play)
     val trace = play.implementation!!.instructions.indexOfFirst {
         ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == GROOT_PLAY
