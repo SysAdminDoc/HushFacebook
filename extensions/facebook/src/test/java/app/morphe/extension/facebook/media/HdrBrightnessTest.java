@@ -18,6 +18,7 @@ import android.hardware.display.DisplayManager;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.os.Build;
 import android.view.Display;
 import android.view.Surface;
 import android.view.SurfaceView;
@@ -32,6 +33,7 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowMediaCodec;
+import org.robolectric.util.ReflectionHelpers;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -68,6 +70,8 @@ public class HdrBrightnessTest {
 
     @After
     public void restore() {
+        // Android 12 is where Build grew this field.
+        if (Build.VERSION.SDK_INT >= 31) ReflectionHelpers.setStaticField(Build.class, "SOC_MODEL", Build.UNKNOWN);
         PauseForTests.resume();
         Settings.TURN_OFF_HDR_BRIGHTNESS.resetToDefault();
         HookStatus.clear();
@@ -316,13 +320,14 @@ public class HdrBrightnessTest {
     }
 
     /**
-     * A Snapdragon Samsung phone's media codec service aborts in the vendor's tone-map filter when
-     * its Qualcomm decoder is sent the request on HDR reels. That decoder never gets it: an HLG
-     * video still goes over at the usual range, a PQ video exactly as Facebook asked.
+     * A Snapdragon 8 Gen 1's media codec service aborts in the vendor's tone-map filter when its
+     * Qualcomm decoder is sent the request on HDR reels. That decoder never gets it: an HLG video
+     * still goes over at the usual range, a PQ video exactly as Facebook asked.
      */
     @Test
-    public void aQualcommDecoderIsNeverSentTheRequest() throws Exception {
+    public void aSnapdragon8Gen1DecoderIsNeverSentTheRequest() throws Exception {
         String name = "c2.qti.vp9.decoder";
+        ReflectionHelpers.setStaticField(Build.class, "SOC_MODEL", "SM8450");
         ShadowMediaCodec.clearCodecs();
         ShadowMediaCodec.addDecoder(name, new ShadowMediaCodec.CodecConfig(1_024, 1_024, (in, out) -> { }));
         try {
@@ -351,8 +356,52 @@ public class HdrBrightnessTest {
         }
     }
 
+    /**
+     * An 8 Elite tone-maps a PQ video on any of its decoders. Its VP9 and AV1 decoders stop with a
+     * fatal error when the format names no transfer, or names the usual one with the request, so a
+     * video that's HDR by its profile alone isn't asked and an HLG video gets only its new name.
+     */
+    @Test
+    public void aNewerSnapdragonDecoderIsAskedOnlyForAVideoNamingPq() throws Exception {
+        String name = "c2.qti.vp9.decoder";
+        ReflectionHelpers.setStaticField(Build.class, "SOC_MODEL", "SM8750");
+        ShadowMediaCodec.clearCodecs();
+        ShadowMediaCodec.addDecoder(name, new ShadowMediaCodec.CodecConfig(1_024, 1_024, (in, out) -> { }));
+        try {
+            MediaCodec pq = MediaCodec.createByCodecName(name);
+            HdrBrightness.configure(pq, video(MediaFormat.COLOR_TRANSFER_ST2084), surface(), null, 0);
+            assertEquals("the PQ video's request", MediaFormat.COLOR_TRANSFER_SDR_VIDEO,
+                    pq.getInputFormat().getInteger(MediaFormat.KEY_COLOR_TRANSFER_REQUEST));
+            assertEquals("the PQ video's transfer", MediaFormat.COLOR_TRANSFER_ST2084,
+                    pq.getInputFormat().getInteger(MediaFormat.KEY_COLOR_TRANSFER));
+            pq.release();
+
+            MediaCodec hlg = MediaCodec.createByCodecName(name);
+            HdrBrightness.configure(hlg, video(MediaFormat.COLOR_TRANSFER_HLG), surface(), null, 0);
+            assertFalse("the HLG video was sent the request", hlg.getInputFormat().containsKey(MediaFormat.KEY_COLOR_TRANSFER_REQUEST));
+            assertEquals("the HLG video's transfer", MediaFormat.COLOR_TRANSFER_SDR_VIDEO,
+                    hlg.getInputFormat().getInteger(MediaFormat.KEY_COLOR_TRANSFER));
+            hlg.release();
+
+            MediaFormat unnamed = video(-1);
+            unnamed.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.VP9Profile2HDR);
+            assertTrue("HDR by its profile", HdrBrightness.hdrVideo(unnamed));
+            MediaCodec profile = MediaCodec.createByCodecName(name);
+            HdrBrightness.configure(profile, unnamed, surface(), null, 0);
+            assertFalse("the video naming no transfer was sent the request", profile.getInputFormat().containsKey(MediaFormat.KEY_COLOR_TRANSFER_REQUEST));
+            profile.release();
+
+            String line = statusLine();
+            assertTrue(line, line.contains(HdrBrightness.HLG_AS_USUAL_RANGE + " 1"));
+            assertTrue(line, line.contains(HdrBrightness.QUALCOMM_NOT_ASKED + " 2"));
+        } finally {
+            ShadowMediaCodec.clearCodecs();
+        }
+    }
+
     @Test
     public void onlyAQualcommCodec2DecoderIsPassedOver() {
+        ReflectionHelpers.setStaticField(Build.class, "SOC_MODEL", "SM8450");
         assertTrue("Qualcomm's VP9 decoder", HdrBrightness.qualcomm("c2.qti.vp9.decoder"));
         assertTrue("any case", HdrBrightness.qualcomm("C2.QTI.hevc.decoder"));
         assertFalse("Android's own decoder", HdrBrightness.qualcomm("c2.android.vp9.decoder"));

@@ -90,6 +90,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** Debug logging for `Keep the progress bar` names a reel by a short code now, not by its Facebook video id. The lines still pair up when one reel hands the bar to the next, but a shared log doesn't show which reels you watched.
 * **Tooling:** The file listing the supported Facebook builds and the patch list generator credit where they really came from, De-Vanced, by way of tiktok-patches-for-morphe and Hushfeed. Their old notices pointed at ReVanced files that never existed. NOTICE and the app's Licenses page name De-Vanced now, and the mirror check fails a cited file that GitLab sends to a folder page instead.
 * **Tooling:** The build moves to Gradle 9.8.2, still pinned by checksum. It's a bug-fix release, and the wrapper jar is the same file as 9.8.1's.
+* **Facebook:** `Turn off HDR brightness` turns PQ videos down on Snapdragon phones again, apart from the Snapdragon 8 Gen 1. All of them were left out after that chip's video service crashed when asked to tone-map, and a Snapdragon 8 Elite turns out to do the job fine. HLG videos are handled as they were. Checked in tests and with a decoder test on a Galaxy S25: PQ samples in HEVC, VP9 and AV1 all came out at the usual range, and its video service kept running.
 
 ## 0.19.0 (2026-10-27)
 
