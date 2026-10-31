@@ -25,9 +25,10 @@ import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
- * Most viewed first on a profile's Reels tab (#232). The tab's tiles are drawn by the video grid
- * section from the profile's paginated list of reel nodes. With the switch on, the patch hands that
- * list to {@link #list} just before the section takes it, and the section gets a copy carrying the
+ * Most viewed first on a profile's Reels tab (#232). The tab's tiles are drawn by the Reels tab
+ * section of a profile or Page, and by the video grid section elsewhere, from a paginated list of reel
+ * nodes. With the switch on, the patch hands that list to {@link #list} just before the section takes
+ * it, and the section gets a copy carrying the
  * same paging with its loaded reels sorted by the play count Facebook itself reads for a reel's view
  * badge. The section's own handlers keep the list they were given, so loading the next page works
  * as before and the next bind sorts again. The reel viewer's section hands over its plain list the

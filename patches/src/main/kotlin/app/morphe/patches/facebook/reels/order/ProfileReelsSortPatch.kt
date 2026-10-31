@@ -175,6 +175,74 @@ internal fun hookProfileGrid(site: ProfileGridSite, mutable: (String) -> ClassDe
     )
 }
 
+/*
+ * The Reels tab of a profile or a Page is its own section, read from 585 on 2026-10-31: the spec that
+ * loads "FbReelsProfileTabContentSection" (585 arm64 LX/0CvE;->A00) asks a static (FbUserSession, tab
+ * data) helper (LX/0CvS;->A00) for the tab's paginated list and hands it to the grid it builds. The
+ * hook swaps that list for the extension's answer, as the grid hook does. A tile's tap opens the
+ * viewer by the reel's id and "load more" asks the helper again, so both keep Facebook's own list.
+ * The other holder of the name (LX/0CvE;->A01) returns nothing and only logs the tab's state.
+ */
+
+/** The kept name of the section that draws the Reels tab of a profile or a Page. */
+internal const val PROFILE_TAB_SECTION = "FbReelsProfileTabContentSection"
+
+private const val SESSION = "Lcom/facebook/auth/usersession/FbUserSession;"
+
+/**
+ * Where the tab hook goes: right after [method] keeps its paginated list in [list], at [after]. The
+ * list is copied to [copyRegister] to be handed over, since it can sit past v15.
+ */
+internal class ProfileTabSite(
+    val method: Method,
+    val after: Int,
+    val list: Int,
+    val copyRegister: Int,
+    val classRegister: Int,
+    val nameRegister: Int,
+    val holder: String,
+    val reader: String,
+)
+
+/**
+ * The tab hook's site, from [tabs] (the methods loading [PROFILE_TAB_SECTION]) and [readers]: the one
+ * static (FbUserSession, one more) call answering a paginated list, with its result kept, in a holder
+ * that answers something. Refuses unless each part is found exactly once.
+ */
+internal fun profileTabSite(tabs: List<Method>, readers: List<Method>): ProfileTabSite {
+    val calls = tabs.filter { it.returnType != "V" && it.implementation != null }.flatMap { method ->
+        val code = method.implementation!!.instructions.toList()
+        code.indices.filter { index ->
+            val call = code[index]
+            if (call.opcode != Opcode.INVOKE_STATIC && call.opcode != Opcode.INVOKE_STATIC_RANGE) return@filter false
+            val ref = (call as ReferenceInstruction).reference as? MethodReference ?: return@filter false
+            ref.returnType == PAGINABLE && ref.parameterTypes.size == 2 && ref.parameterTypes[0].toString() == SESSION &&
+                code.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+        }.map { index -> method to index }
+    }
+    val (method, at) = calls.singleOrNull() ?: refuseProfile("expected one (FbUserSession, x) paginated list kept by a method loading \"$PROFILE_TAB_SECTION\", found ${calls.size}")
+    val list = (method.implementation!!.instructions.elementAt(at + 1) as OneRegisterInstruction).registerA
+    val free = method.freeLocalsAt(PROFILE_SORT, at + 2, 3)
+    val reader = readers.singleOrNull() ?: refuseProfile("expected one play count reader, found ${readers.size}")
+    return ProfileTabSite(method, at + 2, list, free[0], free[1], free[2], reader.definingClass, reader.name)
+}
+
+/** Hands the tab's list to the extension and keeps its answer as the list. */
+internal fun hookProfileTab(site: ProfileTabSite, mutable: (String) -> ClassDef) {
+    val method = mutable(site.method.definingClass).methods.single { it.descriptor() == site.method.descriptor() } as MutableMethod
+    method.addInstructions(
+        site.after,
+        """
+            move-object/from16 v${site.copyRegister}, v${site.list}
+            const-class v${site.classRegister}, ${site.holder}
+            const-string v${site.nameRegister}, "${site.reader}"
+            invoke-static {v${site.copyRegister}, v${site.classRegister}, v${site.nameRegister}}, $LIST_CALL
+            move-result-object v${site.list}
+            check-cast v${site.list}, $PAGINABLE
+        """,
+    )
+}
+
 /**
  * The profile Reels sort goes in. Nameless: Newest reels first carries it, and its fixture tests
  * run it on its own. Everything is found before anything changes.
@@ -194,9 +262,14 @@ internal val profileReelsSortPatch = bytecodePatch {
         val grids = classDefByStrings(PROFILE_GRID_SECTION, StringComparisonType.EQUALS)
             .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
             .flatMap { owner -> owner.methods.filter { holdsString(it, PROFILE_GRID_SECTION) } }
+        val tabs = classDefByStrings(PROFILE_TAB_SECTION, StringComparisonType.EQUALS)
+            .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+            .flatMap { owner -> owner.methods.filter { holdsString(it, PROFILE_TAB_SECTION) } }
         val gridSite = profileGridSite(grids, readers)
+        val tabSite = profileTabSite(tabs, readers)
         val sites = profileReelsSites(sections, readers)
         hookProfileReels(sites) { type -> mutableClassDefBy(type) }
         hookProfileGrid(gridSite) { type -> mutableClassDefBy(type) }
+        hookProfileTab(tabSite) { type -> mutableClassDefBy(type) }
     }
 }
