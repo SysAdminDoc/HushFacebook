@@ -480,6 +480,8 @@ Hide comments under posts	隐藏帖子下方的评论
 Feed posts stop showing a few comments under their buttons. Tap Comment to read them all.	动态中的帖子不再在按钮下方显示评论。点按“评论”即可查看全部。
 Hide dislike on comments	隐藏评论的踩按钮
 Takes the thumbs-down off comments. Like and Reply stay.	去掉评论旁的踩按钮。赞和回复保留。
+Hide Like on comments	隐藏评论的赞按钮
+Takes Like off the row under comments. Reply and the reaction count stay.	去掉评论下方那一行的赞。回复和心情数量保留。
 # context: switch title under Comments; Like is the button under a post or a comment
 Like only	仅“赞”
 # context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens

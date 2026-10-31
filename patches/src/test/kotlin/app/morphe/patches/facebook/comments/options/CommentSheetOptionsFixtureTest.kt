@@ -26,6 +26,7 @@ import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -228,14 +229,32 @@ class CommentSheetOptionsFixtureTest {
                 ((instruction as ReferenceInstruction).reference as TypeReference).type == builder.returnType
         })
 
-        val context = PatchContexts.of(listOf(plugin!!))
+        held(plugin!!, builder, HOLDS_COMMENT_DISLIKE, where)
+    }
+
+    private fun like(bundle: File) {
+        val name = bundle.name
+        val plugin = FixtureDex.classes(bundle, setOf(COMMENT_LIKE)).values.singleOrNull()
+        assertNotNull("$name: nothing is $COMMENT_LIKE", plugin)
+        val builder = likeBuilder(plugin)
+        val where = "$name: ${builder.descriptor()}"
+        assertEquals("$where: it takes the comment's context", 1, builder.parameterTypes.size)
+        val code = builder.implementation!!.instructions.toList()
+        assertTrue("$where: it already answers nothing for a comment it can't like", code.any { it.opcode == Opcode.CONST_4 } &&
+            code.count { it.opcode == Opcode.RETURN_OBJECT } == 1)
+        held(plugin!!, builder, HOLDS_COMMENT_LIKE, where)
+    }
+
+    /** [builder] of [plugin] asks [call] first and returns nothing on a yes, its own code following. */
+    private fun held(plugin: ClassDef, builder: Method, call: String, where: String) {
+        val context = PatchContexts.of(listOf(plugin))
         val method = context.mutableClassDefBy(plugin.type).methods.single { it.descriptor() == builder.descriptor() }
         val original = method.implementation!!.instructions.toList()
-        method.holdDislike()
+        method.holdBuild(call)
         val patched = method.implementation!!.instructions.toList()
         assertEquals("$where gains five instructions", original.size + 5, patched.size)
         assertEquals("$where: the extension is asked first", Opcode.INVOKE_STATIC, patched[0].opcode)
-        assertEquals("$where: the extension is asked first", HOLDS_COMMENT_DISLIKE, patched[0].reference())
+        assertEquals("$where: the extension is asked first", call, patched[0].reference())
         assertEquals("$where: with nothing handed over", 0, (patched[0] as FiveRegisterInstruction).registerCount)
         assertEquals("$where: its answer is kept", Opcode.MOVE_RESULT, patched[1].opcode)
         val register = (patched[1] as OneRegisterInstruction).registerA
@@ -624,6 +643,11 @@ class CommentSheetOptionsFixtureTest {
     @Test
     fun `each declared build keeps the thumbs-down out from under a comment`() = bundles { bundle ->
         dislike(bundle)
+    }
+
+    @Test
+    fun `each declared build can keep Like out of the row under a comment`() = bundles { bundle ->
+        like(bundle)
     }
 
     @Test

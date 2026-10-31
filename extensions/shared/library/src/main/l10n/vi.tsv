@@ -480,6 +480,8 @@ Hide comments under posts	Ẩn bình luận dưới bài viết
 Feed posts stop showing a few comments under their buttons. Tap Comment to read them all.	Bài viết trên bảng tin không còn hiện bình luận dưới các nút. Nhấn Bình luận để đọc tất cả.
 Hide dislike on comments	Ẩn nút không thích ở bình luận
 Takes the thumbs-down off comments. Like and Reply stay.	Bỏ nút ngón cái hướng xuống khỏi bình luận. Thích và Trả lời vẫn giữ nguyên.
+Hide Like on comments	Ẩn Thích ở bình luận
+Takes Like off the row under comments. Reply and the reaction count stay.	Bỏ nút Thích khỏi hàng dưới bình luận. Trả lời và số lượt bày tỏ cảm xúc vẫn giữ nguyên.
 # context: switch title under Comments; Like is the button under a post or a comment
 Like only	Chỉ Thích
 # context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens

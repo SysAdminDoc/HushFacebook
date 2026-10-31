@@ -77,6 +77,7 @@ public class CommentSheetOptionsTest {
         Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS.resetToDefault();
         Settings.HIDE_POST_COMMENT_PREVIEWS.resetToDefault();
         Settings.HIDE_COMMENT_DOWNVOTE_BUTTON.resetToDefault();
+        Settings.HIDE_COMMENT_LIKE_BUTTON.resetToDefault();
         Settings.COMMENT_BLOCK_BUTTON.resetToDefault();
         HookStatus.clear();
     }
@@ -347,6 +348,43 @@ public class CommentSheetOptionsTest {
     }
 
     @Test
+    public void onACommentsLikeIsHeldAndCountedWhileTheDislikeIsLeftAlone() {
+        Settings.HIDE_COMMENT_LIKE_BUTTON.save(true);
+        assertTrue("Like stayed", CommentSheetOptions.holdsCommentLike());
+        assertTrue("Like stayed on the next comment", CommentSheetOptions.holdsCommentLike());
+        assertFalse("the Like switch held the dislike", CommentSheetOptions.holdsCommentDislike());
+        Settings.COMMENT_BLOCK_BUTTON.save(true);
+        assertTrue("the Block button brought Like back", CommentSheetOptions.holdsCommentLike());
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 4, 2 found, 0 missing. Counted: "
+                + CommentSheetOptions.LIKE_HIDDEN + " 3", statusLine());
+    }
+
+    @Test
+    public void offPausedOrColdACommentsLikeIsFacebooks() {
+        assertFalse("Hide Like on comments doesn't start off", Settings.HIDE_COMMENT_LIKE_BUTTON.get());
+        assertFalse("off, Like was held", CommentSheetOptions.holdsCommentLike());
+        Settings.HIDE_COMMENT_DOWNVOTE_BUTTON.save(true);
+        assertFalse("Hide dislike on comments held Like", CommentSheetOptions.holdsCommentLike());
+        Settings.HIDE_COMMENT_DOWNVOTE_BUTTON.save(false);
+
+        Settings.HIDE_COMMENT_LIKE_BUTTON.save(true);
+        for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP,
+                HushfacebookPause.Reason.MARKER_FILE}) {
+            PauseForTests.pause(reason);
+            assertFalse("a Hushfacebook paused by " + reason + " held Like",
+                    CommentSheetOptions.holdsCommentLike());
+            PauseForTests.resume();
+        }
+        SettingsContextRule.withoutContext(() -> assertFalse("Like was held before the settings were ready",
+                CommentSheetOptions.holdsCommentLike()));
+
+        String line = statusLine();
+        assertFalse("a plugin left to Facebook was counted: " + line, line != null && line.contains("Counted"));
+        assertTrue("on again after the pause, Like stayed", CommentSheetOptions.holdsCommentLike());
+    }
+
+    @Test
     public void offPausedOrColdACommentsDislikeIsFacebooks() {
         assertFalse("Hide dislike on comments doesn't start off", Settings.HIDE_COMMENT_DOWNVOTE_BUTTON.get());
         assertFalse("off, the dislike was held", CommentSheetOptions.holdsCommentDislike());
@@ -465,7 +503,7 @@ public class CommentSheetOptionsTest {
                 Settings.LOAD_WHOLE_REPLY_THREADS, Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS, Settings.HIDE_SHOP_LINK_COMMENTS,
                 Settings.HIDE_COMMENTS_WITH_WORDS, Settings.HIDE_INCOMING_COMMENT_TYPING, Settings.HIDE_NEW_COMMENTS_PILL,
                 Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES, Settings.HIDE_POST_COMMENT_PREVIEWS,
-                Settings.HIDE_COMMENT_DOWNVOTE_BUTTON, Settings.HIDE_COMMENT_EMOJI_ROW}) {
+                Settings.HIDE_COMMENT_DOWNVOTE_BUTTON, Settings.HIDE_COMMENT_LIKE_BUTTON, Settings.HIDE_COMMENT_EMOJI_ROW}) {
             assertFalse(setting.key + " asks for a restart, but each hook reads it again", setting.rebootApp);
             assertNull(setting.key + " asks before it changes", setting.userDialogMessage);
             assertTrue("Pause and the report don't know " + setting.key,

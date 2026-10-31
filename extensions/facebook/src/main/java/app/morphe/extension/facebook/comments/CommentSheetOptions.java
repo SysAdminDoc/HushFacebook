@@ -36,7 +36,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * {@link #holdsPostComments} first in its check. The Dislike button under a comment is built by its
  * own plugin, and the patch asks {@link #holdsCommentDislike} first in that builder; a yes builds
  * nothing, and the socket of a comment's buttons draws the rest of the row as it would without a
- * Dislike. A long press on Like opens the reaction
+ * Dislike. Like in that row is written by a plugin of its own too, and the patch asks
+ * {@link #holdsCommentLike} first in its builder the same way. A long press on Like opens the reaction
  * picker through one method, and the patch asks {@link #skipReactionPicker} first there; a yes
  * returns before anything opens. A comment keeps whether its reply thread is open in its state,
  * which starts closed until a tap on View replies opens it. The patch hands
@@ -101,6 +102,12 @@ public final class CommentSheetOptions {
 
     /** The member the report names once the Dislike plugin's builder has asked. */
     static final String COMMENT_DISLIKE = "comment dislike";
+
+    /** Counted each time Like is kept out of a comment's row (#241). */
+    static final String LIKE_HIDDEN = "Comment Like kept out";
+
+    /** The member the report names once the Like plugin's builder has asked. */
+    static final String COMMENT_LIKE = "comment like";
 
     /** Counted each time a feed post's inline comments are kept out from under its buttons. */
     static final String POST_COMMENTS_HIDDEN = "Comments under a post kept out";
@@ -393,6 +400,24 @@ public final class CommentSheetOptions {
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "comment dislike", failure);
+            return false;
+        }
+    }
+
+    /**
+     * The hook, first thing where the Like plugin writes Like in a comment's row. True writes nothing
+     * while Hide Like on comments is on, so the row keeps Reply, the reaction icons and their count;
+     * false leaves Like to Facebook, and otherwise (#241).
+     */
+    public static boolean holdsCommentLike() {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, COMMENT_LIKE);
+            if (!Utils.settingsReady() || !Settings.HIDE_COMMENT_LIKE_BUTTON.get()) return false;
+            HookStatus.counted(FAMILY, LIKE_HIDDEN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, COMMENT_LIKE, failure);
             return false;
         }
     }

@@ -484,6 +484,8 @@ Hide comments under posts	隱藏貼文下方的留言
 Feed posts stop showing a few comments under their buttons. Tap Comment to read them all.	動態消息中的貼文不再於按鈕下方顯示留言。點一下「留言」即可查看全部。
 Hide dislike on comments	隱藏留言的倒讚按鈕
 Takes the thumbs-down off comments. Like and Reply stay.	移除留言旁的倒讚按鈕。讚和回覆保留。
+Hide Like on comments	隱藏留言的讚按鈕
+Takes Like off the row under comments. Reply and the reaction count stay.	移除留言下方那一列的讚。回覆和心情數量保留。
 # context: switch title under Comments; Like is the button under a post or a comment
 Like only	僅使用讚
 # context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens

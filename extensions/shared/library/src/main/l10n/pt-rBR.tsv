@@ -441,6 +441,8 @@ Hide comments under posts	Ocultar os comentários embaixo das publicações
 Feed posts stop showing a few comments under their buttons. Tap Comment to read them all.	As publicações do feed deixam de mostrar comentários embaixo dos botões. Toque em Comentar para ler todos.
 Hide dislike on comments	Ocultar o polegar para baixo nos comentários
 Takes the thumbs-down off comments. Like and Reply stay.	Tira o polegar para baixo dos comentários. Curtir e Responder continuam.
+Hide Like on comments	Ocultar Curtir nos comentários
+Takes Like off the row under comments. Reply and the reaction count stay.	Tira o Curtir da linha abaixo dos comentários. Responder e a contagem de reações continuam.
 # context: switch title under Comments; Like is the button under a post or a comment
 Like only	Só Curtir
 # context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens

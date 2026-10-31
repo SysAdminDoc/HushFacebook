@@ -106,6 +106,7 @@ final class SwitchLabels {
         if (setting == Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES) return L10n.t("Tap anywhere on View more replies");
         if (setting == Settings.HIDE_POST_COMMENT_PREVIEWS) return L10n.t("Hide comments under posts");
         if (setting == Settings.HIDE_COMMENT_DOWNVOTE_BUTTON) return L10n.t("Hide dislike on comments");
+        if (setting == Settings.HIDE_COMMENT_LIKE_BUTTON) return L10n.t("Hide Like on comments");
         if (setting == Settings.COMMENT_BLOCK_BUTTON) return L10n.t("Block button on comments");
         if (setting == Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS) return L10n.t("Hide related groups");
         if (setting == Settings.HIDE_SHOP_LINK_COMMENTS) return L10n.t("Hide comments with shop links");

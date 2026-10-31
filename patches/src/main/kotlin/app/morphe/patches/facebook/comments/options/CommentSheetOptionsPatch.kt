@@ -118,6 +118,10 @@ internal const val INLINE_COMMENTS_CLIENT_RANKING =
 internal const val COMMENT_DOWNVOTE =
     "Lcom/facebook/feedback/comments/plugins/commentufi/commentsdownvote/CommentsUFIInlineDownvotePlugin;"
 
+/** The plugin that writes Like in the row under a comment, a kept class (#241). */
+internal const val COMMENT_LIKE =
+    "Lcom/facebook/feedback/comments/plugins/commentufi/like/InlineCommentLikePlugin;"
+
 /** The name the reaction picker's popup logs itself under, in the method that opens it. */
 internal const val DOCK_NAME = "reactions_dock"
 
@@ -163,6 +167,7 @@ internal const val HIDES_VIDEO_COMMENT_COMPOSER = "$COMMENT_SHEET_OPTIONS->hides
 internal const val HOLDS_BOTTOM_CONTENT = "$COMMENT_SHEET_OPTIONS->holdsBottomContent(Ljava/lang/String;)Z"
 internal const val HOLDS_POST_COMMENTS = "$COMMENT_SHEET_OPTIONS->holdsPostComments(Ljava/lang/String;)Z"
 internal const val HOLDS_COMMENT_DISLIKE = "$COMMENT_SHEET_OPTIONS->holdsCommentDislike()Z"
+internal const val HOLDS_COMMENT_LIKE = "$COMMENT_SHEET_OPTIONS->holdsCommentLike()Z"
 internal const val SKIP_PICKER = "$COMMENT_SHEET_OPTIONS->skipReactionPicker()Z"
 internal const val OPEN_REPLY_THREADS = "$COMMENT_SHEET_OPTIONS->openReplyThreads(Z)Z"
 internal const val HIDES_COMMENT = "$COMMENT_SHEET_OPTIONS->hidesComment(Ljava/lang/Object;)Z"
@@ -227,6 +232,12 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * the plugin as present and draws Like, Reply, the reaction icons and their count as it does next
  * to a thumbs-down. 0.19.0 answered no for the plugin in that socket's check instead (584
  * `LX/228;->A2C`), and the reaction icons and count went with the thumbs-down.
+ *
+ * Hide Like on comments (#241): Like in that row is written by another kept plugin, [COMMENT_LIKE],
+ * whose one static builder takes the comment's context and answers the Like text, or nothing when
+ * the comment has none to like (585 arm64 `A00(LX/07T7;)Landroid/text/Spannable;`, reached through
+ * the plugin table's `LX/01xX;->A00`). It's held the same way, so the row keeps Reply, the reaction
+ * icons and their count.
  *
  * Like only: a long press on Like opens the reaction picker through one method that builds
  * [UFI_DOCK] in a popup and logs [DOCK_NAME] (581 `LX/3FO;->A06`, each an instance (View, View)V
@@ -295,7 +306,7 @@ val commentSheetOptionsPatch = bytecodePatch(
     name = "Comment sheet options",
     description = "Small fixes for comments. Stop a long press on Like from opening reactions, hide the GIF and " +
         "sticker buttons, show every reply without tapping View replies, load a whole reply thread as you " +
-        "scroll, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, hide Related groups under group posts, hide comments with shop links or your words, hide who is typing and the new comments pop-up, hide the emoji row over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
+        "scroll, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, hide Like on comments, hide Related groups under group posts, hide comments with shop links or your words, hide who is typing and the new comments pop-up, hide the emoji row over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
         "Hushfacebook settings > Comments and writing.",
 ) {
     category("Comments")
@@ -324,6 +335,7 @@ val commentSheetOptionsPatch = bytecodePatch(
             refuse("the socket under a post's buttons leads to another socket's check, ${post.check.descriptor()}")
         }
         val dislike = dislikeBuilder(classDefByOrNull(COMMENT_DOWNVOTE))
+        val like = likeBuilder(classDefByOrNull(COMMENT_LIKE))
         val dock = reactionPicker(holders(DOCK_NAME))
         val threads = replyThreads(
             holders(COMMENT_SECTION),
@@ -351,7 +363,9 @@ val commentSheetOptionsPatch = bytecodePatch(
         mutableClassDefBy(post.check.definingClass).methods.single { it.descriptor() == post.check.descriptor() }
             .holdButtons(post.table, HOLDS_POST_COMMENTS)
         mutableClassDefBy(dislike.definingClass).methods.single { it.descriptor() == dislike.descriptor() }
-            .holdDislike()
+            .holdBuild(HOLDS_COMMENT_DISLIKE)
+        mutableClassDefBy(like.definingClass).methods.single { it.descriptor() == like.descriptor() }
+            .holdBuild(HOLDS_COMMENT_LIKE)
         mutableClassDefBy(dock.definingClass).methods.single { it.descriptor() == dock.descriptor() }
             .skipPicker()
         mutableClassDefBy(threads.initialState.definingClass).methods
@@ -508,6 +522,27 @@ internal fun dislikeBuilder(plugin: ClassDef?): Method {
 }
 
 /**
+ * The builder of Like in the row under a comment: the one static method of [plugin], the class
+ * [COMMENT_LIKE], that takes the comment's context and answers the Like text as a Spannable, or
+ * nothing when the comment has none, with a local register for the hook. Refuses without the class
+ * or with any other number of such methods.
+ */
+internal fun likeBuilder(plugin: ClassDef?): Method {
+    if (plugin == null) refuse("no class $COMMENT_LIKE")
+    val builders = plugin.methods.filter { method ->
+        AccessFlags.STATIC.isSet(method.accessFlags) &&
+            method.returnType == "Landroid/text/Spannable;" &&
+            method.parameterTypes.size == 1
+    }
+    val builder = builders.singleOrNull() ?: refuse(
+        "expected one static Spannable builder of one object in $COMMENT_LIKE, found ${builders.size}: " +
+            builders.joinToString { it.descriptor() },
+    )
+    if (builder.localRegisterCount() < 1) refuse("${builder.descriptor()} has no local register for the hook")
+    return builder
+}
+
+/**
  * A socket named [socket] whose name table names [plugin], and [alsoNamed] when it's given. The
  * table is the one static (I)String name table among [holders] loading [plugin]. The check is the
  * one static boolean method a method of [sockets] calls along with the table, with an int last, a
@@ -588,12 +623,15 @@ internal fun MutableMethod.holdButtons(table: Method, hook: String = HOLDS_BUTTO
     )
 }
 
-/** First thing where the thumbs-down under a comment is built: while the extension says so, return nothing. */
-internal fun MutableMethod.holdDislike() {
+/**
+ * First thing where a button under a comment is built, the thumbs-down or Like: while the
+ * extension's [call] says so, return nothing.
+ */
+internal fun MutableMethod.holdBuild(call: String) {
     addInstructionsWithLabels(
         0,
         """
-            invoke-static {}, $HOLDS_COMMENT_DISLIKE
+            invoke-static {}, $call
             move-result v0
             if-eqz v0, :build
             const/4 v0, 0x0

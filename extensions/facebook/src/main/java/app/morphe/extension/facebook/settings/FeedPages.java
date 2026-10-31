@@ -645,6 +645,8 @@ final class FeedPages {
                     L10n.t("Feed posts stop showing a few comments under their buttons. Tap Comment to read them all.")));
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_DOWNVOTE_BUTTON,
                     L10n.t("Takes the thumbs-down off comments. Like and Reply stay.")));
+            comments.addPreference(toggle(context, Settings.HIDE_COMMENT_LIKE_BUTTON,
+                    L10n.t("Takes Like off the row under comments. Reply and the reaction count stay.")));
             comments.addPreference(toggle(context, Settings.COMMENT_BLOCK_BUTTON,
                     L10n.t("The thumbs-down on a comment becomes Block. One tap opens Facebook's own block screen for that person.")));
             comments.addPreference(toggle(context, Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS,
