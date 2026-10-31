@@ -16,6 +16,7 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.util.ControlFlow
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -130,6 +131,13 @@ internal val tabBarScrollAwayPatch = bytecodePatch {
         val entry = mutableClassDefBy(name.definingClass)
         for (move in entryMoves(entry)) {
             entry.findMutableMethodOf(move.method).holdsTopBar(name, move.distance, move.hidden)
+        }
+        try {
+            hookReelUnderTopBar { why ->
+                patchLog.warning("$PATCH: $why, so the reel keeps its black strip under a top tab bar")
+            }
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so the reel keeps its black strip under a top tab bar")
         }
         for ((trace, call) in listOf(DEACTIVATE_SCROLL_AWAY to TOP_BARS_LET_GO, REACTIVATE_SCROLL_AWAY to TOP_BARS_TAKEN_BACK)) {
             val switch = scrollAwaySwitch(

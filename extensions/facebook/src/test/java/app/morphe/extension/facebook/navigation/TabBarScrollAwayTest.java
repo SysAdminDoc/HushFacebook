@@ -54,6 +54,7 @@ public class TabBarScrollAwayTest {
         Settings.KEEP_TAB_BAR.resetToDefault();
         Settings.KEEP_TOP_BAR.resetToDefault();
         Settings.BOTTOM_TAB_BAR.resetToDefault();
+        Settings.TOP_TAB_BAR.resetToDefault();
         Settings.TRANSLUCENT_BARS.resetToDefault();
         TabBarScrollAway.topBarsTakenBack();
         TabBarScrollAway.forgetBuilt();
@@ -395,5 +396,30 @@ public class TabBarScrollAwayTest {
         TabBarScrollAway.padsPager(paused, 0, 0, 0, 147);
         assertNull("a paused Hushfacebook gave a pager a listener", TabBarScrollAway.CLEARED_PAGERS.get(paused));
         assertEquals(147, paused.getPaddingBottom());
+    }
+
+    @Test
+    public void theReelRunsUnderATopBarOnlyOffTheFeed() {
+        Settings.TOP_TAB_BAR.save(true);
+        assertEquals("the feed keeps its padding", 150, TabBarScrollAway.pagesTop(150));
+        TabBarScrollAway.topBarsLetGo();
+        assertEquals("off the feed the top bar's padding is dropped", 0, TabBarScrollAway.pagesTop(150));
+        assertEquals("a zero stays zero", 0, TabBarScrollAway.pagesTop(0));
+        String line = statusLine();
+        assertTrue(line, line != null && line.contains(TabBarScrollAway.REEL_UNDER_BAR + " 1"));
+        TabBarScrollAway.topBarsTakenBack();
+        assertEquals("back on the feed", 150, TabBarScrollAway.pagesTop(150));
+    }
+
+    @Test
+    public void thePaddingStaysWithoutATopBarOrWhilePaused() {
+        TabBarScrollAway.topBarsLetGo();
+        assertEquals("top bar off", 150, TabBarScrollAway.pagesTop(150));
+        Settings.TOP_TAB_BAR.save(true);
+        Settings.BOTTOM_TAB_BAR.save(true);
+        assertEquals("the bottom switch wins", 150, TabBarScrollAway.pagesTop(150));
+        Settings.BOTTOM_TAB_BAR.save(false);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused", 150, TabBarScrollAway.pagesTop(150));
     }
 }

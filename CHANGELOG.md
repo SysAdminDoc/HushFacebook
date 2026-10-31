@@ -53,6 +53,7 @@ Changes in each Hushfacebook version, newest first.
 * **Tooling:** The register check now also looks at the objects each changed method hands on. When an injected call, field read or field write gets an object whose class the other side can't take, the check fails before the build gets near a phone. An early 585 build crashed at launch over exactly that, and dex2oat's verify pass didn't say a word about it.
 
 ### Fixed
+* **Facebook:** With `Tab bar at the top` on, the Reels tab now runs the reel under the bar instead of starting it a bar-height lower, so the video fills the screen like it does with the bar at the bottom. The other tabs and the bottom bar are unchanged. (#264)
 * **Facebook:** With `Hide For you in search` and `Hide "People you may know" in search` on, the search screen no longer sits on "No recent searches" with a spinner that never stops, and pulling down no longer restarts it. When every row Facebook has loaded is one of the hidden ones, the screen now stops asking for more. Recent searches and any other row still load as before. (#235)
 
 * **Facebook:** `Hide For you in search` and `Hide "People you may know" in search` now also reach the rows Facebook draws on the first page of the search screen before you type. On some accounts Facebook builds that first page on its own, apart from the rows further down, and the switches only ever saw the later ones, so For you stayed. Debug logging now says which part of Facebook handed over each row (Refs #285).

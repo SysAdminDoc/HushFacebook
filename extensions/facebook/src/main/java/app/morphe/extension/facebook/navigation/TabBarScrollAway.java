@@ -143,6 +143,33 @@ public final class TabBarScrollAway {
         offTheFeed = false;
     }
 
+    /** Counted each time the top padding under a top tab bar is dropped so the reel fills the screen. */
+    static final String REEL_UNDER_BAR = "Reel run under the top tab bar";
+
+    /**
+     * The hook at the return of each method that answers how far down Facebook pads a page's
+     * content for the top bars (#264). With the tab bar at the top, the Reels tab started its reel
+     * below the bar and the video's letterbox read as a black strip. While the main screen is off
+     * the feed (Facebook has deactivated scroll-away for the Reels tab or a full-screen page) the
+     * answer is 0, so the reel fills the screen behind the bar. Anywhere else, with the top bar
+     * off, with the bottom bar on, paused, before the settings are ready or on a failure, it's
+     * Facebook's own number.
+     */
+    public static int pagesTop(int padding) {
+        try {
+            if (padding == 0 || !offTheFeed) return padding;
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || Settings.BOTTOM_TAB_BAR.get() || !Settings.TOP_TAB_BAR.get()) return padding;
+            HookStatus.bound(FAMILY, "reel under the top bar");
+            HookStatus.counted(FAMILY, REEL_UNDER_BAR);
+            Logger.printDebug(() -> "Tab bar at the top: the reel runs under the bar");
+            return 0;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel under the top bar", failure);
+            return padding;
+        }
+    }
+
     /**
      * The hook, right after Facebook's check finds the tab bar at the bottom. True lets the bar
      * slide away; false leaves the answer to Facebook's server settings.
