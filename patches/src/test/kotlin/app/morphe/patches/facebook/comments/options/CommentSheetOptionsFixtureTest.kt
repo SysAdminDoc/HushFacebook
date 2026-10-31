@@ -56,7 +56,10 @@ import java.io.File
  * the Related groups plugin, its check is another one than the button check, and it's hooked the
  * same way with its own extension method (#101). The thumbs-down under each comment has its own
  * plugin, a kept class found by name, whose one static builder asks the extension first and builds
- * nothing on a yes, so the row around it stays Facebook's (#241). The comment section is found by its name, its reply flag
+ * nothing on a yes, so the row around it stays Facebook's (#241). Like is written through one method
+ * the kept Like plugin's builder calls, and the plugin table, which names LikePlugin (the Like
+ * button beside the thumbs-down), calls it too; that method asks first and writes nothing on a yes
+ * (#241). The comment section is found by its name, its reply flag
  * through the expandReplySection update, and the flag goes through the extension, as a range
  * call, just before the initial state returns. The section's draw method asks about its comment
  * first, read off its props, and returns no children on a yes (#118). An open reply thread's section
@@ -70,6 +73,9 @@ import java.io.File
  * and its render asks first and returns nothing on a yes (#213). Reads the fixture bundles from
  * HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
+/** The plugin that draws Like as a button beside the thumbs-down, as the plugin table names it. */
+private const val LIKE_PLUGIN = "com.facebook.feedback.comments.plugins.commentufi.like.LikePlugin"
+
 class CommentSheetOptionsFixtureTest {
     private fun bundles(check: (File) -> Unit) {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -242,7 +248,19 @@ class CommentSheetOptionsFixtureTest {
         val code = builder.implementation!!.instructions.toList()
         assertTrue("$where: it already answers nothing for a comment it can't like", code.any { it.opcode == Opcode.CONST_4 } &&
             code.count { it.opcode == Opcode.RETURN_OBJECT } == 1)
-        held(plugin!!, builder, HOLDS_COMMENT_LIKE, where)
+
+        val text = likeText(builder)
+        val writer = FixtureDex.classes(bundle, setOf(text.definingClass)).values.singleOrNull()
+        assertNotNull("$name: nothing is ${text.definingClass}", writer)
+        val method = writer!!.methods.single { it.descriptor() == text.descriptor() }
+        // The Like button beside the thumbs-down comes from LikePlugin, folded into the plugin table.
+        val table = holders(bundle, LIKE_PLUGIN)
+        assertEquals("$name: one class names $LIKE_PLUGIN", 1, table.size)
+        val folded = table.single().methods.filter { candidate ->
+            candidate.implementation?.instructions?.any { it.reference() == text.descriptor() } == true
+        }
+        assertEquals("$name: the plugin table writes LikePlugin's Like through ${text.descriptor()}", 1, folded.size)
+        held(writer, method, HOLDS_COMMENT_LIKE, "$name: ${text.descriptor()}")
     }
 
     /** [builder] of [plugin] asks [call] first and returns nothing on a yes, its own code following. */

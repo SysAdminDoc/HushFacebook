@@ -36,8 +36,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * {@link #holdsPostComments} first in its check. The Dislike button under a comment is built by its
  * own plugin, and the patch asks {@link #holdsCommentDislike} first in that builder; a yes builds
  * nothing, and the socket of a comment's buttons draws the rest of the row as it would without a
- * Dislike. Like in that row is written by a plugin of its own too, and the patch asks
- * {@link #holdsCommentLike} first in its builder the same way. A long press on Like opens the reaction
+ * Dislike. Like in that row is written by one of two plugins, the Like text or the Like button
+ * beside the Dislike, both through one method, and the patch asks {@link #holdsCommentLike} first
+ * there the same way. A long press on Like opens the reaction
  * picker through one method, and the patch asks {@link #skipReactionPicker} first there; a yes
  * returns before anything opens. A comment keeps whether its reply thread is open in its state,
  * which starts closed until a tap on View replies opens it. The patch hands
@@ -405,7 +406,7 @@ public final class CommentSheetOptions {
     }
 
     /**
-     * The hook, first thing where the Like plugin writes Like in a comment's row. True writes nothing
+     * The hook, first thing where either Like plugin writes Like in a comment's row. True writes nothing
      * while Hide Like on comments is on, so the row keeps Reply, the reaction icons and their count;
      * false leaves Like to Facebook, and otherwise (#241).
      */

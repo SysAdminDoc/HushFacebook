@@ -233,11 +233,14 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * to a thumbs-down. 0.19.0 answered no for the plugin in that socket's check instead (584
  * `LX/228;->A2C`), and the reaction icons and count went with the thumbs-down.
  *
- * Hide Like on comments (#241): Like in that row is written by another kept plugin, [COMMENT_LIKE],
- * whose one static builder takes the comment's context and answers the Like text, or nothing when
- * the comment has none to like (585 arm64 `A00(LX/07T7;)Landroid/text/Spannable;`, reached through
- * the plugin table's `LX/01xX;->A00`). It's held the same way, so the row keeps Reply, the reaction
- * icons and their count.
+ * Hide Like on comments (#241): Like in that row is written by one of two plugins. The kept
+ * [COMMENT_LIKE] has one static builder that takes the comment's context and answers the Like
+ * text, or nothing when the comment has none to like (585 arm64 `A00(LX/07T7;)Landroid/text/Spannable;`).
+ * The other, `commentufi.like.LikePlugin`, draws Like as a button beside the thumbs-down on public
+ * Pages' comments, and its builder is folded into the plugin table's own (585 `LX/01xX;->A00`).
+ * Both write Like through one method, the SpannableString one the kept builder calls with the
+ * comment (585 `LX/05Mi;->A03`), and that's what's held, so the row keeps Reply, the reaction icons
+ * and their count either way. Holding the kept builder alone left the button beside the thumbs-down.
  *
  * Like only: a long press on Like opens the reaction picker through one method that builds
  * [UFI_DOCK] in a popup and logs [DOCK_NAME] (581 `LX/3FO;->A06`, each an instance (View, View)V
@@ -335,7 +338,10 @@ val commentSheetOptionsPatch = bytecodePatch(
             refuse("the socket under a post's buttons leads to another socket's check, ${post.check.descriptor()}")
         }
         val dislike = dislikeBuilder(classDefByOrNull(COMMENT_DOWNVOTE))
-        val like = likeBuilder(classDefByOrNull(COMMENT_LIKE))
+        val like = likeText(likeBuilder(classDefByOrNull(COMMENT_LIKE)))
+        if ((classDefByOrNull(like.definingClass)?.methods?.singleOrNull { it.descriptor() == like.descriptor() }
+                ?.localRegisterCount() ?: 0) < 1
+        ) refuse("${like.descriptor()} has no local register for the hook")
         val dock = reactionPicker(holders(DOCK_NAME))
         val threads = replyThreads(
             holders(COMMENT_SECTION),
@@ -540,6 +546,20 @@ internal fun likeBuilder(plugin: ClassDef?): Method {
     )
     if (builder.localRegisterCount() < 1) refuse("${builder.descriptor()} has no local register for the hook")
     return builder
+}
+
+/**
+ * What writes Like, for both Like plugins: the one method [builder], the kept plugin's, calls that
+ * takes a GraphQLComment and answers a SpannableString. Refuses with any other number of them.
+ */
+internal fun likeText(builder: Method): MethodReference {
+    val writers = calls(builder).filter {
+        it.returnType == "Landroid/text/SpannableString;" && GRAPHQL_COMMENT in it.parameterTypes
+    }.distinctBy { it.descriptor() }
+    return writers.singleOrNull() ?: refuse(
+        "expected ${builder.descriptor()} to write Like through one method, found ${writers.size}: " +
+            writers.joinToString { it.descriptor() },
+    )
 }
 
 /**
