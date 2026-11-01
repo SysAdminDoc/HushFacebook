@@ -61,7 +61,7 @@ Changing one of those brings up a **Restart Facebook** row at the top of the pag
 
 Morphe Manager can back up your patch choices but not these switches. **Export settings** saves them to a JSON file, word lists included, and **Import settings** reads one back on this phone or a new one. It shows what the file would change before anything does. **Check for new Hushfacebook releases** under Updates is off until you turn it on. Then it asks GitHub once a day and tells you when there's a newer release, and you update through Morphe Manager as usual.
 
-The settings follow the language Facebook shows. German, Spanish, Indonesian, Brazilian Portuguese, Turkish, Vietnamese, Simplified Chinese and Traditional Chinese (Taiwan) are translated. Other languages get English. [Translating](CONTRIBUTING.md#translating) explains how to fix a string or add a language.
+The settings follow the language Facebook shows. German, Spanish, Indonesian, Brazilian Portuguese, Turkish, Vietnamese, Russian, Simplified Chinese and Traditional Chinese (Taiwan) are translated. Other languages get English. [Translating](CONTRIBUTING.md#translating) explains how to fix a string or add a language.
 
 To keep Reel downloads in More without the sidebar button, leave **Download** on under **Reels and Watch** and turn off **Download button on reels** on the same page.
 
