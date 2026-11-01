@@ -16,8 +16,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+
+import com.facebook.feed.tab.FeedTab;
+import com.facebook.katana.activity.FbMainTabActivity;
+import com.facebook.notifications.tab.NotificationsTab;
+import com.facebook.video.videohome.tab.WatchTab;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.PatchFamily;
@@ -42,6 +48,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
 public class TabBarScrollAwayTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
+    private FbMainTabActivity screen;
+
     @Before
     public void start() {
         HookStatus.clear();
@@ -57,6 +65,7 @@ public class TabBarScrollAwayTest {
         Settings.TOP_TAB_BAR.resetToDefault();
         Settings.TRANSLUCENT_BARS.resetToDefault();
         TabBarScrollAway.topBarsTakenBack();
+        TabBarScrollAway.mainScreenCreated(null);
         TabBarScrollAway.forgetBuilt();
         HookStatus.clear();
     }
@@ -399,11 +408,12 @@ public class TabBarScrollAwayTest {
     }
 
     @Test
-    public void theReelRunsUnderATopBarOnlyOffTheFeed() {
+    public void theReelRunsUnderATopBarOnlyOnTheReelsTab() {
         Settings.TOP_TAB_BAR.save(true);
+        onTab(new WatchTab());
         assertEquals("the feed keeps its padding", 150, TabBarScrollAway.pagesTop(150));
         TabBarScrollAway.topBarsLetGo();
-        assertEquals("off the feed the top bar's padding is dropped", 0, TabBarScrollAway.pagesTop(150));
+        assertEquals("on the Reels tab the top bar's padding is dropped", 0, TabBarScrollAway.pagesTop(150));
         assertEquals("a zero stays zero", 0, TabBarScrollAway.pagesTop(0));
         String line = statusLine();
         assertTrue(line, line != null && line.contains(TabBarScrollAway.REEL_UNDER_BAR + " 1"));
@@ -412,7 +422,40 @@ public class TabBarScrollAwayTest {
     }
 
     @Test
+    public void theOtherTabsKeepTheirPaddingUnderATopBar() {
+        Settings.TOP_TAB_BAR.save(true);
+        TabBarScrollAway.topBarsLetGo();
+        onTab(new NotificationsTab());
+        assertEquals("Notifications", 150, TabBarScrollAway.pagesTop(150));
+        onTab(new FeedTab());
+        assertEquals("Home", 150, TabBarScrollAway.pagesTop(150));
+        onTab(new WatchTab());
+        assertEquals("then Reels", 0, TabBarScrollAway.pagesTop(150));
+        onTab(new NotificationsTab());
+        assertEquals("and back to Notifications", 150, TabBarScrollAway.pagesTop(150));
+    }
+
+    @Test
+    public void thePaddingStaysWhenTheTabCantBeRead() {
+        Settings.TOP_TAB_BAR.save(true);
+        TabBarScrollAway.topBarsLetGo();
+        assertEquals("no main screen", 150, TabBarScrollAway.pagesTop(150));
+        onTab(null);
+        assertEquals("a main screen with no tab yet", 150, TabBarScrollAway.pagesTop(150));
+        onTab("not a tab");
+        assertEquals("something that isn't a tab", 150, TabBarScrollAway.pagesTop(150));
+    }
+
+    /** A new main screen showing [tab], kept so the weak hold on it lasts the test. */
+    private void onTab(Object tab) {
+        screen = Robolectric.buildActivity(FbMainTabActivity.class).get();
+        screen.currentTab = tab;
+        TabBarScrollAway.mainScreenCreated(screen);
+    }
+
+    @Test
     public void thePaddingStaysWithoutATopBarOrWhilePaused() {
+        onTab(new WatchTab());
         TabBarScrollAway.topBarsLetGo();
         assertEquals("top bar off", 150, TabBarScrollAway.pagesTop(150));
         Settings.TOP_TAB_BAR.save(true);

@@ -29,7 +29,9 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * LX/02zz;->A02). Both sum the top entries' heights. On the Reels tab, Facebook deactivates scroll-away
  * with the top entries fully shown, so they stay and the pages are padded below them. A08, the
  * bottom padding, calls a one-argument static and the controller's own accessor, so it isn't one.
- * The extension answers 0 for both while the top bar is on and the main screen is off the feed.
+ * The extension answers 0 for both while the top bar is on and the main screen shows the Reels tab.
+ * Facebook deactivates scroll-away on Notifications, Groups and Feeds too, and those keep the padding
+ * or the bar covers their first rows (#328).
  */
 
 internal const val CONTENT_PADDING_TRACE =

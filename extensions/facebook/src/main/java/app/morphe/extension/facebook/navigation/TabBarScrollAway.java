@@ -4,11 +4,13 @@
  */
 package app.morphe.extension.facebook.navigation;
 
+import android.app.Activity;
 import android.view.View;
 import android.view.WindowInsets;
 
 import androidx.annotation.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -78,11 +80,14 @@ public final class TabBarScrollAway {
 
     /**
      * Whether the main screen has left the surface the bars belong on. Facebook turns scroll-away
-     * off as it opens the Reels tab or a full-screen page and hides the bars itself, then back on as
-     * it returns to the feed. Between the two, a kept top bar lets Facebook's moves through, so it
-     * goes with the feed instead of sitting over a reel (issue #159).
+     * off as it opens the Reels tab, another tab that isn't Home or a full-screen page and hides the
+     * bars itself, then back on as it returns to the feed. Between the two, a kept top bar lets
+     * Facebook's moves through, so it goes with the feed instead of sitting over a reel (issue #159).
      */
     private static volatile boolean offTheFeed;
+
+    /** The main screen, for the tab it shows. */
+    private static volatile WeakReference<Activity> mainScreen = new WeakReference<>(null);
 
     /**
      * Whether the bar was kept, and whether it was see-through, as Facebook's check first ran in
@@ -130,6 +135,11 @@ public final class TabBarScrollAway {
         builtSeeThrough = null;
     }
 
+    /** A new main screen, as it's created. */
+    static void mainScreenCreated(Activity screen) {
+        mainScreen = new WeakReference<>(screen);
+    }
+
     /**
      * The hook at the start of Facebook's deactivate of scroll-away: the main screen is leaving the
      * bars' surface and is about to hide them. Never throws.
@@ -149,10 +159,11 @@ public final class TabBarScrollAway {
     /**
      * The hook at the return of each method that answers how far down Facebook pads a page's
      * content for the top bars (#264). With the tab bar at the top, the Reels tab started its reel
-     * below the bar and the video's letterbox read as a black strip. While the main screen is off
-     * the feed (Facebook has deactivated scroll-away for the Reels tab or a full-screen page) the
-     * answer is 0, so the reel fills the screen behind the bar. Anywhere else, with the top bar
-     * off, with the bottom bar on, paused, before the settings are ready or on a failure, it's
+     * below the bar and the video's letterbox read as a black strip. While the main screen shows the
+     * Reels tab the answer is 0, so the reel fills the screen behind the bar. Off the feed alone
+     * isn't enough, since Facebook turns scroll-away off on Notifications, Groups and Feeds too, and
+     * those need the padding or the bar covers their first rows (#328). Anywhere else, with the top
+     * bar off, with the bottom bar on, paused, before the settings are ready or on a failure, it's
      * Facebook's own number.
      */
     public static int pagesTop(int padding) {
@@ -160,6 +171,7 @@ public final class TabBarScrollAway {
             if (padding == 0 || !offTheFeed) return padding;
             HookStatus.invoked(FAMILY);
             if (!Utils.settingsReady() || Settings.BOTTOM_TAB_BAR.get() || !Settings.TOP_TAB_BAR.get()) return padding;
+            if (!onReelsTab()) return padding;
             HookStatus.bound(FAMILY, "reel under the top bar");
             HookStatus.counted(FAMILY, REEL_UNDER_BAR);
             Logger.printDebug(() -> "Tab bar at the top: the reel runs under the bar");
@@ -168,6 +180,13 @@ public final class TabBarScrollAway {
             HookStatus.threw(FAMILY, "reel under the top bar", failure);
             return padding;
         }
+    }
+
+    /** Whether the main screen shows the tab called Reels or Video. */
+    private static boolean onReelsTab() {
+        Activity screen = mainScreen.get();
+        Object tab = screen == null ? null : StartTabRoute.TabBar.currentTab(screen);
+        return tab != null && StartTab.VIDEO.isTab(tab.getClass().getName());
     }
 
     /**

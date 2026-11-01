@@ -174,6 +174,7 @@ public final class StartTabRoute {
     public static void onActivityCreate(@Nullable Activity activity, @Nullable Bundle savedState) {
         try {
             if (activity == null || !FacebookTabs.MAIN_TAB_ACTIVITY.equals(activity.getClass().getName())) return;
+            TabBarScrollAway.mainScreenCreated(activity);
             // A new main screen: whatever an earlier one asked for isn't this one's.
             starts++;
             settled();
