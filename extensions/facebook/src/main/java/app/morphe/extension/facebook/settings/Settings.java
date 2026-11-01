@@ -192,6 +192,10 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting BACK_KEEPS_HOME =
             new BooleanSetting("hushfacebook_back_keeps_home", FALSE);
 
+    /** Back keeps Home without the toast saying a second Back goes to the top (#334). */
+    public static final BooleanSetting HIDE_BACK_REMINDER =
+            new BooleanSetting("hushfacebook_hide_back_reminder", FALSE, Setting.parent(BACK_KEEPS_HOME));
+
     /**
      * Feed posts Facebook's own detection marked as made with AI. Off until one AI-labeled and one
      * ordinary post have been recorded on a signed-in feed and the rule told them apart.

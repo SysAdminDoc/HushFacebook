@@ -294,6 +294,8 @@ With the switch above on, your place stays however long you're away. Pull to ref
 Back leaves Home where it is	返回鍵不改變首頁位置
 Pressing Back on a scrolled Home no longer jumps to the top and reloads the feed. Press Back again within two seconds to do that.	在已向下捲動的首頁按返回鍵，不會再跳到頂端並重新載入動態消息。兩秒內再按一次返回鍵即可這麼做。
 Press Back again to go to the top	再按一次返回鍵回到頂端
+Hide the Back reminder	隱藏返回鍵提醒
+Back keeps your place without saying "Press Back again to go to the top".	返回鍵保留你的位置，不再顯示「再按一次返回鍵回到頂端」。
 A finished story stays on screen until you tap or swipe. Turn this off for Facebook's timing.	限時動態播放完畢後會停留在畫面上，直到你點按或滑動。停用後恢復 Facebook 原有的切換時間。
 View stories anonymously	匿名觀看限時動態
 Facebook isn't told which stories you watch, so you stay off their viewer lists. Replying or reacting still shows you. Stories you watch to the end show as watched on this phone only, until that person posts a new one.	不向 Facebook 回報你看過哪些限時動態，因此你不會出現在觀看名單上。回覆或留下心情仍會顯示你的身分。完整看過的限時動態只會在這支手機上標示為已觀看，直到對方發布新的限時動態。

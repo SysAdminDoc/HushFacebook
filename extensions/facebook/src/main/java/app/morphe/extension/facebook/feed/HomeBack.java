@@ -43,7 +43,9 @@ public final class HomeBack {
             Logger.printDebug(() -> "Home back: Back on a scrolled Home"
                     + (hold ? ": kept the feed where it is" : ": second Back, Facebook goes to the top"));
             HookStatus.counted(FamilyNames.RETURN_REFRESH, hold ? KEPT : LET_FACEBOOK);
-            if (hold) Utils.showToastShort(L10n.t("Press Back again to go to the top"));
+            if (hold && !Settings.HIDE_BACK_REMINDER.get()) {
+                Utils.showToastShort(L10n.t("Press Back again to go to the top"));
+            }
             return hold;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.RETURN_REFRESH, "Home back", failure);

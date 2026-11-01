@@ -345,6 +345,9 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.BACK_KEEPS_HOME,
                         L10n.t("Pressing Back on a scrolled Home no longer jumps to the top and reloads the feed. "
                                 + "Press Back again within two seconds to do that.")));
+                feed.addPreference(toggle(context, Settings.HIDE_BACK_REMINDER,
+                        L10n.t("Back keeps your place without saying \"Press Back again to go to the top\"."))
+                        .needs(Settings.BACK_KEEPS_HOME));
             }
             subheading(feed, L10n.t("Content filters"));
             if (build.contains(PatchFamily.SEEN_POSTS)) {
