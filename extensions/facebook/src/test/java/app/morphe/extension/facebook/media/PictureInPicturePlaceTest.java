@@ -34,7 +34,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * A reel's place as its screen comes back (#44): Facebook seeks it to 0 then, from the window and
  * from another app alike. That seek is dropped while the screen is away and just after it returns.
  * The same seek later, as a swipe does it, a drag to the start, a seek elsewhere, another player,
- * the switch off or a pause leave Facebook's seek alone.
+ * the switch off or a pause leave Facebook's seek alone. So does the seek of a reel that just
+ * ended, which is its loop.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -101,6 +102,39 @@ public class PictureInPicturePlaceTest {
         assertTrue(PictureInPicture.keepPlace(Trigger.BY_GROOT_TRANSITION, player, 0));
         arrivals.onActivityResumed(screen);
         assertTrue(PictureInPicture.keepPlace(Trigger.BY_GROOT_TRANSITION, player, 0));
+    }
+
+    @Test
+    public void aReelThatEndsInTheWindowIsLeftToLoop() {
+        arrivals.onActivityPaused(screen);
+        PictureInPicture.playerEnded(player);
+        assertFalse(PictureInPicture.keepPlace(Trigger.BY_AUTOPLAY, player, 0));
+        assertNotNull(statusLine());
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + PictureInPicture.LOOP_LEFT + " 1"));
+    }
+
+    @Test
+    public void aReelThatEndsJustAfterItsReturnIsLeftToLoop() {
+        tripAway();
+        PictureInPicture.playerEnded(player);
+        assertFalse(PictureInPicture.keepPlace(Trigger.BY_AUTOPLAY, player, 0));
+    }
+
+    @Test
+    public void aRewindLongAfterTheEndIsStillDropped() {
+        arrivals.onActivityPaused(screen);
+        PictureInPicture.playerEnded(player);
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(PictureInPicture.LOOP_MS));
+        assertTrue(PictureInPicture.keepPlace(Trigger.BY_AUTOPLAY, player, 0));
+    }
+
+    @Test
+    public void anotherPlayerEndingKeepsTheReelsPlace() {
+        arrivals.onActivityPaused(screen);
+        PictureInPicture.playerEnded(other);
+        assertTrue(PictureInPicture.keepPlace(Trigger.BY_AUTOPLAY, player, 0));
+        PictureInPicture.playerEnded(null);
+        assertTrue(PictureInPicture.keepPlace(Trigger.BY_AUTOPLAY, player, 0));
     }
 
     @Test

@@ -27,6 +27,7 @@ import app.morphe.patches.facebook.media.taptoplay.GROOT_PLAY
 import app.morphe.patches.facebook.media.taptoplay.grootPauses
 import app.morphe.patches.facebook.media.taptoplay.grootPlays
 import app.morphe.patches.facebook.media.taptoplay.innerPause
+import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
@@ -35,6 +36,10 @@ import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.extension.requireParameterIntact
 import app.morphe.patches.facebook.misc.extension.requireThisIntact
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.patches.facebook.reels.PlayerRead
+import app.morphe.patches.facebook.reels.VIDEO_COMPLETE_ANCHOR
+import app.morphe.patches.facebook.reels.playerRead
+import app.morphe.patches.facebook.reels.videoCompletes
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -95,6 +100,8 @@ internal const val PLAYER_PLAYING = "$PICTURE_IN_PICTURE->playerPlaying(Ljava/la
 internal const val PLAYER_PAUSED = "$PICTURE_IN_PICTURE->playerPaused(Ljava/lang/Object;)V"
 
 internal const val KEEP_PLACE = "$PICTURE_IN_PICTURE->keepPlace(Ljava/lang/Object;Ljava/lang/Object;I)Z"
+
+internal const val PLAYER_ENDED = "$PICTURE_IN_PICTURE->playerEnded(Ljava/lang/Object;)V"
 
 internal const val SET_ASIDE = "$PICTURE_IN_PICTURE->setAside()Z"
 
@@ -223,6 +230,7 @@ val pictureInPicturePatch = bytecodePatch(
         val step = findArmingStep(check)
         val gate = findSurfaceGate(step)
         val player = findPlayer()
+        val playerEnd = findPlayerEnd(player)
         val arming = findArming(check, player.play.definingClass)
         val videoParams = videoParamsCall(step, arming, player.play.definingClass)
             ?: refuse("${step.definingClass}->${step.name} asks the player for none of ${arming.name}'s arguments")
@@ -236,6 +244,7 @@ val pictureInPicturePatch = bytecodePatch(
         applyArming(arming, player.play.definingClass, videoParams)
         disarms.forEach { applyDisarm(it) }
         applyPlayer(player)
+        applyPlayerEnd(playerEnd)
         // Without the view, every player that plays is the reel on screen, as before (#126).
         try {
             fillPlayerView(playerViewField(player))
@@ -615,6 +624,34 @@ internal fun BytecodePatchContext.applyPlayer(player: Player) {
     if (trace < 0) refuse("${play.definingClass}->${play.name} no longer loads \"$GROOT_PLAY\"")
     play.requireThisIntact(PATCH, listOf(trace + 1))
     play.addInstruction(trace + 1, "invoke-static/range { p0 .. p0 }, $PLAYER_PLAYING")
+}
+
+/** Facebook's end-of-video step and its read of the player, as the reel binding finds them. */
+internal class PlayerEnd(val step: Method, val read: PlayerRead)
+
+/**
+ * The end-of-video step (585 `LX/05iS;->Ina`) of [player]. A reel's loop puts it back at its start
+ * by the same seek the seek hook drops as the screen returns, and comes from inside this step, so
+ * the seek hook can't go in without it.
+ */
+internal fun BytecodePatchContext.findPlayerEnd(player: Player): PlayerEnd {
+    val holders = classDefByStrings(VIDEO_COMPLETE_ANCHOR, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+    val step = videoCompletes(holders).singleOrNull()
+        ?: refuse("expected one method holding \"$VIDEO_COMPLETE_ANCHOR\", found ${videoCompletes(holders).size}")
+    val read = playerRead(holders.single { it.type == step.definingClass }, step)
+        ?: refuse("${step.definingClass} keeps no single player that ${step.name} reads from this")
+    if (read.field.type != player.play.definingClass) {
+        refuse("${step.definingClass}->${step.name} reads a ${read.field.type}, not the player ${player.play.definingClass}")
+    }
+    return PlayerEnd(step, read)
+}
+
+/** The end-of-video step hands the extension its player right after reading it. Changes nothing else. */
+internal fun BytecodePatchContext.applyPlayerEnd(end: PlayerEnd) {
+    val register = end.read.register
+    mutableClassDefBy(end.step.definingClass).findMutableMethodOf(end.step)
+        .addInstruction(end.read.at + 1, "invoke-static/range { v$register .. v$register }, $PLAYER_ENDED")
 }
 
 /** The extension's stub the patch fills with a read of the player's view. */

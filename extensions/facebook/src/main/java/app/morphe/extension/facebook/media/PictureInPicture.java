@@ -152,6 +152,12 @@ public final class PictureInPicture {
     /** How long after its screen resumes a seek to a reel's start still belongs to the screen coming back. */
     static final long RETURN_MS = 1500;
 
+    /** Counted each time a reel that just ended is left to go back to its start and loop. */
+    static final String LOOP_LEFT = "reel left to loop as it ended";
+
+    /** How long after a reel ends a seek to its start is its loop. Facebook seeks from inside its end-of-video step, so at once. */
+    static final long LOOP_MS = 1000;
+
     /** The triggers of the seeks that put a reel back at its start: the viewer's for a reel out of sight, the bind's, and the autoplay's as it picks the reel up again. */
     static final Set<String> REWINDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             "BY_SHORT_FORM_VIDEO_INVISIBLE", "BY_GROOT_TRANSITION", "BY_AUTOPLAY")));
@@ -267,6 +273,10 @@ public final class PictureInPicture {
 
     /** When a screen last came back from being {@link #away}. */
     private static long backAt = -RETURN_MS;
+
+    /** The player whose video last reached its end, and when. */
+    private static WeakReference<Object> ended = new WeakReference<>(null);
+    private static long endedAt = -LOOP_MS;
 
     /** Goes up with each arming and disarm, so a later look can tell whether Facebook did either. */
     private static int armings;
@@ -820,14 +830,22 @@ public final class PictureInPicture {
      * paused too, so it started over every time (#44). Answering yes drops that seek and the armed
      * reel goes on from where it was. Only a seek to 0 by one of {@link #REWINDS} counts, while the
      * screen is away or within {@link #RETURN_MS} of its return, so a swipe still rewinds the reel it
-     * leaves and a drag to the start is left alone.
+     * leaves and a drag to the start is left alone. A reel that just ended ({@link #playerEnded})
+     * goes back to its start by the same seek to loop, and dropping that one froze it on its last
+     * frame, so it stays.
      */
     public static boolean keepPlace(Object trigger, Object player, int positionMs) {
         try {
-            if (positionMs != 0 || player == null || !comingBack(player, SystemClock.uptimeMillis())) return false;
+            long now = SystemClock.uptimeMillis();
+            if (positionMs != 0 || player == null || !comingBack(player, now)) return false;
             String name = trigger instanceof Enum ? ((Enum<?>) trigger).name() : null;
             if (!REWINDS.contains(name)) {
                 Logger.printDebug(() -> "Picture-in-picture: a seek to the start by " + name + " left alone as the screen came back");
+                return false;
+            }
+            if (justEnded(player, now)) {
+                HookStatus.counted(FAMILY, LOOP_LEFT);
+                Logger.printDebug(() -> "Picture-in-picture: player " + System.identityHashCode(player) + " ended, left to loop, " + name);
                 return false;
             }
             HookStatus.counted(FAMILY, PLACE_KEPT);
@@ -844,6 +862,25 @@ public final class PictureInPicture {
         Activity screen = armedScreen.get();
         if (screen == null || player != current.get() || !on()) return false;
         return screen == away.get() || now - backAt < RETURN_MS;
+    }
+
+    /** The hook, right after Facebook's end-of-video step reads its player. */
+    public static void playerEnded(Object player) {
+        try {
+            if (player != null) noteEnded(player, SystemClock.uptimeMillis());
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "video end", failure);
+        }
+    }
+
+    private static synchronized void noteEnded(Object player, long now) {
+        ended = new WeakReference<>(player);
+        endedAt = now;
+    }
+
+    /** Whether [player]'s video reached its end just before [now]. */
+    private static synchronized boolean justEnded(Object player, long now) {
+        return player == ended.get() && now - endedAt < LOOP_MS;
     }
 
     /** Facebook just set auto-enter itself, on or off, so nothing is held any more. */
@@ -1225,6 +1262,8 @@ public final class PictureInPicture {
             underSettings = new WeakReference<>(null);
             away = new WeakReference<>(null);
             backAt = -RETURN_MS;
+            ended = new WeakReference<>(null);
+            endedAt = -LOOP_MS;
         }
     }
 }

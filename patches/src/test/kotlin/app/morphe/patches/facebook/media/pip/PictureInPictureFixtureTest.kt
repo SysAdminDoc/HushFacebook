@@ -16,6 +16,9 @@ import app.morphe.patches.facebook.media.taptoplay.grootPlays
 import app.morphe.patches.facebook.media.taptoplay.innerPause
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
+import app.morphe.patches.facebook.reels.VIDEO_COMPLETE_ANCHOR
+import app.morphe.patches.facebook.reels.playerRead
+import app.morphe.patches.facebook.reels.videoCompletes
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -198,7 +201,13 @@ class PictureInPictureFixtureTest {
                 val shownView = originalShower[shownAt] as FiveRegisterInstruction
                 assertTrue("$name: the show takes its view or visibility from past v15", shownView.registerC <= 15 && shownView.registerD <= 15)
 
-                val context = PatchContexts.of((listOf(util, holder, owner, runnable, topic, homeClass, paramsClass) + viewers + listOf(
+                val endHolders = FixtureDex.classesHolding(bundle, VIDEO_COMPLETE_ANCHOR).filterNot { it.type.startsWith(EXTENSION_CLASSES) }.distinctBy { it.type }
+                val end = videoCompletes(endHolders).single()
+                val listener = endHolders.single { it.type == end.definingClass }
+                val endRead = playerRead(listener, end)
+                assertNotNull("$name: ${listener.type} keeps no single player that its end-of-video step reads", endRead)
+
+                val context = PatchContexts.of((listOf(util, holder, owner, runnable, topic, homeClass, paramsClass, listener) + viewers + listOf(
                     ExtensionDex.classDef(PICTURE_IN_PICTURE), ExtensionDex.classDef(SETTINGS_STATUS))).distinctBy { it.type })
                 pictureInPicturePatch.execute(context)
 
@@ -307,6 +316,13 @@ class PictureInPictureFixtureTest {
                 assertEquals("$name: the seek's yes branch", Opcode.IF_EQZ, seeked[2].opcode)
                 assertEquals("$name: a no runs Facebook's seek", 4, seeked.target(2))
                 assertEquals("$name: a yes drops the seek", Opcode.RETURN_VOID, seeked[3].opcode)
+                // #44: a reel's loop is the same seek, and the end-of-video step says it's coming.
+                assertEquals("$name: the end step reads the player", play.definingClass, endRead!!.field.type)
+                val ending = patchedOf(end).code()
+                assertEquals("$name: the end step's call after its read", PLAYER_ENDED, ending[endRead.at + 1].call.toString())
+                assertEquals("$name: the end step hands over its player", endRead.register,
+                    (ending[endRead.at + 1] as RegisterRangeInstruction).startRegister)
+                assertEquals("$name: the end step's own code around it", end.code().size + 1, ending.size)
 
                 val ran = patchedOf(run).code()
                 assertEquals("$name: the runnable's first call", SET_ASIDE, ran[0].call.toString())
