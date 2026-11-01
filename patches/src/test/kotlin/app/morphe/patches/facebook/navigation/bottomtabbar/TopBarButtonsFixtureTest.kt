@@ -26,6 +26,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.junit.Assert.assertEquals
@@ -121,6 +122,11 @@ class TopBarButtonsFixtureTest {
                 assertEquals("$name: the newer bar keeps a glyph", newer.glyph.type,
                     ((newerSearchCode[newerSearch.kept] as ReferenceInstruction).reference as FieldReference).type)
                 assertNotEquals("$name: the search glyph isn't made in the spec method", specButtonSite(newer.bar).method.name, newerSearch.method.name)
+                // Positive control for telling Home's bar from Marketplace's: the classic bar names the
+                // newer bar inside it, and the field that name lands in is a String of the newer bar's.
+                assertTrue("$name: the classic bar names Home's newer bar", homeBarScreenCalls(bar, newer.bar, newerSearch) >= 1)
+                assertEquals("$name: the screen field is the newer bar's", NAVIGATION_BAR, newerSearch.screenField.definingClass)
+                assertEquals("$name: the screen field holds a name", "Ljava/lang/String;", newerSearch.screenField.type)
 
                 // Apply the whole hook set the way the patch does: settings has already sent the logo's
                 // touch listener through its stand-in when this patch runs.
@@ -194,16 +200,24 @@ class TopBarButtonsFixtureTest {
                     assertEquals("$name: the search builder grew by its hook only", searchBefore + 1, searchAfter.size)
                 }
 
-                // The newer bar's search glyph: the hook right after the bar keeps it, on its register.
+                // The newer bar's search glyph: right after the bar keeps it, the bar's screen name is read
+                // and the hook gets both.
                 val newerSearchAfter = context.mutableClassDefBy(NAVIGATION_BAR).findMutableMethodOf(newerSearch.method).code()
                 // Not counting nops: the method ends in a switch payload, which the hook can shift off its alignment.
-                assertEquals("$name: the newer search method grew by its hook only", newerSearchBefore + 1,
+                assertEquals("$name: the newer search method grew by its read and hook only", newerSearchBefore + 2,
                     newerSearchAfter.count { it.opcode != Opcode.NOP })
-                val newerHook = newerSearchAfter[newerSearch.kept + 1]
-                assertEquals("$name: the newer search hook follows the iput-object", HIDE_SEARCH_BUTTON_HOOK, newerHook.call())
-                assertEquals("$name: the newer search hook is range invoke-static", Opcode.INVOKE_STATIC_RANGE, newerHook.opcode)
+                val screenRead = newerSearchAfter[newerSearch.kept + 1]
+                assertEquals("$name: the screen name is read right after the iput-object", Opcode.IGET_OBJECT, screenRead.opcode)
+                assertEquals("$name: the read takes the bar's screen field", newerSearch.screenField.name,
+                    ((screenRead as ReferenceInstruction).reference as FieldReference).name)
+                val newerHook = newerSearchAfter[newerSearch.kept + 2]
+                assertEquals("$name: the newer search hook follows the read", BAR_SEARCH_BUTTON_HOOK, newerHook.call())
+                assertEquals("$name: the newer search hook is invoke-static", Opcode.INVOKE_STATIC, newerHook.opcode)
                 assertEquals("$name: the newer search hook hands over the glyph",
-                    newerSearch.register, (newerHook as RegisterRangeInstruction).startRegister)
+                    newerSearch.register, (newerHook as FiveRegisterInstruction).registerC)
+                assertEquals("$name: the newer search hook hands over the name",
+                    (screenRead as TwoRegisterInstruction).registerA, (newerHook as FiveRegisterInstruction).registerD)
+                assertNotEquals("$name: the read doesn't overwrite the glyph", newerSearch.register, screenRead.registerA)
                 assertEquals("$name: the newer search hook comes after the glyph's iput-object", Opcode.IPUT_OBJECT,
                     newerSearchAfter[newerSearch.kept].opcode)
 
@@ -326,10 +340,12 @@ class TopBarButtonsFixtureTest {
             .map { "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }
         for (hook in listOf(
             HIDE_MESSENGER_BUTTON_HOOK, HIDE_MESSENGER_COUNT_HOOK, HIDE_FACEBOOK_LOGO_HOOK, BAR_BUTTON_HOOK, BAR_BUTTON_COUNT_HOOK,
-            HIDE_CREATE_BUTTON_HOOK, HIDE_SEARCH_BUTTON_HOOK,
+            HIDE_CREATE_BUTTON_HOOK, HIDE_SEARCH_BUTTON_HOOK, BAR_SEARCH_BUTTON_HOOK,
         )) {
             assertTrue("the extension declares no public static $hook: $calls", hook in calls)
         }
+        assertEquals("the extension looks for the screen name the patch checked for",
+            HOME_BAR_SCREEN, ExtensionDex.stringConstant(TOP_BAR_BUTTONS, "HOME_BAR_SCREEN"))
         assertEquals("the extension looks for the spec name the fixtures hold",
             MESSENGER_SPEC, ExtensionDex.stringConstant(TOP_BAR_BUTTONS, "MESSENGER_SPEC"))
         assertEquals("the extension looks for the Create spec name the fixtures hold",

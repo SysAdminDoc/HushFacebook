@@ -34,9 +34,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *       spot still opens Hushfacebook settings on a long press.
  *   <li>{@link #createButton} runs right after the bar adds the Create button, and sets it GONE
  *       like the Messenger button.
- *   <li>{@link #searchButton} runs right after the bar adds the search button (#321), and on the
- *       newer bar right after the bar makes it, and sets it GONE the same way. A kept button gets
- *       the Google Lens long press of {@link PictureSearch} while that switch is on (#245).
+ *   <li>{@link #searchButton} runs right after the bar adds the search button (#321), and
+ *       {@link #barSearchButton} right after the newer bar makes it, and on Home's bar they set it
+ *       GONE the same way. A kept button gets the Google Lens long press of {@link PictureSearch}
+ *       while that switch is on (#245).
  * </ul>
  *
  * <p>Some accounts get the newer bar instead, where every button is a glyph the bar makes from a
@@ -62,6 +63,9 @@ public final class TopBarButtons {
 
     /** The newer bar's spec name for the Create button. */
     static final String CREATE_SPEC = "trep-composer-button";
+
+    /** The screen name the home feed's top bar gives the newer bar inside it. */
+    static final String HOME_BAR_SCREEN = "NewsFeedFragment";
 
     private static final String FAMILY = FamilyNames.BOTTOM_TAB_BAR;
 
@@ -130,15 +134,29 @@ public final class TopBarButtons {
         Logger.printDebug(() -> "Top bar: hid the Create button");
     }
 
-    /**
-     * Injection point, after either bar makes or adds the search button. Hides it, or with Search
-     * with a picture on gives it the long press that opens Google Lens (#245). Never throws.
-     */
+    /** Injection point, after the classic bar adds the search button. That bar is only ever Home's. */
     public static void searchButton(View button) {
+        searchButton(button, true);
+    }
+
+    /**
+     * Injection point, after the newer bar makes its search button, with the name of the screen the
+     * bar is for. Marketplace and other screens build their top bars from the same class, and their
+     * search stays when Home's is hidden.
+     */
+    public static void barSearchButton(View button, String screen) {
+        searchButton(button, HOME_BAR_SCREEN.equals(screen));
+    }
+
+    /**
+     * Hides a search button of Home's bar, or with Search with a picture on gives any kept one the
+     * long press that opens Google Lens (#245). Never throws.
+     */
+    private static void searchButton(View button, boolean onHome) {
         try {
             HookStatus.invoked(FAMILY);
             if (button == null || !Utils.settingsReady()) return;
-            if (!Settings.HIDE_SEARCH_BUTTON.get()) {
+            if (!onHome || !Settings.HIDE_SEARCH_BUTTON.get()) {
                 if (Settings.SEARCH_WITH_PICTURE.get()) PictureSearch.attach(button);
                 return;
             }

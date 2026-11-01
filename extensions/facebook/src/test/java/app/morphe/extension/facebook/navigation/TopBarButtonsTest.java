@@ -309,4 +309,37 @@ public class TopBarButtonsTest {
         PauseForTests.resume();
         TopBarButtons.searchButton(null);
     }
+
+    @Test
+    public void theNewerBarHidesSearchOnHomeOnly() {
+        Settings.HIDE_SEARCH_BUTTON.save(true);
+        View home = button();
+        TopBarButtons.barSearchButton(home, TopBarButtons.HOME_BAR_SCREEN);
+        assertEquals("Home's button goes", View.GONE, home.getVisibility());
+        assertTrue(reported(TopBarButtons.SEARCH_HIDDEN));
+    }
+
+    @Test
+    public void anotherScreensSearchStaysWithTheSwitchOn() {
+        Settings.HIDE_SEARCH_BUTTON.save(true);
+        View marketplace = button();
+        TopBarButtons.barSearchButton(marketplace, "MarketplaceHomeFragmentV2");
+        assertEquals("Marketplace keeps its search", View.VISIBLE, marketplace.getVisibility());
+        View unnamed = button();
+        TopBarButtons.barSearchButton(unnamed, null);
+        assertEquals("a bar with no name isn't Home's", View.VISIBLE, unnamed.getVisibility());
+        assertFalse(reported(TopBarButtons.SEARCH_HIDDEN));
+        TopBarButtons.barSearchButton(null, TopBarButtons.HOME_BAR_SCREEN);
+    }
+
+    @Test
+    public void aKeptSearchButtonStillTakesTheLongPressOnAnyScreen() {
+        Settings.HIDE_SEARCH_BUTTON.save(true);
+        Settings.SEARCH_WITH_PICTURE.save(true);
+        View marketplace = button();
+        TopBarButtons.barSearchButton(marketplace, "MarketplaceHomeFragmentV2");
+        assertEquals(View.VISIBLE, marketplace.getVisibility());
+        assertTrue("Lens stays on the button that's kept", marketplace.isLongClickable());
+        Settings.SEARCH_WITH_PICTURE.resetToDefault();
+    }
 }

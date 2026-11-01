@@ -81,7 +81,11 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   isn't made from a spec: its config method (A0E) makes a glyph of the same class as the spec
  *   buttons' (LX/02Gs;, also the classic bar's search glyph) and keeps it in the bar's one field of
  *   that class (A08), the only write to it. The hook goes right after that iput-object, before the
- *   glyph is added to the bar.
+ *   glyph is added to the bar. That class also draws Marketplace's and other screens' top bars, which
+ *   the first 0.20.0 walk caught losing their search too (2026-11-01), so the hook also gets the bar's
+ *   one String field (A0B), the name of its screen, written before the config method runs. The classic
+ *   bar holds Home's newer bar and names it "NewsFeedFragment" in both calls, a literal that doesn't
+ *   change with the language.
  *
  * A missing anchor refuses the whole Tab bar at the bottom patch, like every other anchor in it.
  */
@@ -94,6 +98,8 @@ internal const val BAR_BUTTON_HOOK = "$TOP_BAR_BUTTONS->barButton(Landroid/view/
 internal const val BAR_BUTTON_COUNT_HOOK = "$TOP_BAR_BUTTONS->barButtonCount(Landroid/view/View;I)I"
 internal const val HIDE_CREATE_BUTTON_HOOK = "$TOP_BAR_BUTTONS->createButton(Landroid/view/View;)V"
 internal const val HIDE_SEARCH_BUTTON_HOOK = "$TOP_BAR_BUTTONS->searchButton(Landroid/view/View;)V"
+internal const val BAR_SEARCH_BUTTON_HOOK = "$TOP_BAR_BUTTONS->barSearchButton(Landroid/view/View;Ljava/lang/String;)V"
+internal const val HOME_BAR_SCREEN = "NewsFeedFragment"
 
 internal const val SETUP_MESSENGER_GLYPH_VIEW = "WordmarkNavigationBar#setupMessengerGlyphView"
 internal const val SETUP_CREATE_GLYPH_VIEW = "WordmarkNavigationBar#setupCreateGlyphView"
@@ -209,13 +215,17 @@ internal fun searchButtonSite(builder: Method): AddedButtonSite {
     return AddedButtonSite(field, add, (load as OneRegisterInstruction).registerA)
 }
 
-/** Where the newer bar keeps its search glyph: the method, the iput-object's index and the register holding the glyph. */
-internal class SearchGlyphSite(val method: Method, val kept: Int, val register: Int)
+/**
+ * Where the newer bar keeps its search glyph: the method, the iput-object's index, the register
+ * holding the glyph and the bar's field naming its screen.
+ */
+internal class SearchGlyphSite(val method: Method, val kept: Int, val register: Int, val screenField: FieldReference)
 
 /**
  * The newer bar's search glyph: the one write to [bar]'s one instance field of [glyphType] (the
  * class [specButtonSite] found for the spec buttons), an iput-object of a glyph made right before
- * it with just a Context. Refuses unless the field and the write are each found once.
+ * it with just a Context. Refuses unless the field and the write are each found once, and unless
+ * the bar has one String field to read its screen from.
  */
 internal fun searchGlyphSite(bar: ClassDef, glyphType: String): SearchGlyphSite {
     val fields = bar.fields.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == glyphType }
@@ -239,7 +249,55 @@ internal fun searchGlyphSite(bar: ClassDef, glyphType: String): SearchGlyphSite 
         init.parameterTypes.map(CharSequence::toString) == listOf(CONTEXT) &&
         (code[kept - 1] as FiveRegisterInstruction).registerC == glyph
     if (!made) refuse("the write to ${bar.type}->${field.name} in ${method.name} doesn't follow a glyph made with just a Context")
-    return SearchGlyphSite(method, kept, glyph)
+    val names = bar.fields.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == STRING }
+    val screen = names.singleOrNull() ?: refuse("expected one String field in ${bar.type} to name its screen, found ${names.size}")
+    return SearchGlyphSite(method, kept, glyph, screen)
+}
+
+/**
+ * How many of [wordmark]'s calls name the newer bar inside it [HOME_BAR_SCREEN]. Refuses unless
+ * there's at least one, each passes that literal, and the method it calls writes the bar's screen
+ * field before it runs the method holding the search glyph. Without all of that the extension
+ * couldn't tell Home's bar from Marketplace's.
+ */
+internal fun homeBarScreenCalls(wordmark: ClassDef, bar: ClassDef, search: SearchGlyphSite): Int {
+    val calls = wordmark.methods.flatMap { method ->
+        val code = method.implementation?.instructions?.toList() ?: return@flatMap emptyList()
+        code.indices.filter { index ->
+            val called = code[index].reference() as? MethodReference
+            called != null && called.definingClass == NAVIGATION_BAR && called.parameterTypes.size == 4 &&
+                called.parameterTypes.first().toString() == "Landroid/app/Activity;" && called.parameterTypes.last().toString() == STRING
+        }.map { Triple(method, code, it) }
+    }
+    if (calls.isEmpty()) refuse("${wordmark.type} no longer hands $NAVIGATION_BAR a screen name")
+    calls.forEach { (method, code, index) ->
+        val where = "${wordmark.type}->${method.name}"
+        val call = code[index] as? FiveRegisterInstruction ?: refuse("expected a plain call to the newer bar in $where")
+        val named = (maxOf(0, index - 4) until index).any { before ->
+            code[before].opcode in setOf(Opcode.CONST_STRING, Opcode.CONST_STRING_JUMBO) &&
+                (code[before] as OneRegisterInstruction).registerA == call.registerG &&
+                (code[before].reference() as StringReference).string == HOME_BAR_SCREEN
+        }
+        if (!named) refuse("expected \"$HOME_BAR_SCREEN\" right before the call to the newer bar in $where")
+        val entryRef = code[index].reference() as MethodReference
+        val entry = bar.methods.singleOrNull {
+            it.name == entryRef.name && it.parameterTypes.map(CharSequence::toString) == entryRef.parameterTypes.map(CharSequence::toString)
+        } ?: refuse("${bar.type} has no ${entryRef.name} for $where to call")
+        val entryCode = entry.implementation?.instructions?.toList() ?: refuse("${bar.type}->${entry.name} has no code")
+        val written = entryCode.indexOfFirst { insn ->
+            val field = insn.reference() as? FieldReference
+            insn.opcode == Opcode.IPUT_OBJECT && field != null && field.definingClass == bar.type && field.name == search.screenField.name
+        }
+        val built = entryCode.indexOfFirst { insn ->
+            val target = insn.reference() as? MethodReference
+            target != null && target.definingClass == bar.type && target.name == search.method.name &&
+                target.parameterTypes.map(CharSequence::toString) == search.method.parameterTypes.map(CharSequence::toString)
+        }
+        if (written < 0 || built < 0 || written > built) {
+            refuse("${bar.type}->${entry.name} doesn't name the bar before it builds (write at $written, build at $built)")
+        }
+    }
+    return calls.size
 }
 
 /** The register of an instance method's int parameter at [at], counted from the parameters. */
@@ -401,9 +459,20 @@ internal fun MutableMethod.hideSearchButtonAfter(site: AddedButtonSite) {
     addInstructions(site.addView + 1, "invoke-static/range { v${site.register} .. v${site.register} }, $HIDE_SEARCH_BUTTON_HOOK")
 }
 
-/** Puts the search button's hook after the newer bar keeps its search glyph. */
+/** Puts the search button's hook after the newer bar keeps its search glyph, with the name of the bar's screen. */
 internal fun MutableMethod.hideSearchGlyphAfter(site: SearchGlyphSite) {
-    addInstructions(site.kept + 1, "invoke-static/range { v${site.register} .. v${site.register} }, $HIDE_SEARCH_BUTTON_HOOK")
+    val at = site.kept + 1
+    val screen = findFreeRegister(at, site.register)
+    if (maxOf(site.register, screen, implementation!!.registerCount - 1) > 15) {
+        refuse("the glyph (v${site.register}), the free v$screen or the bar is past v15 in ${site.method.definingClass}->${site.method.name}")
+    }
+    addInstructions(
+        at,
+        """
+            iget-object v$screen, p0, ${site.screenField.smali()}
+            invoke-static { v${site.register}, v$screen }, $BAR_SEARCH_BUTTON_HOOK
+        """,
+    )
 }
 
 /** Sends the count through the extension first thing, so a hidden count reaches Facebook as 0. */
@@ -477,7 +546,9 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
         val glyph = mutableClassDefByOrNull(spec.glyphType)
             ?: refuse("this Facebook has no ${spec.glyphType}, the newer bar's button glyph")
         val counts = glyphCountMethods(glyph, glyph.interfaces.mapNotNull { classDefByOrNull(it) })
-        searchGlyphSite(bar, spec.glyphType)
+        val wordmark = classDefByOrNull(WORDMARK_NAVIGATION_BAR)
+            ?: refuse("this Facebook has no $WORDMARK_NAVIGATION_BAR, the home feed's top bar")
+        homeBarScreenCalls(wordmark, bar, searchGlyphSite(bar, spec.glyphType))
 
         bar.findMutableMethodOf(spec.method).markSpecButtonAfter(spec)
         // Found again: the search glyph's method may be the spec method, which now holds more instructions.
