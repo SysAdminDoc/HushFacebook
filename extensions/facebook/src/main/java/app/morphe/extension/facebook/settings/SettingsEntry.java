@@ -900,6 +900,13 @@ public final class SettingsEntry {
         if (openPending) OpenWhenResumed.openWhenSettled(activity);
     }
 
+    /** Whether the screen is over [activity] or waiting to open, so a page opened now would cover it. */
+    public static boolean upOrComing(Activity activity) {
+        if (openPending) return true;
+        WeakReference<Activity> shownOver = host;
+        return shownOver != null && shownOver.get() == activity;
+    }
+
     /** Called by the screen when the person closes it, so it isn't reopened. */
     static void onClosedByUser() {
         closedByUser = true;

@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.navigation;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -17,6 +18,7 @@ import com.facebook.feed.tab.FeedTab;
 import com.facebook.katana.activity.FbMainTabActivity;
 import com.facebook.marketplace.tab.MarketplaceTab;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,7 +27,9 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
+import app.morphe.extension.facebook.settings.SettingsEntry;
 import app.morphe.extension.shared.SettingsContextRule;
+import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
  * The Feeds page a start that chose Feeds opens over Home: started on Facebook's screen for pages
@@ -36,6 +40,11 @@ import app.morphe.extension.shared.SettingsContextRule;
 @Config(sdk = 30)
 public class FeedsPageScreenTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
+
+    @After
+    public void restore() {
+        HookStatus.clear();
+    }
 
     @Test
     public void theFeedsPageOpensOnFacebooksPageScreenWithTheMenuRowsExtras() {
@@ -63,5 +72,21 @@ public class FeedsPageScreenTest {
         String launch = page.getStringExtra("extra_launch_uri");
         assertEquals(StartTabRoute.FEEDS_LAUNCH_LINK, launch);
         assertNotEquals("fb://feed", Uri.parse(launch).buildUpon().clearQuery().build().toString());
+    }
+
+    /** The restart row lands back on the settings screen, and a page opened then would cover it. */
+    @Test
+    public void theFeedsPageStaysClosedWhileTheSettingsScreenIsOverTheStart() {
+        ActivityController<FbMainTabActivity> controller =
+                Robolectric.buildActivity(FbMainTabActivity.class, StartTabRouteForTests.launcherStart());
+        FbMainTabActivity screen = controller.get();
+        StartTabRouteForTests.tabBar(screen, StartTabRouteForTests.tabs(new FeedTab(), new MarketplaceTab()), null);
+        screen.currentTab = new FeedTab();
+        controller.create().start().resume().visible();
+
+        assertTrue("the settings screen didn't open", SettingsEntry.open(screen));
+        StartTabRoute.openFeedsPage(screen, StartTab.FEEDS, StartTab.FEEDS, true);
+
+        assertNull("the Feeds page covered the settings screen", shadowOf(screen).getNextStartedActivity());
     }
 }

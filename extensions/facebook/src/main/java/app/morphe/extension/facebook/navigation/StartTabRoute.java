@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.facebook.settings.SettingsEntry;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
@@ -484,6 +485,11 @@ public final class StartTabRoute {
             if (!inFront || !StartTab.HOME.isTab(current.getClass().getName())) {
                 debug(() -> "the tab bar has no feeds tab, but the main screen had already left Home,"
                         + " so the Feeds page stays closed.");
+                return;
+            }
+            // The restart row lands back on the settings screen, which shows over this one.
+            if (SettingsEntry.upOrComing(activity)) {
+                debug(() -> "the settings screen is up, so the Feeds page stays closed.");
                 return;
             }
             // The Menu row's extras, so the screen shows the page instead of switching to Home.
