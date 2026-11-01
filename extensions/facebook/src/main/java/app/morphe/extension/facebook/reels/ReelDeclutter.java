@@ -332,6 +332,17 @@ public final class ReelDeclutter {
         return hideSubscribePill(subscribe) ? null : slot;
     }
 
+    /**
+     * Injection point, in the reel row that builds a pill of its own, right after it asks whether
+     * the author gets Subscribe (#291). -1 takes the row's way for an author with no pill, and 1
+     * and 0 are the yes and no it asked for. Never throws: anything but a Subscribe pill with the
+     * switch on answers what Facebook decided.
+     */
+    public static int authorPillAnswer(boolean subscribe) {
+        if (hideSubscribePill(subscribe)) return -1;
+        return subscribe ? 1 : 0;
+    }
+
     /** Whether the pill goes: a Subscribe pill, counted as either kind, while the switch is on. */
     private static boolean hideSubscribePill(boolean subscribe) {
         String pill = subscribe ? SUBSCRIBE : FOLLOW;

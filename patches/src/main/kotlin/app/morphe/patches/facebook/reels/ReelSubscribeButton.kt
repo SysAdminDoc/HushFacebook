@@ -6,13 +6,19 @@ package app.morphe.patches.facebook.reels
 
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
+import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.util.RegisterLiveness
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.namedRegisters
+import app.morphe.util.readsAfter
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -45,15 +51,25 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   (LX/09bY;->A0B) is passed over for its own callers.
  * - 585 has three such slots: the viewer row's, after A0B (LX/02zm;), and two in LX/0CLg;->render
  *   (LX/02zm; and LX/02y0;).
+ * - One more row builds a pill of its own under another tag, "follow_button" (LX/0b4q;->render). It
+ *   asks the same owner check and builds Subscribe past that check's if-eqz. Before the check it has
+ *   a way for an author with no pill, an if-eqz whose target lies past the tag. Its hook turns the
+ *   owner answer into 1, 0, or -1 for a Subscribe that goes, and -1 takes that way. The patch checks
+ *   nothing on that way reads a register the row wrote since its own branch there, so the two ways
+ *   in agree on every register it uses.
  */
 
 internal const val SHOW_AUTHOR_PILL = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->showAuthorPill(ZZ)Z"
 internal const val NOTE_AUTHOR_PILL = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->noteAuthorPill(Z)V"
 internal const val AUTHOR_PILL_SLOT =
     "$EXTENSION_PACKAGE/reels/ReelDeclutter;->authorPillSlot(Ljava/lang/Object;)Ljava/lang/Object;"
+internal const val AUTHOR_PILL_ANSWER = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->authorPillAnswer(Z)I"
 
 /** The test tag both places that build the author's Follow or Subscribe pill load. */
 internal const val AUTHOR_PILL_TAG = "video_author_follow_button"
+
+/** The test tag of the row that builds a Follow or Subscribe pill of its own. */
+internal const val FOOTER_PILL_TAG = "follow_button"
 
 /** The tree key the owner check reads: whether the author gets Subscribe rather than Follow. */
 internal const val SUBSCRIBE_OWNER_KEY = 0x73849f2a
@@ -137,6 +153,37 @@ internal fun authorPill(method: Method, isOwnerCheck: (MethodReference) -> Boole
     val yes = code.getOrNull(check + 3)?.takeIf { it.opcode == Opcode.CONST_4 } ?: return null
     if (skip.registerA != answer.registerA || (yes as NarrowLiteralInstruction).narrowLiteral != 1) return null
     return AuthorPill(method, tag, (yes as OneRegisterInstruction).registerA, pill)
+}
+
+/** The row with a pill of its own: where its owner answer lands, in which register, and where its way for no pill starts. */
+internal class FooterPill(val method: Method, val answerAt: Int, val answer: Int, val noPill: Int)
+
+/**
+ * [method]'s own pill, or null unless it loads [FOOTER_PILL_TAG] once, asks the owner check
+ * ([isOwnerCheck]) once before the tag and branches on the answer with an `if-eqz`, and has an
+ * `if-eqz` before that check whose target lies past the tag. Null too if the answer is read after
+ * that branch, or if the way for no pill reads a register written since the row's branch to it.
+ */
+internal fun footerPill(method: Method, isOwnerCheck: (MethodReference) -> Boolean): FooterPill? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val tag = code.indices.singleOrNull {
+        code[it].opcode in STRINGS && ((code[it] as ReferenceInstruction).reference as StringReference).string == FOOTER_PILL_TAG
+    } ?: return null
+    val check = (0 until tag).singleOrNull { at -> code[at].call?.takeIf { it.returnType == "Z" }?.let(isOwnerCheck) == true }
+        ?: return null
+    val answer = code.getOrNull(check + 1)?.takeIf { it.opcode == Opcode.MOVE_RESULT } as? OneRegisterInstruction ?: return null
+    val branch = code.getOrNull(check + 2)?.takeIf { it.opcode == Opcode.IF_EQZ } as? OneRegisterInstruction ?: return null
+    if (branch.registerA != answer.registerA) return null
+    val at = addresses(code)
+    val skip = (check - 1 downTo 0).firstOrNull {
+        code[it].opcode == Opcode.IF_EQZ && at[it] + (code[it] as OffsetInstruction).codeOffset > at[tag]
+    } ?: return null
+    val noPill = at.indexOf(at[skip] + (code[skip] as OffsetInstruction).codeOffset)
+    if (noPill !in code.indices || method.readsAfter(check + 2, answer.registerA).isNotEmpty()) return null
+    val live = RegisterLiveness.of(method).liveInto(noPill)
+    val written = (skip + 1..check + 1).filter { code[it].opcode.setsRegister() }.map { code[it].namedRegisters().first() }
+    if (written.any { it in live }) return null
+    return FooterPill(method, check + 1, answer.registerA, noPill)
 }
 
 /** Whether every value [register] can hold at [index] in [method] is a `const/4` 0 or 1. */
@@ -238,6 +285,13 @@ internal fun BytecodePatchContext.hideSubscribePill() {
         .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
         .flatMap { owner -> owner.methods.filter { holdsString(it, AUTHOR_PILL_TAG) } }
     val pills = holders.mapNotNull { authorPill(it, isOwnerCheck) }
+    val footers = classDefByStrings(FOOTER_PILL_TAG, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+        .flatMap { owner -> owner.methods.filter { holdsString(it, FOOTER_PILL_TAG) } }
+        .mapNotNull { footerPill(it, isOwnerCheck) }
+    val footer = footers.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one row building its own \"$FOOTER_PILL_TAG\" pill after the Subscribe owner check, found ${footers.size}",
+    )
     val row = pills.singleOrNull { !it.returned } ?: throw PatchException(
         "$PATCH: expected one author row building the \"$AUTHOR_PILL_TAG\" pill after the Subscribe owner check, " +
             "found ${pills.count { !it.returned }} among ${holders.size} methods loading the tag",
@@ -287,6 +341,19 @@ internal fun BytecodePatchContext.hideSubscribePill() {
             builder.tag,
             "invoke-static/range { v${builder.subscribe} .. v${builder.subscribe} }, $NOTE_AUTHOR_PILL",
         )
+    } + PillHook(footer.method, footer.answerAt) {
+        addInstructionsWithLabels(
+            footer.answerAt + 1,
+            """
+                invoke-static/range { v${footer.answer} .. v${footer.answer} }, $AUTHOR_PILL_ANSWER
+                move-result v${footer.answer}
+                if-ltz v${footer.answer}, :no_pill
+            """,
+            ExternalLabel("no_pill", getInstruction(footer.noPill)),
+        )
+    }
+    if (hooks.count { it.method.key() == footer.method.key() } != 1) {
+        throw PatchException("$PATCH: the row building its own pill would take a second pill hook")
     }
     // Each method's hooks go in from the bottom up, so the indices found above still hold.
     for (inMethod in hooks.groupBy { it.method.key() }.values) {

@@ -395,8 +395,12 @@ public class ReelDeclutterTest {
         assertTrue(ReelDeclutter.showAuthorPill(true, true));
         ReelDeclutter.noteAuthorPill(true);
         assertSame(slot, ReelDeclutter.authorPillSlot(slot));
+        assertEquals("the row's own Subscribe with the switch off", 1, ReelDeclutter.authorPillAnswer(true));
+        assertEquals("the row's own Follow with the switch off", 0, ReelDeclutter.authorPillAnswer(false));
 
         Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON.save(true);
+        assertEquals("the row kept its own Subscribe", -1, ReelDeclutter.authorPillAnswer(true));
+        assertEquals("the row lost its own Follow", 0, ReelDeclutter.authorPillAnswer(false));
         assertFalse("the row built the Subscribe pill", ReelDeclutter.showAuthorPill(true, true));
         assertTrue("the row lost its Follow pill", ReelDeclutter.showAuthorPill(false, true));
         assertFalse("a row with no pill got one", ReelDeclutter.showAuthorPill(false, false));
@@ -409,6 +413,7 @@ public class ReelDeclutterTest {
 
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertTrue("the pill went while paused", ReelDeclutter.showAuthorPill(true, true));
+        assertEquals("the row's own pill went while paused", 1, ReelDeclutter.authorPillAnswer(true));
         ReelDeclutter.noteAuthorPill(true);
         assertSame("the slot emptied while paused", slot, ReelDeclutter.authorPillSlot(slot));
         PauseForTests.resume();

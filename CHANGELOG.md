@@ -14,6 +14,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** `See-through bars` keeps frosting the tab bar when the page under it stops short of the bar's holder or sits a level up. Those layouts used to flip it to a dark strip with the feed sharp behind it. (#250)
 * **Facebook:** With `Tab to open on` set to Feeds on an account with no Feeds tab, `Restart Facebook to apply this change` lands back on the settings screen. The Feeds page used to open over it. (#330)
 * **Facebook:** `Select part of a post's text` no longer draws solid boxes behind the selection handles and the copy toolbar. (#294)
+* **Facebook:** `Hide the Subscribe button on videos` also takes the Subscribe pill in a reel's footer, next to the author's name. (#291)
 
 ## 0.20.0 (2026-11-01)
 
