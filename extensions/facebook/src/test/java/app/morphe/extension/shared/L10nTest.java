@@ -42,7 +42,7 @@ public class L10nTest {
 
     @Test
     public void everyLanguageTheBundleCarriesHasATableWithTheKey() {
-        assertEquals(Arrays.asList("de", "es", "in", "pt-rbr", "tr", "vi", "zh-rcn", "zh-rtw"),
+        assertEquals(Arrays.asList("de", "es", "in", "pt-rbr", "ru", "tr", "vi", "zh-rcn", "zh-rtw"),
                 Arrays.asList(L10nTranslations.LANGUAGES));
         for (String language : L10nTranslations.LANGUAGES) {
             Map<String, String> table = L10nTranslations.of(language);
@@ -263,6 +263,17 @@ public class L10nTest {
         // Turkish raises i to a dotted capital.
         assertEquals((char) 0x0130 + "ndir", L10n.capitalize(in(new Locale("tr", "TR")), "indir"));
         assertEquals("", L10n.capitalize(in(Locale.US), ""));
+    }
+
+    @Test
+    public void russianCountsUseOneFewAndManyForms() {
+        Context russian = in(new Locale("ru", "RU"));
+        String one = "%1$d switch will change.";
+        String other = "%1$d switches will change.";
+        assertEquals("Будет изменен 1 переключатель.", L10n.quantity(russian, 1, one, other, 1));
+        assertEquals("Будут изменены 2 переключателя.", L10n.quantity(russian, 2, one, other, 2));
+        assertEquals("Будет изменено 5 переключателей.", L10n.quantity(russian, 5, one, other, 5));
+        assertEquals("Будет изменен 21 переключатель.", L10n.quantity(russian, 21, one, other, 21));
     }
 
     @Test

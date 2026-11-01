@@ -141,7 +141,7 @@ public class HomeBackTest {
     /** The toast fits two lines of about 28 characters in every language Hushfacebook carries. */
     @Test public void theToastFitsTwoShortLinesInEveryLanguage() {
         assertTrue(lines(TOAST) <= 2);
-        for (String language : new String[]{"de", "es", "in", "pt-rbr", "tr", "vi", "zh-rcn", "zh-rtw"}) {
+        for (String language : new String[]{"de", "es", "in", "pt-rbr", "ru", "tr", "vi", "zh-rcn", "zh-rtw"}) {
             String translated = L10nTablesForTests.of(language).get(TOAST);
             assertNotNull(language + " has no toast", translated);
             assertTrue(language + ": " + translated, lines(translated) <= 2);

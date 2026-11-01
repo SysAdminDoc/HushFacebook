@@ -98,7 +98,7 @@ For DEX edits, check the utilities in `patches/src/main/kotlin/app/morphe/util/`
 
 ## Translating
 
-Hushfacebook's own text (its settings, toasts and the menu rows it adds) comes from one table per language in `extensions/shared/library/src/main/l10n/`. Facebook's own text isn't in them. There's `de.tsv`, `es.tsv`, `in.tsv` (Indonesian, under Android's older code), `pt-rBR.tsv`, `tr.tsv`, `vi.tsv`, `zh-rCN.tsv` and `zh-rTW.tsv`.
+Hushfacebook's own text (its settings, toasts and the menu rows it adds) comes from one table per language in `extensions/shared/library/src/main/l10n/`. Facebook's own text isn't in them. There's `de.tsv`, `es.tsv`, `in.tsv` (Indonesian, under Android's older code), `pt-rBR.tsv`, `ru.tsv`, `tr.tsv`, `vi.tsv`, `zh-rCN.tsv` and `zh-rTW.tsv`.
 
 Each row is the English exactly as the code hands it to `L10n.t`, `L10n.f` or `L10n.quantity`, then one tab, then the translation. Lines starting with `#` are comments, and a `# context:` line above a row says where the text shows and what it does. Write a line break as `\n`. The English is the whole sentence, so change only the right-hand column. A row can keep the English as its translation, and that's how a string sits until someone translates it.
 
