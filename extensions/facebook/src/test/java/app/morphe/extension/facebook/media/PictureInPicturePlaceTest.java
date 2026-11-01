@@ -42,7 +42,7 @@ public class PictureInPicturePlaceTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     /** Stands in for Facebook's enum of seek triggers: only the names count. */
-    private enum Trigger { BY_SHORT_FORM_VIDEO_INVISIBLE, BY_GROOT_TRANSITION, BY_USER, BY_PLAYER }
+    private enum Trigger { BY_SHORT_FORM_VIDEO_INVISIBLE, BY_GROOT_TRANSITION, BY_AUTOPLAY, BY_USER, BY_PLAYER }
 
     private final Object player = new Object();
     private final Object other = new Object();
@@ -79,12 +79,13 @@ public class PictureInPicturePlaceTest {
     }
 
     @Test
-    public void bothRewindsAreDroppedAsTheScreenComesBack() {
+    public void everyRewindIsDroppedAsTheScreenComesBack() {
         tripAway();
         assertTrue(PictureInPicture.keepPlace(Trigger.BY_SHORT_FORM_VIDEO_INVISIBLE, player, 0));
         assertTrue(PictureInPicture.keepPlace(Trigger.BY_GROOT_TRANSITION, player, 0));
+        assertTrue(PictureInPicture.keepPlace(Trigger.BY_AUTOPLAY, player, 0));
         assertNotNull(statusLine());
-        assertTrue(statusLine(), statusLine().endsWith("Counted: " + PictureInPicture.PLACE_KEPT + " 2"));
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + PictureInPicture.PLACE_KEPT + " 3"));
     }
 
     @Test

@@ -152,9 +152,9 @@ public final class PictureInPicture {
     /** How long after its screen resumes a seek to a reel's start still belongs to the screen coming back. */
     static final long RETURN_MS = 1500;
 
-    /** The triggers of the seeks that put a reel back at its start: the viewer's for a reel out of sight, and the bind's. */
+    /** The triggers of the seeks that put a reel back at its start: the viewer's for a reel out of sight, the bind's, and the autoplay's as it picks the reel up again. */
     static final Set<String> REWINDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            "BY_SHORT_FORM_VIDEO_INVISIBLE", "BY_GROOT_TRANSITION")));
+            "BY_SHORT_FORM_VIDEO_INVISIBLE", "BY_GROOT_TRANSITION", "BY_AUTOPLAY")));
 
     /**
      * The narrowest and widest window Facebook arms for a reel, width to height, as its arming
