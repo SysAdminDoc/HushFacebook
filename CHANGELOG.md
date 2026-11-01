@@ -21,6 +21,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** The Hush settings now come in Russian, translated by vortexnode. (#335)
 * **Facebook:** `Keep the progress bar` lifts a reel's bar when the Reels tab would put it behind the tab bar. (#282)
 * **Facebook:** Posts in another language can get a Translate line under their text, or show translated by themselves with See original under them, through Google Translate. Both switches start off, in Hushfacebook settings > News feed, where you also pick the language to translate to and the languages to leave alone. (#332)
+* **Facebook:** `Hold a feed video for 2x` can stay at 2x now. Pull down before you let go, and tap the video when you want its old speed back.
 
 ## 0.20.0 (2026-11-01)
 

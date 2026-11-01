@@ -32,6 +32,7 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowToast;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -228,6 +229,158 @@ public class FeedVideoHoldTest {
         assertEquals(MotionEvent.ACTION_UP, send(event(MotionEvent.ACTION_UP, at)).getActionMasked());
         holdLongEnough();
         assertEquals("a tap sets nothing", 2, sets.size());
+    }
+
+    /** A hold on the video at [at], a pull past the line and the lift. */
+    private void holdPullAndLift(int[] at) {
+        send(event(MotionEvent.ACTION_DOWN, at));
+        holdLongEnough();
+        int[] below = {at[0], at[1] + FeedVideoHold.PULL_TO_KEEP_DP + 10};
+        assertEquals(MotionEvent.ACTION_CANCEL, send(event(MotionEvent.ACTION_MOVE, below)).getActionMasked());
+        assertEquals(MotionEvent.ACTION_CANCEL, send(event(MotionEvent.ACTION_UP, below)).getActionMasked());
+    }
+
+    @Test
+    public void aPullDownKeepsTheVideoAt2xAndATapPutsItsSpeedBack() {
+        speeds.put(player, 1.25f);
+        int[] at = middleOf(container);
+        holdPullAndLift(at);
+        assertEquals("the lift left it fast", List.of(2f), sets);
+        waitFor(100);
+        assertEquals("Locked at 2x. Tap the video to go back.", ShadowToast.getTextOfLatestToast());
+        String status = statusLine(FamilyNames.HOLD_REEL_FOR_2X);
+        assertTrue(status, status.contains(FeedVideoHold.KEPT + " 1"));
+
+        assertEquals(MotionEvent.ACTION_DOWN, send(event(MotionEvent.ACTION_DOWN, at)).getActionMasked());
+        assertEquals("a tap never opens the video", MotionEvent.ACTION_CANCEL,
+                send(event(MotionEvent.ACTION_UP, at)).getActionMasked());
+        assertEquals("the tap put back the speed it had", List.of(2f, 1.25f), sets);
+
+        // The next gesture is Facebook's again.
+        send(event(MotionEvent.ACTION_DOWN, at));
+        assertEquals(MotionEvent.ACTION_UP, send(event(MotionEvent.ACTION_UP, at)).getActionMasked());
+        assertEquals(2, sets.size());
+    }
+
+    @Test
+    public void aDriftOrAPullBackUpIsAnOrdinaryHold() {
+        speeds.put(player, 1f);
+        int[] at = middleOf(container);
+        int[] drifted = {at[0], at[1] + FeedVideoHold.PULL_TO_KEEP_DP - 10};
+        send(event(MotionEvent.ACTION_DOWN, at));
+        holdLongEnough();
+        send(event(MotionEvent.ACTION_MOVE, drifted));
+        send(event(MotionEvent.ACTION_UP, drifted));
+        assertEquals(List.of(2f, 1f), sets);
+
+        int[] pulled = {at[0], at[1] + FeedVideoHold.PULL_TO_KEEP_DP + 10};
+        send(event(MotionEvent.ACTION_DOWN, at));
+        holdLongEnough();
+        send(event(MotionEvent.ACTION_MOVE, pulled));
+        send(event(MotionEvent.ACTION_MOVE, at));
+        send(event(MotionEvent.ACTION_UP, at));
+        assertEquals(List.of(2f, 1f, 2f, 1f), sets);
+
+        // A pull that a cancel ends keeps nothing.
+        send(event(MotionEvent.ACTION_DOWN, at));
+        holdLongEnough();
+        send(event(MotionEvent.ACTION_MOVE, pulled));
+        send(event(MotionEvent.ACTION_CANCEL, pulled));
+        assertEquals(List.of(2f, 1f, 2f, 1f, 2f, 1f), sets);
+    }
+
+    @Test
+    public void aScrollFromTheKeptVideoAndAPressElsewhereLeaveTheLockAlone() {
+        speeds.put(player, 1f);
+        int[] at = middleOf(container);
+        holdPullAndLift(at);
+        int[] far = {at[0], at[1] + 300};
+        assertEquals(MotionEvent.ACTION_DOWN, send(event(MotionEvent.ACTION_DOWN, at)).getActionMasked());
+        assertEquals(MotionEvent.ACTION_MOVE, send(event(MotionEvent.ACTION_MOVE, far)).getActionMasked());
+        assertEquals("the scroll's lift is Facebook's", MotionEvent.ACTION_UP,
+                send(event(MotionEvent.ACTION_UP, far)).getActionMasked());
+        int[] header = middleOf(name);
+        send(event(MotionEvent.ACTION_DOWN, header));
+        assertEquals(MotionEvent.ACTION_UP, send(event(MotionEvent.ACTION_UP, header)).getActionMasked());
+        assertEquals("still fast", List.of(2f), sets);
+    }
+
+    @Test
+    public void theLockEndsWhenItsVideoLeavesTheWindow() {
+        speeds.put(player, 1f);
+        holdPullAndLift(middleOf(container));
+        row.removeView(container);
+        assertEquals(List.of(2f, 1f), sets);
+    }
+
+    @Test
+    public void theLockEndsWhenTheWindowLosesFocus() {
+        speeds.put(player, 1f);
+        holdPullAndLift(middleOf(container));
+        window.windowFocusChanged(false);
+        waitFor(100);
+        assertEquals(List.of(2f, 1f), sets);
+    }
+
+    @Test
+    public void theLockStaysOnARebindAndEndsWhenThePlayerMoves() {
+        speeds.put(player, 1f);
+        holdPullAndLift(middleOf(container));
+        FeedVideoHold.attached(container, player);
+        assertEquals("the same container again is the same video", List.of(2f), sets);
+        FrameLayout elsewhere = new FrameLayout(activity);
+        place(row, elsewhere, 0, 300, 1080, 900);
+        views.put(player, elsewhere);
+        FeedVideoHold.attached(elsewhere, player);
+        assertEquals(List.of(2f, 1f), sets);
+    }
+
+    @Test
+    public void holdingAnotherVideoPutsTheKeptOneBackFirst() {
+        speeds.put(player, 1.5f);
+        Object second = new Object();
+        speeds.put(second, 1f);
+        FrameLayout other = video(post(list, 1200), 0, 100, 1080, 500, second);
+        layOut();
+        holdPullAndLift(middleOf(container));
+        send(event(MotionEvent.ACTION_DOWN, middleOf(other)));
+        holdLongEnough();
+        assertEquals(List.of(2f, 1.5f, 2f), sets);
+        assertEquals(1.5f, speeds.get(player), 0f);
+        assertEquals(2f, speeds.get(second), 0f);
+        send(event(MotionEvent.ACTION_UP, middleOf(other)));
+        assertEquals("the second one's lift puts back its own speed", 1f, speeds.get(second), 0f);
+    }
+
+    @Test
+    public void offOrPausedTheNextTouchPutsTheKeptSpeedBack() {
+        speeds.put(player, 1f);
+        int[] at = middleOf(container);
+        holdPullAndLift(at);
+        Settings.HOLD_FEED_VIDEO_FOR_2X.save(false);
+        assertEquals(MotionEvent.ACTION_DOWN, send(event(MotionEvent.ACTION_DOWN, at)).getActionMasked());
+        assertEquals(List.of(2f, 1f), sets);
+        send(event(MotionEvent.ACTION_UP, at));
+
+        Settings.HOLD_FEED_VIDEO_FOR_2X.save(true);
+        holdPullAndLift(at);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        send(event(MotionEvent.ACTION_DOWN, at));
+        assertEquals(List.of(2f, 1f, 2f, 1f), sets);
+    }
+
+    @Test
+    public void hideThe2xPopupsLocksWithoutTheToast() {
+        Settings.HIDE_2X_POPUPS.save(true);
+        try {
+            speeds.put(player, 1f);
+            holdPullAndLift(middleOf(container));
+            waitFor(100);
+            assertEquals(List.of(2f), sets);
+            assertNull(ShadowToast.getLatestToast());
+        } finally {
+            Settings.HIDE_2X_POPUPS.resetToDefault();
+        }
     }
 
     @Test

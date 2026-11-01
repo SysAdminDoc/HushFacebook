@@ -264,8 +264,9 @@ final class VideoPages {
                     L10n.t("With the switch above on, only a hold on the right third of a reel plays it at double "
                             + "speed. Hold anywhere else and Facebook's long-press menu opens.")));
             reels.addPreference(toggle(context, Settings.HOLD_FEED_VIDEO_FOR_2X,
-                    L10n.t("Holding a video in the feed or in Watch plays it at double speed until you let go. It works "
-                            + "without the switches above.")));
+                    L10n.t("Holding a video in the feed or in Watch plays it at double speed until you let go. Pull down "
+                            + "before you let go to keep it at 2x, then tap the video to go back. It works without the "
+                            + "switches above.")));
             reels.addPreference(toggle(context, Settings.HIDE_2X_LOCK_HINT,
                     L10n.t("Holding a video for 2x shows the plain 2x pill, without the \"Pull down to lock 2x speed\" "
                             + "hint. Pulling down still locks it. It works without the switches above.")));

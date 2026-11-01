@@ -851,7 +851,8 @@ With the switch above on, only a hold on the right third of a reel plays it at d
 # context: label of a switch under Hold a reel for 2x; a feed video is a video playing in Home's feed or in Watch, not a reel
 Hold a feed video for 2x	Tahan video feed untuk 2x
 # context: summary of that switch; Watch is Facebook's video tab, keep its name; the switches above are Hold a reel for 2x and Only on the right edge
-Holding a video in the feed or in Watch plays it at double speed until you let go. It works without the switches above.	Menahan video di feed atau di Watch memutarnya dengan kecepatan dua kali lipat sampai kamu melepaskannya. Ini berfungsi tanpa sakelar di atas.
+Holding a video in the feed or in Watch plays it at double speed until you let go. Pull down before you let go to keep it at 2x, then tap the video to go back. It works without the switches above.	Menahan video di feed atau di Watch memutarnya dengan kecepatan dua kali lipat sampai kamu melepaskannya. Tarik ke bawah sebelum melepaskan agar tetap 2x, lalu ketuk video untuk kembali. Ini berfungsi tanpa sakelar di atas.
+Locked at 2x. Tap the video to go back.	Terkunci di 2x. Ketuk video untuk kembali.
 Hide the pull down to lock hint	Sembunyikan petunjuk tarik ke bawah untuk mengunci
 Hide the 2x popups	Sembunyikan popup 2x
 Holding a video for 2x shows no pill at all, so no "Speed: 2x", "Release to lock" or "Locked at 2x speed". The hold and the lock still work.	Menahan video untuk 2x tidak menampilkan pil apa pun, jadi tidak ada "Kecepatan: 2x", "Lepaskan untuk mengunci", atau "Terkunci pada kecepatan 2x". Menahan dan mengunci tetap berfungsi.

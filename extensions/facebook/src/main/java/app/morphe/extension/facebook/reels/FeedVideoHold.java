@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 
 import androidx.annotation.Nullable;
@@ -27,6 +28,7 @@ import java.util.WeakHashMap;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.facebook.settings.SettingsStatus;
+import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -53,6 +55,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * video. The lift or a cancel puts back the speed it had. A video already at 2x or faster, and a
  * press anywhere else, are Facebook's.
  *
+ * <p>Pulling down before the lift keeps the video at 2x with no finger on it (#229's follow-up). A tap
+ * on that video puts its speed back without opening it. A scroll that starts on it still scrolls. The
+ * lock ends with the video: when its container leaves the window, when its player moves to another
+ * container, when the window loses focus, when another video is held, or at the next touch once the
+ * switch is off or paused. It only ever sets the player, so the saved video speed never hears of it.
+ *
  * <p>With Long press opens comments on too, a hold on a feed video is this one's, and the rest of
  * the post opens comments ({@link #takes}). Off, paused, before the settings are ready, without the
  * patch in the build, or when anything here fails, touches go through untouched. A hold that already
@@ -66,6 +74,12 @@ public final class FeedVideoHold {
 
     /** Counted for each hold on a feed video that already played at the hold speed or faster. */
     static final String ALREADY_FAST = "feed video already at 2x or faster";
+
+    /** Counted for each feed video a pull down kept at 2x. */
+    static final String KEPT = "feed video kept at 2x";
+
+    /** How far down a hold's finger goes, in dp, before its lift keeps the video at 2x. */
+    static final int PULL_TO_KEEP_DP = 64;
 
     /** The speed a hold plays a feed video at. */
     static final float DOUBLE_SPEED = 2f;
@@ -121,7 +135,29 @@ public final class FeedVideoHold {
     /** The player a hold sped up, weakly, and the speed it played at before. */
     private static WeakReference<Object> heldPlayer = new WeakReference<>(null);
     private static float before = 1f;
+    /** The hold's finger is past the pull, so its lift keeps the speed. */
+    private static boolean pulled;
+    private static float pullPixels;
+    /** A pull kept {@link #heldPlayer} fast after its lift, with no finger on it. */
+    private static boolean kept;
+    /** A finger went down on the kept video and hasn't moved, so its lift puts the speed back. */
+    private static boolean tapping;
+    private static WeakReference<View> keptRoot = new WeakReference<>(null);
+    private static WeakReference<ViewGroup> keptView = new WeakReference<>(null);
     private static final Runnable FIRE = FeedVideoHold::fire;
+    private static final ViewTreeObserver.OnWindowFocusChangeListener FOCUS = focused -> {
+        if (!focused) letGo();
+    };
+    private static final View.OnAttachStateChangeListener DETACH = new View.OnAttachStateChangeListener() {
+        @Override
+        public void onViewAttachedToWindow(View view) {
+        }
+
+        @Override
+        public void onViewDetachedFromWindow(View view) {
+            letGo();
+        }
+    };
 
     private FeedVideoHold() {
     }
@@ -151,6 +187,8 @@ public final class FeedVideoHold {
             synchronized (players) {
                 players.add(player);
             }
+            // A player keeps its speed when Facebook moves it, and the next video isn't the one that was locked.
+            if (kept && player == heldPlayer.get() && container != keptView.get()) letGo();
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "feed video attach", failure);
         }
@@ -174,19 +212,48 @@ public final class FeedVideoHold {
         int action = event.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN) {
             stop();
+            tapping = false;
             // A lift this never heard leaves the last hold's speed up; the next finger puts it back.
-            letGo();
-            if (root == null || !on("press")) return;
-            pressedRoot = new WeakReference<>(root);
+            if (holding) letGo();
+            if (root == null || !on("press")) {
+                letGo();
+                return;
+            }
             downX = event.getRawX();
             downY = event.getRawY();
             slop = ViewConfiguration.get(root.getContext()).getScaledTouchSlop();
+            pullPixels = PULL_TO_KEEP_DP * root.getResources().getDisplayMetrics().density;
+            if (kept) {
+                Object keptPlayer = heldPlayer.get();
+                if (keptPlayer == null) {
+                    letGo();
+                } else if (videoAt(root, Math.round(downX), Math.round(downY)) == keptPlayer) {
+                    tapping = true;
+                    return;
+                }
+            }
+            pressedRoot = new WeakReference<>(root);
             timing = true;
             main().postDelayed(FIRE, ViewConfiguration.getLongPressTimeout());
             return;
         }
+        if (tapping) {
+            if (action == MotionEvent.ACTION_UP) {
+                letGo();
+                event.setAction(MotionEvent.ACTION_CANCEL);
+            } else if (action != MotionEvent.ACTION_MOVE
+                    || Math.hypot(event.getRawX() - downX, event.getRawY() - downY) > slop) {
+                tapping = false;
+            }
+            return;
+        }
         if (holding) {
-            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) letGo();
+            if (action == MotionEvent.ACTION_MOVE || action == MotionEvent.ACTION_UP) pull(root, event);
+            if (action == MotionEvent.ACTION_UP && pulled) {
+                keep(root);
+            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                letGo();
+            }
             event.setAction(MotionEvent.ACTION_CANCEL);
             return;
         }
@@ -211,6 +278,8 @@ public final class FeedVideoHold {
             int y = Math.round(downY);
             Object player = videoAt(root, x, y);
             if (player == null) return;
+            // Another video was held, so the one locked before it goes back first.
+            if (kept) letGo();
             Players players = access;
             float speed = players.speed(player);
             if (Float.isNaN(speed) || speed <= 0f) speed = 1f;
@@ -223,6 +292,7 @@ public final class FeedVideoHold {
             before = speed;
             heldPlayer = new WeakReference<>(player);
             holding = true;
+            pulled = false;
             players.speed(player, DOUBLE_SPEED);
             cancelLongPresses(root, x, y);
             ViewGroup view = players.view(player);
@@ -235,15 +305,62 @@ public final class FeedVideoHold {
         }
     }
 
-    /** Puts back the speed the held video had, if a hold sped one up. Never throws. */
-    private static void letGo() {
-        if (!holding) return;
+    /** Notes whether the hold's finger is past the pull, with the buzz of the long press as it crosses. */
+    private static void pull(@Nullable View root, MotionEvent event) {
+        boolean past = event.getRawY() - downY > pullPixels;
+        if (past && !pulled && root != null) root.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+        pulled = past;
+    }
+
+    /** The lift of a pulled hold: the video stays fast until a tap on it, or until it stops being the same video. */
+    private static void keep(@Nullable View root) {
+        Object player = heldPlayer.get();
+        ViewGroup view = player == null ? null : access.view(player);
+        if (root == null || view == null || !view.isAttachedToWindow()) {
+            letGo();
+            return;
+        }
         holding = false;
+        pulled = false;
+        kept = true;
+        keptRoot = new WeakReference<>(root);
+        keptView = new WeakReference<>(view);
+        root.getViewTreeObserver().addOnWindowFocusChangeListener(FOCUS);
+        view.addOnAttachStateChangeListener(DETACH);
+        HookStatus.counted(FAMILY, KEPT);
+        Logger.printDebug(() -> "Feed video hold: kept at " + DOUBLE_SPEED + "x");
+        if (!Settings.HIDE_2X_POPUPS.get()) Utils.showToastShort(L10n.t("Locked at 2x. Tap the video to go back."));
+    }
+
+    /** Stops listening for the end of a lock. */
+    private static void unwatch() {
+        View root = keptRoot.get();
+        keptRoot = new WeakReference<>(null);
+        if (root != null) {
+            ViewTreeObserver observer = root.getViewTreeObserver();
+            if (observer.isAlive()) observer.removeOnWindowFocusChangeListener(FOCUS);
+        }
+        View view = keptView.get();
+        keptView = new WeakReference<>(null);
+        if (view != null) view.removeOnAttachStateChangeListener(DETACH);
+    }
+
+    /** Puts back the speed the held or kept video had, if a hold sped one up. Never throws. */
+    private static void letGo() {
+        if (!holding && !kept) return;
+        holding = false;
+        pulled = false;
+        kept = false;
+        tapping = false;
         Object player = heldPlayer.get();
         heldPlayer = new WeakReference<>(null);
-        if (player == null) return;
+        if (player == null) {
+            unwatch();
+            return;
+        }
         float back = before;
         try {
+            unwatch();
             access.speed(player, back);
             Logger.printDebug(() -> "Feed video hold: back to " + back + "x");
         } catch (Throwable failure) {
@@ -363,7 +480,11 @@ public final class FeedVideoHold {
     /** For tests: forgets the players, the press being timed and the hold, and goes back to the patch's stubs. */
     static void reset() {
         stop();
+        unwatch();
         holding = false;
+        pulled = false;
+        kept = false;
+        tapping = false;
         heldPlayer = new WeakReference<>(null);
         before = 1f;
         synchronized (players) {

@@ -855,7 +855,8 @@ With the switch above on, only a hold on the right third of a reel plays it at d
 # context: label of a switch under Hold a reel for 2x; a feed video is a video playing in Home's feed or in Watch, not a reel
 Hold a feed video for 2x	長按動態消息影片以 2 倍速播放
 # context: summary of that switch; Watch is Facebook's video tab, keep its name; the switches above are Hold a reel for 2x and Only on the right edge
-Holding a video in the feed or in Watch plays it at double speed until you let go. It works without the switches above.	長按動態消息或 Watch 中的影片時，會以兩倍速度播放，放開後恢復。不必啟用上方的開關即可使用。
+Holding a video in the feed or in Watch plays it at double speed until you let go. Pull down before you let go to keep it at 2x, then tap the video to go back. It works without the switches above.	長按動態消息或 Watch 中的影片時，會以兩倍速度播放，放開後恢復。放開前向下拉可維持 2x，再輕觸影片即可恢復。不必啟用上方的開關即可使用。
+Locked at 2x. Tap the video to go back.	已鎖定 2x。輕觸影片即可恢復。
 Hide the pull down to lock hint	隱藏「下拉鎖定」提示
 Hide the 2x popups	隱藏 2x 彈出提示
 Holding a video for 2x shows no pill at all, so no "Speed: 2x", "Release to lock" or "Locked at 2x speed". The hold and the lock still work.	按住影片以 2x 播放時不顯示任何提示，包括「速度：2x」、「放開以鎖定」和「已鎖定 2x 速度」。按住和鎖定仍可使用。

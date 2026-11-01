@@ -737,7 +737,8 @@ With the switch above on, only a hold on the right third of a reel plays it at d
 # context: label of a switch under Hold a reel for 2x; a feed video is a video playing in Home's feed or in Watch, not a reel
 Hold a feed video for 2x	Segurar um vídeo do feed para 2x
 # context: summary of that switch; Watch is Facebook's video tab, keep its name; the switches above are Hold a reel for 2x and Only on the right edge
-Holding a video in the feed or in Watch plays it at double speed until you let go. It works without the switches above.	Segurar um vídeo no feed ou no Watch faz ele tocar no dobro da velocidade até você soltar. Funciona sem as opções acima.
+Holding a video in the feed or in Watch plays it at double speed until you let go. Pull down before you let go to keep it at 2x, then tap the video to go back. It works without the switches above.	Segurar um vídeo no feed ou no Watch faz ele tocar no dobro da velocidade até você soltar. Puxe para baixo antes de soltar para manter em 2x e toque no vídeo para voltar. Funciona sem as opções acima.
+Locked at 2x. Tap the video to go back.	Travado em 2x. Toque no vídeo para voltar.
 Hide the pull down to lock hint	Ocultar a dica de puxar para baixo para travar
 Hide the 2x popups	Ocultar os avisos de 2x
 Holding a video for 2x shows no pill at all, so no "Speed: 2x", "Release to lock" or "Locked at 2x speed". The hold and the lock still work.	Segurar um vídeo em 2x não mostra nenhum aviso, nem "Velocidade: 2x", nem "Solte para travar", nem "Travado em velocidade 2x". Segurar e travar continuam funcionando.
