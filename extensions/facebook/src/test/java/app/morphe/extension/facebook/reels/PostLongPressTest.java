@@ -22,6 +22,7 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -611,6 +612,63 @@ public class PostLongPressTest {
         layOut();
         assertNull(PostLongPress.rowAt(root, middleOf(page)[0], middleOf(page)[1]));
         assertEquals(PostLongPress.FULL_PAGE, PostLongPress.passedOver);
+    }
+
+    /**
+     * The Reels tab leaves a strip of the next reel under the one playing, with the bar drawn over
+     * it. A hold there used to read as a tall post running off the screen and scrolled the next
+     * reel in.
+     */
+    @Test
+    public void aHoldOnAReelsBarOrTheNextReelsStripStaysOnTheReel() {
+        list.removeAllViews();
+        View playing = new View(activity);
+        View next = new View(activity);
+        place(list, playing, 0, 0, 1080, 1940);
+        place(list, next, 0, 1940, 1080, 3880);
+        SeekBar bar = new SeekBar(activity);
+        place(root, bar, 0, 2050, 1080, 2090);
+        layOut();
+
+        int[] onBar = middleOf(bar);
+        assertNull(PostLongPress.rowAt(root, onBar[0], onBar[1]));
+        assertEquals(PostLongPress.ON_BAR, PostLongPress.passedOver);
+        send(event(MotionEvent.ACTION_DOWN, onBar));
+        holdLongEnough();
+        String status = statusLine();
+        assertTrue(status, status.contains(PostLongPress.ON_BAR + " 1"));
+        assertFalse(status, status.contains(PostLongPress.SCROLLED));
+        send(event(MotionEvent.ACTION_UP, onBar));
+
+        bar.setVisibility(View.GONE);
+        assertNull("the strip with no bar over it", PostLongPress.rowAt(root, onBar[0], onBar[1]));
+        assertEquals(PostLongPress.FULL_PAGE, PostLongPress.passedOver);
+        int[] onReel = middleOf(playing);
+        assertNull("the reel itself", PostLongPress.rowAt(root, onReel[0], onReel[1]));
+        assertEquals(PostLongPress.FULL_PAGE, PostLongPress.passedOver);
+    }
+
+    /** Posts running off the bottom keep their hold, however tall or alike they are. */
+    @Test
+    public void aTallPostIsNotAPage() {
+        list.removeAllViews();
+        View alike = new View(activity);
+        View peeking = new View(activity);
+        place(list, alike, 0, 0, 1080, 1700);
+        place(list, peeking, 0, 1700, 1080, 3400);
+        layOut();
+        int[] peekingAt = new int[2];
+        peeking.getLocationOnScreen(peekingAt);
+        assertSame("same size, well short of the list", peeking, PostLongPress.rowAt(root, 300, peekingAt[1] + 50));
+
+        list.removeAllViews();
+        View tall = new View(activity);
+        View shorter = new View(activity);
+        place(list, tall, 0, 0, 1080, 1940);
+        place(list, shorter, 0, 1940, 1080, 2600);
+        layOut();
+        int[] onTall = middleOf(tall);
+        assertSame("nearly as tall as the list, with nothing its size", tall, PostLongPress.rowAt(root, onTall[0], onTall[1]));
     }
 
     /** A lift that comes after the long-press time while the timer still waits is counted, not opened. */

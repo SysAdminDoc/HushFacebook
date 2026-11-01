@@ -16,6 +16,7 @@ import android.view.ViewParent;
 import android.view.Window;
 import android.widget.HorizontalScrollView;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -41,7 +42,7 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * With the switch on, a finger that goes down starts a timer of the system's long-press length, and
  * moving past the touch slop, a second finger, a lift or a cancel stops it. When it runs out, the
  * press must sit in a feed post: a row of a list that scrolls up and down, not a full-size page like
- * a reel's, with no carousel or pager in the way. Litho draws a post's parts as plain hosts, and a
+ * a reel's, with no carousel, pager or video's bar in the way. Litho draws a post's parts as plain hosts, and a
  * host lists the text it draws (ComponentHost.getTextContent, which 583 keeps by name), so a long
  * press of its own on the way that draws text, or holds a host that does, is the post text, which
  * copies itself, and stays Facebook's. Anything else is judged by how wide it's drawn. The S22's
@@ -107,6 +108,7 @@ public final class PostLongPress {
     static final String SCROLLER = "feed hold passed: in a scroller or pager";
     static final String ON_FOOTER = "feed hold passed: on or under the footer";
     static final String ON_VIDEO = "feed hold passed: on a feed video the hold speeds up";
+    static final String ON_BAR = "feed hold passed: on a video's bar";
 
     /** The kept name of the list every feed is drawn in; Facebook's own lists extend it. */
     static final String LIST = "androidx.recyclerview.widget.RecyclerView";
@@ -363,6 +365,7 @@ public final class PostLongPress {
     static View rowAt(View root, int x, int y) {
         passedOver = null;
         View view = hit(root, x, y);
+        if (view instanceof SeekBar) return pass(ON_BAR);
         View picture = null;
         while (view != null) {
             if (view.isLongClickable()) {
@@ -377,7 +380,7 @@ public final class PostLongPress {
             View up = (View) parent;
             if (isNamed(up, LIST)) {
                 if (!up.canScrollVertically(1) && !up.canScrollVertically(-1)) return pass(STILL_LIST);
-                if (view.getWidth() == up.getWidth() && view.getHeight() == up.getHeight()) return pass(FULL_PAGE);
+                if (isPage(view, (ViewGroup) up)) return pass(FULL_PAGE);
                 if (picture != null) {
                     Boolean text = drawsText(picture);
                     if (Boolean.TRUE.equals(text)) return pass(ON_TEXT);
@@ -391,6 +394,22 @@ public final class PostLongPress {
             view = up;
         }
         return pass(NO_LIST);
+    }
+
+    /**
+     * Whether [row] is a page of [list], not a post. A page fills the list, or on the Reels tab
+     * leaves a strip of the next reel showing under it: nearly as tall as the list and the very
+     * same size as the row next to it.
+     */
+    private static boolean isPage(View row, ViewGroup list) {
+        if (row.getWidth() != list.getWidth()) return false;
+        if (row.getHeight() == list.getHeight()) return true;
+        if (row.getHeight() > list.getHeight() || row.getHeight() * 10 < list.getHeight() * 9) return false;
+        for (int i = 0; i < list.getChildCount(); i++) {
+            View other = list.getChildAt(i);
+            if (other != row && other.getWidth() == row.getWidth() && other.getHeight() == row.getHeight()) return true;
+        }
+        return false;
     }
 
     @Nullable
@@ -475,7 +494,8 @@ public final class PostLongPress {
                 if (found != null) return found;
             }
         }
-        if (view.isClickable() || view.isLongClickable()) return view;
+        // A bar reads its touches itself, with neither flag set.
+        if (view.isClickable() || view.isLongClickable() || view instanceof SeekBar) return view;
         // A list or scroller takes a press anywhere in it to drag, so its own view under the finger counts.
         return isNamed(view, LIST) || isScroller(view) ? deepest(view, x, y) : null;
     }

@@ -98,6 +98,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** With `Keep the progress bar` on, a reel you reach after refreshing or swiping back up keeps its own bar and time, where it could show none at all or sit frozen on the last reel's length (#120). An older reel closing took the newer reel's bar with it.
 * **Facebook:** With `Material You theme` on, Facebook could crash in random places with a color error (#323). The theme's colors only existed in dark mode, so a screen built in dark mode crashed when it read one after Android had left dark mode. They have a plain value now too.
 * **Facebook:** With `Keep the progress bar` on, tapping a reel's bar could freeze it, with the time gone or stuck until the reel looped (#120). On some accounts Facebook's tap stops the bar's timer and only starts it again after a real drag. Hushfacebook starts it again once you let go.
+* **Facebook:** With `Long press opens comments` on, resting a finger on a reel's progress bar jumped to the next reel. The hold read the strip of the next reel under the bar as a long post and scrolled it up. A hold there now stays on the reel you're watching.
 
 ## 0.19.0 (2026-10-27)
 
