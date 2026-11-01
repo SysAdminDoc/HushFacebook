@@ -100,6 +100,68 @@ public class TranslucentBarsTest {
         assertNull("nothing is drawn before the page", TranslucentBars.under(screen.page));
     }
 
+    /** Rows from [top] to [bottom] of the screen, in the window, which starts the screen's own view lower down. */
+    private static Rect onScreen(TranslucentBarsForTests screen, int top, int bottom) {
+        int[] at = new int[2];
+        screen.window.getLocationInWindow(at);
+        return new Rect(at[0], at[1] + top, at[0] + 720, at[1] + bottom);
+    }
+
+    @Test
+    public void aPageThatOnlyHoldsTheRowsOnScreenIsStillUnderTheBar() {
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        int[] origin = new int[2];
+        // The tab holder ends at 1600, past the page, on a phone where it reaches under the navigation bar.
+        screen.page.layout(0, 0, 720, 1560);
+        assertNull(TranslucentBars.under(screen.tabHolder));
+        assertSame(screen.page, TranslucentBars.reachingUnder(screen.tabHolder, onScreen(screen, 1440, 1552), origin));
+        assertNull("rows past the page have nothing under them",
+                TranslucentBars.reachingUnder(screen.tabHolder, onScreen(screen, 1440, 1600), origin));
+        assertNull("no rows on screen", TranslucentBars.reachingUnder(screen.tabHolder, new Rect(), origin));
+
+        screen.page.setVisibility(View.INVISIBLE);
+        assertNull("a hidden page", TranslucentBars.reachingUnder(screen.tabHolder, onScreen(screen, 1440, 1552), origin));
+    }
+
+    @Test
+    public void aPageALevelUpIsStillUnderTheBar() {
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        FrameLayout wrapper = new FrameLayout(screen.activity);
+        screen.window.removeView(screen.tabHolder);
+        wrapper.addView(screen.tabHolder, new FrameLayout.LayoutParams(720, 160));
+        screen.window.addView(wrapper, new FrameLayout.LayoutParams(720, 160, android.view.Gravity.BOTTOM));
+        screen.layOut();
+
+        assertNull("its parent draws nothing before it", TranslucentBars.under(screen.tabHolder));
+        assertSame(screen.page, TranslucentBars.reachingUnder(screen.tabHolder, onScreen(screen, 1440, 1552), new int[2]));
+    }
+
+    @Test
+    public void theReportSaysWhenABarLosesTheViewUnderIt() {
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        HookStatus.invoked(FamilyNames.BOTTOM_TAB_BAR);
+        Rect rows = onScreen(screen, 1440, 1552);
+        assertSame(screen.page, screen.bars.underNow(screen.tabHolder, rows));
+        assertFalse("a page holding the box isn't news", statusLine().contains("Counted"));
+
+        screen.page.layout(0, 0, 720, 1560);
+        assertSame(screen.page, screen.bars.underNow(screen.tabHolder, rows));
+        assertSame(screen.page, screen.bars.underNow(screen.tabHolder, rows));
+        assertTrue(statusLine(), statusLine().contains(TranslucentBars.UNDER_ITS_ROWS + " 1"));
+
+        screen.page.layout(0, 0, 720, 1500);
+        assertNull(screen.bars.underNow(screen.tabHolder, rows));
+        assertNull(screen.bars.underNow(screen.tabHolder, rows));
+        assertTrue(statusLine(), statusLine().contains(TranslucentBars.NOTHING_UNDER + " 1"));
+        assertTrue(statusLine(), statusLine().contains("No view under bar 0,1440-720,1600 rows " + rows.toShortString() + " before 0,0-720,88 before 0,0-720,1500 1"));
+
+        screen.page.layout(0, 0, 720, 1600);
+        assertSame(screen.page, screen.bars.underNow(screen.tabHolder, rows));
+        screen.page.layout(0, 0, 720, 1500);
+        assertNull(screen.bars.underNow(screen.tabHolder, rows));
+        assertTrue("losing it again counts again", statusLine().contains(TranslucentBars.NOTHING_UNDER + " 2"));
+    }
+
     @Test
     public void onTheFillsGoSeeThroughAndTheIconsBadgesAndRipplesStay() {
         TranslucentBarsForTests screen = new TranslucentBarsForTests();

@@ -11,6 +11,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** Starting on a Feeds filter, like Friends, no longer lands on an empty "You're all caught up" page. The chosen filter now loads its posts by itself. (#330)
 * **Facebook:** New `Hide the Back reminder` switch under News feed. With `Back leaves Home where it is` on, Back keeps your place without the "Press Back again to go to the top" toast. (#334)
 * **Facebook:** New `Hide the Commission eligible label` switch under News feed takes that label off reels, along with the gap it leaves under the creator's name when a reel has nothing else to disclose. It starts off. (#329)
+* **Facebook:** `See-through bars` keeps frosting the tab bar when the page under it stops short of the bar's holder or sits a level up. Those layouts used to flip it to a dark strip with the feed sharp behind it. (#250)
 
 ## 0.20.0 (2026-11-01)
 

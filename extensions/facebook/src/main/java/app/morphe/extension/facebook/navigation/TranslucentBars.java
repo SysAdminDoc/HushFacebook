@@ -107,6 +107,10 @@ public final class TranslucentBars {
     static final String MADE_SEE_THROUGH = "Bar background made see-through";
     /** Counted each time a bar gets its frost. */
     static final String FROSTED = "Bar frosted";
+    /** Counted each time a bar is frosted from a view that holds its rows on screen, not its whole box. */
+    static final String UNDER_ITS_ROWS = "Bar frosted from the view under its rows";
+    /** Counted each time a bar finds no view under it, which leaves it the plain dark strip (#250). */
+    static final String NOTHING_UNDER = "Bar with no view under it";
     /** Counted each time the switch going off or a pause gives the fills back. */
     static final String GIVEN_BACK = "Bar backgrounds given back";
 
@@ -284,6 +288,35 @@ public final class TranslucentBars {
         return null;
     }
 
+    /**
+     * The view under [bar] when none in its parent holds its whole box: the last visible one drawn
+     * before it, in its parent or further up, that holds [rows], the bar's rows on screen in the
+     * window, or null. A page can stop short of a holder that reaches past the rows, or sit a level
+     * up, and still show under the bar, which then read as a dark strip with the feed sharp behind
+     * it (#250). [origin] is scratch space.
+     */
+    @Nullable
+    static View reachingUnder(View bar, Rect rows, int[] origin) {
+        if (rows.isEmpty()) return null;
+        View above = bar;
+        ViewParent parent = bar.getParent();
+        while (parent instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) parent;
+            for (int i = group.indexOfChild(above) - 1; i >= 0; i--) {
+                View child = group.getChildAt(i);
+                if (child.getVisibility() != View.VISIBLE || child.getWidth() <= 0 || child.getHeight() <= 0) continue;
+                child.getLocationInWindow(origin);
+                if (origin[0] <= rows.left && origin[1] <= rows.top
+                        && origin[0] + child.getWidth() >= rows.right && origin[1] + child.getHeight() >= rows.bottom) {
+                    return child;
+                }
+            }
+            above = group;
+            parent = group.getParent();
+        }
+        return null;
+    }
+
     /** What shows whether a fill changed: its colour for a plain colour, its alpha for anything else. */
     static int reading(Drawable drawn) {
         if (drawn instanceof android.graphics.drawable.ColorDrawable) {
@@ -370,6 +403,10 @@ public final class TranslucentBars {
         private final Rect seen = new Rect();
         private final Rect visible = new Rect();
         private final Rect rows = new Rect();
+        private final int[] origin = new int[2];
+        /** The bars with no view holding their box, by the bar: whether one holds their rows. */
+        private final Map<View, Boolean> shortOfBox = new IdentityHashMap<>();
+        private boolean describedNothingUnder;
         private long nextLook;
         private int frame;
         private boolean stopped;
@@ -428,7 +465,7 @@ public final class TranslucentBars {
                     if (other.getHeight() > 0) row = Math.min(row, other.getHeight());
                     if (other.getGlobalVisibleRect(visible)) rows.union(visible);
                 }
-                View under = blurs ? under(bar) : null;
+                View under = blurs ? underNow(bar, rows) : null;
                 seen.setEmpty();
                 float shown = keep(bar, bar, row, under != null, 1f, 0);
                 if (under != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -444,6 +481,48 @@ public final class TranslucentBars {
             }
             forgetUnseen();
             dropStaleFrost();
+        }
+
+        /**
+         * The view under [bar] this frame, with [rows] its rows on screen. The report counts each
+         * change to a view that only holds the rows or to none, and once says what the layout was,
+         * so a dark strip on a phone nobody here has can be read from its diagnostic report.
+         */
+        @Nullable
+        View underNow(View bar, Rect rows) {
+            View holdingBox = under(bar);
+            if (holdingBox != null) {
+                shortOfBox.remove(bar);
+                return holdingBox;
+            }
+            View holdingRows = reachingUnder(bar, rows, origin);
+            Boolean found = holdingRows != null;
+            if (!found.equals(shortOfBox.put(bar, found))) {
+                HookStatus.counted(FAMILY, found ? UNDER_ITS_ROWS : NOTHING_UNDER);
+                if (!found && !describedNothingUnder && !rows.isEmpty()) {
+                    describedNothingUnder = true;
+                    HookStatus.counted(FAMILY, describe(bar, rows));
+                }
+            }
+            return holdingRows;
+        }
+
+        /** A bar's box, its rows and the boxes of what its parent draws before it, for the report. */
+        private static String describe(View bar, Rect rows) {
+            StringBuilder text = new StringBuilder("No view under bar ").append(box(bar))
+                    .append(" rows ").append(rows.toShortString());
+            ViewParent parent = bar.getParent();
+            if (parent instanceof ViewGroup) {
+                ViewGroup group = (ViewGroup) parent;
+                for (int i = Math.min(group.indexOfChild(bar), 4) - 1; i >= 0; i--) {
+                    text.append(" before ").append(box(group.getChildAt(i)));
+                }
+            }
+            return text.toString();
+        }
+
+        private static String box(View view) {
+            return view.getLeft() + "," + view.getTop() + "-" + view.getRight() + "," + view.getBottom();
         }
 
         /** Anchor [index], or null when it's gone or not on screen. */
