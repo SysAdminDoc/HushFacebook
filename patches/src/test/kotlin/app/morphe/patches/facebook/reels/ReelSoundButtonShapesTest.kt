@@ -4,11 +4,14 @@
  */
 package app.morphe.patches.facebook.reels
 
+import app.morphe.patcher.patch.PatchException
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
+import com.android.tools.smali.dexlib2.immutable.ImmutableField
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
@@ -20,6 +23,7 @@ import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodRefere
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableStringReference
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableTypeReference
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -186,5 +190,51 @@ class ReelSoundButtonShapesTest {
         assertEquals(null, footerSpeakerCheck(footerBuilder(check = Opcode.IF_EQZ), toggles))
         assertEquals(null, footerSpeakerCheck(footerBuilder(landsOn = Opcode.NOP), toggles))
         assertEquals(null, footerSpeakerCheck(footerBuilder(), emptySet()))
+    }
+
+    /** A side column's render: asks a config interface, then returns at index 2 and has one more instruction, and maybe calls [other] first. */
+    private fun sideRender(other: ImmutableMethodReference? = null): Method {
+        val ask = ImmutableMethodReference("Lfixture/Config;", "BUh", emptyList(), "Z")
+        val code = listOf<Instruction>(
+            ImmutableInstruction35c(Opcode.INVOKE_INTERFACE, 1, 1, 0, 0, 0, 0, other ?: ask),
+            ImmutableInstruction11x(Opcode.MOVE_RESULT, 0),
+            ImmutableInstruction11x(Opcode.RETURN_OBJECT, 1),
+            ImmutableInstruction10x(Opcode.NOP),
+        )
+        return ImmutableMethod(
+            "Lfixture/Side;", "A17", emptyList(), "Lfixture/Row;", AccessFlags.PUBLIC.value, null, null,
+            ImmutableMethodImplementation(2, code, null, null),
+        )
+    }
+
+    @Test
+    fun `the side column's early exit is the config boolean in front of its first return`() {
+        val config = listOf("Lfixture/Config;")
+        assertEquals("BUh", earlyExitAsk(sideRender(), 3, config)?.name)
+        // The return comes after the assembly, so nothing leaves early.
+        assertEquals(null, earlyExitAsk(sideRender(), 1, config))
+        // Something leaves early on an answer the corner doesn't hold, or that isn't a yes or no.
+        assertThrows(PatchException::class.java) { earlyExitAsk(sideRender(), 3, listOf("Lfixture/Other;")) }
+        assertThrows(PatchException::class.java) {
+            earlyExitAsk(sideRender(ImmutableMethodReference("Lfixture/Config;", "A00", emptyList(), "I")), 3, config)
+        }
+    }
+
+    @Test
+    fun `the reel is the one type the speaker's builder, the side column and its assembly share`() {
+        val session = "Lcom/facebook/auth/usersession/FbUserSession;"
+        val side = { fields: List<String> ->
+            ImmutableClassDef(
+                "Lfixture/Side;", 0, "Ljava/lang/Object;", null, null, null,
+                fields.mapIndexed { index, type -> ImmutableField("Lfixture/Side;", "A0$index", type, 0, null, null, null) }, emptyList(),
+            )
+        }
+        val call = { parameters: List<String> -> ImmutableMethodReference("Lfixture/Any;", "A00", parameters, "V") }
+        val builder = call(listOf(session, "Lfixture/Item;", "Lfixture/Context;"))
+        val assembly = call(listOf(session, "Lfixture/Item;", "Lfixture/Context;"))
+        assertEquals("Lfixture/Item;", reelItemType(builder, side(listOf(session, "Lfixture/Item;")), assembly))
+        // The session isn't a reel, and two candidates pick neither.
+        assertEquals(null, reelItemType(builder, side(listOf(session)), assembly))
+        assertEquals(null, reelItemType(builder, side(listOf("Lfixture/Item;", "Lfixture/Context;")), assembly))
     }
 }

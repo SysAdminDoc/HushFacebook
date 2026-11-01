@@ -27,6 +27,7 @@ import app.morphe.patches.facebook.misc.extension.liveAcrossInjection
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.patchLog
+import app.morphe.patches.facebook.reels.REEL_SPEAKER_LAYOUT
 import app.morphe.patches.facebook.misc.extension.requireParameterIntact
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
@@ -140,7 +141,7 @@ private const val HELPER = "hushfacebookDownloadButton"
 internal const val VERTICAL_UFI_FLAG = "fdsConfig.enableFDSVerticalUfiFbReels"
 
 /** Handed Facebook's answer for [VERTICAL_UFI_FLAG], returns the one the render goes by. */
-private const val VERTICAL_UFI = "$HANDLER->verticalUfi(Z)Z"
+internal const val VERTICAL_UFI = "$HANDLER->verticalUfi(Z)Z"
 
 /**
  * Adds a download button beside every reel.
@@ -579,17 +580,7 @@ val downloadReelPatch = bytecodePatch(
         // while the button is on. The block's scratch registers include the flag's (v8 on 585), but
         // the block comes after the flag's one branch, where the flag is dead.
         try {
-            val reader = verticalUfiReader()
-            val method = component.findMutableMethodOf(render)
-            val branch = layoutBranch(method, reader)
-                ?: throw PatchException("$PATCH: $renderClass->${render.name} doesn't pick its button layout by $reader the way 585 does")
-            method.addInstructionsAtControlFlowLabel(
-                branch.join,
-                """
-                    invoke-static/range { v${branch.register} .. v${branch.register} }, $VERTICAL_UFI
-                    move-result v${branch.register}
-                """,
-            )
+            hookSidebarLayout(component.findMutableMethodOf(render), VERTICAL_UFI)
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so reels Facebook draws with its older button layout keep Facebook's own buttons.")
         }
@@ -905,6 +896,38 @@ internal fun BytecodePatchContext.verticalUfiReader(): MethodReference {
         .distinctBy(MethodReference::toString)
     return readers.singleOrNull()
         ?: throw PatchException("$PATCH: ${readers.size} config reads name $VERTICAL_UFI_FLAG, not one")
+}
+
+/**
+ * Hands the side column [render]'s choice of button layout to the extension through [hook]. Download
+ * and Clean up Reels (#331) each want the newer layout and either can be in a build without the other,
+ * so whichever comes second goes right behind the first's answer: its hook is the flag's one read now,
+ * and [layoutBranch] no longer knows the shape. Refuses a render it can't read, having written nothing.
+ */
+internal fun BytecodePatchContext.hookSidebarLayout(render: MutableMethod, hook: String) {
+    val code = render.instructions()
+    val earlier = code.indexOfFirst { it.methodReference()?.toString().let { call -> call == VERTICAL_UFI || call == REEL_SPEAKER_LAYOUT } }
+    if (earlier >= 0) {
+        val flag = (code[earlier + 1] as OneRegisterInstruction).registerA
+        render.addInstructions(
+            earlier + 2,
+            """
+                invoke-static/range { v$flag .. v$flag }, $hook
+                move-result v$flag
+            """,
+        )
+        return
+    }
+    val reader = verticalUfiReader()
+    val branch = layoutBranch(render, reader)
+        ?: throw PatchException("$PATCH: ${render.definingClass}->${render.name} doesn't pick its button layout by $reader the way 585 does")
+    render.addInstructionsAtControlFlowLabel(
+        branch.join,
+        """
+            invoke-static/range { v${branch.register} .. v${branch.register} }, $hook
+            move-result v${branch.register}
+        """,
+    )
 }
 
 /** Where the render's layout flag is settled: the instruction both its writes run into, and its register. */

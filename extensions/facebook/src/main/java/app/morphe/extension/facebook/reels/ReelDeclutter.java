@@ -4,6 +4,7 @@
  */
 package app.morphe.extension.facebook.reels;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -62,7 +63,9 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  *       video controls build it only when one check of Facebook's answers yes, and
  *       {@link #showsSoundButton} is handed that answer before they branch on it. Otherwise the
  *       footer builds it, and {@link #soundButton} is handed what was built before the footer's
- *       null check. Either way the button stays out while the switch is on (#190).
+ *       null check. Either way the button stays out while the switch is on (#190). Move the speaker
+ *       above the three dots leaves those two with nothing to build and has the side column build
+ *       the footer's button from the reel's corner: {@link #cornerForSide} (#331).
  *   <li>A video that keeps buffering has Facebook post a runnable that shows "This is taking a
  *       while. Try checking your network connection." {@link #hideSlowConnectionMessage} is asked
  *       first thing in it, and true makes it return before the message is built (#222).
@@ -167,8 +170,24 @@ public final class ReelDeclutter {
     static final String COMMENT_BUTTON = "Comment button";
     static final String SHARE_BUTTON = "Share button";
     static final String SOUND_BUTTON = "speaker button";
-    /** Counted under the family's name each time the footer builds the speaker the controls would have. */
+    /** Counted under the family's name each time the side column builds a reel's speaker (#331). */
     static final String SPEAKER_MOVED = "speaker kept above the three dots";
+    /** How many reels the side column's speaker is remembered for, far past what a viewer keeps built. */
+    static final int MOVED_SPEAKERS_KEPT = 24;
+    /** Reels whose speaker goes to their side column, oldest first, by identity: nothing's asked of Facebook's objects. */
+    private static final ArrayList<MovedSpeaker> MOVED_SPEAKERS = new ArrayList<>();
+    /** Set while the side column asks Facebook's builder for the speaker, on the thread that asks. */
+    private static final ThreadLocal<Boolean> BUILDING_SIDE_SPEAKER = new ThreadLocal<>();
+
+    /** A reel whose speaker goes to its side column, and the corner to build it from once there is one. */
+    private static final class MovedSpeaker {
+        final WeakReference<Object> reel;
+        WeakReference<Object> corner;
+
+        MovedSpeaker(Object reel) {
+            this.reel = new WeakReference<>(reel);
+        }
+    }
 
     /**
      * The constant of Facebook's icon enum the reel sidebar builds its Save button for (#190). The
@@ -728,42 +747,148 @@ public final class ReelDeclutter {
         return button == null || showsSoundButton(true) ? button : null;
     }
 
-    /**
-     * Injection point, in the speaker builder the reel footer calls, handed whether the footer leaves
-     * the speaker to the video controls (#331). Answers false while Move the speaker above the three
-     * dots is on, so the footer builds it, right above the three dots in its own column. Never throws:
-     * off, paused, before the settings are ready, or on a failure, Facebook's answer stands.
-     *
-     * @param leaves whether Facebook would leave the speaker to the video controls.
-     */
-    public static boolean footerLeavesSpeaker(boolean leaves) {
-        try {
-            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
-            if (!leaves || !Utils.settingsReady() || !Settings.REEL_SPEAKER_ABOVE_MENU.get()) return leaves;
-            HookStatus.counted(FamilyNames.REEL_DECLUTTER, SPEAKER_MOVED);
-            return false;
-        } catch (Throwable failure) {
-            HookStatus.threw(FamilyNames.REEL_DECLUTTER, SPEAKER_MOVED, failure);
-            return leaves;
+    /** Whether Move the speaker above the three dots is on. */
+    private static boolean movesSpeaker() {
+        return Utils.settingsReady() && Settings.REEL_SPEAKER_ABOVE_MENU.get();
+    }
+
+    /** The mark for the reel, or null. Call with {@link #MOVED_SPEAKERS} held. */
+    private static MovedSpeaker movedSpeaker(Object reel) {
+        for (int i = MOVED_SPEAKERS.size() - 1; i >= 0; i--) {
+            MovedSpeaker mark = MOVED_SPEAKERS.get(i);
+            if (mark.reel.get() == reel) return mark;
+        }
+        return null;
+    }
+
+    /** The corner remembered for the reel, while the reel's speaker goes to its side column, or null. */
+    private static Object rememberedCorner(Object reel) {
+        synchronized (MOVED_SPEAKERS) {
+            MovedSpeaker mark = movedSpeaker(reel);
+            return mark == null || mark.corner == null ? null : mark.corner.get();
         }
     }
 
     /**
-     * Injection point, in the reel's video controls, handed the speaker button they just built, or null
-     * when they built none (#331). Answers null while Move the speaker above the three dots is on, since
-     * the footer builds that speaker instead, so a reel never shows two. Otherwise it's
-     * {@link #soundButton}, the same answer the footer's speaker gets.
+     * Injection point, in the reel's builder, handed the reel as it fills the side column's field
+     * (#331): this reel's side column is one that can take the speaker. A reel the builder gives
+     * another column never gets here, and stays as Facebook has it. Never throws.
      *
-     * @param button the speaker button's component, or null.
+     * @param reel the reel.
      */
-    public static Object controlsSoundButton(Object button) {
-        if (button == null) return null;
+    public static void sideColumnComing(Object reel) {
         try {
-            if (Utils.settingsReady() && Settings.REEL_SPEAKER_ABOVE_MENU.get()) return null;
+            if (reel == null || !movesSpeaker()) return;
+            synchronized (MOVED_SPEAKERS) {
+                MovedSpeaker mark = movedSpeaker(reel);
+                if (mark != null) {
+                    mark.corner = null;
+                    return;
+                }
+                if (MOVED_SPEAKERS.size() >= MOVED_SPEAKERS_KEPT) MOVED_SPEAKERS.remove(0);
+                MOVED_SPEAKERS.add(new MovedSpeaker(reel));
+            }
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, SPEAKER_MOVED, failure);
         }
-        return soundButton(button);
+    }
+
+    /**
+     * Injection point, in the corner the reel's builder just made, unless the side column is one
+     * that leaves before it assembles its buttons (#331). From here on the reel's speaker goes to
+     * the side column, which reads what it needs from this corner. Never throws.
+     *
+     * @param reel the reel.
+     * @param corner the component whose column holds the speaker on Facebook's own layout.
+     */
+    public static void rememberCorner(Object reel, Object corner) {
+        try {
+            if (reel == null) return;
+            synchronized (MOVED_SPEAKERS) {
+                MovedSpeaker mark = movedSpeaker(reel);
+                if (mark != null) mark.corner = new WeakReference<>(corner);
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, SPEAKER_MOVED, failure);
+        }
+    }
+
+    /**
+     * Injection point, in the side column, right before it assembles its buttons (#331). Answers the
+     * corner to build the speaker from, or null for no speaker here: the switch is off, the speaker
+     * is hidden, the app is paused, or the reel keeps its speaker where Facebook put it. Never throws.
+     *
+     * @param reel the reel.
+     */
+    public static Object cornerForSide(Object reel) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (reel == null || !movesSpeaker() || !showsSoundButton(true)) return null;
+            Object corner = rememberedCorner(reel);
+            if (corner != null) BUILDING_SIDE_SPEAKER.set(Boolean.TRUE);
+            return corner;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, SPEAKER_MOVED, failure);
+            return null;
+        }
+    }
+
+    /**
+     * Injection point, in the side column, handed the speaker it just built from the corner, or null
+     * when Facebook's builder made none (#331).
+     *
+     * @param button the speaker button's component, or null.
+     */
+    public static Object sideSpeaker(Object button) {
+        BUILDING_SIDE_SPEAKER.remove();
+        if (button != null) HookStatus.counted(FamilyNames.REEL_DECLUTTER, SPEAKER_MOVED);
+        return button;
+    }
+
+    /**
+     * Injection point, in the corner and the video controls, handed the speaker they just built and
+     * the reel (#331). Answers null for a reel whose speaker goes to the side column, so it never
+     * shows two, and what was built for any other. Never throws.
+     *
+     * @param button the speaker button's component, or null.
+     * @param reel the reel.
+     */
+    public static Object speakerStays(Object button, Object reel) {
+        if (button == null) return null;
+        try {
+            return movesSpeaker() && rememberedCorner(reel) != null ? null : button;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, SPEAKER_MOVED, failure);
+            return button;
+        }
+    }
+
+    /**
+     * Injection point, in the speaker builder, handed whether it leaves the speaker to the video
+     * controls (#331). A server flag says so on some accounts, and the side column needs the speaker
+     * built all the same, so the answer is false while it asks. Every other caller gets Facebook's.
+     *
+     * @param leaves whether Facebook would leave the speaker to the video controls.
+     */
+    public static boolean footerLeavesSpeaker(boolean leaves) {
+        return leaves && BUILDING_SIDE_SPEAKER.get() == null;
+    }
+
+    /**
+     * Injection point, in the side column's render, handed which layout of buttons Facebook picked
+     * (#331). Only the newer one assembles the buttons the speaker joins, so it's yes while the switch
+     * is on. Never throws: off, paused, before the settings are ready, or on a failure, Facebook's
+     * answer stands.
+     *
+     * @param newer whether Facebook would draw the newer layout.
+     */
+    public static boolean speakerLayout(boolean newer) {
+        try {
+            return newer || movesSpeaker();
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, SPEAKER_MOVED, failure);
+            return newer;
+        }
     }
 
     /** Whether the text has a digit in any script, which a count always has and a word doesn't. */

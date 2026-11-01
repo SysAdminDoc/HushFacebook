@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.reels;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -78,6 +79,7 @@ public class ReelDeclutterTest {
         Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON.resetToDefault();
         Settings.HIDE_REEL_SOUND_BUTTON.resetToDefault();
         Settings.REEL_SPEAKER_ABOVE_MENU.resetToDefault();
+        ReelDeclutter.sideSpeaker(null);
         Settings.HIDE_REEL_AUDIO_LINE.resetToDefault();
         Settings.HIDE_SLOW_CONNECTION_MESSAGE.resetToDefault();
         Settings.PLAY_FEED_REELS_WHOLE.resetToDefault();
@@ -923,71 +925,151 @@ public class ReelDeclutterTest {
     }
 
     /**
-     * Move the speaker above the three dots (#331): off, each place keeps Facebook's answer. On, the
-     * footer builds the speaker the controls would have and the controls drop theirs, so a reel has
-     * one, and a footer that was going to build it anyway isn't counted.
+     * Move the speaker above the three dots (#331): off, each place keeps Facebook's answer. On, a reel
+     * marked by its builder has its speaker built by the side column and dropped everywhere else, and
+     * the builder is told to build it only while the side column asks.
      */
     @Test
-    public void theSpeakerMovesToTheFooterOnlyWhileItsSwitchIsOn() {
+    public void aMarkedReelsSpeakerGoesToItsSideColumnOnlyWhileTheSwitchIsOn() {
+        Object reel = new Object();
+        Object corner = new Object();
         Object button = new Object();
         assertFalse(Settings.REEL_SPEAKER_ABOVE_MENU.defaultValue);
-        assertTrue("off, the footer built the controls' speaker", ReelDeclutter.footerLeavesSpeaker(true));
-        assertFalse("off, the footer stopped building its own", ReelDeclutter.footerLeavesSpeaker(false));
-        assertSame("off, the controls lost their speaker", button, ReelDeclutter.controlsSoundButton(button));
+        ReelDeclutter.sideColumnComing(reel);
+        ReelDeclutter.rememberCorner(reel, corner);
+        assertNull("off, the side column got a speaker", ReelDeclutter.cornerForSide(reel));
+        assertSame("off, the corner lost its speaker", button, ReelDeclutter.speakerStays(button, reel));
+        assertFalse("off, the side column's layout changed", ReelDeclutter.speakerLayout(false));
+        assertTrue(ReelDeclutter.speakerLayout(true));
+        assertTrue("off, the builder took the controls' speaker", ReelDeclutter.footerLeavesSpeaker(true));
 
         Settings.REEL_SPEAKER_ABOVE_MENU.save(true);
-        assertFalse("the footer left the speaker to the controls", ReelDeclutter.footerLeavesSpeaker(true));
+        assertTrue("the side column kept the layout with no buttons list", ReelDeclutter.speakerLayout(false));
+        ReelDeclutter.sideColumnComing(reel);
+        assertSame("a mark alone took the corner's speaker", button, ReelDeclutter.speakerStays(button, reel));
+        ReelDeclutter.rememberCorner(reel, corner);
+        assertNull("the corner kept a second speaker", ReelDeclutter.speakerStays(button, reel));
+        assertNull("nothing built became something", ReelDeclutter.speakerStays(null, reel));
+
+        assertTrue("the builder was told before the side column asked", ReelDeclutter.footerLeavesSpeaker(true));
+        assertSame(corner, ReelDeclutter.cornerForSide(reel));
+        assertFalse("the builder left the side column's speaker to the controls", ReelDeclutter.footerLeavesSpeaker(true));
         assertFalse(ReelDeclutter.footerLeavesSpeaker(false));
-        assertNull("the controls kept a second speaker", ReelDeclutter.controlsSoundButton(button));
-        assertNull("controls with no speaker got one", ReelDeclutter.controlsSoundButton(null));
-        assertSame("the footer's own speaker went", button, ReelDeclutter.soundButton(button));
+        assertSame(button, ReelDeclutter.sideSpeaker(button));
+        assertTrue("the builder went on building it after the side column", ReelDeclutter.footerLeavesSpeaker(true));
         assertTrue(HookStatus.report().toString(),
                 HookStatus.report().toString().contains("Counted: " + ReelDeclutter.SPEAKER_MOVED + " 1"));
 
         Settings.REEL_SPEAKER_ABOVE_MENU.save(false);
-        assertTrue("turning the switch off didn't hand the speaker back", ReelDeclutter.footerLeavesSpeaker(true));
-        assertSame(button, ReelDeclutter.controlsSoundButton(button));
+        assertSame("turning the switch off didn't hand the speaker back", button, ReelDeclutter.speakerStays(button, reel));
+        assertNull(ReelDeclutter.cornerForSide(reel));
     }
 
-    /** Hide the speaker button still wins with the switch on: neither place has a speaker. */
+    /** A reel no side column can take the speaker for, or a builder that hasn't got to the corner, keeps Facebook's. */
+    @Test
+    public void aReelWithoutAMarkAndACornerKeepsItsSpeaker() {
+        Object reel = new Object();
+        Object corner = new Object();
+        Object button = new Object();
+        Settings.REEL_SPEAKER_ABOVE_MENU.save(true);
+        ReelDeclutter.rememberCorner(reel, corner);
+        assertSame("a corner alone took the speaker", button, ReelDeclutter.speakerStays(button, reel));
+        assertNull("a corner alone put one in the side column", ReelDeclutter.cornerForSide(reel));
+        ReelDeclutter.sideColumnComing(reel);
+        assertNull("a mark alone put one in the side column", ReelDeclutter.cornerForSide(reel));
+
+        // Built again, the reel waits for the new corner.
+        ReelDeclutter.rememberCorner(reel, corner);
+        assertNotNull(ReelDeclutter.cornerForSide(reel));
+        ReelDeclutter.sideSpeaker(null);
+        ReelDeclutter.sideColumnComing(reel);
+        assertSame("the old corner stood in for the new one", button, ReelDeclutter.speakerStays(button, reel));
+
+        assertNull(ReelDeclutter.cornerForSide(null));
+        assertSame(button, ReelDeclutter.speakerStays(button, null));
+        ReelDeclutter.sideColumnComing(null);
+        ReelDeclutter.rememberCorner(null, corner);
+    }
+
+    @Test
+    public void twoReelsDontShareAMoveAndTheOldestMarkGoesFirst() {
+        Object button = new Object();
+        Settings.REEL_SPEAKER_ABOVE_MENU.save(true);
+        Object[] reels = new Object[ReelDeclutter.MOVED_SPEAKERS_KEPT + 1];
+        Object[] corners = new Object[reels.length];
+        for (int i = 0; i < reels.length; i++) {
+            reels[i] = new Object();
+            corners[i] = new Object();
+            ReelDeclutter.sideColumnComing(reels[i]);
+            ReelDeclutter.rememberCorner(reels[i], corners[i]);
+        }
+        Object last = reels[reels.length - 1];
+        assertSame(corners[reels.length - 1], ReelDeclutter.cornerForSide(last));
+        ReelDeclutter.sideSpeaker(null);
+        assertSame(corners[1], ReelDeclutter.cornerForSide(reels[1]));
+        ReelDeclutter.sideSpeaker(null);
+        assertSame("a reel past the bound stayed marked", button, ReelDeclutter.speakerStays(button, reels[0]));
+        assertNull(ReelDeclutter.cornerForSide(reels[0]));
+        assertSame("a reel never seen lost its speaker", button, ReelDeclutter.speakerStays(button, new Object()));
+    }
+
+    /** Hide the speaker button still wins with the switch on: no place has a speaker. */
     @Test
     public void hidingTheSpeakerBeatsMovingIt() {
+        Object reel = new Object();
+        Object corner = new Object();
         Object button = new Object();
         Settings.REEL_SPEAKER_ABOVE_MENU.save(true);
         Settings.HIDE_REEL_SOUND_BUTTON.save(true);
-        assertNull("the controls kept the speaker", ReelDeclutter.controlsSoundButton(button));
-        assertNull("the footer kept the speaker", ReelDeclutter.soundButton(button));
+        ReelDeclutter.sideColumnComing(reel);
+        ReelDeclutter.rememberCorner(reel, corner);
+        assertNull("the side column kept the speaker", ReelDeclutter.cornerForSide(reel));
+        assertNull("the corner kept the speaker", ReelDeclutter.soundButton(ReelDeclutter.speakerStays(button, reel)));
 
         Settings.REEL_SPEAKER_ABOVE_MENU.save(false);
-        assertNull("the hide switch stopped reaching the controls' speaker", ReelDeclutter.controlsSoundButton(button));
+        assertSame(button, ReelDeclutter.speakerStays(button, reel));
+        assertNull("the hide switch stopped reaching the corner's speaker", ReelDeclutter.soundButton(button));
     }
 
     @Test
     public void pausedOrNotReadyTheSpeakerStaysWhereFacebookPutIt() {
+        Object reel = new Object();
+        Object corner = new Object();
         Object button = new Object();
         Settings.REEL_SPEAKER_ABOVE_MENU.save(true);
+        ReelDeclutter.sideColumnComing(reel);
+        ReelDeclutter.rememberCorner(reel, corner);
         for (HushfacebookPause.Reason why : new HushfacebookPause.Reason[]{
                 HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP,
                 HushfacebookPause.Reason.MARKER_FILE}) {
             PauseForTests.pause(why);
-            assertTrue(why + " moved the speaker", ReelDeclutter.footerLeavesSpeaker(true));
-            assertSame(why + " took the controls' speaker", button, ReelDeclutter.controlsSoundButton(button));
+            assertNull(why + " moved the speaker", ReelDeclutter.cornerForSide(reel));
+            assertSame(why + " took the corner's speaker", button, ReelDeclutter.speakerStays(button, reel));
+            assertFalse(why + " changed the layout", ReelDeclutter.speakerLayout(false));
             PauseForTests.resume();
         }
         SettingsContextRule.withoutContext(() -> {
-            assertTrue(ReelDeclutter.footerLeavesSpeaker(true));
-            assertSame(button, ReelDeclutter.controlsSoundButton(button));
+            assertNull(ReelDeclutter.cornerForSide(reel));
+            assertSame(button, ReelDeclutter.speakerStays(button, reel));
+            assertFalse(ReelDeclutter.speakerLayout(false));
         });
     }
 
     /** A switch that can't be read leaves the speaker where Facebook put it, and the report names the hook. */
     @Test
     public void aMoveSwitchThatCantBeReadKeepsFacebooksAnswer() {
+        Object reel = new Object();
+        Object corner = new Object();
         Object button = new Object();
+        Settings.REEL_SPEAKER_ABOVE_MENU.save(true);
+        ReelDeclutter.sideColumnComing(reel);
+        ReelDeclutter.rememberCorner(reel, corner);
         SettingReadsForTests.breakReads(Settings.REEL_SPEAKER_ABOVE_MENU);
         try {
-            assertTrue(ReelDeclutter.footerLeavesSpeaker(true));
-            assertSame(button, ReelDeclutter.controlsSoundButton(button));
+            assertNull(ReelDeclutter.cornerForSide(reel));
+            assertSame(button, ReelDeclutter.speakerStays(button, reel));
+            assertFalse(ReelDeclutter.speakerLayout(false));
+            assertTrue(ReelDeclutter.speakerLayout(true));
         } finally {
             SettingReadsForTests.mend(Settings.REEL_SPEAKER_ABOVE_MENU);
         }

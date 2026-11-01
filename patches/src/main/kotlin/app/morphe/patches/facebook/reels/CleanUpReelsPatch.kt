@@ -21,6 +21,7 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -135,8 +136,14 @@ val cleanUpReelsPatch = bytecodePatch(
         hideViewerTopButtons()
         // #190: the speaker button under the sidebar, from whichever place a server flag picks:
         // the video controls, through Facebook's own check for it, or the footer, through its null check.
-        hideReelSoundButton()
-        hideReelFooterSoundButton()
+        val controlsSpeaker = hideReelSoundButton()
+        val footerSpeaker = hideReelFooterSoundButton()
+        // #331: that speaker in the side column, right above the three dots.
+        try {
+            moveReelSpeakerAboveMenu(footerSpeaker, controlsSpeaker)
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so Move the speaker above the three dots leaves it where Facebook puts it.")
+        }
         // #161: a feed video's player asks for no more reels after it.
         keepFeedVideosAlone()
         // #222: the "This is taking a while" message a stalled video posts.
