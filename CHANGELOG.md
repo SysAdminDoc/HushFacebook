@@ -19,6 +19,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** New `Move the speaker above the three dots` switch under Video and audio. It puts a reel's speaker button in the side column, right above the three dots. It starts off. (#331)
 * **Facebook:** With `Keep the progress bar` on, a reel's bar and time now travel with the reel while you drag it, so they stop sitting on top of the next reel. (#120)
 * **Facebook:** The Hush settings now come in Russian, translated by vortexnode. (#335)
+* **Facebook:** `Keep the progress bar` lifts a reel's bar when the Reels tab would put it behind the tab bar. (#282)
 
 ## 0.20.0 (2026-11-01)
 

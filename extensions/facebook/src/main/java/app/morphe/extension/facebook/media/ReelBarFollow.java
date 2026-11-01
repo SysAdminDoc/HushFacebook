@@ -47,6 +47,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>Only while Keep the progress bar is on. Otherwise the bar isn't up during a drag anyway, and
  * the host goes back to where Facebook has it.
+ *
+ * <p>The same move lifts the bar when its line would sit behind the tab bar (#282). One reporter's
+ * Reels tab runs the whole reel about 60 px lower than ours, so Facebook's own line and the kept
+ * bar's thumb both went under the tabs. On the S22 and the emulator the line clears the tab bar by
+ * 8 dp or more, so nothing moves there.
  */
 final class ReelBarFollow {
     private static final String FAMILY = FamilyNames.PROGRESS_BAR;
@@ -54,6 +59,12 @@ final class ReelBarFollow {
     /** A reel's page is a plain LithoView, whose name Redex keeps. */
     private static final String PAGE = "com.facebook.litho.LithoView";
     static final String FOLLOWED = "reel bar followed its reel";
+    static final String LIFTED = "reel bar lifted above the tab bar";
+    private static final String TAB_BAR = "com.facebook.navigation.tabbar.ui.TabBarContainerLayout";
+    /** How far above the tab bar the line has to sit for the whole thumb to show. */
+    private static final int LINE_CLEARANCE_DP = 6;
+    /** How deep under the window's root to look for the tab bar. */
+    private static final int TAB_BAR_LEVELS = 20;
     /** The host is two levels above the time label on 585. */
     private static final int LEVELS_UP = 4;
     /** The list is one level inside the host's sibling on 585. */
@@ -150,15 +161,46 @@ final class ReelBarFollow {
                 && child.getHeight() == group.getHeight();
     }
 
+    @Nullable
+    private static View tabBarIn(View view, int levels) {
+        if (TAB_BAR.equals(view.getClass().getName())) return view;
+        if (levels == 0 || !(view instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) view;
+        for (int index = 0; index < group.getChildCount(); index++) {
+            View found = tabBarIn(group.getChildAt(index), levels - 1);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    /** The scrubber's line, the full-width view beside the time. */
+    @Nullable
+    private static View barBeside(View label) {
+        ViewParent above = label.getParent();
+        if (!(above instanceof ViewGroup)) return null;
+        ViewGroup plugin = (ViewGroup) above;
+        View lowest = null;
+        for (int index = 0; index < plugin.getChildCount(); index++) {
+            View child = plugin.getChildAt(index);
+            if (child == label || child.getWidth() != plugin.getWidth() || child.getHeight() >= plugin.getHeight()) continue;
+            if (lowest == null || child.getBottom() > lowest.getBottom()) lowest = child;
+        }
+        return lowest;
+    }
+
     private static final class Follow implements ViewTreeObserver.OnPreDrawListener {
         private final WeakReference<View> heldLabel;
         private final WeakReference<View> heldMover;
         private final WeakReference<ViewGroup> heldPager;
         final ViewTreeObserver tree;
         @Nullable
+        private final WeakReference<View> heldTabBar;
+        @Nullable
         private WeakReference<View> heldPage;
         /** What this added to the host's own translation, which Facebook may set as well. */
         private int applied;
+        private int lastFollow;
+        private int lastLift;
         boolean handed;
         private boolean stopped;
 
@@ -167,6 +209,8 @@ final class ReelBarFollow {
             heldMover = new WeakReference<>(mover);
             heldPager = new WeakReference<>(pager);
             tree = pager.getViewTreeObserver();
+            View tabBar = tabBarIn(label.getRootView(), TAB_BAR_LEVELS);
+            heldTabBar = tabBar == null ? null : new WeakReference<>(tabBar);
         }
 
         @Override
@@ -186,11 +230,34 @@ final class ReelBarFollow {
                 stop(mover);
                 return;
             }
-            int offset = keeps() ? offsetIn(pager) : 0;
+            boolean keeping = keeps();
+            int follow = keeping ? offsetIn(pager) : 0;
+            int lift = keeping ? liftOver() : 0;
+            if (follow != 0 && lastFollow == 0) HookStatus.counted(FAMILY, FOLLOWED);
+            if (lift != 0 && lastLift == 0) HookStatus.counted(FAMILY, LIFTED);
+            lastFollow = follow;
+            lastLift = lift;
+            int offset = follow - lift;
             if (offset == applied) return;
-            if (applied == 0) HookStatus.counted(FAMILY, FOLLOWED);
             mover.setTranslationY(mover.getTranslationY() - applied + offset);
             applied = offset;
+        }
+
+        /** How far the line, where it would be without this class's move, has to rise to clear the tab bar. */
+        private int liftOver() {
+            View tabBar = heldTabBar == null ? null : heldTabBar.get();
+            View label = heldLabel.get();
+            if (tabBar == null || label == null || !tabBar.isShown()) return 0;
+            View bar = barBeside(label);
+            if (bar == null) return 0;
+            int[] at = new int[2];
+            tabBar.getLocationInWindow(at);
+            int tabTop = at[1];
+            if (tabTop < tabBar.getRootView().getHeight() / 2) return 0;
+            bar.getLocationInWindow(at);
+            int line = at[1] + bar.getHeight() / 2 - applied;
+            int clearance = Math.round(LINE_CLEARANCE_DP * bar.getResources().getDisplayMetrics().density);
+            return Math.max(0, line + clearance - tabTop);
         }
 
         /** How far the page the bar belongs to is from its place, and 0 once a reel has settled. */

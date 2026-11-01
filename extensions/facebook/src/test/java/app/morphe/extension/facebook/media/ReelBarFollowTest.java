@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import com.facebook.litho.LithoView;
+import com.facebook.navigation.tabbar.ui.TabBarContainerLayout;
 
 import org.junit.After;
 import org.junit.Before;
@@ -53,6 +54,8 @@ public class ReelBarFollowTest {
     private LithoView coming;
     private FrameLayout host;
     private FrameLayout label;
+    private FrameLayout screen;
+    private TabBarContainerLayout tabBar;
 
     @Before
     public void setUp() {
@@ -75,7 +78,11 @@ public class ReelBarFollowTest {
         place(host, plugin, 0, 0, 1080, 1080);
         label = new FrameLayout(activity);
         place(plugin, label, 0, 918, 291, 1080);
-        activity.setContentView(viewer);
+        FrameLayout line = new FrameLayout(activity);
+        place(plugin, line, 0, 984, 1080, 1080);
+        screen = new FrameLayout(activity);
+        place(screen, viewer, 0, 0, 1080, PAGE_HEIGHT);
+        activity.setContentView(screen);
         layOut();
     }
 
@@ -196,6 +203,73 @@ public class ReelBarFollowTest {
 
         assertEquals(0f, rowHost.getTranslationY(), 0f);
         assertFalse(HookStatus.report().toString().contains("reel bar follow"));
+    }
+
+    @Test
+    public void aLineClearOfTheTabBarStaysPut() {
+        addTabBar(PAGE_HEIGHT);
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        assertEquals(0f, host.getTranslationY(), 0f);
+        assertFalse(HookStatus.report().toString().contains(ReelBarFollow.LIFTED));
+    }
+
+    @Test
+    public void aLineBehindTheTabBarRisesUntilTheThumbShows() {
+        // The line sits at 2018, so a tab bar from 1980 covers it, as on the reporter's Reels tab.
+        addTabBar(1980);
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        float lift = 2018 + 6 * activity.getResources().getDisplayMetrics().density - 1980;
+        assertEquals(-lift, host.getTranslationY(), 0f);
+        frame();
+        assertEquals("and it doesn't keep rising", -lift, host.getTranslationY(), 0f);
+        assertTrue(HookStatus.report().toString().contains(ReelBarFollow.LIFTED + " 1"));
+
+        drag(-400);
+        assertEquals("it still rides on its reel", -400 - lift, host.getTranslationY(), 0f);
+        drag(400);
+        assertEquals(-lift, host.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void theLiftEndsWhenTheTabBarSlidesAwayOrTheSwitchGoesOff() {
+        addTabBar(1980);
+        ReelBarFollow.updated(label);
+        frame();
+        assertTrue(host.getTranslationY() < 0f);
+
+        tabBar.setTranslationY(400);
+        frame();
+        assertEquals(0f, host.getTranslationY(), 0f);
+
+        tabBar.setTranslationY(0);
+        frame();
+        assertTrue(host.getTranslationY() < 0f);
+
+        Settings.KEEP_PROGRESS_BAR.save(false);
+        frame();
+        assertEquals(0f, host.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void aTabBarAtTheTopLeavesTheLineAlone() {
+        addTabBar(0);
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        assertEquals(0f, host.getTranslationY(), 0f);
+    }
+
+    private void addTabBar(int top) {
+        tabBar = new TabBarContainerLayout(activity);
+        place(screen, tabBar, 0, top, 1080, top + 200);
+        layOut();
     }
 
     private void drag(int by) {
