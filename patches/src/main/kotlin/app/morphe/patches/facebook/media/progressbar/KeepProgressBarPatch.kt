@@ -148,6 +148,18 @@ internal const val HANDS_OVER =
 internal const val LEFT_ON_LAST_REEL = "$PROGRESS_BAR->leftOnLastReel()V"
 internal const val REGISTRY_ASKS = "$PROGRESS_BAR->registryAsks(ZLjava/lang/Integer;)V"
 internal const val NO_SCRUBBER = "$PROGRESS_BAR->noScrubber()V"
+internal const val MISSES_HAND_OVER = "$PROGRESS_BAR->missesHandOver(" +
+    "Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;" +
+    "Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Integer;I)V"
+
+/** The extension's stub the patch fills with a call of the registry's hand-over. */
+internal const val HAND_OVER_AGAIN_STUB = "handOverAgain"
+
+/** The extension's stub the patch fills with a read of the scrubber's bar info. */
+internal const val HELD_BAR_INFO_STUB = "heldBarInfo"
+
+/** The extension's stub the patch fills with a write of the scrubber's bar info. */
+internal const val SET_BAR_INFO_STUB = "setBarInfo"
 internal const val MOUNTS = "$PROGRESS_BAR->mounts(Landroid/view/ViewGroup;Ljava/lang/Object;)V"
 internal const val LOADS = "$PROGRESS_BAR->loads(Landroid/view/ViewGroup;Ljava/lang/Object;Ljava/lang/String;)V"
 internal const val KEEPS_DEFAULT_HOLDER = "$PROGRESS_BAR->keepsDefaultHolder(Ljava/lang/Object;Ljava/lang/Object;)Z"
@@ -155,6 +167,9 @@ internal const val KEEPS_OVERLAY = "$PROGRESS_BAR->keepsOverlayWhileSeeking()Z"
 
 /** The extension's stub the patch fills with a call to the scrubber base's progress update. */
 internal const val UPDATE_AGAIN_STUB = "updateAgain"
+internal const val BAR_RELEASED = "$PROGRESS_BAR->barReleased(Ljava/lang/Object;Landroid/view/View;)V"
+internal const val SEEK_BAR_LISTENER = "Landroid/widget/SeekBar\$OnSeekBarChangeListener;"
+internal const val ON_STOP_TRACKING = "onStopTrackingTouch(Landroid/widget/SeekBar;)V"
 internal const val LOOK_FOR = "$PROGRESS_BAR->lookFor(Landroid/view/ViewGroup;Ljava/lang/Integer;)Ljava/lang/Integer;"
 internal const val LOOKS_AGAIN = "$PROGRESS_BAR->looksAgain(Landroid/view/ViewGroup;)Z"
 
@@ -250,7 +265,9 @@ internal const val INVALIDATE = "Landroid/view/View;->invalidate()V"
  * on its caption (#73). So each holder reports itself to the extension as it's made, and its update,
  * handed no event (Facebook's code returns at once for one, and only the helper the patch adds to the
  * holder calls it so), takes HIDDEN to VISIBLE through Facebook's own store, Function1 call and event
- * while the bar is kept. The extension runs that helper on each holder as the switch goes on.
+ * while the bar is kept. The extension runs that helper on each holder as the switch goes on. A press
+ * asks for DRAGGING, which isn't lifted, so with the overlay kept the status stays at VISIBLE through
+ * it and the name and buttons don't drop (#120).
  *
  * Older builds' Reels viewer used a bottom bar plugin, named [REEL_SEEK_BAR_PLUGIN], sizes its SeekBar with two
  * static (SeekBar, plugin) methods (581 `LX/8sg;->A00` and `A01`, still present on every declared
@@ -376,9 +393,11 @@ val keepProgressBarPatch = bytecodePatch(
         val checkHolders = mutableListOf<ClassDef>()
         val mountHolders = mutableListOf<ClassDef>()
         val scrubberSubclasses = mutableListOf<ClassDef>()
+        val barListeners = mutableListOf<ClassDef>()
         classDefForEach {
             if (it.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
             if (it.superclass == scrubber.type) scrubberSubclasses += it
+            if (SEEK_BAR_LISTENER in it.interfaces) barListeners += it
             if (takesUpdater(it, updater)) controllers += it
             if (it.fields.any { field -> field.type == status.type }) statusOwners += it
             if (it.fields.any { field -> field.type == FUNCTION1 }) visibilityOwners += it
@@ -401,6 +420,7 @@ val keepProgressBarPatch = bytecodePatch(
             refuse("$PROGRESS_BAR has no static void $UPDATE_AGAIN_STUB(Object)")
         }
         checkUpdateAgain(progress)
+        checkHandOverAgain(handOver, returns, another) { classDefByOrNull(it) }
         val overrides = if (lengthChecks == null) emptyList() else {
             lengthCheckOverrides(checkHolders, scrubber.type, listOf(lengthChecks.minimum, lengthChecks.short)) {
                 classDefByOrNull(it)?.superclass
@@ -416,6 +436,7 @@ val keepProgressBarPatch = bytecodePatch(
         // The extension takes the bar as a SeekBar, and the verifier holds the class to that.
         if (!extendsType(barType, SEEK_BAR) { classDefByOrNull(it)?.superclass }) refuse("$barType, the scrubber's bar, isn't a SeekBar")
         val touch = barTouch(classDefByOrNull(barType) ?: refuse("$barType, the scrubber's SeekBar, isn't in this APK"))
+        val release = barRelease(barListeners, progress.base.type)
 
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(scrubber.passive) }
             .activeInstead(scrubber, graph)
@@ -468,11 +489,13 @@ val keepProgressBarPatch = bytecodePatch(
         // The lift on ask jumps to the store staysLifted follows, so staysLifted goes in first.
         mutableClassDefBy(footer.type).methods.single { it.sameAs(footer.update) }.apply {
             staysLifted(footer, status)
+            staysLiftedOnPress(footer, status)
             liftsWhenAsked(footer, status)
         }
         fillFooterLift(footer)
         mutableClassDefBy(footerSeek.type).methods.single { it.sameAs(footerSeek.method) }.keepsOverlayOnPress(footerSeek, visibility)
         fillUpdateAgain(progress)
+        fillHandOverAgain(handOver, another)
         if (plugin != null && sizes != null) {
             mutableClassDefBy(plugin.type).methods.single { it.sameAs(sizes.shrink) }
                 .fullSizeInstead(plugin.type, sizes.fullSize)
@@ -481,6 +504,7 @@ val keepProgressBarPatch = bytecodePatch(
         mutableClassDefBy(extension.type).methods.single { it.sameAs(hide) }.noTimerWhileKept()
         mutableClassDefBy(hider.type).methods.single { it.sameAs(hiderRun) }.noTimerWhileKept()
         mutableClassDefBy(barType).methods.single { it.sameAs(touch) }.takesTapsToSeek()
+        mutableClassDefBy(release.method.definingClass).methods.single { it.sameAs(release.method) }.reportsBarRelease(release)
         enableStatus("keepProgressBar")
     }
 }
@@ -1397,7 +1421,7 @@ internal fun frameDelay(progress: ProgressUpdate): Method {
 }
 
 /** The Reels footer's seek bar status enum and its HIDDEN and VISIBLE values, as `class->name:type`. */
-internal class SeekBarStatus(val type: String, val hidden: String, val visible: String)
+internal class SeekBarStatus(val type: String, val hidden: String, val visible: String, val dragging: String)
 
 /**
  * The seek bar status (582 `LX/AGw;`): the one enum of [holders] whose `<clinit>` builds exactly
@@ -1409,7 +1433,7 @@ internal fun seekBarStatus(holders: List<ClassDef>): SeekBarStatus {
     val found = holders.distinctBy { it.type }.mapNotNull { enum -> enumFields(enum)?.takeIf { it.keys == names }?.let { enum.type to it } }
     val (type, values) = found.singleOrNull()
         ?: refuse("expected one enum of $STATUS_HIDDEN, $STATUS_VISIBLE and $STATUS_DRAGGING, found ${found.size}")
-    return SeekBarStatus(type, values.getValue(STATUS_HIDDEN), values.getValue(STATUS_VISIBLE))
+    return SeekBarStatus(type, values.getValue(STATUS_HIDDEN), values.getValue(STATUS_VISIBLE), values.getValue(STATUS_DRAGGING))
 }
 
 /** An enum's fields by value name, each name the last string its `<clinit>` loads before the value's `sput-object`. */
@@ -1886,8 +1910,9 @@ internal fun MutableMethod.notesRegistryAsk(returns: RegistryReturns) {
 
 /**
  * At the registry's test for a scrubber holder ([RegistryReturns.noHolder]): with none, tell the
- * extension, then Facebook's test returns as before. A holder goes straight to Facebook's test.
- * Nothing is borrowed, and only the instruction before reaches the test.
+ * extension, and hand it the method's own arguments so it can run the hand-over again, then Facebook's
+ * test returns as before. A holder goes straight to Facebook's test. Nothing is borrowed, the arguments
+ * are still as Facebook got them ([checkHandOverAgain]), and only the instruction before reaches the test.
  */
 internal fun MutableMethod.notesNoScrubber(returns: RegistryReturns) {
     addInstructionsWithLabels(
@@ -1895,6 +1920,7 @@ internal fun MutableMethod.notesNoScrubber(returns: RegistryReturns) {
         """
             if-nez v${returns.holder}, :facebook
             invoke-static { }, $NO_SCRUBBER
+            invoke-static/range { p0 .. p$HAND_OVER_PARAMETERS }, $MISSES_HAND_OVER
         """,
         ExternalLabel("facebook", getInstruction(returns.noHolder)),
     )
@@ -1924,11 +1950,6 @@ internal fun MutableMethod.reportsLoad(looks: ScrubberLooks, load: ScrubberLoad,
 }
 
 /**
- * Ahead of the scrubber's unload clearing the registry's default holder ([HolderClear.clear]): ask the
- * extension about what the registry holds and the scrubber's own holder. A yes skips Facebook's clear,
- * so a scrubber unloading late leaves the holder of the one loaded after it.
- */
-/**
  * With the switch on, a press of the bar hands the footer its everyday look instead of the seek one.
  * The load's register holds nothing Facebook reads, since the load overwrites it.
  */
@@ -1943,6 +1964,11 @@ internal fun MutableMethod.keepsOverlayOnPress(seek: FooterSeek, visibility: Foo
         """, ExternalLabel("facebook", getInstruction(seek.at)), ExternalLabel("hand", getInstruction(seek.at + 1)))
 }
 
+/**
+ * Ahead of the scrubber's unload clearing the registry's default holder ([HolderClear.clear]): ask the
+ * extension about what the registry holds and the scrubber's own holder. A yes skips Facebook's clear,
+ * so a scrubber unloading late leaves the holder of the one loaded after it.
+ */
 internal fun MutableMethod.keepsNewerHolder(clear: HolderClear, load: ScrubberLoad, returns: RegistryReturns) {
     val (current, own) = freeLocalsAt(PATCH, clear.clear, 2, targets = listOf(clear.store + 1))
     addInstructionsWithLabels(
@@ -2015,6 +2041,104 @@ internal fun BytecodePatchContext.fillUpdateAgain(progress: ProgressUpdate) {
         """
             check-cast p0, $base
             invoke-static { p0 }, $base->${progress.update.name}($base)V
+        """,
+    )
+}
+
+/** The registry's hand-over takes this many arguments, the reel's key and an int last, after its own instance. */
+internal const val HAND_OVER_PARAMETERS = 9
+
+/** Whether [method] is the extension's [HAND_OVER_AGAIN_STUB]: static, void, on [MISSES_HAND_OVER]'s arguments. */
+internal fun isHandOverAgainStub(method: Method) = method.name == HAND_OVER_AGAIN_STUB &&
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" &&
+    method.parameterTypes.joinToString("") == MISSES_HAND_OVER.substringAfter("(").substringBefore(")")
+
+/** Whether [method] is the extension's [HELD_BAR_INFO_STUB]: static, from an Object to an Object. */
+internal fun isHeldBarInfoStub(method: Method) = method.name == HELD_BAR_INFO_STUB &&
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Ljava/lang/Object;" &&
+    method.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;")
+
+/** Whether [method] is the extension's [SET_BAR_INFO_STUB]: static, void, on two Objects. */
+internal fun isSetBarInfoStub(method: Method) = method.name == SET_BAR_INFO_STUB &&
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" &&
+    method.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;", "Ljava/lang/Object;")
+
+/**
+ * Refuses unless the extension can run the registry's hand-over again: the method takes the arguments
+ * [MISSES_HAND_OVER] passes on, nothing overwrites one of them ahead of the test for a holder, and the
+ * method, the class, each argument's type that's in this APK, and the scrubber's bar info field with
+ * its type are all reachable from the extension's package.
+ */
+internal fun checkHandOverAgain(
+    handOver: ReelHandOver,
+    returns: RegistryReturns,
+    another: AnotherVideo,
+    classOf: (String) -> ClassDef?,
+) {
+    val method = handOver.method
+    val where = "${method.definingClass}->${method.name}"
+    val types = method.parameterTypes.map(CharSequence::toString)
+    if (types.size != HAND_OVER_PARAMETERS || types[HAND_OVER_PARAMETERS - 2] != "Ljava/lang/Integer;" || types.last() != "I") {
+        refuse("$where no longer takes $HAND_OVER_PARAMETERS arguments ending in the reel's key and an int: $types")
+    }
+    if (!AccessFlags.PUBLIC.isSet(method.accessFlags) || AccessFlags.STATIC.isSet(method.accessFlags)) {
+        refuse("$where isn't a public instance method")
+    }
+    val implementation = method.implementation!!
+    val code = implementation.instructions.toList()
+    val arguments = (implementation.registerCount - HAND_OVER_PARAMETERS - 1) until implementation.registerCount
+    (0 until returns.noHolder).firstOrNull { index -> arguments.any { writes(code[index], it) } }?.let {
+        refuse("$where overwrites an argument at $it, ahead of its test for a scrubber holder")
+    }
+    val infoOwner = another.info.substringBefore("->")
+    val infoName = another.info.substringAfter("->").substringBefore(":")
+    val infoType = another.info.substringAfter(":")
+    (listOf(method.definingClass, infoOwner, infoType) + types).forEach { type ->
+        val found = classOf(type) ?: return@forEach
+        if (!AccessFlags.PUBLIC.isSet(found.accessFlags)) refuse("$type, which the hand-over's stubs name, isn't public")
+    }
+    val info = classOf(infoOwner)?.fields?.singleOrNull { it.name == infoName && it.type == infoType }
+        ?: refuse("$infoOwner has no field ${another.info}")
+    if (!AccessFlags.PUBLIC.isSet(info.accessFlags) || AccessFlags.FINAL.isSet(info.accessFlags)) {
+        refuse("${another.info}, the scrubber's bar info, isn't public and writable")
+    }
+}
+
+/**
+ * Fills [HAND_OVER_AGAIN_STUB] with a call of the registry's hand-over on the arguments it's handed, and
+ * [HELD_BAR_INFO_STUB] and [SET_BAR_INFO_STUB] with the read and write of the scrubber's bar info. d8
+ * gives these stubs no locals of their own, so everything happens in the argument registers.
+ */
+internal fun BytecodePatchContext.fillHandOverAgain(handOver: ReelHandOver, another: AnotherVideo) {
+    val method = handOver.method
+    val types = method.parameterTypes.map(CharSequence::toString)
+    val extension = mutableClassDefBy(PROGRESS_BAR)
+    val again = extension.methods.singleOrNull(::isHandOverAgainStub) ?: refuse("$PROGRESS_BAR has no static void $HAND_OVER_AGAIN_STUB")
+    val casts = (listOf(method.definingClass) + types).withIndex().filter { it.value != "I" }
+        .joinToString("\n") { "check-cast p${it.index}, ${it.value}" }
+    again.addInstructions(
+        0,
+        """
+            $casts
+            invoke-virtual/range { p0 .. p$HAND_OVER_PARAMETERS }, ${method.definingClass}->${method.name}(${types.joinToString("")})V
+        """,
+    )
+    val held = extension.methods.singleOrNull(::isHeldBarInfoStub) ?: refuse("$PROGRESS_BAR has no static Object $HELD_BAR_INFO_STUB")
+    held.addInstructions(
+        0,
+        """
+            check-cast p0, ${another.info.substringBefore("->")}
+            iget-object p0, p0, ${another.info}
+            return-object p0
+        """,
+    )
+    val set = extension.methods.singleOrNull(::isSetBarInfoStub) ?: refuse("$PROGRESS_BAR has no static void $SET_BAR_INFO_STUB")
+    set.addInstructions(
+        0,
+        """
+            check-cast p0, ${another.info.substringBefore("->")}
+            check-cast p1, ${another.info.substringAfter(":")}
+            iput-object p1, p0, ${another.info}
         """,
     )
 }
@@ -2260,12 +2384,7 @@ internal fun MutableMethod.startsLifted(holder: StatusHolder, status: SeekBarSta
  */
 internal fun MutableMethod.staysLifted(holder: StatusHolder, status: SeekBarStatus) {
     val at = holder.store + 1
-    val registers = listOf(holder.new, holder.old, holder.self)
-    // The old status is dead past the store on 582, so liveness alone could hand it out.
-    val live = liveAcrossInjection(at)
-    val free = (0 until minOf(localRegisterCount(), 16)).firstOrNull { it !in live && it !in registers }
-        ?: refuse("$definingClass->$name has no local free after its status store besides $registers")
-    if (registers.any { it > 15 }) refuse("$definingClass->$name keeps the status past v15: $registers")
+    val free = freeAfterStatusStore(holder)
     addInstructionsWithLabels(
         at,
         """
@@ -2281,6 +2400,44 @@ internal fun MutableMethod.staysLifted(holder: StatusHolder, status: SeekBarStat
         """,
         ExternalLabel("facebook", getInstruction(at)),
     )
+}
+
+/**
+ * Right after the status holder's update stores a new status: when a press of the bar takes a footer
+ * from VISIBLE to DRAGGING and the extension keeps the overlay, put VISIBLE back and return, so the
+ * caption stays lifted and the name and buttons don't drop about 35 dp for the press. A footer not at
+ * VISIBLE isn't lifted to begin with, so its press stays Facebook's, or the press would raise it.
+ */
+internal fun MutableMethod.staysLiftedOnPress(holder: StatusHolder, status: SeekBarStatus) {
+    val at = holder.store + 1
+    val free = freeAfterStatusStore(holder)
+    addInstructionsWithLabels(
+        at,
+        """
+            sget-object v$free, ${status.dragging}
+            if-ne v${holder.new}, v$free, :facebook
+            sget-object v$free, ${status.visible}
+            if-ne v${holder.old}, v$free, :facebook
+            invoke-static { }, $KEEPS_OVERLAY
+            move-result v$free
+            if-eqz v$free, :facebook
+            sget-object v${holder.new}, ${status.visible}
+            iput-object v${holder.new}, v${holder.self}, ${holder.field}
+            return-void
+        """,
+        ExternalLabel("facebook", getInstruction(at)),
+    )
+}
+
+/** A local the code right after the status store can borrow, one nothing reads from there on that isn't the status or the holder. */
+private fun MutableMethod.freeAfterStatusStore(holder: StatusHolder): Int {
+    val registers = listOf(holder.new, holder.old, holder.self)
+    // The old status is dead past the store on 582, so liveness alone could hand it out.
+    val live = liveAcrossInjection(holder.store + 1)
+    val free = (0 until minOf(localRegisterCount(), 16)).firstOrNull { it !in live && it !in registers }
+        ?: refuse("$definingClass->$name has no local free after its status store besides $registers")
+    if (registers.any { it > 15 }) refuse("$definingClass->$name keeps the status past v15: $registers")
+    return free
 }
 
 /**
@@ -2472,6 +2629,44 @@ internal fun barTouch(bar: ClassDef): Method =
     bar.methods.singleOrNull {
         "${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == ON_TOUCH && it.implementation != null
     } ?: refuse("${bar.type} has no $ON_TOUCH of its own")
+
+/** The scrubber's own bar listener's release, and the field it holds the scrubber in. */
+internal class BarRelease(val method: Method, val scrubber: String)
+
+/**
+ * The release of the one [SEEK_BAR_LISTENER] among [listeners] that holds a scrubber base (585
+ * `LX/09RL;`). Refuses unless exactly one does, in one field, with a release of its own.
+ */
+internal fun barRelease(listeners: List<ClassDef>, base: String): BarRelease {
+    val holding = listeners.filter { listener -> listener.fields.any { it.type == base } }
+    val owner = holding.singleOrNull() ?: refuse("${holding.size} seek bar listeners hold a $base, expected one")
+    val field = owner.fields.singleOrNull { it.type == base } ?: refuse("${owner.type} holds a $base in more than one field")
+    val method = owner.methods.singleOrNull {
+        "${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == ON_STOP_TRACKING && it.implementation != null
+    } ?: refuse("${owner.type} has no $ON_STOP_TRACKING of its own")
+    return BarRelease(method, "${owner.type}->${field.name}:$base")
+}
+
+/**
+ * First in the bar's release: the extension gets the scrubber and the bar. Nothing has run yet, so
+ * they're read from p0 and p1, which can sit past what these instructions name, into free locals.
+ * Refuses when a jump comes back to the start, as the hook would run twice and the locals it writes
+ * may be live there.
+ */
+internal fun MutableMethod.reportsBarRelease(release: BarRelease) {
+    val first = implementation!!.instructions[0] as BuilderInstruction
+    if (first.location.labels.isNotEmpty()) refuse("$definingClass->$name has a jump back to its start")
+    val (scrubber, bar) = freeLocalsAt(PATCH, 0, 2)
+    addInstructions(
+        0,
+        """
+            move-object/from16 v$scrubber, p0
+            iget-object v$scrubber, v$scrubber, ${release.scrubber}
+            move-object/from16 v$bar, p1
+            invoke-static { v$scrubber, v$bar }, $BAR_RELEASED
+        """,
+    )
+}
 
 /**
  * First in the bar's touch handler: the extension sees every touch, and a yes answers true without

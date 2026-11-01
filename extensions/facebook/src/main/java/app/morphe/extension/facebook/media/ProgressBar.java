@@ -125,11 +125,22 @@ public final class ProgressBar {
     /** Counted each time the registry has no scrubber for a reel, so the kept bar left on the last reel is hidden. */
     static final String NO_SCRUBBER_HIDDEN = "Reel bar hidden for a reel the registry has no scrubber for";
 
+    /** Counted each time a hand-over the registry had no scrubber for runs again once a scrubber has loaded. */
+    static final String HAND_OVER_AGAIN = "Reel bar handed over again after a scrubber's load";
+
+    /** How long a hand-over with no scrubber waits for one to load. The S22 saw 3 to 210 ms. */
+    static final long MISSED_HAND_OVER_MS = 1000;
+
     /** Counted each time an older scrubber unloading leaves the registry's default holder with the scrubber that loaded after it. */
     static final String DEFAULT_HOLDER_KEPT = "Reel bar's scrubber kept in the registry past an older one's unload";
 
     /** Counted each time a press of the bar leaves a reel's name and buttons up instead of Facebook's seek look. */
     static final String OVERLAY_KEPT = "Reel overlay kept on a press of the bar";
+
+    /** Events of one press come closer together than this, so a longer gap starts another press for the log. */
+    static final long OVERLAY_LOG_GAP_MS = 1000;
+
+    private static volatile long overlayKeptAt;
 
     /** Counted each time a bar still in Facebook's thin look is made full size, after the switch went on. */
     static final String KEPT_LOOK_AGAIN = "Reel bar made full size after the switch went on";
@@ -142,6 +153,12 @@ public final class ProgressBar {
 
     /** Counted each time a reel's bar update is run again because nothing had drawn the reel since its light mount. */
     static final String UPDATE_AGAIN = "Reel bar update run again after a hand-over";
+
+    /** Counted each time a reel's bar update is run again because a press on the bar let go. */
+    static final String BAR_RELEASE = "Reel bar update run again after a press";
+
+    /** How long after the bar is let go its update runs again, so a seek Facebook started has landed. */
+    static final long BAR_RELEASE_MS = 300;
 
     /** How long after a light mount, and then between checks, a kept bar is checked for having drawn its reel. */
     static final long UPDATE_CHECK_MS = 500;
@@ -264,6 +281,22 @@ public final class ProgressBar {
         void run(Object scrubber);
     }
 
+    /** Facebook's side of a hand-over run again, in its place for tests, where the stubs have nothing behind them. */
+    @Nullable
+    static volatile HandOverAgain handOverAgainForTests;
+
+    interface HandOverAgain {
+        @Nullable
+        Object swapBarInfo(Object scrubber, @Nullable Object info);
+
+        void handOver(Object registry, Object context, Object session, Object reel, Object host, Object surface,
+                      Object origin, Object store, @Nullable Integer key, int index);
+    }
+
+    /** The hand-over {@link #missesHandOver} is holding for a scrubber's load. */
+    @Nullable
+    private static Runnable missedHandOver;
+
     /** The label of the hand-over running now, between {@link #handsOver} and {@link #leftOnLastReel}. */
     @Nullable
     private static WeakReference<View> handingOver;
@@ -317,6 +350,7 @@ public final class ProgressBar {
         lastBar = null;
         lastShown = null;
         lastBarInfo = null;
+        missedHandOver = null;
     }
 
     private ProgressBar() {
@@ -536,6 +570,92 @@ public final class ProgressBar {
     }
 
     /**
+     * The hook right after {@link #noScrubber}, with every argument of the hand-over the registry is
+     * about to return from. A refresh unloads the scrubber, and its holder leaves the registry with
+     * it, so the hand-over for the reel on screen can land in the gap before the scrubber's next load.
+     * The load takes the reel's id and length but no player, so the scrubber goes on asking the last
+     * reel's: with that player gone its update stops for good, the bar frozen and the time missing,
+     * and with it alive the bar reads that player's place (#120). The other order works, so while
+     * the bar is kept this holds the hand-over for {@link #MISSED_HAND_OVER_MS}, and a load in that
+     * time runs it again ({@link #loads}). Nothing is held longer, as it keeps the Activity's context.
+     */
+    public static void missesHandOver(@Nullable Object registry, @Nullable Object context, @Nullable Object session,
+                                      @Nullable Object reel, @Nullable Object host, @Nullable Object surface,
+                                      @Nullable Object origin, @Nullable Object store, @Nullable Integer key, int index) {
+        try {
+            missedHandOver = null;
+            if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) return;
+            Runnable again = () -> {
+                HandOverAgain forced = handOverAgainForTests;
+                if (forced != null) {
+                    forced.handOver(registry, context, session, reel, host, surface, origin, store, key, index);
+                } else {
+                    handOverAgain(registry, context, session, reel, host, surface, origin, store, key, index);
+                }
+            };
+            missedHandOver = again;
+            Utils.runOnMainThreadDelayed(() -> {
+                if (missedHandOver == again) missedHandOver = null;
+            }, MISSED_HAND_OVER_MS);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel registry", failure);
+        }
+    }
+
+    /**
+     * Filled in by the patch: Facebook's registry hand-over on these arguments, which {@link
+     * #missesHandOver} kept. Does nothing until filled.
+     */
+    public static void handOverAgain(Object registry, Object context, Object session, Object reel, Object host, Object surface,
+                                     Object origin, Object store, @Nullable Integer key, int index) {
+    }
+
+    /** Filled in by the patch: [scrubber]'s bar info. Answers null until filled. */
+    @Nullable
+    public static Object heldBarInfo(Object scrubber) {
+        return null;
+    }
+
+    /** Filled in by the patch: stores [info] as [scrubber]'s bar info. Does nothing until filled. */
+    public static void setBarInfo(Object scrubber, @Nullable Object info) {
+    }
+
+    @Nullable
+    private static Object barInfoSwapped(Object scrubber, @Nullable Object info) {
+        HandOverAgain forced = handOverAgainForTests;
+        if (forced != null) return forced.swapBarInfo(scrubber, info);
+        Object held = heldBarInfo(scrubber);
+        setBarInfo(scrubber, info);
+        return held;
+    }
+
+    /**
+     * Runs a hand-over {@link #missesHandOver} kept, on [scrubber], which has just loaded. The
+     * registry skips a reel the scrubber's bar info already holds, and the load stored that, so the
+     * info is taken away for the call, which handles having none and builds it again. If the
+     * hand-over stopped short or went to another scrubber, the info goes back.
+     */
+    private static void runHandOverAgain(Object scrubber, Runnable again) {
+        try {
+            if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) return;
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, "reel hand-over again");
+            HookStatus.counted(FAMILY, HAND_OVER_AGAIN);
+            Logger.printDebug(() -> "Reel bar: the hand-over the registry had no scrubber for runs again on scrubber "
+                    + Integer.toHexString(System.identityHashCode(scrubber)));
+            Object info = barInfoSwapped(scrubber, null);
+            try {
+                again.run();
+            } finally {
+                Object built = barInfoSwapped(scrubber, info);
+                if (built != null) barInfoSwapped(scrubber, built);
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel hand-over again", failure);
+        }
+    }
+
+    /**
      * The hook in Facebook's Reels scrubber registry as a new reel shows, once it has picked the
      * scrubber, with that scrubber's time label and bar, the id of the reel the scrubber holds (its
      * bar info's) and the id of the reel on screen. Facebook goes on to hand the scrubber the reel,
@@ -549,6 +669,7 @@ public final class ProgressBar {
     public static void handsOver(@Nullable ViewGroup label, @Nullable View bar, @Nullable String held, @Nullable String shown) {
         try {
             handingOver = null;
+            missedHandOver = null;
             if (label == null) return;
             lastLabel = new WeakReference<>(label);
             lastBar = new WeakReference<>(bar);
@@ -622,7 +743,8 @@ public final class ProgressBar {
      * The hook in the scrubber base's load, once it has built the bar info of the reel it takes, with
      * the scrubber's time label, the scrubber and that reel's id. A scrubber can take a reel this way
      * with no hand-over and no light mount, as after a feed refresh (#120), so a hold on its bar ends
-     * here as it does at a mount, and the scrubber is watched until its update draws the reel.
+     * here as it does at a mount, and the scrubber is watched until its update draws the reel. A
+     * hand-over that came just too early for this scrubber runs again once the load is through.
      */
     public static void loads(@Nullable ViewGroup label, @Nullable Object scrubber, @Nullable String reel) {
         try {
@@ -632,8 +754,32 @@ public final class ProgressBar {
             boolean back = over != null && showBarAgain(over);
             Logger.printDebug(() -> "Reel bar: scrubber " + Integer.toHexString(System.identityHashCode(scrubber))
                     + " loaded " + reelName(reel) + (back ? ", so its bar shows again" : ""));
+            Runnable again = missedHandOver;
+            missedHandOver = null;
+            if (again != null && scrubber != null) Utils.runOnMainThread(() -> runHandOverAgain(scrubber, again));
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "scrubber load", failure);
+        }
+    }
+
+    /**
+     * Asked as a press of the bar is about to clear the reel's name, caption and buttons for
+     * Facebook's seek look, and to drop its footer out of the lifted layout. Both hooks ask on every
+     * event of the press, so only the first of a run of them logs.
+     */
+    public static boolean keepsOverlayWhileSeeking() {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.KEEP_REEL_OVERLAY.get()) return false;
+            HookStatus.bound(FAMILY, "bar press");
+            HookStatus.counted(FAMILY, OVERLAY_KEPT);
+            long now = SystemClock.uptimeMillis();
+            if (now - overlayKeptAt > OVERLAY_LOG_GAP_MS) Logger.printDebug(() -> "Reel bar: a press leaves the name and buttons up");
+            overlayKeptAt = now;
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "bar press", failure);
+            return false;
         }
     }
 
@@ -644,21 +790,6 @@ public final class ProgressBar {
      * loaded after it, and the registry has no scrubber for the reel on screen until another load
      * (#120). While the bar is kept, true keeps a holder that isn't the unloading scrubber's.
      */
-    /** Asked as a press of the bar is about to clear the reel's name, caption and buttons for Facebook's seek look. */
-    public static boolean keepsOverlayWhileSeeking() {
-        try {
-            HookStatus.invoked(FAMILY);
-            if (!Utils.settingsReady() || !Settings.KEEP_REEL_OVERLAY.get()) return false;
-            HookStatus.bound(FAMILY, "bar press");
-            HookStatus.counted(FAMILY, OVERLAY_KEPT);
-            Logger.printDebug(() -> "Reel bar: a press leaves the name and buttons up");
-            return true;
-        } catch (Throwable failure) {
-            HookStatus.threw(FAMILY, "bar press", failure);
-            return false;
-        }
-    }
-
     public static boolean keepsDefaultHolder(@Nullable Object current, @Nullable Object own) {
         try {
             HookStatus.invoked(FAMILY);
@@ -732,6 +863,40 @@ public final class ProgressBar {
      * position and length, and stops again otherwise. Does nothing until filled.
      */
     public static void updateAgain(Object scrubber) {
+    }
+
+    /**
+     * The hook, first in the bar's release, with the scrubber and its bar. A press stops the scrubber's
+     * update, and on a bar that takes a touch anywhere only a seek starts it again. A tap in the look
+     * this switch keeps doesn't seek, so the bar and its time stood still until the reel looped (#120).
+     * While the bar is kept this runs the update again just after the release: one more ordinary run
+     * after a real seek, and on a paused reel the update stops itself.
+     */
+    public static void barReleased(Object scrubber, View bar) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, "reel bar release");
+            if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) return;
+            Utils.runOnMainThreadDelayed(() -> updateAfterRelease(scrubber, bar), BAR_RELEASE_MS);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel bar release", failure);
+        }
+    }
+
+    /** The run {@link #barReleased} leaves for later, unless a new press took over and its own release is still to come. */
+    private static void updateAfterRelease(Object scrubber, View bar) {
+        try {
+            if (bar.isPressed()) return;
+            HookStatus.counted(FAMILY, BAR_RELEASE);
+            UpdateAgain forced = updateAgainForTests;
+            if (forced != null) {
+                forced.run(scrubber);
+            } else {
+                updateAgain(scrubber);
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel bar release", failure);
+        }
     }
 
     /**

@@ -594,6 +594,31 @@ class KeepProgressBarReelsFixtureTest {
         }
         val into = patched.indices.filter { store + 1 in flow.normal[it] }.toSet()
         assertEquals("$where: something jumps past the hook", setOf(store), into)
+
+        // #120: a press of a lifted footer stays lifted while the overlay is kept.
+        update.staysLiftedOnPress(holder, status)
+        val pressed = update.code()
+        val spare = (pressed[store + 1] as OneRegisterInstruction).registerA
+        assertTrue("$where: the press hook borrows v$spare, which it reads or Facebook does",
+            spare !in listOf(holder.new, holder.old, holder.self) && spare !in RegisterLiveness.of(holder.update).liveInto(store + 1))
+        assertEquals("$where: $STATUS_DRAGGING is loaded to compare", status.dragging, pressed[store + 1].reference())
+        assertEquals("$where: with the new status", holder.new, (pressed[store + 2] as TwoRegisterInstruction).registerA)
+        assertEquals("$where: $STATUS_VISIBLE is loaded to compare", status.visible, pressed[store + 3].reference())
+        assertEquals("$where: with the old status", holder.old, (pressed[store + 4] as TwoRegisterInstruction).registerA)
+        assertEquals("$where: the extension is asked", KEEPS_OVERLAY, pressed[store + 5].reference())
+        assertEquals("$where: a no goes on to Facebook", Opcode.IF_EQZ, pressed[store + 7].opcode)
+        assertEquals("$where: $STATUS_VISIBLE goes back", status.visible, pressed[store + 8].reference())
+        assertEquals("$where: in the new status' register", holder.new, (pressed[store + 8] as OneRegisterInstruction).registerA)
+        assertEquals("$where: and is stored", holder.field, pressed[store + 9].reference())
+        assertEquals("$where: which stops there, before the Function1 hears of it", Opcode.RETURN_VOID, pressed[store + 10].opcode)
+        // The longer method can need a wider goto than Facebook's, which changes nothing else.
+        fun Instruction.widened() = if (opcode == Opcode.GOTO) Opcode.GOTO_16 else opcode
+        assertEquals("$where: the code behind it stays", patched.drop(store + 1).map { it.widened() }, pressed.drop(store + 11).map { it.widened() })
+        val pressFlow = ControlFlow.of(update)
+        for (branch in listOf(store + 2, store + 4, store + 7)) {
+            assertTrue("$where: a no at $branch doesn't land on the code behind it", store + 11 in pressFlow.normal[branch])
+        }
+        assertEquals("$where: something jumps past the press hook", setOf(store), pressed.indices.filter { store + 1 in pressFlow.normal[it] }.toSet())
     }
 
     /** #120: a press of the bar asks first, and a yes hands the footer's call its everyday look instead of the seek one. */
@@ -830,7 +855,7 @@ class KeepProgressBarReelsFixtureTest {
         val patched = method.code()
         val test = returns.test
         val none = returns.noHolder + 1
-        assertEquals("$where gains three instructions", original.size + 3, patched.size)
+        assertEquals("$where gains four instructions", original.size + 4, patched.size)
         assertEquals("$where: the extension is asked at the flag's test", REGISTRY_ASKS, patched[test].reference())
         val ask = patched[test] as FiveRegisterInstruction
         assertEquals("$where: with the flag and the reel's key", listOf(2, returns.flag, returns.key),
@@ -841,20 +866,27 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$where: on the holder", returns.holder, (patched[none] as OneRegisterInstruction).registerA)
         assertEquals("$where: the extension is told there's no scrubber", NO_SCRUBBER, patched[none + 1].reference())
         assertEquals("$where: with nothing", 0, (patched[none + 1] as FiveRegisterInstruction).registerCount)
-        assertEquals("$where: Facebook's test for a holder comes right after", Opcode.IF_EQZ, patched[none + 2].opcode)
+        // #120: the hand-over came too early for the scrubber's next load, so the extension keeps its arguments.
+        assertEquals("$where: the extension gets the hand-over's arguments", MISSES_HAND_OVER, patched[none + 2].reference())
+        val kept = patched[none + 2] as RegisterRangeInstruction
+        val registers = handOver.method.implementation!!.registerCount
+        assertEquals("$where: all of them, the instance first", listOf(HAND_OVER_PARAMETERS + 1, registers - HAND_OVER_PARAMETERS - 1),
+            listOf(kept.registerCount, kept.startRegister))
+        assertEquals("$where: Facebook's test for a holder comes right after", Opcode.IF_EQZ, patched[none + 3].opcode)
         val flow = ControlFlow.of(method)
         assertEquals("$where: something jumps onto the ask", setOf(test - 1), patched.indices.filter { test in flow.normal[it] }.toSet())
         assertEquals("$where: something jumps onto the holder's hook", setOf(none - 1),
             patched.indices.filter { none in flow.normal[it] }.toSet())
-        assertEquals("$where: a holder doesn't go straight on to Facebook's test", setOf(none + 1, none + 2), flow.normal[none].toSet())
-        assertEquals("$where: something jumps onto Facebook's test for a holder", setOf(none, none + 1),
-            patched.indices.filter { none + 2 in flow.normal[it] }.toSet())
-        assertEquals("$where: no holder no longer returns where the hide does", setOf(test + 2, none + 2),
+        assertEquals("$where: a holder doesn't go straight on to Facebook's test", setOf(none + 1, none + 3), flow.normal[none].toSet())
+        assertEquals("$where: something jumps onto Facebook's test for a holder", setOf(none, none + 2),
+            patched.indices.filter { none + 3 in flow.normal[it] }.toSet())
+        assertEquals("$where: no holder no longer returns where the hide does", setOf(test + 2, none + 3),
             patched.indices.filter { test + 3 in flow.normal[it] }.toSet())
         assertEquals("$where: Facebook's code changed", original.map { it.opcode },
-            patched.indices.filterNot { it in setOf(test, none, none + 1) }.map { patched[it].opcode })
+            patched.indices.filterNot { it in setOf(test, none, none + 1, none + 2) }.map { patched[it].opcode })
         extensionHas(where, REGISTRY_ASKS)
         extensionHas(where, NO_SCRUBBER)
+        extensionHas(where, MISSES_HAND_OVER)
     }
 
     @Test
@@ -1040,5 +1072,102 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$where: on the scrubber it's handed", listOf(1, (stub[0] as OneRegisterInstruction).registerA),
             listOf(call.registerCount, call.registerC))
         extensionHas(where, "$PROGRESS_BAR->$UPDATE_AGAIN_STUB(Ljava/lang/Object;)V")
+    }
+
+    /**
+     * #120: a press stops the scrubber's update, and on a bar that takes a touch anywhere only a seek
+     * starts it again, so a tap in the kept look froze the bar and its time. The bar's release tells the
+     * extension first thing, with the scrubber and the bar, so it can run the update again.
+     */
+    @Test
+    fun `each declared build tells the extension when the bar is let go`() = bundles { bundle ->
+        val name = bundle.name
+        val base = scrubber(bundle).progress.base
+        val listeners = mutableListOf<ClassDef>()
+        FixtureDex.forEach(bundle) { dex -> dex.classes.filterTo(listeners) { SEEK_BAR_LISTENER in it.interfaces } }
+        val release = barRelease(listeners, base.type)
+        val owner = release.method.definingClass
+        val where = "$name: $owner->${release.method.name}"
+        val original = release.method.code()
+        assertTrue("$where no longer reads the scrubber", original.any { it.opcode == Opcode.IGET_OBJECT && it.reference() == release.scrubber })
+        assertTrue("$where no longer restarts the update from its seek", original.any {
+            val call = (it as? ReferenceInstruction)?.reference as? MethodReference
+            it.opcode == Opcode.INVOKE_STATIC && call?.definingClass == base.type && call.returnType == "V" &&
+                call.parameterTypes.map(CharSequence::toString) == listOf(base.type, "J")
+        })
+
+        val context = PatchContexts.of(listeners.filter { it.type == owner })
+        val method = context.mutableClassDefBy(owner).methods.single { it.sameAs(release.method) }
+        method.reportsBarRelease(release)
+        val patched = method.code()
+        assertEquals("$where: the hook's code", listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.IGET_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.INVOKE_STATIC),
+            patched.take(4).map { it.opcode })
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(4).map { it.opcode })
+        val parameters = method.implementation!!.registerCount - 2
+        val scrubberRead = patched[0] as TwoRegisterInstruction
+        assertEquals("$where: the scrubber is read from p0", parameters, scrubberRead.registerB)
+        assertEquals("$where: through the listener's field", release.scrubber, patched[1].reference())
+        val read = patched[1] as TwoRegisterInstruction
+        assertEquals("$where: on the copy of p0", listOf(scrubberRead.registerA, scrubberRead.registerA), listOf(read.registerA, read.registerB))
+        val barRead = patched[2] as TwoRegisterInstruction
+        assertEquals("$where: the bar is read from p1", parameters + 1, barRead.registerB)
+        assertEquals("$where: the extension hears it", BAR_RELEASED, patched[3].reference())
+        val call = patched[3] as FiveRegisterInstruction
+        assertEquals("$where: with the scrubber and the bar", listOf(2, read.registerA, barRead.registerA),
+            listOf(call.registerCount, call.registerC, call.registerD))
+        assertTrue("$where: the hook writes past the locals", maxOf(read.registerA, barRead.registerA) < method.localRegisterCount())
+        extensionHas(where, BAR_RELEASED)
+    }
+
+    /**
+     * #120: a refresh's hand-over can land between the scrubber's unload and its next load, and the load
+     * takes no player. The extension keeps the hand-over's arguments and runs it again after the load, with
+     * the bar info taken away for the call, since the registry skips a reel the info already holds.
+     */
+    @Test
+    fun `each declared build lets the extension run the registry's hand-over again`() = bundles { bundle ->
+        val name = bundle.name
+        val found = scrubber(bundle)
+        val base = found.progress.base
+        val holders = FixtureDex.classesHolding(bundle, NEW_REELS_UNIT_SHOWN).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        val handOver = reelHandOver(holders, base.type)
+        val returns = registryReturns(handOver)
+        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.scrubber)?.minimum).builder.returnType, handOver)
+        val owner = holders.single { it.type == handOver.method.definingClass }
+        val where = "$name: ${owner.type}->${handOver.method.name}"
+        val named = listOf(owner.type, another.info.substringBefore("->"), another.info.substringAfter(":")) +
+            handOver.method.parameterTypes.map(CharSequence::toString)
+        val classes = FixtureDex.classes(bundle, named.toSet())
+        checkHandOverAgain(handOver, returns, another) { classes[it] }
+        // The way back to null bar info: the registry reads the info, and takes none as another reel.
+        val code = handOver.method.code()
+        val read = code.indexOfFirst { it.opcode == Opcode.IGET_OBJECT && it.reference() == another.info }
+        assertTrue("$where no longer reads the scrubber's bar info", read >= 0)
+        assertEquals("$where no longer tests for no bar info", Opcode.IF_EQZ, code.drop(read + 1).first { it.opcode in setOf(Opcode.IF_EQZ, Opcode.IF_NEZ) }.opcode)
+
+        val context = PatchContexts.of(listOf(ExtensionDex.classDef(PROGRESS_BAR)))
+        context.fillHandOverAgain(handOver, another)
+        val methods = context.mutableClassDefBy(PROGRESS_BAR).methods
+        val again = methods.single(::isHandOverAgainStub).code()
+        val types = listOf(owner.type) + handOver.method.parameterTypes.map(CharSequence::toString)
+        assertEquals("$where: the stub's code", List(HAND_OVER_PARAMETERS) { Opcode.CHECK_CAST } + listOf(Opcode.INVOKE_VIRTUAL_RANGE, Opcode.RETURN_VOID),
+            again.map { it.opcode })
+        assertEquals("$where: each argument cast to its type, the int aside", types.dropLast(1), again.take(HAND_OVER_PARAMETERS).map { it.reference() })
+        assertEquals("$where: in its own register", (0 until HAND_OVER_PARAMETERS).toList(),
+            again.take(HAND_OVER_PARAMETERS).map { (it as OneRegisterInstruction).registerA })
+        assertEquals("$where: the stub runs the hand-over", "${owner.type}->${handOver.method.name}(${types.drop(1).joinToString("")})V", again[HAND_OVER_PARAMETERS].reference())
+        val call = again[HAND_OVER_PARAMETERS] as RegisterRangeInstruction
+        assertEquals("$where: on every argument it's handed", listOf(HAND_OVER_PARAMETERS + 1, 0), listOf(call.registerCount, call.startRegister))
+
+        val held = methods.single(::isHeldBarInfoStub).code()
+        assertEquals("$where: the read's code", listOf(Opcode.CHECK_CAST, Opcode.IGET_OBJECT, Opcode.RETURN_OBJECT), held.take(3).map { it.opcode })
+        assertEquals("$where: the read's field", another.info, held[1].reference())
+        assertEquals("$where: the read answers what it read", (held[1] as OneRegisterInstruction).registerA, (held[2] as OneRegisterInstruction).registerA)
+        val set = methods.single(::isSetBarInfoStub).code()
+        assertEquals("$where: the write's code", listOf(Opcode.CHECK_CAST, Opcode.CHECK_CAST, Opcode.IPUT_OBJECT, Opcode.RETURN_VOID), set.map { it.opcode })
+        assertEquals("$where: the write's field", another.info, set[2].reference())
+        extensionHas(where, "$PROGRESS_BAR->$HAND_OVER_AGAIN_STUB(${MISSES_HAND_OVER.substringAfter("(")}")
+        extensionHas(where, "$PROGRESS_BAR->$HELD_BAR_INFO_STUB(Ljava/lang/Object;)Ljava/lang/Object;")
+        extensionHas(where, "$PROGRESS_BAR->$SET_BAR_INFO_STUB(Ljava/lang/Object;Ljava/lang/Object;)V")
     }
 }

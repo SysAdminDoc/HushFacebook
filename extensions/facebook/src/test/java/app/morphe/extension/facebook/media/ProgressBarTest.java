@@ -4,6 +4,7 @@
  */
 package app.morphe.extension.facebook.media;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -67,6 +68,7 @@ public class ProgressBarTest {
         Settings.TAP_TO_PLAY.resetToDefault();
         ProgressBar.footerLiftForTests = null;
         ProgressBar.updateAgainForTests = null;
+        ProgressBar.handOverAgainForTests = null;
         ProgressBar.forgetWatchesForTests();
         ProgressBar.forgetFootersForTests();
         ProgressBar.forgetHandOversForTests();
@@ -692,6 +694,146 @@ public class ProgressBarTest {
         assertTrue(line, line.contains(ProgressBar.LAST_REEL_BACK + " 1"));
     }
 
+    /** Facebook's side of a hand-over run again: the scrubber's bar info, and every call made. */
+    private static final class FakeRegistry implements ProgressBar.HandOverAgain {
+        final List<Object[]> handOvers = new ArrayList<>();
+        Object info;
+        Object builds;
+
+        @Override
+        public Object swapBarInfo(Object scrubber, Object next) {
+            Object was = info;
+            info = next;
+            return was;
+        }
+
+        @Override
+        public void handOver(Object registry, Object context, Object session, Object reel, Object host, Object surface,
+                             Object origin, Object store, Integer key, int index) {
+            handOvers.add(new Object[] {registry, context, session, reel, host, surface, origin, store, key, index});
+            assertNull("the registry would skip the reel the bar info holds", info);
+            if (builds != null) info = builds;
+        }
+    }
+
+    private static final Object[] HAND_OVER = {"registry", "context", "session", "reel", "host", "surface", "origin", "store", 7, 3};
+
+    private static void missesHandOver() {
+        ProgressBar.missesHandOver(HAND_OVER[0], HAND_OVER[1], HAND_OVER[2], HAND_OVER[3], HAND_OVER[4], HAND_OVER[5],
+                HAND_OVER[6], HAND_OVER[7], (Integer) HAND_OVER[8], (Integer) HAND_OVER[9]);
+    }
+
+    @Test
+    public void aHandOverWithNoScrubberRunsAgainOnceOneLoads() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        FakeRegistry registry = new FakeRegistry();
+        registry.info = "loaded";
+        registry.builds = "built";
+        ProgressBar.handOverAgainForTests = registry;
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+        missesHandOver();
+        ProgressBar.loads(label, new Object(), "b");
+        assertTrue("the hand-over ran inside the load", registry.handOvers.isEmpty());
+        idle(0);
+        assertEquals("the hand-over didn't run again once", 1, registry.handOvers.size());
+        assertArrayEquals("the hand-over's arguments changed", HAND_OVER, registry.handOvers.get(0));
+        assertEquals("the bar info the hand-over built was lost", "built", registry.info);
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.HAND_OVER_AGAIN + " 1"));
+
+        ProgressBar.loads(label, new Object(), "c");
+        idle(0);
+        assertEquals("a load with nothing missed handed over", 1, registry.handOvers.size());
+    }
+
+    @Test
+    public void aHandOverThatStopsShortOrThrowsLeavesTheBarInfoTheLoadBuilt() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        FakeRegistry registry = new FakeRegistry();
+        registry.info = "loaded";
+        ProgressBar.handOverAgainForTests = registry;
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+        missesHandOver();
+        ProgressBar.loads(label, new Object(), "b");
+        idle(0);
+        assertEquals(1, registry.handOvers.size());
+        assertEquals("the load's bar info didn't come back", "loaded", registry.info);
+
+        ProgressBar.handOverAgainForTests = new ProgressBar.HandOverAgain() {
+            @Override
+            public Object swapBarInfo(Object scrubber, Object next) {
+                return registry.swapBarInfo(scrubber, next);
+            }
+
+            @Override
+            public void handOver(Object r, Object c, Object s, Object u, Object h, Object f, Object o, Object t, Integer k, int i) {
+                throw new IllegalStateException("Facebook threw");
+            }
+        };
+        missesHandOver();
+        ProgressBar.loads(label, new Object(), "b");
+        idle(0);
+        assertEquals("the load's bar info didn't come back after a throw", "loaded", registry.info);
+    }
+
+    @Test
+    public void aMissedHandOverWaitsOnlySoLongAndEndsWithARealOne() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        FakeRegistry registry = new FakeRegistry();
+        ProgressBar.handOverAgainForTests = registry;
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+        SeekBar bar = new SeekBar(RuntimeEnvironment.getApplication());
+        scrubberViews(label, bar);
+
+        missesHandOver();
+        idle(ProgressBar.MISSED_HAND_OVER_MS);
+        ProgressBar.loads(label, new Object(), "b");
+        idle(0);
+        assertTrue("a late load ran a hand-over that went stale", registry.handOvers.isEmpty());
+
+        missesHandOver();
+        ProgressBar.handsOver(label, bar, null, "b");
+        ProgressBar.loads(label, new Object(), "b");
+        idle(0);
+        assertTrue("a hand-over that found a scrubber ran again", registry.handOvers.isEmpty());
+
+        // A newer miss replaces the older one, and its wait isn't cut short by the older one's.
+        missesHandOver();
+        idle(ProgressBar.MISSED_HAND_OVER_MS - 1);
+        missesHandOver();
+        idle(1);
+        ProgressBar.loads(label, new Object(), "b");
+        idle(0);
+        assertEquals("the newer miss was dropped with the older", 1, registry.handOvers.size());
+    }
+
+    @Test
+    public void aMissedHandOverIsLeftToFacebookOffOrPaused() {
+        FakeRegistry registry = new FakeRegistry();
+        ProgressBar.handOverAgainForTests = registry;
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+        Settings.KEEP_PROGRESS_BAR.save(false);
+        missesHandOver();
+        ProgressBar.loads(label, new Object(), "b");
+        idle(0);
+        assertTrue("the switch is off", registry.handOvers.isEmpty());
+
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        missesHandOver();
+        ProgressBar.loads(label, new Object(), "b");
+        idle(0);
+        assertTrue("paused", registry.handOvers.isEmpty());
+        PauseForTests.resume();
+
+        // Paused between the load and its run: the hand-over stays Facebook's.
+        missesHandOver();
+        ProgressBar.loads(label, new Object(), "b");
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        idle(0);
+        assertTrue("paused before it ran", registry.handOvers.isEmpty());
+    }
+
     @Test
     public void aLoadWithoutAHoldLeavesTheBarAlone() {
         Settings.KEEP_PROGRESS_BAR.save(true);
@@ -761,6 +903,69 @@ public class ProgressBarTest {
 
     private static void idle(long ms) {
         shadowOf(Looper.getMainLooper()).idleFor(ms, TimeUnit.MILLISECONDS);
+    }
+
+    /** #120: a press stops the bar's update, and a tap that doesn't seek never started it again. */
+    @Test
+    public void lettingGoOfAKeptBarRunsItsUpdateAgain() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        SeekBar bar = new SeekBar(RuntimeEnvironment.getApplication());
+        List<Object> runs = new ArrayList<>();
+        ProgressBar.updateAgainForTests = runs::add;
+        Object scrubber = new Object();
+        ProgressBar.barReleased(scrubber, bar);
+        assertTrue("the update ran before a seek could land", runs.isEmpty());
+        idle(ProgressBar.BAR_RELEASE_MS);
+        assertEquals(1, runs.size());
+        assertSame(scrubber, runs.get(0));
+        idle(10 * ProgressBar.BAR_RELEASE_MS);
+        assertEquals("one release runs it once, and the update goes on by itself", 1, runs.size());
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.BAR_RELEASE + " 1"));
+    }
+
+    @Test
+    public void aNewPressOnTheBarTakesOverFromALastRelease() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        SeekBar bar = new SeekBar(RuntimeEnvironment.getApplication());
+        List<Object> runs = new ArrayList<>();
+        ProgressBar.updateAgainForTests = runs::add;
+        ProgressBar.barReleased(new Object(), bar);
+        bar.setPressed(true);
+        idle(ProgressBar.BAR_RELEASE_MS);
+        assertTrue("the update ran under a new press", runs.isEmpty());
+        bar.setPressed(false);
+        Object scrubber = new Object();
+        ProgressBar.barReleased(scrubber, bar);
+        idle(ProgressBar.BAR_RELEASE_MS);
+        assertEquals(1, runs.size());
+        assertSame(scrubber, runs.get(0));
+    }
+
+    @Test
+    public void lettingGoOfTheBarIsLeftToFacebookOffOrPaused() {
+        SeekBar bar = new SeekBar(RuntimeEnvironment.getApplication());
+        List<Object> runs = new ArrayList<>();
+        ProgressBar.updateAgainForTests = runs::add;
+        Settings.KEEP_PROGRESS_BAR.save(false);
+        ProgressBar.barReleased(new Object(), bar);
+        idle(ProgressBar.BAR_RELEASE_MS);
+        assertTrue("the update ran with the switch off", runs.isEmpty());
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        ProgressBar.barReleased(new Object(), bar);
+        idle(ProgressBar.BAR_RELEASE_MS);
+        assertTrue("the update ran under Pause", runs.isEmpty());
+    }
+
+    @Test
+    public void aThrowingUpdateAfterAReleaseStaysOutOfFacebook() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        ProgressBar.updateAgainForTests = scrubber -> {
+            throw new IllegalStateException("Facebook moved");
+        };
+        ProgressBar.barReleased(new Object(), new SeekBar(RuntimeEnvironment.getApplication()));
+        idle(ProgressBar.BAR_RELEASE_MS);
     }
 
     @Test
