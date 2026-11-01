@@ -432,6 +432,7 @@ public final class ProgressBar {
     public static void nextReel(@Nullable ViewGroup label, @Nullable View bar) {
         try {
             HookStatus.invoked(FAMILY);
+            ReelBarFollow.handedOver(label);
             if (!Utils.settingsReady() || !(Settings.KEEP_PROGRESS_BAR.get() || Settings.TAP_TO_PLAY.get())) return;
             HookStatus.bound(FAMILY, "reel bar start over");
             if (bar instanceof android.widget.ProgressBar && ((android.widget.ProgressBar) bar).getProgress() != 0) {
@@ -728,6 +729,7 @@ public final class ProgressBar {
         try {
             if (label == null) return;
             CaptionRoom.mounted(label);
+            ReelBarFollow.mounted(label);
             HandOver over = handOvers.remove(label);
             watch(label, scrubber, over == null ? null : over.shown);
             if (over == null) return;
@@ -1091,6 +1093,7 @@ public final class ProgressBar {
         try {
             if (label == null) return false;
             CaptionRoom.updated(label);
+            ReelBarFollow.updated(label);
             // Facebook found the reel's position and length and moved the bar: the update draws.
             Watch watch = watches.remove(label);
             if (watch != null && watch.runs > 0) {
