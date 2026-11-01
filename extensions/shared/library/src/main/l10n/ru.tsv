@@ -71,7 +71,7 @@ Export settings	Экспортировать настройки
 Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.	Facebook три раза подряд аварийно завершил работу или завис в течение минуты после запуска, поэтому Hushfacebook автоматически приостановил свою работу.
 Facebook no longer downloads ads, or the data it uses to pick them, in the background.	Facebook больше не загружает в фоновом режиме рекламу и данные, используемые для ее подбора.
 Facebook doesn't show its ads inside other apps on this phone.	Facebook не показывает свою рекламу в других приложениях на этом телефоне.
-Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	Темный режим и этот экран используют цвета обоев (на Android 11 - синий). Чтобы увидеть изменения, включите темный режим в Facebook.
+Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in Facebook to see it.	Темный режим и этот экран используют цвета обоев (на Android 11 синий цвет). Чтобы увидеть изменения, включите темный режим в Facebook.
 Hide Stories between posts	Скрывать Истории между публикациями
 Joining the picture and sound	Объединение изображения и звука
 # context: summary of the Pause Hushfacebook switch; Debug logging and Lock Facebook are the two switches a pause leaves working
@@ -285,7 +285,7 @@ A change shows the next time you pull down to refresh.	Изменение вст
 Use the system font	Использовать системный шрифт
 Use the phone's emoji	Использовать эмодзи телефона
 Version	Версия
-Videos go to %1$s and photos to %2$s.	Видео сохраняются в %1$s, а фото - в %2$s.
+Videos go to %1$s and photos to %2$s.	Видео сохраняются в %1$s, а фото в %2$s.
 Open web links in your browser. Facebook's own pages stay in the app.	Открывать веб-ссылки в браузере. Страницы самого Facebook остаются в приложении.
 Records what the patches do and shows error messages, to help with a bug report. Leave it off for everyday use.	Записывает действия патчей и показывает сообщения об ошибках, чтобы помочь при составлении отчета. Для обычного использования оставьте эту функцию выключенной.
 You paused Hushfacebook.	Вы приостановили Hushfacebook.
@@ -326,9 +326,9 @@ Videos will save at their lowest quality, for the smallest files.	Видео б�
 Videos will save at %1$s or the closest quality below it. A video with nothing that low will save at the closest quality above.	Видео будут сохраняться в качестве %1$s или в ближайшем более низком качестве. Если такого качества нет, будет использовано ближайшее более высокое.
 Settings imported.	Настройки импортированы.
 Video file name	Имя файла видео
-%1$s becomes the date and time of the save, %2$s the video's number on Facebook, %3$s who posted it, %4$s their profile's number on Facebook and %5$s the day it was posted. What a save doesn't know is left out, and a name with none of these gets the date added. When the name is already in the folder, the time of the save goes on the end. Invalid characters become underscores. Leave it blank to use the default, %6$s.	%1$s заменяется датой и временем сохранения, %2$s - номером видео на Facebook, %3$s - именем автора, %4$s - номером его профиля на Facebook, а %5$s - датой публикации. Неизвестные данные пропускаются. Если ни один из этих элементов не указан в имени, к нему добавляется дата. Если файл с таким именем уже есть в папке, в конец добавляется время сохранения. Недопустимые символы заменяются символами подчеркивания. Оставьте поле пустым, чтобы использовать значение по умолчанию: %6$s.
+%1$s becomes the date and time of the save, %2$s the video's number on Facebook, %3$s who posted it, %4$s their profile's number on Facebook and %5$s the day it was posted. What a save doesn't know is left out, and a name with none of these gets the date added. When the name is already in the folder, the time of the save goes on the end. Invalid characters become underscores. Leave it blank to use the default, %6$s.	%1$s заменяется датой и временем сохранения, %2$s номером видео на Facebook, %3$s именем автора, %4$s номером его профиля на Facebook, а %5$s датой публикации. Неизвестные данные пропускаются. Если ни один из этих элементов не указан в имени, к нему добавляется дата. Если файл с таким именем уже есть в папке, в конец добавляется время сохранения. Недопустимые символы заменяются символами подчеркивания. Оставьте поле пустым, чтобы использовать значение по умолчанию: %6$s.
 Photo file name	Имя файла фото
-%1$s becomes the date and time of the save, %2$s the photo's number on Facebook, %3$s who posted it, %4$s their profile's number on Facebook and %5$s the day it was posted. What a save doesn't know is left out, and a name with none of these gets the date added. When the name is already in the folder, the time of the save goes on the end. Invalid characters become underscores. Leave it blank to use the default, %6$s.	%1$s заменяется датой и временем сохранения, %2$s - номером фото на Facebook, %3$s - именем автора, %4$s - номером его профиля на Facebook, а %5$s - датой публикации. Неизвестные данные пропускаются. Если ни один из этих элементов не указан в имени, к нему добавляется дата. Если файл с таким именем уже есть в папке, в конец добавляется время сохранения. Недопустимые символы заменяются символами подчеркивания. Оставьте поле пустым, чтобы использовать значение по умолчанию: %6$s.
+%1$s becomes the date and time of the save, %2$s the photo's number on Facebook, %3$s who posted it, %4$s their profile's number on Facebook and %5$s the day it was posted. What a save doesn't know is left out, and a name with none of these gets the date added. When the name is already in the folder, the time of the save goes on the end. Invalid characters become underscores. Leave it blank to use the default, %6$s.	%1$s заменяется датой и временем сохранения, %2$s номером фото на Facebook, %3$s именем автора, %4$s номером его профиля на Facebook, а %5$s датой публикации. Неизвестные данные пропускаются. Если ни один из этих элементов не указан в имени, к нему добавляется дата. Если файл с таким именем уже есть в папке, в конец добавляется время сохранения. Недопустимые символы заменяются символами подчеркивания. Оставьте поле пустым, чтобы использовать значение по умолчанию: %6$s.
 Videos are named %1$s.	Видео называются %1$s.
 Photos are named %1$s.	Фото называются %1$s.
 Saved videos will be named %1$s.	Сохраненные видео будут называться %1$s.
@@ -456,7 +456,7 @@ The Upgrades section and its offers leave Facebook's Menu. Settings, Help and su
 # context: switch title under Menu; Also from Meta is the name of a section in Facebook's own Menu
 Hide Also from Meta	Скрывать раздел «Также от Meta»
 Hide the Muse card	Скрывать карточку Muse
-The Muse card, Meta's ad for its AI agent app, leaves the top of Facebook's Menu.	Карточка Muse - реклама приложения ИИ-агента от Meta - исчезает из верхней части меню Facebook.
+The Muse card, Meta's ad for its AI agent app, leaves the top of Facebook's Menu.	Карточка Muse (реклама приложения ИИ-агента от Meta) исчезает из верхней части меню Facebook.
 # context: summary of that switch; the section links to Meta's other apps and shows ads for its devices
 The Also from Meta section leaves Facebook's Menu, with its links to Meta's other apps and its ads for Meta's devices. Your own shortcuts stay.	Раздел «Также от Meta» исчезает из меню Facebook вместе со ссылками на другие приложения Meta и рекламой устройств Meta. Ваши собственные ярлыки остаются.
 # context: switch title under Menu; Help and support is the name of a section in Facebook's own Menu
@@ -683,9 +683,9 @@ Words to hide	Слова для скрытия
 # context: title of the row and dialog holding the list of words and phrases that keep a post even when it has a word to hide
 Words that keep a post	Слова, разрешающие публикацию
 # context: message of the Words to hide dialog; %1$d is how many phrases a list holds (50), %2$d and %3$d the shortest and longest phrase in characters (2 and 60)
-One word or phrase per line, up to %1$d lines, each %2$d to %3$d characters long. A single emoji or Chinese, Japanese or Korean character is enough on its own. Capital letters don't matter, and a phrase matches anywhere in a post's text, even inside longer words.	По одному слову или фразе в строке, не более %1$d строк, длина каждой - от %2$d до %3$d символов. Одного эмодзи или одного китайского, японского или корейского символа достаточно. Регистр букв не имеет значения. Фраза может совпасть с любой частью текста публикации, в том числе внутри более длинного слова.
+One word or phrase per line, up to %1$d lines, each %2$d to %3$d characters long. A single emoji or Chinese, Japanese or Korean character is enough on its own. Capital letters don't matter, and a phrase matches anywhere in a post's text, even inside longer words.	По одному слову или фразе в строке, не более %1$d строк, каждая длиной от %2$d до %3$d символов. Одного эмодзи или одного китайского, японского или корейского символа достаточно. Регистр букв не имеет значения. Фраза может совпасть с любой частью текста публикации, в том числе внутри более длинного слова.
 # context: message of the Words that keep a post dialog; %1$d is how many phrases a list holds (50), %2$d and %3$d the shortest and longest phrase in characters (2 and 60)
-A post with any of these stays, even when it also has a word to hide. One per line, up to %1$d lines, each %2$d to %3$d characters long. A single emoji or Chinese, Japanese or Korean character is enough on its own.	Публикация с любым из этих слов останется, даже если в ней также есть слово для скрытия. По одному слову или фразе в строке, не более %1$d строк, длина каждой - от %2$d до %3$d символов. Одного эмодзи или одного китайского, японского или корейского символа достаточно.
+A post with any of these stays, even when it also has a word to hide. One per line, up to %1$d lines, each %2$d to %3$d characters long. A single emoji or Chinese, Japanese or Korean character is enough on its own.	Публикация с любым из этих слов останется, даже если в ней также есть слово для скрытия. По одному слову или фразе в строке, не более %1$d строк, каждая длиной от %2$d до %3$d символов. Одного эмодзи или одного китайского, японского или корейского символа достаточно.
 # context: hint in the empty text box of both word list dialogs
 One word or phrase per line	По одному слову или фразе в строке
 # context: toast after saving a word list, one line left out; %2$d and %3$d are the shortest and longest phrase in characters
@@ -751,7 +751,7 @@ Also hide posts labeled as AI	Также скрывать публикации �
 Hide Meta AI in the feed	Скрывать Meta AI в Ленте
 Hides Meta AI cards between posts and cards promoting the Vibes app. People's posts stay, whatever they say about AI.	Скрывает карточки Meta AI между публикациями и карточки с рекламой приложения Vibes. Публикации пользователей остаются независимо от того, что в них говорится об ИИ.
 Hide AI character posts	Скрывать публикации с персонажами ИИ
-Hides posts featuring Meta's AI characters, the chatbots people make with Meta AI Studio. Off by default, since it hasn't been tried on a real feed yet.	Скрывает публикации с персонажами ИИ от Meta - чат-ботами, которых пользователи создают с помощью Meta AI Studio. По умолчанию выключено, поскольку функция еще не проверялась на реальной Ленте.
+Hides posts featuring Meta's AI characters, the chatbots people make with Meta AI Studio. Off by default, since it hasn't been tried on a real feed yet.	Скрывает публикации с персонажами ИИ от Meta, то есть чат-ботами, которых пользователи создают с помощью Meta AI Studio. По умолчанию выключено, поскольку функция еще не проверялась на реальной Ленте.
 # context: summary of that switch; the AI label is the one Facebook shows next to the poster's name on such posts
 Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Off by default, since it hasn't been tried on a real feed yet.	Также скрывает публикации, которые автор пометил как созданные с помощью ИИ, а не только те, которые распознает сам Facebook. По умолчанию выключено, поскольку функция еще не проверялась на реальной Ленте.
 Return to regular Facebook	Вернуться к обычному Facebook
@@ -855,7 +855,7 @@ A double tap on a reel, a video or a photo in the feed no longer likes it or sho
 # context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it
 Double tap to skip	Перемотка двойным нажатием
 # context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video
-A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. A double tap in the middle works as before.	Двойное нажатие на левый или правый край Reels или видео перематывает его на 10 секунд назад или вперед, а для видео короче 30 секунд - на 5 секунд. Двойное нажатие по центру работает как обычно.
+A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. A double tap in the middle works as before.	Двойное нажатие на левый или правый край Reels или видео перематывает его на 10 секунд назад или вперед, а видео короче 30 секунд на 5 секунд. Двойное нажатие по центру работает как обычно.
 # context: switch title under Reels and Watch; on, a tap on a playing reel shows its controls without pausing it
 Tap shows the controls	Нажатие показывает элементы управления
 # context: summary of that switch; the button in the middle is the play and pause button in the reel's controls
@@ -920,10 +920,10 @@ Save to	Сохранять в
 Movies and Pictures	Фильмы и изображения
 Videos and photos go to %1$s, next to the camera's. Saves you already have stay where they are.	Видео и фото сохраняются в %1$s рядом с папкой камеры. Уже сохраненные файлы останутся на прежнем месте.
 Videos and photos go to %1$s, with the phone's other downloads. Saves you already have stay where they are.	Видео и фото сохраняются в %1$s вместе с другими загрузками телефона. Уже сохраненные файлы останутся на прежнем месте.
-Videos go to %1$s and photos to %2$s, as Facebook's own saves do. Some galleries don't show %1$s.	Видео сохраняются в %1$s, а фото - в %2$s, как при сохранении средствами Facebook. Некоторые галереи не отображают %1$s.
+Videos go to %1$s and photos to %2$s, as Facebook's own saves do. Some galleries don't show %1$s.	Видео сохраняются в %1$s, а фото в %2$s, как при сохранении средствами Facebook. Некоторые галереи не отображают %1$s.
 Choose a folder name under %1$s. Invalid characters become underscores. Leave it blank to use the default folder, %2$s.	Выберите имя папки внутри %1$s. Недопустимые символы будут заменены символами подчеркивания. Оставьте поле пустым, чтобы использовать папку по умолчанию: %2$s.
 Videos and photos go to %1$s.	Видео и фото сохраняются в %1$s.
-Videos will go to %1$s and photos to %2$s.	Видео будут сохраняться в %1$s, а фото - в %2$s.
+Videos will go to %1$s and photos to %2$s.	Видео будут сохраняться в %1$s, а фото в %2$s.
 Videos and photos will go to %1$s.	Видео и фото будут сохраняться в %1$s.
 # context: row title under Pause, backup and diagnostics, shown only while Debug logging is on
 Test the Messenger link	Проверить ссылку Messenger
@@ -1039,7 +1039,6 @@ Hides product cards from shopping links that creators add to posts, reels and co
 Hide the Commission eligible label	Скрывать метку «Подходит для комиссии»
 Hides the "Commission eligible" label under the creator's name on reels.	Скрывает метку «Подходит для комиссии» под именем автора в Reels.
 # context: description of that switch; "Commission eligible" is Facebook's own label, so use Facebook's wording in your language if you know it
-Hides product cards from shopping links that creators add to posts, reels and comments. The "Commission eligible" label stays.	Скрывает карточки товаров из ссылок на магазины, которые авторы добавляют в публикации, Reels и комментарии. Метка «Можно получить комиссию» остается.
 # context: The reel button and the video menu item while links are sent to another app (#41)
 Send to app	Отправить в приложение
 # context: Title of Android's app chooser when a video's link is sent
@@ -1121,8 +1120,8 @@ Saved isn't available in this build.	В этой сборке раздел «С�
 Watch history	История Watch
 Watch history shortcut	Ярлык истории Watch
 Watch history isn't available in this build.	В этой сборке история Watch недоступна.
-Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room, and a Watch history row in Settings and privacy. Existing shortcuts stay.	Добавляет историю Watch - просмотренные вами видео и Reels - в меню, открываемое долгим нажатием на значок Facebook, если для нее есть место, а также строку «История Watch» в разделе «Настройки и конфиденциальность». Существующие ярлыки остаются.
-Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Добавляет историю Watch - просмотренные вами видео и Reels - в меню, открываемое долгим нажатием на значок Facebook, если для нее есть место. Существующие ярлыки остаются.
+Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room, and a Watch history row in Settings and privacy. Existing shortcuts stay.	Добавляет историю Watch (просмотренные вами видео и Reels) в меню, открываемое долгим нажатием на значок Facebook, если для нее есть место, а также строку «История Watch» в разделе «Настройки и конфиденциальность». Существующие ярлыки остаются.
+Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Добавляет историю Watch (просмотренные вами видео и Reels) в меню, открываемое долгим нажатием на значок Facebook, если для нее есть место. Существующие ярлыки остаются.
 # context: The optional matching mode for both post word lists.
 Match whole words	Совпадение целых слов
 Matches whole words only, in both lists. For example, "hat" matches "hat!" but not "what" or "hats".	Ищет только целые слова в обоих списках. Например, «кот» совпадает с «кот!», но не с «скот» или «коты».
@@ -1231,7 +1230,7 @@ Facebook stops asking whether to share your post to Threads too. Posting to Face
 # context: summary of the Threads share sheet switch; the share sheet is the panel that opens when you tap Share on a post
 Removes the Threads button when you share something. All other ways to share stay, in the same order.	Удаляет кнопку Threads при отправке материалов. Все остальные способы отправки остаются в прежнем порядке.
 # context: summary of the Muse share sheet switch; Muse is Meta's AI agent app, keep its name
-Removes Muse, Meta's AI agent app, when you share something. All other ways to share stay, in the same order.	Удаляет Muse - приложение ИИ-агента от Meta - при отправке материалов. Все остальные способы отправки остаются в прежнем порядке.
+Removes Muse, Meta's AI agent app, when you share something. All other ways to share stay, in the same order.	Удаляет Muse (приложение ИИ-агента от Meta) при отправке материалов. Все остальные способы отправки остаются в прежнем порядке.
 # context: summary of the Meta Verified switch; the label is a line Facebook adds under the poster's name on some posts
 No Meta Verified offer after you post, and no Meta Verified label under the names on posts. Posting works as usual.	После публикации больше не появляется предложение Meta Verified и метка Meta Verified под именами авторов. Публикации работают как обычно.
 # context: summary of the avatar sticker switch; promotion slots are the cards Facebook uses to suggest its own features
@@ -1351,7 +1350,7 @@ Marked as seen. Tap again to undo.	Отмечено как просмотрен�
 # context: what TalkBack reads for the eye button once the marked story was sent as seen
 Marked as seen and sent	Отмечено как просмотренное и отправлено
 # context: the word lists' dialogs, after their first paragraph: a line between slashes is a regular expression; %1$d is how many a list holds, %2$d the most characters each
-A line between slashes, like /gr[ae]y/, is a pattern that can match several spellings (a regular expression). A list holds up to %1$d, each up to %2$d characters.	Строка между косыми чертами, например /gr[ae]y/, - это шаблон, который может соответствовать нескольким вариантам написания (регулярное выражение). В списке может быть не более %1$d шаблонов длиной до %2$d символов каждый.
+A line between slashes, like /gr[ae]y/, is a pattern that can match several spellings (a regular expression). A list holds up to %1$d, each up to %2$d characters.	Строка между косыми чертами, например /gr[ae]y/, это шаблон, который может соответствовать нескольким вариантам написания (регулярное выражение). В списке может быть не более %1$d шаблонов длиной до %2$d символов каждый.
 # context: under a word list being edited, and when its Save is refused: a line written between slashes isn't a pattern the app can read; %1$d is the line's number
 Line %1$d isn't a pattern Hushfacebook can read. Fix it or remove it, then save again.	Строка %1$d не является шаблоном, который Hushfacebook может прочитать. Исправьте или удалите ее, затем сохраните снова.
 # context: under a word list being edited, and when its Save is refused: more patterns than a list holds; %1$d is the most a list holds
@@ -1788,7 +1787,7 @@ Takes the row of profile pictures off the share sheet, the people Facebook sugge
 Hide who is typing in comments	Скрывать индикатор набора комментария другими пользователями
 Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	Скрывает строку, сообщающую, что кто-то набирает комментарий. Для скрытия вашего собственного индикатора набора есть отдельный переключатель в разделе «Конфиденциальность».
 Hide the search pill on reels	Скрывать поисковую подсказку в Reels
-Hides the search suggestion under a reel's caption, the magnifier with a question to look up, the one at the top of its comments and the search bar over reels you open from a profile.	Скрывает поисковую подсказку под подписью Reels - значок лупы с вопросом для поиска, такую же подсказку вверху комментариев и строку поиска поверх Reels, открытых из профиля.
+Hides the search suggestion under a reel's caption, the magnifier with a question to look up, the one at the top of its comments and the search bar over reels you open from a profile.	Скрывает поисковую подсказку под подписью Reels (значок лупы с вопросом для поиска), такую же подсказку вверху комментариев и строку поиска поверх Reels, открытых из профиля.
 Hide the top right buttons on opened videos	Скрывать кнопки вверху справа у открытых видео
 Takes Search and the button next to it off the top of a video or reel you open. Back stays, and so does More at the bottom of the side buttons, where Download is.	Удаляет поиск и соседнюю кнопку из верхней части открытого видео или Reels. Кнопка «Назад» остается, как и кнопка «Еще» внизу боковой панели, где находится «Скачать».
 # context: switch title under Appearance; the button is Facebook's Messenger icon in the top bar of Home
@@ -1946,8 +1945,8 @@ The "new comments" bubble no longer pops up while you read comments. New comment
 Free stuff	Бесплатное
 Free stuff shortcut	Ярлык «Бесплатное»
 Free stuff isn't available in this build.	В этой сборке раздел «Бесплатное» недоступен.
-Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing shortcuts stay.	Добавляет «Бесплатное» - бесплатные объявления Marketplace - в меню, открываемое долгим нажатием на значок Facebook, если для него есть место, а также строку «Бесплатное» в разделе «Настройки и конфиденциальность». Существующие ярлыки остаются.
-Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Добавляет «Бесплатное» - бесплатные объявления Marketplace - в меню, открываемое долгим нажатием на значок Facebook, если для него есть место. Существующие ярлыки остаются.
+Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing shortcuts stay.	Добавляет «Бесплатное» (бесплатные объявления Marketplace) в меню, открываемое долгим нажатием на значок Facebook, если для него есть место, а также строку «Бесплатное» в разделе «Настройки и конфиденциальность». Существующие ярлыки остаются.
+Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Добавляет «Бесплатное» (бесплатные объявления Marketplace) в меню, открываемое долгим нажатием на значок Facebook, если для него есть место. Существующие ярлыки остаются.
 # context: row in a video's menu while Skip silent parts is on; the video's silent parts are skipped
 Skip silent parts: on	Пропускать тихие фрагменты: включено
 # context: the same row after a tap; this one video keeps its silent parts
@@ -1979,7 +1978,7 @@ The Date posted filter in post search asks for a from and to month, in place of 
 # context: switch title under Reels and Watch; the audio line is the scrolling line at the bottom of a reel naming its sound, like "Name · Original audio" or a song title
 Hide the audio line on reels	Скрывать строку аудио в Reels
 # context: summary of that switch; "Original audio" is Facebook's own label, so use the wording Facebook shows in this language
-Takes the line with the reel's sound, "Original audio" or a song, off the bottom of reels. Other info stays. A change shows from the next reel.	Удаляет нижнюю строку со звуком Reels - «Исходный звук» или названием песни. Остальная информация остается. Изменение применяется начиная со следующего Reels.
+Takes the line with the reel's sound, "Original audio" or a song, off the bottom of reels. Other info stays. A change shows from the next reel.	Удаляет нижнюю строку со звуком Reels («Исходный звук» или название песни). Остальная информация остается. Изменение применяется начиная со следующего Reels.
 # context: switch title under Reels and Watch; the message is Facebook's own "This is taking a while. Try checking your network connection." that pops up while a video or GIF loads slowly
 Hide the slow connection message	Скрывать сообщение о медленном подключении
 # context: summary of that switch; "This is taking a while" is Facebook's own message, so use the wording Facebook shows in this language
@@ -1991,15 +1990,15 @@ The reels in your feed's Reels row play from the start and keep going, instead o
 # context: title of the row on the Appearance page, with AMOLED in the build, that takes a color code for dark mode's backgrounds; also its dialog's title
 Background color	Цвет фона
 # context: text in that row's dialog above the field; %1$s is the lightest gray code it takes, %2$s the color code the patch wrote, both like #0D1117; keep #RRGGBB and #0D1117 as they are
-A color code (#RRGGBB) for dark mode's backgrounds, like #0D1117. Grays up to about %1$s work. Leave it blank for %2$s, the color Hushfacebook was patched with.	Код цвета (#RRGGBB) для фона темного режима, например #0D1117. Подойдут оттенки серого до %1$s. Оставьте поле пустым, чтобы использовать %2$s - цвет, заданный при патчинге Hushfacebook.
+A color code (#RRGGBB) for dark mode's backgrounds, like #0D1117. Grays up to about %1$s work. Leave it blank for %2$s, the color Hushfacebook was patched with.	Код цвета (#RRGGBB) для фона темного режима, например #0D1117. Подойдут оттенки серого до %1$s. Оставьте поле пустым, чтобы использовать %2$s (цвет, заданный при патчинге Hushfacebook).
 # context: summary of that row while it's blank; %1$s is the color code the patch wrote, like #0D1117
-Uses %1$s, the color Hushfacebook was patched with. Type a color code to change it.	Используется %1$s - цвет, заданный при патчинге Hushfacebook. Введите код цвета, чтобы изменить его.
+Uses %1$s, the color Hushfacebook was patched with. Type a color code to change it.	Используется %1$s (цвет, заданный при патчинге Hushfacebook). Введите код цвета, чтобы изменить его.
 # context: summary of that row with a color saved; %1$s is that color code, like #0D1117
 Dark mode's backgrounds use %1$s. Restart Facebook to see the change.	Для фона темного режима используется %1$s. Перезапустите Facebook, чтобы увидеть изменения.
 # context: shown when Save is tapped on that row with text that isn't a color code; %1$s is what was typed; keep #RRGGBB and #0D1117 as they are
 "%1$s" isn't a color. Type a six-digit color code (#RRGGBB), like #0D1117, or leave it blank for the color Hushfacebook was patched with.	«%1$s» не является кодом цвета. Введите шестизначный код (#RRGGBB), например #0D1117, или оставьте поле пустым, чтобы использовать цвет, заданный при патчинге Hushfacebook.
 # context: shown when Save is tapped on that row with an eight-digit code that isn't fully opaque; %1$s is what was typed; keep #RRGGBB and #0D1117 as they are
-%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #0D1117.	%1$s - прозрачный цвет. Введите непрозрачный шестизначный код (#RRGGBB), например #0D1117.
+%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #0D1117.	Цвет %1$s прозрачный. Введите непрозрачный шестизначный код (#RRGGBB), например #0D1117.
 # context: shown when Save is tapped on that row with a color too light for Facebook's white text; %1$s is what was typed, %2$s the lightest gray code it takes
 %1$s is too light for Facebook's text to stay readable. Pick a darker color. Grays up to about %2$s work.	%1$s слишком светлый, и текст Facebook будет плохо читаться. Выберите более темный цвет. Подойдут оттенки серого до %2$s.
 # context: import preview sentence: the file sets AMOLED's Background color row back to blank; "AMOLED black theme" is the patch's name, keep it as translated for that patch
@@ -2017,7 +2016,7 @@ Light mode's backgrounds use %1$s. Restart Facebook to see the change.	Для ф
 # context: shown when Save is tapped on that row with text that isn't a color code; %1$s is what was typed; keep #RRGGBB and #FFF8E7 as they are
 "%1$s" isn't a color. Type a six-digit color code (#RRGGBB), like #FFF8E7, or leave it blank for Facebook's own white.	«%1$s» не является кодом цвета. Введите шестизначный код (#RRGGBB), например #FFF8E7, или оставьте поле пустым, чтобы использовать исходный белый цвет Facebook.
 # context: shown when Save is tapped on that row with an eight-digit code that isn't fully opaque; %1$s is what was typed; keep #RRGGBB and #FFF8E7 as they are
-%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #FFF8E7.	%1$s - прозрачный цвет. Введите непрозрачный шестизначный код (#RRGGBB), например #FFF8E7.
+%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #FFF8E7.	Цвет %1$s прозрачный. Введите непрозрачный шестизначный код (#RRGGBB), например #FFF8E7.
 # context: shown when Save is tapped on that row with a color too dark for light mode's dark text; %1$s is what was typed, %2$s a gray color code like #A6A6A6
 %1$s is too dark for Facebook's light mode text to stay readable. Pick a lighter color. Grays down to about %2$s work.	%1$s слишком темный, и текст светлого режима Facebook будет плохо читаться. Выберите более светлый цвет. Подойдут оттенки серого вплоть до %2$s.
 # context: import preview sentence: the file sets AMOLED's Light background color row back to blank; "AMOLED black theme" is the patch's name, keep it as translated for that patch
@@ -2182,7 +2181,7 @@ Count badges on the tabs are %1$s. Restart Facebook to see the change.	Счет�
 # context: shown when Save is tapped on the Badge or Logo color row with text that isn't a color code; %1$s is what was typed; keep #RRGGBB and #2ECC71 as they are
 "%1$s" isn't a color. Type a six-digit color code (#RRGGBB), like #2ECC71, or leave it blank for Facebook's own.	«%1$s» не является кодом цвета. Введите шестизначный код (#RRGGBB), например #2ECC71, или оставьте поле пустым, чтобы использовать исходный цвет Facebook.
 # context: shown when Save is tapped on the Badge or Logo color row with a see-through color; %1$s is what was typed; keep #RRGGBB and #2ECC71 as they are
-%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #2ECC71.	%1$s - прозрачный цвет. Введите непрозрачный шестизначный код (#RRGGBB), например #2ECC71.
+%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #2ECC71.	Цвет %1$s прозрачный. Введите непрозрачный шестизначный код (#RRGGBB), например #2ECC71.
 # context: import preview sentence: the file sets the Badge color row back to blank; "Badge and logo colors" is the patch's name, keep it as translated for that patch
 If your patched Facebook includes Badge and logo colors, badges will be Facebook's red.	Если в вашей версии пропатченного Facebook есть настройка цветов значков и логотипа, счетчики будут красными, как в Facebook.
 # context: import preview sentence: the file sets the Logo color row back to blank; "Badge and logo colors" is the patch's name, keep it as translated for that patch

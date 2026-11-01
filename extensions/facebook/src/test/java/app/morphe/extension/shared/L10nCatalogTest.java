@@ -75,6 +75,7 @@ public class L10nCatalogTest {
     private static final Pattern L10N_CALL = Pattern.compile("\\bL10n\\s*\\.\\s*(?:t|f|quantity)\\s*\\(");
 
     private static final Pattern PLACEHOLDER = Pattern.compile("%(?:\\d+\\$)?[a-zA-Z]");
+    private static final Pattern PLURAL_FORM = Pattern.compile("\\|(?:zero|one|two|few|many)$");
 
     @Test
     public void theGeneratedClassIsTheTables() throws IOException {
@@ -118,6 +119,8 @@ public class L10nCatalogTest {
             assertEquals(language + " has no row for what the code shows: " + missing, Collections.emptySet(), missing);
             Set<String> stale = new TreeSet<>(carried);
             stale.removeAll(used);
+            // Russian's few and many hang off the other form's key, and L10n.quantity reads them there.
+            stale.removeIf(row -> used.contains(PLURAL_FORM.matcher(row).replaceFirst("")));
             assertEquals(language + " carries rows nothing shows any more: " + stale, Collections.emptySet(), stale);
         }
     }
