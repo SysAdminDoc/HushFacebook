@@ -189,8 +189,9 @@ final class FeedPages {
             // One switch covers the cards on reels and in the comment sheet too.
             if (build.contains(PatchFamily.AFFILIATE_LINKS)) {
                 feed.addPreference(toggle(context, Settings.HIDE_AFFILIATE_LINKS,
-                        L10n.t("Hides product cards from shopping links that creators add to posts, reels and comments. The "
-                                + "\"Commission eligible\" label stays.")));
+                        L10n.t("Hides product cards from shopping links that creators add to posts, reels and comments.")));
+                feed.addPreference(toggle(context, Settings.HIDE_COMMISSION_LABEL,
+                        L10n.t("Hides the \"Commission eligible\" label under the creator's name on reels.")));
             }
             if (build.contains(PatchFamily.SUGGESTED_POSTS)) {
                 feed.addPreference(toggle(context, Settings.HIDE_SUGGESTED_POSTS,

@@ -145,6 +145,18 @@ class HideAffiliateLinksFixtureTest {
         }
     }
 
+    /** Right after the flag's read keeps its answer, that answer goes through the extension and comes back to it. */
+    private fun assertLabelHooked(name: String, method: Method, flag: Int) {
+        val call = flagReads(method).single { it.second == flag }.first
+        val code = method.code()
+        val answer = (code[call + 1] as OneRegisterInstruction).registerA
+        val hook = code[call + 2] as RegisterRangeInstruction
+        assertEquals("$name: the hook", KEEP_COMMISSION_LABEL, (hook as ReferenceInstruction).reference.toString())
+        assertEquals("$name: the hook's register", answer, hook.startRegister)
+        assertEquals("$name: the hook's answer", Opcode.MOVE_RESULT, code[call + 3].opcode)
+        assertEquals("$name: the hook's answer's register", answer, (code[call + 3] as OneRegisterInstruction).registerA)
+    }
+
     @Test
     fun `each declared build has the four anchors once, and every answer goes through the extension`() {
         val checked = mutableSetOf<String>()
@@ -207,8 +219,16 @@ class HideAffiliateLinksFixtureTest {
 
                 val reelCheck = builders.flatMap { reelCardChecks(it, eyebrow!!) }.first()
                 val footerId = footerChecks.flatMap { footerIdCalls(it) }.first()
+                // The label's row: exactly one render names it, and it reads one flag.
+                val labelRenders = FixtureDex.classesHolding(bundle, COMMISSION_IMPRESSION)
+                    .flatMap { it.methods.filter(::isDisclosureRender) }
+                assertEquals("$name: renders naming $DISCLOSURE_COMPONENT", 1, labelRenders.size)
+                val labelRender = labelRenders.single()
+                val labelGate = disclosureGate(labelRender)
+                assertNotNull("$name: the render asks no session check first", labelGate)
                 val types = (builders + footerChecks).map { it.definingClass }.toSet() + reelCheck.map { it.definingClass } +
-                    setOf(footerId.definingClass, FLOATING_CARD_PLUGIN, ctaFilter.definingClass)
+                    setOf(footerId.definingClass, FLOATING_CARD_PLUGIN, ctaFilter.definingClass, labelRender.definingClass,
+                        labelGate!!.definingClass)
                 val classes = FixtureDex.classes(bundle, types)
                 assertEquals("$name: classes read", types, classes.keys)
                 val plugin = classes.getValue(FLOATING_CARD_PLUGIN)
@@ -239,6 +259,12 @@ class HideAffiliateLinksFixtureTest {
                     assertFiltered("$name comment card", originals[1], patched(commentCard), KEEP_COMMENT_CARD, commentCard.returnType)
                 }
                 assertCtaFiltered("$name CTA filter", originals[2], patched(ctaFilter), list)
+                val labelFlag = flagReads(labelRender).single().second
+                for (read in listOf<MethodReference>(labelRender, labelGate)) {
+                    val hooked = context.mutableClassDefBy(read.definingClass).methods
+                        .single { MethodUtil.methodSignaturesMatch(it, read) }
+                    assertLabelHooked("$name label ${read.definingClass}", hooked, labelFlag)
+                }
 
                 val status = context.mutableClassDefBy(SETTINGS_STATUS).methods.single { it.name == "affiliateLinks" }
                 assertEquals("$name: SettingsStatus.affiliateLinks() isn't switched on", 1,

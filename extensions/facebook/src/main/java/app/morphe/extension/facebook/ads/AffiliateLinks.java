@@ -32,7 +32,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * kinds of the overlay's call-to-action list, and with the switch on the list comes back without
  * them.
  *
- * <p>The "Commission eligible" label is a disclosure and is left alone.
+ * <p>The "Commission eligible" label under a reel's creator has a switch of its own, off by default
+ * (#329). The label's row and the check for whether a reel has that row each read the same flag on
+ * the reel, and {@link #keepCommissionLabel} answers both.
  *
  * <p>Off, paused, before the settings are ready, or when anything here fails, the answer is
  * Facebook's own.
@@ -42,6 +44,7 @@ public final class AffiliateLinks {
     static final String REEL_CARD = "Reel product card kept out";
     static final String FEED_CARD = "Feed product card kept out";
     static final String COMMENT_CARD = "Comment sheet product card kept out";
+    static final String COMMISSION_LABEL = "Commission eligible label kept out";
     /**
      * Counted with the kind's name after it, so a report says which shop card a reel had. The name is
      * one of {@link #SHOP_CTAS}, so the count's text stays fixed.
@@ -62,6 +65,23 @@ public final class AffiliateLinks {
     private static volatile boolean logged;
 
     private AffiliateLinks() {
+    }
+
+    /**
+     * The hook right after Facebook reads a reel's "Commission eligible" flag, handed the flag as an
+     * int. False while the label's switch is on, and the flag otherwise.
+     */
+    public static boolean keepCommissionLabel(int commissionEligible) {
+        boolean shows = commissionEligible != 0;
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!shows || !Utils.settingsReady() || !Settings.HIDE_COMMISSION_LABEL.get()) return shows;
+            kept("commission label", COMMISSION_LABEL);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "commission label", failure);
+            return shows;
+        }
     }
 
     /**

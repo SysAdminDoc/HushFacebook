@@ -117,7 +117,7 @@ public enum PatchFamily {
     GAME_ADS(FamilyNames.GAME_ADS, "gameAds", null,
             Settings.BLOCK_GAME_ADS, Settings.ANSWER_REWARDED_GAME_ADS),
     AFFILIATE_LINKS(FamilyNames.AFFILIATE_LINKS, "affiliateLinks", null,
-            Settings.HIDE_AFFILIATE_LINKS),
+            Settings.HIDE_AFFILIATE_LINKS, Settings.HIDE_COMMISSION_LABEL),
     REEL_DECLUTTER(FamilyNames.REEL_DECLUTTER, "reelDeclutter", null,
             Settings.HIDE_REEL_CHIPS, Settings.HIDE_REEL_FOLLOW_BUTTON, Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON,
             Settings.HIDE_REEL_SOCIAL_FOOTER, Settings.HIDE_REEL_THREADS_CARDS, Settings.REEL_CLEAN_MODE, Settings.PLAY_REELS_ONCE,

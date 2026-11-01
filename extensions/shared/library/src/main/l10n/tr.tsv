@@ -992,7 +992,9 @@ No "Are you interested in this reel?" prompt on reels. The reel plays as usual.	
 # context: switch title under News feed; affiliate product links are the shop links creators add to their posts to earn a commission
 Hide affiliate product links	Satış ortaklığı ürün bağlantılarını gizle
 # context: description of that switch; "Commission eligible" is Facebook's own label, so use Facebook's wording in your language if you know it
-Hides product cards from shopping links that creators add to posts, reels and comments. The "Commission eligible" label stays.	İçerik üreticilerin gönderilere, reellere ve yorumlara eklediği alışveriş bağlantılarının ürün kartlarını gizler. “Komisyona uygun” etiketi kalır.
+Hides product cards from shopping links that creators add to posts, reels and comments.	İçerik üreticilerin gönderilere, reellere ve yorumlara eklediği alışveriş bağlantılarının ürün kartlarını gizler.
+Hide the Commission eligible label	“Komisyona uygun” etiketini gizle
+Hides the "Commission eligible" label under the creator's name on reels.	Reellerde içerik üreticinin adının altındaki “Komisyona uygun” etiketini gizler.
 # context: The reel button and the video menu item while links are sent to another app (#41)
 Send to app	Uygulamaya gönder
 # context: Title of Android's app chooser when a video's link is sent

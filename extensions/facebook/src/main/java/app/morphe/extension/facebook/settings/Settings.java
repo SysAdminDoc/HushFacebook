@@ -557,11 +557,15 @@ public class Settings extends BaseSettings {
     /**
      * The product cards of the shop links a creator attaches to a post go: on a reel, under a feed
      * post and floating over the comment box ({@link app.morphe.extension.facebook.ads.AffiliateLinks}).
-     * The "Commission eligible" label stays. A change shows on the reels, posts and comment sheets
-     * built after it.
+     * The "Commission eligible" label has its own switch, {@link #HIDE_COMMISSION_LABEL}. A change
+     * shows on the reels, posts and comment sheets built after it.
      */
     public static final BooleanSetting HIDE_AFFILIATE_LINKS =
             new BooleanSetting("hushfacebook_hide_affiliate_links", TRUE);
+
+    /** The "Commission eligible" label under a reel's creator goes (#329). Shows on the reels built after a change. */
+    public static final BooleanSetting HIDE_COMMISSION_LABEL =
+            new BooleanSetting("hushfacebook_hide_commission_label", FALSE);
 
     /**
      * The chips under a reel that prompt you to make something (Remix, Use template, Add yours,

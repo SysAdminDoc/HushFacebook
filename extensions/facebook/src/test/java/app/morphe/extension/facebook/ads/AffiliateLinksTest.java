@@ -56,7 +56,30 @@ public class AffiliateLinksTest {
     public void restore() {
         PauseForTests.resume();
         Settings.HIDE_AFFILIATE_LINKS.resetToDefault();
+        Settings.HIDE_COMMISSION_LABEL.resetToDefault();
         HookStatus.clear();
+    }
+
+    /** The label has its own switch, off by default, whatever the product cards' switch says (#329). */
+    @Test
+    public void theCommissionLabelGoesOnlyWithItsOwnSwitch() {
+        assertTrue("the label went with its switch off", AffiliateLinks.keepCommissionLabel(1));
+        assertFalse(AffiliateLinks.keepCommissionLabel(0));
+
+        Settings.HIDE_COMMISSION_LABEL.save(true);
+        assertFalse("the label stayed with its switch on", AffiliateLinks.keepCommissionLabel(1));
+        assertFalse(AffiliateLinks.keepCommissionLabel(0));
+
+        Settings.HIDE_AFFILIATE_LINKS.save(false);
+        assertFalse("the cards' switch brought the label back", AffiliateLinks.keepCommissionLabel(1));
+        assertTrue(statusLine(), statusLine().contains(AffiliateLinks.COMMISSION_LABEL));
+    }
+
+    @Test
+    public void pausedTheCommissionLabelStays() {
+        Settings.HIDE_COMMISSION_LABEL.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue("Pause didn't bring the label back", AffiliateLinks.keepCommissionLabel(1));
     }
 
     private static String statusLine() {

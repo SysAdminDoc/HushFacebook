@@ -8,12 +8,15 @@
  */
 package app.morphe.patches.facebook.ads.affiliate
 
+import app.morphe.patcher.StringComparisonType
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.refresh.enumConstant
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.filterBooleanReturns
@@ -29,6 +32,7 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
@@ -38,6 +42,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.util.MethodUtil
 
 internal const val PATCH = "Hide affiliate product links"
 
@@ -69,11 +74,24 @@ internal const val KEEP_FOOTER = "$AFFILIATE_LINKS->keepFooter($STRING)$STRING"
 internal const val KEEP_COMMENT_CARD = "$AFFILIATE_LINKS->keepCommentCard(Ljava/lang/Object;)Ljava/lang/Object;"
 internal const val KEEP_COMMENT_CARD_CHECK = "$AFFILIATE_LINKS->keepCommentCard(I)Z"
 internal const val KEEP_REEL_CTAS = "$AFFILIATE_LINKS->keepReelCtas($LIST$LIST)$LIST"
+internal const val KEEP_COMMISSION_LABEL = "$AFFILIATE_LINKS->keepCommissionLabel(I)Z"
+
+/** What the reel's disclosure row keeps: the component's name, and what it logs for the label. */
+internal const val DISCLOSURE_COMPONENT = "FbShortsViewerDisclosureComponent"
+internal const val COMMISSION_IMPRESSION = "commission_label_impression"
+
+internal const val FB_USER_SESSION = "Lcom/facebook/auth/usersession/FbUserSession;"
 
 /**
  * The product cards of the shop links a creator attaches to a post go, in the three places
- * Facebook shows them, and the "Commission eligible" label stays. Each place asks its own
- * question first.
+ * Facebook shows them. Each place asks its own question first. The "Commission eligible" label has
+ * a switch of its own, off by default.
+ *
+ * - The label (#329) is a row of the reel's disclosure component ([isDisclosureRender], 585 arm64
+ *   `LX/0CRr;->render`, armv7 `LX/0CRu;->render`), which reads one boolean flag off the reel for it.
+ *   The render first asks a static check (arm64 `LX/09b5;->A00`, armv7 `LX/09bA;->A00`) whether the
+ *   reel has any disclosure at all, and that check reads the same flag. Both answers go through
+ *   the extension, so a reel with nothing else to disclose loses the row and not only its text.
  *
  * - On a reel, the card is the overlay item AFFILIATE_EYEBROW of the reel overlay enum (580
  *   `LX/7fq;`, 577 `LX/7ZW;`). The overlay adds it to its list only when a static predicate (580
@@ -123,6 +141,10 @@ val hideAffiliateLinksPatch = bytecodePatch(
 
     execute {
         val anchors = findAffiliateAnchors()
+        val label = findCommissionLabel()
+        for (read in listOf(label.render, label.gate)) {
+            mutableClassDefBy(read.definingClass).findMutableMethodOf(read).hookCommissionFlag(label.flag)
+        }
         for (check in anchors.reelCardChecks) {
             mutableClassDefBy(check.definingClass).findMutableMethodOf(check).filterBooleanReturns(PATCH, KEEP_REEL_CARD)
         }
@@ -146,6 +168,76 @@ internal class AffiliateAnchors(
     val commentCard: Method,
     val ctaFilter: Method,
 )
+
+/** The reel disclosure row's render, the check in front of it, and the flag both read. */
+internal class CommissionLabelAnchors(val render: Method, val gate: Method, val flag: Int)
+
+/** Whether [method] is the reel disclosure row's render, which draws the "Commission eligible" label. */
+internal fun isDisclosureRender(method: Method): Boolean =
+    method.name == "render" && holdsString(method, DISCLOSURE_COMPONENT) && holdsString(method, COMMISSION_IMPRESSION)
+
+/** The check [render] asks first: its first static call answering a boolean about the session. */
+internal fun disclosureGate(render: Method): MethodReference? =
+    render.implementation?.instructions?.firstNotNullOfOrNull { instruction ->
+        val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        call?.takeIf {
+            instruction.opcode == Opcode.INVOKE_STATIC && it.returnType == "Z" &&
+                it.parameterTypes.firstOrNull()?.toString() == FB_USER_SESSION
+        }
+    }
+
+/** Each read in [method] of a reel's boolean flag by its number, as the read's index and the number. */
+internal fun flagReads(method: Method): List<Pair<Int, Int>> {
+    val code = method.implementation?.instructions?.toList() ?: return emptyList()
+    return code.indices.mapNotNull { at ->
+        val call = (code[at] as? ReferenceInstruction)?.reference as? MethodReference
+        val read = code[at] as? FiveRegisterInstruction
+        if (call == null || read == null || call.name != "getBooleanValue" || call.returnType != "Z" ||
+            call.parameterTypes.map { it.toString() } != listOf("I")
+        ) return@mapNotNull null
+        val number = (at - 1 downTo 0).map(code::get).firstOrNull {
+            it is NarrowLiteralInstruction && it is OneRegisterInstruction && it.registerA == read.registerD
+        } as? NarrowLiteralInstruction
+        number?.let { at to it.narrowLiteral }
+    }
+}
+
+/** The label's render and check, each sure to read the flag once. Changes nothing. */
+internal fun BytecodePatchContext.findCommissionLabel(): CommissionLabelAnchors {
+    val renders = classDefByStrings(COMMISSION_IMPRESSION, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .flatMap { classDef -> classDef.methods.filter(::isDisclosureRender) }
+    val render = renders.singleOrNull() ?: refuse("expected one render naming $DISCLOSURE_COMPONENT, found ${renders.size}")
+    val flag = flagReads(render).singleOrNull()?.second
+        ?: refuse("expected one flag read in ${render.definingClass}->render")
+    val gateCall = disclosureGate(render) ?: refuse("${render.definingClass}->render asks no session check first")
+    val gate = classDefBy(gateCall.definingClass).methods.firstOrNull { MethodUtil.methodSignaturesMatch(it, gateCall) }
+        ?: refuse("${gateCall.definingClass} has no ${gateCall.name}")
+    for (method in listOf(render, gate)) {
+        val read = flagReads(method).singleOrNull { it.second == flag }?.first
+            ?: refuse("expected one read of the flag in ${method.definingClass}->${method.name}")
+        val answer = method.implementation!!.instructions.elementAt(read + 1)
+        if (answer.opcode != Opcode.MOVE_RESULT) refuse("the flag read in ${method.definingClass}->${method.name} keeps no answer")
+    }
+    return CommissionLabelAnchors(render, gate, flag)
+}
+
+/**
+ * Hands the answer to the read of [flag] through the extension. Plain [addInstructions] on purpose: a
+ * jump that lands right after the read comes from a path that never read the flag, and it stays on
+ * Facebook's next instruction with its own answer.
+ */
+private fun MutableMethod.hookCommissionFlag(flag: Int) {
+    val read = flagReads(this).single { it.second == flag }.first
+    val answer = (getInstruction(read + 1) as OneRegisterInstruction).registerA
+    addInstructions(
+        read + 2,
+        """
+            invoke-static/range { v$answer .. v$answer }, $KEEP_COMMISSION_LABEL
+            move-result v$answer
+        """,
+    )
+}
 
 /** Whether [method] is the reel overlay's [CTA_FILTER]: static, (List, Set) to List, with code. */
 internal fun isCtaFilter(method: Method): Boolean =

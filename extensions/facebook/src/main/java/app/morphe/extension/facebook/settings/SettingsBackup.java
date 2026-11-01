@@ -208,6 +208,7 @@ public final class SettingsBackup {
             Settings.BLOCK_GAME_ADS,
             Settings.ANSWER_REWARDED_GAME_ADS,
             Settings.HIDE_AFFILIATE_LINKS,
+            Settings.HIDE_COMMISSION_LABEL,
             Settings.HIDE_REEL_CHIPS,
             Settings.HIDE_REEL_FOLLOW_BUTTON,
             Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON,

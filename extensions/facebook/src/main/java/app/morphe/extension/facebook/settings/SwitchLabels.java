@@ -31,6 +31,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_POST_SHARE_BUTTON) return L10n.t("Hide Share under posts");
         if (setting == Settings.HIDE_POST_SEND_BUTTON) return L10n.t("Hide Send under posts");
         if (setting == Settings.HIDE_AFFILIATE_LINKS) return L10n.t("Hide affiliate product links");
+        if (setting == Settings.HIDE_COMMISSION_LABEL) return L10n.t("Hide the Commission eligible label");
         if (setting == Settings.HIDE_SUGGESTED_POSTS) return L10n.t("Hide page suggestions and Facebook's own promos");
         if (setting == Settings.HIDE_SUGGESTED_FOR_YOU) return L10n.t("Hide \"Suggested for you\" posts");
         if (setting == Settings.HIDE_PEOPLE_YOU_MAY_KNOW) return L10n.t("Hide \"People you may know\"");
