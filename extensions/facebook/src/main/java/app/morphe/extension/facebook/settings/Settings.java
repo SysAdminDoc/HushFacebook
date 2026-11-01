@@ -1440,6 +1440,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_keep_progress_bar_time", TRUE);
 
     /**
+     * Pressing a reel's progress bar leaves its name, caption and buttons on screen
+     * ({@link app.morphe.extension.facebook.media.ProgressBar}). Off by default. Off or paused,
+     * Facebook clears them until you let go, as before.
+     */
+    public static final BooleanSetting KEEP_REEL_OVERLAY =
+            new BooleanSetting("hushfacebook_keep_reel_overlay", FALSE);
+
+    /**
      * A tap anywhere on a reel's or video's progress bar jumps there, where Facebook's bar only seeks
      * on a drag from its thumb ({@link app.morphe.extension.facebook.media.TapToSeek}).
      * Works with {@link #KEEP_PROGRESS_BAR} on or off. Off by default, and asked on every press, so

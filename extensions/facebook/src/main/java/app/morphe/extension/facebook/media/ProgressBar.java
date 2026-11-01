@@ -125,6 +125,12 @@ public final class ProgressBar {
     /** Counted each time the registry has no scrubber for a reel, so the kept bar left on the last reel is hidden. */
     static final String NO_SCRUBBER_HIDDEN = "Reel bar hidden for a reel the registry has no scrubber for";
 
+    /** Counted each time an older scrubber unloading leaves the registry's default holder with the scrubber that loaded after it. */
+    static final String DEFAULT_HOLDER_KEPT = "Reel bar's scrubber kept in the registry past an older one's unload";
+
+    /** Counted each time a press of the bar leaves a reel's name and buttons up instead of Facebook's seek look. */
+    static final String OVERLAY_KEPT = "Reel overlay kept on a press of the bar";
+
     /** Counted each time a bar still in Facebook's thin look is made full size, after the switch went on. */
     static final String KEPT_LOOK_AGAIN = "Reel bar made full size after the switch went on";
 
@@ -609,6 +615,63 @@ public final class ProgressBar {
             Logger.printDebug(() -> "Reel bar: Facebook handed the bar to " + reelName(over.shown) + (back ? ", which shows again" : ""));
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel hand-over", failure);
+        }
+    }
+
+    /**
+     * The hook in the scrubber base's load, once it has built the bar info of the reel it takes, with
+     * the scrubber's time label, the scrubber and that reel's id. A scrubber can take a reel this way
+     * with no hand-over and no light mount, as after a feed refresh (#120), so a hold on its bar ends
+     * here as it does at a mount, and the scrubber is watched until its update draws the reel.
+     */
+    public static void loads(@Nullable ViewGroup label, @Nullable Object scrubber, @Nullable String reel) {
+        try {
+            if (label == null) return;
+            HandOver over = handOvers.remove(label);
+            watch(label, scrubber, reel);
+            boolean back = over != null && showBarAgain(over);
+            Logger.printDebug(() -> "Reel bar: scrubber " + Integer.toHexString(System.identityHashCode(scrubber))
+                    + " loaded " + reelName(reel) + (back ? ", so its bar shows again" : ""));
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "scrubber load", failure);
+        }
+    }
+
+    /**
+     * The hook in the scrubber base's unload, where it clears the registry's default holder, with
+     * what the registry holds and the unloading scrubber's own holder. Facebook clears it whichever
+     * scrubber it belongs to, so an older scrubber unloading late takes the holder of the one that
+     * loaded after it, and the registry has no scrubber for the reel on screen until another load
+     * (#120). While the bar is kept, true keeps a holder that isn't the unloading scrubber's.
+     */
+    /** Asked as a press of the bar is about to clear the reel's name, caption and buttons for Facebook's seek look. */
+    public static boolean keepsOverlayWhileSeeking() {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.KEEP_REEL_OVERLAY.get()) return false;
+            HookStatus.bound(FAMILY, "bar press");
+            HookStatus.counted(FAMILY, OVERLAY_KEPT);
+            Logger.printDebug(() -> "Reel bar: a press leaves the name and buttons up");
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "bar press", failure);
+            return false;
+        }
+    }
+
+    public static boolean keepsDefaultHolder(@Nullable Object current, @Nullable Object own) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) return false;
+            HookStatus.bound(FAMILY, "scrubber unload");
+            boolean keep = current != null && current != own;
+            if (keep) HookStatus.counted(FAMILY, DEFAULT_HOLDER_KEPT);
+            Logger.printDebug(() -> "Reel bar: holder " + Integer.toHexString(System.identityHashCode(own))
+                    + " unloaded" + (keep ? ", another scrubber's stays in the registry" : ""));
+            return keep;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "scrubber unload", failure);
+            return false;
         }
     }
 

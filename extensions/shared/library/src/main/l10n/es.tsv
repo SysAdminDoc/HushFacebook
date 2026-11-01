@@ -1123,6 +1123,10 @@ Keep the progress bar	Mantener la barra de progreso
 A reel's progress bar stays full size, ready to drag. A full-screen video's controls stay until you tap.	La barra de progreso de un reel se queda a tamaño completo, lista para arrastrar. Los controles de un vídeo a pantalla completa se quedan hasta que tocas.
 Show a reel's time	Mostrar el tiempo de un reel
 With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.	Con Mantener la barra de progreso activado, el tiempo transcurrido y el total de un reel se quedan encima de la barra. Desactivado, solo se ven mientras la arrastras.
+# context: switch title under Playback; while you press a reel's progress bar, the poster's name and the like, comment and share buttons stay on screen
+Keep the name and buttons while seeking	Mantener el nombre y los botones al saltar
+# context: summary of that switch; the caption is the text under a reel
+Pressing a reel's progress bar leaves the name, caption and buttons on screen. Off, Facebook clears them until you let go.	Al pulsar la barra de progreso de un reel, el nombre, el texto y los botones siguen en pantalla. Desactivado, Facebook los quita hasta que la sueltas.
 # context: switch title under Playback, after Show a reel's time; a tap on the video's progress bar jumps to that point
 Tap the bar to seek	Tocar la barra para saltar
 # context: description of that switch; the dot is the bar's round handle you drag

@@ -377,6 +377,10 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.KEEP_PROGRESS_BAR_TIME,
                         L10n.t("With Keep the progress bar on, a reel's elapsed and total time stay above the bar. "
                                 + "Off, they show only while you drag it.")));
+                // Asked on every press of the bar, so it works from the next one.
+                playback.addPreference(toggle(context, Settings.KEEP_REEL_OVERLAY,
+                        L10n.t("Pressing a reel's progress bar leaves the name, caption and buttons on screen. "
+                                + "Off, Facebook clears them until you let go.")));
                 // Asked on every press of the bar, so it works from the next tap.
                 playback.addPreference(toggle(context, Settings.TAP_TO_SEEK,
                         L10n.t("Tap anywhere on a reel's or video's progress bar to jump there, instead of dragging "

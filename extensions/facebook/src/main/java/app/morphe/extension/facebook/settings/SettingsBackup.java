@@ -304,6 +304,7 @@ public final class SettingsBackup {
             Settings.MUTE_STORIES,
             Settings.KEEP_PROGRESS_BAR,
             Settings.KEEP_PROGRESS_BAR_TIME,
+            Settings.KEEP_REEL_OVERLAY,
             Settings.TAP_TO_SEEK,
             Settings.USE_SYSTEM_FONT,
             Settings.USE_SYSTEM_EMOJI,

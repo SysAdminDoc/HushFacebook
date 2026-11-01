@@ -596,6 +596,39 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$where: something jumps past the hook", setOf(store), into)
     }
 
+    /** #120: a press of the bar asks first, and a yes hands the footer's call its everyday look instead of the seek one. */
+    @Test
+    fun `each declared build can keep the overlay on a press of the bar`() = bundles { bundle ->
+        val name = bundle.name
+        val visibility = footerVisibility(FixtureDex.classesHolding(bundle, FOOTER_SEEKING).filterNot { it.type.startsWith(EXTENSION_CLASSES) })
+        val owners = mutableListOf<ClassDef>()
+        FixtureDex.forEach(bundle) { dex ->
+            dex.classes.filterTo(owners) { owner -> owner.fields.any { it.type == FUNCTION1 } }
+        }
+        val seek = footerSeek(owners, visibility)
+        val where = "$name: ${seek.type}"
+        val original = seek.method.code()
+        val at = seek.at
+        assertTrue("$where: the footer's call never gets $FOOTER_SHOWN", original.any { it.reference() == visibility.shown })
+
+        val context = PatchContexts.of(listOf(owners.first { it.type == seek.type }))
+        val method = context.mutableClassDefBy(seek.type).methods.single { it.sameAs(seek.method) }
+        method.keepsOverlayOnPress(seek, visibility)
+        val patched = method.code()
+        assertEquals("$where: Facebook's code up to the press stays", original.take(at).map { it.opcode }, patched.take(at).map { it.opcode })
+        assertEquals("$where: the extension is asked", KEEPS_OVERLAY, patched[at].reference())
+        assertEquals("$where: its answer is tested", Opcode.IF_EQZ, patched[at + 2].opcode)
+        assertEquals("$where: a yes loads $FOOTER_SHOWN", visibility.shown, patched[at + 3].reference())
+        assertEquals("$where: in the register the call reads", seek.register, (patched[at + 3] as OneRegisterInstruction).registerA)
+        assertEquals("$where: a no still loads $FOOTER_SEEKING", visibility.seeking, patched[at + 5].reference())
+        assertEquals("$where: the call follows it", FUNCTION1_INVOKE, patched[at + 6].reference())
+        assertEquals("$where: Facebook's code from the load on stays", original.drop(at).map { it.opcode }, patched.drop(at + 5).map { it.opcode })
+        val flow = ControlFlow.of(method)
+        assertEquals("$where: a yes goes straight to the call", setOf(at + 6), flow.normal[at + 4].toSet())
+        assertEquals("$where: a no reaches Facebook's load", setOf(at + 3, at + 5), flow.normal[at + 2].toSet())
+        assertEquals("$where: something jumps past the question", setOf(at - 1), patched.indices.filter { at in flow.normal[it] }.toSet())
+    }
+
     /**
      * #73's reel on screen as the switch goes on: each footer status holder reports itself as it's
      * made, the update handed no event lifts HIDDEN to VISIBLE through Facebook's own store while the
@@ -822,6 +855,80 @@ class KeepProgressBarReelsFixtureTest {
             patched.indices.filterNot { it in setOf(test, none, none + 1) }.map { patched[it].opcode })
         extensionHas(where, REGISTRY_ASKS)
         extensionHas(where, NO_SCRUBBER)
+    }
+
+    @Test
+    fun `each declared build reports a scrubber's load and keeps a newer holder past an older unload`() = bundles { bundle ->
+        val name = bundle.name
+        val found = scrubber(bundle)
+        val base = found.progress.base
+        val holders = FixtureDex.classesHolding(bundle, NEW_REELS_UNIT_SHOWN).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        val handOver = reelHandOver(holders, base.type)
+        val returns = registryReturns(handOver)
+        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.scrubber)?.minimum).builder.returnType, handOver)
+        val load = scrubberLoad(base, another, returns)
+        val clear = holderClear(base, returns)
+        assertTrue("$name: the load's trace is gone", load.method.code().any {
+            (it as? ReferenceInstruction)?.reference?.let { ref -> (ref as? StringReference)?.string } == SCRUBBER_LOAD
+        })
+        val context = PatchContexts.of(listOf(base))
+
+        // #120: a scrubber took a reel through its load, with no hand-over and no light mount, and the hold
+        // on its bar never ended.
+        val loading = context.mutableClassDefBy(base.type).methods.single { it.sameAs(load.method) }
+        var where = "$name: ${base.type}->${loading.name}"
+        val loadCode = loading.code()
+        val live = RegisterLiveness.of(load.method).liveInto(load.at)
+        loading.reportsLoad(found.looks, load, another)
+        val loaded = loading.code()
+        assertEquals("$where: the hook's code",
+            listOf(Opcode.IGET_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.IGET_OBJECT, Opcode.IF_EQZ, Opcode.IGET_OBJECT,
+                Opcode.MOVE_OBJECT_FROM16, Opcode.INVOKE_STATIC),
+            loaded.subList(load.at, load.at + 7).map { it.opcode })
+        assertEquals("$where: the bar info is stored right before", another.info, loadCode[load.at - 1].reference())
+        assertEquals("$where: the reel's id off that bar info", another.id, loaded[load.at].reference())
+        assertEquals("$where: from the register stored", load.info, (loaded[load.at] as TwoRegisterInstruction).registerB)
+        assertEquals("$where: the views holder", found.looks.viewsField, loaded[load.at + 2].reference())
+        assertEquals("$where: the time label", found.looks.labelField, loaded[load.at + 4].reference())
+        assertEquals("$where: the extension is told", LOADS, loaded[load.at + 6].reference())
+        val told = loaded[load.at + 6] as FiveRegisterInstruction
+        val borrowed = listOf(told.registerC, told.registerD, told.registerE)
+        assertEquals("$where: with the label, scrubber and reel", 3, told.registerCount)
+        for (register in borrowed) {
+            assertTrue("$where: the hook borrows v$register, which Facebook reads on", register !in live)
+            assertTrue("$where: the hook writes v$register, which isn't a low local", register < minOf(loading.localRegisterCount(), 16))
+        }
+        assertEquals("$where: a missing views holder goes on to Facebook", setOf(load.at + 4, load.at + 7),
+            ControlFlow.of(loading).normal[load.at + 3].toSet())
+        assertEquals("$where: Facebook's code changed", loadCode.map { it.opcode },
+            (loaded.take(load.at) + loaded.drop(load.at + 7)).map { it.opcode })
+
+        // #120: an older scrubber unloading late cleared the default holder of the one that loaded after it.
+        val unloading = context.mutableClassDefBy(base.type).methods.single { it.sameAs(clear.method) }
+        where = "$name: ${base.type}->${unloading.name}"
+        val unloadCode = unloading.code()
+        val liveThere = RegisterLiveness.of(clear.method).liveInto(clear.clear) + RegisterLiveness.of(clear.method).liveInto(clear.store + 1)
+        unloading.keepsNewerHolder(clear, load, returns)
+        val unloaded = unloading.code()
+        val at = clear.clear
+        assertEquals("$where: the hook's code",
+            listOf(Opcode.IGET_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.IGET_OBJECT, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_NEZ),
+            unloaded.subList(at, at + 6).map { it.opcode })
+        assertEquals("$where: Facebook's clear follows", Opcode.CONST_4, unloaded[at + 6].opcode)
+        assertEquals("$where: what the registry holds", returns.defaultHolder, unloaded[at].reference())
+        assertEquals("$where: off the registry", clear.registry, (unloaded[at] as TwoRegisterInstruction).registerB)
+        assertEquals("$where: the scrubber's own holder", load.ownHolder, unloaded[at + 2].reference())
+        assertEquals("$where: the extension is asked", KEEPS_DEFAULT_HOLDER, unloaded[at + 3].reference())
+        assertEquals("$where: Facebook's clear is the default holder's", returns.defaultHolder, unloaded[at + 7].reference())
+        assertEquals("$where: a yes skips only the clear", setOf(at + 6, at + 8), ControlFlow.of(unloading).normal[at + 5].toSet())
+        val asked = unloaded[at + 3] as FiveRegisterInstruction
+        for (register in listOf(asked.registerC, asked.registerD)) {
+            assertTrue("$where: the hook borrows v$register, which Facebook reads on", register !in liveThere)
+        }
+        assertEquals("$where: Facebook's code changed", unloadCode.map { it.opcode },
+            (unloaded.take(at) + unloaded.drop(at + 6)).map { it.opcode })
+        extensionHas(where, LOADS)
+        extensionHas(where, KEEPS_DEFAULT_HOLDER)
     }
 
     @Test

@@ -45,6 +45,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** A Marketplace listing's page now says when it went up, after its place, like "Moncton, NB · Listed 3 weeks ago (Oct 12, 2026)". Facebook only says that on brand new listings, but it sends the time for every one. It's on by default as `Show when listings went up` under Marketplace and shows from the next listing you open (Refs #303).
 * **Facebook:** New `See who shared` adds a row to a post's three-dot menu that opens Facebook's own list of the people who shared it, for photo posts and videos. Facebook only shows that list from the share count for some accounts, so this gets you there on any post that's been shared. It starts off, under News feed (Refs #283).
 * **Facebook:** Two new story switches under Video and audio. `Mute stories` (with `Keep feed videos muted`) starts every story with the sound off each time you open Facebook, until you tap a speaker or press volume up. `Video stories wait for a tap` (with `Tap to play`) keeps a video story from playing by itself, so it won't start until you touch and hold it and let go. Both start off and work with the switches above them on or off (Refs #261).
+* **Facebook:** New `Keep the name and buttons while seeking` leaves a reel's name, caption and side buttons on screen while you press its progress bar (#120). Off, Facebook clears them until you let go. It starts off, under Video and audio.
 
 ### Changed
 
@@ -94,6 +95,7 @@ Changes in each Hushfacebook version, newest first.
 * **Tooling:** The build moves to Gradle 9.8.2, still pinned by checksum. It's a bug-fix release, and the wrapper jar is the same file as 9.8.1's.
 * **Facebook:** `Turn off HDR brightness` turns PQ videos down on Snapdragon phones again, apart from the Snapdragon 8 Gen 1. Every Snapdragon was left out after that chip's video service crashed when asked to turn HDR down, and a Snapdragon 8 Elite turns out to do the job fine in HEVC, VP9 and AV1. HLG videos are handled as they were.
 * **Facebook:** With `Picture-in-picture` on, a reel keeps its place when you come back to it, from the window's expand button or from another app (#44). Facebook put it back at the start every time its screen returned, and that's the seek Hushfacebook drops now. A reel you swipe away from still starts over when you swipe back, like it always has.
+* **Facebook:** With `Keep the progress bar` on, a reel you reach after refreshing or swiping back up keeps its own bar and time, where it could show none at all or sit frozen on the last reel's length (#120). An older reel closing took the newer reel's bar with it.
 
 ## 0.19.0 (2026-10-27)
 

@@ -1123,6 +1123,10 @@ Keep the progress bar	Pertahankan bilah progres
 A reel's progress bar stays full size, ready to drag. A full-screen video's controls stay until you tap.	Bilah progres reel tetap berukuran penuh, siap digeser. Kontrol video layar penuh tetap tampil sampai Anda mengetuk.
 Show a reel's time	Tampilkan waktu reel
 With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.	Dengan Pertahankan bilah progres aktif, waktu berjalan dan total reel tetap tampil di atas bilah. Jika nonaktif, waktu hanya tampil saat Anda menggeser bilah.
+# context: switch title under Playback; while you press a reel's progress bar, the poster's name and the like, comment and share buttons stay on screen
+Keep the name and buttons while seeking	Pertahankan nama dan tombol saat melompat
+# context: summary of that switch; the caption is the text under a reel
+Pressing a reel's progress bar leaves the name, caption and buttons on screen. Off, Facebook clears them until you let go.	Saat bilah progres reel ditekan, nama, keterangan, dan tombol tetap tampil. Jika nonaktif, Facebook menyembunyikannya sampai kamu melepasnya.
 # context: switch title under Playback, after Show a reel's time; a tap on the video's progress bar jumps to that point
 Tap the bar to seek	Ketuk bilah untuk melompat
 # context: description of that switch; the dot is the bar's round handle you drag

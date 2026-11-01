@@ -665,6 +665,70 @@ public class ProgressBarTest {
     }
 
     @Test
+    public void aScrubberLoadingAReelEndsTheHoldOnItsBar() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+        SeekBar bar = new SeekBar(RuntimeEnvironment.getApplication());
+        scrubberViews(label, bar);
+        ProgressBar.registryAsks(false, 1);
+        ProgressBar.handsOver(label, bar, null, "a");
+        ProgressBar.mounts(label, null);
+        ProgressBar.leftOnLastReel();
+        // #120: after a refresh the registry has nothing for the reel, then a scrubber loads it directly.
+        ProgressBar.noScrubber();
+        assertEquals(View.INVISIBLE, bar.getVisibility());
+        assertNull("a look could show the last reel's bar", ProgressBar.lookFor(label, 1));
+        List<Object> runs = new ArrayList<>();
+        ProgressBar.updateAgainForTests = runs::add;
+        Object scrubber = new Object();
+        ProgressBar.loads(label, scrubber, "b");
+        assertEquals("the hold outlived the load", View.VISIBLE, bar.getVisibility());
+        Integer active = 1;
+        assertSame("a look was held back after the load", active, ProgressBar.lookFor(label, active));
+        idle(ProgressBar.UPDATE_CHECK_MS);
+        assertEquals("the loaded reel's update wasn't run again", 1, runs.size());
+        assertSame(scrubber, runs.get(0));
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.LAST_REEL_BACK + " 1"));
+    }
+
+    @Test
+    public void aLoadWithoutAHoldLeavesTheBarAlone() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+        SeekBar bar = new SeekBar(RuntimeEnvironment.getApplication());
+        scrubberViews(label, bar);
+        bar.setVisibility(View.GONE);
+        ProgressBar.loads(label, new Object(), "b");
+        assertEquals("a load changed a bar nothing hid", View.GONE, bar.getVisibility());
+        ProgressBar.loads(null, new Object(), "b");
+    }
+
+    @Test
+    public void anOlderScrubbersUnloadLeavesTheNewerHolder() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        Object older = new Object();
+        Object newer = new Object();
+        assertTrue("the older unload took the newer holder", ProgressBar.keepsDefaultHolder(newer, older));
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.DEFAULT_HOLDER_KEPT + " 1"));
+        assertFalse("a scrubber's own holder stayed past its unload", ProgressBar.keepsDefaultHolder(newer, newer));
+        assertFalse("nothing to keep", ProgressBar.keepsDefaultHolder(null, older));
+        assertFalse(ProgressBar.keepsDefaultHolder(null, null));
+    }
+
+    @Test
+    public void facebookClearsTheHolderWithTheSwitchOffOrPaused() {
+        Object older = new Object();
+        Object newer = new Object();
+        Settings.KEEP_PROGRESS_BAR.save(false);
+        assertFalse("the switch is off", ProgressBar.keepsDefaultHolder(newer, older));
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused", ProgressBar.keepsDefaultHolder(newer, older));
+    }
+
+    @Test
     public void theRegistrysHideIsCountedAndNothingChangesOffOrPaused() {
         Settings.KEEP_PROGRESS_BAR.save(true);
         ProgressBar.registryAsks(true, 3);
@@ -1073,6 +1137,32 @@ public class ProgressBarTest {
         Settings.KEEP_PROGRESS_BAR.save(false);
         assertSame(active, ProgressBar.lookFor(label, active));
         assertEquals("the bar stayed hidden with the switch off", View.VISIBLE, bar.getVisibility());
+    }
+
+    @Test
+    public void aPressOfTheBarKeepsTheOverlayOnlyWithItsSwitchOnAndNotPaused() {
+        assertFalse("the overlay switch doesn't start off", Settings.KEEP_REEL_OVERLAY.get());
+        assertFalse("Facebook's seek look went missing with the switch off", ProgressBar.keepsOverlayWhileSeeking());
+        Settings.KEEP_REEL_OVERLAY.save(true);
+        try {
+            assertTrue("a press still clears the name and buttons", ProgressBar.keepsOverlayWhileSeeking());
+            String line = statusLine();
+            assertTrue("the kept press wasn't counted: " + line,
+                    line != null && line.endsWith("Counted: " + ProgressBar.OVERLAY_KEPT + " 1"));
+            PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+            assertFalse("Pause doesn't give the press back to Facebook", ProgressBar.keepsOverlayWhileSeeking());
+        } finally {
+            PauseForTests.resume();
+            Settings.KEEP_REEL_OVERLAY.resetToDefault();
+        }
+    }
+
+    @Test
+    public void theOverlaySwitchNeedsNoRestartAndTravelsWithItsFamily() {
+        assertFalse(Settings.KEEP_REEL_OVERLAY.rebootApp);
+        assertNull(Settings.KEEP_REEL_OVERLAY.userDialogMessage);
+        assertTrue("Pause and the report don't know the overlay switch",
+                PatchFamily.PROGRESS_BAR.switches.contains(Settings.KEEP_REEL_OVERLAY));
     }
 
     @Test

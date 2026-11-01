@@ -1123,6 +1123,10 @@ Keep the progress bar	Giữ thanh tiến trình
 A reel's progress bar stays full size, ready to drag. A full-screen video's controls stay until you tap.	Thanh tiến trình của reel giữ kích thước đầy đủ, sẵn sàng để kéo. Nút điều khiển của video toàn màn hình vẫn hiện cho đến khi bạn nhấn.
 Show a reel's time	Hiện thời gian của reel
 With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.	Khi Giữ thanh tiến trình bật, thời gian đã phát và tổng thời gian của reel luôn hiện phía trên thanh. Khi tắt, chúng chỉ hiện lúc bạn kéo thanh.
+# context: switch title under Playback; while you press a reel's progress bar, the poster's name and the like, comment and share buttons stay on screen
+Keep the name and buttons while seeking	Giữ tên và các nút khi tua
+# context: summary of that switch; the caption is the text under a reel
+Pressing a reel's progress bar leaves the name, caption and buttons on screen. Off, Facebook clears them until you let go.	Khi nhấn thanh tiến trình của reel, tên, chú thích và các nút vẫn hiện trên màn hình. Khi tắt, Facebook ẩn chúng cho đến khi bạn thả tay.
 # context: switch title under Playback, after Show a reel's time; a tap on the video's progress bar jumps to that point
 Tap the bar to seek	Nhấn vào thanh để tua
 # context: description of that switch; the dot is the bar's round handle you drag

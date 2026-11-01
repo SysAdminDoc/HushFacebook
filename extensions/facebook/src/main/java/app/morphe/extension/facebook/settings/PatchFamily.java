@@ -182,7 +182,7 @@ public enum PatchFamily {
     KEEP_FEED_VIDEOS_MUTED(FamilyNames.KEEP_FEED_VIDEOS_MUTED, "keepFeedVideosMuted", null,
             Settings.KEEP_FEED_VIDEOS_MUTED, Settings.MUTE_STORIES),
     PROGRESS_BAR(FamilyNames.PROGRESS_BAR, "keepProgressBar", null,
-            Settings.KEEP_PROGRESS_BAR, Settings.KEEP_PROGRESS_BAR_TIME, Settings.TAP_TO_SEEK),
+            Settings.KEEP_PROGRESS_BAR, Settings.KEEP_PROGRESS_BAR_TIME, Settings.KEEP_REEL_OVERLAY, Settings.TAP_TO_SEEK),
     SYSTEM_FONT(FamilyNames.SYSTEM_FONT, "systemFont", null,
             Settings.USE_SYSTEM_FONT),
     SYSTEM_EMOJI(FamilyNames.SYSTEM_EMOJI, "systemEmoji", null,

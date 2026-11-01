@@ -222,6 +222,7 @@ final class SwitchLabels {
         if (setting == Settings.MUTE_STORIES) return L10n.t("Mute stories");
         if (setting == Settings.KEEP_PROGRESS_BAR) return L10n.t("Keep the progress bar");
         if (setting == Settings.KEEP_PROGRESS_BAR_TIME) return L10n.t("Show a reel's time");
+        if (setting == Settings.KEEP_REEL_OVERLAY) return L10n.t("Keep the name and buttons while seeking");
         if (setting == Settings.TAP_TO_SEEK) return L10n.t("Tap the bar to seek");
         if (setting == Settings.DOWNLOAD_VIDEOS) return L10n.t("Download feed and Watch videos");
         if (setting == Settings.CLIPBOARD_DOWNLOAD) return L10n.t("Offer to download copied links");
