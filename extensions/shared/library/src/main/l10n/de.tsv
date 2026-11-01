@@ -977,6 +977,22 @@ Keep post dates	Beitragsdatum behalten
 # context: description of that switch; the rotating details are the texts Facebook's newer post header takes turns showing on that line
 Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.	Zeigt unter dem Namen des Absenders das Datum des Beitrags statt der wechselnden Angaben von Facebook, die auf manchen Telefonen leer bleiben.
 Show full post text	Ganzen Beitragstext zeigen
+Translate	Übersetzen
+See original	Original ansehen
+Translation	Übersetzung
+Show original	Original zeigen
+Show translation	Übersetzung zeigen
+Translating...	Wird übersetzt …
+Couldn't translate this. Check your connection and try again.	Übersetzen hat nicht geklappt. Prüfe deine Verbindung und versuche es noch einmal.
+Add a Translate link to posts	Übersetzen-Link bei Beiträgen anzeigen
+Translate posts by themselves	Beiträge automatisch übersetzen
+Posts in another language get a Translate link under their text. A tap sends that post's text to Google Translate.	Beiträge in einer anderen Sprache bekommen unter dem Text einen Übersetzen-Link. Ein Tippen schickt den Text dieses Beitrags an Google Übersetzer.
+Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.	Beiträge in einer anderen Sprache erscheinen übersetzt, darunter steht „Original ansehen“. Der Text jedes Beitrags geht beim Anzeigen an Google Übersetzer.
+Translate to	Übersetzen in
+The phone's language	Sprache des Handys
+Languages to leave alone	Sprachen, die bleiben, wie sie sind
+None picked. Posts in every language can be translated.	Keine ausgewählt. Beiträge in jeder Sprache können übersetzt werden.
+Left alone: %s	Bleiben unverändert: %s
 Posts in the feed show all of their text, so there's no See more to tap.	Beiträge im Feed zeigen ihren ganzen Text, du musst also nicht auf Mehr ansehen tippen.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Wer hat geteilt

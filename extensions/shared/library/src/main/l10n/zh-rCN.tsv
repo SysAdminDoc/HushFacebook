@@ -974,6 +974,22 @@ Keep post dates	保留帖子日期
 # context: description of that switch; the rotating details are the texts Facebook's newer post header takes turns showing on that line
 Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.	在发布者姓名下方显示帖子日期，而不是 Facebook 轮换显示的详情（在某些手机上可能变成空白）。
 Show full post text	显示完整帖子文字
+Translate	翻译
+See original	查看原文
+Translation	译文
+Show original	显示原文
+Show translation	显示译文
+Translating...	正在翻译...
+Couldn't translate this. Check your connection and try again.	无法翻译。请检查网络连接后重试。
+Add a Translate link to posts	为帖子添加“翻译”链接
+Translate posts by themselves	自动翻译帖子
+Posts in another language get a Translate link under their text. A tap sends that post's text to Google Translate.	其他语言的帖子文字下方会出现“翻译”链接。点按后，该帖子的文字会发送到 Google 翻译。
+Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.	其他语言的帖子会显示译文，下方有“查看原文”。每条帖子的文字在显示时都会发送到 Google 翻译。
+Translate to	翻译成
+The phone's language	手机语言
+Languages to leave alone	不翻译的语言
+None picked. Posts in every language can be translated.	未选择。任何语言的帖子都可以翻译。
+Left alone: %s	不翻译：%s
 Posts in the feed show all of their text, so there's no See more to tap.	动态中的帖子会显示全部文字，不用再点“展开”。
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	查看谁分享了

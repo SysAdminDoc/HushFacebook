@@ -977,6 +977,22 @@ Keep post dates	Gönderi tarihlerini koru
 # context: description of that switch; the rotating details are the texts Facebook's newer post header takes turns showing on that line
 Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.	Gönderi sahibinin adının altında, bazı telefonlarda boş kalabilen Facebook'un değişen ayrıntıları yerine gönderi tarihini gösterir.
 Show full post text	Gönderi metninin tamamını göster
+Translate	Çevir
+See original	Orijinali gör
+Translation	Çeviri
+Show original	Orijinali göster
+Show translation	Çeviriyi göster
+Translating...	Çevriliyor...
+Couldn't translate this. Check your connection and try again.	Bu çevrilemedi. Bağlantını kontrol edip tekrar dene.
+Add a Translate link to posts	Gönderilere Çevir bağlantısı ekle
+Translate posts by themselves	Gönderileri kendiliğinden çevir
+Posts in another language get a Translate link under their text. A tap sends that post's text to Google Translate.	Başka dildeki gönderilerin metninin altına Çevir bağlantısı eklenir. Dokununca o gönderinin metni Google Çeviri'ye gönderilir.
+Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.	Başka dildeki gönderiler çevrilmiş görünür, altlarında Orijinali gör yazar. Her gönderinin metni gösterilirken Google Çeviri'ye gider.
+Translate to	Çevrilecek dil
+The phone's language	Telefonun dili
+Languages to leave alone	Çevrilmeyecek diller
+None picked. Posts in every language can be translated.	Seçilen yok. Her dildeki gönderiler çevrilebilir.
+Left alone: %s	Çevrilmeyecek: %s
 Posts in the feed show all of their text, so there's no See more to tap.	Akıştaki gönderiler metninin tamamını gösterir, Devamını gör'e dokunman gerekmez.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Kimlerin paylaştığını gör

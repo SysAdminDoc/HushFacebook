@@ -33,6 +33,7 @@ public final class FamilyNames {
     public static final String META_AI_QUESTIONS = "Hide Meta AI questions under posts";
     public static final String POST_DATES = "Keep post dates";
     public static final String FULL_POST_TEXT = "Show full post text";
+    public static final String TRANSLATE_POSTS = "Translate posts";
     public static final String WHO_SHARED = "See who shared";
     public static final String AUTO_TRANSLATION = "Turn off auto-translation";
     public static final String FEEDS_HEADER = "Hide the Feeds header";

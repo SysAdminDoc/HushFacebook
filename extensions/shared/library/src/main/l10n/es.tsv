@@ -977,6 +977,22 @@ Keep post dates	Mantener la fecha de las publicaciones
 # context: description of that switch; the rotating details are the texts Facebook's newer post header takes turns showing on that line
 Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.	Muestra la fecha de la publicación bajo el nombre de quien publica, en lugar de los datos rotativos de Facebook, que en algunos teléfonos se quedan en blanco.
 Show full post text	Mostrar el texto completo de las publicaciones
+Translate	Traducir
+See original	Ver original
+Translation	Traducción
+Show original	Mostrar original
+Show translation	Mostrar traducción
+Translating...	Traduciendo...
+Couldn't translate this. Check your connection and try again.	No se pudo traducir. Revisa tu conexión e inténtalo de nuevo.
+Add a Translate link to posts	Añadir un enlace Traducir a las publicaciones
+Translate posts by themselves	Traducir las publicaciones automáticamente
+Posts in another language get a Translate link under their text. A tap sends that post's text to Google Translate.	Las publicaciones en otro idioma llevan un enlace Traducir debajo del texto. Al tocarlo, el texto de esa publicación se envía al Traductor de Google.
+Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.	Las publicaciones en otro idioma se muestran traducidas, con Ver original debajo. El texto de cada publicación se envía al Traductor de Google al mostrarse.
+Translate to	Traducir a
+The phone's language	El idioma del teléfono
+Languages to leave alone	Idiomas que no se traducen
+None picked. Posts in every language can be translated.	Ninguno elegido. Se pueden traducir publicaciones en cualquier idioma.
+Left alone: %s	No se traducen: %s
 Posts in the feed show all of their text, so there's no See more to tap.	Las publicaciones del feed muestran todo su texto, así que no hay que tocar Ver más.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Ver quién compartió

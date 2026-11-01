@@ -17,6 +17,8 @@ import android.net.Uri;
 import android.preference.Preference;
 import android.preference.PreferenceGroup;
 
+import app.morphe.extension.facebook.feed.TranslateLanguages;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -67,6 +69,8 @@ public class SettingsL10nTest {
     @Before
     public void everyPatchIn() {
         PatchFamily.inBuildForTests = EnumSet.allOf(PatchFamily.class);
+        // A language's name in Translate posts' lists is Android's own, already in the phone's language.
+        for (String code : TranslateLanguages.codes()) AS_IS.add(TranslateLanguages.name(code));
         // Another class may have left a bundle's own sentences set; this one reads the catalog's.
         LogBufferManager.clearedMessage = null;
         LogBufferManager.nothingToClearMessage = null;

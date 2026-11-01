@@ -863,6 +863,22 @@ Keep post dates	Manter a data das publicações
 # context: description of that switch; the rotating details are the texts Facebook's newer post header takes turns showing on that line
 Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.	Mostra a data da publicação abaixo do nome de quem publicou, em vez dos detalhes rotativos do Facebook, que ficam em branco em alguns celulares.
 Show full post text	Mostrar o texto completo das publicações
+Translate	Traduzir
+See original	Ver original
+Translation	Tradução
+Show original	Mostrar original
+Show translation	Mostrar tradução
+Translating...	Traduzindo...
+Couldn't translate this. Check your connection and try again.	Não foi possível traduzir. Verifique sua conexão e tente de novo.
+Add a Translate link to posts	Adicionar um link Traduzir às publicações
+Translate posts by themselves	Traduzir as publicações automaticamente
+Posts in another language get a Translate link under their text. A tap sends that post's text to Google Translate.	Publicações em outro idioma ganham um link Traduzir abaixo do texto. Um toque envia o texto dessa publicação para o Google Tradutor.
+Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.	Publicações em outro idioma aparecem traduzidas, com Ver original abaixo. O texto de cada publicação vai para o Google Tradutor ao ser exibido.
+Translate to	Traduzir para
+The phone's language	O idioma do celular
+Languages to leave alone	Idiomas que não são traduzidos
+None picked. Posts in every language can be translated.	Nenhum escolhido. Publicações em qualquer idioma podem ser traduzidas.
+Left alone: %s	Não traduzidos: %s
 Posts in the feed show all of their text, so there's no See more to tap.	As publicações do feed mostram todo o texto, então não precisa tocar em Ver mais.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Ver quem compartilhou

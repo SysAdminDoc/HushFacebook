@@ -19,6 +19,7 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.startTabRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.subheading;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.toggle;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.translateToRow;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -27,8 +28,10 @@ import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
 import android.preference.SwitchPreference;
+import android.text.TextUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -36,6 +39,7 @@ import app.morphe.extension.facebook.comments.CommentSheetOptions;
 import app.morphe.extension.facebook.feed.FeedTypeNames;
 import app.morphe.extension.facebook.feed.HiddenTally;
 import app.morphe.extension.facebook.feed.SeenPosts;
+import app.morphe.extension.facebook.feed.TranslateLanguages;
 import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.navigation.MarketplaceOnly;
 import app.morphe.extension.facebook.profile.LocalProfileCounts;
@@ -298,6 +302,16 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.SHOW_FULL_POST_TEXT,
                         L10n.t("Posts in the feed show all of their text, so there's no See more to tap.")));
             }
+            if (build.contains(PatchFamily.TRANSLATE_POSTS)) {
+                feed.addPreference(toggle(context, Settings.TRANSLATE_POST_LINK,
+                        L10n.t("Posts in another language get a Translate link under their text. A tap sends that post's "
+                                + "text to Google Translate.")));
+                feed.addPreference(toggle(context, Settings.TRANSLATE_POSTS_BY_THEMSELVES,
+                        L10n.t("Posts in another language show translated, with See original under them. Each post's "
+                                + "text goes to Google Translate as it's drawn.")));
+                feed.addPreference(translateToRow(context));
+                feed.addPreference(leaveAloneRow(page, context));
+            }
             if (build.contains(PatchFamily.REEL_GESTURES)) {
                 // Read on each long press, so a change shows on the next one.
                 feed.addPreference(toggle(context, Settings.SELECT_POST_TEXT,
@@ -407,7 +421,59 @@ final class FeedPages {
     /** The row's key, for the settings search. No setting is behind it. */
     static final String FEED_TYPES_ROW = "action_feed_types";
 
+    /** The row's key, for the settings search. The setting it writes is a list of codes. */
+    static final String LEAVE_ALONE_ROW = "action_translate_leave_alone";
+
     /** Feed types to hide: units hidden by the type name Debug logging records, picked from a list. */
+    /** The languages Translate posts leaves as they are, picked from a list. */
+    static Preference leaveAloneRow(HushfacebookPreferenceFragment page, Context context) {
+        Row row = new Row(context);
+        row.setKey(LEAVE_ALONE_ROW);
+        row.setTitle(L10n.t("Languages to leave alone"));
+        row.setPersistent(false);
+        row.setSummary(leaveAloneSummary());
+        row.setOnPreferenceClickListener(p -> {
+            showLeaveAlone(page, context, row);
+            return true;
+        });
+        return row;
+    }
+
+    private static void showLeaveAlone(HushfacebookPreferenceFragment page, Context context, Row row) {
+        List<String> codes = TranslateLanguages.codes();
+        List<String> picked = Arrays.asList(Settings.TRANSLATE_LEAVE_ALONE.get().split(","));
+        CharSequence[] names = new CharSequence[codes.size()];
+        boolean[] ticked = new boolean[codes.size()];
+        for (int i = 0; i < names.length; i++) {
+            names[i] = TranslateLanguages.name(codes.get(i));
+            ticked[i] = picked.contains(codes.get(i));
+        }
+        AlertDialog list = page.show(new AlertDialog.Builder(context)
+                .setTitle(L10n.t("Languages to leave alone"))
+                .setMultiChoiceItems(names, ticked, (shown, which, isTicked) -> ticked[which] = isTicked)
+                .setPositiveButton(L10n.t("Save"), null)
+                .setNegativeButton(L10n.t("Cancel"), null));
+        if (list == null) return;
+        list.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(button -> {
+            List<String> kept = new ArrayList<>();
+            for (int i = 0; i < ticked.length; i++) {
+                if (ticked[i]) kept.add(codes.get(i));
+            }
+            Settings.TRANSLATE_LEAVE_ALONE.save(TextUtils.join(",", kept));
+            row.setSummary(leaveAloneSummary());
+            list.dismiss();
+        });
+    }
+
+    private static String leaveAloneSummary() {
+        List<String> names = new ArrayList<>();
+        for (String code : Settings.TRANSLATE_LEAVE_ALONE.get().split(",")) {
+            if (!code.isEmpty()) names.add(TranslateLanguages.name(code));
+        }
+        if (names.isEmpty()) return L10n.t("None picked. Posts in every language can be translated.");
+        return L10n.f("Left alone: %s", L10n.join(names));
+    }
+
     static Preference feedTypesRow(HushfacebookPreferenceFragment page, Context context) {
         Row row = new Row(context);
         row.setKey(FEED_TYPES_ROW);

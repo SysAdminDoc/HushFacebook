@@ -426,7 +426,7 @@ public class PatchFamilyTest {
                 "Block background ad prefetch: no switch, stays in while paused: No ads downloaded in advance",
                 "not in this build: Hide suggested and promoted posts, Hide Stories tray, Hide Reels in the feed, "
                         + "Block background-return feed refresh, Hide AI-detected posts, Hide posts by words, Hide "
-                        + "post prompts, Hide seen posts, Hide Meta AI questions under posts, Keep post dates, Show full post text, See who shared, Turn "
+                        + "post prompts, Hide seen posts, Hide Meta AI questions under posts, Keep post dates, Show full post text, Translate posts, See who shared, Turn "
                         + "off auto-translation, Hide the Feeds header, Hide sponsored stories, Hide suggested "
                         + "stories, Stop Story auto-advance, View stories anonymously, Upload Stories in HD, Longer music on photo stories, Round stories tray, Pinch to zoom, Hide sponsored search results, "
                         + "Hide sponsored profile posts, Hide profile notes, Local profile counts, Post action buttons, Hide sponsored Marketplace listings, Block Instant Games "
@@ -450,7 +450,7 @@ public class PatchFamilyTest {
                 "left out of Manager's default selection: Hide suggested and promoted posts, Hide Stories tray, Hide "
                         + "Reels in the feed, Block background-return feed refresh, Hide AI-detected posts, Hide "
                         + "posts by words, Hide post prompts, Hide seen posts, Hide Meta AI questions under posts, "
-                        + "Keep post dates, Show full post text, See who shared, Turn off auto-translation, Hide the Feeds header, Hide sponsored stories, "
+                        + "Keep post dates, Show full post text, Translate posts, See who shared, Turn off auto-translation, Hide the Feeds header, Hide sponsored stories, "
                         + "Hide suggested stories, Stop Story auto-advance, View stories anonymously, Upload Stories in HD, Longer music on photo stories, Round stories tray, Pinch to zoom, Hide sponsored "
                         + "search results, Hide sponsored profile posts, Hide profile notes, Local profile counts, Post action buttons, Hide sponsored Marketplace listings, Block "
                         + "Instant Games ads, Hide affiliate product links, Clean up Reels, Hide reel interest "
@@ -483,7 +483,8 @@ public class PatchFamilyTest {
                         + "hushfacebook_hide_reel_whatsapp_button=off, hushfacebook_hide_reel_like_button=off, "
                         + "hushfacebook_hide_reel_comment_button=off, hushfacebook_hide_reel_share_button=off, "
                         + "hushfacebook_show_reel_comment_button=off, hushfacebook_show_reel_post_date=off, "
-                        + "hushfacebook_hide_reel_sound_button=off, hushfacebook_hide_reel_audio_line=off, "
+                        + "hushfacebook_hide_reel_sound_button=off, hushfacebook_reel_speaker_above_menu=off, "
+                        + "hushfacebook_hide_reel_audio_line=off, "
                         + "hushfacebook_hide_slow_connection_message=off, hushfacebook_feed_videos_alone=off, "
                         + "hushfacebook_play_feed_reels_whole=off)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.REEL_DECLUTTER), false).get(0));

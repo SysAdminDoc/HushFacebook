@@ -147,7 +147,7 @@ public final class PostTextSelect {
     }
 
     /** Whether Facebook's dark mode is on, or the phone's night mode before Facebook has said. */
-    private static boolean dark(Context context) {
+    public static boolean dark(Context context) {
         if (DarkMode.hasAnswered()) return DarkMode.on();
         return (context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
                 == Configuration.UI_MODE_NIGHT_YES;

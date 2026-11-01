@@ -149,6 +149,10 @@ public class SettingsBackupTest {
         out.put("hushfacebook_font_source",
                 "it names the font file Use the system font draws in, whose copy only this install holds. A settings "
                         + "file can't carry the font itself, and the name alone would point at nothing on another phone.");
+        out.put("hushfacebook_translate_to",
+                "it's a language pick for the person on this phone, and left empty it follows the phone's own language.");
+        out.put("hushfacebook_translate_leave_alone",
+                "it lists the languages the person on this phone reads, which belongs to them, not to a settings file.");
         out.put("hushfacebook_header_picture",
                 "it names the picture at the top of Home, whose shrunk copy only this install holds. A settings file "
                         + "can't carry the picture itself, and the name alone would point at nothing on another phone.");

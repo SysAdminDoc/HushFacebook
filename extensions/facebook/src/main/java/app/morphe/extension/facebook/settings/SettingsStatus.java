@@ -386,6 +386,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean translatePosts() {
+        return false;
+    }
+
     public static boolean whoShared() {
         return false;
     }

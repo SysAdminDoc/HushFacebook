@@ -53,8 +53,11 @@ val showFullPostTextPatch = bytecodePatch(
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {
-        val cut = findTextCut()
-        mutableClassDefBy(cut.method.definingClass).findMutableMethodOf(cut.method).addInstructions(
+        val builder = findPostTextBuilder(PATCH)
+        val method = mutableClassDefBy(builder.definingClass).findMutableMethodOf(builder)
+        // Translate posts adds to this method too, and may have run first, so the place is read from it as it is now.
+        val cut = textCut(method)
+        method.addInstructions(
             cut.hookIndex,
             """
                 invoke-static/range { v${cut.register} .. v${cut.register} }, $CUT
@@ -103,14 +106,13 @@ internal fun textCut(method: Method): TextCut {
     return TextCut(method, call + 2, register)
 }
 
-/** The one method shaped like the cut's caller that reads the line limit, read as the cut. Changes nothing. */
-internal fun BytecodePatchContext.findTextCut(): TextCut {
+/** The one method shaped like the cut's caller that reads the line limit: Facebook's builder of a post's text. */
+internal fun BytecodePatchContext.findPostTextBuilder(patch: String): Method {
     val methods = mutableListOf<Method>()
     classDefForEachReferencing(types = listOf(CHARACTER_STYLE)) { classDef ->
         if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
         classDef.methods.filterTo(methods, ::cutShaped)
     }
-    val method = methods.singleOrNull()
-        ?: refuse("expected one method cutting a post's text to its line limit, found ${methods.size}")
-    return textCut(method)
+    return methods.singleOrNull()
+        ?: throw PatchException("$patch: expected one method building a post's text to its line limit, found ${methods.size}")
 }

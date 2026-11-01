@@ -2444,6 +2444,30 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_show_full_post_text", FALSE);
 
     /**
+     * A post in another language gets a Translate line under its text, and a tap sends the text to
+     * Google Translate ({@link app.morphe.extension.facebook.feed.PostTranslation}). A change shows
+     * on the posts drawn after it.
+     */
+    public static final BooleanSetting TRANSLATE_POST_LINK =
+            new BooleanSetting("hushfacebook_translate_post_link", FALSE);
+
+    /**
+     * A post in another language shows translated by itself, with See original under it. Each such
+     * post's text goes to Google Translate as it's drawn. Includes the line above, for the posts
+     * whose answer doesn't come in time.
+     */
+    public static final BooleanSetting TRANSLATE_POSTS_BY_THEMSELVES =
+            new BooleanSetting("hushfacebook_translate_posts_by_themselves", FALSE);
+
+    /** The language posts are translated to, as Google Translate's code. Empty goes by the phone's language. */
+    public static final StringSetting TRANSLATE_TO =
+            new StringSetting("hushfacebook_translate_to", "");
+
+    /** The languages posts stay in, as Google Translate's codes joined with commas. */
+    public static final StringSetting TRANSLATE_LEAVE_ALONE =
+            new StringSetting("hushfacebook_translate_leave_alone", "");
+
+    /**
      * A post's three-dot menu gets See who shared, which opens Facebook's own list of the people
      * who shared it ({@link app.morphe.extension.facebook.feed.WhoShared}). A change shows on the
      * next menu opened.

@@ -69,7 +69,7 @@ public class RowChevronTest {
     /** Every row on the screen whose tap opens a dialog, a file picker, the browser, Android's settings or another page. */
     private static final Set<String> OPENS_SOMETHING = new LinkedHashSet<>(Arrays.asList(
             "Jump to a section", "Pause length", "Break after", "Break length", "Reels in the feed", "Reels that play by themselves", "The Reels tab",
-            "Everything except Marketplace", "Menu tiles to hide",
+            "Everything except Marketplace", "Menu tiles to hide", "Translate to", "Languages to leave alone",
             "Tab bar position", "Tab bar while scrolling", "Tab to open on", "Feeds opens on", "Home shows", "Keep seen posts hidden for", "Words to hide", "Words that keep a post", "People, Pages and sites to hide", "Reels order", "Comment order", "Hide reaction counts", "Recently watched", "Keep watched entries for","Default quality", "Reels quality", "Stories quality", "Font file", "Home header text", "Home header picture", "Download quality", "Save on", "Save to", "Save folder",
             "Video subfolder", "Photo subfolder",
             "Video file name", "Photo file name", "When you tap Download", "App to send to", "Share sheet items to hide", "Supported links", "Meta App Manager", "Messenger", "Instagram",

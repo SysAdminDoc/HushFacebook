@@ -977,6 +977,22 @@ Keep post dates	Pertahankan tanggal postingan
 # context: description of that switch; the rotating details are the texts Facebook's newer post header takes turns showing on that line
 Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.	Menampilkan tanggal postingan di bawah nama pemosting, bukan keterangan bergantian milik Facebook yang bisa kosong di beberapa ponsel.
 Show full post text	Tampilkan teks postingan lengkap
+Translate	Terjemahkan
+See original	Lihat aslinya
+Translation	Terjemahan
+Show original	Tampilkan aslinya
+Show translation	Tampilkan terjemahan
+Translating...	Menerjemahkan...
+Couldn't translate this. Check your connection and try again.	Tidak bisa menerjemahkan ini. Periksa koneksi Anda lalu coba lagi.
+Add a Translate link to posts	Tambahkan tautan Terjemahkan ke postingan
+Translate posts by themselves	Terjemahkan postingan secara otomatis
+Posts in another language get a Translate link under their text. A tap sends that post's text to Google Translate.	Postingan dalam bahasa lain mendapat tautan Terjemahkan di bawah teksnya. Mengetuknya mengirim teks postingan itu ke Google Terjemahan.
+Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.	Postingan dalam bahasa lain tampil sudah diterjemahkan, dengan Lihat aslinya di bawahnya. Teks tiap postingan dikirim ke Google Terjemahan saat ditampilkan.
+Translate to	Terjemahkan ke
+The phone's language	Bahasa ponsel
+Languages to leave alone	Bahasa yang tidak diterjemahkan
+None picked. Posts in every language can be translated.	Belum ada yang dipilih. Postingan dalam bahasa apa pun bisa diterjemahkan.
+Left alone: %s	Tidak diterjemahkan: %s
 Posts in the feed show all of their text, so there's no See more to tap.	Postingan di feed menampilkan seluruh teksnya, jadi tidak perlu mengetuk Lihat selengkapnya.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Lihat siapa yang membagikan

@@ -59,6 +59,7 @@ import app.morphe.extension.facebook.feed.PostSources;
 import app.morphe.extension.facebook.feed.PostWords;
 import app.morphe.extension.facebook.feed.ReactionCeiling;
 import app.morphe.extension.facebook.feed.TopicPacks;
+import app.morphe.extension.facebook.feed.TranslateLanguages;
 import app.morphe.extension.facebook.feed.SeenPosts;
 import app.morphe.extension.facebook.media.PlaybackQuality;
 import app.morphe.extension.facebook.media.RecentlyWatched;
@@ -120,6 +121,7 @@ import app.morphe.extension.facebook.settings.ValueRows.StartTabRow;
 import app.morphe.extension.facebook.settings.ValueRows.SubfolderRow;
 import app.morphe.extension.facebook.settings.ValueRows.SurfaceQualityRow;
 import app.morphe.extension.facebook.settings.ValueRows.SourcesRow;
+import app.morphe.extension.facebook.settings.ValueRows.TranslateToRow;
 import app.morphe.extension.facebook.settings.ValueRows.WordsRow;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
@@ -1308,6 +1310,28 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         return row;
     }
 
+    /** The language Translate posts translates to. The first choice goes by the phone's language. */
+    static TranslateToRow translateToRow(Context context) {
+        TranslateToRow row = new TranslateToRow(context);
+        row.setKey(Settings.TRANSLATE_TO.key);
+        row.setTitle(L10n.t("Translate to"));
+        row.setDialogTitle(L10n.t("Translate to"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        List<String> codes = TranslateLanguages.codes();
+        CharSequence[] entries = new CharSequence[codes.size() + 1];
+        CharSequence[] values = new CharSequence[codes.size() + 1];
+        entries[0] = L10n.t("The phone's language");
+        values[0] = "";
+        for (int i = 0; i < codes.size(); i++) {
+            entries[i + 1] = TranslateLanguages.name(codes.get(i));
+            values[i + 1] = codes.get(i);
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.TRANSLATE_TO.savedValue());
+        return row;
+    }
+
     /** What the list, its summary and an import's preview call [subtab]: the filter's name in Facebook. */
     static String feedsSubtabLabel(FeedsSubtab subtab) {
         switch (subtab) {
@@ -2426,6 +2450,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((StartTabRow) listPreference).showSummary();
         } else if (listPreference instanceof FeedsSubtabRow) {
             ((FeedsSubtabRow) listPreference).showSummary();
+        } else if (listPreference instanceof TranslateToRow) {
+            ((TranslateToRow) listPreference).showSummary();
         } else if (listPreference instanceof HomeFeedRow) {
             ((HomeFeedRow) listPreference).showSummary();
         } else if (listPreference instanceof CommentOrderRow) {

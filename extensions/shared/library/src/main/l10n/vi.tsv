@@ -977,6 +977,22 @@ Keep post dates	Giữ ngày đăng bài
 # context: description of that switch; the rotating details are the texts Facebook's newer post header takes turns showing on that line
 Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.	Hiện ngày đăng dưới tên người đăng thay cho thông tin luân phiên của Facebook, vốn có thể trống trên một số điện thoại.
 Show full post text	Hiện toàn bộ nội dung bài viết
+Translate	Dịch
+See original	Xem bản gốc
+Translation	Bản dịch
+Show original	Hiện bản gốc
+Show translation	Hiện bản dịch
+Translating...	Đang dịch...
+Couldn't translate this. Check your connection and try again.	Không dịch được. Hãy kiểm tra kết nối rồi thử lại.
+Add a Translate link to posts	Thêm liên kết Dịch vào bài viết
+Translate posts by themselves	Tự động dịch bài viết
+Posts in another language get a Translate link under their text. A tap sends that post's text to Google Translate.	Bài viết bằng ngôn ngữ khác có liên kết Dịch dưới nội dung. Khi chạm vào, nội dung bài viết đó được gửi đến Google Dịch.
+Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.	Bài viết bằng ngôn ngữ khác hiện bản đã dịch, với Xem bản gốc ở dưới. Nội dung mỗi bài viết được gửi đến Google Dịch khi hiển thị.
+Translate to	Dịch sang
+The phone's language	Ngôn ngữ của điện thoại
+Languages to leave alone	Ngôn ngữ không dịch
+None picked. Posts in every language can be translated.	Chưa chọn ngôn ngữ nào. Bài viết bằng mọi ngôn ngữ đều có thể được dịch.
+Left alone: %s	Không dịch: %s
 Posts in the feed show all of their text, so there's no See more to tap.	Bài viết trong bảng feed hiện toàn bộ nội dung, nên không cần nhấn Xem thêm.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Xem ai đã chia sẻ

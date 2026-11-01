@@ -75,6 +75,8 @@ public enum PatchFamily {
             Settings.KEEP_POST_DATES),
     FULL_POST_TEXT(FamilyNames.FULL_POST_TEXT, "fullPostText", null,
             Settings.SHOW_FULL_POST_TEXT),
+    TRANSLATE_POSTS(FamilyNames.TRANSLATE_POSTS, "translatePosts", null,
+            Settings.TRANSLATE_POST_LINK, Settings.TRANSLATE_POSTS_BY_THEMSELVES),
     WHO_SHARED(FamilyNames.WHO_SHARED, "whoShared", null,
             Settings.SEE_WHO_SHARED),
     AUTO_TRANSLATION(FamilyNames.AUTO_TRANSLATION, "autoTranslation", null,

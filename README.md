@@ -134,6 +134,7 @@ Each row says what the patch does, how its switch starts and which settings sect
 | `Hide the Feeds header` | Takes the title row and the All, Favorites, Friends, Groups and Pages filters off the top of the Feeds tab, so it opens straight on posts. Starts off. Turn it on in Hushfacebook settings > News feed, then restart Facebook. |
 | `Keep post dates` | Keeps the date under the poster's name, so you can always tell how old a post is. Facebook's newer header can swap it for rotating details, and on some phones the line goes blank. On by default. Turn it off in Hushfacebook settings > News feed. |
 | `Show full post text` | Shows all of a post's text in the feed, so you don't have to tap See more. Starts off. Turn it on in Hushfacebook settings > News feed. |
+| `Translate posts` | Translates posts in another language through Google Translate, from a Translate line under the post or by themselves. Starts off. Turn it on in Hushfacebook settings > News feed. |
 | `See who shared` | Adds See who shared to a post's menu, which opens Facebook's list of the people who shared it. Starts off. Turn it on in Hushfacebook settings > News feed. |
 | `Turn off auto-translation` | Shows posts and reel captions in the language they were written in, instead of Facebook's automatic translation, so you read people's own words. See translation still works. Starts off. Turn it on in Hushfacebook settings > News feed. |
 | `Hide sponsored posts` | Removes sponsored and promoted posts from the news feed, with no gap left behind, so you see fewer ads. It also keeps the floating ad button off an ad's comments. On by default. Turn it off in Hushfacebook settings > News feed. |
@@ -333,7 +334,7 @@ A few rows hand a link to another app instead of going online themselves. **Send
 | Minimum Android version | Android 11 |
 | Download | [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/) |
 
-There are 109 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to that build. Older Facebook versions like 584 and 583 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched at all, since their code sits in a compressed archive the patcher can't read. The 64-bit build is the 120-640dpi one because 585 has no 480-640dpi bundle for Android 11; it carries every screen density, so it fits any 64-bit phone.
+There are 110 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to that build. Older Facebook versions like 584 and 583 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched at all, since their code sits in a compressed archive the patcher can't read. The 64-bit build is the 120-640dpi one because 585 has no 480-640dpi bundle for Android 11; it carries every screen density, so it fits any 64-bit phone.
 
 SHA-256 of the .apkm files the patches are checked against:
 

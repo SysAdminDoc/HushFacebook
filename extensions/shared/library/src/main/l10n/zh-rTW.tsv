@@ -981,6 +981,22 @@ Keep post dates	保留貼文日期
 # context: description of that switch; the rotating details are the texts Facebook's newer post header takes turns showing on that line
 Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.	在發布者名稱下顯示貼文日期，取代 Facebook 輪流顯示的詳細資訊，後者可能在部分手機上變成空白。
 Show full post text	顯示完整貼文文字
+Translate	翻譯
+See original	查看原文
+Translation	譯文
+Show original	顯示原文
+Show translation	顯示譯文
+Translating...	正在翻譯...
+Couldn't translate this. Check your connection and try again.	無法翻譯。請檢查網路連線後再試一次。
+Add a Translate link to posts	為貼文加入「翻譯」連結
+Translate posts by themselves	自動翻譯貼文
+Posts in another language get a Translate link under their text. A tap sends that post's text to Google Translate.	其他語言的貼文文字下方會出現「翻譯」連結。輕觸後，該貼文的文字會傳送到 Google 翻譯。
+Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.	其他語言的貼文會顯示譯文，下方有「查看原文」。每則貼文的文字在顯示時都會傳送到 Google 翻譯。
+Translate to	翻譯成
+The phone's language	手機語言
+Languages to leave alone	不翻譯的語言
+None picked. Posts in every language can be translated.	未選擇。任何語言的貼文都可以翻譯。
+Left alone: %s	不翻譯：%s
 Posts in the feed show all of their text, so there's no See more to tap.	動態中的貼文會顯示全部文字，不用再點「顯示更多」。
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	查看誰分享了

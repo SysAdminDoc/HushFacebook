@@ -1003,6 +1003,22 @@ Keep post dates	Показывать даты публикаций
 # context: description of that switch; the rotating details are the texts Facebook's newer post header takes turns showing on that line
 Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.	Показывает дату публикации под именем автора вместо меняющихся сведений Facebook, которые на некоторых телефонах могут исчезать.
 Show full post text	Показывать полный текст публикаций
+Translate	Перевести
+See original	Показать оригинал
+Translation	Перевод
+Show original	Показать оригинал
+Show translation	Показать перевод
+Translating...	Перевод...
+Couldn't translate this. Check your connection and try again.	Не удалось перевести. Проверьте подключение и попробуйте еще раз.
+Add a Translate link to posts	Добавлять к публикациям ссылку «Перевести»
+Translate posts by themselves	Переводить публикации автоматически
+Posts in another language get a Translate link under their text. A tap sends that post's text to Google Translate.	Под текстом публикаций на другом языке появляется ссылка «Перевести». Нажатие отправляет текст этой публикации в Google Переводчик.
+Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.	Публикации на другом языке показываются переведенными, а под ними есть ссылка «Показать оригинал». Текст каждой публикации отправляется в Google Переводчик при показе.
+Translate to	Язык перевода
+The phone's language	Язык телефона
+Languages to leave alone	Языки без перевода
+None picked. Posts in every language can be translated.	Ничего не выбрано. Можно переводить публикации на любом языке.
+Left alone: %s	Без перевода: %s
 Posts in the feed show all of their text, so there's no See more to tap.	В Ленте публикации отображаются полностью, поэтому нажимать «Еще» не нужно.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Посмотреть, кто поделился

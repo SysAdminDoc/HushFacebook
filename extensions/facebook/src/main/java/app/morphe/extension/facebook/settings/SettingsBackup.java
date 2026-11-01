@@ -170,6 +170,8 @@ public final class SettingsBackup {
             Settings.HIDE_META_AI_QUESTIONS,
             Settings.KEEP_POST_DATES,
             Settings.SHOW_FULL_POST_TEXT,
+            Settings.TRANSLATE_POST_LINK,
+            Settings.TRANSLATE_POSTS_BY_THEMSELVES,
             Settings.SEE_WHO_SHARED,
             Settings.TURN_OFF_AUTO_TRANSLATION,
             Settings.HIDE_FEEDS_HEADER,
