@@ -1031,6 +1031,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_2x_lock_hint", FALSE);
 
     /**
+     * Holding a video for 2x draws no pill at all: no speed, no "Release to lock" and no "Locked at 2x
+     * speed" (#289). The hold and its lock work as before. Works without {@link #HOLD_REEL_FOR_2X}.
+     * Starts off.
+     */
+    public static final BooleanSetting HIDE_2X_POPUPS =
+            new BooleanSetting("hushfacebook_hide_2x_popups", FALSE);
+
+    /**
      * Comment sheets ask for the order in {@link #COMMENT_ORDER} where Facebook's servers would
      * choose one, and an order picked in a post's comments stays for that post until Facebook
      * restarts ({@link app.morphe.extension.facebook.comments.DefaultCommentOrder}). A request that

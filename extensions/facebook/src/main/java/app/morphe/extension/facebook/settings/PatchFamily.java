@@ -147,7 +147,7 @@ public enum PatchFamily {
             Settings.SPEED_ON_REPLAYS),
     REEL_HOLD(FamilyNames.HOLD_REEL_FOR_2X, "reelHold", null,
             Settings.HOLD_REEL_FOR_2X, Settings.HOLD_REEL_RIGHT_EDGE, Settings.HOLD_FEED_VIDEO_FOR_2X,
-            Settings.HIDE_2X_LOCK_HINT),
+            Settings.HIDE_2X_LOCK_HINT, Settings.HIDE_2X_POPUPS),
     DEFAULT_COMMENT_ORDER(FamilyNames.DEFAULT_COMMENT_ORDER, "defaultCommentOrder", null,
             Settings.DEFAULT_COMMENT_ORDER),
     META_AI_SUMMARIES(FamilyNames.META_AI_SUMMARIES, "metaAiSummaries", null,

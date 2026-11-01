@@ -22,10 +22,16 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * states a pull itself shows (ready to lock, locked, ready to unlock) are kept, so pulling down
  * still locks 2x and says so. Off, paused, before the settings are ready, or when anything here
  * fails, the state is Facebook's own.
+ *
+ * <p>Hide the 2x popups goes further: {@link #hidesPill} is asked first in both pills' renders, and a
+ * yes draws nothing, whatever the state. The hold, the lock and what they hide on the reel stay
+ * Facebook's, since only the pill's drawing is skipped.
  */
 public final class LockHint {
     /** Counted under the patch's name each time a hint is drawn as the plain pill. */
     static final String HINT_HIDDEN = "2x lock hint shown as the plain pill";
+    /** Counted under the patch's name each time a pill draws nothing. */
+    static final String PILL_HIDDEN = "2x pill hidden";
 
     private static final String FAMILY = FamilyNames.HOLD_REEL_FOR_2X;
 
@@ -77,6 +83,24 @@ public final class LockHint {
             HookStatus.threw(FAMILY, "Reels 2x lock hint", failure);
             Logger.printException(() -> "2x lock hint: could not read the Reels pill's flag", failure);
             return hints;
+        }
+    }
+
+    /**
+     * Injection point, first in the render of either 2x pill. True has the pill draw nothing, the
+     * empty result Litho takes from any component. Never throws.
+     */
+    public static boolean hidesPill() {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!ReelHold.holdInBuild() || !Utils.settingsReady() || !Settings.HIDE_2X_POPUPS.get()) return false;
+            HookStatus.bound(FAMILY, "2x popups");
+            HookStatus.counted(FAMILY, PILL_HIDDEN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "2x popups", failure);
+            Logger.printException(() -> "2x popups: could not read the switch", failure);
+            return false;
         }
     }
 

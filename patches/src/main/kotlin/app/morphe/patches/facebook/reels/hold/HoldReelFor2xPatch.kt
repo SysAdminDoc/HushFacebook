@@ -7,10 +7,12 @@ package app.morphe.patches.facebook.reels.hold
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.media.reelspeed.speedSetters
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
@@ -195,7 +197,7 @@ internal fun BytecodePatchContext.applyFeedVideoHold(anchors: ReelHoldAnchors, f
  * Hide the pull down to lock hint's two hooks: first in the 2x pill's constructor, its state goes
  * through the extension's LockHint and back, and first in the Reels pill's, its hints flag does.
  * A build where either pill moved keeps the rest of Hold a reel for 2x, with that pill's hint left
- * as Facebook draws it and a warning saying why.
+ * as Facebook draws it and a warning saying why. Hide the 2x popups hooks the same two pills' renders.
  */
 internal fun BytecodePatchContext.applyLockHint() {
     applyVideoLockHint()
@@ -225,6 +227,7 @@ private fun BytecodePatchContext.applyReelLockHint() {
             move-result p4
         """,
     )
+    hidePillOnAsk(pill)
 }
 
 private fun BytecodePatchContext.applyVideoLockHint() {
@@ -247,6 +250,29 @@ private fun BytecodePatchContext.applyVideoLockHint() {
             move-result-object p1
             check-cast p1, $state
         """,
+    )
+    hidePillOnAsk(pill)
+}
+
+/** First in the render of the pill [constructor] makes: a yes from the extension returns no component. */
+private fun BytecodePatchContext.hidePillOnAsk(constructor: Method) {
+    val classDef = mutableClassDefBy(constructor.definingClass)
+    val render = pillRender(classDef)?.let(classDef::findMutableMethodOf) ?: return patchLog.warning(
+        "$PATCH: the 2x pill ${constructor.definingClass} has no one render method. Hide the 2x popups leaves that pill alone in this build",
+    )
+    if (render.localRegisterCount() < 1) return patchLog.warning(
+        "$PATCH: the 2x pill's render has no register free. Hide the 2x popups leaves that pill alone in this build",
+    )
+    render.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { }, $HIDES_2X_PILL
+            move-result v0
+            if-eqz v0, :draw
+            const/4 v0, 0x0
+            return-object v0
+        """,
+        ExternalLabel("draw", render.getInstruction(0)),
     )
 }
 

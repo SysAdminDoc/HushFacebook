@@ -264,6 +264,7 @@ public final class SettingsBackup {
             Settings.HOLD_REEL_RIGHT_EDGE,
             Settings.HOLD_FEED_VIDEO_FOR_2X,
             Settings.HIDE_2X_LOCK_HINT,
+            Settings.HIDE_2X_POPUPS,
             Settings.DEFAULT_COMMENT_ORDER,
             Settings.HIDE_META_AI_SUMMARIES,
             Settings.LIKE_ONLY,

@@ -853,6 +853,8 @@ Hold a feed video for 2x	Nhấn giữ video trên bảng tin để phát 2x
 # context: summary of that switch; Watch is Facebook's video tab, keep its name; the switches above are Hold a reel for 2x and Only on the right edge
 Holding a video in the feed or in Watch plays it at double speed until you let go. It works without the switches above.	Nhấn giữ video trên bảng tin hoặc trong Watch sẽ phát với tốc độ gấp đôi cho đến khi bạn thả tay. Không cần bật các công tắc phía trên.
 Hide the pull down to lock hint	Ẩn gợi ý kéo xuống để khóa
+Hide the 2x popups	Ẩn các thông báo 2x
+Holding a video for 2x shows no pill at all, so no "Speed: 2x", "Release to lock" or "Locked at 2x speed". The hold and the lock still work.	Giữ video để xem 2x sẽ không hiện thông báo nào, không có "Tốc độ: 2x", "Thả để khóa" hay "Đã khóa ở tốc độ 2x". Giữ và khóa vẫn hoạt động.
 # context: summary of that switch; the quoted hint is Facebook's own text on the pill over a video held for 2x, translate it the way Facebook would; the switches above are Hold a reel for 2x's
 Holding a video for 2x shows the plain 2x pill, without the "Pull down to lock 2x speed" hint. Pulling down still locks it. It works without the switches above.	Nhấn giữ video để phát 2x chỉ hiện nhãn 2x thông thường, không có gợi ý "Kéo xuống để khóa tốc độ 2x". Kéo xuống vẫn khóa được. Không cần bật các công tắc phía trên.
 Default playback quality	Chất lượng phát mặc định

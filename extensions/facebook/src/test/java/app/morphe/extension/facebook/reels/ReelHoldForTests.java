@@ -65,6 +65,11 @@ public final class ReelHoldForTests {
         return withHold(() -> LockHint.pill(Pill.LOCK_HINT) == Pill.NORMAL || !LockHint.reelPill(ReelPill.UNLOCKED_2X_SPEED, true));
     }
 
+    /** A pause or a cold-start check's view of Hide the 2x popups: true when a 2x pill would draw nothing. */
+    public static boolean hidesThePill() {
+        return withHold(LockHint::hidesPill);
+    }
+
     /** Facebook's Reels 2x pill states, by the names its enum keeps. */
     public enum ReelPill {
         LOCKED_WITH_FOOTER, INITIATING_LOCK, INITIATING_RESTORE, UNLOCKED_ORIGINAL_SPEED, UNLOCKED_2X_SPEED, ORIGINAL_SPEED

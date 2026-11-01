@@ -274,6 +274,19 @@ class HoldReelFor2xFixtureTest {
                 assertEquals("$name: the Reels 2x pill's code after its hook", reelPill.code().map { it.opcode },
                     reelPillCode.drop(2).map { it.opcode })
 
+                // First in both pills' renders: a yes from the extension returns no component.
+                listOf(pillClass, reelPillClass).forEach { component ->
+                    val render = pillRender(component) ?: throw AssertionError("$name: ${component.type} has no render")
+                    val before = render.code()
+                    val after = patched(render)
+                    assertEquals("$name: ${component.type} asks", HIDES_2X_PILL, after[0].call.toString())
+                    assertEquals("$name: ${component.type} takes the answer", Opcode.MOVE_RESULT, after[1].opcode)
+                    assertEquals("$name: ${component.type} branches", Opcode.IF_EQZ, after[2].opcode)
+                    assertEquals("$name: ${component.type} answers nothing", Opcode.RETURN_OBJECT, after[4].opcode)
+                    assertEquals("$name: ${component.type} draws as before past the hook",
+                        before.map { it.opcode }, after.drop(5).map { it.opcode })
+                }
+
                 fun assertAnswers(method: Method, hook: String, flags: Set<String>) {
                     val before = method.code()
                     val after = patched(method)

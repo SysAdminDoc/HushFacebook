@@ -853,6 +853,8 @@ Hold a feed video for 2x	2x için akıştaki videoya basılı tut
 # context: summary of that switch; Watch is Facebook's video tab, keep its name; the switches above are Hold a reel for 2x and Only on the right edge
 Holding a video in the feed or in Watch plays it at double speed until you let go. It works without the switches above.	Akışta veya Watch'ta bir videoya basılı tutmak, bırakana kadar onu iki kat hızda oynatır. Yukarıdaki anahtarlar olmadan da çalışır.
 Hide the pull down to lock hint	Kilitlemek için aşağı çek ipucunu gizle
+Hide the 2x popups	2x açılır pencerelerini gizle
+Holding a video for 2x shows no pill at all, so no "Speed: 2x", "Release to lock" or "Locked at 2x speed". The hold and the lock still work.	Bir videoyu 2x için basılı tutunca hiçbir etiket görünmez, yani "Hız: 2x", "Kilitlemek için bırak" veya "2x hızda kilitlendi" olmaz. Basılı tutma ve kilitleme çalışmaya devam eder.
 # context: summary of that switch; the quoted hint is Facebook's own text on the pill over a video held for 2x, translate it the way Facebook would; the switches above are Hold a reel for 2x's
 Holding a video for 2x shows the plain 2x pill, without the "Pull down to lock 2x speed" hint. Pulling down still locks it. It works without the switches above.	2x için bir videoya basılı tutunca, "2x hızı kilitlemek için aşağı çek" ipucu olmadan yalnızca düz 2x etiketi görünür. Aşağı çekmek yine kilitler. Yukarıdaki anahtarlar olmadan da çalışır.
 Default playback quality	Varsayılan oynatma kalitesi

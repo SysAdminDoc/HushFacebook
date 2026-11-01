@@ -697,7 +697,9 @@ public class PausedHooksTest {
                 // With Hold a feed video for 2x on, a finger down starts timing a hold.
                 FeedVideoHoldForTests::startsTiming,
                 // With Hide the pull down to lock hint on, the 2x pill's hint is drawn as the plain pill.
-                ReelHoldForTests::hidesTheLockHint));
+                ReelHoldForTests::hidesTheLockHint,
+                // With Hide the 2x popups on, a 2x pill draws nothing.
+                ReelHoldForTests::hidesThePill));
         // A speed picked on a reel is set on the next reel the viewer starts, and one picked on a
         // feed video on the next feed video. A full-screen video that isn't live, and isn't an ad,
         // gets Playback speed in its gear menu (#238).

@@ -49,6 +49,7 @@ public class LockHintTest {
         PauseForTests.resume();
         ReelHold.holdInBuildForTests = null;
         Settings.HIDE_2X_LOCK_HINT.resetToDefault();
+        Settings.HIDE_2X_POPUPS.resetToDefault();
         HookStatus.clear();
     }
 
@@ -141,6 +142,35 @@ public class LockHintTest {
 
         String line = statusLine();
         assertFalse("an answer left to Facebook was counted: " + line, line != null && line.contains("Counted"));
+    }
+
+    @Test
+    public void thePopupsGoOnlyWithTheirSwitch() {
+        assertFalse("the switch doesn't start off", Settings.HIDE_2X_POPUPS.get());
+        assertFalse("off, a pill went away", LockHint.hidesPill());
+        Settings.HIDE_2X_LOCK_HINT.save(true);
+        assertFalse("the lock hint's switch took the whole pill", LockHint.hidesPill());
+        String off = statusLine();
+        assertFalse("an answer left to Facebook was counted: " + off, off != null && off.contains("Counted"));
+
+        Settings.HIDE_2X_LOCK_HINT.save(false);
+        Settings.HIDE_2X_POPUPS.save(true);
+        assertTrue("on, a pill drew", LockHint.hidesPill());
+        assertTrue(statusLine(), statusLine().contains("Counted: " + LockHint.PILL_HIDDEN + " 1"));
+
+        ReelHold.holdInBuildForTests = false;
+        assertFalse("a build without Hold a reel for 2x hid the pill", LockHint.hidesPill());
+        ReelHold.holdInBuildForTests = true;
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused, a pill went away", LockHint.hidesPill());
+    }
+
+    @Test
+    public void thePopupsSwitchNeedsNoRestartAndTravelsWithTheHold() {
+        assertFalse("a new pill reads the switch as it's drawn", Settings.HIDE_2X_POPUPS.rebootApp);
+        assertTrue("Pause and the report don't know the switch",
+                PatchFamily.REEL_HOLD.switches.contains(Settings.HIDE_2X_POPUPS));
     }
 
     @Test

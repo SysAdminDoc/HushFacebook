@@ -359,6 +359,21 @@ internal fun playerCallees(player: ClassDef, method: Method): List<Method> {
 
 internal const val LOCK_HINT_CLASS = "$EXTENSION_PACKAGE/reels/LockHint;"
 internal const val LOCK_HINT_PILL = "$LOCK_HINT_CLASS->pill(Ljava/lang/Enum;)Ljava/lang/Enum;"
+
+/**
+ * Hide the 2x popups (#289) asks this first in both pills' renders, and a yes returns no component.
+ * A KComponent's render may answer null, which lays out as nothing. The hold, its lock, the overlay
+ * Facebook hides for it and the pill holder's animation all run outside the render.
+ */
+internal const val HIDES_2X_PILL = "$LOCK_HINT_CLASS->hidesPill()Z"
+private const val COMPONENT_RENDER = "render"
+
+/** The render of the Litho component [classDef]: an instance method by that kept name with one parameter, answering an object. */
+internal fun pillRender(classDef: ClassDef): Method? = classDef.methods.singleOrNull {
+    it.name == COMPONENT_RENDER && !AccessFlags.STATIC.isSet(it.accessFlags) && it.implementation != null &&
+        it.parameterTypes.size == 1 && it.returnType.startsWith("L")
+}
+
 internal val PILL_STATES = listOf(
     "NORMAL", "LOCK_HINT", "READY_TO_LOCK", "LOCKED", "UNLOCK_HINT", "READY_TO_UNLOCK", "NUX_PROMPT",
 )
