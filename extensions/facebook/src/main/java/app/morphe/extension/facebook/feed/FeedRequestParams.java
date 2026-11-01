@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
+import app.morphe.extension.facebook.navigation.FeedsSubtabRoute;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
@@ -40,6 +41,10 @@ import app.morphe.extension.shared.settings.BaseSettings;
  */
 public final class FeedRequestParams {
     static final String PREFIX = "Feed request ";
+
+    /** How a request's feed style reads, and Facebook's default one. */
+    private static final String FEED_STYLE = "feed_style=";
+    private static final String DEFAULT_FEED_STYLE = FEED_STYLE + "MOST_RECENT_FEED_DEFAULT";
     static final int MAX_REQUESTS = 24;
     static final int PART = 800;
     static final int MAX_ITEMS = 12;
@@ -84,6 +89,7 @@ public final class FeedRequestParams {
 
     /** The hook, before each of the feed query method's returns, handed the request's parameter set. */
     public static void sent(@Nullable Object params) {
+        if (params != null && FeedsSubtabRoute.awaitingPosts()) tellTheStartsFilter(params);
         if (params == null || requests.get() >= MAX_REQUESTS || !enabled()) return;
         try {
             Map<?, ?> map = mapOf(params);
@@ -104,6 +110,20 @@ public final class FeedRequestParams {
                         () -> PREFIX + "parameters unreadable: " + unreadable.getClass().getSimpleName());
             } catch (Throwable ignored) {
             }
+        }
+    }
+
+    /**
+     * Says when a request names a feed style other than Facebook's default, which goes out at every
+     * start whatever the filter. That's the filter the start asked for, since its page is showing.
+     */
+    private static void tellTheStartsFilter(Object params) {
+        try {
+            Map<?, ?> map = mapOf(params);
+            String text = map == null ? "" : render(map, 0);
+            if (text.contains(FEED_STYLE) && !text.contains(DEFAULT_FEED_STYLE)) FeedsSubtabRoute.filterPostsRequested();
+        } catch (Throwable unreadable) {
+            // This runs inside Facebook's feed request. The asking runs out by itself.
         }
     }
 

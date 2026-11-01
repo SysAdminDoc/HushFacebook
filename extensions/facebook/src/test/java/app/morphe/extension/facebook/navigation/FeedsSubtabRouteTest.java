@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.navigation;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -24,8 +25,10 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowLooper;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -217,6 +220,159 @@ public class FeedsSubtabRouteTest {
         assertSame(FeedType.MOST_RECENT_PAGE, FeedsSubtabRoute.feedTypeNamed(FeedType.class, "most_recent_page"));
         assertNull("a name Facebook hasn't got", FeedsSubtabRoute.feedTypeNamed(FeedType.class, "most_recent_events"));
         assertNull("another class", FeedsSubtabRoute.feedTypeNamed(String.class, "favorites"));
+    }
+
+    /** Time enough for the looks at the Feeds tab to run. */
+    private static void waitForTheLooks(int looks) {
+        ShadowLooper.idleMainLooper(looks * 100L, TimeUnit.MILLISECONDS);
+    }
+
+    /** Time enough for [asks] asks of the chosen filter's page. */
+    private static void waitForTheAsks(int asks) {
+        ShadowLooper.idleMainLooper(asks * FeedsSubtabRoute.ASK_MS, TimeUnit.MILLISECONDS);
+    }
+
+    /** A filter picked through the handler never asks for its posts by itself, so it's told to (#330). */
+    @Test
+    public void thePickedFiltersPageIsToldToLoadOnceItShows() {
+        Settings.FEEDS_SUBTAB.save(FeedsSubtab.FRIENDS);
+        launched();
+        FeedFiltersFragment feeds = recentFeeds();
+        feeds.pageSwapped = false;
+        feeds.listLoaded = false;
+
+        feeds.onResume();
+        assertEquals(2, feeds.picked);
+        waitForTheLooks(3);
+        assertEquals("All is still showing", 0, feeds.reselected);
+
+        feeds.pageSwapped = true;
+        waitForTheLooks(3);
+        assertEquals("the new page has no list yet", 0, feeds.reselected);
+
+        feeds.listLoaded = true;
+        waitForTheLooks(1);
+        assertEquals(1, feeds.reselected);
+    }
+
+    /** Facebook drops the ask for a while on a start on the Feeds tab, so it goes on until the request does. */
+    @Test
+    public void thePageIsAskedUntilTheRequestGoesOut() {
+        Settings.FEEDS_SUBTAB.save(FeedsSubtab.FRIENDS);
+        launched();
+        FeedFiltersFragment feeds = recentFeeds();
+
+        feeds.onResume();
+        waitForTheLooks(1);
+        assertEquals(1, feeds.reselected);
+        assertTrue(FeedsSubtabRoute.awaitingPosts());
+        waitForTheAsks(3);
+        assertEquals("asked each second", 4, feeds.reselected);
+
+        FeedsSubtabRoute.filterPostsRequested();
+        assertFalse(FeedsSubtabRoute.awaitingPosts());
+        waitForTheAsks(FeedsSubtabRoute.ASKS);
+        assertEquals("asked again after the request", 4, feeds.reselected);
+    }
+
+    /** A page that never asks is left alone in the end. */
+    @Test
+    public void theAskingRunsOut() {
+        Settings.FEEDS_SUBTAB.save(FeedsSubtab.FRIENDS);
+        launched();
+        FeedFiltersFragment feeds = recentFeeds();
+
+        feeds.onResume();
+        waitForTheLooks(1);
+        waitForTheAsks(FeedsSubtabRoute.ASKS * 2);
+        assertEquals(FeedsSubtabRoute.ASKS, feeds.reselected);
+        assertFalse(FeedsSubtabRoute.awaitingPosts());
+    }
+
+    /** The person picked another filter, whose page has its own posts. */
+    @Test
+    public void theAskingStopsWhenThePageIsNoLongerShowing() {
+        Settings.FEEDS_SUBTAB.save(FeedsSubtab.FRIENDS);
+        launched();
+        FeedFiltersFragment feeds = recentFeeds();
+
+        feeds.onResume();
+        waitForTheLooks(1);
+        assertEquals(1, feeds.reselected);
+
+        feeds.pageSwapped = false;
+        waitForTheAsks(FeedsSubtabRoute.ASKS);
+        assertEquals("asked while another page showed", 1, feeds.reselected);
+        assertFalse(FeedsSubtabRoute.awaitingPosts());
+    }
+
+    /** A new start stops what the last one was asking for. */
+    @Test
+    public void disarmingStopsTheAsking() {
+        Settings.FEEDS_SUBTAB.save(FeedsSubtab.FRIENDS);
+        launched();
+        FeedFiltersFragment feeds = recentFeeds();
+
+        feeds.onResume();
+        waitForTheLooks(1);
+        FeedsSubtabRoute.disarm();
+        waitForTheAsks(FeedsSubtabRoute.ASKS);
+        assertEquals(1, feeds.reselected);
+    }
+
+    /** Another filter got there first, by a link or a tap, and has its own posts. */
+    @Test
+    public void aPageThatNeverShowsIsLeftAlone() {
+        Settings.FEEDS_SUBTAB.save(FeedsSubtab.FRIENDS);
+        launched();
+        FeedFiltersFragment feeds = recentFeeds();
+        feeds.pageSwapped = false;
+
+        feeds.onResume();
+        waitForTheLooks(60);
+        assertEquals(0, feeds.reselected);
+
+        // Looking has stopped by now.
+        feeds.pageSwapped = true;
+        waitForTheLooks(60);
+        assertEquals(0, feeds.reselected);
+    }
+
+    @Test
+    public void whatPicksNothingLoadsNothing() {
+        // All is what Facebook opens on, and it loads by itself.
+        launched();
+        FeedFiltersFragment feeds = recentFeeds();
+        feeds.onResume();
+        waitForTheLooks(60);
+        assertEquals(0, feeds.reselected);
+
+        // A filter the tab hasn't got.
+        Settings.FEEDS_SUBTAB.save(FeedsSubtab.FRIENDS);
+        launched();
+        FeedFiltersFragment other = feeds();
+        other.onResume();
+        waitForTheLooks(60);
+        assertEquals(0, other.reselected);
+    }
+
+    @Test
+    public void aFailedLoadFailsOpen() {
+        Settings.FEEDS_SUBTAB.save(FeedsSubtab.FRIENDS);
+        launched();
+        FeedFiltersFragment feeds = recentFeeds();
+        feeds.failReselect = new IllegalStateException("no second tap for this test");
+
+        feeds.onResume();
+        waitForTheLooks(1);
+
+        assertEquals("the filter stays picked", 2, feeds.picked);
+        assertEquals(1, feeds.reselected);
+        String line = statusLine();
+        assertTrue(line, line.contains("'feeds filter' hook (it threw java.lang.IllegalStateException)"));
+        waitForTheAsks(FeedsSubtabRoute.ASKS);
+        assertEquals("told again after a throw", 1, feeds.reselected);
+        assertFalse(FeedsSubtabRoute.awaitingPosts());
     }
 
     /** A Feeds tab whose handler throws opens as Facebook chooses, and the status says so. */
