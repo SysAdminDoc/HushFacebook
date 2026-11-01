@@ -96,6 +96,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** `Turn off HDR brightness` turns PQ videos down on Snapdragon phones again, apart from the Snapdragon 8 Gen 1. Every Snapdragon was left out after that chip's video service crashed when asked to turn HDR down, and a Snapdragon 8 Elite turns out to do the job fine in HEVC, VP9 and AV1. HLG videos are handled as they were.
 * **Facebook:** With `Picture-in-picture` on, a reel keeps its place when you come back to it, from the window's expand button or from another app (#44). Facebook put it back at the start every time its screen returned, and that's the seek Hushfacebook drops now. A reel you swipe away from still starts over when you swipe back, like it always has.
 * **Facebook:** With `Keep the progress bar` on, a reel you reach after refreshing or swiping back up keeps its own bar and time, where it could show none at all or sit frozen on the last reel's length (#120). An older reel closing took the newer reel's bar with it.
+* **Facebook:** With `Material You theme` on, Facebook could crash in random places with a color error (#323). The theme's colors only existed in dark mode, so a screen built in dark mode crashed when it read one after Android had left dark mode. They have a plain value now too.
 
 ## 0.19.0 (2026-10-27)
 

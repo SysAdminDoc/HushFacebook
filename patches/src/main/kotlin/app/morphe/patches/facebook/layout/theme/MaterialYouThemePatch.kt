@@ -251,12 +251,20 @@ private const val NIGHT_COLORS = "res/values-night/colors.xml"
 private const val NIGHT_V31_COLORS = "res/values-night-v31/colors.xml"
 private const val NIGHT_VALUES = "res/values-night"
 
-/** The night style items' colour state lists for Android 12 and newer, one file per [NightShade]. */
-private const val NIGHT_V31_STATE_LISTS = "res/color-night-v31"
-
-/** Read, never written: light mode's colours and styles stay as Facebook has them. */
+/**
+ * Facebook's own entries stay as they are, since light mode reads them. The only thing added is the
+ * palette the night style items point at, under names light mode never asks for: a theme made at night
+ * keeps those references when the phone leaves night, and Android throws on one that then finds no
+ * value (issue #323), so these names can't have a night qualifier.
+ */
 private const val DEFAULT_COLORS = "res/values/colors.xml"
 private const val DEFAULT_VALUES = "res/values"
+
+/** The palette's system colours for Android 12 and newer, with no night qualifier for the same reason. */
+private const val V31_COLORS = "res/values-v31/colors.xml"
+
+/** The night style items' colour state lists for Android 12 and newer, one file per [NightShade]. */
+private const val V31_STATE_LISTS = "res/color-v31"
 
 private const val EMPTY_RESOURCES = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n</resources>\n"
 
@@ -274,6 +282,15 @@ internal fun nightValuedColours(res: File): Set<String> =
         .map { File(it, "colors.xml") }.filter { it.isFile }
         .flatMapTo(sortedSetOf()) { readOnly(it).colourValues().keys }
 
+/**
+ * The patch's own colours in [res], a decoded resource folder, with a night value and no default one.
+ * A theme made at night that names one makes Android throw once the phone leaves night (issue #323).
+ */
+internal fun ownNightOnlyColours(res: File): Set<String> {
+    val defaults = File(res, "values/colors.xml").takeIf { it.isFile }?.let { readOnly(it).colourValues().keys }.orEmpty()
+    return nightValuedColours(res).filterTo(sortedSetOf()) { it.startsWith("hushfacebook_") && it !in defaults }
+}
+
 /** Each colour in a decoded colours file, by name, with its value as written. */
 internal fun Document.colourValues(): Map<String, String> {
     val colors = getElementsByTagName("color")
@@ -289,12 +306,14 @@ private val materialYouResourcePatch = resourcePatch {
     finalize {
         // Patcher 2.0 decodes only the files a patch asks for: an undecoded file does not exist yet, so
         // the state list check below needs its folder decoded too.
-        decode("res/values*/colors.xml", "res/values*/style*.xml", NIGHT_V31_STATE_LISTS)
+        decode("res/values*/colors.xml", "res/values*/style*.xml", V31_STATE_LISTS)
         check(get(NIGHT_COLORS, false).exists()) { "Facebook has no night colours, so text would keep its grey" }
-        val dynamic = get(NIGHT_V31_COLORS, false)
-        if (!dynamic.exists()) {
-            dynamic.parentFile.mkdirs()
-            dynamic.writeText(EMPTY_RESOURCES)
+        for (path in listOf(NIGHT_V31_COLORS, V31_COLORS)) {
+            val dynamic = get(path, false)
+            if (!dynamic.exists()) {
+                dynamic.parentFile.mkdirs()
+                dynamic.writeText(EMPTY_RESOURCES)
+            }
         }
         val nightColourNames = nightValuedColours(get("res", false))
         val changed = document(NIGHT_COLORS).use { night ->
@@ -317,10 +336,10 @@ private val materialYouResourcePatch = resourcePatch {
             val nightStyles = "$NIGHT_VALUES/${file.name}"
             get(nightStyles, false).let { if (!it.exists()) it.writeText(EMPTY_RESOURCES) }
             restyled += document(nightStyles).use { night ->
-                document(NIGHT_COLORS).use { nightColours ->
-                    document(NIGHT_V31_COLORS).use { nightV31Colours ->
-                        writeNightStyles(family, colours, nightColourNames, tokenAttributeNames, night, nightColours,
-                            nightV31Colours, stateLists, plain)
+                document(DEFAULT_COLORS).use { paletteColours ->
+                    document(V31_COLORS).use { paletteV31Colours ->
+                        writeNightStyles(family, colours, nightColourNames, tokenAttributeNames, night, paletteColours,
+                            paletteV31Colours, stateLists, plain)
                     }
                 }
             }
@@ -329,11 +348,13 @@ private val materialYouResourcePatch = resourcePatch {
             "No FDS dark style item takes a palette colour, so views Facebook inflates from its layouts would keep its blue"
         }
         for ((name, stateList) in stateLists) {
-            val file = get("$NIGHT_V31_STATE_LISTS/$name.xml", false)
+            val file = get("$V31_STATE_LISTS/$name.xml", false)
             check(!file.exists()) { "Facebook already has a colour state list named $name" }
             file.parentFile.mkdirs()
             file.writeText(stateList)
         }
+        val nightOnly = ownNightOnlyColours(get("res", false))
+        check(nightOnly.isEmpty()) { "These colours have only a night value, so leaving night would crash Facebook: $nightOnly" }
     }
 }
 

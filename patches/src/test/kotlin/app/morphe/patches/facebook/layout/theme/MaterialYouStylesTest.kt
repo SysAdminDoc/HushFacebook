@@ -186,6 +186,26 @@ class MaterialYouStylesTest {
             dynamic)
     }
 
+    /**
+     * The palette goes into the default colours beside Facebook's, so a theme made at night still
+     * finds each name once the phone leaves night (issue #323).
+     */
+    @Test
+    fun `every name a night item points at is in the palette and Facebook's colours stay`() {
+        val night = xml("<resources/>")
+        val paletteColours = xml("<resources><color name=\"blue\">#ff0866ff</color></resources>")
+        writeNightStyles(darkFdsStyles(defaults(), tokens), colours, nightColourNames, tokens, night, paletteColours,
+            xml("<resources/>"), mutableMapOf(), setOf("PRIMARY_TEXT"))
+
+        val given = paletteColours.elements("color").map { it.getAttribute("name") to it.textContent }
+        assertEquals("Facebook's colour is first and as it was", "blue" to "#ff0866ff", given.first())
+        assertTrue("only palette names go in, found $given", given.drop(1).all { it.first.startsWith("hushfacebook_you_") })
+        val pointedAt = night.elements("style.2").flatMap { it.items().values }
+            .filter { it.startsWith("@color/hushfacebook_you_") }.map { it.removePrefix("@color/") }.toSet()
+        assertTrue("a night item takes the palette", pointedAt.isNotEmpty())
+        assertEquals(emptySet<String>(), pointedAt - given.map { it.first }.toSet())
+    }
+
     @Test
     fun `a shade keeps the listed colour's lightness and alpha on both routes`() {
         val tint = checkNotNull(nightShade(0x331D85FC))

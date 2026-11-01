@@ -559,7 +559,7 @@ internal data class NightShade(val accent: Boolean, val lightness: Int, val alph
             (if (alpha == 0xFF) "" else "_a%02x".format(alpha))
 
     /**
-     * Android 12 and newer: a colour state list in `res/color-night-v31` that moves the system tone
+     * Android 12 and newer: a colour state list in `res/color-v31` that moves the system tone
      * nearest [lightness] to it with `android:lStar`, keeping that tone's hue and chroma, and gives it
      * [alpha]. The base is never tone 0 or 100, whose hue is lost.
      */
@@ -676,12 +676,15 @@ private val NightTone.name: String
 /**
  * Writes into [night] a copy of each style in [family] with an item to change, its items for a
  * listed token and colour pointing at that colour's [NightShade], and adds each shade once to
- * [nightColours] (the fixed palette, for Android 11) and [stateLists] (the wallpaper's, as the
- * `res/color-night-v31` file for each name). An item for one of [plain], the tokens some code reads
- * as a plain colour, takes the colour's [nightTone] instead, a colour in [nightColours] and a system
- * colour in [nightV31Colours], or stays when no tone is near. [colours] are the default colours by
+ * [paletteColours] (the fixed palette, for Android 11) and [stateLists] (the wallpaper's, as the
+ * `res/color-v31` file for each name). An item for one of [plain], the tokens some code reads as a
+ * plain colour, takes the colour's [nightTone] instead, a colour in [paletteColours] and a system
+ * colour in [paletteV31Colours], or stays when no tone is near. [colours] are the default colours by
  * name and [nightColourNames] the ones with a night value. A style [night] already has is left to
  * Facebook. Answers how many items it pointed elsewhere.
+ *
+ * The palette takes no night qualifier: a theme made at night keeps these references when the phone
+ * leaves night, and each has to find a value then too (issue #323).
  */
 internal fun writeNightStyles(
     family: List<Element>,
@@ -689,15 +692,15 @@ internal fun writeNightStyles(
     nightColourNames: Set<String>,
     tokens: Map<String, String>,
     night: Document,
-    nightColours: Document,
-    nightV31Colours: Document,
+    paletteColours: Document,
+    paletteV31Colours: Document,
     stateLists: MutableMap<String, String>,
     plain: Set<String>,
 ): Int {
     val listed = listedTokenColours()
     val present = night.documentElement.childElements().map { it.getAttribute("name") }.toSet()
-    val written = nightColours.documentElement.childElements().map { it.getAttribute("name") }.toMutableSet()
-    val writtenV31 = nightV31Colours.documentElement.childElements().map { it.getAttribute("name") }.toMutableSet()
+    val written = paletteColours.documentElement.childElements().map { it.getAttribute("name") }.toMutableSet()
+    val writtenV31 = paletteV31Colours.documentElement.childElements().map { it.getAttribute("name") }.toMutableSet()
 
     var changed = 0
     for (style in family) {
@@ -708,14 +711,14 @@ internal fun writeNightStyles(
             if (colour !in listed[token].orEmpty()) return@mapIndexedNotNull null
             val name = if (token in plain) {
                 nightTone("#%08x".format(colour))?.also { tone ->
-                    if (written.add(tone.name)) nightColours.documentElement.appendChild(nightColours.colour(tone.name, tone.fallback))
+                    if (written.add(tone.name)) paletteColours.documentElement.appendChild(paletteColours.colour(tone.name, tone.fallback))
                     if (writtenV31.add(tone.name)) {
-                        nightV31Colours.documentElement.appendChild(nightV31Colours.colour(tone.name, tone.systemColor))
+                        paletteV31Colours.documentElement.appendChild(paletteV31Colours.colour(tone.name, tone.systemColor))
                     }
                 }?.name
             } else {
                 nightShade(colour)?.also { shade ->
-                    if (written.add(shade.name)) nightColours.documentElement.appendChild(nightColours.colour(shade.name, shade.fallback))
+                    if (written.add(shade.name)) paletteColours.documentElement.appendChild(paletteColours.colour(shade.name, shade.fallback))
                     stateLists.getOrPut(shade.name) { shade.stateList }
                 }?.name
             }

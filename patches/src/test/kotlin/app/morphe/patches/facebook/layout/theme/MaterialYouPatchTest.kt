@@ -211,32 +211,62 @@ class MaterialYouPatchTest {
 
     /**
      * Light mode's colours and styles live in values/, which the resource half reads for the FDS
-     * styles' night copies and never writes: it opens for writing only night files.
+     * styles' night copies. Besides the night files it opens values/colors.xml and values-v31/colors.xml
+     * for the palette alone, the names [writeNightStyles] adds.
      */
     @Test
-    fun `the resource half writes only night resources`() {
+    fun `the resource half writes night resources and the palette`() {
         val dir = "patches/src/main/kotlin/app/morphe/patches/facebook/layout/theme"
         val source = File(RepoFiles.root, "$dir/MaterialYouThemePatch.kt").readText()
         val paths = Regex(""""(res/[^"]+)"""").findAll(source).map { it.groupValues[1] }.toSet()
         // The two globs only decode: patcher 2.0 leaves a file it wasn't asked for undecoded, so it
         // wouldn't exist to read or check.
         assertEquals(setOf("res/values-night/colors.xml", "res/values-night-v31/colors.xml", "res/values-night",
-            "res/color-night-v31", "res/values/colors.xml", "res/values", "res/values*/colors.xml",
+            "res/color-v31", "res/values/colors.xml", "res/values", "res/values-v31/colors.xml", "res/values*/colors.xml",
             "res/values*/style*.xml"), paths)
         assertTrue("the files it reads are decoded first",
-            source.contains("decode(\"res/values*/colors.xml\", \"res/values*/style*.xml\", NIGHT_V31_STATE_LISTS)"))
-        assertTrue("the state lists are written as files", source.contains("get(\"\$NIGHT_V31_STATE_LISTS/\$name.xml\", false)"))
+            source.contains("decode(\"res/values*/colors.xml\", \"res/values*/style*.xml\", V31_STATE_LISTS)"))
+        assertTrue("the state lists are written as files", source.contains("get(\"\$V31_STATE_LISTS/\$name.xml\", false)"))
 
         val opened = Regex("""document\((\w+)\)""").findAll(source).map { it.groupValues[1] }.toSet()
-        assertEquals(setOf("NIGHT_COLORS", "NIGHT_V31_COLORS", "nightStyles"), opened)
+        assertEquals(setOf("NIGHT_COLORS", "NIGHT_V31_COLORS", "nightStyles", "DEFAULT_COLORS", "V31_COLORS"), opened)
         assertTrue("the night styles are no night file", source.contains("val nightStyles = \"\$NIGHT_VALUES/"))
         val defaults = Regex("""\S*DEFAULT_(?:COLORS|VALUES)\S*""").findAll(source).map { it.value }
             .filterNot { it == "DEFAULT_COLORS" || it == "DEFAULT_VALUES" }.toSet()
-        assertEquals(setOf("readOnly(get(DEFAULT_COLORS)).colourValues()", "get(DEFAULT_VALUES).listFiles().orEmpty()"), defaults)
+        assertEquals(setOf("readOnly(get(DEFAULT_COLORS)).colourValues()", "get(DEFAULT_VALUES).listFiles().orEmpty()",
+            "document(DEFAULT_COLORS).use"), defaults)
+        assertTrue("only the palette goes in the default colours",
+            source.contains("document(DEFAULT_COLORS).use { paletteColours ->"))
         assertTrue("the style files are opened for writing", source.contains("darkFdsStyles(readOnly(file), "))
+        assertTrue("the finished resources are checked", source.contains("ownNightOnlyColours(get(\"res\", false))"))
 
         val styles = File(RepoFiles.root, "$dir/MaterialYouStyles.kt").readText()
         assertTrue("MaterialYouStyles opens a resource file", "\"res/" !in styles && "document(" !in styles)
+    }
+
+    /** A theme made at night holds these names after the phone leaves night, and Android throws on one with no value then (issue #323). */
+    @Test
+    fun `an own colour with only a night value is found`() {
+        val res = kotlin.io.path.createTempDirectory("night-only").toFile()
+        try {
+            fun write(folder: String, vararg names: String) {
+                File(res, folder).mkdirs()
+                File(res, "$folder/colors.xml").writeText(
+                    "<resources>" + names.joinToString("") { "<color name=\"$it\">#ff000000</color>" } + "</resources>",
+                )
+            }
+            write("values", "facebook_grey", "hushfacebook_you_neutral_95", "hushfacebook_amoled_page")
+            write("values-night", "facebook_grey", "hushfacebook_amoled_page", "hushfacebook_you_accent_l48", "facebook_night_only")
+            write("values-night-v31", "hushfacebook_you_neutral_95", "hushfacebook_you_neutral_50")
+            assertEquals("Facebook's own night colours aren't the patch's to answer for",
+                setOf("hushfacebook_you_accent_l48", "hushfacebook_you_neutral_50"), ownNightOnlyColours(res))
+
+            write("values", "facebook_grey", "hushfacebook_you_neutral_95", "hushfacebook_amoled_page",
+                "hushfacebook_you_accent_l48", "hushfacebook_you_neutral_50")
+            assertEquals(emptySet<String>(), ownNightOnlyColours(res))
+        } finally {
+            res.deleteRecursively()
+        }
     }
 
     /**
