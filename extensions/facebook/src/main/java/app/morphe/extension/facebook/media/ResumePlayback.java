@@ -200,7 +200,7 @@ public final class ResumePlayback {
     @Nullable
     static volatile ResumePoints pointsForTests;
 
-    private static final Players PLAYERS = new Players();
+    static final Players PLAYERS = new Players();
     private static final Object POINTS_LOCK = new Object();
     @Nullable
     private static ResumePoints points;
@@ -327,6 +327,20 @@ public final class ResumePlayback {
             if (positionMs > START_WINDOW_MS || (name != null && USER_SEEKS.contains(name))) {
                 PLAYERS.positioned(player);
             }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "player seek", failure);
+        }
+    }
+
+    /**
+     * The seek bar on feed videos, just before it seeks. It asks for the exact spot with
+     * BY_INITIAL_FRAME_PERFECT_SEEK, which Facebook also sends by itself to start a video over, so
+     * {@link #seeking} can't tell that this one is you placing the video.
+     */
+    public static void placedByYou(Object player) {
+        try {
+            if (!on() || player == null) return;
+            PLAYERS.positioned(player);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "player seek", failure);
         }

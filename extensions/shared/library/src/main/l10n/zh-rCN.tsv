@@ -2086,6 +2086,9 @@ Reels order will be set to %1$s.	Reels 排序将设为 %1$s。
 Cast button on feed videos	动态视频上的投屏按钮
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	为动态中的视频添加投屏按钮。它会把视频交给你已安装的投屏应用（如 Web Video Caster），由它发送到电视。Facebook 已不再自带投屏功能。
 Cast this video	投屏此视频
+Seek bar on feed videos	动态视频上的进度条
+Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	在动态视频底部显示一条进度条。拖动后松开即可跳到该位置。直播视频和广告仍使用它们自己的控件。开启“点按播放”时，还需要开启“动态消息视频控件”。
+Feed video position	动态视频播放位置
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	徽章颜色
 # context: title of the row that holds a color code for the Facebook logo at the top of Home

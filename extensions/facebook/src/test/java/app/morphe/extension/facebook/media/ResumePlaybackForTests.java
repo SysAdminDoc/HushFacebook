@@ -119,6 +119,11 @@ public final class ResumePlaybackForTests {
         while ((task = LATER.poll()) != null) task.run();
     }
 
+    /** Whether a seek was marked on [player] before its first start. Reading it takes the mark. */
+    public static boolean placedBeforeStart(Object player) {
+        return ResumePlayback.PLAYERS.wasPositioned(ResumePlayback.PLAYERS.firstStart(player, "read", 0));
+    }
+
     /** Puts the app's own player, looper and store back. */
     public static void forget() {
         LATER.clear();

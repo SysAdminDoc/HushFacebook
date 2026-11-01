@@ -12,13 +12,22 @@ import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Insets;
+import android.graphics.Rect;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
+import android.widget.SeekBar;
 
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -36,6 +45,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+import app.morphe.extension.facebook.media.ResumePlaybackForTests;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -56,6 +66,7 @@ public class FeedVideoControlsTest {
     private final Player player = new Player();
     private final List<Boolean> commands = new ArrayList<>();
     private final List<String> casts = new ArrayList<>();
+    private final List<Integer> seeks = new ArrayList<>();
     private boolean fail;
 
     private static final class Media { String id = "video"; boolean ordinary = true; }
@@ -64,6 +75,7 @@ public class FeedVideoControlsTest {
         Media params = new Media();
         String origin = "newsfeed::feed_story";
         boolean playing;
+        int position, length, positionReads;
     }
 
     @Before public void setUp() {
@@ -89,6 +101,17 @@ public class FeedVideoControlsTest {
                 assertTrue(from == FeedVideoControls.showingCast(player));
                 casts.add(videoId);
             }
+            public int position(Object of) {
+                if (fail) throw new IllegalStateException("unavailable player");
+                ((Player) of).positionReads++;
+                return ((Player) of).position;
+            }
+            public int length(Object of, Object params) { return ((Player) of).length; }
+            public void seek(Object of, int positionMs) {
+                assertEquals(Looper.getMainLooper(), Looper.myLooper());
+                assertTrue(of == player);
+                seeks.add(positionMs);
+            }
         };
         Settings.TAP_TO_PLAY.save(false);
         Settings.INLINE_FEED_VIDEO_CONTROLS.save(true);
@@ -109,8 +132,11 @@ public class FeedVideoControlsTest {
 
     @After public void restore() {
         FeedVideoControls.reset();
+        Settings.RESUME_LONG_VIDEOS.resetToDefault();
+        ResumePlaybackForTests.forget();
         Settings.INLINE_FEED_VIDEO_CONTROLS.resetToDefault();
         Settings.FEED_VIDEO_CAST_BUTTON.resetToDefault();
+        Settings.FEED_VIDEO_SEEK_BAR.resetToDefault();
         Settings.TAP_TO_PLAY.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         LogBufferManager.clearLogBuffer();
@@ -155,8 +181,373 @@ public class FeedVideoControlsTest {
         drain();
     }
 
+    private SeekBar bar() { return FeedVideoControls.showingBar(player); }
+
+    /** A minute long video a quarter of the way through, and the bar laid out on it. */
+    private void barOn() {
+        player.length = 60000;
+        player.position = 15000;
+        Settings.FEED_VIDEO_SEEK_BAR.save(true);
+        FeedVideoControls.settingsChanged();
+        drain();
+        layout();
+    }
+
+    private void refreshAfterLayout() {
+        layout();
+        FeedVideoControls.changed(player);
+        drain();
+    }
+
+    private static void tick() { shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(300)); }
+
+    private static void touch(View view, int action, int x) {
+        long now = SystemClock.uptimeMillis();
+        MotionEvent event = MotionEvent.obtain(now, now, action, x, view.getHeight() / 2f, 0);
+        view.dispatchTouchEvent(event);
+        event.recycle();
+    }
+
+    private static int[] on(View view) {
+        int[] at = new int[2];
+        view.getLocationInWindow(at);
+        return at;
+    }
+
+    private View paint(ViewGroup into, int top, int height) {
+        View view = new View(activity);
+        view.setBackgroundColor(0xFF000000);
+        place(into, view, 0, top, 1080, height);
+        return view;
+    }
+
     private static FrameLayout.LayoutParams at(View button) {
         return (FrameLayout.LayoutParams) button.getLayoutParams();
+    }
+
+    @Test public void seekBarRunsAlongTheVideosBottomEdgeAndFollowsThePlayer() {
+        assertNull("it starts off", bar());
+        barOn();
+        SeekBar bar = bar();
+        assertNotNull(bar);
+        assertEquals("Feed video position", bar.getContentDescription());
+        assertTrue(bar.getParent() == button().getParent());
+        assertEquals(0, on(bar)[0]);
+        assertEquals(1080, bar.getWidth());
+        assertEquals(FeedVideoControls.BAR_DP, bar.getHeight());
+        assertEquals("its bottom is the video's", on(player.view)[1] + 600, on(bar)[1] + bar.getHeight());
+        assertEquals(60000, bar.getMax());
+        assertEquals(15000, bar.getProgress());
+        player.position = 30000;
+        tick();
+        assertEquals(30000, bar.getProgress());
+        player.position = 90000;
+        tick();
+        assertEquals("a position past the end stays on the bar", 60000, bar.getProgress());
+        assertTrue("following the player moves nothing", seeks.isEmpty());
+        assertTrue(commands.isEmpty());
+    }
+
+    @Test public void aDragMovesOnlyTheBarUntilItsLetGoThenSeeksOnceAndLeavesPlaybackAlone() {
+        barOn();
+        Settings.RESUME_LONG_VIDEOS.save(true);
+        SeekBar bar = bar();
+        Bitmap frame = Bitmap.createBitmap(1080, 100, Bitmap.Config.ARGB_8888);
+        bar.draw(new Canvas(frame));
+        touch(bar, MotionEvent.ACTION_DOWN, 270);
+        touch(bar, MotionEvent.ACTION_MOVE, 540);
+        assertTrue("the video waits for the let go", seeks.isEmpty());
+        assertEquals(30000, bar.getProgress());
+        player.position = 16000;
+        tick();
+        assertEquals("the player's position leaves a drag alone", 30000, bar.getProgress());
+        refreshAfterLayout();
+        layout();
+        assertEquals("a drag has room for its time", FeedVideoControls.BAR_DP + FeedVideoControls.TIME_DP, bar.getHeight());
+        assertEquals("and the line stays where it was", on(player.view)[1] + 600, on(bar)[1] + bar.getHeight());
+        bar.draw(new Canvas(frame));
+        touch(bar, MotionEvent.ACTION_UP, 810);
+        assertEquals(java.util.Arrays.asList(45000), seeks);
+        assertTrue("Resume long videos leaves a video you placed alone", ResumePlaybackForTests.placedBeforeStart(player));
+        assertTrue("a paused video stays paused", commands.isEmpty());
+        assertFalse(player.playing);
+        refreshAfterLayout();
+        layout();
+        assertEquals(FeedVideoControls.BAR_DP, bar.getHeight());
+    }
+
+    @Test public void theButtonsAndBarStayOnTheVideoWhenTheContentFrameHasPadding() {
+        castOn();
+        barOn();
+        assertEquals("below the channel picture", FeedVideoControls.TOP_DP, on(button())[1] - on(player.view)[1]);
+        assertEquals(FeedVideoControls.TOP_DP, on(cast())[1] - on(player.view)[1]);
+        ViewGroup content = activity.findViewById(android.R.id.content);
+        content.setPadding(20, 128, 0, 0);
+        refreshAfterLayout();
+        layout();
+        assertEquals("the status bar's padding changes nothing", FeedVideoControls.TOP_DP, on(button())[1] - on(player.view)[1]);
+        assertEquals(FeedVideoControls.TOP_DP, on(cast())[1] - on(player.view)[1]);
+        assertEquals(on(player.view)[0], on(bar())[0]);
+        assertEquals(on(player.view)[1] + 600, on(bar())[1] + bar().getHeight());
+    }
+
+    @Test public void aTapOnTheBarSeeksThereOnce() {
+        barOn();
+        touch(bar(), MotionEvent.ACTION_DOWN, 540);
+        touch(bar(), MotionEvent.ACTION_UP, 540);
+        assertEquals(java.util.Arrays.asList(30000), seeks);
+    }
+
+    @Test public void theBarWaitsForASeekToLandInsteadOfSpringingBack() {
+        barOn();
+        SeekBar bar = bar();
+        touch(bar, MotionEvent.ACTION_DOWN, 270);
+        touch(bar, MotionEvent.ACTION_UP, 810);
+        assertEquals(java.util.Arrays.asList(45000), seeks);
+        player.position = 16000;
+        tick();
+        assertEquals("the player still reads the old spot", 45000, bar.getProgress());
+        player.position = 45300;
+        tick();
+        assertEquals(45300, bar.getProgress());
+        player.position = 5000;
+        tick();
+        assertEquals("once landed it follows the player again", 5000, bar.getProgress());
+    }
+
+    @Test public void aSeekThatNeverLandsLetsTheBarGoBackToThePlayer() {
+        barOn();
+        SeekBar bar = bar();
+        touch(bar, MotionEvent.ACTION_DOWN, 270);
+        touch(bar, MotionEvent.ACTION_UP, 810);
+        player.position = 16000;
+        tick();
+        assertEquals(45000, bar.getProgress());
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(FeedVideoControls.LANDING_MS));
+        assertEquals(16000, bar.getProgress());
+    }
+
+    @Test public void aCancelledDragDoesntSeekAndTheBarGoesBackToThePlayer() {
+        barOn();
+        SeekBar bar = bar();
+        touch(bar, MotionEvent.ACTION_DOWN, 540);
+        touch(bar, MotionEvent.ACTION_CANCEL, 540);
+        assertTrue(seeks.isEmpty());
+        tick();
+        assertEquals(15000, bar.getProgress());
+    }
+
+    @Test public void aScreenReadersScrollSeeksOnce() {
+        barOn();
+        assertTrue(bar().performAccessibilityAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD, null));
+        assertEquals(java.util.Arrays.asList(18000), seeks);
+    }
+
+    @Test public void seekBarStandsAloneAndNeedsItsSwitchTheBuildAndNoPause() {
+        Settings.INLINE_FEED_VIDEO_CONTROLS.save(false);
+        barOn();
+        assertNull(button());
+        assertNotNull(bar());
+        Settings.FEED_VIDEO_SEEK_BAR.save(false);
+        drain();
+        assertNull(bar());
+        int reads = player.positionReads;
+        tick();
+        assertEquals("the tick stops with it", reads, player.positionReads);
+        barOn();
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        FeedVideoControls.settingsChanged();
+        drain();
+        assertNull(bar());
+        PauseForTests.resume();
+        SettingsContextRule.beforeThePauseIsDecided(() -> {
+            FeedVideoControls.settingsChanged();
+            drain();
+            assertNull(bar());
+        });
+        barOn();
+        assertNotNull(bar());
+        FeedVideoControls.inBuildForTests = false;
+        FeedVideoControls.settingsChanged();
+        drain();
+        assertNull(bar());
+        assertTrue(seeks.isEmpty());
+    }
+
+    @Test public void aLetGoAfterTheVideoChangedNeverSeeksTheNewOne() {
+        barOn();
+        SeekBar old = bar();
+        touch(old, MotionEvent.ACTION_DOWN, 540);
+        player.params = new Media();
+        touch(old, MotionEvent.ACTION_UP, 540);
+        assertTrue(seeks.isEmpty());
+        assertNull(bar());
+        FeedVideoControls.changed(player);
+        drain();
+        layout();
+        SeekBar next = bar();
+        assertNotNull(next);
+        assertFalse(next == old);
+        touch(next, MotionEvent.ACTION_DOWN, 540);
+        FeedVideoControls.rebound(player);
+        touch(next, MotionEvent.ACTION_UP, 540);
+        assertTrue(seeks.isEmpty());
+        drain();
+        layout();
+        touch(bar(), MotionEvent.ACTION_DOWN, 540);
+        touch(bar(), MotionEvent.ACTION_UP, 540);
+        assertEquals(java.util.Arrays.asList(30000), seeks);
+    }
+
+    @Test public void aVideoWithNoLengthYetHidesTheBarUntilItKnows() {
+        barOn();
+        SeekBar bar = bar();
+        int[] at = on(bar);
+        player.length = 0;
+        tick();
+        assertEquals(View.GONE, bar.getVisibility());
+        assertFalse(FeedVideoControls.barAt(activity.getWindow().getDecorView(), at[0] + 540, at[1] + 12));
+        player.length = 60000;
+        tick();
+        assertEquals(View.VISIBLE, bar.getVisibility());
+        assertEquals(60000, bar.getMax());
+    }
+
+    @Test public void aPlayerThatFailsTakesTheBarOff() {
+        barOn();
+        fail = true;
+        tick();
+        assertNull(bar());
+        assertTrue(seeks.isEmpty());
+    }
+
+    @Test public void liveVideosAdsAndOtherOriginsGetNoBar() {
+        barOn();
+        player.params.ordinary = false;
+        FeedVideoControls.changed(player);
+        drain();
+        assertNull(bar());
+        player.params.ordinary = true;
+        FeedVideoControls.changed(player);
+        drain();
+        assertNotNull(bar());
+        player.origin = "fb_shorts_tab::fb_shorts_viewer";
+        FeedVideoControls.changed(player);
+        drain();
+        assertNull(bar());
+    }
+
+    @Test public void aVideoCutOffAtTheBottomKeepsItsButtonsAndGetsTheBarWhenItsEdgeShows() {
+        barOn();
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) row.getLayoutParams();
+        params.topMargin = 1500;
+        row.setLayoutParams(params);
+        refreshAfterLayout();
+        assertNull(bar());
+        assertNotNull("the buttons need only the top", button());
+        params.topMargin = 0;
+        row.setLayoutParams(params);
+        refreshAfterLayout();
+        assertNotNull(bar());
+    }
+
+    private static WindowInsets gestureStrip(int height) {
+        return new WindowInsets.Builder().setInsets(WindowInsets.Type.mandatorySystemGestures(), Insets.of(0, 0, 0, height)).build();
+    }
+
+    @Test public void aBarInTheScreensGestureStripStepsAsideUntilItsEdgeIsClear() {
+        barOn();
+        int below = bar().getRootView().getHeight() - (on(player.view)[1] + 600);
+        FeedVideoControls.insetsForTests = gestureStrip(below);
+        refreshAfterLayout();
+        assertNotNull("ending right where the strip starts is fine", bar());
+        FeedVideoControls.insetsForTests = gestureStrip(below + 1);
+        refreshAfterLayout();
+        assertNull("a pixel into it can't be dragged", bar());
+        assertNotNull("the buttons need only the top", button());
+        FeedVideoControls.insetsForTests = gestureStrip(below);
+        refreshAfterLayout();
+        assertNotNull(bar());
+    }
+
+    @Test public void theWholeBarKeepsADragFromTheSystemsSideSwipes() {
+        barOn();
+        SeekBar bar = bar();
+        assertEquals(java.util.Collections.singletonList(new Rect(0, 0, 1080, FeedVideoControls.BAR_DP)), bar.getSystemGestureExclusionRects());
+        touch(bar, MotionEvent.ACTION_DOWN, 270);
+        touch(bar, MotionEvent.ACTION_MOVE, 540);
+        refreshAfterLayout();
+        layout();
+        assertEquals("a drag's taller bar stays covered",
+                java.util.Collections.singletonList(new Rect(0, 0, 1080, FeedVideoControls.BAR_DP + FeedVideoControls.TIME_DP)),
+                bar.getSystemGestureExclusionRects());
+    }
+
+    @Test public void aSurfaceTallerThanItsContainerEndsAtTheContainersEdge() {
+        player.view.removeAllViews();
+        place(player.view, new TextureView(activity), 0, 0, 1080, 1067);
+        layout();
+        barOn();
+        assertNotNull(bar());
+        assertEquals(on(player.view)[1] + 600, on(bar())[1] + bar().getHeight());
+    }
+
+    @Test public void somethingOverTheBottomEdgeTakesTheBarOffUntilItMoves() {
+        barOn();
+        View tabs = paint(root, 980, 120);
+        refreshAfterLayout();
+        assertNull(bar());
+        assertNotNull(button());
+        tabs.setVisibility(View.GONE);
+        refreshAfterLayout();
+        assertNotNull(bar());
+    }
+
+    @Test public void onlyWhatShowsAcrossTheEdgeCountsNotAFrameAroundIt() {
+        barOn();
+        FrameLayout frame = new FrameLayout(activity);
+        place(root, frame, 0, 0, 1080, 2300);
+        place(root, new View(activity), 0, 0, 1080, 2300);
+        paint(frame, 2000, 100);
+        refreshAfterLayout();
+        assertNotNull("an empty frame and a bare spacer", bar());
+        paint(frame, 900, 200);
+        refreshAfterLayout();
+        assertNull("what the frame holds", bar());
+    }
+
+    @Test public void debugLoggingNamesWhatLiesOverTheEdgeOnce() {
+        barOn();
+        BaseSettings.DEBUG.save(true);
+        LogBufferManager.clearLogBuffer();
+        paint(root, 980, 120);
+        for (int pass = 0; pass < 3; pass++) refreshAfterLayout();
+        String log = LogBufferManager.buildExportText();
+        assertEquals(log, 1, occurrences(log, "Feed video seek bar: none, something lies over its bottom edge android.view.View"));
+    }
+
+    @Test public void barAtAnswersForTheBarAndAHoldThereIsntAHoldOnTheVideo() {
+        barOn();
+        View decor = activity.getWindow().getDecorView();
+        int[] at = new int[2];
+        bar().getLocationOnScreen(at);
+        assertTrue(FeedVideoControls.barAt(decor, at[0] + 540, at[1] + 12));
+        assertFalse(FeedVideoControls.barAt(decor, at[0] + 540, at[1] - 1));
+        assertFalse("another window", FeedVideoControls.barAt(root, at[0] + 540, at[1] + 12));
+        FeedVideoHold.reset();
+        try {
+            FeedVideoHold.inBuildForTests = true;
+            FeedVideoHold.access = new FeedVideoHold.Players() {
+                @Override public ViewGroup view(Object of) { return player.view; }
+                @Override public float speed(Object of) { return 1f; }
+                @Override public void speed(Object of, float speed) { }
+            };
+            FeedVideoHold.attached(player.view, player);
+            assertNull(FeedVideoHold.videoAt(decor, at[0] + 540, at[1] + 12));
+            assertTrue("just above the bar it's the video", FeedVideoHold.videoAt(decor, at[0] + 540, at[1] - 1) == player);
+        } finally {
+            FeedVideoHold.reset();
+        }
     }
 
     @Test public void castButtonSitsAcrossFromPlayAndHandsOverTheVideoOnScreen() {
@@ -526,12 +917,15 @@ public class FeedVideoControlsTest {
 
     @Test public void aRowRecycledDuringALayoutPassTakesTheButtonsOffAfterThePass() {
         castOn();
+        barOn();
         View play = button();
         View cast = cast();
+        View bar = bar();
         assertNotNull(play);
         assertNotNull(cast);
+        assertNotNull(bar);
         ViewGroup content = activity.findViewById(android.R.id.content);
-        assertEquals(3, content.getChildCount());
+        assertEquals(4, content.getChildCount());
         // Like the feed list recycling a video row in its own onLayout, while the content frame lays out its children.
         Runnable[] recycle = { () -> row.removeView(player.view) };
         View lister = new View(activity) {
@@ -546,9 +940,11 @@ public class FeedVideoControlsTest {
         assertTrue(recycle[0] == null);
         assertNull(button());
         assertNull(cast());
+        assertNull(bar());
         drain();
         assertTrue(play.getParent() == null);
         assertTrue(cast.getParent() == null);
+        assertTrue(bar.getParent() == null);
         assertEquals(1, content.getChildCount());
     }
 }

@@ -2095,6 +2095,9 @@ Reels order will be set to %1$s.	Reels 排序方式將設為 %1$s。
 Cast button on feed videos	動態影片上的投放按鈕
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	為動態中的影片加入投放按鈕。它會把影片交給你已安裝的投放應用程式（例如 Web Video Caster），由它傳送到電視。Facebook 已不再內建投放功能。
 Cast this video	投放這部影片
+Seek bar on feed videos	動態影片上的進度列
+Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	在動態影片底部顯示進度列。拖曳後放開即可跳到該位置。直播影片和廣告仍使用各自的控制項。開啟「點按播放」時，也需要開啟「動態消息影片控制項」。
+Feed video position	動態影片播放位置
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	徽章顏色
 # context: title of the row that holds a color code for the Facebook logo at the top of Home

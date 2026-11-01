@@ -260,6 +260,14 @@ public class ResumePlaybackTest {
         ResumePlayback.seeking(Trigger.BY_INITIAL_FRAME_PERFECT_SEEK, reset, 0);
         assertEquals(Collections.singletonList("BY_PLAYER@600000"), openedAfter(reset));
         assertTrue(report(), report().contains("seek before the resume 2"));
+
+        // The seek bar on feed videos back to the start, with the same exact trigger as that reset.
+        Player placed = new Player(params);
+        ResumePlayback.started(placed, Trigger.BY_USER);
+        ResumePlayback.placedByYou(placed);
+        ResumePlayback.seeking(Trigger.BY_INITIAL_FRAME_PERFECT_SEEK, placed, 0);
+        ResumePlaybackForTests.runLater();
+        assertTrue("the resume ran over the feed bar", placed.seeks.isEmpty());
     }
 
     private static List<String> openedAfter(Player player) {

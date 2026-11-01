@@ -208,6 +208,7 @@ final class SwitchLabels {
         if (setting == Settings.TAP_TO_PLAY_STORIES) return L10n.t("Video stories wait for a tap");
         if (setting == Settings.INLINE_FEED_VIDEO_CONTROLS) return L10n.t("Inline feed video controls");
         if (setting == Settings.FEED_VIDEO_CAST_BUTTON) return L10n.t("Cast button on feed videos");
+        if (setting == Settings.FEED_VIDEO_SEEK_BAR) return L10n.t("Seek bar on feed videos");
         if (setting == Settings.RESUME_LONG_VIDEOS) return L10n.t("Resume long videos");
         if (setting == Settings.RECENTLY_WATCHED) return L10n.t("Remember what you watch");
         if (setting == Settings.FRAME_STEP) return L10n.t("Frame step");

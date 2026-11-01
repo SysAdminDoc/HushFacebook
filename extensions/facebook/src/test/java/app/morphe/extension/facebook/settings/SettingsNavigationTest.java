@@ -1666,6 +1666,7 @@ public class SettingsNavigationTest {
         assertTrue(page.navigation.isExpanded("Downloads"));
         assertTrue(contains(Settings.TAP_TO_PLAY.key));
         assertTrue(contains(Settings.INLINE_FEED_VIDEO_CONTROLS.key));
+        assertTrue(contains(Settings.FEED_VIDEO_SEEK_BAR.key));
         assertEquals(before, list().getCount());
         assertEquals(anchor, ((Preference) list().getItemAtPosition(list().getFirstVisiblePosition())).getKey());
         assertEquals(offset, list().getChildAt(0).getTop());

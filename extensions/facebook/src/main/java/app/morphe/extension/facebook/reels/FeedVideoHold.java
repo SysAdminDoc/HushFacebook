@@ -281,6 +281,7 @@ public final class FeedVideoHold {
      */
     @Nullable
     static Object videoAt(View root, int x, int y) {
+        if (FeedVideoControls.barAt(root, x, y)) return null;
         List<Object> attached;
         synchronized (players) {
             attached = new ArrayList<>(players);

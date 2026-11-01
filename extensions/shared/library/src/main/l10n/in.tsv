@@ -2091,6 +2091,9 @@ Reels order will be set to %1$s.	Urutan reel akan diatur ke %1$s.
 Cast button on feed videos	Tombol transmisi di video feed
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Menambahkan tombol transmisi ke video feed. Tombol ini menyerahkan video ke aplikasi transmisi yang kamu punya, seperti Web Video Caster, yang mengirimnya ke TV-mu. Facebook sudah tidak punya fitur transmisi sendiri.
 Cast this video	Transmisikan video ini
+Seek bar on feed videos	Bilah geser di video feed
+Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Menampilkan bilah di bagian bawah video feed. Geser lalu lepaskan untuk melompat ke titik itu. Video live dan iklan tetap memakai kontrolnya sendiri. Jika “Ketuk untuk memutar” aktif, “Kontrol video di beranda” juga harus aktif.
+Feed video position	Posisi video feed
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Warna lencana
 # context: title of the row that holds a color code for the Facebook logo at the top of Home

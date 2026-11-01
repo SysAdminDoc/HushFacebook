@@ -12,12 +12,19 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.ads.sponsoredsearch.enumConstantFields
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.media.framestep.STEP_TRIGGER
 import app.morphe.patches.facebook.media.reelspeed.originGetters
 import app.morphe.patches.facebook.media.resume.IS_PLAYING
 import app.morphe.patches.facebook.media.resume.VIDEO_PLAYER_PARAMS
+import app.morphe.patches.facebook.media.resume.lengthReaders
 import app.morphe.patches.facebook.media.resume.paramsGetters
+import app.morphe.patches.facebook.media.resume.playingInterfaces
+import app.morphe.patches.facebook.media.resume.positionReaders
 import app.morphe.patches.facebook.media.resume.releases
+import app.morphe.patches.facebook.media.resume.remainingReaders
 import app.morphe.patches.facebook.media.resume.reportedValues
+import app.morphe.patches.facebook.media.resume.safeSeeks
+import app.morphe.patches.facebook.media.resume.seekTos
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegister
@@ -49,6 +56,12 @@ internal fun BytecodePatchContext.installFeedVideoControls(play: Method) {
         it.name in userFields && it.type == trigger && AccessFlags.PUBLIC.isSet(it.accessFlags)
                 && AccessFlags.STATIC.isSet(it.accessFlags) && AccessFlags.ENUM.isSet(it.accessFlags)
     } ?: refuse("expected one public BY_USER enum constant in $trigger")
+    // The seek bar seeks with Frame step's exact trigger. BY_SEEKBAR_CONTROLLER lands up to two seconds early, a fifth of a ten second video.
+    val seekFields = enumConstantFields(triggerClass).filterValues { it == STEP_TRIGGER }.keys
+    val seekBy = triggerClass.fields.singleOrNull {
+        it.name in seekFields && it.type == trigger && AccessFlags.PUBLIC.isSet(it.accessFlags)
+                && AccessFlags.STATIC.isSet(it.accessFlags) && AccessFlags.ENUM.isSet(it.accessFlags)
+    } ?: refuse("expected one public $STEP_TRIGGER enum constant in $trigger")
     val pauses = grootPauses(owner, trigger)
     val inner = innerPause(pauses) ?: refuse("no pause the other pauses hand on to")
     val pause = pauses.singleOrNull {
@@ -63,6 +76,10 @@ internal fun BytecodePatchContext.installFeedVideoControls(play: Method) {
     val params = single("VideoPlayerParams getter", paramsGetters(owner))
     val origin = single("PlayerOrigin getter", originGetters(owner))
     val release = single("native release", releases(owner, trigger))
+    val seekTo = single("native seek", seekTos(owner, trigger, single("safe seek", safeSeeks(owner, trigger))))
+    val playingFace = playingInterfaces(owner.interfaces.mapNotNull { classDefByOrNull(it) }).singleOrNull()
+        ?: refuse("expected one interface declaring isPlaying()")
+    val position = single("position reader", positionReaders(owner, playingFace))
     val attaches = owner.methods.mapNotNull { method -> attachedPlayerParameter(method, owner.type)?.let { method to it } }
     val (attach, playerParameter) = attaches.singleOrNull()
         ?: refuse("expected one attach of the current player container, found ${attaches.size}")
@@ -74,7 +91,7 @@ internal fun BytecodePatchContext.installFeedVideoControls(play: Method) {
                 && !AccessFlags.STATIC.isSet(it.accessFlags)
     }) refuse("the current player container isn't public")
     val paramsClass = classDefBy(VIDEO_PLAYER_PARAMS)
-    val names = INLINE_FLAGS.keys + "videoId"
+    val names = INLINE_FLAGS.keys + "videoId" + "videoDurationMs"
     val dump = paramsClass.methods.singleOrNull { method -> names.all { holdsString(method, it) } }
         ?: refuse("no unique params dump names ${names.joinToString()}")
     val reported = reportedValues(dump)
@@ -87,10 +104,13 @@ internal fun BytecodePatchContext.installFeedVideoControls(play: Method) {
     }
     val flags = INLINE_FLAGS.mapValues { (name, _) -> field(name, "Z") }
     val id = field("videoId", "Ljava/lang/String;")
+    val duration = field("videoDurationMs", "I")
+    val length = single("length reader", lengthReaders(owner, single("remaining time reader",
+        remainingReaders(owner, position, duration.name)), position))
     listOf(owner, paramsClass, triggerClass).forEach {
         if (!AccessFlags.PUBLIC.isSet(it.accessFlags)) refuse("${it.type} isn't public")
     }
-    listOf(play, pause, playing, params, origin).forEach {
+    listOf(play, pause, playing, params, origin, position, length, seekTo).forEach {
         if (!AccessFlags.PUBLIC.isSet(it.accessFlags)) refuse("${it.definingClass}->${it.name} isn't public")
     }
     val extension = mutableClassDefBy(FEED_CONTROLS)
@@ -101,16 +121,19 @@ internal fun BytecodePatchContext.installFeedVideoControls(play: Method) {
         } ?: refuse("missing $name stub")
     // Resolve all stubs before the first edit too.
     val stubs = listOf("playerView" to VIEW_GROUP, "playerParams" to "Ljava/lang/Object;",
-        "playerOrigin" to "Ljava/lang/Object;", "mediaId" to "Ljava/lang/String;", "isPlaying" to "Z")
+        "playerOrigin" to "Ljava/lang/Object;", "mediaId" to "Ljava/lang/String;", "isPlaying" to "Z",
+        "playerPosition" to "I", "playerLength" to "I", "paramsLength" to "I")
         .associate { (name, answer) -> name to stub(name, answer) }
     val flagStubs = INLINE_FLAGS.values.associateWith { stub(it, "Z") }
     val command = stub("commandPlayer", "V", listOf("Ljava/lang/Object;", "Z"))
+    val seek = stub("seekPlayer", "V", listOf("Ljava/lang/Object;", "Ljava/lang/Object;", "I"))
     stubs.getValue("playerView").addInstructions(0, """
         check-cast p0, ${owner.type}
         iget-object p0, p0, $container
         return-object p0
     """)
-    listOf("playerParams" to params, "playerOrigin" to origin, "isPlaying" to playing).forEach { (name, method) ->
+    listOf("playerParams" to params, "playerOrigin" to origin, "isPlaying" to playing,
+        "playerPosition" to position, "playerLength" to length).forEach { (name, method) ->
         val objectResult = method.returnType.startsWith("L")
         stubs.getValue(name).addInstructions(0, """
             check-cast p0, ${owner.type}
@@ -123,6 +146,18 @@ internal fun BytecodePatchContext.installFeedVideoControls(play: Method) {
         check-cast p0, $VIDEO_PLAYER_PARAMS
         iget-object p0, p0, $id
         return-object p0
+    """)
+    stubs.getValue("paramsLength").addInstructions(0, """
+        check-cast p0, $VIDEO_PLAYER_PARAMS
+        iget p0, p0, $duration
+        return p0
+    """)
+    // p1 only lends its register to the trigger.
+    seek.addInstructions(0, """
+        check-cast p0, ${owner.type}
+        sget-object p1, $seekBy
+        invoke-virtual/range { p0 .. p2 }, ${seekTo.definingClass}->${seekTo.name}(${trigger}I)V
+        return-void
     """)
     INLINE_FLAGS.forEach { (name, stub) ->
         flagStubs.getValue(stub).addInstructions(0, """

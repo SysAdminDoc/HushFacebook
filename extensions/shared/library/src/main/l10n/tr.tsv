@@ -2091,6 +2091,9 @@ Reels order will be set to %1$s.	Reels sırası %1$s olarak ayarlanacak.
 Cast button on feed videos	Akış videolarında yayınla düğmesi
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Akış videolarına bir yayınla düğmesi ekler. Videoyu, Web Video Caster gibi sende olan bir yayın uygulamasına verir, o da TV'ne gönderir. Facebook'un artık kendi yayınlama özelliği yok.
 Cast this video	Bu videoyu yayınla
+Seek bar on feed videos	Akış videolarında sarma çubuğu
+Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Akıştaki bir videonun altında bir çubuk gösterir. Sürükleyip bırakarak o noktaya atlayın. Canlı videolar ve reklamlar kendi denetimlerini korur. “Oynatmak için dokun” açıksa “Akış videosu denetimleri” de açık olmalıdır.
+Feed video position	Akış videosu konumu
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Rozet rengi
 # context: title of the row that holds a color code for the Facebook logo at the top of Home

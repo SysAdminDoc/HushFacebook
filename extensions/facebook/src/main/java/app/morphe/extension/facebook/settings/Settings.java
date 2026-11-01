@@ -1274,6 +1274,18 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * A bar along the bottom of a feed video to drag to any point in it (#326). A drag shows the
+     * time, and the video moves when it's let go. Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_SEEK_BAR =
+            new BooleanSetting("hushfacebook_feed_video_seek_bar", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
      * A video longer than two minutes that was left partway picks up where it was left, once, the
      * next time a player starts it ({@link app.morphe.extension.facebook.media.ResumePlayback}).
      * Starts off. Off or paused, nothing is saved or looked up and videos start as Facebook starts

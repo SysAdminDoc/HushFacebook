@@ -304,6 +304,9 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.INLINE_FEED_VIDEO_CONTROLS,
                         L10n.t("Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Live videos and ads keep their own controls. "
                                 + "With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.")));
+                playback.addPreference(toggle(context, Settings.FEED_VIDEO_SEEK_BAR,
+                        L10n.t("Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. "
+                    + "With Tap to play on, it needs Inline feed video controls on too.")));
                 // The tap hands over the file the video patch's player record found.
                 if (build.contains(PatchFamily.VIDEO_DOWNLOAD)) {
                     playback.addPreference(toggle(context, Settings.FEED_VIDEO_CAST_BUTTON,

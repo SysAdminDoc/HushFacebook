@@ -2091,6 +2091,9 @@ Reels order will be set to %1$s.	El orden de los reels será %1$s.
 Cast button on feed videos	Botón de enviar en videos del feed
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Añade un botón de enviar a los videos del feed. Pasa el video a una app de transmisión que tengas, como Web Video Caster, que lo envía a tu TV. Facebook ya no tiene transmisión propia.
 Cast this video	Enviar este video
+Seek bar on feed videos	Barra de progreso en videos del feed
+Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Muestra una barra en la parte inferior de un video del feed. Arrástrala y suéltala para saltar a ese punto. Los videos en vivo y los anuncios conservan sus propios controles. Si “Toca para reproducir” está activado, también necesita “Controles de video en el feed”.
+Feed video position	Posición del video del feed
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Color de insignias
 # context: title of the row that holds a color code for the Facebook logo at the top of Home

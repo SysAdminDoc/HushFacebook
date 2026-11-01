@@ -13,6 +13,7 @@ import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.media.reelspeed.PLAYER_ORIGIN
 import app.morphe.patches.facebook.media.resume.GROOT_RELEASE
+import app.morphe.patches.facebook.media.resume.GROOT_SAFE_SEEK
 import app.morphe.patches.facebook.media.resume.VIDEO_PLAYER_PARAMS
 import app.morphe.patches.facebook.reels.hold.ATTACH_VIEW_LOG
 import app.morphe.patches.facebook.reels.hold.VIEW_GROUP
@@ -50,6 +51,7 @@ class TapToPlayShapesTest {
     private val trigger = "Lfixture/Trigger;"
     private val setting = "Lfixture/Autoplay;"
     private val player = "Lfixture/Player;"
+    private val playingFace = "Lfixture/Playing;"
     private val controller = "Lfixture/Controller;"
     private val checker = "Lfixture/Checker;"
     private val session = "Lcom/facebook/auth/usersession/FbUserSession;"
@@ -125,8 +127,9 @@ class TapToPlayShapesTest {
         return-void
     """
 
-    private fun enumNaming(type: String, names: List<String>): ClassDef {
+    private fun enumNaming(type: String, names: List<String>, seekable: Boolean = true): ClassDef {
         val user = type == trigger && "BY_USER" in names
+        val seeker = user && seekable
         val body = names.joinToString("\n") { "const-string v0, \"$it\"" } + if (user) """
 
             new-instance v0, $type
@@ -135,6 +138,13 @@ class TapToPlayShapesTest {
             invoke-direct {v0, v1, v2}, $type-><init>(Ljava/lang/String;I)V
             sput-object v0, $type->user:$type
             sput-object v0, $type->alias:$type
+            ${if (seeker) """
+                new-instance v0, $type
+                const-string v1, "BY_INITIAL_FRAME_PERFECT_SEEK"
+                const/4 v2, 0x1
+                invoke-direct {v0, v1, v2}, $type-><init>(Ljava/lang/String;I)V
+                sput-object v0, $type->seeker:$type
+            """ else ""}
             return-void
         """ else "\nreturn-void"
         // Like 584, the constant is also stored in a plain static alias that isn't an enum entry.
@@ -143,7 +153,9 @@ class TapToPlayShapesTest {
                 AccessFlags.PUBLIC.value or AccessFlags.STATIC.value or AccessFlags.ENUM.value, null, null, null),
             ImmutableField(type, "alias", type,
                 AccessFlags.PUBLIC.value or AccessFlags.STATIC.value or AccessFlags.FINAL.value, null, null, null),
-        ) else emptyList()
+        ) + (if (seeker) listOf(ImmutableField(type, "seeker", type,
+            AccessFlags.PUBLIC.value or AccessFlags.STATIC.value or AccessFlags.ENUM.value, null, null, null)) else emptyList())
+        else emptyList()
         return ImmutableClassDef(type, AccessFlags.PUBLIC.value, "Ljava/lang/Enum;", null, null, null, fields,
             listOf(ImmutableMethod.of(method(type, "<clinit>", emptyList(), "V", body, registers = 3, static = true))))
     }
@@ -152,6 +164,30 @@ class TapToPlayShapesTest {
         val field = ImmutableField(player, "container", VIEW_GROUP, AccessFlags.PUBLIC.value, null, null, null)
         val extra = listOf(
             method(player, "isPlaying", emptyList(), "Z", "const/4 v0, 0x0\nreturn v0"),
+            method(player, "position", emptyList(), "I", "const/4 v0, 0x0\nreturn v0"),
+            method(player, "length", emptyList(), "I", "const/4 v0, 0x0\nreturn v0"),
+            method(player, "remaining", emptyList(), "J", """
+                invoke-virtual {p0}, $player->length()I
+                move-result v0
+                invoke-virtual {p0}, $player->params()$VIDEO_PLAYER_PARAMS
+                move-result-object v1
+                iget v2, v1, $VIDEO_PLAYER_PARAMS->videoDurationMs:I
+                invoke-virtual {p0}, $player->position()I
+                move-result v1
+                sub-int/2addr v0, v1
+                int-to-long v0, v0
+                return-wide v0
+            """),
+            method(player, "safeSeek", listOf(trigger, player, "I", "Z"), "V", holding(GROOT_SAFE_SEEK), static = true),
+            method(player, "seekWith", listOf(trigger, "I", "Z"), "V", """
+                invoke-static {p1, p0, p2, p3}, $player->safeSeek($trigger${player}IZ)V
+                return-void
+            """),
+            method(player, "seekTo", listOf(trigger, "I"), "V", """
+                const/4 v0, 0x0
+                invoke-virtual {p0, p1, p2, v0}, $player->seekWith(${trigger}IZ)V
+                return-void
+            """),
             method(player, "params", emptyList(), VIDEO_PLAYER_PARAMS, "const/4 v0, 0x0\nreturn-object v0"),
             method(player, "origin", emptyList(), PLAYER_ORIGIN, "const/4 v0, 0x0\nreturn-object v0"),
             method(player, "release", listOf(trigger, "Ljava/lang/String;"), "V", holding(GROOT_RELEASE)),
@@ -161,15 +197,25 @@ class TapToPlayShapesTest {
                 return-void
             """, registers = 6, static = true),
         )
-        return ImmutableClassDef(player, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null,
+        return ImmutableClassDef(player, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", listOf(playingFace), null, null,
             listOf(field), (base.methods.toList() + extra).map(ImmutableMethod::of))
     }
 
+    /** The interface declaring isPlaying(), whose one int method names the player's position reader. */
+    private fun playingInterface(): ClassDef = ImmutableClassDef(
+        playingFace, AccessFlags.PUBLIC.value or AccessFlags.INTERFACE.value or AccessFlags.ABSTRACT.value,
+        "Ljava/lang/Object;", null, null, null, null,
+        listOf("isPlaying" to "Z", "position" to "I").map { (name, returns) ->
+            ImmutableMethod(playingFace, name, emptyList<ImmutableMethodParameter>(), returns,
+                AccessFlags.PUBLIC.value or AccessFlags.ABSTRACT.value, null, null, null)
+        },
+    )
+
     private fun inlineParams(): ClassDef {
-        val fields = (INLINE_FLAGS.keys.associateWith { "Z" } + ("videoId" to "Ljava/lang/String;"))
+        val fields = (INLINE_FLAGS.keys.associateWith { "Z" } + ("videoId" to "Ljava/lang/String;") + ("videoDurationMs" to "I"))
         val dump = fields.entries.joinToString("\n") { (name, type) -> """
             const-string v0, "$name"
-            ${if (type == "Z") "iget-boolean" else "iget-object"} v1, p0, $VIDEO_PLAYER_PARAMS->$name:$type
+            ${when (type) { "Z" -> "iget-boolean"; "I" -> "iget"; else -> "iget-object" }} v1, p0, $VIDEO_PLAYER_PARAMS->$name:$type
             invoke-static {v0, v1}, Lfixture/Reporter;->report(Ljava/lang/String;$type)V
         """ } + "\nreturn-void"
         return ImmutableClassDef(VIDEO_PLAYER_PARAMS, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null,
@@ -270,7 +316,7 @@ class TapToPlayShapesTest {
         componentClass: ClassDef = controlComponent(),
         controlsClass: ClassDef = classDef(controls, "Ljava/lang/Object;", reelCheck()),
     ) = PatchContexts.of(
-        listOf(inlinePlayer(grootPlayer), inlineParams(), triggerEnum, legacy(), checkerClass,
+        listOf(inlinePlayer(grootPlayer), playingInterface(), inlineParams(), triggerEnum, legacy(), checkerClass,
             enumNaming(setting, SETTING_NAMES), activityClass, componentClass, controlsClass,
             ExtensionDex.classDef(FEED_CONTROLS), ExtensionDex.classDef(SETTINGS_STATUS)) + playbackClasses(),
     )
@@ -313,6 +359,19 @@ class TapToPlayShapesTest {
         }
         assertEquals(INLINE_ATTACHED, patched(context, player, "attach").implementation!!.instructions.toList()[2].call.toString())
         assertEquals(INLINE_RELEASED, patched(context, player, "release").implementation!!.instructions.first().call.toString())
+        // The seek bar seeks as Facebook's own bar does, and reads the position and length the resume patch reads.
+        val seek = bridge.methods.single { it.name == "seekPlayer" }.implementation!!.instructions.toList()
+        assertEquals("$player->seekTo(${trigger}I)V", seek.firstNotNullOf { it.call }.toString())
+        assertEquals(listOf(0, 1, 2), seek.first { it.call != null }.registers())
+        assertEquals("$trigger->seeker:$trigger", seek.single { it.opcode == Opcode.SGET_OBJECT }
+            .let { (it as ReferenceInstruction).reference.toString() })
+        listOf("playerPosition" to "position", "playerLength" to "length").forEach { (stub, reader) ->
+            val code = bridge.methods.single { it.name == stub }.implementation!!.instructions
+            assertEquals("$player->$reader()I", code.firstNotNullOf { it.call }.toString())
+        }
+        val length = bridge.methods.single { it.name == "paramsLength" }.implementation!!.instructions.toList()
+        assertEquals(Opcode.IGET, length[1].opcode)
+        assertEquals("$VIDEO_PLAYER_PARAMS->videoDurationMs:I", (length[1] as ReferenceInstruction).reference.toString())
     }
 
     @Test
@@ -322,6 +381,19 @@ class TapToPlayShapesTest {
         val play = missing.classDefBy(player).methods.single { it.name == "play" }
         assertTrue(assertThrows(PatchException::class.java) { missing.installFeedVideoControls(play) }
             .message.orEmpty().contains("isAudioOnly"))
+        fun refusalWithout(context: app.morphe.patcher.patch.BytecodePatchContext) = assertThrows(PatchException::class.java) {
+            context.installFeedVideoControls(context.classDefBy(player).methods.single { it.name == "play" })
+        }.message.orEmpty()
+        val noSeekTrigger = build(triggerEnum = enumNaming(trigger, TRIGGER_NAMES, seekable = false))
+        assertTrue(refusalWithout(noSeekTrigger).contains("BY_INITIAL_FRAME_PERFECT_SEEK"))
+        val noSeek = build()
+        noSeek.mutableClassDefBy(player).methods.removeAll { it.name == "seekTo" }
+        assertTrue(refusalWithout(noSeek).contains("native seek"))
+        val noLength = build()
+        noLength.mutableClassDefBy(player).methods.removeAll { it.name == "remaining" }
+        assertTrue(refusalWithout(noLength).contains("remaining time reader"))
+        assertTrue(noSeek.mutableClassDefBy(FEED_CONTROLS).methods.single { it.name == "seekPlayer" }
+            .implementation!!.instructions.none { it.call?.definingClass == player })
         assertTrue(missing.mutableClassDefBy(FEED_CONTROLS).methods.single { it.name == "commandPlayer" }
             .implementation!!.instructions.none { it.call?.definingClass == player })
         val ambiguous = build()

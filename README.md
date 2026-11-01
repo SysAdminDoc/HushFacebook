@@ -73,6 +73,8 @@ To keep Reel downloads in More without the sidebar button, leave **Download** on
 
 **Cast button on feed videos**, right below it, puts a cast button in a feed video's top right corner. Facebook has no casting of its own anymore, so the button hands the video to a casting app you have, like Web Video Caster. It starts off.
 
+**Seek bar on feed videos**, right below that, runs a thin bar along the bottom of a feed video. Drag it and let go to jump to that point, and the time shows while you drag. It starts off. You won't see it while the video's bottom edge is off screen or covered by the tab bar, and the same goes for the strip at the very bottom of the screen that Android keeps for its home swipe. Scroll a little and it comes back. With Tap to play on, it needs Inline feed video controls on too.
+
 ### Blocking Reels
 
 Reels turn up in several places, and no one switch covers them all. Searching the settings for "block reels" brings up a map of them.

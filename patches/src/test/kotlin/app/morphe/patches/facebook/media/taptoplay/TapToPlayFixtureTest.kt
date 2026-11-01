@@ -187,6 +187,33 @@ class TapToPlayFixtureTest {
                     val field = (it as? ReferenceInstruction)?.reference as? FieldReference
                     it.opcode == Opcode.SGET_OBJECT && field?.definingClass == trigger && field.name == user
                 })
+                // The seek bar seeks with the exact trigger, through the player's public seek.
+                val seekNames = enumConstantFields(classes.getValue(trigger)).filterValues { it == "BY_INITIAL_FRAME_PERFECT_SEEK" }.keys
+                val seekBy = classes.getValue(trigger).fields.single {
+                    it.name in seekNames && AccessFlags.ENUM.isSet(it.accessFlags)
+                }.name
+                val bridge = context.mutableClassDefBy(FEED_CONTROLS)
+                val seekCode = bridge.methods.single { it.name == "seekPlayer" }.implementation!!.instructions.toList()
+                assertEquals("$name: the seek's trigger", 1, seekCode.count {
+                    val field = (it as? ReferenceInstruction)?.reference as? FieldReference
+                    it.opcode == Opcode.SGET_OBJECT && field?.definingClass == trigger && field.name == seekBy
+                })
+                val seekCall = seekCode.mapNotNull { it.call }.single()
+                assertEquals("$name: the seek's owner", groot.type, seekCall.definingClass)
+                assertEquals("$name: the seek's arguments", listOf(trigger, "I"), seekCall.parameterTypes.map(CharSequence::toString))
+                listOf("playerPosition", "playerLength").forEach { stub ->
+                    val call = bridge.methods.single { it.name == stub }.implementation!!.instructions.mapNotNull { it.call }.single()
+                    assertEquals("$name: $stub's owner", groot.type, call.definingClass)
+                    assertEquals("$name: $stub's answer", "I", call.returnType)
+                }
+                assertTrue("$name: position and length are two readers", bridge.methods.single { it.name == "playerPosition" }
+                    .implementation!!.instructions.mapNotNull { it.call }.single().name != bridge.methods.single { it.name == "playerLength" }
+                    .implementation!!.instructions.mapNotNull { it.call }.single().name)
+                assertEquals("$name: the params' length", 1, bridge.methods.single { it.name == "paramsLength" }
+                    .implementation!!.instructions.count {
+                        val field = (it as? ReferenceInstruction)?.reference as? FieldReference
+                        it.opcode == Opcode.IGET && field?.definingClass == VIDEO_PLAYER_PARAMS
+                    })
                 assertEquals("$name: the attach knows the current player", 1,
                     context.mutableClassDefBy(groot.type).methods.sumOf { method ->
                         method.implementation?.instructions?.count { it.call?.toString() == INLINE_ATTACHED } ?: 0

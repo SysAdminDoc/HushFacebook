@@ -2091,6 +2091,9 @@ Reels order will be set to %1$s.	Thứ tự reel sẽ được đặt thành %1$
 Cast button on feed videos	Nút truyền trên video bảng tin
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Thêm nút truyền vào video trên bảng tin. Nút này chuyển video sang ứng dụng truyền bạn có, như Web Video Caster, để phát lên TV. Facebook không còn tính năng truyền riêng nữa.
 Cast this video	Truyền video này
+Seek bar on feed videos	Thanh tua trên video bảng tin
+Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Hiển thị một thanh dọc theo cạnh dưới của video bảng tin. Kéo rồi thả để nhảy đến điểm đó. Video trực tiếp và quảng cáo vẫn giữ điều khiển riêng. Khi Nhấn để phát bật, Nút điều khiển video trong bảng tin cũng phải bật.
+Feed video position	Vị trí video bảng tin
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Màu huy hiệu
 # context: title of the row that holds a color code for the Facebook logo at the top of Home

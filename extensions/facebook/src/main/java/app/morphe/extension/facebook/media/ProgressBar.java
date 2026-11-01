@@ -490,7 +490,7 @@ public final class ProgressBar {
      * A time as Facebook's time writer puts it: whole seconds, m:ss, or h:mm:ss from an hour on,
      * with the app's locale's digits.
      */
-    static String time(long ms) {
+    public static String time(long ms) {
         long seconds = ms / 1000;
         long hours = seconds / 3600;
         long minutes = seconds / 60 % 60;
