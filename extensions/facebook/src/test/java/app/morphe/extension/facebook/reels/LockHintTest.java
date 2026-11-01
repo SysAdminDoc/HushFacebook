@@ -167,6 +167,34 @@ public class LockHintTest {
     }
 
     @Test
+    public void theLockPopupGoesWithThePopupsSwitch() {
+        assertTrue("off, the popup went away", LockHint.lockPopupShows(true));
+        assertFalse("off, a popup Facebook skips appeared", LockHint.lockPopupShows(false));
+        Settings.HIDE_2X_LOCK_HINT.save(true);
+        assertTrue("the lock hint's switch took the popup", LockHint.lockPopupShows(true));
+        String off = statusLine();
+        assertFalse("an answer left to Facebook was counted: " + off, off != null && off.contains("Counted"));
+
+        Settings.HIDE_2X_LOCK_HINT.save(false);
+        Settings.HIDE_2X_POPUPS.save(true);
+        assertFalse("on, the popup showed", LockHint.lockPopupShows(true));
+        assertTrue(statusLine(), statusLine().contains("Counted: " + LockHint.POPUP_HIDDEN + " 1"));
+        assertFalse("on, a popup Facebook skips appeared", LockHint.lockPopupShows(false));
+        assertTrue("a popup Facebook skipped was counted: " + statusLine(),
+                statusLine().contains("Counted: " + LockHint.POPUP_HIDDEN + " 1"));
+
+        ReelHold.holdInBuildForTests = false;
+        assertTrue("a build without Hold a reel for 2x hid the popup", LockHint.lockPopupShows(true));
+        ReelHold.holdInBuildForTests = true;
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue("paused, the popup went away", LockHint.lockPopupShows(true));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertTrue("the popup went before the settings were ready", LockHint.lockPopupShows(true)));
+    }
+
+    @Test
     public void thePopupsSwitchNeedsNoRestartAndTravelsWithTheHold() {
         assertFalse("a new pill reads the switch as it's drawn", Settings.HIDE_2X_POPUPS.rebootApp);
         assertTrue("Pause and the report don't know the switch",

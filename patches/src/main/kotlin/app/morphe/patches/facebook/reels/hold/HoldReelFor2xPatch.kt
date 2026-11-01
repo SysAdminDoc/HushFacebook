@@ -197,11 +197,50 @@ internal fun BytecodePatchContext.applyFeedVideoHold(anchors: ReelHoldAnchors, f
  * Hide the pull down to lock hint's two hooks: first in the 2x pill's constructor, its state goes
  * through the extension's LockHint and back, and first in the Reels pill's, its hints flag does.
  * A build where either pill moved keeps the rest of Hold a reel for 2x, with that pill's hint left
- * as Facebook draws it and a warning saying why. Hide the 2x popups hooks the same two pills' renders.
+ * as Facebook draws it and a warning saying why. Hide the 2x popups hooks the same two pills' renders,
+ * the reel gesture's two toasts and the seek bar plugin's component.
  */
 internal fun BytecodePatchContext.applyLockHint() {
     applyVideoLockHint()
     applyReelLockHint()
+    applyReelLockPopups()
+    applyVideoLockPopup()
+}
+
+private fun BytecodePatchContext.applyReelLockPopups() {
+    val gestures = mutableListOf<Method>()
+    classDefForEachReferencing(strings = REEL_LOCK_GESTURE_TAGS) { classDef ->
+        gestures += classDef.methods.filter(::isReelLockGesture)
+    }
+    val gesture = gestures.singleOrNull() ?: return patchLog.warning(
+        "$PATCH: expected one reel lock gesture, found ${gestures.size}. Hide the 2x popups leaves its popup alone in this build",
+    )
+    val gates = reelLockPopupGates(gesture)
+    if (gates.size != 2) return patchLog.warning(
+        "$PATCH: expected two popups in the reel lock gesture, found ${gates.size}. Hide the 2x popups leaves them alone in this build",
+    )
+    val mutable = mutableClassDefBy(gesture.definingClass).findMutableMethodOf(gesture)
+    gates.sortedDescending().forEach { gate ->
+        val flag = mutable.getInstruction<OneRegisterInstruction>(gate).registerA
+        mutable.addInstructionsAtControlFlowLabel(
+            gate,
+            """
+                invoke-static/range { v$flag .. v$flag }, $LOCK_POPUP_SHOWS
+                move-result v$flag
+            """,
+        )
+    }
+}
+
+private fun BytecodePatchContext.applyVideoLockPopup() {
+    val showers = mutableListOf<Method>()
+    classDefForEachReferencing(names = listOf(LOCK_POPUP_ANNOUNCE)) { classDef ->
+        showers += classDef.methods.filter(::isLockPopupShower)
+    }
+    val component = showers.singleOrNull()?.let(::lockPopupComponent) ?: return patchLog.warning(
+        "$PATCH: expected one seek bar lock popup, found ${showers.size}. Hide the 2x popups leaves it alone in this build",
+    )
+    hidePillOnAsk(component)
 }
 
 private fun BytecodePatchContext.applyReelLockHint() {
@@ -227,7 +266,7 @@ private fun BytecodePatchContext.applyReelLockHint() {
             move-result p4
         """,
     )
-    hidePillOnAsk(pill)
+    hidePillOnAsk(pill.definingClass)
 }
 
 private fun BytecodePatchContext.applyVideoLockHint() {
@@ -251,14 +290,14 @@ private fun BytecodePatchContext.applyVideoLockHint() {
             check-cast p1, $state
         """,
     )
-    hidePillOnAsk(pill)
+    hidePillOnAsk(pill.definingClass)
 }
 
-/** First in the render of the pill [constructor] makes: a yes from the extension returns no component. */
-private fun BytecodePatchContext.hidePillOnAsk(constructor: Method) {
-    val classDef = mutableClassDefBy(constructor.definingClass)
+/** First in the render of the pill [component]: a yes from the extension returns no component. */
+private fun BytecodePatchContext.hidePillOnAsk(component: String) {
+    val classDef = mutableClassDefBy(component)
     val render = pillRender(classDef)?.let(classDef::findMutableMethodOf) ?: return patchLog.warning(
-        "$PATCH: the 2x pill ${constructor.definingClass} has no one render method. Hide the 2x popups leaves that pill alone in this build",
+        "$PATCH: the 2x pill $component has no one render method. Hide the 2x popups leaves that pill alone in this build",
     )
     if (render.localRegisterCount() < 1) return patchLog.warning(
         "$PATCH: the 2x pill's render has no register free. Hide the 2x popups leaves that pill alone in this build",

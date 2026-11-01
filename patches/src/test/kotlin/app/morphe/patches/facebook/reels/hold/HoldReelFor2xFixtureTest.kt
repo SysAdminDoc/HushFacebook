@@ -214,11 +214,22 @@ class HoldReelFor2xFixtureTest {
                 assertEquals("$name: Reels 2x pill constructors: ${reelPills.map(::key)}", 1, reelPills.size)
                 val reelPill = reelPills.single()
                 val reelPillClass = FixtureDex.classes(bundle, setOf(reelPill.definingClass)).values.single()
+                // Hide the 2x popups: the reel gesture's two toasts, and the seek bar plugin's component.
+                val gestures = FixtureDex.classesHolding(bundle, REEL_LOCK_GESTURE_TAGS[0]).flatMap { it.methods.filter(::isReelLockGesture) }
+                assertEquals("$name: reel lock gestures: ${gestures.map(::key)}", 1, gestures.size)
+                val gesture = gestures.single()
+                val gates = reelLockPopupGates(gesture)
+                assertEquals("$name: the reel lock gesture's toasts: $gates", 2, gates.size)
+                val gestureClass = FixtureDex.classes(bundle, setOf(gesture.definingClass)).values.single()
+                val showers = FixtureDex.methodsWhere(bundle, { true }, ::isLockPopupShower)
+                assertEquals("$name: seek bar lock popups: ${showers.map(::key)}", 1, showers.size)
+                val popupClass = FixtureDex.classes(bundle, setOf(lockPopupComponent(showers.single())!!)).values.single()
 
                 val activity = FixtureDex.classes(bundle, setOf(FRAGMENT_ACTIVITY)).values.single()
                 val componentClasses = components.filter { c -> checks.any { it.definingClass == c.type } }
                 val classes: List<ClassDef> = (handlers + listeners + componentClasses + edgeClass + activity + player + configClass +
-                    speedUpClasses + speedClass + attachHolders + pillStates + pillClass + reelPillStates + reelPillClass + ExtensionDex.classDef(REEL_HOLD) +
+                    speedUpClasses + speedClass + attachHolders + pillStates + pillClass + reelPillStates + reelPillClass + gestureClass + popupClass +
+                    FixtureDex.classes(bundle, setOf(showers.single().definingClass)).values.single() + ExtensionDex.classDef(REEL_HOLD) +
                     ExtensionDex.classDef(FEED_VIDEO_HOLD) + ExtensionDex.classDef(SETTINGS_STATUS))
                     .distinctBy { it.type }
                 // A guard-only build, as Keep the reel speed has without this patch: the listeners'
@@ -274,8 +285,21 @@ class HoldReelFor2xFixtureTest {
                 assertEquals("$name: the Reels 2x pill's code after its hook", reelPill.code().map { it.opcode },
                     reelPillCode.drop(2).map { it.opcode })
 
-                // First in both pills' renders: a yes from the extension returns no component.
-                listOf(pillClass, reelPillClass).forEach { component ->
+                // The gesture passes each toast's flag through LockHint, and its code past that is as it was.
+                val gestureCode = patched(gesture)
+                val popupAsks = gestureCode.indices.filter { gestureCode[it].call?.toString() == LOCK_POPUP_SHOWS }
+                assertEquals("$name: the gesture's popup hooks", 2, popupAsks.size)
+                popupAsks.forEachIndexed { at, ask ->
+                    val flag = (gesture.code()[gates[at]] as OneRegisterInstruction).registerA
+                    assertEquals("$name: popup hook $at reads the flag", listOf(flag), gestureCode[ask].registers())
+                    assertEquals("$name: popup hook $at takes the answer back", flag, (gestureCode[ask + 1] as OneRegisterInstruction).registerA)
+                    assertEquals("$name: popup hook $at sits on the gate", Opcode.IF_EQZ, gestureCode[ask + 2].opcode)
+                }
+                assertEquals("$name: the gesture's code past its hooks", gesture.code().map { it.opcode },
+                    gestureCode.filterIndexed { at, _ -> popupAsks.none { at == it || at == it + 1 } }.map { it.opcode })
+
+                // First in the pills' renders: a yes from the extension returns no component.
+                listOf(pillClass, reelPillClass, popupClass).forEach { component ->
                     val render = pillRender(component) ?: throw AssertionError("$name: ${component.type} has no render")
                     val before = render.code()
                     val after = patched(render)

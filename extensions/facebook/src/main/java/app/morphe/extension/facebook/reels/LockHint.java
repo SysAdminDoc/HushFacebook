@@ -24,14 +24,17 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * fails, the state is Facebook's own.
  *
  * <p>Hide the 2x popups goes further: {@link #hidesPill} is asked first in both pills' renders, and a
- * yes draws nothing, whatever the state. The hold, the lock and what they hide on the reel stay
- * Facebook's, since only the pill's drawing is skipped.
+ * yes draws nothing, whatever the state. {@link #lockPopupShows} takes the line Facebook shows
+ * when a lock starts or ends, "Locked at 2x speed" and "Back to normal speed", the same way. The
+ * hold, the lock and what they hide on the reel stay Facebook's, since only the drawing is skipped.
  */
 public final class LockHint {
     /** Counted under the patch's name each time a hint is drawn as the plain pill. */
     static final String HINT_HIDDEN = "2x lock hint shown as the plain pill";
     /** Counted under the patch's name each time a pill draws nothing. */
     static final String PILL_HIDDEN = "2x pill hidden";
+    /** Counted under the patch's name each time a lock starts or ends without its popup. */
+    static final String POPUP_HIDDEN = "2x lock popup hidden";
 
     private static final String FAMILY = FamilyNames.HOLD_REEL_FOR_2X;
 
@@ -91,11 +94,27 @@ public final class LockHint {
      * empty result Litho takes from any component. Never throws.
      */
     public static boolean hidesPill() {
+        return hides(PILL_HIDDEN);
+    }
+
+    /**
+     * Injection point, in Facebook's reel gesture, on the flag that decides whether a lock starting
+     * or ending raises its popup. That popup is a window of its own, not a pill, so the flag is the
+     * one place to stop it. Answers false with the switch on. The flag's own answer otherwise,
+     * since the gesture does the lock itself whichever way this goes. Never throws.
+     *
+     * @param shows the flag's answer.
+     */
+    public static boolean lockPopupShows(boolean shows) {
+        return shows && !hides(POPUP_HIDDEN);
+    }
+
+    private static boolean hides(String counted) {
         try {
             HookStatus.invoked(FAMILY);
             if (!ReelHold.holdInBuild() || !Utils.settingsReady() || !Settings.HIDE_2X_POPUPS.get()) return false;
             HookStatus.bound(FAMILY, "2x popups");
-            HookStatus.counted(FAMILY, PILL_HIDDEN);
+            HookStatus.counted(FAMILY, counted);
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "2x popups", failure);

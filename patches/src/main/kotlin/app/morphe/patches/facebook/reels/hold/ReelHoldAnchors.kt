@@ -8,6 +8,7 @@ import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.media.taptoplay.FB_USER_SESSION
 import app.morphe.patches.facebook.media.taptoplay.MOTION_EVENT
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.util.ControlFlow
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -373,6 +374,61 @@ internal fun pillRender(classDef: ClassDef): Method? = classDef.methods.singleOr
     it.name == COMPONENT_RENDER && !AccessFlags.STATIC.isSet(it.accessFlags) && it.implementation != null &&
         it.parameterTypes.size == 1 && it.returnType.startsWith("L")
 }
+
+/**
+ * Hide the 2x popups also takes the line a lock shows as it starts or ends, "Locked at 2x speed" and
+ * "Back to normal speed" (#289). Reels raise it from the gesture method as a toast in a window of its
+ * own, built only when a server flag says so, once for each end. The patch passes that flag's answer
+ * through LockHint just before each gate, so the block is skipped and the lock itself still runs.
+ */
+internal const val LOCK_POPUP_SHOWS = "$LOCK_HINT_CLASS->lockPopupShows(Z)Z"
+internal val REEL_LOCK_GESTURE_TAGS = listOf("slide_up", "slide_down")
+private const val CALLER_CONTEXT = "Lcom/facebook/common/callercontext/CallerContext;"
+
+/** The reel's lock gesture: takes the touch first, and logs which way the lock slid. */
+internal fun isReelLockGesture(method: Method): Boolean =
+    method.parameters().firstOrNull() == MOTION_EVENT && REEL_LOCK_GESTURE_TAGS.all { holdsString(method, it) }
+
+/**
+ * The gates in [gesture]: an if-eqz jumping over a block that reads a caller context and whose last
+ * call shows what it built, a virtual call taking nothing and answering nothing.
+ */
+internal fun reelLockPopupGates(gesture: Method): List<Int> {
+    val code = gesture.code
+    return code.indices.filter { index ->
+        if (code[index].opcode != Opcode.IF_EQZ) return@filter false
+        val target = branchTarget(code, index) ?: return@filter false
+        if (target <= index + 1) return@filter false
+        val last = code[target - 1]
+        val show = (last as? ReferenceInstruction)?.reference as? MethodReference ?: return@filter false
+        last.opcode == Opcode.INVOKE_VIRTUAL && show.returnType == "V" && show.parameterTypes.isEmpty() &&
+            (index until target).any { at ->
+                val read = code[at]
+                read.opcode == Opcode.SGET_OBJECT && ((read as ReferenceInstruction).reference as FieldReference).type == CALLER_CONTEXT
+            }
+    }
+}
+
+/**
+ * Feed and Watch video show the same two lines from the seek bar plugin: its listener puts a Litho
+ * component in a view for two seconds and reads the line out for screen readers. The method takes
+ * whether the lock started, and makes that component with the same flag.
+ */
+internal const val LOCK_POPUP_ANNOUNCE = "announceForAccessibility"
+
+internal fun isLockPopupShower(method: Method): Boolean {
+    if (method.returnType != "V" || method.parameters() != listOf("Z")) return false
+    val calls = method.code.mapNotNull { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.name }
+    return LOCK_POPUP_ANNOUNCE in calls && "postDelayed" in calls && lockPopupComponent(method) != null
+}
+
+/** The one Litho component [method] makes from a lone boolean, or null. */
+internal fun lockPopupComponent(method: Method): String? = method.code.mapNotNull {
+    val made = (it as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
+    made.definingClass.takeIf { _ ->
+        it.opcode == Opcode.INVOKE_DIRECT && made.name == "<init>" && made.parameterTypes.map(CharSequence::toString) == listOf("Z")
+    }
+}.singleOrNull()
 
 internal val PILL_STATES = listOf(
     "NORMAL", "LOCK_HINT", "READY_TO_LOCK", "LOCKED", "UNLOCK_HINT", "READY_TO_UNLOCK", "NUX_PROMPT",
