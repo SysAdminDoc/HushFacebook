@@ -13,6 +13,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** New `Hide the Commission eligible label` switch under News feed takes that label off reels, along with the gap it leaves under the creator's name when a reel has nothing else to disclose. It starts off. (#329)
 * **Facebook:** `See-through bars` keeps frosting the tab bar when the page under it stops short of the bar's holder or sits a level up. Those layouts used to flip it to a dark strip with the feed sharp behind it. (#250)
 * **Facebook:** With `Tab to open on` set to Feeds on an account with no Feeds tab, `Restart Facebook to apply this change` lands back on the settings screen. The Feeds page used to open over it. (#330)
+* **Facebook:** `Select part of a post's text` no longer draws solid boxes behind the selection handles and the copy toolbar. (#294)
 
 ## 0.20.0 (2026-11-01)
 

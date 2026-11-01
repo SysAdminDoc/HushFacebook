@@ -9,6 +9,7 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.os.SystemClock;
 import android.util.TypedValue;
 import android.widget.ScrollView;
@@ -21,6 +22,7 @@ import java.lang.ref.WeakReference;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.facebook.settings.ShimmerTitle;
+import app.morphe.extension.facebook.theme.DarkMode;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
@@ -118,11 +120,16 @@ public final class PostTextSelect {
     static void show(Activity activity, String text) {
         AlertDialog open = showing.get();
         if (open != null && open.isShowing()) open.dismiss();
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity)
+        // Not Facebook's dialog theme: it sets android:background, which every view built from it takes,
+        // the selection handles and their toolbar included, so they'd cover the text with solid boxes (#294).
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity, dark(activity)
+                ? android.R.style.Theme_DeviceDefault_Dialog_Alert
+                : android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
                 .setTitle(L10n.t(activity, "Select text"))
                 .setPositiveButton(L10n.t(activity, "Done"), null);
         Context themed = builder.getContext();
         TextView body = new TextView(themed);
+        body.setTextAppearance(android.R.style.TextAppearance_Material_Body1);
         body.setText(text);
         body.setTextIsSelectable(true);
         body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
@@ -137,6 +144,13 @@ public final class PostTextSelect {
         ShimmerTitle.wearTitleOf(dialog);
         HookStatus.counted(FAMILY, OPENED);
         Logger.printDebug(() -> "Post text select: " + OPENED + ", " + text.length() + " characters");
+    }
+
+    /** Whether Facebook's dark mode is on, or the phone's night mode before Facebook has said. */
+    private static boolean dark(Context context) {
+        if (DarkMode.hasAnswered()) return DarkMode.on();
+        return (context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                == Configuration.UI_MODE_NIGHT_YES;
     }
 
     /** The box on the screen, or null. For tests. */

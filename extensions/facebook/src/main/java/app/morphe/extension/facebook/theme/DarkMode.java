@@ -75,7 +75,7 @@ public final class DarkMode {
     }
 
     /** Whether Facebook has answered since the app started, with either answer. */
-    static boolean hasAnswered() {
+    public static boolean hasAnswered() {
         return answered;
     }
 

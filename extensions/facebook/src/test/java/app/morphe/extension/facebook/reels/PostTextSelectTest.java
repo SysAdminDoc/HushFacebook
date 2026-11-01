@@ -41,6 +41,8 @@ import java.util.List;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.facebook.theme.DarkMode;
+import app.morphe.extension.facebook.theme.DarkModeForTests;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.HushfacebookPause;
@@ -92,6 +94,7 @@ public class PostTextSelectTest {
     public void restore() {
         PostLongPress.reset();
         PostTextSelect.reset();
+        DarkModeForTests.forget();
         PauseForTests.resume();
         Settings.SELECT_POST_TEXT.resetToDefault();
         Settings.LONG_PRESS_OPENS_COMMENTS.resetToDefault();
@@ -145,6 +148,37 @@ public class PostTextSelectTest {
             if (line.startsWith(FamilyNames.REEL_GESTURES + ":")) return line;
         }
         return "";
+    }
+
+    @Test
+    @Config(sdk = 30, qualifiers = "w1080dp-h2400dp-night-mdpi")
+    public void theBoxTakesItsThemeFromTheModeAndNeverFromFacebooksDialogTheme() {
+        // The activity's own theme is the light one, and the phone's night mode says dark.
+        activity.setTheme(android.R.style.Theme_DeviceDefault_Light);
+        DarkModeForTests.forget();
+        assertFalse("night mode with no answer from Facebook gave a light box", boxIsLight());
+
+        PostTextSelect.reset();
+        DarkMode.answer(false);
+        assertTrue("Facebook's light mode gave a dark box", boxIsLight());
+
+        PostTextSelect.reset();
+        activity.setTheme(android.R.style.Theme_DeviceDefault);
+        DarkMode.answer(true);
+        assertFalse("Facebook's dark mode gave a light box", boxIsLight());
+    }
+
+    private boolean boxIsLight() {
+        hold();
+        copy(POST);
+        AlertDialog box = PostTextSelect.shownDialog();
+        assertNotNull(box);
+        TextView shown = selectable(box.getWindow().getDecorView());
+        android.content.res.TypedArray theme =
+                shown.getContext().obtainStyledAttributes(new int[]{android.R.attr.isLightTheme});
+        boolean light = theme.getBoolean(0, false);
+        theme.recycle();
+        return light;
     }
 
     @Test
