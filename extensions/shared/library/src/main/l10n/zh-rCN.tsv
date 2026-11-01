@@ -501,6 +501,9 @@ Comments show their replies right away, so there's no View replies to tap.	评�
 Load whole reply threads	加载完整回复
 # context: summary of that switch; View more replies is the row Facebook shows under an open thread that has more replies to load
 An open reply thread keeps loading as you scroll, so there's no View more replies to tap.	展开的回复会在你滚动时持续加载，因此不用再点按“查看更多回复”。
+Hide replies button	隐藏回复按钮
+An open reply thread gets a Hide replies button, so you can close it again after reading.	展开的回复串会显示隐藏回复按钮，读完后可以再次收起。
+Hide replies	隐藏回复
 # context: switch title under Comments; View more replies is the row under an open reply thread that loads more replies, and this makes the whole row take the tap instead of only its words
 Tap anywhere on View more replies	点按“查看更多回复”整行任意位置
 # context: summary of that switch

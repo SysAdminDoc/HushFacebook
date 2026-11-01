@@ -501,6 +501,9 @@ Comments show their replies right away, so there's no View replies to tap.	Komen
 Load whole reply threads	Muat utas balasan lengkap
 # context: summary of that switch; View more replies is the row Facebook shows under an open thread that has more replies to load
 An open reply thread keeps loading as you scroll, so there's no View more replies to tap.	Utas balasan yang terbuka terus dimuat saat kamu menggulir, tanpa perlu mengetuk untuk melihat balasan lainnya.
+Hide replies button	Tombol Sembunyikan balasan
+An open reply thread gets a Hide replies button, so you can close it again after reading.	Utas balasan yang terbuka mendapat tombol Sembunyikan balasan, jadi kamu bisa menutupnya lagi setelah membaca.
+Hide replies	Sembunyikan balasan
 # context: switch title under Comments; View more replies is the row under an open reply thread that loads more replies, and this makes the whole row take the tap instead of only its words
 Tap anywhere on View more replies	Ketuk di mana saja pada Lihat balasan lainnya
 # context: summary of that switch

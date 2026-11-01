@@ -501,6 +501,9 @@ Comments show their replies right away, so there's no View replies to tap.	Bình
 Load whole reply threads	Tải toàn bộ chuỗi phản hồi
 # context: summary of that switch; View more replies is the row Facebook shows under an open thread that has more replies to load
 An open reply thread keeps loading as you scroll, so there's no View more replies to tap.	Chuỗi phản hồi đang mở tiếp tục tải khi bạn cuộn, nên không cần nhấn Xem thêm phản hồi.
+Hide replies button	Nút Ẩn phản hồi
+An open reply thread gets a Hide replies button, so you can close it again after reading.	Chuỗi phản hồi đang mở sẽ có nút Ẩn phản hồi để bạn đóng lại sau khi đọc.
+Hide replies	Ẩn phản hồi
 # context: switch title under Comments; View more replies is the row under an open reply thread that loads more replies, and this makes the whole row take the tap instead of only its words
 Tap anywhere on View more replies	Nhấn bất kỳ đâu trên Xem thêm phản hồi
 # context: summary of that switch

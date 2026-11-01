@@ -871,6 +871,7 @@ public class PausedHooksTest {
                 CommentSheetOptions::skipReactionPicker,
                 () -> CommentSheetOptions.openReplyThreads(false),
                 () -> CommentSheetOptions.loadWholeReplyThreads(false),
+                () -> CommentSheetOptions.drawsHideRepliesRow(true, false, null, null),
                 () -> !CommentSheetOptions.viewMoreRepliesTextOnly(true),
                 () -> CommentSheetOptions.holdsBottomContent(CommentSheetOptions.RELATED_GROUPS),
                 () -> CommentSheetOptions.holdsPostComments(CommentSheetOptions.INLINE_COMMENTS),

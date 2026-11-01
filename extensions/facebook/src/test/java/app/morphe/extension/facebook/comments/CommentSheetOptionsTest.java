@@ -16,6 +16,8 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ResolveInfo;
 
+import java.util.Collections;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -73,6 +75,7 @@ public class CommentSheetOptionsTest {
         Settings.HIDE_VIDEO_COMMENT_COMPOSER.resetToDefault();
         Settings.OPEN_REPLY_THREADS.resetToDefault();
         Settings.LOAD_WHOLE_REPLY_THREADS.resetToDefault();
+        Settings.HIDE_REPLIES_BUTTON.resetToDefault();
         Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES.resetToDefault();
         Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS.resetToDefault();
         Settings.HIDE_POST_COMMENT_PREVIEWS.resetToDefault();
@@ -230,6 +233,52 @@ public class CommentSheetOptionsTest {
         assertFalse("a list left to Facebook was counted: " + line, line != null && line.contains("Counted"));
         assertTrue("on again after the pause, a thread's replies kept View more replies",
                 CommentSheetOptions.loadWholeReplyThreads(false));
+    }
+
+    @Test
+    public void onOnlyAThreadTheFlagAloneHoldsOpenGetsAHideRepliesRow() {
+        Settings.HIDE_REPLIES_BUTTON.save(true);
+        assertTrue("a thread a tap opened got no row", CommentSheetOptions.drawsHideRepliesRow(true, false, null, null));
+        assertTrue("no replies written here stopped the row",
+                CommentSheetOptions.drawsHideRepliesRow(true, false, Collections.emptyList(), Boolean.FALSE));
+        assertFalse("a closed thread got a row", CommentSheetOptions.drawsHideRepliesRow(false, false, null, null));
+        assertFalse("a thread that opens itself got a row it can't close",
+                CommentSheetOptions.drawsHideRepliesRow(true, true, null, null));
+        assertFalse("a thread holding a reply written here got a row it can't close",
+                CommentSheetOptions.drawsHideRepliesRow(true, false, Collections.singletonList("reply"), null));
+        assertFalse("a thread its props keep open got a row it can't close",
+                CommentSheetOptions.drawsHideRepliesRow(true, false, null, Boolean.TRUE));
+
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 6, 1 found, 0 missing. Counted: "
+                + CommentSheetOptions.HIDE_ROWS_DRAWN + " 2", statusLine());
+    }
+
+    @Test
+    public void offPausedOrColdAnOpenThreadGetsNoHideRepliesRow() {
+        assertFalse("Hide replies button doesn't start off", Settings.HIDE_REPLIES_BUTTON.get());
+        assertFalse("off, an open thread got a row", CommentSheetOptions.drawsHideRepliesRow(true, false, null, null));
+
+        Settings.HIDE_REPLIES_BUTTON.save(true);
+        for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP,
+                HushfacebookPause.Reason.MARKER_FILE}) {
+            PauseForTests.pause(reason);
+            assertFalse("a Hushfacebook paused by " + reason + " drew a row",
+                    CommentSheetOptions.drawsHideRepliesRow(true, false, null, null));
+            PauseForTests.resume();
+        }
+        SettingsContextRule.withoutContext(() -> assertFalse(
+                "a row was drawn before the settings were ready", CommentSheetOptions.drawsHideRepliesRow(true, false, null, null)));
+
+        String line = statusLine();
+        assertFalse("a thread left to Facebook was counted: " + line, line != null && line.contains("Counted"));
+        assertTrue("on again after the pause, an open thread got no row",
+                CommentSheetOptions.drawsHideRepliesRow(true, false, null, null));
+    }
+
+    @Test
+    public void aHideRepliesRowSaysHideReplies() {
+        assertEquals("Hide replies", CommentSheetOptions.hideRepliesWords());
     }
 
     @Test
@@ -500,7 +549,8 @@ public class CommentSheetOptionsTest {
     public void theSwitchesNeedNoRestartAndTravelWithTheirFamily() {
         for (app.morphe.extension.shared.settings.BooleanSetting setting : new app.morphe.extension.shared.settings.BooleanSetting[] {
                 Settings.LIKE_ONLY, Settings.HIDE_COMMENT_GIF_STICKER_BUTTONS, Settings.OPEN_REPLY_THREADS,
-                Settings.LOAD_WHOLE_REPLY_THREADS, Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS, Settings.HIDE_SHOP_LINK_COMMENTS,
+                Settings.LOAD_WHOLE_REPLY_THREADS, Settings.HIDE_REPLIES_BUTTON,
+                Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS, Settings.HIDE_SHOP_LINK_COMMENTS,
                 Settings.HIDE_COMMENTS_WITH_WORDS, Settings.HIDE_INCOMING_COMMENT_TYPING, Settings.HIDE_NEW_COMMENTS_PILL,
                 Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES, Settings.HIDE_POST_COMMENT_PREVIEWS,
                 Settings.HIDE_COMMENT_DOWNVOTE_BUTTON, Settings.HIDE_COMMENT_LIKE_BUTTON, Settings.HIDE_COMMENT_EMOJI_ROW}) {

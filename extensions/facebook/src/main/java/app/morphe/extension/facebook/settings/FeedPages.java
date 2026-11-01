@@ -639,6 +639,8 @@ final class FeedPages {
                     L10n.t("Comments show their replies right away, so there's no View replies to tap.")));
             comments.addPreference(toggle(context, Settings.LOAD_WHOLE_REPLY_THREADS,
                     L10n.t("An open reply thread keeps loading as you scroll, so there's no View more replies to tap.")));
+            comments.addPreference(toggle(context, Settings.HIDE_REPLIES_BUTTON,
+                    L10n.t("An open reply thread gets a Hide replies button, so you can close it again after reading.")));
             comments.addPreference(toggle(context, Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES,
                     L10n.t("The whole View more replies row opens the replies, not just its words.")));
             comments.addPreference(toggle(context, Settings.HIDE_POST_COMMENT_PREVIEWS,

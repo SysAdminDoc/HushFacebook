@@ -46,6 +46,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
@@ -173,6 +174,30 @@ internal const val OPEN_REPLY_THREADS = "$COMMENT_SHEET_OPTIONS->openReplyThread
 internal const val HIDES_COMMENT = "$COMMENT_SHEET_OPTIONS->hidesComment(Ljava/lang/Object;)Z"
 internal const val LOAD_WHOLE_REPLY_THREADS = "$COMMENT_SHEET_OPTIONS->loadWholeReplyThreads(Z)Z"
 internal const val VIEW_MORE_REPLIES_TEXT_ONLY = "$COMMENT_SHEET_OPTIONS->viewMoreRepliesTextOnly(Z)Z"
+internal const val DRAWS_HIDE_REPLIES_ROW =
+    "$COMMENT_SHEET_OPTIONS->drawsHideRepliesRow(ZZLjava/util/Collection;Ljava/lang/Object;)Z"
+internal const val HIDE_REPLIES_WORDS = "$COMMENT_SHEET_OPTIONS->hideRepliesWords()Ljava/lang/String;"
+
+/** The name the section drawing a comment's View replies row gives itself in its constructor. */
+internal const val COLLAPSED_REPLIES = "CollapsedReplySection"
+
+/** The number Hide replies goes by, as the sender's kind and as the state update it sends. Neither switch may use it. */
+internal const val HIDE_REPLIES = 1000
+
+/** The key on the section drawing the Hide replies row, so it never takes over the View replies row's state. */
+internal const val HIDE_REPLIES_KEY = "hush_hide_replies"
+
+/** What Facebook's icon enum calls the arrow on a View replies row. */
+internal const val CHEVRON_DOWN = "CHEVRON_DOWN"
+internal const val CHEVRON_UP = "CHEVRON_UP"
+
+private const val OBJECT = "Ljava/lang/Object;"
+private const val STRING = "Ljava/lang/String;"
+private const val INTEGER = "Ljava/lang/Integer;"
+private const val BOOLEAN_OBJECT = "Ljava/lang/Boolean;"
+private const val CHAR_SEQUENCE = "Ljava/lang/CharSequence;"
+private const val FUNCTION_0 = "Lkotlin/jvm/functions/Function0;"
+private const val FUNCTION_1 = "Lkotlin/jvm/functions/Function1;"
 
 /** Facebook's comment model, a kept class the comment section casts its comment to. */
 internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment;"
@@ -298,6 +323,20 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * [GRAPHQL_COMMENT]. First thing there, the extension is handed that comment, and a yes returns
  * no children, as Facebook's own comment list section does when it has nothing to draw.
  *
+ * Hide replies button (#325): Facebook has no way back once a thread is open, because the
+ * [EXPAND_REPLIES] update only ever sets the flag. So the comment draws a second collapsed section
+ * above an open thread's replies, the one that names itself [COLLAPSED_REPLIES] (585 `LX/09xV`),
+ * built with the sender Facebook's own builds but with [HIDE_REPLIES] as its kind. That number
+ * follows the same arm of the sender (585 `LX/0D6e;->invoke`), which sends it as the update number,
+ * and the state answers it by writing the flag false. The section gives its row a count of -1, and
+ * the row's render (585 `LX/09xd;->render`) turns that into the words Hide replies and an up arrow.
+ * No part of Facebook's own code runs differently while the switch is off, except for the checks of
+ * that number. A thread open for any reason but a tap, its own server config or a reply just
+ * written for instance, stays open whatever the flag says, so it gets no button. A build these
+ * places don't fit keeps the rest of the patch, with the switch doing nothing and a warning saying
+ * why. Everything's read from the code: the 32-bit build matches arm64 instruction for instruction
+ * with its classes renamed.
+ *
  * Hide who is typing in comments (#170) and Hide the new comments pop-up (#185) are nameless patches
  * this one carries, [incomingCommentTypingPatch] and [newCommentsPillPatch].
  *
@@ -309,7 +348,7 @@ val commentSheetOptionsPatch = bytecodePatch(
     name = "Comment sheet options",
     description = "Small fixes for comments. Stop a long press on Like from opening reactions, hide the GIF and " +
         "sticker buttons, show every reply without tapping View replies, load a whole reply thread as you " +
-        "scroll, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, hide Like on comments, hide Related groups under group posts, hide comments with shop links or your words, hide who is typing and the new comments pop-up, hide the emoji row over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
+        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, hide Like on comments, hide Related groups under group posts, hide comments with shop links or your words, hide who is typing and the new comments pop-up, hide the emoji row over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
         "Hushfacebook settings > Comments and writing.",
 ) {
     category("Comments")
@@ -400,6 +439,17 @@ val commentSheetOptionsPatch = bytecodePatch(
         }
         emojiRowCheck(holders(EMOJI_ROW))?.let { check ->
             mutableClassDefBy(check.definingClass).methods.single { it.descriptor() == check.descriptor() }.holdEmojiRow()
+        }
+        // Last, and read from the methods as they stand: the hooks above add to the draw and the row.
+        fun mutable(method: Method) = mutableClassDefBy(method.definingClass).methods.single { it.descriptor() == method.descriptor() }
+        hideRepliesParts(
+            holders(EXPAND_REPLIES).flatMap { methodsHolding(it, EXPAND_REPLIES) }.distinctBy { it.descriptor() }.single(),
+            threads.flag,
+            mutable(drawn.render),
+            holders(COLLAPSED_REPLIES),
+            mutable(replyRow.render),
+        ) { types -> types.mapNotNull { classDefByOrNull(it) }.associateBy { it.type } }?.forEach { part ->
+            mutable(part.method).insertAll(part.insertions)
         }
         enableStatus("commentSheetOptions")
     }
@@ -701,16 +751,12 @@ private fun literalBefore(code: List<Instruction>, index: Int, register: Int): I
 private val UPDATE_FACTORIES = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
 private val UPDATE_CONSTRUCTORS = setOf(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE)
 
-/**
- * The update [update] sends: its type and its number, read from the last call before
- * [EXPAND_REPLIES] that builds something from an Object[] and an int, a static factory on 577 and
- * 581 and a constructor on 580. The number is the int, and it has to be a literal.
- */
-internal fun expandUpdate(update: Method): Pair<String, Int> {
+/** The index of the last call before [EXPAND_REPLIES] in [update] that builds something from an Object[] and an int. */
+private fun expandBuild(update: Method): Int {
     val code = update.implementation?.instructions?.toList().orEmpty()
     val named = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == EXPAND_REPLIES }
     if (named < 0) refuse("${update.descriptor()} doesn't name \"$EXPAND_REPLIES\"")
-    val build = (named - 1 downTo 0).firstOrNull { index ->
+    return (named - 1 downTo 0).firstOrNull { index ->
         val call = code[index].methodCall() ?: return@firstOrNull false
         call.parameterTypes.map(CharSequence::toString) == listOf(OBJECTS, "I") && when (code[index].opcode) {
             in UPDATE_FACTORIES -> call.returnType.startsWith("L")
@@ -718,11 +764,41 @@ internal fun expandUpdate(update: Method): Pair<String, Int> {
             else -> false
         }
     } ?: refuse("${update.descriptor()} builds no update from an Object[] and a number before \"$EXPAND_REPLIES\"")
+}
+
+/**
+ * The update [update] sends: its type and its number, read from the last call before
+ * [EXPAND_REPLIES] that builds something from an Object[] and an int, a static factory on 577 and
+ * 581 and a constructor on 580. The number is the int, and it has to be a literal.
+ */
+internal fun expandUpdate(update: Method): Pair<String, Int> {
+    val code = update.implementation?.instructions?.toList().orEmpty()
+    val build = expandBuild(update)
     val call = code[build].methodCall()!!
     val type = if (code[build].opcode in UPDATE_FACTORIES) call.returnType else call.definingClass
     val number = literalBefore(code, build, code[build].namedRegisters().last())
         ?: refuse("${update.descriptor()} builds its update with a number that isn't a literal")
     return type to number
+}
+
+/** The one update method of [state], an instance ([type])V method. Refuses on any other number of them. */
+private fun stateUpdate(state: ClassDef, type: String): Method {
+    val methods = state.methods.filter {
+        !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
+            it.parameterTypes.map(CharSequence::toString) == listOf(type)
+    }
+    return methods.singleOrNull() ?: refuse("expected one update method on ${state.type}, found ${methods.size}")
+}
+
+/** The index of [method]'s first switch, and for each of its keys the index its arm starts at, -1 if that's between instructions. */
+private fun switchArms(method: Method): Pair<Int, Map<Int, Int>> {
+    val code = method.implementation?.instructions?.toList().orEmpty()
+    val addresses = code.runningFold(0) { address, instruction -> address + instruction.codeUnits }
+    val switch = code.indexOfFirst { it.opcode == Opcode.PACKED_SWITCH || it.opcode == Opcode.SPARSE_SWITCH }
+    if (switch < 0) refuse("${method.descriptor()} has no switch")
+    val payload = code.getOrNull(addresses.indexOf(addresses[switch] + (code[switch] as OffsetInstruction).codeOffset))
+        as? SwitchPayload ?: refuse("${method.descriptor()}'s switch has no payload")
+    return switch to payload.switchElements.associate { it.key to addresses.indexOf(addresses[switch] + it.offset) }
 }
 
 /**
@@ -731,20 +807,9 @@ internal fun expandUpdate(update: Method): Pair<String, Int> {
  * an arm for the number, and a boolean write on [state] in that arm before it leaves.
  */
 internal fun openFlag(state: ClassDef, type: String, number: Int): FieldReference {
-    val methods = state.methods.filter {
-        !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
-            it.parameterTypes.map(CharSequence::toString) == listOf(type)
-    }
-    val apply = methods.singleOrNull() ?: refuse("expected one update method on ${state.type}, found ${methods.size}")
+    val apply = stateUpdate(state, type)
     val code = apply.implementation?.instructions?.toList().orEmpty()
-    val addresses = code.runningFold(0) { address, instruction -> address + instruction.codeUnits }
-    val switch = code.indexOfFirst { it.opcode == Opcode.PACKED_SWITCH || it.opcode == Opcode.SPARSE_SWITCH }
-    if (switch < 0) refuse("${apply.descriptor()} has no switch")
-    val payload = code.getOrNull(addresses.indexOf(addresses[switch] + (code[switch] as OffsetInstruction).codeOffset))
-        as? SwitchPayload ?: refuse("${apply.descriptor()}'s switch has no payload")
-    val arm = payload.switchElements.singleOrNull { it.key == number }
-        ?: refuse("${apply.descriptor()} has no arm for update $number")
-    val start = addresses.indexOf(addresses[switch] + arm.offset)
+    val start = switchArms(apply).second[number] ?: refuse("${apply.descriptor()} has no arm for update $number")
     if (start < 0) refuse("${apply.descriptor()}'s arm for update $number lands between instructions")
     return code.drop(start)
         .takeWhile { !it.opcode.name.startsWith("return") && it.opcode != Opcode.THROW }
@@ -1129,6 +1194,469 @@ internal fun MutableMethod.tapWholeReplyRow(tap: ReplyRowTap) {
             move-result v${tap.flag}
         """,
     )
+}
+
+/**
+ * Code that goes in front of instruction [at] of a method. Its one jump, `:keep`, lands on that
+ * instruction, so skipping the code runs Facebook's as it was.
+ */
+internal class Insertion(val at: Int, val smali: String)
+
+/** What the Hide replies button adds to one method. */
+internal class HideRepliesPart(val method: Method, val insertions: List<Insertion>)
+
+private fun Method.code() = implementation?.instructions?.toList().orEmpty()
+
+private fun FieldReference.smali() = "$definingClass->$name:$type"
+
+private fun Instruction.madeType() =
+    if (opcode == Opcode.NEW_INSTANCE) ((this as ReferenceInstruction).reference as TypeReference).type else null
+
+private fun Instruction.targetRegister() = (this as OneRegisterInstruction).registerA
+
+/** Whether only the instruction before [at] runs into it, so nothing jumps past code put there. */
+private fun ranIntoOnlyFromBefore(method: Method, at: Int): Boolean {
+    val flow = ControlFlow.of(method)
+    return at > 0 && at in flow.normal[at - 1] && flow.instructions.indices.none { index ->
+        index != at - 1 && (at in flow.normal[index] || at in flow.exceptional[index])
+    }
+}
+
+/** [count] locals from v0 to v15 that nothing reads from instruction [at] on, leaving out [keep]. */
+private fun lowFreeRegisters(method: Method, at: Int, count: Int, keep: Set<Int> = emptySet()): List<Int> {
+    val live = RegisterLiveness.of(method).liveInto(at)
+    val free = (0 until minOf(method.localRegisterCount(), 16)).filter { it !in live && it !in keep }
+    if (free.size < count) refuse("${method.descriptor()} has ${free.size} free low registers at instruction $at, not $count")
+    return free.take(count)
+}
+
+/** Refuses unless [register] holds at [at] what it holds at [readAt]: the same writes reach both. */
+private fun Method.requireSameValue(at: Int, readAt: Int, register: Int) {
+    if (writersReaching(at, register).toSet() != writersReaching(readAt, register).toSet()) {
+        refuse("${descriptor()}: v$register holds something else at instruction $at than at $readAt")
+    }
+}
+
+/**
+ * Where the state takes an update, first thing: on the Hide replies number it writes the reply flag
+ * false and returns. The switch's own number comes from the field Facebook reads it from.
+ */
+private fun hideInState(update: Method, flag: FieldReference): Insertion {
+    val where = update.descriptor()
+    val code = update.code()
+    val (switch, arms) = switchArms(update)
+    if (HIDE_REPLIES in arms) refuse("$where already has an arm for $HIDE_REPLIES")
+    val on = code[switch].targetRegister()
+    val number = (switch - 1 downTo 0).map { code[it] }.firstOrNull { it.writes(on) }
+        ?.takeIf { it.opcode == Opcode.IGET }?.field() ?: refuse("$where doesn't read its switch's number from a field")
+    if (update.implementation!!.registerCount > 16) refuse("$where has its arguments out of an iget's reach")
+    val (read, wanted) = lowFreeRegisters(update, 0, 2)
+    return Insertion(
+        0,
+        """
+            iget v$read, p1, ${number.smali()}
+            const/16 v$wanted, $HIDE_REPLIES
+            if-ne v$read, v$wanted, :keep
+            const/4 v$read, 0x0
+            iput-boolean v$read, p0, ${flag.smali()}
+            return-void
+        """,
+    )
+}
+
+/** The sender's arm for [EXPAND_REPLIES], and the two places that make it send Hide replies' number when built with it. */
+private fun hideInSender(sender: Method): Pair<Int, List<Insertion>> {
+    val where = sender.descriptor()
+    val code = sender.code()
+    val (switch, arms) = switchArms(sender)
+    val kind = code[0].takeIf { it.opcode == Opcode.IGET }?.field()
+    val on = code[switch].targetRegister()
+    if (kind == null || switch != 1 || (code[0] as TwoRegisterInstruction).registerA != on) {
+        refuse("$where doesn't open on a switch over one of its fields")
+    }
+    if (HIDE_REPLIES in arms) refuse("$where already has an arm for $HIDE_REPLIES")
+    val self = (code[0] as TwoRegisterInstruction).registerB
+    if (on > 15 || self > 15) refuse("$where keeps its switch out of an if-ne's reach")
+
+    val named = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == EXPAND_REPLIES }
+    val start = arms.values.filter { it in 0..named }.maxOrNull() ?: refuse("$where has no arm reaching \"$EXPAND_REPLIES\"")
+    val key = arms.filterValues { it == start }.keys.singleOrNull() ?: refuse("$where shares the arm sending \"$EXPAND_REPLIES\"")
+    if (!ranIntoOnlyFromBefore(sender, switch)) refuse("$where has a jump to its switch")
+
+    val build = expandBuild(sender)
+    val number = code[build].namedRegisters().last()
+    if (number > 255) refuse("$where builds its update with a number out of a const's reach")
+    if (!ranIntoOnlyFromBefore(sender, build)) refuse("$where has a jump to where it builds its update")
+    sender.requireSameValue(build, 0, self)
+
+    val (wanted) = lowFreeRegisters(sender, switch, 1, setOf(on))
+    val (read, sent) = lowFreeRegisters(sender, build, 2, setOf(number, self))
+    return key to listOf(
+        Insertion(
+            switch,
+            """
+                const/16 v$wanted, $HIDE_REPLIES
+                if-ne v$on, v$wanted, :keep
+                const/16 v$on, $key
+            """,
+        ),
+        Insertion(
+            build,
+            """
+                iget v$read, v$self, ${kind.smali()}
+                const/16 v$sent, $HIDE_REPLIES
+                if-ne v$read, v$sent, :keep
+                const/16 v$number, $HIDE_REPLIES
+            """,
+        ),
+    )
+}
+
+/**
+ * Where the comment draws an open thread, in front of its expanded section: a second collapsed
+ * section, keyed so it never takes over the View replies row's state, that the row below turns into
+ * Hide replies. It's filled from the registers Facebook's own collapsed block reads, none of them
+ * written on the way to either place, with no inline preview rows. The extension gets the four
+ * things the thread can be open for, because only one a tap opened can be closed.
+ */
+private fun hideRowInDraw(draw: Method, sender: Method, senderKey: Int, flag: FieldReference, collapsed: ClassDef, base: ClassDef): Insertion {
+    val where = draw.descriptor()
+    val code = draw.code()
+    val flow = ControlFlow.of(draw)
+
+    val runs = code.indices.filter { first ->
+        (0..2).all { code.getOrNull(first + it)?.opcode == Opcode.IF_NEZ } && code.getOrNull(first + 3)?.opcode == Opcode.IF_EQZ &&
+            (0..2).map { flow.normal[first + it].first() }.distinct().size == 1
+    }
+    val first = runs.singleOrNull() ?: refuse("$where has ${runs.size} runs of open checks, not one")
+    val (opened, itself, kept) = (0..2).map { code[first + it].targetRegister() }
+    val local = code[first + 3].targetRegister()
+    val openAt = flow.normal[first].first()
+    val open = code[openAt].takeIf { it.opcode == Opcode.CONST_16 && (it as NarrowLiteralInstruction).narrowLiteral == 1 }
+        ?.targetRegister() ?: refuse("$where doesn't set a register for an open thread")
+
+    val flagAt = draw.writersReaching(first, opened).singleOrNull() ?: refuse("$where sets v$opened more than one way")
+    if (flagAt < 0) refuse("$where checks v$opened without setting it")
+    val flagRead = if (flagAt > 0 && code[flagAt].opcode == Opcode.MOVE_FROM16) code[flagAt - 1] else code[flagAt]
+    if (flagRead.opcode != Opcode.IGET_BOOLEAN || flagRead.field()?.sameAs(flag) != true) refuse("$where's first open check isn't the reply flag")
+
+    val answer = draw.writersReaching(first + 2, kept).singleOrNull() ?: refuse("$where sets v$kept more than one way")
+    val ask = (answer downTo maxOf(answer - 6, 2)).firstOrNull { index ->
+        code[index].methodCall()?.let { it.returnType == OBJECT && it.parameterTypes.map(CharSequence::toString) == listOf(FUNCTION_1) } == true
+    } ?: refuse("$where's third open check doesn't ask the comment's props")
+    val keptType = code[ask - 2].madeType() ?: refuse("$where doesn't make its question right before asking")
+    val keptInit = code[ask - 1].methodCall()?.takeIf { it.definingClass == keptType && it.name == "<init>" }
+        ?: refuse("$where doesn't make its question right before asking")
+    val keptWhich = literalBefore(code, ask - 1, code[ask - 1].namedRegisters().last())
+        ?: refuse("$where makes its question with a number that isn't a literal")
+    val props = code[ask].namedRegisters().first()
+
+    val start = code.indices.singleOrNull { code[it].madeType() == collapsed.type }
+        ?: refuse("$where doesn't make ${collapsed.type} once")
+    val checks = code.indices.filter { index ->
+        index > 0 && code[index].opcode == Opcode.IF_EQZ && code[index].targetRegister() == open && flow.normal[index - 1].firstOrNull() == start
+    }
+    val check = checks.singleOrNull() ?: refuse("$where checks an open thread ${checks.size} times next to its collapsed block, not once")
+    val at = check + 1
+    if (!ranIntoOnlyFromBefore(draw, at)) refuse("$where has a jump to instruction $at, where the Hide replies row goes")
+
+    val builderInit = code.getOrNull(start + 3)?.takeIf { it.opcode == Opcode.INVOKE_DIRECT }?.methodCall()
+        ?.takeIf { it.name == "<init>" && it.parameterTypes.size == 2 && it.parameterTypes[0].toString() == collapsed.type }
+        ?: refuse("$where doesn't build ${collapsed.type} through a builder")
+    val context = code[start + 3].namedRegisters().last()
+    val component = code[start + 4].takeIf { it.opcode == Opcode.IGET_OBJECT && it.field()?.type == collapsed.type }
+        ?.let { (it as TwoRegisterInstruction).registerA } ?: refuse("$where doesn't read the section back from its builder")
+    val addAt = (start + 5 until code.size).firstOrNull { component in code[it].namedRegisters() && code[it].methodCall() != null }
+        ?: refuse("$where never hands its collapsed section on")
+    val add = code[addAt].methodCall()!!
+    if (code[addAt].opcode != Opcode.INVOKE_VIRTUAL || add.returnType != "V" || add.parameterTypes.size != 1) {
+        refuse("$where hands its collapsed section to ${add.descriptor()}")
+    }
+    val children = code[addAt].namedRegisters().first()
+
+    val senderAt = (start until addAt).singleOrNull { code[it].madeType() == sender.definingClass }
+        ?: refuse("$where doesn't make ${sender.definingClass} once in its collapsed block")
+    val senderInit = code[senderAt + 1].methodCall()?.takeIf { it.definingClass == sender.definingClass && it.name == "<init>" }
+        ?: refuse("$where doesn't start ${sender.definingClass} right after making it")
+    val senderArgs = code[senderAt + 1].namedRegisters()
+    if (senderArgs.size != 3 || senderArgs[1] != context || literalBefore(code, senderAt + 1, senderArgs[2]) != senderKey) {
+        refuse("$where doesn't start ${sender.definingClass} with its context and arm $senderKey")
+    }
+
+    if (base.methods.none { it.name == "setKey" && it.returnType == "V" && it.parameterTypes.map(CharSequence::toString) == listOf(STRING) }) {
+        refuse("${base.type} has no setKey")
+    }
+
+    // Each register read and where Facebook reads it, so the value can be checked at the hook.
+    val reads = mutableListOf(opened to first, itself to first + 1, local to first + 3, props to ask, context to start + 3, children to addAt)
+    val fills = mutableListOf<Pair<FieldReference, (Int) -> String>>()
+    var senderField: FieldReference? = null
+    for (index in start + 5 until addAt) {
+        val put = code[index]
+        val move = when (put.opcode) {
+            Opcode.IPUT -> "move/from16"
+            Opcode.IPUT_OBJECT -> "move-object/from16"
+            else -> continue
+        }
+        val field = put.field()?.takeIf { it.definingClass == collapsed.type } ?: continue
+        if ((put as TwoRegisterInstruction).registerB != component) continue
+        val source = put.registerA
+        val writer = (index - 1 downTo start).firstOrNull { code[it].writes(source) }
+        val written = writer?.let { code[it] }
+        when {
+            field.type == FUNCTION_0 -> senderField = field
+            field.type == BOOLEAN_OBJECT -> fills += field to { x: Int -> "sget-object v$x, $BOOLEAN_OBJECT->FALSE:$BOOLEAN_OBJECT" }
+            written == null -> {
+                reads += source to index
+                fills += field to { x: Int -> "$move v$x, v$source" }
+            }
+            written.opcode == Opcode.CHECK_CAST -> Unit
+            written.opcode == Opcode.MOVE_OBJECT_FROM16 || written.opcode == Opcode.MOVE_FROM16 -> {
+                val from = (written as TwoRegisterInstruction).registerB
+                reads += from to writer
+                fills += field to { x: Int -> "$move v$x, v$from" }
+            }
+            written.opcode == Opcode.ADD_INT_LIT8 -> {
+                val from = (written as TwoRegisterInstruction).registerB
+                val plus = (written as NarrowLiteralInstruction).narrowLiteral
+                reads += from to writer
+                fills += field to { x: Int -> "add-int/lit8 v$x, v$from, $plus" }
+            }
+            written.opcode == Opcode.MOVE_RESULT_OBJECT && code[writer - 1].opcode == Opcode.INVOKE_INTERFACE_RANGE -> {
+                val from = code[writer - 1].namedRegisters().singleOrNull() ?: refuse("$where fills ${field.smali()} from a call with arguments")
+                val call = code[writer - 1].methodCall()!!.descriptor()
+                reads += from to writer - 1
+                fills += field to { x: Int -> "invoke-interface/range {v$from .. v$from}, $call\nmove-result-object v$x" }
+            }
+            else -> refuse("$where fills ${field.smali()} from ${written.opcode}")
+        }
+    }
+    val senderSlot = senderField ?: refuse("$where never hands its collapsed section a sender")
+
+    reads.forEach { (register, readAt) -> draw.requireSameValue(at, readAt, register) }
+    if (reads.any { (register, _) -> register > 255 }) refuse("$where reads something out of a move's reach")
+    val (made, x, y, z) = lowFreeRegisters(draw, at, 4, reads.map { it.first }.toSet())
+    val filled = fills.joinToString("\n") { (field, load) ->
+        "${load(x)}\n${if (field.type == "I") "iput" else "iput-object"} v$x, v$made, ${field.smali()}"
+    }
+    return Insertion(
+        at,
+        """
+            const/16 v$x, $keptWhich
+            new-instance v$z, $keptType
+            invoke-direct {v$z, v$x}, ${keptInit.descriptor()}
+            move-object/from16 v$y, v$props
+            invoke-virtual {v$y, v$z}, ${code[ask].methodCall()!!.descriptor()}
+            move-result-object v$z
+            move/from16 v$made, v$opened
+            move/from16 v$x, v$itself
+            move-object/from16 v$y, v$local
+            invoke-static {v$made, v$x, v$y, v$z}, $DRAWS_HIDE_REPLIES_ROW
+            move-result v$made
+            if-eqz v$made, :keep
+            new-instance v$made, ${collapsed.type}
+            invoke-direct {v$made}, ${collapsed.type}-><init>()V
+            new-instance v$x, ${builderInit.definingClass}
+            move-object/from16 v$y, v$context
+            invoke-direct {v$x, v$made, v$y}, ${builderInit.descriptor()}
+$filled
+            const/16 v$x, $HIDE_REPLIES
+            new-instance v$z, ${sender.definingClass}
+            move-object/from16 v$y, v$context
+            invoke-direct {v$z, v$y, v$x}, ${senderInit.descriptor()}
+            iput-object v$z, v$made, ${senderSlot.smali()}
+            const-string v$x, "$HIDE_REPLIES_KEY"
+            invoke-virtual {v$made, v$x}, ${base.type}->setKey($STRING)V
+            move-object/from16 v$y, v$children
+            invoke-virtual {v$y, v$made}, ${add.descriptor()}
+        """,
+    )
+}
+
+/**
+ * In the collapsed section, once its tap handler is wrapped and before its row is built: a section
+ * sent Hide replies' sender builds its row with a count no real one has, -1, and a kind other than
+ * the eye row's ([eyeKinds], the kinds the row itself loads). The row reads that count below.
+ */
+private fun hideRowInSection(collapsed: ClassDef, rowType: String, sender: Method, kind: FieldReference, eyeKinds: Set<String>): HideRepliesPart {
+    val sections = collapsed.methods.filter { method -> method.code().any { it.madeType() == rowType } }
+    val section = sections.singleOrNull() ?: refuse("${collapsed.type} makes $rowType in ${sections.size} methods, not one")
+    val where = section.descriptor()
+    val code = section.code()
+    val made = code.indexOfFirst { it.madeType() == rowType }
+    val init = (made + 1 until code.size).firstOrNull { index ->
+        code[index].opcode == Opcode.INVOKE_DIRECT_RANGE && code[index].methodCall()?.let { it.definingClass == rowType && it.name == "<init>" } == true
+    } ?: refuse("$where doesn't start its row with a range call")
+    val parameters = code[init].methodCall()!!.parameterTypes.map(CharSequence::toString)
+    if ("J" in parameters || "D" in parameters) refuse("$where starts its row with a wide argument")
+    val countAt = parameters.indexOf("I")
+    val kindAt = parameters.indexOf(INTEGER)
+    if (countAt < 0 || kindAt < 0) refuse("$where starts its row without a count and a kind")
+    val firstArgument = (code[init] as RegisterRangeInstruction).startRegister + 1
+    val count = firstArgument + countAt
+    val kindRegister = firstArgument + kindAt
+
+    val handlers = code.indices.filter { index ->
+        code[index].opcode == Opcode.IGET_OBJECT && code[index].field()?.let { it.definingClass == collapsed.type && it.type == FUNCTION_0 } == true
+    }
+    val handler = handlers.singleOrNull() ?: refuse("$where reads ${handlers.size} tap handlers, not one")
+    val tap = (code[handler] as TwoRegisterInstruction).registerA
+    if (tap > 15) refuse("$where keeps its tap handler out of an instance-of's reach")
+    val wrapped = (made - 1 downTo 0).firstOrNull { index ->
+        code[index].opcode == Opcode.INVOKE_DIRECT && code[index].methodCall()?.name == "<init>" && code[index].namedRegisters().let { it.size == 2 && it[1] == tap }
+    } ?: refuse("$where doesn't wrap its tap handler before making its row")
+    val at = wrapped + 1
+    if (!ranIntoOnlyFromBefore(section, at)) refuse("$where has a jump to instruction $at, where the row's count goes")
+    if (section.writersReaching(at, tap) != listOf(handler)) refuse("$where writes v$tap on the way to its row")
+    if ((at until init).any { code[it].writes(count) || code[it].writes(kindRegister) }) refuse("$where sets its row's count or kind after wrapping its handler")
+
+    val plain = code.filter { it.opcode == Opcode.SGET_OBJECT && it.targetRegister() == kindRegister }
+        .mapNotNull { it.field() }.filter { it.type == INTEGER && it.smali() !in eyeKinds }.lastOrNull()
+        ?: refuse("$where loads no kind for its row other than the row's own")
+    val (free) = lowFreeRegisters(section, at, 1, setOf(tap, count, kindRegister))
+    if (count > 255 || kindRegister > 255) refuse("$where keeps its row's count out of a const's reach")
+    return HideRepliesPart(
+        section,
+        listOf(
+            Insertion(
+                at,
+                """
+                    instance-of v$free, v$tap, ${sender.definingClass}
+                    if-eqz v$free, :keep
+                    move-object v$free, v$tap
+                    check-cast v$free, ${sender.definingClass}
+                    iget v$free, v$free, ${kind.smali()}
+                    add-int/lit16 v$free, v$free, -$HIDE_REPLIES
+                    if-nez v$free, :keep
+                    const/16 v$count, -1
+                    sget-object v$kindRegister, ${plain.smali()}
+                """,
+            ),
+        ),
+    )
+}
+
+/**
+ * In the row's render, on a count below zero, which only [hideRowInSection] gives it: the words it
+ * shows and speaks become Hide replies, once they're both picked, and its arrow points up.
+ */
+private fun hideWordsInRow(row: Method, classes: (Set<String>) -> Map<String, ClassDef>): List<Insertion> {
+    val where = row.descriptor()
+    val code = row.code()
+    val countRead = code.indices.firstOrNull { index ->
+        code[index].opcode == Opcode.IGET && code[index].field()?.type == "I" && code.getOrNull(index + 1)?.opcode == Opcode.IF_GTZ &&
+            code[index + 1].targetRegister() == (code[index] as TwoRegisterInstruction).registerA
+    } ?: refuse("$where doesn't check a count above zero")
+    val count = code[countRead].field()!!
+    val self = (code[countRead] as TwoRegisterInstruction).registerB
+    if (self > 15) refuse("$where keeps itself out of an iget's reach")
+
+    val results = (countRead until code.size - 1).filter { index ->
+        code[index].opcode == Opcode.INVOKE_STATIC && code[index + 1].opcode == Opcode.MOVE_RESULT_OBJECT &&
+            code[index].methodCall()?.let { it.returnType == CHAR_SEQUENCE && it.parameterTypes.size == 2 && it.parameterTypes[1].toString() == "I" } == true
+    }.map { it + 1 }
+    val texts = results.map { code[it].targetRegister() }.distinct()
+    if (texts.size < 2) refuse("$where picks its words in ${texts.size} registers, not two")
+    val (words, spoken) = texts
+    val wordsAt = results.last { code[it].targetRegister() == spoken } + 2
+    if (!ranIntoOnlyFromBefore(row, wordsAt)) refuse("$where has a jump to instruction $wordsAt, where the row's words go")
+    if (row.writersReaching(wordsAt, words).any { it < 0 || code[it].opcode != Opcode.MOVE_RESULT_OBJECT }) {
+        refuse("$where can reach instruction $wordsAt without its words in v$words")
+    }
+    row.requireSameValue(wordsAt, countRead, self)
+
+    val loads = code.indices.filter { code[it].opcode == Opcode.SGET_OBJECT }
+    val icons = classes(loads.mapNotNull { code[it].field()?.type }.toSet())
+    val downs = loads.filter { index ->
+        val field = code[index].field()!!
+        icons[field.type]?.let { enumConstant(it, CHEVRON_DOWN) } == field.toString()
+    }
+    val down = downs.singleOrNull() ?: refuse("$where loads the down arrow ${downs.size} times, not once")
+    val up = enumConstant(icons.getValue(code[down].field()!!.type), CHEVRON_UP) ?: refuse("${code[down].field()!!.type} has no $CHEVRON_UP")
+    val arrow = code[down].targetRegister()
+    val arrowAt = down + 1
+    if (!ranIntoOnlyFromBefore(row, arrowAt)) refuse("$where has a jump to instruction $arrowAt, where the row's arrow goes")
+    row.requireSameValue(arrowAt, countRead, self)
+
+    val (forWords) = lowFreeRegisters(row, wordsAt, 1, setOf(self, words, spoken))
+    val (forArrow) = lowFreeRegisters(row, arrowAt, 1, setOf(self, arrow))
+    if (words > 255 || spoken > 255 || arrow > 255) refuse("$where keeps its words or arrow out of a move's reach")
+    return listOf(
+        Insertion(
+            wordsAt,
+            """
+                iget v$forWords, v$self, ${count.smali()}
+                if-gez v$forWords, :keep
+                invoke-static {}, $HIDE_REPLIES_WORDS
+                move-result-object v$words
+                move-object/from16 v$spoken, v$words
+            """,
+        ),
+        Insertion(
+            arrowAt,
+            """
+                iget v$forArrow, v$self, ${count.smali()}
+                if-gez v$forArrow, :keep
+                sget-object v$arrow, $up
+            """,
+        ),
+    )
+}
+
+/**
+ * Everything the Hide replies button adds, read from [sender], the one method sending
+ * [EXPAND_REPLIES], [flag], the reply flag, [draw], the comment section's draw, [collapsedHolders],
+ * the classes loading [COLLAPSED_REPLIES], and [row], the View replies row's render. [draw] and
+ * [row] are read as the hooks above left them, so the places found here are still good. Throws
+ * naming what differs.
+ */
+internal fun findHideRepliesParts(
+    sender: Method,
+    flag: FieldReference,
+    draw: Method,
+    collapsedHolders: List<ClassDef>,
+    row: Method,
+    classes: (Set<String>) -> Map<String, ClassDef>,
+): List<HideRepliesPart> {
+    fun read(type: String) = classes(setOf(type))[type] ?: refuse("$type isn't in this APK")
+    val named = collapsedHolders.filter { holder -> holder.methods.any { it.name == "<init>" && holdsString(it, COLLAPSED_REPLIES) } }
+        .distinctBy { it.type }
+    val collapsed = named.singleOrNull() ?: refuse("expected one class naming itself \"$COLLAPSED_REPLIES\", found ${named.size}")
+    val (updateType, _) = expandUpdate(sender)
+    val update = stateUpdate(read(flag.definingClass), updateType)
+    val (senderKey, senderHooks) = hideInSender(sender)
+    val kind = sender.code()[0].field()!!
+    val eyeKinds = row.code().filter { it.opcode == Opcode.SGET_OBJECT }.mapNotNull { it.field() }.filter { it.type == INTEGER }.map { it.smali() }.toSet()
+    val base = collapsed.superclass ?: refuse("${collapsed.type} has no superclass")
+    return listOf(
+        HideRepliesPart(update, listOf(hideInState(update, flag))),
+        HideRepliesPart(sender, senderHooks),
+        HideRepliesPart(draw, listOf(hideRowInDraw(draw, sender, senderKey, flag, collapsed, read(base)))),
+        hideRowInSection(collapsed, row.definingClass, sender, kind, eyeKinds),
+        HideRepliesPart(row, hideWordsInRow(row, classes)),
+    )
+}
+
+/** [findHideRepliesParts], with a build it doesn't fit keeping the rest of the patch and a warning saying why. */
+internal fun hideRepliesParts(
+    sender: Method,
+    flag: FieldReference,
+    draw: Method,
+    collapsedHolders: List<ClassDef>,
+    row: Method,
+    classes: (Set<String>) -> Map<String, ClassDef>,
+): List<HideRepliesPart>? = try {
+    findHideRepliesParts(sender, flag, draw, collapsedHolders, row, classes)
+} catch (failure: PatchException) {
+    patchLog.warning("${failure.message}. The Hide replies button does nothing in this build")
+    null
+}
+
+/** Puts [insertions] in, the last place first so the others' places stay good. */
+internal fun MutableMethod.insertAll(insertions: List<Insertion>) {
+    insertions.sortedByDescending { it.at }.forEach { insertion ->
+        addInstructionsWithLabels(insertion.at, insertion.smali, ExternalLabel("keep", getInstruction(insertion.at)))
+    }
 }
 
 /**

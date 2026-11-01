@@ -269,6 +269,7 @@ public final class SettingsBackup {
             Settings.HIDE_COMMENT_EMOJI_ROW,
             Settings.OPEN_REPLY_THREADS,
             Settings.LOAD_WHOLE_REPLY_THREADS,
+            Settings.HIDE_REPLIES_BUTTON,
             Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES,
             Settings.HIDE_POST_COMMENT_PREVIEWS,
             Settings.HIDE_COMMENT_DOWNVOTE_BUTTON,

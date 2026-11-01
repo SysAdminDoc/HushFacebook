@@ -13,9 +13,12 @@ import android.net.Uri;
 
 import androidx.annotation.Nullable;
 
+import java.util.Collection;
+
 import app.morphe.extension.facebook.feed.PostWords;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -47,7 +50,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * itself or draws View more replies; the patch asks {@link #loadWholeReplyThreads} which, just
  * before Facebook sets it. A View more replies row reads a flag that makes only its words take a
  * tap, and the patch hands {@link #viewMoreRepliesTextOnly} that flag right after. Each comment is drawn by a section that the patch asks {@link #hidesComment} first, with the
- * comment it draws; a yes draws nothing for it.
+ * comment it draws; a yes draws nothing for it. Facebook has no way to close a thread once it's
+ * open, so the patch asks {@link #drawsHideRepliesRow} as one is drawn and on a yes draws a row over
+ * it that clears the flag, with {@link #hideRepliesWords} on it.
  *
  * <p>Off, paused, before the settings are ready, or when anything here fails, the answers are
  * Facebook's own and its code runs as written.
@@ -134,6 +139,9 @@ public final class CommentSheetOptions {
     /** Counted each time a View more replies row is built to take a tap anywhere on it. */
     static final String WHOLE_ROW_TAPS = "View more replies row takes a tap anywhere";
 
+    /** Counted each time an open reply thread is drawn with a Hide replies row above it. */
+    static final String HIDE_ROWS_DRAWN = "Hide replies row drawn";
+
     /** Counted each time a comment is left out for a link to a shop. */
     static final String SHOP_LINK_HIDDEN = "Comment with a shop link left out";
 
@@ -184,6 +192,9 @@ public final class CommentSheetOptions {
 
     /** The member the report names once a View more replies row has been drawn through the hook. */
     static final String REPLY_ROWS = "View more replies rows";
+
+    /** The member the report names once an open reply thread has asked about its Hide replies row. */
+    static final String HIDE_ROWS = "Hide replies rows";
 
     /**
      * Facebook's own settings, a route its links table carries on 577, 580 and 581. Reaction
@@ -497,6 +508,39 @@ public final class CommentSheetOptions {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "View more replies row", failure);
             return textOnly;
+        }
+    }
+
+    /**
+     * The hook, as a comment is drawn with its reply thread open, handed what the thread is open
+     * for: {@code open}, the comment's reply flag, which a tap on View replies and Open every reply
+     * thread set; {@code opensItself}, Facebook's own answer for where the comment sits;
+     * {@code localReplies}, replies written on this phone; and {@code keptOpen}, the props' answer
+     * for replies the server already sent along (#325). True draws a Hide replies row over the
+     * thread. Only a thread the flag alone holds open gets one, because clearing the flag closes no
+     * other. Off, paused, before the settings are ready or for a throw, false.
+     */
+    public static boolean drawsHideRepliesRow(boolean open, boolean opensItself, Collection<?> localReplies, Object keptOpen) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, HIDE_ROWS);
+            if (!open || opensItself || (localReplies != null && !localReplies.isEmpty())
+                    || Boolean.TRUE.equals(keptOpen) || !Utils.settingsReady() || !Settings.HIDE_REPLIES_BUTTON.get()) return false;
+            HookStatus.counted(FAMILY, HIDE_ROWS_DRAWN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Hide replies row", failure);
+            return false;
+        }
+    }
+
+    /** The hook, as a Hide replies row picks its words: what it shows and what it reads out. */
+    public static String hideRepliesWords() {
+        try {
+            return L10n.t("Hide replies");
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Hide replies words", failure);
+            return "Hide replies";
         }
     }
 

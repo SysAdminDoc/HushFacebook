@@ -21,7 +21,9 @@ import app.morphe.patches.facebook.feed.refresh.enumConstant
 import app.morphe.patches.facebook.reels.gesture.COMPOSER_ACTION
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.util.ControlFlow
+import app.morphe.util.namedRegisters
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -41,6 +43,7 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -70,7 +73,12 @@ import java.io.File
  * open reply thread, found as the one thing the thread's comment list makes that reads it. The video viewer's comment bar is found by the names
  * of its sticker and GIF buttons (585: the sticker's name and the GIF button's flyout composer action), and once both are built the extension is asked and a yes clears
  * them. The whole bar around them is the class naming its layout transition that builds that row,
- * and its render asks first and returns nothing on a yes (#213). Reads the fixture bundles from
+ * and its render asks first and returns nothing on a yes (#213). A Hide replies row goes in five
+ * places, each read from the code as the comment and whole-row hooks left it: the state's update
+ * writes the flag false on its own number, the sender takes the arm naming expandReplySection and
+ * sends that number instead, the draw builds a second collapsed section when the extension says so,
+ * that section gives its row a count of -1, and the row takes the extension's words and the up arrow
+ * on that count (#325). Reads the fixture bundles from
  * HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 /** The plugin that draws Like as a button beside the thumbs-down, as the plugin table names it. */
@@ -651,6 +659,155 @@ class CommentSheetOptionsFixtureTest {
         assertEquals("$where: a no goes on to Facebook", 6, (patched[3] as BuilderOffsetInstruction).target.location.index)
         assertEquals("$where: a yes answers no", listOf(Opcode.CONST_4, Opcode.RETURN), patched.subList(4, 6).map { it.opcode })
         assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(6).map { it.opcode })
+    }
+
+    /**
+     * Puts [part] into [method] and returns each block it added, in order. Whatever the block, the
+     * code around it stays Facebook's, its jumps land on the instruction after it, and only the
+     * instruction before it runs into it. [sizes] gives each block's length, left out for one block.
+     */
+    private fun added(where: String, method: MutableMethod, part: HideRepliesPart, sizes: List<Int>? = null): List<List<Instruction>> {
+        val original = method.implementation!!.instructions.toList()
+        method.insertAll(part.insertions)
+        val patched = method.implementation!!.instructions.toList()
+        val lengths = sizes ?: listOf(patched.size - original.size)
+        assertEquals("$where: one length for each place", part.insertions.size, lengths.size)
+        assertEquals("$where gains the blocks alone", original.size + lengths.sum(), patched.size)
+        val flow = ControlFlow.of(method)
+        var shift = 0
+        val blocks = part.insertions.sortedBy { it.at }.zip(lengths).map { (insertion, length) ->
+            val start = insertion.at + shift
+            shift += length
+            val block = patched.subList(start, start + length)
+            block.filterIsInstance<BuilderOffsetInstruction>().forEach {
+                assertEquals("$where: the block at $start jumps to Facebook's next instruction", start + length, it.target.location.index)
+            }
+            patched.indices.filter { it != start - 1 && start in flow.normal[it] }.let {
+                assertEquals("$where: only the instruction before runs into the block at $start", emptyList<Int>(), it)
+            }
+            block.toList() to start
+        }
+        val facebooks = patched.indices.filter { index -> blocks.none { (block, start) -> index in start until start + block.size } }
+        assertEquals("$where: Facebook's code stays", original.opcodes(), facebooks.map { patched[it] }.opcodes())
+        return blocks.map { it.first }
+    }
+
+    private fun Instruction.literal() = (this as NarrowLiteralInstruction).narrowLiteral
+
+    private fun hideReplies(bundle: File) {
+        val name = bundle.name
+        val updates = holders(bundle, EXPAND_REPLIES).flatMap { methodsHolding(it, EXPAND_REPLIES) }
+        val classes = { types: Set<String> -> FixtureDex.classes(bundle, types) }
+        val flag = replyThreads(holders(bundle, COMMENT_SECTION), updates, classes).flag
+        val drawn = commentDraw(holders(bundle, COMMENT_SECTION))
+        val tap = replyRowTap(holders(bundle, VIEW_MORE_REPLIES))
+        val collapsedHolders = holders(bundle, COLLAPSED_REPLIES)
+
+        // As the patch has them when it looks: the comment hook and the whole-row hook are already in.
+        val hooked = PatchContexts.of(classes(setOf(drawn.render.definingClass, tap.render.definingClass)).values.toList())
+        fun hookedMethod(method: Method) =
+            hooked.mutableClassDefBy(method.definingClass).methods.single { it.descriptor() == method.descriptor() }
+        val draw = hookedMethod(drawn.render).apply { hideComments(drawn) }
+        val row = hookedMethod(tap.render).apply { tapWholeReplyRow(tap) }
+
+        assertNull("$name: a build these places don't fit keeps the rest of the patch",
+            hideRepliesParts(updates.single(), flag, draw, emptyList(), row, classes))
+        val parts = findHideRepliesParts(updates.single(), flag, draw, collapsedHolders, row, classes)
+        assertEquals("$name: the five places", 5, parts.size)
+        val (state, sender, section, list, words) = parts.let { listOf(it[0], it[1], it[2], it[3], it[4]) }
+        val rest = PatchContexts.of(classes(setOf(state.method.definingClass, sender.method.definingClass, list.method.definingClass)).values.toList())
+        fun restMethod(method: Method) =
+            rest.mutableClassDefBy(method.definingClass).methods.single { it.descriptor() == method.descriptor() }
+        val field = { it: FieldReference -> "${it.definingClass}->${it.name}:${it.type}" }
+
+        // The state answers the number by writing the flag false, and nothing else runs.
+        val stateWhere = "$name: ${state.method.descriptor()}"
+        val switchRead = state.method.implementation!!.instructions.first { it.opcode == Opcode.IGET }
+        val (stateBlock) = added(stateWhere, restMethod(state.method), state, listOf(6))
+        assertEquals("$stateWhere: the shape", listOf(Opcode.IGET, Opcode.CONST_16, Opcode.IF_NE, Opcode.CONST_4, Opcode.IPUT_BOOLEAN, Opcode.RETURN_VOID),
+            stateBlock.map { it.opcode })
+        assertEquals("$stateWhere: reads the number the switch reads", switchRead.reference(), stateBlock[0].reference())
+        assertEquals("$stateWhere: the number", HIDE_REPLIES, stateBlock[1].literal())
+        assertEquals("$stateWhere: writes false", 0, stateBlock[3].literal())
+        assertEquals("$stateWhere: into the reply flag", field(flag), stateBlock[4].reference())
+
+        // The sender takes expand's arm for the number, then sends the number in place of expand's.
+        val senderWhere = "$name: ${sender.method.descriptor()}"
+        val (toArm, toUpdate) = added(senderWhere, restMethod(sender.method), sender, listOf(3, 4))
+        assertEquals("$senderWhere: the switch's shape", listOf(Opcode.CONST_16, Opcode.IF_NE, Opcode.CONST_16), toArm.map { it.opcode })
+        assertEquals("$senderWhere: looks for the number", HIDE_REPLIES, toArm[0].literal())
+        assertEquals("$senderWhere: takes the arm that names the update", 7, toArm[2].literal())
+        assertEquals("$senderWhere: the update's shape", listOf(Opcode.IGET, Opcode.CONST_16, Opcode.IF_NE, Opcode.CONST_16), toUpdate.map { it.opcode })
+        assertEquals("$senderWhere: looks for the number", HIDE_REPLIES, toUpdate[1].literal())
+        assertEquals("$senderWhere: sends the number", HIDE_REPLIES, toUpdate[3].literal())
+        val kind = toUpdate[0].reference()
+        assertEquals("$senderWhere: reads what its switch reads", sender.method.implementation!!.instructions.first().reference(), kind)
+        val built = restMethod(sender.method).implementation!!.instructions.toList()
+        val builds = built.indexOf(toUpdate[3]) + 1
+        assertEquals("$senderWhere: into the register the update is built from",
+            (toUpdate[3] as OneRegisterInstruction).registerA, built[builds].namedRegisters().last())
+
+        // The draw builds a second collapsed section after asking the extension.
+        val drawWhere = "$name: ${draw.descriptor()}"
+        val facebookDraw = draw.implementation!!.instructions.toList()
+        val (drawBlock) = added(drawWhere, draw, section)
+        val asked = drawBlock.indexOfFirst { it.reference() == DRAWS_HIDE_REPLIES_ROW }
+        assertTrue("$drawWhere: asks the extension", asked >= 0)
+        assertEquals("$drawWhere: answered by a skip", listOf(Opcode.MOVE_RESULT, Opcode.IF_EQZ), drawBlock.subList(asked + 1, asked + 3).map { it.opcode })
+        val made = (drawBlock[asked + 3] as ReferenceInstruction).reference.toString()
+        assertEquals("$drawWhere: then makes the section", Opcode.NEW_INSTANCE, drawBlock[asked + 3].opcode)
+        assertEquals("$drawWhere: the section that draws the row", collapsedHolders.single { holder ->
+            holder.methods.any { it.name == "<init>" && holdsString(it, COLLAPSED_REPLIES) }
+        }.type, made)
+        fun puts(code: List<Instruction>) = code.filter { it.opcode == Opcode.IPUT || it.opcode == Opcode.IPUT_OBJECT }
+            .mapNotNull { it.reference() }.filter { it.startsWith("$made->") }.toSet()
+        val facebookStart = facebookDraw.indexOfFirst { it.opcode == Opcode.NEW_INSTANCE && (it as ReferenceInstruction).reference.toString() == made }
+        val facebookFills = puts(facebookDraw.drop(facebookStart))
+        val ours = puts(drawBlock)
+        assertEquals("$drawWhere: fills what Facebook fills but the preview rows", 1, (facebookFills - ours).size)
+        assertTrue("$drawWhere: fills nothing Facebook doesn't", (ours - facebookFills).isEmpty())
+        assertTrue("$drawWhere: keyed apart from the View replies row", drawBlock.any { (it as? ReferenceInstruction)?.reference?.toString() == HIDE_REPLIES_KEY })
+        assertTrue("$drawWhere: starts its sender with the number", drawBlock.any { it.opcode == Opcode.CONST_16 && it.literal() == HIDE_REPLIES })
+        assertEquals("$drawWhere: last hands the section over", Opcode.INVOKE_VIRTUAL, drawBlock.last().opcode)
+
+        // The section marks a row it builds for the sender with a count of -1.
+        val listWhere = "$name: ${list.method.descriptor()}"
+        val listMethod = restMethod(list.method)
+        val (listBlock) = added(listWhere, listMethod, list, listOf(9))
+        assertEquals("$listWhere: the shape", listOf(Opcode.INSTANCE_OF, Opcode.IF_EQZ, Opcode.MOVE_OBJECT, Opcode.CHECK_CAST, Opcode.IGET,
+            Opcode.ADD_INT_LIT16, Opcode.IF_NEZ, Opcode.CONST_16, Opcode.SGET_OBJECT), listBlock.map { it.opcode })
+        assertEquals("$listWhere: looks at the sender's own number", kind, listBlock[4].reference())
+        assertEquals("$listWhere: takes the number off", -HIDE_REPLIES, listBlock[5].literal())
+        assertEquals("$listWhere: writes a count below any real one", -1, listBlock[7].literal())
+        assertEquals("$listWhere: loads a kind", "Ljava/lang/Integer;", (listBlock[8].reference() ?: "").substringAfterLast(':'))
+        val code = listMethod.implementation!!.instructions.toList()
+        val init = code.indexOfFirst {
+            it.opcode == Opcode.INVOKE_DIRECT_RANGE && (it as ReferenceInstruction).reference.toString().startsWith(row.definingClass + "-><init>")
+        }
+        val parameters = ((code[init] as ReferenceInstruction).reference as MethodReference).parameterTypes.map { it.toString() }
+        val first = (code[init] as RegisterRangeInstruction).startRegister + 1
+        assertEquals("$listWhere: writes the row's count", first + parameters.indexOf("I"), (listBlock[7] as OneRegisterInstruction).registerA)
+        assertEquals("$listWhere: writes the row's kind", first + parameters.indexOf("Ljava/lang/Integer;"), (listBlock[8] as OneRegisterInstruction).registerA)
+
+        // The row swaps its words and its arrow on that count.
+        val rowWhere = "$name: ${row.descriptor()}"
+        val (wordsBlock, arrowBlock) = added(rowWhere, row, words, listOf(5, 3))
+        assertEquals("$rowWhere: the words' shape", listOf(Opcode.IGET, Opcode.IF_GEZ, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT_OBJECT, Opcode.MOVE_OBJECT_FROM16),
+            wordsBlock.map { it.opcode })
+        assertEquals("$rowWhere: the extension's words", HIDE_REPLIES_WORDS, wordsBlock[2].reference())
+        assertEquals("$rowWhere: the arrow's shape", listOf(Opcode.IGET, Opcode.IF_GEZ, Opcode.SGET_OBJECT), arrowBlock.map { it.opcode })
+        assertEquals("$rowWhere: both read the count", wordsBlock[0].reference(), arrowBlock[0].reference())
+        val rowCode = row.implementation!!.instructions.toList()
+        val arrowLoad = arrowBlock[2]
+        val icons = classes(setOf((arrowLoad as ReferenceInstruction).reference.toString().substringAfterLast(':'))).values.single()
+        assertEquals("$rowWhere: the arrow points up", enumConstant(icons, CHEVRON_UP), arrowLoad.reference())
+        assertEquals("$rowWhere: right after Facebook loads the arrow pointing down", enumConstant(icons, CHEVRON_DOWN),
+            rowCode[rowCode.indexOf(arrowBlock[0]) - 1].reference())
+    }
+
+    @Test
+    fun `each declared build can close an open reply thread with a Hide replies row`() = bundles { bundle ->
+        hideReplies(bundle)
     }
 
     @Test

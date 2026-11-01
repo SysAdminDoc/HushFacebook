@@ -501,6 +501,9 @@ Comments show their replies right away, so there's no View replies to tap.	Yorum
 Load whole reply threads	Yanıt dizilerini tamamen yükle
 # context: summary of that switch; View more replies is the row Facebook shows under an open thread that has more replies to load
 An open reply thread keeps loading as you scroll, so there's no View more replies to tap.	Açık bir yanıt dizisi sen kaydırdıkça yüklenmeye devam eder, daha fazla yanıt için dokunman gerekmez.
+Hide replies button	Yanıtları gizle düğmesi
+An open reply thread gets a Hide replies button, so you can close it again after reading.	Açık bir yanıt dizisinde Yanıtları gizle düğmesi çıkar, böylece okuduktan sonra diziyi yeniden kapatabilirsin.
+Hide replies	Yanıtları gizle
 # context: switch title under Comments; View more replies is the row under an open reply thread that loads more replies, and this makes the whole row take the tap instead of only its words
 Tap anywhere on View more replies	Daha fazla yanıt gör satırının her yerine dokun
 # context: summary of that switch

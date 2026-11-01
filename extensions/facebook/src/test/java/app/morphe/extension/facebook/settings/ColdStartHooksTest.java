@@ -387,6 +387,8 @@ public class ColdStartHooksTest {
                 CommentSheetOptions.openReplyThreads(false));
         assertFalse("a reply thread opened before the context paged on by itself",
                 CommentSheetOptions.loadWholeReplyThreads(false));
+        assertFalse("an open thread drawn before the context got a Hide replies row",
+                CommentSheetOptions.drawsHideRepliesRow(true, false, null, null));
         assertTrue("a View more replies row drawn before the context took a tap anywhere",
                 CommentSheetOptions.viewMoreRepliesTextOnly(true));
         assertFalse("a post's comments drawn before the context lost Related groups",

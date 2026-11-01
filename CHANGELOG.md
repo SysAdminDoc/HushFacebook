@@ -2,6 +2,10 @@
 
 Changes in each Hushfacebook version, newest first.
 
+## Unreleased
+
+* **Facebook:** New `Hide replies button` switch under Comments and writing. A reply thread you opened gets a Hide replies button over it, with the arrow pointing up, so you can close it again after reading. It starts off. (#325)
+
 ## 0.20.0 (2026-11-01)
 
 * **Facebook:** This one needs Morphe Manager 2.3.0 or newer, so update Manager before you patch, and it moves to Facebook 585.0.0.47.54. Reels can show when they were posted, keep their Comment button when comments are off, and play or pause with a tap above their comments, and a burn-in guard fades a video's buttons when you leave it alone. New switches hide the search button, Like under comments, the emoji row over the comment box, the Subscribe button on videos and the stories you've already watched or that come from Pages. Marketplace listings say when they went up, comment videos can be saved, and `Opening pause` and `Take breaks` help you spend less time scrolling. Fixes cover the search screen that spun forever, the blur on see-through bars, Events, Instagram and Messenger links that went nowhere, and reels that lost their Quality row.

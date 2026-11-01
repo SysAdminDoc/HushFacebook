@@ -103,6 +103,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_VIDEO_COMMENT_COMPOSER) return L10n.t("Hide the video comment box");
         if (setting == Settings.OPEN_REPLY_THREADS) return L10n.t("Open every reply thread");
         if (setting == Settings.LOAD_WHOLE_REPLY_THREADS) return L10n.t("Load whole reply threads");
+        if (setting == Settings.HIDE_REPLIES_BUTTON) return L10n.t("Hide replies button");
         if (setting == Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES) return L10n.t("Tap anywhere on View more replies");
         if (setting == Settings.HIDE_POST_COMMENT_PREVIEWS) return L10n.t("Hide comments under posts");
         if (setting == Settings.HIDE_COMMENT_DOWNVOTE_BUTTON) return L10n.t("Hide dislike on comments");

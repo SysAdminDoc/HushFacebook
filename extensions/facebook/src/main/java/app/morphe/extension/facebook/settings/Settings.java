@@ -1091,6 +1091,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_load_whole_reply_threads", FALSE);
 
     /**
+     * A reply thread a tap opened gets a Hide replies row over it, with its arrow up, that closes it
+     * again ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}, #325). Off by
+     * default. A change shows on the next comments drawn.
+     */
+    public static final BooleanSetting HIDE_REPLIES_BUTTON =
+            new BooleanSetting("hushfacebook_hide_replies_button", FALSE);
+
+    /**
      * A tap anywhere on a View more replies row opens the replies, not only a tap on its words
      * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}, #219). Off by default.
      * A change shows on the next rows drawn.

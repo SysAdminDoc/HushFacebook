@@ -462,6 +462,9 @@ Comments show their replies right away, so there's no View replies to tap.	Os co
 Load whole reply threads	Carregar respostas por completo
 # context: summary of that switch; View more replies is the row Facebook shows under an open thread that has more replies to load
 An open reply thread keeps loading as you scroll, so there's no View more replies to tap.	Uma conversa aberta continua carregando as respostas enquanto você rola, sem precisar tocar para ver mais.
+Hide replies button	Botão Ocultar respostas
+An open reply thread gets a Hide replies button, so you can close it again after reading.	Uma conversa de respostas aberta ganha um botão Ocultar respostas, para você fechá-la depois de ler.
+Hide replies	Ocultar respostas
 # context: switch title under Comments; View more replies is the row under an open reply thread that loads more replies, and this makes the whole row take the tap instead of only its words
 Tap anywhere on View more replies	Tocar em qualquer parte de Ver mais respostas
 # context: summary of that switch
