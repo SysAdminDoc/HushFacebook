@@ -167,6 +167,8 @@ public final class ReelDeclutter {
     static final String COMMENT_BUTTON = "Comment button";
     static final String SHARE_BUTTON = "Share button";
     static final String SOUND_BUTTON = "speaker button";
+    /** Counted under the family's name each time the footer builds the speaker the controls would have. */
+    static final String SPEAKER_MOVED = "speaker kept above the three dots";
 
     /**
      * The constant of Facebook's icon enum the reel sidebar builds its Save button for (#190). The
@@ -724,6 +726,44 @@ public final class ReelDeclutter {
      */
     public static Object soundButton(Object button) {
         return button == null || showsSoundButton(true) ? button : null;
+    }
+
+    /**
+     * Injection point, in the speaker builder the reel footer calls, handed whether the footer leaves
+     * the speaker to the video controls (#331). Answers false while Move the speaker above the three
+     * dots is on, so the footer builds it, right above the three dots in its own column. Never throws:
+     * off, paused, before the settings are ready, or on a failure, Facebook's answer stands.
+     *
+     * @param leaves whether Facebook would leave the speaker to the video controls.
+     */
+    public static boolean footerLeavesSpeaker(boolean leaves) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (!leaves || !Utils.settingsReady() || !Settings.REEL_SPEAKER_ABOVE_MENU.get()) return leaves;
+            HookStatus.counted(FamilyNames.REEL_DECLUTTER, SPEAKER_MOVED);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, SPEAKER_MOVED, failure);
+            return leaves;
+        }
+    }
+
+    /**
+     * Injection point, in the reel's video controls, handed the speaker button they just built, or null
+     * when they built none (#331). Answers null while Move the speaker above the three dots is on, since
+     * the footer builds that speaker instead, so a reel never shows two. Otherwise it's
+     * {@link #soundButton}, the same answer the footer's speaker gets.
+     *
+     * @param button the speaker button's component, or null.
+     */
+    public static Object controlsSoundButton(Object button) {
+        if (button == null) return null;
+        try {
+            if (Utils.settingsReady() && Settings.REEL_SPEAKER_ABOVE_MENU.get()) return null;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, SPEAKER_MOVED, failure);
+        }
+        return soundButton(button);
     }
 
     /** Whether the text has a digit in any script, which a count always has and a word doesn't. */

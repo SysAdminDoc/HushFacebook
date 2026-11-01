@@ -64,10 +64,23 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * - The hook goes between the move-result-object and the if-eqz: the extension is handed what was
  *   built and answers it or null in the same register, cast back to the builder's return type for
  *   the verifier.
+ *
+ * Move the speaker above the three dots (#331, read from 585, 2026-11-01, both ABIs):
+ * - 585's flag is 0x1010a1500045c31, and it's on for the S22's account and for the reporter now, so the
+ *   controls' speaker is the one on screen, under the three dots and off the column's center. The
+ *   footer's already sits right above the three dots: the column (arm64 LX/0B7l;->render) adds it just
+ *   before LX/0B7l;->A0B builds the three dots. Nothing has to move, the footer just has to build it.
+ * - The builder (arm64 LX/0CnO;->A00) reads whether the controls build it (that flag or LX/05It;->BhP)
+ *   into a register and leaves through an if-nez onto its return of null, the last if-nez before it news
+ *   up the sound toggle. The hook goes in front of that if-nez, and the controls' own hook drops theirs.
+ * - The builder's other caller is the video settings row (arm64 LX/08gJ;->A0C). It gets the speaker
+ *   too, as it does on an account with the flag off, so the switch is that account's own layout.
  */
 
 internal const val REEL_SOUND_BUTTON = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->showsSoundButton(Z)Z"
 internal const val REEL_FOOTER_SOUND_BUTTON = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->soundButton(Ljava/lang/Object;)Ljava/lang/Object;"
+internal const val REEL_CONTROLS_SOUND_BUTTON = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->controlsSoundButton(Ljava/lang/Object;)Ljava/lang/Object;"
+internal const val REEL_FOOTER_LEAVES_SPEAKER = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->footerLeavesSpeaker(Z)Z"
 internal const val SOUND_BUTTON_KEY = "mute_button_transition_key"
 internal const val FOOTER_COMPONENT = "FbShortsViewerFooterComponent"
 internal const val SPEAKER_CONTROLS = "FbShortsVideoControlComponent"
@@ -196,8 +209,40 @@ internal fun BytecodePatchContext.hideReelFooterSoundButton() {
     val found = pieces.filter(::outsideExtension).mapNotNull { classDefByOrNull(it) }
         .flatMap { piece -> piece.methods.filter { speakerBuilds(it, buildsSpeaker).isNotEmpty() }.map { piece.type to it } }
     hookSpeakerBuild(
-        found, "expected one piece of \"$FOOTER_COMPONENT\" to build the speaker button, found ${found.size}",
+        found, "expected one piece of \"$FOOTER_COMPONENT\" to build the speaker button, found ${found.size}", REEL_FOOTER_SOUND_BUTTON,
     ) { speakerBuilds(it, buildsSpeaker) }
+    val holder = found.single().second
+    val build = speakerBuilds(holder, buildsSpeaker).single()
+    keepSpeakerInFooter((holder.implementation!!.instructions.toList()[build.call] as ReferenceInstruction).reference as MethodReference, toggles)
+}
+
+/**
+ * The if-nez in the footer's speaker builder [method] that answers null when the video controls are
+ * the ones to build it: the last if-nez before it news up one of the sound [toggles], landing on a
+ * return. Null when the builder has no such branch.
+ */
+internal fun footerSpeakerCheck(method: Method, toggles: Set<String>): Int? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val toggle = code.indexOfFirst {
+        it.opcode == Opcode.NEW_INSTANCE && ((it as ReferenceInstruction).reference as TypeReference).type in toggles
+    }
+    val check = (toggle - 1 downTo 0).firstOrNull { code[it].opcode == Opcode.IF_NEZ } ?: return null
+    return check.takeIf { branchTarget(code, check)?.let(code::getOrNull)?.opcode == Opcode.RETURN_OBJECT }
+}
+
+/** Hands the footer's check for whether the controls build the speaker to the extension, in the builder [call] names. */
+private fun BytecodePatchContext.keepSpeakerInFooter(call: MethodReference, toggles: Set<String>) {
+    val method = mutableClassDefBy(call.definingClass).methods.single { isCalledBy(it, call) }
+    val check = footerSpeakerCheck(method, toggles)
+        ?: throw PatchException("$PATCH: ${call.definingClass}->${call.name} has no check in front of the sound toggle")
+    val answer = (method.implementation!!.instructions.toList()[check] as OneRegisterInstruction).registerA
+    method.addInstructions(
+        check,
+        """
+            invoke-static/range { v$answer .. v$answer }, $REEL_FOOTER_LEAVES_SPEAKER
+            move-result v$answer
+        """,
+    )
 }
 
 /**
@@ -221,6 +266,7 @@ private fun BytecodePatchContext.hideControlsSpeakerBuild() {
         found,
         "expected one static check whose false skips \"$SOUND_BUTTON_KEY\", or one method of \"$SPEAKER_CONTROLS\" " +
             "building the speaker button, found ${found.size}",
+        REEL_CONTROLS_SOUND_BUTTON,
     ) { controlSpeakerBuilds(it, buildsSpeaker) }
 }
 
@@ -228,10 +274,11 @@ private fun BytecodePatchContext.hideControlsSpeakerBuild() {
 internal fun buildsControlsSpeaker(method: Method, call: MethodReference, toggles: Set<String>): Boolean =
     isCalledBy(method, call) && holdsString(method, SOUND_BUTTON_KEY) && newInstanceTypes(method).any(toggles::contains)
 
-/** The one place in [found] that builds the speaker, hooked on the builder's answer before the null check. */
+/** The one place in [found] that builds the speaker, whose answer goes through [hook] before the null check. */
 private fun BytecodePatchContext.hookSpeakerBuild(
     found: List<Pair<String, Method>>,
     problem: String,
+    hook: String,
     builds: (Method) -> List<SpeakerBuild>,
 ) {
     val (owner, holder) = found.singleOrNull() ?: throw PatchException("$PATCH: $problem")
@@ -245,7 +292,7 @@ private fun BytecodePatchContext.hookSpeakerBuild(
     method.addInstructions(
         build.call + 2,
         """
-            invoke-static/range { v${build.register} .. v${build.register} }, $REEL_FOOTER_SOUND_BUTTON
+            invoke-static/range { v${build.register} .. v${build.register} }, $hook
             move-result-object v${build.register}
             check-cast v${build.register}, ${build.type}
         """,

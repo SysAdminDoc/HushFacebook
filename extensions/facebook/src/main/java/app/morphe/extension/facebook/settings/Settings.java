@@ -737,6 +737,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_sound_button", FALSE);
 
     /**
+     * A reel's speaker button sits in the side column right above the three dots, where the reel's
+     * footer builds it, not lower down where the video controls do
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#footerLeavesSpeaker}, #331). Off by
+     * default. A change shows from the next reel.
+     */
+    public static final BooleanSetting REEL_SPEAKER_ABOVE_MENU =
+            new BooleanSetting("hushfacebook_reel_speaker_above_menu", FALSE);
+
+    /**
      * The line under a reel naming its sound, "Original audio" or a song, isn't drawn, and the other
      * chips stay ({@link app.morphe.extension.facebook.reels.ReelDeclutter#filterChips}, #200). Off
      * by default. A change shows from the next reel.

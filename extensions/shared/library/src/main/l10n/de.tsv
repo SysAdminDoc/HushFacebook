@@ -1778,6 +1778,8 @@ Takes the Save button off the side of reels. The buttons above it move down. A c
 Hide the speaker button on reels	Lautsprecher-Schaltfläche bei Reels ausblenden
 # context: summary of that switch
 Takes the speaker button off the bottom of the side of reels. A change shows from the next reel.	Entfernt die Lautsprecher-Schaltfläche unten seitlich an Reels. Eine Änderung gilt ab dem nächsten Reel.
+Move the speaker above the three dots	Lautsprecher über die drei Punkte setzen
+Puts the speaker button in the side column of reels, right above the three dots. A change shows from the next reel.	Setzt die Lautsprecher-Schaltfläche in die seitliche Spalte von Reels, direkt über die drei Punkte. Eine Änderung gilt ab dem nächsten Reel.
 # context: switch title under News feed; the reaction preview is the stack of reaction icons and the line with the number of reactions under a post
 Hide the reaction preview on posts	Reaktionsvorschau bei Beiträgen ausblenden
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions

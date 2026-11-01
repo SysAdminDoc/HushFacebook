@@ -16,6 +16,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** `Select part of a post's text` no longer draws solid boxes behind the selection handles and the copy toolbar. (#294)
 * **Facebook:** `Hide the Subscribe button on videos` also takes the Subscribe pill in a reel's footer, next to the author's name. (#291)
 * **Facebook:** New `Hide the 2x popups` switch under Video and audio. Holding a video for 2x then shows no pill at all, so no "Speed: 2x", "Release to lock" or "Locked at 2x speed". The hold and the lock still work. It starts off. (#289)
+* **Facebook:** New `Move the speaker above the three dots` switch under Video and audio. It puts a reel's speaker button in the side column, right above the three dots. It starts off. (#331)
 
 ## 0.20.0 (2026-11-01)
 

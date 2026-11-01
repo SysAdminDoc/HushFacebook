@@ -1778,6 +1778,8 @@ Takes the Save button off the side of reels. The buttons above it move down. A c
 Hide the speaker button on reels	Ocultar el botón del altavoz en los reels
 # context: summary of that switch
 Takes the speaker button off the bottom of the side of reels. A change shows from the next reel.	Quita el botón del altavoz de la parte inferior del lateral de los reels. Un cambio se ve a partir del siguiente reel.
+Move the speaker above the three dots	Mover el altavoz encima de los tres puntos
+Puts the speaker button in the side column of reels, right above the three dots. A change shows from the next reel.	Pone el botón del altavoz en la columna lateral de los reels, justo encima de los tres puntos. Un cambio se ve a partir del siguiente reel.
 # context: switch title under News feed; the reaction preview is the stack of reaction icons and the line with the number of reactions under a post
 Hide the reaction preview on posts	Ocultar la vista previa de reacciones en las publicaciones
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions

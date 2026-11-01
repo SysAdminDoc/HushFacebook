@@ -166,6 +166,7 @@ final class SwitchLabels {
         if (setting == Settings.SHOW_REEL_COMMENT_BUTTON) return L10n.t("Show Comment when comments are off");
         if (setting == Settings.SHOW_REEL_POST_DATE) return L10n.t("Show the post date on reels");
         if (setting == Settings.HIDE_REEL_SOUND_BUTTON) return L10n.t("Hide the speaker button on reels");
+        if (setting == Settings.REEL_SPEAKER_ABOVE_MENU) return L10n.t("Move the speaker above the three dots");
         if (setting == Settings.HIDE_REEL_AUDIO_LINE) return L10n.t("Hide the audio line on reels");
         if (setting == Settings.HIDE_SLOW_CONNECTION_MESSAGE) return L10n.t("Hide the slow connection message");
         if (setting == Settings.FEED_VIDEOS_ALONE) return L10n.t("Open feed videos on their own");

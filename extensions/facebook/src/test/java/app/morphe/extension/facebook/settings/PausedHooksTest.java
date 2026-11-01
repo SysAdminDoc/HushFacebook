@@ -631,6 +631,9 @@ public class PausedHooksTest {
                 () -> !ReelDeclutter.showsSoundButton(true),
                 // And the footer's speaker, when the footer builds it.
                 () -> ReelDeclutter.soundButton(new Object()) == null,
+                // Move the speaker above the three dots hands it from the controls to the footer.
+                () -> !ReelDeclutter.footerLeavesSpeaker(true),
+                () -> ReelDeclutter.controlsSoundButton(new Object()) == null,
                 // A tile of the feed's Reels row skips its clip and plays to the end.
                 () -> !ReelDeclutter.allowsPreviewClip(true),
                 () -> ReelDeclutter.previewClipEnd(1000) != 1000,

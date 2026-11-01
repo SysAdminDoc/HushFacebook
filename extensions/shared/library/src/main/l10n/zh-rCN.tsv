@@ -1773,6 +1773,8 @@ Takes the Save button off the side of reels. The buttons above it move down. A c
 Hide the speaker button on reels	隐藏 Reels 上的扬声器按钮
 # context: summary of that switch
 Takes the speaker button off the bottom of the side of reels. A change shows from the next reel.	去掉 Reels 侧边底部的扬声器按钮。更改会从下一个 Reels 开始显示。
+Move the speaker above the three dots	把扬声器移到三个点上方
+Puts the speaker button in the side column of reels, right above the three dots. A change shows from the next reel.	把扬声器按钮放到 Reels 的侧边栏，就在三个点上方。更改会从下一个 Reels 开始显示。
 # context: switch title under News feed; the reaction preview is the stack of reaction icons and the line with the number of reactions under a post
 Hide the reaction preview on posts	隐藏帖子上的回应预览
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions

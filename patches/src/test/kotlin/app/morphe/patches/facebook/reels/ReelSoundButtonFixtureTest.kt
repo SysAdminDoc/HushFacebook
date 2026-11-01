@@ -102,6 +102,26 @@ class ReelSoundButtonFixtureTest {
                     (patched[at + 3] as OneRegisterInstruction).registerA)
                 assertEquals("$name: the rest is Facebook's", original.map { it.opcode },
                     patched.take(at).map { it.opcode } + patched.drop(at + 3).map { it.opcode })
+
+                // The builder's check for whether the controls build the speaker goes through the extension (#331).
+                val builderMethod = callees.getValue(builder.definingClass).methods.single { isCalledBy(it, builder) }
+                val builderCode = builderMethod.code()
+                val left = footerSpeakerCheck(builderMethod, toggles) ?: throw AssertionError("$name: no check in front of the toggle")
+                assertTrue("$name: a branch lands on the builder's check", left !in branchTargets(builderCode))
+                val answer = (builderCode[left] as OneRegisterInstruction).registerA
+                // Negative control: without its toggle the same builder has no check to take.
+                assertEquals("$name: the toggle doesn't pick the check", null, footerSpeakerCheck(builderMethod, emptySet()))
+                val patchedBuilder = context.mutableClassDefBy(builder.definingClass).methods.single { isCalledBy(it, builder) }.code()
+                assertEquals("$name: shape of the builder's hook", listOf(Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT, Opcode.IF_NEZ),
+                    patchedBuilder.subList(left, left + 3).map { it.opcode })
+                val asked = patchedBuilder[left] as RegisterRangeInstruction
+                assertEquals("$name: the extension is asked by the builder", REEL_FOOTER_LEAVES_SPEAKER,
+                    ((asked as ReferenceInstruction).reference as MethodReference).toString())
+                assertEquals("$name: the builder's hook reads Facebook's answer", answer, asked.startRegister)
+                assertEquals("$name: the builder's answer goes back", answer, (patchedBuilder[left + 1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: the builder's branch reads the extension's answer", answer, (patchedBuilder[left + 2] as OneRegisterInstruction).registerA)
+                assertEquals("$name: the rest of the builder is Facebook's", unpadded(builderCode).map { it.opcode },
+                    unpadded(patchedBuilder.take(left) + patchedBuilder.drop(left + 2)).map { it.opcode })
                 checked += version
                 abis += name.substringAfter("-$version-").substringBefore(".apkm")
             }
@@ -152,7 +172,7 @@ class ReelSoundButtonFixtureTest {
             listOf(Opcode.MOVE_RESULT_OBJECT, Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT_OBJECT, Opcode.CHECK_CAST, Opcode.IF_EQZ),
             patched.subList(at - 1, at + 4).map { it.opcode })
         val call = patched[at] as RegisterRangeInstruction
-        assertEquals("$name: the extension is asked", REEL_FOOTER_SOUND_BUTTON,
+        assertEquals("$name: the extension is asked", REEL_CONTROLS_SOUND_BUTTON,
             ((call as ReferenceInstruction).reference as MethodReference).toString())
         assertEquals("$name: the hook passes one register", 1, call.registerCount)
         assertEquals("$name: the hook reads what was built", build.register, call.startRegister)
@@ -235,7 +255,7 @@ class ReelSoundButtonFixtureTest {
 
     @Test
     fun `the extension has the hooks`() {
-        for (descriptor in listOf(REEL_SOUND_BUTTON, REEL_FOOTER_SOUND_BUTTON)) {
+        for (descriptor in listOf(REEL_SOUND_BUTTON, REEL_FOOTER_SOUND_BUTTON, REEL_CONTROLS_SOUND_BUTTON, REEL_FOOTER_LEAVES_SPEAKER)) {
             val type = descriptor.substringBefore("->")
             val name = descriptor.substringAfter("->").substringBefore("(")
             val hook = ExtensionDex.classDef(type).methods.singleOrNull { it.name == name }

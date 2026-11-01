@@ -77,6 +77,7 @@ public class ReelDeclutterTest {
         Settings.SHOW_REEL_POST_DATE.resetToDefault();
         Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON.resetToDefault();
         Settings.HIDE_REEL_SOUND_BUTTON.resetToDefault();
+        Settings.REEL_SPEAKER_ABOVE_MENU.resetToDefault();
         Settings.HIDE_REEL_AUDIO_LINE.resetToDefault();
         Settings.HIDE_SLOW_CONNECTION_MESSAGE.resetToDefault();
         Settings.PLAY_FEED_REELS_WHOLE.resetToDefault();
@@ -919,6 +920,78 @@ public class ReelDeclutterTest {
         PauseForTests.resume();
         Settings.HIDE_REEL_SOUND_BUTTON.save(false);
         assertSame("turning the switch off didn't bring the footer's speaker back", button, ReelDeclutter.soundButton(button));
+    }
+
+    /**
+     * Move the speaker above the three dots (#331): off, each place keeps Facebook's answer. On, the
+     * footer builds the speaker the controls would have and the controls drop theirs, so a reel has
+     * one, and a footer that was going to build it anyway isn't counted.
+     */
+    @Test
+    public void theSpeakerMovesToTheFooterOnlyWhileItsSwitchIsOn() {
+        Object button = new Object();
+        assertFalse(Settings.REEL_SPEAKER_ABOVE_MENU.defaultValue);
+        assertTrue("off, the footer built the controls' speaker", ReelDeclutter.footerLeavesSpeaker(true));
+        assertFalse("off, the footer stopped building its own", ReelDeclutter.footerLeavesSpeaker(false));
+        assertSame("off, the controls lost their speaker", button, ReelDeclutter.controlsSoundButton(button));
+
+        Settings.REEL_SPEAKER_ABOVE_MENU.save(true);
+        assertFalse("the footer left the speaker to the controls", ReelDeclutter.footerLeavesSpeaker(true));
+        assertFalse(ReelDeclutter.footerLeavesSpeaker(false));
+        assertNull("the controls kept a second speaker", ReelDeclutter.controlsSoundButton(button));
+        assertNull("controls with no speaker got one", ReelDeclutter.controlsSoundButton(null));
+        assertSame("the footer's own speaker went", button, ReelDeclutter.soundButton(button));
+        assertTrue(HookStatus.report().toString(),
+                HookStatus.report().toString().contains("Counted: " + ReelDeclutter.SPEAKER_MOVED + " 1"));
+
+        Settings.REEL_SPEAKER_ABOVE_MENU.save(false);
+        assertTrue("turning the switch off didn't hand the speaker back", ReelDeclutter.footerLeavesSpeaker(true));
+        assertSame(button, ReelDeclutter.controlsSoundButton(button));
+    }
+
+    /** Hide the speaker button still wins with the switch on: neither place has a speaker. */
+    @Test
+    public void hidingTheSpeakerBeatsMovingIt() {
+        Object button = new Object();
+        Settings.REEL_SPEAKER_ABOVE_MENU.save(true);
+        Settings.HIDE_REEL_SOUND_BUTTON.save(true);
+        assertNull("the controls kept the speaker", ReelDeclutter.controlsSoundButton(button));
+        assertNull("the footer kept the speaker", ReelDeclutter.soundButton(button));
+
+        Settings.REEL_SPEAKER_ABOVE_MENU.save(false);
+        assertNull("the hide switch stopped reaching the controls' speaker", ReelDeclutter.controlsSoundButton(button));
+    }
+
+    @Test
+    public void pausedOrNotReadyTheSpeakerStaysWhereFacebookPutIt() {
+        Object button = new Object();
+        Settings.REEL_SPEAKER_ABOVE_MENU.save(true);
+        for (HushfacebookPause.Reason why : new HushfacebookPause.Reason[]{
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP,
+                HushfacebookPause.Reason.MARKER_FILE}) {
+            PauseForTests.pause(why);
+            assertTrue(why + " moved the speaker", ReelDeclutter.footerLeavesSpeaker(true));
+            assertSame(why + " took the controls' speaker", button, ReelDeclutter.controlsSoundButton(button));
+            PauseForTests.resume();
+        }
+        SettingsContextRule.withoutContext(() -> {
+            assertTrue(ReelDeclutter.footerLeavesSpeaker(true));
+            assertSame(button, ReelDeclutter.controlsSoundButton(button));
+        });
+    }
+
+    /** A switch that can't be read leaves the speaker where Facebook put it, and the report names the hook. */
+    @Test
+    public void aMoveSwitchThatCantBeReadKeepsFacebooksAnswer() {
+        Object button = new Object();
+        SettingReadsForTests.breakReads(Settings.REEL_SPEAKER_ABOVE_MENU);
+        try {
+            assertTrue(ReelDeclutter.footerLeavesSpeaker(true));
+            assertSame(button, ReelDeclutter.controlsSoundButton(button));
+        } finally {
+            SettingReadsForTests.mend(Settings.REEL_SPEAKER_ABOVE_MENU);
+        }
+        assertTrue(HookStatus.report().toString(), HookStatus.report().toString().contains(ReelDeclutter.SPEAKER_MOVED));
     }
 
     @Test

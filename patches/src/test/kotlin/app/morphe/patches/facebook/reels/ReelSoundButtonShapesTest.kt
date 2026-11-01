@@ -159,4 +159,32 @@ class ReelSoundButtonShapesTest {
         val other = ImmutableMethodReference("Lfixture/Builder;", "A02", emptyList(), "Lfixture/Row;")
         assertTrue(!buildsControlsSpeaker(builder(SOUND_BUTTON_KEY, "Lfixture/Toggle;"), other, toggles))
     }
+
+    /**
+     * A footer builder: an if-nez on v0 over the toggle's new-instance, landing on [landsOn], and a
+     * return of the toggle in front of it. Two code units each for the if-nez and the new-instance and
+     * one for the return, so the branch's offset of 5 lands just past them.
+     */
+    private fun footerBuilder(check: Opcode = Opcode.IF_NEZ, landsOn: Opcode = Opcode.RETURN_OBJECT): Method {
+        val code = listOf<Instruction>(
+            ImmutableInstruction21t(check, 0, 5),
+            ImmutableInstruction21c(Opcode.NEW_INSTANCE, 1, ImmutableTypeReference("Lfixture/Toggle;")),
+            ImmutableInstruction11x(Opcode.RETURN_OBJECT, 1),
+            if (landsOn == Opcode.RETURN_OBJECT) ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0) else ImmutableInstruction10x(landsOn),
+        )
+        return ImmutableMethod(
+            "Lfixture/Builder;", "A00", emptyList(), "Lfixture/Row;", AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, null, null,
+            ImmutableMethodImplementation(2, code, null, null),
+        )
+    }
+
+    @Test
+    fun `the footer's check is the last if-nez in front of the toggle, landing on a return`() {
+        val toggles = setOf("Lfixture/Toggle;")
+        assertEquals(0, footerSpeakerCheck(footerBuilder(), toggles))
+        // An if-eqz, a branch that lands anywhere but a return, or no toggle in the method isn't it.
+        assertEquals(null, footerSpeakerCheck(footerBuilder(check = Opcode.IF_EQZ), toggles))
+        assertEquals(null, footerSpeakerCheck(footerBuilder(landsOn = Opcode.NOP), toggles))
+        assertEquals(null, footerSpeakerCheck(footerBuilder(), emptySet()))
+    }
 }

@@ -1778,6 +1778,8 @@ Takes the Save button off the side of reels. The buttons above it move down. A c
 Hide the speaker button on reels	Sembunyikan tombol speaker di reel
 # context: summary of that switch
 Takes the speaker button off the bottom of the side of reels. A change shows from the next reel.	Menghapus tombol speaker dari bagian bawah sisi reel. Perubahan terlihat mulai reel berikutnya.
+Move the speaker above the three dots	Pindahkan speaker ke atas tiga titik
+Puts the speaker button in the side column of reels, right above the three dots. A change shows from the next reel.	Menaruh tombol speaker di kolom samping reel, tepat di atas tiga titik. Perubahan terlihat mulai reel berikutnya.
 # context: switch title under News feed; the reaction preview is the stack of reaction icons and the line with the number of reactions under a post
 Hide the reaction preview on posts	Sembunyikan pratinjau reaksi di postingan
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
