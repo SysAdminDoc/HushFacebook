@@ -5,7 +5,7 @@ Changes in each Hushfacebook version, newest first.
 ## Unreleased
 
 * **Facebook:** The play and cast buttons on feed videos now land in the same place on every phone, just under the channel picture on reel style posts. How far down they sat used to depend on the status bar.
-* **Facebook:** New `Seek bar on feed videos` under Video and audio. It runs a bar along the bottom of a feed video, and you drag it and let go to jump to that point, with the time showing while you drag. It starts off, and with `Tap to play` on it needs `Inline feed video controls` on too. (#326)
+* **Facebook:** New `Seek bar on feed videos` under Video and audio. It runs a bar just above the bottom of a feed video, clear of the speaker and tagged people buttons, and you drag it and let go to jump to that point, with the time showing while you drag. It starts off, and with `Tap to play` on it needs `Inline feed video controls` on too. (#326)
 * **Facebook:** New `Hide replies button` switch under Comments and writing. A reply thread you opened gets a Hide replies button over it, with the arrow pointing up, so you can close it again after reading. It starts off. (#325)
 * **Facebook:** With the tab bar at the top, Notifications, Groups, Feeds and Profile no longer lose their first rows under the bar. 0.20.0 caused this when it let reels run full height under a top bar, and now only the Reels tab does that. (#328)
 * **Facebook:** Starting on a Feeds filter, like Friends, no longer lands on an empty "You're all caught up" page. The chosen filter now loads its posts by itself. (#330)

@@ -225,7 +225,7 @@ public class FeedVideoControlsTest {
         return (FrameLayout.LayoutParams) button.getLayoutParams();
     }
 
-    @Test public void seekBarRunsAlongTheVideosBottomEdgeAndFollowsThePlayer() {
+    @Test public void seekBarRunsJustAboveTheVideosBottomEdgeAndFollowsThePlayer() {
         assertNull("it starts off", bar());
         barOn();
         SeekBar bar = bar();
@@ -235,7 +235,8 @@ public class FeedVideoControlsTest {
         assertEquals(0, on(bar)[0]);
         assertEquals(1080, bar.getWidth());
         assertEquals(FeedVideoControls.BAR_DP, bar.getHeight());
-        assertEquals("its bottom is the video's", on(player.view)[1] + 600, on(bar)[1] + bar.getHeight());
+        assertEquals("it leaves the video's bottom corners to Facebook's buttons",
+                on(player.view)[1] + 600 - FeedVideoControls.BAR_LIFT_DP, on(bar)[1] + bar.getHeight());
         assertEquals(60000, bar.getMax());
         assertEquals(15000, bar.getProgress());
         player.position = 30000;
@@ -264,7 +265,8 @@ public class FeedVideoControlsTest {
         refreshAfterLayout();
         layout();
         assertEquals("a drag has room for its time", FeedVideoControls.BAR_DP + FeedVideoControls.TIME_DP, bar.getHeight());
-        assertEquals("and the line stays where it was", on(player.view)[1] + 600, on(bar)[1] + bar.getHeight());
+        assertEquals("and the line stays where it was",
+                on(player.view)[1] + 600 - FeedVideoControls.BAR_LIFT_DP, on(bar)[1] + bar.getHeight());
         bar.draw(new Canvas(frame));
         touch(bar, MotionEvent.ACTION_UP, 810);
         assertEquals(java.util.Arrays.asList(45000), seeks);
@@ -288,7 +290,7 @@ public class FeedVideoControlsTest {
         assertEquals("the status bar's padding changes nothing", FeedVideoControls.TOP_DP, on(button())[1] - on(player.view)[1]);
         assertEquals(FeedVideoControls.TOP_DP, on(cast())[1] - on(player.view)[1]);
         assertEquals(on(player.view)[0], on(bar())[0]);
-        assertEquals(on(player.view)[1] + 600, on(bar())[1] + bar().getHeight());
+        assertEquals(on(player.view)[1] + 600 - FeedVideoControls.BAR_LIFT_DP, on(bar())[1] + bar().getHeight());
     }
 
     @Test public void aTapOnTheBarSeeksThereOnce() {
@@ -457,7 +459,7 @@ public class FeedVideoControlsTest {
 
     @Test public void aBarInTheScreensGestureStripStepsAsideUntilItsEdgeIsClear() {
         barOn();
-        int below = bar().getRootView().getHeight() - (on(player.view)[1] + 600);
+        int below = bar().getRootView().getHeight() - (on(player.view)[1] + 600 - FeedVideoControls.BAR_LIFT_DP);
         FeedVideoControls.insetsForTests = gestureStrip(below);
         refreshAfterLayout();
         assertNotNull("ending right where the strip starts is fine", bar());
@@ -489,12 +491,12 @@ public class FeedVideoControlsTest {
         layout();
         barOn();
         assertNotNull(bar());
-        assertEquals(on(player.view)[1] + 600, on(bar())[1] + bar().getHeight());
+        assertEquals(on(player.view)[1] + 600 - FeedVideoControls.BAR_LIFT_DP, on(bar())[1] + bar().getHeight());
     }
 
     @Test public void somethingOverTheBottomEdgeTakesTheBarOffUntilItMoves() {
         barOn();
-        View tabs = paint(root, 980, 120);
+        View tabs = paint(root, on(bar())[1] - on(root)[1], 120);
         refreshAfterLayout();
         assertNull(bar());
         assertNotNull(button());
@@ -520,7 +522,7 @@ public class FeedVideoControlsTest {
         barOn();
         BaseSettings.DEBUG.save(true);
         LogBufferManager.clearLogBuffer();
-        paint(root, 980, 120);
+        paint(root, on(bar())[1] - on(root)[1], 120);
         for (int pass = 0; pass < 3; pass++) refreshAfterLayout();
         String log = LogBufferManager.buildExportText();
         assertEquals(log, 1, occurrences(log, "Feed video seek bar: none, something lies over its bottom edge android.view.View"));

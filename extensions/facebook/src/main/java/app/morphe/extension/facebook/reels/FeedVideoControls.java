@@ -53,7 +53,7 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * sit on the player's container, where the video will show (#239). Facebook keeps its video taps and fullscreen controls. The Tap to play patch
  * supplies these bridges independently of its autoplay switch and of Hold a feed video for 2x.
  * The cast button also needs the video patch, whose player record holds the file it hands over.
- * A seek bar can run along the video's bottom edge too (#326).
+ * A seek bar can run just above the video's bottom edge too, clear of Facebook's own buttons there (#326).
  */
 public final class FeedVideoControls {
     private static final String FAMILY = FamilyNames.TAP_TO_PLAY;
@@ -64,6 +64,8 @@ public final class FeedVideoControls {
     static final int TOP_DP = 54;
     /** The seek bar's touch height, short because a feed video's caption sits right above it, and the room a drag's time takes above it. */
     static final int BAR_DP = 20, TIME_DP = 28;
+    /** The room the seek bar leaves under it for what Facebook puts in the video's bottom corners: the speaker, and the tagged people (#326). */
+    static final int BAR_LIFT_DP = 40;
     private static final long TICK_MS = 250;
     /** How long the bar waits for a seek to land, and how near the spot counts as landed. */
     static final long LANDING_MS = 3000;
@@ -392,9 +394,9 @@ public final class FeedVideoControls {
     }
 
     /**
-     * Where the seek bar goes in the window, along the bottom of the video's [visible] part, or null
-     * when that edge isn't showing, or something on top of the feed lies across it. The buttons
-     * keep [room] of the height.
+     * Where the seek bar goes in the window, {@link #BAR_LIFT_DP} above the bottom of the video's
+     * [visible] part, or null when that spot isn't showing, or something on top of the feed lies
+     * across it. The buttons keep [room] of the height.
      */
     @Nullable
     /** Whether a bar ending at window position [bottom] reaches the strip Android keeps for its home swipe. No app can claim touches there, so the bar would look live and never get a drag. */
@@ -411,7 +413,7 @@ public final class FeedVideoControls {
         surface.getLocationInWindow(at);
         int bottom = at[1] + surface.getHeight();
         container.getLocationInWindow(at);
-        bottom = Math.min(bottom, at[1] + container.getHeight());
+        bottom = Math.min(bottom, at[1] + container.getHeight()) - Math.round(BAR_LIFT_DP * density);
         int height = Math.round(BAR_DP * density);
         if (visible.bottom < bottom || visible.height() < room + height) return noBar(control, "its bottom edge doesn't show", null);
         if (inGestureStrip(content, bottom)) return noBar(control, "its bottom edge is in the system's gesture strip", null);
