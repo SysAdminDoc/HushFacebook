@@ -34,7 +34,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * answered as one it doesn't, and counted. A search Facebook already keeps out stays out and isn't
  * counted. Off, paused, or before the settings are ready, Facebook's own answer comes back. The
  * same goes for the Recent list: on, a search doesn't go to its top; otherwise Facebook's put runs.
- * And for profile visits (#221): on, the visit event isn't logged and every other event is.
+ * And for profile visits (#221): on, the visit event isn't logged and every other event is. A
+ * profile opened from a story stays out while View stories anonymously is on as well.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -50,6 +51,7 @@ public class SearchHistoryTest {
     public void restore() {
         PauseForTests.resume();
         Settings.DONT_SAVE_SEARCH_HISTORY.resetToDefault();
+        Settings.VIEW_STORIES_ANONYMOUSLY.resetToDefault();
         HookStatus.clear();
     }
 
@@ -136,6 +138,25 @@ public class SearchHistoryTest {
         Settings.DONT_SAVE_SEARCH_HISTORY.save(true);
         assertTrue("a profile visit was logged", SearchHistory.keepVisitOut(SearchHistory.PROFILE_VISIT));
         assertTrue(String.valueOf(statusLine()).contains(SearchHistory.KEPT_VISIT_OUT + " 1"));
+    }
+
+    @Test
+    public void onAProfileOpenedFromAStoryIsKeptOutToo() {
+        Settings.DONT_SAVE_SEARCH_HISTORY.save(true);
+        assertTrue("a profile opened from a story was logged", SearchHistory.keepVisitOut(SearchHistory.STORY_PROFILE_VISIT));
+        assertTrue(String.valueOf(statusLine()).contains(SearchHistory.KEPT_VISIT_OUT + " 1"));
+    }
+
+    @Test
+    public void withAnonymousStoriesAProfileOpenedFromAStoryIsKeptOut() {
+        Settings.VIEW_STORIES_ANONYMOUSLY.save(true);
+        assertTrue("a profile opened from an anonymous story was logged",
+                SearchHistory.keepVisitOut(SearchHistory.STORY_PROFILE_VISIT));
+        assertFalse("anonymous stories kept an ordinary profile visit out",
+                SearchHistory.keepVisitOut(SearchHistory.PROFILE_VISIT));
+        assertTrue(String.valueOf(statusLine()).contains(SearchHistory.KEPT_VISIT_OUT + " 1"));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused", SearchHistory.keepVisitOut(SearchHistory.STORY_PROFILE_VISIT));
     }
 
     @Test

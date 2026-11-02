@@ -28,9 +28,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>A page or profile you open from a search goes into the same history as "You visited", and
  * that entry comes from somewhere else: Facebook builds it from the {@value #PROFILE_VISIT}
- * analytics event the profile sends as it opens (#221). Every analytics event is made by one
- * factory, and the patch asks {@link #keepVisitOut} first thing there; while the switch is on, that
- * one event comes back as Facebook's own "not logged" event, so it's never sent.
+ * analytics event the profile sends as it opens (#221). A profile opened from a story sends
+ * {@value #STORY_PROFILE_VISIT} with the story's owner first. Every analytics event is made by one
+ * factory, and the patch asks {@link #keepVisitOut} first thing there; while the switch is on, those
+ * two events come back as Facebook's own "not logged" event, so they're never sent. The story one
+ * is kept out while View stories anonymously is on as well.
  *
  * <p>Searches already in your history stay there until you delete them.
  */
@@ -49,6 +51,12 @@ public final class SearchHistory {
 
     /** The analytics event a profile sends as it opens, which Facebook turns into "You visited". */
     static final String PROFILE_VISIT = "profile_engagement";
+
+    /**
+     * The analytics event the story viewer sends, naming the story's owner, as it opens that owner's
+     * profile from a story (#221).
+     */
+    static final String STORY_PROFILE_VISIT = "fb_stories_visit_profile";
 
     /** The member the report names once a profile visit event has been asked about. */
     static final String VISIT_EVENT = "profile visit event";
@@ -103,15 +111,21 @@ public final class SearchHistory {
 
     /**
      * The hook, first thing where Facebook makes an analytics event, handed the event's name. True,
-     * so the event isn't logged, only for {@link #PROFILE_VISIT} while Don't save search history is
-     * on; every other event, and a throw, answers false. Every event the app logs comes through
+     * so the event isn't logged, for {@link #PROFILE_VISIT} and {@link #STORY_PROFILE_VISIT} while
+     * Don't save search history is on, and for {@link #STORY_PROFILE_VISIT} while View stories
+     * anonymously is on too, since a story you watch anonymously shouldn't leave its owner among your
+     * visits; every other event, and a throw, answers false. Every event the app logs comes through
      * here, so the name is checked before anything else.
      */
     public static boolean keepVisitOut(String event) {
-        if (!PROFILE_VISIT.equals(event)) return false;
+        boolean fromStory = STORY_PROFILE_VISIT.equals(event);
+        if (!fromStory && !PROFILE_VISIT.equals(event)) return false;
         try {
             HookStatus.bound(FAMILY, VISIT_EVENT);
-            if (!Utils.settingsReady() || !Settings.DONT_SAVE_SEARCH_HISTORY.get()) return false;
+            if (!Utils.settingsReady()) return false;
+            if (!Settings.DONT_SAVE_SEARCH_HISTORY.get() && !(fromStory && Settings.VIEW_STORIES_ANONYMOUSLY.get())) {
+                return false;
+            }
             HookStatus.counted(FAMILY, KEPT_VISIT_OUT);
             Logger.printDebug(() -> "Don't save search history: a profile visit was kept out of your history");
             return true;

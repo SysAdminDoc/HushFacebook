@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** Search results get their Posts chip back, right after Reels, so you can see only posts for what you searched. It's on by default, and `Show Posts in search` under Search turns it off. (#339)
 * **Facebook:** `Search date range` now takes a day for each end too. Pick the months on Facebook's own wheels and the days on the two wheels under them, so a search can cover a few days instead of whole months. (#279)
+* **Facebook:** A profile you open from someone's story stays out of your search history's visits now, with either `Don't save search history` or `View stories anonymously` on. (#221)
 * **Facebook:** The play and cast buttons on feed videos now land in the same place on every phone, just under the channel picture on reel style posts. How far down they sat used to depend on the status bar.
 * **Facebook:** New `Seek bar on feed videos` under Video and audio. It runs a bar just above the bottom of a feed video, clear of the speaker and tagged people buttons, and you drag it and let go to jump to that point, with the time showing while you drag. It starts off, and with `Tap to play` on it needs `Inline feed video controls` on too. (#326)
 * **Facebook:** New `Hide replies button` switch under Comments and writing. A reply thread you opened gets a Hide replies button over it, with the arrow pointing up, so you can close it again after reading. It starts off. (#325)
