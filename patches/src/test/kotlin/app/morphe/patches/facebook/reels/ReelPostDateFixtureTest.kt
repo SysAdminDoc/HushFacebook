@@ -13,6 +13,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -71,8 +72,31 @@ class ReelPostDateFixtureTest {
                 assertEquals("$name: Facebook branches on the answer next", Opcode.IF_NE, patched[at + 2].opcode)
                 assertEquals("$name: on the same register", result, (patched[at + 2] as TwoRegisterInstruction).registerA)
                 assertTrue("$name: the date is read after the switch", creationTimeRead(helper) > at - 2)
-                assertEquals("$name: two executable instructions added",
-                    helper.code().count { it.opcode != Opcode.NOP } + 2, patched.count { it.opcode != Opcode.NOP })
+                // #357: the formatter's words, null past what Facebook words, go to the extension with the time.
+                val texts = patched.indices.filter {
+                    ((patched[it] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == POST_DATE_TEXT
+                }
+                assertEquals("$name: one wording hook", 1, texts.size)
+                val worded = texts.single()
+                val format = (patched[worded - 2] as ReferenceInstruction).reference as MethodReference
+                assertEquals("$name: the wording hook follows the formatter", "Ljava/lang/String;", format.returnType)
+                assertEquals("$name: a formatter of the time", "J", format.parameterTypes.last().toString())
+                assertEquals("$name: and its move-result-object", Opcode.MOVE_RESULT_OBJECT, patched[worded - 1].opcode)
+                val words = (patched[worded - 1] as OneRegisterInstruction).registerA
+                val formatCall = patched[worded - 2] as FiveRegisterInstruction
+                val hook = patched[worded] as FiveRegisterInstruction
+                assertEquals("$name: the hook takes three registers", 3, hook.registerCount)
+                assertEquals("$name: Facebook's words first", words, hook.registerC)
+                assertEquals("$name: then the time's low half", formatCall.registerF, hook.registerD)
+                assertEquals("$name: and its high half", formatCall.registerG, hook.registerE)
+                assertEquals("$name: the extension's words replace Facebook's", Opcode.MOVE_RESULT_OBJECT, patched[worded + 1].opcode)
+                assertEquals("$name: into the same register", words, (patched[worded + 1] as OneRegisterInstruction).registerA)
+                // Facebook draws nothing for null right after, so a filled-in date reaches the line.
+                assertEquals("$name: Facebook checks the words for null next", Opcode.IF_EQZ, patched[worded + 2].opcode)
+                assertEquals("$name: the same words", words, (patched[worded + 2] as OneRegisterInstruction).registerA)
+                assertTrue("$name: the wording hook comes after the switch's", worded > at)
+                assertEquals("$name: four executable instructions added",
+                    helper.code().count { it.opcode != Opcode.NOP } + 4, patched.count { it.opcode != Opcode.NOP })
                 checked += version
                 abis += name.substringAfter("-$version-").substringBefore(".apkm")
             }
@@ -89,5 +113,10 @@ class ReelPostDateFixtureTest {
         assertEquals("showsPostDate's shape", SHOW_POST_DATE,
             "${hook!!.definingClass}->${hook.name}(${hook.parameterTypes.joinToString("")})${hook.returnType}")
         assertTrue("showsPostDate isn't static", AccessFlags.STATIC.isSet(hook.accessFlags))
+        val wording = ExtensionDex.classDef(type).methods.singleOrNull { it.name == "postDateText" }
+        assertNotNull("the extension has no ReelDeclutter.postDateText", wording)
+        assertEquals("postDateText's shape", POST_DATE_TEXT,
+            "${wording!!.definingClass}->${wording.name}(${wording.parameterTypes.joinToString("")})${wording.returnType}")
+        assertTrue("postDateText isn't static", AccessFlags.STATIC.isSet(wording.accessFlags))
     }
 }

@@ -2461,3 +2461,10 @@ If your patched Facebook includes Accent color, the Custom choice will be %1$s.	
 If your patched Facebook includes Accent color, the Custom choice will keep Facebook's blue.	Nếu Facebook đã vá của bạn có Màu nhấn, lựa chọn Tùy chỉnh sẽ giữ màu xanh của Facebook.
 If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.	Nếu Facebook đã vá của bạn có Biểu tượng cảm xúc sau logo, đầu Trang chủ sẽ hiện %1$s sau logo.
 The top of Home will show no emoji after the logo.	Đầu Trang chủ sẽ không hiện biểu tượng cảm xúc nào sau logo.
+Show the post date as	Hiện ngày đăng dạng
+How long ago	Cách đây bao lâu
+The date	Ngày cụ thể
+# context: summary under Show the post date as; %1$s is an example, 3 weeks ago or Oct 12
+Like "%1$s". A change shows from the next reel.	Ví dụ "%1$s". Thay đổi hiện từ reel tiếp theo.
+Reel post dates will show how long ago they were posted.	Ngày đăng reel sẽ hiện là đăng cách đây bao lâu.
+Reel post dates will show the day they were posted.	Ngày đăng reel sẽ hiện ngày cụ thể đã đăng.

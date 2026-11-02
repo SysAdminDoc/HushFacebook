@@ -41,11 +41,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import app.morphe.extension.facebook.coexist.FamilySignatureTrust;
 import app.morphe.extension.facebook.comments.CommentOrder;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
+import app.morphe.extension.facebook.reels.ReelDateStyle;
 import app.morphe.extension.facebook.reels.ReelsOrder;
 import app.morphe.extension.facebook.download.DownloadQuality;
 import app.morphe.extension.facebook.download.FileNameTemplate;
@@ -100,6 +102,7 @@ import app.morphe.extension.facebook.settings.ValueRows.PauseLengthRow;
 import app.morphe.extension.facebook.settings.ValueRows.WatchedKeepRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInGuardRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInWaitRow;
+import app.morphe.extension.facebook.settings.ValueRows.ReelDateStyleRow;
 import app.morphe.extension.facebook.settings.ValueRows.AccentRow;
 import app.morphe.extension.facebook.settings.ValueRows.BackgroundRow;
 import app.morphe.extension.facebook.settings.ValueRows.CountRow;
@@ -1857,6 +1860,37 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
                 + "stay faded.", burnInWaitLabel(wait));
     }
 
+    /** How a reel's post date reads (#357), right under the switch that shows it. */
+    static ReelDateStyleRow reelDateStyleRow(Context context) {
+        ReelDateStyleRow row = new ReelDateStyleRow(context);
+        row.setKey(Settings.REEL_POST_DATE_STYLE.key);
+        row.setTitle(L10n.t("Show the post date as"));
+        row.setDialogTitle(L10n.t("Show the post date as"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        ReelDateStyle[] choices = ReelDateStyle.values();
+        CharSequence[] entries = new CharSequence[choices.length];
+        CharSequence[] values = new CharSequence[choices.length];
+        for (int i = 0; i < choices.length; i++) {
+            entries[i] = reelDateStyleLabel(choices[i]);
+            values[i] = choices[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.REEL_POST_DATE_STYLE.savedValue().name());
+        return row;
+    }
+
+    /** What the list calls [style]. */
+    static String reelDateStyleLabel(ReelDateStyle style) {
+        return style == ReelDateStyle.DATE ? L10n.t("The date") : L10n.t("How long ago");
+    }
+
+    /** The row's summary: how a three-week-old reel reads with [style], in the app's language. */
+    static String reelDateStyleSummary(ReelDateStyle style) {
+        return L10n.f("Like \"%1$s\". A change shows from the next reel.",
+                style.example(System.currentTimeMillis(), L10n.locale(), TimeZone.getDefault()));
+    }
+
     /**
      * How large Facebook's text is. Like the comment order row, its values are the setting's own
      * names and its summary says what the choice does.
@@ -2524,6 +2558,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((BurnInGuardRow) listPreference).showSummary();
         } else if (listPreference instanceof BurnInWaitRow) {
             ((BurnInWaitRow) listPreference).showSummary();
+        } else if (listPreference instanceof ReelDateStyleRow) {
+            ((ReelDateStyleRow) listPreference).showSummary();
         } else if (listPreference instanceof BreakRow) {
             ((BreakRow) listPreference).showSummary();
         } else if (listPreference instanceof TextSizeRow) {

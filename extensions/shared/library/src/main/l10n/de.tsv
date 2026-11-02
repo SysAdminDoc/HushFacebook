@@ -2461,3 +2461,10 @@ If your patched Facebook includes Accent color, the Custom choice will be %1$s.	
 If your patched Facebook includes Accent color, the Custom choice will keep Facebook's blue.	Wenn dein gepatchtes Facebook die Akzentfarbe enthält, behält die Auswahl Benutzerdefiniert das Blau von Facebook.
 If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.	Wenn dein gepatchtes Facebook Emoji nach dem Logo enthält, zeigt die Startseite oben nach dem Logo %1$s an.
 The top of Home will show no emoji after the logo.	Oben auf der Startseite wird nach dem Logo kein Emoji angezeigt.
+Show the post date as	Veröffentlichungsdatum anzeigen als
+How long ago	Wie lange her
+The date	Das Datum
+# context: summary under Show the post date as; %1$s is an example, 3 weeks ago or Oct 12
+Like "%1$s". A change shows from the next reel.	Etwa „%1$s“. Eine Änderung gilt ab dem nächsten Reel.
+Reel post dates will show how long ago they were posted.	Bei Reels wird angezeigt, wie lange die Veröffentlichung her ist.
+Reel post dates will show the day they were posted.	Bei Reels wird der Tag der Veröffentlichung angezeigt.

@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import app.morphe.extension.facebook.feed.TypedFeedUnit;
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -76,6 +78,7 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_SHARE_BUTTON.resetToDefault();
         Settings.SHOW_REEL_COMMENT_BUTTON.resetToDefault();
         Settings.SHOW_REEL_POST_DATE.resetToDefault();
+        Settings.REEL_POST_DATE_STYLE.resetToDefault();
         Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON.resetToDefault();
         Settings.HIDE_REEL_SOUND_BUTTON.resetToDefault();
         Settings.REEL_SPEAKER_ABOVE_MENU.resetToDefault();
@@ -383,6 +386,70 @@ public class ReelDeclutterTest {
         Settings.SHOW_REEL_POST_DATE.save(false);
         assertFalse("turning the switch off didn't take the date away", ReelDeclutter.showsPostDate(false));
         assertTrue(ReelDeclutter.showsPostDate(true));
+    }
+
+    private static final long NOW = 1793620800_000L; // 2026-11-02 12:00 UTC
+    private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+
+    /**
+     * A reel older than Facebook's server switches allow got no date at all (#357). With the switch
+     * on it now reads how long ago, and The date gives the day it was posted, with the year only for
+     * an earlier one. Facebook's own words stay with How long ago, and a time that can't be a post's
+     * keeps whatever Facebook had.
+     */
+    @Test
+    public void anOldReelGetsItsPostDateWorded() {
+        long threeWeeks = NOW / 1000 - 21L * 24 * 60 * 60;
+        assertEquals("3 weeks ago", ReelDeclutter.postDate(null, threeWeeks, NOW, ReelDateStyle.AGO, true, Locale.US, UTC));
+        assertNull("the switch off kept Facebook's blank", ReelDeclutter.postDate(null, threeWeeks, NOW, ReelDateStyle.AGO, false, Locale.US, UTC));
+        assertEquals("2d", ReelDeclutter.postDate("2d", threeWeeks, NOW, ReelDateStyle.AGO, true, Locale.US, UTC));
+        assertEquals("1 year ago", ReelDeclutter.postDate(null, 1760281200L, NOW, ReelDateStyle.AGO, true, Locale.US, UTC));
+
+        assertEquals("Oct 12", ReelDeclutter.postDate("2d", 1791817200L, NOW, ReelDateStyle.DATE, true, Locale.US, UTC));
+        assertEquals("Oct 12", ReelDeclutter.postDate(null, 1791817200L, NOW, ReelDateStyle.DATE, false, Locale.US, UTC));
+        assertEquals("Oct 12, 2025", ReelDeclutter.postDate(null, 1760281200L, NOW, ReelDateStyle.DATE, true, Locale.US, UTC));
+        assertEquals("the day in the phone's own time zone", "Oct 11",
+                ReelDeclutter.postDate(null, 1791770400L, NOW, ReelDateStyle.DATE, true, Locale.US, TimeZone.getTimeZone("America/New_York")));
+        assertEquals("12. Okt.", ReelDeclutter.postDate(null, 1791817200L, NOW, ReelDateStyle.DATE, true, Locale.GERMANY, UTC));
+
+        for (long impossible : new long[]{0, -5, NOW / 1000 + 3600}) {
+            assertNull(ReelDeclutter.postDate(null, impossible, NOW, ReelDateStyle.DATE, true, Locale.US, UTC));
+            assertEquals("2d", ReelDeclutter.postDate("2d", impossible, NOW, ReelDateStyle.AGO, true, Locale.US, UTC));
+        }
+        assertEquals("a clock a few seconds behind isn't the future", "Nov 2",
+                ReelDeclutter.postDate(null, NOW / 1000 + 30, NOW, ReelDateStyle.DATE, true, Locale.US, UTC));
+    }
+
+    /** The hook words the date from the saved list, counts it once, and hands Facebook's words back paused. */
+    @Test
+    public void thePostDateHookFollowsTheList() {
+        long threeWeeks = System.currentTimeMillis() / 1000 - 21L * 24 * 60 * 60;
+        assertEquals(ReelDateStyle.AGO, Settings.REEL_POST_DATE_STYLE.defaultValue);
+        assertFalse("asked as each reel's date is worded, so no restart", Settings.REEL_POST_DATE_STYLE.rebootApp);
+        assertNull("off by default, Facebook's blank stays", ReelDeclutter.postDateText(null, threeWeeks));
+        assertEquals("2d", ReelDeclutter.postDateText("2d", threeWeeks));
+        assertNull(line(ReelDeclutter.DATE_ROUTE));
+
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertEquals("3 weeks ago", ReelDeclutter.postDateText(null, threeWeeks));
+        Settings.REEL_POST_DATE_STYLE.save(ReelDateStyle.DATE);
+        String day = ReelDeclutter.postDateText("2d", threeWeeks);
+        assertNotNull(day);
+        assertFalse(day, day.contains("ago") || day.equals("2d"));
+        assertTrue(line(ReelDeclutter.DATE_ROUTE), line(ReelDeclutter.DATE_ROUTE).contains(ReelDeclutter.DATE_WORDED));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("the date was reworded while paused", "2d", ReelDeclutter.postDateText("2d", threeWeeks));
+        assertNull(ReelDeclutter.postDateText(null, threeWeeks));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertEquals("reworded before the settings were ready", "2d", ReelDeclutter.postDateText("2d", threeWeeks)));
+        SettingReadsForTests.breakReads(Settings.SHOW_REEL_POST_DATE);
+        try {
+            assertEquals("a failing read reworded the date", "2d", ReelDeclutter.postDateText("2d", threeWeeks));
+        } finally {
+            SettingReadsForTests.mend(Settings.SHOW_REEL_POST_DATE);
+        }
     }
 
     /**

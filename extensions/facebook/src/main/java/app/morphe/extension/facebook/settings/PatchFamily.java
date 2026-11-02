@@ -584,6 +584,11 @@ public enum PatchFamily {
                         .append(Settings.BURN_IN_WAIT.key).append('=').append(Settings.BURN_IN_WAIT.savedValue()).append(", ");
             }
             line.append(setting.key).append(setting.savedValue() ? "=on" : "=off");
+            // How the post date is worded follows its switch (#357).
+            if (setting == Settings.SHOW_REEL_POST_DATE) {
+                line.append(", ").append(Settings.REEL_POST_DATE_STYLE.key).append('=')
+                        .append(Settings.REEL_POST_DATE_STYLE.savedValue());
+            }
         }
         line.append(')');
         if (staysWhilePaused != null) line.append("; stays in while paused: ").append(staysWhilePaused);

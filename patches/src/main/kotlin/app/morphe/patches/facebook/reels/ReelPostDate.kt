@@ -14,9 +14,11 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 /*
@@ -32,9 +34,14 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * - Past it the helper reads the video's creation_time through TreeJNI.getTimeValue and formats it
  *   with the same (Context, FbUserSession, long) formatter feed headers use. The hook hands the
  *   switch's answer to the extension, which says yes while the setting is on.
+ * - That formatter (arm64 LX/0dPO;->A00) takes the time in seconds and answers "3 days ago", but
+ *   weeks, months and a date each sit behind another server switch, and it answers null past them,
+ *   which draws nothing (#357). A second hook hands its answer and the time to the extension, which
+ *   words the date itself where it's blank or the date style asks for the day.
  */
 
 internal const val SHOW_POST_DATE = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->showsPostDate(Z)Z"
+internal const val POST_DATE_TEXT = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->postDateText(Ljava/lang/String;J)Ljava/lang/String;"
 
 /** The video's tree key for when it was posted. It's the name's String.hashCode(). */
 internal val CREATION_TIME = "creation_time".hashCode()
@@ -81,6 +88,17 @@ internal fun postDateGate(method: Method, read: Int): Int? {
     }.singleOrNull()
 }
 
+/** Whether [instruction] calls a (Context, FbUserSession, long) to String formatter. */
+private fun formatsTime(instruction: Instruction): Boolean {
+    val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    return reference.returnType == "Ljava/lang/String;" &&
+        reference.params() == listOf("Landroid/content/Context;", USER_SESSION, "J")
+}
+
+/** Where [method] formats the time it read at [read], or -1 unless one call after it does. */
+internal fun postDateFormat(method: Method, read: Int): Int =
+    method.code.indices.filter { it > read && formatsTime(method.code[it]) }.singleOrNull() ?: -1
+
 /**
  * Whether [method] is the reel's post date line: static, the session first and a boolean last, an
  * object back, one [CREATION_TIME] read formatted by a (Context, FbUserSession, long) to String
@@ -92,12 +110,31 @@ internal fun isReelPostDate(method: Method): Boolean {
     if (params.size < 3 || params.first() != USER_SESSION || params.last() != "Z") return false
     val read = creationTimeRead(method)
     if (read < 0) return false
-    val formats = method.code.drop(read).any {
-        val reference = (it as? ReferenceInstruction)?.reference as? MethodReference
-        reference != null && reference.returnType == "Ljava/lang/String;" &&
-            reference.params() == listOf("Landroid/content/Context;", USER_SESSION, "J")
+    return postDateFormat(method, read) >= 0 && postDateGate(method, read) != null
+}
+
+/**
+ * The registers the formatter call at [at] in [method] takes the time in, low then high, and the one
+ * its words land in through the move-result-object right after. Null when the call has no such
+ * result or the three don't fit a plain invoke (each below v16, the words apart from the time).
+ */
+internal fun postDateRegisters(method: Method, at: Int): Triple<Int, Int, Int>? {
+    val code = method.code
+    val call = code[at]
+    val result = code.getOrNull(at + 1)?.takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT } as? OneRegisterInstruction ?: return null
+    // The receiver, when there is one, then the Context and the session, then the time's pair.
+    val first = if (call.opcode == Opcode.INVOKE_STATIC || call.opcode == Opcode.INVOKE_STATIC_RANGE) 2 else 3
+    val registers = when (call) {
+        is FiveRegisterInstruction -> listOf(call.registerC, call.registerD, call.registerE, call.registerF, call.registerG)
+            .take(call.registerCount)
+        is RegisterRangeInstruction -> (call.startRegister until call.startRegister + call.registerCount).toList()
+        else -> return null
     }
-    return formats && postDateGate(method, read) != null
+    val low = registers.getOrNull(first) ?: return null
+    val high = registers.getOrNull(first + 1) ?: return null
+    val words = result.registerA
+    if (words == low || words == high || maxOf(words, low, high) > 15) return null
+    return Triple(low, high, words)
 }
 
 /** Hands the line's server switch to the extension, which says yes while the setting is on. */
@@ -112,7 +149,19 @@ internal fun BytecodePatchContext.showReelPostDate() {
     val method = mutableClassDefBy(helper.definingClass).methods.single {
         it.name == helper.name && it.parameterTypes.map(CharSequence::toString) == helper.parameterTypes.map(CharSequence::toString)
     }
-    val gate = postDateGate(method, creationTimeRead(method))!!
+    val read = creationTimeRead(method)
+    val format = postDateFormat(method, read)
+    val (low, high, words) = postDateRegisters(method, format)
+        ?: throw PatchException("$PATCH: the post date's formatter in ${helper.definingClass} doesn't hand back its words where a hook can read them")
+    // The later hook goes in first, so the gate's index still holds.
+    method.addInstructions(
+        format + 2,
+        """
+            invoke-static { v$words, v$low, v$high }, $POST_DATE_TEXT
+            move-result-object v$words
+        """,
+    )
+    val gate = postDateGate(method, read)!!
     val result = (method.code[gate + 1] as OneRegisterInstruction).registerA
     method.addInstructions(
         gate + 2,

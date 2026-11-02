@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** `Show the post date` now dates older reels too. Past the first week Facebook often leaves the date out, so an older reel showed nothing under the poster's name even with the switch on. It now reads "3 weeks ago" there. A new `Show the post date as` list right under it picks between how long ago and the date it was posted, like Oct 12. (#357)
 * **Facebook:** When an imported file picks a start tab, the import message now says it applies with `Open on a chosen tab` on. It used to say Facebook will open there, even with that switch off.
 * **Facebook:** Importing a settings file that changes a lot of switches no longer freezes Facebook. A big file could hold the screen for about a minute, long enough for Android to offer to close the app.
 * **Facebook:** `See-through bars` keeps its blur lined up with the bar when the page under it is scrolled inside its own frame.

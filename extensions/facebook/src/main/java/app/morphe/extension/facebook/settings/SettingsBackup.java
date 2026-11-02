@@ -34,6 +34,7 @@ import org.json.JSONObject;
 import app.morphe.extension.facebook.comments.CommentOrder;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
+import app.morphe.extension.facebook.reels.ReelDateStyle;
 import app.morphe.extension.facebook.reels.ReelsOrder;
 import app.morphe.extension.facebook.download.DownloadQuality;
 import app.morphe.extension.facebook.download.FileNameTemplate;
@@ -606,6 +607,12 @@ public final class SettingsBackup {
     static final EnumSetting<BurnInWait> BURN_IN_WAIT = Settings.BURN_IN_WAIT;
 
     /**
+     * How a reel's post date reads (#357), held in a file as its {@link ReelDateStyle#fileValue}.
+     * Anything else refuses the whole file, as a reels order does.
+     */
+    static final EnumSetting<ReelDateStyle> DATE_STYLE = Settings.REEL_POST_DATE_STYLE;
+
+    /**
      * The hours notification quiet hours start and end, each held in a file as its
      * {@link QuietHour#fileValue}, a 24-hour time on the hour. Anything else refuses the whole file,
      * as a playback quality does.
@@ -696,7 +703,7 @@ public final class SettingsBackup {
 
     /** The settings a file carries that aren't switches, in the order Settings declares them. */
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
-            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, REELS_ORDER, WATCHED_KEEP, SHARE_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
+            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, DATE_STYLE, REELS_ORDER, WATCHED_KEEP, SHARE_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY,
                     QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI, BADGE,
                     LOGO, TAB));
@@ -824,6 +831,7 @@ public final class SettingsBackup {
         private static final String REELS_ORDER_NAME = "reels_order";
         private static final String BURN_IN_NAME = "burn_in_guard";
         private static final String BURN_IN_WAIT_NAME = "burn_in_wait";
+        private static final String DATE_STYLE_NAME = "reel_post_date_style";
 
         /** In {@link #ALLOWLIST} order, and only the switches the file named. */
         final Map<BooleanSetting, Boolean> values;
@@ -962,6 +970,9 @@ public final class SettingsBackup {
         /** The Dim after wait the file holds, the same way. */
         @Nullable
         BurnInWait burnInWait;
+        /** How the file says a reel's post date reads, the same way. */
+        @Nullable
+        ReelDateStyle dateStyle;
         /** Names the file holds that aren't settings this build knows. They're left out. */
         final int unknown;
 
@@ -1208,6 +1219,8 @@ public final class SettingsBackup {
             if (burnInChange != null) changes.put(BURN_IN, burnInChange);
             BurnInWait burnInWaitChange = burnInWaitChange();
             if (burnInWaitChange != null) changes.put(BURN_IN_WAIT, burnInWaitChange);
+            ReelDateStyle dateStyleChange = dateStyleChange();
+            if (dateStyleChange != null) changes.put(DATE_STYLE, dateStyleChange);
             SendLink.Action actionChange = actionChange();
             if (actionChange != null) changes.put(ACTION, actionChange);
             String appChange = appChange();
@@ -1502,6 +1515,12 @@ public final class SettingsBackup {
             return burnInWait == null || burnInWait == BURN_IN_WAIT.savedValue() ? null : burnInWait;
         }
 
+        /** How a reel's post date reads after this file, the same way. */
+        @Nullable
+        ReelDateStyle dateStyleChange() {
+            return dateStyle == null || dateStyle == DATE_STYLE.savedValue() ? null : dateStyle;
+        }
+
         @Nullable
         private static String listChange(@Nullable String list, StringSetting setting) {
             if (list == null) return null;
@@ -1561,6 +1580,7 @@ public final class SettingsBackup {
             if (reelsOrder != null) state.putString(REELS_ORDER_NAME, reelsOrder.fileValue);
             if (burnIn != null) state.putString(BURN_IN_NAME, burnIn.fileValue);
             if (burnInWait != null) state.putString(BURN_IN_WAIT_NAME, burnInWait.fileValue);
+            if (dateStyle != null) state.putString(DATE_STYLE_NAME, dateStyle.fileValue);
             state.putInt(UNKNOWN, unknown);
             return state;
         }
@@ -1634,6 +1654,7 @@ public final class SettingsBackup {
             read.reelsOrder = ReelsOrder.fromFile(state.get(REELS_ORDER_NAME));
             read.burnIn = BurnInMode.fromFile(state.get(BURN_IN_NAME));
             read.burnInWait = BurnInWait.fromFile(state.get(BURN_IN_WAIT_NAME));
+            read.dateStyle = ReelDateStyle.fromFile(state.get(DATE_STYLE_NAME));
             Object background = state.get(BACKGROUND_NAME);
             read.background = isBackground(background) ? (String) background : null;
             Object lightBackground = state.get(LIGHT_BACKGROUND_NAME);
@@ -1706,6 +1727,7 @@ public final class SettingsBackup {
             switches.put(REELS_ORDER.key, of(REELS_ORDER).fileValue);
             switches.put(BURN_IN.key, of(BURN_IN).fileValue);
             switches.put(BURN_IN_WAIT.key, of(BURN_IN_WAIT).fileValue);
+            switches.put(DATE_STYLE.key, of(DATE_STYLE).fileValue);
             switches.put(QUIET_FROM.key, of(QUIET_FROM).fileValue());
             switches.put(QUIET_UNTIL.key, of(QUIET_UNTIL).fileValue());
             switches.put(LOCK_AFTER.key, of(LOCK_AFTER).fileValue);
@@ -1884,6 +1906,7 @@ public final class SettingsBackup {
         ReelsOrder reelsOrder = null;
         BurnInMode burnIn = null;
         BurnInWait burnInWait = null;
+        ReelDateStyle dateStyle = null;
         JSONObject values = (JSONObject) settings;
         for (Iterator<String> names = values.keys(); names.hasNext(); ) {
             String name = names.next();
@@ -2025,6 +2048,11 @@ public final class SettingsBackup {
             if (BURN_IN_WAIT.key.equals(name)) {
                 burnInWait = BurnInWait.fromFile(values.opt(name));
                 if (burnInWait == null) throw new Rejected(Reason.VALUE, "Not a dim after wait: " + name);
+                continue;
+            }
+            if (DATE_STYLE.key.equals(name)) {
+                dateStyle = ReelDateStyle.fromFile(values.opt(name));
+                if (dateStyle == null) throw new Rejected(Reason.VALUE, "Not a post date style: " + name);
                 continue;
             }
             if (QUIET_FROM.key.equals(name) || QUIET_UNTIL.key.equals(name)) {
@@ -2203,6 +2231,7 @@ public final class SettingsBackup {
         read.reelsOrder = reelsOrder;
         read.burnIn = burnIn;
         read.burnInWait = burnInWait;
+        read.dateStyle = dateStyle;
         return read;
     }
 

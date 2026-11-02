@@ -30,7 +30,7 @@ import app.morphe.extension.shared.Logger;
  * data.viewer.marketplace_pdp.listing.primary_mp_ent has creation_time (seconds) and location_text
  * {text}, and data.listing has location_text and the same id. Nothing else in the answer changes.
  */
-final class MarketplaceListingAge {
+public final class MarketplaceListingAge {
     /** The queries a listing's own page answers with. */
     static final String[] QUERIES = {
             "MarketplacePDPSurfaceQuery",
@@ -227,8 +227,11 @@ final class MarketplaceListingAge {
         return L10n.f("Listed %1$s (%2$s)", ago(Math.max(0, nowSeconds - seconds), locale), date);
     }
 
-    /** "3 weeks ago" for an age of [age] seconds, in the largest whole unit it reaches. */
-    static String ago(long age, Locale locale) {
+    /**
+     * "3 weeks ago" for an age of [age] seconds, in the largest whole unit it reaches. A reel's post
+     * date reads the same way ({@link app.morphe.extension.facebook.reels.ReelDeclutter#postDateText}).
+     */
+    public static String ago(long age, Locale locale) {
         RelativeDateTimeFormatter format = RelativeDateTimeFormatter.getInstance(locale);
         long minutes = age / 60;
         long hours = minutes / 60;

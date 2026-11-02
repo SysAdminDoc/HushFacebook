@@ -2465,3 +2465,10 @@ If your patched Facebook includes Accent color, the Custom choice will be %1$s.	
 If your patched Facebook includes Accent color, the Custom choice will keep Facebook's blue.	若修補後的 Facebook 包含「強調色」，「自訂」選項將保留 Facebook 的藍色。
 If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.	若修補後的 Facebook 包含「標誌後的表情符號」，首頁頂端的標誌後將顯示 %1$s。
 The top of Home will show no emoji after the logo.	首頁頂端的標誌後將不顯示表情符號。
+Show the post date as	發佈日期顯示為
+How long ago	多久以前
+The date	具體日期
+# context: summary under Show the post date as; %1$s is an example, 3 weeks ago or Oct 12
+Like "%1$s". A change shows from the next reel.	例如「%1$s」。從下一則 Reels 起生效。
+Reel post dates will show how long ago they were posted.	Reels 的發佈日期將顯示為多久以前發佈。
+Reel post dates will show the day they were posted.	Reels 的發佈日期將顯示具體發佈日期。

@@ -2461,3 +2461,10 @@ If your patched Facebook includes Accent color, the Custom choice will be %1$s.	
 If your patched Facebook includes Accent color, the Custom choice will keep Facebook's blue.	Jika Facebook yang kamu patch menyertakan Warna aksen, pilihan Kustom akan tetap memakai biru Facebook.
 If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.	Jika Facebook yang kamu patch menyertakan Emoji setelah logo, bagian atas Beranda akan menampilkan %1$s setelah logo.
 The top of Home will show no emoji after the logo.	Bagian atas Beranda tidak akan menampilkan emoji setelah logo.
+Show the post date as	Tampilkan tanggal posting sebagai
+How long ago	Berapa lama yang lalu
+The date	Tanggalnya
+# context: summary under Show the post date as; %1$s is an example, 3 weeks ago or Oct 12
+Like "%1$s". A change shows from the next reel.	Misalnya "%1$s". Perubahan terlihat mulai reel berikutnya.
+Reel post dates will show how long ago they were posted.	Tanggal posting reel akan menampilkan berapa lama yang lalu diposting.
+Reel post dates will show the day they were posted.	Tanggal posting reel akan menampilkan hari diposting.

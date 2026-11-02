@@ -9,6 +9,7 @@ package app.morphe.extension.facebook.settings;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInGuardRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInWaitRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.category;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.reelDateStyleRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.downloadActionRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.fileNameRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.folderRow;
@@ -178,6 +179,8 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SHOW_REEL_POST_DATE,
                     L10n.t("Shows when a reel or a video you open full screen was posted, under the name of "
                             + "who posted it. A change shows from the next reel.")));
+            // Asked as each reel's date is worded, so a change shows from the next reel (#357).
+            reels.addPreference(reelDateStyleRow(context));
             reels.addPreference(toggle(context, Settings.HIDE_REEL_SOUND_BUTTON,
                     L10n.t("Takes the speaker button off the bottom of the side of reels. "
                             + "A change shows from the next reel.")));

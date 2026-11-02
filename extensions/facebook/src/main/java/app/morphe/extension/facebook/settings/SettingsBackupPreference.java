@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import app.morphe.extension.facebook.comments.CommentOrder;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
+import app.morphe.extension.facebook.reels.ReelDateStyle;
 import app.morphe.extension.facebook.reels.ReelsOrder;
 import app.morphe.extension.facebook.download.DownloadQuality;
 import app.morphe.extension.facebook.download.SaveTo;
@@ -413,6 +414,7 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.reelsOrderChange() != null) parts.add(reelsOrderSentence(snapshot.reelsOrderChange()));
             if (snapshot.burnInChange() != null) parts.add(burnInSentence(snapshot.burnInChange()));
             if (snapshot.burnInWaitChange() != null) parts.add(burnInWaitSentence(snapshot.burnInWaitChange()));
+            if (snapshot.dateStyleChange() != null) parts.add(dateStyleSentence(snapshot.dateStyleChange()));
             if (snapshot.backgroundChange() != null) parts.add(backgroundSentence(snapshot.backgroundChange()));
             if (snapshot.lightBackgroundChange() != null) parts.add(lightBackgroundSentence(snapshot.lightBackgroundChange()));
             if (snapshot.badgeChange() != null) parts.add(markColorSentence(Mark.BADGE, snapshot.badgeChange()));
@@ -606,6 +608,12 @@ public class SettingsBackupPreference extends Preference {
     static String burnInWaitSentence(BurnInWait wait) {
         if (wait == BurnInWait.AT_ONCE) return L10n.t("Burn-in guard will dim the Reels screen as soon as you stop touching it.");
         return L10n.f("Burn-in guard will dim the Reels screen after %1$d seconds without a touch.", (int) (wait.millis / 1000));
+    }
+
+    /** The sentence that says how a reel's post date reads after an import (#357). */
+    static String dateStyleSentence(ReelDateStyle style) {
+        if (style == ReelDateStyle.DATE) return L10n.t("Reel post dates will show the day they were posted.");
+        return L10n.t("Reel post dates will show how long ago they were posted.");
     }
 
     /** The sentence that says in what order comments open after an import. */
@@ -1059,6 +1067,7 @@ public class SettingsBackupPreference extends Preference {
                     + (snapshot.reelsOrderChange() == null ? "" : " " + reelsOrderSentence(snapshot.reelsOrderChange()))
                     + (snapshot.burnInChange() == null ? "" : " " + burnInSentence(snapshot.burnInChange()))
                     + (snapshot.burnInWaitChange() == null ? "" : " " + burnInWaitSentence(snapshot.burnInWaitChange()))
+                    + (snapshot.dateStyleChange() == null ? "" : " " + dateStyleSentence(snapshot.dateStyleChange()))
                     + (snapshot.backgroundChange() == null ? "" : " " + backgroundSentence(snapshot.backgroundChange()))
                     + (snapshot.lightBackgroundChange() == null ? "" : " " + lightBackgroundSentence(snapshot.lightBackgroundChange()))
                     + (snapshot.badgeChange() == null ? "" : " " + markColorSentence(Mark.BADGE, snapshot.badgeChange()))

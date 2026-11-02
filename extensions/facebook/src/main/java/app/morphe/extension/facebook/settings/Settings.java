@@ -22,6 +22,7 @@ import app.morphe.extension.facebook.media.SurfaceQuality;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
 import app.morphe.extension.facebook.reels.FeedVideoControls;
+import app.morphe.extension.facebook.reels.ReelDateStyle;
 import app.morphe.extension.facebook.reels.ReelsOrder;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
@@ -760,6 +761,15 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting SHOW_REEL_POST_DATE =
             new BooleanSetting("hushfacebook_show_reel_post_date", FALSE);
+
+    /**
+     * Show the post date as: how a reel's post date reads, wherever it shows
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#postDateText}, #357). How long ago by
+     * default, which also fills in the older reels Facebook leaves blank while
+     * {@link #SHOW_REEL_POST_DATE} is on. A change shows from the next reel.
+     */
+    public static final EnumSetting<ReelDateStyle> REEL_POST_DATE_STYLE =
+            new EnumSetting<>("hushfacebook_reel_post_date_style", ReelDateStyle.AGO);
 
     /**
      * The speaker button at the bottom of a reel's right side isn't built
