@@ -3292,6 +3292,44 @@
       "options": []
     },
     {
+      "name": "Search posts tab",
+      "description": "Puts the Posts chip back in the row over search results, after Reels, so you can see only posts for what you searched. Turn it off in Hushfacebook settings > Search.",
+      "category": "Interface",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "585.0.0.47.54"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "585.0.0.47.54",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 476015655,
+                "ARMEABI_V7A": 476015543
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "See who shared",
       "description": "Adds See who shared to a post's menu, which opens Facebook's list of the people who shared it. Starts off. Turn it on in Hushfacebook settings > News feed.",
       "category": "Feed",

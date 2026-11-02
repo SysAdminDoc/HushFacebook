@@ -2415,3 +2415,5 @@ Your tab bar will keep Facebook's order.	你的标签栏将保持 Facebook 的�
 Your tab bar will go in this order: %1$s.	你的标签栏将按此顺序排列：%1$s。
 Show only watched stories	只显示看过的快拍
 The Stories tray keeps only the stories you've already watched, so you can find one again. Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when Facebook next loads the tray.	快拍栏只保留你已经看过的快拍，方便你再找到某一个。关闭后可看到新的快拍。开启时“隐藏已看过的快拍”暂不生效。在 Facebook 下次加载快拍栏时生效。
+Show Posts in search	在搜索中显示帖子
+Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	把“帖子”放回搜索结果上方的那一行，排在 Reels 之后，这样你可以只看与搜索内容相关的帖子。

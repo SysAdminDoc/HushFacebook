@@ -213,7 +213,7 @@ final class AppPages {
             Set<PatchFamily> build) {
         if (build.contains(PatchFamily.META_AI_SEARCH) || build.contains(PatchFamily.SPONSORED_SEARCH)
                 || build.contains(PatchFamily.SUGGESTED_POSTS) || build.contains(PatchFamily.SEARCH_HISTORY)
-                || build.contains(PatchFamily.SEARCH_DATE_RANGE)) {
+                || build.contains(PatchFamily.SEARCH_DATE_RANGE) || build.contains(PatchFamily.SEARCH_POSTS_TAB)) {
             PreferenceCategory search = category(screen, L10n.t("Search"));
             if (build.contains(PatchFamily.META_AI_SEARCH)) {
                 search.addPreference(toggle(context, Settings.HIDE_META_AI_IN_SEARCH,
@@ -241,6 +241,11 @@ final class AppPages {
                 search.addPreference(toggle(context, Settings.SEARCH_DATE_RANGE,
                         L10n.t("The Date posted filter in post search asks for a from and to month, in place of a list of "
                                 + "years.")));
+            }
+            if (build.contains(PatchFamily.SEARCH_POSTS_TAB)) {
+                search.addPreference(toggle(context, Settings.SEARCH_POSTS_TAB,
+                        L10n.t("Puts Posts back in the row over search results, after Reels, so you can see only posts "
+                                + "for what you searched.")));
             }
         }
     }

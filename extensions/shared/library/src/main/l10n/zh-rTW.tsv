@@ -2424,3 +2424,5 @@ Your tab bar will keep Facebook's order.	你的分頁列會維持 Facebook 的�
 Your tab bar will go in this order: %1$s.	你的分頁列會依此順序排列：%1$s。
 Show only watched stories	只顯示看過的限時動態
 The Stories tray keeps only the stories you've already watched, so you can find one again. Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when Facebook next loads the tray.	限時動態列只保留你已經看過的限時動態，方便你再找到某一則。關閉後即可看到新的。開啟時「隱藏已看過的限時動態」會暫停。在 Facebook 下次載入限時動態列時生效。
+Show Posts in search	在搜尋中顯示貼文
+Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	把「貼文」放回搜尋結果上方的那一列，排在 Reels 之後，讓你只看和搜尋內容相關的貼文。

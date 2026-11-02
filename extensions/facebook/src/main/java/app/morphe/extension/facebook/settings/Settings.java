@@ -1771,6 +1771,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_search_date_range", FALSE);
 
     /**
+     * The Posts chip goes back in the row over search results, after Reels, and Facebook builds it
+     * like its other tabs ({@link app.morphe.extension.facebook.search.SearchPostsTab}, #339). On by
+     * default: it only adds the chip Facebook stopped listing.
+     */
+    public static final BooleanSetting SEARCH_POSTS_TAB =
+            new BooleanSetting("hushfacebook_search_posts_tab", TRUE);
+
+    /**
      * The For you section of searches Facebook suggests, on the search screen before anything is
      * typed (#80), found by the module name Facebook gives its entry. Recent searches, the search box
      * and the suggestions while typing stay. Part of Hide suggested and promoted posts, off until picked.

@@ -113,6 +113,7 @@ public final class FamilyNames {
     public static final String META_AI_SEARCH = "Hide Meta AI in search";
     public static final String SEARCH_HISTORY = "Don't save search history";
     public static final String SEARCH_DATE_RANGE = "Search date range";
+    public static final String SEARCH_POSTS_TAB = "Search posts tab";
     public static final String PROMO_NOTIFICATIONS = "Block promotional notifications";
     public static final String AD_PREFETCH = "Block background ad prefetch";
     public static final String AD_TELEMETRY = "Block ad telemetry";

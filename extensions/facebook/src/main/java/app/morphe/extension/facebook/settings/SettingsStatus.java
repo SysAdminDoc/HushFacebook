@@ -442,6 +442,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean searchPostsTab() {
+        return false;
+    }
+
     public static boolean menuSettingsRow() {
         return false;
     }
