@@ -23,6 +23,8 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.facebook.inspiration.activity.InspirationCameraActivity;
 
 import org.junit.After;
@@ -241,6 +243,56 @@ public class BurnInGuardTest {
         } finally {
             story.close();
         }
+    }
+
+    /**
+     * A wide video opened from the feed plays small on a page of Facebook's full-screen viewer, a page
+     * the pager's own size, and the same video in a post of the feed is left alone (#370). The pager
+     * is a list holding just that video, so it doesn't scroll (585 on the emulator).
+     */
+    @Test
+    public void aWideVideoOnAFullScreenViewerPageDimsAndInAPostDoesnt() {
+        FrameLayout screen = new FrameLayout(activity);
+        activity.setContentView(screen);
+        RecyclerView pagerView = new RecyclerView(activity, false);
+        screen.addView(pagerView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout onePage = new FrameLayout(activity);
+        pagerView.addView(onePage, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        TextureView wide = new TextureView(activity);
+        place(onePage, wide, 0, H / 3, W, H / 3 + W * 9 / 16);
+        View share = button(onePage, W - 140, H - 600, W - 20, H - 480);
+        View bar = new View(activity);
+        place(screen, bar, 0, 0, W, 150);
+        layout();
+        View decor = activity.getWindow().getDecorView();
+        Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+
+        assertSame("the page is the viewer's own size", wide, BurnInGuard.reelOf(decor));
+        BurnInGuard.resumed(activity);
+        after(IDLE + 100);
+        assertEquals("the viewer's buttons", BurnInGuard.IDLE_LEVEL, share.getAlpha(), 0f);
+        assertEquals("the viewer's top bar", BurnInGuard.IDLE_LEVEL, bar.getAlpha(), 0f);
+        assertEquals("the video", 1f, wide.getAlpha(), 0f);
+
+        // A post in the feed: a page of the list, shorter than it.
+        BurnInGuard.paused(activity);
+        onePage.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (H * 0.8f)));
+        layout();
+        assertNull(BurnInGuard.reelOf(decor));
+        BurnInGuard.resumed(activity);
+        after(IDLE * 3);
+        assertEquals("a post's buttons", 1f, share.getAlpha(), 0f);
+        assertEquals("the feed's top bar", 1f, bar.getAlpha(), 0f);
+
+        // The same page in a frame that's neither a list nor scrolls isn't a viewer's page.
+        BurnInGuard.paused(activity);
+        screen.removeView(pagerView);
+        pagerView.removeView(onePage);
+        FrameLayout frame = new FrameLayout(activity);
+        screen.addView(frame, 0, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        frame.addView(onePage, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        layout();
+        assertNull("a frame the page's size", BurnInGuard.reelOf(decor));
     }
 
     @Test
