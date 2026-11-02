@@ -373,12 +373,13 @@ public class FeedVideoAloneTest {
 
     /**
      * #237: a page's video post opens the reels viewer, then the Warion viewer, and only then does the
-     * viewer's data source ask its seed check (584 emulator 2026-10-27). A yes there skipped the first
-     * page that brings the video in, and the viewer stood empty about half a second longer than with
-     * the switch off. Its data source keeps Facebook's answer; its feed and list are still held.
+     * viewer's data source ask its seed check (584 emulator 2026-10-27). Its first ask keeps
+     * Facebook's answer so the video loads, as a reel's does, and every later one gets the yes: with
+     * Facebook's answer on every ask, a group's video post opened from the home feed, and an anonymous
+     * member's in a group, led to the next video a swipe away (2026-11-02).
      */
     @Test
-    public void aFeedsOrdinaryVideoReachesItsViewerWithoutTheSeedCheck() {
+    public void aFeedsOrdinaryVideoGetsTheSeedCheckLikeAReel() {
         Object reels = new Object();
         FeedVideoAlone.originForTests = params -> params == reels ? origin("user_timeline::fb_shorts_viewer") : null;
         FeedVideoAlone.reelsViewerOpening(origin("user_timeline::feed_story"));
@@ -387,41 +388,31 @@ public class FeedVideoAloneTest {
         FeedVideoAlone.warionOpening(viewer, true);
         clock.addAndGet(50);
         Object source = new Object();
-        assertFalse("the video's data source shows its first page", FeedVideoAlone.seedOnly(source));
+        assertFalse("the video's data source starts loading it on its first ask", FeedVideoAlone.seedCheck(source));
+        assertTrue("its next ask keeps the video alone", FeedVideoAlone.seedCheck(source));
         clock.addAndGet(150);
         Object feed = new Object();
-        assertTrue("its feed still gets no more reels", FeedVideoAlone.holdsBack(feed));
+        assertTrue("its feed gets no more reels", FeedVideoAlone.holdsBack(feed));
         assertFalse("and its list no loading page", FeedVideoAlone.moreReelsComing(true, reels));
         clock.addAndGet(60_000);
-        assertFalse("the data source asking later, the viewer still open", FeedVideoAlone.seedOnly(source));
-        assertFalse("and through its seed check", FeedVideoAlone.seedCheck(source));
+        assertTrue("the data source asking later, the viewer still open", FeedVideoAlone.seedCheck(source));
         assertTrue(FeedVideoAlone.holdsBack(feed));
-        assertTrue("another object in that viewer still holds", FeedVideoAlone.seedOnly(new Object()));
         assertTrue(statusLine(), statusLine().contains(FeedVideoAlone.OPENED + " 1"));
 
+        for (String post : new String[]{"newsfeed::feed_story", "newsfeed::multimedia_post", "group::feed_story",
+                "group::multimedia_post", "group::fb_shorts_creation_feed_unit", "group::fb_shorts_reshare_feed_unit"}) {
+            FeedVideoAlone.warionClosed(viewer);
+            clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
+            FeedVideoAlone.reelsViewerOpening(origin(post));
+            viewer = new Object();
+            FeedVideoAlone.warionOpening(viewer, true);
+            Object postSource = new Object();
+            assertFalse(post + ": the first ask loads the video", FeedVideoAlone.seedCheck(postSource));
+            assertTrue(post + ": the next one keeps it alone", FeedVideoAlone.seedCheck(postSource));
+            assertTrue(post + ": its feed gets no more reels", FeedVideoAlone.holdsBack(new Object()));
+        }
+
         FeedVideoAlone.warionClosed(viewer);
-        FeedVideoAlone.reelsViewerOpening(origin("group::feed_story"));
-        Object groupSource = new Object();
-        assertFalse("a group's video post too", FeedVideoAlone.seedOnly(groupSource));
-        assertTrue("the tap is left for the player's feed", FeedVideoAlone.holdsBack(new Object()));
-        assertFalse(FeedVideoAlone.seedOnly(groupSource));
-
-        clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
-        FeedVideoAlone.reelsViewerOpening(origin("group::multimedia_post"));
-        Object postSource = new Object();
-        assertFalse("a group's video post opened from the group itself", FeedVideoAlone.seedOnly(postSource));
-        assertTrue("its feed still gets no more reels", FeedVideoAlone.holdsBack(new Object()));
-        assertFalse(FeedVideoAlone.seedOnly(postSource));
-
-        clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
-        FeedVideoAlone.reelsViewerOpening(origin("group::fb_shorts_creation_feed_unit"));
-        assertTrue("a reel posted in the group itself shows alone, its first page carrying the next reel (#237)",
-                FeedVideoAlone.seedOnly(new Object()));
-
-        clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
-        FeedVideoAlone.reelsViewerOpening(origin("group::fb_shorts_reshare_feed_unit"));
-        assertTrue("a feed reel's data source still shows its reel alone", FeedVideoAlone.seedOnly(new Object()));
-
         clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
         FeedVideoAlone.reelsViewerOpening(origin("newsfeed::feed_story"));
         FeedVideoAlone.warionOpening(new Object(), true);

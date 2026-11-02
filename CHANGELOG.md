@@ -5,6 +5,7 @@ Changes in each Hushfacebook version, newest first.
 ## Unreleased
 
 * **Facebook:** New `Restore feed sound after opened videos` under Video and audio. A video you open from the feed still plays with its sound, but once you go back the feed's sound is what it was before, even after a long watch. Before, watching a while with sound left every feed video playing out loud. Works with `Keep feed videos muted` on or off, and it starts off. (#350)
+* **Facebook:** `Open feed videos on their own` now also holds group videos that Facebook opens as a regular video post, like one from an anonymous group member or a group video you open from your home feed. Swiping up from them used to reach the next video. (#237)
 * **Facebook:** New `Only reels from accounts I follow` switch under Reels and Watch, part of `Clean up Reels`. The Reels tab then keeps reels from people and Pages you follow and skips the ones Facebook would show a Follow button on. It can take a little longer to fill, and it starts off. (#349)
 * **Facebook:** `Hide suggested groups` takes the "Suggested for you" groups card off the Groups tab as well, not just off Home. (#347)
 * **Facebook:** `Hide the top right buttons on opened videos` takes Search and the profile button off the top of the Reels tab too. Menu stays where it is. (#346)
