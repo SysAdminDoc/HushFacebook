@@ -65,6 +65,7 @@ public class SuggestedStoriesTest {
         Settings.HIDE_STORY_PROMPTS.resetToDefault();
         Settings.HIDE_PAGE_STORIES.resetToDefault();
         Settings.HIDE_SEEN_STORIES.resetToDefault();
+        Settings.SHOW_ONLY_WATCHED_STORIES.resetToDefault();
         SuggestedStoriesForTests.peopleYouMayKnowInBuild(null);
         FeedFilterCounters.clear();
         HookStatus.clear();
@@ -578,7 +579,7 @@ public class SuggestedStoriesTest {
     public void switchesNotReadArentCalledOff() {
         assertEquals(" (switches not read)", SuggestedStories.Switches.NONE.offNote());
         assertEquals(" (off: suggested, contact import card)",
-                new SuggestedStories.Switches(false, false, false, false, false, false).offNote());
+                new SuggestedStories.Switches(false, false, false, false, false, false, false).offNote());
     }
 
     @Test
@@ -591,6 +592,9 @@ public class SuggestedStoriesTest {
         Settings.HIDE_SEEN_STORIES.save(true);
         assertTrue(SuggestedStoriesForTests.hidesPageStories());
         assertTrue(SuggestedStoriesForTests.hidesSeenStories());
+        assertFalse("Show only watched stories starts off", SuggestedStoriesForTests.keepsOnlyWatchedStories());
+        Settings.SHOW_ONLY_WATCHED_STORIES.save(true);
+        assertTrue(SuggestedStoriesForTests.keepsOnlyWatchedStories());
     }
 
     /**
@@ -645,6 +649,49 @@ public class SuggestedStoriesTest {
         assertEquals(Arrays.asList(create, self, fresh, card), SuggestedStoriesForTests.keptBuckets(tray));
         assertTrue(counterLine(), counterLine().contains("Last reason: " + SuggestedStories.SEEN + "."));
         assertTrue(counterLine(), counterLine().contains("Removed: " + SuggestedStories.SEEN + " 2."));
+    }
+
+    /**
+     * Issue #340: with Show only watched stories on, the tray keeps only the stories you've watched
+     * to the end, a person's or a Page's, suggested or not, so one can be found again. The Add to
+     * story tiles and the cards stay, and Hide seen stories waits while it's on.
+     */
+    @Test
+    public void onlyWatchedStoriesStayWithTheirSwitch() {
+        assertFalse("the switch starts off", Settings.SHOW_ONLY_WATCHED_STORIES.get());
+        Bucket fresh = new Bucket(false, null).ownedBy("User");
+        Bucket watched = new Bucket(false, Label.FAMILY).ownedBy("User").watched();
+        Bucket page = new Bucket(false, null).ownedBy(SuggestedStories.PAGE_OWNER);
+        Bucket watchedPage = new Bucket(false, null).ownedBy(SuggestedStories.PAGE_OWNER).watched();
+        Bucket suggested = new Bucket(true, null).ownedBy("User");
+        Bucket create = new Bucket(false, null, Type.ADD_TO_STORY);
+        Bucket self = new Bucket(false, null, Type.ADD_TO_STORY_SELF_VIEW);
+        Bucket card = new Bucket(false, null, Type.CONTACT_IMPORTER_STORY);
+        List<Bucket> tray = Arrays.asList(create, self, fresh, watched, page, watchedPage, suggested, card);
+        Settings.HIDE_SUGGESTED_STORIES.save(false);
+        Settings.HIDE_CONTACT_IMPORT_CARD.save(false);
+        assertSame("off, Facebook's tray", tray, SuggestedStoriesForTests.keptBuckets(tray));
+
+        Settings.SHOW_ONLY_WATCHED_STORIES.save(true);
+        Settings.HIDE_SEEN_STORIES.save(true);
+        assertEquals("Hide seen stories didn't wait", Arrays.asList(create, self, watched, watchedPage, card),
+                SuggestedStoriesForTests.keptBuckets(tray));
+        assertTrue(counterLine(), counterLine().contains("Last reason: " + SuggestedStories.UNWATCHED + "."));
+        assertTrue(counterLine(), counterLine().contains("Removed: " + SuggestedStories.UNWATCHED + " 3."));
+
+        // Off again, Hide seen stories takes its turn.
+        Settings.SHOW_ONLY_WATCHED_STORIES.save(false);
+        assertEquals(Arrays.asList(create, self, fresh, page, suggested, card), SuggestedStoriesForTests.keptBuckets(tray));
+    }
+
+    /** A build where the patch couldn't fill the seen stub: with Show only watched stories on, every bucket stays. */
+    @Test
+    public void anUnreadableSeenFlagKeepsTheBucketWithOnlyWatchedOn() {
+        List<Bucket> tray = Arrays.asList(new Bucket(false, null).ownedBy("User"),
+                new Bucket(false, null).ownedBy("User").watched());
+        Settings.SHOW_ONLY_WATCHED_STORIES.save(true);
+        assertSame(tray, SuggestedStories.keptBuckets(tray, typeReadBy(SuggestedStoriesForTests.STAND_IN::type)));
+        assertTrue(statusLine(), statusLine().endsWith(" 1 missing. First missing: method tray bucket#" + SuggestedStories.SEEN_FIELD));
     }
 
     /**

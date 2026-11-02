@@ -605,6 +605,11 @@ final class FeedPages {
                 stories.addPreference(toggle(context, Settings.HIDE_SEEN_STORIES,
                         L10n.t("Stories you've already watched leave the Stories tray until there's a new one. Applies when "
                                 + "Facebook next loads the tray.")));
+                // The other way round, so the tray flips between the two with one switch (#340).
+                stories.addPreference(toggle(context, Settings.SHOW_ONLY_WATCHED_STORIES,
+                        L10n.t("The Stories tray keeps only the stories you've already watched, so you can find one again. "
+                                + "Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when "
+                                + "Facebook next loads the tray.")));
             }
             if (build.contains(PatchFamily.STORY_AUTO_ADVANCE)) {
                 stories.addPreference(toggle(context, Settings.BLOCK_STORY_AUTO_ADVANCE,

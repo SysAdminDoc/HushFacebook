@@ -367,6 +367,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_seen_stories", FALSE);
 
     /**
+     * The other way round from {@link #HIDE_SEEN_STORIES} (#340): the Stories tray keeps only the
+     * buckets you've watched, and Hide seen stories waits while this is on. Off until you turn it on.
+     */
+    public static final BooleanSetting SHOW_ONLY_WATCHED_STORIES =
+            new BooleanSetting("hushfacebook_show_only_watched_stories", FALSE);
+
+    /**
      * The cards beside Create story in the Stories tray that suggest a story to make, such as
      * "Share music you love": the tray's fetch asks the server to leave out their list,
      * skip_srtt_item_list, as Facebook does for the Video tab's tray. Off until you turn it on.

@@ -198,4 +198,12 @@ public final class SuggestedStoriesForTests {
         Object kept = keptBuckets(tray);
         return kept != tray && Collections.singletonList(fresh).equals(kept);
     }
+
+    /** A tray of a story not watched yet and one watched to the end. True when only the watched one stayed (#340). */
+    public static boolean keepsOnlyWatchedStories() {
+        Bucket watched = new Bucket(false, null).ownedBy("User").watched();
+        List<Bucket> tray = Arrays.asList(new Bucket(false, null).ownedBy("User"), watched);
+        Object kept = keptBuckets(tray);
+        return kept != tray && Collections.singletonList(watched).equals(kept);
+    }
 }

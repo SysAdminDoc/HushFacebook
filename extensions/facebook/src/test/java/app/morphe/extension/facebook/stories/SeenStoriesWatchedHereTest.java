@@ -172,6 +172,23 @@ public class SeenStoriesWatchedHereTest {
                 line(FamilyNames.SUGGESTED_STORIES, HookStatus.report()).endsWith(" 0 missing"));
     }
 
+    /** With Show only watched stories on (#340), a bucket watched to the end here is one it keeps. */
+    @Test
+    public void aBucketWatchedToTheEndHereStaysWithOnlyWatchedOn() {
+        watch(new Played("b1", "s1", "s2"), "s1", "s2");
+        watch(new Played("b2", "s1", "s2"), "s1");
+        Tree watched = postedHoursAgo("b1", 3);
+        List<Tree> tray = Arrays.asList(postedHoursAgo("b2", 3), watched, postedHoursAgo("b3", 3));
+        Settings.SHOW_ONLY_WATCHED_STORIES.save(true);
+        try {
+            assertEquals(Collections.singletonList(watched), kept(tray));
+            String counters = line(SuggestedStories.ROUTE, FeedFilterCounters.report());
+            assertTrue(counters, counters.contains("Removed: " + SuggestedStories.UNWATCHED + " 2."));
+        } finally {
+            Settings.SHOW_ONLY_WATCHED_STORIES.resetToDefault();
+        }
+    }
+
     @Test
     public void aBucketWatchedPartwayStays() {
         watch(new Played("b1", "s1", "s2", "s3"), "s1", "s2");

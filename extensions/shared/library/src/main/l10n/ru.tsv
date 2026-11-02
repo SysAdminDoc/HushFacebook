@@ -2472,3 +2472,5 @@ In this order: %1$s. Facebook opens on the first one. Restart Facebook after you
 Tap a tab to move it up	Нажмите на вкладку, чтобы поднять её выше
 Your tab bar will keep Facebook's order.	Панель вкладок сохранит порядок Facebook.
 Your tab bar will go in this order: %1$s.	Вкладки на панели пойдут в таком порядке: %1$s.
+Show only watched stories	Показывать только просмотренные Истории
+The Stories tray keeps only the stories you've already watched, so you can find one again. Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when Facebook next loads the tray.	В ленте Историй остаются только те, что вы уже посмотрели, чтобы можно было найти нужную. Выключите, чтобы видеть новые. Пока это включено, «Скрывать просмотренные Истории» не действует. Сработает, когда Facebook снова загрузит ленту.

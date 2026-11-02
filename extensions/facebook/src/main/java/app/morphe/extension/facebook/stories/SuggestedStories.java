@@ -49,7 +49,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * so none of them goes as seen. That flag comes from the servers, which never hear of a story
  * watched with View stories anonymously on, so a bucket whose flag is false also goes as seen when
  * it was watched to the end on this phone after its newest story was posted, by its id and
- * expiration_time ({@link StorySeen#trayWatchedHere}, #218).
+ * expiration_time ({@link StorySeen#trayWatchedHere}, #218). Show only watched stories turns that
+ * round: a story whose flag reads false and that wasn't watched here goes, and Hide seen stories
+ * waits while it's on (#340). A bucket whose flag can't be read stays either way.
  *
  * <p>Nothing else counts, so a friend's story, a Page you follow, your own story, a friend
  * request and anything that isn't a bucket or whose type isn't one of those stay.
@@ -112,6 +114,9 @@ public final class SuggestedStories {
 
     /** What a story that left the tray because you watched it is counted under. */
     static final String SEEN = "seen";
+
+    /** What a story that left the tray because you haven't watched it yet is counted under (#340). */
+    static final String UNWATCHED = "not watched yet";
 
     /** Debug intake is bounded and never expands an enum constant into a person's bucket fields. */
     private static final int TYPE_DIAGNOSTIC_ITEMS = 256;
@@ -231,7 +236,7 @@ public final class SuggestedStories {
     /** Which kinds leave the tray, read once for each tray. */
     static final class Switches {
         /** Before the settings are ready, or when they can't be read: every bucket stays. */
-        static final Switches NONE = new Switches(false, false, false, false, false, false);
+        static final Switches NONE = new Switches(false, false, false, false, false, false, false);
 
         final boolean suggested;
         /** Whether the People you may know switch is in this build at all. */
@@ -239,16 +244,20 @@ public final class SuggestedStories {
         final boolean peopleYouMayKnow;
         final boolean contactImport;
         final boolean pageStories;
+        /** Hide seen stories, which waits while Show only watched stories is on. */
         final boolean seenStories;
+        /** Show only watched stories (#340). */
+        final boolean onlyWatched;
 
         Switches(boolean suggested, boolean peopleYouMayKnowInBuild, boolean peopleYouMayKnow, boolean contactImport,
-                boolean pageStories, boolean seenStories) {
+                boolean pageStories, boolean seenStories, boolean onlyWatched) {
             this.suggested = suggested;
             this.peopleYouMayKnowInBuild = peopleYouMayKnowInBuild;
             this.peopleYouMayKnow = peopleYouMayKnowInBuild && peopleYouMayKnow;
             this.contactImport = contactImport;
             this.pageStories = pageStories;
-            this.seenStories = seenStories;
+            this.seenStories = seenStories && !onlyWatched;
+            this.onlyWatched = onlyWatched;
         }
 
         /** Whether a bucket of this kind leaves the tray. */
@@ -262,8 +271,17 @@ public final class SuggestedStories {
 
         /** Whether a bucket of this kind leaves once you've watched it: a story, whoever posted it. */
         boolean leavesSeen(String kind) {
-            return seenStories && (SUGGESTED.equals(kind) || LABELLED_SUGGESTED.equals(kind)
-                    || PAGE_STORY.equals(kind) || NOT_SUGGESTED.equals(kind));
+            return seenStories && story(kind);
+        }
+
+        /** Whether a bucket of this kind leaves while you haven't watched it, with Show only watched stories on. */
+        boolean leavesUnwatched(String kind) {
+            return onlyWatched && story(kind);
+        }
+
+        private static boolean story(String kind) {
+            return SUGGESTED.equals(kind) || LABELLED_SUGGESTED.equals(kind) || PAGE_STORY.equals(kind)
+                    || NOT_SUGGESTED.equals(kind);
         }
 
         /**
@@ -315,7 +333,8 @@ public final class SuggestedStories {
                 kinds.add(kind);
                 FeedFilterCounters.sawKind(ROUTE, kind);
                 String leaving = switches.leaves(kind) ? kind
-                        : switches.leavesSeen(kind) && watched(bucket, access) ? SEEN : null;
+                        : switches.leavesSeen(kind) && watched(bucket, access) ? SEEN
+                        : switches.leavesUnwatched(kind) && unwatched(bucket, access) ? UNWATCHED : null;
                 if (leaving != null) {
                     if (kept == null) {
                         kept = new ArrayList<>(buckets.size());
@@ -494,9 +513,24 @@ public final class SuggestedStories {
      * says no. Never throws.
      */
     static boolean watched(Object bucket, Buckets access) {
+        return Boolean.TRUE.equals(watchedOrNot(bucket, access));
+    }
+
+    /**
+     * Whether you haven't watched a bucket's stories yet, for Show only watched stories (#340): its
+     * flag reads false and it wasn't watched here. The Add to story tile and a bucket whose flag
+     * can't be read aren't, so they stay. Never throws.
+     */
+    static boolean unwatched(Object bucket, Buckets access) {
+        return Boolean.FALSE.equals(watchedOrNot(bucket, access));
+    }
+
+    /** {@link #watched}'s answer, or null for the Add to story tile and a flag it can't read. */
+    @Nullable
+    private static Boolean watchedOrNot(Object bucket, Buckets access) {
         try {
             Object type = access.type(bucket);
-            if (type instanceof Enum && ((Enum<?>) type).name().startsWith(ADD_TO_STORY_TYPE)) return false;
+            if (type instanceof Enum && ((Enum<?>) type).name().startsWith(ADD_TO_STORY_TYPE)) return null;
         } catch (Throwable ignored) {
             // cardKind already reported this read, and the flag still answers.
         }
@@ -505,13 +539,13 @@ public final class SuggestedStories {
             seen = access.seen(bucket);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "bucket seen flag", failure);
-            return false;
+            return null;
         }
         if (seen == UNPATCHED) {
             HookStatus.missingMember(FamilyNames.SUGGESTED_STORIES, "method", "tray bucket", SEEN_FIELD);
-            return false;
+            return null;
         }
-        if (!(seen instanceof Boolean)) return false;
+        if (!(seen instanceof Boolean)) return null;
         HookStatus.bound(FamilyNames.SUGGESTED_STORIES, "tray bucket#" + SEEN_FIELD);
         return (Boolean) seen || watchedHere(bucket, access);
     }
@@ -699,7 +733,8 @@ public final class SuggestedStories {
             if (!Utils.settingsReady()) return Switches.NONE;
             return new Switches(Settings.HIDE_SUGGESTED_STORIES.get(), peopleYouMayKnowInBuild(),
                     Settings.HIDE_PEOPLE_YOU_MAY_KNOW.get(), Settings.HIDE_CONTACT_IMPORT_CARD.get(),
-                    Settings.HIDE_PAGE_STORIES.get(), Settings.HIDE_SEEN_STORIES.get());
+                    Settings.HIDE_PAGE_STORIES.get(), Settings.HIDE_SEEN_STORIES.get(),
+                    Settings.SHOW_ONLY_WATCHED_STORIES.get());
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "switch read", failure);
             return Switches.NONE;

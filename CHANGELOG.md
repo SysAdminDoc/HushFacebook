@@ -27,6 +27,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** With `View stories anonymously` on, `Hide seen stories` also takes out a story you watched to the end on this phone. Facebook never hears about those views, so it kept calling them unseen and they stayed in the tray. The story comes back when that person posts a new one. (#218)
 * **Facebook:** With `Select part of a post's text` on, holding a post's text only opens the box now. It doesn't also copy the whole text, so whatever you had on the clipboard stays there, and Facebook's "Text copied to clipboard" message no longer pops up for it. The box has a Copy all button for when you do want all of it. (#342)
 * **Facebook:** New `Tab order` row under Tabs and navigation, next to the Hide tabs switches. Tap a tab in its list to move it up, then save and restart Facebook. Facebook opens on whichever tab you put first, unless `Open on a chosen tab` says otherwise. The order goes in settings backups too. (#341)
+* **Facebook:** New `Show only watched stories` switch under Stories. The Stories tray then keeps only the stories you've already watched, so you can find one again, and you turn it off to get the new ones back. `Hide seen stories` waits while it's on. It starts off. (#340)
 
 ## 0.20.0 (2026-11-01)
 

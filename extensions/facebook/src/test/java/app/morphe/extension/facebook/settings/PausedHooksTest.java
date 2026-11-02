@@ -264,6 +264,18 @@ public class PausedHooksTest {
         boolean changedFacebook();
     }
 
+    /** A Stories tray probe run with Show only watched stories off, which would take its friend's unwatched story too. */
+    private static Probe allStories(Probe probe) {
+        return () -> {
+            Settings.SHOW_ONLY_WATCHED_STORIES.save(false);
+            try {
+                return probe.changedFacebook();
+            } finally {
+                Settings.SHOW_ONLY_WATCHED_STORIES.save(true);
+            }
+        };
+    }
+
     private static final String AD = AdBase.class.getName();
 
     /** A reel overlay call-to-action kind named like Facebook's storefront card. */
@@ -527,8 +539,10 @@ public class PausedHooksTest {
         probes.put(PatchFamily.SPONSORED_STORIES, Collections.singletonList(FeedFilter::hideSponsoredStories));
         // A tray of a friend's bucket, a suggested one and one labelled SUGGESTED keeps only the friend's,
         // a Page's bucket leaves it, and so does a bucket you've watched.
-        probes.put(PatchFamily.SUGGESTED_STORIES, Arrays.asList(SuggestedStoriesForTests::hidesSuggestions,
-                SuggestedStoriesForTests::hidesPageStories, SuggestedStoriesForTests::hidesSeenStories));
+        // With Show only watched stories on, the tray keeps only what you've watched (#340).
+        probes.put(PatchFamily.SUGGESTED_STORIES, Arrays.asList(allStories(SuggestedStoriesForTests::hidesSuggestions),
+                allStories(SuggestedStoriesForTests::hidesPageStories), allStories(SuggestedStoriesForTests::hidesSeenStories),
+                SuggestedStoriesForTests::keepsOnlyWatchedStories));
         probes.put(PatchFamily.STORY_AUTO_ADVANCE, Arrays.asList(StoryAdvance::waitForTap, StoryAdvance::loop));
         // The story viewer's report of the stories you viewed goes out whole, and with Mark as seen
         // on a marked card goes alone and the button follows the card on screen.
