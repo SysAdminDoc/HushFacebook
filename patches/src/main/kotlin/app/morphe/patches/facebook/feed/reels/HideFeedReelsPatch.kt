@@ -81,7 +81,7 @@ val hideFeedReelsPatch = bytecodePatch(
         "the feed sticks to posts. A reel a friend posts stays. Starts off. Turn it on in Hushfacebook settings " +
         "> News feed.",
 ) {
-    category("Feed")
+    category("Reels")
     dependsOn(settingsPatch)
     dependsOn(feedFilterHookPatch)
     compatibleWith(*AppCompatibilities.facebook())
