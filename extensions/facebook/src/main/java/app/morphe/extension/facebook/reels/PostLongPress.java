@@ -129,6 +129,10 @@ public final class PostLongPress {
     private static float downX;
     private static float downY;
     private static int slop;
+    /** When, in uptime, the press being timed went down. */
+    private static long downAt;
+    /** How much sooner than this press's timer, in milliseconds, Facebook's own long press may run. */
+    static final long HELD_SLACK = 100L;
     private static boolean timing;
     /** The press opened comments, so every later event of the gesture becomes a cancel. */
     private static boolean swallowing;
@@ -173,6 +177,7 @@ public final class PostLongPress {
             pressedRoot = new WeakReference<>(root);
             downX = event.getRawX();
             downY = event.getRawY();
+            downAt = event.getDownTime();
             slop = ViewConfiguration.get(root.getContext()).getScaledTouchSlop();
             timing = true;
             main().postDelayed(FIRE, ViewConfiguration.getLongPressTimeout());
@@ -342,6 +347,15 @@ public final class PostLongPress {
         Logger.printDebug(() -> "Feed long press: " + why + ", at "
                 + (under == null ? "nothing" : under.getClass().getName() + " " + under.getWidth() + "x" + under.getHeight()
                 + (under.isLongClickable() ? " long-clickable" : "")));
+    }
+
+    /**
+     * Whether the press being timed is still down and has been for about the long-press time.
+     * Facebook's own long press on a post's text can copy it just before this press's timer arms
+     * the box, and that copy belongs to the hold all the same.
+     */
+    static boolean heldLong() {
+        return timing && SystemClock.uptimeMillis() - downAt >= ViewConfiguration.getLongPressTimeout() - HELD_SLACK;
     }
 
     private static void stop() {

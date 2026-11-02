@@ -2210,9 +2210,11 @@ Show the post date on reels	Показывать дату публикации �
 Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.	Показывает дату публикации Reels или видео, открытого в полноэкранном режиме, под именем автора. Изменение применяется начиная со следующего Reels.
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	Оставляет кнопку «Комментировать» в Reels, где комментарии отключены, чтобы вы могли читать уже существующие комментарии. Изменение применяется начиная со следующего Reels.
 Select part of a post's text	Выбирать часть текста публикации
-Holding a post's text still copies all of it, and also opens the text in a box where you can select just the part you want and copy that.	Долгое нажатие на текст публикации по-прежнему копирует его целиком, а также открывает текст в окне, где можно выделить и скопировать только нужную часть.
+Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	Удержание текста публикации открывает его в окне, где можно выделить только нужную часть и скопировать её или скопировать всё. Само удержание ничего не копирует.
 Select text	Выбрать текст
 Done	Готово
+Copy all	Копировать всё
+Copied	Скопировано
 Oldest	Сначала старые
 Comments open oldest first, on every post. Facebook's sort menu then shows All comments.	Комментарии ко всем публикациям открываются сначала с самых старых. В меню сортировки Facebook после этого показывается вариант «Все комментарии».
 Comments will open oldest first.	Комментарии будут открываться начиная с самых старых.

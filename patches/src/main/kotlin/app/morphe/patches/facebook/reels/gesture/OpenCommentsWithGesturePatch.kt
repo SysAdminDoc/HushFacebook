@@ -85,7 +85,9 @@ val openCommentsWithGesturePatch = bytecodePatch(
         // instruction changes. A build that fails anywhere in the find phase is refused untouched.
         requireStatusMethod("reelGestures")
         val anchors = findGestureAnchors()
+        val clipboardWriters = clipboardWriters()
         applyGestureAnchors(anchors)
+        sendClipboardWrites(clipboardWriters)
         enableStatus("reelGestures")
     }
 }

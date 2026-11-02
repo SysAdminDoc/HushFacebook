@@ -126,9 +126,15 @@ public class PostTextSelectTest {
         return deliver(event(MotionEvent.ACTION_UP));
     }
 
+    /** Facebook's copy of [what], made through the stand-in the patch puts in place of its clipboard writes. */
     private void copy(String what) {
-        clipboard.setPrimaryClip(ClipData.newPlainText("post", what));
+        PostTextSelect.copy(clipboard, ClipData.newPlainText("post", what));
         waitFor(0);
+    }
+
+    private String onClipboard() {
+        CharSequence held = PostTextSelect.textOf(clipboard.getPrimaryClip());
+        return held == null ? null : held.toString();
     }
 
     /** The first text in [view] that can be selected, or null. */
@@ -197,6 +203,70 @@ public class PostTextSelectTest {
 
         copy("copied again with no hold");
         assertNull("a copy with no hold opens nothing", PostTextSelect.shownDialog());
+        assertEquals("a copy with no hold reaches the clipboard", "copied again with no hold", onClipboard());
+    }
+
+    @Test
+    public void theHoldsCopyOpensTheBoxWithoutReachingTheClipboard() {
+        clipboard.setPrimaryClip(ClipData.newPlainText("earlier", "a link I copied earlier"));
+        hold();
+        copy(POST);
+        assertNotNull("the copy opened the box", PostTextSelect.shownDialog());
+        assertEquals("the clipboard keeps what it held (#342)", "a link I copied earlier", onClipboard());
+        assertTrue(statusLine(), statusLine().contains(PostTextSelect.KEPT_OFF + " 1"));
+    }
+
+    @Test
+    public void aCopyThatLandsBeforeTheHoldsTimerStillOpensTheBoxAndKeepsOffTheClipboard() {
+        clipboard.setPrimaryClip(ClipData.newPlainText("earlier", "kept"));
+        deliver(event(MotionEvent.ACTION_DOWN));
+        waitFor(ViewConfiguration.getLongPressTimeout() - PostLongPress.HELD_SLACK + 10L);
+        copy(POST);
+        AlertDialog box = PostTextSelect.shownDialog();
+        assertNotNull("Facebook's copy beat our timer and still opened the box", box);
+        assertEquals("kept", onClipboard());
+
+        waitFor(200);
+        deliver(event(MotionEvent.ACTION_UP));
+        assertFalse("the timer that ran out after didn't arm the box again", statusLine().contains(PostTextSelect.ARMED));
+        box.dismiss();
+        copy("copied from inside the box");
+        assertNull(PostTextSelect.shownDialog());
+        assertEquals("copied from inside the box", onClipboard());
+    }
+
+    @Test
+    public void aShortTapsCopyGoesToTheClipboard() {
+        deliver(event(MotionEvent.ACTION_DOWN));
+        waitFor(100);
+        copy("picked from a menu");
+        assertNull(PostTextSelect.shownDialog());
+        assertEquals("picked from a menu", onClipboard());
+        deliver(event(MotionEvent.ACTION_UP));
+    }
+
+    @Test
+    public void copyAllPutsTheWholeTextOnTheClipboardAndOpensNothingAgain() {
+        hold();
+        copy(POST);
+        AlertDialog box = PostTextSelect.shownDialog();
+        assertNotNull(box);
+        assertTrue("the box has Copy all", box.getButton(AlertDialog.BUTTON_NEUTRAL).performClick());
+        waitFor(0);
+        assertEquals(POST, onClipboard());
+        assertTrue(statusLine(), statusLine().contains(PostTextSelect.COPIED_ALL + " 1"));
+        assertNull("Copy all closed the box and opened no other", PostTextSelect.shownDialog());
+        assertTrue("opened once", statusLine().contains(PostTextSelect.OPENED + " 1"));
+    }
+
+    @Test
+    public void aCopyThatSkipsTheStandInStillOpensTheBoxOnceItLands() {
+        hold();
+        clipboard.setPrimaryClip(ClipData.newPlainText("post", POST));
+        waitFor(0);
+        AlertDialog box = PostTextSelect.shownDialog();
+        assertNotNull("the clipboard's listener opened the box", box);
+        assertEquals(POST, selectable(box.getWindow().getDecorView()).getText().toString());
     }
 
     @Test
@@ -215,8 +285,9 @@ public class PostTextSelectTest {
         Settings.SELECT_POST_TEXT.save(true);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         hold();
-        copy(POST);
+        copy("paused copy");
         assertNull("paused", PostTextSelect.shownDialog());
+        assertEquals("a copy that opens nothing reaches the clipboard", "paused copy", onClipboard());
         assertEquals("Facebook's copy ran every time", List.of("copy", "copy", "copy"), facebook);
     }
 

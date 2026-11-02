@@ -315,8 +315,8 @@ final class FeedPages {
             if (build.contains(PatchFamily.REEL_GESTURES)) {
                 // Read on each long press, so a change shows on the next one.
                 feed.addPreference(toggle(context, Settings.SELECT_POST_TEXT,
-                        L10n.t("Holding a post's text still copies all of it, and also opens the text in a box where you "
-                                + "can select just the part you want and copy that.")));
+                        L10n.t("Holding a post's text opens it in a box where you can select just the part you want "
+                                + "and copy that, or copy all of it. The hold itself copies nothing.")));
             }
             if (build.contains(PatchFamily.WHO_SHARED)) {
                 feed.addPreference(toggle(context, Settings.SEE_WHO_SHARED,

@@ -2166,9 +2166,11 @@ Show the post date on reels	Tampilkan tanggal posting di reel
 Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.	Menampilkan kapan reel atau video yang kamu buka layar penuh diposting, di bawah nama orang yang mempostingnya. Perubahan terlihat mulai reel berikutnya.
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	Tetap menampilkan tombol Komentari di reel yang komentarnya dimatikan, jadi kamu masih bisa membaca komentar yang sudah ada. Perubahan terlihat mulai reel berikutnya.
 Select part of a post's text	Pilih sebagian teks postingan
-Holding a post's text still copies all of it, and also opens the text in a box where you can select just the part you want and copy that.	Menekan lama teks postingan tetap menyalin semuanya, dan juga membuka teks itu di kotak tempat kamu bisa memilih bagian yang kamu mau saja lalu menyalinnya.
+Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	Menahan teks postingan membukanya di kotak tempat kamu bisa memilih bagian yang kamu mau lalu menyalinnya, atau menyalin semuanya. Menahan saja tidak menyalin apa pun.
 Select text	Pilih teks
 Done	Selesai
+Copy all	Salin semua
+Copied	Disalin
 Oldest	Terlama
 Comments open oldest first, on every post. Facebook's sort menu then shows All comments.	Komentar terbuka dari yang terlama di setiap postingan. Menu urutan Facebook lalu menampilkan Semua komentar.
 Comments will open oldest first.	Komentar akan terbuka dari yang terlama.

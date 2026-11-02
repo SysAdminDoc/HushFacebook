@@ -2166,9 +2166,11 @@ Show the post date on reels	Veröffentlichungsdatum bei Reels anzeigen
 Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.	Zeigt unter dem Namen der Person, die es gepostet hat, wann ein Reel oder ein im Vollbild geöffnetes Video veröffentlicht wurde. Die Änderung gilt ab dem nächsten Reel.
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	Behält den Button „Kommentieren“ bei Reels, deren Kommentare ausgeschaltet sind, damit du die vorhandenen Kommentare weiter lesen kannst. Die Änderung gilt ab dem nächsten Reel.
 Select part of a post's text	Teil eines Beitragstexts auswählen
-Holding a post's text still copies all of it, and also opens the text in a box where you can select just the part you want and copy that.	Wenn du den Text eines Beitrags gedrückt hältst, wird er weiterhin ganz kopiert und zusätzlich in einem Feld geöffnet, in dem du nur den gewünschten Teil auswählen und kopieren kannst.
+Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	Wenn du den Text eines Beitrags gedrückt hältst, öffnet er sich in einem Feld, in dem du nur den gewünschten Teil auswählen und kopieren oder alles kopieren kannst. Das Gedrückthalten selbst kopiert nichts.
 Select text	Text auswählen
 Done	Fertig
+Copy all	Alles kopieren
+Copied	Kopiert
 Oldest	Älteste
 Comments open oldest first, on every post. Facebook's sort menu then shows All comments.	Kommentare öffnen sich bei jedem Beitrag mit den ältesten zuerst. Facebooks Sortiermenü zeigt dann Alle Kommentare.
 Comments will open oldest first.	Kommentare öffnen sich mit den ältesten zuerst.

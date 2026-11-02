@@ -2166,9 +2166,11 @@ Show the post date on reels	Hiện ngày đăng trên reel
 Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.	Hiện thời điểm một reel hoặc video bạn mở toàn màn hình được đăng, ngay dưới tên người đăng. Thay đổi có hiệu lực từ reel tiếp theo.
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	Giữ nút Bình luận trên các reel đã tắt bình luận, để bạn vẫn đọc được các bình luận đã có. Thay đổi có hiệu lực từ reel tiếp theo.
 Select part of a post's text	Chọn một phần văn bản của bài viết
-Holding a post's text still copies all of it, and also opens the text in a box where you can select just the part you want and copy that.	Nhấn giữ văn bản của bài viết vẫn sao chép toàn bộ, đồng thời mở văn bản trong một hộp để bạn chỉ chọn và sao chép phần mình muốn.
+Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	Nhấn giữ văn bản của bài viết sẽ mở nó trong một hộp để bạn chọn đúng phần mình muốn và sao chép, hoặc sao chép tất cả. Chỉ nhấn giữ thì không sao chép gì.
 Select text	Chọn văn bản
 Done	Xong
+Copy all	Sao chép tất cả
+Copied	Đã sao chép
 Oldest	Cũ nhất
 Comments open oldest first, on every post. Facebook's sort menu then shows All comments.	Bình luận mở theo thứ tự cũ nhất trước, trên mọi bài viết. Menu sắp xếp của Facebook khi đó hiện Tất cả bình luận.
 Comments will open oldest first.	Bình luận sẽ mở theo thứ tự cũ nhất trước.

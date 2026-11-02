@@ -10,6 +10,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.SystemClock;
 import android.util.TypedValue;
 import android.widget.ScrollView;
@@ -30,17 +31,22 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
  * Select part of a post's text (issue #294). Facebook's long press on a feed post's text copies all
- * of it, with no way to pick a part. With the switch on, that copy also opens the text in a box
- * whose text can be selected, so a word or a line can be copied on its own.
+ * of it, with no way to pick a part. With the switch on, that hold opens the text in a box whose
+ * text can be selected, so a word or a line can be copied on its own, and the box's Copy all
+ * button copies the whole of it.
  *
  * <p>The text comes from the clip Facebook makes, so it's the whole text even when the post shows
  * See more, and a reel's caption copies the same way. {@link PostLongPress} times every press: one
  * that reaches the long-press time arms this, and the next clip made within {@link #WINDOW} of that
  * opens the box. Which view the hold was on isn't asked, since post text isn't always drawn by a
  * view that says it holds text. A long press that copies nothing (a photo, a comment's menu) opens
- * nothing, and the armed hold runs out; a copy picked from a menu comes later than the window. The
- * clipboard is listened to from the first press with the switch on, since Facebook's copy can land
- * in the same moment as the hold's timer.
+ * nothing, and the armed hold runs out; a copy picked from a menu comes later than the window.
+ *
+ * <p>The patch sends each of Facebook's clipboard writes to {@link #copy}, which opens the box in
+ * place of the copy a hold makes, so the clipboard keeps what it held (#342). A copy that reaches
+ * the clipboard some other way still opens the box once it lands: the clipboard is listened to from
+ * the first press with the switch on, since that copy can land in the same moment as the hold's
+ * timer.
  */
 public final class PostTextSelect {
     private static final String FAMILY = FamilyNames.REEL_GESTURES;
@@ -49,12 +55,18 @@ public final class PostTextSelect {
     static final String ARMED = "press held for a copy to select";
     /** Counted for each box opened on the text Facebook copied. */
     static final String OPENED = "post text opened to select";
+    /** Counted for each copy a hold made that opened the box instead of reaching the clipboard. */
+    static final String KEPT_OFF = "hold's copy kept off the clipboard";
+    /** Counted for each tap of the box's Copy all. */
+    static final String COPIED_ALL = "post text copied whole";
 
     /** How long after a hold on text, in milliseconds, Facebook's copy still opens the box. */
     static final long WINDOW = 1500L;
 
     /** When, in uptime, a hold on text armed the box; 0 when nothing is armed. */
     private static volatile long armedAt;
+    /** When, in uptime, the box last opened; 0 before it ever has. */
+    private static volatile long openedAt;
     private static WeakReference<Activity> screen = new WeakReference<>(null);
     @Nullable private static ClipboardManager listening;
     private static final ClipboardManager.OnPrimaryClipChangedListener CHANGED = PostTextSelect::changed;
@@ -88,6 +100,9 @@ public final class PostTextSelect {
     /** A hold reached the long-press time on the screen last pressed. */
     static void armed() {
         if (screen.get() == null) return;
+        // Facebook's copy can open the box a moment before this hold's timer runs out, and the
+        // hold mustn't arm the box again for a copy made from inside it.
+        if (openedAt != 0L && SystemClock.uptimeMillis() - openedAt < WINDOW) return;
         armedAt = SystemClock.uptimeMillis();
         HookStatus.counted(FAMILY, ARMED);
     }
@@ -109,6 +124,44 @@ public final class PostTextSelect {
         }
     }
 
+    /**
+     * Injection point, in place of each of Facebook's ClipboardManager.setPrimaryClip calls, with
+     * the same two arguments. A copy a hold on a post's text made opens the box instead, and the
+     * clipboard keeps what it held. Every other copy goes to the clipboard as Facebook made it.
+     */
+    public static void copy(ClipboardManager clipboard, ClipData clip) {
+        if (opensInstead(clip)) return;
+        clipboard.setPrimaryClip(clip);
+    }
+
+    /** Whether [clip] is the copy a hold just made, and the box opened on its text. Never throws. */
+    static boolean opensInstead(@Nullable ClipData clip) {
+        try {
+            long at = armedAt;
+            boolean held = at != 0L && SystemClock.uptimeMillis() - at <= WINDOW;
+            if (!held && !PostLongPress.heldLong()) return false;
+            if (!on()) return false;
+            Activity activity = screen.get();
+            if (activity == null || activity.isFinishing() || activity.isDestroyed()) return false;
+            CharSequence text = textOf(clip);
+            if (text == null || text.toString().trim().isEmpty()) return false;
+            armedAt = 0L;
+            String whole = text.toString();
+            HookStatus.counted(FAMILY, KEPT_OFF);
+            Utils.runOnMainThreadNowOrLater(() -> {
+                try {
+                    if (!activity.isFinishing() && !activity.isDestroyed()) show(activity, whole);
+                } catch (Throwable failure) {
+                    HookStatus.threw(FAMILY, "post text select", failure);
+                }
+            });
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "post text select", failure);
+            return false;
+        }
+    }
+
     /** The text of [clip]'s first item, or null. */
     @Nullable
     static CharSequence textOf(@Nullable ClipData clip) {
@@ -126,6 +179,7 @@ public final class PostTextSelect {
                 ? android.R.style.Theme_DeviceDefault_Dialog_Alert
                 : android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
                 .setTitle(L10n.t(activity, "Select text"))
+                .setNeutralButton(L10n.t(activity, "Copy all"), (box, which) -> copyAll(activity, text))
                 .setPositiveButton(L10n.t(activity, "Done"), null);
         Context themed = builder.getContext();
         TextView body = new TextView(themed);
@@ -140,10 +194,27 @@ public final class PostTextSelect {
         scroll.addView(body);
         AlertDialog dialog = builder.setView(scroll).create();
         showing = new WeakReference<>(dialog);
+        openedAt = SystemClock.uptimeMillis();
         dialog.show();
         ShimmerTitle.wearTitleOf(dialog);
         HookStatus.counted(FAMILY, OPENED);
         Logger.printDebug(() -> "Post text select: " + OPENED + ", " + text.length() + " characters");
+    }
+
+    /**
+     * Puts all of [text] on the clipboard. Android 13 and up shows its own line for a copy, so the
+     * toast is only for older phones. Never throws.
+     */
+    static void copyAll(Activity activity, String text) {
+        try {
+            ClipboardManager clipboard = activity.getSystemService(ClipboardManager.class);
+            if (clipboard == null) return;
+            clipboard.setPrimaryClip(ClipData.newPlainText(null, text));
+            HookStatus.counted(FAMILY, COPIED_ALL);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) Utils.showToastShort(L10n.t(activity, "Copied"));
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "post text copy all", failure);
+        }
     }
 
     /** Whether Facebook's dark mode is on, or the phone's night mode before Facebook has said. */
@@ -163,6 +234,7 @@ public final class PostTextSelect {
     /** For tests: forgets the armed hold, the clipboard listened to and the box shown. */
     static void reset() {
         armedAt = 0L;
+        openedAt = 0L;
         screen = new WeakReference<>(null);
         if (listening != null) listening.removePrimaryClipChangedListener(CHANGED);
         listening = null;

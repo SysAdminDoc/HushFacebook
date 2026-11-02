@@ -2161,9 +2161,11 @@ Show the post date on reels	在 Reels 上显示发布日期
 Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.	在发布者的名字下方显示 Reel 或全屏打开的视频是什么时候发布的。从下一个 Reel 开始生效。
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	在关闭了评论的 Reels 上保留“评论”按钮，让你仍能阅读已有的评论。从下一个 Reel 开始生效。
 Select part of a post's text	选择帖子文字的一部分
-Holding a post's text still copies all of it, and also opens the text in a box where you can select just the part you want and copy that.	长按帖子文字仍会复制全部内容，同时会在一个框中打开这段文字，你可以只选择想要的部分再复制。
+Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	长按帖子文字会在一个框中打开，你可以只选择想要的部分并复制，或者全部复制。长按本身不会复制任何内容。
 Select text	选择文字
 Done	完成
+Copy all	全部复制
+Copied	已复制
 Oldest	最早
 Comments open oldest first, on every post. Facebook's sort menu then shows All comments.	每个帖子的评论都从最早的开始显示。Facebook 的排序菜单这时会显示“所有评论”。
 Comments will open oldest first.	评论将从最早的开始显示。

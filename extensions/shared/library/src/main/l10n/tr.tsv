@@ -2166,9 +2166,11 @@ Show the post date on reels	Reels'te paylaşım tarihini göster
 Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.	Bir reel'in ya da tam ekran açtığın bir videonun ne zaman paylaşıldığını, paylaşan kişinin adının altında gösterir. Değişiklik bir sonraki reel'den itibaren görünür.
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	Yorumları kapatılmış reels'te Yorum Yap düğmesini tutar, böylece mevcut yorumları okumaya devam edebilirsin. Değişiklik bir sonraki reel'den itibaren görünür.
 Select part of a post's text	Gönderi metninin bir kısmını seç
-Holding a post's text still copies all of it, and also opens the text in a box where you can select just the part you want and copy that.	Bir gönderinin metnine basılı tutmak yine metnin tamamını kopyalar, ayrıca metni yalnızca istediğin kısmı seçip kopyalayabileceğin bir kutuda açar.
+Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	Bir gönderinin metnini basılı tutmak onu, yalnızca istediğin kısmı seçip kopyalayabileceğin ya da tümünü kopyalayabileceğin bir kutuda açar. Basılı tutmak tek başına hiçbir şey kopyalamaz.
 Select text	Metni seç
 Done	Bitti
+Copy all	Tümünü kopyala
+Copied	Kopyalandı
 Oldest	En eski
 Comments open oldest first, on every post. Facebook's sort menu then shows All comments.	Yorumlar her gönderide en eskiden başlayarak açılır. Facebook'un sıralama menüsü o zaman Tüm yorumlar gösterir.
 Comments will open oldest first.	Yorumlar en eskiden başlayarak açılacak.
