@@ -835,8 +835,9 @@ public class PausedHooksTest {
         // The tab bar's count for the Friends tab reads none, and a launcher writer puts 0 on the icon.
         probes.put(PatchFamily.TAB_BADGES, Arrays.asList(TabBadgesForTests::clearsTheFriendsTab,
                 TabBadgesForTests::clearsTheIcon));
-        // The Friends tab comes off the bar.
-        probes.put(PatchFamily.HIDDEN_TABS, Collections.singletonList(HiddenTabsForTests::hidesTheTab));
+        // The Friends tab comes off the bar, and a saved tab order puts Friends before Home.
+        probes.put(PatchFamily.HIDDEN_TABS, Arrays.asList(HiddenTabsForTests::hidesTheTab,
+                HiddenTabsForTests::reordersTheBar));
         // Facebook's own override of where the tab bar goes reads YES, for the bottom, where it read NO.
         // With the bar at the bottom, Facebook's check of whether it slides away answers yes. The top
         // bar's entry is told to move 0 and fade by 0. (A kept bottom bar has its own test: with every

@@ -2182,6 +2182,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_jobs_tab", FALSE, true);
 
     /**
+     * The order Hide tabs puts the tab bar's tabs in (#341,
+     * {@link app.morphe.extension.facebook.navigation.TabOrder}): each tab's key, commas between,
+     * the first tab first. Blank keeps Facebook's order. Facebook builds the bar once, so a change
+     * shows when it restarts.
+     */
+    public static final StringSetting TAB_ORDER =
+            new StringSetting("hushfacebook_tab_order", "", true);
+
+    /**
      * The tab bar goes to the bottom of the screen on accounts Facebook gives it at the top
      * ({@link app.morphe.extension.facebook.navigation.BottomTabBar}). Facebook places the bar as
      * its main screen starts, so a change waits for a restart.

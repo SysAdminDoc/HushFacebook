@@ -2408,3 +2408,13 @@ A profile's Reels tab lists its most viewed reels first instead of the newest. O
 Not in this build, so dark mode stays Facebook's dark gray. Morphe Manager doesn't pick it by default. Turn on Expert mode in Manager, choose the %1$s patch and patch again.	Không có trong bản dựng này, nên chế độ tối vẫn là màu xám đậm của Facebook. Morphe Manager không chọn mục này theo mặc định. Hãy bật Chế độ chuyên gia trong Manager, chọn bản vá %1$s và vá lại.
 Cast button on reels	Nút truyền trên reels
 Adds a cast button to reels, under Download. It hands the reel to a casting app you have, such as Web Video Caster, which sends it to your TV.	Thêm nút truyền vào reels, bên dưới nút Tải xuống. Nút này chuyển reel sang ứng dụng truyền bạn có, như Web Video Caster, để phát lên TV.
+Tab order	Thứ tự tab
+Professional dashboard	Bảng điều khiển chuyên nghiệp
+Ad Center	Trung tâm quảng cáo
+Create	Tạo
+Explore	Khám phá
+As Facebook has it. Tap to put the tabs in the order you want. Facebook opens on the first one. Restart Facebook after you change this.	Như Facebook mặc định. Nhấn để sắp xếp các tab theo thứ tự bạn muốn. Facebook mở ở tab đầu tiên. Hãy khởi động lại Facebook sau khi đổi mục này.
+In this order: %1$s. Facebook opens on the first one. Restart Facebook after you change this.	Theo thứ tự này: %1$s. Facebook mở ở tab đầu tiên. Hãy khởi động lại Facebook sau khi đổi mục này.
+Tap a tab to move it up	Nhấn vào một tab để đưa nó lên trên
+Your tab bar will keep Facebook's order.	Thanh tab của bạn sẽ giữ thứ tự của Facebook.
+Your tab bar will go in this order: %1$s.	Thanh tab của bạn sẽ theo thứ tự này: %1$s.

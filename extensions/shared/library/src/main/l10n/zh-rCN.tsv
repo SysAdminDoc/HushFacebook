@@ -2403,3 +2403,13 @@ A profile's Reels tab lists its most viewed reels first instead of the newest. O
 Not in this build, so dark mode stays Facebook's dark gray. Morphe Manager doesn't pick it by default. Turn on Expert mode in Manager, choose the %1$s patch and patch again.	此版本中没有，所以深色模式仍是 Facebook 的深灰色。Morphe Manager 默认不选它。请在 Manager 中开启专家模式，选择 %1$s 修补项，然后重新修补。
 Cast button on reels	短视频上的投屏按钮
 Adds a cast button to reels, under Download. It hands the reel to a casting app you have, such as Web Video Caster, which sends it to your TV.	在短视频的“下载”按钮下方添加投屏按钮。它会把短视频交给你已安装的投屏应用（如 Web Video Caster），由它发送到电视。
+Tab order	标签顺序
+Professional dashboard	专业面板
+Ad Center	广告中心
+Create	创建
+Explore	探索
+As Facebook has it. Tap to put the tabs in the order you want. Facebook opens on the first one. Restart Facebook after you change this.	按 Facebook 的设置。点按即可把标签排成你想要的顺序。Facebook 会在第一个标签打开。更改后请重启 Facebook。
+In this order: %1$s. Facebook opens on the first one. Restart Facebook after you change this.	按此顺序：%1$s。Facebook 会在第一个标签打开。更改后请重启 Facebook。
+Tap a tab to move it up	点按一个标签把它上移
+Your tab bar will keep Facebook's order.	你的标签栏将保持 Facebook 的顺序。
+Your tab bar will go in this order: %1$s.	你的标签栏将按此顺序排列：%1$s。

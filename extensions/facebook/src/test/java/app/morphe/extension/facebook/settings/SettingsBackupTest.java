@@ -291,7 +291,7 @@ public class SettingsBackupTest {
         for (Setting<?> setting : SettingsBackup.VALUES) {
             assertFalse(setting.key + " is carried and kept out at once", VALUES_STAY_OUT.containsKey(setting.key));
         }
-        assertEquals(Arrays.<Setting<?>>asList(Settings.HIDDEN_WORDS, Settings.KEPT_WORDS, Settings.HIDDEN_SOURCES, Settings.HIDDEN_FEED_TYPES, Settings.HIDE_POSTS_OVER_REACTIONS, Settings.BURN_IN_GUARD, Settings.BURN_IN_WAIT, Settings.REELS_ORDER, Settings.RECENTLY_WATCHED_KEEP, Settings.HIDDEN_SHARE_ITEMS, Settings.HIDDEN_MENU_TILES, Settings.HOME_FEED, Settings.AMOLED_BACKGROUND, Settings.AMOLED_LIGHT_BACKGROUND, Settings.HEADER_TEXT, Settings.SEEN_POSTS_KEEP, Settings.SAVE_TO,
+        assertEquals(Arrays.<Setting<?>>asList(Settings.HIDDEN_WORDS, Settings.KEPT_WORDS, Settings.HIDDEN_SOURCES, Settings.HIDDEN_FEED_TYPES, Settings.HIDE_POSTS_OVER_REACTIONS, Settings.BURN_IN_GUARD, Settings.BURN_IN_WAIT, Settings.REELS_ORDER, Settings.RECENTLY_WATCHED_KEEP, Settings.HIDDEN_SHARE_ITEMS, Settings.HIDDEN_MENU_TILES, Settings.HOME_FEED, Settings.TAB_ORDER, Settings.AMOLED_BACKGROUND, Settings.AMOLED_LIGHT_BACKGROUND, Settings.HEADER_TEXT, Settings.SEEN_POSTS_KEEP, Settings.SAVE_TO,
                 Settings.SAVE_FOLDER, Settings.VIDEO_SUBFOLDER, Settings.PHOTO_SUBFOLDER, Settings.DOWNLOAD_QUALITY,
                 Settings.FILENAME_TEMPLATE, Settings.PHOTO_FILENAME_TEMPLATE, Settings.DOWNLOAD_ACTION, Settings.SEND_TO_APP,
                 Settings.START_TAB, Settings.FEEDS_SUBTAB, Settings.COMMENT_ORDER, Settings.PLAYBACK_QUALITY,
@@ -312,6 +312,7 @@ public class SettingsBackupTest {
         assertEquals(Settings.START_TAB, SettingsBackup.START);
         assertEquals(Settings.FEEDS_SUBTAB, SettingsBackup.SUBTAB);
         assertEquals(Settings.HOME_FEED, SettingsBackup.HOME_FEED);
+        assertEquals(Settings.TAB_ORDER, SettingsBackup.TAB_ORDER);
         assertEquals(Settings.AMOLED_BACKGROUND, SettingsBackup.BACKGROUND);
         assertEquals(Settings.AMOLED_LIGHT_BACKGROUND, SettingsBackup.LIGHT_BACKGROUND);
         assertEquals(Settings.COMMENT_ORDER, SettingsBackup.ORDER);
@@ -2131,6 +2132,63 @@ public class SettingsBackupTest {
         assertEquals(L10n.f("With %1$s on, Home will show the same posts as %2$s in the Feeds tab.",
                         L10n.isolate(SwitchLabels.title(Settings.FOLLOWING_FEED_HOME)), L10n.t("Groups")),
                 SettingsBackupPreference.homeFeedSentence(FeedsSubtab.GROUPS));
+    }
+
+    /**
+     * The tab order goes out as the row keeps it and comes back only as one the row would save, and
+     * the preview names the tabs in order. A file from before it was carried leaves it alone (#341).
+     */
+    @Test
+    public void theTabOrderRoundTripsAndComesBackOnlyClean() throws Exception {
+        for (String order : new String[]{"friends,home,menu", "marketplace", ""}) {
+            Settings.TAB_ORDER.save(order);
+            String file = SettingsBackup.create();
+            assertEquals(order, new JSONObject(file).getJSONObject("settings").get(SettingsBackup.TAB_ORDER.key));
+            Settings.TAB_ORDER.save("video,home");
+
+            SettingsBackup.Snapshot snapshot = SettingsBackup.parse(file);
+            assertEquals(order, snapshot.tabOrder);
+            assertEquals(order, snapshot.tabOrderChange());
+            assertEquals(Collections.singletonMap(SettingsBackup.TAB_ORDER, order), snapshot.changes());
+            assertEquals(1, SettingsBackup.apply(snapshot));
+            assertEquals(order, Settings.TAB_ORDER.savedValue());
+            assertEquals("a file read back is the file", file, SettingsBackup.create());
+            assertEquals("the same order again changes nothing", 0, SettingsBackup.parse(file).changes().size());
+        }
+
+        Settings.TAB_ORDER.save("friends,home");
+        String file = SettingsBackup.create();
+        Map<String, ?> before = store();
+        for (Object refused : new Object[]{"Friends,home", "friends,,home", "friends,home,friends", "friends, home",
+                "reels", "home,", 3, true, JSONObject.NULL, new JSONObject(), new org.json.JSONArray()}) {
+            JSONObject hostile = new JSONObject(file);
+            hostile.getJSONObject("settings").put(SettingsBackup.TAB_ORDER.key, refused);
+            try {
+                SettingsBackup.parse(hostile.toString());
+                fail("a file with the tab order " + printable(String.valueOf(refused)) + " was read");
+            } catch (SettingsBackup.Rejected rejected) {
+                assertEquals(printable(String.valueOf(refused)), SettingsBackup.Reason.VALUE, rejected.reason);
+            }
+        }
+        assertEquals("a refused file wrote something", before, store());
+
+        SettingsBackup.Snapshot older = SettingsBackup.parse(fileWith(Settings.HIDE_SUGGESTED_POSTS, false));
+        assertNull(older.tabOrder);
+        assertNull(older.tabOrderChange());
+        SettingsBackup.apply(older);
+        assertEquals("friends,home", Settings.TAB_ORDER.savedValue());
+
+        // A preview kept across a rebuild keeps its order, and only a clean one comes back.
+        Bundle state = SettingsBackup.parse(file).toBundle();
+        assertEquals("friends,home", SettingsBackup.Snapshot.fromBundle(state).tabOrder);
+        state.putString("tab_order", "home,home");
+        assertNull(SettingsBackup.Snapshot.fromBundle(state).tabOrder);
+
+        assertEquals(L10n.f("Your tab bar will go in this order: %1$s.",
+                        L10n.join(Arrays.asList(L10n.t("Friends"), L10n.t("Home")))),
+                SettingsBackupPreference.tabOrderSentence("friends,home"));
+        assertEquals(L10n.t("Your tab bar will keep Facebook's order."), SettingsBackupPreference.tabOrderSentence(""));
+        Settings.TAB_ORDER.resetToDefault();
     }
 
     /**

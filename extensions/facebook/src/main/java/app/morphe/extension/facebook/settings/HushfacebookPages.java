@@ -136,6 +136,8 @@ final class HushfacebookPages {
                         L10n.t("Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the "
                                 + "change.")));
             }
+            // The tabs left on the bar, in the order you pick (#341). Also built once, so it waits too.
+            tabs.addPreference(TabOrderRow.row(page, context));
         }
         if (build.contains(PatchFamily.TAB_BADGES)) {
             subheading(tabs, L10n.t("Dots and counts"));

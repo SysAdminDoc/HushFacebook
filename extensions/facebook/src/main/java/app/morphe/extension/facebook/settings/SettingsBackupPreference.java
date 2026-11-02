@@ -70,6 +70,7 @@ import app.morphe.extension.facebook.theme.AccentColor;
 import app.morphe.extension.facebook.theme.MarkColors.Mark;
 import app.morphe.extension.facebook.navigation.FeedsSubtab;
 import app.morphe.extension.facebook.navigation.StartTab;
+import app.morphe.extension.facebook.navigation.TabOrder;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
@@ -407,6 +408,7 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.shareItemsChange() != null) parts.add(shareItemsSentence(snapshot.shareItemsChange()));
             if (snapshot.menuTilesChange() != null) parts.add(menuTilesSentence(snapshot.menuTilesChange()));
             if (snapshot.feedTypesChange() != null) parts.add(feedTypesSentence(snapshot.feedTypesChange()));
+            if (snapshot.tabOrderChange() != null) parts.add(tabOrderSentence(snapshot.tabOrderChange()));
             if (snapshot.homeFeedChange() != null) parts.add(homeFeedSentence(snapshot.homeFeedChange()));
             if (snapshot.reelsOrderChange() != null) parts.add(reelsOrderSentence(snapshot.reelsOrderChange()));
             if (snapshot.burnInChange() != null) parts.add(burnInSentence(snapshot.burnInChange()));
@@ -807,6 +809,15 @@ public class SettingsBackupPreference extends Preference {
                 "Your list of feed types to hide will hold %1$d types.", types);
     }
 
+    /** The sentence that says the order the tab bar will have after an import. */
+    static String tabOrderSentence(String order) {
+        List<TabOrder.Tab> tabs = TabOrder.parse(order);
+        if (tabs.isEmpty()) return L10n.t("Your tab bar will keep Facebook's order.");
+        List<String> names = new ArrayList<>();
+        for (TabOrder.Tab tab : tabs) names.add(TabOrderRow.label(tab));
+        return L10n.f("Your tab bar will go in this order: %1$s.", L10n.join(names));
+    }
+
     /** A sentence for each setting that isn't a switch an import changes, with no word list among them. */
     static List<String> valueSentences(@Nullable String folder, @Nullable DownloadQuality quality,
                                        @Nullable String fileName, @Nullable StartTab start,
@@ -1020,6 +1031,7 @@ public class SettingsBackupPreference extends Preference {
                     + (snapshot.shareItemsChange() == null ? "" : " " + shareItemsSentence(snapshot.shareItemsChange()))
                     + (snapshot.menuTilesChange() == null ? "" : " " + menuTilesSentence(snapshot.menuTilesChange()))
                     + (snapshot.feedTypesChange() == null ? "" : " " + feedTypesSentence(snapshot.feedTypesChange()))
+                    + (snapshot.tabOrderChange() == null ? "" : " " + tabOrderSentence(snapshot.tabOrderChange()))
                     + (snapshot.homeFeedChange() == null ? "" : " " + homeFeedSentence(snapshot.homeFeedChange()))
                     + (snapshot.reelsOrderChange() == null ? "" : " " + reelsOrderSentence(snapshot.reelsOrderChange()))
                     + (snapshot.burnInChange() == null ? "" : " " + burnInSentence(snapshot.burnInChange()))

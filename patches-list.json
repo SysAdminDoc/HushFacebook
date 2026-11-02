@@ -1982,7 +1982,7 @@
     },
     {
       "name": "Hide tabs",
-      "description": "Takes the tabs you pick off the tab bar, such as Friends, Marketplace, Groups, Gaming or Events, so the bar only has what you use. Each page stays in the Menu. Starts off. Turn on the ones you want in Hushfacebook settings > Tabs and navigation, then restart Facebook.",
+      "description": "Takes the tabs you pick off the tab bar, such as Friends, Marketplace, Groups, Gaming or Events, so the bar only has what you use, and puts the ones left in the order you want. Each page stays in the Menu. Starts off. Pick the tabs and their order in Hushfacebook settings > Tabs and navigation, then restart Facebook.",
       "category": "Navigation",
       "use": true,
       "dependencies": [

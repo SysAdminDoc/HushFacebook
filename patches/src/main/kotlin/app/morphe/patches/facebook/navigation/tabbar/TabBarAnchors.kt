@@ -54,6 +54,12 @@ internal const val LIST_BUILDER = "Lcom/google/common/collect/ImmutableList\$Bui
 /** Guava keeps its names, so the builder's add is known by its whole signature. */
 private const val LIST_BUILDER_ADD = "$LIST_BUILDER->add(Ljava/lang/Object;)$LIST_BUILDER"
 
+/** Guava's copy of any list into an ImmutableList, which the reordered tabs go back through. */
+internal const val IMMUTABLE_LIST_COPY_OF = "$IMMUTABLE_LIST->copyOf(Ljava/util/Collection;)$IMMUTABLE_LIST"
+
+/** The extension's order for the shown tabs, once the builder has its list (#341). */
+internal const val TAB_ORDER_CALL = "$EXTENSION_PACKAGE/navigation/TabOrder;->order(Ljava/util/List;)Ljava/util/List;"
+
 /** The extension's answer after Facebook's hidden-tab set has answered for one tab. */
 internal const val HIDES_TAB =
     "$EXTENSION_PACKAGE/navigation/TabBarFilter;->hidesTab(ZLjava/lang/Object;Ljava/util/List;Ljava/util/Set;)Z"
@@ -142,5 +148,37 @@ internal fun shownTabFilter(method: Method): TabFilter? {
     if (code.subList(read + 1, ask + 1).any { writes(it, configured) }) return null
     if (answer in setOf(tab, configured, hidden)) return null
     return TabFilter(ask + 1, answer, tab, configured, hidden)
+}
+
+/**
+ * Where [method] keeps the shown tabs it built, or null when it isn't the shown-tab builder: the
+ * index of its one `iput-object` of an ImmutableList into its own class, after the builder's one
+ * add. It's the builder [shownTabFilter] finds, told apart without the set's answer, since the
+ * tab bar filter's call sits between that answer and the add once it's in. On 585 the builder
+ * ends in `ImmutableList list = builder.build(); this.shown = list;` inside its monitor.
+ */
+internal fun shownTabStore(method: Method): Int? {
+    if (!AccessFlags.STATIC.isSet(method.accessFlags) || method.returnType != "V") return null
+    if (method.parameterTypes.map { it.toString() } != listOf(method.definingClass)) return null
+    val code = method.implementation?.instructions?.toList() ?: return null
+
+    val reads = code.withIndex().filter { (_, it) ->
+        it.opcode == Opcode.IGET_OBJECT && ((it as ReferenceInstruction).reference as FieldReference).let { field ->
+            field.definingClass == NAVIGATION_CONFIG && field.type == IMMUTABLE_LIST
+        }
+    }
+    val casts = code.withIndex().filter { (_, it) ->
+        it.opcode == Opcode.CHECK_CAST && ((it as ReferenceInstruction).reference as TypeReference).type == TAB_TAG
+    }
+    val adds = code.withIndex().filter { (_, it) -> it.call?.signature() == LIST_BUILDER_ADD }
+    val stores = code.withIndex().filter { (_, it) ->
+        it.opcode == Opcode.IPUT_OBJECT && ((it as ReferenceInstruction).reference as FieldReference).let { field ->
+            field.definingClass == method.definingClass && field.type == IMMUTABLE_LIST
+        }
+    }
+    if (reads.size != 1 || casts.size != 1 || adds.size != 1 || stores.size != 1) return null
+    val (read, cast, add, store) = listOf(reads, casts, adds, stores).map { it.single().index }
+    if (!(read < cast && cast < add && add < store)) return null
+    return store
 }
 

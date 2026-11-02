@@ -60,6 +60,7 @@ import app.morphe.extension.facebook.theme.AmoledLightBackground;
 import app.morphe.extension.facebook.theme.MarkColors;
 import app.morphe.extension.facebook.navigation.FeedsSubtab;
 import app.morphe.extension.facebook.navigation.StartTab;
+import app.morphe.extension.facebook.navigation.TabOrder;
 import app.morphe.extension.facebook.feed.SeenPosts;
 import app.morphe.extension.facebook.notifications.QuietHour;
 import app.morphe.extension.shared.settings.BooleanSetting;
@@ -662,9 +663,15 @@ public final class SettingsBackup {
      */
     static final StringSetting FEED_TYPES = Settings.HIDDEN_FEED_TYPES;
 
+    /**
+     * The tab bar's order, held in a file exactly as its row stores it: tab keys, commas between. An
+     * order {@link TabOrder#clean} would change refuses the whole file, as a Menu tiles list does.
+     */
+    static final StringSetting TAB_ORDER = Settings.TAB_ORDER;
+
     /** The settings a file carries that aren't switches, in the order Settings declares them. */
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
-            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, REELS_ORDER, WATCHED_KEEP, SHARE_ITEMS, MENU_TILES, HOME_FEED, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
+            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, REELS_ORDER, WATCHED_KEEP, SHARE_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY,
                     QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, ACCENT, BADGE,
                     LOGO, TAB));
@@ -779,6 +786,7 @@ public final class SettingsBackup {
         private static final String SHARE_ITEMS_NAME = "hidden_share_items";
         private static final String MENU_TILES_NAME = "hidden_menu_tiles";
         private static final String FEED_TYPES_NAME = "hidden_feed_types";
+        private static final String TAB_ORDER_NAME = "tab_order";
         private static final String HOME_FEED_NAME = "home_feed";
         private static final String BACKGROUND_NAME = "amoled_background";
         private static final String LIGHT_BACKGROUND_NAME = "amoled_light_background";
@@ -888,6 +896,9 @@ public final class SettingsBackup {
         /** The clean list of feed types to hide the file holds, or null when it names none. Set once, as it's read. */
         @Nullable
         String feedTypes;
+        /** The clean tab order the file holds, or null when it names none. Set once, as it's read. */
+        @Nullable
+        String tabOrder;
         /** The feed the file says Home shows, or null when it names none. Set once, as it's read. */
         @Nullable
         FeedsSubtab homeFeed;
@@ -1137,6 +1148,8 @@ public final class SettingsBackup {
             if (menuTilesChange != null) changes.put(MENU_TILES, menuTilesChange);
             String feedTypesChange = feedTypesChange();
             if (feedTypesChange != null) changes.put(FEED_TYPES, feedTypesChange);
+            String tabOrderChange = tabOrderChange();
+            if (tabOrderChange != null) changes.put(TAB_ORDER, tabOrderChange);
             if (seenKeep != null && seenKeep != SEEN_KEEP.savedValue()) changes.put(SEEN_KEEP, seenKeep);
             FeedsSubtab homeFeedChange = homeFeedChange();
             if (homeFeedChange != null) changes.put(HOME_FEED, homeFeedChange);
@@ -1365,6 +1378,13 @@ public final class SettingsBackup {
             return feedTypes.equals(FeedTypeNames.clean(FEED_TYPES.savedValue())) ? null : feedTypes;
         }
 
+        /** The tab order this file sets, or null when it names none or the one already set. */
+        @Nullable
+        String tabOrderChange() {
+            if (tabOrder == null) return null;
+            return tabOrder.equals(TabOrder.clean(TAB_ORDER.savedValue())) ? null : tabOrder;
+        }
+
         /** The Background color this file sets, or null when it names none or the one already set. */
         @Nullable
         String backgroundChange() {
@@ -1477,6 +1497,7 @@ public final class SettingsBackup {
             if (shareItems != null) state.putString(SHARE_ITEMS_NAME, shareItems);
             if (menuTiles != null) state.putString(MENU_TILES_NAME, menuTiles);
             if (feedTypes != null) state.putString(FEED_TYPES_NAME, feedTypes);
+            if (tabOrder != null) state.putString(TAB_ORDER_NAME, tabOrder);
             if (homeFeed != null) state.putString(HOME_FEED_NAME, homeFeed.fileValue);
             if (background != null) state.putString(BACKGROUND_NAME, background);
             if (lightBackground != null) state.putString(LIGHT_BACKGROUND_NAME, lightBackground);
@@ -1553,6 +1574,9 @@ public final class SettingsBackup {
             Object feedTypes = state.get(FEED_TYPES_NAME);
             read.feedTypes = feedTypes instanceof String && FeedTypeNames.isClean((String) feedTypes)
                     ? (String) feedTypes : null;
+            Object tabOrder = state.get(TAB_ORDER_NAME);
+            read.tabOrder = tabOrder instanceof String && TabOrder.isClean((String) tabOrder)
+                    ? (String) tabOrder : null;
             read.homeFeed = FeedsSubtab.fromFile(state.get(HOME_FEED_NAME));
             read.reelsOrder = ReelsOrder.fromFile(state.get(REELS_ORDER_NAME));
             read.burnIn = BurnInMode.fromFile(state.get(BURN_IN_NAME));
@@ -1645,6 +1669,7 @@ public final class SettingsBackup {
             switches.put(SHARE_ITEMS.key, ShareSheetItems.clean(of(SHARE_ITEMS)));
             switches.put(MENU_TILES.key, MenuTiles.clean(of(MENU_TILES)));
             switches.put(FEED_TYPES.key, FeedTypeNames.clean(of(FEED_TYPES)));
+            switches.put(TAB_ORDER.key, TabOrder.clean(of(TAB_ORDER)));
             // The colour as the row keeps it, so a file never carries one an import would refuse.
             String background = AmoledBackground.stored(of(BACKGROUND));
             switches.put(BACKGROUND.key, background == null ? "" : background);
@@ -1785,6 +1810,7 @@ public final class SettingsBackup {
         String shareItems = null;
         String menuTiles = null;
         String feedTypes = null;
+        String tabOrder = null;
         FeedsSubtab homeFeed = null;
         String background = null;
         String lightBackground = null;
@@ -2038,6 +2064,14 @@ public final class SettingsBackup {
                 feedTypes = (String) value;
                 continue;
             }
+            if (TAB_ORDER.key.equals(name)) {
+                Object value = values.opt(name);
+                if (!(value instanceof String) || !TabOrder.isClean((String) value)) {
+                    throw new Rejected(Reason.VALUE, "Not one clean tab order: " + name);
+                }
+                tabOrder = (String) value;
+                continue;
+            }
             BooleanSetting setting = known.get(name);
             if (setting == null) {
                 // A name this build doesn't know, Pause and the debug settings included: left
@@ -2079,6 +2113,7 @@ public final class SettingsBackup {
         read.shareItems = shareItems;
         read.menuTiles = menuTiles;
         read.feedTypes = feedTypes;
+        read.tabOrder = tabOrder;
         read.homeFeed = homeFeed;
         read.background = background;
         read.lightBackground = lightBackground;

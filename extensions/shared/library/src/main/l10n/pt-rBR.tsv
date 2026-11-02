@@ -2294,3 +2294,13 @@ A profile's Reels tab lists its most viewed reels first instead of the newest. O
 Not in this build, so dark mode stays Facebook's dark gray. Morphe Manager doesn't pick it by default. Turn on Expert mode in Manager, choose the %1$s patch and patch again.	Não faz parte desta versão, então o modo escuro continua no cinza-escuro do Facebook. O Morphe Manager não o escolhe por padrão. Ative o modo especialista no Manager, escolha o patch %1$s e aplique os patches novamente.
 Cast button on reels	Botão de transmitir nos reels
 Adds a cast button to reels, under Download. It hands the reel to a casting app you have, such as Web Video Caster, which sends it to your TV.	Adiciona um botão de transmitir aos reels, abaixo de Baixar. Ele entrega o reel a um app de transmissão que você tenha, como o Web Video Caster, que o envia para sua TV.
+Tab order	Ordem das abas
+Professional dashboard	Painel profissional
+Ad Center	Central de Anúncios
+Create	Criar
+Explore	Explorar
+As Facebook has it. Tap to put the tabs in the order you want. Facebook opens on the first one. Restart Facebook after you change this.	Como o Facebook tem. Toque para colocar as abas na ordem que você quiser. O Facebook abre na primeira. Reinicie o Facebook depois de mudar isto.
+In this order: %1$s. Facebook opens on the first one. Restart Facebook after you change this.	Nesta ordem: %1$s. O Facebook abre na primeira. Reinicie o Facebook depois de mudar isto.
+Tap a tab to move it up	Toque numa aba para subi-la
+Your tab bar will keep Facebook's order.	Sua barra de abas vai manter a ordem do Facebook.
+Your tab bar will go in this order: %1$s.	Sua barra de abas vai ficar nesta ordem: %1$s.

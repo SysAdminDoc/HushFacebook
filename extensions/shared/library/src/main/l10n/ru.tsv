@@ -2462,3 +2462,13 @@ A profile's Reels tab lists its most viewed reels first instead of the newest. O
 Not in this build, so dark mode stays Facebook's dark gray. Morphe Manager doesn't pick it by default. Turn on Expert mode in Manager, choose the %1$s patch and patch again.	В этой сборке этого нет, поэтому в темном режиме сохраняется темно-серый цвет Facebook. Morphe Manager не выбирает этот патч по умолчанию. Включите режим Expert в Manager, выберите патч %1$s и выполните патчинг повторно.
 Cast button on reels	Кнопка трансляции в Reels
 Adds a cast button to reels, under Download. It hands the reel to a casting app you have, such as Web Video Caster, which sends it to your TV.	Добавляет кнопку трансляции в Reels под кнопкой «Скачать». Она передает Reels в установленное приложение для трансляции, например Web Video Caster, которое отправляет видео на телевизор.
+Tab order	Порядок вкладок
+Professional dashboard	Профессиональная панель
+Ad Center	Рекламный центр
+Create	Создать
+Explore	Интересное
+As Facebook has it. Tap to put the tabs in the order you want. Facebook opens on the first one. Restart Facebook after you change this.	Как в Facebook. Нажмите, чтобы расставить вкладки в нужном порядке. Facebook открывается на первой. Перезапустите Facebook после изменения.
+In this order: %1$s. Facebook opens on the first one. Restart Facebook after you change this.	В таком порядке: %1$s. Facebook открывается на первой. Перезапустите Facebook после изменения.
+Tap a tab to move it up	Нажмите на вкладку, чтобы поднять её выше
+Your tab bar will keep Facebook's order.	Панель вкладок сохранит порядок Facebook.
+Your tab bar will go in this order: %1$s.	Вкладки на панели пойдут в таком порядке: %1$s.

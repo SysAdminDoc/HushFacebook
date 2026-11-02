@@ -9,6 +9,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.navigation.tabbar.tabBarFilterPatch
 import app.morphe.patches.facebook.navigation.tabbar.tabLinksPatch
+import app.morphe.patches.facebook.navigation.tabbar.tabOrderPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 
 /** The classes Facebook keeps the names of for each tab Hide tabs can take off, as the extension's HiddenTabs knows them. */
@@ -38,7 +39,8 @@ internal val HIDEABLE_TABS = mapOf(
  * Facebook keeps for it. A tab Facebook's own tab bar settings hide stays theirs, and Open on a
  * chosen tab sends a start meant for a hidden tab to Home. Each page stays in the Menu: the tab
  * links patch (TabLinkAnchors.kt) has Facebook open a hidden tab's page on its own screen where it
- * would otherwise switch to the missing tab.
+ * would otherwise switch to the missing tab. The tab order patch (TabOrderPatch.kt) puts the tabs
+ * left in the order picked in the Tab order row (#341).
  *
  * In the default selection with every switch off, so it changes nothing until a tab is picked.
  */
@@ -46,12 +48,13 @@ internal val HIDEABLE_TABS = mapOf(
 val hideTabsPatch = bytecodePatch(
     name = "Hide tabs",
     description = "Takes the tabs you pick off the tab bar, such as Friends, Marketplace, Groups, Gaming or " +
-        "Events, so the bar only has what you use. Each page stays in the Menu. Starts off. Turn on the ones you " +
-        "want in Hushfacebook settings > Tabs and navigation, then restart Facebook.",
+        "Events, so the bar only has what you use, and puts the ones left in the order you want. Each page stays " +
+        "in the Menu. Starts off. Pick the tabs and their order in Hushfacebook settings > Tabs and navigation, " +
+        "then restart Facebook.",
     default = true,
 ) {
     category("Navigation")
-    dependsOn(settingsPatch, tabBarFilterPatch, tabLinksPatch)
+    dependsOn(settingsPatch, tabBarFilterPatch, tabLinksPatch, tabOrderPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {

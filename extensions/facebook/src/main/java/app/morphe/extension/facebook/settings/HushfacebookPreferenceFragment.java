@@ -877,6 +877,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         for (TabBarChoices.Pair pair : TabBarChoices.Pair.values()) {
             if (getPreferenceScreen() != null) TabBarChoices.showSaved(findPreference(pair.rowKey), pair);
         }
+        if (getPreferenceScreen() != null) TabOrderRow.showSaved(findPreference(TabOrderRow.ROW));
         if (refreshWaysIn != null) refreshWaysIn.run();
     }
 

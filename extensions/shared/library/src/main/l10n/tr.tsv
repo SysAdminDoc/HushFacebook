@@ -2408,3 +2408,13 @@ A profile's Reels tab lists its most viewed reels first instead of the newest. O
 Not in this build, so dark mode stays Facebook's dark gray. Morphe Manager doesn't pick it by default. Turn on Expert mode in Manager, choose the %1$s patch and patch again.	Bu sürümde yok, bu yüzden karanlık mod Facebook'un koyu grisinde kalır. Morphe Manager bunu varsayılan olarak seçmez. Manager'da Uzman modunu aç, %1$s yamasını seç ve yeniden yamala.
 Cast button on reels	Reels'te yayınla düğmesi
 Adds a cast button to reels, under Download. It hands the reel to a casting app you have, such as Web Video Caster, which sends it to your TV.	Reels'e, İndir'in altına bir yayınla düğmesi ekler. Reel'i, Web Video Caster gibi sende olan bir yayın uygulamasına verir, o da TV'ne gönderir.
+Tab order	Sekme sırası
+Professional dashboard	Profesyonel panel
+Ad Center	Reklam Merkezi
+Create	Oluştur
+Explore	Keşfet
+As Facebook has it. Tap to put the tabs in the order you want. Facebook opens on the first one. Restart Facebook after you change this.	Facebook'ta olduğu gibi. Sekmeleri istediğiniz sıraya koymak için dokunun. Facebook ilk sekmede açılır. Bunu değiştirdikten sonra Facebook'u yeniden başlatın.
+In this order: %1$s. Facebook opens on the first one. Restart Facebook after you change this.	Bu sırayla: %1$s. Facebook ilk sekmede açılır. Bunu değiştirdikten sonra Facebook'u yeniden başlatın.
+Tap a tab to move it up	Bir sekmeyi yukarı taşımak için ona dokunun
+Your tab bar will keep Facebook's order.	Sekme çubuğunuz Facebook'un sırasını koruyacak.
+Your tab bar will go in this order: %1$s.	Sekme çubuğunuz şu sırayla olacak: %1$s.
