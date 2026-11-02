@@ -4,17 +4,41 @@
  */
 package app.morphe.extension.facebook.search;
 
-import java.lang.reflect.Method;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.os.Build;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.NumberPicker;
+import android.widget.TextView;
 
+import java.lang.reflect.Method;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import app.morphe.extension.facebook.reels.PostTextSelect;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.ui.Dim;
 
 /**
  * Search date range (#279): the Posted date filter opens Facebook's own from and to month picker
- * in place of the list of years.
+ * in place of the list of years, with a day wheel for each end under it.
  *
  * <p>Facebook's filter screen is built from the kind each filter declares, and it already has a
  * date range picker for that kind: two month wheels that send the range to the search as a start
@@ -29,6 +53,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * hands the tap handler its own callback, and a tap with a callback goes to it and never reaches
  * the kind. For the date filter with the switch on, {@link #callback} answers no callback, so the
  * tap carries on to the kind and the picker.
+ *
+ * <p>The picker only asks for months, and Facebook Lite asks for days. The search takes a day too:
+ * the same {@code creation_time} filter Facebook's website sends carries {@code start_day} and
+ * {@code end_day} beside the months. {@link #dayRow} puts a From day and a To day wheel under the
+ * picker, {@link #days} adds the two days to the range Facebook sends, clamped to each month's
+ * length, and {@link #label} puts them in the chip Facebook shows for the range. The first of the
+ * start month to the last of the end month is the range Facebook sends anyway, so it goes as it is.
  */
 public final class SearchDateRange {
     /** The name Facebook gives the Posted date filter. */
@@ -49,10 +80,53 @@ public final class SearchDateRange {
     /** What the report counts each time the date filter opens as a range. */
     static final String OPENED = "Date filter opened as a range";
 
+    /** The member the report names once the picker's view has been asked about. */
+    static final String DAY_ROW = "day wheels";
+
+    /** The member the report names once a range Facebook sends has been asked about. */
+    static final String DAY_ARGS = "range days";
+
+    /** The member the report names once the range's chip label has been asked about. */
+    static final String DAY_LABEL = "range label";
+
+    /** What the report counts each time a range goes out with its days. */
+    static final String DAYS_SENT = "Range sent with days";
+
+    /**
+     * A quote as the range text holds it. That text goes into the filter's {@code args}, a JSON
+     * string, so each of its quotes is escaped with a backslash.
+     */
+    static final String QUOTE = "\\\"";
+
+    /** The months Facebook puts in a range it sends, as year and month for each end. */
+    private static final Pattern MONTHS = Pattern.compile(Pattern.quote(QUOTE + "start_month" + QUOTE + ":" + QUOTE)
+            + "(\\d{4})-(\\d{1,2})" + Pattern.quote(QUOTE + "," + QUOTE + "end_month" + QUOTE + ":" + QUOTE)
+            + "(\\d{4})-(\\d{1,2})" + Pattern.quote(QUOTE));
+
+    /** The text colors of Facebook's dark and light screens. */
+    private static final int DARK_TEXT = 0xFFE4E6EB;
+    private static final int LIGHT_TEXT = 0xFF050505;
+
+    /** Facebook's dark and light sheet colours, for the day row until it reads the sheet's own. */
+    private static final int DARK_SHEET = 0xFF242526;
+    private static final int LIGHT_SHEET = 0xFFFFFFFF;
+
     private static final String FAMILY = FamilyNames.SEARCH_DATE_RANGE;
 
     /** True between {@link #kind} remapping a filter and {@link #bottomSheet} answering for the same tap. */
     private static boolean remapped;
+
+    /** The day the From day wheel shows, kept for the next time the picker opens. */
+    static int fromDay = 1;
+
+    /** The day the To day wheel shows; past the end month's last day, it means that last day. */
+    static int toDay = 31;
+
+    /**
+     * The range {@link #days} last sent with days, as start year, month and day and end year,
+     * month and day, until {@link #label} uses it; null when it went as whole months.
+     */
+    private static int[] sent;
 
     private SearchDateRange() {
     }
@@ -129,6 +203,204 @@ public final class SearchDateRange {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, SHEET_CALLBACK, failure);
             return facebookCallback;
+        }
+    }
+
+    /**
+     * The hook where the range picker hands back its view, the whole Date posted page with its
+     * heading: with the switch on, the same page over a row with the From day and To day wheels;
+     * otherwise, and for a throw, Facebook's view. The page paints the sheet behind itself and the
+     * sheet doesn't, so once the page is laid out the row takes the colour the page paints.
+     */
+    public static View dayRow(View facebookView) {
+        try {
+            HookStatus.bound(FAMILY, DAY_ROW);
+            if (facebookView == null || !Utils.settingsReady() || !Settings.SEARCH_DATE_RANGE.get()) {
+                return facebookView;
+            }
+            Context context = facebookView.getContext();
+            boolean dark = PostTextSelect.dark(context);
+            int text = dark ? DARK_TEXT : LIGHT_TEXT;
+            LinearLayout row = new LinearLayout(context);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_HORIZONTAL);
+            row.setPadding(Dim.dp16, Dim.dp8, Dim.dp16, Dim.dp16);
+            row.setBackgroundColor(dark ? DARK_SHEET : LIGHT_SHEET);
+            LinearLayout.LayoutParams half = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            row.addView(wheel(context, L10n.t(context, "From day"), fromDay, text, day -> fromDay = day), half);
+            row.addView(wheel(context, L10n.t(context, "To day"), toDay, text, day -> toDay = day),
+                    new LinearLayout.LayoutParams(half));
+            LinearLayout column = new LinearLayout(context);
+            column.setOrientation(LinearLayout.VERTICAL);
+            column.addView(facebookView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+            column.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT));
+            facebookView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                @Override
+                public void onLayoutChange(View page, int left, int top, int right, int bottom,
+                                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                    page.removeOnLayoutChangeListener(this);
+                    page.post(() -> paintLike(row, page));
+                }
+            });
+            Logger.printDebug(() -> "Search date range: day wheels at " + fromDay + " and " + toDay);
+            return column;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, DAY_ROW, failure);
+            return facebookView;
+        }
+    }
+
+    /**
+     * Gives [row] the colour [page] paints at the middle of its top edge, above the heading's text,
+     * so the row matches the sheet in every theme. Keeps the row's colour when the page can't be read.
+     */
+    static void paintLike(View row, View page) {
+        int width = page.getWidth();
+        int height = page.getHeight();
+        if (width <= 0 || height <= 0) return;
+        try {
+            Bitmap pixel = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(pixel);
+            canvas.translate(-(width / 2f), -Math.min(height - 1, Dim.dp4));
+            page.draw(canvas);
+            int colour = pixel.getPixel(0, 0);
+            pixel.recycle();
+            if (Color.alpha(colour) == 0xFF) row.setBackgroundColor(colour);
+        } catch (Throwable unreadable) {
+            Logger.printDebug(() -> "Search date range: the sheet's colour couldn't be read");
+        }
+    }
+
+    /** Takes the day a wheel moved to. */
+    interface DayPicked {
+        void picked(int day);
+    }
+
+    /** A titled wheel of the days 1 to 31, starting at [day]. */
+    private static View wheel(Context context, String title, int day, int textColor, DayPicked picked) {
+        LinearLayout column = new LinearLayout(context);
+        column.setOrientation(LinearLayout.VERTICAL);
+        column.setGravity(Gravity.CENTER_HORIZONTAL);
+        TextView label = new TextView(context);
+        label.setText(title);
+        label.setTextColor(textColor);
+        label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        label.setGravity(Gravity.CENTER);
+        column.addView(label);
+        NumberPicker days = new NumberPicker(context);
+        days.setMinValue(1);
+        days.setMaxValue(31);
+        days.setValue(Math.max(1, Math.min(31, day)));
+        days.setWrapSelectorWheel(true);
+        days.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) days.setTextColor(textColor);
+        days.setContentDescription(title);
+        days.setOnValueChangedListener((wheel, before, now) -> picked.picked(now));
+        column.addView(days);
+        return column;
+    }
+
+    /**
+     * The hook after Facebook writes the months of a range it sends, handed that text. With the
+     * switch on and a day picked, the same text with the start and end day after it; otherwise,
+     * and for a throw, Facebook's text.
+     */
+    public static String days(String facebookArgs) {
+        sent = null;
+        try {
+            HookStatus.bound(FAMILY, DAY_ARGS);
+            if (facebookArgs == null || !Utils.settingsReady() || !Settings.SEARCH_DATE_RANGE.get()) {
+                return facebookArgs;
+            }
+            int[] range = range(facebookArgs, fromDay, toDay);
+            if (range == null) return facebookArgs;
+            sent = range;
+            HookStatus.counted(FAMILY, DAYS_SENT);
+            String withDays = facebookArgs + "," + field("start_day", day(range, 0)) + "," + field("end_day", day(range, 3));
+            Logger.printDebug(() -> "Search date range: " + withDays);
+            return withDays;
+        } catch (Throwable failure) {
+            sent = null;
+            HookStatus.threw(FAMILY, DAY_ARGS, failure);
+            return facebookArgs;
+        }
+    }
+
+    /**
+     * The range [args] names with the days [from] and [to], each held to its month's length, as
+     * start year, month and day and end year, month and day, the earlier first. Null when [args]
+     * names no months, or the days are the whole months Facebook sends anyway.
+     */
+    static int[] range(String args, int from, int to) {
+        Matcher months = MONTHS.matcher(args);
+        if (!months.find()) return null;
+        int startYear = Integer.parseInt(months.group(1));
+        int startMonth = Integer.parseInt(months.group(2));
+        int endYear = Integer.parseInt(months.group(3));
+        int endMonth = Integer.parseInt(months.group(4));
+        if (startMonth < 1 || startMonth > 12 || endMonth < 1 || endMonth > 12) return null;
+        int endLast = lastDay(endYear, endMonth);
+        int startDay = Math.max(1, Math.min(from, lastDay(startYear, startMonth)));
+        int endDay = Math.max(1, Math.min(to, endLast));
+        if (startDay == 1 && endDay == endLast) return null;
+        int[] range = {startYear, startMonth, startDay, endYear, endMonth, endDay};
+        // Facebook puts the earlier month first, so only days in one month can be the wrong way round.
+        if (startYear == endYear && startMonth == endMonth && startDay > endDay) {
+            range[2] = endDay;
+            range[5] = startDay;
+        }
+        return range;
+    }
+
+    /** The day of [range] starting at [at], written as the search takes it. */
+    private static String day(int[] range, int at) {
+        return String.format(Locale.US, "%04d-%02d-%02d", range[at], range[at + 1], range[at + 2]);
+    }
+
+    /** [name] and [value] as one field of the range text, quoted as Facebook quotes its months. */
+    static String field(String name, String value) {
+        return QUOTE + name + QUOTE + ":" + QUOTE + value + QUOTE;
+    }
+
+    /** How many days [month] (1 to 12) of [year] has. */
+    static int lastDay(int year, int month) {
+        return new GregorianCalendar(year, month - 1, 1).getActualMaximum(Calendar.DAY_OF_MONTH);
+    }
+
+    private static Date date(int year, int month, int day) {
+        return new GregorianCalendar(year, month - 1, day).getTime();
+    }
+
+    /**
+     * The hook after Facebook writes the chip label for a range it sends, handed the label and the
+     * date format it wrote the two ends with. When {@link #days} sent days, the same label with each
+     * end written as its day; otherwise, and for a label it can't take apart, Facebook's label.
+     */
+    public static String label(String facebookLabel, Object facebookFormat) {
+        int[] range = sent;
+        sent = null;
+        try {
+            HookStatus.bound(FAMILY, DAY_LABEL);
+            if (range == null || facebookLabel == null || !(facebookFormat instanceof DateFormat)) return facebookLabel;
+            DateFormat format = (DateFormat) facebookFormat;
+            // Facebook writes the first of the start month and the last of the end month.
+            String first = format.format(date(range[0], range[1], 1));
+            String last = format.format(date(range[3], range[4], lastDay(range[3], range[4])));
+            if (first.length() + last.length() > facebookLabel.length() || !facebookLabel.startsWith(first)
+                    || !facebookLabel.endsWith(last)) {
+                Logger.printDebug(() -> "Search date range: the label " + facebookLabel + " stays");
+                return facebookLabel;
+            }
+            String between = facebookLabel.substring(first.length(), facebookLabel.length() - last.length());
+            Locale locale = Locale.getDefault();
+            DateFormat days = new SimpleDateFormat(
+                    android.text.format.DateFormat.getBestDateTimePattern(locale, "yMMMd"), locale);
+            return days.format(date(range[0], range[1], range[2])) + between
+                    + days.format(date(range[3], range[4], range[5]));
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, DAY_LABEL, failure);
+            return facebookLabel;
         }
     }
 

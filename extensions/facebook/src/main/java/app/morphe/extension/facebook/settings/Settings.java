@@ -1763,8 +1763,9 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_dont_save_search_history", FALSE);
 
     /**
-     * The Posted date filter in post search opens Facebook's own from and to month picker in place
-     * of the list of years ({@link app.morphe.extension.facebook.search.SearchDateRange}, #279).
+     * The Posted date filter in post search opens Facebook's own from and to month picker, with a
+     * day wheel for each end, in place of the list of years
+     * ({@link app.morphe.extension.facebook.search.SearchDateRange}, #279).
      * Off by default.
      */
     public static final BooleanSetting SEARCH_DATE_RANGE =

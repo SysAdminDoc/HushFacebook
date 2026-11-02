@@ -29,6 +29,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 private const val PATCH = "Search date range"
 
@@ -40,6 +41,20 @@ internal const val KIND = "$SEARCH_DATE_RANGE->kind(Ljava/lang/Object;Ljava/lang
 internal const val BOTTOM_SHEET = "$SEARCH_DATE_RANGE->bottomSheet(Z)Z"
 internal const val CALLBACK =
     "$SEARCH_DATE_RANGE->callback(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"
+internal const val DAY_ROW = "$SEARCH_DATE_RANGE->dayRow(Landroid/view/View;)Landroid/view/View;"
+internal const val DAYS = "$SEARCH_DATE_RANGE->days(Ljava/lang/String;)Ljava/lang/String;"
+internal const val LABEL = "$SEARCH_DATE_RANGE->label(Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/String;"
+
+/** The range picker screen. */
+internal const val PICKER = "Lcom/facebook/search/results/filters/ui/home/SearchResultsDateRangePickerMenuFragment;"
+
+/**
+ * The text Facebook writes a range's months with, held by the method that sends the range. It goes
+ * into the filter's args, a JSON string, so its quotes carry backslashes.
+ */
+internal const val RANGE_MONTHS = "\\\"start_month\\\":\\\"%d-%02d\\\",\\\"end_month\\\":\\\"%d-%02d\\\""
+
+private const val STRING = "Ljava/lang/String;"
 
 /** The kinds a filter declares, as the enum's constants are named; the kind class holds all of them. */
 internal val FILTER_KINDS = listOf("DATE_RANGE_PICKER", "MULTI_CHOICE", "TIME_PICKER")
@@ -77,13 +92,21 @@ internal const val FLAG_REACH = 12
  * so the hooked read never runs. That test is the if-eqz jumping straight to the hooked read, and the
  * extension is handed the filter, that first kind and the callback before it. For the date filter
  * with the switch on it answers no callback, and the tap carries on to the picker.
+ *
+ * Days: the picker's onCreateView hands back its LithoView, and the extension wraps it under a row
+ * of From day and To day wheels. Its Apply (585 `LX/0kz3;->onClick`, one case of a shared click
+ * handler) writes the months with [RANGE_MONTHS] and then the chip label, built by a static call
+ * joining five Strings from the two ends a DateFormat wrote. After the months text lands, the
+ * extension is handed it and adds `start_day` and `end_day`; after the label lands, it is handed
+ * the label and that DateFormat and writes the ends as days.
  */
 @Suppress("unused")
 val searchDateRangePatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Search date range",
-    description = "Adds a from and to month picker to the Date posted filter in post search, in place of the list of " +
-        "years, so you can narrow results to a stretch of time. Starts off. Turn it on in Hushfacebook settings > Search.",
+    description = "Adds a from and to date picker to the Date posted filter in post search, in place of the list of " +
+        "years, so you can narrow results to a few days or a stretch of months. Starts off. Turn it on in Hushfacebook " +
+        "settings > Search.",
 ) {
     category("Interface")
     dependsOn(settingsPatch, facebookExtensionPatch)
@@ -104,11 +127,27 @@ val searchDateRangePatch = bytecodePatch(
             ?: throw PatchException(
                 "$PATCH: ${tap.descriptor()} has no test of the filter sheet's own callback jumping to its kind read",
             )
+        val view = classDefByOrNull(PICKER)?.methods?.singleOrNull(::isPickerView)
+            ?.let { picker -> pickerReturns(picker)?.let { picker to it } }
+            ?: throw PatchException("$PATCH: $PICKER has no onCreateView handing back a view it can wrap")
+        val writes = classDefByStrings(RANGE_MONTHS, StringComparisonType.EQUALS)
+            .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+            .flatMap { holder -> methodsHolding(holder, RANGE_MONTHS) }
+            .mapNotNull { sender -> rangeWrite(sender)?.let { sender to it } }
+        val (sender, write) = writes.singleOrNull()
+            ?: throw PatchException(
+                "$PATCH: expected one method writing a range's months and then its label, found ${writes.size}: " +
+                    writes.joinToString { it.first.descriptor() },
+            )
         val method = mutableClassDefBy(tap.definingClass).methods.single { it.descriptor() == tap.descriptor() }
         // The last first: each hook moves every later instruction down.
         method.hookFlag(read)
         method.hookKind(read)
         method.hookCallback(sheet)
+        mutableClassDefBy(view.first.definingClass).methods.single { it.descriptor() == view.first.descriptor() }
+            .hookPickerView(view.second)
+        mutableClassDefBy(sender.definingClass).methods.single { it.descriptor() == sender.descriptor() }
+            .hookRangeWrite(write)
         enableStatus("searchDateRange")
     }
 }
@@ -237,6 +276,129 @@ internal fun MutableMethod.hookFlag(read: KindRead) {
         """
             invoke-static { v${read.flag} }, $BOTTOM_SHEET
             move-result v${read.flag}
+        """,
+    )
+}
+
+/** Whether [method] is the picker's onCreateView. */
+internal fun isPickerView(method: Method) = method.name == "onCreateView" && method.returnType == "Landroid/view/View;" &&
+    method.parameterTypes.map(CharSequence::toString) ==
+    listOf("Landroid/view/LayoutInflater;", "Landroid/view/ViewGroup;", "Landroid/os/Bundle;")
+
+/**
+ * The indexes of [method]'s return-object instructions, or null when it has none, one hands back a
+ * register past v15, or one is a branch target, which a hook put before it would be jumped past.
+ */
+internal fun pickerReturns(method: Method): List<Int>? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val address = IntArray(code.size + 1)
+    for (at in code.indices) address[at + 1] = address[at] + code[at].codeUnits
+    val targets = code.indices.mapNotNull { at -> (code[at] as? OffsetInstruction)?.let { address[at] + it.codeOffset } }.toSet()
+    val returns = code.indices.filter { code[it].opcode == Opcode.RETURN_OBJECT }
+    if (returns.isEmpty() || returns.any { (code[it] as OneRegisterInstruction).registerA > 15 || address[it] in targets }) {
+        return null
+    }
+    return returns
+}
+
+/** Before each return of the picker's view, the extension is handed the view and its answer is returned instead. */
+internal fun MutableMethod.hookPickerView(returns: List<Int>) {
+    val code = implementation!!.instructions.toList()
+    for (at in returns.sortedDescending()) {
+        val view = (code[at] as OneRegisterInstruction).registerA
+        addInstructions(
+            at,
+            """
+                invoke-static { v$view }, $DAY_ROW
+                move-result-object v$view
+            """,
+        )
+    }
+}
+
+/** Where a range's Apply writes its months and then its chip label. */
+internal class RangeWrite(
+    /** The index of the move-result taking the months text. */
+    val monthsResult: Int,
+    /** The register the months text lands in. */
+    val months: Int,
+    /** The index of the move-result taking the label. */
+    val labelResult: Int,
+    /** The register the label lands in. */
+    val label: Int,
+    /** The register holding the DateFormat the label's two ends were written with. */
+    val format: Int,
+)
+
+/**
+ * In [method], the [RANGE_MONTHS] text formatted by the static call right after it and taken by a
+ * move-result-object, then the first static call joining five Strings into one, taken the same way,
+ * with the DateFormat of the last format(Date) call before it still in its register. Null when any
+ * part is missing or a register is past v15.
+ */
+internal fun rangeWrite(method: Method): RangeWrite? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val text = code.indices.singleOrNull { at ->
+        (code[at].opcode == Opcode.CONST_STRING || code[at].opcode == Opcode.CONST_STRING_JUMBO) &&
+            ((code[at] as ReferenceInstruction).reference as? StringReference)?.string == RANGE_MONTHS
+    } ?: return null
+    val formatted = code.getOrNull(text + 1) ?: return null
+    val formatter = (formatted as? ReferenceInstruction)?.reference as? MethodReference ?: return null
+    if (formatted.opcode != Opcode.INVOKE_STATIC || formatter.returnType != STRING ||
+        (formatted as FiveRegisterInstruction).registerC != (code[text] as OneRegisterInstruction).registerA
+    ) {
+        return null
+    }
+    val monthsResult = text + 2
+    if (code.getOrNull(monthsResult)?.opcode != Opcode.MOVE_RESULT_OBJECT) return null
+    val months = (code[monthsResult] as OneRegisterInstruction).registerA
+    val join = (monthsResult + 1 until code.size - 1).firstOrNull { at ->
+        val call = code[at]
+        val target = (call as? ReferenceInstruction)?.reference as? MethodReference
+        call.opcode == Opcode.INVOKE_STATIC && target != null && target.returnType == STRING &&
+            target.parameterTypes.size == 5 && target.parameterTypes.all { it.toString() == STRING }
+    } ?: return null
+    val labelResult = join + 1
+    if (code[labelResult].opcode != Opcode.MOVE_RESULT_OBJECT) return null
+    val label = (code[labelResult] as OneRegisterInstruction).registerA
+    val formatCall = (join - 1 downTo monthsResult).firstOrNull { at ->
+        val target = (code[at] as? ReferenceInstruction)?.reference as? MethodReference
+        code[at].opcode == Opcode.INVOKE_VIRTUAL && target != null && target.definingClass == "Ljava/text/DateFormat;" &&
+            target.name == "format" && target.parameterTypes.map(CharSequence::toString) == listOf("Ljava/util/Date;")
+    } ?: return null
+    val format = (code[formatCall] as FiveRegisterInstruction).registerC
+    // Nothing between that call and the label may write over the format's register.
+    val overwritten = (formatCall + 1..labelResult).any { at ->
+        val written = code[at] as? OneRegisterInstruction
+        written != null && written.registerA == format && code[at].opcode in WRITES
+    }
+    if (overwritten || maxOf(months, label, format) > 15 || format == label) return null
+    return RangeWrite(monthsResult, months, labelResult, label, format)
+}
+
+/** The opcodes that load a register a OneRegisterInstruction names. */
+private val WRITES = setOf(
+    Opcode.MOVE_RESULT, Opcode.MOVE_RESULT_OBJECT, Opcode.MOVE_RESULT_WIDE, Opcode.CONST_STRING, Opcode.CONST_STRING_JUMBO,
+    Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST, Opcode.CONST_HIGH16, Opcode.CONST_CLASS, Opcode.NEW_INSTANCE,
+)
+
+/**
+ * After the label lands, the extension is handed it and the DateFormat; after the months text lands,
+ * the extension is handed it. Each answer goes back into the same register.
+ */
+internal fun MutableMethod.hookRangeWrite(write: RangeWrite) {
+    addInstructions(
+        write.labelResult + 1,
+        """
+            invoke-static { v${write.label}, v${write.format} }, $LABEL
+            move-result-object v${write.label}
+        """,
+    )
+    addInstructions(
+        write.monthsResult + 1,
+        """
+            invoke-static { v${write.months} }, $DAYS
+            move-result-object v${write.months}
         """,
     )
 }

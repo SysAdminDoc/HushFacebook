@@ -116,7 +116,68 @@ class SearchDateRangeFixtureTest {
             }.map { it.opcode })
     }
 
+    private fun days(bundle: File) {
+        // The picker hands back its view from one return, which the day wheels can wrap.
+        val picker = FixtureDex.classes(bundle, setOf(PICKER)).values.singleOrNull()
+        assertTrue("${bundle.name}: $PICKER is there", picker != null)
+        val view = picker!!.methods.single(::isPickerView)
+        val returns = pickerReturns(view)
+        assertEquals("${bundle.name}: ${view.descriptor()} hands back its view once", 1, returns?.size)
+        val stockView = view.implementation!!.instructions.toList()
+        val viewContext = PatchContexts.of(listOf(picker))
+        val mutableView = viewContext.mutableClassDefBy(PICKER).methods.single { it.descriptor() == view.descriptor() }
+        mutableView.hookPickerView(returns!!)
+        val wrapped = mutableView.implementation!!.instructions.toList()
+        assertEquals("${bundle.name}: the view goes through the extension right before it's returned", DAY_ROW,
+            (wrapped[returns.single()] as ReferenceInstruction).reference.toString())
+        assertEquals(stockView.size + 2, wrapped.size)
+
+        // One method writes a range's months and then its label, and sends both on.
+        val holders = FixtureDex.classesHolding(bundle, RANGE_MONTHS).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        val writes = holders.flatMap { methodsHolding(it, RANGE_MONTHS) }.mapNotNull { m -> rangeWrite(m)?.let { m to it } }
+        assertEquals("${bundle.name}: one method writes a range's months and label, found ${writes.map { it.first.descriptor() }}",
+            1, writes.size)
+        val (sender, write) = writes.single()
+        val where = "${bundle.name}: ${sender.descriptor()}"
+        val stock = sender.implementation!!.instructions.toList()
+        // The months text is what goes into the creation_time filter's args.
+        val wrapsMonths = stock.drop(write.monthsResult + 1).take(4).any { instruction ->
+            instruction.opcode == Opcode.INVOKE_STATIC && (instruction as FiveRegisterInstruction).registerCount == 2 &&
+                instruction.registerD == write.months
+        }
+        assertTrue("$where hands the months text to the call writing the filter's args", wrapsMonths)
+        // The label is the one a FilterPersistentState is built with.
+        val built = stock.drop(write.labelResult + 1).firstOrNull { instruction ->
+            instruction.opcode == Opcode.INVOKE_DIRECT && ((instruction as ReferenceInstruction).reference as MethodReference)
+                .definingClass.endsWith("/FilterPersistentState;")
+        } as FiveRegisterInstruction?
+        // Its constructor takes the filter's name, then the label.
+        assertTrue("$where builds a FilterPersistentState with the label", built != null && built.registerE == write.label)
+
+        val owner = FixtureDex.classes(bundle, setOf(sender.definingClass)).values.single()
+        val mutable = PatchContexts.of(listOf(owner)).mutableClassDefBy(owner.type).methods
+            .single { it.descriptor() == sender.descriptor() }
+        mutable.hookRangeWrite(write)
+        val patched = mutable.implementation!!.instructions.toList()
+        assertEquals("$where gains two instructions for the months and two for the label", stock.size + 4, patched.size)
+        assertEquals("$where: the months are handed over", DAYS,
+            (patched[write.monthsResult + 1] as ReferenceInstruction).reference.toString())
+        assertEquals("$where: their answer goes back", write.months,
+            (patched[write.monthsResult + 2] as OneRegisterInstruction).registerA)
+        assertEquals("$where: the label is handed over", LABEL,
+            (patched[write.labelResult + 3] as ReferenceInstruction).reference.toString())
+        assertEquals("$where: with the DateFormat", write.format, (patched[write.labelResult + 3] as FiveRegisterInstruction).registerD)
+        assertEquals("$where: the rest of Facebook's code stays", stock.map { it.opcode },
+            patched.filterIndexed { index, _ ->
+                index !in (write.monthsResult + 1..write.monthsResult + 2) && index !in (write.labelResult + 3..write.labelResult + 4)
+            }.map { it.opcode })
+    }
+
     @Test
     fun `each declared build reads a filter's kind, the sheet flag and the sheet callback in one place and hooks all three`() =
         bundles(::tap)
+
+    @Test
+    fun `each declared build hands back the range picker's view and writes a range's months and label where they can be hooked`() =
+        bundles(::days)
 }

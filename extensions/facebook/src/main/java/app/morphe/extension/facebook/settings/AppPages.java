@@ -239,7 +239,7 @@ final class AppPages {
             }
             if (build.contains(PatchFamily.SEARCH_DATE_RANGE)) {
                 search.addPreference(toggle(context, Settings.SEARCH_DATE_RANGE,
-                        L10n.t("The Date posted filter in post search asks for a from and to month, in place of a list of "
+                        L10n.t("The Date posted filter in post search asks for a from and to date, in place of a list of "
                                 + "years.")));
             }
             if (build.contains(PatchFamily.SEARCH_POSTS_TAB)) {

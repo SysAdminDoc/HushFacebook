@@ -3255,7 +3255,7 @@
     },
     {
       "name": "Search date range",
-      "description": "Adds a from and to month picker to the Date posted filter in post search, in place of the list of years, so you can narrow results to a stretch of time. Starts off. Turn it on in Hushfacebook settings > Search.",
+      "description": "Adds a from and to date picker to the Date posted filter in post search, in place of the list of years, so you can narrow results to a few days or a stretch of months. Starts off. Turn it on in Hushfacebook settings > Search.",
       "category": "Interface",
       "use": true,
       "dependencies": [

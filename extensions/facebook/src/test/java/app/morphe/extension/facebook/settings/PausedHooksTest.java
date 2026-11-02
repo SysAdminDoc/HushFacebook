@@ -168,6 +168,7 @@ import app.morphe.extension.facebook.reels.TapShowsControls;
 import app.morphe.extension.facebook.search.MetaAiSearchForTests;
 import app.morphe.extension.facebook.search.PreSearchSectionsForTests;
 import app.morphe.extension.facebook.search.SearchDateRange;
+import app.morphe.extension.facebook.search.SearchDateRangeForTests;
 import app.morphe.extension.facebook.search.SearchDateRangeTest;
 import app.morphe.extension.facebook.search.SearchHistory;
 import app.morphe.extension.facebook.search.SearchPostsTabForTests;
@@ -1024,7 +1025,9 @@ public class PausedHooksTest {
                     return !SearchDateRange.bottomSheet(true);
                 },
                 () -> SearchDateRange.callback(new SearchDateRangeTest.Filter("rp_creation_time"),
-                        SearchDateRangeTest.Kind.MULTI_CHOICE, "callback") == null));
+                        SearchDateRangeTest.Kind.MULTI_CHOICE, "callback") == null,
+                SearchDateRangeForTests::sendsDays,
+                SearchDateRangeForTests::wrapsThePicker));
         // Search results get a Posts chip after Reels.
         probes.put(PatchFamily.SEARCH_POSTS_TAB, Collections.singletonList(SearchPostsTabForTests::addsPosts));
         // XAnalytics' upload and uploader resume are skipped, and the Papaya job finishes unrun.

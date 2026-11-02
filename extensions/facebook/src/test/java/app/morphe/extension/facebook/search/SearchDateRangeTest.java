@@ -4,11 +4,18 @@
  */
 package app.morphe.extension.facebook.search;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+
+import android.graphics.drawable.ColorDrawable;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.NumberPicker;
+import android.widget.TextView;
 
 import org.junit.After;
 import org.junit.Before;
@@ -16,7 +23,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.robolectric.annotation.GraphicsMode;
+
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -56,6 +68,8 @@ public class SearchDateRangeTest {
 
     private static final Filter POSTED = new Filter(SearchDateRange.FILTER);
 
+    private static final String MARCH_TO_MAY = SearchDateRangeForTests.MARCH_TO_MAY;
+
     @Before
     public void start() {
         HookStatus.clear();
@@ -66,8 +80,11 @@ public class SearchDateRangeTest {
         PauseForTests.resume();
         Settings.SEARCH_DATE_RANGE.resetToDefault();
         HookStatus.clear();
-        // Leave no remapped tap behind for another class.
+        // Leave no remapped tap, picked day or sent range behind for another class.
         SearchDateRange.bottomSheet(true);
+        SearchDateRange.fromDay = 1;
+        SearchDateRange.toDay = 31;
+        SearchDateRange.label(null, null);
     }
 
     private static String statusLine() {
@@ -157,5 +174,134 @@ public class SearchDateRangeTest {
         Settings.SEARCH_DATE_RANGE.save(true);
         Object notAnEnum = "kind";
         assertSame(notAnEnum, SearchDateRange.kind(POSTED, notAnEnum));
+    }
+
+    @Test
+    public void daysAreHeldToTheirMonthsAndWholeMonthsStayAsFacebookSendsThem() {
+        assertArrayEquals(new int[] {2026, 3, 5, 2026, 5, 20}, SearchDateRange.range(MARCH_TO_MAY, 5, 20));
+        assertNull("the first of the start month to the last of the end month",
+                SearchDateRange.range(MARCH_TO_MAY, 1, 31));
+        assertArrayEquals("April has 30 days and 2024 is a leap year", new int[] {2024, 2, 29, 2024, 4, 30},
+                SearchDateRange.range(SearchDateRangeForTests.months("2024-02", "2024-04"), 31, 30));
+        assertNull(SearchDateRange.range(SearchDateRangeForTests.months("2024-02", "2024-04"), 1, 30));
+        assertArrayEquals("2025 isn't", new int[] {2025, 2, 28, 2025, 2, 28},
+                SearchDateRange.range(SearchDateRangeForTests.months("2025-02", "2025-02"), 30, 31));
+        assertArrayEquals("days the wrong way round in one month swap", new int[] {2026, 3, 5, 2026, 3, 20},
+                SearchDateRange.range(SearchDateRangeForTests.months("2026-03", "2026-03"), 20, 5));
+        assertNull(SearchDateRange.range(SearchDateRange.field("start_year", "2026"), 5, 20));
+        assertNull(SearchDateRange.range(SearchDateRangeForTests.months("2026-13", "2026-05"), 5, 20));
+    }
+
+    @Test
+    public void theMonthsAreReadOnlyAsFacebookQuotesThemInsideItsArgs() {
+        // Facebook formats them as "{\"start_month\":\"2026-03\",...}" inside the args string of
+        // {"name":"creation_time","args":"{%s}"}: a bare quote would end that string.
+        assertEquals("\\\"start_day\\\":\\\"2026-03-05\\\"", SearchDateRange.field("start_day", "2026-03-05"));
+        assertNull(SearchDateRange.range("\"start_month\":\"2026-03\",\"end_month\":\"2026-05\"", 5, 20));
+    }
+
+    @Test
+    public void onARangeGoesOutWithItsDaysAndTheChipShowsThem() {
+        Settings.SEARCH_DATE_RANGE.save(true);
+        SearchDateRange.fromDay = 5;
+        SearchDateRange.toDay = 20;
+        assertEquals(MARCH_TO_MAY + ",\\\"start_day\\\":\\\"2026-03-05\\\",\\\"end_day\\\":\\\"2026-05-20\\\"",
+                SearchDateRange.days(MARCH_TO_MAY));
+        SimpleDateFormat months = new SimpleDateFormat("MMM yyyy", Locale.US);
+        assertEquals("Mar 5, 2026 to May 20, 2026", SearchDateRange.label("Mar 2026 to May 2026", months));
+        assertEquals("the days are used once", "Mar 2026 to May 2026",
+                SearchDateRange.label("Mar 2026 to May 2026", months));
+        String line = statusLine();
+        assertTrue(line, line.contains(SearchDateRange.DAYS_SENT + " 1"));
+    }
+
+    @Test
+    public void aLabelItCannotTakeApartStays() {
+        Settings.SEARCH_DATE_RANGE.save(true);
+        SearchDateRange.fromDay = 5;
+        SearchDateRange.days(MARCH_TO_MAY);
+        assertEquals("Spring", SearchDateRange.label("Spring", new SimpleDateFormat("MMM yyyy", Locale.US)));
+        SearchDateRange.days(MARCH_TO_MAY);
+        assertEquals("Mar 2026 to May 2026", SearchDateRange.label("Mar 2026 to May 2026", "not a format"));
+    }
+
+    @Test
+    public void wholeMonthsOffOrPausedTheRangeAndLabelAreFacebooks() {
+        Settings.SEARCH_DATE_RANGE.save(true);
+        SimpleDateFormat months = new SimpleDateFormat("MMM yyyy", Locale.US);
+        assertSame(MARCH_TO_MAY, SearchDateRange.days(MARCH_TO_MAY));
+        assertEquals("Mar 2026 to May 2026", SearchDateRange.label("Mar 2026 to May 2026", months));
+        SearchDateRange.fromDay = 5;
+        Settings.SEARCH_DATE_RANGE.save(false);
+        assertSame(MARCH_TO_MAY, SearchDateRange.days(MARCH_TO_MAY));
+        Settings.SEARCH_DATE_RANGE.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame(MARCH_TO_MAY, SearchDateRange.days(MARCH_TO_MAY));
+        assertEquals("Mar 2026 to May 2026", SearchDateRange.label("Mar 2026 to May 2026", months));
+        assertNull(SearchDateRange.days(null));
+    }
+
+    @Test
+    public void onThePageKeepsItsHeadingOnTopWithTheDayWheelsUnderIt() {
+        Settings.SEARCH_DATE_RANGE.save(true);
+        SearchDateRange.fromDay = 5;
+        View picker = new View(RuntimeEnvironment.getApplication());
+        View shown = SearchDateRange.dayRow(picker);
+        assertTrue(shown instanceof LinearLayout);
+        LinearLayout column = (LinearLayout) shown;
+        assertEquals(2, column.getChildCount());
+        assertSame("Facebook's page is kept, over the wheels", picker, column.getChildAt(0));
+        LinearLayout row = (LinearLayout) column.getChildAt(1);
+        assertTrue("the row paints its own background", row.getBackground() instanceof ColorDrawable);
+        NumberPicker from = (NumberPicker) ((LinearLayout) row.getChildAt(0)).getChildAt(1);
+        NumberPicker to = (NumberPicker) ((LinearLayout) row.getChildAt(1)).getChildAt(1);
+        assertEquals("From day", ((TextView) ((LinearLayout) row.getChildAt(0)).getChildAt(0)).getText().toString());
+        assertEquals(5, from.getValue());
+        assertEquals(31, to.getValue());
+        assertEquals(1, from.getMinValue());
+        assertEquals(31, from.getMaxValue());
+    }
+
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    public void theDayRowTakesTheColourThePagePaints() {
+        View page = new View(RuntimeEnvironment.getApplication());
+        page.setBackgroundColor(0xFF123456);
+        page.layout(0, 0, 200, 100);
+        View row = new View(RuntimeEnvironment.getApplication());
+        row.setBackgroundColor(0xFF000001);
+        SearchDateRange.paintLike(row, page);
+        assertEquals(0xFF123456, ((ColorDrawable) row.getBackground()).getColor());
+    }
+
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    public void aPageThatPaintsNothingOrIsNotLaidOutLeavesTheRowsColour() {
+        View row = new View(RuntimeEnvironment.getApplication());
+        row.setBackgroundColor(0xFF000001);
+        View clear = new View(RuntimeEnvironment.getApplication());
+        clear.layout(0, 0, 200, 100);
+        SearchDateRange.paintLike(row, clear);
+        View unplaced = new View(RuntimeEnvironment.getApplication());
+        unplaced.setBackgroundColor(0xFF123456);
+        SearchDateRange.paintLike(row, unplaced);
+        assertEquals(0xFF000001, ((ColorDrawable) row.getBackground()).getColor());
+    }
+
+    @Test
+    public void offOrPausedThePickerIsFacebooksAlone() {
+        View picker = new View(RuntimeEnvironment.getApplication());
+        assertSame(picker, SearchDateRange.dayRow(picker));
+        Settings.SEARCH_DATE_RANGE.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame(picker, SearchDateRange.dayRow(picker));
+        assertNull(SearchDateRange.dayRow(null));
+    }
+
+    @Test
+    public void theProbesAnswerOnlyWithTheSwitchOn() {
+        assertFalse(SearchDateRangeForTests.sendsDays());
+        assertFalse(SearchDateRangeForTests.wrapsThePicker());
+        Settings.SEARCH_DATE_RANGE.save(true);
+        assertTrue(SearchDateRangeForTests.sendsDays());
+        assertTrue(SearchDateRangeForTests.wrapsThePicker());
     }
 }

@@ -1931,7 +1931,9 @@ What you search for, and the pages and profiles you open from a search, aren't a
 # context: switch title under Search; on, the Date posted filter in post search asks for a from and to month instead of a list of years; Date posted is Facebook's own filter name in search results
 Search date range	Khoảng ngày trong tìm kiếm
 # context: summary of that switch; Date posted is Facebook's own filter name in post search results, named here as Facebook shows it
-The Date posted filter in post search asks for a from and to month, in place of a list of years.	Bộ lọc ngày đăng trong tìm kiếm bài viết hỏi tháng bắt đầu và tháng kết thúc, thay cho danh sách năm.
+The Date posted filter in post search asks for a from and to date, in place of a list of years.	Bộ lọc ngày đăng trong tìm kiếm bài viết hỏi ngày bắt đầu và ngày kết thúc, thay cho danh sách năm.
+From day	Từ ngày
+To day	Đến ngày
 # context: switch title under Reels and Watch; the audio line is the scrolling line at the bottom of a reel naming its sound, like "Name · Original audio" or a song title
 Hide the audio line on reels	Ẩn dòng âm thanh trên reel
 # context: summary of that switch; "Original audio" is Facebook's own label, so use the wording Facebook shows in this language
