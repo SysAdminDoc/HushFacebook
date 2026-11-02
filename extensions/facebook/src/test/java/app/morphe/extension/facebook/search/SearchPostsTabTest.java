@@ -17,11 +17,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -31,10 +34,10 @@ import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
- * Search posts tab (#339): with its switch on, a search answer's entries gain one naming Posts
- * after Reels, which answers Posts through the same interface call Facebook reads the tab with,
- * and nothing through the rest. An answer without tabs, one that already has Posts, and every
- * answer with the switch off or paused stay as they came.
+ * Search posts tab (#339): with its switch on, the row of chips over search results gains a Posts
+ * chip after Reels, labelled as Facebook's own table labels its posts tab, so a tap opens the
+ * posts results. A row that already has Posts, a table with no posts tab, and every row with the
+ * switch off or paused stay as they came.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -43,70 +46,56 @@ public class SearchPostsTabTest {
 
     /** Stands in for Facebook's tab enum. */
     public enum Tab {
-        UNSET_OR_UNRECOGNIZED_ENUM_VALUE, TOP, POSTS, REELS, PEOPLE, GROUPS, EVENTS
+        UNSET_OR_UNRECOGNIZED_ENUM_VALUE, BLENDED, BLENDED_STORIES, REELS, USERS, GROUPS
     }
 
-    /** Stands in for an entry's interface: the tab, and other answers Facebook reads from a filter. */
-    public interface Entry {
-        Tab tab();
+    /** Stands in for a chip: selected, then its id and label, as Facebook makes them. */
+    public static final class Chip {
+        final String id;
+        final String label;
+        final boolean selected;
 
-        Object filter();
-
-        boolean selected();
-
-        int position();
+        public Chip(boolean selected, String id, String label) {
+            this.selected = selected;
+            this.id = id;
+            this.label = label;
+        }
     }
 
-    /** An answer's entry naming [tab], or none for a chip like All. */
-    public static final class Served implements Entry {
-        private final Tab tab;
-
-        public Served(Tab tab) {
-            this.tab = tab;
-        }
-
-        @Override
-        public Tab tab() {
-            return tab;
-        }
-
-        @Override
-        public Object filter() {
-            return "filter";
-        }
-
-        @Override
-        public boolean selected() {
-            return true;
-        }
-
-        @Override
-        public int position() {
-            return 7;
-        }
+    /** Facebook's table, label to tab, as the tap handler reads it. */
+    private static Map<String, Tab> labels() {
+        Map<String, Tab> out = new LinkedHashMap<>();
+        out.put("All", Tab.BLENDED);
+        out.put("Posts", Tab.BLENDED_STORIES);
+        out.put("People", Tab.USERS);
+        out.put("Groups", Tab.GROUPS);
+        out.put("Reels", Tab.REELS);
+        return out;
     }
 
     @Before
     public void start() {
         HookStatus.clear();
+        SearchPostsTab.testLabels = labels();
     }
 
     @After
     public void restore() {
+        SearchPostsTab.testLabels = null;
         PauseForTests.resume();
         Settings.SEARCH_POSTS_TAB.resetToDefault();
         HookStatus.clear();
     }
 
-    private static List<Entry> chips(Tab... tabs) {
-        List<Entry> out = new ArrayList<>();
-        for (Tab tab : tabs) out.add(new Served(tab));
+    private static List<Chip> row(String... labels) {
+        List<Chip> out = new ArrayList<>();
+        for (int i = 0; i < labels.length; i++) out.add(new Chip(i == 0, labels[i], labels[i]));
         return out;
     }
 
-    private static List<Tab> tabsOf(List<?> entries) {
-        List<Tab> out = new ArrayList<>();
-        for (Object entry : entries) out.add(((Entry) entry).tab());
+    private static List<String> labelsOf(List<?> chips) {
+        List<String> out = new ArrayList<>();
+        for (Object chip : chips) out.add(((Chip) chip).label);
         return out;
     }
 
@@ -119,68 +108,82 @@ public class SearchPostsTabTest {
 
     @Test
     public void postsGoesInAfterReels() {
-        List<Entry> served = chips(null, Tab.REELS, Tab.PEOPLE, Tab.GROUPS, Tab.EVENTS);
-        List<?> out = SearchPostsTab.edges(served);
-        assertEquals(Arrays.asList(null, Tab.REELS, Tab.POSTS, Tab.PEOPLE, Tab.GROUPS, Tab.EVENTS), tabsOf(out));
+        List<Chip> served = row("All", "Reels", "People", "Groups");
+        List<?> out = SearchPostsTab.chips(served);
+        assertEquals(Arrays.asList("All", "Reels", "Posts", "People", "Groups"), labelsOf(out));
         for (int i = 0; i < served.size(); i++) {
-            assertTrue("Facebook's own entries stay, in order", out.get(i < 2 ? i : i + 1) == served.get(i));
+            assertSame("Facebook's own chips stay, in order", served.get(i), out.get(i < 2 ? i : i + 1));
         }
-        Entry posts = (Entry) out.get(2);
-        assertNull("the added entry has no filter of its own", posts.filter());
-        assertFalse(posts.selected());
-        assertEquals(0, posts.position());
-        assertFalse("the added entry is only itself", posts.equals(served.get(1)));
-        assertTrue(posts.equals(posts));
+        Chip posts = (Chip) out.get(2);
+        assertEquals("the id is the label, as Facebook's chips have it", "Posts", posts.id);
+        assertFalse(posts.selected);
         String line = statusLine();
         assertNotNull(line);
         assertTrue(line, line.contains(SearchPostsTab.ADDED));
     }
 
     @Test
-    public void withoutReelsPostsGoesBeforeTheFirstTab() {
-        assertEquals(Arrays.asList(null, Tab.POSTS, Tab.PEOPLE, Tab.GROUPS),
-                tabsOf(SearchPostsTab.edges(chips(null, Tab.PEOPLE, Tab.GROUPS))));
-        assertEquals(Arrays.asList(Tab.TOP, Tab.POSTS, Tab.PEOPLE),
-                tabsOf(SearchPostsTab.edges(chips(Tab.TOP, Tab.PEOPLE))));
-        assertEquals(Arrays.asList(Tab.UNSET_OR_UNRECOGNIZED_ENUM_VALUE, Tab.POSTS, Tab.GROUPS),
-                tabsOf(SearchPostsTab.edges(chips(Tab.UNSET_OR_UNRECOGNIZED_ENUM_VALUE, Tab.GROUPS))));
+    public void withoutReelsPostsGoesAfterTheFirstChip() {
+        assertEquals(Arrays.asList("All", "Posts", "People", "Groups"),
+                labelsOf(SearchPostsTab.chips(row("All", "People", "Groups"))));
+        assertEquals(Arrays.asList("All", "Posts"), labelsOf(SearchPostsTab.chips(row("All"))));
     }
 
     @Test
-    public void answersWithPostsOrWithoutTabsStay() {
-        List<Entry> withPosts = chips(null, Tab.REELS, Tab.POSTS, Tab.PEOPLE);
-        assertSame(withPosts, SearchPostsTab.edges(withPosts));
-        List<Entry> filters = chips(null, null, Tab.UNSET_OR_UNRECOGNIZED_ENUM_VALUE);
-        assertSame(filters, SearchPostsTab.edges(filters));
-        List<Entry> empty = new ArrayList<>();
-        assertSame(empty, SearchPostsTab.edges(empty));
-        assertNull(SearchPostsTab.edges(null));
-        List<String> notEntries = Arrays.asList("a", "b");
-        assertSame(notEntries, SearchPostsTab.edges(notEntries));
+    public void theTableIsReadEitherWayRound() {
+        Map<Tab, String> byTab = new LinkedHashMap<>();
+        byTab.put(Tab.REELS, "Reels");
+        byTab.put(Tab.BLENDED_STORIES, "Posts");
+        SearchPostsTab.testLabels = byTab;
+        assertEquals(Arrays.asList("All", "Reels", "Posts", "People"),
+                labelsOf(SearchPostsTab.chips(row("All", "Reels", "People"))));
+        assertEquals("Posts", SearchPostsTab.labelOf(labels(), SearchPostsTab.POSTS_TAB));
+        assertNull(SearchPostsTab.labelOf(null, SearchPostsTab.POSTS_TAB));
     }
 
     @Test
-    public void offOrPausedTheAnswerStays() {
-        List<Entry> served = chips(null, Tab.REELS, Tab.PEOPLE);
+    public void aRowWithPostsOrATableWithoutItStays() {
+        List<Chip> withPosts = row("All", "Reels", "Posts", "People");
+        assertSame(withPosts, SearchPostsTab.chips(withPosts));
+        Map<String, Tab> noPosts = labels();
+        noPosts.remove("Posts");
+        SearchPostsTab.testLabels = noPosts;
+        List<Chip> served = row("All", "Reels");
+        assertSame(served, SearchPostsTab.chips(served));
+        List<Chip> empty = new ArrayList<>();
+        assertSame(empty, SearchPostsTab.chips(empty));
+        assertNull(SearchPostsTab.chips(null));
+        assertFalse("nothing was added", String.valueOf(statusLine()).contains(SearchPostsTab.ADDED));
+    }
+
+    @Test
+    public void aChipKindWithoutTheConstructorStays() {
+        List<String> notChips = Arrays.asList("All", "Reels");
+        assertSame(notChips, SearchPostsTab.chips(notChips));
+    }
+
+    @Test
+    public void offOrPausedTheRowStays() {
+        List<Chip> served = row("All", "Reels", "People");
         Settings.SEARCH_POSTS_TAB.save(false);
-        assertSame(served, SearchPostsTab.edges(served));
+        assertSame(served, SearchPostsTab.chips(served));
         Settings.SEARCH_POSTS_TAB.save(true);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
-        assertSame(served, SearchPostsTab.edges(served));
+        assertSame(served, SearchPostsTab.chips(served));
         PauseForTests.resume();
-        assertEquals(4, SearchPostsTab.edges(served).size());
+        assertEquals(4, SearchPostsTab.chips(served).size());
+    }
+
+    @Test
+    public void unpatchedThereIsNoTableAndTheRowStays() {
+        SearchPostsTab.testLabels = null;
+        assertNull(SearchPostsTab.tabLabels(RuntimeEnvironment.getApplication()));
+        List<Chip> served = row("All", "Reels");
+        assertSame(served, SearchPostsTab.chips(served));
     }
 
     @Test
     public void onByDefault() {
         assertTrue(Settings.SEARCH_POSTS_TAB.get());
-    }
-
-    @Test
-    public void theTabIsReadThroughTheOneMethodAnsweringTheEnum() throws Exception {
-        assertEquals("tab", SearchPostsTab.tabMethod(new Served(Tab.REELS)).getName());
-        assertNull(SearchPostsTab.tabMethod("not an entry"));
-        assertTrue(SearchPostsTab.isTabEnum(Tab.class));
-        assertFalse(SearchPostsTab.isTabEnum(HushfacebookPause.Reason.class));
     }
 }

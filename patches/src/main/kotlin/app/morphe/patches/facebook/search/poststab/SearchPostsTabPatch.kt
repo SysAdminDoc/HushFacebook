@@ -6,62 +6,64 @@ package app.morphe.patches.facebook.search.poststab
 
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
-import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.util.proxy.mutableTypes.MutableClass
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.methodsHolding
-import app.morphe.patches.facebook.feed.reels.categoryNames
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
-import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
-import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
-import com.android.tools.smali.dexlib2.iface.reference.StringReference
-import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 private const val PATCH = "Search posts tab"
 
-/** The trace section Facebook opens while it reads a search answer's filters and tabs. */
-internal const val FILTER_PARSE = "filter parse"
+/** A tab name the chip row's builder switches on to label a chip. */
+internal const val CHIP_TAB_NAME = "BLENDED_VIDEOS"
 
-internal const val IMMUTABLE_LIST = "Lcom/google/common/collect/ImmutableList;"
+internal const val LIST_BUILDER = "Lcom/google/common/collect/ImmutableList\$Builder;"
 
-internal const val EDGES = "$EXTENSION_PACKAGE/search/SearchPostsTab;->edges(Ljava/util/List;)Ljava/util/List;"
+internal const val IMMUTABLE_MAP = "Lcom/google/common/collect/ImmutableMap;"
 
-internal const val COPY_OF = "$IMMUTABLE_LIST->copyOf(Ljava/util/Collection;)$IMMUTABLE_LIST"
+internal const val CONTEXT = "Landroid/content/Context;"
 
-/** Tabs the enum an entry answers must hold, as its constants are named. */
-internal val TAB_NAMES = listOf("POSTS", "REELS", "PEOPLE", "GROUPS")
+internal const val LIST = "Ljava/util/List;"
+
+internal const val POSTS_TAB_CLASS = "$EXTENSION_PACKAGE/search/SearchPostsTab;"
+
+internal const val CHIPS = "$POSTS_TAB_CLASS->chips($LIST)$LIST"
+
+/** The extension's stub this patch fills with a call to Facebook's table of tab labels. */
+internal const val TAB_LABELS_STUB = "tabLabels"
 
 /**
  * Search posts tab (#339).
  *
- * The chips over search results come from the search answer: a list of entries, each answering
- * the tab it stands for through an interface call (585 arm64: `LX/0DrM;->DE7()LX/0BfT;`, the tab
- * enum holding POSTS, REELS, PEOPLE, GROUPS and the rest). Facebook reads that list under the
- * [FILTER_PARSE] trace section, and for each entry naming a tab it builds the chip itself, with
- * the tab's own label, kind and query (`LX/0D0J;->A04`). POSTS is still one of them, with the
- * "Posts" label and the blended posts search, but answers stopped listing it.
+ * The chips over search results are built by one method that walks the search answer's tabs and
+ * labels each one, switching on the tab's name ([CHIP_TAB_NAME] among them): it makes each chip
+ * with a `(selected, id, label)` constructor, adds it to an ImmutableList builder and hands the row
+ * to the chip row's static draw method (585 arm64: built in `LX/0Czv;->A00(LX/0D1n;)V`, chips
+ * `LX/0Dw4;`, drawn by `LX/0Dw3;->A02(FbUserSession, LX/0Dw3;, List, Z)V`). Every row goes through
+ * that draw method: the answer's, the one rebuilt after a tap from a stored list or Facebook's
+ * fallback row, and the reset. A tap looks the chip's label up in Facebook's table of tab labels
+ * (`LX/0Dvk;->A02(Context)ImmutableMap`, label to tab) to open that tab. Posts (BLENDED_STORIES)
+ * is still in that table, but answers stopped listing it.
  *
- * The method opening [FILTER_PARSE] casts the list to ImmutableList before it walks it. Right
- * after that cast the extension is handed the list, and what it answers goes back into the same
- * register as an ImmutableList (`copyOf` gives back the same list when nothing changed). With the
- * switch on it adds an entry naming POSTS after REELS, and Facebook builds that chip like the rest.
- *
- * The cast is found by shape: the first check-cast to ImmutableList after the trace string, in a
- * method that also reads an entry's tab with an interface call answering the enum holding all of
- * [TAB_NAMES] after it.
+ * The draw method hands its list of chips to the extension first and draws what comes back. The
+ * extension's [TAB_LABELS_STUB] is filled with a call to the table, so with the switch on every
+ * row gets a chip labelled as the table labels Posts, after Reels, and a tap on it opens the posts
+ * results.
  */
 @Suppress("unused")
 val searchPostsTabPatch = bytecodePatch(
@@ -76,76 +78,107 @@ val searchPostsTabPatch = bytecodePatch(
 
     execute {
         requireStatusMethod("searchPostsTab")
-        val holders = classDefByStrings(FILTER_PARSE, StringComparisonType.EQUALS)
+        val holders = classDefByStrings(CHIP_TAB_NAME, StringComparisonType.EQUALS)
             .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        val found = listReads(holders)
-        val (parse, read) = found.singleOrNull()
+        val found = chipRows(holders)
+        val (builder, row) = found.singleOrNull()
             ?: throw PatchException(
-                "$PATCH: expected one method opening \"$FILTER_PARSE\" that casts a list and reads each entry's tab, " +
-                    "found ${found.size}: ${found.joinToString { it.first.descriptor() }}",
+                "$PATCH: expected one method building the search chip row, found ${found.size}: " +
+                    found.joinToString { it.first.descriptor() },
             )
-        val method = mutableClassDefBy(parse.definingClass).methods.single { it.descriptor() == parse.descriptor() }
-        method.hookEntries(read)
+        val rowClass = mutableClassDefBy(row.draw.definingClass)
+        val tables = tabLabelTables(rowClass)
+        val table = tables.singleOrNull()
+            ?: throw PatchException("$PATCH: expected one table of tab labels called from ${rowClass.type}, found $tables")
+        val draw = rowClass.methods.singleOrNull { it.descriptor() == row.draw.descriptor() }
+            ?: throw PatchException("$PATCH: ${builder.descriptor()} draws its row with ${row.draw.descriptor()}, which isn't there")
+        draw.handChipsOver()
+        tabLabelsStub(mutableClassDefBy(POSTS_TAB_CLASS)).fillTabLabels(table)
         enableStatus("searchPostsTab")
     }
 }
 
-/** Where a filter parse casts its list of entries, and how it reads an entry's tab. */
-internal class ListRead(
-    /** The index of the check-cast to ImmutableList. */
-    val cast: Int,
-    /** The register the list is in. */
-    val list: Int,
-    /** The interface call that reads an entry's tab. */
-    val tabRead: MethodReference,
+/** A chip row's builder: what its chips are and the static method that draws the row. */
+internal class ChipRow(
+    /** The chips' type. */
+    val chipType: String,
+    /** The chip row class's static method the row goes to, taking that class and the List of chips. */
+    val draw: MethodReference,
 )
 
-/**
- * Each method of [holders] opening [FILTER_PARSE], with where it casts its list. A type Facebook
- * doesn't define is looked up as no class.
- */
-internal fun BytecodePatchContext.listReads(holders: List<ClassDef>) =
-    holders.flatMap { holder -> methodsHolding(holder, FILTER_PARSE) }
-        .mapNotNull { method -> listRead(method) { type -> classDefByOrNull(type) }?.let { method to it } }
+/** Each method of [holders] loading [CHIP_TAB_NAME] that builds a chip row, with its chips and draw method. */
+internal fun chipRows(holders: List<ClassDef>) =
+    holders.flatMap { holder -> methodsHolding(holder, CHIP_TAB_NAME) }
+        .mapNotNull { method -> chipRow(method)?.let { method to it } }
+
+private fun Instruction.methodRef() = (this as? ReferenceInstruction)?.reference as? MethodReference
+
+private fun MethodReference.parameters() = parameterTypes.map { it.toString() }
 
 /**
- * Where [method] casts the list it reads after [FILTER_PARSE], or null when it doesn't, or reads
- * no entry's tab after it. [classOf] looks a class up by type.
+ * [method]'s chip row, or null when it builds none: a chip made with a `(Z, String, String)`
+ * constructor and added to a list builder, then, after that, a call to a static void method of a
+ * class taking that class and a List, which draws the row.
  */
-internal fun listRead(method: Method, classOf: (String) -> ClassDef?): ListRead? {
+internal fun chipRow(method: Method): ChipRow? {
     val code = method.implementation?.instructions?.toList() ?: return null
-    val trace = code.indexOfFirst {
-        ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == FILTER_PARSE
-    }
-    if (trace < 0) return null
-    val cast = (trace + 1 until code.size).firstOrNull { at ->
-        code[at].opcode == Opcode.CHECK_CAST &&
-            ((code[at] as ReferenceInstruction).reference as? TypeReference)?.type == IMMUTABLE_LIST
+    val add = (1 until code.size).firstOrNull { at ->
+        val call = code[at].methodRef() ?: return@firstOrNull false
+        val made = code[at - 1].methodRef() ?: return@firstOrNull false
+        code[at].opcode == Opcode.INVOKE_VIRTUAL && call.definingClass == LIST_BUILDER && call.name == "add" &&
+            code[at - 1].opcode == Opcode.INVOKE_DIRECT && made.name == "<init>" &&
+            made.parameters() == listOf("Z", "Ljava/lang/String;", "Ljava/lang/String;")
     } ?: return null
-    val list = (code[cast] as OneRegisterInstruction).registerA
-    if (list > 15) return null
-    val tabRead = (cast + 1 until code.size).firstNotNullOfOrNull { at ->
-        val call = code[at]
-        if (call.opcode != Opcode.INVOKE_INTERFACE) return@firstNotNullOfOrNull null
-        val reference = (call as ReferenceInstruction).reference as? MethodReference ?: return@firstNotNullOfOrNull null
-        if (reference.parameterTypes.isNotEmpty() || !reference.returnType.startsWith("L")) return@firstNotNullOfOrNull null
-        if ((call as FiveRegisterInstruction).registerCount != 1) return@firstNotNullOfOrNull null
-        val tabs = classOf(reference.returnType) ?: return@firstNotNullOfOrNull null
-        if (!categoryNames(tabs).containsAll(TAB_NAMES)) return@firstNotNullOfOrNull null
-        reference
+    val chipType = code[add - 1].methodRef()!!.definingClass
+    val draw = (add + 1 until code.size).firstNotNullOfOrNull { at ->
+        code[at].methodRef()?.takeIf {
+            code[at].opcode == Opcode.INVOKE_STATIC && it.returnType == "V" &&
+                it.definingClass in it.parameters() && it.parameters().count { type -> type == LIST } == 1
+        }
     } ?: return null
-    return ListRead(cast, list, tabRead)
+    return ChipRow(chipType, draw)
 }
 
-/** After the list is cast, the extension is handed it and its answer goes back into the register as an ImmutableList. */
-internal fun MutableMethod.hookEntries(read: ListRead) {
+/** The static `(Context)ImmutableMap` methods [rowClass] calls: Facebook's table of tab labels. */
+internal fun tabLabelTables(rowClass: ClassDef): List<MethodReference> =
+    rowClass.methods.flatMap { it.implementation?.instructions?.toList().orEmpty() }
+        .filter { it.opcode == Opcode.INVOKE_STATIC }
+        .mapNotNull { it.methodRef() }
+        .filter { it.parameters() == listOf(CONTEXT) && it.returnType == IMMUTABLE_MAP }
+        .distinctBy { it.toString() }
+
+/** The parameter register holding a static method's one List parameter. */
+internal fun Method.listParameter(): Int {
+    val types = parameterTypes.map { it.toString() }
+    return types.take(types.indexOf(LIST)).map { if (it == "J" || it == "D") 2 else 1 }.sum()
+}
+
+/** The draw method hands its chips to the extension first and draws the list that comes back. */
+internal fun MutableMethod.handChipsOver() {
+    val list = listParameter()
     addInstructions(
-        read.cast + 1,
+        0,
         """
-            invoke-static { v${read.list} }, $EDGES
-            move-result-object v${read.list}
-            invoke-static { v${read.list} }, $COPY_OF
-            move-result-object v${read.list}
+            invoke-static/range { p$list .. p$list }, $CHIPS
+            move-result-object p$list
+        """,
+    )
+}
+
+/** The extension's static `Map tabLabels(Context)` stub in [extension]. */
+internal fun tabLabelsStub(extension: MutableClass): MutableMethod = extension.methods.singleOrNull {
+    it.name == TAB_LABELS_STUB && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Ljava/util/Map;" &&
+        it.parameterTypes.map { type -> type.toString() } == listOf(CONTEXT)
+} ?: throw PatchException("$PATCH: $POSTS_TAB_CLASS has no static Map $TAB_LABELS_STUB(Context)")
+
+/** The stub answers [table]'s map for its context. It uses only its parameter register. */
+internal fun MutableMethod.fillTabLabels(table: MethodReference) {
+    addInstructions(
+        0,
+        """
+            invoke-static { p0 }, $table
+            move-result-object p0
+            return-object p0
         """,
     )
 }
