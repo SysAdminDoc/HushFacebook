@@ -17,6 +17,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RenderNode;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -250,6 +251,29 @@ public class TranslucentBarsTest {
     }
 
     @Test
+    @Config(sdk = 34)
+    public void theFrostOfAScrolledHostIsDrawnWhereTheHostShows() {
+        // A host's overlay draws in its scrolled content, so a scrolled host put the frost off by
+        // its scroll and left the bar plain over a sharp feed (#250).
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        int[] origin = new int[2];
+        screen.page.getLocationInWindow(origin);
+        screen.page.scrollTo(720, 0);
+        TranslucentBars.Frost frost = new TranslucentBars.Frost(screen.page, 47f);
+        frost.update(new Rect(0, 1440, 720, 1600), 1f, 1, 0f);
+        Tracking canvas = new Tracking();
+        canvas.hardware = true;
+        // The host's own drawing: its overlay comes after the scroll is applied.
+        canvas.translate(-720, 0);
+
+        frost.draw(canvas);
+
+        assertEquals(1, canvas.nodes.size());
+        assertEquals("on screen, over the bar", new Rect(0, 1440 - origin[1], 720, 1600 - origin[1]), canvas.nodes.get(0));
+        frost.remove();
+    }
+
+    @Test
     public void aPageHoldingASurfaceViewIsSeenAnywhereInIt() {
         TranslucentBarsForTests screen = new TranslucentBarsForTests();
         Rect box = new Rect();
@@ -333,9 +357,11 @@ public class TranslucentBarsTest {
         }
     }
 
-    /** A canvas that keeps its translation and each cleared box, in its starting coordinates. */
+    /** A canvas that keeps its translation, each cleared box and each node drawn, in its starting coordinates. */
     private static final class Tracking extends Canvas {
         final List<Rect> cleared = new ArrayList<>();
+        final List<Rect> nodes = new ArrayList<>();
+        boolean hardware;
         private final Deque<float[]> stack = new ArrayDeque<>();
         private float x;
         private float y;
@@ -369,6 +395,17 @@ public class TranslucentBarsTest {
             if (paint.getXfermode() instanceof PorterDuffXfermode) {
                 cleared.add(new Rect(Math.round(left + x), Math.round(top + y), Math.round(right + x), Math.round(bottom + y)));
             }
+        }
+
+        @Override
+        public boolean isHardwareAccelerated() {
+            return hardware;
+        }
+
+        @Override
+        public void drawRenderNode(RenderNode node) {
+            nodes.add(new Rect(Math.round(node.getLeft() + x), Math.round(node.getTop() + y),
+                    Math.round(node.getRight() + x), Math.round(node.getBottom() + y)));
         }
     }
 

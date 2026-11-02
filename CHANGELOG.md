@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** `See-through bars` keeps its blur lined up with the bar when the page under it is scrolled inside its own frame.
 * **Facebook:** New `Videos in search results wait for a tap` under Video and audio. Videos in search results stay still until you tap one, whether `Tap to play` is on or off. It starts off. (#363)
 * **Facebook:** New `Hide the Reels title` under Reels and Watch. It takes the word Reels off the top of the Reels tab and leaves the buttons beside it. It starts off. (#362)
 * **Facebook:** New `Hide the Join button on posts` under News feed. A post from a group you haven't joined shows a Join button after the group's name, and this takes it off while the name stays. It shows on posts drawn after you flip it. It starts off. (#356)

@@ -520,6 +520,8 @@ public final class TranslucentBars {
             Boolean found = holdingRows != null;
             if (!found.equals(shortOfBox.put(bar, found))) {
                 HookStatus.counted(FAMILY, found ? UNDER_ITS_ROWS : NOTHING_UNDER);
+                Logger.printDebug(() -> "See-through bars: " + (found ? "a view holds only the rows of bar " : "nothing under bar ")
+                        + box(bar) + " rows " + rows.toShortString());
                 if (!found && !describedNothingUnder && !rows.isEmpty()) {
                     describedNothingUnder = true;
                     HookStatus.counted(FAMILY, describe(bar, rows));
@@ -757,6 +759,8 @@ public final class TranslucentBars {
         /** The pill's corners, for a rounded tab bar (#344). */
         private final Outline outline = new Outline();
         private boolean recording;
+        /** Whether it was drawn yet, for the debug log. */
+        private boolean drawn;
         int frame;
 
         Frost(View host, float radius) {
@@ -824,7 +828,18 @@ public final class TranslucentBars {
         @Override
         public void draw(Canvas canvas) {
             if (recording || !canvas.isHardwareAccelerated()) return;
+            // An overlay draws in its host's scrolled content (View translates by -scroll first), so
+            // a scrolled host would put the frost off by its scroll. [node] sits where the host
+            // shows, the way record() copies it.
+            int saved = canvas.save();
+            canvas.translate(host.getScrollX(), host.getScrollY());
             canvas.drawRenderNode(node);
+            canvas.restoreToCount(saved);
+            if (!drawn) {
+                drawn = true;
+                Logger.printDebug(() -> "See-through bars: frost drawn in " + host.getClass().getSimpleName()
+                        + " scrolled " + host.getScrollX() + "," + host.getScrollY());
+            }
         }
 
         @Override
