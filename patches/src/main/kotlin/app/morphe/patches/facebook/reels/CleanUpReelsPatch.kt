@@ -106,8 +106,10 @@ val cleanUpReelsPatch = bytecodePatch(
         filterChips()
         // #314: and "Made with Edits" under the caption, which isn't one of the chips.
         hideEditsLabel()
-        // #200: the Reels tab draws the audio line in a row of its own, past the chip list.
-        hideReelsTabAudioLine()
+        // #200: the Reels tab draws the audio line in a row of its own, past the chip list. Looked up
+        // once: the hide's early return makes the row stop reading as one, and #357 dates it below.
+        val audioLine = reelsTabAudioLine()
+        audioLine.returnNullWhen(HIDE_AUDIO_LINE)
         hideFollowButtons()
         skipFooterQueries()
         hideThreadsCards()
@@ -131,7 +133,9 @@ val cleanUpReelsPatch = bytecodePatch(
         // #299: the Comment button on a reel whose comments are turned off.
         showReelCommentButton()
         // #296: the post date under a reel's author, behind a server switch.
-        showReelPostDate()
+        val storyType = showReelPostDate()
+        // #357: and in front of the song line, which takes that spot on most reels in the Reels tab.
+        dateReelsTabAudioLine(audioLine, storyType)
         // #291: the Subscribe pill beside a video's author, in the viewer's row and wherever the shared builder's lands.
         hideSubscribePill()
         // #311: Search and the button beside it at the top of the full-screen player, by the bar's id.
@@ -180,17 +184,18 @@ private fun BytecodePatchContext.filterChips() {
 }
 
 /**
- * The Reels tab's audio line row asks the extension first thing and answers null when it says so,
- * Facebook's own answer for a reel with no sound line. Refuses unless exactly one render fits.
+ * The Reels tab's audio line row, as Facebook ships it, which asks the extension first thing and
+ * answers null when it says so, Facebook's own answer for a reel with no sound line. Refuses unless
+ * exactly one render fits. Once hooked, its first answer is the hook's, so it's looked up only once.
  */
-private fun BytecodePatchContext.hideReelsTabAudioLine() {
+internal fun BytecodePatchContext.reelsTabAudioLine(): MutableMethod {
     val rows = classDefByStrings(SOUNDTRACK_CHIP, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
         .flatMap { classDef -> classDef.methods.filter(::isAudioLineRender).map { classDef.type to it } }
     val (owner, row) = rows.singleOrNull() ?: throw PatchException(
         "$PATCH: expected one render that picks $SOUNDTRACK_CHIP and answers null first, found ${rows.size}",
     )
-    mutableClassDefBy(owner).methods.first { it.sameSignatureAs(row) }.returnNullWhen(HIDE_AUDIO_LINE)
+    return mutableClassDefBy(owner).methods.first { it.sameSignatureAs(row) }
 }
 
 /** Asks [hook] first thing and answers null when it says so. v0 is free there, as in [answerWhen]. */

@@ -12,6 +12,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import com.facebook.graphservice.tree.TreeJNI;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -450,6 +452,46 @@ public class ReelDeclutterTest {
         } finally {
             SettingReadsForTests.mend(Settings.SHOW_REEL_POST_DATE);
         }
+    }
+
+    /**
+     * On a reel with a song the Reels tab draws the song's line where the date would go (#357), so the
+     * date goes in front of it, worded the same way. A time that can't be a post's, a story that holds
+     * none or isn't a live tree, the switch off, a pause and unready settings all keep the song line.
+     */
+    @Test
+    public void theDateGoesInFrontOfTheSongLine() {
+        String song = "Some Band" + ReelDeclutter.DOT + "Original audio";
+        long threeWeeks = NOW / 1000 - 21L * 24 * 60 * 60;
+        assertEquals("3 weeks ago" + ReelDeclutter.DOT + song,
+                ReelDeclutter.audioLine(song, threeWeeks, NOW, ReelDateStyle.AGO, Locale.US, UTC));
+        assertEquals("Oct 12" + ReelDeclutter.DOT + song,
+                ReelDeclutter.audioLine(song, 1791817200L, NOW, ReelDateStyle.DATE, Locale.US, UTC));
+        for (ReelDateStyle style : ReelDateStyle.values()) {
+            assertSame(song, ReelDeclutter.audioLine(song, 0, NOW, style, Locale.US, UTC));
+            assertSame(song, ReelDeclutter.audioLine(song, NOW / 1000 + 3600, NOW, style, Locale.US, UTC));
+        }
+
+        long posted = System.currentTimeMillis() / 1000 - 21L * 24 * 60 * 60;
+        TreeJNI story = new TreeJNI().with("creation_time", posted);
+        assertSame("off by default, the song line stays", song, ReelDeclutter.audioLineText(song, story));
+        assertNull(line(ReelDeclutter.DATE_ROUTE));
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertEquals("3 weeks ago" + ReelDeclutter.DOT + song, ReelDeclutter.audioLineText(song, story));
+        assertTrue(line(ReelDeclutter.DATE_ROUTE), line(ReelDeclutter.DATE_ROUTE).contains(ReelDeclutter.DATE_ON_SONG));
+        assertSame("a story with no time", song, ReelDeclutter.audioLineText(song, new TreeJNI()));
+        assertSame("a story that isn't a tree", song, ReelDeclutter.audioLineText(song, "story"));
+        assertSame("no story", song, ReelDeclutter.audioLineText(song, null));
+        TreeJNI released = new TreeJNI().with("creation_time", posted).releasedTree();
+        assertSame("a released story", song, ReelDeclutter.audioLineText(song, released));
+        assertFalse("the released story was read", released.readAfterRelease);
+        assertNull("no line stays no line", ReelDeclutter.audioLineText(null, story));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame("dated while paused", song, ReelDeclutter.audioLineText(song, story));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertSame("dated before the settings were ready", song, ReelDeclutter.audioLineText(song, story)));
     }
 
     /**

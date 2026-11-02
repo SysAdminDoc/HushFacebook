@@ -187,9 +187,10 @@ public final class PostDetails {
 
     /**
      * When [model] was posted: its creation time, and for a video without one, its creation
-     * story's. Null when neither is set or it isn't a tree.
+     * story's. Null when neither is set or it isn't a tree. Public for the date in front of a reel's
+     * song line (ReelDeclutter.audioLineText, #357).
      */
-    static Date postedOf(Object model) {
+    public static Date postedOf(Object model) {
         if (!isLiveTree(model)) return null;
         long seconds = time(model, CREATION_TIME);
         if (seconds <= 0) seconds = time(tree(model, CREATION_STORY), CREATION_TIME);

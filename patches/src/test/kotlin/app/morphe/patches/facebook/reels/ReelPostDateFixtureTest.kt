@@ -28,7 +28,8 @@ import org.junit.Test
 /**
  * The post date under a reel's author (#296): each declared build has one helper that reads the
  * video's creation_time behind a server switch, and the switch's answer goes to the extension
- * before the helper compares it with yes.
+ * before the helper compares it with yes. The Reels tab's song line, which takes the date's spot on
+ * most reels, hands its joined line and the reel's story to the extension too (#357).
  */
 class ReelPostDateFixtureTest {
     private fun Method.code() = implementation!!.instructions.toList()
@@ -50,7 +51,8 @@ class ReelPostDateFixtureTest {
                     PatchContexts.of(emptyList()).showReelPostDate()
                 }
                 val context = PatchContexts.of(classes)
-                context.showReelPostDate()
+                val storyType = context.showReelPostDate()
+                assertEquals("$name: the story type is the helper's second parameter", helper.parameterTypes[1].toString(), storyType)
                 val patched = context.mutableClassDefBy(helper.definingClass).methods.single {
                     it.name == helper.name &&
                         it.parameterTypes.map(CharSequence::toString) == helper.parameterTypes.map(CharSequence::toString)
@@ -97,6 +99,53 @@ class ReelPostDateFixtureTest {
                 assertTrue("$name: the wording hook comes after the switch's", worded > at)
                 assertEquals("$name: four executable instructions added",
                     helper.code().count { it.opcode != Opcode.NOP } + 4, patched.count { it.opcode != Opcode.NOP })
+                // #357: on most reels the Reels tab's song line takes that spot, so the date goes in front of it.
+                val chipHolders = FixtureDex.classesHolding(bundle, SOUNDTRACK_CHIP)
+                val renders = chipHolders.flatMap { owner -> owner.methods.filter(::isAudioLineRender) }
+                assertEquals("$name: audio line renders", 1, renders.size)
+                val render = renders.single()
+                val join = audioLineJoin(render)
+                assertTrue("$name: the render joins its song in one call", join >= 0)
+                val line = (render.code()[join + 1] as OneRegisterInstruction).registerA
+                val story = audioLineStory(render, join + 2, storyType)
+                assertNotNull("$name: the render holds the story where it joins the song", story)
+                assertThrows("$name: no render must refuse the patch", PatchException::class.java) {
+                    PatchContexts.of(emptyList()).reelsTabAudioLine()
+                }
+                // In the patch's order: the hide's early return goes in first, and the date still finds its join.
+                val audio = PatchContexts.of(chipHolders)
+                val audioLine = audio.reelsTabAudioLine()
+                audioLine.returnNullWhen(HIDE_AUDIO_LINE)
+                dateReelsTabAudioLine(audioLine, storyType)
+                val dated = audio.mutableClassDefBy(render.definingClass).methods.single {
+                    it.name == render.name &&
+                        it.parameterTypes.map(CharSequence::toString) == render.parameterTypes.map(CharSequence::toString)
+                }.code()
+                assertEquals("$name: the hide's hook still comes first", HIDE_AUDIO_LINE,
+                    ((dated[0] as ReferenceInstruction).reference as MethodReference).toString())
+                val songHooks = dated.indices.filter {
+                    ((dated[it] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == AUDIO_LINE_TEXT
+                }
+                assertEquals("$name: one song line hook", 1, songHooks.size)
+                val songHook = songHooks.single()
+                val passed = dated[songHook] as FiveRegisterInstruction
+                assertEquals("$name: the song line hook takes two registers", 2, passed.registerCount)
+                // A register the hook reads is the original, or a copy made of it between the join and the hook.
+                val datedJoin = audioLineJoin(audioLine)
+                assertTrue("$name: the hook goes in right after the join", songHook > datedJoin + 1)
+                fun copiedFrom(register: Int) = (datedJoin + 2 until songHook).map { dated[it] }
+                    .lastOrNull { it.opcode == Opcode.MOVE_OBJECT_FROM16 && (it as TwoRegisterInstruction).registerA == register }
+                    ?.let { (it as TwoRegisterInstruction).registerB } ?: register
+                assertEquals("$name: the hook passes the joined line", line, copiedFrom(passed.registerC))
+                assertEquals("$name: and the reel's story", story, copiedFrom(passed.registerD))
+                assertEquals("$name: the extension's line comes back", Opcode.MOVE_RESULT_OBJECT, dated[songHook + 1].opcode)
+                assertEquals("$name: into the register passed", passed.registerC, (dated[songHook + 1] as OneRegisterInstruction).registerA)
+                if (passed.registerC != line) {
+                    val back = dated[songHook + 2] as TwoRegisterInstruction
+                    assertEquals("$name: and is copied back", Opcode.MOVE_OBJECT_FROM16, dated[songHook + 2].opcode)
+                    assertEquals("$name: into the line's own register", line, back.registerA)
+                    assertEquals("$name: from the extension's answer", passed.registerC, back.registerB)
+                }
                 checked += version
                 abis += name.substringAfter("-$version-").substringBefore(".apkm")
             }
@@ -118,5 +167,10 @@ class ReelPostDateFixtureTest {
         assertEquals("postDateText's shape", POST_DATE_TEXT,
             "${wording!!.definingClass}->${wording.name}(${wording.parameterTypes.joinToString("")})${wording.returnType}")
         assertTrue("postDateText isn't static", AccessFlags.STATIC.isSet(wording.accessFlags))
+        val song = ExtensionDex.classDef(type).methods.singleOrNull { it.name == "audioLineText" }
+        assertNotNull("the extension has no ReelDeclutter.audioLineText", song)
+        assertEquals("audioLineText's shape", AUDIO_LINE_TEXT,
+            "${song!!.definingClass}->${song.name}(${song.parameterTypes.joinToString("")})${song.returnType}")
+        assertTrue("audioLineText isn't static", AccessFlags.STATIC.isSet(song.accessFlags))
     }
 }
