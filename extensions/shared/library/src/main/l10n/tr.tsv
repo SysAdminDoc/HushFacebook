@@ -2457,3 +2457,7 @@ Emoji after the logo	Logodan sonra emoji
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	Ana sayfanın üstünde Facebook logosunun hemen yanına, kendi renkleriyle çizilen bir emoji. Hiç olmasın istiyorsan boş bırak.
 No emoji after the logo. Type one to show it there.	Logodan sonra emoji yok. Orada görünmesi için bir tane yaz.
 The top of Home shows %1$s after the logo. Restart Facebook to see the change.	Ana sayfanın üstünde logodan sonra %1$s görünüyor. Değişikliği görmek için Facebook uygulamasını yeniden başlat.
+If your patched Facebook includes Accent color, the Custom choice will be %1$s.	Yamalı Facebook'unuz Vurgu rengini içeriyorsa Özel seçeneği %1$s olacak.
+If your patched Facebook includes Accent color, the Custom choice will keep Facebook's blue.	Yamalı Facebook'unuz Vurgu rengini içeriyorsa Özel seçeneği Facebook'un mavisini koruyacak.
+If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.	Yamalı Facebook'unuz Logodan sonra emoji özelliğini içeriyorsa Ana Sayfa'nın üstünde logodan sonra %1$s görünecek.
+The top of Home will show no emoji after the logo.	Ana Sayfa'nın üstünde logodan sonra emoji görünmeyecek.

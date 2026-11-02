@@ -156,11 +156,6 @@ public class SettingsBackupTest {
         out.put("hushfacebook_header_picture",
                 "it names the picture at the top of Home, whose shrunk copy only this install holds. A settings file "
                         + "can't carry the picture itself, and the name alone would point at nothing on another phone.");
-        out.put("hushfacebook_accent_custom",
-                "it's the color code the Custom accent choice picked on this phone. A file that carries the accent "
-                        + "choice but not the code leaves Custom as Facebook's own blue.");
-        out.put("hushfacebook_logo_emoji",
-                "it's a personal touch for the top of Home on this phone, which a settings file doesn't need to copy.");
         out.put("hushfacebook_stories_tray_size",
                 "it is a width in dp picked for this phone's screen, which reads differently on another phone.");
         for (String count : new String[] {"friends", "followers", "following"}) {
@@ -252,6 +247,8 @@ public class SettingsBackupTest {
         Settings.LOGO_COLOR.resetToDefault();
         Settings.TAB_COLOR.resetToDefault();
         Settings.HEADER_TEXT.resetToDefault();
+        Settings.ACCENT_CUSTOM.resetToDefault();
+        Settings.LOGO_EMOJI.resetToDefault();
         Settings.SEEN_MENU_TILES.resetToDefault();
         Settings.SEEN_SHARE_ITEMS.resetToDefault();
         BaseSettings.PAUSED.resetToDefault();
@@ -302,7 +299,7 @@ public class SettingsBackupTest {
                 Settings.START_TAB, Settings.FEEDS_SUBTAB, Settings.COMMENT_ORDER, Settings.PLAYBACK_QUALITY,
                 Settings.REELS_PLAYBACK_QUALITY, Settings.STORIES_PLAYBACK_QUALITY, Settings.QUIET_HOURS_FROM,
                 Settings.QUIET_HOURS_UNTIL, Settings.APP_LOCK_AFTER, Settings.OPENING_PAUSE_LENGTH, Settings.BREAK_AFTER,
-                Settings.BREAK_LENGTH, Settings.TEXT_SIZE, Settings.ACCENT_COLOR, Settings.BADGE_COLOR, Settings.LOGO_COLOR, Settings.TAB_COLOR), SettingsBackup.VALUES);
+                Settings.BREAK_LENGTH, Settings.TEXT_SIZE, Settings.ACCENT_COLOR, Settings.ACCENT_CUSTOM, Settings.LOGO_EMOJI, Settings.BADGE_COLOR, Settings.LOGO_COLOR, Settings.TAB_COLOR), SettingsBackup.VALUES);
         assertEquals(Settings.SAVE_TO, SettingsBackup.TO);
         assertEquals(Settings.HIDDEN_WORDS, SettingsBackup.HIDDEN);
         assertEquals(Settings.KEPT_WORDS, SettingsBackup.KEPT);
@@ -1351,6 +1348,129 @@ public class SettingsBackupTest {
         assertEquals("Matt's feed", SettingsBackup.Snapshot.fromBundle(state).headerText);
         state.putString("header_text", " Matt's feed");
         assertNull(SettingsBackup.Snapshot.fromBundle(state).headerText);
+    }
+
+    /**
+     * The color the Accent color row's Custom choice uses (#355) goes out and comes back as its row
+     * keeps it, so a phone that gets the file shows that color and not Facebook's blue. A code
+     * written any other way refuses the whole file, as a Badge color does.
+     */
+    @Test
+    public void theCustomAccentColorRoundTripsAsItsRowKeepsIt() throws Exception {
+        Settings.ACCENT_COLOR.save(AccentColor.Preset.CUSTOM);
+        Settings.ACCENT_CUSTOM.save(" 12ab9f ");
+        String file = SettingsBackup.create();
+        assertEquals("#12AB9F", new JSONObject(file).getJSONObject("settings").get(SettingsBackup.ACCENT_CUSTOM.key));
+        Settings.ACCENT_COLOR.resetToDefault();
+        Settings.ACCENT_CUSTOM.resetToDefault();
+
+        // A fresh install takes the choice and its color together.
+        SettingsBackup.Snapshot snapshot = SettingsBackup.parse(file);
+        assertEquals("#12AB9F", snapshot.accentCustomChange());
+        assertEquals(2, SettingsBackup.apply(snapshot));
+        assertEquals(AccentColor.Preset.CUSTOM, Settings.ACCENT_COLOR.savedValue());
+        assertEquals("#12AB9F", Settings.ACCENT_CUSTOM.savedValue());
+        assertEquals(Integer.valueOf(0xFF12AB9F), AccentColor.customColour());
+        assertEquals("a file read back is the file", file, SettingsBackup.create());
+        assertEquals(0, SettingsBackup.parse(file).changes().size());
+        assertEquals("If your patched Facebook includes Accent color, the Custom choice will be #12AB9F.",
+                SettingsBackupPreference.accentCustomSentence(snapshot.accentCustom)
+                        .replace(String.valueOf((char) 0x2068), "").replace(String.valueOf((char) 0x2069), ""));
+        assertEquals("If your patched Facebook includes Accent color, the Custom choice will keep Facebook's blue.",
+                SettingsBackupPreference.accentCustomSentence(""));
+
+        Map<String, ?> before = store();
+        for (Object refused : new Object[]{"#12ab9f", "12AB9F", "#8012AB9F", "teal", "#12AB9", 5, true, JSONObject.NULL}) {
+            JSONObject hostile = new JSONObject(file);
+            hostile.getJSONObject("settings").put(SettingsBackup.ACCENT_CUSTOM.key, refused);
+            try {
+                SettingsBackup.parse(hostile.toString());
+                fail("a file with the custom accent " + printable(String.valueOf(refused)) + " was read");
+            } catch (SettingsBackup.Rejected rejected) {
+                assertEquals(printable(String.valueOf(refused)), SettingsBackup.Reason.VALUE, rejected.reason);
+            }
+        }
+        assertEquals("a refused file wrote something", before, store());
+
+        JSONObject blank = new JSONObject(file);
+        blank.getJSONObject("settings").put(SettingsBackup.ACCENT_CUSTOM.key, "");
+        assertEquals(1, SettingsBackup.apply(SettingsBackup.parse(blank.toString())));
+        assertEquals("", Settings.ACCENT_CUSTOM.savedValue());
+
+        Settings.ACCENT_CUSTOM.save("#112233");
+        JSONObject older = new JSONObject(file);
+        older.getJSONObject("settings").remove(SettingsBackup.ACCENT_CUSTOM.key);
+        SettingsBackup.apply(SettingsBackup.parse(older.toString()));
+        assertEquals("#112233", Settings.ACCENT_CUSTOM.savedValue());
+
+        // Saved some other way, it goes out as the row would keep it, or blank when it isn't a color.
+        Settings.ACCENT_CUSTOM.save("not a color");
+        assertEquals("", new JSONObject(SettingsBackup.create()).getJSONObject("settings").get(SettingsBackup.ACCENT_CUSTOM.key));
+
+        Bundle state = snapshot.toBundle();
+        assertEquals("#12AB9F", SettingsBackup.Snapshot.fromBundle(state).accentCustom);
+        state.putString("accent_custom", "#12ab9f");
+        assertNull(SettingsBackup.Snapshot.fromBundle(state).accentCustom);
+    }
+
+    /**
+     * The emoji after the logo (#360) goes out and comes back as its row keeps it, and text written
+     * any other way refuses the whole file, as the Home header text does.
+     */
+    @Test
+    public void theEmojiAfterTheLogoRoundTripsAsItsRowKeepsIt() throws Exception {
+        String party = new String(Character.toChars(0x1F389));
+        Settings.LOGO_EMOJI.save(party);
+        String file = SettingsBackup.create();
+        assertEquals(party, new JSONObject(file).getJSONObject("settings").get(SettingsBackup.LOGO_EMOJI.key));
+        Settings.LOGO_EMOJI.resetToDefault();
+
+        SettingsBackup.Snapshot snapshot = SettingsBackup.parse(file);
+        assertEquals(party, snapshot.logoEmojiChange());
+        assertEquals(1, SettingsBackup.apply(snapshot));
+        assertEquals(party, Settings.LOGO_EMOJI.savedValue());
+        assertEquals("a file read back is the file", file, SettingsBackup.create());
+        assertEquals(0, SettingsBackup.parse(file).changes().size());
+        assertEquals("If your patched Facebook includes Emoji after the logo, the top of Home will show " + party
+                        + " after the logo.",
+                SettingsBackupPreference.logoEmojiSentence(snapshot.logoEmoji)
+                        .replace(String.valueOf((char) 0x2068), "").replace(String.valueOf((char) 0x2069), ""));
+        assertEquals("The top of Home will show no emoji after the logo.", SettingsBackupPreference.logoEmojiSentence(""));
+
+        // Text saved some other way goes out as the header shows it.
+        Settings.LOGO_EMOJI.save("  " + party + " ");
+        assertEquals(party, new JSONObject(SettingsBackup.create()).getJSONObject("settings").get(SettingsBackup.LOGO_EMOJI.key));
+        Settings.LOGO_EMOJI.save(party);
+
+        Map<String, ?> before = store();
+        for (Object refused : new Object[]{" " + party, party + " ", party + " " + party, "tab" + (char) 9 + "here",
+                "123456789", 5, true, JSONObject.NULL}) {
+            JSONObject hostile = new JSONObject(file);
+            hostile.getJSONObject("settings").put(SettingsBackup.LOGO_EMOJI.key, refused);
+            try {
+                SettingsBackup.parse(hostile.toString());
+                fail("a file with the emoji " + printable(String.valueOf(refused)) + " was read");
+            } catch (SettingsBackup.Rejected rejected) {
+                assertEquals(printable(String.valueOf(refused)), SettingsBackup.Reason.VALUE, rejected.reason);
+            }
+        }
+        assertEquals("a refused file wrote something", before, store());
+
+        JSONObject blank = new JSONObject(file);
+        blank.getJSONObject("settings").put(SettingsBackup.LOGO_EMOJI.key, "");
+        assertEquals(1, SettingsBackup.apply(SettingsBackup.parse(blank.toString())));
+        assertEquals("", Settings.LOGO_EMOJI.savedValue());
+
+        Settings.LOGO_EMOJI.save("*");
+        JSONObject older = new JSONObject(file);
+        older.getJSONObject("settings").remove(SettingsBackup.LOGO_EMOJI.key);
+        SettingsBackup.apply(SettingsBackup.parse(older.toString()));
+        assertEquals("*", Settings.LOGO_EMOJI.savedValue());
+
+        Bundle state = snapshot.toBundle();
+        assertEquals(party, SettingsBackup.Snapshot.fromBundle(state).logoEmoji);
+        state.putString("logo_emoji", " " + party);
+        assertNull(SettingsBackup.Snapshot.fromBundle(state).logoEmoji);
     }
 
     /**

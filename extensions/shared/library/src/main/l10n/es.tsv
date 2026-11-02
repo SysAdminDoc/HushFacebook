@@ -2457,3 +2457,7 @@ Emoji after the logo	Emoji tras el logotipo
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	Un emoji justo después del logotipo de Facebook en la parte superior de Inicio, con sus propios colores. Déjalo en blanco si no quieres ninguno.
 No emoji after the logo. Type one to show it there.	No hay emoji tras el logotipo. Escribe uno para mostrarlo ahí.
 The top of Home shows %1$s after the logo. Restart Facebook to see the change.	La parte superior de Inicio muestra %1$s tras el logotipo. Reinicia Facebook para ver el cambio.
+If your patched Facebook includes Accent color, the Custom choice will be %1$s.	Si tu Facebook parcheado incluye Color de énfasis, la opción Personalizado será %1$s.
+If your patched Facebook includes Accent color, the Custom choice will keep Facebook's blue.	Si tu Facebook parcheado incluye Color de énfasis, la opción Personalizado conservará el azul de Facebook.
+If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.	Si tu Facebook parcheado incluye Emoji tras el logotipo, la parte superior de Inicio mostrará %1$s tras el logotipo.
+The top of Home will show no emoji after the logo.	La parte superior de Inicio no mostrará ningún emoji tras el logotipo.

@@ -419,6 +419,8 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.logoChange() != null) parts.add(markColorSentence(Mark.LOGO, snapshot.logoChange()));
             if (snapshot.tabChange() != null) parts.add(markColorSentence(Mark.TAB, snapshot.tabChange()));
             if (snapshot.headerTextChange() != null) parts.add(headerTextSentence(snapshot.headerTextChange()));
+            if (snapshot.logoEmojiChange() != null) parts.add(logoEmojiSentence(snapshot.logoEmojiChange()));
+            if (snapshot.accentCustomChange() != null) parts.add(accentCustomSentence(snapshot.accentCustomChange()));
             if (snapshot.seenKeep != null && snapshot.changes().containsKey(SettingsBackup.SEEN_KEEP)) {
                 parts.add(L10n.f("Posts you've seen will stay hidden for %1$s.",
                         HushfacebookPreferenceFragment.seenKeepLabel(snapshot.seenKeep)));
@@ -712,6 +714,22 @@ public class SettingsBackupPreference extends Preference {
         if (text.isEmpty()) return L10n.t("The top of Home will show Facebook's own logo.");
         return L10n.f("If your patched Facebook includes Home header text, the top of Home will say %1$s.",
                 L10n.isolate(text));
+    }
+
+    /** The sentence that says what follows the logo at the top of Home after an import, [emoji] blank or the text. */
+    static String logoEmojiSentence(String emoji) {
+        if (emoji.isEmpty()) return L10n.t("The top of Home will show no emoji after the logo.");
+        return L10n.f("If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.",
+                L10n.isolate(emoji));
+    }
+
+    /** The sentence that says which color the Accent color row's Custom choice will use after an import, [code] blank or a code. */
+    static String accentCustomSentence(String code) {
+        if (code.isEmpty()) {
+            return L10n.t("If your patched Facebook includes Accent color, the Custom choice will keep Facebook's blue.");
+        }
+        return L10n.f("If your patched Facebook includes Accent color, the Custom choice will be %1$s.",
+                L10n.isolate(code));
     }
 
     /** The sentence that says how large Facebook's text will be after an import. */
@@ -1047,6 +1065,8 @@ public class SettingsBackupPreference extends Preference {
                     + (snapshot.logoChange() == null ? "" : " " + markColorSentence(Mark.LOGO, snapshot.logoChange()))
                     + (snapshot.tabChange() == null ? "" : " " + markColorSentence(Mark.TAB, snapshot.tabChange()))
                     + (snapshot.headerTextChange() == null ? "" : " " + headerTextSentence(snapshot.headerTextChange()))
+                    + (snapshot.logoEmojiChange() == null ? "" : " " + logoEmojiSentence(snapshot.logoEmojiChange()))
+                    + (snapshot.accentCustomChange() == null ? "" : " " + accentCustomSentence(snapshot.accentCustomChange()))
                     + (snapshot.pauseLength == null || !snapshot.changes().containsKey(SettingsBackup.PAUSE_LENGTH) ? ""
                             : " " + pauseLengthSentence(snapshot.pauseLength))
                     + (snapshot.breakAfter == null || !snapshot.changes().containsKey(SettingsBackup.BREAK_AFTER) ? ""

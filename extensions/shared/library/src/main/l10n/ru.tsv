@@ -2511,3 +2511,7 @@ Emoji after the logo	Эмодзи после логотипа
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	Эмодзи сразу после логотипа Facebook вверху Главной, в собственных цветах. Оставьте поле пустым, если он не нужен.
 No emoji after the logo. Type one to show it there.	Эмодзи после логотипа нет. Введите его, чтобы он появился там.
 The top of Home shows %1$s after the logo. Restart Facebook to see the change.	Вверху Главной после логотипа отображается %1$s. Перезапустите Facebook, чтобы увидеть изменения.
+If your patched Facebook includes Accent color, the Custom choice will be %1$s.	Если в вашей версии пропатченного Facebook есть акцентный цвет, вариант «Свой» будет %1$s.
+If your patched Facebook includes Accent color, the Custom choice will keep Facebook's blue.	Если в вашей версии пропатченного Facebook есть акцентный цвет, вариант «Свой» сохранит синий цвет Facebook.
+If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.	Если в вашей версии пропатченного Facebook есть эмодзи после логотипа, вверху Главной после логотипа будет %1$s.
+The top of Home will show no emoji after the logo.	Вверху Главной после логотипа не будет эмодзи.

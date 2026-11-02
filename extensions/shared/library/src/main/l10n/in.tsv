@@ -2457,3 +2457,7 @@ Emoji after the logo	Emoji setelah logo
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	Emoji yang digambar tepat setelah logo Facebook di bagian atas Beranda, dengan warnanya sendiri. Biarkan kosong jika tidak ingin ada.
 No emoji after the logo. Type one to show it there.	Tidak ada emoji setelah logo. Ketik satu untuk menampilkannya di sana.
 The top of Home shows %1$s after the logo. Restart Facebook to see the change.	Bagian atas Beranda menampilkan %1$s setelah logo. Mulai ulang Facebook untuk melihat perubahannya.
+If your patched Facebook includes Accent color, the Custom choice will be %1$s.	Jika Facebook yang kamu patch menyertakan Warna aksen, pilihan Kustom akan berwarna %1$s.
+If your patched Facebook includes Accent color, the Custom choice will keep Facebook's blue.	Jika Facebook yang kamu patch menyertakan Warna aksen, pilihan Kustom akan tetap memakai biru Facebook.
+If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.	Jika Facebook yang kamu patch menyertakan Emoji setelah logo, bagian atas Beranda akan menampilkan %1$s setelah logo.
+The top of Home will show no emoji after the logo.	Bagian atas Beranda tidak akan menampilkan emoji setelah logo.

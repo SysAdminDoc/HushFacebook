@@ -50,6 +50,7 @@ import app.morphe.extension.facebook.media.SurfaceQuality;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.misc.HeaderText;
+import app.morphe.extension.facebook.misc.LogoEmoji;
 import app.morphe.extension.facebook.misc.OpeningPause;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
 import app.morphe.extension.facebook.misc.TextSize;
@@ -560,6 +561,19 @@ public final class SettingsBackup {
     static final StringSetting HEADER_TEXT = Settings.HEADER_TEXT;
 
     /**
+     * The emoji after the logo, held in a file as its row keeps it: blank, or text {@link LogoEmoji}
+     * leaves as it is. Text written any other way refuses the whole file.
+     */
+    static final StringSetting LOGO_EMOJI = Settings.LOGO_EMOJI;
+
+    /**
+     * The color the Accent color row's Custom choice uses, held in a file as its row keeps it: blank,
+     * or {@code #RRGGBB} in capitals that {@link AccentColor#customStored} takes. Anything else
+     * refuses the whole file.
+     */
+    static final StringSetting ACCENT_CUSTOM = Settings.ACCENT_CUSTOM;
+
+    /**
      * The order comment sheets ask for, held in a file as its {@link CommentOrder#fileValue}.
      * Anything else refuses the whole file, as a tab does.
      */
@@ -684,7 +698,7 @@ public final class SettingsBackup {
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
             Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, REELS_ORDER, WATCHED_KEEP, SHARE_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY,
-                    QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, ACCENT, BADGE,
+                    QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI, BADGE,
                     LOGO, TAB));
 
     /** The longest name or value a file holds that isn't a word list, far past a package name. */
@@ -805,6 +819,8 @@ public final class SettingsBackup {
         private static final String LOGO_NAME = "logo_color";
         private static final String TAB_NAME = "tab_color";
         private static final String HEADER_TEXT_NAME = "header_text";
+        private static final String LOGO_EMOJI_NAME = "logo_emoji";
+        private static final String ACCENT_CUSTOM_NAME = "accent_custom";
         private static final String REELS_ORDER_NAME = "reels_order";
         private static final String BURN_IN_NAME = "burn_in_guard";
         private static final String BURN_IN_WAIT_NAME = "burn_in_wait";
@@ -931,6 +947,12 @@ public final class SettingsBackup {
         /** The Home header text the file holds, the same way. */
         @Nullable
         String headerText;
+        /** The emoji after the logo the file holds, the same way. */
+        @Nullable
+        String logoEmoji;
+        /** The Custom accent color the file holds, the same way. */
+        @Nullable
+        String accentCustom;
         /** What the file says Sort loaded reels sorts by, or null when it names none. Set once, as it's read. */
         @Nullable
         ReelsOrder reelsOrder;
@@ -1176,6 +1198,10 @@ public final class SettingsBackup {
             if (tabChange != null) changes.put(TAB, tabChange);
             String headerTextChange = headerTextChange();
             if (headerTextChange != null) changes.put(HEADER_TEXT, headerTextChange);
+            String logoEmojiChange = logoEmojiChange();
+            if (logoEmojiChange != null) changes.put(LOGO_EMOJI, logoEmojiChange);
+            String accentCustomChange = accentCustomChange();
+            if (accentCustomChange != null) changes.put(ACCENT_CUSTOM, accentCustomChange);
             ReelsOrder reelsOrderChange = reelsOrderChange();
             if (reelsOrderChange != null) changes.put(REELS_ORDER, reelsOrderChange);
             BurnInMode burnInChange = burnInChange();
@@ -1438,6 +1464,20 @@ public final class SettingsBackup {
             return headerText.equals(HEADER_TEXT.savedValue()) ? null : headerText;
         }
 
+        /** The emoji after the logo this file sets, or null when it names none or the one already set. */
+        @Nullable
+        String logoEmojiChange() {
+            if (logoEmoji == null) return null;
+            return logoEmoji.equals(LOGO_EMOJI.savedValue()) ? null : logoEmoji;
+        }
+
+        /** The Custom accent color this file sets, or null when it names none or the one already set. */
+        @Nullable
+        String accentCustomChange() {
+            if (accentCustom == null) return null;
+            return accentCustom.equals(ACCENT_CUSTOM.savedValue()) ? null : accentCustom;
+        }
+
         /** The feed Home shows after this file, or null when it names none or the one already set. */
         @Nullable
         FeedsSubtab homeFeedChange() {
@@ -1516,6 +1556,8 @@ public final class SettingsBackup {
             if (logo != null) state.putString(LOGO_NAME, logo);
             if (tab != null) state.putString(TAB_NAME, tab);
             if (headerText != null) state.putString(HEADER_TEXT_NAME, headerText);
+            if (logoEmoji != null) state.putString(LOGO_EMOJI_NAME, logoEmoji);
+            if (accentCustom != null) state.putString(ACCENT_CUSTOM_NAME, accentCustom);
             if (reelsOrder != null) state.putString(REELS_ORDER_NAME, reelsOrder.fileValue);
             if (burnIn != null) state.putString(BURN_IN_NAME, burnIn.fileValue);
             if (burnInWait != null) state.putString(BURN_IN_WAIT_NAME, burnInWait.fileValue);
@@ -1605,6 +1647,11 @@ public final class SettingsBackup {
             Object headerText = state.get(HEADER_TEXT_NAME);
             read.headerText = HeaderText.isClean(headerText instanceof String ? (String) headerText : null)
                     ? (String) headerText : null;
+            Object logoEmoji = state.get(LOGO_EMOJI_NAME);
+            read.logoEmoji = LogoEmoji.isClean(logoEmoji instanceof String ? (String) logoEmoji : null)
+                    ? (String) logoEmoji : null;
+            Object accentCustom = state.get(ACCENT_CUSTOM_NAME);
+            read.accentCustom = isAccentCustom(accentCustom) ? (String) accentCustom : null;
             if (read.hidden != null && read.kept != null && !read.wordListsFit()) return null;
             return read;
         }
@@ -1693,6 +1740,9 @@ public final class SettingsBackup {
             String tab = MarkColors.stored(of(TAB));
             switches.put(TAB.key, tab == null ? "" : tab);
             switches.put(HEADER_TEXT.key, HeaderText.clean(of(HEADER_TEXT)));
+            switches.put(LOGO_EMOJI.key, LogoEmoji.clean(of(LOGO_EMOJI)));
+            String accentCustom = AccentColor.customStored(of(ACCENT_CUSTOM));
+            switches.put(ACCENT_CUSTOM.key, accentCustom == null ? "" : accentCustom);
             return new JSONObject()
                     .put(FORMAT_NAME, FORMAT)
                     .put(SCHEMA_NAME, SCHEMA)
@@ -1829,6 +1879,8 @@ public final class SettingsBackup {
         String logo = null;
         String tab = null;
         String headerText = null;
+        String logoEmoji = null;
+        String accentCustom = null;
         ReelsOrder reelsOrder = null;
         BurnInMode burnIn = null;
         BurnInWait burnInWait = null;
@@ -1927,6 +1979,20 @@ public final class SettingsBackup {
                     throw new Rejected(Reason.VALUE, "Not a Home header text: " + name);
                 }
                 headerText = (String) value;
+                continue;
+            }
+            if (LOGO_EMOJI.key.equals(name)) {
+                Object value = values.opt(name);
+                if (!(value instanceof String) || !LogoEmoji.isClean((String) value)) {
+                    throw new Rejected(Reason.VALUE, "Not an emoji after the logo: " + name);
+                }
+                logoEmoji = (String) value;
+                continue;
+            }
+            if (ACCENT_CUSTOM.key.equals(name)) {
+                Object value = values.opt(name);
+                if (!isAccentCustom(value)) throw new Rejected(Reason.VALUE, "Not a color code: " + name);
+                accentCustom = (String) value;
                 continue;
             }
             if (ORDER.key.equals(name)) {
@@ -2132,6 +2198,8 @@ public final class SettingsBackup {
         read.logo = logo;
         read.tab = tab;
         read.headerText = headerText;
+        read.logoEmoji = logoEmoji;
+        read.accentCustom = accentCustom;
         read.reelsOrder = reelsOrder;
         read.burnIn = burnIn;
         read.burnInWait = burnInWait;
@@ -2146,6 +2214,12 @@ public final class SettingsBackup {
     /** A Light background color as its row keeps it, which {@link AmoledLightBackground} takes. */
     static boolean isLightBackground(@Nullable Object value) {
         return value instanceof String && value.equals(AmoledLightBackground.stored((String) value));
+    }
+
+    /** The Custom accent color as its row keeps it: blank, or {@code #RRGGBB} in capitals. */
+    static boolean isAccentCustom(@Nullable Object value) {
+        return value instanceof String
+                && (((String) value).isEmpty() || value.equals(AccentColor.customStored((String) value)));
     }
 
     /** A Badge, Logo or Selected tab color as its row keeps it, which {@link MarkColors} takes. */

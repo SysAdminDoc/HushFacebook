@@ -2820,21 +2820,21 @@ public class Settings extends BaseSettings {
 
     /**
      * The color the Accent color row's Custom choice uses (#355), as {@code #RRGGBB}. Blank means none
-     * picked yet, and Custom then keeps Facebook's blue. A settings file leaves it out. Screens pick
+     * picked yet, and Custom then keeps Facebook's blue. A settings file carries it. Screens pick
      * their colours as they build, so a change brings up the restart row. Not a switch.
      */
     public static final StringSetting ACCENT_CUSTOM =
-            new StringSetting("hushfacebook_accent_custom", "", true, false);
+            new StringSetting("hushfacebook_accent_custom", "", true);
 
     /**
      * An emoji, or a few characters, drawn after the Facebook logo at the top of Home in their own
      * colors (#360), with the Home header text patch in the build ({@link
      * app.morphe.extension.facebook.misc.HeaderText}). Blank is off, and so is a paused Facebook.
-     * Facebook builds the header once, so a change brings up the restart row. A settings file leaves
-     * it out. Not a switch.
+     * Facebook builds the header once, so a change brings up the restart row. A settings file carries
+     * it. Not a switch.
      */
     public static final StringSetting LOGO_EMOJI =
-            new StringSetting("hushfacebook_logo_emoji", "", true, false);
+            new StringSetting("hushfacebook_logo_emoji", "", true);
 
     /**
      * The colour the count badges on the tabs take ({@link app.morphe.extension.facebook.theme.MarkColors}),

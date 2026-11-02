@@ -2457,3 +2457,7 @@ Emoji after the logo	Biểu tượng cảm xúc sau logo
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	Một biểu tượng cảm xúc nằm ngay sau logo Facebook ở đầu Trang chủ, giữ nguyên màu riêng của nó. Để trống nếu không muốn có.
 No emoji after the logo. Type one to show it there.	Chưa có biểu tượng cảm xúc sau logo. Nhập một biểu tượng để hiển thị ở đó.
 The top of Home shows %1$s after the logo. Restart Facebook to see the change.	Đầu Trang chủ hiển thị %1$s sau logo. Hãy khởi động lại Facebook để thấy thay đổi.
+If your patched Facebook includes Accent color, the Custom choice will be %1$s.	Nếu Facebook đã vá của bạn có Màu nhấn, lựa chọn Tùy chỉnh sẽ là %1$s.
+If your patched Facebook includes Accent color, the Custom choice will keep Facebook's blue.	Nếu Facebook đã vá của bạn có Màu nhấn, lựa chọn Tùy chỉnh sẽ giữ màu xanh của Facebook.
+If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.	Nếu Facebook đã vá của bạn có Biểu tượng cảm xúc sau logo, đầu Trang chủ sẽ hiện %1$s sau logo.
+The top of Home will show no emoji after the logo.	Đầu Trang chủ sẽ không hiện biểu tượng cảm xúc nào sau logo.

@@ -2452,3 +2452,7 @@ Emoji after the logo	徽标后的表情符号
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	在主页顶部的 Facebook 徽标后面紧接着显示一个表情符号，保持它自己的颜色。留空则不显示。
 No emoji after the logo. Type one to show it there.	徽标后没有表情符号。输入一个即可显示在那里。
 The top of Home shows %1$s after the logo. Restart Facebook to see the change.	主页顶部在徽标后显示 %1$s。重启 Facebook 后可看到更改。
+If your patched Facebook includes Accent color, the Custom choice will be %1$s.	如果你修补的 Facebook 包含“强调色”，“自定义”选项将使用 %1$s。
+If your patched Facebook includes Accent color, the Custom choice will keep Facebook's blue.	如果你修补的 Facebook 包含“强调色”，“自定义”选项将保持 Facebook 的蓝色。
+If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.	如果你修补的 Facebook 包含“徽标后的表情符号”，主页顶部的徽标后将显示 %1$s。
+The top of Home will show no emoji after the logo.	主页顶部的徽标后将不显示表情符号。
