@@ -9,6 +9,7 @@ package app.morphe.extension.facebook.reels;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
@@ -76,7 +77,8 @@ import app.morphe.extension.shared.settings.Setting;
  *
  * <p>The shift moves the window's content around a small square, {@link #STEP_DP} at a time, every
  * {@link #SHIFT_EVERY_MS}. It's one view's translation, the content frame's, which Facebook doesn't
- * animate, where each control's would be fought over with Facebook's own animations.
+ * animate, where each control's would be fought over with Facebook's own animations. A window the
+ * screen under it shows through, the story viewer's, is never moved ({@link #seeThrough}, #369).
  *
  * <p>Both run only on the Reels screen, with the choice on, Hushfacebook not paused and the activity
  * in front. While guarding, a look that doesn't find the Reels screen is made again {@link
@@ -148,6 +150,8 @@ public final class BurnInGuard {
     private static Handler handler;
     /** The activity in front, the one every pass looks at. */
     private static WeakReference<Activity> front = new WeakReference<>(null);
+    /** The activity in front lets the screen under it show through ({@link #seeThrough}). */
+    private static boolean frontSeeThrough;
     /** The decor view whose observer has the listeners. */
     private static WeakReference<View> observed = new WeakReference<>(null);
     private static boolean layoutWatched;
@@ -212,6 +216,7 @@ public final class BurnInGuard {
         try {
             leave();
             front = new WeakReference<>(activity);
+            frontSeeThrough = seeThrough(activity);
             View decor = activity.getWindow() == null ? null : activity.getWindow().peekDecorView();
             if (decor == null) return;
             ViewTreeObserver observer = decor.getViewTreeObserver();
@@ -293,7 +298,7 @@ public final class BurnInGuard {
             } else {
                 undim();
             }
-            boolean shifting = on && mode == BurnInMode.DIM_AND_SHIFT;
+            boolean shifting = on && mode == BurnInMode.DIM_AND_SHIFT && !frontSeeThrough;
             place(activity, shifting, now);
             long next = !on || fingerDown ? Long.MAX_VALUE : dim ? now + KEEP_MS : touchedAt + wait;
             schedule(Math.min(next,
@@ -312,6 +317,20 @@ public final class BurnInGuard {
     /** Whether [activity] is Facebook's camera or story editor, whose full-screen picture is a preview. */
     static boolean camera(Activity activity) {
         return activity.getClass().getName().startsWith(CAMERA_PACKAGE);
+    }
+
+    /**
+     * Whether [activity]'s window lets the screen under it show through, as the story viewer's does
+     * (585: StoryViewerActivity's theme is translucent on a clear background). Moved a step, its
+     * content would uncover a strip of the feed beneath along one edge (#369), so it's never moved.
+     */
+    static boolean seeThrough(Activity activity) {
+        TypedArray style = activity.obtainStyledAttributes(new int[]{android.R.attr.windowIsTranslucent});
+        try {
+            return style.getBoolean(0, false);
+        } finally {
+            style.recycle();
+        }
     }
 
     /** The video the Reels screen in [decor] plays, or null when [decor] isn't showing it. */
@@ -757,6 +776,7 @@ public final class BurnInGuard {
     static void resetForTests() {
         leave();
         if (handler != null) handler.removeCallbacks(TICK);
+        frontSeeThrough = false;
         tickAt = -1L;
         touchedAt = 0L;
         doubtSince = -1L;

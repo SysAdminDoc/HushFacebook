@@ -204,6 +204,45 @@ public class BurnInGuardTest {
         }
     }
 
+    /** The story viewer's window shows the feed through it, so a step would uncover a strip of the feed (#369). */
+    @Test
+    public void aSeeThroughScreenDimsButNeverMoves() {
+        ActivityController<Activity> story = Robolectric.buildActivity(Activity.class);
+        story.get().setTheme(android.R.style.Theme_Translucent_NoTitleBar);
+        story.setup();
+        try {
+            Activity screen = story.get();
+            assertTrue(BurnInGuard.seeThrough(screen));
+            assertFalse("the Reels screen isn't see-through", BurnInGuard.seeThrough(activity));
+            FrameLayout frame = new FrameLayout(screen);
+            screen.setContentView(frame);
+            frame.addView(new TextureView(screen), new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            View reply = new View(screen);
+            reply.setOnClickListener(view -> { });
+            place(frame, reply, 30, H - 300, W - 30, H - 150);
+            View decor = screen.getWindow().getDecorView();
+            decor.measure(View.MeasureSpec.makeMeasureSpec(W, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(H, View.MeasureSpec.EXACTLY));
+            decor.layout(0, 0, W, H);
+            story.windowFocusChanged(true);
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            assertNotNull("the story's video fills the screen", BurnInGuard.reelOf(decor));
+            Settings.BURN_IN_GUARD.save(BurnInMode.DIM_AND_SHIFT);
+
+            BurnInGuard.resumed(screen);
+            View content = screen.findViewById(android.R.id.content);
+            // Once around the nine places the Reels screen would move to.
+            for (int place = 0; place < 9; place++) {
+                after(BurnInGuard.SHIFT_EVERY_MS);
+                assertEquals("the story stays put", 0f, content.getTranslationX(), 0f);
+                assertEquals("the story stays put", 0f, content.getTranslationY(), 0f);
+            }
+            assertEquals("its reply bar still dims", BurnInGuard.IDLE_LEVEL, reply.getAlpha(), 0f);
+        } finally {
+            story.close();
+        }
+    }
+
     @Test
     public void aTapOnTheVideoLeavesThemDimmedAndATapOnAButtonBringsThemBack() {
         Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
