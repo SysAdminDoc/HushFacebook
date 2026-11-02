@@ -2158,6 +2158,8 @@ If your patched Facebook includes Badge and logo colors, the selected tab will b
 If your patched Facebook includes Badge and logo colors, the selected tab will be %1$s.	如果你修补的 Facebook 包含“徽章和标志颜色”，选中的标签页将为 %1$s。
 Hide the emoji row on comments	隐藏评论的表情符号栏
 The row of emoji over the comment box goes away. You can still type emoji from your keyboard.	评论框上方的表情符号栏不再显示。你仍然可以用键盘输入表情符号。
+Hide the line over the comment box	隐藏评论框上方的线条
+The thin line along the top of the comment box goes away.	评论框顶部的细线不再显示。
 Show Comment when comments are off	评论关闭时仍显示“评论”
 Show the post date on reels	在 Reels 上显示发布日期
 Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.	在发布者的名字下方显示 Reel 或全屏打开的视频是什么时候发布的。从下一个 Reel 开始生效。

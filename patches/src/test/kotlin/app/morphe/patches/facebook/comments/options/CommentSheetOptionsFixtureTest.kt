@@ -661,6 +661,79 @@ class CommentSheetOptionsFixtureTest {
         assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(6).map { it.opcode })
     }
 
+    private fun commentBox(bundle: File) {
+        val found = commentBoxBackground(holders(bundle, COMMENT_BOX_INIT))
+        assertNotNull("${bundle.name}: the comment box's constructor wasn't found", found)
+        val where = "${bundle.name}: ${found!!.init.descriptor()}"
+        val owner = FixtureDex.classes(bundle, setOf(found.init.definingClass)).values.single()
+        val context = PatchContexts.of(listOf(owner))
+        val method = context.mutableClassDefBy(owner.type).methods.single { it.descriptor() == found.init.descriptor() }
+        val original = method.implementation!!.instructions.toList()
+        assertEquals("$where: the theme's drawable and the top border resource",
+            listOf("setBackground", "setBackgroundResource"),
+            found.calls.map { ((original[it] as ReferenceInstruction).reference as MethodReference).name })
+        // The box is this: p0 itself, or one copy of it made before anything else writes that register.
+        val self = method.localRegisterCount()
+        val superCall = original.indexOfFirst {
+            it.opcode == Opcode.INVOKE_DIRECT && ((it as ReferenceInstruction).reference as MethodReference).let { called ->
+                called.name == "<init>" && called.definingClass == owner.superclass
+            }
+        }
+        val copies = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+        val writers = method.writersReaching(superCall, found.box)
+        assertTrue("$where: v${found.box} isn't this", found.box == self && writers == listOf(-1) ||
+            writers.singleOrNull()?.let { at ->
+                original[at].opcode in copies && (original[at] as TwoRegisterInstruction).registerB == self
+            } == true)
+
+        method.flattenCommentBox(found)
+        val patched = method.implementation!!.instructions.toList()
+        assertEquals("$where gains one call per background", original.size + found.calls.size, patched.size)
+        val flow = ControlFlow.of(method)
+        val hooks = found.calls.mapIndexed { n, call -> call + 1 + n }
+        for (at in hooks) {
+            val hook = patched[at]
+            assertEquals("$where: the extension is called at $at", Opcode.INVOKE_STATIC_RANGE, hook.opcode)
+            assertEquals("$where: the box's line goes through the extension", FLATTEN_COMMENT_BOX, hook.reference())
+            assertEquals("$where: with the box", found.box, (hook as RegisterRangeInstruction).startRegister)
+            assertEquals("$where: and nothing else", 1, hook.registerCount)
+            assertTrue("$where: right after a background call",
+                ((patched[at - 1] as ReferenceInstruction).reference as MethodReference).name in BACKGROUND_SETTERS)
+            val into = patched.indices.filter { at in flow.normal[it] || at in flow.exceptional[it] }
+            assertEquals("$where: only the background call runs into the hook at $at", listOf(at - 1), into)
+        }
+        assertEquals("$where: Facebook's code stays", original.opcodes(), patched.filterIndexed { i, _ -> i !in hooks }.opcodes())
+    }
+
+    private fun socketLine(bundle: File) {
+        val found = socketBackground(holders(bundle, EMOJI_ROW))
+        assertNotNull("${bundle.name}: the pre-input socket's background wasn't found", found)
+        val where = "${bundle.name}: ${found!!.render.descriptor()}"
+        val owner = FixtureDex.classes(bundle, setOf(found.render.definingClass)).values.single()
+        val context = PatchContexts.of(listOf(owner))
+        val method = context.mutableClassDefBy(owner.type).methods.single { it.descriptor() == found.render.descriptor() }
+        val original = method.implementation!!.instructions.toList()
+        val load = (original[found.moveResult - 1] as ReferenceInstruction).reference as MethodReference
+        assertEquals("$where: the drawable comes from the context", "getDrawable", load.name)
+        val id = original[found.moveResult - 2]
+        assertEquals("$where: the line's drawable, loaded right before", Opcode.CONST, id.opcode)
+
+        method.flattenSocketLine(found)
+        val patched = method.implementation!!.instructions.toList()
+        val at = found.moveResult + 1
+        assertEquals("$where gains two instructions", original.size + 2, patched.size)
+        val hook = patched[at]
+        assertEquals("$where: the socket's drawable goes through the extension", FLATTEN_SOCKET_LINE, hook.reference())
+        assertEquals("$where: as a range", Opcode.INVOKE_STATIC_RANGE, hook.opcode)
+        assertEquals("$where: with the drawable", found.register, (hook as RegisterRangeInstruction).startRegister)
+        assertEquals("$where: and its answer back in the same register", Opcode.MOVE_RESULT_OBJECT, patched[at + 1].opcode)
+        assertEquals("$where: the same register", found.register, (patched[at + 1] as OneRegisterInstruction).registerA)
+        val flow = ControlFlow.of(method)
+        val into = patched.indices.filter { at in flow.normal[it] || at in flow.exceptional[it] }
+        assertEquals("$where: only the drawable's move-result runs into the hook", listOf(at - 1), into)
+        assertEquals("$where: Facebook's code stays", original.opcodes(), (patched.take(at) + patched.drop(at + 2)).opcodes())
+    }
+
     /**
      * Puts [part] into [method] and returns each block it added, in order. Whatever the block, the
      * code around it stays Facebook's, its jumps land on the instruction after it, and only the
@@ -813,6 +886,16 @@ class CommentSheetOptionsFixtureTest {
     @Test
     fun `each declared build can keep the emoji row out from over the comment box`() = bundles { bundle ->
         emojiRow(bundle)
+    }
+
+    @Test
+    fun `each declared build can take the line off the top of the comment box`() = bundles { bundle ->
+        commentBox(bundle)
+    }
+
+    @Test
+    fun `each declared build can take the line off the top of the socket over the comment box`() = bundles { bundle ->
+        socketLine(bundle)
     }
 
     @Test

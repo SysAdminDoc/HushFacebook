@@ -2207,6 +2207,8 @@ If your patched Facebook includes Badge and logo colors, the selected tab will b
 If your patched Facebook includes Badge and logo colors, the selected tab will be %1$s.	Если в вашей версии пропатченного Facebook есть настройка цветов значков и логотипа, выбранная вкладка будет цвета %1$s.
 Hide the emoji row on comments	Скрывать строку эмодзи в комментариях
 The row of emoji over the comment box goes away. You can still type emoji from your keyboard.	Строка с эмодзи над полем комментария исчезает. Вы по-прежнему можете вводить эмодзи с клавиатуры.
+Hide the line over the comment box	Скрыть линию над полем комментария
+The thin line along the top of the comment box goes away.	Тонкая линия по верхнему краю поля комментария исчезает.
 Show Comment when comments are off	Показывать кнопку «Комментировать», если комментарии отключены
 Show the post date on reels	Показывать дату публикации в Reels
 Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.	Показывает дату публикации Reels или видео, открытого в полноэкранном режиме, под именем автора. Изменение применяется начиная со следующего Reels.

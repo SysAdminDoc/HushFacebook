@@ -13,6 +13,9 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.net.Uri;
 import android.os.SystemClock;
 import android.text.Spannable;
@@ -928,7 +931,26 @@ public class PausedHooksTest {
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("https://s.shopee.vn/9zKs")),
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("Big SPOILER inside")),
                 () -> CommentSheetOptions.incomingTypers(3) == 0,
-                () -> CommentSheetOptions.newCommentsPill("3 new comments").isEmpty()));
+                () -> CommentSheetOptions.newCommentsPill("3 new comments").isEmpty(),
+                CommentSheetOptions::holdsEmojiRow,
+                () -> {
+                    // The line along the top of the comment box is taken off its background (#344).
+                    View box = new View(RuntimeEnvironment.getApplication());
+                    LayerDrawable border = new LayerDrawable(new Drawable[] {
+                            new ColorDrawable(0xFF3E4042), new ColorDrawable(0xFF242526)});
+                    border.setLayerInsetTop(1, 3);
+                    box.setBackground(border);
+                    CommentSheetOptions.flattenCommentBox(box);
+                    return border.getLayerInsetTop(1) == 0;
+                },
+                () -> {
+                    // And off the socket over the box, holding the emoji row (#344).
+                    LayerDrawable border = new LayerDrawable(new Drawable[] {
+                            new ColorDrawable(0xFF3E4042), new ColorDrawable(0xFF242526)});
+                    border.setLayerInsetTop(1, 3);
+                    CommentSheetOptions.flattenSocketLine(border);
+                    return border.getLayerInsetTop(1) == 0;
+                }));
         // A reel's comment sheet asking for two thirds of the screen gets all of it, a split-screen
         // launcher answers that it didn't open, a full-height sheet fills the screen, the reel
         // drawn above the comments is hidden, and a part-height sheet over the Reels tab lets a tap

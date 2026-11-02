@@ -8,6 +8,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -15,6 +16,11 @@ import android.app.Application;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ResolveInfo;
+import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
+import android.view.View;
 
 import java.util.Collections;
 
@@ -72,6 +78,7 @@ public class CommentSheetOptionsTest {
         Settings.LIKE_ONLY.resetToDefault();
         Settings.HIDE_COMMENT_GIF_STICKER_BUTTONS.resetToDefault();
         Settings.HIDE_COMMENT_EMOJI_ROW.resetToDefault();
+        Settings.HIDE_COMMENT_BOX_LINE.resetToDefault();
         Settings.HIDE_VIDEO_COMMENT_COMPOSER.resetToDefault();
         Settings.OPEN_REPLY_THREADS.resetToDefault();
         Settings.LOAD_WHOLE_REPLY_THREADS.resetToDefault();
@@ -128,6 +135,95 @@ public class CommentSheetOptionsTest {
         PauseForTests.resume();
         SettingsContextRule.withoutContext(() -> assertFalse("the emoji row went before the settings were ready",
                 CommentSheetOptions.holdsEmojiRow()));
+    }
+
+    /** Facebook's top border: the line's color filling the box, the box's color over it, 3 px down. */
+    private static LayerDrawable topBorder() {
+        LayerDrawable border = new LayerDrawable(new Drawable[] {
+                new ColorDrawable(0xFF3E4042), new ColorDrawable(0xFF242526)});
+        border.setLayerInsetTop(1, 3);
+        return border;
+    }
+
+    @Test
+    public void theLineOverTheCommentBoxGoesUnderItsOwnSwitchOnThatBoxAlone() {
+        View box = new View(RuntimeEnvironment.getApplication());
+        LayerDrawable border = topBorder();
+        LayerDrawable sibling = (LayerDrawable) border.getConstantState().newDrawable();
+        box.setBackground(border);
+
+        Settings.HIDE_COMMENT_EMOJI_ROW.save(true);
+        CommentSheetOptions.flattenCommentBox(box);
+        assertEquals("the emoji row switch took the line off", 3, border.getLayerInsetTop(1));
+
+        Settings.HIDE_COMMENT_BOX_LINE.save(true);
+        CommentSheetOptions.flattenCommentBox(box);
+        LayerDrawable flat = (LayerDrawable) box.getBackground();
+        assertEquals("the box's layer still starts below the top", 0, flat.getLayerInsetTop(1));
+        assertEquals("the line's layer still draws", 0, flat.getDrawable(0).getAlpha());
+        assertEquals("the box's own color went", 255, flat.getDrawable(1).getAlpha());
+        flat.setBounds(0, 0, 100, 40);
+        assertEquals("laid out, the box's color leaves a strip", new Rect(0, 0, 100, 40), flat.getDrawable(1).getBounds());
+        assertEquals("a box built from the same drawable lost its line", 3, sibling.getLayerInsetTop(1));
+        assertEquals("a box built from the same drawable lost the line's color", 255, sibling.getDrawable(0).getAlpha());
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 2, 1 found, 0 missing. Counted: "
+                + CommentSheetOptions.BOX_LINE_HIDDEN + " 1", statusLine());
+    }
+
+    @Test
+    public void theSocketOverTheBoxLosesTheSameLineUnderTheSameSwitch() {
+        LayerDrawable border = topBorder();
+        assertSame("off, the socket's drawable comes back", border, CommentSheetOptions.flattenSocketLine(border));
+        assertEquals("off, the socket kept its line", 3, border.getLayerInsetTop(1));
+        assertNull(CommentSheetOptions.flattenSocketLine(null));
+
+        Settings.HIDE_COMMENT_BOX_LINE.save(true);
+        LayerDrawable sibling = (LayerDrawable) border.getConstantState().newDrawable();
+        assertSame("on, the same drawable comes back", border, CommentSheetOptions.flattenSocketLine(border));
+        assertEquals("the socket's layer still starts below the top", 0, border.getLayerInsetTop(1));
+        assertEquals("the line's layer still draws", 0, border.getDrawable(0).getAlpha());
+        assertEquals("a box built from the same drawable lost its line", 3, sibling.getLayerInsetTop(1));
+        ColorDrawable plain = new ColorDrawable(0xFF242526);
+        assertSame(plain, CommentSheetOptions.flattenSocketLine(plain));
+        assertEquals("a plain background changed", 255, plain.getAlpha());
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 4, 1 found, 0 missing. Counted: "
+                + CommentSheetOptions.BOX_LINE_HIDDEN + " 1", statusLine());
+
+        LayerDrawable paused = topBorder();
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame(paused, CommentSheetOptions.flattenSocketLine(paused));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> CommentSheetOptions.flattenSocketLine(paused));
+        assertEquals("paused or before the settings, the line went", 3, paused.getLayerInsetTop(1));
+    }
+
+    @Test
+    public void anyOtherBackgroundPausedOrBeforeTheSettingsTheBoxIsLeftAlone() {
+        Settings.HIDE_COMMENT_BOX_LINE.save(true);
+        View plain = new View(RuntimeEnvironment.getApplication());
+        plain.setBackground(new ColorDrawable(0xFF242526));
+        CommentSheetOptions.flattenCommentBox(plain);
+        assertEquals("a plain background changed", 255, plain.getBackground().getAlpha());
+        CommentSheetOptions.flattenCommentBox(new View(RuntimeEnvironment.getApplication()));
+        CommentSheetOptions.flattenCommentBox(null);
+        View even = new View(RuntimeEnvironment.getApplication());
+        LayerDrawable flush = new LayerDrawable(new Drawable[] {
+                new ColorDrawable(0xFF3E4042), new ColorDrawable(0xFF242526)});
+        even.setBackground(flush);
+        CommentSheetOptions.flattenCommentBox(even);
+        assertEquals("layers with no strip at the top lost one", 255, flush.getDrawable(0).getAlpha());
+
+        View box = new View(RuntimeEnvironment.getApplication());
+        LayerDrawable border = topBorder();
+        box.setBackground(border);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        CommentSheetOptions.flattenCommentBox(box);
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> CommentSheetOptions.flattenCommentBox(box));
+        assertEquals("paused or before the settings, the line went", 3, border.getLayerInsetTop(1));
+        assertEquals("paused or before the settings, the line's color went", 255, border.getDrawable(0).getAlpha());
+        String line = statusLine();
+        assertFalse("a box left alone was counted: " + line, line != null && line.contains("Counted"));
     }
 
     @Test
@@ -553,7 +649,8 @@ public class CommentSheetOptionsTest {
                 Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS, Settings.HIDE_SHOP_LINK_COMMENTS,
                 Settings.HIDE_COMMENTS_WITH_WORDS, Settings.HIDE_INCOMING_COMMENT_TYPING, Settings.HIDE_NEW_COMMENTS_PILL,
                 Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES, Settings.HIDE_POST_COMMENT_PREVIEWS,
-                Settings.HIDE_COMMENT_DOWNVOTE_BUTTON, Settings.HIDE_COMMENT_LIKE_BUTTON, Settings.HIDE_COMMENT_EMOJI_ROW}) {
+                Settings.HIDE_COMMENT_DOWNVOTE_BUTTON, Settings.HIDE_COMMENT_LIKE_BUTTON, Settings.HIDE_COMMENT_EMOJI_ROW,
+                Settings.HIDE_COMMENT_BOX_LINE}) {
             assertFalse(setting.key + " asks for a restart, but each hook reads it again", setting.rebootApp);
             assertNull(setting.key + " asks before it changes", setting.userDialogMessage);
             assertTrue("Pause and the report don't know " + setting.key,

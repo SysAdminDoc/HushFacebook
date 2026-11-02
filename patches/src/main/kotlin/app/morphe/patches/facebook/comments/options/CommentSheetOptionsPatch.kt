@@ -41,6 +41,7 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
@@ -66,6 +67,12 @@ internal const val GIF_BUTTON =
 /** The comment box's sticker button, in the same name table. */
 internal const val STICKER_BUTTON =
     "com.facebook.feedback.comments.plugins.commentcomposer.attachmentbutton.sticker.StickerAttachmentButtonPlugin"
+
+/** What the comment box a post page opens with names itself in the constructor that builds it (#344). */
+internal const val COMMENT_BOX_INIT = "SingleLineCommentComposerView.init"
+
+/** The View calls that set a background, as the comment box's constructor makes them. */
+internal val BACKGROUND_SETTERS = setOf("setBackground", "setBackgroundResource", "setBackgroundDrawable")
 
 /** The name the socket over the comment box's text field gives itself, in its render (#290). */
 internal const val PRE_INPUT_SOCKET = "CommentComposerPreInputContentSocket"
@@ -163,6 +170,9 @@ private const val OBJECTS = "[Ljava/lang/Object;"
 internal const val COMMENT_SHEET_OPTIONS = "$EXTENSION_PACKAGE/comments/CommentSheetOptions;"
 internal const val HOLDS_BUTTON = "$COMMENT_SHEET_OPTIONS->holdsButton(Ljava/lang/String;)Z"
 internal const val HOLDS_EMOJI_ROW = "$COMMENT_SHEET_OPTIONS->holdsEmojiRow()Z"
+internal const val FLATTEN_COMMENT_BOX = "$COMMENT_SHEET_OPTIONS->flattenCommentBox(Landroid/view/View;)V"
+internal const val FLATTEN_SOCKET_LINE =
+    "$COMMENT_SHEET_OPTIONS->flattenSocketLine(Landroid/graphics/drawable/Drawable;)Landroid/graphics/drawable/Drawable;"
 internal const val HOLDS_VIEWER_BUTTONS = "$COMMENT_SHEET_OPTIONS->holdsViewerButtons()Z"
 internal const val HIDES_VIDEO_COMMENT_COMPOSER = "$COMMENT_SHEET_OPTIONS->hidesVideoCommentComposer()Z"
 internal const val HOLDS_BOTTOM_CONTENT = "$COMMENT_SHEET_OPTIONS->holdsBottomContent(Ljava/lang/String;)Z"
@@ -228,6 +238,13 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * another component, the one class naming [VIDEO_COMMENT_BAR] that builds the row's class (583
  * `LX/98j;`, whose `A0G` builds `LX/ALy`). First thing in its render the extension is asked, and
  * while the switch is on the render returns nothing, so the box is gone with its outline.
+ *
+ * Hide the line over the comment box (#344): the box a post page opens with is a plain view whose
+ * constructor names itself [COMMENT_BOX_INIT] (585 `LX/07tV;`). It sets its own background either
+ * from the theme or, behind a MobileConfig check, as a resource (`drawable/sutro_top_border`): a
+ * layer list of the line's color under the box's color, the box's layer 1 dp down from the top. Right
+ * after each of those calls on the box itself, the extension is handed the box, and while the switch
+ * is on it moves the top layer back up and stops the ones under it drawing.
  *
  * Hide related groups: what comes after a post's comments is drawn through another socket, the one
  * that names itself [BOTTOM_SOCKET] in the two comment surfaces' methods going through its plugins
@@ -348,7 +365,7 @@ val commentSheetOptionsPatch = bytecodePatch(
     name = "Comment sheet options",
     description = "Small fixes for comments. Stop a long press on Like from opening reactions, hide the GIF and " +
         "sticker buttons, show every reply without tapping View replies, load a whole reply thread as you " +
-        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, hide Like on comments, hide Related groups under group posts, hide comments with shop links or your words, hide who is typing and the new comments pop-up, hide the emoji row over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
+        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, hide Like on comments, hide Related groups under group posts, hide comments with shop links or your words, hide who is typing and the new comments pop-up, hide the emoji row over the comment box, hide the line over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
         "Hushfacebook settings > Comments and writing.",
 ) {
     category("Comments")
@@ -440,6 +457,14 @@ val commentSheetOptionsPatch = bytecodePatch(
         emojiRowCheck(holders(EMOJI_ROW))?.let { check ->
             mutableClassDefBy(check.definingClass).methods.single { it.descriptor() == check.descriptor() }.holdEmojiRow()
         }
+        commentBoxBackground(holders(COMMENT_BOX_INIT))?.let { box ->
+            mutableClassDefBy(box.init.definingClass).methods.single { it.descriptor() == box.init.descriptor() }
+                .flattenCommentBox(box)
+        }
+        socketBackground(holders(EMOJI_ROW))?.let { socket ->
+            mutableClassDefBy(socket.render.definingClass).methods.single { it.descriptor() == socket.render.descriptor() }
+                .flattenSocketLine(socket)
+        }
         // Last, and read from the methods as they stand: the hooks above add to the draw and the row.
         fun mutable(method: Method) = mutableClassDefBy(method.definingClass).methods.single { it.descriptor() == method.descriptor() }
         hideRepliesParts(
@@ -507,6 +532,101 @@ internal fun MutableMethod.holdEmojiRow() {
             return v0
         """,
         ExternalLabel("check", getInstruction(0)),
+    )
+}
+
+/** The comment box's constructor, the register holding the box, and each call there that sets the box's background. */
+internal class CommentBoxBackground(val init: Method, val box: Int, val calls: List<Int>)
+
+/** The receiver of an invoke, in either form. */
+private fun receiver(instruction: Instruction): Int? = when (instruction) {
+    is FiveRegisterInstruction -> instruction.registerC.takeIf { instruction.registerCount > 0 }
+    is RegisterRangeInstruction -> instruction.startRegister.takeIf { instruction.registerCount > 0 }
+    else -> null
+}
+
+/**
+ * The comment box's constructor, from [holders], the classes loading [COMMENT_BOX_INIT]: the one
+ * constructor naming it, and in it each [BACKGROUND_SETTERS] call made on the box itself, that is
+ * on a register holding what the superclass constructor was called on (585 `LX/07tV;-><init>`:
+ * setBackground with the theme's drawable, and setBackgroundResource of `sutro_top_border` when
+ * the theme has none or a MobileConfig check is off). A build where that moved keeps the rest of
+ * the patch, with Hide the line over the comment box left doing nothing and a warning saying why.
+ */
+internal fun commentBoxBackground(holders: List<ClassDef>): CommentBoxBackground? {
+    fun skip(why: String): CommentBoxBackground? {
+        patchLog.warning("$PATCH: $why. Hide the line over the comment box does nothing in this build")
+        return null
+    }
+    val inits = holders.flatMap { methodsHolding(it, COMMENT_BOX_INIT) }.filter { it.name == "<init>" }
+    val init = inits.singleOrNull() ?: return skip("expected one constructor naming $COMMENT_BOX_INIT, found ${inits.size}")
+    val owner = holders.single { it.type == init.definingClass }
+    val code = init.implementation!!.instructions.toList()
+    fun called(index: Int) = (code[index] as? ReferenceInstruction)?.reference as? MethodReference
+    val superCall = code.indices.firstOrNull { index ->
+        code[index].opcode.let { it == Opcode.INVOKE_DIRECT || it == Opcode.INVOKE_DIRECT_RANGE } &&
+            called(index)?.let { it.name == "<init>" && it.definingClass == owner.superclass } == true
+    } ?: return skip("${init.descriptor()} doesn't call ${owner.superclass}'s constructor")
+    val box = receiver(code[superCall]) ?: return skip("${init.descriptor()}'s superclass call has no receiver")
+    val boxWriters = init.writersReaching(superCall, box)
+    val calls = (superCall + 1 until code.size).filter { index ->
+        code[index].opcode.let { it == Opcode.INVOKE_VIRTUAL || it == Opcode.INVOKE_VIRTUAL_RANGE } &&
+            called(index)?.let { it.definingClass == VIEW && it.name in BACKGROUND_SETTERS } == true &&
+            receiver(code[index]) == box && init.writersReaching(index, box) == boxWriters
+    }
+    if (calls.isEmpty()) return skip("${init.descriptor()} sets no background on the box")
+    return CommentBoxBackground(init, box, calls)
+}
+
+/**
+ * Right after each of the box's background calls, the extension is handed the box. Each goes in
+ * before the instruction that followed the call, which keeps its labels, so only the call itself
+ * runs into it; the last goes in first so the earlier indexes hold.
+ */
+internal fun MutableMethod.flattenCommentBox(found: CommentBoxBackground) {
+    found.calls.sortedDescending().forEach { call ->
+        addInstructions(call + 1, "invoke-static/range { v${found.box} .. v${found.box} }, $FLATTEN_COMMENT_BOX")
+    }
+}
+
+/** The pre-input socket's render, and the index of the move-result taking the drawable it loads, in the register it names. */
+internal class SocketBackground(val render: Method, val moveResult: Int, val register: Int)
+
+/**
+ * The pre-input socket's render, from [holders], the classes loading [EMOJI_ROW]: the one render
+ * naming [PRE_INPUT_SOCKET] and the emoji row, and in it the one `Context.getDrawable(int)` call,
+ * whose drawable the socket draws behind itself (585 `LX/0B0k;->render`: `sutro_top_border`, the
+ * comment box's own layers). A build where that moved keeps the rest of the patch, with the line
+ * over the emoji row left showing and a warning saying why.
+ */
+internal fun socketBackground(holders: List<ClassDef>): SocketBackground? {
+    fun skip(why: String): SocketBackground? {
+        patchLog.warning("$PATCH: $why. Hide the line over the comment box leaves the line over the emoji row in this build")
+        return null
+    }
+    val renders = holders.flatMap { methodsHolding(it, EMOJI_ROW) }.filter { holdsString(it, PRE_INPUT_SOCKET) }
+    val render = renders.singleOrNull() ?: return skip("expected one render naming $PRE_INPUT_SOCKET and the emoji row, found ${renders.size}")
+    val code = render.implementation!!.instructions.toList()
+    val loads = code.indices.filter { index ->
+        val call = (code[index] as? ReferenceInstruction)?.reference as? MethodReference
+        code[index].opcode == Opcode.INVOKE_VIRTUAL && call != null && call.definingClass == "Landroid/content/Context;" &&
+            call.name == "getDrawable" && call.parameterTypes.map(CharSequence::toString) == listOf("I")
+    }
+    val load = loads.singleOrNull() ?: return skip("expected one getDrawable call in ${render.descriptor()}, found ${loads.size}")
+    val result = code.getOrNull(load + 1)
+    if (result?.opcode != Opcode.MOVE_RESULT_OBJECT) return skip("${render.descriptor()} doesn't keep its drawable")
+    return SocketBackground(render, load + 1, (result as OneRegisterInstruction).registerA)
+}
+
+/** Right after the socket's drawable is taken, the extension hands it back flattened or as it was. */
+internal fun MutableMethod.flattenSocketLine(found: SocketBackground) {
+    val drawable = found.register
+    addInstructions(
+        found.moveResult + 1,
+        """
+            invoke-static/range { v$drawable .. v$drawable }, $FLATTEN_SOCKET_LINE
+            move-result-object v$drawable
+        """,
     )
 }
 

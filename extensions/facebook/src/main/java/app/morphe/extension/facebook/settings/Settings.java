@@ -1097,6 +1097,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_comment_emoji_row", FALSE);
 
     /**
+     * The comment box comes without the thin line along its top (#344,
+     * {@link app.morphe.extension.facebook.comments.CommentSheetOptions}). Off by default. A
+     * change shows on the next comment box built.
+     */
+    public static final BooleanSetting HIDE_COMMENT_BOX_LINE =
+            new BooleanSetting("hushfacebook_hide_comment_box_line", FALSE);
+
+    /**
      * The comment composer at the bottom of Facebook's full-screen video viewer is omitted from
      * the viewer's render method ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}).
      * Comment boxes on ordinary posts are unchanged. Off by default.

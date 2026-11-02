@@ -9,7 +9,10 @@ import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.net.Uri;
+import android.view.View;
 
 import androidx.annotation.Nullable;
 
@@ -178,6 +181,15 @@ public final class CommentSheetOptions {
     /** Counted each time the emoji row is kept out from over the comment box. */
     static final String EMOJI_ROW_HIDDEN = "Comment emoji row kept out";
 
+    /** The member the report names once the comment box has set its background (#344). */
+    static final String BOX_LINE = "line over the comment box";
+
+    /** The member the report names once the socket over the comment box has loaded its background (#344). */
+    static final String SOCKET_LINE = "line over the emoji row";
+
+    /** Counted each time the line along the top of the comment box, or of the socket over it, is taken off. */
+    static final String BOX_LINE_HIDDEN = "Comment box line kept out";
+
     /** The member the report names once the socket under a post's comments has asked about Related groups. */
     static final String BOTTOM = "related groups under comments";
 
@@ -318,6 +330,69 @@ public final class CommentSheetOptions {
             HookStatus.threw(FAMILY, "comment emoji row", failure);
             return false;
         }
+    }
+
+    /**
+     * The hook, right after the comment box sets its background as it's built (#344). Facebook
+     * draws the box as layers: the line's color filling the whole box, and the box's own color over
+     * it, pushed down from the top, so the strip left showing is the line. While the switch is on,
+     * the box's layer goes back to the top and the layers under it stop drawing, on this box's own
+     * copy of the drawable. Any other background, off, paused, or before the settings are ready,
+     * the box stays as Facebook drew it.
+     */
+    public static void flattenCommentBox(@Nullable View box) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, BOX_LINE);
+            if (box == null || !Utils.settingsReady() || !Settings.HIDE_COMMENT_BOX_LINE.get()) return;
+            if (flatten(box.getBackground(), "box")) HookStatus.counted(FAMILY, BOX_LINE_HIDDEN);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, BOX_LINE, failure);
+        }
+    }
+
+    /**
+     * The hook, right after the socket over the comment box's text field, the one holding the emoji
+     * row and Meta AI's pills, loads the drawable it draws behind itself (#344). It's the same
+     * layers as the box's, so the line shows along the top of the socket when the socket is there.
+     * While the switch is on, the socket's own copy gets the same treatment as the box's; it's
+     * handed back either way, and as it came off, paused, before the settings are ready or on a
+     * throw.
+     */
+    @Nullable
+    public static Drawable flattenSocketLine(@Nullable Drawable background) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, SOCKET_LINE);
+            if (background == null || !Utils.settingsReady() || !Settings.HIDE_COMMENT_BOX_LINE.get()) return background;
+            if (flatten(background, "socket")) HookStatus.counted(FAMILY, BOX_LINE_HIDDEN);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, SOCKET_LINE, failure);
+        }
+        return background;
+    }
+
+    /**
+     * Takes the line off [background], a line-colored layer under the top layer pushed down from
+     * the top: the top layer goes back to the top and the layers under it stop drawing, on
+     * [background]'s own copy. True when it did; any other drawable is left as it is.
+     */
+    static boolean flatten(@Nullable Drawable background, String whose) {
+        if (!(background instanceof LayerDrawable)) {
+            Logger.printDebug(() -> "Comment box line: the " + whose + "'s background is "
+                    + (background == null ? "nothing" : background.getClass().getName()) + ", left as it is");
+            return false;
+        }
+        LayerDrawable layers = (LayerDrawable) background;
+        int top = layers.getNumberOfLayers() - 1;
+        if (top < 1 || layers.getLayerInsetTop(top) <= 0) {
+            Logger.printDebug(() -> "Comment box line: the " + whose + "'s " + (top + 1) + " layers leave no strip at the top");
+            return false;
+        }
+        layers.mutate();
+        layers.setLayerInsetTop(top, 0);
+        for (int layer = 0; layer < top; layer++) layers.getDrawable(layer).setAlpha(0);
+        return true;
     }
 
     /**
