@@ -2454,3 +2454,6 @@ Preview	預覽
 Blue	藍
 Type a six-digit color code, like #2ECC71.	請輸入六位顏色代碼，例如 #2ECC71。
 Pick Custom color again to change it.	再次選擇「自訂顏色」即可變更。
+Switches that are on	已開啟的開關
+Every switch you have on, in one list. Turn one off here and it's off everywhere.	你開啟的所有開關，集中在同一個清單。在這裡關掉一個，它在所有地方都會關閉。
+No switches are on yet.	還沒有開啟任何開關。

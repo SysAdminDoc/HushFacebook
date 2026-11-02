@@ -352,6 +352,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         Preference startsOff = StartsOffNote.row(context, build);
         if (startsOff != null) screen.addPreference(startsOff);
         screen.addPreference(jumpRow(context));
+        screen.addPreference(FavoriteSwitchesScreen.row(this, context));
 
         // The sections in the order they come on the page, each in its category page's class.
         FeedPages.opening(this, screen, context, build);

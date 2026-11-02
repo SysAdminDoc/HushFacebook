@@ -2504,3 +2504,6 @@ Preview	Просмотр
 Blue	Синий
 Type a six-digit color code, like #2ECC71.	Введите шестизначный код цвета, например #2ECC71.
 Pick Custom color again to change it.	Выберите Свой цвет ещё раз, чтобы изменить его.
+Switches that are on	Включённые переключатели
+Every switch you have on, in one list. Turn one off here and it's off everywhere.	Все включённые вами переключатели в одном списке. Выключите один здесь, и он выключится везде.
+No switches are on yet.	Пока ни один переключатель не включён.

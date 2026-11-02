@@ -2450,3 +2450,6 @@ Preview	Vorschau
 Blue	Blau
 Type a six-digit color code, like #2ECC71.	Gib einen sechsstelligen Farbcode ein, zum Beispiel #2ECC71.
 Pick Custom color again to change it.	Wähle Eigene Farbe noch einmal, um sie zu ändern.
+Switches that are on	Eingeschaltete Schalter
+Every switch you have on, in one list. Turn one off here and it's off everywhere.	Alle Schalter, die du eingeschaltet hast, in einer Liste. Schaltest du hier einen aus, ist er überall aus.
+No switches are on yet.	Noch ist kein Schalter eingeschaltet.

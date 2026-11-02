@@ -2450,3 +2450,6 @@ Preview	Önizleme
 Blue	Mavi
 Type a six-digit color code, like #2ECC71.	Altı haneli bir renk kodu yaz, örneğin #2ECC71.
 Pick Custom color again to change it.	Değiştirmek için Özel renk seçeneğini tekrar seç.
+Switches that are on	Açık olan anahtarlar
+Every switch you have on, in one list. Turn one off here and it's off everywhere.	Açtığın tüm anahtarlar tek bir listede. Burada birini kapatırsan her yerde kapanır.
+No switches are on yet.	Henüz açık anahtar yok.

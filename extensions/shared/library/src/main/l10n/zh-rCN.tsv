@@ -2445,3 +2445,6 @@ Preview	预览
 Blue	蓝
 Type a six-digit color code, like #2ECC71.	请输入六位颜色代码，例如 #2ECC71。
 Pick Custom color again to change it.	再次选择“自定义颜色”即可更改。
+Switches that are on	已开启的开关
+Every switch you have on, in one list. Turn one off here and it's off everywhere.	你开启的所有开关，集中在一个列表里。在这里关掉一个，它在所有地方都会关闭。
+No switches are on yet.	还没有开启任何开关。
