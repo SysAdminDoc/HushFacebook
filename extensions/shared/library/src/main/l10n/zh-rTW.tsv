@@ -2457,3 +2457,7 @@ Pick Custom color again to change it.	再次選擇「自訂顏色」即可變更
 Switches that are on	已開啟的開關
 Every switch you have on, in one list. Turn one off here and it's off everywhere.	你開啟的所有開關，集中在同一個清單。在這裡關掉一個，它在所有地方都會關閉。
 No switches are on yet.	還沒有開啟任何開關。
+Emoji after the logo	標誌後的表情符號
+An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	在首頁頂端的 Facebook 標誌後面緊接著顯示一個表情符號，保留它自己的顏色。留空則不顯示。
+No emoji after the logo. Type one to show it there.	標誌後沒有表情符號。輸入一個就會顯示在那裡。
+The top of Home shows %1$s after the logo. Restart Facebook to see the change.	首頁頂端在標誌後顯示 %1$s。重新啟動 Facebook 後即可看到變更。

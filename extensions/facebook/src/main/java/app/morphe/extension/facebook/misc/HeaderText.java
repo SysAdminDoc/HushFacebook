@@ -65,16 +65,22 @@ public final class HeaderText {
             if (!(logo instanceof ImageView) || !Utils.settingsReady()) return;
             ImageView image = (ImageView) logo;
             Bitmap picture = HeaderPicture.load(image.getContext());
+            String text = picture != null ? "" : clean(Settings.HEADER_TEXT.get());
+            String emoji = LogoEmoji.clean(Settings.LOGO_EMOJI.get());
+            Dressing dressing = new Dressing(picture, text, emoji);
+            Drawable shown = dressing.apply(image, -1);
+            if (shown == null) return;
+            image.getViewTreeObserver().addOnPreDrawListener(new Keeper(image, shown, dressing));
             if (picture != null) {
-                image.getViewTreeObserver().addOnPreDrawListener(new Keeper(image, put(image, picture, -1)));
                 Logger.printDebug(() -> "Header picture: put a " + picture.getWidth() + "x" + picture.getHeight()
                         + " picture at the top of Home");
-                return;
+            } else if (!text.isEmpty()) {
+                Logger.printDebug(() -> "Header text: put " + text.length() + " characters at the top of Home");
             }
-            String text = clean(Settings.HEADER_TEXT.get());
-            if (text.isEmpty()) return;
-            image.getViewTreeObserver().addOnPreDrawListener(new Keeper(image, put(image, text, -1)));
-            Logger.printDebug(() -> "Header text: put " + text.length() + " characters at the top of Home");
+            if (!emoji.isEmpty()) {
+                Logger.printDebug(() -> "Header emoji: put " + emoji.codePointCount(0, emoji.length())
+                        + " code points after the logo at the top of Home");
+            }
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.HEADER_TEXT, "header text", failure);
             Logger.printException(() -> "Header text: could not put the text at the top of Home", failure);
@@ -134,18 +140,48 @@ public final class HeaderText {
         return typed != null && clean(typed).equals(typed);
     }
 
-    /** Swaps [image]'s drawable for the text, sized from the wordmark's height or [previous]. */
-    private static TextMark put(ImageView image, String text, int previous) {
-        TextMark mark = new TextMark(text, height(image, previous), maxWidth(image));
-        show(image, mark);
-        return mark;
-    }
+    /**
+     * What goes at the top of Home: the picture, else the text, else Facebook's own wordmark, with the
+     * emoji after it when one is saved (#360).
+     */
+    static final class Dressing {
+        @Nullable final Bitmap picture;
+        final String text;
+        final String emoji;
+        /** The height the last mark was given, so a reload keeps it. */
+        int slot = -1;
 
-    /** Swaps [image]'s drawable for the picture, sized from the wordmark's height or [previous]. */
-    private static PictureMark put(ImageView image, Bitmap picture, int previous) {
-        PictureMark mark = new PictureMark(picture, height(image, previous), maxWidth(image));
-        show(image, mark);
-        return mark;
+        Dressing(@Nullable Bitmap picture, String text, String emoji) {
+            this.picture = picture;
+            this.text = text;
+            this.emoji = emoji;
+        }
+
+        /**
+         * Puts it in [image], sized from the wordmark's height or [previous] (the height the last mark
+         * was given, -1 for none). Returns what [image] shows now, or null when there's nothing to put:
+         * no picture, text or emoji, or no wordmark to put the emoji after.
+         */
+        @Nullable
+        Drawable apply(ImageView image, int previous) {
+            Drawable mark;
+            int height = height(image, previous);
+            if (picture != null) {
+                mark = new PictureMark(picture, height, maxWidth(image));
+            } else if (!text.isEmpty()) {
+                mark = new TextMark(text, height, maxWidth(image));
+            } else if (!emoji.isEmpty()) {
+                // Facebook's own wordmark stays, with the emoji after it.
+                mark = image.getDrawable();
+                if (mark == null || mark instanceof LogoEmoji.Tail) return null;
+            } else {
+                return null;
+            }
+            Drawable shown = emoji.isEmpty() ? mark : new LogoEmoji.Tail(mark, emoji, height);
+            slot = height;
+            show(image, shown);
+            return shown;
+        }
     }
 
     private static void show(ImageView image, Drawable mark) {
@@ -180,11 +216,13 @@ public final class HeaderText {
      */
     private static final class Keeper implements ViewTreeObserver.OnPreDrawListener {
         private final WeakReference<ImageView> header;
+        private final Dressing dressing;
         private Drawable mark;
 
-        Keeper(ImageView image, Drawable mark) {
+        Keeper(ImageView image, Drawable mark, Dressing dressing) {
             this.header = new WeakReference<>(image);
             this.mark = mark;
+            this.dressing = dressing;
         }
 
         @Override
@@ -192,13 +230,9 @@ public final class HeaderText {
             ImageView image = header.get();
             if (image == null || image.getDrawable() == mark) return true;
             try {
-                if (mark instanceof PictureMark) {
-                    PictureMark picture = (PictureMark) mark;
-                    mark = put(image, picture.picture, picture.slot);
-                } else {
-                    TextMark text = (TextMark) mark;
-                    mark = put(image, text.text, text.getIntrinsicHeight());
-                }
+                Drawable again = dressing.apply(image, dressing.slot);
+                if (again == null) return true;
+                mark = again;
                 Logger.printDebug(() -> "Header text: Facebook loaded its wordmark again, put yours back");
                 // This pass would draw Facebook's wordmark, so the next one draws yours.
                 return false;

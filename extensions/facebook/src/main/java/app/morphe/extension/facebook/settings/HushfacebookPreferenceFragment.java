@@ -67,6 +67,7 @@ import app.morphe.extension.facebook.media.SurfaceQuality;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.misc.HeaderText;
+import app.morphe.extension.facebook.misc.LogoEmoji;
 import app.morphe.extension.facebook.profile.LocalProfileCounts;
 import app.morphe.extension.facebook.stories.StoriesTrayCircles;
 import app.morphe.extension.facebook.misc.OpeningPause;
@@ -2181,6 +2182,35 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     }
 
     /**
+     * The emoji after the Facebook logo (#360): one emoji, or a few characters, drawn right after the
+     * wordmark at the top of Home in its own colors. What's saved is what {@link LogoEmoji} shows.
+     */
+    static HeaderTextRow logoEmojiRow(Context context) {
+        HeaderTextRow row = new HeaderTextRow(context, HushfacebookPreferenceFragment::logoEmojiSummary);
+        row.setKey(Settings.LOGO_EMOJI.key);
+        String title = L10n.t("Emoji after the logo");
+        row.setTitle(title);
+        row.setDialogTitle(title);
+        row.setDialogMessage(L10n.t("An emoji drawn right after the Facebook logo at the top of Home, in its own "
+                + "colors. Leave it blank for none."));
+        row.setPositiveButtonText(L10n.t("Save"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        EditText field = row.getEditText();
+        keepEditorInDialog(field, false);
+        field.setHint(new String(Character.toChars(0x1F383)));
+        row.setText(Settings.LOGO_EMOJI.savedValue());
+        row.setOnPreferenceChangeListener((preference, typed) -> {
+            String raw = typed == null ? "" : typed.toString();
+            String clean = LogoEmoji.clean(raw);
+            if (clean.equals(raw)) return true;
+            // Keeps the emoji as the header shows it in place of what was typed, as the header text row does.
+            ((HeaderTextRow) preference).setText(clean);
+            return false;
+        });
+        return row;
+    }
+
+    /**
      * Home header text (#230): your own words at the top of Home in place of Facebook's logo, read
      * as Facebook builds the header. What's saved is the text {@link HeaderText} shows: one line,
      * trimmed, at most {@link HeaderText#MAX_LENGTH} characters.
@@ -2294,6 +2324,14 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     /** What the Round picture size row says for [text], the digits typed there. */
     static String sizeSummary(String text) {
         return L10n.f("Round pictures are %1$s dp wide.", StoriesTrayCircles.diameterDp(text));
+    }
+
+    /** What the Emoji after the logo row says for [text], the emoji typed there. */
+    static String logoEmojiSummary(String text) {
+        String shown = LogoEmoji.clean(text);
+        if (shown.isEmpty()) return L10n.t("No emoji after the logo. Type one to show it there.");
+        return L10n.f("The top of Home shows %1$s after the logo. Restart Facebook to see the change.",
+                L10n.isolate(shown));
     }
 
     /** What the Home header text row says for [text], the words typed there. */

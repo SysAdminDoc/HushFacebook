@@ -2453,3 +2453,7 @@ Pick Custom color again to change it.	Değiştirmek için Özel renk seçeneğin
 Switches that are on	Açık olan anahtarlar
 Every switch you have on, in one list. Turn one off here and it's off everywhere.	Açtığın tüm anahtarlar tek bir listede. Burada birini kapatırsan her yerde kapanır.
 No switches are on yet.	Henüz açık anahtar yok.
+Emoji after the logo	Logodan sonra emoji
+An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	Ana sayfanın üstünde Facebook logosunun hemen yanına, kendi renkleriyle çizilen bir emoji. Hiç olmasın istiyorsan boş bırak.
+No emoji after the logo. Type one to show it there.	Logodan sonra emoji yok. Orada görünmesi için bir tane yaz.
+The top of Home shows %1$s after the logo. Restart Facebook to see the change.	Ana sayfanın üstünde logodan sonra %1$s görünüyor. Değişikliği görmek için Facebook uygulamasını yeniden başlat.

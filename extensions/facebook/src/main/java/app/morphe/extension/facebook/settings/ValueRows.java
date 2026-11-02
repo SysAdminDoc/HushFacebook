@@ -925,14 +925,22 @@ final class ValueRows {
      * the top of Home shows.
      */
     static final class HeaderTextRow extends EditTextPreference {
+        /** What the summary says for the text, the header's words or the emoji after the logo. */
+        private final java.util.function.Function<String, String> summary;
+
         HeaderTextRow(Context context) {
+            this(context, HushfacebookPreferenceFragment::headerTextSummary);
+        }
+
+        HeaderTextRow(Context context, java.util.function.Function<String, String> summary) {
             super(context);
+            this.summary = summary;
         }
 
         @Override
         public void setText(String text) {
             super.setText(text);
-            setSummary(headerTextSummary(text));
+            setSummary(summary.apply(text));
         }
 
         @Override
