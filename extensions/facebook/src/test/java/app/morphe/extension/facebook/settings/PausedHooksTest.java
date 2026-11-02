@@ -611,12 +611,13 @@ public class PausedHooksTest {
         probes.put(PatchFamily.GAME_ADS, Collections.singletonList(
                 () -> GameAds.heldPromise("{\"type\":\"loadadasync\",\"content\":{\"promiseID\":\"1\"}}") != null));
         // A reel's product card is answered away, and so are a feed post's product footer, the
-        // comment sheet's floating card and a reel's storefront card.
+        // comment sheet's floating card, a reel's storefront card and a profile's shop banner tag.
         probes.put(PatchFamily.AFFILIATE_LINKS, Arrays.asList(
                 () -> !AffiliateLinks.keepReelCard(true),
                 () -> AffiliateLinks.keepFooter("footer") == null,
                 () -> AffiliateLinks.keepCommentCard(new Object()) == null,
-                () -> AffiliateLinks.keepReelCtas(null, Collections.singletonList(ReelCta.STOREFRONT)) != null));
+                () -> AffiliateLinks.keepReelCtas(null, Collections.singletonList(ReelCta.STOREFRONT)) != null,
+                () -> AffiliateLinks.keepProfileEntry("REELS_VDD") == null));
         // A Remix chip under a reel, the Follow and Following buttons beside its author, both
         // footer queries, a Threads card between reels, and a reel starting outside Clean mode.
         probes.put(PatchFamily.REEL_DECLUTTER, Arrays.asList(

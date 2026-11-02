@@ -1339,7 +1339,7 @@
     },
     {
       "name": "Hide affiliate product links",
-      "description": "Removes the shopping cards that affiliate links add to reels, feed posts and comments, plus Shop now cards on reels, so you see fewer sales pitches while you scroll. On by default. Turn it off in Hushfacebook settings > News feed.",
+      "description": "Removes the shopping cards that affiliate links add to reels, feed posts and comments, plus Shop now cards on reels and the shop banner on a profile you open from one, so you see fewer sales pitches while you scroll. On by default. Turn it off in Hushfacebook settings > News feed.",
       "category": "Ads",
       "use": true,
       "dependencies": [

@@ -22,6 +22,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.filterBooleanReturns
 import app.morphe.patches.facebook.misc.extension.filterObjectReturns
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.reels.prompts.findOverlayEnum
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -41,6 +42,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.util.MethodUtil
 
@@ -75,6 +77,11 @@ internal const val KEEP_COMMENT_CARD = "$AFFILIATE_LINKS->keepCommentCard(Ljava/
 internal const val KEEP_COMMENT_CARD_CHECK = "$AFFILIATE_LINKS->keepCommentCard(I)Z"
 internal const val KEEP_REEL_CTAS = "$AFFILIATE_LINKS->keepReelCtas($LIST$LIST)$LIST"
 internal const val KEEP_COMMISSION_LABEL = "$AFFILIATE_LINKS->keepCommissionLabel(I)Z"
+
+internal const val KEEP_PROFILE_ENTRY = "$AFFILIATE_LINKS->keepProfileEntry($STRING)$STRING"
+
+/** The bundle key a reel or post sets on the profile it opens, which then shows the shop banner. */
+internal const val PROFILE_ENTRY_POINT = "affiliate_profile_cta_entry_point"
 
 /** What the reel's disclosure row keeps: the component's name, and what it logs for the label. */
 internal const val DISCLOSURE_COMPONENT = "FbShortsViewerDisclosureComponent"
@@ -123,6 +130,11 @@ internal const val FB_USER_SESSION = "Lcom/facebook/auth/usersession/FbUserSessi
  *   static initializer fills four Sets with overlay kinds, reads the MobileConfig switches itself,
  *   answers null when none is on and otherwise drops each kind whose set's category is switched on.
  *   The overlay's builder (`LX/0B8F;->A0C`) and the rec pill's class (`LX/0B7J;->A00`) both call it.
+ * - On a creator's profile (#329), the shop banner that floats over the Reels grid comes with the
+ *   tag a reel, post or feed video puts in the bundle of the profile it opens. One static helper
+ *   (585 arm64 `LX/0cuE;->A00(String, Bundle)`, which the reel's author tap calls with "REELS_VDD")
+ *   stores it under [PROFILE_ENTRY_POINT], and the profile asks for the banner only with it. The value
+ *   it stores goes through the extension, so the profile gets null and opens like any other.
  *
  * Every answer of those four goes through the extension, which turns a yes into a no, an id or a
  * model into null, and a list of reel cards into one without the shop kinds while the switch is on.
@@ -132,7 +144,8 @@ val hideAffiliateLinksPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Hide affiliate product links",
     description = "Removes the shopping cards that affiliate links add to reels, feed posts and comments, plus " +
-        "Shop now cards on reels, so you see fewer sales pitches while you scroll. On by default. Turn it off in " +
+        "Shop now cards on reels and the shop banner on a profile you open from one, so you see fewer sales pitches " +
+        "while you scroll. On by default. Turn it off in " +
         "Hushfacebook settings > News feed.",
 ) {
     category("Ads")
@@ -155,6 +168,12 @@ val hideAffiliateLinksPatch = bytecodePatch(
         else commentCard.filterObjectReturns(PATCH, KEEP_COMMENT_CARD)
         mutableClassDefBy(anchors.ctaFilter.definingClass).findMutableMethodOf(anchors.ctaFilter)
             .filterCtaReturns()
+        try {
+            val entry = findProfileEntryWrite()
+            mutableClassDefBy(entry.definingClass).findMutableMethodOf(entry).hookProfileEntry()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so a profile opened from a reel keeps its shop banner.")
+        }
         enableStatus("affiliateLinks")
     }
 }
@@ -237,6 +256,46 @@ private fun MutableMethod.hookCommissionFlag(flag: Int) {
             move-result v$answer
         """,
     )
+}
+
+/**
+ * Each `putString` in [method] that stores [PROFILE_ENTRY_POINT] in a bundle, as the call's index and
+ * the register of the value it stores. Only a store the method returns right after counts, so nothing
+ * else reads the value the hook hands back.
+ */
+internal fun profileEntryWrites(method: Method): List<Pair<Int, Int>> {
+    val code = method.implementation?.instructions?.toList() ?: return emptyList()
+    return code.indices.mapNotNull { at ->
+        val call = (code[at] as? ReferenceInstruction)?.reference as? MethodReference
+        val put = code[at] as? FiveRegisterInstruction
+        if (call == null || put == null || code[at].opcode != Opcode.INVOKE_VIRTUAL || call.name != "putString" ||
+            put.registerCount != 3 || code.getOrNull(at + 1)?.opcode != Opcode.RETURN_VOID
+        ) return@mapNotNull null
+        val key = (at - 1 downTo 0).map(code::get).firstOrNull { writesRegister(it, put.registerD) }
+        val named = ((key as? ReferenceInstruction)?.reference as? StringReference)?.string == PROFILE_ENTRY_POINT
+        if (named) at to put.registerE else null
+    }
+}
+
+/** The one method that tags a profile's bundle with [PROFILE_ENTRY_POINT]. Changes nothing. */
+internal fun BytecodePatchContext.findProfileEntryWrite(): Method {
+    val writers = classDefByStrings(PROFILE_ENTRY_POINT, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .flatMap { classDef -> classDef.methods.filter { profileEntryWrites(it).isNotEmpty() } }
+    return writers.singleOrNull() ?: refuse("expected one method storing $PROFILE_ENTRY_POINT in a bundle, found ${writers.size}")
+}
+
+/** Hands the value each store of [PROFILE_ENTRY_POINT] is about to write through the extension first. */
+private fun MutableMethod.hookProfileEntry() {
+    for ((put, value) in profileEntryWrites(this).asReversed()) {
+        addInstructionsAtControlFlowLabel(
+            put,
+            """
+                invoke-static/range { v$value .. v$value }, $KEEP_PROFILE_ENTRY
+                move-result-object v$value
+            """,
+        )
+    }
 }
 
 /** Whether [method] is the reel overlay's [CTA_FILTER]: static, (List, Set) to List, with code. */

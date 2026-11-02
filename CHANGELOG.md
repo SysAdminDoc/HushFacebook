@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** `Hide affiliate product links` also keeps the shop banner (the one with "On Shopee" and an X) off a creator's profile when you open it from one of their reels. (#329)
 * **Facebook:** New `Photo carousel` under News feed. A post with several photos or videos shows them in a row you swipe through, one at a time, instead of Facebook's grid. Posts with sensitive photos keep their cover. It starts off. (#345)
 * **Facebook:** New `Hide the line over the comment box` under Comments and writing. The thin line along the top of the comment box you get when you open a post goes away. It starts off. (#344)
 * **Facebook:** New `Rounded tab bar` under Appearance, in Screen and motion. With the tab bar at the bottom it turns into a pill with round ends, a bit narrower and lifted just off the bottom of the screen. Works with `See-through bars` too, and it starts off. (#344)

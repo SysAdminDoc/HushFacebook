@@ -82,6 +82,21 @@ public class AffiliateLinksTest {
         assertTrue("Pause didn't bring the label back", AffiliateLinks.keepCommissionLabel(1));
     }
 
+    /** A profile opened from a reel loses the tag that asks for its shop banner, and only while the switch is on (#329). */
+    @Test
+    public void theProfileOpensWithoutItsShopBannerTag() {
+        assertNull("the profile kept its shop banner tag", AffiliateLinks.keepProfileEntry("REELS_VDD"));
+        assertNull(AffiliateLinks.keepProfileEntry(null));
+        assertEquals(FamilyNames.AFFILIATE_LINKS + ": invoked 2, 1 found, 0 missing. Counted: "
+                + AffiliateLinks.PROFILE_BANNER + " 1", statusLine());
+
+        Settings.HIDE_AFFILIATE_LINKS.save(false);
+        assertEquals("the switch off lost the tag", "REELS_VDD", AffiliateLinks.keepProfileEntry("REELS_VDD"));
+        Settings.HIDE_AFFILIATE_LINKS.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("Pause lost the tag", "REELS_VDD", AffiliateLinks.keepProfileEntry("REELS_VDD"));
+    }
+
     private static String statusLine() {
         for (String line : HookStatus.report()) {
             if (line.startsWith(FamilyNames.AFFILIATE_LINKS + ":")) return line;
