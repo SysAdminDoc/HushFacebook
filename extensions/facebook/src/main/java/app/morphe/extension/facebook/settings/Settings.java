@@ -547,6 +547,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_show_seller_view_profile", TRUE);
 
     /**
+     * Facebook's safe area for React Native pages counts only what overlaps the page itself, so a
+     * Marketplace listing that already sits below the status bar doesn't pad its top by the bar's
+     * height again ({@link app.morphe.extension.facebook.navigation.ListingGap}). Off or paused, the
+     * pages get the whole window's insets as Facebook hands them out.
+     */
+    public static final BooleanSetting REMOVE_LISTING_GAP =
+            new BooleanSetting("hushfacebook_remove_listing_gap", TRUE);
+
+    /**
      * The ads Instant Games ask Facebook for ({@link app.morphe.extension.facebook.ads.GameAds}): each
      * request is answered with no ad.
      */

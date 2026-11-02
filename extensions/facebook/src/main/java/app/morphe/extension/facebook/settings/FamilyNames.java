@@ -99,6 +99,7 @@ public final class FamilyNames {
     public static final String FOLLOWING_HOME = "Following feed on Home";
     public static final String MARKETPLACE_ONLY = "Marketplace only";
     public static final String SELLER_VIEW_PROFILE = "Show View profile on Marketplace sellers";
+    public static final String LISTING_GAP = "Remove the gap above Marketplace listings";
     public static final String REELS_TAB = "Hide the Reels tab";
     public static final String REELS_TAB_DOT = "Hide the Reels tab dot";
     public static final String TAB_BADGES = "Hide tab badges";

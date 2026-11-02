@@ -229,6 +229,8 @@ public enum PatchFamily {
             Settings.MARKETPLACE_SKIP_FEED_PREFETCH),
     SELLER_VIEW_PROFILE(FamilyNames.SELLER_VIEW_PROFILE, "sellerViewProfile", null,
             Settings.SHOW_SELLER_VIEW_PROFILE),
+    LISTING_GAP(FamilyNames.LISTING_GAP, "listingGap", null,
+            Settings.REMOVE_LISTING_GAP),
     REELS_TAB(FamilyNames.REELS_TAB, "reelsTab", null,
             Settings.HIDE_REELS_TAB),
     REELS_TAB_DOT(FamilyNames.REELS_TAB_DOT, "reelsTabDot", null,

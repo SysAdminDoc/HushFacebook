@@ -1168,6 +1168,10 @@ Tap anywhere on a reel's or video's progress bar to jump there, instead of dragg
 Show View profile on Marketplace sellers	Hiện Xem trang cá nhân ở người bán trên Marketplace
 # context: summary of that switch
 Adds a View profile button to every seller's Marketplace page, opening their Facebook profile. Facebook only shows it to some accounts.	Thêm nút Xem trang cá nhân vào trang Marketplace của mọi người bán, mở trang cá nhân Facebook của họ. Facebook chỉ hiện nút này với một số tài khoản.
+# context: switch title under Marketplace; a listing is one item for sale on Marketplace, and the gap is an empty band between the status bar and the listing's close and share buttons (#333)
+Remove the gap above Marketplace listings	Bỏ khoảng trống phía trên tin đăng Marketplace
+# context: summary of that switch; Pixel is Google's phone, keep the name
+Takes out the empty band some phones show above a listing's top row, like Pixels on Android 17.	Bỏ dải trống mà một số điện thoại hiện phía trên hàng đầu của tin đăng, như Pixel chạy Android 17.
 # context: the Save Facebook's notification sound row under Notifications and its toasts (#83)
 Save Facebook's notification sound	Lưu âm thanh thông báo của Facebook
 Adds Facebook's chime to your phone's notification sounds, for categories set to None. Then pick it in Android's notification settings for Facebook, under Sound.	Thêm tiếng chuông của Facebook vào âm thanh thông báo của điện thoại, dành cho các danh mục đang đặt là Không có. Sau đó chọn âm thanh này trong cài đặt thông báo của Android cho Facebook, ở mục Âm thanh.

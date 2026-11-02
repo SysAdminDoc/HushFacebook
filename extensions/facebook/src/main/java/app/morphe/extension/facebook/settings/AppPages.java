@@ -275,6 +275,12 @@ final class AppPages {
                     L10n.t("Adds a View profile button to every seller's Marketplace page, opening their Facebook profile. "
                             + "Facebook only shows it to some accounts.")));
         }
+        if (build.contains(PatchFamily.LISTING_GAP)) {
+            // Read each time a listing asks for its safe area, so a change shows on the next listing.
+            marketplace.addPreference(toggle(context, Settings.REMOVE_LISTING_GAP,
+                    L10n.t("Takes out the empty band some phones show above a listing's top row, like Pixels on "
+                            + "Android 17.")));
+        }
         SwitchPreference free = toggle(context, Settings.FREE_STUFF_SHORTCUT, build.contains(PatchFamily.MENU_SETTINGS_ROW)
                 ? L10n.t("Adds Free stuff, Marketplace's free listings, to the menu you get by holding "
                         + "Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing "

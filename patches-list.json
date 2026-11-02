@@ -3141,6 +3141,44 @@
       "options": []
     },
     {
+      "name": "Remove the gap above Marketplace listings",
+      "description": "Takes out the empty band some phones show between the status bar and a Marketplace listing's close and share buttons, like Pixels on Android 17. Phones without the gap look the same as before. On by default. Turn it off in Hushfacebook settings > Marketplace.",
+      "category": "Fixes",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "585.0.0.47.54"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "585.0.0.47.54",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 476015655,
+                "ARMEABI_V7A": 476015543
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Restore screens on re-signed builds",
       "description": "Fixes profiles, photos, posts and some Settings pages that won't open on a patched Facebook, lets a Messenger or Facebook Lite patched in the same Manager sign in through it, and opens Instagram and Threads links in a patched Instagram or Threads. Root Mount installs don't need it. Works as soon as you patch it in, with no switch.",
       "category": "Fixes",

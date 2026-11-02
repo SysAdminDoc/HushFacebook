@@ -1172,6 +1172,10 @@ Tap anywhere on a reel's or video's progress bar to jump there, instead of dragg
 Show View profile on Marketplace sellers	顯示 Marketplace 賣家的查看個人檔案按鈕
 # context: summary of that switch
 Adds a View profile button to every seller's Marketplace page, opening their Facebook profile. Facebook only shows it to some accounts.	在每位賣家的 Marketplace 頁面新增「查看個人檔案」按鈕，開啟其 Facebook 個人檔案。Facebook 原本只對部分帳號顯示此按鈕。
+# context: switch title under Marketplace; a listing is one item for sale on Marketplace, and the gap is an empty band between the status bar and the listing's close and share buttons (#333)
+Remove the gap above Marketplace listings	移除 Marketplace 商品上方的空白
+# context: summary of that switch; Pixel is Google's phone, keep the name
+Takes out the empty band some phones show above a listing's top row, like Pixels on Android 17.	移除部分手機在商品最上方一列上方顯示的空白條，例如 Android 17 上的 Pixel。
 # context: the Save Facebook's notification sound row under Notifications and its toasts (#83)
 Save Facebook's notification sound	儲存 Facebook 通知音效
 Adds Facebook's chime to your phone's notification sounds, for categories set to None. Then pick it in Android's notification settings for Facebook, under Sound.	將 Facebook 提示音加入手機的通知音效，供音效設為「無」的類別使用。之後可在 Android 的 Facebook 通知設定中，於「音效」選取。

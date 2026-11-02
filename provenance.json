@@ -1464,6 +1464,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/navigation/ListingGap.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/navigation/listinggap/RemoveListingGapPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook from Facebook 585 on an Android 17 emulator, for issue #333: a Marketplace listing is a React Native page whose header pads its top by the safe area Facebook's SafeArea module reports, the whole window's insets, while Android 17 already places the page below the status bar. Before the module's static Insets-to-map method runs, in safeAreaInsets and in the listener it sets on the decor view, the insets and the decor go to the extension, which keeps only the part of each side that overlaps the React Native root view. Until the root is placed, the room inside the native frame the page fills (its padding, and the margins of a container still waiting for its first layout) stands in for it. No Facebook code was copied."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/ScreenTransitions.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/misc/transitions/Fingerprints.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/misc/transitions/FragmentSlides.kt",

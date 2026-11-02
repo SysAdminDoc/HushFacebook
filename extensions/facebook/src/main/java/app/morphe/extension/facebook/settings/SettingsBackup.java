@@ -210,6 +210,7 @@ public final class SettingsBackup {
             Settings.MARKETPLACE_FILTERS_BUTTON,
             Settings.MARKETPLACE_LISTING_DATE,
             Settings.SHOW_SELLER_VIEW_PROFILE,
+            Settings.REMOVE_LISTING_GAP,
             Settings.BLOCK_GAME_ADS,
             Settings.ANSWER_REWARDED_GAME_ADS,
             Settings.HIDE_AFFILIATE_LINKS,

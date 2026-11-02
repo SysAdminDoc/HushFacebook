@@ -148,6 +148,7 @@ import app.morphe.extension.facebook.navigation.TranslucentBarsForTests;
 import app.morphe.extension.facebook.navigation.RoundedTabBarForTests;
 import app.morphe.extension.facebook.navigation.MarketplaceOnlyForTests;
 import app.morphe.extension.facebook.navigation.MarketplaceSellerProfileForTests;
+import app.morphe.extension.facebook.navigation.ListingGapForTests;
 import app.morphe.extension.facebook.navigation.HiddenTabsForTests;
 import app.morphe.extension.facebook.navigation.ReelsTabForTests;
 import app.morphe.extension.facebook.navigation.TabBadgesForTests;
@@ -857,6 +858,8 @@ public class PausedHooksTest {
         probes.put(PatchFamily.SELLER_VIEW_PROFILE, Arrays.asList(
                 MarketplaceSellerProfileForTests::givesSellersViewProfile,
                 MarketplaceSellerProfileForTests::givesSellersViewProfileById));
+        // A listing below the status bar is handed a safe area without the status bar in it.
+        probes.put(PatchFamily.LISTING_GAP, Arrays.asList(ListingGapForTests::trimsAListing));
         // The tab bar builder is told to leave the Reels tab out.
         // Facebook's push of its Reels launcher shortcut is held back too.
         probes.put(PatchFamily.REELS_TAB, Arrays.asList(ReelsTabForTests::hidesTheTab,

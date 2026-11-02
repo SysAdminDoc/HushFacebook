@@ -342,6 +342,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean listingGap() {
+        return false;
+    }
+
     public static boolean reelsTab() {
         return false;
     }

@@ -1194,6 +1194,10 @@ Tap anywhere on a reel's or video's progress bar to jump there, instead of dragg
 Show View profile on Marketplace sellers	Показывать кнопку «Посмотреть профиль» у продавцов Marketplace
 # context: summary of that switch
 Adds a View profile button to every seller's Marketplace page, opening their Facebook profile. Facebook only shows it to some accounts.	Добавляет кнопку «Посмотреть профиль» на страницу каждого продавца в Marketplace и открывает его профиль Facebook. Facebook показывает ее только некоторым аккаунтам.
+# context: switch title under Marketplace; a listing is one item for sale on Marketplace, and the gap is an empty band between the status bar and the listing's close and share buttons (#333)
+Remove the gap above Marketplace listings	Убрать отступ над объявлениями Marketplace
+# context: summary of that switch; Pixel is Google's phone, keep the name
+Takes out the empty band some phones show above a listing's top row, like Pixels on Android 17.	Убирает пустую полосу, которую некоторые телефоны показывают над верхней строкой объявления, например Pixel на Android 17.
 # context: the Save Facebook's notification sound row under Notifications and its toasts (#83)
 Save Facebook's notification sound	Сохранить звук уведомления Facebook
 Adds Facebook's chime to your phone's notification sounds, for categories set to None. Then pick it in Android's notification settings for Facebook, under Sound.	Добавляет мелодию Facebook в звуки уведомлений телефона для категорий, в которых выбран вариант «Нет». Затем выберите ее в настройках уведомлений Android для Facebook в разделе «Звук».

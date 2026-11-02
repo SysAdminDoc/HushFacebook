@@ -287,6 +287,7 @@ final class SwitchLabels {
         if (setting == Settings.MARKETPLACE_FILTERS_BUTTON) return L10n.t("Adv. Filters button");
         if (setting == Settings.MARKETPLACE_LISTING_DATE) return L10n.t("Show when listings went up");
         if (setting == Settings.SHOW_SELLER_VIEW_PROFILE) return L10n.t("Show View profile on Marketplace sellers");
+        if (setting == Settings.REMOVE_LISTING_GAP) return L10n.t("Remove the gap above Marketplace listings");
         if (setting == Settings.BLOCK_GAME_ADS) return L10n.t("Block Instant Games ads");
         if (setting == Settings.ANSWER_REWARDED_GAME_ADS) return L10n.t("Answer rewarded game ads as watched");
         if (setting == Settings.BLOCK_TRENDING_VIDEO_NOTIFICATIONS) return L10n.t("Block trending video notifications");

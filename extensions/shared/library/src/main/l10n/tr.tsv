@@ -1168,6 +1168,10 @@ Tap anywhere on a reel's or video's progress bar to jump there, instead of dragg
 Show View profile on Marketplace sellers	Marketplace satıcılarında Profili gör'ü göster
 # context: summary of that switch
 Adds a View profile button to every seller's Marketplace page, opening their Facebook profile. Facebook only shows it to some accounts.	Her Marketplace satıcı sayfasına, Facebook profilini açan bir Profili gör düğmesi ekler. Facebook bunu yalnızca bazı hesaplara gösterir.
+# context: switch title under Marketplace; a listing is one item for sale on Marketplace, and the gap is an empty band between the status bar and the listing's close and share buttons (#333)
+Remove the gap above Marketplace listings	Marketplace ilanlarının üstündeki boşluğu kaldır
+# context: summary of that switch; Pixel is Google's phone, keep the name
+Takes out the empty band some phones show above a listing's top row, like Pixels on Android 17.	Bazı telefonların bir ilanın üst satırının üstünde gösterdiği boş şeridi kaldırır, örneğin Android 17'deki Pixel'ler.
 # context: the Save Facebook's notification sound row under Notifications and its toasts (#83)
 Save Facebook's notification sound	Facebook'un bildirim sesini kaydet
 Adds Facebook's chime to your phone's notification sounds, for categories set to None. Then pick it in Android's notification settings for Facebook, under Sound.	Facebook'un bildirim sesini telefonunuzun bildirim seslerine ekler; sesi Hiçbiri olan kategoriler için. Sonra Android'in Facebook bildirim ayarlarında Ses bölümünden seçin.
