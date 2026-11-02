@@ -268,6 +268,8 @@ public class ColdStartHooksTest {
         assertFalse("a Made with Edits line taken before the context came off", ReelDeclutter.hideEditsLabel());
         assertFalse("a slow connection message posted before the context was held back",
                 ReelDeclutter.hideSlowConnectionMessage());
+        assertFalse("an Up next lookup skipped before the context came off", ReelDeclutter.skipUpNextFetch());
+        assertFalse("Up next videos held back before the context came off", ReelDeclutter.hideUpNextVideos());
         assertTrue("a feed Reels row tile lost its clip before the context came off", ReelDeclutter.allowsPreviewClip(true));
         assertEquals("a feed Reels row tile lost its end before the context came off", 1000, ReelDeclutter.previewClipEnd(1000));
         assertFalse("a reel with comments off got its Comment button before the context came off",

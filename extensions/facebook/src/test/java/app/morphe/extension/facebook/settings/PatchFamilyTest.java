@@ -485,7 +485,7 @@ public class PatchFamilyTest {
                         + "hushfacebook_show_reel_comment_button=off, hushfacebook_show_reel_post_date=off, "
                         + "hushfacebook_reel_post_date_style=AGO, hushfacebook_hide_reel_sound_button=off, hushfacebook_reel_speaker_above_menu=off, "
                         + "hushfacebook_hide_reel_audio_line=off, "
-                        + "hushfacebook_hide_slow_connection_message=off, hushfacebook_feed_videos_alone=off, "
+                        + "hushfacebook_hide_slow_connection_message=off, hushfacebook_hide_up_next=off, hushfacebook_feed_videos_alone=off, "
                         + "hushfacebook_play_feed_reels_whole=off)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.REEL_DECLUTTER), false).get(0));
         // Share sheet items is set by its list, and its group switch is saved beside it.

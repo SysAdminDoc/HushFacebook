@@ -87,6 +87,7 @@ public class ReelDeclutterTest {
         ReelDeclutter.sideSpeaker(null);
         Settings.HIDE_REEL_AUDIO_LINE.resetToDefault();
         Settings.HIDE_SLOW_CONNECTION_MESSAGE.resetToDefault();
+        Settings.HIDE_UP_NEXT.resetToDefault();
         Settings.PLAY_FEED_REELS_WHOLE.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         FeedFilterCounters.clear();
@@ -289,6 +290,54 @@ public class ReelDeclutterTest {
         assertEquals(ReelDeclutter.SLOW_ROUTE + ": 5 lists, 5 items, 1 removed. Last reason: " + ReelDeclutter.SLOW_MESSAGE
                 + ". Removed: " + ReelDeclutter.SLOW_MESSAGE + " 1. Kinds: " + ReelDeclutter.SLOW_MESSAGE + " 5",
                 line(ReelDeclutter.SLOW_ROUTE));
+    }
+
+    /**
+     * The UP NEXT bar under a video opened from the feed (#367) gets its video until the switch is on:
+     * then the lookup is skipped and the videos are handed out empty. Both come back paused, before
+     * the settings are ready and once the switch is off again.
+     */
+    @Test
+    public void upNextGetsItsVideoUntilItsSwitchIsOn() {
+        assertFalse(Settings.HIDE_UP_NEXT.defaultValue);
+        assertFalse("the other Reels switches took the lookup", ReelDeclutter.skipUpNextFetch());
+        assertFalse("the other Reels switches took the videos", ReelDeclutter.hideUpNextVideos());
+        Settings.HIDE_UP_NEXT.save(true);
+        assertTrue(ReelDeclutter.skipUpNextFetch());
+        assertTrue(ReelDeclutter.hideUpNextVideos());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("the lookup went while paused", ReelDeclutter.skipUpNextFetch());
+        assertFalse("the videos went while paused", ReelDeclutter.hideUpNextVideos());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> {
+            assertFalse("the lookup went before the settings were ready", ReelDeclutter.skipUpNextFetch());
+            assertFalse("the videos went before the settings were ready", ReelDeclutter.hideUpNextVideos());
+        });
+        Settings.HIDE_UP_NEXT.save(false);
+        assertFalse("turning the switch off didn't bring the lookup back", ReelDeclutter.skipUpNextFetch());
+        assertFalse("turning the switch off didn't bring the videos back", ReelDeclutter.hideUpNextVideos());
+        assertEquals(ReelDeclutter.UP_NEXT_ROUTE + ": 10 lists, 10 items, 2 removed. Last reason: "
+                        + ReelDeclutter.UP_NEXT_VIDEOS + ". Removed: " + ReelDeclutter.UP_NEXT_FETCH + " 1, "
+                        + ReelDeclutter.UP_NEXT_VIDEOS + " 1. Kinds: " + ReelDeclutter.UP_NEXT_FETCH + " 5, "
+                        + ReelDeclutter.UP_NEXT_VIDEOS + " 5",
+                line(ReelDeclutter.UP_NEXT_ROUTE));
+    }
+
+    /** An Up next switch that can't be read keeps the lookup and its videos, and the report names the hook. */
+    @Test
+    public void anUpNextSwitchThatCantBeReadKeepsTheVideo() {
+        SettingReadsForTests.breakReads(Settings.HIDE_UP_NEXT);
+        try {
+            assertFalse(ReelDeclutter.skipUpNextFetch());
+            assertFalse(ReelDeclutter.hideUpNextVideos());
+        } finally {
+            SettingReadsForTests.mend(Settings.HIDE_UP_NEXT);
+        }
+        String missing = HookStatus.missing(FamilyNames.REEL_DECLUTTER).toString();
+        assertTrue(missing, missing.contains("a working '" + ReelDeclutter.UP_NEXT_FETCH + "' hook (it threw "
+                + NullPointerException.class.getName() + ")"));
+        assertTrue(missing, missing.contains("a working '" + ReelDeclutter.UP_NEXT_VIDEOS + "' hook (it threw "
+                + NullPointerException.class.getName() + ")"));
     }
 
     /**

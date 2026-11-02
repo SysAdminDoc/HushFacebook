@@ -805,6 +805,16 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_slow_connection_message", FALSE);
 
     /**
+     * The UP NEXT bar under a video opened from the feed, naming the video Facebook lines up after
+     * it, gets no video to show: the lookup returns before it queries and what was found is handed
+     * out empty ({@link app.morphe.extension.facebook.reels.ReelDeclutter#skipUpNextFetch} and
+     * {@link app.morphe.extension.facebook.reels.ReelDeclutter#hideUpNextVideos}, #367). Off by
+     * default.
+     */
+    public static final BooleanSetting HIDE_UP_NEXT =
+            new BooleanSetting("hushfacebook_hide_up_next", FALSE);
+
+    /**
      * The tiles in the feed's Reels row play their reel from the start to its end instead of the
      * short clip Facebook picks, which is often one second played over and over
      * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#allowsPreviewClip} and

@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** New `Hide Up next on videos` under Reels and Watch. It takes the UP NEXT bar, with the next video's name and length, off the bottom of a video you open from the feed. It starts off. (#367)
 * **Facebook:** With `Show full post text` on, a tap on a post's text folds it back to See more, and another tap opens it again, the way Facebook does it with the switch off. Before, a long post stayed open whatever you tapped. (#354)
 * **Facebook:** Opening a section in the Hush settings folds the one you had open, so the page stays short and only one section is open at a time. (#368)
 * **Facebook:** `Burn-in guard` now dims around a wide video you open from the feed. It plays small in the middle of the full-screen viewer, so the guard used to leave it alone. (#370)

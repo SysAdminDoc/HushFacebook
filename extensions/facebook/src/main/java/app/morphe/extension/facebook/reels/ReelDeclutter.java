@@ -80,6 +80,12 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  *   <li>A video that keeps buffering has Facebook post a runnable that shows "This is taking a
  *       while. Try checking your network connection." {@link #hideSlowConnectionMessage} is asked
  *       first thing in it, and true makes it return before the message is built (#222).
+ *   <li>A video opened from the feed gets an UP NEXT bar under its seek bar, naming the video
+ *       Facebook lines up after it. Facebook's controller for that bar looks the next video up once
+ *       per video, keeps what came back, and hands it to the bar and the end screen. {@link
+ *       #skipUpNextFetch} is asked first thing in the lookup, and true returns before it queries.
+ *       {@link #hideUpNextVideos} is asked first thing in the hand-out, and true answers an empty
+ *       list, Facebook's own answer for a video with nothing lined up (#367).
  *   <li>Each tile of the feed's Reels row plays a short clip of its reel that Facebook picks, and
  *       a clip it can't use comes out as the first second, played over and over (#228).
  *       {@link #allowsPreviewClip} is handed the last check before the tile asks for its clip, and
@@ -147,6 +153,14 @@ public final class ReelDeclutter {
     /** Counted under its own name each time a video's slow connection message isn't shown. */
     static final String SLOW_ROUTE = "Slow connection message";
     static final String SLOW_MESSAGE = "slow connection message";
+
+    /**
+     * Counted under its own name each time the UP NEXT bar's lookup is skipped and each time its
+     * videos are handed out empty (#367).
+     */
+    static final String UP_NEXT_ROUTE = "Video Up next";
+    static final String UP_NEXT_FETCH = "Up next lookup";
+    static final String UP_NEXT_VIDEOS = "Up next videos";
 
     /**
      * Counted under its own name for each tile of the feed's Reels row, as its end is handed in, and
@@ -506,6 +520,43 @@ public final class ReelDeclutter {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, SLOW_MESSAGE, failure);
             Logger.printException(() -> "Slow connection message: could not read its switch", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, first thing in the lookup of the video Facebook lines up after one opened from
+     * the feed, the one its UP NEXT bar names (#367). True makes it return before it queries, so the
+     * video never gets one. Never throws: false looks it up.
+     */
+    public static boolean skipUpNextFetch() {
+        return hidesUpNext(UP_NEXT_FETCH, "Up next: not looked up");
+    }
+
+    /**
+     * Injection point, first thing in what hands the UP NEXT bar and the end screen the videos looked
+     * up after one (#367). True makes it answer an empty list, as Facebook does for a video with
+     * nothing lined up, so a lookup made before the switch went on shows nothing either. Never
+     * throws: false hands out what was found.
+     */
+    public static boolean hideUpNextVideos() {
+        return hidesUpNext(UP_NEXT_VIDEOS, "Up next: no video handed out");
+    }
+
+    private static boolean hidesUpNext(String kind, String message) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            FeedFilterCounters.sawList(UP_NEXT_ROUTE, 1);
+            FeedFilterCounters.sawKind(UP_NEXT_ROUTE, kind);
+            boolean hide = Utils.settingsReady() && Settings.HIDE_UP_NEXT.get();
+            if (hide) {
+                FeedFilterCounters.removed(UP_NEXT_ROUTE, 1, kind);
+                logOnce(kind, () -> message);
+            }
+            return hide;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, kind, failure);
+            Logger.printException(() -> kind + ": could not read its switch", failure);
             return false;
         }
     }

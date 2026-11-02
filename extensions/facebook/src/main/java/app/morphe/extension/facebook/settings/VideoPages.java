@@ -195,6 +195,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.HIDE_SLOW_CONNECTION_MESSAGE,
                     L10n.t("Stops the \"This is taking a while\" message about your network connection when a video "
                             + "or GIF is slow to load. It keeps loading as before.")));
+            // Asked as each video opened from the feed looks up the next one and as the bar is drawn.
+            reels.addPreference(toggle(context, Settings.HIDE_UP_NEXT,
+                    L10n.t("Takes the UP NEXT bar with the next video off the bottom of a video you open from the "
+                            + "feed. A change shows from the next video you open.")));
             // Asked as a feed video's player asks for more, so a change shows from the next feed video.
             reels.addPreference(toggle(context, Settings.FEED_VIDEOS_ALONE,
                     L10n.t("A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. "

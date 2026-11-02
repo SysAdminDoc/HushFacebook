@@ -177,6 +177,7 @@ final class SwitchLabels {
         if (setting == Settings.REEL_SPEAKER_ABOVE_MENU) return L10n.t("Move the speaker above the three dots");
         if (setting == Settings.HIDE_REEL_AUDIO_LINE) return L10n.t("Hide the audio line on reels");
         if (setting == Settings.HIDE_SLOW_CONNECTION_MESSAGE) return L10n.t("Hide the slow connection message");
+        if (setting == Settings.HIDE_UP_NEXT) return L10n.t("Hide Up next on videos");
         if (setting == Settings.FEED_VIDEOS_ALONE) return L10n.t("Open feed videos on their own");
         if (setting == Settings.PLAY_FEED_REELS_WHOLE) return L10n.t("Play whole reels in the feed's Reels row");
         if (setting == Settings.DONT_SEND_REEL_WATCH_HISTORY) return L10n.t("Don't send reel watch history");
