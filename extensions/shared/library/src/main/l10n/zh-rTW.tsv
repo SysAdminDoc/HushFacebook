@@ -2443,3 +2443,5 @@ Show Posts in search	在搜尋中顯示貼文
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	把「貼文」放回搜尋結果上方的那一列，排在 Reels 之後，讓你只看和搜尋內容相關的貼文。
 Restore feed sound after opened videos	開啟影片後還原動態消息的聲音
 A video you open plays with its sound as usual. Back in the feed, the sound is what it was before you opened it, even after a long watch.	你開啟的影片照常有聲音播放。回到動態消息後，聲音會恢復成開啟影片前的狀態，即使看了很久也一樣。
+Hide the Join button on posts	隱藏貼文上的加入按鈕
+Hides the Join button next to the group's name on posts from groups you haven't joined. A change shows on the posts drawn after it.	隱藏來自你尚未加入的社團的貼文中，社團名稱旁邊的加入按鈕。變更會在之後載入的貼文上生效。

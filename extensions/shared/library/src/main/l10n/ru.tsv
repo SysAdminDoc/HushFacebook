@@ -2493,3 +2493,5 @@ Show Posts in search	Показывать «Публикации» в поиск
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	Возвращает «Публикации» в ряд над результатами поиска, после Reels, чтобы видеть только публикации по вашему запросу.
 Restore feed sound after opened videos	Возвращать звук Ленты после открытых видео
 A video you open plays with its sound as usual. Back in the feed, the sound is what it was before you opened it, even after a long watch.	Открытое видео воспроизводится со звуком как обычно. После возврата в Ленту звук будет таким же, как до открытия видео, даже после долгого просмотра.
+Hide the Join button on posts	Скрывать кнопку «Вступить» в публикациях
+Hides the Join button next to the group's name on posts from groups you haven't joined. A change shows on the posts drawn after it.	Скрывает кнопку «Вступить» рядом с названием группы в публикациях из групп, в которые вы не вступили. Изменение видно в публикациях, загруженных после него.

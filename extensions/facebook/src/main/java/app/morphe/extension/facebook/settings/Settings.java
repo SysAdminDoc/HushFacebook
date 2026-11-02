@@ -2445,6 +2445,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_post_follow_link", FALSE);
 
     /**
+     * The Join button after the group's name in the header of a post from a group you haven't joined
+     * goes, and the dot before it ({@link app.morphe.extension.facebook.feed.PostPrompts#hideJoinButton},
+     * #356). Off by default. A change shows on the posts drawn after it.
+     */
+    public static final BooleanSetting HIDE_POST_JOIN_BUTTON =
+            new BooleanSetting("hushfacebook_hide_post_join_button", FALSE);
+
+    /**
      * The numbers on a post's Like, Comment and Share buttons go and each button shows its word, as
      * on a post nobody has reacted to yet ({@link app.morphe.extension.facebook.feed.PostPrompts#hidePostCounts},
      * #180). The buttons stay where they are. Off by default. A change shows on the posts drawn after it.

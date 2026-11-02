@@ -759,6 +759,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostJoinButton.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: the Join button in the header of a post from a group you haven't joined. One instance method appends it to the header and carries a trace string naming the group header title menu helper. The patch finds that method by the string and its shape (returns void, five parameters, one a SpannableStringBuilder) and has it ask the extension first thing, returning before it adds the button while the switch is on."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/ReactionPreview.kt"
       ],
       "origin": "original",

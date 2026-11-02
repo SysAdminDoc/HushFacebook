@@ -111,6 +111,35 @@ public final class PostPrompts {
         }
     }
 
+    private static volatile boolean joinLogged;
+
+    /** Counted under the patch's name each time a header is built without its Join button. */
+    static final String JOIN_HIDDEN = "Join button kept out";
+
+    /**
+     * The hook, first thing in the group header helper that appends the dot and the Join button
+     * after a group's name (#356). True makes it return before appending either, so the header is
+     * the one Facebook draws for a post with no such button. False, which is the answer while the
+     * switch is off, paused, before the settings are ready or when anything here fails, lets
+     * Facebook append them.
+     */
+    public static boolean hideJoinButton() {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.HIDE_POST_JOIN_BUTTON.get()) return false;
+            HookStatus.bound(FAMILY, "join button");
+            HookStatus.counted(FAMILY, JOIN_HIDDEN);
+            if (!joinLogged) {
+                joinLogged = true;
+                Logger.printDebug(() -> "Post prompts: a post header's Join button was kept out");
+            }
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "join button", failure);
+            return false;
+        }
+    }
+
     /**
      * The hook, at the start of the builder that turns a post's reaction, comment or share count
      * into the text on its button. True makes the builder answer the empty text it gives a count of

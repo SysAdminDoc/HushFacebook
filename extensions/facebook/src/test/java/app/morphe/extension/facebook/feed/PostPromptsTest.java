@@ -44,6 +44,7 @@ public class PostPromptsTest {
         PauseForTests.resume();
         Settings.HIDE_POST_PROMPTS.resetToDefault();
         Settings.HIDE_POST_FOLLOW_LINK.resetToDefault();
+        Settings.HIDE_POST_JOIN_BUTTON.resetToDefault();
         Settings.HIDE_POST_COUNTS.resetToDefault();
         Settings.HIDE_POST_REACTIONS.resetToDefault();
         Settings.HIDE_COMMENT_REACTIONS.resetToDefault();
@@ -94,6 +95,25 @@ public class PostPromptsTest {
         assertFalse("a header kept its Follow link", PostPrompts.showFollowLink(true));
         assertFalse(PostPrompts.showFollowLink(false));
         assertTrue("the status line doesn't count the hidden link", statusLine().contains(PostPrompts.FOLLOW_HIDDEN + " 1"));
+    }
+
+    @Test
+    public void theJoinButtonStaysUntilItsSwitchIsOn() {
+        assertFalse("the switch doesn't start off", Settings.HIDE_POST_JOIN_BUTTON.get());
+        assertFalse("the header was cut with the switch off", PostPrompts.hideJoinButton());
+        Settings.HIDE_POST_JOIN_BUTTON.save(true);
+        assertTrue("the header kept its Join button", PostPrompts.hideJoinButton());
+        assertTrue("the status line doesn't count the hidden button", statusLine().contains(PostPrompts.JOIN_HIDDEN + " 1"));
+        Settings.HIDE_POST_FOLLOW_LINK.save(true);
+        Settings.HIDE_POST_JOIN_BUTTON.save(false);
+        assertFalse("the follow switch hid the Join button", PostPrompts.hideJoinButton());
+    }
+
+    @Test
+    public void pausedTheJoinButtonStays() {
+        Settings.HIDE_POST_JOIN_BUTTON.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("a paused Hushfacebook hid the Join button", PostPrompts.hideJoinButton());
     }
 
     /** The two switches are independent: neither one's hook answers for the other. */

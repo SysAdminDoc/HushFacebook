@@ -2439,3 +2439,5 @@ Show Posts in search	Aramada Gönderiler'i göster
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	Gönderiler'i arama sonuçlarının üstündeki sıraya, Reels'ten sonra geri koyar, böylece aradığın şey için yalnızca gönderileri görebilirsin.
 Restore feed sound after opened videos	Açılan videolardan sonra akışın sesini geri yükle
 A video you open plays with its sound as usual. Back in the feed, the sound is what it was before you opened it, even after a long watch.	Açtığın bir video her zamanki gibi sesli oynar. Akışa döndüğünde ses, videoyu açmadan önceki gibi olur, uzun süre izlesen bile.
+Hide the Join button on posts	Gönderilerde Katıl düğmesini gizle
+Hides the Join button next to the group's name on posts from groups you haven't joined. A change shows on the posts drawn after it.	Üyesi olmadığın gruplardan gelen gönderilerde grup adının yanındaki Katıl düğmesini gizler. Değişiklik, sonradan yüklenen gönderilerde görünür.

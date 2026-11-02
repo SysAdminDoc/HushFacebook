@@ -78,6 +78,7 @@ val hidePostPromptsPatch = bytecodePatch(
 
     execute {
         hidePromptChecks()
+        hidePostJoinButton()
         hidePostCounts()
         hideReactionPreview()
         hideReactionCount()
