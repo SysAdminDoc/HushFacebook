@@ -7,6 +7,7 @@ package app.morphe.patches.facebook.media.feedsound
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -23,7 +24,8 @@ import java.io.File
  * asks the extension for its flag before anything reads it, and its reasoned setter asks right
  * after reading the flag the state holds, each answer going back in the flag's own register, with
  * the rest of both methods as Facebook wrote it. The story viewer's volume setter asks for each
- * story's volume right before it builds the request that carries it (#261).
+ * story's volume right before it builds the request that carries it (#261). The opened video's
+ * close step asks for the time it played with sound right after taking it (#350).
  */
 class KeepFeedVideosMutedFixtureTest {
     private fun bundles(check: (File) -> Unit) {
@@ -125,6 +127,40 @@ class KeepFeedVideosMutedFixtureTest {
         assertEquals("$where: the answer's register", volume.volume, (answer as OneRegisterInstruction).registerA)
         for (index in code.indices) {
             val patchedIndex = if (index < volume.askAt) index else index + 2
+            assertEquals("$where: instruction $index", code[index].opcode, body[patchedIndex].opcode)
+        }
+    }
+
+    @Test
+    fun `each declared build's opened video close asks right after taking the time with sound`() = bundles { bundle ->
+        val owners = FixtureDex.classesHolding(bundle, SOUND_ON_WHEN_EXIT)
+        // Probed on 585 (2026-11-02): WarionSoundStateManager's restore step, 0BWo.A0W on arm64 and
+        // 0BWr.A0W on v7, and a table of marker point names, 0D5Y.A0W and 0D5b.A0W, that the finder skips.
+        assertEquals("${bundle.name}: classes holding $SOUND_ON_WHEN_EXIT", 2, owners.size)
+        val steps = owners.filter { owner -> owner.methods.any { holdsString(it, RESTORE_STEP) } }
+        assertEquals("${bundle.name}: classes holding $RESTORE_STEP too", 1, steps.size)
+        val context = PatchContexts.of(owners)
+        val close = context.viewerExitSound()
+        val type = steps.single().type
+        assertEquals("${bundle.name}: the close step's class", type, close.owner)
+        val code = close.method.implementation!!.instructions.toList()
+        assertEquals("${bundle.name}: the time is kept right before the ask", Opcode.MOVE_RESULT_WIDE, code[close.askAt - 1].opcode)
+        assertEquals("${bundle.name}: the time's register", close.time, (code[close.askAt - 1] as OneRegisterInstruction).registerA)
+
+        context.askViewerSoundTime(close)
+        val where = "${bundle.name}: $type->${close.method.name}"
+        val body = context.mutableClassDefBy(type).methods.single { same(it, close.method) }.implementation!!.instructions.toList()
+        assertEquals("$where: two instructions added", code.size + 2, body.size)
+        val ask = body[close.askAt]
+        assertEquals("$where: the ask's form", Opcode.INVOKE_STATIC_RANGE, ask.opcode)
+        assertEquals("$where: the ask", OWN_VIEWER_SOUND_TIME, (ask as ReferenceInstruction).reference.toString())
+        assertEquals("$where: the ask reads the time", close.time, (ask as RegisterRangeInstruction).startRegister)
+        assertEquals("$where: the ask reads one wide value", 2, ask.registerCount)
+        val answer = body[close.askAt + 1]
+        assertEquals("$where: the answer's form", Opcode.MOVE_RESULT_WIDE, answer.opcode)
+        assertEquals("$where: the answer's register", close.time, (answer as OneRegisterInstruction).registerA)
+        for (index in code.indices) {
+            val patchedIndex = if (index < close.askAt) index else index + 2
             assertEquals("$where: instruction $index", code[index].opcode, body[patchedIndex].opcode)
         }
     }

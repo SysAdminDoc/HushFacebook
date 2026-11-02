@@ -232,6 +232,7 @@ final class SwitchLabels {
         if (setting == Settings.SKIP_SILENT_PARTS) return L10n.t("Skip silent parts");
         if (setting == Settings.KEEP_FEED_VIDEOS_MUTED) return L10n.t("Keep feed videos muted");
         if (setting == Settings.MUTE_STORIES) return L10n.t("Mute stories");
+        if (setting == Settings.RESTORE_FEED_SOUND) return L10n.t("Restore feed sound after opened videos");
         if (setting == Settings.KEEP_PROGRESS_BAR) return L10n.t("Keep the progress bar");
         if (setting == Settings.KEEP_PROGRESS_BAR_TIME) return L10n.t("Show a reel's time");
         if (setting == Settings.KEEP_REEL_OVERLAY) return L10n.t("Keep the name and buttons while seeking");

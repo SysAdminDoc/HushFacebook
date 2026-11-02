@@ -187,7 +187,7 @@ public enum PatchFamily {
     SKIP_SILENCE(FamilyNames.SKIP_SILENCE, "skipSilentParts", null,
             Settings.SKIP_SILENT_PARTS),
     KEEP_FEED_VIDEOS_MUTED(FamilyNames.KEEP_FEED_VIDEOS_MUTED, "keepFeedVideosMuted", null,
-            Settings.KEEP_FEED_VIDEOS_MUTED, Settings.MUTE_STORIES),
+            Settings.KEEP_FEED_VIDEOS_MUTED, Settings.MUTE_STORIES, Settings.RESTORE_FEED_SOUND),
     PROGRESS_BAR(FamilyNames.PROGRESS_BAR, "keepProgressBar", null,
             Settings.KEEP_PROGRESS_BAR, Settings.KEEP_PROGRESS_BAR_TIME, Settings.KEEP_REEL_OVERLAY, Settings.TAP_TO_SEEK),
     SYSTEM_FONT(FamilyNames.SYSTEM_FONT, "systemFont", null,

@@ -51,6 +51,11 @@ internal const val NEW_SESSION = "startNewSession"
  * the story viewer's volume setter ([storyVolume]), which works its answer out apart from the
  * feed's flag on most builds.
  *
+ * Its Restore feed sound after opened videos switch (#350) asks the extension's FeedSound for the
+ * time an opened video played with its sound, in the step that runs as it closes
+ * ([viewerExitSound]). Past a threshold from Facebook's servers, that step turns the feed's sound on
+ * as the user's own pick, so a feed muted before the video comes back loud.
+ *
  * In the default selection with its switch off: a feed that stays quiet after the user turned
  * its sound on would be a surprise nobody asked for.
  */
@@ -59,7 +64,8 @@ val keepFeedVideosMutedPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Keep feed videos muted",
     description = "Feed videos start with the sound off every time you open Facebook, and only a tap on a " +
-        "video's speaker or the volume up key turns it on. Starts off. Turn it on in Hushfacebook settings > Video and audio.",
+        "video's speaker or the volume up key turns it on. It can also keep a long watch of a video you open from " +
+        "turning the feed's sound on. Starts off. Turn it on in Hushfacebook settings > Video and audio.",
 ) {
     category("Playback")
     dependsOn(settingsPatch, facebookExtensionPatch)
@@ -73,6 +79,13 @@ val keepFeedVideosMutedPatch = bytecodePatch(
             askStorySound(storyVolume())
         } catch (moved: PatchException) {
             patchLog.warning("${moved.message}. The patch goes on without muting stories.")
+        }
+        // Restore feed sound after opened videos (#350) asks in the opened video's close step. A
+        // moved close step costs that switch, not the feed's.
+        try {
+            askViewerSoundTime(viewerExitSound())
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on without restoring the feed's sound after opened videos.")
         }
         enableStatus("keepFeedVideosMuted")
     }

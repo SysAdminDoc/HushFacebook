@@ -2459,7 +2459,7 @@
     },
     {
       "name": "Keep feed videos muted",
-      "description": "Feed videos start with the sound off every time you open Facebook, and only a tap on a video's speaker or the volume up key turns it on. Starts off. Turn it on in Hushfacebook settings > Video and audio.",
+      "description": "Feed videos start with the sound off every time you open Facebook, and only a tap on a video's speaker or the volume up key turns it on. It can also keep a long watch of a video you open from turning the feed's sound on. Starts off. Turn it on in Hushfacebook settings > Video and audio.",
       "category": "Playback",
       "use": true,
       "dependencies": [

@@ -1099,9 +1099,10 @@ public class PausedHooksTest {
                 HdrBrightnessForTests::drawsVideosWithTheScreen));
         // A sink's sound starts with its silent parts skipped.
         probes.put(PatchFamily.SKIP_SILENCE, Collections.singletonList(() -> SkipSilence.skipSilence(false)));
-        // A new session starts muted, and a sound-on that isn't the user's keeps the feed muted.
+        // A new session starts muted, a sound-on that isn't the user's keeps the feed muted, and an
+        // opened video's long watch with sound puts the feed's own sound back.
         probes.put(PatchFamily.KEEP_FEED_VIDEOS_MUTED, Arrays.asList(() -> !FeedSound.sessionSound(true),
-                () -> !FeedSound.soundChange(null, true, false)));
+                () -> !FeedSound.soundChange(null, true, false), () -> FeedSound.viewerSoundTime(60_000L) != 60_000L));
         // A reel's bar is kept full size, a full-screen video sets no fade timer, a press off the
         // bar's thumb is held as a tap to seek, the next reel's bar starts over, and a bar still in
         // Facebook's thin look takes the kept look.

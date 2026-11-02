@@ -377,6 +377,10 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.MUTE_STORIES,
                         L10n.t("Stories start with the sound off every time you open Facebook. Tap a speaker or press "
                                 + "volume up to hear them, and they stay on until you mute again.")));
+                // Asked as each opened video closes, so the next one you open shows it.
+                playback.addPreference(toggle(context, Settings.RESTORE_FEED_SOUND,
+                        L10n.t("A video you open plays with its sound as usual. Back in the feed, the sound is what it "
+                                + "was before you opened it, even after a long watch.")));
             }
             subheading(playback, L10n.t("Controls and picture-in-picture"));
             if (build.contains(PatchFamily.FRAME_STEP)) {

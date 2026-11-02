@@ -46,6 +46,7 @@ public class FeedSoundTest {
     public void restore() {
         PauseForTests.resume();
         Settings.KEEP_FEED_VIDEOS_MUTED.resetToDefault();
+        Settings.RESTORE_FEED_SOUND.resetToDefault();
         HookStatus.clear();
     }
 
@@ -113,6 +114,52 @@ public class FeedSoundTest {
         assertTrue("a sound the user turned on was switched off", FeedSound.soundChange(Reason.BY_ANDROID, true, true));
         String line = statusLine();
         assertFalse("a flag left to Facebook was counted: " + line, line != null && line.contains("Counted"));
+    }
+
+    @Test
+    public void restoreFeedSoundStartsOffAndBelongsToTheSamePatch() {
+        assertFalse("Restore feed sound after opened videos doesn't start off", Settings.RESTORE_FEED_SOUND.defaultValue);
+        assertTrue(PatchFamily.KEEP_FEED_VIDEOS_MUTED.switches.contains(Settings.RESTORE_FEED_SOUND));
+    }
+
+    @Test
+    public void restoreFeedSoundOnALongWatchWithSoundIsUnderEveryThreshold() {
+        Settings.RESTORE_FEED_SOUND.save(true);
+        // Keep feed videos muted stays off, as in #350.
+        for (long watched : new long[] {0L, 4_000L, 600_000L, Long.MAX_VALUE}) {
+            // Facebook turns the feed's sound on only for a time over its threshold, which nothing is under.
+            assertEquals("a " + watched + " ms watch with sound came back over some threshold",
+                    Long.MIN_VALUE, FeedSound.viewerSoundTime(watched));
+        }
+        String line = statusLine();
+        assertTrue(line, line.contains(FeedSound.SOUND_PUT_BACK + " 4"));
+    }
+
+    @Test
+    public void restoreFeedSoundLeavesAVideoThatNeverPlayedWithSoundAlone() {
+        Settings.RESTORE_FEED_SOUND.save(true);
+        assertEquals(-1L, FeedSound.viewerSoundTime(-1L));
+        String line = statusLine();
+        assertFalse("a close without sound was counted: " + line, line != null && line.contains("Counted"));
+    }
+
+    @Test
+    public void restoreFeedSoundOffPausedOrColdFacebooksTimeGoesThrough() {
+        assertEquals("off, a long watch's time changed", 600_000L, FeedSound.viewerSoundTime(600_000L));
+        Settings.RESTORE_FEED_SOUND.save(true);
+        for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP,
+                HushfacebookPause.Reason.MARKER_FILE}) {
+            PauseForTests.pause(reason);
+            assertEquals("a Hushfacebook paused by " + reason + " changed a long watch's time",
+                    600_000L, FeedSound.viewerSoundTime(600_000L));
+            PauseForTests.resume();
+        }
+        SettingsContextRule.withoutContext(() -> assertEquals(
+                "a long watch's time changed before the settings were ready", 600_000L, FeedSound.viewerSoundTime(600_000L)));
+        String line = statusLine();
+        assertFalse("a time left to Facebook was counted: " + line, line != null && line.contains("Counted"));
+        assertTrue("on again after the pause, a long watch's time went through", FeedSound.viewerSoundTime(600_000L) < 0);
     }
 
     @Test

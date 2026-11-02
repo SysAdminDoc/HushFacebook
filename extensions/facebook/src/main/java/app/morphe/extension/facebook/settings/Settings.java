@@ -1492,6 +1492,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_mute_stories", FALSE);
 
     /**
+     * A video opened from the feed plays with its sound as Facebook picks, and back in the feed the
+     * sound is what it was before you opened it, however long you watched
+     * ({@link app.morphe.extension.facebook.media.FeedSound#viewerSoundTime}, #350). Off, a long
+     * watch with sound turns the feed's sound on. Works with {@link #KEEP_FEED_VIDEOS_MUTED} on or off.
+     */
+    public static final BooleanSetting RESTORE_FEED_SOUND =
+            new BooleanSetting("hushfacebook_restore_feed_sound", FALSE);
+
+    /**
      * A reel's progress bar stays full size, thumb and all, and a full-screen video's controls stay
      * until a tap hides them ({@link app.morphe.extension.facebook.media.ProgressBar}). Off by
      * default. Off or paused, Facebook shrinks the bar and fades the controls as before.

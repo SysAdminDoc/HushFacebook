@@ -27,13 +27,17 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * app, in a method it names {@link #VOLUME_INCREASE}. Anything else asking for sound gets the flag
  * it already has, so a sound you turned on stays on and a muted feed stays muted. A video opened
  * from the feed starts muted too, its speaker showing: letting the open turn the sound on would
- * leave it on for the feed after it. Muting always goes through. Nothing here may throw into
+ * leave it on for the feed after it. Muting always goes through. Restore feed sound after opened
+ * videos works apart from that switch ({@link #viewerSoundTime}). Nothing here may throw into
  * Facebook's player: off, paused, before the settings are ready or when anything here fails,
  * Facebook's own answer goes through.
  */
 public final class FeedSound {
     /** Counted under the patch's name each time a new session's sound starts off instead of on. */
     static final String SESSION_MUTED = "Session started muted";
+
+    /** Counted each time a video opened from the feed closed after playing with its sound on. */
+    static final String SOUND_PUT_BACK = "Feed sound put back";
 
     /** Counted each time a sound-on that wasn't yours left the flag as it was. */
     static final String KEPT_MUTED = "Sound kept off";
@@ -94,6 +98,30 @@ public final class FeedSound {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "sound change", failure);
             return asked;
+        }
+    }
+
+    /**
+     * Injection point, in the step that runs as a video opened from the feed closes, right after it
+     * takes how long, in milliseconds, the video played with its sound on: [soundOn], negative when
+     * it never did. Facebook compares that with a time its servers set. Within it, the feed gets back
+     * the sound it had before the video opened. Past it, Facebook turns the feed's sound on as if
+     * you had tapped the speaker, and keeps it that way (#350). While Restore feed sound after opened
+     * videos is on, a video that played with its sound answers a time no threshold is under, so the
+     * feed always gets its own sound back. Everything else gets [soundOn].
+     */
+    public static long viewerSoundTime(long soundOn) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, "opened video close");
+            if (soundOn < 0 || !Utils.settingsReady() || !Settings.RESTORE_FEED_SOUND.get()) return soundOn;
+            HookStatus.counted(FAMILY, SOUND_PUT_BACK);
+            Logger.printDebug(() -> "Restore feed sound: an opened video played " + soundOn
+                    + " ms with sound, the feed gets its own sound back");
+            return Long.MIN_VALUE;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "opened video close", failure);
+            return soundOn;
         }
     }
 
