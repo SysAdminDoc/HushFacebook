@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** Importing a settings file that changes a lot of switches no longer freezes Facebook. A big file could hold the screen for about a minute, long enough for Android to offer to close the app.
 * **Facebook:** `See-through bars` keeps its blur lined up with the bar when the page under it is scrolled inside its own frame.
 * **Facebook:** New `Videos in search results wait for a tap` under Video and audio. Videos in search results stay still until you tap one, whether `Tap to play` is on or off. It starts off. (#363)
 * **Facebook:** New `Hide the Reels title` under Reels and Watch. It takes the word Reels off the top of the Reels tab and leaves the buttons beside it. It starts off. (#362)

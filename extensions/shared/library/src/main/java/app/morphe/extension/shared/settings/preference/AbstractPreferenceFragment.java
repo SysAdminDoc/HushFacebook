@@ -173,6 +173,16 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
                 page.getKey().onPreferenceChanged(change.getValue(), change.getKey(), true);
             }
         }
+        // The availability each change skipped, once per page. A detached page still gets it, as
+        // its replayed changes did one by one.
+        for (AbstractPreferenceFragment page : deferred.keySet()) {
+            if (page.getPreferenceScreen() == null) continue;
+            try {
+                page.updateUIAvailability();
+            } catch (RuntimeException failure) {
+                Logger.printInfo(() -> "Could not refresh settings availability after import", failure);
+            }
+        }
         for (AbstractPreferenceFragment page : deferred.keySet()) {
             if (!page.isAdded() || page.getPreferenceScreen() == null) continue;
             try {
@@ -316,8 +326,10 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
 
             // Apply 'Setting <- Preference', unless importing already updated the Setting.
             updatePreference(pref, setting, true, settingImportInProgress);
-            // Update any other preference availability that may now be different.
-            updateUIAvailability();
+            // Update any other preference availability that may now be different. An import does
+            // that once per page when it finishes: a walk of the whole page per imported switch
+            // held the main thread for a minute on a large file and Android called it frozen.
+            if (!settingImportInProgress && !afterImport) updateUIAvailability();
             // Report success only after every operation that can still enter recovery succeeded.
             if (showRestartAfterUpdate) {
                 if (noteRestartPending(setting, valueBefore) && isAdded() && !afterImport) {

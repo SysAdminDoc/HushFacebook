@@ -3662,6 +3662,39 @@ public class SettingsBackupTest {
         }
     }
 
+    /**
+     * An import redoes which rows are available once at its end. Doing it for each imported switch,
+     * twice, walked the whole page about 120 times for a 58-switch file and Android called
+     * Facebook frozen.
+     */
+    @Test
+    public void importRefreshesThePageOnceInsteadOfOncePerSwitch() throws Exception {
+        String file = fileWith(Settings.DOWNLOAD_REELS, false,
+                Settings.HIDE_SPONSORED_POSTS, false, Settings.HIDE_SPONSORED_STORIES, false);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            HushfacebookPreferenceFragment page = SettingsL10nTest.pageOf(SettingsL10nTest.show(activity));
+            Preference button = page.findPreference(Settings.SHOW_REEL_DOWNLOAD_BUTTON.key);
+            assertNotNull(button);
+            assertTrue(button.isEnabled());
+            deliver(activity, tap(activity, page, IMPORT_ROW), file);
+            AlertDialog preview = shownPreview();
+            AtomicInteger refreshes = new AtomicInteger();
+            Runnable waysIn = page.refreshWaysIn;
+            page.refreshWaysIn = () -> {
+                refreshes.incrementAndGet();
+                if (waysIn != null) waysIn.run();
+            };
+            preview.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            settle();
+            assertEquals("Settings imported. 3 switches changed.", ShadowToast.getTextOfLatestToast());
+            // Availability, the values and the switches once each at the end, whatever the count.
+            // Per switch it added two more for every switch.
+            assertTrue(refreshes.get() + " page refreshes for 3 switches", refreshes.get() >= 1 && refreshes.get() <= 3);
+            assertFalse("the reel button row stayed available with Download Reels off", button.isEnabled());
+        }
+    }
+
     @Test
     public void importingARestartGatedSwitchShowsTheRestartRow() throws Exception {
         try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
