@@ -196,6 +196,12 @@ val hideSuggestedPostsPatch = bytecodePatch(
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so the end of the feed keeps its Find friends card.")
         }
+        // The Groups tab's feed never reaches the edge filter, so its suggested groups card goes at the card's layout (#347).
+        try {
+            hookSuggestedGroupsCard()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so the Groups tab keeps its suggested groups card.")
+        }
         // A friend's post in a group you're not in is an ordinary story; its group's join state tells it apart (#195).
         try {
             if (fillGroupJoinStubs().targetGroup == null) {

@@ -84,6 +84,7 @@ import app.morphe.extension.facebook.feed.AutoTranslationForTests;
 import app.morphe.extension.facebook.feed.FeedFilter;
 import app.morphe.extension.facebook.feed.FindFriendsCard;
 import app.morphe.extension.facebook.feed.SeenPostsForTests;
+import app.morphe.extension.facebook.feed.SuggestedGroupsCard;
 import app.morphe.extension.facebook.feed.FeedsHeader;
 import app.morphe.extension.facebook.feed.FollowingHome;
 import app.morphe.extension.facebook.feed.GroupPosts;
@@ -418,6 +419,8 @@ public class PausedHooksTest {
                 () -> !NotificationFooter.show(true),
                 // The end of the feed is built without its Find friends card.
                 () -> FindFriendsCard.unit("card") == null,
+                // The Groups tab's suggested groups card lays out as nothing.
+                SuggestedGroupsCard::hide,
                 // The search screen draws its For you section as an empty row.
                 PreSearchSectionsForTests::drawsForYouEmpty,
                 // The socket under a post's buttons gets a no for the Related posts list.

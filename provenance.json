@@ -714,6 +714,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/suggested/SuggestedGroupsCard.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: the Suggested for you groups card on the Groups tab, whose feed never passes the edge filter Home's copy goes through. In Facebook 585 every copy of the card is laid out by GroupsYouShouldJoinComponent, the one layout holding the Kotlin message of its cast to GroupsYouShouldJoinFeedUnit, and that layout already returns null when it has nothing to show. The patch asks the extension first thing there and returns that same null while the switch is on."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/suggested/FindFriendsCard.kt"
       ],
       "origin": "original",

@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** `Hide suggested groups` takes the "Suggested for you" groups card off the Groups tab as well, not just off Home. (#347)
 * **Facebook:** `Hide the top right buttons on opened videos` takes Search and the profile button off the top of the Reels tab too. Menu stays where it is. (#346)
 * **Facebook:** `Hide affiliate product links` also keeps the shop banner (the one with "On Shopee" and an X) off a creator's profile when you open it from one of their reels. (#329)
 * **Facebook:** New `Photo carousel` under News feed. A post with several photos or videos shows them in a row you swipe through, one at a time, instead of Facebook's grid. Posts with sensitive photos keep their cover. It starts off. (#345)
