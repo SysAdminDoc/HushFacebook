@@ -29,11 +29,18 @@ import com.android.tools.smali.dexlib2.iface.Method
  * - Returning first thing leaves the title as Facebook builds it for a post with no such button,
  *   dot included. At the first instruction v0 is free: the method's first instruction is a move
  *   from a parameter register.
+ *
+ * The Join group bar under a group's video is a footer attachment (585 `LX/0NmJ;->A00` on arm64,
+ * named by its trace literal "VideoJoinGroupAttachmentViewModelProvider"). Its one caller, the
+ * video footer provider, hands back no footer at all when it answers null, which is what it
+ * answers itself for a video with no group attachment. The hook makes it answer null first thing.
  */
 
 internal const val JOIN_BUTTON_ENTRY = "appendActionableForumJoinButton"
 internal const val JOIN_BUTTON_TRACE = "GroupsFeedStoryHeaderTitleMenuHelperImpl.$JOIN_BUTTON_ENTRY"
 internal const val HIDE_JOIN_BUTTON = "$POST_PROMPTS->hideJoinButton()Z"
+internal const val VIDEO_JOIN_TRACE = "VideoJoinGroupAttachmentViewModelProvider"
+internal const val HIDE_VIDEO_JOIN_BAR = "$POST_PROMPTS->hideVideoJoinBar()Z"
 private const val SPANNABLE_BUILDER = "Landroid/text/SpannableStringBuilder;"
 
 /** Whether [method] is the header entry: an instance method taking a SpannableStringBuilder, answering nothing, with the trace literal. */
@@ -72,4 +79,39 @@ internal fun BytecodePatchContext.hidePostJoinButton() {
     mutableClassDefBy(entry.definingClass).methods.single {
         it.name == entry.name && it.parameterTypes.map(CharSequence::toString) == entry.parameterTypes.map(CharSequence::toString)
     }.skipWhen(HIDE_JOIN_BUTTON)
+    val bar = findVideoJoinBar()
+    mutableClassDefBy(bar.definingClass).methods.single {
+        it.name == bar.name && it.parameterTypes.map(CharSequence::toString) == bar.parameterTypes.map(CharSequence::toString)
+    }.answerNullWhen(HIDE_VIDEO_JOIN_BAR)
+}
+
+/** Whether [method] is the Join group bar's provider: an instance method of four arguments answering an object, with the trace literal. */
+internal fun isVideoJoinBar(method: Method): Boolean =
+    !AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType.startsWith("L") &&
+        method.parameterTypes.size == 4 && holdsString(method, VIDEO_JOIN_TRACE)
+
+/** The Join group bar's provider on whichever class holds it. Changes nothing. */
+internal fun BytecodePatchContext.findVideoJoinBar(): Method {
+    val providers = classDefByStrings(VIDEO_JOIN_TRACE, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .flatMap { it.methods.filter(::isVideoJoinBar) }
+    return providers.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one video footer provider with \"$VIDEO_JOIN_TRACE\", found ${providers.size}",
+    )
+}
+
+/** Asks the extension first thing and answers null, the provider's own answer for a video with no group, when it says so. */
+internal fun MutableMethod.answerNullWhen(hook: String) {
+    requireLocals(PATCH, 1)
+    addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { }, $hook
+            move-result v0
+            if-eqz v0, :facebooks_bar
+            const/4 v0, 0x0
+            return-object v0
+        """,
+        ExternalLabel("facebooks_bar", getInstruction(0)),
+    )
 }

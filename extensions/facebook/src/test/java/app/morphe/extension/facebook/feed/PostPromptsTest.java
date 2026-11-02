@@ -110,10 +110,22 @@ public class PostPromptsTest {
     }
 
     @Test
+    public void theJoinGroupBarFollowsTheJoinSwitch() {
+        assertFalse("the bar was cut with the switch off", PostPrompts.hideVideoJoinBar());
+        Settings.HIDE_POST_JOIN_BUTTON.save(true);
+        assertTrue("a group's video kept its Join group bar", PostPrompts.hideVideoJoinBar());
+        assertTrue("the status line doesn't count the hidden bar", statusLine().contains(PostPrompts.JOIN_BAR_HIDDEN + " 1"));
+        Settings.HIDE_POST_FOLLOW_LINK.save(true);
+        Settings.HIDE_POST_JOIN_BUTTON.save(false);
+        assertFalse("the follow switch hid the Join group bar", PostPrompts.hideVideoJoinBar());
+    }
+
+    @Test
     public void pausedTheJoinButtonStays() {
         Settings.HIDE_POST_JOIN_BUTTON.save(true);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertFalse("a paused Hushfacebook hid the Join button", PostPrompts.hideJoinButton());
+        assertFalse("a paused Hushfacebook hid the Join group bar", PostPrompts.hideVideoJoinBar());
     }
 
     /** The two switches are independent: neither one's hook answers for the other. */

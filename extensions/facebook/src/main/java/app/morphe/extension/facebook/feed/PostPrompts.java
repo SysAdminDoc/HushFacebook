@@ -140,6 +140,34 @@ public final class PostPrompts {
         }
     }
 
+    private static volatile boolean joinBarLogged;
+
+    /** Counted under the patch's name each time a group's video is drawn without its Join group bar. */
+    static final String JOIN_BAR_HIDDEN = "Join group bar kept out";
+
+    /**
+     * The hook, first thing in the provider of the Join group bar under a group's video (#356).
+     * True makes it answer null, which is its own answer for a video with no group, so the video
+     * gets no footer. False, which is the answer while the switch is off, paused, before the
+     * settings are ready or when anything here fails, lets Facebook build the bar.
+     */
+    public static boolean hideVideoJoinBar() {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.HIDE_POST_JOIN_BUTTON.get()) return false;
+            HookStatus.bound(FAMILY, "join group bar");
+            HookStatus.counted(FAMILY, JOIN_BAR_HIDDEN);
+            if (!joinBarLogged) {
+                joinBarLogged = true;
+                Logger.printDebug(() -> "Post prompts: a video's Join group bar was kept out");
+            }
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "join group bar", failure);
+            return false;
+        }
+    }
+
     /**
      * The hook, at the start of the builder that turns a post's reaction, comment or share count
      * into the text on its button. True makes the builder answer the empty text it gives a count of

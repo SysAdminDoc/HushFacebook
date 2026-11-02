@@ -2444,7 +2444,7 @@ Puts Posts back in the row over search results, after Reels, so you can see only
 Restore feed sound after opened videos	開啟影片後還原動態消息的聲音
 A video you open plays with its sound as usual. Back in the feed, the sound is what it was before you opened it, even after a long watch.	你開啟的影片照常有聲音播放。回到動態消息後，聲音會恢復成開啟影片前的狀態，即使看了很久也一樣。
 Hide the Join button on posts	隱藏貼文上的加入按鈕
-Hides the Join button next to the group's name on posts from groups you haven't joined. A change shows on the posts drawn after it.	隱藏來自你尚未加入的社團的貼文中，社團名稱旁邊的加入按鈕。變更會在之後載入的貼文上生效。
+Hides the Join button next to the group's name on posts from groups you haven't joined, and the Join group bar under their videos. A change shows on the posts drawn after it.	隱藏來自你尚未加入的社團的貼文中，社團名稱旁邊的加入按鈕，以及這些社團影片下方的「加入社團」列。變更會在之後載入的貼文上生效。
 Hide the Reels title	隱藏 Reels 標題
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	移除 Reels 分頁頂部的 Reels 字樣。旁邊的按鈕會保留。
 Videos in search results wait for a tap	搜尋結果中的影片等你點一下
