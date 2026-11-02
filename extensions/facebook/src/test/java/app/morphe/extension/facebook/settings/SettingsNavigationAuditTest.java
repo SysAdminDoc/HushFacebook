@@ -120,7 +120,7 @@ public class SettingsNavigationAuditTest {
         assertNoAcknowledgment();
     }
 
-    @Test public void newerNavigationReplacesThePendingTargetWithoutClosingEarlierSections() throws Exception {
+    @Test public void newerNavigationReplacesThePendingTargetAndFoldsTheEarlierSection() throws Exception {
         page.navigation.navigate("About");
         page.navigation.navigate(SettingsNavigation.SUPPORT);
         ShadowLooper.idleMainLooper();
@@ -132,8 +132,7 @@ public class SettingsNavigationAuditTest {
         assertEquals(3, supportChildren());
         JSONObject recorded = readAcknowledgment(SettingsNavigation.SUPPORT, supportChildren());
         JSONArray expanded = recorded.getJSONArray("expandedSections");
-        assertEquals(2, expanded.length());
-        assertTrue(contains(expanded, "About"));
+        assertEquals(1, expanded.length());
         assertTrue(contains(expanded, SettingsNavigation.SUPPORT));
     }
 

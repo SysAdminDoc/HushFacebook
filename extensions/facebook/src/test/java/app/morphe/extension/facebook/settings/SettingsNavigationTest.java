@@ -194,31 +194,35 @@ public class SettingsNavigationTest {
     @Test public void categoryClickChangesOnlyTheSettingWhoseRowWasTapped() {
         assertTrue(page.navigation.open(page.findPreference(Settings.TAP_TO_PLAY.key)));
         tap("section_News feed");
+        tap("section_Playback");
         assertTrue(page.navigation.isExpanded("Playback"));
-        assertTrue(page.navigation.isExpanded("News feed"));
+        assertFalse(page.navigation.isExpanded("News feed"));
         assertFalse(Settings.TAP_TO_PLAY.savedValue());
         tap(Settings.TAP_TO_PLAY.key);
         assertTrue(Settings.TAP_TO_PLAY.savedValue());
         assertFalse(Settings.DOWNLOAD_COMPATIBLE.savedValue());
     }
 
-    @Test public void headersExpandIndependentlyAndCollapsingOneKeepsTheOtherOpen() {
+    /** #368: one section open at a time, so opening another folds the one open before. */
+    @Test public void openingAHeaderFoldsTheSectionOpenBefore() {
         Map<String, Object> before = savedValues();
         tap("section_Playback");
         tap("section_Downloads");
-        assertTrue(page.navigation.isExpanded("Playback"));
-        assertTrue(page.navigation.isExpanded("Downloads"));
-        assertTrue(contains(Settings.TAP_TO_PLAY.key));
-        assertTrue(contains(Settings.DOWNLOAD_COMPATIBLE.key));
-        assertEquals(24 + categoryCount("Playback") + categoryCount("Downloads"), list().getCount());
-        tap("section_Playback");
-        assertFalse(page.navigation.isExpanded("Playback"));
+        assertFalse("the section open before stayed open", page.navigation.isExpanded("Playback"));
         assertTrue(page.navigation.isExpanded("Downloads"));
         assertFalse(contains(Settings.TAP_TO_PLAY.key));
         assertTrue(contains(Settings.DOWNLOAD_COMPATIBLE.key));
         assertEquals(24 + categoryCount("Downloads"), list().getCount());
+        tap("section_Downloads");
+        assertFalse(page.navigation.isExpanded("Downloads"));
+        assertEquals(24, list().getCount());
+        tap("section_Downloads");
         assertTrue(page.navigation.open(page.findPreference(Settings.DOWNLOAD_COMPATIBLE.key)));
         assertTrue("revealing an open section collapsed it", page.navigation.isExpanded("Downloads"));
+        assertTrue(page.navigation.open(page.findPreference(Settings.TAP_TO_PLAY.key)));
+        assertTrue(page.navigation.isExpanded("Playback"));
+        assertFalse("a jump to a setting left the section open before it", page.navigation.isExpanded("Downloads"));
+        assertEquals(24 + categoryCount("Playback"), list().getCount());
         assertEquals(before, savedValues());
         assertMainToolbar();
     }
@@ -572,10 +576,9 @@ public class SettingsNavigationTest {
         assertFalse(contains(SettingsNavigation.RESTART));
         assertEquals(own, position(SettingsNavigation.RESTART_NOW));
 
-        // Expanding another section keeps Support's actions until Support is collapsed.
+        // Opening another section folds Support, and its actions go with it (#368).
         page.navigation.navigate("Privacy");
-        assertTrue(contains(SettingsNavigation.RESTART_NOW));
-        tap(SettingsNavigation.SUPPORT);
+        assertFalse(page.navigation.isExpanded(SettingsNavigation.SUPPORT));
         assertFalse(contains(SettingsNavigation.RESTART_NOW));
         page.navigation.navigate("");
 
@@ -612,7 +615,7 @@ public class SettingsNavigationTest {
         assertEquals(before, savedValues());
         reopenFromRestart();
         layout(dialog.getView(), 1200);
-        assertTrue(page.navigation.isExpanded("News feed"));
+        assertFalse(page.navigation.isExpanded("News feed"));
         assertTrue(page.navigation.isExpanded("Privacy"));
         assertEquals(first, ((Preference) list().getItemAtPosition(list().getFirstVisiblePosition())).getKey());
         assertEquals(offset, list().getChildAt(0).getTop());
@@ -636,9 +639,10 @@ public class SettingsNavigationTest {
         assertEquals("other apps", findSearch(dialog.getView()).getText().toString());
         assertTrue(contains(Settings.DOWNLOAD_COMPATIBLE.key));
         assertTrue(page.navigation.back());
-        assertTrue(page.navigation.isExpanded("Playback"));
+        assertFalse(page.navigation.isExpanded("Playback"));
         assertTrue(page.navigation.isExpanded("Downloads"));
-        assertTrue(contains(Settings.TAP_TO_PLAY.key));
+        assertFalse(contains(Settings.TAP_TO_PLAY.key));
+        assertTrue(contains(Settings.DOWNLOAD_COMPATIBLE.key));
         assertEquals(before, savedValues());
         assertMainToolbar();
     }
@@ -1685,7 +1689,7 @@ public class SettingsNavigationTest {
         recreate();
         layout(dialog.getView(), 1200);
         assertTrue(page.navigation.isExpanded("Playback"));
-        assertTrue(page.navigation.isExpanded("Downloads"));
+        assertFalse(page.navigation.isExpanded("Downloads"));
         assertTrue(contains(Settings.TAP_TO_PLAY.key));
         assertTrue(contains(Settings.INLINE_FEED_VIDEO_CONTROLS.key));
         assertTrue(contains(Settings.FEED_VIDEO_SEEK_BAR.key));
@@ -1699,7 +1703,7 @@ public class SettingsNavigationTest {
         assertTrue(page.navigation.back());
         layout(dialog.getView(), 1200);
         assertTrue(page.navigation.isExpanded("Playback"));
-        assertTrue(page.navigation.isExpanded("Downloads"));
+        assertFalse(page.navigation.isExpanded("Downloads"));
         assertEquals(anchor, ((Preference) list().getItemAtPosition(list().getFirstVisiblePosition())).getKey());
         assertEquals(offset, list().getChildAt(0).getTop());
         assertMainToolbar();
@@ -1739,7 +1743,7 @@ public class SettingsNavigationTest {
             ShadowLooper.idleMainLooper();
             assertTrue(shown.isShowing());
             assertEquals("", findSearch(dialog.getView()).getText().toString());
-            assertTrue(page.navigation.isExpanded("Playback"));
+            assertFalse(page.navigation.isExpanded("Playback"));
             assertTrue(page.navigation.isExpanded("About"));
             if (toolbar) SettingsL10nTest.backOf(dialog).performClick();
             else shown.onBackPressed();
@@ -1759,14 +1763,17 @@ public class SettingsNavigationTest {
         try {
             layout(dialog.getView(), 1200);
             assertTrue(list().isInTouchMode());
-            page.navigation.navigate("News feed");
-            page.navigation.open(page.findPreference(Settings.TAP_TO_PLAY.key));
+            // Every section folded, so opening one can't fold the row in view (#368), with Opening
+            // Facebook's header scrolled off above it.
+            page.navigation.navigate("");
             layout(dialog.getView(), 1200);
-            list().scrollListBy(40);
+            list().setSelectionFromTop(position("section_Opening Facebook") + 3, -24);
             layout(dialog.getView(), 1200);
             Preference anchor = (Preference) list().getItemAtPosition(list().getFirstVisiblePosition());
+            assertTrue(list().getFirstVisiblePosition() > position("section_Opening Facebook"));
             int offset = list().getChildAt(0).getTop();
             tap("section_Opening Facebook");
+            assertTrue(page.navigation.isExpanded("Opening Facebook"));
             // Source preference updates can arrive before the new expansion has laid out.
             ((android.widget.BaseAdapter) page.getPreferenceScreen().getRootAdapter()).notifyDataSetChanged();
             layout(dialog.getView(), 1200);
@@ -1781,8 +1788,6 @@ public class SettingsNavigationTest {
             assertFalse(page.navigation.isExpanded("Downloads"));
             assertTrue(page.navigation.back());
             layout(dialog.getView(), 1200);
-            assertTrue(page.navigation.isExpanded("News feed"));
-            assertTrue(page.navigation.isExpanded("Playback"));
             assertFalse(page.navigation.isExpanded("Opening Facebook"));
             assertFalse(page.navigation.isExpanded("Downloads"));
             assertTrue(anchor == list().getItemAtPosition(list().getFirstVisiblePosition()));
@@ -1860,7 +1865,7 @@ public class SettingsNavigationTest {
             assertTrue("adding an earlier child changed the visible control",
                     anchor == list().getItemAtPosition(list().getFirstVisiblePosition()));
             assertEquals("adding an earlier child moved Comments", offset, list().getChildAt(0).getTop());
-            assertTrue(page.navigation.isExpanded("Downloads"));
+            assertFalse(page.navigation.isExpanded("Downloads"));
             assertTrue(page.navigation.isExpanded("Comments"));
         } finally {
             if (child.getParent() != downloads) downloads.addPreference(child);
@@ -1973,8 +1978,8 @@ public class SettingsNavigationTest {
         page.navigation.navigate("");
         page.navigation.navigate("Playback");
         page.navigation.navigate("Downloads");
-        capture(prefix + "multiple-expanded");
-        assertTrue(page.navigation.isExpanded("Playback"));
+        capture(prefix + "one-expanded");
+        assertFalse("the section open before stayed open (#368)", page.navigation.isExpanded("Playback"));
         assertTrue(page.navigation.isExpanded("Downloads"));
         page.navigation.navigate("");
         findSearch(dialog.getView()).setText("video");

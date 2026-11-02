@@ -626,7 +626,7 @@ public class SettingsEntryTest {
         List<String> titles = titles(pageOver(activity.get()));
         assertTrue(titles.toString(), titles.contains("Save videos other apps can open"));
         assertTrue(pageOver(activity.get()).navigation.isExpanded("Downloads"));
-        assertTrue("a setting request collapsed an open section", pageOver(activity.get()).navigation.isExpanded("Playback"));
+        assertFalse("the section open before stayed open (#368)", pageOver(activity.get()).navigation.isExpanded("Playback"));
         assertNull("the request was kept for the next screen", SettingsEntry.takeRequestedSetting());
     }
 
