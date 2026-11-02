@@ -19,6 +19,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.FeedFilterCounters;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -29,7 +30,7 @@ import app.morphe.extension.shared.settings.preference.LogBufferManager;
  * The post a link lands Home on stays (issue #306): Facebook serves it as the first edge of the
  * feed, flagged as a recommendation on an account that doesn't follow its author, and "Suggested
  * for you" hid it. The landing screen marks the link, the first post judged within the window
- * keeps whatever reason a rule has, ads excepted, and one link keeps one post.
+ * keeps whatever reason a rule has, an ad's included, and one link keeps one post.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -48,6 +49,7 @@ public class LinkedPostTest {
         FeedFilterCounters.clear();
         HookStatus.clear();
         BaseSettings.DEBUG.resetToDefault();
+        Settings.HIDE_SPONSORED_POSTS.resetToDefault();
         LogBufferManager.clearLogBuffer();
     }
 
@@ -91,8 +93,8 @@ public class LinkedPostTest {
 
     /**
      * The reporter's case: the landed post comes flagged as a recommendation and was hidden. After
-     * a link lands, the first post stays, whatever the rule; a row between posts and an ad judged
-     * before it don't spend the link; and the post after it is judged as usual.
+     * a link lands, the first post stays, whatever the rule; a row between posts doesn't spend the
+     * link; and the post after it is judged as usual.
      */
     @Test
     public void theFirstPostAfterALinkStaysWhateverRuleWouldHideIt() {
@@ -102,7 +104,6 @@ public class LinkedPostTest {
 
         linkLanded(SystemClock.uptimeMillis());
         assertTrue("a row between posts stayed", guard(Category.ORGANIC, new GraphQLPagesYouMayLikeFeedUnit(), RECOMMENDED));
-        assertTrue("an ad stayed", guard(Category.SPONSORED, new GraphQLStory(), RECOMMENDED));
         assertFalse("the post the link opened was hidden", guard(Category.ENGAGEMENT, new GraphQLStory(), RECOMMENDED));
         assertTrue("one link kept a second post", guard(Category.ENGAGEMENT, new GraphQLStory(), RECOMMENDED));
 
@@ -110,7 +111,26 @@ public class LinkedPostTest {
         assertTrue(log, log.contains("Feed filter: kept the post a link opened (is_in_feed_recommendation_story)"));
         String counters = String.join("\n", FeedFilterCounters.report());
         assertTrue(counters, counters.contains(LinkedPost.KEPT_KIND + " 1"));
-        assertTrue(counters, counters.contains(FeedFilter.FEED_ROUTE + ": 5 lists, 5 items, 4 removed"));
+        assertTrue(counters, counters.contains(FeedFilter.FEED_ROUTE + ": 4 lists, 4 items, 3 removed"));
+    }
+
+    /**
+     * The reporter's second case, on 0.20.0: a boosted page post comes back from the link as a
+     * sponsored edge. It's still the post the link opened, so it stays and spends the link, and the
+     * suggested post after it is hidden as usual instead of kept in its place.
+     */
+    @Test
+    public void aLinkedPostServedAsAnAdStaysAndTheSuggestedOneAfterItGoes() {
+        Settings.HIDE_SPONSORED_POSTS.save(true);
+        assertTrue("the control: an ad with no link", guard(Category.SPONSORED, new GraphQLStory(), FOLLOWED));
+
+        linkLanded(SystemClock.uptimeMillis());
+        assertFalse("the post the link opened was hidden as an ad", guard(Category.SPONSORED, new GraphQLStory(), FOLLOWED));
+        assertTrue("the suggested post after it was kept for the link",
+                guard(Category.ENGAGEMENT, new GraphQLStory(), RECOMMENDED));
+        assertTrue("the next ad stayed", guard(Category.SPONSORED, new GraphQLStory(), FOLLOWED));
+        String counters = String.join("\n", FeedFilterCounters.report());
+        assertTrue(counters, counters.contains(LinkedPost.KEPT_KIND + " 1"));
     }
 
     /** A landed post no rule would hide spends the link too, and a link past its window keeps nothing. */

@@ -24,8 +24,8 @@ import app.morphe.extension.facebook.settings.Settings;
  * says which type a switch is owed for.
  *
  * <p>The rule runs after every built-in one, so a unit a switch hides counts under that switch,
- * and before the seen rule. The first post after a link (#306) stays as it does for every rule
- * that isn't an ad. An ordinary post ({@link #STORY}) is never offered or matched: picking it
+ * and before the seen rule. The first post after a link (#306) stays as it does for every other
+ * rule. An ordinary post ({@link #STORY}) is never offered or matched: picking it
  * would empty Home and keep the feed asking for more.
  *
  * <p>The list offers the types that got past every other rule since Facebook started, kept in

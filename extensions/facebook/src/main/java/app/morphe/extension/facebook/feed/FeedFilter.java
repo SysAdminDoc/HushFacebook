@@ -583,9 +583,10 @@ public final class FeedFilter {
                 reason = SeenPosts.hideReason(feedUnit);
             }
             // The first post after a link lands Home on it is that post (#306): the person asked
-            // for it, so whatever rule would hide it stands aside. Ads are hidden still, and a link
-            // never lands on one, so an ad judged first doesn't spend the link's one post.
-            if (!adReason(reason) && LinkedPost.isPost(feedUnit) && LinkedPost.takeFirst()) {
+            // for it, so whatever rule would hide it stands aside, the ad rules too. Facebook serves
+            // a boosted page post the link opens as a sponsored edge, so holding ads back hid the
+            // linked post and spent the link on the suggested post after it.
+            if (LinkedPost.isPost(feedUnit) && LinkedPost.takeFirst()) {
                 if (reason == null) return false;
                 FeedFilterCounters.sawKind(FEED_ROUTE, LinkedPost.KEPT_KIND);
                 final String setAside = reason;
@@ -991,11 +992,6 @@ public final class FeedFilter {
         if (SPONSORED.equals(name)) return Settings.HIDE_SPONSORED_POSTS.get();
         if (PROMOTION.equals(name)) return Settings.HIDE_PROMOTED_POSTS.get();
         return false;
-    }
-
-    /** Whether [reason] is one of the sponsored rule's: an ad, a promoted post or a carousel of ads. */
-    static boolean adReason(@Nullable String reason) {
-        return SPONSORED.equals(reason) || PROMOTION.equals(reason) || MULTI_ADS_TYPE.equals(reason);
     }
 
     /** Whether a story category is one Facebook files the feed's rows of reels under. */

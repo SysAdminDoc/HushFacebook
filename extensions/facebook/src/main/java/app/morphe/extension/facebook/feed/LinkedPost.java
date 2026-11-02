@@ -26,7 +26,9 @@ import app.morphe.extension.shared.Logger;
  *
  * <p>The landing screen marks the moment, and the first post the feed guard judges within
  * {@link #WINDOW_MS} of it is the one the link opened, so whatever reason a rule has for hiding it
- * is set aside, ads excepted. One link keeps one post: the mark is spent on that first post whether
+ * is set aside. That holds for the ad rules too: a boosted page post comes back from the link as
+ * a sponsored edge until Facebook stops serving it as an ad, and holding ads back hid the linked
+ * post and kept the suggested post after it instead. One link keeps one post: the mark is spent on that first post whether
  * or not a rule would have hidden it, and a mark older than the window is spent on nothing. The
  * post can't be matched to the link by id: a story answers a cache hash, not its post id. A link
  * to a group post opens the group's screen with the post pinned, never Home, so nothing here
