@@ -998,7 +998,7 @@ The phone's language	Sprache des Handys
 Languages to leave alone	Sprachen, die bleiben, wie sie sind
 None picked. Posts in every language can be translated.	Keine ausgewählt. Beiträge in jeder Sprache können übersetzt werden.
 Left alone: %s	Bleiben unverändert: %s
-Posts in the feed show all of their text, so there's no See more to tap.	Beiträge im Feed zeigen ihren ganzen Text, du musst also nicht auf Mehr ansehen tippen.
+Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.	Beiträge im Feed zeigen ihren ganzen Text, du musst also nicht auf Mehr ansehen tippen. Tippe auf den Text eines Beitrags, um ihn wieder einzuklappen.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Wer hat geteilt
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Fügt dem Menü eines Beitrags Wer hat geteilt hinzu. Es öffnet die Facebook-Liste der Personen, die ihn geteilt haben.

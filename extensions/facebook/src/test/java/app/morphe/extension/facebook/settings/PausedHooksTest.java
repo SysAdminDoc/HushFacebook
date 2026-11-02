@@ -528,8 +528,11 @@ public class PausedHooksTest {
                 MetaAiQuestions::hidesQuestionsBelowCaption));
         // A post header's yes to rotating its subtitle is answered as a no, so it keeps the one line.
         probes.put(PatchFamily.POST_DATES, Collections.singletonList(() -> !PostDates.cycling(true)));
-        // A post's cut text is answered with null, so Facebook keeps the whole text with no See more.
-        probes.put(PatchFamily.FULL_POST_TEXT, Collections.singletonList(() -> FullPostText.cut(new SpannableString("x")) == null));
+        // A post's cut text is answered with null, so Facebook keeps the whole text with no See more,
+        // and a post starts whole, so the first tap folds it.
+        probes.put(PatchFamily.FULL_POST_TEXT, Arrays.asList(
+                () -> FullPostText.cut(new SpannableString("x"), "a story") == null,
+                () -> !FullPostText.allowTruncation(true)));
         probes.put(PatchFamily.TRANSLATE_POSTS, Collections.singletonList(() -> {
             PostTranslationForTests.noNetwork();
             Spannable post = new SpannableString("Una frase en otro idioma");

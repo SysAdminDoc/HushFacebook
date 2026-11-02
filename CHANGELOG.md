@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** With `Show full post text` on, a tap on a post's text folds it back to See more, and another tap opens it again, the way Facebook does it with the switch off. Before, a long post stayed open whatever you tapped. (#354)
 * **Facebook:** Opening a section in the Hush settings folds the one you had open, so the page stays short and only one section is open at a time. (#368)
 * **Facebook:** `Show the post date on reels` now works on reels with a song. In the Reels tab the song's name takes the line under the poster, so most reels still had no date. The date now goes in front of the song, like "3 weeks ago · Artist · Song". (#357)
 * **Facebook:** `Show the post date on reels` now dates older reels too. Past the first week Facebook often leaves the date out, so an older reel showed nothing under the poster's name even with the switch on. It now reads "3 weeks ago" there. A new `Show the post date as` list right under it picks between how long ago and the date it was posted, like Oct 12. (#357)

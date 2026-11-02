@@ -998,7 +998,7 @@ The phone's language	Telefonun dili
 Languages to leave alone	Çevrilmeyecek diller
 None picked. Posts in every language can be translated.	Seçilen yok. Her dildeki gönderiler çevrilebilir.
 Left alone: %s	Çevrilmeyecek: %s
-Posts in the feed show all of their text, so there's no See more to tap.	Akıştaki gönderiler metninin tamamını gösterir, Devamını gör'e dokunman gerekmez.
+Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.	Akıştaki gönderiler metninin tamamını gösterir, Devamını gör'e dokunman gerekmez. Bir gönderinin metnine dokunarak onu yeniden daraltabilirsin.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Kimlerin paylaştığını gör
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Bir gönderinin menüsüne Kimlerin paylaştığını gör ekler. Facebook'un gönderiyi paylaşan kişiler listesini açar.

@@ -37,10 +37,11 @@ class TranslatePostsFixtureTest {
 
     private fun Instruction.names(call: String) = (this as? ReferenceInstruction)?.reference?.toString() == call
 
-    private fun builderAfter(bundle: File, patches: List<BytecodePatch>, builder: Method): List<Instruction> {
-        val classes = FixtureDex.classes(bundle, setOf(builder.definingClass, FRAGMENT_ACTIVITY))
+    /** The builder after [patches], with the feed post component and its state ([foldTypes]) there for Show full post text. */
+    private fun builderAfter(bundle: File, patches: List<BytecodePatch>, builder: Method, foldTypes: Set<String>): List<Instruction> {
+        val classes = FixtureDex.classes(bundle, setOf(builder.definingClass, FRAGMENT_ACTIVITY) + foldTypes)
         val owner = classes.getValue(builder.definingClass)
-        val context = PatchContexts.of(listOf(owner, classes.getValue(FRAGMENT_ACTIVITY), ExtensionDex.classDef(SETTINGS_STATUS)))
+        val context = PatchContexts.of((classes.values + ExtensionDex.classDef(SETTINGS_STATUS)).toList())
         patches.forEach { it.execute(context) }
         return context.mutableClassDefBy(owner.type).methods.single {
             it.name == builder.name && it.parameterTypes == builder.parameterTypes
@@ -55,9 +56,11 @@ class TranslatePostsFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val builder = FixtureDex.methodsWhere(bundle, { true }) {
-                    !it.definingClass.startsWith(EXTENSION_CLASSES) && cutShaped(it)
-                }.single()
+                val found = FixtureDex.methodsWhere(bundle, { true }) {
+                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (cutShaped(it) || foldMarked(it))
+                }
+                val builder = found.filter(::cutShaped).single()
+                val folds = foldTypes(found)
                 val original = builder.code()
                 val returns = original.count { it.opcode == Opcode.RETURN_OBJECT }
                 assertTrue("$name: the builder has no return", returns > 0)
@@ -107,7 +110,7 @@ class TranslatePostsFixtureTest {
 
                 // Either order, Show full post text's hook stays right before its null check, on the cut's answer.
                 for (order in listOf(listOf(translatePostsPatch, showFullPostTextPatch), listOf(showFullPostTextPatch, translatePostsPatch))) {
-                    val both = builderAfter(bundle, order, builder)
+                    val both = builderAfter(bundle, order, builder, folds)
                     val at = both.indexOfFirst { it.names(CUT) }
                     assertTrue("$name: no cut hook after ${order.map { it.name }}", at > 0)
                     assertEquals(Opcode.MOVE_RESULT_OBJECT, both[at - 1].opcode)

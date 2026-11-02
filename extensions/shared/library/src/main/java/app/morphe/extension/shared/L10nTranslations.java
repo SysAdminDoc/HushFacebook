@@ -2183,8 +2183,8 @@ public final class L10nTranslations {
                 "Beitr\u00e4ge in einer anderen Sprache bekommen unter dem Text einen \u00dcbersetzen-Link. Ein Tippen schickt den Text dieses Beitrags an Google \u00dcbersetzer.");
         table.put("Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.",
                 "Beitr\u00e4ge in einer anderen Sprache erscheinen \u00fcbersetzt, darunter steht \u201eOriginal ansehen\u201c. Der Text jedes Beitrags geht beim Anzeigen an Google \u00dcbersetzer.");
-        table.put("Posts in the feed show all of their text, so there's no See more to tap.",
-                "Beitr\u00e4ge im Feed zeigen ihren ganzen Text, du musst also nicht auf Mehr ansehen tippen.");
+        table.put("Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.",
+                "Beitr\u00e4ge im Feed zeigen ihren ganzen Text, du musst also nicht auf Mehr ansehen tippen. Tippe auf den Text eines Beitrags, um ihn wieder einzuklappen.");
         table.put("Posts stay however many reactions they have.",
                 "Beitr\u00e4ge bleiben, egal wie viele Reaktionen sie haben.");
         table.put("Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.",
@@ -5516,8 +5516,8 @@ public final class L10nTranslations {
                 "Las publicaciones en otro idioma llevan un enlace Traducir debajo del texto. Al tocarlo, el texto de esa publicaci\u00f3n se env\u00eda al Traductor de Google.");
         table.put("Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.",
                 "Las publicaciones en otro idioma se muestran traducidas, con Ver original debajo. El texto de cada publicaci\u00f3n se env\u00eda al Traductor de Google al mostrarse.");
-        table.put("Posts in the feed show all of their text, so there's no See more to tap.",
-                "Las publicaciones del feed muestran todo su texto, as\u00ed que no hay que tocar Ver m\u00e1s.");
+        table.put("Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.",
+                "Las publicaciones del feed muestran todo su texto, as\u00ed que no hay que tocar Ver m\u00e1s. Toca el texto de una publicaci\u00f3n para volver a contraerlo.");
         table.put("Posts stay however many reactions they have.",
                 "Las publicaciones se quedan, tengan las reacciones que tengan.");
         table.put("Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.",
@@ -8849,8 +8849,8 @@ public final class L10nTranslations {
                 "Postingan dalam bahasa lain mendapat tautan Terjemahkan di bawah teksnya. Mengetuknya mengirim teks postingan itu ke Google Terjemahan.");
         table.put("Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.",
                 "Postingan dalam bahasa lain tampil sudah diterjemahkan, dengan Lihat aslinya di bawahnya. Teks tiap postingan dikirim ke Google Terjemahan saat ditampilkan.");
-        table.put("Posts in the feed show all of their text, so there's no See more to tap.",
-                "Postingan di feed menampilkan seluruh teksnya, jadi tidak perlu mengetuk Lihat selengkapnya.");
+        table.put("Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.",
+                "Postingan di feed menampilkan seluruh teksnya, jadi tidak perlu mengetuk Lihat selengkapnya. Ketuk teks postingan untuk melipatnya kembali.");
         table.put("Posts stay however many reactions they have.",
                 "Postingan tetap tampil berapa pun jumlah reaksinya.");
         table.put("Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.",
@@ -12182,8 +12182,8 @@ public final class L10nTranslations {
                 "Publica\u00e7\u00f5es em outro idioma ganham um link Traduzir abaixo do texto. Um toque envia o texto dessa publica\u00e7\u00e3o para o Google Tradutor.");
         table.put("Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.",
                 "Publica\u00e7\u00f5es em outro idioma aparecem traduzidas, com Ver original abaixo. O texto de cada publica\u00e7\u00e3o vai para o Google Tradutor ao ser exibido.");
-        table.put("Posts in the feed show all of their text, so there's no See more to tap.",
-                "As publica\u00e7\u00f5es do feed mostram todo o texto, ent\u00e3o n\u00e3o precisa tocar em Ver mais.");
+        table.put("Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.",
+                "As publica\u00e7\u00f5es do feed mostram todo o texto, ent\u00e3o n\u00e3o precisa tocar em Ver mais. Toque no texto de uma publica\u00e7\u00e3o para recolh\u00ea-lo de novo.");
         table.put("Posts stay however many reactions they have.",
                 "As publica\u00e7\u00f5es ficam, n\u00e3o importa quantas rea\u00e7\u00f5es tenham.");
         table.put("Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.",
@@ -15584,8 +15584,8 @@ public final class L10nTranslations {
                 "\u041f\u043e\u0434 \u0442\u0435\u043a\u0441\u0442\u043e\u043c \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0439 \u043d\u0430 \u0434\u0440\u0443\u0433\u043e\u043c \u044f\u0437\u044b\u043a\u0435 \u043f\u043e\u044f\u0432\u043b\u044f\u0435\u0442\u0441\u044f \u0441\u0441\u044b\u043b\u043a\u0430 \u00ab\u041f\u0435\u0440\u0435\u0432\u0435\u0441\u0442\u0438\u00bb. \u041d\u0430\u0436\u0430\u0442\u0438\u0435 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u0442 \u0442\u0435\u043a\u0441\u0442 \u044d\u0442\u043e\u0439 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438 \u0432 Google \u041f\u0435\u0440\u0435\u0432\u043e\u0434\u0447\u0438\u043a.");
         table.put("Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.",
                 "\u041f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438 \u043d\u0430 \u0434\u0440\u0443\u0433\u043e\u043c \u044f\u0437\u044b\u043a\u0435 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u044e\u0442\u0441\u044f \u043f\u0435\u0440\u0435\u0432\u0435\u0434\u0435\u043d\u043d\u044b\u043c\u0438, \u0430 \u043f\u043e\u0434 \u043d\u0438\u043c\u0438 \u0435\u0441\u0442\u044c \u0441\u0441\u044b\u043b\u043a\u0430 \u00ab\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043e\u0440\u0438\u0433\u0438\u043d\u0430\u043b\u00bb. \u0422\u0435\u043a\u0441\u0442 \u043a\u0430\u0436\u0434\u043e\u0439 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u0442\u0441\u044f \u0432 Google \u041f\u0435\u0440\u0435\u0432\u043e\u0434\u0447\u0438\u043a \u043f\u0440\u0438 \u043f\u043e\u043a\u0430\u0437\u0435.");
-        table.put("Posts in the feed show all of their text, so there's no See more to tap.",
-                "\u0412 \u041b\u0435\u043d\u0442\u0435 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438 \u043e\u0442\u043e\u0431\u0440\u0430\u0436\u0430\u044e\u0442\u0441\u044f \u043f\u043e\u043b\u043d\u043e\u0441\u0442\u044c\u044e, \u043f\u043e\u044d\u0442\u043e\u043c\u0443 \u043d\u0430\u0436\u0438\u043c\u0430\u0442\u044c \u00ab\u0415\u0449\u0435\u00bb \u043d\u0435 \u043d\u0443\u0436\u043d\u043e.");
+        table.put("Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.",
+                "\u0412 \u041b\u0435\u043d\u0442\u0435 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438 \u043e\u0442\u043e\u0431\u0440\u0430\u0436\u0430\u044e\u0442\u0441\u044f \u043f\u043e\u043b\u043d\u043e\u0441\u0442\u044c\u044e, \u043f\u043e\u044d\u0442\u043e\u043c\u0443 \u043d\u0430\u0436\u0438\u043c\u0430\u0442\u044c \u00ab\u0415\u0449\u0435\u00bb \u043d\u0435 \u043d\u0443\u0436\u043d\u043e. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u043d\u0430 \u0442\u0435\u043a\u0441\u0442 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438, \u0447\u0442\u043e\u0431\u044b \u0441\u043d\u043e\u0432\u0430 \u0441\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u0435\u0433\u043e.");
         table.put("Posts stay however many reactions they have.",
                 "\u041f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438 \u043e\u0441\u0442\u0430\u044e\u0442\u0441\u044f \u043d\u0435\u0437\u0430\u0432\u0438\u0441\u0438\u043c\u043e \u043e\u0442 \u043a\u043e\u043b\u0438\u0447\u0435\u0441\u0442\u0432\u0430 \u0440\u0435\u0430\u043a\u0446\u0438\u0439.");
         table.put("Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.",
@@ -18960,8 +18960,8 @@ public final class L10nTranslations {
                 "Ba\u015fka dildeki g\u00f6nderilerin metninin alt\u0131na \u00c7evir ba\u011flant\u0131s\u0131 eklenir. Dokununca o g\u00f6nderinin metni Google \u00c7eviri'ye g\u00f6nderilir.");
         table.put("Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.",
                 "Ba\u015fka dildeki g\u00f6nderiler \u00e7evrilmi\u015f g\u00f6r\u00fcn\u00fcr, altlar\u0131nda Orijinali g\u00f6r yazar. Her g\u00f6nderinin metni g\u00f6sterilirken Google \u00c7eviri'ye gider.");
-        table.put("Posts in the feed show all of their text, so there's no See more to tap.",
-                "Ak\u0131\u015ftaki g\u00f6nderiler metninin tamam\u0131n\u0131 g\u00f6sterir, Devam\u0131n\u0131 g\u00f6r'e dokunman gerekmez.");
+        table.put("Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.",
+                "Ak\u0131\u015ftaki g\u00f6nderiler metninin tamam\u0131n\u0131 g\u00f6sterir, Devam\u0131n\u0131 g\u00f6r'e dokunman gerekmez. Bir g\u00f6nderinin metnine dokunarak onu yeniden daraltabilirsin.");
         table.put("Posts stay however many reactions they have.",
                 "G\u00f6nderiler ka\u00e7 tepki al\u0131rsa als\u0131n kal\u0131r.");
         table.put("Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.",
@@ -22293,8 +22293,8 @@ public final class L10nTranslations {
                 "B\u00e0i vi\u1ebft b\u1eb1ng ng\u00f4n ng\u1eef kh\u00e1c c\u00f3 li\u00ean k\u1ebft D\u1ecbch d\u01b0\u1edbi n\u1ed9i dung. Khi ch\u1ea1m v\u00e0o, n\u1ed9i dung b\u00e0i vi\u1ebft \u0111\u00f3 \u0111\u01b0\u1ee3c g\u1eedi \u0111\u1ebfn Google D\u1ecbch.");
         table.put("Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.",
                 "B\u00e0i vi\u1ebft b\u1eb1ng ng\u00f4n ng\u1eef kh\u00e1c hi\u1ec7n b\u1ea3n \u0111\u00e3 d\u1ecbch, v\u1edbi Xem b\u1ea3n g\u1ed1c \u1edf d\u01b0\u1edbi. N\u1ed9i dung m\u1ed7i b\u00e0i vi\u1ebft \u0111\u01b0\u1ee3c g\u1eedi \u0111\u1ebfn Google D\u1ecbch khi hi\u1ec3n th\u1ecb.");
-        table.put("Posts in the feed show all of their text, so there's no See more to tap.",
-                "B\u00e0i vi\u1ebft trong b\u1ea3ng feed hi\u1ec7n to\u00e0n b\u1ed9 n\u1ed9i dung, n\u00ean kh\u00f4ng c\u1ea7n nh\u1ea5n Xem th\u00eam.");
+        table.put("Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.",
+                "B\u00e0i vi\u1ebft trong b\u1ea3ng feed hi\u1ec7n to\u00e0n b\u1ed9 n\u1ed9i dung, n\u00ean kh\u00f4ng c\u1ea7n nh\u1ea5n Xem th\u00eam. Nh\u1ea5n v\u00e0o n\u1ed9i dung b\u00e0i vi\u1ebft \u0111\u1ec3 thu g\u1ecdn l\u1ea1i.");
         table.put("Posts stay however many reactions they have.",
                 "B\u00e0i vi\u1ebft \u0111\u01b0\u1ee3c gi\u1eef l\u1ea1i d\u00f9 c\u00f3 bao nhi\u00eau c\u1ea3m x\u00fac.");
         table.put("Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.",
@@ -25626,8 +25626,8 @@ public final class L10nTranslations {
                 "\u5176\u4ed6\u8bed\u8a00\u7684\u5e16\u5b50\u6587\u5b57\u4e0b\u65b9\u4f1a\u51fa\u73b0\u201c\u7ffb\u8bd1\u201d\u94fe\u63a5\u3002\u70b9\u6309\u540e\uff0c\u8be5\u5e16\u5b50\u7684\u6587\u5b57\u4f1a\u53d1\u9001\u5230 Google \u7ffb\u8bd1\u3002");
         table.put("Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.",
                 "\u5176\u4ed6\u8bed\u8a00\u7684\u5e16\u5b50\u4f1a\u663e\u793a\u8bd1\u6587\uff0c\u4e0b\u65b9\u6709\u201c\u67e5\u770b\u539f\u6587\u201d\u3002\u6bcf\u6761\u5e16\u5b50\u7684\u6587\u5b57\u5728\u663e\u793a\u65f6\u90fd\u4f1a\u53d1\u9001\u5230 Google \u7ffb\u8bd1\u3002");
-        table.put("Posts in the feed show all of their text, so there's no See more to tap.",
-                "\u52a8\u6001\u4e2d\u7684\u5e16\u5b50\u4f1a\u663e\u793a\u5168\u90e8\u6587\u5b57\uff0c\u4e0d\u7528\u518d\u70b9\u201c\u5c55\u5f00\u201d\u3002");
+        table.put("Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.",
+                "\u52a8\u6001\u4e2d\u7684\u5e16\u5b50\u4f1a\u663e\u793a\u5168\u90e8\u6587\u5b57\uff0c\u4e0d\u7528\u518d\u70b9\u201c\u5c55\u5f00\u201d\u3002\u70b9\u6309\u5e16\u5b50\u7684\u6587\u5b57\u5373\u53ef\u91cd\u65b0\u6298\u53e0\u3002");
         table.put("Posts stay however many reactions they have.",
                 "\u65e0\u8bba\u5e16\u5b50\u6709\u591a\u5c11\u56de\u5e94\uff0c\u90fd\u4f1a\u4fdd\u7559\u3002");
         table.put("Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.",
@@ -28959,8 +28959,8 @@ public final class L10nTranslations {
                 "\u5176\u4ed6\u8a9e\u8a00\u7684\u8cbc\u6587\u6587\u5b57\u4e0b\u65b9\u6703\u51fa\u73fe\u300c\u7ffb\u8b6f\u300d\u9023\u7d50\u3002\u8f15\u89f8\u5f8c\uff0c\u8a72\u8cbc\u6587\u7684\u6587\u5b57\u6703\u50b3\u9001\u5230 Google \u7ffb\u8b6f\u3002");
         table.put("Posts in another language show translated, with See original under them. Each post's text goes to Google Translate as it's drawn.",
                 "\u5176\u4ed6\u8a9e\u8a00\u7684\u8cbc\u6587\u6703\u986f\u793a\u8b6f\u6587\uff0c\u4e0b\u65b9\u6709\u300c\u67e5\u770b\u539f\u6587\u300d\u3002\u6bcf\u5247\u8cbc\u6587\u7684\u6587\u5b57\u5728\u986f\u793a\u6642\u90fd\u6703\u50b3\u9001\u5230 Google \u7ffb\u8b6f\u3002");
-        table.put("Posts in the feed show all of their text, so there's no See more to tap.",
-                "\u52d5\u614b\u4e2d\u7684\u8cbc\u6587\u6703\u986f\u793a\u5168\u90e8\u6587\u5b57\uff0c\u4e0d\u7528\u518d\u9ede\u300c\u986f\u793a\u66f4\u591a\u300d\u3002");
+        table.put("Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.",
+                "\u52d5\u614b\u4e2d\u7684\u8cbc\u6587\u6703\u986f\u793a\u5168\u90e8\u6587\u5b57\uff0c\u4e0d\u7528\u518d\u9ede\u300c\u986f\u793a\u66f4\u591a\u300d\u3002\u8f15\u89f8\u8cbc\u6587\u7684\u6587\u5b57\u5373\u53ef\u91cd\u65b0\u6536\u5408\u3002");
         table.put("Posts stay however many reactions they have.",
                 "\u7121\u8ad6\u6709\u591a\u5c11\u500b\u5fc3\u60c5\uff0c\u90fd\u6703\u4fdd\u7559\u8cbc\u6587\u3002");
         table.put("Posts you've scrolled past stay out of the feed when it loads again. The list stays on this phone. Turning this off empties it.",
