@@ -596,7 +596,11 @@ final class SettingsNavigation extends BaseAdapter {
         int offset = first == null ? pendingOffset : first.getTop();
         visible.clear();
         List<String> terms = SettingsSearch.terms(query);
+        // Switches that are on (#353) sits above the sections, on the main list and in search.
+        Preference favorites = screen.findPreference(FavoriteSwitchesScreen.ROW);
         if (!terms.isEmpty()) {
+            if (favorites != null && SettingsSearch.matchesTerms(terms, favorites.getTitle(), favorites.getSummary()))
+                visible.add(favorites);
             for (Section section : sections) {
                 boolean headingAdded = false;
                 CharSequence subheading = null;
@@ -637,6 +641,7 @@ final class SettingsNavigation extends BaseAdapter {
             // Only in a build that lacks another default patch: the card's own line under it.
             Preference missing = screen.findPreference(HushfacebookPreferenceFragment.MISSING_DEFAULTS);
             if (missing != null) visible.add(missing);
+            if (favorites != null) visible.add(favorites);
             for (Section section : sections) {
                 visible.add(section.link);
                 if (expanded.contains(section.id)) {

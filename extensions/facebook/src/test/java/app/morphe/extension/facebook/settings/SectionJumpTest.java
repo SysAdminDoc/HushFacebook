@@ -62,7 +62,7 @@ public class SectionJumpTest {
 
         List<String> titles = new ArrayList<>();
         for (int i = 0; i < page.sections().size(); i++) {
-            Preference header = (Preference) list.getItemAtPosition(i);
+            Preference header = (Preference) list.getItemAtPosition(i + 1);
             assertTrue(header.getKey(), header.getKey().startsWith("section_"));
             titles.add(header.getTitle().toString());
         }
@@ -72,8 +72,8 @@ public class SectionJumpTest {
                 "Tabs and navigation", "Appearance", "Built-in changes", "Pause, backup and diagnostics", "About");
         assertEquals(expected, titles);
         assertEquals(21, titles.size());
-        assertEquals(SettingsNavigation.SUPPORT, ((Preference) list.getItemAtPosition(21)).getKey());
-        assertEquals(23, list.getCount());
+        assertEquals(SettingsNavigation.SUPPORT, ((Preference) list.getItemAtPosition(22)).getKey());
+        assertEquals(24, list.getCount());
         assertFalse(titles.contains("More settings"));
         assertTrue(titles.contains("Downloads"));
         assertTrue(titles.contains("Links and sharing"));
@@ -90,7 +90,7 @@ public class SectionJumpTest {
         assertTrue(page.jumpTo(downloads));
         relayout(list);
         assertTrue(page.navigation.isExpanded("Downloads"));
-        assertEquals(23 + ((android.preference.PreferenceCategory) downloads).getPreferenceCount(), list.getCount());
+        assertEquals(24 + ((android.preference.PreferenceCategory) downloads).getPreferenceCount(), list.getCount());
         int header = -1;
         for (int i = 0; i < list.getCount(); i++) {
             if ("section_Downloads".equals(((Preference) list.getItemAtPosition(i)).getKey())) header = i;
