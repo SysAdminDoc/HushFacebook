@@ -111,7 +111,7 @@ val followingFeedHomePatch = bytecodePatch(
         "settings > Opening Facebook.",
     default = true,
 ) {
-    category("Feed")
+    category("Navigation")
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 

@@ -44,8 +44,8 @@ class ExtensionHostsTest {
             .map { it.first }.toSortedSet()
         assertEquals(
             "The README says the extension goes online by itself only to download what you save (reading " +
-                "where a copied short link leads first), and to ask GitHub for the newest release once that " +
-                "check is turned on. These files open connections",
+                "where a copied short link leads first), to translate a post once Translate posts is turned on, " +
+                "and to ask GitHub for the newest release once that check is turned on. These files open connections",
             TRANSPORTS.toSortedSet(),
             openers,
         )
@@ -112,12 +112,14 @@ class ExtensionHostsTest {
         /** The hosts the README's Privacy section names. */
         val ALLOWED_HOSTS = setOf(
             "github.com", "api.github.com", "gitlab.com", "www.gnu.org", "www.facebook.com", "ko-fi.com", "lens.google.com",
+            "translate.googleapis.com",
         )
         const val RELEASE_CHECK =
             "extensions/facebook/src/main/java/app/morphe/extension/facebook/settings/ReleaseCheck.java"
         val TRANSPORTS = listOf(
             "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/ClipboardLink.java",
             "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/Downloader.java",
+            "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/GoogleTranslate.java",
             "extensions/facebook/src/main/java/app/morphe/extension/facebook/settings/ReleaseTransport.java",
         )
         val URL = Regex("""(?:https?|wss?)://([A-Za-z0-9.-]+)""")
