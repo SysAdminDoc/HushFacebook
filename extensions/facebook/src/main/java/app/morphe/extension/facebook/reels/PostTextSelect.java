@@ -15,7 +15,6 @@ import android.os.SystemClock;
 import android.util.TypedValue;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
@@ -47,8 +46,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * place of the copy a hold makes, so the clipboard keeps what it held (#342). A copy that reaches
  * the clipboard some other way still opens the box once it lands: the clipboard is listened to from
  * the first press with the switch on, since that copy can land in the same moment as the hold's
- * timer. Facebook follows its copy with a "Text copied to clipboard" toast, so each of its toasts
- * goes to {@link #toast}, which drops the one that comes right after a copy the box took.
+ * timer. Facebook follows its copy with a "Text copied to clipboard" popup of its own drawing (not an
+ * Android toast), so the patch asks {@link #dropsPopup} in front of it, which drops the one that
+ * comes right after a copy the box took.
  */
 public final class PostTextSelect {
     private static final String FAMILY = FamilyNames.REEL_GESTURES;
@@ -61,17 +61,22 @@ public final class PostTextSelect {
     static final String KEPT_OFF = "hold's copy kept off the clipboard";
     /** Counted for each tap of the box's Copy all. */
     static final String COPIED_ALL = "post text copied whole";
-    /** Counted for each toast of Facebook's dropped because the copy it announced was kept off. */
-    static final String TOAST_DROPPED = "kept-off copy's toast dropped";
+    /** Counted for each of Facebook's "copied" popups dropped because the copy it announced was kept off. */
+    static final String POPUP_DROPPED = "kept-off copy's popup dropped";
 
     /** How long after a hold on text, in milliseconds, Facebook's copy still opens the box. */
     static final long WINDOW = 1500L;
-    /** How long after a copy kept off the clipboard, in milliseconds, Facebook's toast for it is dropped. */
-    static final long TOAST_WINDOW = 1000L;
+    /** How long after a copy kept off the clipboard, in milliseconds, Facebook's popup for it is dropped. */
+    static final long POPUP_WINDOW = 1000L;
+
+    /** The extension's own classes, which a copy passes through on its way here and the logger adds to. */
+    private static final String EXTENSION = "app.morphe.extension.";
+    /** How many of Facebook's frames name a copy's maker. */
+    private static final int COPIER_FRAMES = 8;
 
     /** When, in uptime, a hold on text armed the box; 0 when nothing is armed. */
     private static volatile long armedAt;
-    /** When, in uptime, a hold's copy was last kept off the clipboard; 0 once its toast is dealt with. */
+    /** When, in uptime, a hold's copy was last kept off the clipboard; 0 once its popup is dealt with. */
     private static volatile long keptAt;
     /** When, in uptime, the box last opened; 0 before it ever has. */
     private static volatile long openedAt;
@@ -113,6 +118,14 @@ public final class PostTextSelect {
         if (openedAt != 0L && SystemClock.uptimeMillis() - openedAt < WINDOW) return;
         armedAt = SystemClock.uptimeMillis();
         HookStatus.counted(FAMILY, ARMED);
+    }
+
+    /**
+     * A hold on a post's text lifted on its Translate line and goes to the post's long press now
+     * (#332). Facebook's copy comes after the lift, so a hold that armed the box is timed from here.
+     */
+    public static void heldThroughLink() {
+        if (armedAt != 0L) armedAt = SystemClock.uptimeMillis();
     }
 
     /** The clipboard changed: Facebook's copy of the held text opens the box. Never throws. */
@@ -157,6 +170,8 @@ public final class PostTextSelect {
             keptAt = SystemClock.uptimeMillis();
             String whole = text.toString();
             HookStatus.counted(FAMILY, KEPT_OFF);
+            String copiedBy = copiers(Thread.currentThread().getStackTrace());
+            Logger.printDebug(() -> "Post text select: " + KEPT_OFF + ", copied by " + copiedBy);
             Utils.runOnMainThreadNowOrLater(() -> {
                 try {
                     if (!activity.isFinishing() && !activity.isDestroyed()) show(activity, whole);
@@ -172,28 +187,39 @@ public final class PostTextSelect {
     }
 
     /**
-     * Injection point, in place of each of Facebook's Toast.show calls. The first toast within
-     * {@link #TOAST_WINDOW} of a copy the box took is Facebook saying the text was copied, which it
-     * wasn't, so it's dropped. Every other toast shows.
+     * Injection point, in front of each "Text copied to clipboard" popup Facebook shows right after
+     * its copy. Answers whether to skip it: the first within {@link #POPUP_WINDOW} of a copy the box
+     * took says the text was copied, which it wasn't. Every other popup shows. Never throws.
      */
-    public static void toast(Toast toast) {
-        if (dropsToast()) return;
-        toast.show();
-    }
-
-    /** Whether the toast being shown announces a copy that was kept off the clipboard. Never throws. */
-    static boolean dropsToast() {
+    public static boolean dropsPopup() {
         try {
             long at = keptAt;
             if (at == 0L) return false;
             keptAt = 0L;
-            if (SystemClock.uptimeMillis() - at > TOAST_WINDOW) return false;
-            HookStatus.counted(FAMILY, TOAST_DROPPED);
+            if (SystemClock.uptimeMillis() - at > POPUP_WINDOW) return false;
+            HookStatus.counted(FAMILY, POPUP_DROPPED);
             return true;
         } catch (Throwable failure) {
-            HookStatus.threw(FAMILY, "post text select toast", failure);
+            HookStatus.threw(FAMILY, "post text select popup", failure);
             return false;
         }
+    }
+
+    /**
+     * The first few of Facebook's methods on [stack], outermost last, past the extension's and the
+     * runtime's own frames: where a copy came from, and so where the popup that follows it is shown.
+     */
+    static String copiers(StackTraceElement[] stack) {
+        StringBuilder found = new StringBuilder();
+        int kept = 0;
+        for (StackTraceElement frame : stack) {
+            String type = frame.getClassName();
+            if (type.startsWith("java.") || type.startsWith("dalvik.") || type.startsWith(EXTENSION)) continue;
+            if (kept++ == COPIER_FRAMES) break;
+            if (found.length() > 0) found.append(" < ");
+            found.append(type).append('.').append(frame.getMethodName());
+        }
+        return found.toString();
     }
 
     /** The text of [clip]'s first item, or null. */

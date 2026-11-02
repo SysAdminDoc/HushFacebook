@@ -86,10 +86,10 @@ val openCommentsWithGesturePatch = bytecodePatch(
         requireStatusMethod("reelGestures")
         val anchors = findGestureAnchors()
         val clipboardWriters = clipboardWriters()
-        val toastShowers = toastShowers()
+        val copyPopups = copyPopups(clipboardWriters)
         applyGestureAnchors(anchors)
         sendClipboardWrites(clipboardWriters)
-        sendToastShows(toastShowers)
+        guardCopyPopups(copyPopups)
         enableStatus("reelGestures")
     }
 }

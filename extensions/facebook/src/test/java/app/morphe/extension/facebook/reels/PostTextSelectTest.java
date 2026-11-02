@@ -24,7 +24,6 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.junit.After;
 import org.junit.Before;
@@ -35,7 +34,6 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
-import org.robolectric.shadows.ShadowToast;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -218,40 +216,34 @@ public class PostTextSelectTest {
         assertTrue(statusLine(), statusLine().contains(PostTextSelect.KEPT_OFF + " 1"));
     }
 
-    /** Facebook's toast after its copy, made through the stand-in the patch puts in place of Toast.show. */
-    private void facebookToast(String what) {
-        PostTextSelect.toast(Toast.makeText(activity, what, Toast.LENGTH_SHORT));
-        waitFor(0);
+    /** Whether Facebook's "copied" popup after its copy shows, as the check the patch puts in front of it answers. */
+    private boolean facebookPopupShows() {
+        return !PostTextSelect.dropsPopup();
     }
 
     @Test
-    public void facebooksCopiedToastForAKeptOffCopyIsDroppedAndTheNextToastShows() {
+    public void facebooksCopiedPopupForAKeptOffCopyIsDroppedAndTheNextOneShows() {
         hold();
         copy(POST);
-        facebookToast("Text copied to clipboard");
-        assertEquals("the toast saying it copied is dropped", 0, ShadowToast.shownToastCount());
-        assertTrue(statusLine(), statusLine().contains(PostTextSelect.TOAST_DROPPED + " 1"));
+        assertFalse("the popup saying it copied is dropped", facebookPopupShows());
+        assertTrue(statusLine(), statusLine().contains(PostTextSelect.POPUP_DROPPED + " 1"));
 
-        facebookToast("Saved");
-        assertEquals("only that one toast is dropped", "Saved", ShadowToast.getTextOfLatestToast());
+        assertTrue("only that one popup is dropped", facebookPopupShows());
     }
 
     @Test
-    public void toastsWithNoKeptOffCopyOrPastTheWindowShow() {
+    public void popupsWithNoKeptOffCopyOrPastTheWindowShow() {
         deliver(event(MotionEvent.ACTION_DOWN));
         waitFor(100);
         copy("picked from a menu");
         deliver(event(MotionEvent.ACTION_UP));
-        facebookToast("Text copied to clipboard");
-        assertEquals("a copy that reached the clipboard keeps its toast", 1, ShadowToast.shownToastCount());
+        assertTrue("a copy that reached the clipboard keeps its popup", facebookPopupShows());
 
         hold();
         copy(POST);
-        waitFor(PostTextSelect.TOAST_WINDOW + 100L);
-        facebookToast("Link copied");
-        assertEquals("a toast long after the kept-off copy shows", "Link copied", ShadowToast.getTextOfLatestToast());
-        assertEquals(2, ShadowToast.shownToastCount());
-        assertFalse(statusLine(), statusLine().contains(PostTextSelect.TOAST_DROPPED));
+        waitFor(PostTextSelect.POPUP_WINDOW + 100L);
+        assertTrue("a popup long after the kept-off copy shows", facebookPopupShows());
+        assertFalse(statusLine(), statusLine().contains(PostTextSelect.POPUP_DROPPED));
     }
 
     @Test
@@ -327,6 +319,50 @@ public class PostTextSelectTest {
         assertNull("paused", PostTextSelect.shownDialog());
         assertEquals("a copy that opens nothing reaches the clipboard", "paused copy", onClipboard());
         assertEquals("Facebook's copy ran every time", List.of("copy", "copy", "copy"), facebook);
+    }
+
+    @Test
+    public void aLongHoldLiftedOnTheTranslateLineIsTimedFromTheLift() {
+        deliver(event(MotionEvent.ACTION_DOWN));
+        waitFor(ViewConfiguration.getLongPressTimeout() + PostTextSelect.WINDOW + 100L);
+        deliver(event(MotionEvent.ACTION_UP));
+        PostTextSelect.heldThroughLink();
+        copy(POST);
+        AlertDialog box = PostTextSelect.shownDialog();
+        assertNotNull("the post's long press the line handed on opened the box", box);
+        assertEquals(POST, selectable(box.getWindow().getDecorView()).getText().toString());
+    }
+
+    @Test
+    public void theTranslateLineArmsNothingWithoutAHold() {
+        PostTextSelect.heldThroughLink();
+        copy(POST);
+        assertNull(PostTextSelect.shownDialog());
+        assertEquals(POST, onClipboard());
+    }
+
+    @Test
+    public void aKeptCopyNamesFacebooksMethodsThatMadeIt() {
+        StackTraceElement[] stack = {
+                new StackTraceElement("dalvik.system.VMStack", "getThreadStackTrace", null, -2),
+                new StackTraceElement("java.lang.Thread", "getStackTrace", null, 1),
+                new StackTraceElement(PostTextSelect.class.getName(), "opensInstead", null, 1),
+                new StackTraceElement(PostTextSelect.class.getName(), "copy", null, 1),
+                new StackTraceElement("app.morphe.extension.shared.Logger", "printDebug", null, 1),
+                new StackTraceElement("X.0aBc", "A02", null, 1),
+                new StackTraceElement("X.0dEf", "onLongClick", null, 1),
+                new StackTraceElement("android.view.View", "performLongClick", null, 1),
+                new StackTraceElement("X.0gHi", "run", null, 1),
+                new StackTraceElement("android.os.Handler", "dispatchMessage", null, 1),
+                new StackTraceElement("android.os.Looper", "loop", null, 1),
+                new StackTraceElement("android.app.ActivityThread", "main", null, 1),
+                new StackTraceElement("com.android.internal.os.ZygoteInit", "main", null, 1),
+                new StackTraceElement("com.android.internal.os.RuntimeInit", "main", null, 1),
+        };
+        assertEquals("X.0aBc.A02 < X.0dEf.onLongClick < android.view.View.performLongClick < X.0gHi.run"
+                        + " < android.os.Handler.dispatchMessage < android.os.Looper.loop"
+                        + " < android.app.ActivityThread.main < com.android.internal.os.ZygoteInit.main",
+                PostTextSelect.copiers(stack));
     }
 
     @Test
