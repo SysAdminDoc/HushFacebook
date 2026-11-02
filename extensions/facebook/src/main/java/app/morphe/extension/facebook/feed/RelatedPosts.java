@@ -19,6 +19,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * {@link #holds} first in that check, with the plugin's name, and a yes answers no for the Related
  * posts plugin, so the socket goes on to the next one. The post, its buttons and its comments stay.
  *
+ * <p>A post opened on its own, from a link or a search, gets the list a second way (#231 again, on
+ * 584): Facebook asks the server for it with the post's comments, and the comment screen's bottom
+ * socket draws it after them as a full list of posts, under a "Commenting is turned off" line when
+ * the post has none. That socket's check asks {@link #holds} the same way, with
+ * {@link #COMMENT_PLUGIN}, and the request's plugin asks {@link #keepsOutOfRequest} first, so the
+ * request doesn't ask for the list while the switch is on.
+ *
  * <p>Off, paused, before the settings are ready, or when anything here fails, the answer is no and
  * the check runs as Facebook wrote it.
  */
@@ -27,11 +34,27 @@ public final class RelatedPosts {
     public static final String PLUGIN =
             "com.facebook.feed.plugins.belowufifooter.impl.inlinerelatedposts.InlineRelatedPostsPlugin";
 
+    /** The Related posts list after a post's comments, as the comment screen's bottom socket names it. */
+    public static final String COMMENT_PLUGIN =
+            "com.facebook.feedback.comments.plugins.bottomcontent.impl.relatedcontent.RelatedContentPlugin";
+
     /** Counted under the patch's name each time the list under a post is kept out. */
     static final String HIDDEN = "Related posts under a post kept out";
 
+    /** Counted under the patch's name each time the list after a post's comments is kept out. */
+    static final String HIDDEN_AFTER_COMMENTS = "Related posts after comments kept out";
+
+    /** Counted under the patch's name each time a post's request goes without asking for the list. */
+    static final String LEFT_OUT = "Related posts left out of a request";
+
     /** The member the report names once the socket under a post's buttons has asked about the list. */
     static final String MEMBER = "Related posts under posts";
+
+    /** The member the report names once the comment screen's bottom socket has asked about the list. */
+    static final String COMMENT_MEMBER = "Related posts after comments";
+
+    /** The member the report names once a post's request has asked whether to fetch the list. */
+    static final String REQUEST_MEMBER = "Related posts request";
 
     private static final String FAMILY = FamilyNames.SUGGESTED_POSTS;
 
@@ -41,24 +64,45 @@ public final class RelatedPosts {
     }
 
     /**
-     * The hook, first thing in the check of the socket under a post's buttons, handed the plugin's
-     * name. True answers no for the Related posts plugin while the switch is on; false leaves the
-     * check to Facebook, for every other plugin and otherwise.
+     * The hook, first thing in the check of the socket under a post's buttons and of the comment
+     * screen's bottom socket, handed the plugin's name. True answers no for either Related posts
+     * plugin while the switch is on; false leaves the check to Facebook, for every other plugin and
+     * otherwise.
      */
     public static boolean holds(@Nullable String plugin) {
         try {
-            if (!PLUGIN.equals(plugin)) return false;
+            final boolean underPost = PLUGIN.equals(plugin);
+            if (!underPost && !COMMENT_PLUGIN.equals(plugin)) return false;
             HookStatus.invoked(FAMILY);
-            HookStatus.bound(FAMILY, MEMBER);
+            HookStatus.bound(FAMILY, underPost ? MEMBER : COMMENT_MEMBER);
             if (!Utils.settingsReady() || !Settings.HIDE_RELATED_POSTS.get()) return false;
-            HookStatus.counted(FAMILY, HIDDEN);
+            HookStatus.counted(FAMILY, underPost ? HIDDEN : HIDDEN_AFTER_COMMENTS);
             if (!logged) {
                 logged = true;
-                Logger.printDebug(() -> "Related posts: the list under a post was kept out");
+                Logger.printDebug(() -> "Related posts: the list " + (underPost ? "under a post" : "after the comments")
+                        + " was kept out");
             }
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "Related posts check", failure);
+            return false;
+        }
+    }
+
+    /**
+     * The hook, first thing in the plugin that decides whether a post's request asks the server for
+     * the Related posts list. True makes it answer no, so the request goes as it does for an account
+     * Facebook never shows the list to; false leaves the decision to Facebook.
+     */
+    public static boolean keepsOutOfRequest() {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, REQUEST_MEMBER);
+            if (!Utils.settingsReady() || !Settings.HIDE_RELATED_POSTS.get()) return false;
+            HookStatus.counted(FAMILY, LEFT_OUT);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Related posts request", failure);
             return false;
         }
     }

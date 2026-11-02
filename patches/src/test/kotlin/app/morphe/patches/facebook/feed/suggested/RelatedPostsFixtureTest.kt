@@ -81,4 +81,47 @@ class RelatedPostsFixtureTest {
         }
         assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(14).map { it.opcode })
     }
+
+    @Test
+    fun `each declared build holds the list after a post's comments in the bottom socket's check`() = bundles { bundle ->
+        val name = bundle.name
+        val table = nameTable(holders(bundle, RELATED_AFTER_COMMENTS), RELATED_AFTER_COMMENTS)
+        val owner = FixtureDex.classes(bundle, setOf(table.definingClass)).values.single()
+        val sockets = holders(bundle, COMMENT_BOTTOM_SOCKET).flatMap { methodsHolding(it, COMMENT_BOTTOM_SOCKET) }
+        assertTrue("$name: nothing names \"$COMMENT_BOTTOM_SOCKET\"", sockets.isNotEmpty())
+        val check = socketCheck(table, owner, sockets)
+        val where = "$name: ${check.descriptor()}"
+
+        val context = PatchContexts.of(listOf(owner))
+        val method = context.mutableClassDefBy(owner.type).methods.single { it.descriptor() == check.descriptor() }
+        val original = method.implementation!!.instructions.toList()
+        method.holdSummaries(table, HOLDS_RELATED_POSTS)
+        val patched = method.implementation!!.instructions.toList()
+        assertEquals("$where gains seven instructions", original.size + 7, patched.size)
+        assertEquals("$where: the plugin's name comes from the table", table.descriptor(), patched[0].reference())
+        assertEquals("$where: the extension isn't asked", HOLDS_RELATED_POSTS, patched[2].reference())
+        assertEquals("$where: a no from the extension lands somewhere else", setOf(5, 7),
+            ControlFlow.of(method).normal[4].toSet())
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(7).map { it.opcode })
+    }
+
+    @Test
+    fun `each declared build asks the extension first in the plugin that asks for the list`() = bundles { bundle ->
+        val plugin = FixtureDex.classes(bundle, setOf(RELATED_REQUEST)).values.single()
+        val decider = requestDecider(plugin)
+        val where = "${bundle.name}: ${decider.descriptor()}"
+        assertTrue("$where has no local register", decider.implementation!!.registerCount > 1)
+
+        val context = PatchContexts.of(listOf(plugin))
+        val method = context.mutableClassDefBy(plugin.type).methods.single { it.descriptor() == decider.descriptor() }
+        val original = method.implementation!!.instructions.toList()
+        method.answerNoWhenKept()
+        val patched = method.implementation!!.instructions.toList()
+        assertEquals("$where gains five instructions", original.size + 5, patched.size)
+        assertEquals("$where: the extension isn't asked", KEEPS_OUT_OF_REQUEST, patched[0].reference())
+        assertEquals("$where: a yes doesn't answer no", Opcode.RETURN, patched[4].opcode)
+        assertEquals("$where: a no from the extension lands somewhere else", setOf(3, 5),
+            ControlFlow.of(method).normal[2].toSet())
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(5).map { it.opcode })
+    }
 }

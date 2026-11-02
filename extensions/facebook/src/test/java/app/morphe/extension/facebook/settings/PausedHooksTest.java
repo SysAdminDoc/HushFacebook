@@ -402,7 +402,11 @@ public class PausedHooksTest {
                 // The search screen draws its For you section as an empty row.
                 PreSearchSectionsForTests::drawsForYouEmpty,
                 // The socket under a post's buttons gets a no for the Related posts list.
-                () -> RelatedPosts.holds(RelatedPosts.PLUGIN)));
+                () -> RelatedPosts.holds(RelatedPosts.PLUGIN),
+                // So does the comment screen's socket under the comments.
+                () -> RelatedPosts.holds(RelatedPosts.COMMENT_PLUGIN),
+                // A post's request goes without asking for the list.
+                RelatedPosts::keepsOutOfRequest));
         // Each of the feed's two Stories tray adapters, and the composer row's, new to the hook,
         // counts no rows.
         probes.put(PatchFamily.STORIES_TRAY, Arrays.asList(

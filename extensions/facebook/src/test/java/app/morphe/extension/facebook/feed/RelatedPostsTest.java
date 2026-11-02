@@ -29,7 +29,9 @@ import app.morphe.extension.shared.settings.PauseForTests;
 /**
  * The Related posts list under a post (#231): with the switch on, the socket under a post's buttons
  * gets a no for the Related posts plugin, counted, while the Meta AI summary and every other plugin
- * it asks about is left to Facebook. Off, paused, or before the settings are ready, nothing is held.
+ * it asks about is left to Facebook. The list a post opened on its own shows after its comments goes
+ * the same way, and that post's request stops asking for it. Off, paused, or before the settings
+ * are ready, nothing is held.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -70,6 +72,42 @@ public class RelatedPostsTest {
         assertTrue("other plugins were counted as calls: " + line, line.contains("invoked 2,"));
         assertTrue("the list kept out wasn't counted: " + line,
                 line.contains("Counted: " + RelatedPosts.HIDDEN + " 2"));
+    }
+
+    /**
+     * The reporter's second case: a post opened on its own lists Related posts after its comments,
+     * through the comment screen's bottom socket, and its request asks the server for that list.
+     */
+    @Test
+    public void onTheListAfterCommentsIsHeldAndItsRequestLeavesItOut() {
+        Settings.HIDE_RELATED_POSTS.save(true);
+        assertFalse("another plugin of the bottom socket was held", RelatedPosts.holds(
+                "com.facebook.feedback.comments.plugins.bottomcontent.impl.relatedgroups.RelatedGroupsPlugin"));
+        assertTrue("the list after the comments stayed", RelatedPosts.holds(RelatedPosts.COMMENT_PLUGIN));
+        assertTrue("the request still asked for the list", RelatedPosts.keepsOutOfRequest());
+        String line = statusLine();
+        assertNotNull("the report doesn't name the family", line);
+        assertTrue("the list after comments wasn't counted apart: " + line,
+                line.contains("Counted: " + RelatedPosts.HIDDEN_AFTER_COMMENTS + " 1"));
+        assertTrue("the request wasn't counted: " + line, line.contains(", " + RelatedPosts.LEFT_OUT + " 1"));
+        assertFalse("the list under a post was counted: " + line, line.contains(RelatedPosts.HIDDEN + " "));
+    }
+
+    @Test
+    public void offOrPausedTheRequestAsksAsFacebookWrote() {
+        assertFalse("off, the request left the list out", RelatedPosts.keepsOutOfRequest());
+        assertFalse("off, the list after comments was held", RelatedPosts.holds(RelatedPosts.COMMENT_PLUGIN));
+
+        Settings.HIDE_RELATED_POSTS.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused, the request left the list out", RelatedPosts.keepsOutOfRequest());
+        assertFalse("paused, the list after comments was held", RelatedPosts.holds(RelatedPosts.COMMENT_PLUGIN));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse("the request left the list out before the settings were ready",
+                RelatedPosts.keepsOutOfRequest()));
+
+        String line = statusLine();
+        assertFalse("a request left to Facebook was counted: " + line, line != null && line.contains("Counted"));
     }
 
     @Test

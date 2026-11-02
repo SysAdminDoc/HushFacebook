@@ -258,6 +258,18 @@ val hideSuggestedPostsPatch = bytecodePatch(
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so Related posts stay under posts.")
         }
+        // A post opened on its own lists Related posts after its comments, through another socket.
+        try {
+            hookRelatedPostsAfterComments()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so Related posts stay after a post's comments.")
+        }
+        // And asks the server for that list with the comments, unless its plugin says no.
+        try {
+            hookRelatedPostsRequest()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so a post's request still asks for Related posts.")
+        }
         enableStatus("suggestedPosts")
     }
 }
