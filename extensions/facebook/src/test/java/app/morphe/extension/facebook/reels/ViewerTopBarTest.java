@@ -119,7 +119,8 @@ public class ViewerTopBarTest {
     }
 
     @Test
-    public void theReelsTabsHeaderIsLeftAlone() {
+    public void theReelsTabsHeaderLosesSearchAndTheProfileButtonAndKeepsMenu() {
+        // #346: the tab's header is the same bar inside the tab pages, Menu where Back would be.
         Settings.HIDE_VIEWER_TOP_BUTTONS.save(true);
         Activity main = Robolectric.buildActivity(Activity.class).setup().get();
         ComponentHost[] header = reelsTab(main);
@@ -128,6 +129,12 @@ public class ViewerTopBarTest {
         layOut(main);
 
         assertEquals(View.VISIBLE, header[0].getVisibility());
+        assertEquals(View.INVISIBLE, header[1].getVisibility());
+        assertEquals(View.INVISIBLE, header[2].getVisibility());
+
+        Settings.HIDE_VIEWER_TOP_BUTTONS.save(false);
+        layOut(main);
+
         assertEquals(View.VISIBLE, header[1].getVisibility());
         assertEquals(View.VISIBLE, header[2].getVisibility());
     }
@@ -154,8 +161,8 @@ public class ViewerTopBarTest {
         assertEquals(View.VISIBLE, playerBack.getVisibility());
         assertEquals(View.INVISIBLE, playerSearch.getVisibility());
         assertEquals(View.INVISIBLE, playerMore.getVisibility());
-        assertEquals(View.VISIBLE, header[1].getVisibility());
-        assertEquals(View.VISIBLE, header[2].getVisibility());
+        assertEquals(View.VISIBLE, header[0].getVisibility());
+        assertEquals(View.INVISIBLE, header[1].getVisibility());
     }
 
     @Test

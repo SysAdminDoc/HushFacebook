@@ -141,8 +141,9 @@ final class VideoPages {
                             + "the one at the top of its comments and the search bar over reels you open from a profile.")));
             // Asked after each layout of the full-screen player, so a change shows right away.
             reels.addPreference(toggle(context, Settings.HIDE_VIEWER_TOP_BUTTONS,
-                    L10n.t("Takes Search and the button next to it off the top of a video or reel you open. Back "
-                            + "stays, and so does More at the bottom of the side buttons, where Download is.")));
+                    L10n.t("Takes Search and the button next to it off the top of a video or reel you open, and off the "
+                            + "Reels tab. Back and Menu stay, and so does More at the bottom of the side buttons, where "
+                            + "Download is.")));
             // Burn-in guard (#288): read on each pass, so a change shows right away.
             reels.addPreference(burnInGuardRow(context));
             reels.addPreference(burnInWaitRow(context));

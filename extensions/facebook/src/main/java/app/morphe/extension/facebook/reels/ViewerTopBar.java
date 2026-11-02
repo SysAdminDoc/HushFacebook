@@ -13,7 +13,6 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 import android.view.Window;
-import android.widget.HorizontalScrollView;
 
 import androidx.annotation.Nullable;
 
@@ -41,8 +40,9 @@ import app.morphe.extension.shared.settings.Setting;
  * <p>A video opened from the feed mostly doesn't get that screen: the player is laid over the main
  * screen, a layer of its own under the content view with the same bar in it (S22, 585). The Reels
  * tab's header there has the same id too, Menu where Back would be, inside the tab pages that slide
- * sideways. So past the full-screen player screens, each layer of the content view is looked
- * through for the bar, and one with a sideways-paging view above it is a tab's header and stays.
+ * sideways, and its Search and profile button go the same way (#346). No other tab's header has the
+ * id (emulator, 585, 2026-11-02). So past the full-screen player screens, each layer of the content
+ * view is looked through for the bar.
  *
  * <p>The buttons are Litho hosts with no ids, and their labels change with the language, so with
  * the switch on every clickable host in the bar that sits past its middle, away from Back, and in
@@ -59,9 +59,6 @@ public final class ViewerTopBar {
     static final String HIDDEN = "Viewer top bar button hidden";
 
     static final String HOST = "com.facebook.litho.ComponentHost";
-    /** The pagers whose pages hold the main screen's tabs. */
-    private static final String VIEW_PAGER = "androidx.viewpager.widget.ViewPager";
-    private static final String VIEW_PAGER2 = "androidx.viewpager2.widget.ViewPager2";
 
     /** How many levels under the bar a button is looked for. 585's sit 2 to 5 down. */
     static final int MAX_DEPTH = 8;
@@ -155,27 +152,8 @@ public final class ViewerTopBar {
         ViewGroup layers = (ViewGroup) content;
         for (int i = 0; i < layers.getChildCount(); i++) {
             View bar = layers.getChildAt(i).findViewById(id);
-            if (bar != null && !paged(bar, layers)) tidy(bar);
+            if (bar != null) tidy(bar);
         }
-    }
-
-    /** Whether a view between [bar] and [top] pages sideways, as the main screen's tabs do. */
-    static boolean paged(View bar, View top) {
-        ViewParent parent = bar.getParent();
-        while (parent instanceof View && parent != top) {
-            if (pages((View) parent)) return true;
-            parent = parent.getParent();
-        }
-        return false;
-    }
-
-    private static boolean pages(View view) {
-        if (view instanceof HorizontalScrollView) return true;
-        for (Class<?> type = view.getClass(); type != null && type != View.class; type = type.getSuperclass()) {
-            String name = type.getName();
-            if (VIEW_PAGER.equals(name) || VIEW_PAGER2.equals(name)) return true;
-        }
-        return false;
     }
 
     /** Whether the bar's far buttons go now. */

@@ -1795,7 +1795,7 @@ Takes away the line that says someone is typing a comment. Your own typing is a 
 Hide the search pill on reels	Скрывать поисковую подсказку в Reels
 Hides the search suggestion under a reel's caption, the magnifier with a question to look up, the one at the top of its comments and the search bar over reels you open from a profile.	Скрывает поисковую подсказку под подписью Reels (значок лупы с вопросом для поиска), такую же подсказку вверху комментариев и строку поиска поверх Reels, открытых из профиля.
 Hide the top right buttons on opened videos	Скрывать кнопки вверху справа у открытых видео
-Takes Search and the button next to it off the top of a video or reel you open. Back stays, and so does More at the bottom of the side buttons, where Download is.	Удаляет поиск и соседнюю кнопку из верхней части открытого видео или Reels. Кнопка «Назад» остается, как и кнопка «Еще» внизу боковой панели, где находится «Скачать».
+Takes Search and the button next to it off the top of a video or reel you open, and off the Reels tab. Back and Menu stay, and so does More at the bottom of the side buttons, where Download is.	Удаляет поиск и соседнюю кнопку из верхней части открытого видео или Reels, а также со вкладки Reels. Кнопки «Назад» и «Меню» остаются, как и кнопка «Еще» внизу боковой панели, где находится «Скачать».
 # context: switch title under Appearance; the button is Facebook's Messenger icon in the top bar of Home
 Hide the Messenger button	Скрывать кнопку Messenger
 # context: summary of that switch; the other top bar buttons move over to fill the space; Hushfacebook is the app's name

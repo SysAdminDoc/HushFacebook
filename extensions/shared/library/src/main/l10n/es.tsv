@@ -1753,7 +1753,7 @@ Takes away the line that says someone is typing a comment. Your own typing is a 
 Hide the search pill on reels	Ocultar la sugerencia de búsqueda en los reels
 Hides the search suggestion under a reel's caption, the magnifier with a question to look up, the one at the top of its comments and the search bar over reels you open from a profile.	Oculta la sugerencia de búsqueda bajo la descripción de un reel, la lupa con una pregunta para consultar, la que aparece arriba de sus comentarios y la barra de búsqueda sobre los reels que abres desde un perfil.
 Hide the top right buttons on opened videos	Ocultar los botones de arriba a la derecha en los videos abiertos
-Takes Search and the button next to it off the top of a video or reel you open. Back stays, and so does More at the bottom of the side buttons, where Download is.	Quita Buscar y el botón de al lado de la parte de arriba de un video o reel que abras. Atrás se queda, y también Más, abajo en los botones del costado, donde está Descargar.
+Takes Search and the button next to it off the top of a video or reel you open, and off the Reels tab. Back and Menu stay, and so does More at the bottom of the side buttons, where Download is.	Quita Buscar y el botón de al lado de la parte de arriba de un video o reel que abras, y de la pestaña Reels. Atrás y Menú se quedan, y también Más, abajo en los botones del costado, donde está Descargar.
 # context: switch title under Appearance; the button is Facebook's Messenger icon in the top bar of Home
 Hide the Messenger button	Ocultar el botón de Messenger
 # context: summary of that switch; the other top bar buttons move over to fill the space; Hushfacebook is the app's name

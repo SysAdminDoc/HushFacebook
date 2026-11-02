@@ -1753,7 +1753,7 @@ Takes away the line that says someone is typing a comment. Your own typing is a 
 Hide the search pill on reels	Reels'te arama önerisini gizle
 Hides the search suggestion under a reel's caption, the magnifier with a question to look up, the one at the top of its comments and the search bar over reels you open from a profile.	Bir reel'in açıklamasının altındaki arama önerisini, yani aranacak bir soru içeren büyüteci, yorumların en üstündekini ve bir profilden açtığınız reel'lerin üstündeki arama çubuğunu gizler.
 Hide the top right buttons on opened videos	Açılan videolarda sağ üstteki düğmeleri gizle
-Takes Search and the button next to it off the top of a video or reel you open. Back stays, and so does More at the bottom of the side buttons, where Download is.	Açtığın bir videonun ya da reel'in üstünden Ara'yı ve yanındaki düğmeyi kaldırır. Geri kalır, yan düğmelerin altındaki, İndir'in bulunduğu Diğer de kalır.
+Takes Search and the button next to it off the top of a video or reel you open, and off the Reels tab. Back and Menu stay, and so does More at the bottom of the side buttons, where Download is.	Açtığın bir videonun ya da reel'in üstünden ve Reels sekmesinden Ara'yı ve yanındaki düğmeyi kaldırır. Geri ve Menü kalır, yan düğmelerin altındaki, İndir'in bulunduğu Diğer de kalır.
 # context: switch title under Appearance; the button is Facebook's Messenger icon in the top bar of Home
 Hide the Messenger button	Messenger düğmesini gizle
 # context: summary of that switch; the other top bar buttons move over to fill the space; Hushfacebook is the app's name
