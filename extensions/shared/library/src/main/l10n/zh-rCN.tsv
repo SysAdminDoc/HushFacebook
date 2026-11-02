@@ -2438,3 +2438,5 @@ Hide the Join button on posts	隐藏帖子上的加入按钮
 Hides the Join button next to the group's name on posts from groups you haven't joined. A change shows on the posts drawn after it.	隐藏来自你未加入的小组的帖子中，小组名称旁边的加入按钮。更改会在之后加载的帖子上生效。
 Hide the Reels title	隐藏 Reels 标题
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	去掉 Reels 标签页顶部的 Reels 字样。旁边的按钮保留。
+Videos in search results wait for a tap	搜索结果中的视频等你点按
+Videos in search results don't start by themselves. Tap one to play it. Works with Tap to play on or off.	搜索结果中的视频不会自动播放。点按某个视频即可播放。无论“点按播放”开启还是关闭都有效。

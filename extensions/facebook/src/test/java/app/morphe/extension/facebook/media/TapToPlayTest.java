@@ -1243,6 +1243,44 @@ public class TapToPlayTest {
         }
     }
 
+    /** Answers a search results origin for [search] and a feed's for every other player. */
+    private static void searchPlayer(Object search) {
+        TapToPlay.origins = player -> player == search ? "search_results_page" : "newsfeed";
+    }
+
+    /** #363: a video in search results waits for a tap, with Tap to play off, and a feed video doesn't. */
+    @Test
+    public void searchVideosWaitWithTapToPlayOff() {
+        Object search = new Object();
+        searchPlayer(search);
+        Settings.TAP_TO_PLAY.save(false);
+        assertFalse("the switch doesn't start off", Settings.TAP_TO_PLAY_SEARCH.defaultValue);
+        assertTrue("a search video waited with the switch off", TapToPlay.allowStart(search, Trigger.BY_AUTOPLAY));
+        Settings.TAP_TO_PLAY_SEARCH.save(true);
+        try {
+            assertFalse("a search video played by itself", TapToPlay.allowStart(search, Trigger.BY_AUTOPLAY));
+            assertTrue("a feed video waited", TapToPlay.allowStart(new Object(), Trigger.BY_AUTOPLAY));
+            assertTrue("a media control was held", TapToPlay.allowStart(search, Trigger.BY_MEDIA_SESSION_CONTROLS));
+            Object next = new Object();
+            searchPlayer(next);
+            assertFalse(TapToPlay.allowStart(next, Trigger.BY_AUTOPLAY));
+            TapToPlayForTests.tapEnded(5);
+            assertTrue("a tap on the search video didn't play it", TapToPlay.allowStart(next, Trigger.BY_USER));
+            assertTrue(TapToPlay.armed(next));
+        } finally {
+            Settings.TAP_TO_PLAY_SEARCH.resetToDefault();
+        }
+    }
+
+    @Test
+    public void onlySearchOriginsCountAsSearch() {
+        assertTrue(TapToPlay.isSearchOrigin("search_results_page"));
+        assertTrue(TapToPlay.isSearchOrigin("SEARCH_RESULTS_BLOKS::feed"));
+        assertFalse("a reel opened from search follows reel rules", TapToPlay.isSearchOrigin("fb_shorts_viewer::search_results_page"));
+        assertFalse(TapToPlay.isSearchOrigin("newsfeed"));
+        assertFalse(TapToPlay.isSearchOrigin(null));
+    }
+
     @Test
     public void videoStoriesWaitWithTapToPlayOff() {
         Object story = new Object();

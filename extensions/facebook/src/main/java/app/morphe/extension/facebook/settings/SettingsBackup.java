@@ -302,6 +302,7 @@ public final class SettingsBackup {
             Settings.TAP_TO_PLAY,
             Settings.TAP_TO_PLAY_REELS_AFTER_FIRST,
             Settings.TAP_TO_PLAY_STORIES,
+            Settings.TAP_TO_PLAY_SEARCH,
             Settings.INLINE_FEED_VIDEO_CONTROLS,
             Settings.FEED_VIDEO_CAST_BUTTON,
             Settings.FEED_VIDEO_SEEK_BAR,

@@ -2443,3 +2443,5 @@ Hide the Join button on posts	Gönderilerde Katıl düğmesini gizle
 Hides the Join button next to the group's name on posts from groups you haven't joined. A change shows on the posts drawn after it.	Üyesi olmadığın gruplardan gelen gönderilerde grup adının yanındaki Katıl düğmesini gizler. Değişiklik, sonradan yüklenen gönderilerde görünür.
 Hide the Reels title	Reels başlığını gizle
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	Reels sekmesinin üstündeki Reels sözcüğünü kaldırır. Yanındaki düğmeler kalır.
+Videos in search results wait for a tap	Arama sonuçlarındaki videolar dokunuşu bekler
+Videos in search results don't start by themselves. Tap one to play it. Works with Tap to play on or off.	Arama sonuçlarındaki videolar kendiliğinden başlamaz. Oynatmak için birine dokun. Dokunarak oynat açıkken de kapalıyken de çalışır.

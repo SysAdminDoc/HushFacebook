@@ -315,6 +315,10 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.TAP_TO_PLAY_STORIES,
                         L10n.t("Video stories don't start by themselves. Touch and hold a story, then let go, to play it. "
                                 + "Works with Tap to play on or off.")));
+                // Asked at each start, so it applies to the next video that tries to play in search.
+                playback.addPreference(toggle(context, Settings.TAP_TO_PLAY_SEARCH,
+                        L10n.t("Videos in search results don't start by themselves. Tap one to play it. "
+                                + "Works with Tap to play on or off.")));
                 playback.addPreference(toggle(context, Settings.INLINE_FEED_VIDEO_CONTROLS,
                         L10n.t("Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Live videos and ads keep their own controls. "
                                 + "With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.")));

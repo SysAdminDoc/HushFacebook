@@ -2443,3 +2443,5 @@ Hide the Join button on posts	Beitreten-Button bei Beiträgen ausblenden
 Hides the Join button next to the group's name on posts from groups you haven't joined. A change shows on the posts drawn after it.	Blendet den Beitreten-Button neben dem Gruppennamen bei Beiträgen aus Gruppen aus, in denen du nicht Mitglied bist. Eine Änderung gilt für Beiträge, die danach geladen werden.
 Hide the Reels title	Reels-Titel ausblenden
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	Nimmt das Wort Reels oben im Reels-Tab weg. Die Buttons daneben bleiben.
+Videos in search results wait for a tap	Videos in Suchergebnissen warten auf einen Tipp
+Videos in search results don't start by themselves. Tap one to play it. Works with Tap to play on or off.	Videos in Suchergebnissen starten nicht von selbst. Tippe eines an, um es abzuspielen. Funktioniert mit „Zum Abspielen tippen“ an oder aus.

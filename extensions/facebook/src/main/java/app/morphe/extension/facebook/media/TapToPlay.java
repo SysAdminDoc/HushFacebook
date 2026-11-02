@@ -541,7 +541,16 @@ public final class TapToPlay {
                 if (!allowed) PictureInPicture.startHeld(player);
                 return allowed;
             }
-            if (!on()) {
+            // A player on a search results surface follows the rules below even with Tap to play off (#363).
+            boolean search = !on() && groot && player != null && searchWaits() && playsSearch(player);
+            if (search) {
+                path += " (search results)";
+                if (!searchLogged) {
+                    searchLogged = true;
+                    Logger.printDebug(() -> "Tap to play: videos in search results wait for a tap");
+                }
+            }
+            if (!on() && !search) {
                 // Starts going ahead with the switch off aren't a run of reels the person started.
                 reelRun = false;
                 heldReel = new WeakReference<>(null);
@@ -563,6 +572,33 @@ public final class TapToPlay {
 
     private static boolean on() {
         return Utils.settingsReady() && Settings.TAP_TO_PLAY.get();
+    }
+
+    private static volatile boolean searchLogged;
+
+    /** Whether videos in search results wait for a tap, with Tap to play on or off (#363). */
+    private static boolean searchWaits() {
+        return Utils.settingsReady() && Settings.TAP_TO_PLAY_SEARCH.get();
+    }
+
+    /** Whether [player] plays on a search results surface: its PlayerOrigin is one of search's. */
+    private static boolean playsSearch(Object player) {
+        Object origin = origins.of(player);
+        return origin != null && isSearchOrigin(origin.toString());
+    }
+
+    /**
+     * Whether a PlayerOrigin's text, "origin::subOrigin" or just "origin", is search's. Facebook's
+     * search origins are search_results_page, search_results_bloks, search_results_legacy and
+     * search_result, and the rest of the search screens (search_typeahead, search_nullstate) begin
+     * the same way. A reel or story opened from search carries search as its sub-origin and keeps
+     * the reel or story rules instead.
+     */
+    static boolean isSearchOrigin(@Nullable String origin) {
+        if (origin == null) return false;
+        int split = origin.indexOf("::");
+        String main = split < 0 ? origin : origin.substring(0, split);
+        return main.toLowerCase(java.util.Locale.US).startsWith("search");
     }
 
     /** Whether video stories wait for a tap of their own, with Tap to play on or off (#261). */

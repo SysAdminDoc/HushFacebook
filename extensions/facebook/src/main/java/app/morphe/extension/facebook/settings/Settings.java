@@ -1313,6 +1313,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_tap_to_play_stories", FALSE);
 
     /**
+     * A video in search results waits for a tap, by the same rules as Tap to play, whether that
+     * switch is on or off (#363). Off, search results follow Tap to play as before.
+     */
+    public static final BooleanSetting TAP_TO_PLAY_SEARCH =
+            new BooleanSetting("hushfacebook_tap_to_play_search", FALSE);
+
+    /**
      * A separate feed play/pause button. Native video taps still open fullscreen. Starts off. With
      * {@link #TAP_TO_PLAY} on it keeps Facebook's Autoplay setting as chosen, since the feed binds a
      * player to a video only while autoplay is allowed (#239).
