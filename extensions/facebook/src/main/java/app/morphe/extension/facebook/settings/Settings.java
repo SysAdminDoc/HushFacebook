@@ -2277,6 +2277,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_translucent_bars", FALSE);
 
     /**
+     * The tab bar at the bottom is drawn as a pill with round ends, a little smaller than the bar and
+     * a few dp above the bottom of the screen (#344, {@link app.morphe.extension.facebook.navigation.RoundedTabBar}).
+     * Asked as each frame of the main screen draws, so a change shows right away.
+     */
+    public static final BooleanSetting ROUNDED_TAB_BAR =
+            new BooleanSetting("hushfacebook_rounded_tab_bar", FALSE);
+
+    /**
      * Android's status bar goes from Facebook's main screen, a swipe down from the top edge showing
      * it for a moment (#124, {@link app.morphe.extension.facebook.navigation.HiddenStatusBar}).
      * Asked as the main screen resumes, gets its focus back or lays itself out, so a change shows

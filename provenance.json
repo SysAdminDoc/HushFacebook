@@ -1522,6 +1522,15 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/navigation/RoundedTabBar.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #344: Rounded tab bar. No patch of its own: the tab bar patch's lifecycle watcher gives each main screen a pre-draw listener that finds the bar the way See-through bars does, clips it to a round-ended outline around its row of tabs and scales it to 90% about a point that keeps the pill a few dp above the row's bottom. Off, paused or with the bar at the top it puts back the bar's own outline, clip, scale and pivot. See-through bars keeps its frost inside the pill with the same corners."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/ads/FeedAdPills.java"
       ],
       "origin": "original",

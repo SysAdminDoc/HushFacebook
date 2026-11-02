@@ -143,6 +143,7 @@ import app.morphe.extension.facebook.navigation.BottomTabBar;
 import app.morphe.extension.facebook.navigation.TopBarButtons;
 import app.morphe.extension.facebook.navigation.TabBarScrollAway;
 import app.morphe.extension.facebook.navigation.TranslucentBarsForTests;
+import app.morphe.extension.facebook.navigation.RoundedTabBarForTests;
 import app.morphe.extension.facebook.navigation.MarketplaceOnlyForTests;
 import app.morphe.extension.facebook.navigation.MarketplaceSellerProfileForTests;
 import app.morphe.extension.facebook.navigation.HiddenTabsForTests;
@@ -869,6 +870,7 @@ public class PausedHooksTest {
                 () -> TabBarScrollAway.topBarOffset("app_header_container", -120) == 0,
                 () -> TabBarScrollAway.topBarFade("app_header_container", 1f) == 0f,
                 TranslucentBarsForTests::makesABarSeeThrough,
+                RoundedTabBarForTests::roundsTheBar,
                 () -> {
                     View button = new View(RuntimeEnvironment.getApplication());
                     TopBarButtons.messengerButton(button);

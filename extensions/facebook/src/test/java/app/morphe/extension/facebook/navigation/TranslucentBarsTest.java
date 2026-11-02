@@ -231,7 +231,7 @@ public class TranslucentBarsTest {
         int[] origin = new int[2];
         screen.page.getLocationInWindow(origin);
         TranslucentBars.Frost frost = new TranslucentBars.Frost(screen.page, 47f);
-        frost.update(new Rect(0, 1440, 720, 1600), 0.5f, 1);
+        frost.update(new Rect(0, 1440, 720, 1600), 0.5f, 1, 0f);
         assertEquals("the fade is on the clipping node", 0.5f, frost.node.getAlpha(), 0f);
         assertEquals(1440 - origin[1], frost.node.getTop());
         assertEquals(1600 - origin[1], frost.node.getBottom());
@@ -239,6 +239,13 @@ public class TranslucentBarsTest {
         assertEquals(0, frost.blur.getTop());
         assertEquals(160, frost.blur.getBottom());
         assertEquals(720, frost.blur.getRight());
+        assertFalse("a square bar's frost is its box", frost.node.getClipToOutline());
+
+        // #344: a rounded tab bar's frost gets the pill's round ends, and loses them with the pill.
+        frost.update(new Rect(36, 1429, 684, 1530), 1f, 2, 50.5f);
+        assertTrue(frost.node.getClipToOutline());
+        frost.update(new Rect(0, 1440, 720, 1600), 1f, 3, 0f);
+        assertFalse(frost.node.getClipToOutline());
         frost.remove();
     }
 

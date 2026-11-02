@@ -115,6 +115,8 @@ A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the t
 See-through bars	Barras transparentes
 # context: description of that switch; the feed is the list of posts on Home, and blurred means frosted like glass
 The top bar and the tab bar turn see-through, so the feed shows through them as you scroll. On Android 12 and newer the feed behind them is blurred.	La barra superior y la barra de pestañas se vuelven transparentes, así el feed se ve a través de ellas mientras te desplazas. En Android 12 y versiones posteriores, el feed que queda detrás se ve difuminado.
+Rounded tab bar	Barra de pestañas redondeada
+With the tab bar at the bottom, it gets round ends and sits a little smaller, just above the bottom of the screen.	Con la barra de pestañas abajo, sus extremos se vuelven redondos y queda un poco más pequeña, justo encima del borde inferior de la pantalla.
 # context: switch title under Appearance; it keeps Facebook's dark mode on whatever Facebook's own Dark mode setting says
 Force dark mode	Forzar modo oscuro
 # context: description of that switch; on some tablets Facebook's own Settings page has no Dark mode row

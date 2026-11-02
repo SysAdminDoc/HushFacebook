@@ -119,6 +119,8 @@ A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the t
 See-through bars	透明列
 # context: description of that switch; the feed is the list of posts on Home, and blurred means frosted like glass
 The top bar and the tab bar turn see-through, so the feed shows through them as you scroll. On Android 12 and newer the feed behind them is blurred.	將頂端列與分頁列設為透明，捲動時可透過它們看到動態消息。Android 12 以上版本會模糊處理後方的動態消息。
+Rounded tab bar	圓角分頁列
+With the tab bar at the bottom, it gets round ends and sits a little smaller, just above the bottom of the screen.	分頁列在底部時，兩端變成圓形，尺寸稍小，位於螢幕底邊上方。
 # context: switch title under Appearance; it keeps Facebook's dark mode on whatever Facebook's own Dark mode setting says
 Force dark mode	強制深色模式
 # context: description of that switch; on some tablets Facebook's own Settings page has no Dark mode row

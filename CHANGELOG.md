@@ -5,6 +5,7 @@ Changes in each Hushfacebook version, newest first.
 ## Unreleased
 
 * **Facebook:** New `Hide the line over the comment box` under Comments and writing. The thin line along the top of the comment box you get when you open a post goes away. It starts off. (#344)
+* **Facebook:** New `Rounded tab bar` under Appearance, in Screen and motion. With the tab bar at the bottom it turns into a pill with round ends, a bit narrower and lifted just off the bottom of the screen. Works with `See-through bars` too, and it starts off. (#344)
 * **Facebook:** Search results get their Posts chip back, right after Reels, so you can see only posts for what you searched. It's on by default, and `Show Posts in search` under Search turns it off. (#339)
 * **Facebook:** `Search date range` now takes a day for each end too. Pick the months on Facebook's own wheels and the days on the two wheels under them, so a search can cover a few days instead of whole months. (#279)
 * **Facebook:** With `Search date range` on, the Date posted row in Filter Posts keeps showing the range you applied instead of going back to Any date, and the range stays put when you change another filter. (#279)

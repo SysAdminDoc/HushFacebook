@@ -315,6 +315,7 @@ final class SwitchLabels {
         if (setting == Settings.KEEP_TOP_BAR) return L10n.t("Keep the top bar on screen");
         if (setting == Settings.PHONE_LAYOUT_ON_BIG_SCREENS) return L10n.t("Phone layout on big screens");
         if (setting == Settings.TRANSLUCENT_BARS) return L10n.t("See-through bars");
+        if (setting == Settings.ROUNDED_TAB_BAR) return L10n.t("Rounded tab bar");
         if (setting == Settings.HIDE_STATUS_BAR) return L10n.t("Hide the status bar");
         if (setting == Settings.HIDE_MESSENGER_BUTTON) return L10n.t("Hide the Messenger button");
         if (setting == Settings.HIDE_MESSENGER_COUNT) return L10n.t("Hide the Messenger count");
