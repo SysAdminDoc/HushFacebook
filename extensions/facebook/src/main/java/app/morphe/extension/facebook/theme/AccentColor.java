@@ -68,7 +68,9 @@ public final class AccentColor {
         ORANGE("orange", 55, 60),
         RED("red", 30, 65),
         INDIGO("indigo", 292, 55),
-        AMBER("amber", 80, 60);
+        AMBER("amber", 80, 60),
+        /** The color the Custom choice holds ({@link Settings#ACCENT_CUSTOM}); its hue and chroma come from that color. */
+        CUSTOM("custom", 0, 0);
 
         /** What a settings file holds for this choice. It never changes once written. */
         public final String fileValue;
@@ -248,7 +250,7 @@ public final class AccentColor {
     @Nullable
     static Preset chosen() {
         Preset preset = Settings.ACCENT_COLOR.get();
-        if (preset == Preset.FACEBOOK || SettingsStatus.materialYouTheme()) return null;
+        if (preset == Preset.FACEBOOK || SettingsStatus.materialYouTheme() || !usable(preset)) return null;
         return preset;
     }
 
@@ -260,7 +262,7 @@ public final class AccentColor {
     static Preset pickedForMaterialYou() {
         if (!SettingsStatus.accentColor() || !Utils.settingsReady()) return null;
         Preset preset = Settings.ACCENT_COLOR.get();
-        return preset == Preset.FACEBOOK ? null : preset;
+        return preset == Preset.FACEBOOK || !usable(preset) ? null : preset;
     }
 
     /** {@code wallpaper} with {@code preset}'s tones as its accent and its own greys, or as it is for no preset. */
@@ -360,6 +362,7 @@ public final class AccentColor {
 
     /** The preset's tones, L* 0 to 100 in steps of ten, as a palette whose accent family is the ramp. */
     static synchronized TonePalette palette(Preset preset) {
+        if (preset == Preset.CUSTOM) return customPalette();
         TonePalette palette = PALETTES.get(preset);
         if (palette == null) {
             int[] ramp = new int[TonePalette.TONES.length];
@@ -370,6 +373,53 @@ public final class AccentColor {
             PALETTES.put(preset, palette);
         }
         return palette;
+    }
+
+    /** The custom color the last {@link #customPalette} was built from, and that palette. */
+    private static int customBuiltFor;
+    @Nullable
+    private static TonePalette customBuilt;
+
+    /**
+     * The Custom choice's tones: the hue and chroma of the saved color, as a preset's ramp has them.
+     * Without a saved color it is Facebook's own blue, so a caller that skipped {@link #usable} still
+     * gets a sensible ramp.
+     */
+    private static synchronized TonePalette customPalette() {
+        Integer picked = customColour();
+        int colour = picked == null ? 0xFF0866FF : picked;
+        if (customBuilt != null && customBuiltFor == colour) return customBuilt;
+        double[] lab = TonePalette.lab(colour);
+        double chroma = Math.hypot(lab[1], lab[2]);
+        double hue = Math.toDegrees(Math.atan2(lab[2], lab[1]));
+        int[] ramp = new int[TonePalette.TONES.length];
+        for (int i = 0; i < ramp.length; i++) {
+            ramp[i] = TonePalette.gamutColour(TonePalette.TONES[i], chroma, hue);
+        }
+        customBuilt = new TonePalette(new int[][]{ramp, ramp, ramp}, false);
+        customBuiltFor = colour;
+        return customBuilt;
+    }
+
+    /** {@code text} as the Custom choice keeps it: {@code #RRGGBB} in capitals, or null when it isn't six hex digits. */
+    @Nullable
+    public static String customStored(@Nullable String text) {
+        String hex = AmoledBackground.hex(text);
+        if (hex.length() != 6 || !AmoledBackground.looksLikeAColour(hex)) return null;
+        return "#" + hex.toUpperCase(java.util.Locale.ROOT);
+    }
+
+    /** The saved Custom color as an opaque colour, or null when none is saved. */
+    @Nullable
+    public static Integer customColour() {
+        String stored = customStored(Settings.ACCENT_CUSTOM.get());
+        return stored == null ? null : (int) (0xFF000000L | Long.parseLong(stored.substring(1), 16));
+    }
+
+    /** Whether {@code preset} changes anything: Facebook blue never does, Custom only with a color saved. */
+    static boolean usable(Preset preset) {
+        if (preset == Preset.FACEBOOK) return false;
+        return preset != Preset.CUSTOM || customColour() != null;
     }
 
     /** WCAG's contrast ratio of two opaque colours. */

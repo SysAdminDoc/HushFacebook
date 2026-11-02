@@ -183,7 +183,7 @@ final class HushfacebookPages {
         subheading(appearance, L10n.t("Colors and theme"));
         if (build.contains(PatchFamily.ACCENT_COLOR)) {
             // Colours Facebook asks for as each screen builds, so a change shows fully after a restart.
-            appearance.addPreference(accentRow(context, build.contains(PatchFamily.MATERIAL_YOU_THEME)));
+            appearance.addPreference(accentRow(page, context, build.contains(PatchFamily.MATERIAL_YOU_THEME)));
         }
         if (build.contains(PatchFamily.MARK_COLORS)) {
             // Colours Facebook asks for as each screen builds, so a change shows fully after a restart.

@@ -1661,6 +1661,19 @@ final class ValueRows {
             this.materialYou = materialYou;
         }
 
+        /** Opens the Custom color editor when Custom is picked (#355). Null where there is no page to show it on. */
+        @Nullable
+        Runnable customEditor;
+
+        @Override
+        protected void onDialogClosed(boolean positiveResult) {
+            super.onDialogClosed(positiveResult);
+            if (positiveResult && customEditor != null
+                    && AccentColor.Preset.CUSTOM.name().equals(getValue())) {
+                customEditor.run();
+            }
+        }
+
         @Override
         public void setValue(String value) {
             super.setValue(value);

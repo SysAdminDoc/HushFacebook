@@ -2445,3 +2445,8 @@ Hide the Reels title	Reels başlığını gizle
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	Reels sekmesinin üstündeki Reels sözcüğünü kaldırır. Yanındaki düğmeler kalır.
 Videos in search results wait for a tap	Arama sonuçlarındaki videolar dokunuşu bekler
 Videos in search results don't start by themselves. Tap one to play it. Works with Tap to play on or off.	Arama sonuçlarındaki videolar kendiliğinden başlamaz. Oynatmak için birine dokun. Dokunarak oynat açıkken de kapalıyken de çalışır.
+Custom color	Özel renk
+Preview	Önizleme
+Blue	Mavi
+Type a six-digit color code, like #2ECC71.	Altı haneli bir renk kodu yaz, örneğin #2ECC71.
+Pick Custom color again to change it.	Değiştirmek için Özel renk seçeneğini tekrar seç.

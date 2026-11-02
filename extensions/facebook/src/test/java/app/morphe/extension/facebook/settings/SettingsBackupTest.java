@@ -156,6 +156,11 @@ public class SettingsBackupTest {
         out.put("hushfacebook_header_picture",
                 "it names the picture at the top of Home, whose shrunk copy only this install holds. A settings file "
                         + "can't carry the picture itself, and the name alone would point at nothing on another phone.");
+        out.put("hushfacebook_accent_custom",
+                "it's the color code the Custom accent choice picked on this phone. A file that carries the accent "
+                        + "choice but not the code leaves Custom as Facebook's own blue.");
+        out.put("hushfacebook_logo_emoji",
+                "it's a personal touch for the top of Home on this phone, which a settings file doesn't need to copy.");
         out.put("hushfacebook_stories_tray_size",
                 "it is a width in dp picked for this phone's screen, which reads differently on another phone.");
         for (String count : new String[] {"friends", "followers", "following"}) {

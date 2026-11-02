@@ -2449,3 +2449,8 @@ Hide the Reels title	隱藏 Reels 標題
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	移除 Reels 分頁頂部的 Reels 字樣。旁邊的按鈕會保留。
 Videos in search results wait for a tap	搜尋結果中的影片等你點一下
 Videos in search results don't start by themselves. Tap one to play it. Works with Tap to play on or off.	搜尋結果中的影片不會自動播放。點一下某個影片即可播放。無論「點一下播放」開啟或關閉都有效。
+Custom color	自訂顏色
+Preview	預覽
+Blue	藍
+Type a six-digit color code, like #2ECC71.	請輸入六位顏色代碼，例如 #2ECC71。
+Pick Custom color again to change it.	再次選擇「自訂顏色」即可變更。

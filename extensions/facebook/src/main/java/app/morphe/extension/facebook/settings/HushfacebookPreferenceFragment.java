@@ -1940,7 +1940,12 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
      * are the setting's own names and its summary says what the choice does.
      */
     static AccentRow accentRow(Context context, boolean materialYou) {
+        return accentRow(null, context, materialYou);
+    }
+
+    static AccentRow accentRow(@Nullable HushfacebookPreferenceFragment page, Context context, boolean materialYou) {
         AccentRow row = new AccentRow(context, materialYou);
+        if (page != null) row.customEditor = () -> AccentCustomEditor.show(page, context);
         row.setKey(Settings.ACCENT_COLOR.key);
         row.setTitle(L10n.t("Accent color"));
         row.setDialogTitle(L10n.t("Accent color"));
@@ -1950,7 +1955,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         CharSequence[] entries = new CharSequence[choices.length];
         CharSequence[] values = new CharSequence[choices.length];
         for (int i = 0; i < choices.length; i++) {
-            entries[i] = accentLabel(choices[i], materialYou);
+            entries[i] = choices[i] == AccentColor.Preset.CUSTOM ? L10n.t("Custom color") : accentLabel(choices[i], materialYou);
             values[i] = choices[i].name();
         }
         row.setEntries(entries);
@@ -1978,6 +1983,10 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
                 return L10n.t("Indigo");
             case AMBER:
                 return L10n.t("Amber");
+            case CUSTOM: {
+                String saved = AccentColor.customStored(Settings.ACCENT_CUSTOM.savedValue());
+                return saved == null ? L10n.t("Custom color") : L10n.isolate(saved);
+            }
             default:
                 return materialYou ? L10n.t("Wallpaper accent") : L10n.t("Facebook blue");
         }
@@ -1988,6 +1997,11 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
      * stands in for the wallpaper's accent, and Facebook blue leaves the wallpaper's (#272).
      */
     static String accentSummary(AccentColor.Preset accent, boolean materialYou) {
+        String base = accentSummaryBase(accent, materialYou);
+        return accent == AccentColor.Preset.CUSTOM ? base + " " + L10n.t("Pick Custom color again to change it.") : base;
+    }
+
+    private static String accentSummaryBase(AccentColor.Preset accent, boolean materialYou) {
         if (materialYou) {
             if (accent == AccentColor.Preset.FACEBOOK) {
                 return L10n.t("Material You uses your wallpaper's accent. Pick a color to use it instead.");
