@@ -356,6 +356,10 @@ class SuggestedStoriesShapesTest {
         assertTrue(declares(SUGGESTED_STUB, listOf("Ljava/lang/Object;"), "Ljava/lang/Object;"))
         assertTrue(declares(LABEL_STUB, listOf("Ljava/lang/Object;"), "Ljava/lang/Object;"))
         assertTrue(declares(TYPE_STUB, listOf("Ljava/lang/Object;"), "Ljava/lang/Object;"))
+        assertTrue(declares(BUCKET_ID_STUB, listOf("Ljava/lang/Object;"), "Ljava/lang/Object;"))
+        assertTrue(declares(EXPIRES_STUB, listOf("Ljava/lang/Object;", "J"), "Ljava/lang/Object;"))
+        assertEquals(ID_FIELD, ExtensionDex.stringConstant(SUGGESTED_STORIES, "ID_FIELD"))
+        assertEquals(EXPIRATION_FIELD, ExtensionDex.stringConstant(SUGGESTED_STORIES, "EXPIRATION_FIELD"))
         assertEquals(BUCKET_TYPE_FIELD, ExtensionDex.stringConstant(SUGGESTED_STORIES, "BUCKET_TYPE_FIELD"))
         val cards = listOf("PYMK_TYPE", "PYMK_PROFILE_FORWARD_TYPE", "CONTACT_IMPORTER_TYPE")
             .map { ExtensionDex.stringConstant(SUGGESTED_STORIES, it) }

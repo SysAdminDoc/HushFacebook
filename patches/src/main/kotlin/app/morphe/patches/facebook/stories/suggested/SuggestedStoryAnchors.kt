@@ -89,6 +89,22 @@ internal const val OWNER_FIELD = "story_bucket_owner"
 /** The method a tree model's interface declares for its GraphQL type, "User" or "Page" for an owner. */
 internal const val TYPE_NAME = "getTypeName"
 
+/*
+ * Stories watched with View stories anonymously on, read from 585 (2026-11-01, issue #218). The
+ * servers never hear of those views, so [SEEN_FIELD] comes back false and Hide seen stories looks a
+ * bucket up on the phone instead, by its id and when it expires. The bucket interface (585 LX/053g;,
+ * v7a LX/053m;) declares getId(), which the tree class answers with getCachedNullableString of
+ * [ID_FIELD]'s key, and a ()J method (585 D3I, v7a D3G) it answers with TreeJNI.getTimeValue of
+ * [EXPIRATION_FIELD]'s key.
+ */
+
+/** The GraphQL fields a bucket is looked up by on the phone: its id, and when its newest story expires. */
+internal const val ID_FIELD = "id"
+internal const val EXPIRATION_FIELD = "expiration_time"
+
+/** The id accessor a tree model's interface declares, a kept name. */
+internal const val GET_ID = "getId"
+
 internal const val IMMUTABLE_LIST = "Lcom/google/common/collect/ImmutableList;"
 
 private fun Method.body(): List<Instruction> = implementation?.instructions?.toList().orEmpty()
@@ -188,6 +204,40 @@ internal fun isTreeEnumReader(method: Method, field: String): Boolean {
             val call = instruction.methodReference()
             instruction.opcode == Opcode.INVOKE_VIRTUAL && call != null && call.name == "getCachedEnum" &&
                 call.returnType == "Ljava/lang/Enum;" && call.parameterTypes.map { it.toString() } == listOf("I", "Ljava/lang/Enum;")
+        }
+}
+
+/**
+ * Whether [method] answers the tree's time [field]: an instance method with no arguments and a long
+ * back, loading the field's key and reading it with getTimeValue(int), TreeJNI's on 585. Only the
+ * call's name and shape count, as for an enum.
+ */
+internal fun isTreeTimeReader(method: Method, field: String): Boolean {
+    if (method.isStatic() || method.parameterTypes.isNotEmpty() || method.returnType != "J") return false
+    val body = method.body()
+    val key = treeFieldKey(field)
+    return body.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == key } &&
+        body.any { instruction ->
+            val call = instruction.methodReference()
+            instruction.opcode == Opcode.INVOKE_VIRTUAL && call != null && call.name == "getTimeValue" &&
+                call.returnType == "J" && call.parameterTypes.map { it.toString() } == listOf("I")
+        }
+}
+
+/**
+ * Whether [method] answers the tree's string [field]: an instance method with no arguments and a
+ * String back, loading the field's key and reading it with getCachedNullableString(int), which names
+ * the tree class's own superclass, so only its name and shape count.
+ */
+internal fun isTreeStringReader(method: Method, field: String): Boolean {
+    if (method.isStatic() || method.parameterTypes.isNotEmpty() || method.returnType != "Ljava/lang/String;") return false
+    val body = method.body()
+    val key = treeFieldKey(field)
+    return body.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == key } &&
+        body.any { instruction ->
+            val call = instruction.methodReference()
+            instruction.opcode == Opcode.INVOKE_VIRTUAL && call != null && call.name == "getCachedNullableString" &&
+                call.returnType == "Ljava/lang/String;" && call.parameterTypes.map { it.toString() } == listOf("I")
         }
 }
 

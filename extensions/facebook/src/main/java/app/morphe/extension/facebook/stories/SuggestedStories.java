@@ -46,7 +46,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * SHARED_PAGE_STORY or one of a profile-style Page's two (#313). A seen bucket is one whose is_bucket_seen_by_viewer flag is true, the
  * flag that greys the tray's ring, and which View stories anonymously sets on this phone for the
  * stories it watches (#317). The cards above aren't stories, and neither is the Add to story tile,
- * so none of them goes as seen.
+ * so none of them goes as seen. That flag comes from the servers, which never hear of a story
+ * watched with View stories anonymously on, so a bucket whose flag is false also goes as seen when
+ * it was watched to the end on this phone after its newest story was posted, by its id and
+ * expiration_time ({@link StorySeen#trayWatchedHere}, #218).
  *
  * <p>Nothing else counts, so a friend's story, a Page you follow, your own story, a friend
  * request and anything that isn't a bucket or whose type isn't one of those stay.
@@ -56,7 +59,7 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * {@link #skipPromptCards} answers that question first.
  *
  * <p>The bucket interface, its accessors and Facebook's label helper are Redex names that change
- * every build, so the patch fills in the seven stubs below. It fails open: switch off, a pause,
+ * every build, so the patch fills in the nine stubs below. It fails open: switch off, a pause,
  * settings that aren't ready, a bucket it can't read, a list it can't copy, or any failure in
  * here, and the tray keeps every bucket Facebook sent.
  */
@@ -91,6 +94,10 @@ public final class SuggestedStories {
     static final String OWNER_FIELD = "story_bucket_owner";
     static final String SEEN_FIELD = "is_bucket_seen_by_viewer";
     static final String PAGE_OWNER = "Page";
+
+    /** The fields a bucket watched on this phone is looked up by: its id, and when it expires. */
+    static final String ID_FIELD = "id";
+    static final String EXPIRATION_FIELD = "expiration_time";
 
     /** What a bucket counts as. Only the first five can leave the tray, each behind its switch. */
     static final String SUGGESTED = "suggested";
@@ -152,6 +159,18 @@ public final class SuggestedStories {
         default Object ownerType(Object bucket) {
             return UNPATCHED;
         }
+
+        /** The bucket's id, null for none, or {@link #UNPATCHED}. */
+        @Nullable
+        default Object id(Object bucket) {
+            return UNPATCHED;
+        }
+
+        /** The bucket's expiration_time in seconds since 1970 as a Long, or {@link #UNPATCHED}. */
+        @Nullable
+        default Object expires(Object bucket) {
+            return UNPATCHED;
+        }
     }
 
     static final Buckets PATCHED = new Buckets() {
@@ -194,6 +213,18 @@ public final class SuggestedStories {
         @Override
         public Object ownerType(Object bucket) {
             return SuggestedStories.ownerType(bucket);
+        }
+
+        @Nullable
+        @Override
+        public Object id(Object bucket) {
+            return SuggestedStories.bucketId(bucket);
+        }
+
+        @Nullable
+        @Override
+        public Object expires(Object bucket) {
+            return SuggestedStories.expires(bucket, 0L);
         }
     };
 
@@ -458,8 +489,9 @@ public final class SuggestedStories {
     }
 
     /**
-     * Whether you've watched a bucket's stories, by its is_bucket_seen_by_viewer flag. The Add to
-     * story tile is never watched, and a flag it can't read says no. Never throws.
+     * Whether you've watched a bucket's stories, by its is_bucket_seen_by_viewer flag, or when that's
+     * false, by {@link #watchedHere}. The Add to story tile is never watched, and a flag it can't read
+     * says no. Never throws.
      */
     static boolean watched(Object bucket, Buckets access) {
         try {
@@ -481,7 +513,34 @@ public final class SuggestedStories {
         }
         if (!(seen instanceof Boolean)) return false;
         HookStatus.bound(FamilyNames.SUGGESTED_STORIES, "tray bucket#" + SEEN_FIELD);
-        return (Boolean) seen;
+        return (Boolean) seen || watchedHere(bucket, access);
+    }
+
+    /**
+     * Whether a bucket the servers send as unwatched was watched to the end on this phone with View
+     * stories anonymously on, which keeps them from hearing of it, so its flag stays false after
+     * every refresh and restart (#218). Its id and expiration_time are read only when something is
+     * kept to look them up in. Never throws.
+     */
+    static boolean watchedHere(Object bucket, Buckets access) {
+        if (!StorySeen.keepsTrayWatched()) return false;
+        Object id;
+        Object expires;
+        try {
+            id = access.id(bucket);
+            expires = access.expires(bucket);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "bucket id and expiration", failure);
+            return false;
+        }
+        if (id == UNPATCHED || expires == UNPATCHED) {
+            HookStatus.missingMember(FamilyNames.SUGGESTED_STORIES, "method", "tray bucket",
+                    id == UNPATCHED ? ID_FIELD : EXPIRATION_FIELD);
+            return false;
+        }
+        if (!(id instanceof String) || !(expires instanceof Long)) return false;
+        HookStatus.bound(FamilyNames.SUGGESTED_STORIES, "tray bucket#" + EXPIRATION_FIELD);
+        return StorySeen.trayWatchedHere((String) id, (Long) expires);
     }
 
     /**
@@ -569,6 +628,25 @@ public final class SuggestedStories {
      * may be passed.
      */
     public static Object ownerType(Object bucket) {
+        return UNPATCHED;
+    }
+
+    /**
+     * Injection point, filled in by the patch: the bucket's id, through the interface's getId().
+     * Only an item {@link #isBucket} took may be passed.
+     */
+    public static Object bucketId(Object bucket) {
+        return UNPATCHED;
+    }
+
+    /**
+     * Injection point, filled in by the patch: the bucket's expiration_time, in seconds since 1970,
+     * as a Long. The patch replaces this body with a call of the interface's accessor, the one its
+     * tree class answers with that field. That long takes a register pair, and {@code spare} is
+     * there so the filled body can use its pair: compiled, this stub keeps no register of its own.
+     * Only an item {@link #isBucket} took may be passed.
+     */
+    public static Object expires(Object bucket, long spare) {
         return UNPATCHED;
     }
 

@@ -69,6 +69,17 @@ class SuggestedStoriesFixtureTest {
         ),
     )
 
+    /**
+     * The bucket interface's expiration_time accessor, per build and then by ABI, which Hide seen
+     * stories looks a bucket watched on this phone up by, with getId() (#218).
+     */
+    private val expectedExpires = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to "D3I",
+            "armeabi-v7a" to "D3G",
+        ),
+    )
+
     /** The tray parser's registers and the register of its bucket list, per build (issues #313 and #317). */
     private val expectedParser = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to (7 to 5),
@@ -157,6 +168,8 @@ class SuggestedStoriesFixtureTest {
                     tray.typeEnum in typeEnums.map { it.type })
                 assertEquals("${bundle.name}: the seen flag, the owner accessor and the owner interface",
                     Triple(seen, owner, ownerType), Triple(tray.seen, tray.owner, tray.ownerType))
+                assertEquals("${bundle.name}: getId() and the expiration_time accessor",
+                    true to expectedExpires.pin(version, bundle), tray.id to tray.expires)
                 assertTrue("${bundle.name}: ${tray.bucket} isn't among the receiver's flags", tray.bucket in interfaces)
                 assertTrue("${bundle.name}: ${tray.bucket} isn't public",
                     AccessFlags.PUBLIC.isSet(support.getValue(tray.bucket).accessFlags))
@@ -195,6 +208,11 @@ class SuggestedStoriesFixtureTest {
                 assertEquals("${tray.bucket}->$owner()$ownerType", reference(ownerStub[1]))
                 assertEquals(Opcode.IF_EQZ, ownerStub[3].opcode)
                 assertEquals("$ownerType->$TYPE_NAME()Ljava/lang/String;", reference(ownerStub[4]))
+                assertEquals("${tray.bucket}->$GET_ID()Ljava/lang/String;", reference(first(BUCKET_ID_STUB)[1]))
+                val expiresStub = first(EXPIRES_STUB)
+                assertEquals("${tray.bucket}->${tray.expires}()J", reference(expiresStub[1]))
+                assertEquals(Opcode.MOVE_RESULT_WIDE, expiresStub[2].opcode)
+                assertEquals("Ljava/lang/Long;->valueOf(J)Ljava/lang/Long;", reference(expiresStub[3]))
                 checked += version
             }
         }

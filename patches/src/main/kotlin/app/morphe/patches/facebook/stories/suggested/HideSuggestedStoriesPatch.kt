@@ -38,6 +38,8 @@ internal const val TYPE_STUB = "bucketType"
 internal const val COPY_STUB = "immutableCopy"
 internal const val SEEN_STUB = "seen"
 internal const val OWNER_TYPE_STUB = "ownerType"
+internal const val BUCKET_ID_STUB = "bucketId"
+internal const val EXPIRES_STUB = "expires"
 
 /** The extension method each tray fetch asks before it sets [SKIP_PROMPT_CARDS]. */
 internal const val SKIP_PROMPT_CARDS_HOOK = "$SUGGESTED_STORIES->skipPromptCards(Z)Z"
@@ -61,6 +63,9 @@ internal class TrayBuckets(
     /** The interface's method answering the bucket's owner and the owner interface it answers, or null. */
     val owner: String? = null,
     val ownerType: String? = null,
+    /** Whether the interface's getId() answers the bucket's id, and its method answering expiration_time, or null. */
+    val id: Boolean = false,
+    val expires: String? = null,
 )
 
 /**
@@ -162,6 +167,8 @@ internal fun BytecodePatchContext.trayBuckets(): TrayBuckets {
     val typed = mutableSetOf<String>()
     val watched = mutableSetOf<String>()
     val owned = mutableSetOf<String>()
+    val identified = mutableSetOf<String>()
+    val expiring = mutableSetOf<String>()
     val helpers = mutableListOf<Method>()
     // A tree class implements a bucket interface, and a label helper answers the label enum.
     classDefForEachReferencing(types = interfaces + label.type) { classDef ->
@@ -176,6 +183,8 @@ internal fun BytecodePatchContext.trayBuckets(): TrayBuckets {
             classDef.methods.filter { isTreeEnumReader(it, BUCKET_TYPE_FIELD) }.mapTo(typed) { "$bucket->${it.name}()${it.returnType}" }
             classDef.methods.filter { isTreeFlagReader(it, SEEN_FIELD) }.mapTo(watched) { "$bucket->${it.name}()Z" }
             treeNodeAnswers(classDef, OWNER_FIELD).mapTo(owned) { "$bucket->${it.name}()${it.returnType}" }
+            classDef.methods.filter { isTreeStringReader(it, ID_FIELD) }.mapTo(identified) { "$bucket->${it.name}()${it.returnType}" }
+            classDef.methods.filter { isTreeTimeReader(it, EXPIRATION_FIELD) }.mapTo(expiring) { "$bucket->${it.name}()J" }
         }
         classDef.methods.filterTo(helpers) { isLabelHelper(it, interfaces, label.type) }
     }
@@ -200,6 +209,10 @@ internal fun BytecodePatchContext.trayBuckets(): TrayBuckets {
     val owner = declared.filter {
         "${flag.definingClass}->${it.name}()${it.returnType}" in owned && classDefByOrNull(it.returnType)?.let(::namesItsType) == true
     }.singleOrNull()
+    // A bucket watched with View stories anonymously on is looked up by these two (#218).
+    val id = "${flag.definingClass}->$GET_ID()Ljava/lang/String;" in identified &&
+        declared.any { it.name == GET_ID && it.returnType == "Ljava/lang/String;" }
+    val expires = declared.filter { it.returnType == "J" && "${flag.definingClass}->${it.name}()J" in expiring }.singleOrNull()
 
     requirePublic(classDefBy(flag.definingClass), "the bucket interface")
     requirePublic(classDefBy(helper.definingClass), "the class of the label helper")
@@ -214,7 +227,7 @@ internal fun BytecodePatchContext.trayBuckets(): TrayBuckets {
 
     return TrayBuckets(
         constructor, list, flag.definingClass, flag.name, type.name, type.returnType, helper, label.type,
-        seen?.name, owner?.name, owner?.returnType,
+        seen?.name, owner?.name, owner?.returnType, id, expires?.name,
     )
 }
 
@@ -243,15 +256,16 @@ private fun requirePublic(classDef: ClassDef, what: String) {
 
 /**
  * Fills the extension's stubs: whether an item is a bucket, its type, its suggested flag, its first
- * label, an ImmutableList of what's kept, and, when the build has them, its seen flag and its owner's
- * type name. Each uses only its parameter register, so the stub's own register count doesn't matter.
+ * label, an ImmutableList of what's kept, and, when the build has them, its seen flag, its owner's
+ * type name, its id and its expiration_time. Each uses only its parameter registers, so the stub's
+ * own register count doesn't matter.
  */
 internal fun BytecodePatchContext.fillBucketStubs(tray: TrayBuckets) {
     val filter = mutableClassDefBy(SUGGESTED_STORIES)
-    fun stub(name: String, returnType: String, parameter: String) = filter.methods.singleOrNull {
+    fun stub(name: String, returnType: String, vararg parameters: String) = filter.methods.singleOrNull {
         it.name == name && it.returnType == returnType && AccessFlags.STATIC.isSet(it.accessFlags) &&
-            it.parameterTypes.map { type -> type.toString() } == listOf(parameter)
-    } ?: throw PatchException("$SUGGESTED_STORIES has no static $returnType $name($parameter)")
+            it.parameterTypes.map { type -> type.toString() } == parameters.toList()
+    } ?: throw PatchException("$SUGGESTED_STORIES has no static $returnType $name(${parameters.joinToString("")})")
 
     val helper = tray.labelHelper
     stub(IS_BUCKET_STUB, "Z", "Ljava/lang/Object;").addInstructions(
@@ -322,6 +336,31 @@ internal fun BytecodePatchContext.fillBucketStubs(tray: TrayBuckets) {
                 invoke-interface { p0 }, ${tray.ownerType}->$TYPE_NAME()Ljava/lang/String;
                 move-result-object p0
                 :none
+                return-object p0
+            """,
+        )
+    }
+    if (tray.id) {
+        stub(BUCKET_ID_STUB, "Ljava/lang/Object;", "Ljava/lang/Object;").addInstructions(
+            0,
+            """
+                check-cast p0, ${tray.bucket}
+                invoke-interface { p0 }, ${tray.bucket}->$GET_ID()Ljava/lang/String;
+                move-result-object p0
+                return-object p0
+            """,
+        )
+    }
+    if (tray.expires != null) {
+        // The long goes in the pair of the stub's spare long parameter, which nothing reads.
+        stub(EXPIRES_STUB, "Ljava/lang/Object;", "Ljava/lang/Object;", "J").addInstructions(
+            0,
+            """
+                check-cast p0, ${tray.bucket}
+                invoke-interface { p0 }, ${tray.bucket}->${tray.expires}()J
+                move-result-wide p1
+                invoke-static { p1, p2 }, Ljava/lang/Long;->valueOf(J)Ljava/lang/Long;
+                move-result-object p0
                 return-object p0
             """,
         )

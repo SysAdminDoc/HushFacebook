@@ -24,6 +24,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** `Hold a feed video for 2x` can stay at 2x now. Pull down before you let go, and tap the video when you want its old speed back.
 * **Facebook:** A post a link opens stays at the top of Home even when Facebook sends it as an ad, which it does for a boosted page post. The ad switches used to hide it, and the suggested post after it showed in its place. (#306)
 * **Facebook:** `Hide "Related posts" under posts` also takes the list of posts Facebook shows after the comments when you open a post on its own, and that post stops asking Facebook for the list. (#231)
+* **Facebook:** With `View stories anonymously` on, `Hide seen stories` also takes out a story you watched to the end on this phone. Facebook never hears about those views, so it kept calling them unseen and they stayed in the tray. The story comes back when that person posts a new one. (#218)
 
 ## 0.20.0 (2026-11-01)
 

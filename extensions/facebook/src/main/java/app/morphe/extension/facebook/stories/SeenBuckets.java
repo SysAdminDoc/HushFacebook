@@ -92,6 +92,11 @@ final class SeenBuckets {
         return entry.newestStory;
     }
 
+    /** When [bucketId] was last watched to the end, in milliseconds since 1970, or -1 when it isn't kept. */
+    synchronized long watchedAt(String bucketId, long now) {
+        return newestWatched(bucketId, now) == null ? -1 : buckets.get(bucketId).watchedAt;
+    }
+
     /** Remembers that [bucketId] was watched through [newestStory], and drops the oldest past the limit. */
     synchronized void watched(String bucketId, String newestStory, long now) {
         load(now);
