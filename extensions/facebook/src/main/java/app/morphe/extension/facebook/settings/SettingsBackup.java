@@ -174,6 +174,7 @@ public final class SettingsBackup {
             Settings.TRANSLATE_POST_LINK,
             Settings.TRANSLATE_POSTS_BY_THEMSELVES,
             Settings.SEE_WHO_SHARED,
+            Settings.PHOTO_CAROUSEL,
             Settings.TURN_OFF_AUTO_TRANSLATION,
             Settings.HIDE_FEEDS_HEADER,
             Settings.HIDE_SPONSORED_STORIES,

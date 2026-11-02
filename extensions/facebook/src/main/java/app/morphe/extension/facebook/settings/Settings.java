@@ -2517,6 +2517,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_see_who_shared", FALSE);
 
     /**
+     * A post with several photos or videos shows them in the row Facebook swipes through, one at a
+     * time, instead of a grid ({@link app.morphe.extension.facebook.feed.PhotoCarousel}). A change
+     * shows on the posts drawn after it.
+     */
+    public static final BooleanSetting PHOTO_CAROUSEL =
+            new BooleanSetting("hushfacebook_photo_carousel", FALSE);
+
+    /**
      * Posts and reel captions keep the language they were written in, with Facebook's See
      * translation link under them ({@link app.morphe.extension.facebook.feed.AutoTranslation}). A
      * change shows on the posts and reels drawn after it.

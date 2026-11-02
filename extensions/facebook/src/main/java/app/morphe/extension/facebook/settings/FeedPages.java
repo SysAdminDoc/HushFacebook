@@ -322,6 +322,12 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.SEE_WHO_SHARED,
                         L10n.t("Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.")));
             }
+            if (build.contains(PatchFamily.PHOTO_CAROUSEL)) {
+                // Asked as each post is drawn, so a change shows on the posts drawn after it.
+                feed.addPreference(toggle(context, Settings.PHOTO_CAROUSEL,
+                        L10n.t("A post with several photos or videos shows them in a row you swipe through, one at a "
+                                + "time, instead of a grid.")));
+            }
             if (build.contains(PatchFamily.AUTO_TRANSLATION)) {
                 // Each post and reel reads the answer as it's drawn, so a change shows on the next ones.
                 feed.addPreference(toggle(context, Settings.TURN_OFF_AUTO_TRANSLATION,

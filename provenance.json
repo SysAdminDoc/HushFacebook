@@ -904,6 +904,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/carousel/**"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: a photo carousel for posts with several photos or videos. In Facebook 585 one static (int) method names each album layout's class, MultiMediaAttachmentHScrollPlugin among them, and a static (props, int) boolean of the same class switches on the layout to say whether it applies. The patch finds the name table by that class name, reads the swipeable row's case from the table and the switch, and hands the answer of the row's feed check to the extension before Facebook tests it. It also puts a call at the start of the check that hands the extension the layout's name, so the three layouts a poster picks answer no while the switch is on."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/posttext/**"
       ],
       "origin": "original",

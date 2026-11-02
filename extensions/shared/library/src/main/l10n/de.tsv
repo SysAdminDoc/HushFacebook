@@ -1000,6 +1000,9 @@ Posts in the feed show all of their text, so there's no See more to tap.	Beiträ
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Wer hat geteilt
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Fügt dem Menü eines Beitrags Wer hat geteilt hinzu. Es öffnet die Facebook-Liste der Personen, die ihn geteilt haben.
+# context: switch title under News feed; a post's photos and videos shown one at a time in a row you swipe, instead of a grid
+Photo carousel	Fotokarussell
+A post with several photos or videos shows them in a row you swipe through, one at a time, instead of a grid.	Ein Beitrag mit mehreren Fotos oder Videos zeigt sie in einer Reihe, durch die du wischst, eins nach dem anderen statt in einem Raster.
 # context: message shown when tapping that row doesn't open the list
 Couldn't open the list of shares.	Die Liste der Teilungen konnte nicht geöffnet werden.
 # context: switch title under News feed; the Feeds header is the row at the top of the Feeds tab with Feeds, the menu and search, and the filters under it, All, Favorites, Friends, Groups and Pages

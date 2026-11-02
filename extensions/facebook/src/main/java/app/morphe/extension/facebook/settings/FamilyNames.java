@@ -35,6 +35,7 @@ public final class FamilyNames {
     public static final String FULL_POST_TEXT = "Show full post text";
     public static final String TRANSLATE_POSTS = "Translate posts";
     public static final String WHO_SHARED = "See who shared";
+    public static final String PHOTO_CAROUSEL = "Photo carousel";
     public static final String AUTO_TRANSLATION = "Turn off auto-translation";
     public static final String FEEDS_HEADER = "Hide the Feeds header";
     public static final String STORIES_TRAY = "Hide Stories tray";

@@ -1004,6 +1004,9 @@ Posts in the feed show all of their text, so there's no See more to tap.	動態�
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	查看誰分享了
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	在貼文選單中加入「查看誰分享了」，開啟 Facebook 上分享這則貼文的使用者清單。
+# context: switch title under News feed; a post's photos and videos shown one at a time in a row you swipe, instead of a grid
+Photo carousel	相片輪播
+A post with several photos or videos shows them in a row you swipe through, one at a time, instead of a grid.	含有多張相片或影片的貼文會以可滑動的橫列逐張顯示，而不是網格。
 # context: message shown when tapping that row doesn't open the list
 Couldn't open the list of shares.	無法開啟分享清單。
 # context: switch title under News feed; the Feeds header is the row at the top of the Feeds tab with Feeds, the menu and search, and the filters under it, All, Favorites, Friends, Groups and Pages

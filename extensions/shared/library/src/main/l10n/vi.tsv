@@ -1000,6 +1000,9 @@ Posts in the feed show all of their text, so there's no See more to tap.	Bài vi
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Xem ai đã chia sẻ
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Thêm Xem ai đã chia sẻ vào menu của bài viết. Mục này mở danh sách của Facebook gồm những người đã chia sẻ bài viết.
+# context: switch title under News feed; a post's photos and videos shown one at a time in a row you swipe, instead of a grid
+Photo carousel	Băng chuyền ảnh
+A post with several photos or videos shows them in a row you swipe through, one at a time, instead of a grid.	Bài viết có nhiều ảnh hoặc video sẽ hiển thị chúng trong một hàng để bạn vuốt qua từng cái một, thay vì dạng lưới.
 # context: message shown when tapping that row doesn't open the list
 Couldn't open the list of shares.	Không mở được danh sách lượt chia sẻ.
 # context: switch title under News feed; the Feeds header is the row at the top of the Feeds tab with Feeds, the menu and search, and the filters under it, All, Favorites, Friends, Groups and Pages

@@ -394,6 +394,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean photoCarousel() {
+        return false;
+    }
+
     public static boolean autoTranslation() {
         return false;
     }

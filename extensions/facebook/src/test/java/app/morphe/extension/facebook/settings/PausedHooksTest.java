@@ -88,6 +88,7 @@ import app.morphe.extension.facebook.feed.FeedsHeader;
 import app.morphe.extension.facebook.feed.FollowingHome;
 import app.morphe.extension.facebook.feed.GroupPosts;
 import app.morphe.extension.facebook.feed.HomeBack;
+import app.morphe.extension.facebook.feed.PhotoCarousel;
 import app.morphe.extension.facebook.feed.ReturnRefresh;
 import app.morphe.extension.facebook.feed.FeedGuardForTests;
 import app.morphe.extension.facebook.feed.FullPostText;
@@ -528,6 +529,10 @@ public class PausedHooksTest {
         }));
         // A shared post's menu gets the See who shared row below Facebook's.
         probes.put(PatchFamily.WHO_SHARED, Collections.singletonList(WhoSharedForTests::addsARow));
+        // The swipeable row's no from its feed check is answered as a yes, and a layout the poster
+        // picked answers that it doesn't apply.
+        probes.put(PatchFamily.PHOTO_CAROUSEL, Arrays.asList(() -> PhotoCarousel.carousel(0),
+                () -> PhotoCarousel.skipLayout("com.facebook.feedplugins.attachments.album.PhotoLayoutFramePlugin")));
         // A post marked for automatic translation reads as one to translate on request, and the
         // reels footer hears a caption can't be translated by itself, so it asks for nothing.
         probes.put(PatchFamily.AUTO_TRANSLATION, Arrays.asList(AutoTranslationForTests::keepsThePost,

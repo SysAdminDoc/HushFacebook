@@ -79,6 +79,8 @@ public enum PatchFamily {
             Settings.TRANSLATE_POST_LINK, Settings.TRANSLATE_POSTS_BY_THEMSELVES),
     WHO_SHARED(FamilyNames.WHO_SHARED, "whoShared", null,
             Settings.SEE_WHO_SHARED),
+    PHOTO_CAROUSEL(FamilyNames.PHOTO_CAROUSEL, "photoCarousel", null,
+            Settings.PHOTO_CAROUSEL),
     AUTO_TRANSLATION(FamilyNames.AUTO_TRANSLATION, "autoTranslation", null,
             Settings.TURN_OFF_AUTO_TRANSLATION),
     FEEDS_HEADER(FamilyNames.FEEDS_HEADER, "feedsHeader", null,
