@@ -19,6 +19,7 @@ import app.morphe.patches.facebook.media.taptoplay.touchDispatches
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.parameterRegister
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.notifications.TRAY_MANAGER
@@ -27,6 +28,7 @@ import app.morphe.patches.facebook.notifications.postNothingWhenBlocked
 import app.morphe.patches.facebook.notifications.trayPost
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -35,7 +37,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 private const val OPEN = "$EXTENSION_PACKAGE/chats/MessengerIcon;->open(Landroid/content/Context;Z)Z"
 private const val TOUCH = "$EXTENSION_PACKAGE/chats/MessengerIcon;->touch($MOTION_EVENT)V"
-private const val HANDOFF = "$EXTENSION_PACKAGE/chats/MessengerHandoff;"
+internal const val HANDOFF = "$EXTENSION_PACKAGE/chats/MessengerHandoff;"
 internal const val DROP_CALL_PUSH = "$HANDOFF->dropCallPush()Z"
 internal const val DROP_RING = "$HANDOFF->dropRing()Z"
 internal const val DROP_CHAT = "$HANDOFF->dropChat(Ljava/lang/Object;)Z"
@@ -63,8 +65,10 @@ internal const val CLIENT_CAPABILITIES = "$HANDOFF->clientCapabilities(J)J"
  * own push notifications (NotificationAnchors.kt), where a message in Facebook's Chats arrives as
  * a push typed MESSAGING_IN_BLUE_DIRECT_MESSAGE and never reaches the dispatcher (#193). Without
  * Messenger, or with it disabled when Facebook starts, the extension leaves the VOIP capability
- * and Facebook rings as before. Every
- * anchor is found before anything changes, so a build missing one stops the patch whole.
+ * and Facebook rings as before. Every anchor is found before anything changes. A build missing
+ * one of the icon's stops the patch; a build missing one of the handoff's keeps the icon, leaves
+ * every handoff hook out and says so in the patch log, and the extension's MessengerHandoff.inBuild
+ * stays false so the settings page doesn't offer the second switch.
  */
 @Suppress("unused")
 val openMessengerFromTopBarPatch = bytecodePatch(
@@ -102,19 +106,31 @@ val openMessengerFromTopBarPatch = bytecodePatch(
         val dispatch = dispatches.singleOrNull() ?: throw PatchException(
             "$ICON_PATCH: expected $FRAGMENT_ACTIVITY to declare one dispatchTouchEvent($MOTION_EVENT)Z, found ${dispatches.size}",
         )
-        val handoff = handoffTargets()
+        val handoffInBuild = mutableClassDefBy(HANDOFF).methods.singleOrNull {
+            it.name == "inBuild" && it.returnType == "Z" && it.parameterTypes.isEmpty()
+        } ?: throw PatchException("$ICON_PATCH: the extension has no $HANDOFF->inBuild()")
+        // The handoff is the second switch's; a build missing one of its anchors keeps the icon.
+        val handoff = try {
+            handoffTargets()
+        } catch (missing: PatchException) {
+            patchLog.warning("${missing.message}, so Leave calls and chats to Messenger isn't in this build")
+            null
+        }
         mutableClassDefBy(tap.definingClass).methods.single { it.isSameAs(tap) }.openMessengerFirst(TAP_LONG_PRESS)
         mutableClassDefBy(handler.definingClass).methods.single { it.isSameAs(handler) }.openMessengerFirst(buttonLongPress(handler))
         mutableClassDefBy(FRAGMENT_ACTIVITY).methods.single { it.isSameAs(dispatch) }.handTouchesToIcon()
-        mutableClassDefBy(handoff.mqtt.method.definingClass).methods.single { it.isSameAs(handoff.mqtt.method) }
-            .leaveCallRegistrationToMessenger(handoff.mqtt.constructionIndex, handoff.mqtt.capabilitiesRegister)
-        for (push in handoff.callPushes) {
-            mutableClassDefBy(push.definingClass).methods.single { it.isSameAs(push) }.dropCallPushFirst()
+        if (handoff != null) {
+            mutableClassDefBy(handoff.mqtt.method.definingClass).methods.single { it.isSameAs(handoff.mqtt.method) }
+                .leaveCallRegistrationToMessenger(handoff.mqtt.constructionIndex, handoff.mqtt.capabilitiesRegister)
+            for (push in handoff.callPushes) {
+                mutableClassDefBy(push.definingClass).methods.single { it.isSameAs(push) }.dropCallPushFirst()
+            }
+            mutableClassDefBy(handoff.ringParse.definingClass).methods.single { it.isSameAs(handoff.ringParse) }.parseNoRingFirst()
+            mutableClassDefBy(MESSAGES_NOTIFICATION_MANAGER).methods.single { it.isSameAs(handoff.chatDispatch) }.dropChatFirst()
+            mutableClassDefBy(TRAY_MANAGER).methods.single { it.isSameAs(handoff.trayPost.method) }
+                .postNothingWhenBlocked(handoff.trayPost.notification, DROP_CHAT_PUSH, ICON_PATCH)
+            handoffInBuild.returnEarly(true)
         }
-        mutableClassDefBy(handoff.ringParse.definingClass).methods.single { it.isSameAs(handoff.ringParse) }.parseNoRingFirst()
-        mutableClassDefBy(MESSAGES_NOTIFICATION_MANAGER).methods.single { it.isSameAs(handoff.chatDispatch) }.dropChatFirst()
-        mutableClassDefBy(TRAY_MANAGER).methods.single { it.isSameAs(handoff.trayPost.method) }
-            .postNothingWhenBlocked(handoff.trayPost.notification, DROP_CHAT_PUSH, ICON_PATCH)
         enableStatus("messengerIcon")
     }
 }

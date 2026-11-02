@@ -6,6 +6,7 @@ package app.morphe.patches.facebook.chats
 
 import app.morphe.ExtensionDex
 import app.morphe.PatchContexts
+import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
@@ -408,12 +409,20 @@ class MessengerHandoffShapesTest {
     /** The made-up Facebook with the Messenger icon's tap, its button handler and the screen's dispatch too. */
     private fun build(leaveOut: Set<String> = emptySet(), extra: List<ClassDef> = emptyList()) =
         PatchContexts.of(MessengerIconShapesTest.iconClasses() + HandoffShapes.classes(leaveOut, extra) +
-            ExtensionDex.classDef(SETTINGS_STATUS))
+            ExtensionDex.classDef(SETTINGS_STATUS) + ExtensionDex.classDef(HANDOFF))
+
+    /** What the extension's MessengerHandoff.inBuild answers after the patch ran. */
+    private fun handoffInBuild(context: BytecodePatchContext): Boolean {
+        val inBuild = context.mutableClassDefBy(HANDOFF).methods.single { it.name == "inBuild" }
+        return (inBuild.at(0) as NarrowLiteralInstruction).narrowLiteral != 0
+    }
 
     @Test
     fun `the patch clears the call registration and asks first in each local call and chat path`() {
         val context = build()
+        assertFalse(handoffInBuild(context))
         openMessengerFromTopBarPatch.execute(context)
+        assertTrue("the settings page wouldn't offer the switch", handoffInBuild(context))
         val mqtt = context.mutableClassDefBy(MQTT_XPLAT_SERVICE_DELEGATE).methods.single()
         assertEquals(Opcode.INVOKE_STATIC_RANGE, mqtt.at(2).opcode)
         assertEquals("clientCapabilities", mqtt.call(2).name)
@@ -470,11 +479,12 @@ class MessengerHandoffShapesTest {
     }
 
     /**
-     * Each anchor this build lacks, or finds twice, stops the whole patch before any hook goes in,
-     * the Messenger icon's included: half a handoff would leave the switch saying more than it does.
+     * Each handoff anchor this build lacks, or finds twice, leaves every handoff hook out while the
+     * Messenger icon's go in, and inBuild stays false so the settings page has no switch that would
+     * do nothing (#39): half a handoff would leave the switch saying more than it does.
      */
     @Test
-    fun `a build missing a handoff anchor stops the patch before anything goes in`() {
+    fun `a build missing a handoff anchor keeps the icon and leaves the whole handoff out`() {
         val broken = mapOf(
             "no NotificationType" to build(leaveOut = setOf(NOTIFICATION_TYPE)),
             "no VOIP constant" to build(leaveOut = setOf(NOTIFICATION_TYPE),
@@ -501,14 +511,25 @@ class MessengerHandoffShapesTest {
             "a push without its type" to build(leaveOut = setOf(TRAY_NOTIFICATION),
                 extra = listOf(shapes.classDef(TRAY_NOTIFICATION))),
         )
+        val handoffClasses = listOf(HandoffShapes.HANDLER, "Lfixture/OtherParser;", HandoffShapes.PARSER,
+            MESSAGES_NOTIFICATION_MANAGER, MQTT_XPLAT_SERVICE_DELEGATE, TRAY_MANAGER)
         for ((why, context) in broken) {
-            val refusal = assertThrows(why, PatchException::class.java) { openMessengerFromTopBarPatch.execute(context) }
-            assertTrue("$why: ${refusal.message}", refusal.message!!.contains(ICON_PATCH))
+            openMessengerFromTopBarPatch.execute(context)
             val tap = context.mutableClassDefBy(MessengerIconShapesTest.TAP_CLASS).methods.single()
-            assertEquals("$why: the tap changed", Opcode.CONST_STRING, tap.at(0).opcode)
+            assertEquals("$why: the tap doesn't ask first", "open", ((tap.at(2) as ReferenceInstruction).reference as MethodReference).name)
             val dispatch = context.mutableClassDefBy(FRAGMENT_ACTIVITY).methods.single { it.name == "dispatchTouchEvent" }
-            assertEquals("$why: the touch dispatch changed", Opcode.CONST_4, dispatch.at(0).opcode)
-            assertEquals(MOTION_EVENT, dispatch.parameterTypes.single().toString())
+            assertEquals("$why: the touches don't reach the icon", "touch", ((dispatch.at(0) as ReferenceInstruction).reference as MethodReference).name)
+            val present = mutableSetOf<String>()
+            context.classDefForEach { present += it.type }
+            for (type in handoffClasses.filter { it in present }) {
+                for (method in context.mutableClassDefBy(type).methods) {
+                    val calls = method.implementation?.instructions.orEmpty().mapNotNull {
+                        ((it as? ReferenceInstruction)?.reference as? MethodReference)?.takeIf { call -> call.definingClass == HANDOFF }
+                    }
+                    assertTrue("$why: ${method.name} asks the handoff $calls", calls.isEmpty())
+                }
+            }
+            assertFalse("$why: the settings page would offer the switch", handoffInBuild(context))
         }
     }
 }

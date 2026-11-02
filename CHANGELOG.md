@@ -5,6 +5,7 @@ Changes in each Hushfacebook version, newest first.
 ## Unreleased
 
 * **Facebook:** New `Remove the gap above Marketplace listings` under Marketplace. On some phones, like Pixels on Android 17, a listing opened with an empty band between the status bar and its close and share buttons. That band is gone now, and phones that never had it look the same. It's on by default. (#333)
+* **Facebook:** If a future Facebook moves one of the spots `Leave calls and chats to Messenger` hooks into, `Open Messenger from the top bar` still patches. Only the second switch drops out of the settings for that build. (#39)
 * **Facebook:** New `Restore feed sound after opened videos` under Video and audio. A video you open from the feed still plays with its sound, but once you go back the feed's sound is what it was before, even after a long watch. Before, watching a while with sound left every feed video playing out loud. Works with `Keep feed videos muted` on or off, and it starts off. (#350)
 * **Facebook:** `Open feed videos on their own` now also holds group videos that Facebook opens as a regular video post, like one from an anonymous group member or a group video you open from your home feed. Swiping up from them used to reach the next video. (#237)
 * **Facebook:** New `Only reels from accounts I follow` switch under Reels and Watch, part of `Clean up Reels`. The Reels tab then keeps reels from people and Pages you follow and skips the ones Facebook would show a Follow button on. It can take a little longer to fill, and it starts off. (#349)

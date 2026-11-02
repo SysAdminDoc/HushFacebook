@@ -294,6 +294,7 @@ class MessengerIconShapesTest {
             classDef(handlerCall.definingClass, handler(owner = handlerCall.definingClass)),
             classDef(FRAGMENT_ACTIVITY, *screen),
             ExtensionDex.classDef(SETTINGS_STATUS),
+            ExtensionDex.classDef(HANDOFF),
         ) + HandoffShapes.classes(),
     )
 
@@ -344,6 +345,7 @@ class MessengerIconShapesTest {
                 classDef(owner, handler(owner = owner), wrapper),
                 classDef(FRAGMENT_ACTIVITY, dispatch()),
                 ExtensionDex.classDef(SETTINGS_STATUS),
+                ExtensionDex.classDef(HANDOFF),
             ) + HandoffShapes.classes(),
         )
         openMessengerFromTopBarPatch.execute(context)

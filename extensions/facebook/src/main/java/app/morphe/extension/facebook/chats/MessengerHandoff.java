@@ -112,6 +112,15 @@ public final class MessengerHandoff {
     }
 
     /**
+     * Whether this build carries the handoff's hooks. The patch answers true here once they're all
+     * in; a Facebook build missing one of their anchors keeps the Messenger icon and leaves this
+     * false, so the settings page doesn't offer a switch that would do nothing.
+     */
+    public static boolean inBuild() {
+        return false;
+    }
+
+    /**
      * Injection point for the client capabilities passed to Facebook's MQTT connection. Removes
      * only VOIP while Messenger owns calls. A value that never claimed VOIP is returned untouched,
      * and any failure leaves Facebook's stock capabilities in place.

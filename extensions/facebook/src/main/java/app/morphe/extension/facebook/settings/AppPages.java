@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import app.morphe.extension.facebook.chats.MessengerHandoff;
 import app.morphe.extension.facebook.menu.MenuTiles;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
@@ -43,6 +44,15 @@ import app.morphe.extension.shared.settings.BooleanSetting;
 @SuppressWarnings("deprecation")
 final class AppPages {
     private AppPages() {
+    }
+
+    /**
+     * Whether this build carries Leave calls and chats to Messenger's hooks. A test that names the
+     * families in its build counts them in with the Messenger icon.
+     */
+    static boolean handoffInBuild() {
+        Set<PatchFamily> forced = PatchFamily.inBuildForTests;
+        return forced != null ? forced.contains(PatchFamily.MESSENGER_ICON) : MessengerHandoff.inBuild();
     }
 
     /** Chats: the Get Messenger card, the chat list clean-up, the Messenger icon and leaving calls to Messenger. */
@@ -70,6 +80,9 @@ final class AppPages {
                 chats.addPreference(toggle(context, Settings.OPEN_MESSENGER_APP,
                         L10n.t("Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without "
                                 + "Messenger, Chats opens as before.")));
+            }
+            // A build whose handoff anchors weren't all found keeps the icon without this switch.
+            if (build.contains(PatchFamily.MESSENGER_ICON) && handoffInBuild()) {
                 // The restart refreshes Facebook's MQTT call capability; the local drops also read it live.
                 chats.addPreference(toggle(context, Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER,
                         L10n.t("Facebook leaves calls and chat notifications to Messenger while Messenger is installed and "

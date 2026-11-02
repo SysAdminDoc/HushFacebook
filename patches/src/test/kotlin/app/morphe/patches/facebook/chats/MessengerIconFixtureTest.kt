@@ -130,7 +130,7 @@ class MessengerIconFixtureTest {
                 val handoffClasses = HandoffFixture.classes(bundle)
                 val context = PatchContexts.of(
                     (listOf(tapClass, classes.getValue(handlerType), classes.getValue(FRAGMENT_ACTIVITY),
-                        ExtensionDex.classDef(SETTINGS_STATUS)) + handoffClasses).distinctBy { it.type },
+                        ExtensionDex.classDef(SETTINGS_STATUS), ExtensionDex.classDef(HANDOFF)) + handoffClasses).distinctBy { it.type },
                 )
                 openMessengerFromTopBarPatch.execute(context)
 
@@ -181,6 +181,10 @@ class MessengerIconFixtureTest {
                 // The push tray, once the push's type is read out of the builder, before Facebook posts.
                 val trayPost = context.mutableClassDefBy(TRAY_MANAGER).methods.single(::isPostMethod)
                 assertEquals("$name: the push tray doesn't ask first", 5, firstCall(trayPost, DROP_CHAT_PUSH))
+                // Every handoff anchor was found, so the settings page offers the switch (#39).
+                val inBuild = context.mutableClassDefBy(HANDOFF).methods.single { it.name == "inBuild" }
+                assertEquals("$name: MessengerHandoff.inBuild still answers false", 1,
+                    (inBuild.implementation!!.instructions.first() as NarrowLiteralInstruction).narrowLiteral)
                 checked += version
             }
         }
