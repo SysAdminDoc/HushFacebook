@@ -10,6 +10,8 @@ import app.morphe.PatchContexts
 import app.morphe.patcher.patch.BytecodePatch
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
+import app.morphe.patches.facebook.media.taptoplay.touchDispatches
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
@@ -36,8 +38,9 @@ class TranslatePostsFixtureTest {
     private fun Instruction.names(call: String) = (this as? ReferenceInstruction)?.reference?.toString() == call
 
     private fun builderAfter(bundle: File, patches: List<BytecodePatch>, builder: Method): List<Instruction> {
-        val owner = FixtureDex.classes(bundle, setOf(builder.definingClass)).getValue(builder.definingClass)
-        val context = PatchContexts.of(listOf(owner, ExtensionDex.classDef(SETTINGS_STATUS)))
+        val classes = FixtureDex.classes(bundle, setOf(builder.definingClass, FRAGMENT_ACTIVITY))
+        val owner = classes.getValue(builder.definingClass)
+        val context = PatchContexts.of(listOf(owner, classes.getValue(FRAGMENT_ACTIVITY), ExtensionDex.classDef(SETTINGS_STATUS)))
         patches.forEach { it.execute(context) }
         return context.mutableClassDefBy(owner.type).methods.single {
             it.name == builder.name && it.parameterTypes == builder.parameterTypes
@@ -60,12 +63,25 @@ class TranslatePostsFixtureTest {
                 assertTrue("$name: the builder has no return", returns > 0)
                 val textRegister = builder.implementation!!.registerCount - builder.parameterTypes.size
 
-                val owner = FixtureDex.classes(bundle, setOf(builder.definingClass)).getValue(builder.definingClass)
-                val context = PatchContexts.of(listOf(owner, ExtensionDex.classDef(SETTINGS_STATUS)))
+                val classes = FixtureDex.classes(bundle, setOf(builder.definingClass, FRAGMENT_ACTIVITY))
+                val owner = classes.getValue(builder.definingClass)
+                val activity = classes.getValue(FRAGMENT_ACTIVITY)
+                val dispatch = touchDispatches(activity).single()
+                val context = PatchContexts.of(listOf(owner, activity, ExtensionDex.classDef(SETTINGS_STATUS)))
                 translatePostsPatch.execute(context)
                 val patched = context.mutableClassDefBy(owner.type).methods.single {
                     it.name == builder.name && it.parameterTypes == builder.parameterTypes
                 }.code()
+
+                // Every touch reaches the line's clock first, read through the range form, and goes on unchanged.
+                val touch = context.mutableClassDefBy(FRAGMENT_ACTIVITY).methods.single {
+                    it.name == dispatch.name && it.parameterTypes == dispatch.parameterTypes
+                }.code()
+                assertTrue("$name: the touch clock comes first", touch[0].names(TRANSLATION_TOUCH))
+                val event = touch[0] as RegisterRangeInstruction
+                assertEquals("$name: the event is handed over", (dispatch.implementation!!.registerCount - 1) to 1,
+                    event.startRegister to event.registerCount)
+                assertEquals("$name: one instruction in dispatchTouchEvent", dispatch.code().size + 1, touch.size)
 
                 assertEquals("$name: two instructions per hook", original.size + 2 * (returns + 1), patched.size)
                 assertTrue("$name: the text's hook comes first", patched[0].names(TRANSLATION_TEXT))

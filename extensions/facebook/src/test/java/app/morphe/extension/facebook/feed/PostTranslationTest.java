@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.feed;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -16,10 +17,13 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.ClickableSpan;
+import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
@@ -385,6 +389,75 @@ public class PostTranslationTest {
         link(built(POST, false)).onClick(hostIn(activity));
         requestsDone();
         assertEquals(TRANSLATED, body(PostTranslationBox.shownDialog()).getText().toString());
+    }
+
+    /** One finger down at [down] and up at [lift], on the uptime clock, as the activity's dispatch sees it. */
+    private static void press(long down, long lift) {
+        PostTranslation.touch(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, 10, 10, 0));
+        PostTranslation.touch(MotionEvent.obtain(down, lift, MotionEvent.ACTION_UP, 10, 10, 0));
+    }
+
+    /**
+     * Litho's text takes a press near the Translate line and calls the line when the finger lifts,
+     * so a hold on a short post's text opened the box instead of Facebook's copy or Select part of a
+     * post's text. A lift after the long-press time is the post's own long press.
+     */
+    @Test
+    public void aHoldThatLiftsOnTheLineIsThePostsLongPress() throws Exception {
+        Settings.TRANSLATE_POST_LINK.save(true);
+        Settings.TRANSLATE_TO.save("en");
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        FrameLayout host = hostIn(activity);
+        List<String> held = new ArrayList<>();
+        host.setOnLongClickListener(view -> held.add("copied"));
+        long down = SystemClock.uptimeMillis();
+
+        press(down, down + ViewConfiguration.getLongPressTimeout() + 100);
+        link(built(POST, false)).onClick(host);
+
+        assertEquals("the post's long press didn't run", 1, held.size());
+        assertNull("the hold opened the box", PostTranslationBox.shownDialog());
+        assertTrue("Google heard about a hold", asked.isEmpty());
+    }
+
+    @Test
+    public void aQuickTapOnTheLineStillOpensTheBox() throws Exception {
+        Settings.TRANSLATE_POST_LINK.save(true);
+        Settings.TRANSLATE_TO.save("en");
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        FrameLayout host = hostIn(activity);
+        List<String> held = new ArrayList<>();
+        host.setOnLongClickListener(view -> held.add("copied"));
+        long down = SystemClock.uptimeMillis();
+
+        press(down, down + 100);
+        link(built(POST, false)).onClick(host);
+
+        assertNotNull("the tap opened nothing", PostTranslationBox.shownDialog());
+        assertTrue("a tap ran the post's long press", held.isEmpty());
+    }
+
+    /**
+     * Google sends Android's own agent, Dalvik/2.1.0, to its unusual-traffic page, which answers 429,
+     * so every tap said Couldn't translate this. The request names a plain browser, and a redirect is
+     * that page, never followed.
+     */
+    @Test
+    public void googleIsAskedAsAPlainBrowser() throws Exception {
+        java.net.HttpURLConnection request = GoogleTranslate.request("es");
+        try {
+            assertEquals("Mozilla/5.0", request.getRequestProperty("User-Agent"));
+            assertFalse("a redirect is followed", request.getInstanceFollowRedirects());
+        } finally {
+            request.disconnect();
+        }
+        assertThrows(GoogleTranslate.Limited.class, () -> GoogleTranslate.check(302));
+        assertThrows(GoogleTranslate.Limited.class, () -> GoogleTranslate.check(429));
+        assertThrows(IOException.class, () -> GoogleTranslate.check(500));
+        GoogleTranslate.check(200);
+        String said = assertThrows(GoogleTranslate.Limited.class, () -> GoogleTranslate.check(302,
+                "https://www.google.com/sorry/index?continue=x&q=address", "Stack")).getMessage();
+        assertTrue(said, said.endsWith("HTTP 302 to www.google.com/sorry/index through Stack"));
     }
 
     @Test

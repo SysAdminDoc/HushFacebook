@@ -15,7 +15,9 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.textclassifier.TextClassificationManager;
 import android.view.textclassifier.TextLanguage;
 
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import app.morphe.extension.facebook.reels.PostTextSelect;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.L10n;
@@ -59,9 +62,11 @@ public final class PostTranslation {
     static final String LINK_ADDED = "Translate link added to a post";
     static final String SHOWN_TRANSLATED = "post shown translated";
     static final String FAILED = "translation failed";
+    static final String HOLD_HANDED_ON = "hold on the Translate line left to the post";
 
     private static final String FAMILY = FamilyNames.TRANSLATE_POSTS;
     private static final String TAP = "translate link tap";
+    private static final String TOUCHES = "touches";
     private static final int FEWEST_LETTERS = 4;
     private static final int REMEMBERED = 300;
     private static final int MOST_AT_ONCE = 4;
@@ -74,6 +79,11 @@ public final class PostTranslation {
     /** How long automatic requests stop after one failed, or after Google asked for fewer. */
     private static final long QUIET_AFTER_FAILURE_MILLIS = 30_000;
     private static final long QUIET_AFTER_LIMIT_MILLIS = 60_000;
+    /** How soon after a held finger lifts a call of the line still counts as its release. */
+    static final long RELEASE_WINDOW_MILLIS = 500;
+    private static final long NONE = Long.MIN_VALUE;
+    /** When the last finger to lift after the long-press time did, on the uptime clock, or NONE. */
+    private static volatile long heldLiftAt = NONE;
 
     interface Translator {
         GoogleTranslate.Answer translate(String text, String target) throws IOException;
@@ -128,6 +138,34 @@ public final class PostTranslation {
             this.original = original;
             this.translated = translated;
         }
+    }
+
+    /**
+     * Injection point, first thing in FbFragmentActivity.dispatchTouchEvent: notes a finger lifting
+     * after the long-press time, since Litho's text hands that lift to the Translate line as a tap.
+     * It only reads the event. Never throws.
+     */
+    public static void touch(@Nullable MotionEvent event) {
+        try {
+            if (event == null) return;
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_UP) {
+                boolean held = event.getEventTime() - event.getDownTime() >= ViewConfiguration.getLongPressTimeout();
+                heldLiftAt = held ? SystemClock.uptimeMillis() : NONE;
+            } else if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_CANCEL) {
+                heldLiftAt = NONE;
+                if (action == MotionEvent.ACTION_DOWN) HookStatus.bound(FAMILY, TOUCHES);
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, TOUCHES, failure);
+        }
+    }
+
+    /** Whether a finger held past the long-press time lifted just now. */
+    static boolean heldPressJustLifted() {
+        long at = heldLiftAt;
+        long now = SystemClock.uptimeMillis();
+        return at != NONE && now >= at && now - at <= RELEASE_WINDOW_MILLIS;
     }
 
     /** The hook at the top of Facebook's builder, handed the post's text. Answers the text to build with. */
@@ -198,6 +236,17 @@ public final class PostTranslation {
         @Override
         public void onClick(View view) {
             try {
+                // Litho's text takes a press near the line and calls the line when the finger
+                // lifts, so a hold on a short post's text lands here. It goes to the post's own
+                // long press, as it would without the line: Facebook's copy, or Select part of a
+                // post's text.
+                if (heldPressJustLifted()) {
+                    heldLiftAt = NONE;
+                    if (view == null) return;
+                    PostTextSelect.heldThroughLink();
+                    if (view.performLongClick()) HookStatus.counted(FAMILY, HOLD_HANDED_ON);
+                    return;
+                }
                 Activity activity = activityOf(view == null ? null : view.getContext());
                 if (activity == null) activity = Utils.getActivity();
                 if (activity != null) PostTranslationBox.show(activity, original, translated);
@@ -301,7 +350,8 @@ public final class PostTranslation {
     private static void failed(Throwable failure, long quietMillis) {
         quietUntil = SystemClock.elapsedRealtime() + quietMillis;
         HookStatus.counted(FAMILY, FAILED);
-        Logger.printDebug(() -> "Post translation: the request failed, " + failure.getClass().getSimpleName());
+        Logger.printDebug(() -> "Post translation: the request failed, " + failure.getClass().getSimpleName()
+                + ": " + failure.getMessage());
     }
 
     private static void tell(Request request) {
@@ -411,5 +461,6 @@ public final class PostTranslation {
         }
         building.remove();
         quietUntil = 0L;
+        heldLiftAt = NONE;
     }
 }

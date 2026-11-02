@@ -50,28 +50,70 @@ final class GoogleTranslate {
 
     /** Google asked for fewer requests for a while. */
     static final class Limited extends IOException {
-        Limited() {
-            super("Google Translate asked for fewer requests");
+        Limited(String detail) {
+            super("Google Translate asked for fewer requests, " + detail);
         }
     }
 
-    static Answer translate(String text, String target) throws IOException {
+    /**
+     * The User-Agent Google is asked with. Google sends Android's own, Dalvik/2.1.0, to its
+     * unusual-traffic page, which answers 429, so every request failed as if limited. A plain
+     * browser name gets the translation.
+     */
+    static final String USER_AGENT = "Mozilla/5.0";
+
+    /** The request for a translation to [target], not yet sent. A redirect isn't followed: it's the limit page. */
+    static HttpURLConnection request(String target) throws IOException {
         HttpURLConnection connection = (HttpURLConnection) new URL(ADDRESS
                 + URLEncoder.encode(target, "UTF-8")).openConnection();
+        connection.setInstanceFollowRedirects(false);
+        connection.setConnectTimeout(CONNECT_MILLIS);
+        connection.setReadTimeout(READ_MILLIS);
+        connection.setRequestMethod("POST");
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8");
+        connection.setRequestProperty("User-Agent", USER_AGENT);
+        return connection;
+    }
+
+    /** Throws unless [code] is Google's answer. A redirect goes to the unusual-traffic page, so it's a limit too. */
+    static void check(int code) throws IOException {
+        check(code, null, null);
+    }
+
+    /**
+     * {@link #check(int)}, with what the failure says: the code, where a redirect pointed, host and
+     * path only (the unusual-traffic page's query encodes the caller's address), and the connection
+     * class, since an app can put its own behind {@link URL#openConnection()}.
+     */
+    static void check(int code, @Nullable String location, @Nullable String through) throws IOException {
+        if (code == HttpURLConnection.HTTP_OK) return;
+        String detail = "HTTP " + code + (location == null ? "" : " to " + withoutQuery(location))
+                + (through == null ? "" : " through " + through);
+        if (code == TOO_MANY_REQUESTS || (code >= 300 && code < 400)) throw new Limited(detail);
+        throw new IOException("Google Translate answered " + detail);
+    }
+
+    static String withoutQuery(String address) {
+        int cut = address.length();
+        for (char end : new char[]{'?', '#'}) {
+            int at = address.indexOf(end);
+            if (at >= 0 && at < cut) cut = at;
+        }
+        String kept = address.substring(0, cut);
+        int scheme = kept.indexOf("://");
+        return scheme < 0 ? kept : kept.substring(scheme + 3);
+    }
+
+    static Answer translate(String text, String target) throws IOException {
+        HttpURLConnection connection = request(target);
         try {
             byte[] body = ("q=" + URLEncoder.encode(text, "UTF-8")).getBytes(StandardCharsets.UTF_8);
-            connection.setConnectTimeout(CONNECT_MILLIS);
-            connection.setReadTimeout(READ_MILLIS);
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8");
             connection.setFixedLengthStreamingMode(body.length);
             try (OutputStream out = connection.getOutputStream()) {
                 out.write(body);
             }
-            int code = connection.getResponseCode();
-            if (code == TOO_MANY_REQUESTS) throw new Limited();
-            if (code != HttpURLConnection.HTTP_OK) throw new IOException("Google Translate answered " + code);
+            check(connection.getResponseCode(), connection.getHeaderField("Location"), connection.getClass().getName());
             try (InputStream in = connection.getInputStream()) {
                 return parse(read(in));
             }
