@@ -395,7 +395,7 @@ Facebook opens on %1$s. If your tab bar doesn't have it, Facebook opens on Home.
 # context: summary of the tab list when Feeds is picked; off the tab bar, Feeds opens as its own page over Home
 Facebook opens on Feeds. If your tab bar doesn't have it, the Feeds page opens over Home.	Facebook 會開啟「動態消息」。若分頁列沒有此分頁，則在首頁上方開啟動態消息頁面。
 # context: a sentence in the settings import preview and its toast; %1$s is a tab name
-Facebook will open on %1$s.	Facebook 將開啟 %1$s。
+With %1$s on, Facebook will open on %2$s.	啟用 %1$s 時，Facebook 將開啟 %2$s。
 # context: switch title under Opening Facebook; Following is Facebook's feed of the friends, Pages and groups you follow, and Home is the tab
 Following feed on Home	在首頁顯示追蹤中的動態
 # context: summary of that switch; the ranked feed is the one Facebook orders for you, and the Feeds tab has its own filters

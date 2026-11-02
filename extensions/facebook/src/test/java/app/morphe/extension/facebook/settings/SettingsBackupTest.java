@@ -2313,7 +2313,8 @@ public class SettingsBackupTest {
             HushfacebookPreferenceFragment page = SettingsL10nTest.pageOf(SettingsL10nTest.show(activity));
             deliver(activity, tap(activity, page, IMPORT_ROW), file.toString());
             AlertDialog preview = shownPreview();
-            String start = "Facebook will open on Notifications.";
+            String start = "With " + L10n.isolate(SwitchLabels.title(Settings.OPEN_ON_CHOSEN_TAB))
+                    + " on, Facebook will open on Notifications.";
             String order = "Comments will open with Newest picked in their sort menu.";
             assertEquals("1 switch will change.\n\n" + start + "\n\n" + order,
                     String.valueOf(shadowOf(preview).getMessage()));
@@ -3363,7 +3364,9 @@ public class SettingsBackupTest {
             HushfacebookPreferenceFragment page = SettingsL10nTest.pageOf(SettingsL10nTest.show(activity));
             deliver(activity, tap(activity, page, IMPORT_ROW), file.toString());
             AlertDialog preview = shownPreview();
-            String start = "Facebook will open on Notifications.";
+            // The tab only counts while its switch is on, and that switch starts off.
+            String start = "With " + L10n.isolate(SwitchLabels.title(Settings.OPEN_ON_CHOSEN_TAB))
+                    + " on, Facebook will open on Notifications.";
             String quality = "Videos will save at " + app.morphe.extension.shared.L10n.isolate("720p")
                     + " or the closest quality below it. A video with nothing that low will save at the closest "
                     + "quality above.";
@@ -3378,7 +3381,8 @@ public class SettingsBackupTest {
                     HushfacebookPreferenceFragment.startTabSummary(StartTab.NOTIFICATIONS),
                     String.valueOf(page.findPreference(Settings.START_TAB.key).getSummary()));
         }
-        assertEquals("Settings imported. Facebook will open on Home.",
+        assertEquals("Settings imported. With " + L10n.isolate(SwitchLabels.title(Settings.OPEN_ON_CHOSEN_TAB))
+                        + " on, Facebook will open on Home.",
                 SettingsBackupPreference.importedMessage(0, null, null, null, StartTab.HOME));
     }
 

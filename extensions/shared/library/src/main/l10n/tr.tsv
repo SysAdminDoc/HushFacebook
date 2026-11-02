@@ -391,7 +391,7 @@ Facebook opens on %1$s. If your tab bar doesn't have it, Facebook opens on Home.
 # context: summary of the tab list when Feeds is picked; off the tab bar, Feeds opens as its own page over Home
 Facebook opens on Feeds. If your tab bar doesn't have it, the Feeds page opens over Home.	Facebook Akışlar sekmesinde açılır. Sekme çubuğunda bu sekme yoksa Akışlar sayfası Ana Sayfa'nın üzerinde açılır.
 # context: a sentence in the settings import preview and its toast; %1$s is a tab name
-Facebook will open on %1$s.	Facebook %1$s sekmesinde açılacak.
+With %1$s on, Facebook will open on %2$s.	%1$s açıkken Facebook %2$s sekmesinde açılacak.
 # context: switch title under Opening Facebook; Following is Facebook's feed of the friends, Pages and groups you follow, and Home is the tab
 Following feed on Home	Ana Sayfa'da Takip Edilenler akışı
 # context: summary of that switch; the ranked feed is the one Facebook orders for you, and the Feeds tab has its own filters

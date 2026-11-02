@@ -378,7 +378,7 @@ Menu	Menu
 Facebook opens on %1$s. If your tab bar doesn't have it, Facebook opens on Home.	O Facebook abre em %1$s. Se essa aba não estiver na sua barra de abas, o Facebook abrirá na Página inicial.
 # context: summary of the tab list when Feeds is picked; off the tab bar, Feeds opens as its own page over Home
 Facebook opens on Feeds. If your tab bar doesn't have it, the Feeds page opens over Home.	O Facebook abre em Feeds. Se essa aba não estiver na sua barra de abas, a página Feeds abre sobre a Página inicial.
-Facebook will open on %1$s.	O Facebook vai abrir em %1$s.
+With %1$s on, Facebook will open on %2$s.	Com %1$s ligado, o Facebook vai abrir em %2$s.
 # context: switch title under Opening Facebook; Following is Facebook's feed of the friends, Pages and groups you follow, and Home is the tab
 Following feed on Home	Feed Seguindo na Página inicial
 # context: summary of that switch; the ranked feed is the one Facebook orders for you, and the Feeds tab has its own filters

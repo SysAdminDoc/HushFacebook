@@ -567,9 +567,14 @@ public class SettingsBackupPreference extends Preference {
         return L10n.f("Saved photos will be named %1$s.", L10n.isolate(template));
     }
 
-    /** The sentence that says which tab Facebook opens on after an import. */
+    /**
+     * The sentence that says which tab Facebook opens on after an import. The tab only counts while
+     * its switch is on, which is off unless it's changed, so the sentence names the switch too.
+     */
     static String startTabSentence(StartTab tab) {
-        return L10n.f("Facebook will open on %1$s.", HushfacebookPreferenceFragment.tabLabel(tab));
+        return L10n.f("With %1$s on, Facebook will open on %2$s.",
+                L10n.isolate(SwitchLabels.title(Settings.OPEN_ON_CHOSEN_TAB)),
+                HushfacebookPreferenceFragment.tabLabel(tab));
     }
 
     /** The sentence that says which filter the Feeds tab opens on after an import. */
