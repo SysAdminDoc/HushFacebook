@@ -315,6 +315,8 @@ Hide comment and reaction previews	隱藏留言與心情預覽
 The comment Facebook previews under a reel and the bubbles of friends who reacted. Open the comments to see them all.	Facebook 在 Reels 下方預覽的留言，以及留下心情的朋友泡泡。開啟留言即可查看全部內容。
 Hide Threads cards between reels	隱藏 Reels 之間的 Threads 卡片
 Hides the "Threads you might like" card between reels. Off by default, since it hasn't been tried on a real account yet.	隱藏 Reels 之間的「你可能喜歡的 Threads」卡片。預設停用，因為尚未使用真實帳號測試。
+Only reels from accounts I follow	只看我追蹤的帳號的 Reels
+The Reels tab only shows reels from people and Pages you follow, starting with the next batch Facebook loads. The tab can take longer to fill. Off by default.	Reels 分頁只顯示你追蹤的人和粉絲專頁的 Reels，從 Facebook 載入的下一批開始。分頁可能需要更久才會填滿。預設停用。
 Download quality	下載畫質
 Best	最佳
 Smallest	最小

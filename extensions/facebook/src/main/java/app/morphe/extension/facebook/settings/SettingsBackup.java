@@ -219,6 +219,7 @@ public final class SettingsBackup {
             Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON,
             Settings.HIDE_REEL_SOCIAL_FOOTER,
             Settings.HIDE_REEL_THREADS_CARDS,
+            Settings.FOLLOWED_REELS_ONLY,
             Settings.REEL_CLEAN_MODE,
             Settings.PLAY_REELS_ONCE,
             Settings.ORIGINAL_AUDIO,

@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** New `Only reels from accounts I follow` switch under Reels and Watch, part of `Clean up Reels`. The Reels tab then keeps reels from people and Pages you follow and skips the ones Facebook would show a Follow button on. It can take a little longer to fill, and it starts off. (#349)
 * **Facebook:** `Hide suggested groups` takes the "Suggested for you" groups card off the Groups tab as well, not just off Home. (#347)
 * **Facebook:** `Hide the top right buttons on opened videos` takes Search and the profile button off the top of the Reels tab too. Menu stays where it is. (#346)
 * **Facebook:** `Hide affiliate product links` also keeps the shop banner (the one with "On Shopee" and an X) off a creator's profile when you open it from one of their reels. (#329)

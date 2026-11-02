@@ -444,6 +444,32 @@ public final class GenAiReelFilter {
         return null;
     }
 
+    /**
+     * The reel model of class [modelClassName] a Reels item keeps, read the way this rule reads it:
+     * the item itself, one of its fields, or the holder in one of its fields that pairs the model with
+     * its story. Null when it keeps none or the class isn't in this build. For the other rules that
+     * read the same items, such as Clean up Reels' followed-only switch.
+     */
+    @Nullable
+    public static Object reelModel(@Nullable Object item, String modelClassName) throws IllegalAccessException {
+        if (item == null) return null;
+        Readers readers = READERS.computeIfAbsent(modelClassName,
+                name -> Readers.lookUp(name, GenAiReelFilter.class.getClassLoader()));
+        if (readers.model == null) return null;
+        if (readers.model.isInstance(item)) return item;
+        Object model = held(item, readers.model);
+        if (model != null) return model;
+        for (Field field : FIELDS.computeIfAbsent(item.getClass(), GenAiReelFilter::instanceFields)) {
+            Object value = field.get(item);
+            if (value == null) continue;
+            for (Field view : readers.holderViews(value.getClass())) {
+                Object kept = view.get(value);
+                if (readers.model.isInstance(kept)) return kept;
+            }
+        }
+        return null;
+    }
+
     private static Field[] instanceFields(Class<?> itemClass) {
         List<Field> fields = new ArrayList<>();
         for (Class<?> type = itemClass; type != null && type != Object.class; type = type.getSuperclass()) {

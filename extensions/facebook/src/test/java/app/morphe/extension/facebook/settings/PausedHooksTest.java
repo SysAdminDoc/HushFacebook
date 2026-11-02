@@ -163,6 +163,7 @@ import app.morphe.extension.facebook.reels.ReelHold;
 import app.morphe.extension.facebook.reels.ReelHoldForTests;
 import app.morphe.extension.facebook.reels.FeedVideoAlone;
 import app.morphe.extension.facebook.reels.FeedVideoAloneForTests;
+import app.morphe.extension.facebook.reels.FollowedReelsForTests;
 import app.morphe.extension.facebook.reels.ReelCleanMode;
 import app.morphe.extension.facebook.reels.ReelDeclutter;
 import app.morphe.extension.facebook.reels.ReelLoopForTests;
@@ -638,6 +639,7 @@ public class PausedHooksTest {
                 ReelDeclutter::skipHotComment,
                 ReelDeclutter::skipSocialBubbles,
                 ReelMidCardsForTests::dropsAThreadsCard,
+                FollowedReelsForTests::dropsANotFollowedReel,
                 () -> ReelCleanMode.startClean(false),
                 // Its button takes the sticky way, and a reel taken out keeps it (#304).
                 () -> ReelCleanMode.stickyClean(false),

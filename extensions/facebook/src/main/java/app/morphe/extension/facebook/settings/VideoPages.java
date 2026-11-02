@@ -122,6 +122,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.HIDE_REEL_THREADS_CARDS,
                     L10n.t("Hides the \"Threads you might like\" card between reels. Off by default, since it hasn't "
                             + "been tried on a real account yet.")));
+            // Read as each batch of reels arrives, so a change shows from the next batch.
+            reels.addPreference(toggle(context, Settings.FOLLOWED_REELS_ONLY,
+                    L10n.t("The Reels tab only shows reels from people and Pages you follow, starting with the next "
+                            + "batch Facebook loads. The tab can take longer to fill. Off by default.")));
             reels.addPreference(toggle(context, Settings.REEL_CLEAN_MODE,
                     L10n.t("Opens reels and videos in Facebook's Clean mode, which hides the buttons down the side. You can "
                             + "still leave Clean mode as usual. Off by default, since it hasn't been tried on a real "

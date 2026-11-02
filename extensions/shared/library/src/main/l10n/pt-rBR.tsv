@@ -304,6 +304,8 @@ Hide comment and reaction previews	Ocultar prévias de comentários e reações
 The comment Facebook previews under a reel and the bubbles of friends who reacted. Open the comments to see them all.	O comentário que o Facebook mostra como prévia abaixo de um Reel e as bolhas dos amigos que reagiram. Abra os comentários para ver todos.
 Hide Threads cards between reels	Ocultar cartões do Threads entre os reels
 Hides the "Threads you might like" card between reels. Off by default, since it hasn't been tried on a real account yet.	Oculta o cartão “Threads que você talvez curta” entre os reels. Desligado por padrão, porque ainda não foi testado em uma conta real.
+Only reels from accounts I follow	Só reels de contas que eu sigo
+The Reels tab only shows reels from people and Pages you follow, starting with the next batch Facebook loads. The tab can take longer to fill. Off by default.	A aba Reels só mostra reels de pessoas e Páginas que você segue, a partir do próximo lote que o Facebook carregar. A aba pode demorar mais para encher. Desligado por padrão.
 Download quality	Qualidade do download
 Best	A melhor
 Smallest	A menor

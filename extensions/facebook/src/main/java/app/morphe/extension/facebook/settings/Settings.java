@@ -614,6 +614,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_threads_cards", FALSE);
 
     /**
+     * Only reels from accounts you follow on the Reels tab ({@link
+     * app.morphe.extension.facebook.reels.FollowedReels}, #349): a reel whose author Facebook's own
+     * Follow button would offer to follow comes off each batch as it arrives. Off by default, since
+     * the tab then fills slower.
+     */
+    public static final BooleanSetting FOLLOWED_REELS_ONLY =
+            new BooleanSetting("hushfacebook_followed_reels_only", FALSE);
+
+    /**
      * Reels and the videos that open in the same viewer start in Facebook's own Clean mode, the
      * state its three-dot menu's Clean mode item puts one reel in, with the buttons down the side
      * hidden. Facebook's own pinch and menu still bring them back for that reel, and an ad reel's
