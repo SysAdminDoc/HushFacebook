@@ -653,6 +653,9 @@ final class SettingsNavigation extends BaseAdapter {
             // Only in a build that lacks Restore screens on a re-signed install: its own line under the card.
             Preference restore = screen.findPreference(HushfacebookPreferenceFragment.MISSING_RESTORE_TRUST);
             if (restore != null) visible.add(restore);
+            // Only while Facebook's images are coarser than the screen (#365): its own line under the card.
+            Preference soft = screen.findPreference(HushfacebookPreferenceFragment.SOFT_ICONS);
+            if (soft != null) visible.add(soft);
             // Only in a build that lacks another default patch: the card's own line under it.
             Preference missing = screen.findPreference(HushfacebookPreferenceFragment.MISSING_DEFAULTS);
             if (missing != null) visible.add(missing);

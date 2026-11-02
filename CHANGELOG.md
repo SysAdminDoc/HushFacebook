@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** Hushfacebook now tells you when Facebook's icons look soft because of the download you patched. The 32-bit bundle only has images for 320 dpi screens, so on a sharper screen the Home, bell, Profile, Search and Messenger icons get enlarged and look blurry. On a phone that can run the 64-bit bundle, a short note says so once after you install, and a line under the status card in the settings names the bundle to patch instead. (#365)
 * **Facebook:** New `Hide Up next on videos` under Reels and Watch. It takes the UP NEXT bar, with the next video's name and length, off the bottom of a video you open from the feed. It starts off. (#367)
 * **Facebook:** With `Show full post text` on, a tap on a post's text folds it back to See more, and another tap opens it again, the way Facebook does it with the switch off. Before, a long post stayed open whatever you tapped. (#354)
 * **Facebook:** Opening a section in the Hush settings folds the one you had open, so the page stays short and only one section is open at a time. (#368)

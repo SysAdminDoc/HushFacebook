@@ -61,6 +61,7 @@ import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.misc.BlockedListPictures;
 import app.morphe.extension.facebook.misc.CloseWhenLeft;
+import app.morphe.extension.facebook.misc.IconDensity;
 import app.morphe.extension.facebook.misc.OpeningPause;
 import app.morphe.extension.facebook.misc.ScreenTransitions;
 import app.morphe.extension.facebook.misc.TextSize;
@@ -206,6 +207,7 @@ public final class SettingsEntry {
         }
         ReleaseCheck.onFacebookStart();
         StartsOffNote.onFacebookStart(context);
+        IconDensity.onFacebookStart(context);
         SaveLeftovers.sweepAfterStart(context);
         ResumePlayback.onFacebookStart();
         publishShortcut(context);

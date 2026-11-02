@@ -2472,3 +2472,6 @@ Hide pictures on the Blocked list	Sembunyikan foto di daftar blokir
 People you've blocked show without their profile pictures on the Blocking page in Facebook's settings. Reopen the page if it's already open.	Orang yang kamu blokir tampil tanpa foto profil di halaman Pemblokiran pada pengaturan Facebook. Buka ulang halaman itu jika sudah terbuka.
 Hide Up next on videos	Sembunyikan Berikutnya di video
 Takes the UP NEXT bar with the next video off the bottom of a video you open from the feed. A change shows from the next video you open.	Menghapus bilah BERIKUTNYA berisi video selanjutnya dari bagian bawah video yang kamu buka dari feed. Perubahan berlaku mulai video berikutnya yang kamu buka.
+Icons look soft on this screen. Repatch with the 120-640dpi bundle.	Ikon terlihat buram di layar ini. Patch ulang dengan bundle 120-640dpi.
+Icons look soft on this screen	Ikon terlihat buram di layar ini
+The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has images for every screen.	Facebook yang kamu patch tidak punya gambar untuk layar ini, jadi beberapa ikon diperbesar. Patch ulang Facebook dari bundle (arm64-v8a) (120-640dpi) di APKMirror, yang punya gambar untuk semua layar.

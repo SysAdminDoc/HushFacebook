@@ -2526,3 +2526,6 @@ Hide pictures on the Blocked list	Скрывать фото в списке за
 People you've blocked show without their profile pictures on the Blocking page in Facebook's settings. Reopen the page if it's already open.	Заблокированные вами люди показываются без фото профиля на странице блокировки в настройках Facebook. Если страница уже открыта, откройте её заново.
 Hide Up next on videos	Скрывать «Далее» в видео
 Takes the UP NEXT bar with the next video off the bottom of a video you open from the feed. A change shows from the next video you open.	Убирает полосу ДАЛЕЕ со следующим видео внизу видео, открытого из Ленты. Изменение действует со следующего видео, которое вы откроете.
+Icons look soft on this screen. Repatch with the 120-640dpi bundle.	Значки на этом экране выглядят размытыми. Повторите патчинг с пакетом 120-640dpi.
+Icons look soft on this screen	Значки на этом экране выглядят размытыми
+The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has images for every screen.	В пропатченном вами Facebook нет изображений для этого экрана, поэтому некоторые значки увеличены. Пропатчите Facebook заново из пакета (arm64-v8a) (120-640dpi) с APKMirror, в котором есть изображения для любого экрана.

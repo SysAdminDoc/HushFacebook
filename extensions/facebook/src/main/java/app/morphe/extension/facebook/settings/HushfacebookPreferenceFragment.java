@@ -69,6 +69,7 @@ import app.morphe.extension.facebook.media.SurfaceQuality;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.misc.HeaderText;
+import app.morphe.extension.facebook.misc.IconDensity;
 import app.morphe.extension.facebook.misc.LogoEmoji;
 import app.morphe.extension.facebook.profile.LocalProfileCounts;
 import app.morphe.extension.facebook.stories.StoriesTrayCircles;
@@ -166,6 +167,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     static final String SUPPORTED_LINKS = "action_supported_links";
     /** The key of the overview row explaining a missing re-signed build fix. */
     static final String MISSING_RESTORE_TRUST = "action_missing_restore_trust";
+    /** The key of the overview row saying which download has sharp icons for this screen (#365). */
+    static final String SOFT_ICONS = "action_soft_icons";
     /** The key of the row naming the default patches this build lacks. It stores nothing either. */
     static final String MISSING_DEFAULTS = "action_missing_default_patches";
     /** How many of the missing patches that row names before it counts the rest. */
@@ -384,6 +387,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         // The overview shows these under the card by key. Last in the model, they move no other row.
         Preference restore = missingRestoreTrustRow(context, build);
         if (restore != null) screen.addPreference(restore);
+        Preference soft = softIconsRow(context);
+        if (soft != null) screen.addPreference(soft);
         Preference lacking = missingDefaultsRow(context, build);
         if (lacking != null) screen.addPreference(lacking);
     }
@@ -612,6 +617,21 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
                 L10n.f("Patch again with %1$s selected. A patched Facebook needs it to open profiles, photos, posts and "
                         + "some of Facebook's Settings pages.", L10n.isolate(FamilyNames.RESTORE_TRUST)));
         row.setKey(MISSING_RESTORE_TRUST);
+        return row;
+    }
+
+    /**
+     * Facebook patched from a download without images for this screen draws its bitmap icons
+     * enlarged and soft (#365). Shown while that holds, on a phone the 64-bit download fits.
+     */
+    @Nullable
+    static Preference softIconsRow(Context context) {
+        if (!IconDensity.patchSharper(context)) return null;
+        Preference row = info(context, L10n.t("Icons look soft on this screen"),
+                L10n.t("The Facebook you patched has no images made for this screen, so some icons are enlarged. "
+                        + "Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has "
+                        + "images for every screen."));
+        row.setKey(SOFT_ICONS);
         return row;
     }
 
