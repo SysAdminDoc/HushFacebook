@@ -25,7 +25,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** A post a link opens stays at the top of Home even when Facebook sends it as an ad, which it does for a boosted page post. The ad switches used to hide it, and the suggested post after it showed in its place. (#306)
 * **Facebook:** `Hide "Related posts" under posts` also takes the list of posts Facebook shows after the comments when you open a post on its own, and that post stops asking Facebook for the list. (#231)
 * **Facebook:** With `View stories anonymously` on, `Hide seen stories` also takes out a story you watched to the end on this phone. Facebook never hears about those views, so it kept calling them unseen and they stayed in the tray. The story comes back when that person posts a new one. (#218)
-* **Facebook:** With `Select part of a post's text` on, holding a post's text only opens the box now. It doesn't also copy the whole text, so whatever you had on the clipboard stays there. The box has a Copy all button for when you do want all of it. (#342)
+* **Facebook:** With `Select part of a post's text` on, holding a post's text only opens the box now. It doesn't also copy the whole text, so whatever you had on the clipboard stays there, and Facebook's "Text copied to clipboard" message no longer pops up for it. The box has a Copy all button for when you do want all of it. (#342)
 
 ## 0.20.0 (2026-11-01)
 

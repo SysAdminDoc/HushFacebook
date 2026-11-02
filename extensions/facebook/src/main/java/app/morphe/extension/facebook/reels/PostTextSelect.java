@@ -15,6 +15,7 @@ import android.os.SystemClock;
 import android.util.TypedValue;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
@@ -46,7 +47,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * place of the copy a hold makes, so the clipboard keeps what it held (#342). A copy that reaches
  * the clipboard some other way still opens the box once it lands: the clipboard is listened to from
  * the first press with the switch on, since that copy can land in the same moment as the hold's
- * timer.
+ * timer. Facebook follows its copy with a "Text copied to clipboard" toast, so each of its toasts
+ * goes to {@link #toast}, which drops the one that comes right after a copy the box took.
  */
 public final class PostTextSelect {
     private static final String FAMILY = FamilyNames.REEL_GESTURES;
@@ -59,12 +61,18 @@ public final class PostTextSelect {
     static final String KEPT_OFF = "hold's copy kept off the clipboard";
     /** Counted for each tap of the box's Copy all. */
     static final String COPIED_ALL = "post text copied whole";
+    /** Counted for each toast of Facebook's dropped because the copy it announced was kept off. */
+    static final String TOAST_DROPPED = "kept-off copy's toast dropped";
 
     /** How long after a hold on text, in milliseconds, Facebook's copy still opens the box. */
     static final long WINDOW = 1500L;
+    /** How long after a copy kept off the clipboard, in milliseconds, Facebook's toast for it is dropped. */
+    static final long TOAST_WINDOW = 1000L;
 
     /** When, in uptime, a hold on text armed the box; 0 when nothing is armed. */
     private static volatile long armedAt;
+    /** When, in uptime, a hold's copy was last kept off the clipboard; 0 once its toast is dealt with. */
+    private static volatile long keptAt;
     /** When, in uptime, the box last opened; 0 before it ever has. */
     private static volatile long openedAt;
     private static WeakReference<Activity> screen = new WeakReference<>(null);
@@ -146,6 +154,7 @@ public final class PostTextSelect {
             CharSequence text = textOf(clip);
             if (text == null || text.toString().trim().isEmpty()) return false;
             armedAt = 0L;
+            keptAt = SystemClock.uptimeMillis();
             String whole = text.toString();
             HookStatus.counted(FAMILY, KEPT_OFF);
             Utils.runOnMainThreadNowOrLater(() -> {
@@ -158,6 +167,31 @@ public final class PostTextSelect {
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "post text select", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, in place of each of Facebook's Toast.show calls. The first toast within
+     * {@link #TOAST_WINDOW} of a copy the box took is Facebook saying the text was copied, which it
+     * wasn't, so it's dropped. Every other toast shows.
+     */
+    public static void toast(Toast toast) {
+        if (dropsToast()) return;
+        toast.show();
+    }
+
+    /** Whether the toast being shown announces a copy that was kept off the clipboard. Never throws. */
+    static boolean dropsToast() {
+        try {
+            long at = keptAt;
+            if (at == 0L) return false;
+            keptAt = 0L;
+            if (SystemClock.uptimeMillis() - at > TOAST_WINDOW) return false;
+            HookStatus.counted(FAMILY, TOAST_DROPPED);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "post text select toast", failure);
             return false;
         }
     }
@@ -234,6 +268,7 @@ public final class PostTextSelect {
     /** For tests: forgets the armed hold, the clipboard listened to and the box shown. */
     static void reset() {
         armedAt = 0L;
+        keptAt = 0L;
         openedAt = 0L;
         screen = new WeakReference<>(null);
         if (listening != null) listening.removePrimaryClipChangedListener(CHANGED);

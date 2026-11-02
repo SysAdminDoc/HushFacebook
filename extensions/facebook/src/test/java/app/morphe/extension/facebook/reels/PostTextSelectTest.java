@@ -24,6 +24,7 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.junit.After;
 import org.junit.Before;
@@ -34,6 +35,7 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowToast;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -214,6 +216,42 @@ public class PostTextSelectTest {
         assertNotNull("the copy opened the box", PostTextSelect.shownDialog());
         assertEquals("the clipboard keeps what it held (#342)", "a link I copied earlier", onClipboard());
         assertTrue(statusLine(), statusLine().contains(PostTextSelect.KEPT_OFF + " 1"));
+    }
+
+    /** Facebook's toast after its copy, made through the stand-in the patch puts in place of Toast.show. */
+    private void facebookToast(String what) {
+        PostTextSelect.toast(Toast.makeText(activity, what, Toast.LENGTH_SHORT));
+        waitFor(0);
+    }
+
+    @Test
+    public void facebooksCopiedToastForAKeptOffCopyIsDroppedAndTheNextToastShows() {
+        hold();
+        copy(POST);
+        facebookToast("Text copied to clipboard");
+        assertEquals("the toast saying it copied is dropped", 0, ShadowToast.shownToastCount());
+        assertTrue(statusLine(), statusLine().contains(PostTextSelect.TOAST_DROPPED + " 1"));
+
+        facebookToast("Saved");
+        assertEquals("only that one toast is dropped", "Saved", ShadowToast.getTextOfLatestToast());
+    }
+
+    @Test
+    public void toastsWithNoKeptOffCopyOrPastTheWindowShow() {
+        deliver(event(MotionEvent.ACTION_DOWN));
+        waitFor(100);
+        copy("picked from a menu");
+        deliver(event(MotionEvent.ACTION_UP));
+        facebookToast("Text copied to clipboard");
+        assertEquals("a copy that reached the clipboard keeps its toast", 1, ShadowToast.shownToastCount());
+
+        hold();
+        copy(POST);
+        waitFor(PostTextSelect.TOAST_WINDOW + 100L);
+        facebookToast("Link copied");
+        assertEquals("a toast long after the kept-off copy shows", "Link copied", ShadowToast.getTextOfLatestToast());
+        assertEquals(2, ShadowToast.shownToastCount());
+        assertFalse(statusLine(), statusLine().contains(PostTextSelect.TOAST_DROPPED));
     }
 
     @Test
