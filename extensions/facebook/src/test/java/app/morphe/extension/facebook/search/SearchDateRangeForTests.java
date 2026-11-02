@@ -8,6 +8,8 @@ import android.view.View;
 
 import org.robolectric.RuntimeEnvironment;
 
+import java.util.Collections;
+
 /** Asks the range picker's day hooks what Facebook's picker and its Apply would. */
 public final class SearchDateRangeForTests {
     /** The months Facebook writes for March to May 2026. */
@@ -37,5 +39,24 @@ public final class SearchDateRangeForTests {
     public static boolean wrapsThePicker() {
         View picker = new View(RuntimeEnvironment.getApplication());
         return SearchDateRange.dayRow(picker) != picker;
+    }
+
+    /** Whether a range labelled at Apply gets that label back when the server labels it Any date. */
+    public static boolean keepsTheLabel() {
+        String value = "{\"name\":\"creation_time\",\"args\":\"{" + MARCH_TO_MAY + "}\"}";
+        try {
+            SearchDateRange.stateLabel(SearchDateRange.FILTER, "Mar 2026 to May 2026", value);
+            return !"Any date".equals(SearchDateRange.stateLabel(SearchDateRange.FILTER, "Any date", value));
+        } finally {
+            SearchDateRange.forgetLabels();
+        }
+    }
+
+    /** Whether a range kept before the server's answer stays in the states that answer brings. */
+    public static boolean keepsTheRange() {
+        String value = "{\"name\":\"creation_time\",\"args\":\"{" + MARCH_TO_MAY + "}\"}";
+        SearchDateRangeTest.State range = new SearchDateRangeTest.State(SearchDateRange.FILTER, value);
+        return SearchDateRange.keptStates(Collections.singletonMap(SearchDateRange.FILTER, Collections.singletonList(range)),
+                Collections.emptyList()) != null;
     }
 }

@@ -6,10 +6,14 @@ package app.morphe.patches.facebook.search.daterange
 
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
+import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
+import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.methodsHolding
@@ -20,16 +24,21 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.classDefForEachReferencing
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 
 private const val PATCH = "Search date range"
 
@@ -44,6 +53,20 @@ internal const val CALLBACK =
 internal const val DAY_ROW = "$SEARCH_DATE_RANGE->dayRow(Landroid/view/View;)Landroid/view/View;"
 internal const val DAYS = "$SEARCH_DATE_RANGE->days(Ljava/lang/String;)Ljava/lang/String;"
 internal const val LABEL = "$SEARCH_DATE_RANGE->label(Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/String;"
+internal const val STATE_LABEL =
+    "$SEARCH_DATE_RANGE->stateLabel(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+internal const val KEPT_STATES = "$SEARCH_DATE_RANGE->keptStates(Ljava/util/Map;Ljava/util/List;)Ljava/util/List;"
+
+/** The state Facebook keeps for each filter a search applies, built from the filter's name, label, value and key. */
+internal const val FILTER_STATE = "Lcom/facebook/search/results/filters/state/FilterPersistentState;"
+
+/** The extension's view of a [FILTER_STATE], which the patch makes it implement. */
+internal const val STATE_BRIDGE = "$EXTENSION_PACKAGE/search/SearchDateRange\$FilterState;"
+internal const val STATE_NAME = "hushfacebookFilterName"
+internal const val STATE_VALUE = "hushfacebookFilterValue"
+
+internal const val IMMUTABLE_LIST = "Lcom/google/common/collect/ImmutableList;"
+internal const val COPY_OF = "$IMMUTABLE_LIST->copyOf(Ljava/util/Collection;)$IMMUTABLE_LIST"
 
 /** The range picker screen. */
 internal const val PICKER = "Lcom/facebook/search/results/filters/ui/home/SearchResultsDateRangePickerMenuFragment;"
@@ -99,6 +122,20 @@ internal const val FLAG_REACH = 12
  * joining five Strings from the two ends a DateFormat wrote. After the months text lands, the
  * extension is handed it and adds `start_day` and `end_day`; after the label lands, it is handed
  * the label and that DateFormat and writes the ends as days.
+ *
+ * Kept: that label goes into a [FILTER_STATE] (585 `LX/0krc;->A02`), which Facebook keeps in a map of
+ * each filter's states (585 `LX/0D0D;->A0A`) that the filter sheet's rows and the next search read.
+ * The server's answer to a search (585 `LX/0DBA;->onSuccess`) clears that map and fills it from the
+ * states it brings (585 `LX/0D0D;->A05`), and it never brings a range back, so the Date posted row
+ * read "Any date" and a later filter change searched without the range. That method is found by
+ * shape: it takes one ImmutableList, clears a HashMap of its own class first, casts to the state and
+ * keys each state by its key or name field. First thing, the map and the incoming list go to the
+ * extension, and a list it answers is copied into an ImmutableList and replaces the incoming one.
+ * The extension tells a range from the state through [STATE_BRIDGE], which the state is made to
+ * implement with two methods answering its name and value fields. Should the server ever send a
+ * range back, it would come labelled with the server's text, so the state's constructor from four
+ * Strings hands the name, label and value to the extension first thing too, and its answer
+ * becomes the label.
  */
 @Suppress("unused")
 val searchDateRangePatch = bytecodePatch(
@@ -139,6 +176,22 @@ val searchDateRangePatch = bytecodePatch(
                 "$PATCH: expected one method writing a range's months and then its label, found ${writes.size}: " +
                     writes.joinToString { it.first.descriptor() },
             )
+        val state = classDefByOrNull(FILTER_STATE)?.methods?.singleOrNull(::isStateConstructor)
+            ?: throw PatchException("$PATCH: $FILTER_STATE has no constructor from four Strings")
+        val fields = stateFields(state)
+            ?: throw PatchException("$PATCH: ${state.descriptor()} doesn't keep its name, label and value in fields")
+        val resets = mutableListOf<Pair<Method, FieldReference>>()
+        classDefForEachReferencing(types = listOf(FILTER_STATE)) { classDef ->
+            if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
+            classDef.methods.forEach { method -> statesReset(method, fields)?.let { resets += method to it } }
+        }
+        val (reset, kept) = resets.singleOrNull()
+            ?: throw PatchException(
+                "$PATCH: expected one method filling the filter states from the server's answer, found ${resets.size}: " +
+                    resets.joinToString { it.first.descriptor() },
+            )
+        classDefByOrNull(IMMUTABLE_LIST)?.methods?.singleOrNull { it.descriptor() == COPY_OF && AccessFlags.STATIC.isSet(it.accessFlags) }
+            ?: throw PatchException("$PATCH: $IMMUTABLE_LIST has no static copyOf from a Collection")
         val method = mutableClassDefBy(tap.definingClass).methods.single { it.descriptor() == tap.descriptor() }
         // The last first: each hook moves every later instruction down.
         method.hookFlag(read)
@@ -148,6 +201,9 @@ val searchDateRangePatch = bytecodePatch(
             .hookPickerView(view.second)
         mutableClassDefBy(sender.definingClass).methods.single { it.descriptor() == sender.descriptor() }
             .hookRangeWrite(write)
+        mutableClassDefBy(FILTER_STATE).methods.single { it.descriptor() == state.descriptor() }.hookStateLabel()
+        bridgeFilterState(fields)
+        mutableClassDefBy(reset.definingClass).methods.single { it.descriptor() == reset.descriptor() }.hookStatesReset(kept)
         enableStatus("searchDateRange")
     }
 }
@@ -411,6 +467,125 @@ internal fun MutableMethod.hookKind(read: KindRead) {
             invoke-static { v${read.filter}, v${read.kind} }, $KIND
             move-result-object v${read.kind}
             check-cast v${read.kind}, ${read.kindType}
+        """,
+    )
+}
+
+/** The [FILTER_STATE] fields its constructor keeps the filter's name, label, value and key in. */
+internal class StateFields(
+    val name: FieldReference,
+    val label: FieldReference,
+    val value: FieldReference,
+    val key: FieldReference,
+)
+
+/**
+ * The fields [constructor] stores its four Strings in, each a String field of [FILTER_STATE]
+ * written from that parameter onto this, or null when one isn't exactly one field.
+ */
+internal fun stateFields(constructor: Method): StateFields? {
+    val implementation = constructor.implementation ?: return null
+    val code = implementation.instructions.toList()
+    val self = implementation.registerCount - 5
+    fun kept(parameter: Int) = code.filter { instruction ->
+        instruction.opcode == Opcode.IPUT_OBJECT && (instruction as TwoRegisterInstruction).registerA == self + parameter &&
+            instruction.registerB == self
+    }.mapNotNull { ((it as ReferenceInstruction).reference as? FieldReference)?.takeIf { field ->
+        field.definingClass == FILTER_STATE && field.type == STRING
+    } }.singleOrNull()
+    return StateFields(kept(1) ?: return null, kept(2) ?: return null, kept(3) ?: return null, kept(4) ?: return null)
+}
+
+/**
+ * The HashMap field the filter states are kept in, when [method] is where the server's answer
+ * fills it: not static, answering nothing, taking one ImmutableList, clearing that field of its own
+ * class right after loading it, casting to [FILTER_STATE] and reading the state's key and name
+ * fields. Null for anything else, or when the incoming list's register is out of reach of the
+ * hook's invoke.
+ */
+internal fun statesReset(method: Method, fields: StateFields): FieldReference? {
+    if (AccessFlags.STATIC.isSet(method.accessFlags) || method.returnType != "V") return null
+    if (method.parameterTypes.map(CharSequence::toString) != listOf(IMMUTABLE_LIST)) return null
+    val implementation = method.implementation ?: return null
+    // The hook borrows v0 and passes it with the list, which sits in the last register.
+    if (implementation.registerCount !in 3..16) return null
+    val code = implementation.instructions.toList()
+    val self = implementation.registerCount - 2
+    val cleared = code.zipWithNext().firstNotNullOfOrNull { (load, clear) ->
+        val field = (load as? ReferenceInstruction)?.reference as? FieldReference
+        val call = (clear as? ReferenceInstruction)?.reference as? MethodReference
+        field?.takeIf {
+            load.opcode == Opcode.IGET_OBJECT && (load as TwoRegisterInstruction).registerB == self &&
+                it.definingClass == method.definingClass && it.type == "Ljava/util/HashMap;" &&
+                clear.opcode == Opcode.INVOKE_VIRTUAL && call?.name == "clear" &&
+                (clear as FiveRegisterInstruction).registerC == load.registerA
+        }
+    } ?: return null
+    fun reads(field: FieldReference) = code.any { instruction ->
+        val read = (instruction as? ReferenceInstruction)?.reference as? FieldReference
+        instruction.opcode == Opcode.IGET_OBJECT && read != null && read.definingClass == FILTER_STATE &&
+            read.name == field.name && read.type == field.type
+    }
+    val casts = code.any { instruction ->
+        instruction.opcode == Opcode.CHECK_CAST && (instruction as ReferenceInstruction).reference.toString() == FILTER_STATE
+    }
+    return if (casts && reads(fields.key) && reads(fields.name)) cleared else null
+}
+
+private fun FieldReference.smali() = "$definingClass->$name:$type"
+
+/**
+ * First thing, the kept states and the incoming list go to the extension; a list it answers
+ * becomes the incoming one, and with none Facebook's list goes on as it came.
+ */
+internal fun MutableMethod.hookStatesReset(kept: FieldReference) {
+    addInstructionsWithLabels(
+        0,
+        """
+            iget-object v0, p0, ${kept.smali()}
+            invoke-static { v0, p1 }, $KEPT_STATES
+            move-result-object v0
+            if-eqz v0, :facebook
+            invoke-static { v0 }, $COPY_OF
+            move-result-object p1
+        """,
+        ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/** Makes [FILTER_STATE] a [STATE_BRIDGE], its two methods answering the state's name and value fields. */
+internal fun BytecodePatchContext.bridgeFilterState(fields: StateFields) {
+    val state = mutableClassDefBy(FILTER_STATE)
+    if (STATE_BRIDGE !in state.interfaces) state.interfaces.add(STATE_BRIDGE)
+    listOf(STATE_NAME to fields.name, STATE_VALUE to fields.value).forEach { (name, field) ->
+        if (state.methods.any { it.name == name }) return@forEach
+        state.methods.add(
+            ImmutableMethod(
+                FILTER_STATE, name, emptyList(), STRING, AccessFlags.PUBLIC.value, null, null, MutableMethodImplementation(2),
+            ).toMutable().apply {
+                addInstructions(
+                    0,
+                    """
+                        iget-object v0, p0, ${field.smali()}
+                        return-object v0
+                    """,
+                )
+            },
+        )
+    }
+}
+
+/** The [FILTER_STATE] constructor taking the filter's name, label, value and key. */
+internal fun isStateConstructor(method: Method) =
+    method.name == "<init>" && method.parameterTypes.map(CharSequence::toString) == listOf(STRING, STRING, STRING, STRING)
+
+/** First thing, the name, label and value go to the extension, and its answer becomes the label. */
+internal fun MutableMethod.hookStateLabel() {
+    addInstructions(
+        0,
+        """
+            invoke-static { p1, p2, p3 }, $STATE_LABEL
+            move-result-object p2
         """,
     )
 }

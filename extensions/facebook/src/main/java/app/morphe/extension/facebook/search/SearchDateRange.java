@@ -22,8 +22,12 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.ArrayList;
 import java.util.GregorianCalendar;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,6 +64,13 @@ import app.morphe.extension.shared.ui.Dim;
  * picker, {@link #days} adds the two days to the range Facebook sends, clamped to each month's
  * length, and {@link #label} puts them in the chip Facebook shows for the range. The first of the
  * start month to the last of the end month is the range Facebook sends anyway, so it goes as it is.
+ *
+ * <p>The Date posted row read "Any date" after a range was applied. The server's answer to a search
+ * replaces the states Facebook keeps for its filters with the ones the server sends back, and it
+ * never sends a range back, so the range was gone from the filter screen and from the next search a
+ * filter change ran. {@link #keptStates} keeps the applied range through that answer. Should the
+ * server ever send a range back, it would come with the server's own text, so {@link #stateLabel}
+ * gives a range's state the label it was applied with.
  */
 public final class SearchDateRange {
     /** The name Facebook gives the Posted date filter. */
@@ -91,6 +102,29 @@ public final class SearchDateRange {
 
     /** What the report counts each time a range goes out with its days. */
     static final String DAYS_SENT = "Range sent with days";
+
+    /** The member the report names once a filter state's label has been asked about. */
+    static final String STATE_LABEL = "filter state label";
+
+    /** What the report counts each time a range's state gets back the label it was applied with. */
+    static final String LABEL_KEPT = "Range label kept";
+
+    /** The member the report names once the server's answer has handed over the states it brings. */
+    static final String KEPT_STATES = "filter states kept";
+
+    /** What the report counts each time an applied range stays through the server's answer. */
+    static final String RANGE_KEPT = "Range kept through the server's answer";
+
+    /** How many ranges' labels are kept, the newest last. */
+    private static final int KEPT_LABELS = 16;
+
+    /** The label each range was first labelled with, by the value it sends. */
+    private static final Map<String, String> RANGE_LABELS = new LinkedHashMap<String, String>(KEPT_LABELS, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+            return size() > KEPT_LABELS;
+        }
+    };
 
     /**
      * A quote as the range text holds it. That text goes into the filter's {@code args}, a JSON
@@ -401,6 +435,100 @@ public final class SearchDateRange {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, DAY_LABEL, failure);
             return facebookLabel;
+        }
+    }
+
+    /**
+     * The hook first thing in the constructor of every filter state Facebook keeps, handed the
+     * filter's name, the label it shows and the value it sends. Facebook builds a range's state at
+     * Apply, labelled with its two ends, and again from the server's answer, labelled with the text
+     * the server has for that value, which for a range on the Posted date filter is the "Any date"
+     * of its list of years. The first label a range's value gets is kept and comes back for that
+     * value afterwards. Every other filter, and a throw, keeps its label.
+     */
+    public static String stateLabel(String name, String facebookLabel, String value) {
+        if (!FILTER.equals(name) || value == null || !value.contains("start_month")) return facebookLabel;
+        try {
+            HookStatus.bound(FAMILY, STATE_LABEL);
+            if (!Utils.settingsReady() || !Settings.SEARCH_DATE_RANGE.get()) return facebookLabel;
+            synchronized (RANGE_LABELS) {
+                String kept = RANGE_LABELS.get(value);
+                if (kept == null) {
+                    if (facebookLabel != null && !facebookLabel.isEmpty()) RANGE_LABELS.put(value, facebookLabel);
+                    Logger.printDebug(() -> "Search date range: " + value + " is labelled " + facebookLabel);
+                    return facebookLabel;
+                }
+                if (!kept.equals(facebookLabel)) {
+                    HookStatus.counted(FAMILY, LABEL_KEPT);
+                    Logger.printDebug(() -> "Search date range: " + facebookLabel + " shows as " + kept);
+                }
+                return kept;
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, STATE_LABEL, failure);
+            return facebookLabel;
+        }
+    }
+
+    /** A filter state Facebook keeps, made to answer its filter's name and the value it sends by the patch. */
+    public interface FilterState {
+        String hushfacebookFilterName();
+
+        String hushfacebookFilterValue();
+    }
+
+    /**
+     * The hook first thing where the server's answer to a search replaces the states Facebook keeps
+     * for its filters, handed the states kept so far, a list of them for each filter, and the ones
+     * the answer brings. The server never sends a range back, so a range applied to the Posted date
+     * filter would be dropped, the filter screen would read "Any date" and the next search a filter
+     * change runs would go out without it. While the switch is on and a range is kept but not
+     * brought back, the answer's states come back with the range in place of any Posted date state
+     * of the server's. Null, for everything else and a throw, lets the answer's states through.
+     */
+    public static List<Object> keptStates(Map<?, ?> kept, List<?> incoming) {
+        if (kept == null || incoming == null) return null;
+        try {
+            HookStatus.bound(FAMILY, KEPT_STATES);
+            if (!Utils.settingsReady() || !Settings.SEARCH_DATE_RANGE.get()) return null;
+            Object range = null;
+            for (Object states : kept.values()) {
+                if (!(states instanceof Iterable)) continue;
+                for (Object state : (Iterable<?>) states) {
+                    if (isRange(state)) range = state;
+                }
+            }
+            if (range == null) return null;
+            List<Object> states = new ArrayList<>(incoming.size() + 1);
+            for (Object state : incoming) {
+                if (isRange(state)) return null;
+                if (!(state instanceof FilterState) || !FILTER.equals(((FilterState) state).hushfacebookFilterName())) {
+                    states.add(state);
+                }
+            }
+            states.add(range);
+            HookStatus.counted(FAMILY, RANGE_KEPT);
+            String value = ((FilterState) range).hushfacebookFilterValue();
+            Logger.printDebug(() -> "Search date range: " + value + " kept through the server's answer");
+            return states;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, KEPT_STATES, failure);
+            return null;
+        }
+    }
+
+    /** Whether {@code state} is a range applied to the Posted date filter. */
+    private static boolean isRange(Object state) {
+        if (!(state instanceof FilterState)) return false;
+        FilterState filter = (FilterState) state;
+        String value = filter.hushfacebookFilterValue();
+        return FILTER.equals(filter.hushfacebookFilterName()) && value != null && value.contains("start_month");
+    }
+
+    /** Forgets every range's label, for tests. */
+    static void forgetLabels() {
+        synchronized (RANGE_LABELS) {
+            RANGE_LABELS.clear();
         }
     }
 

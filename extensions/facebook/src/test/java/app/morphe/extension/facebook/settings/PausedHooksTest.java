@@ -1027,7 +1027,9 @@ public class PausedHooksTest {
                 () -> SearchDateRange.callback(new SearchDateRangeTest.Filter("rp_creation_time"),
                         SearchDateRangeTest.Kind.MULTI_CHOICE, "callback") == null,
                 SearchDateRangeForTests::sendsDays,
-                SearchDateRangeForTests::wrapsThePicker));
+                SearchDateRangeForTests::wrapsThePicker,
+                SearchDateRangeForTests::keepsTheLabel,
+                SearchDateRangeForTests::keepsTheRange));
         // Search results get a Posts chip after Reels.
         probes.put(PatchFamily.SEARCH_POSTS_TAB, Collections.singletonList(SearchPostsTabForTests::addsPosts));
         // XAnalytics' upload and uploader resume are skipped, and the Papaya job finishes unrun.

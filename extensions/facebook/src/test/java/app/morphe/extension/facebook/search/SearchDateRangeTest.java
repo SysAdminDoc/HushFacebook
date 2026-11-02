@@ -28,7 +28,12 @@ import org.robolectric.annotation.Config;
 import org.robolectric.annotation.GraphicsMode;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -66,6 +71,27 @@ public class SearchDateRangeTest {
         }
     }
 
+    /** Stands in for a filter state Facebook keeps, with the two methods the patch gives it. */
+    public static final class State implements SearchDateRange.FilterState {
+        private final String name;
+        private final String value;
+
+        public State(String name, String value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        @Override
+        public String hushfacebookFilterName() {
+            return name;
+        }
+
+        @Override
+        public String hushfacebookFilterValue() {
+            return value;
+        }
+    }
+
     private static final Filter POSTED = new Filter(SearchDateRange.FILTER);
 
     private static final String MARCH_TO_MAY = SearchDateRangeForTests.MARCH_TO_MAY;
@@ -85,6 +111,7 @@ public class SearchDateRangeTest {
         SearchDateRange.fromDay = 1;
         SearchDateRange.toDay = 31;
         SearchDateRange.label(null, null);
+        SearchDateRange.forgetLabels();
     }
 
     private static String statusLine() {
@@ -239,6 +266,72 @@ public class SearchDateRangeTest {
         assertSame(MARCH_TO_MAY, SearchDateRange.days(MARCH_TO_MAY));
         assertEquals("Mar 2026 to May 2026", SearchDateRange.label("Mar 2026 to May 2026", months));
         assertNull(SearchDateRange.days(null));
+    }
+
+    @Test
+    public void aRangeKeepsTheLabelItWasAppliedWithWhenTheServersAnswerComesBack() {
+        Settings.SEARCH_DATE_RANGE.save(true);
+        String value = "{\"name\":\"creation_time\",\"args\":\"{" + MARCH_TO_MAY + "}\"}";
+        String applied = "Mar 5, 2026 to May 20, 2026";
+        assertEquals(applied, SearchDateRange.stateLabel(SearchDateRange.FILTER, applied, value));
+        assertEquals("the server's text for the range was shown", applied,
+                SearchDateRange.stateLabel(SearchDateRange.FILTER, "Any date", value));
+        assertTrue(String.valueOf(statusLine()).contains(SearchDateRange.LABEL_KEPT + " 1"));
+        String june = value.replace("2026-05", "2026-06");
+        assertEquals("another range took this one's label", "Any date",
+                SearchDateRange.stateLabel(SearchDateRange.FILTER, "Any date", june));
+    }
+
+    @Test
+    public void otherFiltersYearsOffOrPausedTheLabelIsFacebooks() {
+        Settings.SEARCH_DATE_RANGE.save(true);
+        String value = "{\"name\":\"creation_time\",\"args\":\"{" + MARCH_TO_MAY + "}\"}";
+        SearchDateRange.stateLabel(SearchDateRange.FILTER, "Mar 2026 to May 2026", value);
+        assertEquals("Anyone", SearchDateRange.stateLabel("rp_author", "Anyone", value));
+        String year = "{\"name\":\"creation_time\",\"args\":\"{\\\"start_year\\\":\\\"2025\\\"}\"}";
+        assertEquals("2025", SearchDateRange.stateLabel(SearchDateRange.FILTER, "2025", year));
+        assertEquals("Any date", SearchDateRange.stateLabel(SearchDateRange.FILTER, "Any date", null));
+        Settings.SEARCH_DATE_RANGE.save(false);
+        assertEquals("off", "Any date", SearchDateRange.stateLabel(SearchDateRange.FILTER, "Any date", value));
+        Settings.SEARCH_DATE_RANGE.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused", "Any date", SearchDateRange.stateLabel(SearchDateRange.FILTER, "Any date", value));
+    }
+
+    @Test
+    public void anAppliedRangeStaysThroughTheServersAnswer() {
+        Settings.SEARCH_DATE_RANGE.save(true);
+        State range = new State(SearchDateRange.FILTER, "{\"name\":\"creation_time\",\"args\":\"{" + MARCH_TO_MAY + "}\"}");
+        Map<String, List<Object>> kept = new HashMap<>();
+        kept.put(SearchDateRange.FILTER, Collections.singletonList(range));
+        kept.put("rp_author", Collections.singletonList(new State("rp_author", "friends")));
+        State author = new State("rp_author", "anyone");
+        State anyDate = new State(SearchDateRange.FILTER, "");
+        List<Object> states = SearchDateRange.keptStates(kept, Arrays.asList(author, anyDate));
+        assertEquals("the server's Any date went and the range stayed", Arrays.asList(author, range), states);
+        assertTrue(String.valueOf(statusLine()).contains(SearchDateRange.RANGE_KEPT + " 1"));
+    }
+
+    @Test
+    public void noRangeKeptOneSentBackOffOrPausedLeaveTheAnswerAlone() {
+        Settings.SEARCH_DATE_RANGE.save(true);
+        String value = "{\"name\":\"creation_time\",\"args\":\"{" + MARCH_TO_MAY + "}\"}";
+        Map<String, Object> kept = new HashMap<>();
+        kept.put(SearchDateRange.FILTER, Collections.singletonList(new State(SearchDateRange.FILTER, value)));
+        List<Object> incoming = Collections.singletonList(new State("rp_author", "anyone"));
+        Map<String, Object> year = Collections.singletonMap(SearchDateRange.FILTER, Collections.singletonList(
+                new State(SearchDateRange.FILTER, "{\"name\":\"creation_time\",\"args\":\"{\\\"start_year\\\":\\\"2025\\\"}\"}")));
+        assertNull("a year kept", SearchDateRange.keptStates(year, incoming));
+        assertNull("nothing kept", SearchDateRange.keptStates(new HashMap<>(), incoming));
+        assertNull("not a list", SearchDateRange.keptStates(Collections.singletonMap(SearchDateRange.FILTER, "x"), incoming));
+        assertNull("no map", SearchDateRange.keptStates(null, incoming));
+        assertNull("sent back", SearchDateRange.keptStates(kept,
+                Collections.singletonList(new State(SearchDateRange.FILTER, value))));
+        Settings.SEARCH_DATE_RANGE.save(false);
+        assertNull("off", SearchDateRange.keptStates(kept, incoming));
+        Settings.SEARCH_DATE_RANGE.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertNull("paused", SearchDateRange.keptStates(kept, incoming));
     }
 
     @Test
