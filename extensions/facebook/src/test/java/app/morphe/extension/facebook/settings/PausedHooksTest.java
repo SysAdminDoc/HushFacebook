@@ -342,6 +342,9 @@ public class PausedHooksTest {
         probes.put(Settings.OPENING_PAUSE, app.morphe.extension.facebook.misc.OpeningPauseForTests::aLaunchCovers);
         // An hour of feed browsing puts a break over the feed.
         probes.put(Settings.TAKE_BREAKS, app.morphe.extension.facebook.misc.BreakTimerForTests::aBreakCovers);
+        // The pictures on Facebook's Blocking page go.
+        probes.put(Settings.HIDE_BLOCKED_LIST_PICTURES,
+                app.morphe.extension.facebook.misc.BlockedListPicturesTest::aBlockingPageHides);
         return probes;
     }
 

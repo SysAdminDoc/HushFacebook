@@ -361,7 +361,7 @@ public enum PatchFamily {
                     Settings.SETTINGS_LOGO_PRESS,
                     Settings.SETTINGS_MENU_ROW, Settings.APP_LOCK,
                     Settings.SAVE_CRASH_FILE, Settings.CLOSE_WHEN_LEFT, Settings.OPENING_PAUSE,
-                    Settings.TAKE_BREAKS));
+                    Settings.TAKE_BREAKS, Settings.HIDE_BLOCKED_LIST_PICTURES));
 
     /**
      * The switches the download patches share and none of them owns: each shapes what every

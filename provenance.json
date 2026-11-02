@@ -1277,6 +1277,15 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/BlockedListPictures.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Hide pictures on the Blocked list. When Facebook's React Native Blocking page comes to the front, found by its route in the intent, each layout pass hides the square images of 32 dp or more, which are the blocked people's pictures, and leaves the 24 dp plus beside Add to blocked list. It runs from the settings entry's activity callbacks rather than a patch."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/TextSize.java"
       ],
       "origin": "original",

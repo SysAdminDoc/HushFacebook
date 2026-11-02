@@ -363,6 +363,7 @@ public final class SettingsBackup {
             Settings.CLOSE_WHEN_LEFT,
             Settings.OPENING_PAUSE,
             Settings.TAKE_BREAKS,
+            Settings.HIDE_BLOCKED_LIST_PICTURES,
             Settings.MARKETPLACE_ONLY,
             Settings.EVENTS_ONLY,
             Settings.MARKETPLACE_QUIET_NOTIFICATIONS,

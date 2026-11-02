@@ -592,6 +592,10 @@ final class AppPages {
                 L10n.t("A few seconds after you leave Facebook, it closes all the way and leaves your recent apps, so it "
                         + "isn't running in the background. It waits for uploads and saves to finish first. Notifications "
                         + "may come late, or not until you open Facebook again.")));
+        // The settings entry's own too: it watches for the Blocking page from the application hook.
+        privacy.addPreference(toggle(context, Settings.HIDE_BLOCKED_LIST_PICTURES,
+                L10n.t("People you've blocked show without their profile pictures on the Blocking page in Facebook's "
+                        + "settings. Reopen the page if it's already open.")));
         if (build.contains(PatchFamily.ANALYTICS_UPLOADS)) {
             // XAnalytics resumes its uploader once, as Facebook starts.
             privacy.addPreference(toggle(context, Settings.HOLD_ANALYTICS_UPLOADS,

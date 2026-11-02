@@ -2009,6 +2009,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_close_when_left", FALSE);
 
     /**
+     * The people on Facebook's Blocking page show without their profile pictures
+     * ({@link app.morphe.extension.facebook.misc.BlockedListPictures}, #361). The settings entry's
+     * own switch, so every build has it ({@link PatchFamily#ENTRY_SWITCHES}). Off by default.
+     */
+    public static final BooleanSetting HIDE_BLOCKED_LIST_PICTURES =
+            new BooleanSetting("hushfacebook_hide_blocked_list_pictures", FALSE);
+
+    /**
      * Opening Facebook from its icon puts a cover that counts down {@link #OPENING_PAUSE_LENGTH}
      * over its first screen ({@link app.morphe.extension.facebook.misc.OpeningPause}). The settings
      * entry's own switch, so every build has it ({@link PatchFamily#ENTRY_SWITCHES}). Off by default.
