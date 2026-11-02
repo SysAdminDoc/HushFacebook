@@ -144,6 +144,8 @@ final class VideoPages {
                     L10n.t("Hides the search suggestion under a reel's caption, the magnifier with a question to look up, "
                             + "the one at the top of its comments and the search bar over reels you open from a profile.")));
             // Asked after each layout of the full-screen player, so a change shows right away.
+            reels.addPreference(toggle(context, Settings.HIDE_REELS_TAB_TITLE,
+                    L10n.t("Takes the word Reels off the top of the Reels tab. The buttons beside it stay.")));
             reels.addPreference(toggle(context, Settings.HIDE_VIEWER_TOP_BUTTONS,
                     L10n.t("Takes Search and the button next to it off the top of a video or reel you open, and off the "
                             + "Reels tab. Back and Menu stay, and so does More at the bottom of the side buttons, where "

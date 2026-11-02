@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** New `Hide the Reels title` under Reels and Watch. It takes the word Reels off the top of the Reels tab and leaves the buttons beside it. It starts off. (#362)
 * **Facebook:** New `Hide the Join button on posts` under News feed. A post from a group you haven't joined shows a Join button after the group's name, and this takes it off while the name stays. It shows on posts drawn after you flip it. It starts off. (#356)
 * **Facebook:** New `Remove the gap above Marketplace listings` under Marketplace. On some phones, like Pixels on Android 17, a listing opened with an empty band between the status bar and its close and share buttons. That band is gone now, and phones that never had it look the same. It's on by default. (#333)
 * **Facebook:** If a future Facebook moves one of the spots `Leave calls and chats to Messenger` hooks into, `Open Messenger from the top bar` still patches. Only the second switch drops out of the settings for that build. (#39)

@@ -60,6 +60,9 @@ public final class ViewerTopBar {
 
     static final String HOST = "com.facebook.litho.ComponentHost";
 
+    /** Counted for each part of the Reels tab's title taken off its header. */
+    static final String TITLE_HIDDEN = "Reels title hidden";
+
     /** How many levels under the bar a button is looked for. 585's sit 2 to 5 down. */
     static final int MAX_DEPTH = 8;
 
@@ -69,6 +72,8 @@ public final class ViewerTopBar {
     private static final Map<View, Boolean> hidden = new WeakHashMap<>();
     /** The hosts with a detach listener on, which stays until the host leaves the window. */
     private static final Map<View, Boolean> listening = new WeakHashMap<>();
+    /** The bars whose hosts were described in the log once. */
+    private static final Map<View, Boolean> titleLogged = new WeakHashMap<>();
 
     /** The application this process's callbacks went on, so a second start of the hook adds none. */
     private static WeakReference<Application> watching = new WeakReference<>(null);
@@ -141,7 +146,7 @@ public final class ViewerTopBar {
 
     private static void laidOut(Activity activity) {
         int id = id();
-        if (id == 0 || (hidden.isEmpty() && !on())) return;
+        if (id == 0 || (hidden.isEmpty() && !on() && !titleOn())) return;
         if (FeedVideoAlone.PLAYER_SCREENS.contains(activity.getClass().getName())) {
             View bar = activity.findViewById(id);
             if (bar != null) tidy(bar);
@@ -152,8 +157,13 @@ public final class ViewerTopBar {
         ViewGroup layers = (ViewGroup) content;
         for (int i = 0; i < layers.getChildCount(); i++) {
             View bar = layers.getChildAt(i).findViewById(id);
-            if (bar != null) tidy(bar);
+            if (bar != null) tidy(bar, true);
         }
+    }
+
+    /** Whether the Reels tab's title goes now. */
+    private static boolean titleOn() {
+        return Utils.settingsReady() && !Setting.isPaused() && Settings.HIDE_REELS_TAB_TITLE.get();
     }
 
     /** Whether the bar's far buttons go now. */
@@ -166,13 +176,42 @@ public final class ViewerTopBar {
      * longer is one, or every one when the switch is off. Answers how many it hid this time.
      */
     static int tidy(View bar) {
+        return tidy(bar, false);
+    }
+
+    /**
+     * [tab] says the bar was found in a layer under the content view, where the Reels tab's header
+     * lives, rather than on a full-screen player screen. Only there is the title looked for (#362).
+     */
+    static int tidy(View bar, boolean tab) {
         boolean on = on();
+        boolean title = tab && titleOn();
         List<View> far = on ? farButtons(bar) : new ArrayList<>();
+        List<View> titles = title ? titleHosts(bar) : new ArrayList<>();
+        List<View> wanted = new ArrayList<>(far);
+        wanted.addAll(titles);
         for (View host : new ArrayList<>(hidden.keySet())) {
-            if (host != null && !far.contains(host) && within(bar, host)) show(host);
+            if (host != null && !wanted.contains(host) && within(bar, host)) show(host);
         }
-        if (!on) return 0;
+        if (!on && !title) return 0;
         HookStatus.invoked(FAMILY);
+        if (title && !titleLogged.containsKey(bar)) {
+            titleLogged.put(bar, Boolean.TRUE);
+            Logger.printDebug(() -> "Viewer top bar: " + titles.size() + " title host(s) found of " + describe(bar));
+        }
+        int titled = 0;
+        for (View host : titles) {
+            if (host.getVisibility() != View.VISIBLE) continue;
+            host.setVisibility(View.INVISIBLE);
+            remember(host);
+            titled++;
+            HookStatus.bound(FAMILY, "reels title");
+            HookStatus.counted(FAMILY, TITLE_HIDDEN);
+        }
+        if (titled > 0) {
+            int hid = titled;
+            Logger.printDebug(() -> "Viewer top bar: hid " + hid + " Reels title host" + (hid == 1 ? "" : "s"));
+        }
         int count = 0;
         for (View host : far) {
             if (host.getVisibility() != View.VISIBLE) continue;
@@ -187,6 +226,70 @@ public final class ViewerTopBar {
             Logger.printDebug(() -> "Viewer top bar: hid " + hid + " button" + (hid == 1 ? "" : "s") + " past Back");
         }
         return count;
+    }
+
+    /**
+     * The Litho hosts in [bar] that could hold the Reels tab's title: not clickable and with no
+     * clickable ancestor in the bar, no host inside them, on the start half of the bar. The title
+     * is text, which Litho draws into the nearest host, so a host of its own is what can go.
+     */
+    static List<View> titleHosts(View bar) {
+        List<View> found = new ArrayList<>();
+        collectHosts(bar, bar, 0, found);
+        List<View> titles = new ArrayList<>();
+        if (bar.getWidth() <= 0) return titles;
+        boolean rtl = bar.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
+        for (View host : found) {
+            if (host.isClickable() || host.getWidth() <= 0 || host.getHeight() <= 0 || holdsHost(host)) continue;
+            if (clickableAbove(bar, host)) continue;
+            int[] at = offset(bar, host);
+            int start = rtl ? bar.getWidth() - (at[0] + host.getWidth()) : at[0];
+            if (start + host.getWidth() / 2 >= bar.getWidth() / 2) continue;
+            titles.add(host);
+        }
+        return titles;
+    }
+
+    private static void collectHosts(View bar, View view, int depth, List<View> found) {
+        if (!(view instanceof ViewGroup) || depth > MAX_DEPTH) return;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            if (isHost(child)) found.add(child);
+            collectHosts(bar, child, depth + 1, found);
+        }
+    }
+
+    private static boolean holdsHost(View host) {
+        ViewGroup group = (ViewGroup) host;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            if (isHost(child) || holdsHost(child)) return true;
+        }
+        return false;
+    }
+
+    private static boolean clickableAbove(View bar, View host) {
+        ViewParent parent = host.getParent();
+        while (parent instanceof View && parent != bar) {
+            if (((View) parent).isClickable() && isHost((View) parent)) return true;
+            parent = parent.getParent();
+        }
+        return false;
+    }
+
+    /** One line naming each host in [bar] with its size, place and whether it takes a tap, for the log. */
+    private static String describe(View bar) {
+        List<View> found = new ArrayList<>();
+        collectHosts(bar, bar, 0, found);
+        StringBuilder out = new StringBuilder("bar ").append(bar.getWidth()).append('x').append(bar.getHeight());
+        for (View host : found) {
+            int[] at = offset(bar, host);
+            out.append(" [").append(at[0]).append(',').append(at[1]).append(' ').append(host.getWidth()).append('x')
+                    .append(host.getHeight()).append(host.isClickable() ? " tap" : "")
+                    .append(host.getContentDescription() != null ? " desc" : "").append(']');
+        }
+        return out.toString();
     }
 
     /**
@@ -296,6 +399,7 @@ public final class ViewerTopBar {
         watched.clear();
         hidden.clear();
         listening.clear();
+        titleLogged.clear();
         barIdForTests = null;
     }
 }

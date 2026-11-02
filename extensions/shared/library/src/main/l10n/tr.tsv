@@ -2441,3 +2441,5 @@ Restore feed sound after opened videos	Açılan videolardan sonra akışın sesi
 A video you open plays with its sound as usual. Back in the feed, the sound is what it was before you opened it, even after a long watch.	Açtığın bir video her zamanki gibi sesli oynar. Akışa döndüğünde ses, videoyu açmadan önceki gibi olur, uzun süre izlesen bile.
 Hide the Join button on posts	Gönderilerde Katıl düğmesini gizle
 Hides the Join button next to the group's name on posts from groups you haven't joined. A change shows on the posts drawn after it.	Üyesi olmadığın gruplardan gelen gönderilerde grup adının yanındaki Katıl düğmesini gizler. Değişiklik, sonradan yüklenen gönderilerde görünür.
+Hide the Reels title	Reels başlığını gizle
+Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	Reels sekmesinin üstündeki Reels sözcüğünü kaldırır. Yanındaki düğmeler kalır.

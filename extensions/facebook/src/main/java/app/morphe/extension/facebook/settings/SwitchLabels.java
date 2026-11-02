@@ -163,6 +163,7 @@ final class SwitchLabels {
         if (setting == Settings.ORIGINAL_AUDIO) return L10n.t("Keep the original audio");
         if (setting == Settings.HIDE_REEL_SEARCH_PILL) return L10n.t("Hide the search pill on reels");
         if (setting == Settings.HIDE_VIEWER_TOP_BUTTONS) return L10n.t("Hide the top right buttons on opened videos");
+        if (setting == Settings.HIDE_REELS_TAB_TITLE) return L10n.t("Hide the Reels title");
         if (setting == Settings.BURN_IN_STAY_DIM) return L10n.t("Stay dim when I tap");
         if (setting == Settings.HIDE_REEL_COUNTS) return L10n.t("Hide counts on reels");
         if (setting == Settings.HIDE_REEL_SAVE_BUTTON) return L10n.t("Hide Save on reels");

@@ -2441,3 +2441,5 @@ Restore feed sound after opened videos	Feed-Ton nach geöffneten Videos wiederhe
 A video you open plays with its sound as usual. Back in the feed, the sound is what it was before you opened it, even after a long watch.	Ein Video, das du öffnest, läuft wie gewohnt mit Ton. Zurück im Feed ist der Ton so wie vor dem Öffnen, auch wenn du lange zugeschaut hast.
 Hide the Join button on posts	Beitreten-Button bei Beiträgen ausblenden
 Hides the Join button next to the group's name on posts from groups you haven't joined. A change shows on the posts drawn after it.	Blendet den Beitreten-Button neben dem Gruppennamen bei Beiträgen aus Gruppen aus, in denen du nicht Mitglied bist. Eine Änderung gilt für Beiträge, die danach geladen werden.
+Hide the Reels title	Reels-Titel ausblenden
+Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	Nimmt das Wort Reels oben im Reels-Tab weg. Die Buttons daneben bleiben.

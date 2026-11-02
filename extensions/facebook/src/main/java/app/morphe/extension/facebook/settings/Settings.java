@@ -680,6 +680,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_viewer_top_buttons", FALSE);
 
     /**
+     * The "Reels" title in the header at the top of the Reels tab goes ({@link
+     * app.morphe.extension.facebook.reels.ViewerTopBar}, #362). Menu and the other buttons stay.
+     * Asked after each layout of the screen.
+     */
+    public static final BooleanSetting HIDE_REELS_TAB_TITLE =
+            new BooleanSetting("hushfacebook_hide_reels_tab_title", FALSE);
+
+    /**
      * Burn-in guard on the Reels screen ({@link app.morphe.extension.facebook.reels.BurnInGuard},
      * #288): once the screen has gone {@link #BURN_IN_WAIT} without a touch, what shows beside the
      * video fades, and with {@link BurnInMode#DIM_AND_SHIFT} the screen also moves a step every two

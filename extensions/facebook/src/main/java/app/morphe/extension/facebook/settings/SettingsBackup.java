@@ -227,6 +227,7 @@ public final class SettingsBackup {
             Settings.ORIGINAL_AUDIO,
             Settings.HIDE_REEL_SEARCH_PILL,
             Settings.HIDE_VIEWER_TOP_BUTTONS,
+            Settings.HIDE_REELS_TAB_TITLE,
             Settings.BURN_IN_STAY_DIM,
             Settings.HIDE_REEL_COUNTS,
             Settings.HIDE_REEL_SAVE_BUTTON,

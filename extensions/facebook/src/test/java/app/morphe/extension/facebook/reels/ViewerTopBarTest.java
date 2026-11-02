@@ -90,6 +90,7 @@ public class ViewerTopBarTest {
     public void tearDown() {
         PauseForTests.resume();
         Settings.HIDE_VIEWER_TOP_BUTTONS.resetToDefault();
+        Settings.HIDE_REELS_TAB_TITLE.resetToDefault();
         ViewerTopBar.reset();
         HookStatus.clear();
     }
@@ -104,6 +105,31 @@ public class ViewerTopBarTest {
         assertEquals(View.INVISIBLE, search.getVisibility());
         assertEquals(View.INVISIBLE, profile.getVisibility());
         assertTrue(reported(ViewerTopBar.HIDDEN));
+    }
+
+    /** #362: the text of the tab's title sits in a host of its own beside Menu. */
+    @Test
+    public void theReelsTitleGoesOnTheTabAndNothingElseDoes() {
+        ComponentHost title = new ComponentHost(activity);
+        place(row, title, 160, 98, 360, 199);
+        layOut();
+        assertEquals(0, ViewerTopBar.tidy(bar, true));
+        assertEquals("the title went with its switch off", View.VISIBLE, title.getVisibility());
+
+        Settings.HIDE_REELS_TAB_TITLE.save(true);
+        assertEquals("a bar that isn't the tab's lost its title", 0, ViewerTopBar.tidy(bar));
+        assertEquals(View.VISIBLE, title.getVisibility());
+
+        assertEquals("only the buttons count", 0, ViewerTopBar.tidy(bar, true));
+        assertEquals(View.INVISIBLE, title.getVisibility());
+        assertEquals("Menu went with the title", View.VISIBLE, back.getVisibility());
+        assertEquals("Search went with the title", View.VISIBLE, search.getVisibility());
+        assertEquals(View.VISIBLE, profile.getVisibility());
+        assertTrue(reported(ViewerTopBar.TITLE_HIDDEN));
+
+        Settings.HIDE_REELS_TAB_TITLE.save(false);
+        ViewerTopBar.tidy(bar, true);
+        assertEquals("the title stayed away with the switch off", View.VISIBLE, title.getVisibility());
     }
 
     @Test

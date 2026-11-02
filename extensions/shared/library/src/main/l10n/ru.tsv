@@ -2495,3 +2495,5 @@ Restore feed sound after opened videos	Возвращать звук Ленты 
 A video you open plays with its sound as usual. Back in the feed, the sound is what it was before you opened it, even after a long watch.	Открытое видео воспроизводится со звуком как обычно. После возврата в Ленту звук будет таким же, как до открытия видео, даже после долгого просмотра.
 Hide the Join button on posts	Скрывать кнопку «Вступить» в публикациях
 Hides the Join button next to the group's name on posts from groups you haven't joined. A change shows on the posts drawn after it.	Скрывает кнопку «Вступить» рядом с названием группы в публикациях из групп, в которые вы не вступили. Изменение видно в публикациях, загруженных после него.
+Hide the Reels title	Скрывать заголовок Reels
+Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	Убирает слово Reels в верхней части вкладки Reels. Кнопки рядом остаются.
