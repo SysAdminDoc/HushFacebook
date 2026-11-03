@@ -29,13 +29,20 @@ import org.junit.Test
  * Turn off auto-translation's anchors on every Facebook build the bundle declares: one
  * GraphQLTranslatabilityType enum, one model getter of it reading translation_type, and in the reels
  * footer that records its caption translation request, two reads of the caption's flag, one of them
- * in that method. Then the patch on those classes: the getter's answer goes through the extension and
- * is cast back to the enum before it returns, and each flag read's answer goes through the extension
- * before anything reads it, each as a range call over the one register. Reads the fixture bundles
- * from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * in that method, and in the comment body two reads of the comment's translation type. Then the patch
+ * on those classes: the getter's answer goes through the extension and is cast back to the enum before
+ * it returns, each flag read's answer goes through the extension before anything reads it, and each
+ * comment type read's answer goes through it and is cast back, each as a range call over the one
+ * register. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class TurnOffAutoTranslationFixtureTest {
-    private class Anchors(val enumClass: ClassDef, val models: List<ClassDef>, val footer: ClassDef)
+    private class Anchors(
+        val enumClass: ClassDef,
+        val models: List<ClassDef>,
+        val footer: ClassDef,
+        val commentEnum: ClassDef,
+        val commentBodies: List<ClassDef>,
+    )
 
     private fun anchors(bundle: java.io.File): Anchors {
         val name = bundle.name
@@ -53,7 +60,12 @@ class TurnOffAutoTranslationFixtureTest {
         }
         val footers = FixtureDex.classesHolding(bundle, CAPTION_TRIGGER).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         assertEquals("$name: classes loading \"$CAPTION_TRIGGER\"", 1, footers.size)
-        return Anchors(enums.single(), models, footers.single())
+        val commentEnums = FixtureDex.classesHolding(bundle, MACHINE_TRANSLATION)
+            .filterNot { it.type.startsWith(EXTENSION_CLASSES) }.filter(::isCommentTranslationEnum)
+        assertEquals("$name: comment translation type enums", 1, commentEnums.size)
+        val bodies = FixtureDex.classesHolding(bundle, COMMENT_TOGGLE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        assertTrue("$name: no class loads \"$COMMENT_TOGGLE\"", bodies.isNotEmpty())
+        return Anchors(enums.single(), models, footers.single(), commentEnums.single(), bodies)
     }
 
     private fun rangeCall(instruction: Instruction, target: String, register: Int, where: String) {
@@ -70,7 +82,7 @@ class TurnOffAutoTranslationFixtureTest {
         }
 
     @Test
-    fun `each declared build has the translation type getter and the reel footer's two caption reads`() {
+    fun `each declared build has the translation type getter, the reel footer's caption reads and the comment body's type reads`() {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
         assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
         val checked = mutableSetOf<String>()
@@ -80,13 +92,18 @@ class TurnOffAutoTranslationFixtureTest {
                 val anchors = anchors(bundle)
                 assertEquals("$name: models with a translation_type getter", 1, anchors.models.size)
                 val context = PatchContexts.of(
-                    anchors.models + anchors.enumClass + anchors.footer + ExtensionDex.classDef(SETTINGS_STATUS),
+                    anchors.models + anchors.enumClass + anchors.footer + anchors.commentEnum + anchors.commentBodies +
+                        ExtensionDex.classDef(SETTINGS_STATUS),
                 )
                 val getter = context.findTranslationTypeGetter()
                 val reads = context.findCaptionReads()
                 assertEquals("$name: caption reads", 2, reads.size)
+                val comments = context.findCommentTypeReads()
+                assertEquals("$name: comment translation type reads", 2, comments.size)
+                assertEquals("$name: the enum the comment body reads", anchors.commentEnum.type, comments.first().enumType)
                 val getterBefore = getter.method.implementation!!.instructions.toList()
                 val readsBefore = reads.associate { it.method to it.method.implementation!!.instructions.toList() }
+                val commentsBefore = comments.associate { it.method to it.method.implementation!!.instructions.toList() }
 
                 turnOffAutoTranslationPatch.execute(context)
 
@@ -113,6 +130,21 @@ class TurnOffAutoTranslationFixtureTest {
                     assertEquals("$readWhere: the hook's answer", Opcode.MOVE_RESULT, code[read.resultIndex + 2].opcode)
                     assertEquals("$readWhere: lands where the flag did", read.register,
                         (code[read.resultIndex + 2] as OneRegisterInstruction).registerA)
+                }
+
+                // The comment body's two reads: each answer goes through the extension and is cast back.
+                for (read in comments) {
+                    val code = patched(context, read.method).implementation!!.instructions.toList()
+                    val readWhere = "$name ${read.method.definingClass}->${read.method.name}"
+                    assertEquals("$readWhere: three instructions in", commentsBefore.getValue(read.method).size + 3, code.size)
+                    assertEquals("$readWhere: the type's answer", Opcode.MOVE_RESULT_OBJECT, code[read.resultIndex].opcode)
+                    rangeCall(code[read.resultIndex + 1], COMMENT_HOOK, read.register, readWhere)
+                    assertEquals("$readWhere: the hook's answer", Opcode.MOVE_RESULT_OBJECT, code[read.resultIndex + 2].opcode)
+                    assertEquals("$readWhere: lands where the type did", read.register,
+                        (code[read.resultIndex + 2] as OneRegisterInstruction).registerA)
+                    assertEquals("$readWhere: cast back", Opcode.CHECK_CAST, code[read.resultIndex + 3].opcode)
+                    assertEquals("$readWhere: cast to the enum", read.enumType,
+                        (code[read.resultIndex + 3] as ReferenceInstruction).reference.toString())
                 }
 
                 val status = context.mutableClassDefBy(SETTINGS_STATUS).methods.single { it.name == "autoTranslation" }

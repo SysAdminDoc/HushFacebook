@@ -4,7 +4,7 @@
  */
 package app.morphe.extension.facebook.feed;
 
-/** Asks the translation hooks the way Facebook's post model and reels footer do. */
+/** Asks the translation hooks the way Facebook's post model, reels footer and comment body do. */
 public final class AutoTranslationForTests {
     private AutoTranslationForTests() {
     }
@@ -16,6 +16,19 @@ public final class AutoTranslationForTests {
         HIDE_AUTO_TRANSLATION,
         NO_TRANSLATION,
         SEE_TRANSLATION,
+    }
+
+    /** A stand-in for the comment's translation type, in 585's order, whose constants keep their names. */
+    public enum CommentTranslation {
+        UNSET_OR_UNRECOGNIZED_ENUM_VALUE,
+        AUTO_TRANSLATE,
+        MACHINE_TRANSLATION,
+        ORIGINAL,
+    }
+
+    /** True when a comment Facebook auto-translated is handed back as one shown as written. */
+    public static boolean keepsTheComment() {
+        return AutoTranslation.commentTranslation(CommentTranslation.AUTO_TRANSLATE) == CommentTranslation.ORIGINAL;
     }
 
     /** True when a post marked for automatic translation is handed back as one to translate on request. */

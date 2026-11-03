@@ -4008,7 +4008,7 @@
     },
     {
       "name": "Turn off auto-translation",
-      "description": "Shows posts and reel captions in the language they were written in, instead of Facebook's automatic translation, so you read people's own words. See translation still works. Starts off. Turn it on in Hushfacebook settings > News feed.",
+      "description": "Shows posts, comments and reel captions in the language they were written in, instead of Facebook's automatic translation, so you read people's own words. See translation still works. Starts off. Turn it on in Hushfacebook settings > News feed.",
       "category": "Feed",
       "use": true,
       "dependencies": [

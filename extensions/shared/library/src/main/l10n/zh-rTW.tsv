@@ -1307,10 +1307,10 @@ No dot or count on Feeds, Gaming, Events and the other tabs not listed here. The
 No dot or count on this tab. Its page still shows what's new when you open it.	不顯示此分頁的提示點或計數。開啟後仍可在頁面查看新內容。
 # context: summary of the app icon count switch
 No number on Facebook's app icon. Notifications still arrive. Some launchers add their own count, which this can't remove.	不顯示 Facebook 應用程式圖示上的數字。通知仍會送達。部分啟動器會自行加入計數，此功能無法移除。
-# context: switch title under News feed; it shows posts and reel captions in their original language instead of Facebook's automatic translation
+# context: switch title under News feed; it shows posts, comments and reel captions in their original language instead of Facebook's automatic translation
 Turn off auto-translation	停用自動翻譯
 # context: description of that switch; See translation is the name of Facebook's own link under a post that translates it on request
-Posts and reel captions stay in the language they were written in. Facebook's See translation link stays under them.	貼文與 Reels 說明保留原本撰寫的語言。下方仍會顯示 Facebook 的「查看翻譯」連結。
+Posts, comments and reel captions stay in the language they were written in. Facebook's See translation link stays under them.	貼文、留言與 Reels 說明保留原本撰寫的語言。下方仍會顯示 Facebook 的「查看翻譯」連結。
 # context: switch title under Reels and Watch, below Keep the reel speed; it keeps a playback speed picked on a feed or Watch video for the next videos
 Keep the video speed	保留影片播放速度
 # context: description of that switch; the gear menu is the settings button on a video's player, where Playback speed is picked

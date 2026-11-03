@@ -544,10 +544,11 @@ public class PausedHooksTest {
         // picked answers that it doesn't apply.
         probes.put(PatchFamily.PHOTO_CAROUSEL, Arrays.asList(() -> PhotoCarousel.carousel(0),
                 () -> PhotoCarousel.skipLayout("com.facebook.feedplugins.attachments.album.PhotoLayoutFramePlugin")));
-        // A post marked for automatic translation reads as one to translate on request, and the
-        // reels footer hears a caption can't be translated by itself, so it asks for nothing.
+        // A post marked for automatic translation reads as one to translate on request, the reels
+        // footer hears a caption can't be translated by itself, so it asks for nothing, and an
+        // auto-translated comment reads as one shown as written.
         probes.put(PatchFamily.AUTO_TRANSLATION, Arrays.asList(AutoTranslationForTests::keepsThePost,
-                AutoTranslationForTests::keepsTheCaption));
+                AutoTranslationForTests::keepsTheCaption, AutoTranslationForTests::keepsTheComment));
         // The Feeds tab's yes to a title row is answered as a no, its filters go to a container
         // that's never on screen, and its posts get no room for them. The room follows what the
         // tab did with its filters, so that probe builds a tab first.

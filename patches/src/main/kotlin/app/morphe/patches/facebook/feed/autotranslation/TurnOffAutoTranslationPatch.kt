@@ -33,6 +33,8 @@ internal const val AUTO_TRANSLATION_EXTENSION = "Lapp/morphe/extension/facebook/
 internal const val TRANSLATION_TYPE_HOOK =
     "$AUTO_TRANSLATION_EXTENSION->translationType(Ljava/lang/Enum;)Ljava/lang/Enum;"
 internal const val CAPTION_HOOK = "$AUTO_TRANSLATION_EXTENSION->captionAutoTranslates(Z)Z"
+internal const val COMMENT_HOOK =
+    "$AUTO_TRANSLATION_EXTENSION->commentTranslation(Ljava/lang/Enum;)Ljava/lang/Enum;"
 
 /** Two constants of Facebook's GraphQLTranslatabilityType, kept as the enum's names. */
 internal const val AUTO_TRANSLATION = "AUTO_TRANSLATION"
@@ -55,9 +57,17 @@ internal const val CAPTION_TRIGGER = "updateState:FbShortsViewerFooterComponent.
  */
 internal const val CAPTION_TRANSLATABLE_KEY = 143667788L
 
+/** Three constants of the comment's translation type enum, kept as the enum's names. */
+internal const val AUTO_TRANSLATE = "AUTO_TRANSLATE"
+internal const val MACHINE_TRANSLATION = "MACHINE_TRANSLATION"
+internal const val ORIGINAL = "ORIGINAL"
+
+/** The state update the comment body makes as See translation or See original is tapped. */
+internal const val COMMENT_TOGGLE = "updateState:CommentBodyComponent.updateIsTranslated"
+
 /**
- * Posts and reel captions stay in the language they were written in, with Facebook's own "See
- * translation" still there.
+ * Posts, comments and reel captions stay in the language they were written in, with Facebook's own
+ * "See translation" still there.
  *
  * Posts: Facebook marks each post's translatability with a GraphQLTranslatabilityType, and the feed
  * puts the auto-translated text plugin (FeedStoryAutoTranslatePlugin) on posts it marks
@@ -74,14 +84,22 @@ internal const val CAPTION_TRANSLATABLE_KEY = 143667788L
  * [CAPTION_TRIGGER] (581 `LX/Au4;` A1A and A1F, 580 `LX/Av9;` A1F and A1K, 577 `LX/AxP;` A1N and
  * A1K). Each read goes through the extension, which answers false while the switch is on, so no
  * request is made and the caption keeps its own words.
+ *
+ * Comments (#372): the comment body (CommentBodyComponent, 585 arm64 `LX/0AA5;`) reads the comment's
+ * own translation type, an enum of AUTO_TRANSLATE, MACHINE_TRANSLATION and ORIGINAL, in two places.
+ * Its starting state (A1F) shows the translated text Facebook sent along when the type isn't
+ * ORIGINAL, and its render (A17) picks See original or See translation by it. Both answers go
+ * through the extension, which says ORIGINAL while the switch is on, so the comment starts in its
+ * own words and See translation fetches the translation when tapped, as on comments Facebook never
+ * translated.
  */
 @Suppress("unused")
 val turnOffAutoTranslationPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Turn off auto-translation",
-    description = "Shows posts and reel captions in the language they were written in, instead of Facebook's " +
-        "automatic translation, so you read people's own words. See translation still works. Starts off. Turn it " +
-        "on in Hushfacebook settings > News feed.",
+    description = "Shows posts, comments and reel captions in the language they were written in, instead of " +
+        "Facebook's automatic translation, so you read people's own words. See translation still works. Starts " +
+        "off. Turn it on in Hushfacebook settings > News feed.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -91,8 +109,10 @@ val turnOffAutoTranslationPatch = bytecodePatch(
         requireStatusMethod("autoTranslation")
         val getter = findTranslationTypeGetter()
         val reads = findCaptionReads()
+        val comments = findCommentTypeReads()
         hookTranslationType(getter)
         reads.forEach { hookCaptionRead(it) }
+        comments.forEach { hookCommentTypeRead(it) }
         enableStatus("autoTranslation")
     }
 }
@@ -109,6 +129,9 @@ internal class TranslationTypeGetter(val method: Method, val enumType: String, v
 
 /** One read of the reel's caption field: its method and where the answer lands. */
 internal class CaptionRead(val method: Method, val resultIndex: Int, val register: Int)
+
+/** One read of a comment's translation type: its method, where the answer lands, and the enum. */
+internal class CommentTypeRead(val method: Method, val resultIndex: Int, val register: Int, val enumType: String)
 
 /** Whether [classDef] is GraphQLTranslatabilityType: an enum whose static setup names both constants. */
 internal fun isTranslatabilityEnum(classDef: ClassDef): Boolean =
@@ -193,6 +216,57 @@ internal fun captionReads(method: Method): List<CaptionRead> {
     }
 }
 
+/** The calls a model read can be: an interface call or a virtual one, in either register form. */
+private val READ_CALLS = setOf(Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE, Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE)
+
+/** Whether [classDef] is the comment's translation type: an enum whose static setup names its three constants. */
+internal fun isCommentTranslationEnum(classDef: ClassDef): Boolean =
+    classDef.superclass == "Ljava/lang/Enum;" && classDef.methods.any {
+        it.name == "<clinit>" && holdsString(it, AUTO_TRANSLATE) && holdsString(it, MACHINE_TRANSLATION) &&
+            holdsString(it, ORIGINAL)
+    }
+
+/** The reads of [enumType] in [method]: a no-argument call returning it, then the move-result that takes it. */
+internal fun commentTypeReads(method: Method, enumType: String): List<CommentTypeRead> {
+    val code = method.implementation?.instructions?.toList() ?: return emptyList()
+    return code.indices.mapNotNull { index ->
+        if (code[index].opcode !in READ_CALLS) return@mapNotNull null
+        val call = (code[index] as ReferenceInstruction).reference as? MethodReference ?: return@mapNotNull null
+        if (call.returnType != enumType || call.parameterTypes.isNotEmpty()) return@mapNotNull null
+        val result = code.getOrNull(index + 1)
+        if (result?.opcode != Opcode.MOVE_RESULT_OBJECT) return@mapNotNull null
+        CommentTypeRead(method, index + 1, (result as OneRegisterInstruction).registerA, enumType)
+    }
+}
+
+/**
+ * The comment body's reads of the comment's translation type: the one enum naming [AUTO_TRANSLATE],
+ * [MACHINE_TRANSLATION] and [ORIGINAL], and the class that records [COMMENT_TOGGLE] and reads that
+ * enum. Refuses unless there's one such enum and one such class, which reads it once in each of two
+ * methods. Changes nothing.
+ */
+internal fun BytecodePatchContext.findCommentTypeReads(): List<CommentTypeRead> {
+    val enums = classDefByStrings(MACHINE_TRANSLATION, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .filter(::isCommentTranslationEnum)
+        .map { it.type }
+        .distinct()
+    val enumType = enums.singleOrNull()
+        ?: refuse("expected one enum naming $AUTO_TRANSLATE, $MACHINE_TRANSLATION and $ORIGINAL, found ${enums.size}")
+    val bodies = classDefByStrings(COMMENT_TOGGLE, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .distinctBy { it.type }
+        .map { body -> body to body.methods.flatMap { commentTypeReads(it, enumType) } }
+        .filter { (_, reads) -> reads.isNotEmpty() }
+    val (body, reads) = bodies.singleOrNull()
+        ?: refuse("expected one class loading \"$COMMENT_TOGGLE\" that reads $enumType, found ${bodies.size}")
+    if (reads.size != 2 || reads.map { it.method }.distinct().size != 2) {
+        refuse("${body.type} reads $enumType ${reads.size} times in ${reads.map { it.method }.distinct().size} " +
+            "methods, expected once in each of two")
+    }
+    return reads
+}
+
 /**
  * The type the getter is about to return goes through the extension, and the answer, cast back to
  * the enum, is what it returns. A range call takes any register.
@@ -218,6 +292,19 @@ internal fun BytecodePatchContext.hookCaptionRead(read: CaptionRead) {
         """
             invoke-static/range { v${read.register} .. v${read.register} }, $CAPTION_HOOK
             move-result v${read.register}
+        """,
+    )
+}
+
+/** The comment body's answer about a comment's translation type goes through the extension, cast back to the enum. */
+internal fun BytecodePatchContext.hookCommentTypeRead(read: CommentTypeRead) {
+    val method = mutableClassDefBy(read.method.definingClass).findMutableMethodOf(read.method)
+    method.addInstructions(
+        read.resultIndex + 1,
+        """
+            invoke-static/range { v${read.register} .. v${read.register} }, $COMMENT_HOOK
+            move-result-object v${read.register}
+            check-cast v${read.register}, ${read.enumType}
         """,
     )
 }
