@@ -191,6 +191,38 @@ public class SettingsNavigationTest {
         }
     }
 
+    /**
+     * An import notes every restart-gated setting it changes, twice over, in one main-thread
+     * message. Each note rebuilt the list with search over every row, about 110 ms apiece on an
+     * S22, so a big import froze settings for seconds. The first note still shows at once, and the
+     * rest share one rebuild.
+     */
+    @Test public void restartChangesDuringSearchRebuildTheListTwiceAtMost() {
+        findSearch(dialog.getView()).setText("hide");
+        ShadowLooper.idleMainLooper();
+        int[] rebuilds = {0};
+        android.database.DataSetObserver counter = new android.database.DataSetObserver() {
+            @Override public void onChanged() { rebuilds[0]++; }
+        };
+        page.navigation.registerDataSetObserver(counter);
+        try {
+            HushfacebookPreferenceFragment.restartPending.add(Settings.BOTTOM_TAB_BAR.key);
+            HushfacebookPreferenceFragment.restartPending.add(Settings.MARKETPLACE_ONLY.key);
+            page.onRestartPendingChanged();
+            assertEquals("the first restart change waited", 1, rebuilds[0]);
+            assertTrue(contains(SettingsNavigation.RESTART));
+            for (int i = 0; i < 10; i++) page.onRestartPendingChanged();
+            assertEquals("the list rebuilt per restart change", 1, rebuilds[0]);
+            ShadowLooper.idleMainLooper();
+            assertEquals(2, rebuilds[0]);
+        } finally {
+            page.navigation.unregisterDataSetObserver(counter);
+            HushfacebookPreferenceFragment.restartPending.clear();
+            page.onRestartPendingChanged();
+            ShadowLooper.idleMainLooper();
+        }
+    }
+
     /** Support expands its report, restart and project actions beneath its main-list header. */
     @Test public void supportKeepsReportsRestartAndTheProjectLinkReachable() {
         Map<String, Object> before = savedValues();
@@ -454,10 +486,12 @@ public class SettingsNavigationTest {
         app.morphe.extension.shared.settings.preference.AbstractPreferenceFragment.restartPending.add(
                 Settings.BOTTOM_TAB_BAR.key);
         page.navigation.restartChanged();
+        ShadowLooper.idleMainLooper();
         assertEquals("Restart Facebook to apply 2 changes",
                 String.valueOf(((Preference) list().getItemAtPosition(0)).getTitle()));
         app.morphe.extension.shared.settings.preference.AbstractPreferenceFragment.restartPending.clear();
         page.navigation.restartChanged();
+        ShadowLooper.idleMainLooper();
         assertFalse(contains(SettingsNavigation.RESTART));
         assertEquals(24, list().getCount());
     }
@@ -603,10 +637,12 @@ public class SettingsNavigationTest {
         app.morphe.extension.shared.settings.preference.AbstractPreferenceFragment.restartPending.add(
                 Settings.HOLD_ANALYTICS_UPLOADS.key);
         page.navigation.restartChanged();
+        ShadowLooper.idleMainLooper();
         assertFalse("two restart rows on one page", contains(SettingsNavigation.RESTART_NOW));
         assertEquals(SettingsNavigation.RESTART, ((Preference) list().getItemAtPosition(0)).getKey());
         app.morphe.extension.shared.settings.preference.AbstractPreferenceFragment.restartPending.clear();
         page.navigation.restartChanged();
+        ShadowLooper.idleMainLooper();
         assertFalse(contains(SettingsNavigation.RESTART));
         assertEquals(own, position(SettingsNavigation.RESTART_NOW));
 
@@ -723,6 +759,7 @@ public class SettingsNavigationTest {
             int privacy = offOnScreen(QuickSetupKeys.PRIVACY);
             assertEquals(privacy, page.applyQuickSetup(QuickSetupKeys.privacy()));
             assertEquals("Changed " + privacy + " settings", ShadowToast.getTextOfLatestToast());
+            ShadowLooper.idleMainLooper();
             assertEquals(SettingsNavigation.RESTART, ((Preference) list().getItemAtPosition(0)).getKey());
             assertEquals("Restart Facebook to apply 2 changes",
                     String.valueOf(((Preference) list().getItemAtPosition(0)).getTitle()));
@@ -733,6 +770,7 @@ public class SettingsNavigationTest {
             for (BooleanSetting setting : QuickSetupKeys.DEFAULTS) {
                 assertEquals(setting.key, setting.defaultValue, setting.savedValue());
             }
+            ShadowLooper.idleMainLooper();
             assertFalse("putting the switches back left the restart owed", contains(SettingsNavigation.RESTART));
         } finally {
             for (BooleanSetting setting : QuickSetupKeys.DEFAULTS) setting.resetToDefault();
