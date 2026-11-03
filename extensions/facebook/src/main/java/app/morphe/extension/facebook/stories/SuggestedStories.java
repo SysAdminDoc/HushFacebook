@@ -49,7 +49,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * so none of them goes as seen. That flag comes from the servers, which never hear of a story
  * watched with View stories anonymously on, so a bucket whose flag is false also goes as seen when
  * it was watched to the end on this phone after its newest story was posted, by its id and
- * expiration_time ({@link StorySeen#trayWatchedHere}, #218). Show only watched stories turns that
+ * expiration_time ({@link StorySeen#trayWatchedHere}, #218), or when an earlier tray sent it as
+ * watched with the same expiration_time, so no story came since (#340). Show only watched stories turns that
  * round: a story whose flag reads false and that wasn't watched here goes, and Hide seen stories
  * waits while it's on (#340). A bucket whose flag can't be read stays either way.
  *
@@ -547,7 +548,25 @@ public final class SuggestedStories {
         }
         if (!(seen instanceof Boolean)) return null;
         HookStatus.bound(FamilyNames.SUGGESTED_STORIES, "tray bucket#" + SEEN_FIELD);
-        return (Boolean) seen || watchedHere(bucket, access);
+        if (!(Boolean) seen) return watchedHere(bucket, access);
+        sentWatched(bucket, access);
+        return true;
+    }
+
+    /**
+     * A bucket sent as watched, by its id and expiration_time, kept with View stories anonymously
+     * on so the next tray that sends it unwatched still reads it as watched (#340). A stub the patch
+     * couldn't fill is reported by {@link #watchedHere} once something is kept. Never throws.
+     */
+    private static void sentWatched(Object bucket, Buckets access) {
+        if (!StorySeen.holdsViewsBack()) return;
+        try {
+            Object id = access.id(bucket);
+            Object expires = access.expires(bucket);
+            if (id instanceof String && expires instanceof Long) StorySeen.trayReadWatched((String) id, (Long) expires);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "bucket id and expiration", failure);
+        }
     }
 
     /**

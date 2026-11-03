@@ -115,6 +115,7 @@ public class SeenStoriesWatchedHereTest {
     public void start() {
         RuntimeEnvironment.getApplication().getSharedPreferences(SeenBuckets.FILE, Context.MODE_PRIVATE).edit().clear().commit();
         RuntimeEnvironment.getApplication().getSharedPreferences(SeenBuckets.CARDS_FILE, Context.MODE_PRIVATE).edit().clear().commit();
+        RuntimeEnvironment.getApplication().getSharedPreferences(SeenBuckets.TRAY_FILE, Context.MODE_PRIVATE).edit().clear().commit();
         StorySeen.useForTests(PLAYED);
         Settings.VIEW_STORIES_ANONYMOUSLY.save(true);
         Settings.HIDE_SEEN_STORIES.save(true);
@@ -187,6 +188,35 @@ public class SeenStoriesWatchedHereTest {
         } finally {
             Settings.SHOW_ONLY_WATCHED_STORIES.resetToDefault();
         }
+    }
+
+    /**
+     * #340: a bucket the phone marked watched, which the tray then sends with its flag true, left
+     * and came back with each refresh when the watch-time check missed it (a phone clock off from
+     * Facebook's). Sent as watched once, it stays out while its expiration_time is the same, a
+     * restart included, and a new story brings it back. With views sent nothing is kept.
+     */
+    @Test
+    public void aBucketSentAsWatchedStaysOutUntilItsNextStory() {
+        Tree fresh = postedHoursAgo("b2", 3);
+        Tree unwatched = postedHoursAgo("b1", 3);
+        Tree marked = new Tree("b1", unwatched.expires, true);
+
+        Settings.VIEW_STORIES_ANONYMOUSLY.save(false);
+        kept(Arrays.asList(marked, fresh));
+        Settings.VIEW_STORIES_ANONYMOUSLY.save(true);
+        List<Tree> refreshed = Arrays.asList(unwatched, fresh);
+        assertSame("kept with views sent", refreshed, kept(refreshed));
+
+        assertEquals(Collections.singletonList(fresh), kept(Arrays.asList(marked, fresh)));
+        assertEquals("came back on the refresh", Collections.singletonList(fresh), kept(refreshed));
+        StorySeen.useForTests(PLAYED);
+        assertEquals("came back after a restart", Collections.singletonList(fresh), kept(refreshed));
+        String status = line(FamilyNames.STORY_SEEN, HookStatus.report());
+        assertTrue(status, status.contains(StorySeen.TRAY_SEEN_BEFORE + " 2"));
+
+        List<Tree> newStory = Arrays.asList(postedHoursAgo("b1", 1), fresh);
+        assertSame("a new story stayed out", newStory, kept(newStory));
     }
 
     @Test

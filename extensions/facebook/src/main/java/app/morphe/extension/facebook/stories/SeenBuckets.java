@@ -32,6 +32,10 @@ import java.util.Map;
  * <p>A second one, in {@link #CARDS_FILE}, keeps each story card watched by its own id, with its
  * bucket's id in the newest story's place, so the viewer can start a bucket at the first card that
  * wasn't watched (#218).
+ *
+ * <p>A third, in {@link #TRAY_FILE}, keeps each tray bucket Facebook sent as watched by its id, with
+ * its expiration_time in the newest story's place, so a later tray that sends it unwatched again
+ * with no new story is still read as watched (#340).
  */
 final class SeenBuckets {
     /** The preferences file, in Facebook's own preferences folder. Only this class writes it. */
@@ -39,6 +43,9 @@ final class SeenBuckets {
 
     /** The cards' preferences file. */
     static final String CARDS_FILE = "hushfacebook_seen_story_cards";
+
+    /** The tray buckets' preferences file. */
+    static final String TRAY_FILE = "hushfacebook_seen_tray_buckets";
 
     /** How many buckets are remembered. The least recently watched goes first. */
     static final int MAX_BUCKETS = 500;
