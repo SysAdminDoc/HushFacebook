@@ -315,6 +315,9 @@ public enum PatchFamily {
     // The version code is in the manifest, and Facebook's reads of it have to keep answering the
     // real one whether or not Hushfacebook is paused.
     PLAY_STORE_UPDATES(FamilyNames.PLAY_STORE_UPDATES, "playStoreUpdates", "Version number Google Play sees"),
+    // The manifest and Facebook's own code name microG-RE in place of Play services, so push keeps
+    // coming through it whether or not Hushfacebook is paused.
+    GMS_CORE(FamilyNames.GMS_CORE, "gmsCore", FamilyNames.GMS_CORE),
     // The share target is declared in the manifest, so it stays in Android's share menu while paused (#111).
     OPEN_IN_FACEBOOK(FamilyNames.OPEN_IN_FACEBOOK, "openInFacebook", FamilyNames.OPEN_IN_FACEBOOK),
     // The settings entry's own way in, like the logo long press and the launcher shortcut, which
@@ -384,10 +387,11 @@ public enum PatchFamily {
      * The patches Morphe Manager leaves out of its default selection. Each one goes in when you
      * patch with no switch to leave Facebook as it ships: the two themes rewrite dark mode's colours,
      * and Disable Play Store updates raises the version number, which a Root Mount install can't
-     * take and every later build has to keep. Everything else is in the default selection, with any
-     * switch a patch brought in from this list starting off.
+     * take and every later build has to keep. GmsCore support stops Facebook asking Google Play
+     * services, so it's only for phones with microG-RE. Everything else is in the default selection,
+     * with any switch a patch brought in from this list starting off.
      */
-    private static final EnumSet<PatchFamily> OPT_IN = EnumSet.of(AMOLED_THEME, MATERIAL_YOU_THEME, PLAY_STORE_UPDATES);
+    private static final EnumSet<PatchFamily> OPT_IN = EnumSet.of(AMOLED_THEME, MATERIAL_YOU_THEME, PLAY_STORE_UPDATES, GMS_CORE);
 
     /**
      * The patches Morphe Manager selects by default. One of them left out is the usual answer to a

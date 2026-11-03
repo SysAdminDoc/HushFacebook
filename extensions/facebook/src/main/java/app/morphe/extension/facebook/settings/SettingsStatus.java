@@ -294,6 +294,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean gmsCore() {
+        return false;
+    }
+
     public static boolean openInFacebook() {
         return false;
     }

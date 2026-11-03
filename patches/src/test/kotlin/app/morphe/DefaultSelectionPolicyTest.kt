@@ -26,6 +26,8 @@ class DefaultSelectionPolicyTest {
             "patch, so taking it back out means patching again.",
         "Disable Play Store updates" to "It raises the version code in the manifest, so a later build without it " +
             "can't install over it, and it doesn't work on a Root Mount install.",
+        "GmsCore support" to "Facebook stops asking Google Play services and asks microG-RE instead, so on a phone " +
+            "without microG-RE it gets no push notifications.",
     )
 
     private fun shippedPatches() = run {

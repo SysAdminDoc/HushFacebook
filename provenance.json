@@ -1368,6 +1368,21 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/gmscore/GmsCoreSupportPatch.kt"
+      ],
+      "origin": "ported",
+      "upstream": "https://github.com/SysAdminDoc/HushMessenger",
+      "commit": "6761b36660b67092f5345479781c7bd9602f772b",
+      "via": [
+        "https://github.com/SysAdminDoc/HushPinterest",
+        "https://github.com/MorpheApp/morphe-patches",
+        "https://gitlab.com/ReVanced/revanced-patches"
+      ],
+      "license": "GPL-3.0-only with the Morphe section 7 notices",
+      "changes": "HushMessenger's GmsCore support moved to Facebook. Facebook 585 has the same Play services availability check and the same androidx Credential Manager framework provider, and Facebook's original certificate is the one Messenger's is. Hushfacebook's own classes under app/morphe keep Google's names, the preflight asks the extension for its gmsCore status method in place of Messenger's version code check, and the patch marks itself in SettingsStatus so the settings page and the diagnostic report know it's patched in."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/chats/VideoLocation.java"
       ],
       "origin": "original",
