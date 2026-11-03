@@ -128,6 +128,36 @@ public class ColourTableTest {
         assertEquals("one type chunk ends the table", bytes.length, at + in.getInt(at + 4));
     }
 
+    /**
+     * The Material You theme's table (#272): Facebook's night colours under night-v31 and the
+     * patch's palette under v31, each only where it's given, and a configuration with nothing in it
+     * left out.
+     */
+    @Test
+    public void otherConfigurationsGoInAsGiven() {
+        int[] ids = {0x7f060010, 0x7f060020};
+        int[] colours = {0xff112233, 0x80445566};
+        byte[] bytes = ColourTable.write("p", ids,
+                new ColourTable.Config(ColourTable.UI_MODE_NIGHT_YES, 31, colours, new boolean[]{true, false}),
+                new ColourTable.Config(0, 31, colours, new boolean[]{false, true}),
+                new ColourTable.Config(0, 0, colours, new boolean[2]));
+        ColourTableReader table = new ColourTableReader(bytes);
+        assertEquals("the night colour changes with night mode", 0x1000, table.specFlags[0x10]);
+        assertEquals("the palette colour doesn't", 0, table.specFlags[0x20]);
+        List<ColourTableReader.Config> configs = table.configs;
+        assertEquals("the empty one is left out", 2, configs.size());
+        assertEquals(0x20, configs.get(0).uiMode);
+        assertEquals(31, configs.get(0).sdkVersion);
+        Map<Integer, Integer> night = new LinkedHashMap<>();
+        night.put(0x10, 0xff112233);
+        assertEquals("night-v31 has the night colour alone", night, configs.get(0).colours);
+        assertEquals(0, configs.get(1).uiMode);
+        assertEquals(31, configs.get(1).sdkVersion);
+        Map<Integer, Integer> palette = new LinkedHashMap<>();
+        palette.put(0x20, 0x80445566);
+        assertEquals("v31 has the palette colour alone", palette, configs.get(1).colours);
+    }
+
     @Test
     public void idsOfAnotherTypeOrPackageOrNoneAtAllAreRefused() {
         int[] none = {0};

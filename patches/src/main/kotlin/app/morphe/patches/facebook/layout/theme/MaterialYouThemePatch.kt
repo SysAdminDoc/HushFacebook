@@ -12,6 +12,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.resource.ResourceType
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -218,9 +219,10 @@ internal fun lstar(r: Int, g: Int, b: Int): Double {
  * Route two for the night colours: each one [nightTone] takes gets the fixed palette's colour in
  * [night], which Android 11 reads, and the wallpaper palette's in [nightV31], which Android 12 and
  * newer prefer. A colour Facebook already gives a value of its own for Android 12 and newer is left
- * alone, and the default (light) colours are never opened. Answers how many it changed.
+ * alone, and the default (light) colours are never opened. Each one it moves to an accent tone goes
+ * in [accents] by name, for [youAccentsTable]. Answers how many it changed.
  */
-internal fun recolourNightColours(night: Document, nightV31: Document): Int {
+internal fun recolourNightColours(night: Document, nightV31: Document, accents: MutableMap<String, NightTone>? = null): Int {
     val resources = nightV31.documentElement
     val present = mutableSetOf<String>()
     val existing = resources.getElementsByTagName("color")
@@ -242,9 +244,51 @@ internal fun recolourNightColours(night: Document, nightV31: Document): Int {
                 it.textContent = tone.systemColor
             },
         )
+        if (tone.accent) accents?.put(name, tone)
         changed++
     }
     return changed
+}
+
+/** The string resource that lists, for AccentResources, the colours this theme points at the palette's accent. */
+internal const val YOU_ACCENTS = "hushfacebook_you_accents"
+
+private val ACCENT_TONE_NAME = Regex("hushfacebook_you_accent_(\\d+)")
+private val ACCENT_SHADE_NAME = Regex("hushfacebook_you_accent_l(\\d+)(?:_a([0-9a-f]{2}))?")
+
+/**
+ * The colours this theme points at the palette's accent, so the extension can give them the accent
+ * the Accent color row picked instead of the wallpaper's (#272): Facebook's night colours route two
+ * moved to an accent tone ([accents]), by the id [idOf] answers in hex, and the patch's own accent
+ * palette colours in [palette], by name. Each takes `t` and its tone, or for a [NightShade] `l` and
+ * its lightness, with `/` and its alpha in hex when it isn't opaque, sorted by key:
+ * "7f0601ab=t40;hushfacebook_you_accent_l62_a80=l62/80". A night colour with no id is left out.
+ */
+internal fun youAccentsTable(accents: Map<String, NightTone>, palette: Document, idOf: (String) -> Long?): String {
+    val entries = sortedMapOf<String, String>()
+    for ((name, tone) in accents) {
+        val id = idOf(name) ?: continue
+        entries["%08x".format(id)] = "t${tone.tone}"
+    }
+    for (name in palette.colourValues().keys) {
+        ACCENT_TONE_NAME.matchEntire(name)?.let { entries[name] = "t" + it.groupValues[1] }
+        ACCENT_SHADE_NAME.matchEntire(name)?.let { shade ->
+            entries[name] = "l" + shade.groupValues[1] + shade.groupValues[2].let { if (it.isEmpty()) "" else "/$it" }
+        }
+    }
+    return entries.entries.joinToString(";") { (key, value) -> "$key=$value" }
+}
+
+/** Adds the string [name] holding [value], never translated, or rewrites it when the file already has one. */
+internal fun Document.putUntranslatedString(name: String, value: String) {
+    val resources = documentElement
+    val string = resources.childElements().firstOrNull { it.tagName == "string" && it.getAttribute("name") == name }
+        ?: createElement("string").also {
+            it.setAttribute("name", name)
+            resources.appendChild(it)
+        }
+    string.setAttribute("translatable", "false")
+    string.textContent = value
 }
 
 private const val NIGHT_COLORS = "res/values-night/colors.xml"
@@ -265,6 +309,9 @@ private const val V31_COLORS = "res/values-v31/colors.xml"
 
 /** The night style items' colour state lists for Android 12 and newer, one file per [NightShade]. */
 private const val V31_STATE_LISTS = "res/color-v31"
+
+/** Where [YOU_ACCENTS] goes. */
+private const val STRINGS = "res/values/strings.xml"
 
 private const val EMPTY_RESOURCES = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n</resources>\n"
 
@@ -316,8 +363,9 @@ private val materialYouResourcePatch = resourcePatch {
             }
         }
         val nightColourNames = nightValuedColours(get("res", false))
+        val accents = sortedMapOf<String, NightTone>()
         val changed = document(NIGHT_COLORS).use { night ->
-            document(NIGHT_V31_COLORS).use { nightV31 -> recolourNightColours(night, nightV31) }
+            document(NIGHT_V31_COLORS).use { nightV31 -> recolourNightColours(night, nightV31, accents) }
         }
         check(changed > 0) { "No night colour is near a palette tone, so text would keep its grey" }
 
@@ -353,6 +401,16 @@ private val materialYouResourcePatch = resourcePatch {
             file.parentFile.mkdirs()
             file.writeText(stateList)
         }
+
+        // What an accent picked in the Accent color row takes over from the wallpaper's: the
+        // extension reads this list and gives these resources the pick's tones (AccentResources).
+        val youAccents = youAccentsTable(accents, readOnly(get(DEFAULT_COLORS))) { name ->
+            resourceIds.getOrNull(ResourceType.COLOR, name) ?: decodedColourId(name)
+        }
+        decode(STRINGS)
+        check(get(STRINGS, false).exists()) { "Facebook has no $STRINGS to hold the accent colour list" }
+        document(STRINGS).use { it.putUntranslatedString(YOU_ACCENTS, youAccents) }
+
         val nightOnly = ownNightOnlyColours(get("res", false))
         check(nightOnly.isEmpty()) { "These colours have only a night value, so leaving night would crash Facebook: $nightOnly" }
     }

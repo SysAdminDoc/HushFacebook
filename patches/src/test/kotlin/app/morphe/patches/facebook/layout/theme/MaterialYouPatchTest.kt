@@ -195,6 +195,46 @@ class MaterialYouPatchTest {
     }
 
     /**
+     * Issue #272: the list the extension reads to give an accent picked in the Accent color row to
+     * what route two and the palette point at the wallpaper's accent. The greys stay the wallpaper's.
+     */
+    @Test
+    fun `the colours pointed at the accent are listed for the picked accent`() {
+        val night = xml(
+            "<resources><color name=\"color_0x7f06044f\">#5aa7ff</color><color name=\"color_0x7f060003\">#ffe4e6eb</color>" +
+                "<color name=\"named_blue\">#5aa7ff</color></resources>",
+        )
+        val accents = sortedMapOf<String, NightTone>()
+        assertEquals(3, recolourNightColours(night, xml("<resources/>"), accents))
+        assertEquals("the blues and not the grey", mapOf("color_0x7f06044f" to NightTone(true, 70), "named_blue" to NightTone(true, 70)),
+            accents)
+
+        val palette = xml(
+            "<resources><color name=\"color_0x7f060001\">#ff0866ff</color>" +
+                "<color name=\"hushfacebook_you_accent_40\">#ff4a5c92</color>" +
+                "<color name=\"hushfacebook_you_neutral_40\">#ff5d5e64</color>" +
+                "<color name=\"${NightShade(true, 56, 0xFF).name}\">#ff6d7fb9</color>" +
+                "<color name=\"${NightShade(true, 62, 0x80).name}\">#807c8fc8</color></resources>",
+        )
+        val table = youAccentsTable(accents, palette) { name -> if (name == "named_blue") null else decodedColourId(name) }
+        assertEquals(
+            "a night colour with no id is left out",
+            "7f06044f=t70;hushfacebook_you_accent_40=t40;hushfacebook_you_accent_l56=l56;hushfacebook_you_accent_l62_a80=l62/80",
+            table,
+        )
+
+        val strings = xml("<resources><string name=\"app_name\">Facebook</string></resources>")
+        strings.putUntranslatedString(YOU_ACCENTS, table)
+        strings.putUntranslatedString(YOU_ACCENTS, "7f06044f=t70")
+        val all = strings.documentElement.getElementsByTagName("string")
+        assertEquals("written once", 2, all.length)
+        val written = all.item(1) as Element
+        assertEquals(YOU_ACCENTS, written.getAttribute("name"))
+        assertEquals("false", written.getAttribute("translatable"))
+        assertEquals("7f06044f=t70", written.textContent)
+    }
+
+    /**
      * The palette adds nothing when there is nothing it recognises: both files come out byte for
      * byte as they went in. With AMOLED first, its black backgrounds are such colours.
      */
@@ -223,18 +263,18 @@ class MaterialYouPatchTest {
         // wouldn't exist to read or check.
         assertEquals(setOf("res/values-night/colors.xml", "res/values-night-v31/colors.xml", "res/values-night",
             "res/color-v31", "res/values/colors.xml", "res/values", "res/values-v31/colors.xml", "res/values*/colors.xml",
-            "res/values*/style*.xml"), paths)
+            "res/values*/style*.xml", "res/values/strings.xml"), paths)
         assertTrue("the files it reads are decoded first",
             source.contains("decode(\"res/values*/colors.xml\", \"res/values*/style*.xml\", V31_STATE_LISTS)"))
         assertTrue("the state lists are written as files", source.contains("get(\"\$V31_STATE_LISTS/\$name.xml\", false)"))
 
         val opened = Regex("""document\((\w+)\)""").findAll(source).map { it.groupValues[1] }.toSet()
-        assertEquals(setOf("NIGHT_COLORS", "NIGHT_V31_COLORS", "nightStyles", "DEFAULT_COLORS", "V31_COLORS"), opened)
+        assertEquals(setOf("NIGHT_COLORS", "NIGHT_V31_COLORS", "nightStyles", "DEFAULT_COLORS", "V31_COLORS", "STRINGS"), opened)
         assertTrue("the night styles are no night file", source.contains("val nightStyles = \"\$NIGHT_VALUES/"))
         val defaults = Regex("""\S*DEFAULT_(?:COLORS|VALUES)\S*""").findAll(source).map { it.value }
             .filterNot { it == "DEFAULT_COLORS" || it == "DEFAULT_VALUES" }.toSet()
         assertEquals(setOf("readOnly(get(DEFAULT_COLORS)).colourValues()", "get(DEFAULT_VALUES).listFiles().orEmpty()",
-            "document(DEFAULT_COLORS).use"), defaults)
+            "document(DEFAULT_COLORS).use", "readOnly(get(DEFAULT_COLORS)))"), defaults)
         assertTrue("only the palette goes in the default colours",
             source.contains("document(DEFAULT_COLORS).use { paletteColours ->"))
         assertTrue("the style files are opened for writing", source.contains("darkFdsStyles(readOnly(file), "))

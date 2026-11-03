@@ -27,7 +27,9 @@ import java.util.EnumMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.ToIntFunction;
 
+import app.morphe.extension.facebook.settings.SettingsStatus;
 import app.morphe.extension.facebook.theme.AccentColor.Preset;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
@@ -50,8 +52,39 @@ import app.morphe.extension.shared.Utils;
  * before; only what the framework reads straight from the resources takes the accent, there.
  *
  * <p>Facebook blue, a paused Facebook and the Material You theme add nothing ({@link AccentColor#chosen}).
+ *
+ * <p>The Material You theme points some colour resources at the wallpaper's accent when the app is
+ * patched: Facebook's night blues and its own palette's accent colours. An accent picked in the row
+ * under that theme gives them its tones instead ({@link #youTable}, #272), from the list the patch
+ * leaves in the resources ({@link #YOU_ACCENTS}), so a view Facebook inflates from its layouts
+ * takes the pick as route one's colours do.
  */
 public final class AccentResources {
+
+    /** The Material You patch's string resource listing what it pointed at the accent (MaterialYouThemePatch.kt). */
+    static final String YOU_ACCENTS = "hushfacebook_you_accents";
+
+    /** The prefix of the Material You patch's own palette colours, which it lists by name. */
+    private static final String OWN_COLOUR = "hushfacebook_";
+
+    /** One colour resource the Material You theme points at the palette's accent ({@link #parseYouAccents}). */
+    static final class YouAccent {
+        final int id;
+        /** One of Facebook's night colours, which changes at night alone; otherwise the patch's own palette colour. */
+        final boolean night;
+        /** The accent's tone, one of {@link TonePalette#TONES}, or -1 for {@link #lightness} and {@link #alpha}. */
+        final int tone;
+        final int lightness;
+        final int alpha;
+
+        YouAccent(int id, boolean night, int tone, int lightness, int alpha) {
+            this.id = id;
+            this.night = night;
+            this.tone = tone;
+            this.lightness = lightness;
+            this.alpha = alpha;
+        }
+    }
 
     /** One colour resource of the table: Facebook's colours for it and the token it's drawn for. */
     static final class Blue {
@@ -101,6 +134,13 @@ public final class AccentResources {
 
     /** A loader for each preset, made once. Main thread only. */
     private static final Map<Preset, ResourcesLoader> LOADERS = new EnumMap<>(Preset.class);
+
+    /** The Material You theme's loader for each picked preset, made once. Main thread only. */
+    private static final Map<Preset, ResourcesLoader> YOU_LOADERS = new EnumMap<>(Preset.class);
+
+    /** The Material You patch's list, read from the resources once. Main thread only. */
+    @Nullable
+    private static List<YouAccent> youAccents;
 
     /**
      * {@link #onAssets}' Resources for each set of assets an activity has had. A loader's callbacks
@@ -213,6 +253,72 @@ public final class AccentResources {
         return ((long) given) << 32 | (facebook & 0xFFFFFFFFL);
     }
 
+    /**
+     * The Material You patch's list ({@link #YOU_ACCENTS}): Facebook's night colours by id in hex, the
+     * patch's own palette colours by name, which {@code idOf} answers with an id or 0, each with
+     * {@code t} and its tone, or {@code l} and its lightness, then {@code /} and its alpha in hex when
+     * it isn't opaque, as {@code "7f0601ab=t40;hushfacebook_you_accent_l62_a80=l62/80"}. An entry it
+     * can't read, or a name with no id, is left out.
+     */
+    static List<YouAccent> parseYouAccents(@Nullable String table, ToIntFunction<String> idOf) {
+        if (table == null || table.isEmpty()) return Collections.emptyList();
+        List<YouAccent> accents = new ArrayList<>();
+        for (String entry : table.split(";")) {
+            int equals = entry.indexOf('=');
+            if (equals <= 0 || equals + 2 > entry.length()) continue;
+            String key = entry.substring(0, equals);
+            String value = entry.substring(equals + 1);
+            try {
+                boolean night = !key.startsWith(OWN_COLOUR);
+                int id = night ? (int) Long.parseLong(key, 16) : idOf.applyAsInt(key);
+                if (id == 0) continue;
+                if (value.charAt(0) == 't') {
+                    int tone = Integer.parseInt(value.substring(1));
+                    if (Arrays.binarySearch(TonePalette.TONES, tone) < 0) continue;
+                    accents.add(new YouAccent(id, night, tone, 0, 0xFF));
+                } else if (value.charAt(0) == 'l') {
+                    int slash = value.indexOf('/');
+                    int lightness = Integer.parseInt(slash < 0 ? value.substring(1) : value.substring(1, slash));
+                    int alpha = slash < 0 ? 0xFF : Integer.parseInt(value.substring(slash + 1), 16);
+                    if (lightness < 0 || lightness > 100 || alpha < 0 || alpha > 0xFF) continue;
+                    accents.add(new YouAccent(id, night, -1, lightness, alpha));
+                }
+            } catch (NumberFormatException unreadable) {
+                Logger.printInfo(() -> "Accent color: left out an unreadable Material You accent entry", unreadable);
+            }
+        }
+        return Collections.unmodifiableList(accents);
+    }
+
+    /**
+     * The table that gives {@code accents} the accent family of {@code palette}, a picked preset's:
+     * Facebook's night colours at night, as night, night-v8 and night-v31, so it wins the tie with
+     * the Material You patch's system colour on Android 12 and newer; the patch's own palette at
+     * every time of day, as the default and v31. Null for no accents.
+     */
+    @Nullable
+    static byte[] youTable(String packageName, List<YouAccent> accents, TonePalette palette) {
+        if (accents.isEmpty()) return null;
+        int count = accents.size();
+        int[] ids = new int[count];
+        int[] colours = new int[count];
+        boolean[] night = new boolean[count];
+        boolean[] own = new boolean[count];
+        for (int i = 0; i < count; i++) {
+            YouAccent accent = accents.get(i);
+            ids[i] = accent.id;
+            colours[i] = accent.tone >= 0 ? palette.tone(TonePalette.ACCENT, accent.tone)
+                    : palette.atLightness(TonePalette.ACCENT, accent.lightness, accent.alpha << 24);
+            night[i] = accent.night;
+            own[i] = !accent.night;
+        }
+        int dark = ColourTable.UI_MODE_NIGHT_YES;
+        return ColourTable.write(packageName, ids,
+                new ColourTable.Config(dark, 0, colours, night), new ColourTable.Config(dark, 8, colours, night),
+                new ColourTable.Config(dark, 31, colours, night),
+                new ColourTable.Config(0, 0, colours, own), new ColourTable.Config(0, 31, colours, own));
+    }
+
     /** Package-visible for tests: puts a table of {@link #resourceBlues}'s form in use. */
     static void useTable(@Nullable String table) {
         blues = parse(table);
@@ -249,7 +355,7 @@ public final class AccentResources {
      * or its views read a colour.
      */
     public static synchronized void watchActivities(Context context) {
-        if (watching || blues.isEmpty() || !(context instanceof Application)) return;
+        if (watching || (blues.isEmpty() && !SettingsStatus.materialYouTheme()) || !(context instanceof Application)) return;
         ((Application) context).registerActivityLifecycleCallbacks(new Activities());
         watching = true;
     }
@@ -267,17 +373,25 @@ public final class AccentResources {
      * Android manages, and Android puts a loader added to such Resources into its assets in place:
      * every Resources and theme on them takes the table, Facebook's wrapper and the one it wraps
      * included.
+     *
+     * <p>Under the Material You theme the accent picked for it gives its own table instead ({@link #youTable}).
      */
     static void recolour(Activity activity) {
         try {
             Preset preset = Utils.settingsReady() ? AccentColor.chosen() : null;
+            Preset you = SettingsStatus.materialYouTheme() ? AccentColor.pickedForMaterialYou() : null;
             ResourcesLoader wanted = preset == null ? null : loader(activity.getPackageName(), preset);
-            if (wanted == null && LOADERS.isEmpty()) return;
+            ResourcesLoader wantedYou = you == null ? null : youLoader(activity, you);
+            if (wanted == null && wantedYou == null && LOADERS.isEmpty() && YOU_LOADERS.isEmpty()) return;
             Resources onAssets = onAssets(activity.getResources());
             for (ResourcesLoader other : LOADERS.values()) {
                 if (other != wanted) onAssets.removeLoaders(other);
             }
+            for (ResourcesLoader other : YOU_LOADERS.values()) {
+                if (other != wantedYou) onAssets.removeLoaders(other);
+            }
             if (wanted != null) onAssets.addLoaders(wanted);
+            if (wantedYou != null) onAssets.addLoaders(wantedYou);
         } catch (Throwable failure) {
             // Throwable, as in every hook: this runs as each activity is created.
             Logger.printException(() -> "Accent color: could not give the resources the accent", failure);
@@ -312,6 +426,33 @@ public final class AccentResources {
         ResourcesLoader loader = loaderFor("hushfacebook-accent.arsc", table);
         LOADERS.put(preset, loader);
         Logger.printDebug(() -> "Accent color: " + answer.ids.length + " colour resources take " + preset.fileValue);
+        return loader;
+    }
+
+    /**
+     * The Material You theme's loader for {@code preset}, made the first time, or null when the
+     * patch listed nothing. The list is read through {@link #onAssets}' Resources, not Facebook's
+     * wrapper, which answers some strings from its own language packs.
+     */
+    @Nullable
+    private static ResourcesLoader youLoader(Activity activity, Preset preset) throws Exception {
+        ResourcesLoader known = YOU_LOADERS.get(preset);
+        if (known != null) return known;
+        List<YouAccent> accents = youAccents;
+        if (accents == null) {
+            Resources resources = onAssets(activity.getResources());
+            String packageName = activity.getPackageName();
+            int list = resources.getIdentifier(YOU_ACCENTS, "string", packageName);
+            accents = parseYouAccents(list == 0 ? null : resources.getString(list),
+                    name -> resources.getIdentifier(name, "color", packageName));
+            youAccents = accents;
+        }
+        byte[] table = youTable(activity.getPackageName(), accents, AccentColor.palette(preset));
+        if (table == null) return null;
+        ResourcesLoader loader = loaderFor("hushfacebook-you-accent.arsc", table);
+        YOU_LOADERS.put(preset, loader);
+        int count = accents.size();
+        Logger.printDebug(() -> "Accent color: " + count + " Material You colour resources take " + preset.fileValue);
         return loader;
     }
 

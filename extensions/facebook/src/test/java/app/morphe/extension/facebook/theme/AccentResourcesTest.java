@@ -18,7 +18,10 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.facebook.theme.AccentColor.Preset;
@@ -131,6 +134,53 @@ public class AccentResourcesTest {
         assertEquals(Preset.GREEN, AccentColor.chosen());
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertNull("paused", AccentColor.chosen());
+    }
+
+    /**
+     * Issue #272: under the Material You theme, the accent picked in the row takes over what the
+     * patch pointed at the wallpaper's accent: Facebook's night blue at night alone, so it wins over
+     * the patch's system colour on Android 12 and newer, and the patch's own palette at any time.
+     */
+    @Test
+    public void thePickTakesWhatTheMaterialYouPatchPointedAtTheAccent() {
+        List<AccentResources.YouAccent> accents = AccentResources.parseYouAccents(
+                "7f06044f=t70;hushfacebook_you_accent_40=t40;hushfacebook_you_accent_l62_a80=l62/80;"
+                        + "hushfacebook_gone=t40;7f060001=t45;unreadable;7f0600zz=t40",
+                name -> name.equals("hushfacebook_you_accent_40") ? 0x7f060900
+                        : name.equals("hushfacebook_you_accent_l62_a80") ? 0x7f060901 : 0);
+        assertEquals("a name with no id, no tone and what can't be read are left out", 3, accents.size());
+        assertTrue(accents.get(0).night);
+        assertEquals(0x7f06044f, accents.get(0).id);
+        assertFalse(accents.get(1).night);
+        assertEquals(40, accents.get(1).tone);
+        assertEquals(-1, accents.get(2).tone);
+        assertEquals(62, accents.get(2).lightness);
+        assertEquals(0x80, accents.get(2).alpha);
+        assertTrue(AccentResources.parseYouAccents(null, name -> 1).isEmpty());
+
+        TonePalette teal = AccentColor.palette(Preset.TEAL);
+        int night = teal.tone(TonePalette.ACCENT, 70);
+        int tone = teal.tone(TonePalette.ACCENT, 40);
+        int shade = teal.atLightness(TonePalette.ACCENT, 62, 0x80000000);
+        ColourTableReader table = new ColourTableReader(AccentResources.youTable("com.facebook.katana", accents, teal));
+        assertEquals("night, night-v8, night-v31, default and v31", 5, table.configs.size());
+        int[][] configs = {{0x20, 0}, {0x20, 8}, {0x20, 31}, {0, 0}, {0, 31}};
+        for (int i = 0; i < configs.length; i++) {
+            ColourTableReader.Config config = table.configs.get(i);
+            assertEquals(configs[i][0], config.uiMode);
+            assertEquals(configs[i][1], config.sdkVersion);
+            Map<Integer, Integer> expected = new LinkedHashMap<>();
+            if (config.uiMode != 0) {
+                expected.put(0x44f, night);
+            } else {
+                expected.put(0x900, tone);
+                expected.put(0x901, shade);
+            }
+            assertEquals("config " + i, expected, config.colours);
+        }
+        assertEquals("the shade keeps its alpha", 0x80, shade >>> 24);
+        assertNotEquals("teal isn't Facebook's blue", 0xFF5AA7FF, night);
+        assertNull(AccentResources.youTable("p", Collections.emptyList(), teal));
     }
 
     /** Stands in for FDS tokens: only the constant names matter. */

@@ -4,6 +4,7 @@
  */
 package app.morphe.extension.facebook.theme;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -17,11 +18,32 @@ import java.nio.charset.StandardCharsets;
  *
  * <p>Each colour has a default value and may have a night one. The night values go in twice, as
  * {@code night} and as {@code night-v8}: aapt2 writes {@code values-night} with the v8 its qualifier
- * implies and other tools don't, and only a configuration equal to the app's wins the tie.
+ * implies and other tools don't, and only a configuration equal to the app's wins the tie. Other
+ * configurations, such as the Material You theme's {@code night-v31} and {@code v31}, are given as
+ * {@link Config}s.
  *
  * <p>Plain Java on purpose, so a test can read the bytes back with a resource table reader.
  */
 final class ColourTable {
+
+    /** One configuration's colours: those {@code present} marks, or all of them when it's null. */
+    static final class Config {
+        final int uiMode;
+        final int sdkVersion;
+        final int[] colours;
+        final boolean[] present;
+
+        Config(int uiMode, int sdkVersion, int[] colours, boolean[] present) {
+            this.uiMode = uiMode;
+            this.sdkVersion = sdkVersion;
+            this.colours = colours;
+            this.present = present;
+        }
+
+        boolean has(int index) {
+            return present == null || present[index];
+        }
+    }
 
     private static final int RES_STRING_POOL_TYPE = 0x0001;
     private static final int RES_TABLE_TYPE = 0x0002;
@@ -45,7 +67,7 @@ final class ColourTable {
 
     /** ResTable_config's uiMode, at byte 29, for night; and the configuration-change flag that goes with it. */
     private static final int CONFIG_UI_MODE_OFFSET = 29;
-    private static final int UI_MODE_NIGHT_YES = 0x20;
+    static final int UI_MODE_NIGHT_YES = 0x20;
     private static final int CONFIG_SDK_VERSION_OFFSET = 24;
     private static final int SPEC_UI_MODE = 0x1000;
 
@@ -59,13 +81,33 @@ final class ColourTable {
      *     given twice, or arrays of different lengths
      */
     static byte[] write(String packageName, int[] ids, int[] defaults, int[] nights, boolean[] hasNight) {
-        if (ids.length == 0 || defaults.length != ids.length || nights.length != ids.length || hasNight.length != ids.length) {
+        if (defaults.length != ids.length || nights.length != ids.length || hasNight.length != ids.length) {
             throw new IllegalArgumentException("ids and colours don't line up");
+        }
+        boolean anyNight = false;
+        for (boolean night : hasNight) anyNight |= night;
+        if (!anyNight) return write(packageName, ids, new Config(0, 0, defaults, null));
+        return write(packageName, ids, new Config(0, 0, defaults, null),
+                new Config(UI_MODE_NIGHT_YES, 0, nights, hasNight), new Config(UI_MODE_NIGHT_YES, 8, nights, hasNight));
+    }
+
+    /**
+     * The table for {@code ids}, colour resources of one app package and type, with each of
+     * {@code configs}' colours for the ids it has. A configuration that has none is left out.
+     *
+     * @throws IllegalArgumentException for no ids, ids of more than one package or type, an id
+     *     given twice, or a configuration whose arrays don't line up with the ids
+     */
+    static byte[] write(String packageName, int[] ids, Config... configs) {
+        if (ids.length == 0) throw new IllegalArgumentException("no ids");
+        for (Config config : configs) {
+            if (config.colours.length != ids.length || (config.present != null && config.present.length != ids.length)) {
+                throw new IllegalArgumentException("ids and colours don't line up");
+            }
         }
         int packageId = ids[0] >>> 24;
         int typeId = (ids[0] >> 16) & 0xFF;
         int entryCount = 0;
-        boolean anyNight = false;
         for (int i = 0; i < ids.length; i++) {
             if (ids[i] >>> 24 != packageId || ((ids[i] >> 16) & 0xFF) != typeId) {
                 throw new IllegalArgumentException("ids of more than one package or type");
@@ -74,7 +116,6 @@ final class ColourTable {
                 if (ids[j] == ids[i]) throw new IllegalArgumentException("id given twice");
             }
             entryCount = Math.max(entryCount, (ids[i] & 0xFFFF) + 1);
-            anyNight |= hasNight[i];
         }
         if (packageId == 0 || typeId == 0) throw new IllegalArgumentException("not an app resource id");
 
@@ -88,14 +129,22 @@ final class ColourTable {
         byte[] keyPool = stringPool(keys);
 
         int[] specFlags = new int[entryCount];
-        for (int i = 0; i < ids.length; i++) if (hasNight[i]) specFlags[ids[i] & 0xFFFF] = SPEC_UI_MODE;
+        ByteArrayOutputStream types = new ByteArrayOutputStream();
+        for (Config config : configs) {
+            boolean any = false;
+            for (int i = 0; i < ids.length; i++) {
+                if (!config.has(i)) continue;
+                any = true;
+                if (config.uiMode != 0) specFlags[ids[i] & 0xFFFF] = SPEC_UI_MODE;
+            }
+            if (!any) continue;
+            byte[] chunk = type(typeId, entryCount, ids, config);
+            types.write(chunk, 0, chunk.length);
+        }
         byte[] spec = typeSpec(typeId, specFlags);
-        byte[] plain = type(typeId, entryCount, ids, defaults, null, 0, 0);
-        byte[] night = anyNight ? type(typeId, entryCount, ids, nights, hasNight, UI_MODE_NIGHT_YES, 0) : new byte[0];
-        byte[] nightV8 = anyNight ? type(typeId, entryCount, ids, nights, hasNight, UI_MODE_NIGHT_YES, 8) : new byte[0];
+        byte[] typeChunks = types.toByteArray();
 
-        int packageSize = PACKAGE_HEADER_SIZE + typePool.length + keyPool.length + spec.length
-                + plain.length + night.length + nightV8.length;
+        int packageSize = PACKAGE_HEADER_SIZE + typePool.length + keyPool.length + spec.length + typeChunks.length;
         byte[] globalPool = stringPool(new String[0]);
         ByteBuffer out = buffer(TABLE_HEADER_SIZE + globalPool.length + packageSize);
         out.putShort((short) RES_TABLE_TYPE).putShort((short) TABLE_HEADER_SIZE).putInt(out.capacity()).putInt(1);
@@ -110,7 +159,7 @@ final class ColourTable {
         out.putInt(PACKAGE_HEADER_SIZE + typePool.length); // keyStrings
         out.putInt(keys.length); // lastPublicKey
         out.putInt(0); // typeIdOffset
-        out.put(typePool).put(keyPool).put(spec).put(plain).put(night).put(nightV8);
+        out.put(typePool).put(keyPool).put(spec).put(typeChunks);
         return out.array();
     }
 
@@ -151,29 +200,26 @@ final class ColourTable {
         return out.array();
     }
 
-    /**
-     * One configuration of the colours: the default one when {@code only} is null, otherwise the
-     * entries {@code only} marks, under a configuration with this {@code uiMode} and {@code sdkVersion}.
-     */
-    private static byte[] type(int typeId, int entryCount, int[] ids, int[] colours, boolean[] only, int uiMode, int sdkVersion) {
+    /** One configuration's type chunk: the entries {@code config} has, under its uiMode and sdkVersion. */
+    private static byte[] type(int typeId, int entryCount, int[] ids, Config config) {
         int present = 0;
-        for (int i = 0; i < ids.length; i++) if (only == null || only[i]) present++;
+        for (int i = 0; i < ids.length; i++) if (config.has(i)) present++;
         int entriesStart = TYPE_HEADER_SIZE + 4 * entryCount;
         ByteBuffer out = buffer(entriesStart + ENTRY_SIZE * present);
         out.putShort((short) RES_TABLE_TYPE_TYPE).putShort((short) TYPE_HEADER_SIZE).putInt(out.capacity());
         out.put((byte) typeId).put((byte) 0).putShort((short) 0).putInt(entryCount).putInt(entriesStart);
-        byte[] config = new byte[CONFIG_SIZE];
-        config[0] = CONFIG_SIZE;
-        config[CONFIG_SDK_VERSION_OFFSET] = (byte) sdkVersion;
-        config[CONFIG_UI_MODE_OFFSET] = (byte) uiMode;
-        out.put(config);
+        byte[] configBytes = new byte[CONFIG_SIZE];
+        configBytes[0] = CONFIG_SIZE;
+        configBytes[CONFIG_SDK_VERSION_OFFSET] = (byte) config.sdkVersion;
+        configBytes[CONFIG_UI_MODE_OFFSET] = (byte) config.uiMode;
+        out.put(configBytes);
 
         int[] offsets = new int[entryCount];
         java.util.Arrays.fill(offsets, NO_ENTRY);
         int next = 0;
         int[] order = new int[present];
         for (int i = 0, k = 0; i < ids.length; i++) {
-            if (only != null && !only[i]) continue;
+            if (!config.has(i)) continue;
             offsets[ids[i] & 0xFFFF] = next;
             next += ENTRY_SIZE;
             order[k++] = i;
@@ -182,7 +228,7 @@ final class ColourTable {
         for (int i : order) {
             // ResTable_entry: its size, no flags, and the key; then a Res_value holding the colour.
             out.putShort((short) 8).putShort((short) 0).putInt(i);
-            out.putShort((short) 8).put((byte) 0).put((byte) TYPE_INT_COLOR_ARGB8).putInt(colours[i]);
+            out.putShort((short) 8).put((byte) 0).put((byte) TYPE_INT_COLOR_ARGB8).putInt(config.colours[i]);
         }
         return out.array();
     }
