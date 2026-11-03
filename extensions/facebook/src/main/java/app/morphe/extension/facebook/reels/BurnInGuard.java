@@ -69,7 +69,8 @@ import app.morphe.extension.shared.settings.Setting;
  * shown views at each level that hold no surface are dimmed: the reel's buttons, author and caption,
  * the top bar and the tab bar. A surface's own branch never is, so a reel the pager holds ready
  * beside the one playing isn't dimmed whole. Only alpha changes, so a dimmed button still takes its
- * tap. A finger held on the screen counts as a touch until it lifts.
+ * tap. A finger held on the screen counts as a touch until it lifts. Hushfacebook's own buttons on the
+ * window's decor view, outside the content frame, dim with them: the story eye ({@link #overlay}).
  *
  * <p>What a touch is: a finger going down on something that takes taps other than the video itself
  * ({@link #quietAt}), or moving as a swipe does. A tap on the video (to pause or play, a double tap
@@ -146,6 +147,8 @@ public final class BurnInGuard {
     private static final Map<View, float[]> DIMMED = new WeakHashMap<>();
     /** Content views this class moved: the [x, y] they had, then the [x, y] written here. */
     private static final Map<View, float[]> MOVED = new WeakHashMap<>();
+    /** Hushfacebook's own buttons put on a window's decor view ({@link #overlay}). Main thread. */
+    private static final Map<View, Boolean> OVERLAYS = new WeakHashMap<>();
     private static final Runnable TICK = BurnInGuard::tick;
     private static final Focus FOCUS = new Focus();
     private static final Layout LAYOUT = new Layout();
@@ -190,6 +193,15 @@ public final class BurnInGuard {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "burn-in guard start", failure);
         }
+    }
+
+    /**
+     * From where Hushfacebook adds a button of its own to a window's decor view, beside the content
+     * frame, where the dim's walk up from the video never reaches: the story eye. While it shows on
+     * the window in front it dims and comes back with Facebook's controls. Main thread.
+     */
+    public static void overlay(View view) {
+        OVERLAYS.put(view, Boolean.TRUE);
     }
 
     /** The choice now: off until the settings are read and while Hushfacebook is paused. */
@@ -448,6 +460,12 @@ public final class BurnInGuard {
             for (int i = 0; i < group.getChildCount(); i++) {
                 View child = group.getChildAt(i);
                 if (child.getVisibility() == View.VISIBLE && !bright.contains(child)) beside.add(child);
+            }
+        }
+        for (View overlay : OVERLAYS.keySet()) {
+            if (overlay != null && overlay.getVisibility() == View.VISIBLE && overlay.getParent() != null
+                    && overlay.getRootView() == decor) {
+                beside.add(overlay);
             }
         }
         for (Iterator<Map.Entry<View, float[]>> entries = DIMMED.entrySet().iterator(); entries.hasNext(); ) {
@@ -821,6 +839,7 @@ public final class BurnInGuard {
         LAYOUT.lastLook = Long.MIN_VALUE / 2;
         DIMMED.clear();
         MOVED.clear();
+        OVERLAYS.clear();
         WRAPPED.clear();
     }
 }

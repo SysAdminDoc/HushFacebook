@@ -36,6 +36,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import app.morphe.extension.facebook.reels.BurnInGuard;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.L10n;
@@ -544,6 +545,8 @@ public final class StorySeenButton {
         params.topMargin = (insets == null ? 0 : insets.getSystemWindowInsetTop()) + Math.round(TOP_DP * density);
         params.setMarginEnd(Math.round(END_DP * density));
         ((ViewGroup) decor).addView(eye, params);
+        // Beside the content frame, so Burn-in guard's walk up from the video wouldn't find it.
+        BurnInGuard.overlay(eye);
         Follower follower = new Follower(eye, decor);
         followers.put(eye, follower);
         decor.getViewTreeObserver().addOnPreDrawListener(follower);

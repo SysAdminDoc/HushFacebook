@@ -551,6 +551,36 @@ public class BurnInGuardTest {
         assertDimmed("lifted");
     }
 
+    /**
+     * The story eye sits on the decor view beside the content frame (HushGram#479's screenshot): it
+     * dims and comes back with the rest, and a view of Facebook's or the system's there is left alone.
+     */
+    @Test
+    public void hushfacebooksOwnButtonOnTheDecorDimsWithTheControls() {
+        FrameLayout decor = (FrameLayout) activity.getWindow().getDecorView();
+        View eye = new View(activity);
+        eye.setOnClickListener(view -> { });
+        place(decor, eye, W - 160, 200, W - 40, 320);
+        View systemBar = new View(activity);
+        place(decor, systemBar, 0, 0, W, 60);
+        BurnInGuard.overlay(eye);
+        layout();
+        Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+        BurnInGuard.resumed(activity);
+        after(IDLE + 100);
+        assertDimmed("idle");
+        assertEquals("the eye", BurnInGuard.IDLE_LEVEL, eye.getAlpha(), 0f);
+        assertEquals("a decor child that isn't Hushfacebook's", 1f, systemBar.getAlpha(), 0f);
+        tapOn(like);
+        assertUp("a tap on Like");
+        assertEquals("the eye comes back", 1f, eye.getAlpha(), 0f);
+        eye.setVisibility(View.INVISIBLE);
+        after(IDLE + 100);
+        assertDimmed("idle again");
+        eye.setVisibility(View.VISIBLE);
+        assertEquals("a hidden eye isn't dimmed", 1f, eye.getAlpha(), 0f);
+    }
+
     @Test
     public void theWatcherPassesTouchesOnToTheActivity() {
         Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
