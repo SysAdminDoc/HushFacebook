@@ -8,7 +8,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -328,7 +327,7 @@ public final class SearchDateRange {
         days.setValue(Math.max(1, Math.min(31, day)));
         days.setWrapSelectorWheel(true);
         days.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) days.setTextColor(textColor);
+        days.setTextColor(textColor);
         days.setContentDescription(title);
         days.setOnValueChangedListener((wheel, before, now) -> picked.picked(now));
         column.addView(days);

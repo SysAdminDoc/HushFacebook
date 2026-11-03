@@ -5,6 +5,7 @@ Changes in each Hushfacebook version, newest first.
 ## Unreleased
 
 * **Facebook:** `Turn off auto-translation` now covers comments too. With it on, a comment Facebook translated by itself shows in the words its writer used, and See translation under it still translates it when you tap. (#372)
+* **Tooling:** `scripts/gen-l10n.py` writes each language's table to a class of its own, since the one generated file had grown past the size lint will read. The release check also stops counting Russian plural rows as missing from the other tables when their English runs over more than one line.
 * **Facebook:** New `Open in Facebook from the share menu` patch. Messenger keeps facebook.com links in its own browser, so share the page from there (or the link from any app) and pick Open in Facebook, and it opens in the patched Facebook. Hushfacebook settings lists it under Built-in changes, with a line on how to use it. (#111)
 * **Facebook:** With `See-through bars` on, a feed video that slides under the top or bottom bar is blurred along with the rest of the page on phones where Facebook used to draw it on a separate layer the blur couldn't reach. Reels keep that layer. (#250)
 * **Facebook:** With `Open comments at full height` on, tapping more on a reel's description opens the whole text right there again. It used to open the comments instead, on reels Facebook would have shown with comments in a split screen. (#269)

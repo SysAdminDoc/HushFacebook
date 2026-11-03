@@ -420,7 +420,16 @@
     },
     {
       "paths": [
-        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTranslations.java"
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTranslations.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableDe.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableEs.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableIn.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTablePt_rBR.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableRu.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableTr.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableVi.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableZh_rCN.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableZh_rTW.java"
       ],
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",

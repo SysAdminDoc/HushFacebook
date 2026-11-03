@@ -425,7 +425,8 @@ public class L10nCatalogTest {
             assertTrue("no sources at " + folder, folder.isDirectory());
             try (Stream<Path> walk = Files.walk(folder.toPath())) {
                 walk.filter(path -> path.toString().endsWith(".java"))
-                        .filter(path -> !path.getFileName().toString().equals("L10nTranslations.java"))
+                        .filter(path -> !path.getFileName().toString().equals("L10nTranslations.java")
+                                && !path.getFileName().toString().startsWith("L10nTable"))
                         .sorted()
                         .forEach(files::add);
             }

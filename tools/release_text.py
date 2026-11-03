@@ -207,19 +207,26 @@ def check_translations(root: Path) -> str:
             problems.append(f"{language} lacks {len(missing)}: " + "; ".join(m[:50] for m in missing[:3]))
     if problems:
         fail("a string isn't translated in every table:\n  " + "\n  ".join(problems))
-    committed = root / "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTranslations.java"
+    shared = root / "extensions/shared/library/src/main/java/app/morphe/extension/shared"
+    committed = shared / "L10nTranslations.java"
     if not committed.is_file():
         fail(f"no generated translations at {committed}")
+
+    def generated(folder: Path) -> dict[str, bytes]:
+        return {path.name: path.read_bytes() for path in sorted(folder.iterdir())
+                if path.name == committed.name or generator.TABLE_FILE.match(path.name)}
+
     with tempfile.TemporaryDirectory() as scratch:
-        generator.JAVA = str(Path(scratch) / "L10nTranslations.java")
+        generator.JAVA = str(Path(scratch) / committed.name)
         try:
             with contextlib.redirect_stdout(io.StringIO()):
                 generator.main()
         except SystemExit as stop:
             fail(f"scripts/gen-l10n.py stopped: {stop}")
-        fresh = Path(generator.JAVA).read_bytes()
-    if fresh != committed.read_bytes():
-        fail("L10nTranslations.java isn't what scripts/gen-l10n.py makes of the tables. Run it and commit the result.")
+        fresh = generated(Path(scratch))
+    if fresh != generated(shared):
+        fail("L10nTranslations.java or an L10nTable class isn't what scripts/gen-l10n.py makes of the tables. "
+             "Run it and commit the result.")
     return f"{len(tables)} tables translate the same {len(every)} strings, and L10nTranslations.java is current"
 
 
