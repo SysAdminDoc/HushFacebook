@@ -2477,3 +2477,4 @@ Icons look soft on this screen	Simgeler bu ekranda bulanık görünüyor
 The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has images for every screen.	Yamaladığınız Facebook'ta bu ekran için yapılmış görseller yok, bu yüzden bazı simgeler büyütülüyor. Facebook'u APKMirror'daki (arm64-v8a) (120-640dpi) paketinden yeniden yamalayın, bu pakette her ekran için görseller var.
 Let each post come back once	Her gönderinin bir kez geri gelmesine izin ver
 A post you scrolled past shows up one more time, and scrolling past it again hides it. Fewer posts go missing after a quick scroll.	Üzerinden kaydırdığınız bir gönderi bir kez daha görünür, tekrar üzerinden kaydırınca gizlenir. Hızlı kaydırmadan sonra daha az gönderi kaybolur.
+There's no Facebook link in what you shared.	Paylaştığın içerikte Facebook bağlantısı yok.

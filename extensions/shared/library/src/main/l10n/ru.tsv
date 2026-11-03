@@ -2531,3 +2531,4 @@ Icons look soft on this screen	Значки на этом экране выгл�
 The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has images for every screen.	В пропатченном вами Facebook нет изображений для этого экрана, поэтому некоторые значки увеличены. Пропатчите Facebook заново из пакета (arm64-v8a) (120-640dpi) с APKMirror, в котором есть изображения для любого экрана.
 Let each post come back once	Показывать каждую публикацию ещё раз
 A post you scrolled past shows up one more time, and scrolling past it again hides it. Fewer posts go missing after a quick scroll.	Публикация, мимо которой вы прокрутили, появится ещё один раз, а если снова прокрутить мимо, она будет скрыта. Так после быстрой прокрутки теряется меньше публикаций.
+There's no Facebook link in what you shared.	В том, чем вы поделились, нет ссылки на Facebook.

@@ -268,6 +268,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/OpenInFacebook.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/openinfacebook/**"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook from Facebook 585 (#111): an Open in Facebook share target declared in the manifest that takes the first Facebook link out of shared text and hands it to Facebook's own link handler, so a link Messenger keeps in its browser can be opened in Facebook."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/GenAiLabel.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/AiCharacterPosts.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/aidetected/**"

@@ -2916,6 +2916,45 @@
       "options": []
     },
     {
+      "name": "Open in Facebook from the share menu",
+      "description": "Adds Open in Facebook to Android's share menu. Share a Facebook link or page to it from Messenger's browser or any other app, and it opens here instead of in that app. Works as soon as you patch it in, with no switch.",
+      "category": "Interface",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings",
+        "ResourcePatch"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "585.0.0.47.54"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "585.0.0.47.54",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 476015655,
+                "ARMEABI_V7A": 476015543
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Open links in external browser",
       "description": "Opens web links in your own browser instead of Facebook's built-in one, without Facebook tracking the click. Facebook pages still open in the app. On by default. Turn it off in Hushfacebook settings > Links and sharing. A second switch, on by default under Privacy, stops Facebook's browser keeping a history of the links you open in it. A Page's Events link opens on that Page's Events tab instead of Home, whichever way the switches are set.",
       "category": "Interface",
