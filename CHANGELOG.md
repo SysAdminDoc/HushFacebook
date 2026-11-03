@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** With `Keep the progress bar` on, a reel opened from the feed shows its time bar right away. It used to be missing for a second or so while the reel viewer caught up with the video the feed had been playing. For that moment the bar now sits at the start, then jumps to where the reel is and keeps moving. (#359)
 * **Facebook:** With `Hide seen stories` and `View stories anonymously` both on, a story Facebook has shown as watched once now stays hidden until that person posts a new one, even after a restart or a refresh that sends it as unwatched. Before, it stayed hidden only when the time you watched it lined up with Facebook's post time, so a phone clock that's a bit off could bring it back. (#340)
 * **Facebook:** `See-through bars` now reaches the Marketplace tab. Marketplace's page used to stop right above the tab bar, so the bar had nothing behind it to show. With the switch on, the page now runs under the bar the way Home's feed does, and turning the switch off puts it back. (#250)
 * **Facebook:** With `Turn off HDR brightness` on, HLG reels in VP9 shouldn't come out bright and yellow anymore on phones without a Snapdragon chip. The switch used to ask the phone's video decoder to convert those reels itself, and some phones' conversion shifted the colors. Now the reel goes over in its own colors and Android fits them to the screen, which is what Snapdragon phones already got. I've only watched it on a Snapdragon phone so far. (#93)

@@ -214,6 +214,54 @@ public class ProgressBarTest {
         assertEquals(40, ProgressBar.barWaitMs());
     }
 
+    /**
+     * While the bar is kept, the scrubber takes the reel's video data from another player until the
+     * viewer's own has it, so it draws as the reel starts playing (#359). Off, paused, before the
+     * settings are ready or with no video id, the render stays as Facebook wrote it.
+     */
+    @Test
+    public void theScrubberBorrowsTheReelsVideoOnlyWhileTheBarIsKept() {
+        assertFalse("off, the scrubber borrowed the video", ProgressBar.borrowsVideo("1"));
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused, the scrubber borrowed the video", ProgressBar.borrowsVideo("1"));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("the scrubber borrowed the video before the settings were ready", ProgressBar.borrowsVideo("1")));
+        assertFalse("with no video id, the scrubber looked for one", ProgressBar.borrowsVideo(null));
+        assertFalse("with an empty video id, the scrubber looked for one", ProgressBar.borrowsVideo(""));
+        assertTrue("kept, the scrubber waited for the viewer's own player", ProgressBar.borrowsVideo("1"));
+        String line = statusLine();
+        assertTrue("the kept answer wasn't counted once: " + line, line != null && line.contains(ProgressBar.BORROWED_VIDEO + " 1"));
+    }
+
+    /**
+     * A bar drawn on video data lent from another player gets a key of its own, and the one drawn
+     * on the viewer's own data next keeps Facebook's, so Litho mounts it afresh on the viewer's
+     * player rather than leaving it at 0:00 on the stopped one (#359).
+     */
+    @Test
+    public void aBarOnLentVideoIsKeyedApartFromTheViewersOwn() {
+        ProgressBar.forgetLentForTests();
+        Object feeds = new Object();
+        Object viewers = new Object();
+        assertNull("nothing was lent, yet a bar was keyed", ProgressBar.scrubberKey(viewers));
+        assertNull("a bar with no data was keyed", ProgressBar.scrubberKey(null));
+        ProgressBar.lent(feeds);
+        ProgressBar.lent(feeds);
+        assertEquals("a bar on lent data kept Facebook's key", ProgressBar.LENT_REEL_KEY, ProgressBar.scrubberKey(feeds));
+        assertEquals("a second render on lent data lost its key", ProgressBar.LENT_REEL_KEY, ProgressBar.scrubberKey(feeds));
+        assertNull("the viewer's own data was keyed as lent", ProgressBar.scrubberKey(viewers));
+        assertNull("lent data stayed lent after the viewer's own came", ProgressBar.scrubberKey(feeds));
+        for (int i = 0; i < 6; i++) ProgressBar.lent(new Object());
+        ProgressBar.lent(feeds);
+        assertEquals("the newest lent data was dropped first", ProgressBar.LENT_REEL_KEY, ProgressBar.scrubberKey(feeds));
+        String line = statusLine();
+        assertTrue("the keyed bars weren't counted: " + line, line != null && line.contains(ProgressBar.LENT_KEYED + " 3"));
+        assertTrue("the bar back on its own data wasn't counted once: " + line,
+                line.contains(ProgressBar.OWN_AFTER_LENT + " 1"));
+    }
+
     /** The next reel starts without the last one's graph and chapter marks only while the bar is kept. */
     @Test
     public void theNextReelIsClearedOnlyWhileTheBarIsKept() {

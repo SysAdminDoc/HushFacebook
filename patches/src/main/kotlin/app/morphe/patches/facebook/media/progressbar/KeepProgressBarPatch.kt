@@ -27,6 +27,7 @@ import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderInstruction
@@ -173,6 +174,24 @@ internal const val LOOKS_AGAIN = "$PROGRESS_BAR->looksAgain(Landroid/view/ViewGr
 
 /** The trace name of the Reels scrubber registry's hand-over as a new reel shows, a kept literal. */
 internal const val NEW_REELS_UNIT_SHOWN = ".onNewReelsUnitShown"
+
+/** The trace name of the Reels scrubber render's check for a missing video, a kept literal. */
+internal const val SCRUBBER_RENDER = "PersistentScrubberUtils.isAnySFVVideoDataNull"
+internal const val IMMUTABLE_SET = "Lcom/google/common/collect/ImmutableSet;"
+internal const val BORROWS_VIDEO = "$PROGRESS_BAR->borrowsVideo(Ljava/lang/String;)Z"
+
+internal const val LENT = "$PROGRESS_BAR->lent(Ljava/lang/Object;)V"
+internal const val SCRUBBER_KEY = "$PROGRESS_BAR->scrubberKey(Ljava/lang/Object;)Ljava/lang/String;"
+
+/** Litho's component key setter, a kept name. */
+internal const val SET_KEY = "setKey(Ljava/lang/String;)V"
+
+/** The helper the patch adds to the scrubber's render class, which hands the render another player's video. */
+internal const val REEL_VIDEO_HELPER = "hushfacebookReelVideo"
+
+/** The helper the patch adds to the scrubber's render class, which keys a bar drawn on another player's video apart. */
+internal const val REEL_KEY_HELPER = "hushfacebookKeyReel"
+private const val MAP_ENTRY = "Ljava/util/Map\$Entry;"
 internal const val TAKES_TOUCH =
     "Lapp/morphe/extension/facebook/media/TapToSeek;->takesTouch(${SEEK_BAR}Landroid/view/MotionEvent;)Z"
 internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
@@ -309,6 +328,19 @@ internal const val INVALIDATE = "Landroid/view/View;->invalidate()V"
  * `LX/9GA;`) the scrubber's listener can post its start of a scrub as a drag starts, so the
  * played drag lifts a moment later, after that start ran (#120).
  *
+ * Opening a reel from the feed, the bar faded in about a second after the reel was playing (#359).
+ * The bar is a Litho component (585 `LX/08NB;`, [reelVideoRead]) whose render looks up the player
+ * for its own origin and the reel's video, and renders nothing while that player has no video data,
+ * which the viewer's hasn't until well after the feed's player has handed the reel over (on the S22,
+ * 1.1 to 1.4 s cold, 0.4 s warm, while the buttons and caption were drawn within 0.3 s). Facebook can
+ * fall back to any player holding the same video, behind two server switches that were off on the
+ * accounts seen, and a bar drawn on another player's data follows that player: the bar drew at once
+ * and then sat at 0:00 and dimmed, as the feed's player had stopped, even after the viewer's own data
+ * came. So while the bar is kept the render takes the video data from the other player, via
+ * [reelVideoHelper], until the viewer's own has it, and the bar drawn on it gets a Litho key of its
+ * own via [reelKeyHelper]: the render on the viewer's data then makes a bar with Facebook's usual
+ * key, which Litho mounts afresh, on the viewer's player.
+ *
  * In the default selection with its switch off: it only acts once the switch is turned on.
  */
 @Suppress("unused")
@@ -375,6 +407,10 @@ val keepProgressBarPatch = bytecodePatch(
         // Only a mount of the base's own is run virtually, so only then can a class extending it skip it.
         val baseMount = another.mount.definingClass == progress.base.type
         val delay = frameDelay(progress)
+        val video = reelVideoRead(
+            classDefByStrings(SCRUBBER_RENDER, StringComparisonType.EQUALS)
+                .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+        )
         val selector = lookSelector(progress.base, scrubber)
         val skip = sameLookSkip(selector) { classDefByOrNull(it) }
         val status = seekBarStatus(
@@ -473,6 +509,7 @@ val keepProgressBarPatch = bytecodePatch(
             looksAgainFirst(scrubber, dragAt)
         }
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(delay) }.smoothWhileKept()
+        borrowsReelVideo(video, reelBarReturn(video) { classDefByOrNull(it) })
         // The skip's index is the unpatched selector's, so its hook goes in before the one at the top.
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(selector) }.apply {
             replacesParkedLook(skip)
@@ -1418,6 +1455,136 @@ internal fun frameDelay(progress: ProgressUpdate): Method {
         ?: refuse("$call, the wait before the next progress update, isn't declared on ${base.type}")
 }
 
+/**
+ * Where the Reels scrubber's render reads the viewer's video data ([at], the `iget-object` it tests
+ * before drawing, with [own], [registry] and [video] the registers holding there that read's result,
+ * the player registry and the reel's video id), and what Facebook's own look through every player
+ * reads, as smali text: the registry's [sessions] (`class->name()ImmutableSet`), a session key's
+ * class and its video id field (`class->name:type`), and a session's class and its video data field.
+ */
+internal class ReelVideoRead(
+    val method: Method,
+    val at: Int,
+    val own: Int,
+    val registry: Int,
+    val video: Int,
+    val sessions: String,
+    val registryType: String,
+    val keyClass: String,
+    val keyVideo: String,
+    val sessionClass: String,
+    val videoData: String,
+    val dataType: String,
+) {
+    /** The descriptor of [reelVideoHelper] on the render's class. */
+    val helper get() = "${method.definingClass}->$REEL_VIDEO_HELPER($dataType${registryType}Ljava/lang/String;)$dataType"
+}
+
+/**
+ * The Reels scrubber's render (585 `LX/08NB;->render`, loading [SCRUBBER_RENDER]) and, in it, the
+ * read of the viewer's video data it tests before drawing (585 index 171). Facebook's look through
+ * every player, behind two server switches, starts at the method's one `()ImmutableSet` call (the
+ * player registry's sessions, 125) and walks the entries: `getKey()`, cast to the key class, its
+ * String video id compared with the reel's through `String.equals`, then `getValue()`, cast to the
+ * session class, and its video data field read (146). The read taken is the first of that field
+ * after the walk that an `if-nez` of its result tests, with the render's own fallback, an
+ * `iget-object` of the same type into the same register, right after. Refuses unless there's exactly
+ * one such method, nothing jumps between the read and its test, the registry and video id registers
+ * hold there what the walk reads (the same writers reach both), and all three registers fit a plain
+ * `invoke-static`.
+ */
+internal fun reelVideoRead(holders: List<ClassDef>): ReelVideoRead {
+    val found = holders.flatMap { methodsHolding(it, SCRUBBER_RENDER) }.mapNotNull { method ->
+        val code = method.code()
+        fun call(at: Int) = (code[at] as? ReferenceInstruction)?.reference as? MethodReference
+        fun field(at: Int) = (code[at] as? ReferenceInstruction)?.reference as? FieldReference
+        fun cast(at: Int) = ((code[at] as ReferenceInstruction).reference as TypeReference).type
+        fun after(from: Int, test: (Int) -> Boolean) = (from + 1 until code.size).firstOrNull(test)
+        fun calls(at: Int, owner: String, name: String) = call(at)?.let { it.definingClass == owner && it.name == name } == true
+        val scan = code.indices.singleOrNull { at ->
+            code[at].opcode == Opcode.INVOKE_VIRTUAL && call(at)?.let { it.parameterTypes.isEmpty() && it.returnType == IMMUTABLE_SET } == true
+        } ?: return@mapNotNull null
+        val getKey = after(scan) { calls(it, MAP_ENTRY, "getKey") } ?: return@mapNotNull null
+        val keyCast = after(getKey) { code[it].opcode == Opcode.CHECK_CAST } ?: return@mapNotNull null
+        val keyClass = cast(keyCast)
+        val keyRead = after(keyCast) { at ->
+            code[at].opcode == Opcode.IGET_OBJECT && field(at)?.let { it.definingClass == keyClass && it.type == "Ljava/lang/String;" } == true
+        } ?: return@mapNotNull null
+        val equals = after(keyRead) { calls(it, "Ljava/lang/String;", "equals") } ?: return@mapNotNull null
+        val getValue = after(equals) { calls(it, MAP_ENTRY, "getValue") } ?: return@mapNotNull null
+        val sessionCast = after(getValue) { code[it].opcode == Opcode.CHECK_CAST } ?: return@mapNotNull null
+        val sessionClass = cast(sessionCast)
+        val dataRead = after(sessionCast) { code[it].opcode == Opcode.IGET_OBJECT && field(it)?.definingClass == sessionClass }
+            ?: return@mapNotNull null
+        val data = field(dataRead)!!
+        val videoData = "${data.definingClass}->${data.name}:${data.type}"
+        val at = after(dataRead) { at ->
+            val own = (code[at] as? TwoRegisterInstruction)?.registerA
+            val fallback = code.getOrNull(at + 2)
+            code[at].opcode == Opcode.IGET_OBJECT && field(at)?.let { "${it.definingClass}->${it.name}:${it.type}" } == videoData &&
+                code.getOrNull(at + 1)?.opcode == Opcode.IF_NEZ && (code[at + 1] as OneRegisterInstruction).registerA == own &&
+                fallback?.opcode == Opcode.IGET_OBJECT && field(at + 2)?.type == data.type && (fallback as TwoRegisterInstruction).registerA == own
+        } ?: return@mapNotNull null
+        val own = (code[at] as TwoRegisterInstruction).registerA
+        val registry = (code[scan] as FiveRegisterInstruction).registerC
+        val keyVideo = (code[keyRead] as TwoRegisterInstruction).registerA
+        val compared = (code[equals] as FiveRegisterInstruction).let { listOf(it.registerC, it.registerD) }
+        val video = compared.singleOrNull { it != keyVideo }?.takeIf { keyVideo in compared } ?: return@mapNotNull null
+        if (at + 1 in branchTargets(code) || listOf(own, registry, video).any { it > 15 }) return@mapNotNull null
+        if (method.writersReaching(at, registry) != method.writersReaching(scan, registry)) return@mapNotNull null
+        if (method.writersReaching(at, video) != method.writersReaching(equals, video)) return@mapNotNull null
+        val sessions = call(scan)!!
+        ReelVideoRead(
+            method, at, own, registry, video,
+            "${sessions.definingClass}->${sessions.name}()$IMMUTABLE_SET", sessions.definingClass,
+            keyClass, (field(keyRead)!!).let { "${it.definingClass}->${it.name}:${it.type}" },
+            sessionClass, videoData, data.type,
+        )
+    }
+    return found.singleOrNull()
+        ?: refuse("expected one scrubber render loading \"$SCRUBBER_RENDER\" that reads its video data after its look through every player, found ${found.size}")
+}
+
+/**
+ * Where the scrubber's render returns the bar it made ([at], a `return-object` of [register]), the
+ * bar's class, its one field of the render's video data type as `class->name:type`, and the
+ * render's return type, Litho's component, which declares [SET_KEY].
+ */
+internal class ReelBarReturn(val at: Int, val register: Int, val barClass: String, val barData: String, val component: String) {
+    /** The descriptor of [reelKeyHelper] on the render's class. */
+    fun helper(read: ReelVideoRead) = "${read.method.definingClass}->$REEL_KEY_HELPER($barClass)V"
+}
+
+/**
+ * The render's return of the bar it made (585 index 360, `return-object v19` of a
+ * `new-instance LX/0Ayx;` built on the render's video data), the one `return-object` whose register
+ * only a `new-instance` writes. Refuses unless there's exactly one, it comes after the read, the
+ * bar's class has exactly one instance field of the video data's type, and the render's return type
+ * declares Litho's `setKey`.
+ */
+internal fun reelBarReturn(read: ReelVideoRead, classDef: (String) -> ClassDef?): ReelBarReturn {
+    val method = read.method
+    val code = method.code()
+    val component = method.returnType
+    if (classDef(component)?.methods?.any { "${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == SET_KEY } != true) {
+        refuse("$component, the scrubber render's return type, doesn't declare $SET_KEY")
+    }
+    val found = code.indices.mapNotNull { at ->
+        if (code[at].opcode != Opcode.RETURN_OBJECT) return@mapNotNull null
+        val register = (code[at] as OneRegisterInstruction).registerA
+        val made = method.writersReaching(at, register).singleOrNull() ?: return@mapNotNull null
+        if (code[made].opcode != Opcode.NEW_INSTANCE) return@mapNotNull null
+        val barClass = ((code[made] as ReferenceInstruction).reference as TypeReference).type
+        val data = classDef(barClass)?.fields?.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == read.dataType }
+            ?.singleOrNull() ?: return@mapNotNull null
+        ReelBarReturn(at, register, barClass, "$barClass->${data.name}:${data.type}", component)
+    }
+    val bar = found.singleOrNull()
+        ?: refuse("expected the scrubber render to return one bar it made with the video data, found ${found.size}")
+    if (bar.at <= read.at + 1) refuse("the scrubber render returns its bar before it reads the video data")
+    return bar
+}
+
 /** The Reels footer's seek bar status enum and its HIDDEN and VISIBLE values, as `class->name:type`. */
 internal class SeekBarStatus(val type: String, val hidden: String, val visible: String, val dragging: String)
 
@@ -2299,6 +2466,114 @@ internal fun MutableMethod.smoothWhileKept() {
             return-wide v0
         """,
         ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * The helper the patch adds to the scrubber's render class, handed the viewer's video data, the
+ * player registry and the reel's video id. It answers the viewer's data when there is some.
+ * Otherwise, while the extension says so ([BORROWS_VIDEO]), it walks the registry's sessions the way
+ * Facebook's own look through every player does and answers the video data of the first session for
+ * the same video that has some, or null when none has. Three locals and the three arguments.
+ */
+internal fun reelVideoHelper(read: ReelVideoRead): MutableMethod = ImmutableMethod(
+    read.method.definingClass,
+    REEL_VIDEO_HELPER,
+    listOf(read.dataType, read.registryType, "Ljava/lang/String;").map { ImmutableMethodParameter(it, null, null) },
+    read.dataType,
+    AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+    null,
+    null,
+    MutableMethodImplementation(6),
+).toMutable().apply {
+    addInstructionsWithLabels(
+        0,
+        """
+            if-nez p0, :own
+            invoke-static { p2 }, $BORROWS_VIDEO
+            move-result v0
+            if-eqz v0, :own
+            invoke-virtual { p1 }, ${read.sessions}
+            move-result-object v0
+            invoke-interface { v0 }, Ljava/util/Collection;->iterator()Ljava/util/Iterator;
+            move-result-object v0
+            :next
+            invoke-interface { v0 }, Ljava/util/Iterator;->hasNext()Z
+            move-result v1
+            if-eqz v1, :own
+            invoke-interface { v0 }, Ljava/util/Iterator;->next()Ljava/lang/Object;
+            move-result-object v1
+            check-cast v1, $MAP_ENTRY
+            invoke-interface { v1 }, $MAP_ENTRY->getKey()Ljava/lang/Object;
+            move-result-object v2
+            check-cast v2, ${read.keyClass}
+            iget-object v2, v2, ${read.keyVideo}
+            invoke-virtual { p2, v2 }, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+            move-result v2
+            if-eqz v2, :next
+            invoke-interface { v1 }, $MAP_ENTRY->getValue()Ljava/lang/Object;
+            move-result-object v1
+            check-cast v1, ${read.sessionClass}
+            iget-object v1, v1, ${read.videoData}
+            if-eqz v1, :next
+            invoke-static { v1 }, $LENT
+            return-object v1
+            :own
+            return-object p0
+        """,
+    )
+}
+
+/**
+ * The helper the patch adds to the scrubber's render class, handed the bar the render is about to
+ * return. It asks the extension ([SCRUBBER_KEY]) about the bar's video data and, when that was lent
+ * by [reelVideoHelper], gives the bar that key through Litho's own `setKey`. One local and the bar.
+ */
+internal fun reelKeyHelper(read: ReelVideoRead, bar: ReelBarReturn): MutableMethod = ImmutableMethod(
+    read.method.definingClass,
+    REEL_KEY_HELPER,
+    listOf(ImmutableMethodParameter(bar.barClass, null, null)),
+    "V",
+    AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+    null,
+    null,
+    MutableMethodImplementation(2),
+).toMutable().apply {
+    addInstructionsWithLabels(
+        0,
+        """
+            iget-object v0, p0, ${bar.barData}
+            invoke-static { v0 }, $SCRUBBER_KEY
+            move-result-object v0
+            if-eqz v0, :usual
+            invoke-virtual { p0, v0 }, ${bar.component}->$SET_KEY
+            :usual
+            return-void
+        """,
+    )
+}
+
+/**
+ * Adds [reelVideoHelper] and [reelKeyHelper] to the scrubber's render class. In the render, right
+ * after its read of the viewer's video data ([reelVideoRead]), hands that read's result to the first
+ * and keeps its answer, so while the bar is kept and the viewer's player has no video data yet, the
+ * render draws the bar with another player's data for the same reel. Nothing jumps between the read
+ * and its test. Before the render returns the bar it made ([reelBarReturn]), hands the bar to the
+ * second, so a bar drawn on lent data is keyed apart from the one the viewer's own data makes next.
+ * The return is changed first, as it comes after the read.
+ */
+internal fun BytecodePatchContext.borrowsReelVideo(read: ReelVideoRead, bar: ReelBarReturn) {
+    val owner = mutableClassDefBy(read.method.definingClass)
+    if (owner.methods.none { it.name == REEL_VIDEO_HELPER }) owner.methods.add(reelVideoHelper(read))
+    if (owner.methods.none { it.name == REEL_KEY_HELPER }) owner.methods.add(reelKeyHelper(read, bar))
+    val render = owner.methods.single { it.sameAs(read.method) }
+    render.addInstructions(bar.at, "invoke-static/range { v${bar.register} .. v${bar.register} }, ${bar.helper(read)}")
+    render.addInstructions(
+        read.at + 1,
+        """
+            invoke-static { v${read.own}, v${read.registry}, v${read.video} }, ${read.helper}
+            move-result-object v${read.own}
+        """,
     )
 }
 

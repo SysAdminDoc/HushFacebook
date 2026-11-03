@@ -16,7 +16,9 @@ import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -112,6 +114,24 @@ public final class ProgressBar {
 
     /** Counted each time a reel's footer is kept in its paused layout, with the caption above the bar. */
     static final String FOOTER_LIFTED = "Reel caption kept above the bar";
+
+    /** Counted each time the scrubber looks for the reel's video on another player. */
+    static final String BORROWED_VIDEO = "Reel scrubber looked for the reel on another player";
+
+    /** Counted each time a bar drawn on another player's video data is given a key of its own. */
+    static final String LENT_KEYED = "Reel scrubber keyed apart on another player's video";
+
+    /** Counted each time a bar is drawn on the viewer's own video data after one was lent some. */
+    static final String OWN_AFTER_LENT = "Reel scrubber drawn on the viewer's own video after another's";
+
+    /** The key of a bar drawn on another player's video data. */
+    static final String LENT_REEL_KEY = "hushfacebookLentReel";
+
+    /** How many lent video data are remembered: the viewer renders the reel on screen and its neighbours. */
+    private static final int MAX_LENT = 4;
+
+    /** The video data lent to bars lately, oldest first. */
+    private static final List<WeakReference<Object>> LENT = new ArrayList<>();
 
     /** Counted each time a footer laid out for a playing reel is lifted above the bar after the switch went on. */
     static final String FOOTER_LIFTED_AGAIN = "Reel caption lifted above the bar after the switch went on";
@@ -1180,6 +1200,74 @@ public final class ProgressBar {
      */
     public static boolean liftsFooter() {
         return keeps("reel caption lift", FOOTER_LIFTED);
+    }
+
+    /**
+     * Asked by the helper the patch adds to the Reels scrubber's render, with the reel's video id,
+     * when the viewer's own player has no video data yet. The scrubber renders nothing until it has,
+     * so on opening a reel from the feed the bar faded in about a second after the reel was playing
+     * (#359). True while the bar is kept and there's an id: the helper then takes the video data
+     * from another player holding the same video, the feed's, until the viewer's own has it
+     * ({@link #scrubberKey}). False leaves the render as Facebook wrote it.
+     */
+    public static boolean borrowsVideo(@Nullable String video) {
+        if (video == null || video.isEmpty()) return false;
+        return keeps("reel scrubber video from another player", BORROWED_VIDEO);
+    }
+
+    /**
+     * Called by the same helper with the video data it found on another player, before handing it
+     * to the scrubber. Remembered by identity, without holding it, so {@link #scrubberKey} can tell
+     * a bar drawn on it from one drawn on the viewer's own.
+     */
+    public static void lent(@Nullable Object data) {
+        if (data == null) return;
+        synchronized (LENT) {
+            for (int i = LENT.size() - 1; i >= 0; i--) {
+                Object held = LENT.get(i).get();
+                if (held == null || held == data) LENT.remove(i);
+            }
+            LENT.add(new WeakReference<>(data));
+            while (LENT.size() > MAX_LENT) LENT.remove(0);
+        }
+    }
+
+    /**
+     * Asked by the helper the patch adds to the scrubber's render, with the video data of the bar
+     * it's about to return. A bar drawn on another player's data follows that player, which stopped
+     * as the reel was handed over, so it sat at 0:00 and dimmed even after the viewer's own data came
+     * (#359). So a bar drawn on lent data gets a key of its own, {@link #LENT_REEL_KEY}, and the next
+     * render, on the viewer's own data, keeps Facebook's usual key: Litho takes it for a new bar, with
+     * its own state, and mounts it on the viewer's player. Null, the usual key, for anything else.
+     * Never throws.
+     */
+    @Nullable
+    public static String scrubberKey(@Nullable Object data) {
+        if (data == null) return null;
+        try {
+            HookStatus.invoked(FAMILY);
+            synchronized (LENT) {
+                if (LENT.isEmpty()) return null;
+                for (WeakReference<Object> held : LENT) {
+                    if (held.get() == data) {
+                        HookStatus.counted(FAMILY, LENT_KEYED);
+                        return LENT_REEL_KEY;
+                    }
+                }
+                LENT.clear();
+            }
+            HookStatus.counted(FAMILY, OWN_AFTER_LENT);
+            Logger.printDebug(() -> "Reel bar: the scrubber has the viewer's own video now, so it's drawn again on its player");
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel scrubber key", failure);
+        }
+        return null;
+    }
+
+    static void forgetLentForTests() {
+        synchronized (LENT) {
+            LENT.clear();
+        }
     }
 
     /**
