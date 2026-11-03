@@ -277,6 +277,10 @@ If Android refuses Facebook some other way, please [report it](https://github.co
 
 Android ties facebook.com links to Meta's signature, so it may stop sending them to a re-signed Facebook. **Supported links** under Links and sharing shows what Android reports and opens the page where you can select Facebook's addresses by hand. If they won't stay selected, another Meta app such as Messenger, Instagram or Meta App Manager holds them. The official Messenger claims facebook.com, www.facebook.com and m.me for itself, which is why those switches turn back off. Tap that app's row under Links and sharing (or open its Open by default page in Android's settings), turn off **Open supported links** there, or on newer Android pick **In your browser**, then select Facebook's addresses again. Links you tap inside Messenger are Messenger's to open, and the official app may keep them in its own browser.
 
+### A second Facebook beside the first
+
+Morphe's own **Clone app** patch, in the Morphe patches source that Manager already lists, installs Facebook again as `com.facebook.katana.morphe`. Select it with **Expert mode** together with Hushfacebook's patches. Open the copy once before other apps send it links, because Facebook only turns on its link handler at first start. A HushMessenger clone sends its profile and Facebook links there when you set its **Facebook package to open** to that ID.
+
 ### Facebook or Google Play offers an update
 
 A patched Facebook can't install Meta's updates, so it stays on the version you patched until you patch a newer one. `Stop update prompts` stops Facebook's own prompts. Meta App Manager, which comes on Samsung and some other phones, posts notices of its own, and you can turn those off in its notification settings. To stop Google Play offering an update, pick `Disable Play Store updates` in Expert mode when you patch. Keep picking it every time after that, because a build without it counts as an older version and won't install over yours.
