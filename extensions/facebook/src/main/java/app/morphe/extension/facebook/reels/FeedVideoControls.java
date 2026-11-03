@@ -335,7 +335,8 @@ public final class FeedVideoControls {
         if (params == null || id == null || id.isEmpty() || !access.eligible(params)) {
             return miss(control, "no video id, or a live video, ad, audio or GIF");
         }
-        if (origin == null || !origin.toString().startsWith("newsfeed::")) return miss(control, "origin", origin);
+        // Any feed counts, so a page's, a group's or a profile's videos get them too (#239).
+        if (origin == null || !FeedVideoAlone.fromFeed(origin.toString())) return miss(control, "origin", origin);
         View row = container;
         View list = null;
         for (ViewParent parent = container.getParent(); parent instanceof View; parent = parent.getParent()) {

@@ -69,7 +69,7 @@ To keep Reel downloads in More without the sidebar button, leave **Download** on
 
 **Hide WhatsApp on reels**, also under **Reels and Watch**, removes the direct WhatsApp button beside a reel or video. It starts off. WhatsApp stays available in the Share menu.
 
-**Inline feed video controls**, under **Video and audio**, adds a separate play/pause button to feed videos. It starts off. With **Tap to play** on as well, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for you. Tap the video itself for full screen. Live videos and ads keep their own controls.
+**Inline feed video controls**, under **Video and audio**, adds a separate play/pause button to feed videos, on Home and in Pages, groups and profiles. It starts off. With **Tap to play** on as well, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for you. Tap the video itself for full screen. Live videos and ads keep their own controls.
 
 **Cast button on feed videos**, right below it, puts a cast button in a feed video's top right corner. Facebook has no casting of its own anymore, so the button hands the video to a casting app you have, like Web Video Caster. It starts off.
 

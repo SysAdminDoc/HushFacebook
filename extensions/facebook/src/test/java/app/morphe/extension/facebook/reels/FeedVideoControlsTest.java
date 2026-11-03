@@ -895,6 +895,24 @@ public class FeedVideoControlsTest {
         assertNull(button());
     }
 
+    @Test public void pageGroupAndProfileVideosGetTheButtonsLikeTheHomeFeed() {
+        for (String origin : new String[] {"user_timeline::feed_story", "group::feed_story",
+                "page_timeline::feed_story", "profile::feed_story"}) {
+            player.origin = "fb_shorts_tab::fb_shorts_viewer";
+            FeedVideoControls.changed(player);
+            drain();
+            assertNull(origin, button());
+            player.origin = origin;
+            FeedVideoControls.changed(player);
+            drain();
+            assertNotNull(origin, button());
+        }
+        player.origin = "search_results_page::feed_story";
+        FeedVideoControls.changed(player);
+        drain();
+        assertNull(button());
+    }
+
     @Test public void detachedHiddenAndFailedOwnershipRemoveAnExistingButton() {
         player.view.setVisibility(View.GONE);
         FeedVideoControls.changed(player);
