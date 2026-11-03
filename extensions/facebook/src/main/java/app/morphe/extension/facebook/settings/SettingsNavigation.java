@@ -8,6 +8,8 @@ import android.content.Context;
 import android.database.DataSetObserver;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
@@ -108,9 +110,17 @@ final class SettingsNavigation extends BaseAdapter {
     private int pendingOffset;
     private int auditGeneration;
 
+    /**
+     * Row changes rebuild once, on the next main-thread turn. An import flips every changed switch in
+     * one message, and a rebuild per switch re-ran search over every row each time: with a query open
+     * that was enough for Facebook isn't responding.
+     */
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private boolean rebuildPosted;
+    private final Runnable postedRebuild = this::rebuild;
     private final DataSetObserver changes = new DataSetObserver() {
-        @Override public void onChanged() { rebuild(); }
-        @Override public void onInvalidated() { rebuild(); }
+        @Override public void onChanged() { rebuildSoon(); }
+        @Override public void onInvalidated() { rebuildSoon(); }
     };
 
     SettingsNavigation(HushfacebookPreferenceFragment page, SettingsDialog host, Bundle saved) {
@@ -597,13 +607,25 @@ final class SettingsNavigation extends BaseAdapter {
         auditGeneration++;
         leftPage();
         source.unregisterDataSetObserver(changes);
+        main.removeCallbacks(postedRebuild);
+        rebuildPosted = false;
         AbstractPreferenceFragment.clearRestartFeedbackPresenter(restartFeedback);
     }
 
     /** A change that waits for a restart was made or taken back: the restart row comes, goes or counts again. */
     void restartChanged() { rebuild(); }
 
+    private void rebuildSoon() {
+        if (rebuildPosted) return;
+        rebuildPosted = true;
+        main.post(postedRebuild);
+    }
+
     private void rebuild() {
+        if (rebuildPosted) {
+            main.removeCallbacks(postedRebuild);
+            rebuildPosted = false;
+        }
         View first = list.getChildAt(0);
         Preference anchor = first != null && first.getTag() instanceof Preference
                 ? (Preference) first.getTag() : pendingAnchor;

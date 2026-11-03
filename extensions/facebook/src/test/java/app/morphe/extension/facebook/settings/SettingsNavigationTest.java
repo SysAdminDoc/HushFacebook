@@ -157,6 +157,40 @@ public class SettingsNavigationTest {
         assertEquals(24, list().getCount());
     }
 
+    /**
+     * An import with search open flipped every changed switch in one main-thread message, and each
+     * flip re-ran search over every row. 150 switches was enough for Facebook isn't responding.
+     * A burst of row changes now rebuilds the list once.
+     */
+    @Test public void aBurstOfSwitchChangesDuringSearchRebuildsTheListOnce() {
+        findSearch(dialog.getView()).setText("hide");
+        ShadowLooper.idleMainLooper();
+        List<SwitchPreference> rows = new ArrayList<>();
+        for (int i = 0; i < list().getCount(); i++) {
+            Object item = list().getItemAtPosition(i);
+            if (!(item instanceof SwitchPreference) || !((Preference) item).isEnabled()) continue;
+            Setting<?> setting = Setting.getSettingFromPath(((Preference) item).getKey());
+            if (setting != null && !setting.rebootApp) rows.add((SwitchPreference) item);
+        }
+        assertTrue("too few switches to make a burst: " + rows.size(), rows.size() >= 10);
+        int[] rebuilds = {0};
+        android.database.DataSetObserver counter = new android.database.DataSetObserver() {
+            @Override public void onChanged() { rebuilds[0]++; }
+        };
+        page.navigation.registerDataSetObserver(counter);
+        try {
+            for (SwitchPreference row : rows) row.setChecked(!row.isChecked());
+            assertEquals("the list rebuilt during the burst", 0, rebuilds[0]);
+            ShadowLooper.idleMainLooper();
+            assertEquals(1, rebuilds[0]);
+            for (SwitchPreference row : rows) assertTrue(contains(row.getKey()));
+        } finally {
+            page.navigation.unregisterDataSetObserver(counter);
+            for (SwitchPreference row : rows) row.setChecked(!row.isChecked());
+            ShadowLooper.idleMainLooper();
+        }
+    }
+
     /** Support expands its report, restart and project actions beneath its main-list header. */
     @Test public void supportKeepsReportsRestartAndTheProjectLinkReachable() {
         Map<String, Object> before = savedValues();
