@@ -2326,7 +2326,7 @@ Adv. Filters button	Botón Filtros av.
 Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	Añade un botón Filtros av. bajo los Filtros de Marketplace en los resultados de búsqueda. Abre listas de palabras para conservar, palabras para ocultar y lugares, y escribe las reglas en la búsqueda por ti.
 # context: switch title and summary under Marketplace; a listing is something for sale
 Show when listings went up	Mostrar cuándo se publicaron los anuncios
-A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.	La página de un anuncio muestra, junto a su ubicación, hace cuánto se publicó y la fecha. Facebook solo lo muestra en anuncios nuevos.
+A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.	La página de un anuncio muestra, debajo del precio y junto a su ubicación, hace cuánto se publicó y la fecha. Facebook solo lo muestra en anuncios nuevos.
 # context: added after a listing's place on its Marketplace page, like Moncton, NB; %1$s is how long ago in your language from the phone, like 3 weeks ago, %2$s is the date
 Listed %1$s (%2$s)	Publicado %1$s (%2$s)
 How Adv. Filters works	Cómo funcionan los Filtros av.

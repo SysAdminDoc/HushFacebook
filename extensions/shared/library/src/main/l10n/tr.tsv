@@ -2326,7 +2326,7 @@ Adv. Filters button	Gel. Filtreler düğmesi
 Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	Arama sonuçlarında Marketplace'in Filtreler'inin altına bir Gel. Filtreler düğmesi ekler. Tutulacak kelimeler, gizlenecek kelimeler ve yerler listelerini açar ve kuralları sizin için aramaya yazar.
 # context: switch title and summary under Marketplace; a listing is something for sale
 Show when listings went up	İlanların ne zaman verildiğini göster
-A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.	Bir ilanın sayfası, konumunun yanında ne kadar önce verildiğini ve tarihini gösterir. Facebook bunu yalnızca yeni ilanlarda gösterir.
+A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.	Bir ilanın sayfası, fiyatının altında ve konumunun yanında ne kadar önce verildiğini ve tarihini gösterir. Facebook bunu yalnızca yeni ilanlarda gösterir.
 # context: added after a listing's place on its Marketplace page, like Moncton, NB; %1$s is how long ago in your language from the phone, like 3 weeks ago, %2$s is the date
 Listed %1$s (%2$s)	%1$s ilan verildi (%2$s)
 How Adv. Filters works	Gel. Filtreler nasıl çalışır

@@ -2380,7 +2380,7 @@ Adv. Filters button	Кнопка «Доп. фильтры»
 Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	Добавляет кнопку «Доп. фильтры» под фильтрами Marketplace в результатах поиска. Она открывает списки слов для включения и скрытия, а также местоположений, и автоматически добавляет правила в поисковый запрос.
 # context: switch title and summary under Marketplace; a listing is something for sale
 Show when listings went up	Показывать дату публикации объявления
-A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.	На странице объявления рядом с местоположением показывается, сколько времени прошло с момента публикации, и дата. Facebook отображает эти сведения только для новых объявлений.
+A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.	На странице объявления под ценой и рядом с местоположением показывается, сколько времени прошло с момента публикации, и дата. Facebook отображает эти сведения только для новых объявлений.
 # context: added after a listing's place on its Marketplace page, like Moncton, NB; %1$s is how long ago in your language from the phone, like 3 weeks ago, %2$s is the date
 Listed %1$s (%2$s)	Опубликовано %1$s (%2$s)
 How Adv. Filters works	Как работают доп. фильтры

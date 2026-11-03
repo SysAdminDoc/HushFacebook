@@ -209,8 +209,8 @@ final class L10nTableZh_rCN {
                 "\u4e00\u4e2a\u5217\u8868\u6700\u591a\u5bb9\u7eb3 %1$d \u4e2a\u6a21\u5f0f\uff0c\u800c\u8fd9\u4e2a\u5217\u8868\u8d85\u51fa\u4e86\u3002\u8bf7\u5220\u9664\u4e00\u4e9b\u540e\u518d\u4fdd\u5b58\u3002");
         table.put("A list holds up to %1$d phrases, and this one has more. Remove some, then save again.",
                 "\u4e00\u4e2a\u5217\u8868\u6700\u591a\u5bb9\u7eb3 %1$d \u4e2a\u77ed\u8bed\uff0c\u800c\u8fd9\u4e2a\u5217\u8868\u8d85\u51fa\u4e86\u3002\u8bf7\u5220\u9664\u4e00\u4e9b\u540e\u518d\u4fdd\u5b58\u3002");
-        table.put("A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.",
-                "\u5546\u54c1\u9875\u9762\u4f1a\u5728\u4f4d\u7f6e\u65c1\u663e\u793a\u53d1\u5e03\u4e86\u591a\u4e45\u4ee5\u53ca\u53d1\u5e03\u65e5\u671f\u3002Facebook \u53ea\u5bf9\u65b0\u5546\u54c1\u663e\u793a\u8fd9\u4e9b\u3002");
+        table.put("A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.",
+                "\u5546\u54c1\u9875\u9762\u4f1a\u5728\u4ef7\u683c\u4e0b\u65b9\u548c\u4f4d\u7f6e\u65c1\u663e\u793a\u53d1\u5e03\u4e86\u591a\u4e45\u4ee5\u53ca\u53d1\u5e03\u65e5\u671f\u3002Facebook \u53ea\u5bf9\u65b0\u5546\u54c1\u663e\u793a\u8fd9\u4e9b\u3002");
         table.put("A live video that has ended gets Playback speed in its gear menu, like other videos. Videos that are still live, and ads, keep Facebook's menu.",
                 "\u5df2\u7ed3\u675f\u7684\u76f4\u64ad\u89c6\u9891\u4f1a\u50cf\u5176\u4ed6\u89c6\u9891\u4e00\u6837\uff0c\u5728\u9f7f\u8f6e\u83dc\u5355\u4e2d\u63d0\u4f9b\u64ad\u653e\u901f\u5ea6\u3002\u4ecd\u5728\u76f4\u64ad\u7684\u89c6\u9891\u548c\u5e7f\u544a\u4fdd\u7559 Facebook \u7684\u83dc\u5355\u3002");
         table.put("A long press on Like doesn't open the reactions. A tap still likes.",

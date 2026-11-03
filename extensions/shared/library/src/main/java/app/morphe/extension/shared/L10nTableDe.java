@@ -209,8 +209,8 @@ final class L10nTableDe {
                 "Eine Liste fasst bis zu %1$d Muster, und diese hat mehr. Entferne einige und speichere dann noch einmal.");
         table.put("A list holds up to %1$d phrases, and this one has more. Remove some, then save again.",
                 "Eine Liste fasst bis zu %1$d Wortfolgen, und diese hat mehr. Entferne einige und speichere dann noch einmal.");
-        table.put("A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.",
-                "Die Seite eines Angebots zeigt neben dem Ort, wie lange es schon online ist, und das Datum. Facebook zeigt das nur bei neuen Angeboten.");
+        table.put("A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.",
+                "Die Seite eines Angebots zeigt unter dem Preis und neben dem Ort, wie lange es schon online ist, und das Datum. Facebook zeigt das nur bei neuen Angeboten.");
         table.put("A live video that has ended gets Playback speed in its gear menu, like other videos. Videos that are still live, and ads, keep Facebook's menu.",
                 "Ein beendetes Live-Video bekommt im Zahnradmen\u00fc die Wiedergabegeschwindigkeit, wie andere Videos. Videos, die noch live sind, und Werbung behalten Facebooks Men\u00fc.");
         table.put("A long press on Like doesn't open the reactions. A tap still likes.",

@@ -13,6 +13,7 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.layout.theme.reactTextBuilders
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
@@ -101,6 +102,18 @@ val hideSponsoredMarketplaceListingsPatch = bytecodePatch(
         val mutableCallbacks = mutableClassDefBy(CALLBACKS)
         mutableCallbacks.findMutableMethodOf(end.method).handTheRestOver(end, piece.emitter)
         handOffs.forEach { mutableCallbacks.findMutableMethodOf(it.method).handTheTextOver(it, tracking) }
+
+        // A listing's date also goes on a line under its price (MarketplacePriceLineAnchors.kt). A
+        // build without React's one text builder keeps the date after the place only.
+        val builders = runCatching { reactTextBuilders().second }.getOrElse { emptyList() }
+        val builder = builders.singleOrNull()
+        if (builder == null) {
+            patchLog.warning(
+                "$PATCH: found ${builders.size} React text builders, not one, so a listing's date shows after its place only.",
+            )
+        } else {
+            mutableClassDefBy(builder.definingClass).findMutableMethodOf(builder).handBuiltTextOver()
+        }
 
         // A video ad that reaches the feed anyway isn't drawn. A build without one of its two drawers
         // goes on without that one: the requests above are what keep the ads out.

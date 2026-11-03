@@ -209,8 +209,8 @@ final class L10nTableVi {
                 "M\u1ed7i danh s\u00e1ch ch\u1ee9a t\u1ed1i \u0111a %1$d m\u1eabu, danh s\u00e1ch n\u00e0y c\u00f3 nhi\u1ec1u h\u01a1n. H\u00e3y x\u00f3a b\u1edbt r\u1ed3i l\u01b0u l\u1ea1i.");
         table.put("A list holds up to %1$d phrases, and this one has more. Remove some, then save again.",
                 "M\u1ed7i danh s\u00e1ch ch\u1ee9a t\u1ed1i \u0111a %1$d c\u1ee5m t\u1eeb, danh s\u00e1ch n\u00e0y c\u00f3 nhi\u1ec1u h\u01a1n. H\u00e3y x\u00f3a b\u1edbt r\u1ed3i l\u01b0u l\u1ea1i.");
-        table.put("A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.",
-                "Trang c\u1ee7a tin \u0111\u0103ng hi\u1ec7n tin \u0111\u00e3 \u0111\u0103ng bao l\u00e2u v\u00e0 ng\u00e0y \u0111\u0103ng, c\u1ea1nh \u0111\u1ecba \u0111i\u1ec3m. Facebook ch\u1ec9 hi\u1ec7n \u0111i\u1ec1u n\u00e0y v\u1edbi tin m\u1edbi.");
+        table.put("A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.",
+                "Trang c\u1ee7a tin \u0111\u0103ng hi\u1ec7n tin \u0111\u00e3 \u0111\u0103ng bao l\u00e2u v\u00e0 ng\u00e0y \u0111\u0103ng, d\u01b0\u1edbi gi\u00e1 v\u00e0 c\u1ea1nh \u0111\u1ecba \u0111i\u1ec3m. Facebook ch\u1ec9 hi\u1ec7n \u0111i\u1ec1u n\u00e0y v\u1edbi tin m\u1edbi.");
         table.put("A live video that has ended gets Playback speed in its gear menu, like other videos. Videos that are still live, and ads, keep Facebook's menu.",
                 "Video tr\u1ef1c ti\u1ebfp \u0111\u00e3 k\u1ebft th\u00fac c\u00f3 m\u1ee5c T\u1ed1c \u0111\u1ed9 ph\u00e1t trong menu b\u00e1nh r\u0103ng, gi\u1ed1ng c\u00e1c video kh\u00e1c. Video v\u1eabn \u0111ang tr\u1ef1c ti\u1ebfp v\u00e0 qu\u1ea3ng c\u00e1o gi\u1eef nguy\u00ean menu c\u1ee7a Facebook.");
         table.put("A long press on Like doesn't open the reactions. A tap still likes.",

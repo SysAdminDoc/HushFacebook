@@ -137,6 +137,8 @@ public final class MarketplaceAdFilter {
 
     /** Where the listing date reports under the patch's family. */
     static final String LISTING_DATE = "Marketplace listing date";
+    /** Where the line under a listing's price reports. */
+    static final String PRICE_LINE = "Marketplace listing date under the price";
 
     /** Search answers being read, by the Networking module's record of their request. */
     private static final Map<Object, MarketplaceSearchAds.Answer> answers = new WeakHashMap<>();
@@ -389,7 +391,7 @@ public final class MarketplaceAdFilter {
     }
 
     /** Whether a listing's page says when it was listed. Out while paused or before the settings are ready. */
-    private static boolean listingDate() {
+    static boolean listingDate() {
         try {
             return Utils.settingsReady() && !HushfacebookPause.isPaused() && Settings.MARKETPLACE_LISTING_DATE.get();
         } catch (Throwable failure) {

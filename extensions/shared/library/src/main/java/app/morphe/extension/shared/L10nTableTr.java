@@ -209,8 +209,8 @@ final class L10nTableTr {
                 "Bir liste en fazla %1$d kal\u0131p al\u0131r ve bu listede daha fazlas\u0131 var. Birka\u00e7\u0131n\u0131 silip yeniden kaydet.");
         table.put("A list holds up to %1$d phrases, and this one has more. Remove some, then save again.",
                 "Bir liste en fazla %1$d ifade al\u0131r ve bu listede daha fazlas\u0131 var. Birka\u00e7\u0131n\u0131 silip yeniden kaydet.");
-        table.put("A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.",
-                "Bir ilan\u0131n sayfas\u0131, konumunun yan\u0131nda ne kadar \u00f6nce verildi\u011fini ve tarihini g\u00f6sterir. Facebook bunu yaln\u0131zca yeni ilanlarda g\u00f6sterir.");
+        table.put("A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.",
+                "Bir ilan\u0131n sayfas\u0131, fiyat\u0131n\u0131n alt\u0131nda ve konumunun yan\u0131nda ne kadar \u00f6nce verildi\u011fini ve tarihini g\u00f6sterir. Facebook bunu yaln\u0131zca yeni ilanlarda g\u00f6sterir.");
         table.put("A live video that has ended gets Playback speed in its gear menu, like other videos. Videos that are still live, and ads, keep Facebook's menu.",
                 "Sona ermi\u015f bir canl\u0131 video, di\u011fer videolar gibi di\u015fli men\u00fcs\u00fcnde Oynatma h\u0131z\u0131 se\u00e7ene\u011fini al\u0131r. H\u00e2l\u00e2 canl\u0131 olan videolar ve reklamlar Facebook'un men\u00fcs\u00fcn\u00fc korur.");
         table.put("A long press on Like doesn't open the reactions. A tap still likes.",

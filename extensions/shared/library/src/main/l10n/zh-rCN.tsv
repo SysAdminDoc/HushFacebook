@@ -2321,7 +2321,7 @@ Adv. Filters button	高级筛选按钮
 Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	在搜索结果中 Marketplace 的“筛选”下方添加“高级筛选”按钮。它会打开要保留的词语、要隐藏的词语和地点的列表，并帮你把规则写进搜索。
 # context: switch title and summary under Marketplace; a listing is something for sale
 Show when listings went up	显示商品发布时间
-A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.	商品页面会在位置旁显示发布了多久以及发布日期。Facebook 只对新商品显示这些。
+A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.	商品页面会在价格下方和位置旁显示发布了多久以及发布日期。Facebook 只对新商品显示这些。
 # context: added after a listing's place on its Marketplace page, like Moncton, NB; %1$s is how long ago in your language from the phone, like 3 weeks ago, %2$s is the date
 Listed %1$s (%2$s)	%1$s发布（%2$s）
 How Adv. Filters works	高级筛选的用法

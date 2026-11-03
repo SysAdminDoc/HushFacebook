@@ -2326,7 +2326,7 @@ Adv. Filters button	Schaltfläche Erw. Filter
 Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	Fügt in den Suchergebnissen unter den Filtern des Marketplace eine Schaltfläche Erw. Filter hinzu. Sie öffnet Listen mit Wörtern zum Behalten, Wörtern zum Ausblenden und Orten und schreibt die Regeln für dich in die Suche.
 # context: switch title and summary under Marketplace; a listing is something for sale
 Show when listings went up	Anzeigen, wann Angebote eingestellt wurden
-A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.	Die Seite eines Angebots zeigt neben dem Ort, wie lange es schon online ist, und das Datum. Facebook zeigt das nur bei neuen Angeboten.
+A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.	Die Seite eines Angebots zeigt unter dem Preis und neben dem Ort, wie lange es schon online ist, und das Datum. Facebook zeigt das nur bei neuen Angeboten.
 # context: added after a listing's place on its Marketplace page, like Moncton, NB; %1$s is how long ago in your language from the phone, like 3 weeks ago, %2$s is the date
 Listed %1$s (%2$s)	Eingestellt %1$s (%2$s)
 How Adv. Filters works	So funktionieren Erw. Filter

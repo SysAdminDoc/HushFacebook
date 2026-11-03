@@ -209,8 +209,8 @@ final class L10nTableIn {
                 "Daftar memuat hingga %1$d pola, dan daftar ini lebih banyak. Hapus beberapa, lalu simpan lagi.");
         table.put("A list holds up to %1$d phrases, and this one has more. Remove some, then save again.",
                 "Daftar memuat hingga %1$d frasa, dan daftar ini lebih banyak. Hapus beberapa, lalu simpan lagi.");
-        table.put("A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.",
-                "Halaman iklan menampilkan sudah berapa lama iklan dipasang beserta tanggalnya, di samping lokasinya. Facebook hanya menampilkannya untuk iklan baru.");
+        table.put("A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.",
+                "Halaman iklan menampilkan sudah berapa lama iklan dipasang beserta tanggalnya, di bawah harganya dan di samping lokasinya. Facebook hanya menampilkannya untuk iklan baru.");
         table.put("A live video that has ended gets Playback speed in its gear menu, like other videos. Videos that are still live, and ads, keep Facebook's menu.",
                 "Video siaran langsung yang sudah selesai mendapat Kecepatan pemutaran di menu roda gigi, seperti video lainnya. Video yang masih siaran langsung dan iklan tetap memakai menu Facebook.");
         table.put("A long press on Like doesn't open the reactions. A tap still likes.",

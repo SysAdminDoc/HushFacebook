@@ -209,8 +209,8 @@ final class L10nTableEs {
                 "Una lista admite hasta %1$d patrones y esta tiene m\u00e1s. Quita algunos y vuelve a guardar.");
         table.put("A list holds up to %1$d phrases, and this one has more. Remove some, then save again.",
                 "Una lista admite hasta %1$d frases y esta tiene m\u00e1s. Quita algunas y vuelve a guardar.");
-        table.put("A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.",
-                "La p\u00e1gina de un anuncio muestra, junto a su ubicaci\u00f3n, hace cu\u00e1nto se public\u00f3 y la fecha. Facebook solo lo muestra en anuncios nuevos.");
+        table.put("A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.",
+                "La p\u00e1gina de un anuncio muestra, debajo del precio y junto a su ubicaci\u00f3n, hace cu\u00e1nto se public\u00f3 y la fecha. Facebook solo lo muestra en anuncios nuevos.");
         table.put("A live video that has ended gets Playback speed in its gear menu, like other videos. Videos that are still live, and ads, keep Facebook's menu.",
                 "Un v\u00eddeo en directo que ya termin\u00f3 tiene Velocidad de reproducci\u00f3n en su men\u00fa de engranaje, como los dem\u00e1s v\u00eddeos. Los v\u00eddeos que siguen en directo y los anuncios mantienen el men\u00fa de Facebook.");
         table.put("A long press on Like doesn't open the reactions. A tap still likes.",

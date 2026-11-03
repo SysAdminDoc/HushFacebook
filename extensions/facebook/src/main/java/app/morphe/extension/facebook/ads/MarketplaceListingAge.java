@@ -4,7 +4,18 @@
  */
 package app.morphe.extension.facebook.ads;
 
+import android.content.res.Resources;
+import android.graphics.Color;
 import android.icu.text.RelativeDateTimeFormatter;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.style.AbsoluteSizeSpan;
+import android.text.style.CharacterStyle;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.UpdateAppearance;
+import android.util.TypedValue;
 
 import androidx.annotation.Nullable;
 
@@ -12,12 +23,18 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
+import app.morphe.extension.facebook.settings.FamilyNames;
+import app.morphe.extension.facebook.theme.ReactColours;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
+import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
  * When a Marketplace listing went up, on the listing's own page (#303). Facebook only says so for a
@@ -25,6 +42,11 @@ import app.morphe.extension.shared.Logger;
  * listing's {@code creation_time}. Each listing in the answer that has one gets it written after its
  * place, in its {@code location_text}: "Moncton, NB · Listed 3 weeks ago (Oct 12, 2026)". A listing
  * the answer names twice, once without its time, gets the time it has under the same id.
+ *
+ * <p>The same date also goes on a line of its own under the listing's price, where Facebook writes
+ * "Just listed" for a day-old one ({@link #priceLine}). JavaScript writes the price from the
+ * answer's listing_price, so the answer's amount and title say which text React builds is the price.
+ * A vehicle gets no such line: Facebook already writes "Listed 3 weeks ago" under its price.
  *
  * <p>Read from 585's MarketplacePDPSurfaceQuery on the S22, 2026-10-31:
  * data.viewer.marketplace_pdp.listing.primary_mp_ent has creation_time (seconds) and location_text
@@ -48,6 +70,36 @@ public final class MarketplaceListingAge {
     /** A time before this (2004) or this far past now isn't a listing's. */
     private static final long EARLIEST_SECONDS = 1_072_915_200L;
     private static final long SLACK_SECONDS = 24 * 60 * 60;
+
+    static final String LISTING_PRICE = "listing_price";
+    /** The price in its currency's smallest unit, a string of digits: "15000" for $150. */
+    static final String AMOUNT = "amount_with_offset";
+    static final String CATEGORY = "marketplace_listing_category_id";
+    /**
+     * What Facebook's fields only a vehicle fills start with (vehicle_odometer_data,
+     * vehicle_make_display_name, vehicle_transmission_type). They're null on anything else.
+     */
+    static final String VEHICLE = "vehicle_";
+
+    /** Listings whose page answered lately, by title, oldest first. Guarded by itself. */
+    private static final LinkedHashMap<String, Priced> PRICED = new LinkedHashMap<>();
+    static final int MAX_PRICED = 16;
+    private static volatile boolean anyPriced;
+    /** The listing whose title React built last, and how many texts it built since. Guarded by PRICED. */
+    @Nullable
+    private static Priced titled;
+    private static int since;
+    /** The price comes this many texts after the title at most: a listing page draws it right under. */
+    static final int MAX_BETWEEN = 4;
+    /** Longer texts are neither a title nor a price. */
+    static final int MAX_TEXT_CHARS = 300;
+    static final int MAX_PRICE_CHARS = 24;
+    /** "CA$", "zł", "kr": a price's letters. More than this is a sentence that holds a number. */
+    static final int MAX_PRICE_LETTERS = 3;
+    /** The date line's size, Facebook's for the line under the price, never larger than the price. */
+    static final float LINE_SP = 14;
+    /** How strongly the date line shows the price's colour, so it reads as the quieter line. */
+    static final float LINE_ALPHA = 0.7f;
 
     private MarketplaceListingAge() {
     }
@@ -74,6 +126,11 @@ public final class MarketplaceListingAge {
         private boolean reading = true;
         /** Each listing's time by its id, for a later payload that names it again. */
         private final Map<String, Long> times = new HashMap<>();
+        /** Each listing's price and title by its id, which may come in another payload than its time. */
+        private final Map<String, String> prices = new HashMap<>();
+        private final Map<String, String> titles = new HashMap<>();
+        /** The ids of listings that are vehicles, which get no line under their price. */
+        private final Set<String> vehicles = new HashSet<>();
 
         Answer(long now) {
             this.now = now;
@@ -145,10 +202,30 @@ public final class MarketplaceListingAge {
             }
             List<MarketplaceSearchAds.Value> listings = new ArrayList<>();
             collect(text, root, listings);
+            vehicles(text, root, null, vehicles);
+            String category = null;
             for (MarketplaceSearchAds.Value listing : listings) {
                 Long seconds = seconds(text, listing.member(text, CREATION_TIME));
                 String id = string(text, listing.member(text, ID));
-                if (seconds != null && id != null) times.put(id, seconds);
+                if (id == null) continue;
+                if (seconds != null) times.put(id, seconds);
+                MarketplaceSearchAds.Value price = listing.member(text, LISTING_PRICE);
+                String amount = price == null || price.kind != '{' ? null : string(text, price.member(text, AMOUNT));
+                if (amount != null && digits(amount)) prices.put(id, amount);
+                String title = MarketplaceSearchSyntax.title(text, listing);
+                if (title != null) titles.put(id, title);
+                if (category == null) category = string(text, listing.member(text, CATEGORY));
+            }
+            for (Map.Entry<String, String> price : prices.entrySet()) {
+                String title = titles.get(price.getKey());
+                if (title == null) continue;
+                if (vehicles.contains(price.getKey())) {
+                    unpriced(title);
+                    continue;
+                }
+                Long seconds = times.get(price.getKey());
+                String label = seconds == null ? null : label(seconds, now);
+                if (label != null) priced(title, price.getValue(), label);
             }
             int untimed = 0, unwritten = 0, dated = 0;
             for (MarketplaceSearchAds.Value listing : listings) {
@@ -174,8 +251,11 @@ public final class MarketplaceListingAge {
             }
             if (!listings.isEmpty()) {
                 int noTime = untimed, noLine = unwritten, wrote = dated;
+                String kind = category == null ? "no category" : "category " + category;
+                int cars = vehicles.size();
                 Logger.printDebug(() -> "Listing date: dated " + wrote + " place lines in a payload, "
-                        + noTime + " with no time, " + noLine + " with no line or a time out of range");
+                        + noTime + " with no time, " + noLine + " with no line or a time out of range, "
+                        + kind + ", " + cars + " vehicles");
             }
             if (!root.changed) return text;
             StringBuilder out = new StringBuilder(text.length() + 64);
@@ -193,6 +273,37 @@ public final class MarketplaceListingAge {
             return;
         }
         for (MarketplaceSearchAds.Value child : value.items) collect(s, child, into);
+    }
+
+    /**
+     * Adds to [into] the id of each listing under [value] that fills a {@link #VEHICLE} field, on its
+     * own object or one inside it. [owner] is the id of the object [value] sits in.
+     */
+    private static void vehicles(String s, MarketplaceSearchAds.Value value, @Nullable String owner, Set<String> into) {
+        if (value.kind == '{') {
+            String id = string(s, value.member(s, ID));
+            if (id != null) owner = id;
+            for (int i = 0; i < value.items.size(); i++) {
+                MarketplaceSearchAds.Value item = value.items.get(i);
+                if (owner != null && s.startsWith(VEHICLE, value.names.get(i)[0]) && filled(s, item)) into.add(owner);
+                vehicles(s, item, owner, into);
+            }
+        } else if (value.kind == '[') {
+            for (MarketplaceSearchAds.Value item : value.items) vehicles(s, item, owner, into);
+        }
+    }
+
+    /**
+     * Whether [value] says anything: not null, false or empty text, and a list or object only when
+     * something in it does. Every listing carries vehicle_odometer_data as {unit:null,value:null}.
+     */
+    private static boolean filled(String s, MarketplaceSearchAds.Value value) {
+        if (value.kind == '{' || value.kind == '[') {
+            for (MarketplaceSearchAds.Value item : value.items) if (filled(s, item)) return true;
+            return false;
+        }
+        if (value.kind == '"') return value.end - value.start > 2;
+        return !s.startsWith("null", value.start) && !s.startsWith("false", value.start);
     }
 
     /** A listing's time in seconds from [value], a whole number, or null when it isn't a plausible one. */
@@ -248,6 +359,154 @@ public final class MarketplaceListingAge {
                 RelativeDateTimeFormatter.RelativeUnit.MONTHS);
         return format.format(days / 365, RelativeDateTimeFormatter.Direction.LAST,
                 RelativeDateTimeFormatter.RelativeUnit.YEARS);
+    }
+
+    /** A listing's price as its page's answer gives it, and the line that goes under the price. */
+    static final class Priced {
+        final String amount;
+        final String label;
+
+        Priced(String amount, String label) {
+            this.amount = amount;
+            this.label = label;
+        }
+    }
+
+    /** Remembers the listing called [title], priced [amount], for the line under its price. */
+    static void priced(String title, String amount, String label) {
+        synchronized (PRICED) {
+            PRICED.remove(title);
+            PRICED.put(title, new Priced(amount, label));
+            if (PRICED.size() > MAX_PRICED) PRICED.remove(PRICED.keySet().iterator().next());
+            anyPriced = true;
+        }
+    }
+
+    /** Forgets the listing called [title], which turned out to be a vehicle. */
+    static void unpriced(String title) {
+        synchronized (PRICED) {
+            Priced gone = PRICED.remove(title);
+            if (gone != null && titled == gone) titled = null;
+        }
+    }
+
+    /**
+     * Each text React builds, from its text builder's returns (#303). Facebook's JavaScript writes a
+     * listing's title, then its price right under it. When a listing whose page answered lately had
+     * its title built, the next few texts are looked at for its price, and that one gets the date on
+     * a line of its own under it. React measures and draws what this returns, so the page makes room
+     * for the line. Anything else, or the date switched off, comes back as it was.
+     */
+    public static Spannable priceLine(@Nullable Spannable text) {
+        if (!anyPriced || text == null) return text;
+        try {
+            int length = text.length();
+            String shown = length == 0 || length > MAX_TEXT_CHARS ? null : text.toString();
+            Priced line;
+            synchronized (PRICED) {
+                Priced named = shown == null ? null : PRICED.get(shown);
+                if (named != null) {
+                    titled = named;
+                    since = 0;
+                    return text;
+                }
+                if (titled == null) return text;
+                if (++since > MAX_BETWEEN) {
+                    titled = null;
+                    return text;
+                }
+                if (shown == null || length > MAX_PRICE_CHARS || !pricedAs(shown, titled.amount)) return text;
+                line = titled;
+                titled = null;
+            }
+            if (!MarketplaceAdFilter.listingDate()) return text;
+            HookStatus.bound(FamilyNames.SPONSORED_MARKETPLACE, MarketplaceAdFilter.PRICE_LINE);
+            Logger.printDebug(() -> "Listing date: put the date on a line under the listing's price");
+            return withLine(text, line.label);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.SPONSORED_MARKETPLACE, "listing date under the price", failure);
+            return text;
+        }
+    }
+
+    /**
+     * Whether [shown] is the price [amount] (amount_with_offset): the same digits, or those with the
+     * cents the price leaves off. A text with more letters than a currency has isn't a price.
+     */
+    static boolean pricedAs(String shown, String amount) {
+        StringBuilder digits = new StringBuilder();
+        int letters = 0;
+        for (int i = 0; i < shown.length(); i++) {
+            char c = shown.charAt(i);
+            if (c >= '0' && c <= '9') digits.append(c);
+            else if (c == '\n' || (Character.isLetter(c) && ++letters > MAX_PRICE_LETTERS)) return false;
+        }
+        if (digits.length() == 0) return false;
+        String number = digits.toString();
+        return amount.equals(number) || amount.equals(number + "00") || amount.equals(number + "000");
+    }
+
+    /** Whether [text] is a whole number of up to 18 digits. */
+    private static boolean digits(String text) {
+        if (text.isEmpty() || text.length() > 18) return false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c < '0' || c > '9') return false;
+        }
+        return true;
+    }
+
+    /**
+     * [price] with [label] on a line under it: smaller than the price and in its colour, faded. The
+     * price's own styles end where the price does.
+     */
+    static Spannable withLine(Spannable price, String label) {
+        int end = price.length();
+        SpannableStringBuilder out = new SpannableStringBuilder(price);
+        out.append('\n').append(label);
+        int total = out.length();
+        for (Object span : out.getSpans(0, total, Object.class)) {
+            if (out.getSpanEnd(span) > end) out.setSpan(span, out.getSpanStart(span), end, out.getSpanFlags(span));
+        }
+        int size = Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, LINE_SP,
+                Resources.getSystem().getDisplayMetrics()));
+        Integer colour = null;
+        for (AbsoluteSizeSpan each : price.getSpans(0, end, AbsoluteSizeSpan.class)) {
+            if (!each.getDip() && each.getSize() > 0) size = Math.min(size, each.getSize());
+        }
+        for (ForegroundColorSpan each : price.getSpans(0, end, ForegroundColorSpan.class)) {
+            colour = each.getForegroundColor();
+        }
+        out.setSpan(new AbsoluteSizeSpan(size), end + 1, total, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        out.setSpan(new LineColour(colour), end + 1, total, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return out;
+    }
+
+    /** The date line's colour: the price's as the theme paints it, or the text's own, faded. */
+    static final class LineColour extends CharacterStyle implements UpdateAppearance {
+        @Nullable
+        final Integer price;
+
+        LineColour(@Nullable Integer price) {
+            this.price = price;
+        }
+
+        @Override
+        public void updateDrawState(TextPaint paint) {
+            int colour = price == null ? paint.getColor() : ReactColours.text(price);
+            int alpha = Math.round(Color.alpha(colour) * LINE_ALPHA);
+            paint.setColor((colour & 0x00FFFFFF) | (alpha << 24));
+        }
+    }
+
+    /** Forgets every listing, for tests. */
+    static void forgetPricesForTests() {
+        synchronized (PRICED) {
+            PRICED.clear();
+            anyPriced = false;
+            titled = null;
+            since = 0;
+        }
     }
 
     /** [text] as the inside of a JSON string. */

@@ -209,8 +209,8 @@ final class L10nTablePt_rBR {
                 "Uma lista comporta at\u00e9 %1$d padr\u00f5es, e esta tem mais. Remova alguns e salve de novo.");
         table.put("A list holds up to %1$d phrases, and this one has more. Remove some, then save again.",
                 "Uma lista comporta at\u00e9 %1$d frases, e esta tem mais. Remova algumas e salve de novo.");
-        table.put("A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.",
-                "A p\u00e1gina de um an\u00fancio mostra, ao lado do local, h\u00e1 quanto tempo ele foi publicado e a data. O Facebook s\u00f3 mostra isso em an\u00fancios novos.");
+        table.put("A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.",
+                "A p\u00e1gina de um an\u00fancio mostra, abaixo do pre\u00e7o e ao lado do local, h\u00e1 quanto tempo ele foi publicado e a data. O Facebook s\u00f3 mostra isso em an\u00fancios novos.");
         table.put("A live video that has ended gets Playback speed in its gear menu, like other videos. Videos that are still live, and ads, keep Facebook's menu.",
                 "Um v\u00eddeo ao vivo que j\u00e1 terminou ganha Velocidade de reprodu\u00e7\u00e3o no menu da engrenagem, como os outros v\u00eddeos. V\u00eddeos ainda ao vivo e an\u00fancios continuam com o menu do Facebook.");
         table.put("A long press on Like doesn't open the reactions. A tap still likes.",

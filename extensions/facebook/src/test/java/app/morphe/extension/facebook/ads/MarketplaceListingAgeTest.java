@@ -6,9 +6,19 @@ package app.morphe.extension.facebook.ads;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+
+import android.content.res.Resources;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.style.AbsoluteSizeSpan;
+import android.text.style.ForegroundColorSpan;
+import android.util.TypedValue;
 
 import org.junit.After;
 import org.junit.Before;
@@ -22,6 +32,7 @@ import java.text.DateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -46,6 +57,7 @@ public class MarketplaceListingAgeTest {
     public void inBuild() {
         MarketplaceAdFilterForTests.inBuild(Boolean.TRUE);
         MarketplaceAdFilterForTests.forget();
+        MarketplaceListingAge.forgetPricesForTests();
         HookStatus.clear();
     }
 
@@ -54,6 +66,7 @@ public class MarketplaceListingAgeTest {
         MarketplaceAdFilterForTests.inBuild(null);
         MarketplaceAdFilter.failNextForTests = null;
         MarketplaceAdFilterForTests.forget();
+        MarketplaceListingAge.forgetPricesForTests();
         PauseForTests.resume();
         Settings.MARKETPLACE_LISTING_DATE.resetToDefault();
         HookStatus.clear();
@@ -154,6 +167,160 @@ public class MarketplaceListingAgeTest {
         Settings.MARKETPLACE_LISTING_DATE.resetToDefault();
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertSame(answer, MarketplaceAdFilterForTests.responseWhole(PAGE, answer));
+    }
+
+    /** [answer] with data.listing priced [amount] (amount_with_offset), as 584 and 585 send it. */
+    private static String priced(String answer, String amount) {
+        String listing = "\"uri_redirect\":null},\"listing\":{\"__typename\":\"GroupCommerceProductItem\",\"id\":\"1234\",";
+        assertTrue(answer.contains(listing));
+        return answer.replace(listing, listing + "\"listing_price\":{\"amount_with_offset\":\"" + amount
+                + "\",\"currency\":\"USD\"},");
+    }
+
+    /** "$150" drawn the way React builds a price: its own size and colour over all of it. */
+    private static SpannableString price(String shown, int size) {
+        SpannableString price = new SpannableString(shown);
+        price.setSpan(new AbsoluteSizeSpan(size), 0, shown.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+        price.setSpan(new ForegroundColorSpan(0xFFE4E6EB), 0, shown.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return price;
+    }
+
+    private static String statusLine() {
+        for (String line : HookStatus.report()) {
+            if (line.startsWith(FamilyNames.SPONSORED_MARKETPLACE + ":")) return line;
+        }
+        return null;
+    }
+
+    private static int lineSize() {
+        return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, MarketplaceListingAge.LINE_SP,
+                Resources.getSystem().getDisplayMetrics()));
+    }
+
+    @Test
+    public void thePriceRightUnderTheTitleGetsTheDateOnALineOfItsOwn() {
+        long listed = System.currentTimeMillis() / 1000 - 21 * DAY;
+        MarketplaceAdFilterForTests.responseWhole(PAGE, priced(answer(listed, "Moncton, NB"), "15000"));
+
+        SpannableString title = new SpannableString("Polaroid Camera");
+        assertSame(title, MarketplaceListingAge.priceLine(title));
+        String before = statusLine();
+        Spannable line = MarketplaceListingAge.priceLine(price("$150", 60));
+        assertNotEquals("the price line is counted as bound", before, statusLine());
+
+        String date = "Listed 3 weeks ago (" + date(listed) + ")";
+        assertEquals("$150\n" + date, line.toString());
+        AbsoluteSizeSpan[] sizes = line.getSpans(0, line.length(), AbsoluteSizeSpan.class);
+        assertEquals(2, sizes.length);
+        for (AbsoluteSizeSpan size : sizes) {
+            if (size.getSize() == 60) {
+                assertEquals("the price's size stops at the price", 4, line.getSpanEnd(size));
+            } else {
+                assertEquals(lineSize(), size.getSize());
+                assertEquals(5, line.getSpanStart(size));
+                assertEquals(line.length(), line.getSpanEnd(size));
+            }
+        }
+        MarketplaceListingAge.LineColour[] colours = line.getSpans(0, line.length(), MarketplaceListingAge.LineColour.class);
+        assertEquals(1, colours.length);
+        TextPaint paint = new TextPaint();
+        colours[0].updateDrawState(paint);
+        assertEquals("the price's colour, faded", 0xB3E4E6EB, paint.getColor());
+
+        SpannableString again = price("$150", 60);
+        assertSame("one line per title", again, MarketplaceListingAge.priceLine(again));
+    }
+
+    @Test
+    public void aPriceNotRightUnderItsTitleOrAnotherAmountStaysAsItIs() {
+        long listed = System.currentTimeMillis() / 1000 - 3 * DAY;
+        MarketplaceAdFilterForTests.responseWhole(PAGE, priced(answer(listed, "Moncton, NB"), "15000"));
+
+        SpannableString alone = price("$150", 60);
+        assertSame("no title before it", alone, MarketplaceListingAge.priceLine(alone));
+
+        MarketplaceListingAge.priceLine(new SpannableString("Polaroid Camera"));
+        for (int i = 0; i < MarketplaceListingAge.MAX_BETWEEN; i++) {
+            MarketplaceListingAge.priceLine(new SpannableString("Text " + i));
+        }
+        SpannableString late = price("$150", 60);
+        assertSame("too far under the title", late, MarketplaceListingAge.priceLine(late));
+
+        MarketplaceListingAge.priceLine(new SpannableString("Polaroid Camera"));
+        SpannableString other = price("$140", 60);
+        assertSame("another listing's price", other, MarketplaceListingAge.priceLine(other));
+
+        MarketplaceListingAge.priceLine(new SpannableString("Polaroid Camera"));
+        MarketplaceListingAge.priceLine(new SpannableString("Text"));
+        Spannable unsized = MarketplaceListingAge.priceLine(new SpannableString("$150.00"));
+        assertEquals("$150.00\nListed 3 days ago (" + date(listed) + ")", unsized.toString());
+        AbsoluteSizeSpan[] sizes = unsized.getSpans(0, unsized.length(), AbsoluteSizeSpan.class);
+        assertEquals(lineSize(), sizes[0].getSize());
+    }
+
+    /** [answer] with [fields] after data.listing's price. */
+    private static String withFields(String answer, String fields) {
+        String price = "\"currency\":\"USD\"},";
+        assertTrue(answer.contains(price));
+        return answer.replace(price, price + fields + ",");
+    }
+
+    @Test
+    public void aVehicleGetsNoLineUnderItsPriceSinceFacebookDatesItThere() {
+        long listed = System.currentTimeMillis() / 1000 - 21 * DAY;
+        String camera = priced(answer(listed, "Moncton, NB"), "15000");
+        MarketplaceAdFilterForTests.responseWhole(PAGE, withFields(camera,
+                "\"vehicle_odometer_data\":{\"unit\":null,\"value\":null},\"vehicle_make_display_name\":\"\","
+                        + "\"vehicle_features\":[],\"vehicle_condition\":null,\"vehicle_is_new\":false,"
+                        + "\"partnership_context\":{\"vehicle_odometer_data\":{\"unit\":null,\"value\":null}}"));
+        MarketplaceListingAge.priceLine(new SpannableString("Polaroid Camera"));
+        assertEquals("empty vehicle fields aren't a vehicle", "$150\nListed 3 weeks ago (" + date(listed) + ")",
+                MarketplaceListingAge.priceLine(price("$150", 60)).toString());
+
+        String car = withFields(camera, "\"vehicle_odometer_data\":{\"unit\":\"MILES\",\"value\":120000}");
+        String dated = MarketplaceAdFilterForTests.responseWhole(PAGE, car);
+        assertTrue("its place still gets the date", dated.contains("Moncton, NB" + MarketplaceListingAge.DOT + "Listed 3 weeks ago ("));
+        MarketplaceListingAge.priceLine(new SpannableString("Polaroid Camera"));
+        SpannableString shown = price("$150", 60);
+        assertSame("a vehicle seen after its page answered once is forgotten", shown, MarketplaceListingAge.priceLine(shown));
+
+        MarketplaceListingAge.forgetPricesForTests();
+        String later = "{\"data\":{\"node\":{\"id\":\"1234\",\"vehicle_info\":{\"vehicle_make_display_name\":\"Honda\"}}}}";
+        MarketplaceAdFilterForTests.responseWhole(PAGE, camera + "\r\n" + later);
+        MarketplaceListingAge.priceLine(new SpannableString("Polaroid Camera"));
+        SpannableString late = price("$150", 60);
+        assertSame("a vehicle field in a later payload, a level down", late, MarketplaceListingAge.priceLine(late));
+    }
+
+    @Test
+    public void aPriceIsItsDigitsWithOrWithoutTheCents() {
+        assertTrue(MarketplaceListingAge.pricedAs("$150", "15000"));
+        assertTrue(MarketplaceListingAge.pricedAs("$150.00", "15000"));
+        assertTrue(MarketplaceListingAge.pricedAs("CA$1,500", "150000"));
+        assertTrue(MarketplaceListingAge.pricedAs("150,50 €", "15050"));
+        assertTrue(MarketplaceListingAge.pricedAs("¥1500", "1500"));
+        assertTrue(MarketplaceListingAge.pricedAs("$15", "1500"));
+        assertFalse(MarketplaceListingAge.pricedAs("$150", "1500"));
+        assertFalse(MarketplaceListingAge.pricedAs("Free", "0"));
+        assertFalse(MarketplaceListingAge.pricedAs("Listed 150 days", "15000"));
+        assertFalse(MarketplaceListingAge.pricedAs("$150\n$200", "15000"));
+    }
+
+    @Test
+    public void offOrPausedThePriceStaysAsItIs() {
+        long listed = System.currentTimeMillis() / 1000 - 3 * DAY;
+        MarketplaceAdFilterForTests.responseWhole(PAGE, priced(answer(listed, "Moncton, NB"), "15000"));
+
+        Settings.MARKETPLACE_LISTING_DATE.save(false);
+        MarketplaceListingAge.priceLine(new SpannableString("Polaroid Camera"));
+        SpannableString off = price("$150", 60);
+        assertSame(off, MarketplaceListingAge.priceLine(off));
+
+        Settings.MARKETPLACE_LISTING_DATE.resetToDefault();
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        MarketplaceListingAge.priceLine(new SpannableString("Polaroid Camera"));
+        SpannableString paused = price("$150", 60);
+        assertSame(paused, MarketplaceListingAge.priceLine(paused));
     }
 
     @Test

@@ -2330,7 +2330,7 @@ Adv. Filters button	進階篩選按鈕
 Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	在搜尋結果中 Marketplace 的「篩選」下方加入「進階篩選」按鈕。它會開啟要保留的詞語、要隱藏的詞語和地點的清單，並幫你把規則寫進搜尋。
 # context: switch title and summary under Marketplace; a listing is something for sale
 Show when listings went up	顯示商品刊登時間
-A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.	商品頁面會在地點旁顯示刊登多久以及刊登日期。Facebook 只會對新商品顯示這些。
+A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.	商品頁面會在價格下方和地點旁顯示刊登多久以及刊登日期。Facebook 只會對新商品顯示這些。
 # context: added after a listing's place on its Marketplace page, like Moncton, NB; %1$s is how long ago in your language from the phone, like 3 weeks ago, %2$s is the date
 Listed %1$s (%2$s)	%1$s刊登（%2$s）
 How Adv. Filters works	進階篩選的用法

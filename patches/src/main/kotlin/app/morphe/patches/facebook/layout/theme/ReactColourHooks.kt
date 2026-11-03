@@ -113,6 +113,23 @@ private fun MutableMethod.passThrough(index: Int, invoke: String, moveResult: St
  * `(Spannable)V` method) and the static builders that take that callback and return the Spannable.
  */
 internal fun BytecodePatchContext.reactTextSpan(): String {
+    val (callback, builders) = reactTextBuilders()
+    val spans = builders.flatMap { builder ->
+        builder.implementation?.instructions?.toList().orEmpty()
+            .filter { it.opcode == Opcode.NEW_INSTANCE }
+            .map { (it as ReferenceInstruction).reference.toString() }
+            .filter { classDefByOrNull(it)?.superclass == FOREGROUND_COLOR_SPAN }
+    }.toSet()
+    return spans.singleOrNull()
+        ?: throw PatchException("React's span builders for $callback create ${spans.size} ForegroundColorSpan types, not one: $spans")
+}
+
+/**
+ * The text view manager's callback for built text (the interface it implements with one
+ * `(Spannable)V` method), and React's static builders that take it and return the Spannable they
+ * built: what Fabric both measures and draws.
+ */
+internal fun BytecodePatchContext.reactTextBuilders(): Pair<String, List<Method>> {
     val manager = classDefByOrNull(REACT_TEXT_MANAGER) ?: throw PatchException("This build has no $REACT_TEXT_MANAGER")
     val callback = manager.interfaces.singleOrNull { type ->
         classDefByOrNull(type)?.methods?.toList()?.let { methods ->
@@ -129,14 +146,7 @@ internal fun BytecodePatchContext.reactTextSpan(): String {
                 method.parameterTypes.any { it.toString() == callback }
         }
     }
-    val spans = builders.flatMap { builder ->
-        builder.implementation?.instructions?.toList().orEmpty()
-            .filter { it.opcode == Opcode.NEW_INSTANCE }
-            .map { (it as ReferenceInstruction).reference.toString() }
-            .filter { classDefByOrNull(it)?.superclass == FOREGROUND_COLOR_SPAN }
-    }.toSet()
-    return spans.singleOrNull()
-        ?: throw PatchException("React's span builders for $callback create ${spans.size} ForegroundColorSpan types, not one: $spans")
+    return callback to builders
 }
 
 private fun Instruction.referenceText(): String? = (this as? ReferenceInstruction)?.reference?.toString()

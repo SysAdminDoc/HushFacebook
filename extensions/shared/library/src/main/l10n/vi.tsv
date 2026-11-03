@@ -2326,7 +2326,7 @@ Adv. Filters button	Nút Bộ lọc NC
 Adds an Adv. Filters button under Marketplace's Filters on search results. It opens lists of words to keep, words to hide and places, and writes the rules into the search for you.	Thêm nút Bộ lọc NC dưới Bộ lọc của Marketplace trong kết quả tìm kiếm. Nút này mở danh sách từ cần giữ, từ cần ẩn và nơi chốn, rồi viết quy tắc vào ô tìm kiếm cho bạn.
 # context: switch title and summary under Marketplace; a listing is something for sale
 Show when listings went up	Hiện thời điểm đăng tin
-A listing's page says how long ago it was listed and the date, next to its place. Facebook only shows it for new listings.	Trang của tin đăng hiện tin đã đăng bao lâu và ngày đăng, cạnh địa điểm. Facebook chỉ hiện điều này với tin mới.
+A listing's page says how long ago it was listed and the date, under its price and next to its place. Facebook only shows it for new listings.	Trang của tin đăng hiện tin đã đăng bao lâu và ngày đăng, dưới giá và cạnh địa điểm. Facebook chỉ hiện điều này với tin mới.
 # context: added after a listing's place on its Marketplace page, like Moncton, NB; %1$s is how long ago in your language from the phone, like 3 weeks ago, %2$s is the date
 Listed %1$s (%2$s)	Đã đăng %1$s (%2$s)
 How Adv. Filters works	Cách Bộ lọc NC hoạt động
