@@ -2531,6 +2531,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_seen_posts", FALSE);
 
     /**
+     * With {@link #HIDE_SEEN_POSTS} on, a post scrolled past shows up one more time and is hidden
+     * only once it's scrolled past again (#186). Off by default, so a seen post stays out from its
+     * first return.
+     */
+    public static final BooleanSetting SEEN_POSTS_COME_BACK_ONCE =
+            new BooleanSetting("hushfacebook_seen_posts_come_back_once", FALSE, Setting.parent(HIDE_SEEN_POSTS));
+
+    /**
      * How long a seen post stays hidden while {@link #HIDE_SEEN_POSTS} is on. It isn't a switch.
      * Its row is greyed out while the switch is off: the settings page enables each row by its
      * setting's availability after every change, which would otherwise undo the row's own greying.

@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** New `Let each post come back once` under `Hide posts you've already seen`. A post counts as seen after a quarter second on screen, so a quick scroll used to hide plenty you never read. With this on, a post you scrolled past shows up one more time, and it's hidden once you scroll past it again. It starts off. (#186)
 * **Facebook:** Hushfacebook now tells you when Facebook's icons look soft because of the download you patched. The 32-bit bundle only has images for 320 dpi screens, so on a sharper screen the Home, bell, Profile, Search and Messenger icons get enlarged and look blurry. On a phone that can run the 64-bit bundle, a short note says so once after you install, and a line under the status card in the settings names the bundle to patch instead. (#365)
 * **Facebook:** New `Hide Up next on videos` under Reels and Watch. It takes the UP NEXT bar, with the next video's name and length, off the bottom of a video you open from the feed. It starts off. (#367)
 * **Facebook:** With `Show full post text` on, a tap on a post's text folds it back to See more, and another tap opens it again, the way Facebook does it with the switch off. Before, a long post stayed open whatever you tapped. (#354)

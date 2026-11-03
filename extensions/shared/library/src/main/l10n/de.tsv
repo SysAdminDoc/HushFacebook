@@ -2475,3 +2475,5 @@ Takes the UP NEXT bar with the next video off the bottom of a video you open fro
 Icons look soft on this screen. Repatch with the 120-640dpi bundle.	Symbole wirken auf diesem Bildschirm unscharf. Patche erneut mit dem 120-640dpi-Bundle.
 Icons look soft on this screen	Symbole wirken auf diesem Bildschirm unscharf
 The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has images for every screen.	Das Facebook, das du gepatcht hast, hat keine Bilder für diesen Bildschirm, daher werden einige Symbole vergrößert. Patche Facebook erneut aus dem Bundle (arm64-v8a) (120-640dpi) von APKMirror, das Bilder für jeden Bildschirm hat.
+Let each post come back once	Jeden Beitrag einmal zurückkommen lassen
+A post you scrolled past shows up one more time, and scrolling past it again hides it. Fewer posts go missing after a quick scroll.	Ein Beitrag, an dem du vorbeigescrollt bist, erscheint noch einmal, und wenn du wieder an ihm vorbeiscrollst, wird er ausgeblendet. So gehen nach schnellem Scrollen weniger Beiträge verloren.

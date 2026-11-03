@@ -2475,3 +2475,5 @@ Takes the UP NEXT bar with the next video off the bottom of a video you open fro
 Icons look soft on this screen. Repatch with the 120-640dpi bundle.	Biểu tượng trông bị mờ trên màn hình này. Hãy vá lại bằng gói 120-640dpi.
 Icons look soft on this screen	Biểu tượng trông bị mờ trên màn hình này
 The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has images for every screen.	Facebook bạn đã vá không có hình ảnh dành cho màn hình này, nên một số biểu tượng bị phóng to. Hãy vá lại Facebook từ gói (arm64-v8a) (120-640dpi) trên APKMirror, gói này có hình ảnh cho mọi màn hình.
+Let each post come back once	Cho mỗi bài viết quay lại một lần
+A post you scrolled past shows up one more time, and scrolling past it again hides it. Fewer posts go missing after a quick scroll.	Bài viết bạn đã cuộn qua sẽ xuất hiện thêm một lần nữa, và cuộn qua lần nữa sẽ ẩn nó. Cuộn nhanh sẽ ít làm mất bài viết hơn.

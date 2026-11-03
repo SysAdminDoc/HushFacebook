@@ -1820,8 +1820,12 @@ public class HushfacebookPreferenceFragmentTest {
             int switchAt = indexOfKey(rows, Settings.HIDE_SEEN_POSTS.key);
             assertTrue("no Hide seen posts switch", switchAt >= 0);
             Preference seen = rows.get(switchAt);
-            Preference keep = rows.get(switchAt + 1);
-            Preference forget = rows.get(switchAt + 2);
+            Preference onceMore = rows.get(switchAt + 1);
+            Preference keep = rows.get(switchAt + 2);
+            Preference forget = rows.get(switchAt + 3);
+            assertEquals(Settings.SEEN_POSTS_COME_BACK_ONCE.key, onceMore.getKey());
+            assertEquals("Let each post come back once", String.valueOf(onceMore.getTitle()));
+            assertFalse("Let each post come back once is open with the switch off", onceMore.isEnabled());
             assertEquals(Settings.SEEN_POSTS_KEEP.key, keep.getKey());
             assertEquals("Forget seen posts", String.valueOf(forget.getTitle()));
             assertFalse("the keep time is open with the switch off", keep.isEnabled());
@@ -1839,6 +1843,7 @@ public class HushfacebookPreferenceFragmentTest {
             assertFalse(file.exists());
 
             assertTrue(seen.getOnPreferenceChangeListener().onPreferenceChange(seen, true));
+            assertTrue(onceMore.isEnabled());
             assertTrue(keep.isEnabled());
             assertFalse("the open keep time still says to turn the switch on",
                     String.valueOf(keep.getSummary()).contains("Turn on"));
@@ -1846,6 +1851,7 @@ public class HushfacebookPreferenceFragmentTest {
             SeenPostsForTests.rememberAndWrite("seen with it on");
             assertTrue(file.exists());
             assertTrue(seen.getOnPreferenceChangeListener().onPreferenceChange(seen, false));
+            assertFalse(onceMore.isEnabled());
             assertFalse(keep.isEnabled());
             assertTrue(forget.isEnabled());
             assertEquals("turning the switch off kept the list", 0, SeenPostsForTests.size());

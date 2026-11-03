@@ -2479,3 +2479,5 @@ Takes the UP NEXT bar with the next video off the bottom of a video you open fro
 Icons look soft on this screen. Repatch with the 120-640dpi bundle.	此螢幕上的圖示看起來模糊。請用 120-640dpi 套件重新修補。
 Icons look soft on this screen	此螢幕上的圖示看起來模糊
 The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has images for every screen.	你修補的 Facebook 沒有適合此螢幕的圖片，因此部分圖示被放大。請使用 APKMirror 上的 (arm64-v8a) (120-640dpi) 套件重新修補 Facebook，它包含適合所有螢幕的圖片。
+Let each post come back once	讓每則貼文再出現一次
+A post you scrolled past shows up one more time, and scrolling past it again hides it. Fewer posts go missing after a quick scroll.	你捲動瀏覽過的貼文會再出現一次，再次捲過後才會隱藏。快速捲動後錯過的貼文會更少。

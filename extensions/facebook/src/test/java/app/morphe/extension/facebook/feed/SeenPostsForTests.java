@@ -37,8 +37,7 @@ public final class SeenPostsForTests {
     public static boolean hidesARememberedPost() {
         return withStore(() -> {
             Story story = new Story("pause-probe");
-            SeenPosts.remember(SeenPosts.idOf(story), System.currentTimeMillis());
-            return SeenPosts.hideReason(story) != null;
+            return seenTwiceThenHidden(story);
         });
     }
 
@@ -47,9 +46,21 @@ public final class SeenPostsForTests {
         return withStore(() -> {
             Story story = new Story("cold-start-probe");
             SeenPosts.seen(story);
-            SeenPosts.remember(SeenPosts.idOf(story), System.currentTimeMillis());
-            return SeenPosts.hideReason(story) != null;
+            return seenTwiceThenHidden(story);
         });
+    }
+
+    /**
+     * Remembers [story], shows it once, remembers it again and answers whether the rule hides it then.
+     * With `Let each post come back once` on as well, the first look lets a post back, so a check
+     * that turns every switch on still sees the hide.
+     */
+    private static boolean seenTwiceThenHidden(Story story) {
+        String id = SeenPosts.idOf(story);
+        SeenPosts.remember(id, System.currentTimeMillis());
+        SeenPosts.hideReason(story);
+        SeenPosts.remember(id, System.currentTimeMillis());
+        return SeenPosts.hideReason(story) != null;
     }
 
     /** Points the store at [file] for a test outside this package, with every write run at once. */

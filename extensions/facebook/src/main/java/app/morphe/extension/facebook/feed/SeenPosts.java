@@ -51,6 +51,11 @@ import app.morphe.extension.shared.settings.preference.LogBufferManager;
  * which means the post on screen is never judged. {@link #seen} remembers the unit's cache id. The feed guard asks {@link #hideReason} for every unit it's about to add, and a
  * remembered one is dropped before Facebook adds it.
  *
+ * <p>A post on screen for 250 ms counts, so a quick scroll remembers posts nobody read (#186). With
+ * Let each post come back once on, a post seen once is let through the first time it comes back
+ * and marked as back, and only scrolling past it again hides it from then on. The mark is kept
+ * with the post, so a restart doesn't hand out a second return.
+ *
  * <p>Only a short hash of each id is kept, in one file in the app's own storage with the time it was
  * seen. It never leaves the phone and isn't part of an exported settings file. At most {@link #CAP}
  * posts are kept, the oldest forgotten first, and a post is forgotten once it's older than the days
@@ -106,6 +111,20 @@ public final class SeenPosts {
     static final String REMEMBERED = "Seen posts remembered";
     /** Counted when a seen post's unit gave no id to remember it by. */
     static final String NO_ID = "Seen posts with no id";
+    /** Counted when a post seen once is let back into the feed under Let each post come back once. */
+    static final String LET_BACK = "Seen posts let back once";
+
+    /** Scrolled past once. A line in the file with no stage is this one. */
+    static final int ONCE = 1;
+    /** Seen once and let back into the feed once, not scrolled past since. */
+    static final int BACK = 2;
+    /** Scrolled past again after coming back, so it's hidden whatever the come-back switch says. */
+    static final int AGAIN = 3;
+
+    /** What the guard does with a post: leave it, hide it, or let it back for its one return. */
+    static final int SHOW = 0;
+    static final int HIDE = 1;
+    static final int SHOW_ONCE_MORE = 2;
 
     /** The reason the feed counts a hidden post under. */
     static final String REASON = "already seen";
@@ -123,8 +142,19 @@ public final class SeenPosts {
      */
     static final int MAX_RETRIES = 5;
 
-    /** Id to the time it was seen, oldest first. Guarded by itself. */
-    private static final LinkedHashMap<String, Long> STORE = new LinkedHashMap<>();
+    /** A remembered post: when it was last seen, and how far it got ({@link #ONCE}, {@link #BACK}, {@link #AGAIN}). */
+    private static final class Seen {
+        final long at;
+        int stage;
+
+        Seen(long at, int stage) {
+            this.at = at;
+            this.stage = stage;
+        }
+    }
+
+    /** Id to when it was seen and its stage, oldest first. Guarded by itself. */
+    private static final LinkedHashMap<String, Seen> STORE = new LinkedHashMap<>();
     /** Held across a write, so two writes land in the order their lists were taken. */
     private static final Object WRITE = new Object();
     private static boolean loaded;
@@ -199,7 +229,9 @@ public final class SeenPosts {
 
     /**
      * The feed guard's question about a unit it's about to add: {@link #REASON} when the post was
-     * seen within the days the setting names and the switch is on, otherwise null. Never throws.
+     * seen within the days the setting names and the switch is on, otherwise null. With Let each
+     * post come back once on, a post seen once gets null the first time and is marked as back, and
+     * {@link #REASON} only after it's been scrolled past again. Never throws.
      */
     @Nullable
     static String hideReason(@Nullable Object unit) {
@@ -217,7 +249,10 @@ public final class SeenPosts {
             if (id == null) return null;
             HookStatus.bound(FAMILY, "feed guard");
             long now = clock.getAsLong();
-            if (!isRemembered(id, now, Settings.SEEN_POSTS_KEEP.get().days * DAY_MS)) return null;
+            int verdict = judge(id, now, Settings.SEEN_POSTS_KEEP.get().days * DAY_MS,
+                    Settings.SEEN_POSTS_COME_BACK_ONCE.get());
+            if (verdict == SHOW_ONCE_MORE) HookStatus.counted(FAMILY, LET_BACK);
+            if (verdict != HIDE) return null;
             HookStatus.counted(FAMILY, HIDDEN);
             return REASON;
         } catch (Throwable failure) {
@@ -272,12 +307,17 @@ public final class SeenPosts {
         }
     }
 
-    /** Remembers [id] as seen at [now]. True when it's new to the store. */
+    /**
+     * Remembers [id] as seen at [now]. A post that came back once is now seen again, so it's
+     * {@link #AGAIN}; otherwise it keeps its stage, and a new one is {@link #ONCE}. True when it's
+     * new to the store.
+     */
     static boolean remember(String id, long now) {
         synchronized (STORE) {
             loadLocked();
-            Long before = STORE.remove(id);
-            STORE.put(id, now);
+            Seen before = STORE.remove(id);
+            int stage = before == null ? ONCE : before.stage == BACK ? AGAIN : before.stage;
+            STORE.put(id, new Seen(now, stage));
             trimLocked();
             dirty = true;
             forgotten = false;
@@ -289,16 +329,50 @@ public final class SeenPosts {
     /** Whether [id] was seen less than [keepMs] before [now]. An older one is dropped, and so is one seen over a day after [now]. */
     static boolean isRemembered(String id, long now, long keepMs) {
         synchronized (STORE) {
+            return liveLocked(id, now, keepMs) != null;
+        }
+    }
+
+    /**
+     * What the guard does with [id] at [now]: {@link #SHOW} when it isn't remembered within
+     * [keepMs], {@link #HIDE} when it is, unless [comeBackOnce] lets it through. Then a post seen
+     * once is {@link #SHOW_ONCE_MORE} and marked {@link #BACK}, one already back stays {@link #SHOW}
+     * until it's scrolled past again, and one seen {@link #AGAIN} is {@link #HIDE}.
+     */
+    static int judge(String id, long now, long keepMs, boolean comeBackOnce) {
+        synchronized (STORE) {
+            Seen seen = liveLocked(id, now, keepMs);
+            if (seen == null) return SHOW;
+            if (!comeBackOnce || seen.stage == AGAIN) return HIDE;
+            if (seen.stage != ONCE) return SHOW;
+            seen.stage = BACK;
+            dirty = true;
+            scheduleWriteLocked();
+            return SHOW_ONCE_MORE;
+        }
+    }
+
+    /** [id]'s entry when it was seen less than [keepMs] before [now], else null. An expired one is dropped. */
+    @Nullable
+    private static Seen liveLocked(String id, long now, long keepMs) {
+        loadLocked();
+        Seen seen = STORE.get(id);
+        if (seen == null) return null;
+        if (expired(seen.at, now, keepMs)) {
+            STORE.remove(id);
+            dirty = true;
+            scheduleWriteLocked();
+            return null;
+        }
+        return seen;
+    }
+
+    /** [id]'s stage, or 0 when it isn't remembered. For tests. */
+    static int stageOf(String id) {
+        synchronized (STORE) {
             loadLocked();
-            Long at = STORE.get(id);
-            if (at == null) return false;
-            if (expired(at, now, keepMs)) {
-                STORE.remove(id);
-                dirty = true;
-                scheduleWriteLocked();
-                return false;
-            }
-            return true;
+            Seen seen = STORE.get(id);
+            return seen == null ? 0 : seen.stage;
         }
     }
 
@@ -316,8 +390,8 @@ public final class SeenPosts {
     /** Drops every post past the days the setting names. Marks the store for a write when it drops one. */
     private static void pruneLocked(long now) {
         long keepMs = savedKeepMs();
-        for (Iterator<Long> times = STORE.values().iterator(); times.hasNext(); ) {
-            if (expired(times.next(), now, keepMs)) {
+        for (Iterator<Seen> times = STORE.values().iterator(); times.hasNext(); ) {
+            if (expired(times.next().at, now, keepMs)) {
                 times.remove();
                 dirty = true;
             }
@@ -399,7 +473,11 @@ public final class SeenPosts {
                 if (loaded) pruneLocked(clock.getAsLong());
                 if (!dirty) return;
                 dirty = false;
-                for (Map.Entry<String, Long> entry : STORE.entrySet()) lines.add(entry.getValue() + " " + entry.getKey());
+                // A post seen once is the line it always was, so a file from before the stages reads the same.
+                for (Map.Entry<String, Seen> entry : STORE.entrySet()) {
+                    Seen seen = entry.getValue();
+                    lines.add(seen.at + " " + entry.getKey() + (seen.stage == ONCE ? "" : " " + seen.stage));
+                }
             }
             boolean stored = store(lines);
             synchronized (STORE) {
@@ -488,7 +566,16 @@ public final class SeenPosts {
                 int space = line.indexOf(' ');
                 if (space <= 0) continue;
                 try {
-                    STORE.put(line.substring(space + 1), Long.parseLong(line.substring(0, space)));
+                    long at = Long.parseLong(line.substring(0, space));
+                    String id = line.substring(space + 1);
+                    int stage = ONCE;
+                    int second = id.indexOf(' ');
+                    if (second >= 0) {
+                        stage = Integer.parseInt(id.substring(second + 1));
+                        id = id.substring(0, second);
+                        if (stage < ONCE || stage > AGAIN || id.isEmpty()) continue;
+                    }
+                    STORE.put(id, new Seen(at, stage));
                 } catch (NumberFormatException skip) {
                     // A damaged line is dropped; the rest still count.
                 }
@@ -537,7 +624,8 @@ public final class SeenPosts {
             List<String> lines = new ArrayList<>();
             if (!inBuild()) return lines;
             lines.add("Remembered: " + size() + " of " + CAP + ", kept for "
-                    + (Utils.settingsReady() ? Settings.SEEN_POSTS_KEEP.get().days : Keep.SEVEN_DAYS.days) + " days");
+                    + (Utils.settingsReady() ? Settings.SEEN_POSTS_KEEP.get().days : Keep.SEVEN_DAYS.days) + " days"
+                    + (Utils.settingsReady() && Settings.SEEN_POSTS_COME_BACK_ONCE.get() ? ", each let back once" : ""));
             return lines;
         }
     };

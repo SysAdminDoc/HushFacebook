@@ -81,6 +81,7 @@ public class SeenPostsTest {
         PauseForTests.resume();
         Settings.HIDE_SEEN_POSTS.resetToDefault();
         Settings.SEEN_POSTS_KEEP.resetToDefault();
+        Settings.SEEN_POSTS_COME_BACK_ONCE.resetToDefault();
         SeenPosts.resetForTests();
         //noinspection ResultOfMethodCallIgnored
         file.delete();
@@ -114,6 +115,83 @@ public class SeenPostsTest {
         assertTrue("a seen post stayed in the feed", FeedFilter.hideEdge(Category.ORGANIC, story));
         assertFalse("a post nobody saw was dropped", FeedFilter.hideEdge(Category.ORGANIC, new Story("fresh")));
         assertTrue(FeedFilterCounters.report().toString(), FeedFilterCounters.report().toString().contains(SeenPosts.REASON));
+    }
+
+    /**
+     * #186: with Let each post come back once on, a post scrolled past once shows the next time it
+     * comes back, stays while it hasn't been scrolled past again, and goes after the second look.
+     * The control: with that switch off the first return is hidden, and turning it off hides a post
+     * already let back.
+     */
+    @Test
+    public void withComeBackOnceAPostReturnsOnceAndGoesAfterTheSecondLook() {
+        Story story = new Story("came back");
+        SeenPosts.seen(story);
+        assertEquals("the control: off, the first return is hidden", SeenPosts.REASON, SeenPosts.hideReason(story));
+
+        Settings.SEEN_POSTS_COME_BACK_ONCE.save(true);
+        assertNull("a post seen once didn't come back", SeenPosts.hideReason(story));
+        assertEquals(SeenPosts.BACK, SeenPosts.stageOf(SeenPosts.idOf(story)));
+        assertNull("a post back but not scrolled past again was hidden", SeenPosts.hideReason(story));
+        SeenPosts.seen(story);
+        assertEquals(SeenPosts.AGAIN, SeenPosts.stageOf(SeenPosts.idOf(story)));
+        assertEquals("a post scrolled past after its return came back again", SeenPosts.REASON, SeenPosts.hideReason(story));
+        assertTrue(statusLine(), statusLine().contains(SeenPosts.LET_BACK + " 1"));
+
+        Story other = new Story("let back, then the switch went off");
+        SeenPosts.seen(other);
+        assertNull(SeenPosts.hideReason(other));
+        Settings.SEEN_POSTS_COME_BACK_ONCE.save(false);
+        assertEquals("a post let back stayed with the switch off", SeenPosts.REASON, SeenPosts.hideReason(other));
+    }
+
+    @Test
+    public void theFeedGuardLetsAPostBackOnceAndThenDropsIt() {
+        Settings.SEEN_POSTS_COME_BACK_ONCE.save(true);
+        Story story = new Story("guarded twice");
+        assertFalse(FeedFilter.hideEdge(Category.ORGANIC, story));
+        SeenPosts.seen(story);
+        assertFalse("the first return was dropped", FeedFilter.hideEdge(Category.ORGANIC, story));
+        SeenPosts.seen(story);
+        assertTrue("a post seen after its return stayed in the feed", FeedFilter.hideEdge(Category.ORGANIC, story));
+    }
+
+    /**
+     * Where each post got to is kept in its line, so a restart neither hands out a second return
+     * nor forgets the second look. A post seen once keeps the line it always had.
+     */
+    @Test
+    public void aRestartKeepsWhereEachPostGotTo() throws IOException {
+        Settings.SEEN_POSTS_COME_BACK_ONCE.save(true);
+        Story back = new Story("back before the restart");
+        Story once = new Story("seen once before the restart");
+        Story again = new Story("seen again before the restart");
+        SeenPosts.seen(back);
+        SeenPosts.seen(once);
+        SeenPosts.seen(again);
+        assertNull(SeenPosts.hideReason(back));
+        assertNull(SeenPosts.hideReason(again));
+        SeenPosts.seen(again);
+        SeenPosts.writeNow();
+        String text = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+        assertTrue(text, text.matches("\\d+ [0-9a-f]{16} 2\\n\\d+ [0-9a-f]{16}\\n\\d+ [0-9a-f]{16} 3\\n"));
+
+        restart();
+        assertNull("a post back before the restart was hidden before a second look", SeenPosts.hideReason(back));
+        assertEquals(SeenPosts.REASON, SeenPosts.hideReason(again));
+        assertNull("a post seen once lost its return over a restart", SeenPosts.hideReason(once));
+        assertEquals(SeenPosts.BACK, SeenPosts.stageOf(SeenPosts.idOf(once)));
+    }
+
+    @Test
+    public void aLineWithABadStageIsDroppedAndOneWithoutAStageIsSeenOnce() throws IOException {
+        long at = now.get();
+        Files.write(file.toPath(), (at + " plain\n" + at + " back 2\n" + at + " odd 9\n" + at + " word x\n")
+                .getBytes(StandardCharsets.UTF_8));
+        assertEquals(2, SeenPosts.size());
+        assertEquals(SeenPosts.ONCE, SeenPosts.stageOf("plain"));
+        assertEquals(SeenPosts.BACK, SeenPosts.stageOf("back"));
+        assertEquals(0, SeenPosts.stageOf("odd"));
     }
 
     @Test
