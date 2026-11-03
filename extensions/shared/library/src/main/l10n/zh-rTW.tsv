@@ -1002,7 +1002,7 @@ The phone's language	手機語言
 Languages to leave alone	不翻譯的語言
 None picked. Posts in every language can be translated.	未選擇。任何語言的貼文都可以翻譯。
 Left alone: %s	不翻譯：%s
-Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.	動態中的貼文會顯示全部文字，不用再點「顯示更多」。輕觸貼文的文字即可重新收合。
+Posts in the feed and captions on reels show all of their text, so there's no See more to tap. Tap the text to fold it back.	動態中的貼文和連續短片的說明會顯示全部文字，不用再點「顯示更多」。輕觸文字即可重新收合。
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	查看誰分享了
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	在貼文選單中加入「查看誰分享了」，開啟 Facebook 上分享這則貼文的使用者清單。

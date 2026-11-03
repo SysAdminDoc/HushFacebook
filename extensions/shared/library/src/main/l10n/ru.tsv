@@ -1024,7 +1024,7 @@ The phone's language	Язык телефона
 Languages to leave alone	Языки без перевода
 None picked. Posts in every language can be translated.	Ничего не выбрано. Можно переводить публикации на любом языке.
 Left alone: %s	Без перевода: %s
-Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.	В Ленте публикации отображаются полностью, поэтому нажимать «Еще» не нужно. Нажмите на текст публикации, чтобы снова свернуть его.
+Posts in the feed and captions on reels show all of their text, so there's no See more to tap. Tap the text to fold it back.	Публикации в Ленте и подписи к Reels отображаются полностью, поэтому нажимать «Еще» не нужно. Нажмите на текст, чтобы снова свернуть его.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Посмотреть, кто поделился
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Добавляет пункт «Посмотреть, кто поделился» в меню публикации. Он открывает список пользователей Facebook, которые поделились ею.

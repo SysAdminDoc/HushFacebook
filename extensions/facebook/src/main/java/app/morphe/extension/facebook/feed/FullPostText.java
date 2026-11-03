@@ -33,6 +33,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the text folds it. A post the reader folded is remembered by its story id, and its cut is let
  * through until a tap opens it again.
  *
+ * <p>A reel's caption (FbShortsViewerDescriptionComponent) keeps an "expanded" state that "more"
+ * flips. Its first value goes through the extension too, so with the switch on a long caption starts
+ * whole, and a tap folds it; Facebook keeps that per reel by itself (#268).
+ *
  * <p>Off, paused, before the settings are ready, or when anything here fails, the cut and the state
  * are Facebook's own.
  */
@@ -51,6 +55,12 @@ public final class FullPostText {
 
     /** The member the report names once a tap on a post's text has gone through here. */
     static final String TAP = "post text tap";
+
+    /** The member the report names once a reel caption's first state has gone through here. */
+    static final String REEL_CAPTION = "reel caption first state";
+
+    /** Counted each time a reel caption that would start cut starts whole. */
+    static final String REEL_CAPTION_WHOLE = "reel caption opened whole";
 
     /** The key a story's id is cached under on its GraphQL model (Facebook's own truncation map reads it, 585). */
     static final int STORY_ID = 0xe6297af8;
@@ -72,6 +82,8 @@ public final class FullPostText {
     private static volatile Method idReader;
 
     private static volatile boolean logged;
+
+    private static volatile boolean reelLogged;
 
     private FullPostText() {
     }
@@ -117,6 +129,27 @@ public final class FullPostText {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, FIRST_STATE, failure);
             return allow;
+        }
+    }
+
+    /**
+     * The hook on a reel caption's first state, handed the "expanded" Facebook starts it with before
+     * its own per-reel memory is read. With the switch on it starts expanded, so a long caption shows
+     * whole, and a tap folds it by Facebook's path, which Facebook then remembers for that reel.
+     */
+    public static boolean reelCaptionExpanded(boolean expanded) {
+        try {
+            HookStatus.bound(FAMILY, REEL_CAPTION);
+            if (expanded || !on()) return expanded;
+            HookStatus.counted(FAMILY, REEL_CAPTION_WHOLE);
+            if (!reelLogged) {
+                reelLogged = true;
+                Logger.printDebug(() -> "Full post text: a reel caption starts whole");
+            }
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, REEL_CAPTION, failure);
+            return expanded;
         }
     }
 

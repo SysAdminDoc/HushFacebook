@@ -57,10 +57,11 @@ class TranslatePostsFixtureTest {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
                 val found = FixtureDex.methodsWhere(bundle, { true }) {
-                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (cutShaped(it) || foldMarked(it))
+                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (cutShaped(it) || foldMarked(it) || captionMarked(it))
                 }
                 val builder = found.filter(::cutShaped).single()
-                val folds = foldTypes(found)
+                // Show full post text's fold and reel caption classes, for running it after or before.
+                val folds = foldTypes(found) + captionTypes(bundle, found)
                 val original = builder.code()
                 val returns = original.count { it.opcode == Opcode.RETURN_OBJECT }
                 assertTrue("$name: the builder has no return", returns > 0)

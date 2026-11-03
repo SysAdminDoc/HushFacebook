@@ -102,6 +102,20 @@ public class FullPostTextTest {
     }
 
     @Test
+    public void aReelCaptionStartsWholeOnlyWithTheSwitchOn() {
+        assertFalse("a reel caption started whole with the switch off", FullPostText.reelCaptionExpanded(false));
+        assertTrue("Facebook's own expanded start was folded", FullPostText.reelCaptionExpanded(true));
+        Settings.SHOW_FULL_POST_TEXT.save(true);
+        assertTrue("a reel caption still starts cut", FullPostText.reelCaptionExpanded(false));
+        assertTrue(FullPostText.reelCaptionExpanded(true));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("a paused Hushfacebook still started a reel caption whole", FullPostText.reelCaptionExpanded(false));
+        PauseForTests.resume();
+        assertEquals(FamilyNames.FULL_POST_TEXT + ": invoked 0, 1 found, 0 missing. Counted: "
+                + FullPostText.REEL_CAPTION_WHOLE + " 1", statusLine());
+    }
+
+    @Test
     public void aTapFoldsThePostAndAnotherOpensIt() {
         Settings.SHOW_FULL_POST_TEXT.save(true);
         Story story = new Story("1234");

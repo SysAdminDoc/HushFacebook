@@ -3597,7 +3597,7 @@
     },
     {
       "name": "Show full post text",
-      "description": "Shows all of a post's text in the feed, so you don't have to tap See more. A tap on the text folds it back. Starts off. Turn it on in Hushfacebook settings > News feed.",
+      "description": "Shows all of a post's text in the feed, and a reel's caption, so you don't have to tap See more. A tap on the text folds it back. Starts off. Turn it on in Hushfacebook settings > News feed.",
       "category": "Feed",
       "use": true,
       "dependencies": [

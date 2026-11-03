@@ -529,10 +529,11 @@ public class PausedHooksTest {
         // A post header's yes to rotating its subtitle is answered as a no, so it keeps the one line.
         probes.put(PatchFamily.POST_DATES, Collections.singletonList(() -> !PostDates.cycling(true)));
         // A post's cut text is answered with null, so Facebook keeps the whole text with no See more,
-        // and a post starts whole, so the first tap folds it.
+        // and a post starts whole, so the first tap folds it. A reel caption starts whole too (#268).
         probes.put(PatchFamily.FULL_POST_TEXT, Arrays.asList(
                 () -> FullPostText.cut(new SpannableString("x"), "a story") == null,
-                () -> !FullPostText.allowTruncation(true)));
+                () -> !FullPostText.allowTruncation(true),
+                () -> FullPostText.reelCaptionExpanded(false)));
         probes.put(PatchFamily.TRANSLATE_POSTS, Collections.singletonList(() -> {
             PostTranslationForTests.noNetwork();
             Spannable post = new SpannableString("Una frase en otro idioma");

@@ -2564,9 +2564,9 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_keep_post_dates", TRUE);
 
     /**
-     * Posts in the feed show their whole text instead of Facebook's cut with See more
-     * ({@link app.morphe.extension.facebook.feed.FullPostText}). A change shows on the posts drawn
-     * after it.
+     * Posts in the feed and reel captions show their whole text instead of Facebook's cut with See more
+     * ({@link app.morphe.extension.facebook.feed.FullPostText}). A change shows on the posts and reels
+     * drawn after it.
      */
     public static final BooleanSetting SHOW_FULL_POST_TEXT =
             new BooleanSetting("hushfacebook_show_full_post_text", FALSE);

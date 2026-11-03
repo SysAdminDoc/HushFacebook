@@ -20,6 +20,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -48,10 +49,18 @@ internal const val COMPONENT_SPEC = "FeedStoryContentWithExtensionComponentSpec"
 /** The state update a tap on a post's text sends, right before it names the component's class (585). */
 internal const val TOGGLE = "updateState:FeedStoryContentWithExtensionComponent.toggleAllowTruncation"
 
+/** The state update "more" on a reel caption sends, right before it names the caption's component (585). */
+internal const val CAPTION_TOGGLE = "updateState:FbShortsViewerDescriptionComponent.doTextExpansion"
+
 internal const val FULL_POST_TEXT = "Lapp/morphe/extension/facebook/feed/FullPostText;"
 internal const val CUT = "$FULL_POST_TEXT->cut(${SPANNABLE_STRING}Ljava/lang/Object;)$SPANNABLE_STRING"
 internal const val FIRST_STATE = "$FULL_POST_TEXT->allowTruncation(Z)Z"
 internal const val TAP = "$FULL_POST_TEXT->truncation(Ljava/lang/Object;Z)V"
+internal const val CAPTION_FIRST_STATE = "$FULL_POST_TEXT->reelCaptionExpanded(Z)Z"
+
+private const val BOOLEAN = "Ljava/lang/Boolean;"
+private const val BOOLEAN_VALUE = "$BOOLEAN->booleanValue()Z"
+private const val BOOLEAN_OF = "$BOOLEAN->valueOf(Z)$BOOLEAN"
 
 private val RETURNS = setOf(Opcode.RETURN, Opcode.RETURN_VOID, Opcode.RETURN_OBJECT, Opcode.RETURN_WIDE)
 
@@ -72,13 +81,18 @@ private val SWITCHES = setOf(Opcode.PACKED_SWITCH, Opcode.SPARSE_SWITCH)
  * through the extension, which starts it false while the switch is on, so the first tap folds the
  * post by Facebook's own path. Each flip goes through the extension with the post's story right
  * after it's stored, so it knows which posts were folded.
+ *
+ * A reel's caption (`FbShortsViewerDescriptionComponent`, 585 `LX/09as;`) keeps an "expanded" state
+ * that "more" flips through [CAPTION_TOGGLE]. Its first value is the component's prop (585 `A0G`),
+ * unless Facebook remembers that reel's caption from an earlier tap. The prop goes through the
+ * extension as it's read, so with the switch on a caption starts whole and a fold is still kept (#268).
  */
 @Suppress("unused")
 val showFullPostTextPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Show full post text",
-    description = "Shows all of a post's text in the feed, so you don't have to tap See more. A tap on the text " +
-        "folds it back. Starts off. Turn it on in Hushfacebook settings > News feed.",
+    description = "Shows all of a post's text in the feed, and a reel's caption, so you don't have to tap See more. " +
+        "A tap on the text folds it back. Starts off. Turn it on in Hushfacebook settings > News feed.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -110,6 +124,14 @@ val showFullPostTextPatch = bytecodePatch(
             """
                 iget-object v${fold.props}, v${fold.props}, ${cut.storyField}
                 invoke-static { v${fold.props}, v${fold.tapValue} }, $TAP
+            """,
+        )
+        val caption = findCaptionStart()
+        mutableClassDefBy(caption.method.definingClass).findMutableMethodOf(caption.method).addInstructions(
+            caption.index + 1,
+            """
+                invoke-static/range { v${caption.register} .. v${caption.register} }, $CAPTION_FIRST_STATE
+                move-result v${caption.register}
             """,
         )
         enableStatus("fullPostText")
@@ -306,14 +328,14 @@ private fun flipsOf(method: Method, field: FieldReference, propsType: String): L
     return (cast + 1 until code.size).filter { booleanSet(code[it])?.toString() == key }
 }
 
-/** The components named right after each [TOGGLE] in [method]. */
-private fun toggled(method: Method): List<String> {
+/** The components named right after each [toggle] in [method]. */
+private fun toggled(method: Method, toggle: String = TOGGLE): List<String> {
     val code = method.implementation!!.instructions.toList()
     return code.indices.filter { index ->
-        ((code[index] as? ReferenceInstruction)?.reference as? StringReference)?.string == TOGGLE
+        ((code[index] as? ReferenceInstruction)?.reference as? StringReference)?.string == toggle
     }.map { index ->
         val named = code.getOrNull(index + 1)
-        if (named?.opcode != Opcode.CONST_CLASS) refuse("${method.definingClass}->${method.name} names no component after \"$TOGGLE\"")
+        if (named?.opcode != Opcode.CONST_CLASS) refuse("${method.definingClass}->${method.name} names no component after \"$toggle\"")
         ((named as ReferenceInstruction).reference as TypeReference).type
     }
 }
@@ -381,3 +403,87 @@ internal fun BytecodePatchContext.findFold(storyField: FieldReference): Fold {
     if (props > 15 || set.registerA > 15) refuse("$tapWhere keeps its props v$props or state v${set.registerA} past v15")
     return Fold(first, firstIndex, firstValue, tap, tapIndex, set.registerA, props)
 }
+
+/** Where a reel caption's first "expanded" is read: instruction [index] of [method] reads the component's prop into [register]. */
+internal class CaptionStart(val method: Method, val index: Int, val register: Int)
+
+/** Whether [instruction] calls [reference]. */
+private fun calls(instruction: Instruction, reference: String) =
+    instruction.opcode in INVOKES && (instruction as ReferenceInstruction).reference.toString() == reference
+
+private val INVOKES = setOf(
+    Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_SUPER, Opcode.INVOKE_DIRECT, Opcode.INVOKE_STATIC, Opcode.INVOKE_INTERFACE,
+    Opcode.INVOKE_VIRTUAL_RANGE, Opcode.INVOKE_SUPER_RANGE, Opcode.INVOKE_DIRECT_RANGE, Opcode.INVOKE_STATIC_RANGE,
+    Opcode.INVOKE_INTERFACE_RANGE,
+)
+
+/** The first register [instruction] hands its call, or null. */
+private fun firstArgument(instruction: Instruction): Int? = when (instruction) {
+    is RegisterRangeInstruction -> instruction.startRegister.takeIf { instruction.registerCount > 0 }
+    is FiveRegisterInstruction -> instruction.registerC.takeIf { instruction.registerCount > 0 }
+    else -> null
+}
+
+/** Whether [method] reads [field] as a boolean, stores it, and flips a value with `xor 1`: a state update toggling it. */
+private fun toggles(method: Method, field: String): Boolean {
+    val code = method.implementation?.instructions?.toList() ?: return false
+    fun touches(opcode: Opcode) = code.any { it.opcode == opcode && (it as ReferenceInstruction).reference.toString() == field }
+    return touches(Opcode.IGET_BOOLEAN) && touches(Opcode.IPUT_BOOLEAN) &&
+        code.any { it.opcode == Opcode.XOR_INT_LIT8 && (it as NarrowLiteralInstruction).narrowLiteral == 1 }
+}
+
+/**
+ * Finds a reel caption's first "expanded". The component is the class named right after
+ * [CAPTION_TOGGLE] wherever it's sent, and one of its methods sets its state's first values. The
+ * caption's "expanded" is the one boolean stored there straight from a Boolean's `booleanValue()`,
+ * into a field a method of the state's class reads, flips (`xor 1`) and stores. That Boolean is the
+ * one `Boolean.valueOf` boxed last before it, and what it boxes starts as the component's one boolean
+ * prop the method reads, right there or through the move after it. The hook goes right after that
+ * read, so Facebook's own memory of a caption tapped before, which may replace it, still wins.
+ */
+internal fun BytecodePatchContext.findCaptionStart(): CaptionStart {
+    val components = methodsWithString(CAPTION_TOGGLE).flatMap { toggled(it, CAPTION_TOGGLE) }.toSet()
+    val component = components.singleOrNull()
+        ?: refuse("expected one component named after \"$CAPTION_TOGGLE\", found ${components.size}")
+    val owner = classDefByOrNull(component) ?: refuse("$component isn't in this build")
+    val unboxed = owner.methods.flatMap { method ->
+        val code = method.implementation?.instructions?.toList() ?: return@flatMap emptyList()
+        code.indices.filter { index ->
+            booleanSet(code[index])?.takeIf { it.definingClass != component } != null &&
+                index >= 2 && calls(code[index - 2], BOOLEAN_VALUE) && code[index - 1].opcode == Opcode.MOVE_RESULT &&
+                (code[index - 1] as OneRegisterInstruction).registerA == (code[index] as TwoRegisterInstruction).registerA
+        }.map { method to it }
+    }
+    val stores = unboxed.filter { (method, index) ->
+        val field = booleanSet(method.implementation!!.instructions.elementAt(index))!!
+        classDefByOrNull(field.definingClass)?.methods?.any { toggles(it, field.toString()) } == true
+    }
+    val (method, store) = stores.singleOrNull() ?: refuse(
+        "expected one state $component starts from a Boolean that its state class flips, found ${stores.size} of " +
+            unboxed.joinToString(prefix = "${unboxed.size} unboxed (", postfix = ")") { (method, index) ->
+                booleanSet(method.implementation!!.instructions.elementAt(index)).toString()
+            },
+    )
+    val code = method.implementation!!.instructions.toList()
+    val where = "${method.definingClass}->${method.name}"
+    val boxed = firstArgument(code[store - 2]) ?: refuse("$where unboxes no register before its caption state")
+    val boxing = (store - 3 downTo 1).firstOrNull { writes(code[it], boxed) }
+    if (boxing == null || code[boxing].opcode != Opcode.MOVE_RESULT_OBJECT || !calls(code[boxing - 1], BOOLEAN_OF)) {
+        refuse("$where doesn't box its caption state with Boolean.valueOf")
+    }
+    val value = firstArgument(code[boxing - 1])!!
+    val props = code.indices.filter { index ->
+        code[index].opcode == Opcode.IGET_BOOLEAN &&
+            ((code[index] as ReferenceInstruction).reference as FieldReference).definingClass == component
+    }
+    val read = props.singleOrNull() ?: refuse("expected $where to read one boolean prop of $component, found ${props.size}")
+    val register = (code[read] as TwoRegisterInstruction).registerA
+    val next = code.getOrNull(read + 1)
+    val carried = register == value || (next != null && next.opcode in MOVES &&
+        (next as TwoRegisterInstruction).registerB == register && next.registerA == value)
+    if (!carried) refuse("$where doesn't box its caption prop in v$register as its first state")
+    if (read + 1 in Flow(code, where).targets) refuse("$where jumps straight past where it reads its caption prop")
+    return CaptionStart(method, read, register)
+}
+
+private val MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)

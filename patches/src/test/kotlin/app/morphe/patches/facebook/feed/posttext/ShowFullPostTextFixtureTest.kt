@@ -7,11 +7,13 @@ package app.morphe.patches.facebook.feed.posttext
 import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
+import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -21,7 +23,10 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -40,6 +45,29 @@ internal fun foldTypes(found: List<Method>): Set<String> {
             .map { ((it as ReferenceInstruction).reference as FieldReference).definingClass }
     }
     return (marked.map { it.definingClass } + states).toSet()
+}
+
+/** Whether [method] sends the reel caption's "more" update, where the caption's component is named. */
+internal fun captionMarked(method: Method) = loadsString(method, CAPTION_TOGGLE)
+
+/** The components named right after [CAPTION_TOGGLE] in [found]. */
+internal fun captionComponents(found: List<Method>): Set<String> = found.filter(::captionMarked).flatMap { method ->
+    val code = method.implementation!!.instructions.toList()
+    code.indices.filter { ((code[it] as? ReferenceInstruction)?.reference as? StringReference)?.string == CAPTION_TOGGLE }
+        .map { ((code[it + 1] as ReferenceInstruction).reference as TypeReference).type }
+}.toSet()
+
+/** The classes whose booleans [components] set: their state classes. */
+internal fun captionStates(components: Collection<ClassDef>): Set<String> = components.flatMap { it.methods }.flatMap { method ->
+    method.implementation?.instructions?.toList().orEmpty().filter { it.opcode == Opcode.IPUT_BOOLEAN }
+        .map { ((it as ReferenceInstruction).reference as FieldReference).definingClass }
+}.toSet() - components.map { it.type }.toSet()
+
+/** The classes the caption's finder reads out of [bundle]: the update's senders, the component and its state classes. */
+internal fun captionTypes(bundle: File, found: List<Method>): Set<String> {
+    val components = captionComponents(found)
+    return found.filter(::captionMarked).map { it.definingClass }.toSet() + components +
+        captionStates(FixtureDex.classes(bundle, components).values)
 }
 
 /**
@@ -63,6 +91,11 @@ class ShowFullPostTextFixtureTest {
         ),
     )
 
+    /** Each declared build's reel caption component, by ABI. */
+    private val captionComponentOf = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to "LX/09as;", "armeabi-v7a" to "LX/09ax;"),
+    )
+
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
 
     private fun Instruction.names(call: String) = (this as? ReferenceInstruction)?.reference?.toString() == call
@@ -80,25 +113,55 @@ class ShowFullPostTextFixtureTest {
             for (bundle in bundles) {
                 val name = bundle.name
                 val found = FixtureDex.methodsWhere(bundle, { true }) {
-                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (cutShaped(it) || foldMarked(it))
+                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (cutShaped(it) || foldMarked(it) || captionMarked(it))
                 }
                 val methods = found.filter(::cutShaped)
                 assertEquals("$name: methods shaped like the text cut", 1, methods.size)
                 val cut = textCut(methods.single())
-                val classes = FixtureDex.classes(bundle, foldTypes(found) + cut.method.definingClass)
+                val abi = name.substringAfter("-$version-").substringBefore(".apkm")
+                val captionComponent = captionComponentOf[version]?.get(abi)
+                val components = captionComponents(found)
+                assertEquals("$name: the reel caption's component", setOf(captionComponent), components)
+                val states = captionStates(FixtureDex.classes(bundle, components).values)
+                val classes = FixtureDex.classes(bundle, foldTypes(found) + cut.method.definingClass + captionTypes(bundle, found))
+
+                // Negative control: without the state class that flips it, no caption state is taken.
+                val stateless = PatchContexts.of(classes.filterKeys { it !in states }.values.toList())
+                assertThrows("$name: a caption state was found with no state class flipping it", PatchException::class.java) {
+                    stateless.findCaptionStart()
+                }
                 val owner = classes.getValue(cut.method.definingClass)
                 val original = cut.method.code()
 
                 val context = PatchContexts.of((classes.values + ExtensionDex.classDef(SETTINGS_STATUS)).toList())
                 val fold = context.findFold(cut.storyField)
                 assertEquals("$name: where the cut and the post's state are kept",
-                    expected[version]?.get(name.substringAfter("-$version-").substringBefore(".apkm")),
+                    expected[version]?.get(abi),
                     Place(cut.method.definingClass, cut.register, cut.story, fold.first.definingClass, fold.tap.definingClass))
                 assertEquals("$name: the story's field", "Ljava/lang/Object;", cut.storyField.type)
                 val firstOriginal = fold.first.code()
                 val tapOriginal = fold.tap.code()
+                val caption = context.findCaptionStart()
+                assertEquals("$name: the caption's first state is set by its component", captionComponent, caption.method.definingClass)
+                val captionOriginal = caption.method.code()
+                val prop = captionOriginal[caption.index]
+                assertEquals("$name: the caption's prop is read", Opcode.IGET_BOOLEAN, prop.opcode)
+                assertEquals(captionComponent, ((prop as ReferenceInstruction).reference as FieldReference).definingClass)
 
                 showFullPostTextPatch.execute(context)
+
+                // A reel caption's first "expanded" goes through the extension right after the prop is read.
+                val captionPatched = context.mutableClassDefBy(caption.method.definingClass).methods.single {
+                    it.name == caption.method.name && it.parameterTypes == caption.method.parameterTypes
+                }.code()
+                assertEquals("$name: two instructions for the caption", captionOriginal.size + 2, captionPatched.size)
+                val captionCall = captionPatched[caption.index + 1]
+                assertTrue("$name: the caption's prop goes through the extension", captionCall.names(CAPTION_FIRST_STATE))
+                assertEquals(caption.register to 1, (captionCall as RegisterRangeInstruction).let { it.startRegister to it.registerCount })
+                assertEquals(Opcode.MOVE_RESULT, captionPatched[caption.index + 2].opcode)
+                assertEquals(caption.register, (captionPatched[caption.index + 2] as OneRegisterInstruction).registerA)
+                assertEquals("$name: the rest of the caption's first state is Facebook's",
+                    captionOriginal.map { it.opcode }, captionPatched.filterIndexed { at, _ -> at != caption.index + 1 && at != caption.index + 2 }.map { it.opcode })
 
                 val patched = context.mutableClassDefBy(owner.type).methods.single {
                     it.name == cut.method.name && it.parameterTypes == cut.method.parameterTypes

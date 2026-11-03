@@ -884,7 +884,7 @@ The phone's language	O idioma do celular
 Languages to leave alone	Idiomas que não são traduzidos
 None picked. Posts in every language can be translated.	Nenhum escolhido. Publicações em qualquer idioma podem ser traduzidas.
 Left alone: %s	Não traduzidos: %s
-Posts in the feed show all of their text, so there's no See more to tap. Tap a post's text to fold it back.	As publicações do feed mostram todo o texto, então não precisa tocar em Ver mais. Toque no texto de uma publicação para recolhê-lo de novo.
+Posts in the feed and captions on reels show all of their text, so there's no See more to tap. Tap the text to fold it back.	As publicações do feed e as legendas dos reels mostram todo o texto, então não precisa tocar em Ver mais. Toque no texto para recolhê-lo de novo.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Ver quem compartilhou
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Adiciona Ver quem compartilhou ao menu de uma publicação. Abre a lista do Facebook com as pessoas que a compartilharam.
