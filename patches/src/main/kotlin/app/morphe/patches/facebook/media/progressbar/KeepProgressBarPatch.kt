@@ -87,9 +87,6 @@ internal const val FOOTER_SEEKING = "SHOW_VIDEO_SETTINGS"
 internal const val FOOTER_HIDDEN = "HIDE_FOOTER"
 internal const val FOOTER_CLEAR = "CLEAR_MODE"
 
-/** How long, in ms, the kept bar waits between moves: about a frame, where Facebook's default is 100. */
-internal const val SMOOTH_FRAME_DELAY_MS = 16
-
 internal const val TEXT_VIEW_SET_TEXT = "Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V"
 
 /** A kept class whose superclass is the full-screen video controls every such player builds on. */
@@ -132,6 +129,7 @@ internal const val HAS_BAR = "$PROGRESS_BAR->hasBar(ZI)Z"
 internal const val REFRESHES_TIME = "$PROGRESS_BAR->refreshesTime(Landroid/view/ViewGroup;Landroid/view/View;)Z"
 internal const val NEXT_REEL = "$PROGRESS_BAR->nextReel(Landroid/view/ViewGroup;Landroid/view/View;)V"
 internal const val SMOOTHS_BAR = "$PROGRESS_BAR->smoothsBar()Z"
+internal const val BAR_WAIT_MS = "$PROGRESS_BAR->barWaitMs()J"
 internal const val LIFTS_FOOTER = "$PROGRESS_BAR->liftsFooter()Z"
 internal const val FOOTER_MADE = "$PROGRESS_BAR->footerMade(Ljava/lang/Object;)V"
 
@@ -2284,8 +2282,9 @@ internal fun MutableMethod.looksAgainFirst(looks: ScrubberLooks, at: Int) {
 
 /**
  * First thing in the wait before the scrubber's next progress update: while the extension keeps
- * the bar, answer [SMOOTH_FRAME_DELAY_MS], so the bar moves about once a frame instead of in steps.
- * Otherwise Facebook's own code runs from its first instruction.
+ * the bar, answer the extension's [BAR_WAIT_MS], so the bar moves in pixel-sized steps instead of
+ * Facebook's 100 ms ones, at most 30 times a second (#364). Otherwise Facebook's own code runs from
+ * its first instruction.
  */
 internal fun MutableMethod.smoothWhileKept() {
     requireLocals(PATCH, 2)
@@ -2295,7 +2294,8 @@ internal fun MutableMethod.smoothWhileKept() {
             invoke-static { }, $SMOOTHS_BAR
             move-result v0
             if-eqz v0, :facebook
-            const-wide/16 v0, $SMOOTH_FRAME_DELAY_MS
+            invoke-static { }, $BAR_WAIT_MS
+            move-result-wide v0
             return-wide v0
         """,
         ExternalLabel("facebook", getInstruction(0)),

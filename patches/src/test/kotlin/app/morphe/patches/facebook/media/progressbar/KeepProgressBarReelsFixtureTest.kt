@@ -25,7 +25,6 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ThreeRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
-import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
@@ -404,7 +403,7 @@ class KeepProgressBarReelsFixtureTest {
     }
 
     @Test
-    fun `each declared build moves the kept bar about once a frame`() = bundles { bundle ->
+    fun `each declared build moves the kept bar at the extension's wait`() = bundles { bundle ->
         val name = bundle.name
         val progress = scrubber(bundle).progress
         val base = progress.base
@@ -421,16 +420,17 @@ class KeepProgressBarReelsFixtureTest {
         val original = method.code()
         method.smoothWhileKept()
         val patched = method.code()
-        assertEquals("$where gains five instructions", original.size + 5, patched.size)
+        assertEquals("$where gains six instructions", original.size + 6, patched.size)
         assertEquals("$where: the extension is asked first", SMOOTHS_BAR, patched[0].reference())
         val register = (patched[1] as OneRegisterInstruction).registerA
         assertTrue("$where: the hook writes v$register and the next, which aren't locals", register + 1 < method.localRegisterCount())
         assertEquals("$where: a no goes on to Facebook", Opcode.IF_EQZ, patched[2].opcode)
-        assertEquals("$where: a yes waits a frame", SMOOTH_FRAME_DELAY_MS.toLong(), (patched[3] as WideLiteralInstruction).wideLiteral)
-        assertEquals("$where: as a long", Opcode.CONST_WIDE_16, patched[3].opcode)
-        assertEquals("$where: and returns it", Opcode.RETURN_WIDE, patched[4].opcode)
-        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(5).map { it.opcode })
-        assertEquals("$where: a no lands on Facebook's first instruction", setOf(3, 5), ControlFlow.of(method).normal[2].toSet())
+        assertEquals("$where: a yes asks the extension how long to wait", BAR_WAIT_MS, patched[3].reference())
+        assertEquals("$where: as a long", Opcode.MOVE_RESULT_WIDE, patched[4].opcode)
+        assertEquals("$where: into the same pair", register, (patched[4] as OneRegisterInstruction).registerA)
+        assertEquals("$where: and returns it", Opcode.RETURN_WIDE, patched[5].opcode)
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(6).map { it.opcode })
+        assertEquals("$where: a no lands on Facebook's first instruction", setOf(3, 6), ControlFlow.of(method).normal[2].toSet())
     }
 
     @Test

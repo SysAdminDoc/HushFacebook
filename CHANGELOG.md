@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** With `Keep the progress bar` on, a playing reel no longer redraws the whole screen every frame. The bar moves about a pixel at a time and at most 30 times a second, and a long reel's bar moves only as often as Facebook's own does. On the S22 the screen used to redraw about 55 times a second for as long as a reel played, and Pause showed none of that. `Fix washed-out video colors` now says it can make videos stutter, mostly high frame rate ones. (#364)
 * **Facebook:** `Hide For you in search` now also hides the For you grid when Facebook sends the search page without saying which section is which. That happens on the page Facebook loads ahead of time when the app starts, from Home or any other tab. In that case Hushfacebook reads the section's name from the page's own layout, and Debug logging lists the names it found. (#285)
 * **Facebook:** `Turn off auto-translation` now covers comments too. With it on, a comment Facebook translated by itself shows in the words its writer used, and See translation under it still translates it when you tap. (#372)
 * **Tooling:** `scripts/gen-l10n.py` writes each language's table to a class of its own, since the one generated file had grown past the size lint will read. The release check also stops counting Russian plural rows as missing from the other tables when their English runs over more than one line.

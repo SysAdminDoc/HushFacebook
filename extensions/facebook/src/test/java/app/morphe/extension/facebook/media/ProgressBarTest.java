@@ -186,6 +186,34 @@ public class ProgressBarTest {
                 + ProgressBar.FOOTER_LIFTED + " 1, " + ProgressBar.BAR_SMOOTHED + " 1", statusLine());
     }
 
+    /**
+     * The kept bar moves a pixel at a time and no more than 30 times a second, so a playing reel
+     * doesn't redraw the Reels window every frame (#364): a 1080 px wide bar on a 15 s or 30 s reel
+     * waits 33 ms, a minute-long reel 55 ms, and from 108 s on Facebook's own 100 ms.
+     */
+    @Test
+    public void theKeptBarWaitsAboutAPixelOfTheReelButNoLessThanTwoFrames() {
+        assertEquals(33, ProgressBar.barWaitMs(15_000, 1080));
+        assertEquals(33, ProgressBar.barWaitMs(30_000, 1080));
+        assertEquals(55, ProgressBar.barWaitMs(60_000, 1080));
+        assertEquals(100, ProgressBar.barWaitMs(108_000, 1080));
+        assertEquals(100, ProgressBar.barWaitMs(600_000, 1080));
+        assertEquals("an unknown length still waits two frames", 33, ProgressBar.barWaitMs(0, 1080));
+        assertEquals(33, ProgressBar.barWaitMs(60_000, 0));
+    }
+
+    /** The wait follows the reel Facebook last built bar info for, which the time's start doesn't use up. */
+    @Test
+    public void theKeptBarsWaitFollowsTheReelsLength() {
+        ProgressBar.forgetHandOversForTests();
+        int width = android.content.res.Resources.getSystem().getDisplayMetrics().widthPixels;
+        assertEquals("no reel yet", ProgressBar.BAR_WAIT_MIN_MS, ProgressBar.barWaitMs());
+        ProgressBar.hasBar(true, 200 * width);
+        assertEquals("a long reel waits Facebook's own 100 ms", ProgressBar.BAR_WAIT_MAX_MS, ProgressBar.barWaitMs());
+        ProgressBar.hasBar(true, 40 * width);
+        assertEquals(40, ProgressBar.barWaitMs());
+    }
+
     /** The next reel starts without the last one's graph and chapter marks only while the bar is kept. */
     @Test
     public void theNextReelIsClearedOnlyWhileTheBarIsKept() {

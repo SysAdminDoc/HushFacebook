@@ -372,7 +372,7 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.DRAW_VIDEOS_WITH_THE_SCREEN,
                         L10n.t("Videos and reels draw together with the rest of the screen, like Disable HW overlays "
                                 + "in developer options. Try it if reels look pale until something covers them. "
-                                + "Uses a little more battery.")));
+                                + "Uses a little more battery and can make videos stutter, mostly high frame rate ones.")));
             }
             subheading(playback, L10n.t("Sound"));
             if (build.contains(PatchFamily.SKIP_SILENCE)) {

@@ -4,6 +4,7 @@
  */
 package app.morphe.extension.facebook.media;
 
+import android.content.res.Resources;
 import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
@@ -92,8 +93,22 @@ public final class ProgressBar {
     /** Counted each time a time label Facebook left hidden is put back while the bar shows. */
     static final String TIME_LABEL_BACK = "Reel time label put back";
 
-    /** Counted each time the kept bar's next move is set a frame away instead of Facebook's wait. */
-    static final String BAR_SMOOTHED = "Reel bar moved every frame";
+    /** Counted each time the kept bar's next move is set by {@link #barWaitMs} instead of Facebook's wait. */
+    static final String BAR_SMOOTHED = "Reel bar moved smoothly";
+
+    /**
+     * The kept bar's shortest wait between moves, in ms, so it moves at most 30 times a second.
+     * Every move redraws the Reels window: at a frame's wait (16 ms) the window drew about 55 times a
+     * second for as long as a reel played on the S22, where Pause and Facebook's own bar draw it a
+     * few times a second (#364).
+     */
+    static final long BAR_WAIT_MIN_MS = 33;
+
+    /** The kept bar's longest wait between moves, in ms: Facebook's own. */
+    static final long BAR_WAIT_MAX_MS = 100;
+
+    /** The length, in ms, of the reel Facebook's bar info builder ran for last, or 0. Never taken. */
+    private static volatile int barLengthMs;
 
     /** Counted each time a reel's footer is kept in its paused layout, with the caption above the bar. */
     static final String FOOTER_LIFTED = "Reel caption kept above the bar";
@@ -350,6 +365,7 @@ public final class ProgressBar {
         lastBar = null;
         lastShown = null;
         lastBarInfo = null;
+        barLengthMs = 0;
         missedHandOver = null;
     }
 
@@ -1057,6 +1073,7 @@ public final class ProgressBar {
         if (lengthMs > 0) {
             try {
                 lastBarInfo = new BarInfo(lengthMs, SystemClock.uptimeMillis(), Thread.currentThread());
+                barLengthMs = lengthMs;
                 if (lengthMs != lastLoggedLengthMs && Utils.settingsReady()) {
                     lastLoggedLengthMs = lengthMs;
                     Logger.printDebug(() -> "Reel bar: bar info built for a reel of " + lengthMs + " ms");
@@ -1128,11 +1145,31 @@ public final class ProgressBar {
 
     /**
      * The hook, first thing in the wait before the scrubber's next progress update. Facebook waits
-     * 100 ms, so the bar jumps along in steps. True has the patch wait about a frame instead, so the
-     * kept bar moves smoothly; false keeps Facebook's wait.
+     * 100 ms, so the bar jumps along in steps. True has the patch wait {@link #barWaitMs} instead, so
+     * the kept bar moves smoothly; false keeps Facebook's wait.
      */
     public static boolean smoothsBar() {
         return keeps("smooth reel bar", BAR_SMOOTHED);
+    }
+
+    /**
+     * The hook right after a yes from {@link #smoothsBar}: how long the kept bar waits before its
+     * next move. About as long as the reel takes to move a full-width bar by one pixel, so a long
+     * reel isn't redrawn more often than its bar can show it, held between {@link #BAR_WAIT_MIN_MS}
+     * and {@link #BAR_WAIT_MAX_MS}.
+     */
+    public static long barWaitMs() {
+        try {
+            return barWaitMs(barLengthMs, Resources.getSystem().getDisplayMetrics().widthPixels);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "smooth reel bar", failure);
+            return BAR_WAIT_MAX_MS;
+        }
+    }
+
+    static long barWaitMs(int lengthMs, int widthPx) {
+        if (lengthMs <= 0 || widthPx <= 0) return BAR_WAIT_MIN_MS;
+        return Math.max(BAR_WAIT_MIN_MS, Math.min(BAR_WAIT_MAX_MS, (long) lengthMs / widthPx));
     }
 
     /**

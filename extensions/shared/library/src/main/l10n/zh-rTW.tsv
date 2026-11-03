@@ -2364,7 +2364,7 @@ The Subscribe button some authors get there instead, which subscribes with one t
 # context: switch title under Play SDR versions of HDR videos; washed-out means pale, faded colors
 Fix washed-out video colors	修正影片顏色泛白
 # context: summary under that switch; Disable HW overlays and developer options are Android's own setting names, use the names Android shows in this language
-Videos and reels draw together with the rest of the screen, like Disable HW overlays in developer options. Try it if reels look pale until something covers them. Uses a little more battery.	影片和 Reels 會與螢幕其他部分一起繪製，效果同開發人員選項中的「停用 HW 重疊圖層」。如果 Reels 在被其他東西蓋住之前一直顯得泛白，可以試試。會多耗一點電。
+Videos and reels draw together with the rest of the screen, like Disable HW overlays in developer options. Try it if reels look pale until something covers them. Uses a little more battery and can make videos stutter, mostly high frame rate ones.	影片和 Reels 會與螢幕其他部分一起繪製，效果同開發人員選項中的「停用 HW 重疊圖層」。如果 Reels 在被其他東西蓋住之前一直顯得泛白，可以試試。會多耗一點電。影片可能會卡頓，尤其是高影格率影片。
 # context: Reels and Watch: title of the list that fades a full-screen video's buttons while the screen sits untouched, so they don't burn into an OLED screen (#288)
 Burn-in guard	防烙印保護
 Dim when idle	閒置時淡化
