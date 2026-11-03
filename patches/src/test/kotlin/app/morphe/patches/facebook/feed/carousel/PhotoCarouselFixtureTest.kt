@@ -50,6 +50,7 @@ class PhotoCarouselFixtureTest {
     @After
     fun forgetTheLastMatch() {
         AlbumLayoutNamesFingerprint.clearMatch()
+        CarouselPhotoFingerprint.clearMatch()
     }
 
     private fun Instruction.methodRef() = (this as? ReferenceInstruction)?.reference as? MethodReference
@@ -98,8 +99,16 @@ class PhotoCarouselFixtureTest {
                     assertEquals("$name: the table names the poster's layout $layout once", 1, strings.count { it.endsWith(layout) })
                 }
 
-                val classes = FixtureDex.classes(bundle, setOf(table.definingClass))
+                val photos = FixtureDex.methodsWhere(bundle, { dex -> dex.stringSection.any { it == CAROUSEL_PHOTO } }) {
+                    it.name == "render" && holds(it, CAROUSEL_PHOTO) && holds(it, "multi_media_photo")
+                }
+                assertEquals("$name: the row's photo", 1, photos.size)
+                val photo = photos.single().definingClass
+
+                val classes = FixtureDex.classes(bundle, setOf(table.definingClass, photo, RECYCLER_VIEW))
                 val holder = classes.getValue(table.definingClass)
+                val rowDraw = classes.getValue(RECYCLER_VIEW).methods.single(::isRowDraw)
+                val drawBefore = rowDraw.code()
                 val layouts = albumLayouts(table, holder)
                 val original = layouts.applies
                 val before = original.code()
@@ -150,6 +159,24 @@ class PhotoCarouselFixtureTest {
                 val ours = (0..6).toSet() + setOf(answer + 1, answer + 2)
                 assertEquals("$name: Facebook's own code is unchanged", withoutNops(before),
                     withoutNops(after.filterIndexed { index, _ -> index !in ours }))
+
+                // ---- the count: the photo's class name to the extension, the row's draw to it -----
+                val stub = context.mutableClassDefBy(PHOTO_CAROUSEL).methods.single { it.name == "photoClass" }.code()
+                assertEquals("$name: photoClass() answers the row's photo", javaName(photo),
+                    ((stub[0] as ReferenceInstruction).reference as StringReference).string)
+                assertEquals(Opcode.RETURN_OBJECT, stub[1].opcode)
+
+                val drawAfter = context.mutableClassDefBy(RECYCLER_VIEW).methods.single(::isRowDraw).code()
+                val returns = drawAfter.indices.filter { drawAfter[it].opcode == Opcode.RETURN_VOID }
+                assertTrue("$name: RecyclerView.draw returns", returns.isNotEmpty())
+                for (at in returns) {
+                    val call = drawAfter[at - 1] as RegisterRangeInstruction
+                    assertEquals("$name: the count is drawn right before each return", DRAW_COUNT, drawAfter[at - 1].methodRef().toString())
+                    assertEquals("$name: handed the row and its canvas", listOf(rowDraw.implementation!!.registerCount - 2, 2),
+                        listOf(call.startRegister, call.registerCount))
+                }
+                assertEquals("$name: the rest of RecyclerView.draw is androidx's", withoutNops(drawBefore),
+                    withoutNops(drawAfter.filterIndexed { index, _ -> index + 1 !in returns }))
 
                 val status = context.mutableClassDefBy(SETTINGS_STATUS).methods.single { it.name == "photoCarousel" }
                 assertEquals("$name: SettingsStatus.photoCarousel() isn't switched on", 1,

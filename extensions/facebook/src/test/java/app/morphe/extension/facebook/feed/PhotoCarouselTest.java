@@ -4,8 +4,14 @@
  */
 package app.morphe.extension.facebook.feed;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.view.View;
+import android.widget.FrameLayout;
 
 import org.junit.After;
 import org.junit.Before;
@@ -13,6 +19,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -106,5 +113,67 @@ public class PhotoCarouselTest {
         assertFalse("before the settings", answers[0]);
         assertFalse("before the settings", answers[1]);
         assertFalse("nothing was let in", statusLine().contains(PhotoCarousel.LET_IN));
+    }
+
+    @Test
+    public void aRowsPhotoIsKnownByTheClassNameLithoViewsTextEndsWith() {
+        String view = "com.facebook.litho.LithoView{36d1429 VFED..C.. ........ 0,0-950,760}";
+        assertTrue(PhotoCarousel.isPhotoText(view + "<cls>X.0cNH</cls>", "X.0cNH"));
+        assertTrue("a simple name Redex left alone", PhotoCarousel.isPhotoText(view + "X.0cNH", "X.0cNH"));
+        assertFalse("the end card", PhotoCarousel.isPhotoText(view + "<cls>X.0cM6</cls>", "X.0cNH"));
+        assertFalse("a longer name", PhotoCarousel.isPhotoText(view + "<cls>X.0cNHa</cls>", "X.0cNH"));
+        assertFalse("a feed post", PhotoCarousel.isPhotoText(view + "LoggingComponent(NewsFeedFeedUnitComponent)", "X.0cNH"));
+    }
+
+    @Test
+    public void theCurrentPhotoIsTheOneMostOfTheRowShows() {
+        // The 585 row on a 1080 px screen: 950 px photos 974 px apart, the next one peeking in.
+        assertEquals("the first photo, settled", 0,
+                PhotoCarousel.current(new int[]{0, 974}, new int[]{950, 1924}, 2, 1080, 0, 4));
+        assertEquals("most of the way to the second", 1,
+                PhotoCarousel.current(new int[]{-600, 374}, new int[]{350, 1324}, 2, 1080, 0, 4));
+        assertEquals("the items in any order", 1,
+                PhotoCarousel.current(new int[]{374, -600}, new int[]{1324, 350}, 2, 1080, 0, 4));
+        assertEquals("the last of ten, the one before it peeking", 9,
+                PhotoCarousel.current(new int[]{-844, 130}, new int[]{106, 1080}, 2, 1080, 8, 10));
+        assertEquals("never past the end", 3,
+                PhotoCarousel.current(new int[]{0, 974}, new int[]{950, 1924}, 2, 1080, 3, 4));
+        assertEquals("a row of one", -1, PhotoCarousel.current(new int[]{0}, new int[]{950}, 1, 1080, 0, 1));
+        assertEquals("a row that reports nothing", -1,
+                PhotoCarousel.current(new int[]{0, 974}, new int[]{950, 1924}, 2, 1080, -1, -1));
+        assertEquals("nothing shown", -1, PhotoCarousel.current(new int[0], new int[0], 0, 1080, 0, 4));
+    }
+
+    @Test
+    public void theCountReadsLikeTheReportersAndTheDotsFollowAlong() {
+        assertEquals("4/10", PhotoCarousel.label(3, 10));
+        assertEquals("1/2", PhotoCarousel.label(0, 2));
+
+        assertEquals("all four fit", 0, PhotoCarousel.firstDot(3, 4, PhotoCarousel.MAX_DOTS));
+        assertEquals("the start of a long row", 0, PhotoCarousel.firstDot(1, 50, PhotoCarousel.MAX_DOTS));
+        assertEquals("the middle keeps the current dot centred", 17, PhotoCarousel.firstDot(20, 50, PhotoCarousel.MAX_DOTS));
+        assertEquals("the end", 43, PhotoCarousel.firstDot(49, 50, PhotoCarousel.MAX_DOTS));
+    }
+
+    @Test
+    public void eachPhotoShownIsNumberedLeftToRight() {
+        Integer[] order = PhotoCarousel.byLeft(new int[]{974, -500, 0, 9999}, 3);
+        assertEquals("only the shown places", 3, order.length);
+        assertEquals("the one scrolled half out first", 1, (int) order[0]);
+        assertEquals(2, (int) order[1]);
+        assertEquals("the one peeking last", 0, (int) order[2]);
+    }
+
+    @Test
+    public void aListThatDoesntScrollSidewaysGetsNothingDrawn() {
+        Settings.PHOTO_CAROUSEL.save(true);
+        FrameLayout list = new FrameLayout(RuntimeEnvironment.getApplication());
+        list.addView(new View(list.getContext()));
+        list.layout(0, 0, 1080, 2000);
+        Bitmap bitmap = Bitmap.createBitmap(1080, 2000, Bitmap.Config.ARGB_8888);
+        PhotoCarousel.drawCount(list, new Canvas(bitmap));
+        assertEquals("nothing drawn", 0, bitmap.getPixel(1000, 40));
+        assertFalse(statusLine(), statusLine().contains(PhotoCarousel.COUNT_SHOWN));
+        assertFalse(statusLine(), statusLine().contains("threw"));
     }
 }

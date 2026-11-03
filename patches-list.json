@@ -2992,7 +2992,7 @@
     },
     {
       "name": "Photo carousel",
-      "description": "Shows a post's photos and videos in a row you swipe through, one at a time, instead of a grid. Starts off. Turn it on in Hushfacebook settings > News feed.",
+      "description": "Shows a post's photos and videos in a row you swipe through, one at a time with a 4/10 count and dots, instead of a grid. Starts off. Turn it on in Hushfacebook settings > News feed.",
       "category": "Feed",
       "use": true,
       "dependencies": [

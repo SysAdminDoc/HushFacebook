@@ -136,7 +136,7 @@ Each row says what the patch does, how its switch starts and which settings sect
 | `Show full post text` | Shows all of a post's text in the feed, so you don't have to tap See more. A tap on the text folds it back. Starts off. Turn it on in Hushfacebook settings > News feed. |
 | `Translate posts` | Translates posts in another language through Google Translate, from a Translate line under the post or by themselves. Starts off. Turn it on in Hushfacebook settings > News feed. |
 | `See who shared` | Adds See who shared to a post's menu, which opens Facebook's list of the people who shared it. Starts off. Turn it on in Hushfacebook settings > News feed. |
-| `Photo carousel` | Shows a post's photos and videos in a row you swipe through, one at a time, instead of a grid. Starts off. Turn it on in Hushfacebook settings > News feed. |
+| `Photo carousel` | Shows a post's photos and videos in a row you swipe through, one at a time with a 4/10 count and dots, instead of a grid. Starts off. Turn it on in Hushfacebook settings > News feed. |
 | `Turn off auto-translation` | Shows posts and reel captions in the language they were written in, instead of Facebook's automatic translation, so you read people's own words. See translation still works. Starts off. Turn it on in Hushfacebook settings > News feed. |
 | `Hide sponsored posts` | Removes sponsored and promoted posts from the news feed, with no gap left behind, so you see fewer ads. It also keeps the floating ad button off an ad's comments. On by default. Turn it off in Hushfacebook settings > News feed. |
 | `Hide sponsored profile posts` | Removes the ads between posts on someone's profile or a Page, so you only see what they posted. On by default. Turn it off in Hushfacebook settings > News feed. |

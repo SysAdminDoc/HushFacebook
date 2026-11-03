@@ -8,9 +8,11 @@ import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
+import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.addressed
 import app.morphe.patches.facebook.feed.switchTarget
 import app.morphe.patches.facebook.feed.tableIndices
@@ -20,6 +22,8 @@ import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -42,6 +46,66 @@ internal const val LET_CAROUSEL_IN = "$PHOTO_CAROUSEL->carousel(I)Z"
 
 /** The extension's answer to whether an album layout is passed over, handed its name. */
 internal const val SKIP_LAYOUT = "$PHOTO_CAROUSEL->skipLayout(Ljava/lang/String;)Z"
+
+/** The name Facebook gives the photo in the swipeable row, in that photo's render. */
+internal const val CAROUSEL_PHOTO = "MultimediaHScrollPhotoComponent"
+
+internal const val RECYCLER_VIEW = "Landroidx/recyclerview/widget/RecyclerView;"
+
+private const val CANVAS = "Landroid/graphics/Canvas;"
+
+/** The extension's count over a row, handed each RecyclerView and its canvas once the row has drawn. */
+internal const val DRAW_COUNT = "$PHOTO_CAROUSEL->drawCount(Landroid/view/ViewGroup;$CANVAS)V"
+
+/**
+ * The photo in the swipeable row: the render of the Litho component that names it, `LX/0cNH;` in
+ * 585. A lambda and a name table hold the name too, and neither is a render.
+ */
+internal object CarouselPhotoFingerprint : Fingerprint(
+    strings = listOf(CAROUSEL_PHOTO, "multi_media_photo"),
+    custom = { method, _ -> method.name == "render" && method.parameterTypes.size == 1 },
+)
+
+/** [type] as Java names the class, `X.0cNH` for `LX/0cNH;`. */
+internal fun javaName(type: String) = type.removePrefix("L").removeSuffix(";").replace('/', '.')
+
+/** Whether [method] is RecyclerView's own draw(Canvas). */
+internal fun isRowDraw(method: Method) =
+    method.name == "draw" && method.returnType == "V" &&
+        method.parameterTypes.map(CharSequence::toString) == listOf(CANVAS) &&
+        !AccessFlags.STATIC.isSet(method.accessFlags) && method.implementation != null
+
+/**
+ * Calls [DRAW_COUNT] last thing in androidx's RecyclerView.draw, before each return, so the count
+ * goes over a row's photos and anything its decorations drew. Litho's row inherits that draw, and a
+ * scroll draws it again. The names are Android's and androidx's, so Redex keeps them.
+ */
+internal fun BytecodePatchContext.hookRowDraw() {
+    val recycler = mutableClassDefByOrNull(RECYCLER_VIEW) ?: throw PatchException("$PATCH: this build has no $RECYCLER_VIEW")
+    val draws = recycler.methods.filter(::isRowDraw)
+    val draw = draws.singleOrNull()
+        ?: throw PatchException("$PATCH: expected $RECYCLER_VIEW to declare one draw($CANVAS)V, found ${draws.size}")
+    val code = draw.implementation!!.instructions.toList()
+    // The row and the canvas are p0 and p1, next to each other, so the range form passes both
+    // without borrowing a register, as long as the method never reuses either.
+    val self = draw.implementation!!.registerCount - 2
+    if (code.any { writesRegister(it, self) || writesRegister(it, self + 1) }) {
+        throw PatchException("$PATCH: $RECYCLER_VIEW's draw writes its row or canvas register")
+    }
+    val returns = code.indices.filter { code[it].opcode == Opcode.RETURN_VOID }
+    if (returns.isEmpty()) throw PatchException("$PATCH: $RECYCLER_VIEW's draw never returns")
+    // At the label, so a branch to the return draws the count too. Last first, as each insert
+    // moves the later indices.
+    returns.asReversed().forEach { draw.addInstructionsAtControlFlowLabel(it, "invoke-static/range { p0 .. p1 }, $DRAW_COUNT") }
+}
+
+/** Fills in PhotoCarousel.photoClass with the class name of the row's photo. */
+internal fun BytecodePatchContext.fillPhotoClass(photo: String) {
+    val stub = mutableClassDefBy(PHOTO_CAROUSEL).methods.singleOrNull {
+        it.name == "photoClass" && it.parameterTypes.isEmpty() && it.returnType == "Ljava/lang/String;"
+    } ?: throw PatchException("$PATCH: PhotoCarousel has no photoClass() for the photo count")
+    stub.returnEarly(javaName(photo))
+}
 
 /**
  * The name table of Facebook's album layouts: a static (int) method answering each layout's class
@@ -123,7 +187,8 @@ internal fun albumLayouts(names: Method, holder: ClassDef): AlbumLayouts {
 val photoCarouselPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Photo carousel",
-    description = "Shows a post's photos and videos in a row you swipe through, one at a time, instead of a grid. " +
+    description = "Shows a post's photos and videos in a row you swipe through, one at a time with a 4/10 count and dots, " +
+        "instead of a grid. " +
         "Starts off. Turn it on in Hushfacebook settings > News feed.",
 ) {
     category("Feed")
@@ -162,6 +227,9 @@ val photoCarouselPatch = bytecodePatch(
             """,
             ExternalLabel("facebook", applies.getInstruction(0)),
         )
+
+        fillPhotoClass(CarouselPhotoFingerprint.method.definingClass)
+        hookRowDraw()
         enableStatus("photoCarousel")
     }
 }
