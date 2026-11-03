@@ -584,6 +584,38 @@ class SharedPermissionsFixtureTest {
     }
 
     /**
+     * Each declared build's in-app browser binds its renderers in the running app: the one
+     * getPackageName() answering Facebook's package for this app goes through the extension, and it
+     * belongs to the connection that names the browser's SandboxedProcessService.
+     */
+    @Test
+    fun eachDeclaredBuildsBrowserRenderersBindInTheRunningApp() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val holders = FixtureDex.classesHolding(bundle, FACEBOOK)
+                val context = PatchContexts.of(holders)
+                assertEquals("${bundle.name}: getPackageName answers routed", OWN_PACKAGE_NAME_ANSWERS.getValue(version),
+                    context.routeOwnPackageNameAnswers(FACEBOOK))
+
+                val routed = holders.map { context.mutableClassDefBy(it.type) }.filter { owner ->
+                    owner.methods.any { method ->
+                        method.name == "getPackageName" &&
+                            method.instructions().any { (it as? ReferenceInstruction)?.reference?.toString() == PACKAGE_CALL }
+                    }
+                }
+                assertEquals("${bundle.name}: classes answering through the extension", 1, routed.size)
+                val strings = routed.single().methods.flatMap { it.instructions() }.mapNotNull { it.loadedString() }
+                assertTrue("${bundle.name}: the routed answer is the browser's renderer connection: $strings",
+                    SANDBOXED_PROCESS_SERVICE in strings)
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /**
      * The call [instruction] makes if it's one that can mean this app when handed Facebook's
      * package ([OWNER_ARGUMENTS]) and [register] goes in that argument, else null.
      */
@@ -725,6 +757,16 @@ class SharedPermissionsFixtureTest {
 
         /** Of those, the ones in Firebase's notification code. */
         val FIREBASE_LOADS = mapOf(AppCompatibilities.FACEBOOK_TARGET_VERSION to 9)
+
+        /**
+         * getPackageName() overrides answering Facebook's package for the running app, per build: the
+         * in-app browser's renderer connection (arm64 585 LX/0BpS, 2026-11-02). Meta's app table, the
+         * other override loading it, answers from a switch and keeps it.
+         */
+        val OWN_PACKAGE_NAME_ANSWERS = mapOf(AppCompatibilities.FACEBOOK_TARGET_VERSION to 1)
+
+        /** The in-app browser's renderer service, named next to the package it runs in. */
+        const val SANDBOXED_PROCESS_SERVICE = "com.facebook.browser.helium.content.SandboxedProcessService"
 
         /**
          * Calls that can mean this app when handed Facebook's package, with the argument it goes in

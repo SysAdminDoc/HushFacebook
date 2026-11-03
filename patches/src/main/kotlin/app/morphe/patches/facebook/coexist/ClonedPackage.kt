@@ -352,7 +352,9 @@ internal fun Method.remoteViewsPackageLoads(packageName: String): List<Int> =
  * caller's or a target's package against it (FBNS push's "am I FB4A" check among them, which push
  * in a clone has to stay native for), the launch of Facebook after a check that it or its in-house
  * build is installed (Horizon's link launcher), the pick of whichever Facebook app is installed to
- * open a link, the installer reads of Facebook for attribution and Google Play's overlay, and
+ * open a link, the installer reads of Facebook for attribution and Google Play's overlay, the sender
+ * name Facebook puts in an extra for another app (Play's install overlay callerId, WhatsApp's status
+ * share, Meta's family-app FOA_EVENT_SENDER broadcast; 585 census, 2026-11-02), and
  * Messenger's warm-start hint (ThreadSettingsActivity), which checks that Facebook is installed and
  * then sends its WarmStartBroadcastReceiver a broadcast. A load that anything else reads, such as
  * that install check or a ComponentName, stays as it is. SharedPermissionsFixtureTest holds each
@@ -498,6 +500,39 @@ internal fun BytecodePatchContext.routeRemoteViewsPackage(packageName: String): 
 internal fun BytecodePatchContext.routeOwnPackageCalls(packageName: String): Int =
     routePackageLoads(packageName) { it.ownPackageCallLoads(packageName) }
 
+/*
+ * The in-app browser's child process connection answers getPackageName() for the package its
+ * renderer service (SandboxedProcessService) lives in. Redex put Facebook's literal where
+ * context.getPackageName() was and left the call with its answer unused, so a clone's in-app
+ * browser bound the stock app's renderers, or none when the stock app isn't installed. Meta's app
+ * table, which answers the package from a switch among nine others and asks Android nothing, keeps
+ * the literal.
+ */
+
+/**
+ * Where [this], a getPackageName() override, answers [packageName] as the running app's: its only
+ * string load, which nothing but the return reads, in a method that still calls
+ * Context.getPackageName() for the answer Redex replaced.
+ */
+internal fun Method.ownPackageNameAnswers(packageName: String): List<Int> {
+    if (name != "getPackageName" || parameterTypes.isNotEmpty() || returnType != "Ljava/lang/String;") return emptyList()
+    val code = implementation?.instructions?.toList() ?: return emptyList()
+    if (code.count { it.loadedString() != null } != 1) return emptyList()
+    if (code.none { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == GET_PACKAGE_NAME }) {
+        return emptyList()
+    }
+    return packageLoadsReadOnlyBy(packageName) { instruction, register ->
+        instruction.opcode == Opcode.RETURN_OBJECT && (instruction as OneRegisterInstruction).registerA == register
+    }
+}
+
+/**
+ * Hands the package each getPackageName() override answers for the running app
+ * ([ownPackageNameAnswers]) to the extension. Answers how many it handed over.
+ */
+internal fun BytecodePatchContext.routeOwnPackageNameAnswers(packageName: String): Int =
+    routePackageLoads(packageName) { it.ownPackageNameAnswers(packageName) }
+
 /** Hands each load [loadsOf] picks out to the extension, right after it. The extension is left alone. */
 private fun BytecodePatchContext.routePackageLoads(packageName: String, loadsOf: (Method) -> List<Int>): Int {
     val owners = classDefByStrings(packageName, StringComparisonType.EQUALS)
@@ -628,6 +663,7 @@ internal val clonedPackagePatch = bytecodePatch {
         routeBuiltAuthorities(packageMetadata.packageName, stockAuthorities)
         routeRemoteViewsPackage(packageMetadata.packageName)
         routeOwnPackageCalls(packageMetadata.packageName)
+        routeOwnPackageNameAnswers(packageMetadata.packageName)
         if (routeMetaAppLookups() == 0) {
             patchLog.warning(
                 "Found no place where Facebook looks itself up among Meta's apps, so a copy made with Clone app " +
