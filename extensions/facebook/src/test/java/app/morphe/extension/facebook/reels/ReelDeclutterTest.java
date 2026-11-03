@@ -302,23 +302,29 @@ public class ReelDeclutterTest {
         assertFalse(Settings.HIDE_UP_NEXT.defaultValue);
         assertFalse("the other Reels switches took the lookup", ReelDeclutter.skipUpNextFetch());
         assertFalse("the other Reels switches took the videos", ReelDeclutter.hideUpNextVideos());
+        assertFalse("the other Reels switches took the room", ReelDeclutter.skipUpNextRoom());
         Settings.HIDE_UP_NEXT.save(true);
         assertTrue(ReelDeclutter.skipUpNextFetch());
         assertTrue(ReelDeclutter.hideUpNextVideos());
+        assertTrue(ReelDeclutter.skipUpNextRoom());
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertFalse("the lookup went while paused", ReelDeclutter.skipUpNextFetch());
         assertFalse("the videos went while paused", ReelDeclutter.hideUpNextVideos());
+        assertFalse("the room went while paused", ReelDeclutter.skipUpNextRoom());
         PauseForTests.resume();
         SettingsContextRule.withoutContext(() -> {
             assertFalse("the lookup went before the settings were ready", ReelDeclutter.skipUpNextFetch());
             assertFalse("the videos went before the settings were ready", ReelDeclutter.hideUpNextVideos());
+            assertFalse("the room went before the settings were ready", ReelDeclutter.skipUpNextRoom());
         });
         Settings.HIDE_UP_NEXT.save(false);
         assertFalse("turning the switch off didn't bring the lookup back", ReelDeclutter.skipUpNextFetch());
         assertFalse("turning the switch off didn't bring the videos back", ReelDeclutter.hideUpNextVideos());
-        assertEquals(ReelDeclutter.UP_NEXT_ROUTE + ": 10 lists, 10 items, 2 removed. Last reason: "
-                        + ReelDeclutter.UP_NEXT_VIDEOS + ". Removed: " + ReelDeclutter.UP_NEXT_FETCH + " 1, "
-                        + ReelDeclutter.UP_NEXT_VIDEOS + " 1. Kinds: " + ReelDeclutter.UP_NEXT_FETCH + " 5, "
+        assertFalse("turning the switch off didn't bring the room back", ReelDeclutter.skipUpNextRoom());
+        assertEquals(ReelDeclutter.UP_NEXT_ROUTE + ": 15 lists, 15 items, 3 removed. Last reason: "
+                        + ReelDeclutter.UP_NEXT_ROOM + ". Removed: " + ReelDeclutter.UP_NEXT_FETCH + " 1, "
+                        + ReelDeclutter.UP_NEXT_ROOM + " 1, " + ReelDeclutter.UP_NEXT_VIDEOS + " 1. Kinds: "
+                        + ReelDeclutter.UP_NEXT_FETCH + " 5, " + ReelDeclutter.UP_NEXT_ROOM + " 5, "
                         + ReelDeclutter.UP_NEXT_VIDEOS + " 5",
                 line(ReelDeclutter.UP_NEXT_ROUTE));
     }
@@ -330,14 +336,15 @@ public class ReelDeclutterTest {
         try {
             assertFalse(ReelDeclutter.skipUpNextFetch());
             assertFalse(ReelDeclutter.hideUpNextVideos());
+            assertFalse(ReelDeclutter.skipUpNextRoom());
         } finally {
             SettingReadsForTests.mend(Settings.HIDE_UP_NEXT);
         }
         String missing = HookStatus.missing(FamilyNames.REEL_DECLUTTER).toString();
-        assertTrue(missing, missing.contains("a working '" + ReelDeclutter.UP_NEXT_FETCH + "' hook (it threw "
-                + NullPointerException.class.getName() + ")"));
-        assertTrue(missing, missing.contains("a working '" + ReelDeclutter.UP_NEXT_VIDEOS + "' hook (it threw "
-                + NullPointerException.class.getName() + ")"));
+        for (String kind : new String[] {ReelDeclutter.UP_NEXT_FETCH, ReelDeclutter.UP_NEXT_VIDEOS, ReelDeclutter.UP_NEXT_ROOM}) {
+            assertTrue(missing, missing.contains("a working '" + kind + "' hook (it threw "
+                    + NullPointerException.class.getName() + ")"));
+        }
     }
 
     /**

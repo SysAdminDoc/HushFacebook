@@ -808,8 +808,9 @@ public class Settings extends BaseSettings {
      * The UP NEXT bar under a video opened from the feed, naming the video Facebook lines up after
      * it, gets no video to show: the lookup returns before it queries and what was found is handed
      * out empty ({@link app.morphe.extension.facebook.reels.ReelDeclutter#skipUpNextFetch} and
-     * {@link app.morphe.extension.facebook.reels.ReelDeclutter#hideUpNextVideos}, #367). Off by
-     * default.
+     * {@link app.morphe.extension.facebook.reels.ReelDeclutter#hideUpNextVideos}, #367), and the
+     * player keeps no empty room for it under the seek bar ({@link
+     * app.morphe.extension.facebook.reels.ReelDeclutter#skipUpNextRoom}, #375). Off by default.
      */
     public static final BooleanSetting HIDE_UP_NEXT =
             new BooleanSetting("hushfacebook_hide_up_next", FALSE);

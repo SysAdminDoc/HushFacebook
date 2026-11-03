@@ -16,6 +16,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import org.junit.Assert.assertEquals
@@ -27,19 +28,23 @@ import org.junit.Test
  * Clean up Reels' UP NEXT hooks (#367) on every Facebook build the bundle declares (arm64 and armv7):
  * one class holds the Up next query in a static lookup, and after the hook that lookup asks the
  * extension first and returns, and the class's (String)List getter asks first and answers an empty
- * list. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * list. One static setter stores the bar's room (#375), and after the hook it asks first and
+ * returns before it writes. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class FeedUpNextFixtureTest {
     private fun Method.body(): List<Instruction> = implementation?.instructions?.toList().orEmpty()
 
     private fun Instruction.called() = ((this as? ReferenceInstruction)?.reference as? MethodReference)?.toString()
 
-    /** Every class in [bundle] with a method holding the Up next query. */
+    /** Every class in [bundle] with a method holding the Up next query or storing the bar's room. */
     private fun holders(bundle: java.io.File): List<ClassDef> {
         val found = mutableListOf<ClassDef>()
         FixtureDex.forEach(bundle) { dex ->
-            if (dex.stringSection.none { it == UP_NEXT_QUERY }) return@forEach
-            dex.classes.filterTo(found) { classDef -> classDef.methods.any { holdsString(it, UP_NEXT_QUERY) } }
+            val strings = dex.stringSection.map(CharSequence::toString).toSet()
+            if (UP_NEXT_QUERY !in strings && OVERLAID_ASPECT_RATIO !in strings) return@forEach
+            dex.classes.filterTo(found) { classDef ->
+                classDef.methods.any { holdsString(it, UP_NEXT_QUERY) } || upNextInsetSetters(classDef.methods).isNotEmpty()
+            }
         }
         return found.map(ImmutableClassDef::of)
     }
@@ -62,11 +67,27 @@ class FeedUpNextFixtureTest {
                 assertNotNull("$name: ${controller.type} has no single (String)List getter", getter)
                 // Negative control: a lookup that takes some other class isn't the controller's.
                 assertTrue("$name: a lookup for another class was taken", upNextLookups("LX/other;", controller.methods).isEmpty())
+                val setters = classes.flatMap { classDef -> upNextInsetSetters(classDef.methods).map { classDef to it } }
+                assertEquals("$name: static (…FI)V methods calling $OVERLAID_ASPECT_RATIO", 1, setters.size)
+                val (setterOwner, setter) = setters.single()
+                // Negative control: the aspect ratio method itself takes two Floats and answers one, so it isn't taken.
+                assertTrue("$name: the aspect ratio method was taken",
+                    upNextInsetSetters(setterOwner.methods.filter { it.name == OVERLAID_ASPECT_RATIO }).isEmpty())
+                assertTrue("$name: the setter writes no Float field", setter.body().any { instruction ->
+                    instruction.opcode == Opcode.IPUT_OBJECT &&
+                        ((instruction as ReferenceInstruction).reference as FieldReference).type == "Ljava/lang/Float;"
+                })
 
                 val context = PatchContexts.of(classes)
                 with(context) { hideUpNext() }
                 val methods = context.mutableClassDefBy(controller.type).methods
                 fun Method.params() = parameterTypes.map(CharSequence::toString)
+                val hookedSetter = context.mutableClassDefBy(setterOwner.type).methods
+                    .single { it.name == setter.name && it.params() == setter.params() }.body()
+                assertEquals("$name: the room setter asks first", SKIP_UP_NEXT_ROOM, hookedSetter[0].called())
+                assertEquals("$name: tests the answer", Opcode.IF_EQZ, hookedSetter[2].opcode)
+                assertEquals("$name: and returns before it writes", Opcode.RETURN_VOID, hookedSetter[3].opcode)
+                assertEquals("$name: the rest of the setter is Facebook's", setter.body().map { it.opcode }, hookedSetter.drop(4).map { it.opcode })
                 val hookedLookup = methods.single { it.name == lookup.name && it.params() == lookup.params() }.body()
                 assertEquals("$name: the lookup asks first", SKIP_UP_NEXT_FETCH, hookedLookup[0].called())
                 assertEquals("$name: tests the answer", Opcode.IF_EQZ, hookedLookup[2].opcode)
@@ -88,8 +109,10 @@ class FeedUpNextFixtureTest {
     }
 
     @Test
-    fun `the extension has both hooks`() {
-        for ((hookName, descriptor) in listOf("skipUpNextFetch" to SKIP_UP_NEXT_FETCH, "hideUpNextVideos" to HIDE_UP_NEXT_VIDEOS)) {
+    fun `the extension has every Up next hook`() {
+        for ((hookName, descriptor) in listOf(
+            "skipUpNextFetch" to SKIP_UP_NEXT_FETCH, "hideUpNextVideos" to HIDE_UP_NEXT_VIDEOS, "skipUpNextRoom" to SKIP_UP_NEXT_ROOM,
+        )) {
             val hook = ExtensionDex.classDef(descriptor.substringBefore("->")).methods.singleOrNull { it.name == hookName }
             assertNotNull("the extension has no ReelDeclutter.$hookName", hook)
             assertEquals("$hookName's shape", descriptor,

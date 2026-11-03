@@ -79,7 +79,8 @@ private const val PATCH = "Clean up Reels"
  * that's off for most accounts (#296, see ReelPostDate.kt). A twenty-first, also off, keeps only
  * reels from accounts you follow on the Reels tab, by the follow status the reel's Follow button
  * reads (#349, see FollowedReels.kt). A twenty-second, also off, takes the UP NEXT bar with the next
- * video off the bottom of a video opened from the feed (#367, see FeedUpNext.kt). With Debug
+ * video off the bottom of a video opened from the feed, with the room kept for it (#367, #375, see
+ * FeedUpNext.kt). With Debug
  * logging on, it also reports whether a reel that ends
  * is on the player the Reels auto-advance controller holds (see ReelBinding.kt), with no switch.
  *
@@ -155,7 +156,8 @@ val cleanUpReelsPatch = bytecodePatch(
         keepFeedVideosAlone()
         // #222: the "This is taking a while" message a stalled video posts.
         hideSlowConnectionMessage()
-        // #367: the UP NEXT bar under a video opened from the feed, at its lookup and its getter.
+        // #367: the UP NEXT bar under a video opened from the feed, at its lookup and its getter,
+        // and #375: the room the player keeps for it under the seek bar.
         hideUpNext()
         // #228: the clip each tile of the feed's Reels row plays, and where it stops.
         playFeedReelsWhole()

@@ -2466,7 +2466,7 @@ Reel post dates will show the day they were posted.	Reels 的发布日期将显�
 Hide pictures on the Blocked list	隐藏屏蔽列表中的头像
 People you've blocked show without their profile pictures on the Blocking page in Facebook's settings. Reopen the page if it's already open.	你屏蔽的人在 Facebook 设置的屏蔽页面上不显示头像。如果该页面已打开，请重新打开。
 Hide Up next on videos	隐藏视频上的“接下来播放”
-Takes the UP NEXT bar with the next video off the bottom of a video you open from the feed. A change shows from the next video you open.	去掉从动态打开的视频底部显示下一个视频的“接下来播放”栏。更改从你打开的下一个视频起生效。
+Takes the UP NEXT bar with the next video off the bottom of a video you open from the feed, and the empty space kept for it, so the seek bar stays at the bottom. A change shows from the next video you open.	去掉从动态打开的视频底部显示下一个视频的“接下来播放”栏，以及为它留出的空白，让进度条留在底部。更改从你打开的下一个视频起生效。
 Icons look soft on this screen. Repatch with the 120-640dpi bundle.	此屏幕上的图标显示模糊。请用 120-640dpi 安装包重新修补。
 Icons look soft on this screen	此屏幕上的图标显示模糊
 The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has images for every screen.	你修补的 Facebook 没有适合此屏幕的图片，因此部分图标被放大了。请使用 APKMirror 上的 (arm64-v8a) (120-640dpi) 安装包重新修补 Facebook，它包含适合所有屏幕的图片。

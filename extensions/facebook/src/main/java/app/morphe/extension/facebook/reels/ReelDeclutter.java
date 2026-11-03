@@ -85,7 +85,9 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  *       per video, keeps what came back, and hands it to the bar and the end screen. {@link
  *       #skipUpNextFetch} is asked first thing in the lookup, and true returns before it queries.
  *       {@link #hideUpNextVideos} is asked first thing in the hand-out, and true answers an empty
- *       list, Facebook's own answer for a video with nothing lined up (#367).
+ *       list, Facebook's own answer for a video with nothing lined up (#367). The player also keeps
+ *       the bar's height empty under the seek bar from the first frame. {@link #skipUpNextRoom} is
+ *       asked first thing where that height is stored, and true leaves none (#375).
  *   <li>Each tile of the feed's Reels row plays a short clip of its reel that Facebook picks, and
  *       a clip it can't use comes out as the first second, played over and over (#228).
  *       {@link #allowsPreviewClip} is handed the last check before the tile asks for its clip, and
@@ -155,12 +157,13 @@ public final class ReelDeclutter {
     static final String SLOW_MESSAGE = "slow connection message";
 
     /**
-     * Counted under its own name each time the UP NEXT bar's lookup is skipped and each time its
-     * videos are handed out empty (#367).
+     * Counted under its own name each time the UP NEXT bar's lookup is skipped, each time its
+     * videos are handed out empty (#367) and each time no room is kept for it (#375).
      */
     static final String UP_NEXT_ROUTE = "Video Up next";
     static final String UP_NEXT_FETCH = "Up next lookup";
     static final String UP_NEXT_VIDEOS = "Up next videos";
+    static final String UP_NEXT_ROOM = "Up next room";
 
     /**
      * Counted under its own name for each tile of the feed's Reels row, as its end is handed in, and
@@ -541,6 +544,15 @@ public final class ReelDeclutter {
      */
     public static boolean hideUpNextVideos() {
         return hidesUpNext(UP_NEXT_VIDEOS, "Up next: no video handed out");
+    }
+
+    /**
+     * Injection point, first thing in what stores the UP NEXT bar's height as the room the player
+     * keeps empty under the seek bar (#375). True makes it return before it writes, so the video
+     * keeps no room, Facebook's own state for a video with no bar. Never throws: false keeps it.
+     */
+    public static boolean skipUpNextRoom() {
+        return hidesUpNext(UP_NEXT_ROOM, "Up next: no room kept under the seek bar");
     }
 
     private static boolean hidesUpNext(String kind, String message) {
