@@ -68,8 +68,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * reels. So for an HLG video the decoder is also told the transfer is the usual one, with its
  * BT.2020 colours left as they are. A VP9 stream names no transfer of its own, so the decoder takes
  * that one, hands its pictures over in BT.2020 at the usual range, and Android maps the colours to
- * the screen the way it does for any wide colour video. A stream that names HLG itself (HEVC, AV1)
- * keeps HLG on the decoder, and the request above still asks for the tone map.
+ * the screen the way it does for any wide colour video. That's all a VP9 HLG video needs, so no
+ * decoder is sent the request for one: 0.14.0 sent both, and the request is what started the tone
+ * map that turned #93's reel yellow. A stream that names HLG itself (HEVC, AV1) keeps HLG on the
+ * decoder, and the request above still asks for the tone map.
  *
  * <p>A Qualcomm Codec2 decoder (its name starts {@code c2.qti.}) gets the request for a PQ video
  * only. On a Snapdragon the request starts the vendor's tone-map filter inside the media codec
@@ -144,6 +146,8 @@ public final class HdrBrightness {
         boolean hlg = hlg(format);
         // Only a decoder drawing to a surface is ever asked, so only its name is read.
         boolean qualcomm = surface != null && qualcomm(codec);
+        // Read before the format is renamed: whether the new name goes over without the request.
+        boolean nameOnly = hlg && nameOnly(format, qualcomm);
         if (!askForUsualRange(format, surface, flags, qualcomm)) {
             codec.configure(format, surface, crypto, flags);
             return;
@@ -165,16 +169,18 @@ public final class HdrBrightness {
             return;
         }
         if (hlg) count(HLG_AS_USUAL_RANGE);
-        count(qualcomm && hlg ? QUALCOMM_NOT_ASKED : toneMaps(codec) ? DECODER_TONE_MAPS : DECODER_CANNOT);
+        if (qualcomm && hlg) count(QUALCOMM_NOT_ASKED);
+        else if (!nameOnly) count(toneMaps(codec) ? DECODER_TONE_MAPS : DECODER_CANNOT);
     }
 
     /**
      * Whether [format] was just asked to come out in the usual range: an HDR video ({@link
      * #hdrVideo}) going to [surface] on a decoder, on Android 12 or newer, with the switch on and
      * no request of Facebook's own. Adds the request to [format] when it answers yes, and for an
-     * HLG video names the usual transfer in place of HLG, its BT.2020 colours left alone. On a
-     * [qualcomm] decoder an HLG video gets only its new name, and any other answers no and is
-     * counted unless {@link #qualcommToneMaps} says it can take the request.
+     * HLG video names the usual transfer in place of HLG, its BT.2020 colours left alone. An HLG
+     * video in VP9, or on a [qualcomm] decoder, gets only its new name ({@link #nameOnly}). Any other
+     * video on a Qualcomm decoder answers no and is counted unless {@link #qualcommToneMaps} says it
+     * can take the request.
      */
     static boolean askForUsualRange(@Nullable MediaFormat format, @Nullable Surface surface, int flags,
                                     boolean qualcomm) {
@@ -188,12 +194,25 @@ public final class HdrBrightness {
                 count(QUALCOMM_NOT_ASKED);
                 return false;
             }
-            if (!qualcomm || !hlg) format.setInteger(MediaFormat.KEY_COLOR_TRANSFER_REQUEST, MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
+            if (!hlg || !nameOnly(format, qualcomm)) format.setInteger(MediaFormat.KEY_COLOR_TRANSFER_REQUEST, MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
             if (hlg) format.setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_SDR_VIDEO);
             HookStatus.bound(FAMILY, "decoder");
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "decoder", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Whether an HLG video in [format] goes to its decoder under the usual-range name alone, never
+     * with the request: in VP9 on any decoder, since its stream names no transfer and the name is
+     * all it needs (#93), and on a [qualcomm] decoder, whose VP9 and AV1 decoders stop on both.
+     */
+    static boolean nameOnly(@Nullable MediaFormat format, boolean qualcomm) {
+        try {
+            return qualcomm || (format != null && MediaFormat.MIMETYPE_VIDEO_VP9.equals(format.getString(MediaFormat.KEY_MIME)));
+        } catch (RuntimeException unreadable) {
             return false;
         }
     }
