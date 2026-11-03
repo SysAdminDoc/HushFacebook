@@ -14,6 +14,7 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11n
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction35c
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
@@ -92,6 +93,43 @@ internal object SettingsPatchHosts {
         )
     }
 
-    /** Every class the settings patch hooks, the top bar a plain one. */
-    fun all(): List<ClassDef> = appAndMainTab() + bar()
+    const val CONTEXT = "Landroid/content/Context;"
+    const val ATTRIBUTES = "Landroid/util/AttributeSet;"
+
+    /** NavigationBar's constructor that builds it: a context, attributes and a style. */
+    val buildsTitleBar = ImmutableMethodReference(NAVIGATION_BAR, "<init>", listOf(CONTEXT, ATTRIBUTES, "I"), "V")
+
+    fun titleBarConstructor(types: List<String>, implementation: ImmutableMethodImplementation) = ImmutableMethod(
+        NAVIGATION_BAR, "<init>", parameters(*types.toTypedArray()), "V",
+        AccessFlags.PUBLIC.value or AccessFlags.CONSTRUCTOR.value, null, null, implementation,
+    )
+
+    /**
+     * The bar across the top of the tabs as 585 builds it: the constructor taking a context,
+     * attributes and a style builds it, with one local ahead of `this` (v1), and the one taking a
+     * context hands on to it. [builds] replaces the building constructor's body when a test needs
+     * another shape.
+     */
+    fun titleBar(vararg builds: Instruction): ClassDef {
+        val code = if (builds.isNotEmpty()) builds.toList() else listOf(
+            ImmutableInstruction35c(Opcode.INVOKE_DIRECT, 4, 1, 2, 3, 4, 0,
+                ImmutableMethodReference("Landroid/widget/FrameLayout;", "<init>", listOf(CONTEXT, ATTRIBUTES, "I"), "V")),
+            ImmutableInstruction11n(Opcode.CONST_4, 0, 0),
+            ImmutableInstruction10x(Opcode.RETURN_VOID),
+        )
+        return ImmutableClassDef(
+            NAVIGATION_BAR, AccessFlags.PUBLIC.value, "Landroid/widget/FrameLayout;", null, null, null, null,
+            listOf(
+                titleBarConstructor(listOf(CONTEXT, ATTRIBUTES, "I"), ImmutableMethodImplementation(5, code, null, null)),
+                titleBarConstructor(listOf(CONTEXT), body(3,
+                    ImmutableInstruction11n(Opcode.CONST_4, 0, 0),
+                    ImmutableInstruction35c(Opcode.INVOKE_DIRECT, 4, 1, 2, 0, 0, 0, buildsTitleBar),
+                    ImmutableInstruction10x(Opcode.RETURN_VOID),
+                )),
+            ),
+        )
+    }
+
+    /** Every class the settings patch hooks, the top bar and the title bar plain ones. */
+    fun all(): List<ClassDef> = appAndMainTab() + bar() + titleBar()
 }

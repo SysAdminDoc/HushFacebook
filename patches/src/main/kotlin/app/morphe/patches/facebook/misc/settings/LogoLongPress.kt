@@ -4,10 +4,16 @@
  */
 package app.morphe.patches.facebook.misc.settings
 
+import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.misc.extension.localRegisterCount
+import app.morphe.patches.facebook.misc.extension.requireThisIntact
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -23,6 +29,17 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * takes that view from it too.
  */
 internal const val WORDMARK_NAVIGATION_BAR = "Lcom/facebook/navigation/navbar/legacy/search/WordmarkNavigationBar;"
+
+/**
+ * The bar across the top of Facebook's tabs. Notifications, Friends, Marketplace and the other tabs
+ * draw a menu button and their title in it (#374), and the home feed's logo bar sits in one too.
+ * Facebook keeps the name in 585. Its constructors that take fewer arguments hand on to the one
+ * taking a context, attributes and a style.
+ */
+internal const val NAVIGATION_BAR = "Lcom/facebook/navigation/navbar/NavigationBar;"
+
+/** SettingsEntry's method each new [NAVIGATION_BAR] is handed to as its constructor ends. */
+internal const val TITLE_BAR_MADE = "$ENTRY->watchTitleBar(Landroid/view/View;)V"
 
 /** The trace section the bar opens while it builds the logo. Only the method that does holds it. */
 internal const val CREATE_WORDMARK_VIEW = "WordmarkNavigationBar#createWordmarkView"
@@ -139,4 +156,40 @@ internal fun BytecodePatchContext.hookLogoLongPress() {
     val withoutTap = logoWithoutTapIndex(builder)
     builder.sendToStandIn(touch, LOGO_TOUCH_STAND_IN)
     withoutTap?.let { builder.sendToStandIn(it, LOGO_WITHOUT_TAP_STAND_IN) }
+}
+
+/** The constructors of [NAVIGATION_BAR] that build the bar themselves, not by calling another of its own. */
+internal fun titleBarConstructors(bar: ClassDef): List<Method> = bar.methods.filter { method ->
+    method.name == "<init>" && method.implementation?.instructions?.none { instruction ->
+        val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        (instruction.opcode == Opcode.INVOKE_DIRECT || instruction.opcode == Opcode.INVOKE_DIRECT_RANGE) &&
+            call?.name == "<init>" && call.definingClass == NAVIGATION_BAR
+    } == true
+}
+
+/**
+ * Hands each new title bar to SettingsEntry as its constructor ends, which gives the bar the same
+ * long press as the logo (#374). The call goes in at each return of each constructor that builds
+ * the bar itself, so a bar is handed over once whichever constructor Facebook calls. The call
+ * replaces the return and a new return follows it, so a jump to the old return reaches the call
+ * too. `this` is the register past the locals, and nothing may write it before a return. Stops the
+ * patch, naming what it missed, when the evidence isn't there.
+ */
+internal fun BytecodePatchContext.hookTitleBarLongPress() {
+    val bar = mutableClassDefByOrNull(NAVIGATION_BAR)
+        ?: throw PatchException("This Facebook has no $NAVIGATION_BAR, the bar across the top of its tabs")
+    val builds = titleBarConstructors(bar).map { it as MutableMethod }
+    if (builds.isEmpty()) throw PatchException("$NAVIGATION_BAR has no constructor that builds the bar itself")
+    builds.forEach { constructor ->
+        val where = "$NAVIGATION_BAR-><init>(${constructor.parameterTypes.joinToString("")})"
+        val code = constructor.implementation!!.instructions.toList()
+        val returns = code.indices.filter { code[it].opcode == Opcode.RETURN_VOID }
+        if (returns.isEmpty()) throw PatchException("$where never returns")
+        constructor.requireThisIntact("Title bar long press, $where", returns)
+        val self = constructor.localRegisterCount()
+        returns.asReversed().forEach { at ->
+            constructor.replaceInstruction(at, "invoke-static/range { v$self .. v$self }, $TITLE_BAR_MADE")
+            constructor.addInstruction(at + 1, "return-void")
+        }
+    }
 }

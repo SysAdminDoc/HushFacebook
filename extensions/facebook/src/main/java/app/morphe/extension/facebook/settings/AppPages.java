@@ -142,8 +142,8 @@ final class AppPages {
         menu.addPreference(settingsShortcut);
         ways.add(Settings.SETTINGS_SHORTCUT, settingsShortcut);
         SwitchPreference logoPress = toggle(context, Settings.SETTINGS_LOGO_PRESS,
-                L10n.t("A long press on the Facebook logo at the top of the home feed opens these settings. Off, "
-                        + "the long press goes back to Facebook."));
+                L10n.t("A long press on the Facebook logo at the top of the home feed, or on the title at the top "
+                        + "of another tab, opens these settings. Off, the long press goes back to Facebook."));
         logoPress.setOnPreferenceChangeListener((preference, value) -> {
             Settings.SETTINGS_LOGO_PRESS.save((Boolean) value);
             ways.refresh();

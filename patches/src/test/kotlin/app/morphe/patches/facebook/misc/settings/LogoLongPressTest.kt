@@ -11,6 +11,7 @@ import app.morphe.RepoFiles
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.settings.SettingsPatchHosts.builder
 import app.morphe.patches.facebook.misc.settings.SettingsPatchHosts.loads
 import app.morphe.patches.facebook.misc.settings.SettingsPatchHosts.on
@@ -27,9 +28,16 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11n
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11x
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21t
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction35c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction3rc
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -40,7 +48,8 @@ import org.junit.Test
  * A long press on the Facebook logo at the top of the home feed opens the Hushfacebook screen, for
  * a launcher with no shortcut menu (#2). The settings patch sends the call that gives the logo its
  * touch listener, right after the one that gives it its tap, to SettingsEntry, in the one method
- * of the top bar that holds the logo's trace section.
+ * of the top bar that holds the logo's trace section. The other tabs' title bars get the same long
+ * press (#374): each new one is handed to SettingsEntry as its constructor ends.
  */
 class LogoLongPressTest {
     private fun Method.instructions(): List<Instruction> = implementation?.instructions?.toList().orEmpty()
@@ -169,6 +178,84 @@ class LogoLongPressTest {
             .map { "$ENTRY->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }
         assertTrue("SettingsEntry declares no public static $LOGO_TOUCH_STAND_IN: $declared", LOGO_TOUCH_STAND_IN in declared)
         assertTrue("SettingsEntry declares no public static $LOGO_WITHOUT_TAP_STAND_IN: $declared", LOGO_WITHOUT_TAP_STAND_IN in declared)
+        assertTrue("SettingsEntry declares no public static $TITLE_BAR_MADE: $declared", TITLE_BAR_MADE in declared)
+    }
+
+    /** The title bar class in [classes] after the title bar hook ran over them. */
+    private fun titleBarAfterHook(vararg classes: ClassDef): List<Method> {
+        val context = PatchContexts.of(classes.toList())
+        context.hookTitleBarLongPress()
+        return context.mutableClassDefBy(NAVIGATION_BAR).methods.toList()
+    }
+
+    private fun Method.shape(): String = parameterTypes.joinToString("", "(", ")") + returnType
+
+    private val buildsShape = "(${SettingsPatchHosts.CONTEXT}${SettingsPatchHosts.ATTRIBUTES}I)V"
+
+    /**
+     * Every other tab's top bar opens the settings on a long press too (#374). The constructor that
+     * builds the bar hands `this`, the register past its locals, to SettingsEntry where it returned,
+     * then returns. The one that hands on to it is left alone, so a bar is handed over once.
+     */
+    @Test
+    fun eachTitleBarIsHandedOverAsItsConstructorEnds() {
+        val methods = titleBarAfterHook(SettingsPatchHosts.titleBar())
+
+        val builds = methods.single { it.shape() == buildsShape }.instructions()
+        assertEquals("instruction count", 4, builds.size)
+        assertEquals("Facebook's own code first", Opcode.INVOKE_DIRECT, builds[0].opcode)
+        assertEquals(Opcode.INVOKE_STATIC_RANGE, builds[2].opcode)
+        assertEquals(TITLE_BAR_MADE, builds[2].call())
+        assertEquals("this, past the one local", listOf(1), builds[2].registers())
+        assertEquals(Opcode.RETURN_VOID, builds[3].opcode)
+        val handsOn = methods.single { it.shape() != buildsShape }.instructions()
+        assertEquals("the constructor handing on changed", 3, handsOn.size)
+        assertTrue("the constructor handing on hands the bar over too", handsOn.none { it.call() == TITLE_BAR_MADE })
+    }
+
+    /** A jump to a return reaches the call too, since the call takes the return's place. */
+    @Test
+    fun aJumpToAReturnReachesTheCall() {
+        val methods = titleBarAfterHook(SettingsPatchHosts.titleBar(
+            ImmutableInstruction35c(Opcode.INVOKE_DIRECT, 4, 1, 2, 3, 4, 0,
+                ImmutableMethodReference("Landroid/widget/FrameLayout;", "<init>", listOf(SettingsPatchHosts.CONTEXT, SettingsPatchHosts.ATTRIBUTES, "I"), "V")),
+            ImmutableInstruction21t(Opcode.IF_EQZ, 4, 3),
+            ImmutableInstruction10x(Opcode.RETURN_VOID),
+            ImmutableInstruction10x(Opcode.RETURN_VOID),
+        ))
+
+        val builds = methods.single { it.shape() == buildsShape }.instructions()
+        assertEquals("instruction count", 6, builds.size)
+        assertEquals(listOf(2, 4), builds.indices.filter { builds[it].call() == TITLE_BAR_MADE })
+        assertEquals(listOf(3, 5), builds.indices.filter { builds[it].opcode == Opcode.RETURN_VOID })
+        assertEquals("the jump to the second return skips its call", 4, gotoTarget(builds, 1))
+    }
+
+    private fun titleBarRefusal(vararg classes: ClassDef): String = try {
+        PatchContexts.of(classes.toList()).hookTitleBarLongPress()
+        fail("the patch went on without its evidence")
+        ""
+    } catch (expected: PatchException) {
+        expected.message.orEmpty()
+    }
+
+    /** Each piece of evidence the title bar hook stands on, missing, stops the patch and says which. */
+    @Test
+    fun aTitleBarItCantHookStopsThePatch() {
+        assertTrue(titleBarRefusal().contains("has no $NAVIGATION_BAR"))
+        val handsOnOnly = SettingsPatchHosts.titleBar().let { bar ->
+            ImmutableClassDef(bar.type, bar.accessFlags, bar.superclass, null, null, null, null,
+                bar.methods.filter { it.shape() != buildsShape }.map { ImmutableMethod.of(it) })
+        }
+        assertTrue(titleBarRefusal(handsOnOnly).contains("no constructor that builds the bar itself"))
+        assertTrue(titleBarRefusal(SettingsPatchHosts.titleBar(
+            ImmutableInstruction11n(Opcode.CONST_4, 0, 0),
+            ImmutableInstruction11x(Opcode.THROW, 0),
+        )).contains("never returns"))
+        assertTrue(titleBarRefusal(SettingsPatchHosts.titleBar(
+            ImmutableInstruction11n(Opcode.CONST_4, 1, 0),
+            ImmutableInstruction10x(Opcode.RETURN_VOID),
+        )).contains("writes over this (v1)"))
     }
 
     /**
@@ -201,7 +288,13 @@ class LogoLongPressTest {
      * Where each declared bundle gives its logo the touch listener, and the registers it uses, then
      * where its path with no tap hides the logo from accessibility, and that call's registers.
      */
-    private data class Pin(val index: Int, val registers: List<Int>, val withoutTap: Int, val withoutTapRegisters: List<Int>)
+    private data class Pin(
+        val index: Int,
+        val registers: List<Int>,
+        val withoutTap: Int,
+        val withoutTapRegisters: List<Int>,
+        val titleBarReturns: List<Int>,
+    )
 
     /**
      * By build, then by the bundle's ABI. 581's two builds put the call at the same index; 582's
@@ -210,12 +303,12 @@ class LogoLongPressTest {
      * instruction before). 583's two hide the logo at 157 on the path with no tap, then jump past
      * the description. 584's two builds both have the builder at `A0G`, the touch listener at 123
      * and the logo hidden at 114, on the same registers. 585's two put them one earlier, at 122 and
-     * 113, on new registers.
+     * 113, on new registers. Last, where the title bar's constructor that builds it returns.
      */
     private val pins = mapOf(
         "585.0.0.47.54" to mapOf(
-            "arm64-v8a" to Pin(122, listOf(4, 6), 113, listOf(4, 8)),
-            "armeabi-v7a" to Pin(122, listOf(4, 6), 113, listOf(4, 8)),
+            "arm64-v8a" to Pin(122, listOf(4, 6), 113, listOf(4, 8), listOf(116)),
+            "armeabi-v7a" to Pin(122, listOf(4, 6), 113, listOf(4, 8), listOf(116)),
         ),
     )
 
@@ -241,8 +334,16 @@ class LogoLongPressTest {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val pin = pins.getValue(version)[bundle.name.substringAfter("-$version-").substringBefore(".apkm")]
                     ?: throw AssertionError("${bundle.name} has no pin")
-                val bar =FixtureDex.classes(bundle, setOf(WORDMARK_NAVIGATION_BAR))[WORDMARK_NAVIGATION_BAR]
+                val classes = FixtureDex.classes(bundle, setOf(WORDMARK_NAVIGATION_BAR, NAVIGATION_BAR))
+                val bar = classes[WORDMARK_NAVIGATION_BAR]
                     ?: throw AssertionError("${bundle.name} has no $WORDMARK_NAVIGATION_BAR")
+                val titleBar = classes[NAVIGATION_BAR] ?: throw AssertionError("${bundle.name} has no $NAVIGATION_BAR")
+                val titleBarBuilds = titleBarConstructors(titleBar)
+                assertEquals("${bundle.name}: the title bar's constructors that build it",
+                    listOf(buildsShape), titleBarBuilds.map { it.shape() })
+                val titleBarWas = titleBarBuilds.single().instructions()
+                assertEquals("${bundle.name}: where the title bar's constructor returns", pin.titleBarReturns,
+                    titleBarWas.indices.filter { titleBarWas[it].opcode == Opcode.RETURN_VOID })
                 val builders = bar.methods.filter { holdsString(it, CREATE_WORDMARK_VIEW) }
                 assertEquals("${bundle.name}: methods holding the logo's trace section", 1, builders.size)
                 val builder = builders.single()
@@ -270,8 +371,19 @@ class LogoLongPressTest {
                 assertTrue("${bundle.name}: the path with no tap doesn't jump past the logo's description",
                     gotoTarget(was, pin.withoutTap + 1) > index + 1)
 
-                val context = PatchContexts.of(SettingsPatchHosts.appAndMainTab() + bar)
+                val context = PatchContexts.of(SettingsPatchHosts.appAndMainTab() + bar + titleBar)
                 settingsPatch.execute(context)
+
+                val titleBarNow = context.mutableClassDefBy(NAVIGATION_BAR).methods
+                    .single { it.name == "<init>" && it.shape() == buildsShape }.instructions()
+                assertEquals("${bundle.name}: the title bar's instruction count",
+                    titleBarWas.size + pin.titleBarReturns.size, titleBarNow.size)
+                pin.titleBarReturns.forEachIndexed { added, at ->
+                    assertEquals("${bundle.name}: the title bar handed over at $at", TITLE_BAR_MADE, titleBarNow[at + added].call())
+                    assertEquals("${bundle.name}: this, past the locals",
+                        listOf(titleBarBuilds.single().localRegisterCount()), titleBarNow[at + added].registers())
+                    assertEquals("${bundle.name}: then the return", Opcode.RETURN_VOID, titleBarNow[at + added + 1].opcode)
+                }
 
                 val now = context.mutableClassDefBy(WORDMARK_NAVIGATION_BAR).methods
                     .single { holdsString(it, CREATE_WORDMARK_VIEW) }.instructions()

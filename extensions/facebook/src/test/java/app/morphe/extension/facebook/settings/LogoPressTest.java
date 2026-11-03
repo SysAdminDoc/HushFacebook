@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -351,6 +352,91 @@ public class LogoPressTest {
         ShadowLooper.idleMainLooper(longPress(), TimeUnit.MILLISECONDS);
 
         assertNull("a tap on a logo with no tap opened the screen", screen());
+    }
+
+    /** Taps on the title bar's menu button. */
+    private int menuTaps;
+
+    /**
+     * A tab's title bar as the patch hands it over (#374): the bar, then a menu button with
+     * Facebook's tap and the tab's title, a plain text view, side by side. [clickable] is whether
+     * Facebook made the bar itself clickable.
+     */
+    private FrameLayout titleBar(boolean clickable) {
+        FrameLayout bar = new FrameLayout(feed.get());
+        bar.setClickable(clickable);
+        View menu = new View(feed.get());
+        menu.setOnClickListener(v -> menuTaps++);
+        bar.addView(menu, new FrameLayout.LayoutParams(120, 90));
+        TextView title = new TextView(feed.get());
+        FrameLayout.LayoutParams titleAt = new FrameLayout.LayoutParams(400, 90);
+        titleAt.leftMargin = 200;
+        bar.addView(title, titleAt);
+        feed.get().setContentView(bar);
+        ShadowLooper.idleMainLooper();
+        SettingsEntry.watchTitleBar(bar);
+        return bar;
+    }
+
+    /** A finger held at [x] on the bar for [heldMs], then lifted. */
+    private static void pressAt(View bar, float x, long heldMs) {
+        long down = SystemClock.uptimeMillis();
+        bar.dispatchTouchEvent(event(MotionEvent.ACTION_DOWN, down, x, 45));
+        ShadowLooper.idleMainLooper(heldMs, TimeUnit.MILLISECONDS);
+        bar.dispatchTouchEvent(event(MotionEvent.ACTION_UP, down, x, 45));
+        ShadowLooper.idleMainLooper();
+    }
+
+    private void assertALongPressOnTheTitleOpens(boolean clickable) {
+        FrameLayout bar = titleBar(clickable);
+
+        pressAt(bar, 400, longPress());
+
+        assertNotNull("a long press on the title didn't open the screen", screen());
+        assertTrue("no line said the title bar was watched: " + logged(), logged().contains(
+                "Settings entry: a long press on a tab's title bar opens the settings"));
+        assertTrue("no line said the long press was on a title bar: " + logged(),
+                logged().contains("Settings entry: a long press on a tab's title bar"));
+    }
+
+    /** A bar Facebook didn't make clickable has the whole touch taken, or it wouldn't hear the rest of it. */
+    @Test public void aLongPressOnATabsTitleOpensTheScreen() {
+        assertALongPressOnTheTitleOpens(false);
+    }
+
+    @Test public void aLongPressOnAClickableTitleBarOpensTheScreen() {
+        assertALongPressOnTheTitleOpens(true);
+    }
+
+    /** The bar's buttons keep their taps, and a long press on one is the button's, not the bar's. */
+    @Test public void theTitleBarsButtonsStayFacebooks() {
+        FrameLayout bar = titleBar(false);
+
+        pressAt(bar, 60, 80);
+        assertEquals("the menu button lost its tap", 1, menuTaps);
+        pressAt(bar, 60, longPress());
+
+        assertNull("a long press on the menu button opened the screen", screen());
+    }
+
+    @Test public void aTapOnATabsTitleOpensNothing() {
+        FrameLayout bar = titleBar(false);
+
+        pressAt(bar, 400, 80);
+        ShadowLooper.idleMainLooper(longPress(), TimeUnit.MILLISECONDS);
+
+        assertNull("a tap on the title opened the screen", screen());
+    }
+
+    /** Switched off, the title bar is Facebook's again: a bar it didn't make clickable takes no touch. */
+    @Test public void switchedOffATitleBarIsFacebooks() {
+        Settings.SETTINGS_LOGO_PRESS.save(false);
+        FrameLayout bar = titleBar(false);
+
+        assertFalse("the bar took the touch with the switch off",
+                bar.dispatchTouchEvent(event(MotionEvent.ACTION_DOWN, SystemClock.uptimeMillis(), 400, 45)));
+        ShadowLooper.idleMainLooper(longPress(), TimeUnit.MILLISECONDS);
+        assertNull(screen());
     }
 
     /** Switched off, the touch goes past the logo with no tap to the bar, as it does without Hushfacebook. */

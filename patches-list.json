@@ -2359,7 +2359,7 @@
     },
     {
       "name": "Hushfacebook settings",
-      "description": "Adds Hushfacebook settings to Facebook, where you turn features on or off, pause Hushfacebook and back up your choices. To open them, long-press the Facebook logo at the top of your feed or Facebook's app icon. Its App name option shows a name you pick under the icon, and Icon style can make the icon white on black or black on white. Other patches need it, so keep it selected.",
+      "description": "Adds Hushfacebook settings to Facebook, where you turn features on or off, pause Hushfacebook and back up your choices. To open them, long-press the Facebook logo at the top of your feed, the title at the top of another tab, or Facebook's app icon. Its App name option shows a name you pick under the icon, and Icon style can make the icon white on black or black on white. Other patches need it, so keep it selected.",
       "category": "Settings",
       "use": true,
       "dependencies": [

@@ -80,7 +80,8 @@ internal fun BytecodePatchContext.declaredInHierarchy(
 
 /**
  * Makes the Hushfacebook screen reachable two ways. Inside Facebook, a long press on the Facebook
- * logo at the top of the home feed opens it. From the home screen, a long-press shortcut on
+ * logo at the top of the home feed opens it, and so does one on the title bar at the top of the
+ * other tabs (#374). From the home screen, a long-press shortcut on
  * Facebook's launcher icon opens Facebook with an extra, the activity reports it, and the screen
  * opens over the next Facebook activity to resume. Every name used here is a manifest component,
  * a framework override or call, or a class name and trace string Facebook keeps. Nothing is added
@@ -90,8 +91,8 @@ internal fun BytecodePatchContext.declaredInHierarchy(
 val settingsPatch = bytecodePatch(
     name = "Hushfacebook settings",
     description = "Adds Hushfacebook settings to Facebook, where you turn features on or off, pause Hushfacebook " +
-        "and back up your choices. To open them, long-press the Facebook logo at the top of your feed or " +
-        "Facebook's app icon. Its App name option shows a name you pick under the icon, and Icon style can make " +
+        "and back up your choices. To open them, long-press the Facebook logo at the top of your feed, the " +
+        "title at the top of another tab, or Facebook's app icon. Its App name option shows a name you pick under the icon, and Icon style can make " +
         "the icon white on black or black on white. Other patches need it, " +
         "so keep it selected.",
     default = true,
@@ -177,6 +178,9 @@ val settingsPatch = bytecodePatch(
         // Facebook too: the call that gives the feed's Facebook logo its touch listener goes
         // through the extension, which gives the logo a long press that opens the screen.
         hookLogoLongPress()
+        // The other tabs show a menu button and a title in that bar, with no logo (#374), so every new title bar is
+        // handed to the extension too, which gives the bar the same long press.
+        hookTitleBarLongPress()
 
         // A picked App name also goes on the task, the label the recent apps screen shows, which
         // Facebook sets from its brand string. See AppLabel.kt.

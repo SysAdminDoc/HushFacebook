@@ -562,6 +562,24 @@ public final class SettingsEntry {
     }
 
     /**
+     * The patch hands each new bar across the top of Facebook's tabs here as its constructor ends
+     * (#374). Notifications, Friends, Marketplace and the other tabs show a menu button and their
+     * title in it, with no Facebook logo, so a long press on the title opens the settings too.
+     *
+     * <p>A touch listener on the bar only hears touches none of its buttons took, so the buttons
+     * keep their taps and the feed's logo keeps its own press. The same switch as the logo's
+     * decides, read on every touch. Anything that goes wrong leaves the bar as Facebook built it.
+     */
+    public static void watchTitleBar(View bar) {
+        try {
+            bar.setOnTouchListener(new LogoPress(false, true));
+            Logger.printInfo(() -> "Settings entry: a long press on a tab's title bar opens the settings");
+        } catch (Throwable failure) {
+            Logger.printException(() -> "Settings entry: could not watch a title bar", failure);
+        }
+    }
+
+    /**
      * Whether a long press on the Facebook logo opens the settings. Its switch, except that when
      * every one of the three ways in is stored off (a backup imported that way, say) the press
      * stays on, so there is always a way back in. The Menu row only counts as a way in on a build
@@ -615,6 +633,12 @@ public final class SettingsEntry {
          * wouldn't hear past the finger going down otherwise.
          */
         private final boolean claims;
+        /**
+         * Whether this times presses on a tab's title bar ({@link #watchTitleBar}). A bar Facebook
+         * made clickable hears the whole touch anyway. One it didn't needs the whole touch taken,
+         * like a logo with no tap.
+         */
+        private final boolean titleBar;
         /** The logo while a press on it is being timed. */
         private View pressed;
         private float downX;
@@ -627,7 +651,12 @@ public final class SettingsEntry {
         }
 
         LogoPress(boolean claims) {
+            this(claims, false);
+        }
+
+        LogoPress(boolean claims, boolean titleBar) {
             this.claims = claims;
+            this.titleBar = titleBar;
         }
 
         /** Whether a press on the logo is being timed for a long press. Package-visible for tests. */
@@ -650,7 +679,7 @@ public final class SettingsEntry {
                         downX = event.getX();
                         downY = event.getY();
                         logo.postDelayed(fire, ViewConfiguration.getLongPressTimeout());
-                        return claims;
+                        return claims || (titleBar && !logo.isClickable());
                     case MotionEvent.ACTION_MOVE:
                         // The same leeway the logo gives its own press before it lets go.
                         if (pressed != null && !within(logo, event)) stop();
@@ -690,6 +719,7 @@ public final class SettingsEntry {
             try {
                 // Switched off while the finger was down: still Facebook's.
                 if (!logoPressOn()) return;
+                if (titleBar) Logger.printInfo(() -> "Settings entry: a long press on a tab's title bar");
                 // Not asked for, and letting go is Facebook's tap, as it is on a Facebook without this.
                 if (!requestFromLogo(logo)) return;
                 opened = true;
