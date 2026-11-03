@@ -9,10 +9,14 @@ import androidx.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import app.morphe.extension.facebook.download.PostDetails;
 import app.morphe.extension.facebook.feed.FeedFilter;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -44,6 +48,12 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * entries come through {@link #queryNode} the same way. The Debug line ends with which builder handed
  * the node over: {@link #FROM_LIST}, {@link #FROM_HEAD} or {@link #FROM_QUERY}.
  *
+ * <p>The query's nodes carry no {@code rendered_modules} (a reporter's 0.20.0 log, #285). Their
+ * native template still names its module in each row's logging data, after a {@code module_name}
+ * key (the S22's For you template, 585, 2026-11-03, names TRENDING_QUERY_SUGGESTION there), so a
+ * node without the string is matched by the module names its template carries, and its Debug line
+ * lists them as {@code template_modules}.
+ *
  * <p>With Debug logging on, this logs the GraphQL type names of the node and the module, read through
  * {@link FeedFilter#typeName}'s checks, and the module names. Only names survive: a type or module
  * name that isn't letters, underscores and at most four digits is logged as "other", so no id, title
@@ -61,6 +71,11 @@ public final class PreSearchSections {
     static final String PREFIX = "Search screen before typing: ";
     /** A tree keys a field by its name's hashCode. */
     private static final int RENDERED_MODULES = "rendered_modules".hashCode();
+    private static final int TEMPLATES_VIEW = "native_templates_view".hashCode();
+    private static final int TEMPLATE_BUNDLES = "native_template_bundles".hashCode();
+    private static final int TEMPLATE_TREE = "nt_bundle_tree".hashCode();
+    /** A module name in a template's logging data: the {@code module_name} key, its quotes and colon, the name. */
+    private static final Pattern TEMPLATE_MODULE = Pattern.compile("module_name[^A-Za-z0-9_]{1,40}([A-Z][A-Z0-9_]*)(?![A-Za-z0-9_])");
 
     /** The node type of the For you and People you may know entries. */
     static final String NULL_STATE_NODE = "SearchNullStateNativeTemplatesResult";
@@ -222,13 +237,15 @@ public final class PreSearchSections {
 
     /**
      * What the node's entry is, as the line it's counted under, when its switch is on: its type, and
-     * its module names, read whole. Null for any other entry, and nothing is read with both off.
+     * its module names, read whole, from its template when it has no {@code rendered_modules}. Null
+     * for any other entry, and nothing is read with both off.
      */
     @Nullable
     static String hidden(@Nullable Object node, boolean forYou, boolean people) {
         if (!forYou && !people) return null;
         if (!NULL_STATE_NODE.equals(FeedFilter.typeName(node))) return null;
         String modules = renderedModules(node);
+        if (modules == null) modules = templateModules(node);
         if (modules == null) return null;
         for (String name : modules.split(",")) {
             String module = name.trim();
@@ -249,8 +266,13 @@ public final class PreSearchSections {
             // A node whose type can't be read may be released, and its strings aren't asked.
             String modules = nodeType == null ? "unread" : modules(node);
             String moduleName = !moduleRead ? "" : " module=" + (module == null ? "none" : name(FeedFilter.typeName(module)));
+            String template = "";
+            if (NULL_STATE_NODE.equals(nodeType) && renderedModules(node) == null) {
+                String named = templateModules(node);
+                template = " template_modules=" + (named == null ? "none" : names(named));
+            }
             String source = from == null ? "" : " from=" + from;
-            record("node=" + name(nodeType) + moduleName + " rendered_modules=" + modules + source);
+            record("node=" + name(nodeType) + moduleName + " rendered_modules=" + modules + template + source);
         } catch (Throwable unreadable) {
             record("unreadable entry");
         }
@@ -289,6 +311,26 @@ public final class PreSearchSections {
         } catch (Throwable failure) {
             return null;
         }
+    }
+
+    /**
+     * The module names the node's own template logs its rows under, comma-separated in the order they
+     * first show, at most one past {@link #MAX_MODULES}. Null when the node isn't live, has no
+     * template, or its template names no module.
+     */
+    @Nullable
+    static String templateModules(Object node) {
+        Object view = PostDetails.tree(node, TEMPLATES_VIEW);
+        List<?> bundles = view == null ? null : PostDetails.trees(view, TEMPLATE_BUNDLES);
+        if (bundles == null) return null;
+        Set<String> names = new LinkedHashSet<>();
+        for (Object bundle : bundles) {
+            String template = bundle == null ? null : PostDetails.string(bundle, TEMPLATE_TREE);
+            if (template == null) continue;
+            Matcher found = TEMPLATE_MODULE.matcher(template);
+            while (names.size() <= MAX_MODULES && found.find()) names.add(found.group(1));
+        }
+        return names.isEmpty() ? null : String.join(",", names);
     }
 
     /** Module names for the log, each through {@link #name}, at most {@link #MAX_MODULES} of them. */

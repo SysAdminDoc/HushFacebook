@@ -258,7 +258,11 @@ public final class PostDetails {
         return isTree(value) ? value : null;
     }
 
-    static List<?> trees(Object model, int field) {
+    /**
+     * The trees in [model]'s list [field], or null when [model] isn't live or the read fails. Public
+     * for the search screen's rows, which read a node's template bundles this way.
+     */
+    public static List<?> trees(Object model, int field) {
         if (!isLiveTree(model)) return null;
         Object value = call(model, "getTreeList", field);
         return value instanceof List ? (List<?>) value : null;

@@ -10,6 +10,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.facebook.graphservice.tree.TreeJNI;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -215,6 +220,81 @@ public class PreSearchSectionsTest {
         assertTrue(line, line.contains(PreSearchSections.HIDDEN_PEOPLE + " 1"));
     }
 
+    /** A node of Facebook's older null-state query: no rendered_modules, and a template per text given. */
+    public static class QueryNode extends TreeJNI {
+        QueryNode(String... templates) {
+            super(PreSearchSections.NULL_STATE_NODE);
+            List<TreeJNI> bundles = new ArrayList<>();
+            for (String template : templates) bundles.add(new TreeJNI().with("nt_bundle_tree", template));
+            with("native_templates_view", new TreeJNI().with("native_template_bundles", bundles));
+        }
+
+        public String getCachedNullableString(int key) {
+            return cachedString(key);
+        }
+    }
+
+    /**
+     * A template's text as the S22's held it on 585: each row's logging data is JSON inside a JSON
+     * string, so its keys and values sit between escaped quotes.
+     */
+    private static String template(String key, String module) {
+        return "{\"logging\":\"{\\\"extra_data\\\":{\\\"" + key + "\\\":\\\"" + module + "\\\",\\\"position_in_module\\\":0}}\"}";
+    }
+
+    /** [inner] as a string inside one more JSON object, as the For you template nests its rows' data. */
+    private static String nested(String inner) {
+        return "{\"rows\":\"" + inner.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}";
+    }
+
+    @Test
+    public void theQuerysNodesAreMatchedByTheModuleTheirTemplateNames() {
+        // #285: a reporter's 0.20.0 log had only query nodes, all without rendered_modules, and For you stayed.
+        Settings.HIDE_SEARCH_FOR_YOU.save(true);
+        assertNull(PreSearchSections.queryNode(new QueryNode(template("module_name", PreSearchSections.FOR_YOU_MODULE))));
+        assertNull(PreSearchSections.queryNode(new QueryNode(nested(template("module_name", PreSearchSections.FOR_YOU_MODULE)))));
+        assertNull("one of the bundles is enough", PreSearchSections.queryNode(
+                new QueryNode(template("module_name", "SEARCH_HEADER"), template("module_name", PreSearchSections.FOR_YOU_MODULE))));
+        QueryNode recent = new QueryNode(template("module_name", "RECENT_SEARCH"));
+        assertSame(recent, PreSearchSections.queryNode(recent));
+        QueryNode longer = new QueryNode(template("module_name", PreSearchSections.FOR_YOU_MODULE + "_V2"));
+        assertSame(longer, PreSearchSections.queryNode(longer));
+        QueryNode elsewhere = new QueryNode(template("result_type", PreSearchSections.FOR_YOU_MODULE));
+        assertSame("only a module_name counts", elsewhere, PreSearchSections.queryNode(elsewhere));
+        QueryNode bare = new QueryNode();
+        assertSame(bare, PreSearchSections.queryNode(bare));
+        // A node that names its modules is taken at its word, and its template isn't read.
+        QueryNode named = new QueryNode(template("module_name", PreSearchSections.FOR_YOU_MODULE));
+        named.with("rendered_modules", "RECENT_SEARCH");
+        assertSame(named, PreSearchSections.queryNode(named));
+        // People you may know leaves only with its own switch.
+        QueryNode people = new QueryNode(template("module_name", PreSearchSections.PEOPLE_YOU_MAY_KNOW_MODULE));
+        assertSame(people, PreSearchSections.queryNode(people));
+        Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW.save(true);
+        assertNull(PreSearchSections.queryNode(people));
+        // A released node's template is never asked for.
+        TreeJNI released = new QueryNode(template("module_name", PreSearchSections.FOR_YOU_MODULE)).releasedTree();
+        assertSame(released, PreSearchSections.queryNode(released));
+        assertFalse(released.readAfterRelease);
+        String line = statusLine();
+        assertTrue(line, line.contains(PreSearchSections.HIDDEN + " 3"));
+        assertTrue(line, line.contains(PreSearchSections.HIDDEN_PEOPLE + " 1"));
+    }
+
+    @Test
+    public void aQueryNodesLineNamesItsTemplatesModules() {
+        PreSearchSections.queryNode(new QueryNode(template("module_name", "RECENT_SEARCH"),
+                nested(template("module_name", PreSearchSections.FOR_YOU_MODULE))));
+        PreSearchSections.queryNode(new QueryNode(template("module_name", "Recent search 1000123456789")));
+        String log = log();
+        String node = PreSearchSections.PREFIX + "node=" + PreSearchSections.NULL_STATE_NODE;
+        assertTrue(log, log.contains(node + " rendered_modules=none template_modules=RECENT_SEARCH,"
+                + PreSearchSections.FOR_YOU_MODULE + " from=" + PreSearchSections.FROM_QUERY));
+        // Only a name in capitals is a module name, so text after the key never gets out.
+        assertTrue(log, log.contains(node + " rendered_modules=none template_modules=none from=" + PreSearchSections.FROM_QUERY));
+        assertFalse(log, log.contains("1000123456789"));
+    }
+
     @Test
     public void eachLineSaysWhichBuilderHandedTheNodeOver() {
         PreSearchSections.node(new Tree(PreSearchSections.NULL_STATE_NODE, true, "RECENT_SEARCHES"));
@@ -225,7 +305,7 @@ public class PreSearchSectionsTest {
         String node = PreSearchSections.PREFIX + "node=" + PreSearchSections.NULL_STATE_NODE;
         assertTrue(log, log.contains(node + " rendered_modules=RECENT_SEARCHES from=" + PreSearchSections.FROM_LIST));
         assertTrue(log, log.contains(node + " rendered_modules=RECENT_SEARCHES from=" + PreSearchSections.FROM_HEAD));
-        assertTrue(log, log.contains(node + " rendered_modules=none from=" + PreSearchSections.FROM_QUERY));
+        assertTrue(log, log.contains(node + " rendered_modules=none template_modules=none from=" + PreSearchSections.FROM_QUERY));
         // 583's static reader names no builder.
         assertTrue(log, log.contains("node=SearchNullStateUnit module=none rendered_modules=RECENT_SEARCHES"));
         assertFalse(log, log.contains("node=SearchNullStateUnit module=none rendered_modules=RECENT_SEARCHES from="));

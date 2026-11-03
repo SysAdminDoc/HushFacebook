@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** `Hide For you in search` now also hides the For you grid when Facebook sends the search page without saying which section is which. That happens on the page Facebook loads ahead of time when the app starts, from Home or any other tab. In that case Hushfacebook reads the section's name from the page's own layout, and Debug logging lists the names it found. (#285)
 * **Facebook:** `Turn off auto-translation` now covers comments too. With it on, a comment Facebook translated by itself shows in the words its writer used, and See translation under it still translates it when you tap. (#372)
 * **Tooling:** `scripts/gen-l10n.py` writes each language's table to a class of its own, since the one generated file had grown past the size lint will read. The release check also stops counting Russian plural rows as missing from the other tables when their English runs over more than one line.
 * **Facebook:** New `Open in Facebook from the share menu` patch. Messenger keeps facebook.com links in its own browser, so share the page from there (or the link from any app) and pick Open in Facebook, and it opens in the patched Facebook. Hushfacebook settings lists it under Built-in changes, with a line on how to use it. (#111)
