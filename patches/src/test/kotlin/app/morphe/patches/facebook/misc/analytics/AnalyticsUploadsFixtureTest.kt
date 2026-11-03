@@ -13,6 +13,7 @@ import app.morphe.patches.facebook.reels.watchhistory.callRegisters
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.findFreeRegister
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.Format
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
@@ -210,8 +211,10 @@ class AnalyticsUploadsFixtureTest {
         val addresses = instructions.runningFold(0) { address, instruction -> address + instruction.codeUnits }
         return instructions.indices.any { at ->
             val branch = instructions[at] as? OffsetInstruction ?: return@any false
-            instructions[at].opcode.name.let { it.startsWith("GOTO") || it.startsWith("IF_") } &&
-                addresses[at] + branch.codeOffset == addresses[index]
+            instructions[at].opcode.format in BRANCHES && addresses[at] + branch.codeOffset == addresses[index]
         }
     }
+
+    /** The formats of goto (10t, 20t, 30t) and if (21t, 22t); 31t is a switch or array payload. */
+    private val BRANCHES = setOf(Format.Format10t, Format.Format20t, Format.Format30t, Format.Format21t, Format.Format22t)
 }
