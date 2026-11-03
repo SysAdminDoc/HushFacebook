@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** With `See-through bars` on, a feed video that slides under the top or bottom bar is blurred along with the rest of the page on phones where Facebook used to draw it on a separate layer the blur couldn't reach. Reels keep that layer. (#250)
 * **Facebook:** With `Open comments at full height` on, tapping more on a reel's description opens the whole text right there again. It used to open the comments instead, on reels Facebook would have shown with comments in a split screen. (#269)
 * **Facebook:** In a copy made with `Clone app`, the in-app browser asks the copy itself for the processes that draw its pages. It used to ask the regular Facebook app, which a copy can't count on being there. I haven't watched this on a signed-in copy yet. (#36)
 * **Facebook:** New `Let each post come back once` under `Hide posts you've already seen`. A post counts as seen after a quarter second on screen, so a quick scroll used to hide plenty you never read. With this on, a post you scrolled past shows up one more time, and it's hidden once you scroll past it again. It starts off. (#186)

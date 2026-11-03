@@ -153,4 +153,9 @@ public final class TranslucentBarsForTests {
         screen.bars.update();
         return screen.topHolder.getBackground().getAlpha() < 255;
     }
+
+    /** Says the tab bar patch is in the build, or with null, asks SettingsStatus again. */
+    public static void inBuild(Boolean inBuild) {
+        TranslucentBars.inBuildForTests = inBuild;
+    }
 }

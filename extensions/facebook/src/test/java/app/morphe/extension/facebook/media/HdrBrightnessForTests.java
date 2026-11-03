@@ -40,6 +40,6 @@ public final class HdrBrightnessForTests {
 
     /** Whether a player Facebook puts on a SurfaceView draws into its TextureView instead. */
     public static boolean drawsVideosWithTheScreen() {
-        return !TextureVideo.surfaceView(true) && TextureVideo.preferTextureView(false);
+        return !TextureVideo.surfaceView(true, TextureVideo.REELS_VIEWER) && TextureVideo.preferTextureView(false);
     }
 }

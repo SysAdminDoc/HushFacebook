@@ -58,7 +58,9 @@ internal const val OVERRIDE = "$BOTTOM_TAB_BAR->override(I)I"
  *
  * See-through bars, one more switch off by default, needs no hook: the extension finds both bars
  * by their kept classes as the main screen draws (TranslucentBars.java, started from the settings
- * entry's onApplicationCreate while this patch is in). Hide the status bar works the same way, and
+ * entry's onApplicationCreate while this patch is in). Its frost can't blur a video on its own
+ * SurfaceView, so while it's on, Turn off HDR brightness's player hook, when that patch is in too,
+ * puts feed videos on their TextureView (#250, TextureVideo.kt). Hide the status bar works the same way, and
  * one hook closes the strip Facebook draws behind the bar once it's gone (see StatusBarStrip.kt).
  */
 @Suppress("unused")

@@ -87,7 +87,9 @@ internal const val OWN_CODEC_CONFIGURE = "$HDR_BRIGHTNESS->configure($MEDIA_CODE
  * of Facebook's must-use-a-SurfaceView decision goes to the extension's TextureVideo, which says
  * no, and so does each read of the player's own TextureView preference behind that no, which says
  * yes. The player then draws into a TextureView, composed by the GPU with the rest of the screen.
- * The map is in TextureVideo.kt.
+ * The map is in TextureVideo.kt. Tab bar at the bottom's See-through bars uses both for every
+ * player origin but the reels viewer's, so a feed video under its frosted bars can be blurred, and
+ * reels keep their SurfaceView (#250).
  *
  * In the default selection with its switch off: HDR is how Facebook means those videos to look,
  * and some people want it.

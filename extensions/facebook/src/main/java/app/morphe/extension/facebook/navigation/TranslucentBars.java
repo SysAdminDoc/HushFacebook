@@ -43,6 +43,7 @@ import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.facebook.settings.SettingsStatus;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -82,6 +83,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * at all, and a feed video scrolling into view turned both bars from frost to a dark strip (#250).
  * Only one on screen counts: Reels' page waiting beside Home with its video kept every tab plain
  * once Reels had been opened, which read as the frost coming and going (#188).
+ *
+ * <p>A SurfaceView's video is a layer the display hardware puts behind the window, so no copy of
+ * the window holds it and the frost can't blur it. On phones where Facebook gives feed videos
+ * their own SurfaceView, the bar over one showed the video sharp under its tint, a dark strip that
+ * came and went as videos played and scrolled by (#250). While the bars are see-through, feed
+ * videos draw into a TextureView instead, through the player hook of Turn off HDR brightness
+ * (TextureVideo), and are frosted with the rest of the feed. Reels keep their SurfaceView.
  *
  * <p>Any failure gives every fill back and stops the bars of that screen, which then look stock.
  */
@@ -142,6 +150,19 @@ public final class TranslucentBars {
     /** Whether the bars are see-through now: the switch on, nothing paused, the settings ready. */
     public static boolean on() {
         return Utils.settingsReady() && Settings.TRANSLUCENT_BARS.get();
+    }
+
+    /** Says the tab bar patch is in the build, or with null, asks SettingsStatus again. */
+    static volatile Boolean inBuildForTests;
+
+    /**
+     * Whether a feed video should draw with the rest of the window now, so the frost blurs it
+     * (#250): the tab bar patch in the build, Android 12 or newer, and the bars see-through.
+     */
+    public static boolean blursVideos() {
+        Boolean forced = inBuildForTests;
+        boolean inBuild = forced != null ? forced : SettingsStatus.bottomTabBar();
+        return inBuild && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && on();
     }
 
     /** The alpha a fill gets for [facebooks], Facebook's own alpha on it, with or without frost under it. */

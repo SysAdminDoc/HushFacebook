@@ -8,6 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
+import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -40,11 +41,16 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  *   controller (LX/07s2;) when it's yes and the SurfaceView one (LX/081t; and its kin) otherwise,
  *   right after "FbGrootPlayer.createGrootSurfaceController". The other five use the answer for the
  *   video effects list and the player's config, so they read it as the TextureView it now is.
+ * - The decision's third argument is the player's origin (PlayerOrigin, never written in the body).
+ *   See-through bars (#250) needs it: the S22's decision says yes for the feed origin from the
+ *   server list, so the hook hands each answer over with the origin, and the extension keeps the
+ *   reels viewer's yes.
  */
 
 internal const val FORCE_TEXTURE_FOR_BLUR = "force_texture_view_for_blur"
 internal const val TEXTURE_VIDEO = "$EXTENSION_PACKAGE/media/TextureVideo;"
-internal const val OWN_SURFACE_VIEW = "$TEXTURE_VIDEO->surfaceView(Z)Z"
+internal const val OWN_SURFACE_VIEW = "$TEXTURE_VIDEO->surfaceView(ZLjava/lang/Object;)Z"
+internal const val PLAYER_ORIGIN = "Lcom/facebook/video/common/playerorigin/PlayerOrigin;"
 internal const val OWN_PREFER_TEXTURE_VIEW = "$TEXTURE_VIDEO->preferTextureView(Z)Z"
 internal const val ATOMIC_BOOLEAN = "Ljava/util/concurrent/atomic/AtomicBoolean;"
 
@@ -73,6 +79,15 @@ internal fun surfaceAnswers(decision: Method): List<Pair<Int, Int>> =
     decision.implementation!!.instructions.withIndex()
         .filter { (_, instruction) -> instruction.opcode in RETURNS }
         .map { (index, instruction) -> index to (instruction as OneRegisterInstruction).registerA }
+
+/** The register [decision] receives its [PLAYER_ORIGIN] argument in, or null when it takes none. */
+internal fun originRegister(decision: Method): Int? {
+    val parameters = decision.parameterTypes.map(CharSequence::toString)
+    val at = parameters.indexOf(PLAYER_ORIGIN).takeIf { it >= 0 } ?: return null
+    // The arguments fill the last registers in order (`this`, when there is one, comes before them).
+    val sizes = parameters.map { if (it == "J" || it == "D") 2 else 1 }
+    return decision.implementation!!.registerCount - sizes.sum() + sizes.take(at).sum()
+}
 
 /**
  * A read of the player's TextureView preference right where a call of the decision sends a no:
@@ -123,16 +138,25 @@ internal fun preferenceReads(method: Method, decision: Method): List<PreferenceR
     return reads
 }
 
-/** What the TextureView switch hooks: the decision and the preference reads behind its no. */
-internal class TextureHooks(val decision: Method, val reads: List<PreferenceRead>)
+/** What the TextureView switch hooks: the decision, its origin's register and the preference reads behind its no. */
+internal class TextureHooks(val decision: Method, val origin: Int, val reads: List<PreferenceRead>)
 
 /**
- * The decision ([surfaceDecision]) and every preference read behind its no ([preferenceReads]) in
- * the classes that reference the decision's class. Throws when no read is found: the player then
- * picks its view some other way, and turning the decision alone wouldn't reach the TextureView.
+ * The decision ([surfaceDecision]), its origin's register ([originRegister]) and every preference
+ * read behind its no ([preferenceReads]) in the classes that reference the decision's class. Throws
+ * when no read is found: the player then picks its view some other way, and turning the decision
+ * alone wouldn't reach the TextureView. Throws too when the decision takes no origin, writes over
+ * it, or keeps it or an answer past v15, where the hook's call can't name it.
  */
 internal fun BytecodePatchContext.textureHooks(): TextureHooks {
     val decision = surfaceDecision()
+    val origin = originRegister(decision) ?: throw PatchException("$PATCH: the surface decision takes no player origin")
+    if (decision.implementation!!.instructions.any { writesRegister(it, origin) }) {
+        throw PatchException("$PATCH: the surface decision writes over its player origin in v$origin")
+    }
+    if (origin > 15 || surfaceAnswers(decision).any { it.second > 15 }) {
+        throw PatchException("$PATCH: the surface decision's origin or an answer sits past v15")
+    }
     val reads = mutableListOf<PreferenceRead>()
     classDefForEachReferencing(types = listOf(decision.definingClass)) { classDef ->
         if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
@@ -142,13 +166,13 @@ internal fun BytecodePatchContext.textureHooks(): TextureHooks {
         throw PatchException("$PATCH: found no TextureView preference read behind the surface decision's no")
     }
     if (reads.any { it.register > 255 }) throw PatchException("$PATCH: a TextureView preference read sits past v255")
-    return TextureHooks(decision, reads)
+    return TextureHooks(decision, origin, reads)
 }
 
 /**
- * Each answer of the decision goes through the extension's surfaceView, at its `return` with any
- * jump to it kept, and each preference read through preferTextureView right after its
- * `move-result`, where only the read leads. Answers how many places it hooked.
+ * Each answer of the decision goes through the extension's surfaceView with the player's origin, at
+ * its `return` with any jump to it kept, and each preference read through preferTextureView right
+ * after its `move-result`, where only the read leads. Answers how many places it hooked.
  */
 internal fun BytecodePatchContext.hookTextureVideo(hooks: TextureHooks): Int {
     val decision = mutableClassDefBy(hooks.decision.definingClass).findMutableMethodOf(hooks.decision)
@@ -157,7 +181,7 @@ internal fun BytecodePatchContext.hookTextureVideo(hooks: TextureHooks): Int {
         decision.addInstructionsAtControlFlowLabel(
             index,
             """
-                invoke-static/range { v$register .. v$register }, $OWN_SURFACE_VIEW
+                invoke-static { v$register, v${hooks.origin} }, $OWN_SURFACE_VIEW
                 move-result v$register
             """,
         )

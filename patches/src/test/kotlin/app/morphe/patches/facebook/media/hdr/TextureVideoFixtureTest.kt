@@ -15,6 +15,7 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -61,6 +62,10 @@ class TextureVideoFixtureTest {
         (it.startRegister until it.startRegister + it.registerCount).toList()
     }
 
+    private fun five(instruction: Instruction) = (instruction as FiveRegisterInstruction).let {
+        listOf(it.registerC, it.registerD, it.registerE, it.registerF, it.registerG).take(it.registerCount)
+    }
+
     /** The opcodes of [body] with each hook of [own] and the move-result after it left out. */
     private fun withoutHooks(body: List<Instruction>, own: String): List<Opcode> {
         val hooks = body.indices.filter { calls(body[it], own) }
@@ -79,8 +84,11 @@ class TextureVideoFixtureTest {
         }
     }
 
-    /** Checks the hooked decision: each return reads the extension's answer, and no jump skips one. */
-    private fun assertDecisionHooked(where: String, original: Method, body: List<Instruction>) {
+    /**
+     * Checks the hooked decision: each return reads the extension's answer, given with the player's
+     * origin in [origin], and no jump skips one.
+     */
+    private fun assertDecisionHooked(where: String, original: Method, origin: Int, body: List<Instruction>) {
         val code = original.implementation!!.instructions.toList()
         val returns = surfaceAnswers(original).map { it.second }
         val hooked = body.indices.filter { body[it].opcode == Opcode.RETURN }
@@ -88,7 +96,7 @@ class TextureVideoFixtureTest {
         for (at in hooked) {
             val register = (body[at] as OneRegisterInstruction).registerA
             assertTrue("$where: the hook before the return at $at", calls(body[at - 2], OWN_SURFACE_VIEW))
-            assertEquals("$where: the answer handed over at $at", listOf(register), range(body[at - 2]))
+            assertEquals("$where: the answer and the origin handed over at $at", listOf(register, origin), five(body[at - 2]))
             assertEquals("$where: read back at $at", Opcode.MOVE_RESULT, body[at - 1].opcode)
             assertEquals("$where: into the returned register at $at", register, (body[at - 1] as OneRegisterInstruction).registerA)
         }
@@ -127,16 +135,21 @@ class TextureVideoFixtureTest {
         assertTrue("${bundle.name}: ${reads.values.sumOf { it.size }} preference reads", reads.values.sumOf { it.size } >= 2)
         assertEquals("${bundle.name}: one preference", 1, reads.values.flatten().map { it.field }.toSet().size)
 
+        // 585: the origin is the second of the five arguments, p2 of a virtual method in v10 (#250).
+        val origin = originRegister(decision)
+        assertTrue("${bundle.name}: the decision takes no player origin", origin != null)
+
         val owners = FixtureDex.classes(bundle, (readers.map { it.definingClass } + decision.definingClass).toSet())
         val context = PatchContexts.of(owners.values)
         val hooks = context.textureHooks()
         assertTrue("${bundle.name}: the decision found", same(decision, hooks.decision))
+        assertEquals("${bundle.name}: the origin found", origin, hooks.origin)
         assertEquals("${bundle.name}: the reads found", reads.values.sumOf { it.size }, hooks.reads.size)
         assertEquals("${bundle.name}: places hooked", surfaceAnswers(decision).size + hooks.reads.size, context.hookTextureVideo(hooks))
 
         fun body(method: Method) = context.mutableClassDefBy(method.definingClass).methods.single { same(it, method) }
             .implementation!!.instructions.toList()
-        assertDecisionHooked("${bundle.name}: the decision", decision, body(decision))
+        assertDecisionHooked("${bundle.name}: the decision", decision, hooks.origin, body(decision))
         for ((reader, inReader) in reads) {
             assertReadsHooked("${bundle.name}: ${reader.definingClass}->${reader.name}", reader, inReader.size, body(reader))
         }
@@ -159,13 +172,15 @@ class TextureVideoFixtureTest {
     private fun type(name: String, vararg methods: Method): ClassDef =
         ImmutableClassDef(name, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null, null, methods.toList())
 
-    private fun decision() = type(
+    /** A decision taking a config and the player's origin (p1, in v3); [writesOrigin] reuses p1 as a local. */
+    private fun decision(origin: Boolean = true, writesOrigin: Boolean = false) = type(
         "LX/decision;",
         method(
-            "LX/decision;", listOf("Ljava/lang/String;"), "Z", 3,
+            "LX/decision;", listOf("Ljava/lang/String;", if (origin) PLAYER_ORIGIN else "Ljava/lang/Object;"), "Z", 4,
             """
                 const/4 v0, 0x0
                 const-string v1, "$FORCE_TEXTURE_FOR_BLUR"
+                ${if (writesOrigin) "const/4 p1, 0x0" else "nop"}
                 if-eqz p0, :answer
                 const/4 v0, 0x1
                 :answer
@@ -180,7 +195,7 @@ class TextureVideoFixtureTest {
             "LX/player;", listOf("LX/player;"), "Z", 3,
             """
                 const/4 v0, 0x0
-                invoke-static { v0 }, LX/decision;->run(Ljava/lang/String;)Z
+                invoke-static { v0, v0 }, LX/decision;->run(Ljava/lang/String;$PLAYER_ORIGIN)Z
                 move-result v0
                 if-eqz v0, :no
                 const/4 v0, 0x0
@@ -200,10 +215,11 @@ class TextureVideoFixtureTest {
         val hooks = context.textureHooks()
         assertEquals(1, hooks.reads.size)
         assertEquals("LX/player;->texture:$ATOMIC_BOOLEAN", hooks.reads.single().field)
+        assertEquals("the origin's register", 3, hooks.origin)
         assertEquals(2, context.hookTextureVideo(hooks))
         val decided = context.mutableClassDefBy("LX/decision;").methods.single().implementation!!.instructions.toList()
-        assertDecisionHooked("decision", decision().methods.single(), decided)
-        assertEquals(Opcode.INVOKE_STATIC_RANGE, jumpTargets(decided).single().opcode)
+        assertDecisionHooked("decision", decision().methods.single(), 3, decided)
+        assertEquals(Opcode.INVOKE_STATIC, jumpTargets(decided).single().opcode)
         val read = context.mutableClassDefBy("LX/player;").methods.single().implementation!!.instructions.toList()
         assertReadsHooked("player", player(readsPreference = true).methods.single(), 1, read)
     }
@@ -213,5 +229,15 @@ class TextureVideoFixtureTest {
         assertThrows(PatchException::class.java) { PatchContexts.of(listOf(player(readsPreference = true))).surfaceDecision() }
         assertThrows(PatchException::class.java) { PatchContexts.of(listOf(decision(), player(readsPreference = false))).textureHooks() }
         assertThrows(PatchException::class.java) { PatchContexts.of(listOf(decision())).textureHooks() }
+    }
+
+    @Test
+    fun `a decision without the player's origin, or one that writes over it, is refused`() {
+        assertThrows(PatchException::class.java) {
+            PatchContexts.of(listOf(decision(origin = false), player(readsPreference = true))).textureHooks()
+        }
+        assertThrows(PatchException::class.java) {
+            PatchContexts.of(listOf(decision(writesOrigin = true), player(readsPreference = true))).textureHooks()
+        }
     }
 }
