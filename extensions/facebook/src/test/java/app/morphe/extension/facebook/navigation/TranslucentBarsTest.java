@@ -34,11 +34,13 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowLooper;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.PatchFamily;
@@ -122,6 +124,64 @@ public class TranslucentBarsTest {
 
         screen.page.setVisibility(View.INVISIBLE);
         assertNull("a hidden page", TranslucentBars.reachingUnder(screen.tabHolder, onScreen(screen, 1440, 1552), origin));
+    }
+
+    /**
+     * #250: Marketplace's React Native page sits in a FrameLayout whose bottom padding stops it at
+     * the tab bar's top, so nothing showed through the bar. While the bars are see-through the gap
+     * goes and the page runs under the bar. Switching them off gives the gap back. The display is
+     * tall enough to show the whole screen, so the tab bar's rows are on it.
+     */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void aPageThatStopsAtTheTabBarRunsUnderIt() {
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        FrameLayout holder = new FrameLayout(screen.activity);
+        holder.setPadding(0, 0, 0, 160);
+        View market = new View(screen.activity);
+        holder.addView(market, new FrameLayout.LayoutParams(720, FrameLayout.LayoutParams.MATCH_PARENT));
+        screen.page.addView(holder, new FrameLayout.LayoutParams(720, 1600));
+        View banner = new View(screen.activity);
+        screen.page.addView(banner, new FrameLayout.LayoutParams(720, 200));
+        screen.layOut();
+        assertEquals("stops at the tab bar", 1440, market.getBottom());
+
+        screen.bars.update();
+        screen.layOut();
+        assertEquals("under the tab bar", 1600, market.getBottom());
+        assertEquals("a short view nearby", 200, banner.getBottom());
+        assertTrue(statusLine(), statusLine().contains(TranslucentBars.STRETCHED + " 1"));
+
+        Settings.TRANSLUCENT_BARS.save(false);
+        screen.bars.update();
+        screen.layOut();
+        assertEquals("the gap back", 160, holder.getPaddingBottom());
+        assertEquals(1440, market.getBottom());
+    }
+
+    /** A page held off the tab bar by its own bottom margin, which Facebook keeps putting back, is left alone. */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void aGapFacebookKeepsPuttingBackIsLeftAlone() {
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        View market = new View(screen.activity);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(720, FrameLayout.LayoutParams.MATCH_PARENT);
+        params.bottomMargin = 160;
+        screen.page.addView(market, params);
+        screen.layOut();
+        for (int stretch = 1; stretch <= TranslucentBars.MAX_PUT_BACKS; stretch++) {
+            screen.bars.update();
+            screen.layOut();
+            assertEquals("stretch " + stretch, 1600, market.getBottom());
+            params.bottomMargin = 160;
+            market.setLayoutParams(params);
+            screen.layOut();
+            ShadowLooper.idleMainLooper(TranslucentBars.RESCAN_MS + 1, TimeUnit.MILLISECONDS);
+        }
+        screen.bars.update();
+        screen.layOut();
+        assertEquals("Facebook's gap kept", 1440, market.getBottom());
+        assertTrue(statusLine(), statusLine().contains(TranslucentBars.LEFT_SHORT + " 1"));
     }
 
     @Test

@@ -29,6 +29,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.ViewTreeObserver;
+import android.widget.FrameLayout;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -91,6 +92,14 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * videos draw into a TextureView instead, through the player hook of Turn off HDR brightness
  * (TextureVideo), and are frosted with the rest of the feed. Reels keep their SurfaceView.
  *
+ * <p>Not every tab's page runs under the tab bar. Marketplace is a React Native page that its
+ * FrameLayout holder stops at the tab bar's top edge, so nothing was there to show through (#250).
+ * While the bars are see-through, a page that stops at the tab bar's top edge through its holder's
+ * bottom padding or its own bottom margin, at least half the window tall and with a gap covering
+ * the tab bar's rows, gets that gap taken away and runs under the bar the way Home's feed does.
+ * The gap comes back when the bars stop. A page Facebook keeps putting the gap back on is left as
+ * Facebook has it, so the two never fight over its layout.
+ *
  * <p>Any failure gives every fill back and stops the bars of that screen, which then look stock.
  */
 public final class TranslucentBars {
@@ -111,6 +120,12 @@ public final class TranslucentBars {
     static final long RESCAN_MS = 1000;
     /** How far below a bar's top view a fill can sit. The top bar's NavigationBar is seven down. */
     static final int MAX_DEPTH = 12;
+    /** How far below the view under the tab bar a page that stops at the bar can sit. Marketplace's is a few down. */
+    static final int STRETCH_DEPTH = 8;
+    /** How soon after a stretch Facebook putting the gap back counts as it wanting the gap. */
+    static final long PUT_BACK_MS = 3000;
+    /** How many put-backs in a row leave a page as Facebook has it. */
+    static final int MAX_PUT_BACKS = 3;
 
     /** Counted each time a fill of Facebook's is made see-through, not each frame. */
     static final String MADE_SEE_THROUGH = "Bar background made see-through";
@@ -122,6 +137,10 @@ public final class TranslucentBars {
     static final String NOTHING_UNDER = "Bar with no view under it";
     /** Counted each time the switch going off or a pause gives the fills back. */
     static final String GIVEN_BACK = "Bar backgrounds given back";
+    /** Counted each time a page that stopped at the tab bar is stretched under it (#250). */
+    static final String STRETCHED = "Page stretched under the tab bar";
+    /** Counted each time Facebook kept putting a page's gap back and it was left alone. */
+    static final String LEFT_SHORT = "Page left stopping at the tab bar";
 
     private static final String FAMILY = FamilyNames.BOTTOM_TAB_BAR;
 
@@ -350,6 +369,85 @@ public final class TranslucentBars {
         return null;
     }
 
+    /**
+     * The view in [view] that stops at [edge], the tab bar's top in the window: at least [minHeight]
+     * tall, its bottom on the edge, and kept off the bar by a gap of at least [minGap] ({@link
+     * #gapBelow}). Searched down to {@link #STRETCH_DEPTH}, through views that reach the edge only.
+     * Null when there's none. [origin] is scratch space.
+     */
+    @Nullable
+    static View stopsAt(View view, int edge, int minHeight, int minGap, int[] origin, int depth) {
+        if (view.getVisibility() != View.VISIBLE || view.getHeight() <= 0) return null;
+        view.getLocationInWindow(origin);
+        int bottom = origin[1] + view.getHeight();
+        if (bottom < edge - 1) return null;
+        if (Math.abs(bottom - edge) <= 1 && view.getHeight() >= minHeight && gapBelow(view) >= minGap) return view;
+        if (depth >= STRETCH_DEPTH || !(view instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View found = stopsAt(group.getChildAt(i), edge, minHeight, minGap, origin, depth + 1);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    /**
+     * The gap under [view] that its FrameLayout holder's bottom padding and its own bottom margin
+     * make, or 0 when it isn't laid out by those alone (another holder, a gravity, a height of its own).
+     */
+    static int gapBelow(View view) {
+        ViewParent parent = view.getParent();
+        if (!(parent instanceof FrameLayout)) return 0;
+        FrameLayout holder = (FrameLayout) parent;
+        int margin = bottomMargin(view);
+        int gap = holder.getPaddingBottom() + margin;
+        return gap > 0 && view.getBottom() + margin == holder.getHeight() - holder.getPaddingBottom() ? gap : 0;
+    }
+
+    private static int bottomMargin(View view) {
+        ViewGroup.LayoutParams params = view.getLayoutParams();
+        return params instanceof ViewGroup.MarginLayoutParams ? ((ViewGroup.MarginLayoutParams) params).bottomMargin : 0;
+    }
+
+    /** A page stretched under the tab bar: the gap Facebook gave it, taken away while the bars are see-through. */
+    static final class Stretch {
+        private WeakReference<FrameLayout> holder = new WeakReference<>(null);
+        /** Facebook's bottom padding on the holder, and its bottom margin on the page. */
+        int padding;
+        int margin;
+        long takenAt;
+        int putBacks;
+        boolean leftAlone;
+
+        /** Takes [view]'s gap away: its holder's bottom padding and its own bottom margin. */
+        void take(View view, long now) {
+            FrameLayout holder = (FrameLayout) view.getParent();
+            this.holder = new WeakReference<>(holder);
+            padding = holder.getPaddingBottom();
+            margin = bottomMargin(view);
+            takenAt = now;
+            if (padding > 0) holder.setPadding(holder.getPaddingLeft(), holder.getPaddingTop(), holder.getPaddingRight(), 0);
+            if (margin > 0) {
+                ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+                params.bottomMargin = 0;
+                view.setLayoutParams(params);
+            }
+        }
+
+        /** Facebook's gap back on [view], where nothing has set it since. */
+        void giveBack(View view) {
+            FrameLayout holder = this.holder.get();
+            if (holder != null && padding > 0 && holder.getPaddingBottom() == 0) {
+                holder.setPadding(holder.getPaddingLeft(), holder.getPaddingTop(), holder.getPaddingRight(), padding);
+            }
+            if (margin > 0 && view.getParent() == holder && bottomMargin(view) == 0) {
+                ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+                params.bottomMargin = margin;
+                view.setLayoutParams(params);
+            }
+        }
+    }
+
     /** What shows whether a fill changed: its colour for a plain colour, its alpha for anything else. */
     static int reading(Drawable drawn) {
         if (drawn instanceof android.graphics.drawable.ColorDrawable) {
@@ -447,8 +545,11 @@ public final class TranslucentBars {
         private final int[] origin = new int[2];
         /** The bars with no view holding their box, by the bar: whether one holds their rows. */
         private final Map<View, Boolean> shortOfBox = new IdentityHashMap<>();
+        /** Each page stretched under the tab bar, by the page (#250). */
+        final Map<View, Stretch> stretched = new WeakHashMap<>();
         private boolean describedNothingUnder;
         private long nextLook;
+        private long nextStretch;
         private int frame;
         private boolean stopped;
 
@@ -506,6 +607,10 @@ public final class TranslucentBars {
                     if (other.getHeight() > 0) row = Math.min(row, other.getHeight());
                     if (other.getGlobalVisibleRect(visible)) rows.union(visible);
                 }
+                if (now >= nextStretch && tabBar.equals(anchor.getClass().getName()) && rows.top > height / 2) {
+                    nextStretch = now + RESCAN_MS;
+                    reachUnder(bar, rows, height, now);
+                }
                 View under = blurs ? underNow(bar, rows) : null;
                 seen.setEmpty();
                 float shown = keep(bar, bar, row, under != null, 1f, 0);
@@ -523,6 +628,43 @@ public final class TranslucentBars {
             }
             forgetUnseen();
             dropStaleFrost();
+        }
+
+        /**
+         * Stretches the page under the tab bar [bar] when it stops at the top of the bar's [rows],
+         * in a window [height] tall (#250). A page Facebook puts the gap back on {@link
+         * #MAX_PUT_BACKS} times in a row, each within {@link #PUT_BACK_MS}, is left as Facebook has it.
+         */
+        private void reachUnder(View bar, Rect rows, int height, long now) {
+            View page = under(bar);
+            if (page == null) return;
+            View content = stopsAt(page, rows.top, height / 2, rows.height(), origin, 0);
+            if (content == null) return;
+            Stretch stretch = stretched.get(content);
+            if (stretch == null) {
+                stretch = new Stretch();
+                stretched.put(content, stretch);
+            } else if (stretch.leftAlone) {
+                return;
+            } else if (now - stretch.takenAt >= PUT_BACK_MS) {
+                stretch.putBacks = 0;
+            } else if (++stretch.putBacks >= MAX_PUT_BACKS) {
+                stretch.leftAlone = true;
+                HookStatus.counted(FAMILY, LEFT_SHORT);
+                Logger.printDebug(() -> "See-through bars: Facebook keeps a page's gap, left alone");
+                return;
+            }
+            int gap = gapBelow(content);
+            stretch.take(content, now);
+            HookStatus.counted(FAMILY, STRETCHED);
+            Logger.printDebug(() -> "See-through bars: stretched a page " + gap + " px under the tab bar");
+        }
+
+        /** Every stretched page gets Facebook's gap back. */
+        private void unstretch() {
+            if (stretched.isEmpty()) return;
+            for (Map.Entry<View, Stretch> entry : stretched.entrySet()) entry.getValue().giveBack(entry.getKey());
+            stretched.clear();
         }
 
         /**
@@ -697,8 +839,9 @@ public final class TranslucentBars {
             }
         }
 
-        /** Every fill gets Facebook's alpha back and the frost goes. */
+        /** Every fill gets Facebook's alpha back, the frost goes and each stretched page gets its gap back. */
         void giveBack() {
+            unstretch();
             if (fills.isEmpty() && frosts.isEmpty()) return;
             for (Map.Entry<Drawable, Fill> entry : fills.entrySet()) giveBack(entry.getKey(), entry.getValue());
             if (!fills.isEmpty()) HookStatus.counted(FAMILY, GIVEN_BACK);
