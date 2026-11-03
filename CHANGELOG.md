@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* **Facebook:** With `Open comments at full height` on, tapping more on a reel's description opens the whole text right there again. It used to open the comments instead, on reels Facebook would have shown with comments in a split screen. (#269)
 * **Facebook:** In a copy made with `Clone app`, the in-app browser asks the copy itself for the processes that draw its pages. It used to ask the regular Facebook app, which a copy can't count on being there. I haven't watched this on a signed-in copy yet. (#36)
 * **Facebook:** New `Let each post come back once` under `Hide posts you've already seen`. A post counts as seen after a quarter second on screen, so a quick scroll used to hide plenty you never read. With this on, a post you scrolled past shows up one more time, and it's hidden once you scroll past it again. It starts off. (#186)
 * **Facebook:** Hushfacebook now tells you when Facebook's icons look soft because of the download you patched. The 32-bit bundle only has images for 320 dpi screens, so on a sharper screen the Home, bell, Profile, Search and Messenger icons get enlarged and look blurry. On a phone that can run the 64-bit bundle, a short note says so once after you install, and a line under the status card in the settings names the bundle to patch instead. (#365)

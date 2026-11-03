@@ -15,6 +15,7 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -65,6 +66,18 @@ internal const val NOT_ENTERED = "split_screen_not_entered"
 
 private const val INTENT = "Landroid/content/Intent;"
 
+/** What a reel description's tap logs when it opens the comments of a feed video's reel, held by its click handler. */
+internal const val DESCRIPTION_TAP = "mfc_description_tap"
+
+/**
+ * What the same click handler hands the split screen it tries first. The comment flyout it falls back to
+ * holds [DESCRIPTION_TAP] too, so this tells the handler apart.
+ */
+internal const val DESCRIPTION_SPLIT = "mfc_caption"
+
+/** The kept class of Facebook's server gates. */
+internal const val MOBILE_CONFIG = "Lcom/facebook/mobileconfig/factory/MobileConfigUnsafeContext;"
+
 /** Facebook's popover fragment, a kept class: its configuration change asks whether it fills the screen. */
 internal const val SIMPLE_POPOVER = "Lcom/facebook/widget/popover/SimplePopoverFragment;"
 
@@ -85,6 +98,7 @@ internal const val WATCH_AND_COMMENT = ", isWatchAndCommentSurface="
 internal const val FULL_HEIGHT_COMMENTS = "$EXTENSION_PACKAGE/comments/FullHeightComments;"
 internal const val SHEET_HEIGHT = "$FULL_HEIGHT_COMMENTS->sheetHeight(F)F"
 internal const val SKIP_SPLIT_SCREEN = "$FULL_HEIGHT_COMMENTS->skipSplitScreen()Z"
+internal const val DESCRIPTION_OPENS_COMMENTS = "$FULL_HEIGHT_COMMENTS->descriptionOpensComments(Z)Z"
 internal const val FILLS_SCREEN = "$FULL_HEIGHT_COMMENTS->fillsScreen(F)Z"
 internal const val WATCH_HEADER = "$FULL_HEIGHT_COMMENTS->watchHeader(Landroid/view/View;IZ)V"
 internal const val TAP_THROUGH = "$FULL_HEIGHT_COMMENTS->tapThrough(Landroid/app/Dialog;I)Z"
@@ -116,6 +130,15 @@ private const val INT_VALUE = "Ljava/lang/Number;->intValue()I"
  * holding [REEL_FOOTER] or [UNIT_NOT_MEASURED] (583 `LX/Xv5;->A00`, `LX/XRV;->A00`,
  * `LX/4Uk;->A08`), and two as the boolean methods holding [NOT_ENTERED] (583 `LX/Xv4;->A00`,
  * `LX/Xys;->A01`). First thing in each, the extension is asked, and a yes answers false.
+ *
+ * A tap on a feed video reel's description (585 `LX/0dPx;->A00`, the click handler of
+ * `FbShortsViewerDescriptionComponentSpec`) reads a server gate, and when it's open tries the split
+ * screen through one of those launchers (585 `LX/0cvi;->A00`, "mfc_caption"). A no there opens the
+ * regular sheet instead of growing the text, so with the switch on "more" opened the comments (#269).
+ * The gate is the last boolean [MOBILE_CONFIG] call before the handler loads [DESCRIPTION_TAP], its
+ * `move-result` followed by an `if-eqz` on the same register that skips to the text's own expansion.
+ * Between the two, the extension is handed the gate's answer and its own goes back into the same
+ * register, so with the switch on the gate reads closed and the description expands in place.
  *
  * A share of one doesn't always fill the screen: [UFI_POPOVER]'s answer to [SIMPLE_POPOVER]'s
  * "fill the screen?" question (583 `A0F`) can still say no from a screen size against a server
@@ -186,6 +209,7 @@ val fullHeightCommentsPatch = bytecodePatch(
         val feedbackParams = classDefByOrNull(FEEDBACK_PARAMS) ?: refuse("$FEEDBACK_PARAMS isn't in this build")
         val watchAndComment = watchAndCommentField(feedbackParams)
         val tapThrough = tapThroughSite(popover)
+        val description = descriptionGate(holders(DESCRIPTION_TAP))
 
         mutableClassDefBy(POPOVER_PARAMS).methods.single { it.descriptor() == sheet.descriptor() }
             .raiseSheet(height)
@@ -193,6 +217,8 @@ val fullHeightCommentsPatch = bytecodePatch(
             mutableClassDefBy(launcher.definingClass).methods.single { it.descriptor() == launcher.descriptor() }
                 .skipSplitScreen()
         }
+        mutableClassDefBy(description.method.definingClass).methods.single { it.descriptor() == description.method.descriptor() }
+            .keepDescriptionInPlace(description)
         mutableClassDefBy(fills.method.definingClass).methods.single { it.descriptor() == fills.method.descriptor() }
             .fillScreen(fills, share)
         mutableClassDefBy(views.definingClass).methods.single { it.descriptor() == views.descriptor() }
@@ -490,6 +516,61 @@ internal fun MutableMethod.skipSplitScreen() {
             return v0
         """,
         ExternalLabel("launch", getInstruction(0)),
+    )
+}
+
+/**
+ * Where a reel description's tap has read the gate sending it to the comments: instruction [index]
+ * of [method], the `if-eqz` testing the gate's answer in [register].
+ */
+internal data class DescriptionGate(val method: Method, val index: Int, val register: Int)
+
+/**
+ * The gate in the one method among [holders] holding [DESCRIPTION_TAP] and [DESCRIPTION_SPLIT]: the
+ * last boolean call to [MOBILE_CONFIG] before the first string, whose `move-result` an `if-eqz` on the
+ * same register follows. Nothing else may jump to that `if-eqz`, or the hook would be skipped on that path.
+ */
+internal fun descriptionGate(holders: List<ClassDef>): DescriptionGate {
+    val found = holders.flatMap { methodsHolding(it, DESCRIPTION_TAP) }.filter { holdsString(it, DESCRIPTION_SPLIT) }
+        .distinctBy { it.descriptor() }
+    val method = found.singleOrNull() ?: refuse(
+        "expected one method holding \"$DESCRIPTION_TAP\" and \"$DESCRIPTION_SPLIT\", found ${found.size}: " +
+            found.joinToString { it.descriptor() },
+    )
+    val code = method.implementation!!.instructions.toList()
+    val tap = code.indexOfFirst {
+        it.opcode in STRINGS && ((it as ReferenceInstruction).reference as StringReference).string == DESCRIPTION_TAP
+    }
+    // Only an invoke carries a method reference.
+    val gate = (tap - 1 downTo 0).firstOrNull { at ->
+        val call = (code[at] as? ReferenceInstruction)?.reference as? MethodReference
+        call?.definingClass == MOBILE_CONFIG && call.returnType == "Z"
+    } ?: refuse("${method.descriptor()} reads no $MOBILE_CONFIG gate before \"$DESCRIPTION_TAP\"")
+    val result = code.getOrNull(gate + 1)
+    val test = code.getOrNull(gate + 2)
+    if (result?.opcode != Opcode.MOVE_RESULT || test?.opcode != Opcode.IF_EQZ ||
+        (test as OneRegisterInstruction).registerA != (result as OneRegisterInstruction).registerA
+    ) {
+        refuse("${method.descriptor()} doesn't test its gate before \"$DESCRIPTION_TAP\" right after reading it")
+    }
+    val index = gate + 2
+    val flow = ControlFlow.of(method)
+    val jumps = flow.instructions.indices.filter { it != gate + 1 && (index in flow.normal[it] || index in flow.exceptional[it]) }
+    if (jumps.isNotEmpty()) refuse("${method.descriptor()} jumps to its gate's test from ${jumps.joinToString()}")
+    return DescriptionGate(method, index, (result as OneRegisterInstruction).registerA)
+}
+
+/**
+ * Where [gate] says the description's gate is tested: hand the extension the gate's answer and keep
+ * its own in the same register. The call takes it as a range, so any register number works.
+ */
+internal fun MutableMethod.keepDescriptionInPlace(gate: DescriptionGate) {
+    addInstructions(
+        gate.index,
+        """
+            invoke-static/range { v${gate.register} .. v${gate.register} }, $DESCRIPTION_OPENS_COMMENTS
+            move-result v${gate.register}
+        """,
     )
 }
 

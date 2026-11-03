@@ -298,10 +298,20 @@ public class FullHeightCommentsTest {
     }
 
     @Test
+    public void onTappingAReelsDescriptionExpandsItInPlaceInsteadOfOpeningTheCommentsCounted() {
+        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        assertFalse("more on a reel's description opened the comments", FullHeightComments.descriptionOpensComments(true));
+        assertFalse("a closed gate was opened", FullHeightComments.descriptionOpensComments(false));
+        assertEquals(FamilyNames.FULL_HEIGHT_COMMENTS + ": invoked 2, 1 found, 0 missing. Counted: "
+                + FullHeightComments.DESCRIPTION_EXPANDED + " 1", statusLine());
+    }
+
+    @Test
     public void offTheSheetKeepsFacebooksHeightAndTheSplitScreenRuns() {
         assertEquals(REEL_SHEET, FullHeightComments.sheetHeight(REEL_SHEET), 0f);
         assertFalse(FullHeightComments.skipSplitScreen());
         assertFalse(FullHeightComments.fillsScreen(1f));
+        assertTrue("off, a reel's description stopped opening the comments", FullHeightComments.descriptionOpensComments(true));
     }
 
     @Test
@@ -311,6 +321,7 @@ public class FullHeightCommentsTest {
         assertEquals(REEL_SHEET, FullHeightComments.sheetHeight(REEL_SHEET), 0f);
         assertFalse(FullHeightComments.skipSplitScreen());
         assertFalse(FullHeightComments.fillsScreen(1f));
+        assertTrue("paused, a reel's description stopped opening the comments", FullHeightComments.descriptionOpensComments(true));
     }
 
     @Test
@@ -321,6 +332,7 @@ public class FullHeightCommentsTest {
             assertEquals(REEL_SHEET, FullHeightComments.sheetHeight(REEL_SHEET), 0f);
             assertFalse(FullHeightComments.skipSplitScreen());
             assertFalse(FullHeightComments.fillsScreen(1f));
+            assertTrue(FullHeightComments.descriptionOpensComments(true));
             FullHeightComments.watchHeader(sheet, HEADER, false);
         });
         assertEquals("a sheet set up before the context lost its header", View.VISIBLE, header(sheet).getVisibility());

@@ -22,6 +22,8 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -44,7 +46,9 @@ import java.io.File
  * through four locals. The popover's dialog setup reads the surface a part-height sheet opened from
  * and compares it with the Reels tab's, and the hook hands the dialog and that surface to the
  * extension in between, ending the setup on a yes and landing a no on Facebook's comparison.
- * Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * The reel description's click handler reads one boolean server gate before its comments tap and
+ * tests it right away, and the hook hands that answer to the extension in between and puts the
+ * reply back in the register Facebook tests (#269). Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class FullHeightCommentsFixtureTest {
     private fun bundles(check: (File) -> Unit) {
@@ -266,6 +270,44 @@ class FullHeightCommentsFixtureTest {
         assertEquals("$where: Facebook's code stays", original.map { it.opcode },
             patched.filterIndexed { index, _ -> index !in at until at + 4 }.map { it.opcode })
         assertEquals("$where: a no lands on Facebook's comparison", setOf(at + 3, at + 4), ControlFlow.of(method).normal[at + 2].toSet())
+    }
+
+    private fun description(bundle: File) {
+        val gate = descriptionGate(holders(bundle, DESCRIPTION_TAP))
+        val where = "${bundle.name}: ${gate.method.descriptor()}"
+        val code = gate.method.implementation!!.instructions.toList()
+        val at = gate.index
+        val split = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == DESCRIPTION_SPLIT }
+        assertTrue("$where: the split screen is only tried past the gate", split > at)
+        val read = code[at - 2]
+        assertEquals("$where: the gate is a server value", MOBILE_CONFIG, ((read as ReferenceInstruction).reference as MethodReference).definingClass)
+        assertEquals("$where: read as a boolean", "Z", (read.reference as MethodReference).returnType)
+        assertEquals("$where: into the register tested", gate.register, (code[at - 1] as OneRegisterInstruction).registerA)
+        assertEquals("$where: tested right after", Opcode.IF_EQZ, code[at].opcode)
+        assertEquals("$where: tested right after", gate.register, (code[at] as OneRegisterInstruction).registerA)
+
+        val owner = FixtureDex.classes(bundle, setOf(gate.method.definingClass)).values.single()
+        val context = PatchContexts.of(listOf(owner))
+        val method = context.mutableClassDefBy(owner.type).methods.single { it.descriptor() == gate.method.descriptor() }
+        val original = method.implementation!!.instructions.toList()
+        method.keepDescriptionInPlace(gate)
+        val patched = method.implementation!!.instructions.toList()
+        assertEquals("$where gains two instructions", original.size + 2, patched.size)
+        assertEquals("$where: the gate's read keeps its result", Opcode.MOVE_RESULT, patched[at - 1].opcode)
+        assertEquals("$where: the extension is asked next", Opcode.INVOKE_STATIC_RANGE, patched[at].opcode)
+        assertEquals("$where: the extension is asked next", DESCRIPTION_OPENS_COMMENTS, patched[at].reference())
+        val call = patched[at] as RegisterRangeInstruction
+        assertEquals("$where: with the gate's answer", listOf(gate.register, 1), listOf(call.startRegister, call.registerCount))
+        assertEquals("$where: its answer goes back", Opcode.MOVE_RESULT, patched[at + 1].opcode)
+        assertEquals("$where: into the gate's register", gate.register, (patched[at + 1] as OneRegisterInstruction).registerA)
+        assertEquals("$where: and Facebook tests that", Opcode.IF_EQZ, patched[at + 2].opcode)
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode },
+            patched.filterIndexed { index, _ -> index !in at until at + 2 }.map { it.opcode })
+    }
+
+    @Test
+    fun `each declared build hands a feed reel description tap's comments gate to the extension`() = bundles { bundle ->
+        description(bundle)
     }
 
     @Test

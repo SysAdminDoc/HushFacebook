@@ -49,6 +49,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * sheet. The patch asks {@link #skipSplitScreen} first in each, so with the switch on they answer
  * no and the regular sheet, at full height, opens instead.
  *
+ * <p>A tap on a feed video reel's description goes through one of those launchers too, behind a
+ * server gate, and falls back to the regular sheet when it answers no, so with the switch on "more"
+ * opened the comments instead of the text (#269). The patch hands {@link #descriptionOpensComments}
+ * that gate's answer, and while the switch is on it comes back closed, so the description expands
+ * in place.
+ *
  * <p>A share of one still has to pass the sheet fragment's "fill the screen?" check, which can say
  * no from the screen's size against a server value and then draws a centered box 80% of the screen
  * tall. The patch hands {@link #fillsScreen} the share where that check starts (on 584, right after
@@ -90,6 +96,12 @@ public final class FullHeightComments {
 
     /** What the report counts each time the split screen is passed over for the regular sheet. */
     static final String SPLIT_SCREEN_SKIPPED = "Split screen passed over";
+
+    /** The member the report names once a reel description's tap has asked whether it opens the comments. */
+    static final String DESCRIPTION = "reel description tap";
+
+    /** What the report counts each time a reel description grows in place instead of opening the comments. */
+    static final String DESCRIPTION_EXPANDED = "Reel description expanded in place";
 
     /** The member the report names once the sheet's "fill the screen?" check has been asked about. */
     static final String FILLS = "comment sheet fills the screen";
@@ -170,6 +182,28 @@ public final class FullHeightComments {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "split screen", failure);
             return false;
+        }
+    }
+
+    /**
+     * The hook, where a reel description's tap reads the server gate that sends it to the comments
+     * on a feed video's reel, handed that gate's answer (#269). Facebook tries its split screen
+     * there, and when a launcher answers no it opens the whole comment sheet instead of growing the
+     * text. While Open comments at full height is on, the launchers always answer no, so a tap on
+     * "more" would land in the comments: the gate comes back closed and the description expands in
+     * place, the way it does wherever the gate is off. Otherwise, and for a throw, Facebook's answer
+     * comes back.
+     */
+    public static boolean descriptionOpensComments(boolean opens) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, DESCRIPTION);
+            if (!opens || !Utils.settingsReady() || !Settings.OPEN_COMMENTS_FULL_HEIGHT.get()) return opens;
+            HookStatus.counted(FAMILY, DESCRIPTION_EXPANDED);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "description tap", failure);
+            return opens;
         }
     }
 
