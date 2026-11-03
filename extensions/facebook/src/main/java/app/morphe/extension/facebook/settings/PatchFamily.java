@@ -315,6 +315,8 @@ public enum PatchFamily {
     // The version code is in the manifest, and Facebook's reads of it have to keep answering the
     // real one whether or not Hushfacebook is paused.
     PLAY_STORE_UPDATES(FamilyNames.PLAY_STORE_UPDATES, "playStoreUpdates", "Version number Google Play sees"),
+    // The share target is declared in the manifest, so it stays in Android's share menu while paused (#111).
+    OPEN_IN_FACEBOOK(FamilyNames.OPEN_IN_FACEBOOK, "openInFacebook", FamilyNames.OPEN_IN_FACEBOOK),
     // The settings entry's own way in, like the logo long press and the launcher shortcut, which
     // stay reachable while paused because the settings screen is where a pause is lifted.
     MENU_SETTINGS_ROW(FamilyNames.MENU_SETTINGS_ROW, "menuSettingsRow", FamilyNames.MENU_SETTINGS_ROW);

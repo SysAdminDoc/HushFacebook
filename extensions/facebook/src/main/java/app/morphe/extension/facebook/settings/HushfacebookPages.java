@@ -289,7 +289,7 @@ final class HushfacebookPages {
         if (build.contains(PatchFamily.AD_PREFETCH) || build.contains(PatchFamily.AD_TELEMETRY)
                 || build.contains(PatchFamily.AUDIENCE_NETWORK) || build.contains(PatchFamily.AMOLED_THEME)
                 || build.contains(PatchFamily.MATERIAL_YOU_THEME) || build.contains(PatchFamily.RESTORE_TRUST)
-                || build.contains(PatchFamily.INSTALL_BESIDE_META_APPS)) {
+                || build.contains(PatchFamily.INSTALL_BESIDE_META_APPS) || build.contains(PatchFamily.OPEN_IN_FACEBOOK)) {
             PreferenceCategory patched = category(screen, L10n.t("Built-in changes"));
             if (build.contains(PatchFamily.AD_PREFETCH)) {
                 patched.addPreference(mark(info(context, L10n.t(PatchFamily.AD_PREFETCH.staysWhilePaused),
@@ -322,6 +322,11 @@ final class HushfacebookPages {
                 patched.addPreference(mark(info(context, L10n.t(PatchFamily.INSTALL_BESIDE_META_APPS.staysWhilePaused),
                         L10n.t("Messenger, Facebook Lite, Business Suite and Workplace can install next to this Facebook. Their "
                                 + "shared permissions no longer clash.")), SettingsIcons.PHONE));
+            }
+            if (build.contains(PatchFamily.OPEN_IN_FACEBOOK)) {
+                patched.addPreference(mark(info(context, L10n.t(PatchFamily.OPEN_IN_FACEBOOK.staysWhilePaused),
+                        L10n.t("Share a Facebook link from Messenger's browser or any other app and pick Open in Facebook, "
+                                + "and it opens here.")), SettingsIcons.LINKS));
             }
             patched.addPreference(mark(info(context, L10n.t("Changing these"),
                     L10n.t("They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off. "

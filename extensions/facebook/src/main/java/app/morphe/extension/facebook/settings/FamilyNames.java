@@ -135,6 +135,7 @@ public final class FamilyNames {
     public static final String TRANSLATED_START = "Start on x86 devices";
     public static final String INSTALL_BESIDE_META_APPS = "Install beside Meta's apps";
     public static final String PLAY_STORE_UPDATES = "Disable Play Store updates";
+    public static final String OPEN_IN_FACEBOOK = "Open in Facebook from the share menu";
     public static final String MENU_SETTINGS_ROW = "Hushfacebook in the Menu";
 
     private FamilyNames() {

@@ -8,6 +8,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -78,7 +79,8 @@ private val openInFacebookResourcePatch = resourcePatch {
  */
 @Suppress("unused")
 val openInFacebookPatch = bytecodePatch(
-    name = PATCH,
+    // The README table check reads this literal; PATCH carries the same text for the messages.
+    name = "Open in Facebook from the share menu",
     description = "Adds Open in Facebook to Android's share menu. Share a Facebook link or page to it from " +
         "Messenger's browser or any other app, and it opens here instead of in that app. Works as soon as you " +
         "patch it in, with no switch.",
@@ -91,5 +93,6 @@ val openInFacebookPatch = bytecodePatch(
 
     execute {
         classDefByOrNull(OPEN_IN_FACEBOOK_CLASS) ?: throw PatchException("$PATCH: the extension has no $OPEN_IN_FACEBOOK_CLASS")
+        enableStatus("openInFacebook")
     }
 }
