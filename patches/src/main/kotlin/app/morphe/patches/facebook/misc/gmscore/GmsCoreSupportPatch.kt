@@ -10,19 +10,18 @@
  */
 package app.morphe.patches.facebook.misc.gmscore
 
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
-import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.encodedValue.MutableStringEncodedValue
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction21c
@@ -443,15 +442,10 @@ internal fun BytecodePatchContext.applyGmsCore(plan: GmsCorePlan) {
         val owner = mutableClassDefBy(type)
         for (field in held) (owner.staticFields.single { it.name == field.name }.initialValue as MutableStringEncodedValue).value = field.text
     }
-    mutableClassDefBy(plan.availability.definingClass).methods.single { it.same(plan.availability) }.answerZero()
-    mutableClassDefBy(plan.frameworkProvider.definingClass).methods.single { it.same(plan.frameworkProvider) }.answerZero()
+    // 0 is success for the availability check, and false tells androidx the framework provider isn't there.
+    mutableClassDefBy(plan.availability.definingClass).methods.single { it.same(plan.availability) }.returnEarly(0)
+    mutableClassDefBy(plan.frameworkProvider.definingClass).methods.single { it.same(plan.frameworkProvider) }.returnEarly(false)
 }
-
-/** Returns 0 (success for the availability check, false for the provider) before the body runs. Both have a v0. */
-private fun MutableMethod.answerZero() = addInstructions(0, """
-    const/4 v0, 0x0
-    return v0
-""")
 
 /**
  * Sends Cloud Messaging's manifest names to microG-RE: the receive permission Facebook asks for, the send permission

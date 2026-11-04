@@ -129,9 +129,11 @@ class GmsCoreSupportTest {
         assertEquals("app.revanced.android.gms", (registered.staticFields.single().initialValue as StringEncodedValue).value)
         for (owner in listOf(availabilityOwner, providerOwner)) {
             val answered = context.mutableClassDefBy(owner).methods.single().instructions()
-            assertEquals(owner, Opcode.CONST_4, answered[0].opcode)
+            // returnEarly loads an int with const and a boolean with const/4: either way a 0 the return hands back.
+            assertTrue(owner, answered[0].opcode in setOf(Opcode.CONST_4, Opcode.CONST))
             assertEquals(owner, 0, (answered[0] as NarrowLiteralInstruction).narrowLiteral)
             assertEquals(owner, Opcode.RETURN, answered[1].opcode)
+            assertEquals(owner, (answered[0] as OneRegisterInstruction).registerA, (answered[1] as OneRegisterInstruction).registerA)
         }
         assertEquals("the check's own texts move too", "app.revanced.android.gms",
             context.mutableClassDefBy(availabilityOwner).methods.single().instructions()[2].text())
