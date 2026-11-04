@@ -480,6 +480,17 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/settings/SettingsHeader.java"
+      ],
+      "origin": "ported",
+      "upstream": "https://github.com/SysAdminDoc/HushGram",
+      "commit": "bb6775bf5f81ea821a078632305ece87bb328f30",
+      "via": [],
+      "license": "GPL-3.0-only",
+      "changes": "Ported from HushGram's settings header: the centred launcher icon, the name in the gradient title and the version line, at HushGram's sizes. HushGram's is a row of its list; here the three parts go straight into the settings screen's collapsing column over the list, the gradient is Facebook's blues lifted to 7:1 on the page, the icon falls back to the patched mark in the heading colour, and the version line names Facebook."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/hook/**",
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/FeedTypeNames.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/DiscoverUnits.kt",

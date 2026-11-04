@@ -23,6 +23,7 @@ Disable Play Store updates is Morphe's own patch from morphe-patches, with
 its file notices kept and Hushfacebook's changes marked in them. GmsCore
 support is HushMessenger's, which adapted HushPinterest's copy of the patch
 Morphe and ReVanced wrote, with Hushfacebook's changes marked in its header.
+The settings screen's header is HushGram's, with its changes marked the same way.
 The notices below are reproduced from those projects. Morphe requires its text to be
 carried in derivative works and shown to the person using the software, so it
 is also reachable in the app itself: long-press Facebook's launcher icon, open
@@ -30,6 +31,7 @@ Hushfacebook, then More settings, About and Licenses.
 
   Hushfacebook                https://github.com/SysAdminDoc/Hushfacebook
   Hushfeed                    https://github.com/SysAdminDoc/hushfeed
+  HushGram                    https://github.com/SysAdminDoc/HushGram
   HushMessenger               https://github.com/SysAdminDoc/HushMessenger
   HushPinterest               https://github.com/SysAdminDoc/HushPinterest
   JhouHank's translation      https://github.com/JhouHank/HushFacebook

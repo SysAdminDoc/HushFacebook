@@ -264,6 +264,12 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             // You error page drew its dark message on black.
             ScreenColors colors = ScreenColors.forScreen(getContext());
             list.setBackgroundColor((colors == null ? ScreenColors.black() : colors).background);
+            // Room under the last row, which scrolls through it, so the row clears the gesture bar.
+            int room = Math.round(24 * getResources().getDisplayMetrics().density);
+            list.setClipToPadding(false);
+            list.setPaddingRelative(list.getPaddingStart(), list.getPaddingTop(), list.getPaddingEnd(), room);
+            // The header over the list slides up under the bar as the rows scroll.
+            if (getParentFragment() instanceof SettingsDialog) ((SettingsDialog) getParentFragment()).followList(list);
         }
     }
 
