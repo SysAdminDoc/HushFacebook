@@ -4,8 +4,15 @@
  */
 package app.morphe.extension.facebook.navigation;
 
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Outline;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,6 +42,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * bar) is clipped away with the rest, and so is the bottom of a row Facebook lays out down over the
  * navigation bar, so the feed shows around the gesture handle.
  *
+ * <p>The selected tab gets a spot behind its icon, a smaller pill in Facebook's blue (#383). It's a
+ * layer over that tab's own background, so Facebook's press ripple stays, and it moves to the next
+ * tab Facebook marks selected.
+ *
  * <p>Nothing is laid out again: the scale and the clip are drawing properties, so Facebook's pages
  * keep their padding, scroll-away keeps sliding the bar, and a tap goes to the tab drawn under the
  * finger. A tab bar at the top is left as Facebook draws it. Off, paused, before the settings are
@@ -51,12 +62,21 @@ public final class RoundedTabBar {
     /** How far above the bottom of the row of tabs the pill's bottom sits, in dp. */
     static final float LIFT_DP = 8f;
 
+    /** The selected tab's spot: Facebook's blue, faint enough that the tab's own blue icon reads on it. */
+    static final int SPOT_COLOR = 0x330866FF;
+    /** How far the spot stays inside its tab at each side, in dp. */
+    static final float SPOT_ACROSS_DP = 4f;
+    /** How far the spot stays inside the part of its tab the pill shows, above and below, in dp. */
+    static final float SPOT_DOWN_DP = 7f;
+
     private static final String FAMILY = FamilyNames.BOTTOM_TAB_BAR;
 
     /** Each main screen's window and its shaper. */
     static final Map<View, Shaper> WINDOWS = new WeakHashMap<>();
     /** Each bar made a pill, with what it had before. */
     static final Map<View, Shape> SHAPED = new WeakHashMap<>();
+    /** Each tab given the spot, with the background it had. */
+    static final Map<View, Spotted> SPOTTED = new WeakHashMap<>();
 
     /** The window's insets in a test, which can't give a view a navigation bar. */
     @Nullable static volatile WindowInsets insetsForTests;
@@ -171,6 +191,55 @@ public final class RoundedTabBar {
         return fresh;
     }
 
+    /**
+     * The selected tab in [view], [anchor]'s row of tabs: the outermost selected view at most half
+     * as wide as the row. Selecting a tab selects what's in it too, and the row itself is wider.
+     */
+    @Nullable
+    static View selectedTab(View view, int rowWidth) {
+        if (view.getVisibility() != View.VISIBLE) return null;
+        if (view.isSelected() && view.getWidth() > 0 && view.getWidth() * 2 <= rowWidth) return view;
+        if (!(view instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View found = selectedTab(group.getChildAt(i), rowWidth);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    /**
+     * Gives [tab] the spot, or brings it up to date: inside the part of the tab the pill around
+     * [row], in [bar]'s coordinates, shows. A background Facebook set since is the one kept.
+     */
+    static void spot(View bar, View tab, Rect row) {
+        Spotted spotted = SPOTTED.get(tab);
+        if (spotted == null || tab.getBackground() != spotted.layers) {
+            spotted = new Spotted(tab.getBackground());
+            SPOTTED.put(tab, spotted);
+            tab.setBackground(spotted.layers);
+        }
+        Rect box = spotted.scratch;
+        box.set(0, 0, tab.getWidth(), tab.getHeight());
+        if (bar != tab && bar instanceof ViewGroup) ((ViewGroup) bar).offsetDescendantRectToMyCoords(tab, box);
+        int top = Math.max(0, row.top - box.top);
+        int bottom = Math.min(tab.getHeight(), row.bottom - box.top);
+        float density = tab.getResources().getDisplayMetrics().density;
+        int across = Math.round(SPOT_ACROSS_DP * density);
+        int down = Math.round(SPOT_DOWN_DP * density);
+        box.set(across, top + down, tab.getWidth() - across, bottom - down);
+        if (!box.equals(spotted.spot.area)) {
+            spotted.spot.area.set(box);
+            spotted.spot.invalidateSelf();
+        }
+    }
+
+    /** Gives [tab] back the background it had before the spot. */
+    static void unspot(View tab) {
+        Spotted spotted = SPOTTED.remove(tab);
+        if (spotted != null && tab.getBackground() == spotted.layers) tab.setBackground(spotted.facebooks);
+    }
+
     /** Gives [bar] back what it had before it was made a pill. True when it was one. */
     static boolean giveBack(View bar) {
         Shape shape = SHAPED.remove(bar);
@@ -217,6 +286,54 @@ public final class RoundedTabBar {
         }
     }
 
+    /** A tab with the spot: the background it had, and the spot over it. */
+    static final class Spotted {
+        @Nullable
+        final Drawable facebooks;
+        final Spot spot = new Spot();
+        final Drawable layers;
+        final Rect scratch = new Rect();
+
+        Spotted(@Nullable Drawable facebooks) {
+            this.facebooks = facebooks;
+            layers = facebooks == null ? spot : new LayerDrawable(new Drawable[]{facebooks, spot});
+        }
+    }
+
+    /** The spot: [area], in its tab's coordinates, with ends as round as it is tall. */
+    static final class Spot extends Drawable {
+        final Rect area = new Rect();
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF round = new RectF();
+
+        Spot() {
+            paint.setColor(SPOT_COLOR);
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            if (area.isEmpty()) return;
+            round.set(area);
+            float radius = round.height() / 2f;
+            canvas.drawRoundRect(round, radius, radius, paint);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            paint.setAlpha((SPOT_COLOR >>> 24) * alpha / 255);
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter filter) {
+            paint.setColorFilter(filter);
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
+    }
+
     /** The pill: the row of tabs, in the bar's coordinates, with ends as round as it is tall. */
     static final class Pill extends ViewOutlineProvider {
         final Rect row = new Rect();
@@ -237,6 +354,7 @@ public final class RoundedTabBar {
         private final String tabBar;
         private WeakReference<View> anchor = new WeakReference<>(null);
         private WeakReference<View> shaped = new WeakReference<>(null);
+        private WeakReference<View> spotted = new WeakReference<>(null);
         private final int[] at = new int[2];
         private long nextLook;
         private boolean stopped;
@@ -306,10 +424,22 @@ public final class RoundedTabBar {
                 Logger.printDebug(() -> "Rounded tab bar: the bar " + barName + " is a pill around its "
                         + rowWidth + "x" + rowHeight + " row");
             }
+            View tab = selectedTab(anchor, anchor.getWidth());
+            View lastTab = spotted.get();
+            if (lastTab != null && lastTab != tab) unspot(lastTab);
+            spotted = new WeakReference<>(tab);
+            Shape shape = SHAPED.get(bar);
+            if (tab != null && shape != null) {
+                HookStatus.bound(FAMILY, "selected tab");
+                spot(bar, tab, shape.pill.row);
+            }
         }
 
-        /** Gives the bar this shaper made a pill its own shape back. */
+        /** Gives the bar this shaper made a pill its own shape back, and the selected tab its background. */
         private void letGo() {
+            View tab = spotted.get();
+            spotted = new WeakReference<>(null);
+            if (tab != null) unspot(tab);
             View bar = shaped.get();
             shaped = new WeakReference<>(null);
             if (bar != null && giveBack(bar)) HookStatus.counted(FAMILY, GIVEN_BACK);

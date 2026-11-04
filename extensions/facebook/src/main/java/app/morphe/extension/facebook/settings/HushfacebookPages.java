@@ -230,7 +230,7 @@ final class HushfacebookPages {
             // Asked as each frame of the main screen draws, so a change shows right away (#344).
             appearance.addPreference(toggle(context, Settings.ROUNDED_TAB_BAR,
                     L10n.t("With the tab bar at the bottom, it gets round ends and sits a little smaller, just above "
-                            + "the bottom of the screen.")));
+                            + "the bottom of the screen, with a soft highlight behind the tab you're on.")));
             // Asked as the main screen gets its focus back, so a change shows when these settings close.
             appearance.addPreference(toggle(context, Settings.HIDE_STATUS_BAR,
                     L10n.t("Takes the phone's status bar, with the time and battery, off Facebook's main screen, so "

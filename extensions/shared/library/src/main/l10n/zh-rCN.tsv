@@ -116,7 +116,7 @@ See-through bars	透明栏
 # context: description of that switch; the feed is the list of posts on Home, and blurred means frosted like glass
 The top bar and the tab bar turn see-through, so the feed shows through them as you scroll. On Android 12 and newer the feed behind them is blurred.	顶部栏和标签栏变为透明，滚动时动态消息会透过它们显示出来。在 Android 12 及更高版本上，它们后面的动态消息会模糊显示。
 Rounded tab bar	圆角标签栏
-With the tab bar at the bottom, it gets round ends and sits a little smaller, just above the bottom of the screen.	标签栏在底部时，两端变为圆形，尺寸略小，位于屏幕底边上方。
+With the tab bar at the bottom, it gets round ends and sits a little smaller, just above the bottom of the screen, with a soft highlight behind the tab you're on.	标签栏在底部时，两端变为圆形，尺寸略小，位于屏幕底边上方，当前所在的标签后面会有柔和的高亮。
 # context: switch title under Appearance; it keeps Facebook's dark mode on whatever Facebook's own Dark mode setting says
 Force dark mode	强制深色模式
 # context: description of that switch; on some tablets Facebook's own Settings page has no Dark mode row

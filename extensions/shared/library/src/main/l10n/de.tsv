@@ -116,7 +116,7 @@ See-through bars	Durchsichtige Leisten
 # context: description of that switch; the feed is the list of posts on Home, and blurred means frosted like glass
 The top bar and the tab bar turn see-through, so the feed shows through them as you scroll. On Android 12 and newer the feed behind them is blurred.	Die obere Leiste und die Tab-Leiste werden durchsichtig, sodass der Feed beim Scrollen durchscheint. Ab Android 12 wird der Feed dahinter weichgezeichnet.
 Rounded tab bar	Abgerundete Tab-Leiste
-With the tab bar at the bottom, it gets round ends and sits a little smaller, just above the bottom of the screen.	Wenn die Tab-Leiste unten ist, bekommt sie runde Enden und wird etwas kleiner, knapp über dem unteren Bildschirmrand.
+With the tab bar at the bottom, it gets round ends and sits a little smaller, just above the bottom of the screen, with a soft highlight behind the tab you're on.	Wenn die Tab-Leiste unten ist, bekommt sie runde Enden und wird etwas kleiner, knapp über dem unteren Bildschirmrand, mit einer sanften Hervorhebung hinter dem Tab, auf dem du bist.
 # context: switch title under Appearance; it keeps Facebook's dark mode on whatever Facebook's own Dark mode setting says
 Force dark mode	Dunkelmodus erzwingen
 # context: description of that switch; on some tablets Facebook's own Settings page has no Dark mode row

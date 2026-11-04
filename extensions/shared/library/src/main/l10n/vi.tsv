@@ -116,7 +116,7 @@ See-through bars	Thanh trong suốt
 # context: description of that switch; the feed is the list of posts on Home, and blurred means frosted like glass
 The top bar and the tab bar turn see-through, so the feed shows through them as you scroll. On Android 12 and newer the feed behind them is blurred.	Thanh trên cùng và thanh tab trở nên trong suốt, nên bảng tin hiện xuyên qua khi bạn cuộn. Trên Android 12 trở lên, bảng tin phía sau được làm mờ.
 Rounded tab bar	Thanh tab bo tròn
-With the tab bar at the bottom, it gets round ends and sits a little smaller, just above the bottom of the screen.	Khi thanh tab ở dưới cùng, hai đầu của nó được bo tròn và thanh nhỏ hơn một chút, nằm ngay trên mép dưới màn hình.
+With the tab bar at the bottom, it gets round ends and sits a little smaller, just above the bottom of the screen, with a soft highlight behind the tab you're on.	Khi thanh tab ở dưới cùng, hai đầu của nó được bo tròn và thanh nhỏ hơn một chút, nằm ngay trên mép dưới màn hình, với một vệt sáng nhẹ phía sau tab bạn đang mở.
 # context: switch title under Appearance; it keeps Facebook's dark mode on whatever Facebook's own Dark mode setting says
 Force dark mode	Buộc dùng chế độ tối
 # context: description of that switch; on some tablets Facebook's own Settings page has no Dark mode row

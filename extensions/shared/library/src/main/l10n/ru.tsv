@@ -120,7 +120,7 @@ See-through bars	Прозрачные панели
 # context: description of that switch; the feed is the list of posts on Home, and blurred means frosted like glass
 The top bar and the tab bar turn see-through, so the feed shows through them as you scroll. On Android 12 and newer the feed behind them is blurred.	Верхняя панель и панель вкладок становятся прозрачными, и при прокрутке сквозь них видна Лента. На Android 12 и новее содержимое Ленты за панелями размывается.
 Rounded tab bar	Скруглённая панель вкладок
-With the tab bar at the bottom, it gets round ends and sits a little smaller, just above the bottom of the screen.	Когда панель вкладок внизу, у неё появляются круглые края и она становится чуть меньше, прямо над нижним краем экрана.
+With the tab bar at the bottom, it gets round ends and sits a little smaller, just above the bottom of the screen, with a soft highlight behind the tab you're on.	Когда панель вкладок внизу, у неё появляются круглые края и она становится чуть меньше, прямо над нижним краем экрана, а за открытой вкладкой появляется мягкая подсветка.
 # context: switch title under Appearance; it keeps Facebook's dark mode on whatever Facebook's own Dark mode setting says
 Force dark mode	Принудительно включить темный режим
 # context: description of that switch; on some tablets Facebook's own Settings page has no Dark mode row

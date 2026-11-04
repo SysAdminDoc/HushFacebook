@@ -6,14 +6,22 @@ package app.morphe.extension.facebook.navigation;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.graphics.Insets;
 import android.graphics.Outline;
 import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
+import android.view.Gravity;
+import android.view.View;
 import android.view.ViewOutlineProvider;
 import android.view.WindowInsets;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
 import org.junit.After;
 import org.junit.Before;
@@ -127,6 +135,44 @@ public class RoundedTabBarTest {
         Settings.ROUNDED_TAB_BAR.save(true);
         screen.shaper.update();
         assertTrue("on again, it's a pill again", screen.holder.getClipToOutline());
+    }
+
+    /** #383: the selected tab gets a spot behind it that follows the selection and goes with the pill. */
+    @Test
+    public void theSelectedTabGetsASpotThatFollowsItAndGoesWithThePill() {
+        RoundedTabBarForTests screen = new RoundedTabBarForTests();
+        screen.tabBar.removeAllViews();
+        FrameLayout[] tabs = new FrameLayout[6];
+        for (int i = 0; i < tabs.length; i++) {
+            tabs[i] = new FrameLayout(screen.activity);
+            tabs[i].addView(new View(screen.activity), new FrameLayout.LayoutParams(48, 48, Gravity.CENTER));
+            screen.tabBar.addView(tabs[i], new LinearLayout.LayoutParams(120, 112));
+        }
+        Drawable ripple = new ColorDrawable(0x00000000);
+        tabs[0].setBackground(ripple);
+        tabs[0].setSelected(true);
+        screen.layOut();
+        screen.shaper.update();
+
+        assertTrue("selecting the tab selected its icon too", tabs[0].getChildAt(0).isSelected());
+        assertTrue("a layer over the tab's own background", tabs[0].getBackground() instanceof LayerDrawable);
+        LayerDrawable layers = (LayerDrawable) tabs[0].getBackground();
+        assertSame(ripple, layers.getDrawable(0));
+        RoundedTabBar.Spot spot = (RoundedTabBar.Spot) layers.getDrawable(1);
+        assertEquals("4 px in at each side, 7 px in above and below, at mdpi", new Rect(4, 7, 116, 105), spot.area);
+        assertNull("the icon keeps its own", tabs[0].getChildAt(0).getBackground());
+        assertNull("the other tabs keep theirs", tabs[1].getBackground());
+
+        tabs[0].setSelected(false);
+        tabs[3].setSelected(true);
+        screen.shaper.update();
+        assertSame("the tab left behind gets its background back", ripple, tabs[0].getBackground());
+        assertTrue("a tab with none gets the spot alone", tabs[3].getBackground() instanceof RoundedTabBar.Spot);
+
+        Settings.ROUNDED_TAB_BAR.save(false);
+        screen.shaper.update();
+        assertNull("off, the tab is Facebook's again", tabs[3].getBackground());
+        assertFalse(screen.holder.getClipToOutline());
     }
 
     @Test
