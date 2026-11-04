@@ -36,7 +36,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the top of Home in place of Facebook's wordmark. The header calls {@link #dress} right after
  * Facebook loads its wordmark. The text is drawn at the wordmark's height and takes the same theme
  * color Facebook gives the wordmark, so it follows dark mode. A picture is drawn at that height in
- * its own colors, and takes the place of the words when both are saved. Blank text with no picture,
+ * its own colors, its see-through border left out, and takes the place of the words when both are
+ * saved. Blank text with no picture,
  * Pause and every failure leave Facebook's wordmark alone.
  */
 public final class HeaderText {
@@ -51,6 +52,9 @@ public final class HeaderText {
 
     /** The widest the text gets, as a share of the screen's width. Wider text gets smaller. */
     private static final float MAX_WIDTH_SHARE = 0.55f;
+
+    /** A pixel of a picture this see-through or more counts as empty border, out of 255. */
+    static final int CLEAR_ALPHA = 8;
 
     private HeaderText() {
     }
@@ -146,6 +150,8 @@ public final class HeaderText {
      */
     static final class Dressing {
         @Nullable final Bitmap picture;
+        /** The part of {@link #picture} that shows, see-through borders left out. */
+        @Nullable final Rect drawn;
         final String text;
         final String emoji;
         /** The height the last mark was given, so a reload keeps it. */
@@ -153,6 +159,7 @@ public final class HeaderText {
 
         Dressing(@Nullable Bitmap picture, String text, String emoji) {
             this.picture = picture;
+            this.drawn = picture == null ? null : shownPart(picture);
             this.text = text;
             this.emoji = emoji;
         }
@@ -167,7 +174,7 @@ public final class HeaderText {
             Drawable mark;
             int height = height(image, previous);
             if (picture != null) {
-                mark = new PictureMark(picture, height, maxWidth(image));
+                mark = new PictureMark(picture, drawn, height, maxWidth(image));
             } else if (!text.isEmpty()) {
                 mark = new TextMark(text, height, maxWidth(image));
             } else if (!emoji.isEmpty()) {
@@ -211,6 +218,34 @@ public final class HeaderText {
     }
 
     /**
+     * The part of [picture] that shows: the box around every pixel less see-through than
+     * {@link #CLEAR_ALPHA}, so a logo saved with an empty border fills the header the way the logo
+     * alone would (#230 follow-up). The saved copy stays as picked. The whole picture when no pixel
+     * shows.
+     */
+    static Rect shownPart(Bitmap picture) {
+        int width = picture.getWidth();
+        int height = picture.getHeight();
+        int[] row = new int[width];
+        int left = width;
+        int top = -1;
+        int right = -1;
+        int bottom = -1;
+        for (int y = 0; y < height; y++) {
+            picture.getPixels(row, 0, width, 0, y, width, 1);
+            for (int x = 0; x < width; x++) {
+                if (Color.alpha(row[x]) < CLEAR_ALPHA) continue;
+                if (top < 0) top = y;
+                bottom = y;
+                left = Math.min(left, x);
+                right = Math.max(right, x);
+            }
+        }
+        if (top < 0) return new Rect(0, 0, width, height);
+        return new Rect(left, top, right + 1, bottom + 1);
+    }
+
+    /**
      * Facebook loads its wordmark again on its own (a theme change reloads it), so before each draw
      * the header gets the picture or text back if its wordmark came back. Holds the header weakly.
      */
@@ -245,12 +280,14 @@ public final class HeaderText {
     }
 
     /**
-     * The picture as a drawable at the wordmark's height, its shape kept. A picture wider than
-     * {@link #MAX_WIDTH_SHARE} of the screen gets smaller. It keeps its own colors, so the color
-     * filter and tint the header gives its wordmark don't reach it.
+     * The picture's shown part ({@link #shownPart}) as a drawable at the wordmark's height, its shape
+     * kept. A picture wider than {@link #MAX_WIDTH_SHARE} of the screen gets smaller. It keeps its own
+     * colors, so the color filter and tint the header gives its wordmark don't reach it.
      */
     static final class PictureMark extends Drawable {
         final Bitmap picture;
+        /** The part of {@link #picture} drawn. */
+        final Rect part;
         /** The wordmark's height, which the picture fills unless it's too wide. */
         final int slot;
         private final int width;
@@ -258,10 +295,11 @@ public final class HeaderText {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         private final RectF place = new RectF();
 
-        PictureMark(Bitmap picture, int slot, int maxWidth) {
+        PictureMark(Bitmap picture, @Nullable Rect part, int slot, int maxWidth) {
             this.picture = picture;
+            this.part = part != null ? part : new Rect(0, 0, picture.getWidth(), picture.getHeight());
             this.slot = slot;
-            int wide = Math.max(1, Math.round(picture.getWidth() * slot / (float) picture.getHeight()));
+            int wide = Math.max(1, Math.round(this.part.width() * slot / (float) this.part.height()));
             int high = slot;
             if (maxWidth > 0 && wide > maxWidth) {
                 high = Math.max(1, Math.round(high * maxWidth / (float) wide));
@@ -274,13 +312,12 @@ public final class HeaderText {
         @Override
         public void draw(@NonNull Canvas canvas) {
             Rect bounds = getBounds();
-            float scale = Math.min(bounds.width() / (float) picture.getWidth(),
-                    bounds.height() / (float) picture.getHeight());
-            float halfWidth = picture.getWidth() * scale / 2f;
-            float halfHeight = picture.getHeight() * scale / 2f;
+            float scale = Math.min(bounds.width() / (float) part.width(), bounds.height() / (float) part.height());
+            float halfWidth = part.width() * scale / 2f;
+            float halfHeight = part.height() * scale / 2f;
             place.set(bounds.exactCenterX() - halfWidth, bounds.exactCenterY() - halfHeight,
                     bounds.exactCenterX() + halfWidth, bounds.exactCenterY() + halfHeight);
-            canvas.drawBitmap(picture, null, place, paint);
+            canvas.drawBitmap(picture, part, place, paint);
         }
 
         @Override

@@ -16,6 +16,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -31,6 +32,7 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.annotation.GraphicsMode;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.nio.file.Files;
 
@@ -243,6 +245,60 @@ public class HeaderTextTest {
         mark.setBounds(0, 0, 48, 24);
         mark.draw(new Canvas(drawn));
         assertEquals("its own color", Color.RED, drawn.getPixel(24, 12));
+    }
+
+    /** A [size] square picture of [border], with a red [logo] painted on it, saved like a picked one. */
+    private static void logoSaved(int size, int border, Rect logo) throws Exception {
+        Bitmap picture = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        picture.eraseColor(border);
+        Canvas canvas = new Canvas(picture);
+        canvas.clipRect(logo);
+        canvas.drawColor(Color.RED);
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        assertTrue(picture.compress(Bitmap.CompressFormat.PNG, 100, png));
+        Files.write(HeaderPicture.file(RuntimeEnvironment.getApplication()).toPath(), png.toByteArray());
+        HeaderPicture.forget();
+        Settings.HEADER_PICTURE.save("logo.png");
+    }
+
+    @Test
+    public void aSeeThroughBorderIsLeftOutSoTheLogoFillsTheHeader() throws Exception {
+        // A 100 by 50 logo in the middle of a 400 by 400 see-through square.
+        logoSaved(400, Color.TRANSPARENT, new Rect(150, 175, 250, 225));
+        ImageView logo = header(new Drawable[1]);
+        HeaderText.dress(logo);
+
+        Drawable mark = logo.getDrawable();
+        assertEquals("the logo's height, not the square's", 24, mark.getIntrinsicHeight());
+        assertEquals("the logo's own shape", 48, mark.getIntrinsicWidth());
+        Bitmap drawn = Bitmap.createBitmap(48, 24, Bitmap.Config.ARGB_8888);
+        mark.setBounds(0, 0, 48, 24);
+        mark.draw(new Canvas(drawn));
+        assertEquals("the logo reaches the left edge", Color.RED, drawn.getPixel(1, 12));
+        assertEquals("and the top", Color.RED, drawn.getPixel(24, 1));
+
+        // A border you can see is part of the picture.
+        logoSaved(400, Color.WHITE, new Rect(150, 175, 250, 225));
+        ImageView framed = header(new Drawable[1]);
+        HeaderText.dress(framed);
+        assertEquals("the whole square", 24, framed.getDrawable().getIntrinsicWidth());
+        Bitmap square = Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888);
+        framed.getDrawable().setBounds(0, 0, 24, 24);
+        framed.getDrawable().draw(new Canvas(square));
+        assertEquals("its white border kept", Color.WHITE, square.getPixel(1, 12));
+    }
+
+    @Test
+    public void aFaintSpeckOrAnAllClearPictureDoesntMoveTheEdges() {
+        Bitmap clear = Bitmap.createBitmap(30, 20, Bitmap.Config.ARGB_8888);
+        assertEquals("nothing shows, so the whole picture", new Rect(0, 0, 30, 20), HeaderText.shownPart(clear));
+
+        Bitmap specked = Bitmap.createBitmap(30, 20, Bitmap.Config.ARGB_8888);
+        specked.setPixel(0, 0, Color.argb(HeaderText.CLEAR_ALPHA - 1, 0, 0, 0));
+        specked.setPixel(10, 5, Color.RED);
+        specked.setPixel(19, 14, Color.argb(HeaderText.CLEAR_ALPHA, 0, 0, 255));
+        assertEquals("the speck is border, the faintest pixel that shows isn't",
+                new Rect(10, 5, 20, 15), HeaderText.shownPart(specked));
     }
 
     @Test
