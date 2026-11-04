@@ -2347,6 +2347,10 @@ After the time you pick on Home, Feeds, Video and Reels, they're covered for a b
 Break after	Перерыв после
 # context: a row under Take breaks that opens a list of times; it's how long a break lasts
 Break length	Длительность перерыва
+# context: a switch under Take breaks; with it on, watching 20 different reels also starts a break
+Also after 20 reels	Также после 20 Reels
+# context: that switch's summary; a reel is one of Facebook's short videos, and it counts toward the 20 once it has played for 3 seconds
+A break also starts once you've watched 20 reels, if that comes first. A reel counts once it's played for 3 seconds, and ads and live videos don't count.	Перерыв также начнется, когда вы посмотрите 20 Reels, если это случится раньше. Reels засчитывается после 3 секунд воспроизведения, реклама и прямые эфиры не засчитываются.
 # context: a choice in those lists
 10 minutes	10 минут
 # context: a choice in those lists

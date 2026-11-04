@@ -2120,6 +2120,14 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting TAKE_BREAKS =
             new BooleanSetting("hushfacebook_take_breaks", FALSE);
 
+    /**
+     * {@link #TAKE_BREAKS} also starts a break once 20 different reels have each played on for
+     * three seconds, whichever comes first (#248). Counted from Resume long videos' player hook, so
+     * it's in that family. Off by default.
+     */
+    public static final BooleanSetting BREAK_AFTER_REELS =
+            new BooleanSetting("hushfacebook_break_after_reels", FALSE, Setting.parent(TAKE_BREAKS));
+
     static {
         // The crash handler is the shared library's, which can't name this class.
         CrashFile.useSwitch(SAVE_CRASH_FILE);

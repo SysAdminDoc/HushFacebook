@@ -253,15 +253,26 @@ public final class ResumePlayback {
             HookStatus.invoked(FAMILY);
             RecentlyWatched.started(player);
             SkipSilence.started(player, trigger);
-            if (player != null && BreakTimer.switchedOn()) {
-                Facts facts = facts(player);
-                if (facts != null && facts.reel) BreakTimer.reelStarted();
-            }
+            if (player != null && BreakTimer.switchedOn()) reelStarted(player);
             if (!on() || player == null) return;
             HookStatus.bound(FAMILY, "player start");
             start(player, trigger, SystemClock.uptimeMillis(), System.currentTimeMillis());
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "player start", failure);
+        }
+    }
+
+    /** Tells Take breaks a reel started, and hands it the reels it counts. A failure here leaves the resume alone. */
+    private static void reelStarted(Object player) {
+        try {
+            Facts facts = facts(player);
+            if (facts == null || !facts.reel) return;
+            BreakTimer.reelStarted();
+            if (!facts.ad && !facts.live && !facts.gif && !facts.audioOnly && BreakTimer.countingReels()) {
+                BreakTimer.reelPlaying(facts.videoId, RecentlyWatched.playsOn(player, facts.videoId));
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel start for breaks", failure);
         }
     }
 

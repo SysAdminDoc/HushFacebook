@@ -44,4 +44,31 @@ public final class BreakTimerForTests {
             }
         }
     }
+
+    /**
+     * A screen in front with Take breaks counting reels, for a test that starts players. Close it,
+     * then call {@link #stopCountingReels}.
+     */
+    public static ActivityController<Activity> countingReels() {
+        BreakTimer.forgetForTests();
+        Settings.TAKE_BREAKS.save(true);
+        Settings.BREAK_AFTER_REELS.save(true);
+        ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup();
+        shadowOf(controller.get().getSystemService(PowerManager.class)).setIsInteractive(true);
+        BreakTimer.resumed(controller.get());
+        return controller;
+    }
+
+    /** How many reels count toward the next break. */
+    public static int reelsCounted() {
+        return BreakTimer.reelsCounted();
+    }
+
+    /** Back to a fresh process with Take breaks off and nothing on disk. */
+    public static void stopCountingReels(Context context) {
+        BreakTimer.forgetForTests();
+        Settings.TAKE_BREAKS.resetToDefault();
+        Settings.BREAK_AFTER_REELS.resetToDefault();
+        context.getSharedPreferences(BreakTimer.STORE, Context.MODE_PRIVATE).edit().clear().commit();
+    }
 }

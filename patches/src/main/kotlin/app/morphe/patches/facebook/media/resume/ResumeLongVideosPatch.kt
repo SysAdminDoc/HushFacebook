@@ -38,7 +38,8 @@ val resumeLongVideosPatch = bytecodePatch(
     description = "A video longer than two minutes picks up where you left off the next time it plays, in the " +
         "feed or full screen, so you don't lose your place. Reels, live videos and ads start as usual. Remember " +
         "what you watch, a second switch, keeps a list on your phone of the reels, videos and stories you " +
-        "watched, under Recently watched. Both start off. Turn them on in Hushfacebook settings > Video and audio.",
+        "watched, under Recently watched. Both start off. Turn them on in Hushfacebook settings > Video and audio. " +
+        "It also lets Take breaks count reels for its Also after 20 reels switch.",
     default = true,
 ) {
     category("Playback")

@@ -32,10 +32,13 @@ import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 
@@ -65,6 +68,12 @@ import app.morphe.extension.shared.Utils;
  * the smaller of what was left at the last save and the time left by the wall clock, so moving the
  * clock can only shorten it. Time away from browsing at least as long as a break counts as one and
  * starts the use time over. The switch off, or Hushfacebook paused, ends a break and the count.
+ *
+ * <p>With {@link Settings#BREAK_AFTER_REELS} on, {@link #REELS_BEFORE_BREAK} different reels start a
+ * break too, whichever comes first. A reel counts once in a count when it has played on for
+ * {@link #REEL_WATCHED_AFTER_MS}; ads, live videos, GIFs and audio don't. A break, time away as
+ * long as one, the switch off or a pause starts the reels over, and they're kept on disk with the
+ * use time.
  */
 public final class BreakTimer {
     /** How often the count runs while a Facebook screen is in front. */
@@ -79,7 +88,13 @@ public final class BreakTimer {
     /** The file the count lives in, apart from the settings so a settings backup never carries it. */
     static final String STORE = "hushfacebook_breaks";
     static final String USED = "used_ms", BROWSED_AT = "browsed_at", ENDS_AT = "ends_at",
-            LEFT = "left_ms", WALL_ENDS_AT = "wall_ends_at", BOOT = "boot";
+            LEFT = "left_ms", WALL_ENDS_AT = "wall_ends_at", BOOT = "boot", REELS = "reels";
+
+    /** How many different reels start a break with {@link Settings#BREAK_AFTER_REELS} on. */
+    static final int REELS_BEFORE_BREAK = 20;
+
+    /** How long after its start a reel is checked, and counted if it played on. */
+    static final long REEL_WATCHED_AFTER_MS = 3000;
 
     private static final long NEVER = -1;
 
@@ -163,6 +178,10 @@ public final class BreakTimer {
     private static long savedAt = NEVER;
     /** Whether this process read the count back from disk. */
     private static boolean loaded;
+    /** The reels counted toward the next break, by video id. Main thread only. */
+    private static final Set<String> reelsWatched = new HashSet<>();
+    /** Moves on each time the reels start over, so a check from before then counts nothing. */
+    private static volatile long reelGeneration;
 
     /** The resumed screen, while there is one. */
     private static WeakReference<Activity> front = new WeakReference<>(null);
@@ -235,10 +254,15 @@ public final class BreakTimer {
 
     /**
      * From the player hook Recently watched shares: a reel started playing. Its screen counts as
-     * browsing from now on, and on a break it's covered.
+     * browsing from now on, and on a break it's covered. The player's thread hands it to the main
+     * one, where the count lives.
      */
     public static void reelStarted() {
         try {
+            if (Looper.myLooper() != Looper.getMainLooper()) {
+                main.post(BreakTimer::reelStarted);
+                return;
+            }
             Activity activity = front.get();
             if (activity == null || !switchedOn()) return;
             reelScreen = new WeakReference<>(activity);
@@ -246,6 +270,58 @@ public final class BreakTimer {
         } catch (Throwable failure) {
             Logger.printException(() -> "Breaks: could not take a reel's start", failure);
         }
+    }
+
+    /** Whether reels are counted: Take breaks on and its reel switch on. */
+    public static boolean countingReels() {
+        return switchedOn() && Settings.BREAK_AFTER_REELS.get();
+    }
+
+    /**
+     * From the same player hook, after {@link #reelStarted}: reel [videoId] started, and [playsOn]
+     * says later whether it played on. It's asked {@link #REEL_WATCHED_AFTER_MS} later on the
+     * player's own thread, and a reel that did is counted on the main thread. Never throws.
+     */
+    public static void reelPlaying(String videoId, BooleanSupplier playsOn) {
+        try {
+            long generation = reelGeneration;
+            Looper looper = Looper.myLooper();
+            new Handler(looper != null ? looper : Looper.getMainLooper()).postDelayed(() -> {
+                try {
+                    if (generation == reelGeneration && playsOn.getAsBoolean()) {
+                        main.post(() -> reelWatched(videoId, generation));
+                    }
+                } catch (Throwable failure) {
+                    Logger.printException(() -> "Breaks: could not check a reel", failure);
+                }
+            }, REEL_WATCHED_AFTER_MS);
+        } catch (Throwable failure) {
+            Logger.printException(() -> "Breaks: could not take a reel", failure);
+        }
+    }
+
+    /** Counts reel [videoId] once, and starts a break at {@link #REELS_BEFORE_BREAK}. */
+    private static void reelWatched(String videoId, long generation) {
+        try {
+            Activity activity = front.get();
+            if (activity == null || generation != reelGeneration || !countingReels()) return;
+            load(activity);
+            if (endsAt != NEVER || !reelsWatched.add(videoId)) return;
+            long now = clock.getAsLong();
+            if (reelsWatched.size() >= REELS_BEFORE_BREAK) {
+                startBreak(activity, now, REELS_BEFORE_BREAK + " reels watched");
+            } else {
+                save(activity);
+            }
+        } catch (Throwable failure) {
+            Logger.printException(() -> "Breaks: could not count a reel", failure);
+        }
+    }
+
+    /** Starts the reels over, and retires every check from before. */
+    private static void forgetReels() {
+        reelsWatched.clear();
+        reelGeneration++;
     }
 
     /**
@@ -277,7 +353,7 @@ public final class BreakTimer {
         if (activity == null) return;
         try {
             if (!switchedOn()) {
-                if (loaded && (endsAt != NEVER || usedMs > 0)) {
+                if (loaded && (endsAt != NEVER || usedMs > 0 || !reelsWatched.isEmpty())) {
                     Logger.printDebug(() -> "Breaks: switched off, so the count and any break end");
                     reset();
                     save(activity);
@@ -286,6 +362,11 @@ public final class BreakTimer {
                 return;
             }
             load(activity);
+            if (!reelsWatched.isEmpty() && !Settings.BREAK_AFTER_REELS.get()) {
+                Logger.printDebug(() -> "Breaks: reels aren't counted, so their count ends");
+                forgetReels();
+                save(activity);
+            }
             long now = clock.getAsLong();
             if (endsAt != NEVER) {
                 if (now < endsAt) {
@@ -308,20 +389,29 @@ public final class BreakTimer {
 
     private static void count(Activity activity, long now) {
         // Time away at least as long as a break counts as one.
-        if (browsedAt != NEVER && now - browsedAt >= breakMs()) usedMs = 0;
+        if (browsedAt != NEVER && now - browsedAt >= breakMs()) {
+            usedMs = 0;
+            forgetReels();
+        }
         if (countedAt != NEVER) usedMs += Math.min(Math.max(0, now - countedAt), MOST_PER_TICK_MS);
         countedAt = now;
         browsedAt = now;
         if (usedMs >= useMs()) {
-            endsAt = now + breakMs();
-            usedMs = 0;
-            countedAt = NEVER;
-            Logger.printDebug(() -> "Breaks: use time is up, a break starts");
-            save(activity);
-            onBreak(activity, now);
+            startBreak(activity, now, "use time is up");
         } else if (savedAt == NEVER || now - savedAt >= SAVE_EVERY_MS) {
             save(activity);
         }
+    }
+
+    /** A break starts now, and the use time and reels start over. [why] goes in the debug log. */
+    private static void startBreak(Activity activity, long now, String why) {
+        endsAt = now + breakMs();
+        usedMs = 0;
+        countedAt = NEVER;
+        forgetReels();
+        Logger.printDebug(() -> "Breaks: " + why + ", a break starts");
+        save(activity);
+        onBreak(activity, now);
     }
 
     /** On a break: [activity] covered while it's browsing, every cover showing the time left. */
@@ -344,6 +434,7 @@ public final class BreakTimer {
         usedMs = 0;
         browsedAt = now;
         countedAt = NEVER;
+        forgetReels();
         boolean shown = !covers.isEmpty();
         closeCovers();
         save(activity);
@@ -398,6 +489,7 @@ public final class BreakTimer {
         browsedAt = NEVER;
         endsAt = NEVER;
         countedAt = NEVER;
+        forgetReels();
     }
 
     // ------------------------------------------------------------------ on disk
@@ -434,13 +526,16 @@ public final class BreakTimer {
             endsAt = ends != NEVER && ends > now && ends - now <= longest ? ends : NEVER;
             browsedAt = browsed != NEVER && browsed <= now ? browsed : NEVER;
             usedMs = browsedAt == NEVER ? 0 : Math.max(0, stored.getLong(USED, 0));
+            reelsWatched.clear();
+            if (browsedAt != NEVER) reelsWatched.addAll(stored.getStringSet(REELS, Collections.emptySet()));
         } else {
             long left = Math.min(stored.getLong(LEFT, 0), stored.getLong(WALL_ENDS_AT, 0) - wallClock.getAsLong());
             endsAt = left > 0 && left <= longest ? now + left : NEVER;
             browsedAt = NEVER;
             usedMs = 0;
+            reelsWatched.clear();
         }
-        Logger.printDebug(() -> "Breaks: read back " + usedMs / 1000 + " s used"
+        Logger.printDebug(() -> "Breaks: read back " + usedMs / 1000 + " s used, " + reelsWatched.size() + " reels"
                 + (endsAt == NEVER ? "" : ", a break with " + (endsAt - now) / 1000 + " s left"));
     }
 
@@ -455,7 +550,13 @@ public final class BreakTimer {
                 .putLong(LEFT, left)
                 .putLong(WALL_ENDS_AT, endsAt == NEVER ? 0 : wallClock.getAsLong() + left)
                 .putInt(BOOT, boot(context))
+                .putStringSet(REELS, new HashSet<>(reelsWatched))
                 .apply();
+    }
+
+    /** How many reels count toward the next break. */
+    static int reelsCounted() {
+        return reelsWatched.size();
     }
 
     // ------------------------------------------------------------------ the cover

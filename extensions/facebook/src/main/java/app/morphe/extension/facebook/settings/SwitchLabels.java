@@ -276,6 +276,7 @@ final class SwitchLabels {
         if (setting == Settings.CLOSE_WHEN_LEFT) return L10n.t("Close Facebook when you leave it");
         if (setting == Settings.OPENING_PAUSE) return L10n.t("Opening pause");
         if (setting == Settings.TAKE_BREAKS) return L10n.t("Take breaks");
+        if (setting == Settings.BREAK_AFTER_REELS) return L10n.t("Also after 20 reels");
         if (setting == Settings.HIDE_BLOCKED_LIST_PICTURES) return L10n.t("Hide pictures on the Blocked list");
         if (setting == Settings.HIDE_MENU_UPGRADES) return L10n.t("Hide Upgrades");
         if (setting == Settings.HIDE_MENU_ALSO_FROM_META) return L10n.t("Hide Also from Meta");

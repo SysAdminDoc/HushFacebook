@@ -16,6 +16,7 @@ import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 
 import app.morphe.extension.facebook.download.PostDetails;
@@ -308,17 +309,36 @@ public final class RecentlyWatched {
             synchronized (LIST_LOCK) {
                 if (generation != observedGeneration || !keeping()) return;
             }
-            Object player = held.get();
-            if (player == null || !keeping()) return;
-            ResumePlayback.Facts facts = ResumePlayback.facts(player);
-            if (facts == null || !videoId.equals(facts.videoId)) return;
-            int now = ResumePlayback.access.position(player);
-            boolean known = now != ResumePlayback.NOT_PATCHED_TIME && startedAt != ResumePlayback.NOT_PATCHED_TIME;
-            if (known && now >= startedAt && now - startedAt < MIN_PLAYED_MS) return;
+            if (!keeping() || !playedOn(held, videoId, startedAt)) return;
             keep(new Entry(kind, videoId, null, null, null, clock.getAsLong(), Math.max(0, length)), observedGeneration);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, PLAYER_HOOK, failure);
         }
+    }
+
+    /**
+     * The same played-on check for [player], which just started [videoId], to run later. Take
+     * breaks counts reels with it, Recently watched on or off.
+     */
+    static BooleanSupplier playsOn(Object player, String videoId) {
+        WeakReference<Object> held = new WeakReference<>(player);
+        int startedAt = ResumePlayback.access.position(player);
+        return () -> playedOn(held, videoId, startedAt);
+    }
+
+    /**
+     * Whether the player in [held] still has [videoId] and has played on since [startedAt], or
+     * wrapped around to an earlier point the way a looping reel does. A position the patch can't
+     * read counts as played on.
+     */
+    static boolean playedOn(WeakReference<Object> held, String videoId, int startedAt) {
+        Object player = held.get();
+        if (player == null) return false;
+        ResumePlayback.Facts facts = ResumePlayback.facts(player);
+        if (facts == null || !videoId.equals(facts.videoId)) return false;
+        int now = ResumePlayback.access.position(player);
+        boolean known = now != ResumePlayback.NOT_PATCHED_TIME && startedAt != ResumePlayback.NOT_PATCHED_TIME;
+        return !known || now < startedAt || now - startedAt >= MIN_PLAYED_MS;
     }
 
     /**

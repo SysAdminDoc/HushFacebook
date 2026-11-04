@@ -2290,6 +2290,10 @@ After the time you pick on Home, Feeds, Video and Reels, they're covered for a b
 Break after	多久后休息
 # context: a row under Take breaks that opens a list of times; it's how long a break lasts
 Break length	休息时长
+# context: a switch under Take breaks; with it on, watching 20 different reels also starts a break
+Also after 20 reels	看满 20 个 Reels 也休息
+# context: that switch's summary; a reel is one of Facebook's short videos, and it counts toward the 20 once it has played for 3 seconds
+A break also starts once you've watched 20 reels, if that comes first. A reel counts once it's played for 3 seconds, and ads and live videos don't count.	看满 20 个 Reels 时也会开始休息，以先到者为准。一个 Reels 播放 3 秒后才计入，广告和直播视频不计入。
 # context: a choice in those lists
 10 minutes	10 分钟
 # context: a choice in those lists

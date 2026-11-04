@@ -8,7 +8,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
 
+import android.app.Activity;
+import android.os.Looper;
 import android.os.SystemClock;
 
 import org.junit.After;
@@ -17,8 +20,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -28,6 +34,7 @@ import app.morphe.extension.facebook.media.RecentlyWatched.Entry;
 import app.morphe.extension.facebook.media.ResumePlaybackForTests.Params;
 import app.morphe.extension.facebook.media.ResumePlaybackForTests.Player;
 import app.morphe.extension.facebook.media.ResumePlaybackForTests.Trigger;
+import app.morphe.extension.facebook.misc.BreakTimerForTests;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
@@ -137,6 +144,30 @@ public class RecentlyWatchedTest {
             playedTo(player, 5_000);
         }
         assertTrue(entries().isEmpty());
+    }
+
+    /** Take breaks' reel count (#248) shares the played-on check, with Recently watched off. */
+    @Test
+    public void takeBreaksCountsReelsThatPlayOnButNotFeedVideosAdsOrLive() {
+        Settings.RECENTLY_WATCHED.save(false);
+        try (ActivityController<Activity> screen = BreakTimerForTests.countingReels()) {
+            for (int i = 0; i < 7; i++) {
+                Params params = new Params("c" + i, 30_000);
+                params.reel = i != 1;
+                params.sponsored = i == 2;
+                params.live = i == 3;
+                params.gif = i == 4;
+                params.audio = i == 5;
+                Player player = new Player(params);
+                ResumePlayback.started(player, Trigger.BY_USER);
+                // The last one is scrolled past, so it never plays on.
+                if (i != 6) player.position = 3_000;
+                shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(3));
+            }
+            assertEquals("only the reel that played on counts", 1, BreakTimerForTests.reelsCounted());
+        } finally {
+            BreakTimerForTests.stopCountingReels(RuntimeEnvironment.getApplication());
+        }
     }
 
     @Test

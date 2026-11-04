@@ -2295,6 +2295,10 @@ After the time you pick on Home, Feeds, Video and Reels, they're covered for a b
 Break after	Pause nach
 # context: a row under Take breaks that opens a list of times; it's how long a break lasts
 Break length	Pausenlänge
+# context: a switch under Take breaks; with it on, watching 20 different reels also starts a break
+Also after 20 reels	Auch nach 20 Reels
+# context: that switch's summary; a reel is one of Facebook's short videos, and it counts toward the 20 once it has played for 3 seconds
+A break also starts once you've watched 20 reels, if that comes first. A reel counts once it's played for 3 seconds, and ads and live videos don't count.	Eine Pause beginnt auch, sobald du 20 Reels angesehen hast, falls das zuerst eintritt. Ein Reel zählt, sobald es 3 Sekunden lang gelaufen ist, Werbung und Live-Videos zählen nicht.
 # context: a choice in those lists
 10 minutes	10 Minuten
 # context: a choice in those lists

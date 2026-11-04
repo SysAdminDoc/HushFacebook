@@ -180,7 +180,7 @@ public enum PatchFamily {
             Settings.INLINE_FEED_VIDEO_CONTROLS,
             Settings.FEED_VIDEO_CAST_BUTTON, Settings.FEED_VIDEO_SEEK_BAR, Settings.FEED_VIDEO_FULL_PLAYER_BUTTON),
     RESUME_LONG_VIDEOS(FamilyNames.RESUME_LONG_VIDEOS, "resumeLongVideos", null,
-            Settings.RESUME_LONG_VIDEOS, Settings.RECENTLY_WATCHED),
+            Settings.RESUME_LONG_VIDEOS, Settings.RECENTLY_WATCHED, Settings.BREAK_AFTER_REELS),
     FRAME_STEP(FamilyNames.FRAME_STEP, "frameStep", null,
             Settings.FRAME_STEP),
     PLAYBACK_QUALITY(FamilyNames.PLAYBACK_QUALITY, "defaultPlaybackQuality", null,

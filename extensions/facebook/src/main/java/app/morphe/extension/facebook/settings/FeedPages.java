@@ -99,6 +99,13 @@ final class FeedPages {
         opening.addPreference(breaks);
         opening.addPreference(breakAfter);
         opening.addPreference(breakLength);
+        if (build.contains(PatchFamily.RESUME_LONG_VIDEOS)) {
+            // Reels are counted from that family's player hook.
+            opening.addPreference(toggle(context, Settings.BREAK_AFTER_REELS,
+                    L10n.t("A break also starts once you've watched 20 reels, if that comes first. "
+                            + "A reel counts once it's played for 3 seconds, and ads and live videos don't count."))
+                    .needs(Settings.TAKE_BREAKS));
+        }
         if (build.contains(PatchFamily.MARKETPLACE_ONLY)) {
             // Facebook builds the tab bar once, and the hook is asked then and not again.
             opening.addPreference(toggle(context, Settings.MARKETPLACE_ONLY, ""));

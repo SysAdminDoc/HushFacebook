@@ -90,6 +90,7 @@ public class BreakTimerTest {
         Settings.TAKE_BREAKS.resetToDefault();
         Settings.BREAK_AFTER.resetToDefault();
         Settings.BREAK_LENGTH.resetToDefault();
+        Settings.BREAK_AFTER_REELS.resetToDefault();
         for (ActivityController<?> controller : controllers) controller.close();
     }
 
@@ -177,6 +178,28 @@ public class BreakTimerTest {
             if (text instanceof Button && label.contentEquals(text.getText())) return (Button) text;
         }
         throw new AssertionError("no " + label + " button on the cover");
+    }
+
+    /** Reel [id] starting in front, as the player hook hands it over, and whether it plays on. */
+    private static void reel(String id, boolean playsOn) {
+        BreakTimer.reelStarted();
+        BreakTimer.reelPlaying(id, () -> playsOn);
+    }
+
+    /** Reels "reel[from]" on, [count] of them, each played until the count checks it. */
+    private static void watchReels(int from, int count) {
+        for (int i = from; i < from + count; i++) {
+            reel("reel" + i, true);
+            pass(BreakTimer.REEL_WATCHED_AFTER_MS);
+        }
+    }
+
+    /** A reel screen in front with reels counted. */
+    private Page reelsCounted() {
+        Settings.BREAK_AFTER_REELS.save(true);
+        Page reels = screen(Page.class);
+        BreakTimer.resumed(reels);
+        return reels;
     }
 
     @Test
@@ -374,6 +397,148 @@ public class BreakTimerTest {
         BreakTimer.reelStarted();
         pass(600_000);
         assertTrue("reels didn't count", BreakTimer.covering());
+    }
+
+    @Test
+    public void twentyDifferentReelsStartABreakBeforeTheUseTime() {
+        reelsCounted();
+        watchReels(0, 19);
+        assertEquals(19, BreakTimer.reelsCounted());
+        assertFalse("a break came before the 20th reel", BreakTimer.covering());
+        watchReels(19, 1);
+        assertTrue("20 reels didn't start a break", BreakTimer.covering());
+        assertTrue(shows("5:00"));
+        assertEquals("the reels didn't start over with the break", 0, BreakTimer.reelsCounted());
+    }
+
+    @Test
+    public void reelsArentCountedWithTheirSwitchOff() {
+        assertFalse("the reel switch starts on", Settings.BREAK_AFTER_REELS.get());
+        BreakTimer.resumed(screen(Page.class));
+        watchReels(0, 25);
+        assertEquals(0, BreakTimer.reelsCounted());
+        assertFalse(BreakTimer.covering());
+    }
+
+    @Test
+    public void aReelCountsOnceAndOnlyWhenItPlayedOn() {
+        reelsCounted();
+        reel("looped", true);
+        pass(BreakTimer.REEL_WATCHED_AFTER_MS - 1);
+        assertEquals("a reel counted before its check", 0, BreakTimer.reelsCounted());
+        pass(1);
+        assertEquals(1, BreakTimer.reelsCounted());
+        for (int i = 0; i < 25; i++) {
+            reel("looped", true);
+            pass(BreakTimer.REEL_WATCHED_AFTER_MS);
+        }
+        assertEquals("a reel playing again counted again", 1, BreakTimer.reelsCounted());
+        for (int i = 0; i < 25; i++) {
+            reel("scrolled past " + i, false);
+            pass(BreakTimer.REEL_WATCHED_AFTER_MS);
+        }
+        assertEquals("a reel scrolled past counted", 1, BreakTimer.reelsCounted());
+        assertFalse(BreakTimer.covering());
+    }
+
+    @Test
+    public void theReelsStartOverAfterABreak() {
+        reelsCounted();
+        watchReels(0, 20);
+        assertTrue(BreakTimer.covering());
+        watchReels(100, 3);
+        assertEquals("reels counted on a break", 0, BreakTimer.reelsCounted());
+        pass(Duration.ofMinutes(5).toMillis());
+        assertFalse(BreakTimer.covering());
+        watchReels(0, 19);
+        assertFalse("reels from before the break still counted", BreakTimer.covering());
+        watchReels(19, 1);
+        assertTrue(BreakTimer.covering());
+    }
+
+    @Test
+    public void timeAwayTheSwitchesAndAPauseStartTheReelsOver() {
+        Page reels = reelsCounted();
+        watchReels(0, 10);
+        BreakTimer.paused(reels);
+        ShadowSystemClock.advanceBy(Duration.ofMinutes(5));
+        BreakTimer.resumed(reels);
+        assertEquals("five minutes away didn't start the reels over", 0, BreakTimer.reelsCounted());
+
+        watchReels(0, 10);
+        Settings.BREAK_AFTER_REELS.save(false);
+        pass(1_000);
+        assertEquals("the reel switch off left the count", 0, BreakTimer.reelsCounted());
+        Settings.BREAK_AFTER_REELS.save(true);
+
+        watchReels(0, 10);
+        Settings.TAKE_BREAKS.save(false);
+        pass(1_000);
+        assertEquals("Take breaks off left the reels' count", 0, BreakTimer.reelsCounted());
+        Settings.TAKE_BREAKS.save(true);
+
+        watchReels(0, 10);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        pass(1_000);
+        assertEquals("a pause left the reels' count", 0, BreakTimer.reelsCounted());
+        PauseForTests.resume();
+
+        watchReels(0, 19);
+        assertFalse("an old count came back", BreakTimer.covering());
+    }
+
+    @Test
+    public void theReelsHoldAcrossARestartOfFacebookButNotOfThePhone() {
+        bootCount(7);
+        Page reels = reelsCounted();
+        watchReels(0, 15);
+        BreakTimer.paused(reels);
+        restartFacebook();
+        Page next = screen(Page.class);
+        BreakTimer.resumed(next);
+        watchReels(15, 4);
+        assertEquals("a restart of Facebook lost the reels", 19, BreakTimer.reelsCounted());
+
+        BreakTimer.paused(next);
+        bootCount(8);
+        restartFacebook();
+        BreakTimer.resumed(screen(Page.class));
+        watchReels(19, 1);
+        assertEquals("reels from before a phone restart still counted", 1, BreakTimer.reelsCounted());
+        assertFalse(BreakTimer.covering());
+    }
+
+    @Test
+    public void aCheckFromBeforeTheReelsStartedOverCountsNothing() {
+        reelsCounted();
+        watchReels(0, 5);
+        reel("late", true);
+        pass(1_000);
+        Settings.TAKE_BREAKS.save(false);
+        BreakTimer.switched();
+        shadowOf(Looper.getMainLooper()).idle();
+        Settings.TAKE_BREAKS.save(true);
+        BreakTimer.switched();
+        pass(BreakTimer.REEL_WATCHED_AFTER_MS);
+        assertEquals("a reel from the old count was counted", 0, BreakTimer.reelsCounted());
+    }
+
+    @Test
+    public void reelsFromThePlayersOwnThreadAreCountedOnTheMainThread() throws Exception {
+        Page reels = reelsCounted();
+        for (int i = 0; i < BreakTimer.REELS_BEFORE_BREAK; i++) {
+            String id = "reel" + i;
+            Thread player = new Thread(() -> reel(id, true));
+            player.start();
+            player.join();
+            if (i == 0) {
+                assertFalse("the player's thread took the reel itself", BreakTimer.browsing(reels));
+                shadowOf(Looper.getMainLooper()).idle();
+                assertTrue("the main thread never took it", BreakTimer.browsing(reels));
+            }
+            pass(BreakTimer.REEL_WATCHED_AFTER_MS);
+        }
+        assertTrue(BreakTimer.covering());
     }
 
     @Test
