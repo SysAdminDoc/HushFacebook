@@ -38,11 +38,16 @@ public class AccentLinkTextTest {
     public void restore() {
         PauseForTests.resume();
         Settings.ACCENT_COLOR.resetToDefault();
+        Settings.ACCENT_CUSTOM.resetToDefault();
     }
 
     @Test
     public void reactTextIsThemedAsALink() {
         assertTrue(AccentColor.TEXT_TOKEN_SET.contains(AccentColor.LINK_TEXT_TOKEN));
+        // Custom keeps Facebook's blue until a color is picked, so the loop runs it with one picked.
+        Settings.ACCENT_COLOR.save(AccentColor.Preset.CUSTOM);
+        assertEquals("Custom with no color picked", LIGHT_LINK, ReactColours.text(LIGHT_LINK, false, true));
+        Settings.ACCENT_CUSTOM.save("#E53935");
         for (AccentColor.Preset preset : AccentColor.Preset.values()) {
             Settings.ACCENT_COLOR.save(preset);
             int themed = ReactColours.text(LIGHT_LINK, false, true);
