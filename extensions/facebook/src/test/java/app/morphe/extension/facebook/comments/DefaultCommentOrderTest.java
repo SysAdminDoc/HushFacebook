@@ -10,6 +10,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
+
+import android.os.Looper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -18,9 +21,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowLooper;
 
 import com.facebook.graphservice.tree.TreeJNI;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -215,6 +220,25 @@ public class DefaultCommentOrderTest {
         String report = LogBufferManager.buildExportText();
         assertEquals(report, 1, occurrences(report, "Default comment order: kept all_comments (" + ALL
                 + "), which its menu offered, for that post until Facebook restarts."));
+    }
+
+    /**
+     * #384: the menu is built while Facebook is still taking in the sheet's first answer, and a pick
+     * right then left the next page loading forever. The pick waits on the main thread first.
+     */
+    @Test
+    public void thePickWaitsForTheSheetsFirstAnswerToLand() {
+        Settings.COMMENT_ORDER.save(CommentOrder.ALL_COMMENTS);
+        assertNull(DefaultCommentOrder.requestedOrder(null, POST, null));
+        ShadowLooper main = shadowOf(Looper.getMainLooper());
+
+        List<Object> tapped = openMenu(POST, RELEVANT, RELEVANT, NEWEST, ALL);
+        main.idle();
+        assertTrue("nothing picked at once", tapped.isEmpty());
+        main.idleFor(Duration.ofMillis(DefaultCommentOrder.PICK_DELAY_MS - 1));
+        assertTrue("nor before the delay is up", tapped.isEmpty());
+        main.idleFor(Duration.ofMillis(1));
+        assertEquals(Collections.singletonList(ALL), tapped);
     }
 
     /** Only the first menu after the request is picked in, within the window, and only for that post. */

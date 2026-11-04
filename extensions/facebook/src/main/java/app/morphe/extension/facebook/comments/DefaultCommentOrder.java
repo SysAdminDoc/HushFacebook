@@ -75,6 +75,14 @@ public final class DefaultCommentOrder {
     /** How long after a pick in the menu the request it sends may come. It comes at once. */
     static final long PICK_WINDOW_MS = 2000;
 
+    /**
+     * How long a pick in a sheet's menu waits after Facebook builds that menu. The menu is built
+     * while Facebook is still taking in the sheet's first answer, and a pick in the middle of that
+     * left the sheet's next page loading forever: a post opened with its first ten or so comments
+     * and a spinner under them (#384). A tap by hand never lands that early.
+     */
+    static final long PICK_DELAY_MS = 1000;
+
     /** The posts whose picked order is kept, the most recently used ones. */
     static final int REMEMBERED_POSTS = 200;
 
@@ -353,9 +361,9 @@ public final class DefaultCommentOrder {
      * builds only when its answer offers more than one order. [feedback] is the post's feedback
      * tree, [pick] what a tap on one of the menu's rows calls with that row's token. When the
      * request for this post was left for the menu and the menu offers the chosen order, that order
-     * is picked here, on the main thread, as a tap would. A post that kept that order and came back
-     * in another one, as a refetch built from the first request's params does, gets it picked
-     * again, once per answer. Never throws.
+     * is picked on the main thread {@link #PICK_DELAY_MS} later, as a tap would. A post that kept
+     * that order and came back in another one, as a refetch built from the first request's params
+     * does, gets it picked again, once per answer. Never throws.
      */
     public static void sortMenu(@Nullable Object feedback, @Nullable Object pick) {
         try {
@@ -426,7 +434,7 @@ public final class DefaultCommentOrder {
             };
             Executor forced = mainForTests;
             if (forced != null) forced.execute(tap);
-            else Utils.runOnMainThread(tap);
+            else Utils.runOnMainThreadDelayed(tap, PICK_DELAY_MS);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.DEFAULT_COMMENT_ORDER, "comment sort menu", failure);
         }
