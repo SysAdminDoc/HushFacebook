@@ -67,6 +67,8 @@ final class ScreenColors {
     final int title;
     /** Row summaries and a dialog's message. */
     final int summary;
+    /** The placeholder of an empty field, quieter than a summary and still 4.5:1 on every surface. */
+    final int hint;
     /** Section titles. */
     final int heading;
     /** A switch that's on, and the buttons of a dialog. */
@@ -76,8 +78,12 @@ final class ScreenColors {
     /** Grouped preference rows and their edge. */
     final int card;
     final int outline;
+    /** A tonal step above the card, behind an icon that has a surface of its own. */
+    final int iconSurface;
     /** Text on the filled primary dialog action. */
     final int onAccent;
+    /** A field's error line, calm on the dialog. */
+    final int error;
 
     /** The colours the screen on show was built with, or null for the black page. */
     @Nullable
@@ -109,17 +115,31 @@ final class ScreenColors {
      * grey of its scale that reads at 3:1 under the black thumb and on the card.
      */
     private ScreenColors() {
+        // WCAG 2.2 ratios on the black page, its card and the dialog, measured 2026-11-03.
         light = false;
         background = Color.BLACK;
         dialog = 0xFF28292C;
+        // 16.15 on the page, 12.64 on the card, 11.18 on the dialog.
         title = 0xFFDFE2E5;
+        // 9.51, 7.44, 6.59.
         summary = 0xFFAAAFB5;
+        // 6.71, 5.25, 4.65: the darkest step of the summary grey that keeps 4.5 on the dialog.
+        hint = 0xFF8E9297;
+        // 7.49 on the page, 5.86 on the card, 5.19 on the dialog.
         heading = 0xFF3E9EFB;
+        // 5.28 on the card; black reads on it at 6.75.
         accent = 0xFF2694FE;
+        // 3.50 on the card, 3.09 on the dialog; the black thumb reads on it at 4.47.
         switchOff = 0xFF6F747C;
         card = 0xFF1F1F22;
+        // Astryx's 10% border over the card, 1.32 on it: an edge, not a control's boundary. A
+        // focused row's outline is the heading, 5.86.
         outline = 0xFF343437;
+        // The heading reads on it at 5.17.
+        iconSurface = 0xFF29292D;
         onAccent = Color.BLACK;
+        // 9.68 on the card, 8.57 on the dialog.
+        error = 0xFFFFB4AB;
     }
 
     private ScreenColors(TonePalette palette, boolean light) {
@@ -129,23 +149,35 @@ final class ScreenColors {
             dialog = palette.tone(TonePalette.NEUTRAL, 95);
             title = palette.tone(TonePalette.NEUTRAL, 10);
             summary = palette.tone(TonePalette.NEUTRAL_VARIANT, 30);
+            // Tone 40 on tone 95 is 5.7:1 for any wallpaper.
+            hint = palette.tone(TonePalette.NEUTRAL_VARIANT, 40);
             heading = palette.tone(TonePalette.ACCENT, 40);
             accent = palette.tone(TonePalette.ACCENT, 40);
             switchOff = palette.tone(TonePalette.NEUTRAL_VARIANT, 50);
             card = palette.tone(TonePalette.NEUTRAL, 95);
             outline = palette.tone(TonePalette.NEUTRAL_VARIANT, 80);
+            // The accent at tone 40 reads on tone 90 at about 5:1.
+            iconSurface = palette.tone(TonePalette.NEUTRAL, 90);
             onAccent = Color.WHITE;
+            // Material 3's error at tone 40, 5.7 on the dialog.
+            error = 0xFFBA1A1A;
         } else {
             background = palette.tone(TonePalette.NEUTRAL, 10);
             dialog = palette.tone(TonePalette.NEUTRAL, 20);
             title = palette.tone(TonePalette.NEUTRAL, 90);
             summary = palette.tone(TonePalette.NEUTRAL_VARIANT, 80);
+            // Tone 70 on tone 20 is 5.7:1 for any wallpaper.
+            hint = palette.tone(TonePalette.NEUTRAL_VARIANT, 70);
             heading = palette.tone(TonePalette.ACCENT, 80);
             accent = palette.tone(TonePalette.ACCENT, 80);
             switchOff = palette.tone(TonePalette.NEUTRAL_VARIANT, 60);
             card = palette.tone(TonePalette.NEUTRAL, 20);
             outline = palette.tone(TonePalette.NEUTRAL_VARIANT, 30);
+            // The accent at tone 80 reads on tone 30 at about 5.5:1.
+            iconSurface = palette.tone(TonePalette.NEUTRAL, 30);
             onAccent = background;
+            // Material 3's error at tone 80, 7.7 on the dialog.
+            error = 0xFFFFB4AB;
         }
     }
 
@@ -162,12 +194,16 @@ final class ScreenColors {
         card = surfaces[1];
         dialog = card;
         outline = surfaces[surfaces.length - 1];
+        // The popover step, between the card and its edge.
+        iconSurface = surfaces[2];
         title = AmoledTheme.readable(DEFAULT.title, card, TEXT_CONTRAST);
         summary = AmoledTheme.readable(DEFAULT.summary, card, TEXT_CONTRAST);
+        hint = AmoledTheme.readable(DEFAULT.hint, card, TEXT_CONTRAST);
         heading = AmoledTheme.readable(DEFAULT.heading, card, TEXT_CONTRAST);
         accent = AmoledTheme.readable(DEFAULT.accent, card, CONTROL_CONTRAST);
         switchOff = AmoledTheme.readable(DEFAULT.switchOff, card, CONTROL_CONTRAST);
         onAccent = TonePalette.luminance(accent) <= (1.05 / TEXT_CONTRAST) - 0.05 ? Color.WHITE : Color.BLACK;
+        error = AmoledTheme.readable(DEFAULT.error, card, TEXT_CONTRAST);
     }
 
     /**
