@@ -237,7 +237,10 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * Hide the video comment box (#213): those buttons are only the box's inner row. The whole bar is
  * another component, the one class naming [VIDEO_COMMENT_BAR] that builds the row's class (583
  * `LX/98j;`, whose `A0G` builds `LX/ALy`). First thing in its render the extension is asked, and
- * while the switch is on the render returns nothing, so the box is gone with its outline.
+ * while the switch is on the render returns nothing, so the box is gone with its outline. The
+ * Shorts viewer a feed video opens in on 585 keeps a band for that bar under the video whatever it
+ * holds, so the bar it builds is dropped, and the video keeps its full height with the seek bar
+ * going down with it (#375, [dropVideoCommentBand]).
  *
  * Hide the line over the comment box (#344): the box a post page opens with is a plain view whose
  * constructor names itself [COMMENT_BOX_INIT] (585 `LX/07tV;`). It sets its own background either
@@ -417,6 +420,16 @@ val commentSheetOptionsPatch = bytecodePatch(
         val barHolders = holders(VIDEO_COMMENT_BAR)
         val videoBar = if (videoCommentBarRenders(barHolders, viewer.render).isEmpty()) null else videoCommentBar(barHolders, viewer.render)
         val inlineBar = if (videoBar == null) inlineCommentBar(barHolders, viewer.render) else null
+        val band = videoCommentBand()
+        // The band's hooks go in at indices read from untouched code, so none of its methods may take another hook here.
+        // The hooks found after dropVideoCommentBand below read their spots from the code as the band left it.
+        val hooked = listOfNotNull(
+            buttons.check, bottom.check, post.check, dislike, like, dock, threads.initialState, drawn.render, replyList.build,
+            replyRow.render, feedReplyRow.render, threadPager.render, viewer.render, videoBar, inlineBar?.render,
+        ).map { it.descriptor() }.toSet()
+        listOf(band.builder, band.root, band.list).firstOrNull { it.descriptor() in hooked }?.let {
+            refuse("${it.descriptor()} holds the video comment band and another hook")
+        }
 
         mutableClassDefBy(buttons.check.definingClass).methods.single { it.descriptor() == buttons.check.descriptor() }
             .holdButtons(buttons.table)
@@ -454,6 +467,8 @@ val commentSheetOptionsPatch = bytecodePatch(
             mutableClassDefBy(bar.render.definingClass).methods.single { it.descriptor() == bar.render.descriptor() }
                 .hideInlineCommentBar(bar)
         }
+        // #375: the band the Shorts viewer keeps for that bar under the video, the room for it in the video's height, and the seek bar over it.
+        dropVideoCommentBand(band)
         emojiRowCheck(holders(EMOJI_ROW))?.let { check ->
             mutableClassDefBy(check.definingClass).methods.single { it.descriptor() == check.descriptor() }.holdEmojiRow()
         }

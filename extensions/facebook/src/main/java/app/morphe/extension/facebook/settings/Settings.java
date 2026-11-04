@@ -1156,6 +1156,9 @@ public class Settings extends BaseSettings {
     /**
      * The comment composer at the bottom of Facebook's full-screen video viewer is omitted from
      * the viewer's render method ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}).
+     * In the Shorts viewer most feed videos open in, the band the bar sits in goes with it, the
+     * video takes its full height and the seek bar goes down with it ({@link
+     * app.morphe.extension.facebook.comments.CommentSheetOptions#dropsShortsCommentBar}, #375).
      * Comment boxes on ordinary posts are unchanged. Off by default.
      */
     public static final BooleanSetting HIDE_VIDEO_COMMENT_COMPOSER =

@@ -16,7 +16,11 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 import app.morphe.extension.facebook.feed.PostWords;
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -174,6 +178,48 @@ public final class CommentSheetOptions {
 
     static final String VIEWER_COMPOSER = "video viewer comment composer";
     static final String COMPOSER_HIDDEN = "Video comment composer hidden";
+
+    /** The member the report names once the Shorts viewer has asked about the comment bar it built (#375). */
+    static final String SHORTS_BAR = "Shorts viewer comment bar";
+
+    /** The member the report names once the Shorts viewer's root has handed over the bar its pick got back (#375). */
+    static final String PICKED_BAR = "Shorts viewer bar pick";
+
+    /** The member the report names once the Shorts viewer has read a video's band through the hook (#375). */
+    static final String VIDEO_HEIGHT = "Shorts viewer video height";
+
+    /** Counted each time that video keeps the height the comment bar's band took off it. */
+    static final String FULL_HEIGHT = "Video kept its full height";
+
+    /** The member the report names once the Shorts viewer has placed its seek bar through the hook (#375). */
+    static final String SEEK_BAR = "Shorts viewer seek bar";
+
+    /** Counted each time that seek bar goes down to the bottom with the video. */
+    static final String SEEK_BAR_LOWERED = "Seek bar moved down with the video";
+
+    /**
+     * How far up, in dp, the Shorts viewer puts its seek bar when it shows no bar under the video:
+     * the 3 its root uses on 585 where the viewer has no bottom bar.
+     */
+    static final int NO_BAR_SEEK_BAR_DP = 3;
+
+    /**
+     * Whether the Shorts viewer root rendering on this thread had its pick of a bottom bar hand back
+     * nothing because of Hide the video comment box (#375). Each root render starts it over. Its other
+     * bars, such as the reply bar under a reel shared in a chat, stay, and so does their band, so the
+     * seek bar follows this, not the switch alone.
+     */
+    private static final ThreadLocal<Boolean> shortsBarDropped = new ThreadLocal<>();
+
+    /**
+     * The Shorts viewer configs whose root last got a bar back from its pick (#375): the reply bar
+     * under a reel shared in a chat, the drafts bar, or the comment bar while the switch was off. Held
+     * weakly and told apart by identity, since a config's equals may compare contents. A viewer's list
+     * sizes its videos with the same config before any root has picked, so a config nothing marked is
+     * taken to have no bar, and a viewer keeps its band once its own root kept one, whatever another
+     * viewer open beside it picked.
+     */
+    private static final List<WeakReference<Object>> barConfigs = new ArrayList<>();
 
     /** The member the report names once the socket over the comment box has asked about the emoji row (#290). */
     static final String EMOJI_ROW = "emoji row over the comment box";
@@ -409,6 +455,110 @@ public final class CommentSheetOptions {
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "video viewer comment composer", failure);
+            return false;
+        }
+    }
+
+    /** The hook, first thing in the Shorts viewer root's render (#375): this render hasn't dropped a bar yet. */
+    public static void pickingShortsBar() {
+        shortsBarDropped.remove();
+    }
+
+    /**
+     * The hook right before the Shorts viewer a feed video opens in hands back the comment bar it
+     * built for the bottom of the screen (#375). True hands back null instead while Hide the video
+     * comment box is on, and the video and its seek bar then take the bar's band; false keeps the bar.
+     */
+    public static boolean dropsShortsCommentBar() {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, SHORTS_BAR);
+            if (!Utils.settingsReady() || !Settings.HIDE_VIDEO_COMMENT_COMPOSER.get()) return false;
+            HookStatus.counted(FAMILY, COMPOSER_HIDDEN);
+            shortsBarDropped.set(Boolean.TRUE);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, SHORTS_BAR, failure);
+            return false;
+        }
+    }
+
+    /**
+     * The hook right after the Shorts viewer's root gets its bottom bar back from the pick (#375),
+     * with that bar, null where it shows none or the comment bar was dropped, and the viewer's config.
+     * A bar marks the config, so the viewer's videos keep Facebook's band from their next layout on;
+     * no bar clears the mark.
+     */
+    public static void keptShortsBar(@Nullable Object bar, @Nullable Object config) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, PICKED_BAR);
+            if (config != null) markKeepsBar(config, bar != null);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, PICKED_BAR, failure);
+        }
+    }
+
+    /**
+     * The hook on each band height, in dp, the Shorts viewer's root places its seek bar and time
+     * above (#375). Once this render dropped the bar they go down with the video to
+     * {@link #NO_BAR_SEEK_BAR_DP}, where Facebook puts them with no bar, instead of staying over the
+     * caption; otherwise the band is Facebook's.
+     */
+    public static int shortsSeekBarBand(int band) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, SEEK_BAR);
+            if (!Boolean.TRUE.equals(shortsBarDropped.get()) || !Utils.settingsReady()
+                    || !Settings.HIDE_VIDEO_COMMENT_COMPOSER.get()) return band;
+            HookStatus.counted(FAMILY, SEEK_BAR_LOWERED);
+            return NO_BAR_SEEK_BAR_DP;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, SEEK_BAR, failure);
+            return band;
+        }
+    }
+
+    /**
+     * The hook on the band height, in dp, the Shorts viewer's list takes off each video's full height
+     * (#375), with the viewer's config. It sizes the videos before any of their roots has picked a
+     * bar, so while Hide the video comment box is on the video keeps its full height and 0 comes back,
+     * unless the config's root kept a bar ({@link #keptShortsBar}). A list handed no config keeps
+     * Facebook's band.
+     */
+    public static int shortsVideoBand(int band, @Nullable Object config) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, VIDEO_HEIGHT);
+            if (config == null || !Utils.settingsReady() || !Settings.HIDE_VIDEO_COMMENT_COMPOSER.get()
+                    || keepsBar(config)) return band;
+            HookStatus.counted(FAMILY, FULL_HEIGHT);
+            return 0;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, VIDEO_HEIGHT, failure);
+            return band;
+        }
+    }
+
+    /** Keeps whether {@code config}'s root got a bar back, letting go of configs no longer held. */
+    private static void markKeepsBar(Object config, boolean keeps) {
+        synchronized (barConfigs) {
+            boolean held = false;
+            for (Iterator<WeakReference<Object>> each = barConfigs.iterator(); each.hasNext(); ) {
+                Object kept = each.next().get();
+                if (kept == null || (kept == config && !keeps)) each.remove();
+                else if (kept == config) held = true;
+            }
+            if (keeps && !held) barConfigs.add(new WeakReference<>(config));
+        }
+    }
+
+    /** Whether {@code config}'s root last got a bar back. */
+    private static boolean keepsBar(Object config) {
+        synchronized (barConfigs) {
+            for (WeakReference<Object> each : barConfigs) {
+                if (each.get() == config) return true;
+            }
             return false;
         }
     }
