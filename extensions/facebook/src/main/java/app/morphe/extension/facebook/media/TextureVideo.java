@@ -29,16 +29,27 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * while it plays. The decision gets the player's origin, and some phones answer yes for the feed
  * origin from a server list, so while the bars are see-through both answers lead to the TextureView
  * for any origin but {@value #REELS_VIEWER}. A reel keeps its SurfaceView.
+ *
+ * <p>Show Reels in gray moves only the reels viewer's players. Its gray is a layer the window draws
+ * through ({@link app.morphe.extension.facebook.reels.GrayReels}), and a SurfaceView's video isn't
+ * drawn by the window, so a reel on one would stay in color. The preference read sits right behind
+ * the decision's no, on the same thread, so the decision notes on its thread whether it just moved a
+ * reel for the gray ({@link #grayReel}) and the read answers yes for that reel alone.
  */
 public final class TextureVideo {
     /** Counted under the patch's name for each player kept off its own SurfaceView. */
     static final String DRAWN_WITH_THE_SCREEN = "Video drawn with the rest of the screen";
     /** Counted for each player See-through bars moved onto its TextureView. */
     static final String DRAWN_UNDER_THE_BARS = "Feed video drawn with the screen under see-through bars";
+    /** Counted for each reel moved onto its TextureView so Show Reels in gray reaches its video. */
+    static final String DRAWN_FOR_GRAY_REELS = "Reel drawn with the screen for Show Reels in gray";
     /** The reels viewer's origin name, which the origin's text holds (585 prints "A00::A01", A01 the name). */
     static final String REELS_VIEWER = "fb_shorts_viewer";
 
     private static final String FAMILY = FamilyNames.HDR_BRIGHTNESS;
+
+    /** The last decision on this thread moved a reel off its SurfaceView for Show Reels in gray. */
+    private static final ThreadLocal<Boolean> grayReel = new ThreadLocal<>();
 
     private static volatile boolean logged;
     private static volatile boolean loggedBars;
@@ -48,13 +59,21 @@ public final class TextureVideo {
 
     /**
      * Injection point, at each answer of Facebook's must-use-a-SurfaceView decision, given the
-     * player's origin: no while the switch is on, or while the bars are see-through for any origin
-     * but the reels viewer's. Facebook's answer otherwise.
+     * player's origin: no while the switch is on, for the reels viewer's while Show Reels in gray is
+     * on, or while the bars are see-through for any origin but the reels viewer's. Facebook's answer
+     * otherwise.
      */
     public static boolean surfaceView(boolean facebook, Object origin) {
         try {
             HookStatus.invoked(FAMILY);
+            grayReel.set(Boolean.FALSE);
             if (!on()) {
+                if (reelsViewer(origin) && grayReels()) {
+                    grayReel.set(Boolean.TRUE);
+                    HookStatus.counted(FAMILY, DRAWN_FOR_GRAY_REELS);
+                    HookStatus.bound(FAMILY, "surfaceView");
+                    return false;
+                }
                 if (!facebook || reelsViewer(origin) || !TranslucentBars.blursVideos()) return facebook;
                 underTheBars();
             } else if (facebook) {
@@ -74,13 +93,17 @@ public final class TextureVideo {
 
     /**
      * Injection point, where the player reads its own TextureView preference after the decision
-     * above said no: yes while the switch is on or the bars are see-through, the player's own
-     * preference otherwise.
+     * above said no: yes while the switch is on, for a reel that decision just moved for Show Reels
+     * in gray, or while the bars are see-through, the player's own preference otherwise.
      */
     public static boolean preferTextureView(boolean facebook) {
         try {
             HookStatus.invoked(FAMILY);
             if (!on()) {
+                if (Boolean.TRUE.equals(grayReel.get())) {
+                    HookStatus.bound(FAMILY, "preferTextureView");
+                    return true;
+                }
                 if (facebook || !TranslucentBars.blursVideos()) return facebook;
                 underTheBars();
             }
@@ -106,5 +129,14 @@ public final class TextureVideo {
 
     private static boolean on() {
         return Utils.settingsReady() && Settings.DRAW_VIDEOS_WITH_THE_SCREEN.get();
+    }
+
+    private static boolean grayReels() {
+        return Utils.settingsReady() && Settings.GRAY_REELS.get();
+    }
+
+    /** Forgets this thread's last decision, so one test's reel doesn't answer the next test's read. */
+    static void resetForTests() {
+        grayReel.remove();
     }
 }

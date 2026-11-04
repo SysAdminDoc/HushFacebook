@@ -2390,6 +2390,9 @@ After %1$d seconds	Nach %1$d Sekunden
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	Gedimmt bleiben, wenn ich tippe
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	Sobald der Einbrennschutz die Schaltflächen abblendet, bleiben sie bei Reels abgeblendet, egal was du tippst oder wischst, auch beim nächsten Reel. Sie funktionieren weiterhin. Wenn du Reels verlässt, sind sie wieder da.
+# context: Reels: switch that shows the Reels screen and its video in black and white
+Show Reels in gray	Reels in Graustufen zeigen
+Reels and their buttons show in black and white, which makes them easier to put down. Your feed, stories, photos and chats keep their colors. It starts from the next reel, and Reels use a little more battery.	Reels und ihre Schaltflächen erscheinen in Schwarzweiß, so legst du sie leichter weg. Dein Feed, Storys, Fotos und Chats behalten ihre Farben. Das gilt ab dem nächsten Reel, und Reels brauchen etwas mehr Akku.
 # context: settings import preview; %1$s is a Burn-in guard choice such as Dim when idle
 Burn-in guard will be set to %1$s.	Der Einbrennschutz wird auf %1$s gesetzt.
 Burn-in guard will dim the Reels screen as soon as you stop touching it.	Der Einbrennschutz dunkelt den Reels-Bildschirm ab, sobald du ihn nicht mehr berührst.

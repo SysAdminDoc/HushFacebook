@@ -2390,6 +2390,9 @@ After %1$d seconds	Setelah %1$d detik
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	Tetap redup saat saya ketuk
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	Setelah Pelindung burn-in meredupkan tombol, tombol tetap redup di Reels apa pun yang kamu ketuk atau geser, termasuk di reel berikutnya. Tombol tetap berfungsi. Keluar dari Reels mengembalikannya.
+# context: Reels: switch that shows the Reels screen and its video in black and white
+Show Reels in gray	Tampilkan Reels dalam abu-abu
+Reels and their buttons show in black and white, which makes them easier to put down. Your feed, stories, photos and chats keep their colors. It starts from the next reel, and Reels use a little more battery.	Reels dan tombolnya tampil hitam putih, jadi lebih mudah untuk berhenti menonton. Feed, cerita, foto, dan chat kamu tetap berwarna. Mulai berlaku dari reel berikutnya, dan Reels memakai sedikit lebih banyak baterai.
 # context: settings import preview; %1$s is a Burn-in guard choice such as Dim when idle
 Burn-in guard will be set to %1$s.	Pelindung burn-in akan diatur ke %1$s.
 Burn-in guard will dim the Reels screen as soon as you stop touching it.	Pelindung burn-in akan meredupkan layar Reels begitu kamu berhenti menyentuhnya.

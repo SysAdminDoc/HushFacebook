@@ -2444,6 +2444,9 @@ After %1$d seconds	Через %1$d секунд
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	Не осветлять при касании
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	После затемнения кнопок защитой от выгорания они остаются затемненными в Reels при любых нажатиях и свайпах, в том числе при переходе к следующему Reels. Кнопки продолжают работать. При выходе из Reels они снова отображаются.
+# context: Reels: switch that shows the Reels screen and its video in black and white
+Show Reels in gray	Reels в оттенках серого
+Reels and their buttons show in black and white, which makes them easier to put down. Your feed, stories, photos and chats keep their colors. It starts from the next reel, and Reels use a little more battery.	Reels и их кнопки показываются чёрно-белыми, так от них легче оторваться. Лента, истории, фото и чаты остаются цветными. Это начнётся со следующего Reels, а Reels будут расходовать чуть больше заряда.
 # context: settings import preview; %1$s is a Burn-in guard choice such as Dim when idle
 Burn-in guard will be set to %1$s.	Для защиты от выгорания будет установлено значение %1$s.
 Burn-in guard will dim the Reels screen as soon as you stop touching it.	Защита от выгорания затемнит экран Reels сразу после прекращения касаний.

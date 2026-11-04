@@ -157,6 +157,15 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.BURN_IN_STAY_DIM,
                     L10n.t("Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, "
                             + "the next reel too. They still work. Leaving Reels brings them back.")));
+            // The gray needs the reel's player on a TextureView, a Turn off HDR brightness hook that
+            // works as each player is built, and the screen stays in color over one that isn't, so
+            // it starts from the next reel.
+            if (build.contains(PatchFamily.HDR_BRIGHTNESS)) {
+                reels.addPreference(toggle(context, Settings.GRAY_REELS,
+                        L10n.t("Reels and their buttons show in black and white, which makes them easier to put down. "
+                                + "Your feed, stories, photos and chats keep their colors. It starts from the next reel, "
+                                + "and Reels use a little more battery.")));
+            }
             // The sidebar buttons are built as each reel is, so a change shows from the next reel.
             reels.addPreference(toggle(context, Settings.HIDE_REEL_COUNTS,
                     L10n.t("Takes the numbers away from under a reel's Like, Comment and Share icons. "

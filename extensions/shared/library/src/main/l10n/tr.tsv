@@ -2390,6 +2390,9 @@ After %1$d seconds	%1$d saniye sonra
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	Dokununca soluk kalsın
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	Ekran yanığı koruması düğmeleri soldurduktan sonra, Reels'te neye dokunur ya da kaydırırsan kaydır soluk kalırlar, sonraki reel'de de. Yine çalışırlar. Reels'ten çıkınca geri gelirler.
+# context: Reels: switch that shows the Reels screen and its video in black and white
+Show Reels in gray	Reels'i gri göster
+Reels and their buttons show in black and white, which makes them easier to put down. Your feed, stories, photos and chats keep their colors. It starts from the next reel, and Reels use a little more battery.	Reels ve düğmeleri siyah beyaz görünür, böylece bırakmak daha kolay olur. Akışın, hikayelerin, fotoğrafların ve sohbetlerin renkli kalır. Bir sonraki reel'den itibaren başlar ve Reels biraz daha fazla pil kullanır.
 # context: settings import preview; %1$s is a Burn-in guard choice such as Dim when idle
 Burn-in guard will be set to %1$s.	Ekran yanığı koruması %1$s olarak ayarlanacak.
 Burn-in guard will dim the Reels screen as soon as you stop touching it.	Ekran yanığı koruması, dokunmayı bıraktığın anda Reels ekranını soluklaştıracak.

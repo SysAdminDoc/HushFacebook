@@ -2394,6 +2394,9 @@ After %1$d seconds	%1$d 秒後
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	點擊時保持淡化
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	防烙印保護淡化按鈕後，無論在 Reels 點擊或滑動什麼，按鈕都會維持淡化，下一則 Reel 也一樣。按鈕仍可操作，離開 Reels 後會恢復顯示。
+# context: Reels: switch that shows the Reels screen and its video in black and white
+Show Reels in gray	以灰階顯示 Reels
+Reels and their buttons show in black and white, which makes them easier to put down. Your feed, stories, photos and chats keep their colors. It starts from the next reel, and Reels use a little more battery.	Reels 及其按鈕以黑白顯示，讓你更容易放下手機。你的動態、限時動態、相片和聊天保持原本的顏色。從下一則 reel 開始生效，Reels 會稍微多耗一點電。
 # context: settings import preview; %1$s is a Burn-in guard choice such as Dim when idle
 Burn-in guard will be set to %1$s.	防烙印保護將設為 %1$s。
 Burn-in guard will dim the Reels screen as soon as you stop touching it.	停止觸碰後，防烙印保護會立即淡化 Reels 畫面。

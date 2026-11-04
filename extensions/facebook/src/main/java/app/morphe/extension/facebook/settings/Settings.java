@@ -763,6 +763,16 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_burn_in_stay_dim", FALSE);
 
     /**
+     * Show Reels in gray: the Reels screen shows in black and white, video and buttons alike, and
+     * every other screen keeps its colors ({@link app.morphe.extension.facebook.reels.GrayReels}).
+     * The reels viewer's players draw into a TextureView while it's on, so the gray reaches the
+     * video ({@link app.morphe.extension.facebook.media.TextureVideo}). Off by default. The screen
+     * is read on each look; the video from the next player Facebook sets up.
+     */
+    public static final BooleanSetting GRAY_REELS =
+            new BooleanSetting("hushfacebook_gray_reels", FALSE);
+
+    /**
      * The numbers under a reel's Like, Comment and Share icons go, and the icons stay where they are
      * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#countText}, #180). Off by default.
      * A change shows on the buttons drawn after it.

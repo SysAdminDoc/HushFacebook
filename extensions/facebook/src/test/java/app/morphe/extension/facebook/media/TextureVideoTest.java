@@ -41,13 +41,16 @@ public class TextureVideoTest {
     @Before
     public void start() {
         HookStatus.clear();
+        TextureVideo.resetForTests();
         Settings.DRAW_VIDEOS_WITH_THE_SCREEN.save(true);
     }
 
     @After
     public void restore() {
         PauseForTests.resume();
+        TextureVideo.resetForTests();
         Settings.DRAW_VIDEOS_WITH_THE_SCREEN.resetToDefault();
+        Settings.GRAY_REELS.resetToDefault();
         Settings.TRANSLUCENT_BARS.resetToDefault();
         TranslucentBarsForTests.inBuild(null);
         HookStatus.clear();
@@ -151,6 +154,55 @@ public class TextureVideoTest {
             PauseForTests.resume();
         }
         assertFalse("an answer left to Facebook was counted: " + statusLine(), statusLine().contains("Counted"));
+    }
+
+    /**
+     * Show Reels in gray: the gray is a layer the window draws through, which a SurfaceView's video
+     * isn't, so a reel is kept off its SurfaceView and its preference read right behind answers yes.
+     * A feed video's decision after it clears the mark, so the feed keeps Facebook's answers.
+     */
+    @Test
+    public void grayReelsPutAReelOnItsTextureViewAndNothingElse() {
+        Settings.DRAW_VIDEOS_WITH_THE_SCREEN.save(false);
+        Settings.GRAY_REELS.save(true);
+        assertFalse("a reel stayed on its SurfaceView with Reels in gray", TextureVideo.surfaceView(true, REELS));
+        assertTrue("the reel's TextureView preference stayed off", TextureVideo.preferTextureView(false));
+        assertFalse("a reel in picture-in-picture stayed on its SurfaceView", TextureVideo.surfaceView(true, REELS_PIP));
+        assertTrue("the picture-in-picture reel's preference stayed off", TextureVideo.preferTextureView(false));
+        assertTrue("a feed video lost its SurfaceView", TextureVideo.surfaceView(true, FEED));
+        assertFalse("a feed video Facebook kept off a SurfaceView", TextureVideo.surfaceView(false, FEED));
+        assertFalse("the reel's mark answered the feed video's preference", TextureVideo.preferTextureView(false));
+        String line = statusLine();
+        assertTrue("the two reels weren't counted: " + line, line.contains(TextureVideo.DRAWN_FOR_GRAY_REELS + " 2"));
+        assertFalse("the gray counted as the washed-out colors switch: " + line,
+                line.contains(TextureVideo.DRAWN_WITH_THE_SCREEN));
+    }
+
+    @Test
+    public void grayReelsOffPausedOrNotReadyLeaveTheReel() throws InterruptedException {
+        Settings.DRAW_VIDEOS_WITH_THE_SCREEN.save(false);
+        assertTrue("off, a reel lost its SurfaceView", TextureVideo.surfaceView(true, REELS));
+        assertFalse("off, the reel's preference was turned on", TextureVideo.preferTextureView(false));
+        Settings.GRAY_REELS.save(true);
+        for (HushfacebookPause.Reason reason : PAUSES) {
+            PauseForTests.pause(reason);
+            assertTrue(reason.name() + ": a reel lost its SurfaceView", TextureVideo.surfaceView(true, REELS));
+            assertFalse(reason.name() + ": the reel's preference was turned on", TextureVideo.preferTextureView(false));
+            PauseForTests.resume();
+        }
+        SettingsContextRule.withoutContext(() -> {
+            assertTrue("a reel lost its SurfaceView before the settings were ready", TextureVideo.surfaceView(true, REELS));
+            assertFalse("the reel's preference was turned on before the settings were ready", TextureVideo.preferTextureView(false));
+        });
+        // A reel's decision on another thread leaves this thread's read alone. That thread's reel has
+        // to have been moved, or this would pass with no mark set anywhere.
+        TextureVideo.surfaceView(true, FEED);
+        boolean[] otherAnswer = {true};
+        Thread other = new Thread(() -> otherAnswer[0] = TextureVideo.surfaceView(true, REELS));
+        other.start();
+        other.join();
+        assertFalse("the other thread's reel stayed on its SurfaceView", otherAnswer[0]);
+        assertFalse("another thread's reel answered this thread's read", TextureVideo.preferTextureView(false));
     }
 
     /** Android 11 has no frost, so the bars leave the player's view alone there. */

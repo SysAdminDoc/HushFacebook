@@ -2390,6 +2390,9 @@ After %1$d seconds	Después de %1$d segundos
 # context: Reels: Burn-in guard's switch that keeps the faded buttons faded while you tap
 Stay dim when I tap	Seguir atenuado al tocar
 Once Burn-in guard fades the buttons, they stay faded on Reels whatever you tap or swipe, the next reel too. They still work. Leaving Reels brings them back.	Cuando la Protección contra quemado atenúa los botones, siguen atenuados en Reels toques o deslices lo que sea, también en el siguiente reel. Siguen funcionando. Al salir de Reels vuelven.
+# context: Reels: switch that shows the Reels screen and its video in black and white
+Show Reels in gray	Mostrar Reels en gris
+Reels and their buttons show in black and white, which makes them easier to put down. Your feed, stories, photos and chats keep their colors. It starts from the next reel, and Reels use a little more battery.	Los Reels y sus botones se ven en blanco y negro, así es más fácil dejarlos. Tu feed, historias, fotos y chats mantienen sus colores. Empieza desde el siguiente reel, y Reels gasta un poco más de batería.
 # context: settings import preview; %1$s is a Burn-in guard choice such as Dim when idle
 Burn-in guard will be set to %1$s.	La Protección contra quemado quedará en %1$s.
 Burn-in guard will dim the Reels screen as soon as you stop touching it.	La Protección contra quemado atenuará la pantalla de Reels en cuanto dejes de tocarla.
