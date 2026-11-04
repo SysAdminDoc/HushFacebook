@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.feed.addressed
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.requireLocals
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -177,8 +178,8 @@ internal fun BytecodePatchContext.hideUpNext() {
 /** The setter of the bar's room returns before it writes the height when the switch is on (#375). */
 private fun BytecodePatchContext.keepNoUpNextRoom() {
     val setters = mutableListOf<Pair<String, Method>>()
-    classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEach
+    classDefForEachReferencing(names = listOf(OVERLAID_ASPECT_RATIO)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
         upNextInsetSetters(classDef.methods).mapTo(setters) { classDef.type to it }
     }
     val (owner, setter) = setters.singleOrNull() ?: throw PatchException(

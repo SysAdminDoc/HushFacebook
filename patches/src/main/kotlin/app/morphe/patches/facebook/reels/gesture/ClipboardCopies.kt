@@ -106,14 +106,19 @@ internal fun BytecodePatchContext.copyPopups(writers: List<String>): List<CopyPo
     val helpers = writers.flatMap { type ->
         classDefBy(type).methods.filter { AccessFlags.STATIC.isSet(it.accessFlags) && it.makes(::isClipboardWrite) }
     }.mapTo(mutableSetOf()) { it.signature() }
+    val owners = writers.toHashSet()
+    // The owner first: spelling out every static call took a tenth of a second on 585 (#216).
+    fun Instruction.callsHelper() = (opcode == Opcode.INVOKE_STATIC || opcode == Opcode.INVOKE_STATIC_RANGE) &&
+        ((this as ReferenceInstruction).reference as MethodReference).let { it.definingClass in owners && it.toString() in helpers }
     val found = mutableListOf<CopyPopup>()
     classDefForEachReferencing(types = writers) { classDef ->
         if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
         for (method in classDef.methods) {
-            val code = method.implementation?.instructions?.toList() ?: continue
+            val instructions = method.implementation?.instructions ?: continue
+            if (instructions.none { it.callsHelper() }) continue
+            val code = instructions.toList()
             for ((copy, instruction) in code.withIndex()) {
-                if (instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) continue
-                if ((instruction as ReferenceInstruction).reference.toString() !in helpers) continue
+                if (!instruction.callsHelper()) continue
                 val show = popupShowAfter(code, copy) ?: continue
                 val borrowed = method.freeLocalsAt(GESTURE_PATCH, show, 1, targets = listOf(show + 1)).single()
                 found += CopyPopup(method, show, borrowed)

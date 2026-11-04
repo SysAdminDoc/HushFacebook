@@ -31,6 +31,7 @@ import app.morphe.patches.facebook.reels.hold.reelLiftGuardPatch
 import app.morphe.patches.facebook.reels.hold.SPEED_SET as GUARD_SPEED_SET
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -248,8 +249,8 @@ internal fun BytecodePatchContext.applyReelSpeedAnchors(anchors: ReelSpeedAnchor
 internal fun BytecodePatchContext.addSlowerSpeeds() {
     // Up to 584 the selector sits in the toast's class; 585 moved the toast into a Runnable, so look build-wide.
     val selectors = mutableListOf<Method>()
-    classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
+    classDefForEachReferencing(types = listOf(ATTRIBUTE_SELECTOR)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
         selectors += classDef.methods.filter {
             AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == ATTRIBUTE_SELECTOR && speedLists(it).isNotEmpty()
         }

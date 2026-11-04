@@ -208,7 +208,9 @@ internal fun BytecodePatchContext.selectedTabColourHook(): () -> Unit {
         classDefByOrNull(type)?.let { AccessFlags.ABSTRACT.isSet(it.accessFlags) && !AccessFlags.INTERFACE.isSet(it.accessFlags) } == true
     }
     val readers = mutableListOf<Pair<String, Method>>()
-    classDefForEachReferencing(names = listOf(colour.name)) { classDef ->
+    // By the class the colour is asked of, which a read names too: its name is an obfuscated one like
+    // A00, which nearly every class names (#216).
+    classDefForEachReferencing(types = listOf(colour.definingClass)) { classDef ->
         if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
         classDef.methods.filterTo(mutableListOf()) { selectedTabColourReads(it, colour).isNotEmpty() }
             .forEach { readers += classDef.type to it }
@@ -220,7 +222,7 @@ internal fun BytecodePatchContext.selectedTabColourHook(): () -> Unit {
     }
     val paint = lineColourPaint(layout)
     val lines = mutableListOf<Pair<String, Method>>()
-    classDefForEachReferencing(names = listOf(paint.name)) { classDef ->
+    classDefForEachReferencing(types = listOf(paint.definingClass)) { classDef ->
         if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
         // The provider's setter also colours this Paint, with the colour read above; it's done already.
         classDef.methods.filter { method ->

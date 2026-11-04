@@ -21,6 +21,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 /*
  * Facebook's checks on dropped frames (#286). Read from 585, 2026-10-31; the obfuscated names here
@@ -105,19 +106,20 @@ internal fun healthSpeedRead(method: Method): Int? {
 /** Whether [method] is the dav1d health check: it names [META_DAV1D] and reads [HEALTH_THRESHOLD] from [settings]. */
 internal fun isHealthCheck(method: Method, settings: String): Boolean {
     val code = method.implementation?.instructions ?: return false
-    return code.any { ((it as? ReferenceInstruction)?.reference)?.toString() == META_DAV1D } &&
+    return code.any { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == META_DAV1D } &&
         code.any { fieldOf(it)?.let { field -> field.definingClass == settings && field.name == HEALTH_THRESHOLD } == true }
 }
 
 /** The indices in [method] of its reads of a [DROP_SETTINGS] field of [settings], with the hook for each. */
 internal fun dropReads(method: Method, settings: String): List<DropRead> {
-    val code = method.implementation?.instructions?.toList() ?: return emptyList()
-    return code.indices.mapNotNull { at ->
-        val field = fieldOf(code[at]) ?: return@mapNotNull null
-        val read = code[at].opcode == Opcode.IGET_BOOLEAN || code[at].opcode == Opcode.IGET_WIDE
+    val reads = mutableListOf<DropRead>()
+    method.implementation?.instructions?.forEachIndexed { at, instruction ->
+        if (instruction.opcode != Opcode.IGET_BOOLEAN && instruction.opcode != Opcode.IGET_WIDE) return@forEachIndexed
+        val field = fieldOf(instruction) ?: return@forEachIndexed
         val hook = DROP_SETTINGS[field.name]
-        if (read && hook != null && field.definingClass == settings) DropRead(method, at, hook) else null
+        if (hook != null && field.definingClass == settings) reads += DropRead(method, at, hook)
     }
+    return reads
 }
 
 /** The class HeroPlayerSetting keeps its generated settings in. Throws when it has none. */

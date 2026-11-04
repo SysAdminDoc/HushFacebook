@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.classDefForEachReferencing
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -94,8 +95,9 @@ private fun signature(method: Method): String =
  */
 internal fun BytecodePatchContext.bloksNodes(): List<ClassDef> {
     val found = mutableListOf<ClassDef>()
-    classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
+    // By the SparseArray field's type, which the index keeps for declarations too (#216).
+    classDefForEachReferencing(types = listOf(SPARSE_ARRAY)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
         if (isBloksNode(classDef)) found += classDef
     }
     if (found.isEmpty()) {

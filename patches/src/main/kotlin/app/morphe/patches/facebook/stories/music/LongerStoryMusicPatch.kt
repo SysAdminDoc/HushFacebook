@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.shared.readsMobileConfig
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -118,8 +119,9 @@ internal fun Method.clipReturns(): ClipReturns {
 /** The composer's music clip length and its two photo returns, found before anything changes. */
 internal fun BytecodePatchContext.findClipReturns(): ClipReturns {
     val methods = mutableListOf<Method>()
-    classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
+    // By the config the clip length asks for (#216).
+    classDefForEachReferencing(types = listOf(FEED_ATTACHMENT_CONFIG)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
         classDef.methods.filterTo(methods, ::isClipLength)
     }
     val method = methods.singleOrNull()

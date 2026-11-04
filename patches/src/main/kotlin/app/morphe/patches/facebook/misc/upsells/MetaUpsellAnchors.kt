@@ -146,11 +146,14 @@ internal fun editsFlagFields(serializer: ClassDef): List<FieldReference> {
 }
 
 /** The indices of each read of one of [fields] in [method]. */
-internal fun editsFlagReads(method: Method, fields: List<FieldReference>): List<Int> {
-    val wanted = fields.map { it.toString() }.toSet()
-    val code = method.code()
+internal fun editsFlagReads(method: Method, fields: List<FieldReference>): List<Int> = editsFlagReads(method.code(), fields)
+
+private fun editsFlagReads(code: List<Instruction>, fields: List<FieldReference>): List<Int> {
+    val names = fields.mapTo(HashSet()) { it.name }
+    val wanted = fields.mapTo(HashSet()) { it.toString() }
     return code.indices.filter {
-        code[it].opcode == Opcode.IGET_BOOLEAN && ((code[it] as ReferenceInstruction).reference.toString() in wanted)
+        code[it].opcode == Opcode.IGET_BOOLEAN &&
+            ((code[it] as ReferenceInstruction).reference as FieldReference).let { read -> read.name in names && read.toString() in wanted }
     }
 }
 
@@ -164,9 +167,11 @@ internal data class PillGate(val moveResult: Int, val boxed: Boolean)
  * (`LX/1a0;->A01`) asks a string table for the name (`LX/6zX;->A00`, see [tableStringsAsked]),
  * which [resolve] finds, and asks the config's interface in place.
  */
-internal fun editsPillGates(method: Method, resolve: (MethodReference) -> Method? = { null }): List<PillGate> {
-    val code = method.code()
-    return (2 until code.size - 1).mapNotNull { at ->
+internal fun editsPillGates(method: Method, resolve: (MethodReference) -> Method? = { null }): List<PillGate> =
+    editsPillGates(method.code(), resolve)
+
+private fun editsPillGates(code: List<Instruction>, resolve: (MethodReference) -> Method?): List<PillGate> =
+    (2 until code.size - 1).mapNotNull { at ->
         val result = code[at - 1]
         val boxed = when {
             result.opcode == Opcode.MOVE_RESULT && readsMobileConfig(code[at - 2], "Z") -> false
@@ -179,7 +184,6 @@ internal fun editsPillGates(method: Method, resolve: (MethodReference) -> Method
         if (answer !in sent || name !in sent) return@mapNotNull null
         PillGate(at - 1, boxed)
     }
-}
 
 /**
  * Where [code] loads [EDITS_PILL_PARAMETER] from [at], the register it lands in and the load's last
@@ -223,9 +227,10 @@ internal fun verifiedLabelText(plugin: ClassDef): Method {
 }
 
 /** The move-result index after each call to [text] in [method], when [method] isn't the plugin's own. */
-internal fun verifiedLabelAsks(method: Method, text: Method): List<Int> {
+internal fun verifiedLabelAsks(method: Method, text: Method): List<Int> = verifiedLabelAsks(method, method.code(), text)
+
+private fun verifiedLabelAsks(method: Method, code: List<Instruction>, text: Method): List<Int> {
     if (method.definingClass == VERIFIED_LABEL_PLUGIN) return emptyList()
-    val code = method.code()
     return code.indices.filter { at ->
         code[at].called()?.sameAs(text) == true && code.getOrNull(at + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
     }.map { it + 1 }
@@ -330,9 +335,11 @@ internal fun BytecodePatchContext.hideMetaUpsells() {
     classDefForEachReferencing(types = named, strings = listOf(EDITS_PILL_PARAMETER)) { classDef ->
         if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
         for (method in classDef.methods) {
-            if (editsFlagReads(method, fields).isNotEmpty()) flagReaders += classDef.type to method
-            if (editsPillGates(method, pillTable).isNotEmpty()) pillMethods += classDef.type to method
-            if (verifiedLabelAsks(method, label).isNotEmpty()) labelAskers += classDef.type to method
+            // Decoded once for the three checks that read the whole body (#216).
+            val code = method.code()
+            if (editsFlagReads(code, fields).isNotEmpty()) flagReaders += classDef.type to method
+            if (editsPillGates(code, pillTable).isNotEmpty()) pillMethods += classDef.type to method
+            if (verifiedLabelAsks(method, code, label).isNotEmpty()) labelAskers += classDef.type to method
             if (capabilityAsks(method, composerImagine).isNotEmpty()) imagineAskers += classDef.type to method
             if (storyToolList(method, storyImagine) != null) storyBuilders += classDef.type to method
         }

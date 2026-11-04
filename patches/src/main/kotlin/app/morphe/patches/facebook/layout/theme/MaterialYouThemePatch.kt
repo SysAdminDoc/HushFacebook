@@ -830,7 +830,8 @@ internal const val DARK_BRANCH = "$MATERIAL_YOU->darkBranch(I)I"
  */
 internal fun BytecodePatchContext.readDarkBranchLiterals(darkCheck: String, target: String = DARK_BRANCH): Int {
     val owners = mutableSetOf<String>()
-    classDefForEachReferencing(names = listOf(darkCheck.memberName())) { classDef ->
+    // By the check's class: its name is an obfuscated one like A00, which nearly every class names (#216).
+    classDefForEachReferencing(types = listOf(darkCheck.substringBefore("->"))) { classDef ->
         if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
         if (classDef.methods.any { it.darkBranchLiterals(darkCheck).isNotEmpty() }) owners += classDef.type
     }

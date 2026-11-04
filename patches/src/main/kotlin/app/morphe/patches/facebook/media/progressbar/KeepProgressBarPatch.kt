@@ -27,6 +27,7 @@ import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -428,8 +429,20 @@ val keepProgressBarPatch = bytecodePatch(
         val mountHolders = mutableListOf<ClassDef>()
         val scrubberSubclasses = mutableListOf<ClassDef>()
         val barListeners = mutableListOf<ClassDef>()
-        classDefForEach {
-            if (it.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
+        // Each list wants a class naming one of these: the scrubber it extends, the listener it
+        // implements, a field's type, the updater its constructor takes, or a type in the signature
+        // of a method it shares with the scrubber or the base. A folded updater or a signature of
+        // primitives alone names nothing to look for, and then every class is read (#216).
+        val shared = listOfNotNull(lengthChecks?.minimum, lengthChecks?.short, another.mount.takeIf { baseMount })
+            .map { method -> (method.parameterTypes.map(CharSequence::toString) + method.returnType).firstOrNull { it.length > 1 } }
+        val named = listOf(scrubber.type, SEEK_BAR_LISTENER, status.type, FUNCTION1, updater.type) + shared.filterNotNull()
+        val walk: ((ClassDef) -> Unit) -> Unit = if (updater.folded || null in shared) {
+            { visit -> classDefForEach(visit) }
+        } else {
+            { visit -> classDefForEachReferencing(types = named, block = visit) }
+        }
+        walk visit@{
+            if (it.type.startsWith(EXTENSION_CLASSES)) return@visit
             if (it.superclass == scrubber.type) scrubberSubclasses += it
             if (SEEK_BAR_LISTENER in it.interfaces) barListeners += it
             if (takesUpdater(it, updater)) controllers += it

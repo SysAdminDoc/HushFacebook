@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.misc.extension.parameterRegister
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.classDefForEachReferencing
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -120,8 +121,9 @@ internal fun isBoxBuilder(method: Method, border: Method): Boolean {
 internal fun BytecodePatchContext.hookBloksText() {
     val reader = themedColourReader(BoxDecorationBorderFingerprint.method)
     val builders = mutableListOf<Pair<String, Method>>()
-    classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEach
+    // By the reader's class, which the builder calls (#216).
+    classDefForEachReferencing(types = listOf(reader.definingClass)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
         classDef.methods.filter { isBloksTextBuilder(it, reader) }.mapTo(builders) { classDef.type to it }
     }
     val (owner, builder) = builders.singleOrNull() ?: throw PatchException(

@@ -348,13 +348,13 @@ class SharedPermissionsFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val authorities = documentOf(manifestOf(bundle)).ownAuthorities(FACEBOOK)
-                val suffixes = authorities.filter { it.startsWith("$FACEBOOK.") }.map { it.removePrefix(FACEBOOK) }
                 val routed = sortedSetOf<String>()
                 val left = sortedSetOf<String>()
                 val callers = mutableListOf<ClassDef>()
                 var results = 0
                 FixtureDex.forEach(bundle) { dex ->
-                    if (dex.stringSection.none { text -> suffixes.any { text.endsWith(it) } }) return@forEach
+                    // By the literals the routing takes, so a dex with only a content:// address and a path is read too.
+                    if (dex.stringSection.none { it.buildsOwnAuthority(FACEBOOK, authorities) }) return@forEach
                     for (classDef in dex.classes) {
                         var builds = false
                         for (method in classDef.methods) {

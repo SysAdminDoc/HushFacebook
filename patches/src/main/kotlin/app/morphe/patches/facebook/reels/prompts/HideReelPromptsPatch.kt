@@ -19,6 +19,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.filterBooleanReturns
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -114,8 +115,9 @@ internal fun BytecodePatchContext.findPromptConstant(): String {
 internal fun BytecodePatchContext.findPromptCheck(): Method {
     val prompt = findPromptConstant()
     val checks = mutableListOf<Method>()
-    classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
+    // By the enum the check reads the constant from (#216).
+    classDefForEachReferencing(types = listOf(prompt.substringBefore("->"))) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
         classDef.methods.filterTo(checks) { isPromptCheck(it, prompt) }
     }
     return checks.singleOrNull() ?: refuse(

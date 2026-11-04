@@ -9,6 +9,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.util.classDefForEachReferencing
 import com.android.tools.smali.dexlib2.builder.BuilderInstruction
 import com.android.tools.smali.dexlib2.iface.Method
 
@@ -23,8 +24,8 @@ internal val tabBarFilterPatch = bytecodePatch {
 
     execute {
         val filters = mutableListOf<Pair<Method, TabFilter>>()
-        classDefForEach { classDef ->
-            if (classDef.fields.none { it.type == NAVIGATION_CONFIG }) return@classDefForEach
+        classDefForEachReferencing(types = listOf(NAVIGATION_CONFIG)) { classDef ->
+            if (classDef.fields.none { it.type == NAVIGATION_CONFIG }) return@classDefForEachReferencing
             classDef.methods.forEach { method -> shownTabFilter(method)?.let { filters += method to it } }
         }
         val (builder, filter) = filters.singleOrNull() ?: throw PatchException(

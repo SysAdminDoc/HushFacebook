@@ -113,6 +113,36 @@ class ClonedPackageLiteralsTest {
             context.mutableClassDefBy(extension).methods.single().instructions().size)
     }
 
+    /**
+     * An authority put together from BuildConstants' name goes through the extension in each shape
+     * the routing looks for: the bare suffix, the suffix after a %s, and a content:// address with a
+     * path, which a search by suffix missed (#216). One joined to another class's name stays.
+     */
+    @Test
+    fun authoritiesBuiltFromBuildConstantsNameGoThroughTheExtension() {
+        val suffix = ".provider.UserValuesProvider"
+        fun built(type: String, literal: String, nameFrom: String = BUILD_CONSTANTS) = classDef(type, method(type, 3,
+            ImmutableInstruction35c(Opcode.INVOKE_STATIC, 0, 0, 0, 0, 0, 0,
+                ImmutableMethodReference(nameFrom, "A04", emptyList(), "Ljava/lang/String;")),
+            ImmutableInstruction11x(Opcode.MOVE_RESULT_OBJECT, 0),
+            load(1, literal),
+            ImmutableInstruction35c(Opcode.INVOKE_STATIC, 2, 0, 1, 0, 0, 0,
+                ImmutableMethodReference("LX/8b0;", "A00", listOf("Ljava/lang/String;", "Ljava/lang/String;"), "Ljava/lang/String;")),
+            ImmutableInstruction11x(Opcode.MOVE_RESULT_OBJECT, 2),
+            ImmutableInstruction10x(Opcode.RETURN_VOID)))
+        val shapes = listOf("LX/8b1;" to suffix, "LX/8b2;" to "%s$suffix", "LX/8b3;" to "content://%s$suffix/values")
+        val other = "LX/8b4;"
+        val context = PatchContexts.of(
+            shapes.map { (type, literal) -> built(type, literal) } + built(other, "content://%s$suffix/values", nameFrom = "LX/8b5;"),
+        )
+
+        assertEquals(3, context.routeBuiltAuthorities(facebook, authorities))
+        for ((type, literal) in shapes) {
+            assertEquals(literal, 8, context.mutableClassDefBy(type).methods.single().instructions().size)
+        }
+        assertEquals(6, context.mutableClassDefBy(other).methods.single().instructions().size)
+    }
+
     /** The calls the patch writes are public static methods of the payload, moving names under Facebook's package. */
     @Test
     fun theExtensionDeclaresTheCall() {

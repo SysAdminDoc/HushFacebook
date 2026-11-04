@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.classDefForEachReferencing
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -99,8 +100,8 @@ internal fun mentions(method: Method, text: String): Boolean =
 /** The method that renders Home's stories row. */
 internal fun BytecodePatchContext.storiesRowRender(): Method {
     val found = mutableListOf<Method>()
-    classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
+    classDefForEachReferencing(strings = listOf(STORIES_ROW_RENDER)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
         classDef.methods.filterTo(found) { mentions(it, STORIES_ROW_RENDER) }
     }
     return found.singleOrNull()
@@ -142,8 +143,9 @@ internal fun isTrayContainerFactory(method: Method, superOf: (String) -> String?
 /** Every container factory in the app. */
 internal fun BytecodePatchContext.trayContainerFactories(): List<Method> {
     val found = mutableListOf<Method>()
-    classDefForEach { classDef: ClassDef ->
-        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
+    // A factory calls the list's constructor, so it names the list's class.
+    classDefForEachReferencing(types = listOf(RECYCLER_CONSTRUCTOR.substringBefore("->"))) { classDef: ClassDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
         classDef.methods.filterTo(found) { isTrayContainerFactory(it) { type -> classDefByOrNull(type)?.superclass } }
     }
     if (found.isEmpty()) throw PatchException("$STORIES_CIRCLES_PATCH: found no factory that wraps a new list for pull to refresh")

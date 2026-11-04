@@ -179,10 +179,22 @@ internal fun BytecodePatchContext.methodsNaming(literal: String, wanted: (Method
     val found = holders.values.flatMapTo(mutableListOf()) { owner -> owner.methods.filter { wanted(it) && holdsString(it, literal) } }
     if (holders.values.none { owner -> owner.methods.any { isStringTable(it) && holdsString(it, literal) } }) return found
     val resolve: (MethodReference) -> Method? = { call -> holders[call.definingClass]?.let { resolveStatic(it, call) } }
-    // A method without the literal names it only by calling a table, which [resolve] finds among the holders.
+    // Each table's indices for the literal, read once: every caller of a table asks it, and a table is
+    // thousands of instructions (#216).
+    val indices = HashMap<MethodReference, Set<Int>>()
+    fun asksTable(method: Method): Boolean {
+        val code = method.implementation?.instructions?.toList() ?: return false
+        return code.indices.any { at ->
+            val index = tableIndexAt(code, at) ?: return@any false
+            val call = code[at].methodCall()!!
+            index in indices.getOrPut(call) { resolve(call)?.let { tableIndices(it, literal) }.orEmpty() }
+        }
+    }
+    // A method without the literal names it only by calling a table, which [resolve] finds among the
+    // holders ([namesString], with each table read once).
     classDefForEachReferencing(types = holders.keys) { owner ->
         if (owner.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
-        owner.methods.filterTo(found) { wanted(it) && !holdsString(it, literal) && namesString(it, literal, resolve) }
+        owner.methods.filterTo(found) { wanted(it) && !holdsString(it, literal) && asksTable(it) }
     }
     return found
 }

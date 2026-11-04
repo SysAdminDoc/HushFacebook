@@ -29,6 +29,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import java.util.EnumSet
 
 /*
  * Facebook's own double-tap skip on reels and videos, read from 584 (#225, 2026-10-24). The
@@ -72,7 +73,7 @@ internal val SKIP_FIELDS = mapOf("\$edgeWidthPercent" to "F", "\$skipDuration" t
 /** The most instructions from the id's load to the read taking it: the config's cast between them. */
 private const val READ_REACH = 3
 
-private val WIDE_CONSTS = setOf(Opcode.CONST_WIDE, Opcode.CONST_WIDE_32, Opcode.CONST_WIDE_16, Opcode.CONST_WIDE_HIGH16)
+private val WIDE_CONSTS = EnumSet.of(Opcode.CONST_WIDE, Opcode.CONST_WIDE_32, Opcode.CONST_WIDE_16, Opcode.CONST_WIDE_HIGH16)
 
 private fun refuse(detail: String): Nothing = throw PatchException("$SKIP_PATCH: $detail")
 
@@ -117,13 +118,21 @@ private fun readAt(method: Method, code: List<Instruction>, load: Int): FlagRead
     return FlagRead(method, load, ask + 1, (result as OneRegisterInstruction).registerA)
 }
 
-/** Where [method] loads [flag]. */
-internal fun loadsOf(method: Method, flag: Long): List<Int> = method.code().withIndex().filter { (_, it) -> it.wideLiteral() == flag }.map { it.index }
+/** Where [method] loads [flag]. Read in one pass with nothing copied: every MobileConfig reader is asked (#216). */
+internal fun loadsOf(method: Method, flag: Long): List<Int> {
+    val loads = mutableListOf<Int>()
+    method.implementation?.instructions?.forEachIndexed { at, instruction ->
+        if (instruction.opcode in WIDE_CONSTS && (instruction as WideLiteralInstruction).wideLiteral == flag) loads += at
+    }
+    return loads
+}
 
 /** [method]'s reads of [flag], or a refusal when one of its loads of [flag] isn't a read the patch knows. */
 internal fun readsOf(method: Method, flag: Long): List<FlagRead> {
+    val loads = loadsOf(method, flag)
+    if (loads.isEmpty()) return emptyList()
     val code = method.code()
-    return loadsOf(method, flag).map { load ->
+    return loads.map { load ->
         readAt(method, code, load) ?: refuse("${method.definingClass}->${method.name} loads the skip flag at $load without reading it")
     }
 }
