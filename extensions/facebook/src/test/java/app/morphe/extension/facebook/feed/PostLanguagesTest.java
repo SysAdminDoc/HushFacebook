@@ -25,6 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
@@ -38,7 +41,7 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * Hide posts in other languages (#382) in the shared feed guard: a post the phone is sure is in a
  * language that isn't kept goes; a post in a kept language, one too short to guess and one the phone
  * isn't sure of stay. It reads nothing with its switch off, without Hide posts by words or while
- * Hushfacebook is paused, and the main thread never waits for a guess.
+ * Hushfacebook is paused, and the main thread waits only briefly for a guess.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -155,17 +158,77 @@ public class PostLanguagesTest {
                 PostLanguages.REASON, PostLanguages.judge(Arrays.asList("Ein ganz normaler Satz hier"), "en"));
     }
 
+    /**
+     * Facebook builds each post into the feed once, on the main thread, so a quick guess is waited for
+     * there. The wait is long here so a loaded machine starting the worker late can't fail it.
+     */
     @Test
-    public void theMainThreadNeverWaitsForAGuessAndTheNextPassUsesIt() throws Exception {
+    public void onTheMainThreadAQuickGuessIsUsedForThePostItsFor() {
         PostLanguages.detectorForTests(text -> {
             asked.add(text);
             return languages.get(text);
         }, false);
-        assertEquals(PostLanguages.NOT_YET, PostLanguages.judge(Arrays.asList("Mañana vamos al mercado con mis amigos"), "en"));
+        PostLanguages.waitForTests(5000);
+        assertEquals(PostLanguages.REASON, PostLanguages.judge(Arrays.asList("Mañana vamos al mercado con mis amigos"), "en"));
+        assertEquals(1, asked.size());
+        assertTrue(String.valueOf(FeedFilterCounters.report()), FeedFilterCounters.report().stream()
+                .anyMatch(reported -> reported.startsWith(PostLanguages.GUESS_ROUTE + ": 1 lists")));
+    }
+
+    @Test
+    public void onTheMainThreadASlowGuessKeepsThePostAndTheNextPassUsesIt() throws Exception {
+        CountDownLatch answer = new CountDownLatch(1);
+        PostLanguages.detectorForTests(text -> {
+            asked.add(text);
+            awaitQuietly(answer);
+            return languages.get(text);
+        }, false);
+        try {
+            assertEquals(PostLanguages.NOT_YET, PostLanguages.judge(Arrays.asList("Mañana vamos al mercado con mis amigos"), "en"));
+        } finally {
+            answer.countDown();
+        }
 
         Utils.awaitBackgroundTasksForTests();
         assertEquals(PostLanguages.REASON, PostLanguages.judge(Arrays.asList("Mañana vamos al mercado con mis amigos"), "en"));
         assertEquals(1, asked.size());
+    }
+
+    /**
+     * Ten posts the classifier is stuck on cost the main thread its per-second budget, not ten waits,
+     * and hold only two of the shared workers.
+     */
+    @Test
+    public void aStuckClassifierCostsTheMainThreadOnlyItsBudget() throws Exception {
+        CountDownLatch answer = new CountDownLatch(1);
+        AtomicInteger stuck = new AtomicInteger();
+        PostLanguages.detectorForTests(text -> {
+            stuck.incrementAndGet();
+            awaitQuietly(answer);
+            return null;
+        }, false);
+        long began = System.nanoTime();
+        int heldWorkers;
+        try {
+            for (int post = 0; post < 10; post++) {
+                assertEquals(PostLanguages.NOT_YET, PostLanguages.judge(Arrays.asList("Post number " + post + " words"), "en"));
+            }
+            heldWorkers = stuck.get();
+        } finally {
+            answer.countDown();
+        }
+        long waitedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - began);
+        assertTrue("ten 60 ms waits would be 600 ms, the budget is 150: " + waitedMillis, waitedMillis < 450);
+        assertTrue("workers held by the stuck classifier: " + heldWorkers, heldWorkers <= 2);
+        Utils.awaitBackgroundTasksForTests();
+    }
+
+    private static void awaitQuietly(CountDownLatch latch) {
+        try {
+            latch.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Test

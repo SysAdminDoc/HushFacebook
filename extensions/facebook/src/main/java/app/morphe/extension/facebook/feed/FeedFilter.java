@@ -868,12 +868,7 @@ public final class FeedFilter {
     static String languageReason(Object feedUnit, StoryFlag.Accessor message, StoryFlag.Accessor attached,
             StoryFlag.Accessor links, StoryFlag.Accessor actionLinks) {
         FeedFilterCounters.sawList(PostLanguages.ROUTE, 1);
-        PostText.Read read = PostText.read(feedUnit, message, attached, links, actionLinks);
-        if (read.outcome != PostText.Outcome.TEXT) {
-            FeedFilterCounters.sawKind(PostLanguages.ROUTE, read.outcome.reason);
-            return null;
-        }
-        String kind = PostLanguages.judge(read.texts, Settings.KEPT_LANGUAGES.get());
+        String kind = PostLanguages.storyKind(feedUnit, message, attached, links, actionLinks);
         FeedFilterCounters.sawKind(PostLanguages.ROUTE, kind);
         if (!PostLanguages.REASON.equals(kind)) return null;
         FeedFilterCounters.removed(PostLanguages.ROUTE, 1, kind);
