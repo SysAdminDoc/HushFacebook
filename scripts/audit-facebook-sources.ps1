@@ -1002,8 +1002,10 @@ function Read-GitLabSource {
         $branches[$name] = [pscustomobject]@{ Head = $head
             Facebook = (Get-GitLabFacebookHead -Mirror $mirror -Branch $name -WatchPaths $watch -Head $head) }
     }
+    # GitLab renames a project waiting to be deleted after its own id. A scanner forks the mirror and deletes the fork again every few hours, faster than any census could record them.
+    $keptForks = @($forkList.Items | Where-Object { [string]$_.path_with_namespace -cnotlike "*-deletion_scheduled-$($_.id)" })
     return [pscustomobject]@{ Status = 200; FullName = "gitlab.com/$($repo.path_with_namespace)".ToLowerInvariant(); Archived = [bool]$repo.archived
-        License = $license; Branches = $branches; Forks = @($forkList.Items | ForEach-Object { [string]$_.path_with_namespace }) }
+        License = $license; Branches = $branches; Forks = @($keptForks | ForEach-Object { [string]$_.path_with_namespace }) }
 }
 
 $forkCount = 0

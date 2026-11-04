@@ -967,6 +967,16 @@ $fakeForge = @{ Answers = (New-FakeAnswers); Requests = (New-Object System.Colle
     Assert-Drift 'unseen-fork' '*alpha-patches*fork stranger/alpha-patches*' 'A fork the ledger has not seen'
     $fakeForge.Answers = New-FakeAnswers
 
+    # A GitLab fork waiting to be deleted carries its own id in its name; one whose suffix names another id is a real fork.
+    $fakeForge.Answers.gammaForks.Content = '[{"id":42,"path_with_namespace":"scanner/gamma-patches-deletion_scheduled-42"}]'
+    $scheduled = Invoke-Audit
+    Assert-True ($scheduled.ExitCode -eq 0) ("A GitLab fork waiting to be deleted was reported: " +
+        (@($scheduled.Report.findings | ForEach-Object { "$($_.kind): $($_.detail)" }) -join ' | '))
+    Reset-FixtureLedger
+    $fakeForge.Answers.gammaForks.Content = '[{"id":41,"path_with_namespace":"scanner/gamma-patches-deletion_scheduled-42"}]'
+    Assert-Drift 'unseen-fork' '*gamma-patches*fork scanner/gamma-patches-deletion_scheduled-42*' 'A GitLab fork named after another id'
+    $fakeForge.Answers = New-FakeAnswers
+
     $fakeForge.Answers.gammaProject = @{ Status = 404; Content = $null }
     Assert-Drift 'repository-gone' '*gamma-patches*HTTP 404*' 'A GitLab source that is gone'
     $fakeForge.Answers = New-FakeAnswers
