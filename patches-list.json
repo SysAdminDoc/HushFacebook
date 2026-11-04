@@ -816,7 +816,8 @@
       "use": true,
       "dependencies": [
         "BytecodePatch",
-        "Hushfacebook settings"
+        "Hushfacebook settings",
+        "ResourcePatch"
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
