@@ -87,11 +87,13 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-# Read-SmokeReport alone: dot-sourcing all of phone-smoke would bind its parameters over these.
+# Read-SmokeReport and Read-CrashBuffer alone: dot-sourcing all of phone-smoke would bind its parameters over these.
 $smokeAst = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'phone-smoke.ps1'), [ref]$null, [ref]$null)
-$smokeReader = $smokeAst.Find({ param($node)
-        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Read-SmokeReport' }, $true)
-. ([scriptblock]::Create($smokeReader.Extent.Text))
+foreach ($smokeFunction in @('Read-SmokeReport', 'Read-CrashBuffer')) {
+    $smokeReader = $smokeAst.Find({ param($node)
+            $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $smokeFunction }, $true)
+    . ([scriptblock]::Create($smokeReader.Extent.Text))
+}
 # Use-Utf8ConsoleOutput alone, the same way: adb writes UTF-8, and Invoke-Adb reads it through this.
 $commonAst = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'common.ps1'), [ref]$null, [ref]$null)
 $utf8Reader = $commonAst.Find({ param($node)
@@ -300,8 +302,9 @@ function Get-AuditCrashes([long]$SinceEpoch) {
     $crashes = @(Invoke-Adb shell logcat -b crash -d -v epoch) | Where-Object {
         $_ -match '^\s*(\d+)\.\d+\s' -and [long]$Matches[1] -ge $SinceEpoch
     }
-    $fatal = @($crashes | Where-Object { $_ -match "Process: $([regex]::Escape($Package))(?=[:,\s]|$)" })
-    return [pscustomobject]@{ Lines = @($crashes); Fatal = $fatal }
+    # Java crashes and native ones (a tombstone's signal and top frame), minus emulator translation aborts.
+    $read = Read-CrashBuffer -Lines @($crashes) -Package $Package
+    return [pscustomobject]@{ Lines = @($crashes); Fatal = @($read.Fatal); EmulatorNotes = @($read.EmulatorNotes) }
 }
 
 # Whether the keyboard is on screen. A dump that doesn't say is no answer either way.
@@ -1245,6 +1248,7 @@ if ($startedEpoch -gt 0) {
         }
         $walkCrashes = $finalCrashes.Fatal.Count
         if ($walkCrashes -gt 0) { $problems.Add("Facebook crashed during the audit: $($finalCrashes.Fatal[0].Trim())") }
+        foreach ($note in $finalCrashes.EmulatorNotes) { $summary.Add("Emulator note, not Facebook's crash: $note") }
     } catch { $problems.Add("Could not read the final crash buffer: $($_.Exception.Message)") }
 }
 

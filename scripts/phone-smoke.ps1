@@ -133,6 +133,80 @@ function Read-SmokeReport {
     }
 }
 
+<#
+    Reads crash buffer lines (logcat -b crash -v epoch, already cut to the walk) into $Package's
+    crashes. Fatal holds one line per crash: Java's "Process:" line, or for a native crash, which
+    leaves no Java line, its time, signal and top frame from debuggerd's tombstone. A native crash
+    whose top frame is in libndk_translation, an emulator's arm translation layer, goes to
+    EmulatorNotes instead: emulator-5590 logged an fdsan abort there on the 585 walks, and the walk
+    read clean because only Java crashes were counted.
+#>
+function Read-CrashBuffer {
+    param(
+        [AllowEmptyCollection()][string[]]$Lines = @(),
+        [Parameter(Mandatory = $true)][string]$Package
+    )
+    $fatal = New-Object System.Collections.Generic.List[string]
+    $notes = New-Object System.Collections.Generic.List[string]
+    $name = [regex]::Escape($Package)
+    $natives = New-Object System.Collections.Generic.List[object]
+    # libc's "Fatal signal 6 (SIGABRT) ... pid 1 (package)" comes first, then the tombstone:
+    # "pid: 1, tid: 2, name: x  >>> package <<<", "signal 6 (SIGABRT)" and the backtrace's
+    # "#00 pc 0005e1fc  /path/lib.so (symbol+164)" lines. The top frame is the first outside libc,
+    # which only aborts for whoever called it. A header naming the crash's own pid again is the same
+    # crash, so one crash counts once whichever lines it left.
+    $native = $null
+    foreach ($line in @($Lines)) {
+        if ($line -match "Process: $name(?=[:,\s]|$)") { $fatal.Add($line.Trim()); continue }
+        $epoch = if ($line -match '^\s*(\d+\.\d+)\s') { $Matches[1] } else { '' }
+        if ($line -match "\bFatal signal \d+ \((?<signal>SIG[A-Z0-9]+)\).*\(\s*$name(?::[^)]*)?\)\s*$") {
+            $signal = $Matches['signal']
+            $crashPid = if ($line -match '\bpid (\d+) \(') { $Matches[1] } else { '' }
+            $native = [pscustomobject]@{ Epoch = $epoch; Pid = $crashPid; Signal = $signal; Tombstone = $false; Top = ''; Frame = '' }
+            $natives.Add($native)
+            continue
+        }
+        if ($line -match '>>> (?<owner>\S+) <<<') {
+            $owner = $Matches['owner']
+            if ($owner -notmatch "^$name(?::|$)") { $native = $null; continue }
+            $headerPid = if ($line -match '\bpid: (\d+),') { $Matches[1] } else { '' }
+            $same = if ($null -eq $native) { $false }
+                elseif ($native.Pid -and $headerPid) { $native.Pid -eq $headerPid }
+                else { -not $native.Tombstone }
+            if (-not $same) {
+                $native = [pscustomobject]@{ Epoch = $epoch; Pid = $headerPid; Signal = ''; Tombstone = $true; Top = ''; Frame = '' }
+                $natives.Add($native)
+            }
+            $native.Tombstone = $true
+            if (-not $native.Pid) { $native.Pid = $headerPid }
+            continue
+        }
+        if ($null -eq $native -or -not $native.Tombstone) { continue }
+        if (-not $native.Signal -and $line -match '\bsignal \d+ \((?<signal>SIG[A-Z0-9]+)\)') {
+            $native.Signal = $Matches['signal']
+            continue
+        }
+        if ($line -match '#\d+ pc [0-9a-fA-F]+\s+(?<path>\S+)(?:\s+\((?<symbol>[^)]*)\))?') {
+            $where = $Matches['path']
+            $symbol = $Matches['symbol']
+            $outsideLibc = $where -notmatch '/libc\.so$'
+            if ($symbol -and $symbol -notlike 'BuildId:*') { $where += " ($symbol)" }
+            if (-not $native.Top) { $native.Top = $where }
+            if (-not $native.Frame -and $outsideLibc) { $native.Frame = $where }
+        }
+    }
+    foreach ($crash in $natives) {
+        $frame = if ($crash.Frame) { $crash.Frame } elseif ($crash.Top) { $crash.Top } else { 'no backtrace' }
+        $signal = if ($crash.Signal) { $crash.Signal } else { 'unknown signal' }
+        $text = "$($crash.Epoch) native crash, $signal in $frame".Trim()
+        if ($frame -like '*libndk_translation*') { $notes.Add($text) } else { $fatal.Add($text) }
+    }
+    [pscustomobject]@{
+        Fatal         = $fatal.ToArray()
+        EmulatorNotes = $notes.ToArray()
+    }
+}
+
 if ($MyInvocation.InvocationName -eq '.') { return }
 
 $ErrorActionPreference = 'Stop'
@@ -265,11 +339,12 @@ foreach ($problem in $result.Problems) { $problems.Add($problem) }
 $crashes = @(Invoke-Adb shell logcat -b crash -d -v epoch) | Where-Object {
     $_ -match '^\s*(\d+)\.\d+\s' -and [long]$Matches[1] -ge $startedEpoch
 }
-$fatal = @($crashes | Where-Object { $_ -match "Process: $([regex]::Escape($Package))(?=[:,\s]|$)" })
-if ($fatal.Count -gt 0) { $problems.Add("Facebook crashed during the walk: $($fatal[0].Trim())") }
-if ($crashes.Count -gt 0) { [IO.File]::WriteAllLines((Join-Path $OutDir 'crash-buffer.txt'), [string[]]$crashes) }
+$crashRead = Read-CrashBuffer -Lines @($crashes) -Package $Package
+if ($crashRead.Fatal.Count -gt 0) { $problems.Add("Facebook crashed during the walk: $($crashRead.Fatal[0])") }
+if (@($crashes).Count -gt 0) { [IO.File]::WriteAllLines((Join-Path $OutDir 'crash-buffer.txt'), [string[]]$crashes) }
 
 $summary = New-Object System.Collections.Generic.List[string]
+foreach ($note in $crashRead.EmulatorNotes) { $summary.Add("Emulator note, not Facebook's crash: $note") }
 $summary.Add("$($result.Families.Count) hook families, $(@($result.Families | Where-Object { $_.Invoked -gt 0 }).Count) ran on the walk")
 foreach ($family in $result.Families) {
     $summary.Add(('  {0}: invoked {1}, {2} found, {3} missing{4}' -f $family.Name, $family.Invoked, $family.Found,
