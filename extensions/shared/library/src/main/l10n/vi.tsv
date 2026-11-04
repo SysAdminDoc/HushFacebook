@@ -2047,7 +2047,7 @@ The app holding that picture is taking too long, so Hushfacebook stopped waiting
 # context: toast when a tap on Home header picture comes while the last stalled app still holds a worker
 The app holding the last picture still hasn't answered. Try again later.	Ứng dụng chứa ảnh trước đó vẫn chưa phản hồi. Hãy thử lại sau.
 Inline feed video controls	Nút điều khiển video trong bảng tin
-Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Live videos and ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	Thêm nút phát/tạm dừng vào video trong bảng tin. Chạm vào video để mở toàn màn hình. Video trực tiếp và quảng cáo giữ nguyên các nút điều khiển. Khi Nhấn để phát cũng bật, cài đặt tự động phát của Facebook giữ nguyên như bạn đã chọn để nút này có thể hiện, và video vẫn chờ bạn nhấn.
+Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	Thêm nút phát/tạm dừng vào video trong bảng tin. Chạm vào video để mở toàn màn hình. Quảng cáo giữ nguyên các nút điều khiển. Khi Nhấn để phát cũng bật, cài đặt tự động phát của Facebook giữ nguyên như bạn đã chọn để nút này có thể hiện, và video vẫn chờ bạn nhấn.
 Play feed video	Phát video trong bảng tin
 Pause feed video	Tạm dừng video trong bảng tin
 Support	Hỗ trợ
@@ -2134,6 +2134,9 @@ Reels order will be set to %1$s.	Thứ tự reel sẽ được đặt thành %1$
 Cast button on feed videos	Nút truyền trên video bảng tin
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Thêm nút truyền vào video trên bảng tin. Nút này chuyển video sang ứng dụng truyền bạn có, như Web Video Caster, để phát lên TV. Facebook không còn tính năng truyền riêng nữa.
 Cast this video	Truyền video này
+Full player button on feed videos	Nút trình phát đầy đủ trên video bảng tin
+Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	Thêm nút vào video bảng tin để mở video trong trình phát đầy đủ của Facebook, với mọi nút điều khiển. Video trực tiếp cũng có nút này. Khi Nhấn để phát bật, Nút điều khiển video trong bảng tin cũng phải bật.
+Open in the full player	Mở trong trình phát đầy đủ
 Seek bar on feed videos	Thanh tua trên video bảng tin
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Hiển thị một thanh dọc theo cạnh dưới của video bảng tin. Kéo rồi thả để nhảy đến điểm đó. Video trực tiếp và quảng cáo vẫn giữ điều khiển riêng. Khi Nhấn để phát bật, Nút điều khiển video trong bảng tin cũng phải bật.
 Feed video position	Vị trí video bảng tin

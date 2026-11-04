@@ -2047,7 +2047,7 @@ The app holding that picture is taking too long, so Hushfacebook stopped waiting
 # context: toast when a tap on Home header picture comes while the last stalled app still holds a worker
 The app holding the last picture still hasn't answered. Try again later.	Aplikasi yang menyimpan gambar terakhir masih belum merespons. Coba lagi nanti.
 Inline feed video controls	Kontrol video di beranda
-Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Live videos and ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	Menambahkan tombol putar/jeda pada video di beranda. Ketuk video untuk membukanya dalam layar penuh. Video siaran langsung dan iklan tetap memakai kontrolnya sendiri. Jika “Ketuk untuk memutar” juga aktif, pengaturan putar otomatis Facebook tetap seperti yang kamu pilih agar tombol ini bisa muncul, dan video tetap menunggu ketukanmu.
+Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	Menambahkan tombol putar/jeda pada video di beranda. Ketuk video untuk membukanya dalam layar penuh. Iklan tetap memakai kontrolnya sendiri. Jika “Ketuk untuk memutar” juga aktif, pengaturan putar otomatis Facebook tetap seperti yang kamu pilih agar tombol ini bisa muncul, dan video tetap menunggu ketukanmu.
 Play feed video	Putar video beranda
 Pause feed video	Jeda video beranda
 Support	Bantuan
@@ -2134,6 +2134,9 @@ Reels order will be set to %1$s.	Urutan reel akan diatur ke %1$s.
 Cast button on feed videos	Tombol transmisi di video feed
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Menambahkan tombol transmisi ke video feed. Tombol ini menyerahkan video ke aplikasi transmisi yang kamu punya, seperti Web Video Caster, yang mengirimnya ke TV-mu. Facebook sudah tidak punya fitur transmisi sendiri.
 Cast this video	Transmisikan video ini
+Full player button on feed videos	Tombol pemutar penuh di video feed
+Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	Menambahkan tombol ke video feed yang membuka video di pemutar penuh milik Facebook, lengkap dengan semua kontrolnya. Video siaran langsung juga mendapatkannya. Jika “Ketuk untuk memutar” aktif, “Kontrol video di beranda” juga harus aktif.
+Open in the full player	Buka di pemutar penuh
 Seek bar on feed videos	Bilah geser di video feed
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Menampilkan bilah di bagian bawah video feed. Geser lalu lepaskan untuk melompat ke titik itu. Video live dan iklan tetap memakai kontrolnya sendiri. Jika “Ketuk untuk memutar” aktif, “Kontrol video di beranda” juga harus aktif.
 Feed video position	Posisi video feed

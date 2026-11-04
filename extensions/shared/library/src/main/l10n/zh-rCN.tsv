@@ -2042,7 +2042,7 @@ The app holding that picture is taking too long, so Hushfacebook stopped waiting
 # context: toast when a tap on Home header picture comes while the last stalled app still holds a worker
 The app holding the last picture still hasn't answered. Try again later.	持有上一张图片的应用仍未响应。请稍后重试。
 Inline feed video controls	动态消息视频控件
-Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Live videos and ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	为动态消息视频添加播放或暂停按钮。点按视频本身仍会全屏打开。直播视频和广告保留原有控件。同时开启“点按播放”时，Facebook 自己的自动播放设置会保持你的选择，这样按钮才能显示，视频仍会等你点按。
+Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	为动态消息视频添加播放或暂停按钮。点按视频本身仍会全屏打开。广告保留原有控件。同时开启“点按播放”时，Facebook 自己的自动播放设置会保持你的选择，这样按钮才能显示，视频仍会等你点按。
 Play feed video	播放动态消息视频
 Pause feed video	暂停动态消息视频
 Support	帮助与支持
@@ -2129,6 +2129,9 @@ Reels order will be set to %1$s.	Reels 排序将设为 %1$s。
 Cast button on feed videos	动态视频上的投屏按钮
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	为动态中的视频添加投屏按钮。它会把视频交给你已安装的投屏应用（如 Web Video Caster），由它发送到电视。Facebook 已不再自带投屏功能。
 Cast this video	投屏此视频
+Full player button on feed videos	动态视频上的完整播放器按钮
+Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	为动态中的视频添加一个按钮，在 Facebook 自己的完整播放器中打开视频，附带全部控件。直播视频也有。开启“点按播放”时，还需要开启“动态消息视频控件”。
+Open in the full player	在完整播放器中打开
 Seek bar on feed videos	动态视频上的进度条
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	在动态视频底部显示一条进度条。拖动后松开即可跳到该位置。直播视频和广告仍使用它们自己的控件。开启“点按播放”时，还需要开启“动态消息视频控件”。
 Feed video position	动态视频播放位置

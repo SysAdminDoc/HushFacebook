@@ -1443,6 +1443,19 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * A button on a feed video, beside the play/pause one, that opens the video in Facebook's own
+     * full player with all its controls, the way Recently watched opens one (#239). Live videos
+     * get it too. Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_FULL_PLAYER_BUTTON =
+            new BooleanSetting("hushfacebook_feed_video_full_player_button", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
      * A video longer than two minutes that was left partway picks up where it was left, once, the
      * next time a player starts it ({@link app.morphe.extension.facebook.media.ResumePlayback}).
      * Starts off. Off or paused, nothing is saved or looked up and videos start as Facebook starts

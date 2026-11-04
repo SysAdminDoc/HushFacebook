@@ -69,11 +69,13 @@ To keep Reel downloads in More without the sidebar button, leave **Download** on
 
 **Hide WhatsApp on reels**, also under **Reels and Watch**, removes the direct WhatsApp button beside a reel or video. It starts off. WhatsApp stays available in the Share menu.
 
-**Inline feed video controls**, under **Video and audio**, adds a separate play/pause button to feed videos, on Home and in Pages, groups and profiles. It starts off. With **Tap to play** on as well, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for you. Tap the video itself for full screen. Live videos and ads keep their own controls.
+**Inline feed video controls**, under **Video and audio**, adds a separate play/pause button to feed videos, on Home and in Pages, groups and profiles. It starts off. With **Tap to play** on as well, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for you. Tap the video itself for full screen. Live videos get the button too, though not the seek bar or cast button below, since a live stream has no end to jump around in and no file to hand over. Ads keep their own controls.
 
-**Cast button on feed videos**, right below it, puts a cast button in a feed video's top right corner. Facebook has no casting of its own anymore, so the button hands the video to a casting app you have, like Web Video Caster. It starts off.
+**Full player button on feed videos**, right below it, adds a button next to play that opens the video in Facebook's own full player, with all its controls. A video playing in the feed stops first. It starts off, and live videos get it too. With Tap to play on, it needs Inline feed video controls on too.
 
 **Seek bar on feed videos**, right below that, runs a thin bar along the bottom of a feed video. Drag it and let go to jump to that point, and the time shows while you drag. It starts off. You won't see it while the video's bottom edge is off screen or covered by the tab bar, and the same goes for the strip at the very bottom of the screen that Android keeps for its home swipe. Scroll a little and it comes back. With Tap to play on, it needs Inline feed video controls on too.
+
+**Cast button on feed videos**, the last of these, puts a cast button in a feed video's top right corner. Facebook has no casting of its own anymore, so the button hands the video to a casting app you have, like Web Video Caster. It starts off.
 
 ### Blocking Reels
 

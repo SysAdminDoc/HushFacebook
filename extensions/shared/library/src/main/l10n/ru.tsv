@@ -2091,7 +2091,7 @@ The app holding that picture is taking too long, so Hushfacebook stopped waiting
 # context: toast when a tap on Home header picture comes while the last stalled app still holds a worker
 The app holding the last picture still hasn't answered. Try again later.	Приложение, в котором находится последнее изображение, по-прежнему не отвечает. Повторите попытку позже.
 Inline feed video controls	Встроенные элементы управления видео в Ленте
-Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Live videos and ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	Добавляет кнопку воспроизведения и паузы к видео в Ленте. Нажмите на само видео, чтобы открыть его в полноэкранном режиме. Для прямых эфиров и рекламы сохраняются собственные элементы управления. Если также включено воспроизведение по нажатию, собственная настройка автозапуска Facebook остается в выбранном вами состоянии, чтобы кнопка отображалась, а видео по-прежнему ждут вашего нажатия.
+Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	Добавляет кнопку воспроизведения и паузы к видео в Ленте. Нажмите на само видео, чтобы открыть его в полноэкранном режиме. Для рекламы сохраняются собственные элементы управления. Если также включено воспроизведение по нажатию, собственная настройка автозапуска Facebook остается в выбранном вами состоянии, чтобы кнопка отображалась, а видео по-прежнему ждут вашего нажатия.
 Play feed video	Воспроизвести видео в Ленте
 Pause feed video	Приостановить видео в Ленте
 Support	Поддержка
@@ -2178,6 +2178,9 @@ Reels order will be set to %1$s.	Порядок Reels будет изменен 
 Cast button on feed videos	Кнопка трансляции для видео в Ленте
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Добавляет кнопку трансляции к видео в Ленте. Она передает видео в установленное приложение для трансляции, например Web Video Caster, которое отправляет его на телевизор. В Facebook больше нет собственной функции трансляции.
 Cast this video	Транслировать это видео
+Full player button on feed videos	Кнопка полного плеера для видео в Ленте
+Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	Добавляет к видео в Ленте кнопку, которая открывает видео в полном плеере Facebook со всеми его элементами управления. Прямые эфиры тоже ее получают. Если включено воспроизведение по нажатию, необходимо также включить встроенные элементы управления видео в Ленте.
+Open in the full player	Открыть в полном плеере
 Seek bar on feed videos	Полоса перемотки для видео в Ленте
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Показывает внизу видео в Ленте полосу перемотки. Перетащите ползунок и отпустите, чтобы перейти к нужному моменту. Для прямых эфиров и рекламы остаются собственные элементы управления. Если включено воспроизведение по нажатию, необходимо также включить встроенные элементы управления видео в Ленте.
 Feed video position	Позиция видео в Ленте

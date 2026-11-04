@@ -2047,7 +2047,7 @@ The app holding that picture is taking too long, so Hushfacebook stopped waiting
 # context: toast when a tap on Home header picture comes while the last stalled app still holds a worker
 The app holding the last picture still hasn't answered. Try again later.	La app de la última imagen aún no ha respondido. Inténtalo más tarde.
 Inline feed video controls	Controles de video en el feed
-Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Live videos and ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	Añade un botón de reproducción y pausa a los videos del feed. Toca el video para abrirlo a pantalla completa. Los videos en directo y los anuncios conservan sus propios controles. Si “Toca para reproducir” también está activado, el ajuste de reproducción automática de Facebook se queda como lo elegiste para que el botón pueda aparecer, y los videos siguen esperando a que los toques.
+Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	Añade un botón de reproducción y pausa a los videos del feed. Toca el video para abrirlo a pantalla completa. Los anuncios conservan sus propios controles. Si “Toca para reproducir” también está activado, el ajuste de reproducción automática de Facebook se queda como lo elegiste para que el botón pueda aparecer, y los videos siguen esperando a que los toques.
 Play feed video	Reproducir video del feed
 Pause feed video	Pausar video del feed
 Support	Ayuda
@@ -2134,6 +2134,9 @@ Reels order will be set to %1$s.	El orden de los reels será %1$s.
 Cast button on feed videos	Botón de enviar en videos del feed
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Añade un botón de enviar a los videos del feed. Pasa el video a una app de transmisión que tengas, como Web Video Caster, que lo envía a tu TV. Facebook ya no tiene transmisión propia.
 Cast this video	Enviar este video
+Full player button on feed videos	Botón de reproductor completo en videos del feed
+Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	Añade un botón a los videos del feed que abre el video en el reproductor completo de Facebook, con todos sus controles. Los videos en directo también lo tienen. Si “Toca para reproducir” está activado, también necesita “Controles de video en el feed”.
+Open in the full player	Abrir en el reproductor completo
 Seek bar on feed videos	Barra de progreso en videos del feed
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Muestra una barra en la parte inferior de un video del feed. Arrástrala y suéltala para saltar a ese punto. Los videos en vivo y los anuncios conservan sus propios controles. Si “Toca para reproducir” está activado, también necesita “Controles de video en el feed”.
 Feed video position	Posición del video del feed

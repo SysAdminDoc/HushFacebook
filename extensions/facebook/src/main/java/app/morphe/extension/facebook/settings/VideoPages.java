@@ -329,8 +329,11 @@ final class VideoPages {
                         L10n.t("Videos in search results don't start by themselves. Tap one to play it. "
                                 + "Works with Tap to play on or off.")));
                 playback.addPreference(toggle(context, Settings.INLINE_FEED_VIDEO_CONTROLS,
-                        L10n.t("Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Live videos and ads keep their own controls. "
+                        L10n.t("Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Ads keep their own controls. "
                                 + "With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.")));
+                playback.addPreference(toggle(context, Settings.FEED_VIDEO_FULL_PLAYER_BUTTON,
+                        L10n.t("Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. "
+                                + "Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.")));
                 playback.addPreference(toggle(context, Settings.FEED_VIDEO_SEEK_BAR,
                         L10n.t("Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. "
                     + "With Tap to play on, it needs Inline feed video controls on too.")));

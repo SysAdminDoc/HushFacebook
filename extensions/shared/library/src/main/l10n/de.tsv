@@ -2047,7 +2047,7 @@ The app holding that picture is taking too long, so Hushfacebook stopped waiting
 # context: toast when a tap on Home header picture comes while the last stalled app still holds a worker
 The app holding the last picture still hasn't answered. Try again later.	Die App mit dem letzten Bild hat noch immer nicht geantwortet. Versuche es später noch einmal.
 Inline feed video controls	Wiedergabesteuerung im Feed
-Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Live videos and ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	Fügt Feed-Videos eine Wiedergabe-/Pausetaste hinzu. Tippe auf das Video selbst, um es im Vollbild zu öffnen. Live-Videos und Anzeigen behalten ihre eigenen Steuerelemente. Ist auch „Zum Abspielen tippen“ an, bleibt Facebooks eigene Autoplay-Einstellung so, wie du sie gewählt hast, damit die Taste erscheinen kann. Videos warten trotzdem auf dein Antippen.
+Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	Fügt Feed-Videos eine Wiedergabe-/Pausetaste hinzu. Tippe auf das Video selbst, um es im Vollbild zu öffnen. Anzeigen behalten ihre eigenen Steuerelemente. Ist auch „Zum Abspielen tippen“ an, bleibt Facebooks eigene Autoplay-Einstellung so, wie du sie gewählt hast, damit die Taste erscheinen kann. Videos warten trotzdem auf dein Antippen.
 Play feed video	Feed-Video abspielen
 Pause feed video	Feed-Video pausieren
 Support	Hilfe
@@ -2134,6 +2134,9 @@ Reels order will be set to %1$s.	Die Reihenfolge der Reels wird auf %1$s gesetzt
 Cast button on feed videos	Cast-Taste bei Feed-Videos
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Fügt Feed-Videos eine Cast-Taste hinzu. Sie übergibt das Video an eine Cast-App, die du hast, etwa Web Video Caster, die es an deinen Fernseher sendet. Facebook selbst kann nicht mehr casten.
 Cast this video	Dieses Video casten
+Full player button on feed videos	Taste für den vollständigen Player bei Feed-Videos
+Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	Fügt Feed-Videos eine Taste hinzu, die das Video in Facebooks eigenem vollständigen Player mit allen Steuerelementen öffnet. Live-Videos bekommen sie auch. Ist „Zum Abspielen tippen“ an, muss auch „Wiedergabesteuerung im Feed“ an sein.
+Open in the full player	Im vollständigen Player öffnen
 Seek bar on feed videos	Suchleiste bei Feed-Videos
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Zeigt eine Leiste am unteren Rand eines Feed-Videos. Zieh sie und lass los, um zu dieser Stelle zu springen. Live-Videos und Werbung behalten ihre eigene Steuerung. Ist „Zum Abspielen tippen“ an, muss auch „Wiedergabesteuerung im Feed“ an sein.
 Feed video position	Position im Feed-Video

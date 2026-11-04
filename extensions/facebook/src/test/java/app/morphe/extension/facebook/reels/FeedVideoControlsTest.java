@@ -66,10 +66,11 @@ public class FeedVideoControlsTest {
     private final Player player = new Player();
     private final List<Boolean> commands = new ArrayList<>();
     private final List<String> casts = new ArrayList<>();
+    private final List<String> opens = new ArrayList<>();
     private final List<Integer> seeks = new ArrayList<>();
     private boolean fail;
 
-    private static final class Media { String id = "video"; boolean ordinary = true; }
+    private static final class Media { String id = "video"; boolean ordinary = true; boolean live; }
     private static final class Player {
         ViewGroup view;
         Media params = new Media();
@@ -90,6 +91,7 @@ public class FeedVideoControlsTest {
             public Object origin(Object of) { return ((Player) of).origin; }
             public String videoId(Object params) { return ((Media) params).id; }
             public boolean eligible(Object params) { return ((Media) params).ordinary; }
+            public boolean live(Object params) { return ((Media) params).live; }
             public boolean playing(Object of) { return ((Player) of).playing; }
             public void command(Object of, boolean play) {
                 assertEquals(Looper.getMainLooper(), Looper.myLooper());
@@ -100,6 +102,10 @@ public class FeedVideoControlsTest {
             public void cast(View from, String videoId) {
                 assertTrue(from == FeedVideoControls.showingCast(player));
                 casts.add(videoId);
+            }
+            public void open(View from, String videoId) {
+                assertTrue(from == FeedVideoControls.showingOpen(player));
+                opens.add(videoId);
             }
             public int position(Object of) {
                 if (fail) throw new IllegalStateException("unavailable player");
@@ -137,6 +143,7 @@ public class FeedVideoControlsTest {
         Settings.INLINE_FEED_VIDEO_CONTROLS.resetToDefault();
         Settings.FEED_VIDEO_CAST_BUTTON.resetToDefault();
         Settings.FEED_VIDEO_SEEK_BAR.resetToDefault();
+        Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.resetToDefault();
         Settings.TAP_TO_PLAY.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         LogBufferManager.clearLogBuffer();
@@ -177,6 +184,14 @@ public class FeedVideoControlsTest {
     private void castOn() {
         FeedVideoControls.videoPatchInBuildForTests = true;
         Settings.FEED_VIDEO_CAST_BUTTON.save(true);
+        FeedVideoControls.settingsChanged();
+        drain();
+    }
+
+    private View open() { return FeedVideoControls.showingOpen(player); }
+
+    private void openOn() {
+        Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.save(true);
         FeedVideoControls.settingsChanged();
         drain();
     }
@@ -628,6 +643,124 @@ public class FeedVideoControlsTest {
         assertEquals(java.util.Arrays.asList("video"), casts);
     }
 
+    @Test public void fullPlayerButtonSitsNextToPlayStopsTheFeedCopyAndOpensTheVideo() {
+        assertNull("it starts off", open());
+        openOn();
+        assertNotNull(open());
+        assertEquals("Open in the full player", open().getContentDescription());
+        assertTrue(open().getParent() == button().getParent());
+        // 40 px buttons 4 px apart at mdpi, play first (#239).
+        assertEquals(4, at(button()).leftMargin);
+        assertEquals(4 + 40 + 4, at(open()).leftMargin);
+        assertEquals(at(button()).topMargin, at(open()).topMargin);
+        player.playing = true;
+        FeedVideoControls.changed(player);
+        drain();
+        assertEquals("Pause feed video", button().getContentDescription());
+        open().performClick();
+        assertEquals("the feed's copy stops first", java.util.Arrays.asList(false), commands);
+        assertEquals("its play button shows the stop at once", "Play feed video", button().getContentDescription());
+        assertEquals(java.util.Arrays.asList("video"), opens);
+        open().performClick();
+        assertEquals("a stopped video isn't told again", 1, commands.size());
+        assertEquals(2, opens.size());
+    }
+
+    @Test public void fullPlayerButtonStandsAloneAndNeedsItsSwitchTheBuildAndNoPause() {
+        Settings.INLINE_FEED_VIDEO_CONTROLS.save(false);
+        openOn();
+        assertNull(button());
+        assertNotNull(open());
+        assertEquals("alone it takes play's spot", 4, at(open()).leftMargin);
+        View old = open();
+        Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.save(false);
+        old.performClick();
+        drain();
+        assertNull(open());
+        openOn();
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        FeedVideoControls.settingsChanged();
+        drain();
+        assertNull(open());
+        PauseForTests.resume();
+        openOn();
+        assertNotNull(open());
+        FeedVideoControls.inBuildForTests = false;
+        FeedVideoControls.settingsChanged();
+        drain();
+        assertNull(open());
+        assertTrue(opens.isEmpty());
+        assertTrue(commands.isEmpty());
+    }
+
+    @Test public void oldFullPlayerClickNeverOpensAnotherVideo() {
+        openOn();
+        View old = open();
+        player.params.id = "another video";
+        old.performClick();
+        assertTrue(opens.isEmpty());
+        FeedVideoControls.changed(player);
+        drain();
+        open().performClick();
+        assertEquals(java.util.Arrays.asList("another video"), opens);
+    }
+
+    @Test public void aLiveVideoGetsPlayPauseAndTheFullPlayerButtonButNoCastOrSeekBar() {
+        castOn();
+        openOn();
+        barOn();
+        assertNotNull("an ordinary video gets the cast button", cast());
+        assertNotNull("and the bar", bar());
+        player.params.live = true;
+        FeedVideoControls.changed(player);
+        drain();
+        assertNotNull(button());
+        assertNotNull(open());
+        assertNull("a live video has no file to hand over", cast());
+        assertNull("or an end to seek to", bar());
+        button().performClick();
+        assertEquals(java.util.Arrays.asList(true), commands);
+        open().performClick();
+        assertEquals(java.util.Arrays.asList("video"), opens);
+        player.params.live = false;
+        FeedVideoControls.changed(player);
+        drain();
+        layout();
+        assertNotNull(cast());
+        assertNotNull(bar());
+    }
+
+    @Test public void aLiveVideoNeedsRoomOnlyForTheButtonsItGets() {
+        player.view.removeAllViews();
+        // Room for two 40 px buttons and their three 4 px gaps, not three and four.
+        place(player.view, new SurfaceView(activity), 0, 0, 100, 600);
+        layout();
+        castOn();
+        openOn();
+        FeedVideoControls.changed(player);
+        drain();
+        assertNull(button());
+        assertNull(open());
+        player.params.live = true;
+        FeedVideoControls.changed(player);
+        drain();
+        assertNotNull(button());
+        assertNotNull(open());
+        assertNull(cast());
+    }
+
+    @Test public void theFullPlayerOpensTheVideosWatchLinkInFacebooksLinkHandler() {
+        FeedVideoControls.openFullPlayer(activity, "10153038129956772");
+        android.content.Intent opened = shadowOf(activity).getNextStartedActivity();
+        assertNotNull(opened);
+        assertEquals(android.content.Intent.ACTION_VIEW, opened.getAction());
+        assertEquals("https://www.facebook.com/watch/?v=10153038129956772", opened.getDataString());
+        assertEquals(FeedVideoControls.URI_HANDLER, opened.getComponent().getClassName());
+        assertEquals(activity.getPackageName(), opened.getComponent().getPackageName());
+        FeedVideoControls.openFullPlayer(activity, "not a video");
+        assertNull("anything but a video id opens nothing", shadowOf(activity).getNextStartedActivity());
+    }
+
     @Test public void aSurfaceTooNarrowForTwoButtonsGetsNeitherButOneFits() {
         player.view.removeAllViews();
         place(player.view, new SurfaceView(activity), 0, 0, 90, 600);
@@ -843,7 +976,7 @@ public class FeedVideoControlsTest {
         FeedVideoControls.changed(player);
         drain();
         log = LogBufferManager.buildExportText();
-        assertEquals(log, 1, occurrences(log, "Inline feed button: none, no video id, or a live video, ad, audio or GIF"));
+        assertEquals(log, 1, occurrences(log, "Inline feed button: none, no video id, or an ad, audio or GIF"));
         assertEquals(log, 1, occurrences(log, "Inline feed button: none, origin"));
     }
 

@@ -2047,7 +2047,7 @@ The app holding that picture is taking too long, so Hushfacebook stopped waiting
 # context: toast when a tap on Home header picture comes while the last stalled app still holds a worker
 The app holding the last picture still hasn't answered. Try again later.	Son resmi tutan uygulama hâlâ yanıt vermedi. Daha sonra tekrar dene.
 Inline feed video controls	Akış videosu denetimleri
-Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Live videos and ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	Akış videolarına oynat/duraklat düğmesi ekler. Tam ekran açmak için videonun kendisine dokunun. Canlı videolar ve reklamlar kendi denetimlerini korur. “Oynatmak için dokun” da açıksa Facebook'un kendi otomatik oynatma ayarı seçtiğiniz gibi kalır, böylece düğme görünebilir. Videolar yine de dokunmanızı bekler.
+Adds a play/pause button to feed videos. Tap the video itself to open it full screen. Ads keep their own controls. With Tap to play on too, Facebook's own Autoplay setting stays as you set it so the button can show, and videos still wait for your tap.	Akış videolarına oynat/duraklat düğmesi ekler. Tam ekran açmak için videonun kendisine dokunun. Reklamlar kendi denetimlerini korur. “Oynatmak için dokun” da açıksa Facebook'un kendi otomatik oynatma ayarı seçtiğiniz gibi kalır, böylece düğme görünebilir. Videolar yine de dokunmanızı bekler.
 Play feed video	Akış videosunu oynat
 Pause feed video	Akış videosunu duraklat
 Support	Destek
@@ -2134,6 +2134,9 @@ Reels order will be set to %1$s.	Reels sırası %1$s olarak ayarlanacak.
 Cast button on feed videos	Akış videolarında yayınla düğmesi
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Akış videolarına bir yayınla düğmesi ekler. Videoyu, Web Video Caster gibi sende olan bir yayın uygulamasına verir, o da TV'ne gönderir. Facebook'un artık kendi yayınlama özelliği yok.
 Cast this video	Bu videoyu yayınla
+Full player button on feed videos	Akış videolarında tam oynatıcı düğmesi
+Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	Akış videolarına, videoyu Facebook'un kendi tam oynatıcısında tüm denetimleriyle açan bir düğme ekler. Canlı videolarda da bulunur. “Oynatmak için dokun” açıksa “Akış videosu denetimleri” de açık olmalıdır.
+Open in the full player	Tam oynatıcıda aç
 Seek bar on feed videos	Akış videolarında sarma çubuğu
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Akıştaki bir videonun altında bir çubuk gösterir. Sürükleyip bırakarak o noktaya atlayın. Canlı videolar ve reklamlar kendi denetimlerini korur. “Oynatmak için dokun” açıksa “Akış videosu denetimleri” de açık olmalıdır.
 Feed video position	Akış videosu konumu
