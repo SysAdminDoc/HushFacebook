@@ -68,6 +68,11 @@ final class SettingsNavigation extends BaseAdapter {
     /** Which rows the person hasn't seen yet, for the dot beside them. Null when it couldn't start. */
     @Nullable private final NewRowDots dots;
     private final Set<String> expanded = new LinkedHashSet<>();
+    /** Where the list or category choice is kept: a way of looking, so no backup carries it. */
+    static final String VIEW_STORE = "hushfacebook_settings_view";
+    static final String LIST_VIEW = "list";
+    /** Every section's rows on the one page under their headings, instead of a button per section. */
+    private boolean listMode;
     /** Report, restart and project links expand in the same list as the settings. */
     private final Preference support;
     private final PreferenceCategory supportHeading;
@@ -132,6 +137,7 @@ final class SettingsNavigation extends BaseAdapter {
         list = page.getView().findViewById(android.R.id.list);
         source = screen.getRootAdapter();
         Context context = screen.getContext();
+        listMode = context.getSharedPreferences(VIEW_STORE, Context.MODE_PRIVATE).getBoolean(LIST_VIEW, false);
         // Stable English route IDs survive a locale change; the displayed names are localized.
         section("Opening Facebook", L10n.t("Opening Facebook"), L10n.t("Your start tab and launch settings"), SettingsIcons.OPENING);
         section("News feed", L10n.t("News feed"), L10n.t("Ads, suggestions and word filters"), SettingsIcons.FEED);
@@ -260,7 +266,35 @@ final class SettingsNavigation extends BaseAdapter {
         rebuild();
         showPage();
         if (state != null) restoreAnchor(state.getString("anchor", ""), state.getInt("position"), state.getInt("offset"));
-        else if (header(route) != null) showAt(visible.indexOf(header(route)), 0);
+        else if (header(route) != null) showAt(visible.indexOf(anchorOf(route)), 0);
+    }
+
+    boolean listMode() {
+        return listMode;
+    }
+
+    /**
+     * Shows every section's rows on the one page under their headings ([list]), or a button per
+     * section that opens it, and keeps the choice for the next time the screen opens. The list
+     * goes back to its top, under the toggle that was tapped.
+     */
+    void showAsList(boolean list) {
+        if (listMode == list) return;
+        listMode = list;
+        screen.getContext().getSharedPreferences(VIEW_STORE, Context.MODE_PRIVATE).edit().putBoolean(LIST_VIEW, list).apply();
+        refocus = null;
+        rebuild();
+        showPage();
+        showAt(0, 0);
+    }
+
+    /** The row a jump to section [id] scrolls to: its button, or its heading in the list view. */
+    @Nullable
+    private Preference anchorOf(String id) {
+        if (!listMode) return header(id);
+        if (SUPPORT.equals(id)) return supportHeading;
+        for (Section section : sections) if (section.id.equals(id)) return section.category;
+        return null;
     }
 
     private void section(String id, String title, String detail, String icon) {
@@ -309,6 +343,7 @@ final class SettingsNavigation extends BaseAdapter {
 
     private void showPage() {
         host.showPage("Hushfacebook", true, query);
+        host.showViewToggle(listMode);
         String shownRoute = route;
         int generation = ++auditGeneration;
         if (!query.isEmpty()) return;
@@ -319,7 +354,7 @@ final class SettingsNavigation extends BaseAdapter {
                         || host.getDialog() == null || !host.getDialog().isShowing()
                         || !list.isAttachedToWindow() || list.getAdapter() != SettingsNavigation.this
                         || list.getChildCount() == 0 || list.isLayoutRequested()) return true;
-                Preference target = header(route);
+                Preference target = anchorOf(route);
                 int index = visible.indexOf(target);
                 if (target != null && (index < list.getFirstVisiblePosition() || index > list.getLastVisiblePosition()))
                     return true;
@@ -329,9 +364,12 @@ final class SettingsNavigation extends BaseAdapter {
         });
     }
 
-    /** Closing settings acknowledges open sections. Search alone never marks a section seen. */
+    /**
+     * Closing settings acknowledges open sections, and in the list view every section, since it
+     * showed them all. Search alone never marks a section seen.
+     */
     private void leftPage() {
-        for (Section section : sections) if (expanded.contains(section.id)) acknowledge(section);
+        for (Section section : sections) if (listMode || expanded.contains(section.id)) acknowledge(section);
     }
 
     private void acknowledge(Section section) {
@@ -365,7 +403,7 @@ final class SettingsNavigation extends BaseAdapter {
         } else openAlone(route);
         rebuild();
         showPage();
-        showAt(route.isEmpty() ? 0 : visible.indexOf(header(route)), 0);
+        showAt(route.isEmpty() ? 0 : visible.indexOf(anchorOf(route)), 0);
     }
 
     /**
@@ -408,7 +446,7 @@ final class SettingsNavigation extends BaseAdapter {
     }
 
     private int sectionRows(String id) {
-        if (!expanded.contains(id)) return 0;
+        if (!listMode && !expanded.contains(id)) return 0;
         if (SUPPORT.equals(id)) {
             int count = 0;
             for (Preference row : new Preference[]{report, restartNow, supportProject})
@@ -551,6 +589,7 @@ final class SettingsNavigation extends BaseAdapter {
         String id = headerId(item);
         if (id != null) return "section:" + id;
         for (Section section : sections) if (item == section.category) return "heading:" + section.id;
+        if (item == supportHeading) return "heading:" + SUPPORT;
         if (item == buildDetails) return "build";
         if (item == screen.getPreference(0)) return "status";
         // An inline heading has no key, so its section and title find it again.
@@ -703,13 +742,15 @@ final class SettingsNavigation extends BaseAdapter {
             if (missing != null) visible.add(missing);
             if (favorites != null) visible.add(favorites);
             for (Section section : sections) {
-                visible.add(section.link);
-                if (expanded.contains(section.id)) {
+                // The list view names each section over its rows, as search does, with no button to open.
+                if (listMode && section.category.getPreferenceCount() == 0) continue;
+                visible.add(listMode ? section.category : section.link);
+                if (listMode || expanded.contains(section.id)) {
                     for (int i = 0; i < section.category.getPreferenceCount(); i++) visible.add(section.category.getPreference(i));
                 }
             }
-            visible.add(support);
-            if (expanded.contains(SUPPORT)) {
+            visible.add(listMode ? supportHeading : support);
+            if (listMode || expanded.contains(SUPPORT)) {
                 visible.add(helpHeading);
                 visible.add(report);
                 if (ReopenSettingsAfterRestart.changesWaiting(screen.getContext()) <= 0) visible.add(restartNow);
@@ -831,6 +872,7 @@ final class SettingsNavigation extends BaseAdapter {
             boolean last = position + 1 == getCount() || group(getItem(position + 1)) != group;
             palette().paintSurface(row, item, first, last, overview(item));
         }
+        if (item == restart) palette().paintRestartBar(row);
         String sectionId = headerId(item);
         if (sectionId != null) bindHeader(row, item, sectionId);
         NewRowDots.paint(row, fresh(item), palette().accent);

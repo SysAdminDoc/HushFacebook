@@ -13,9 +13,12 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
 import android.preference.Preference;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ListView;
 
 import org.junit.After;
@@ -111,6 +114,41 @@ public class SettingsEdgeInsetsTest {
         assertPixel("the page past the card's end", colors.background, drawn.getPixel(w - line, h / 2));
         assertPixel("one line between rows, not two", colors.card, drawn.getPixel(line + dp(4), 0));
         assertPixel("the line under the row", colors.outline, drawn.getPixel(line + dp(4), h - 1));
+    }
+
+    @Test public void theSearchStandsOnThe18DpLineAndTheToggleRunsEdgeToEdge() {
+        ScreenColors colors = ScreenColors.current();
+        ViewGroup root = (ViewGroup) dialog.getView();
+        root.measure(View.MeasureSpec.makeMeasureSpec(780, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(1688, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, 780, 1688);
+        EditText search = findSearch(root);
+        assertTrue(search != null);
+        View box = (View) search.getParent();
+        int start = root.getPaddingLeft();
+        int end = root.getWidth() - root.getPaddingRight();
+        assertEquals("the search's start", start + dp(18), box.getLeft());
+        assertEquals("the search's end", end - dp(18), box.getRight());
+        assertTrue(box.getBackground() instanceof GradientDrawable);
+        assertEquals(dp(10), ((GradientDrawable) box.getBackground()).getCornerRadius(), 0.01);
+        assertEquals(colors.hint, search.getCurrentHintTextColor());
+        assertEquals(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 16,
+                controller.get().getResources().getDisplayMetrics()), search.getTextSize(), 0.01f);
+        assertTrue("the search is under 48 dp", box.getHeight() >= dp(48));
+        View toggle = root.findViewWithTag(SettingsDialog.VIEW_TOGGLE);
+        assertEquals("the toggle's start", start, toggle.getLeft());
+        assertEquals("the toggle's end", end, toggle.getRight());
+    }
+
+    private static EditText findSearch(View view) {
+        if (view instanceof EditText) return (EditText) view;
+        if (!(view instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            EditText found = findSearch(group.getChildAt(i));
+            if (found != null) return found;
+        }
+        return null;
     }
 
     private static void assertPixel(String where, int expected, int actual) {

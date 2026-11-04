@@ -61,6 +61,10 @@ public class SettingsTitleBarTest {
         PatchFamily.inBuildForTests = EnumSet.allOf(PatchFamily.class);
         PatchFamily.inBuildForTests.remove(PatchFamily.MATERIAL_YOU_THEME);
         PauseForTests.resume();
+        // The test host has no version name of its own, so the header's line would have none to show.
+        android.content.Context app = org.robolectric.RuntimeEnvironment.getApplication();
+        org.robolectric.Shadows.shadowOf(app.getPackageManager())
+                .getInternalMutablePackageInfo(app.getPackageName()).versionName = "584.0.0.51.56";
         controller = Robolectric.buildActivity(Activity.class).setup().visible();
         dialog = SettingsL10nTest.show(controller.get());
         SettingsL10nTest.pageOf(dialog);
@@ -227,13 +231,11 @@ public class SettingsTitleBarTest {
         HeaderColumn root = root();
         root.collapse();
         layout();
-        View searchBox = (View) search().getParent();
         TextView title = barTitle();
         int x = title.getRight() - dp(4);
         int y = bar().getHeight() / 2;
-        assertTrue("the search isn't under the bar here, so this proves nothing",
-                searchBox.getTop() <= y + root.getScrollY() && y + root.getScrollY() < searchBox.getBottom()
-                        && searchBox.getLeft() <= x && x < searchBox.getRight());
+        View under = underTheBar(x, y);
+        boolean listMode = SettingsL10nTest.pageOf(dialog).navigation.listMode();
         long now = SystemClock.uptimeMillis();
         MotionEvent down = MotionEvent.obtain(now, now, MotionEvent.ACTION_DOWN, x, y, 0);
         MotionEvent up = MotionEvent.obtain(now, now + 50, MotionEvent.ACTION_UP, x, y, 0);
@@ -243,7 +245,25 @@ public class SettingsTitleBarTest {
         up.recycle();
         ShadowLooper.idleMainLooper();
         assertFalse("a tap on the bar reached the search under it", search().hasFocus());
+        assertEquals("a tap on the bar reached " + under + " under it",
+                listMode, SettingsL10nTest.pageOf(dialog).navigation.listMode());
         assertEquals(root.range(), root.getScrollY());
+    }
+
+    /**
+     * The search or the view toggle, whichever the collapsed header leaves under the bar at
+     * [x], [y]. Neither under it would prove nothing.
+     */
+    private View underTheBar(int x, int y) {
+        HeaderColumn root = root();
+        View searchBox = (View) search().getParent();
+        View toggle = root.findViewWithTag(SettingsDialog.VIEW_TOGGLE);
+        for (View candidate : new View[]{searchBox, toggle}) {
+            if (candidate != null && candidate.getVisibility() == View.VISIBLE
+                    && candidate.getTop() <= y + root.getScrollY() && y + root.getScrollY() < candidate.getBottom()
+                    && candidate.getLeft() <= x && x < candidate.getRight()) return candidate;
+        }
+        throw new AssertionError("neither the search nor the view toggle is under the bar here, so this proves nothing");
     }
 
     @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -251,18 +271,16 @@ public class SettingsTitleBarTest {
         HeaderColumn root = root();
         root.collapse();
         layout();
-        View searchBox = (View) search().getParent();
         int x = barTitle().getRight() - dp(4);
         int y = bar().getHeight() / 2;
-        assertTrue("the search isn't under the bar here, so this proves nothing",
-                searchBox.getTop() <= y + root.getScrollY() && y + root.getScrollY() < searchBox.getBottom());
+        View under = underTheBar(x, y);
         Bitmap shot = Bitmap.createBitmap(root.getWidth(), root.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(shot);
         // Where the window draws it: the column's own scroll moves what it holds up.
         canvas.translate(-root.getScrollX(), -root.getScrollY());
         root.draw(canvas);
         ScreenColors colors = ScreenColors.black();
-        assertEquals("the search's card shows through the bar", hex(colors.background), hex(shot.getPixel(x, y)));
+        assertEquals(under + " shows through the bar", hex(colors.background), hex(shot.getPixel(x, y)));
         assertEquals("the bar's line moved", hex(colors.outline), hex(shot.getPixel(x, root.pinnedBottom() - 1)));
         shot.recycle();
     }

@@ -418,6 +418,24 @@ final class ScreenColors {
         row.setPaddingRelative(dp(row, 22), dp(row, 20), dp(row, 22), dp(row, 8));
     }
 
+    /**
+     * The restart row, drawn as the button it is: a card on the 18 dp line with 8 dp of page above
+     * and below, rounded 12 dp and outlined in the heading colour, at least 56 dp tall. It stays a
+     * row of the list, at its top, so it shows on whatever page is open the moment a change waits.
+     */
+    void paintRestartBar(View row) {
+        GradientDrawable surface = new GradientDrawable();
+        surface.setColor(card);
+        surface.setCornerRadius(dp(row, 12));
+        surface.setStroke(dp(row, 1), interactionOutline(heading, title));
+        Drawable inset = new InsetDrawable(surface, dp(row, 18), dp(row, 8), dp(row, 18), dp(row, 8));
+        row.setBackground(new RippleDrawable(interactionRipple(heading), inset, null).mutate());
+        row.setPaddingRelative(dp(row, 18 + 16), dp(row, 8 + 6), dp(row, 18 + 20), dp(row, 8 + 6));
+        row.setMinimumHeight(dp(row, 8 + 56 + 8));
+        TextView title = row.findViewById(android.R.id.title);
+        if (title != null) title.setTextColor(dimmedWhenDisabled(this.title));
+    }
+
     /** Marks the chevron a row was given, so a recycled row's can be found and taken off. */
     static final String CHEVRON = "hushfacebook_chevron";
 
