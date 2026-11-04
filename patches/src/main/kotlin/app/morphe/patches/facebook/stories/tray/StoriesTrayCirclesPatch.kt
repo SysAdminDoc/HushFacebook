@@ -63,7 +63,7 @@ val storiesTrayCirclesPatch = bytecodePatch(
     description = "Draws the stories row on Home as round pictures at a size you pick, like Instagram. " +
         "Starts off. Turn it on in Hushfacebook settings > Stories.",
 ) {
-    category("Interface")
+    category("Stories")
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
