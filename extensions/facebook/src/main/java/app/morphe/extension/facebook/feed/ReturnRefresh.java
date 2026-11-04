@@ -25,7 +25,9 @@ import app.morphe.extension.shared.settings.Setting;
  * callback, the feed's warm-start check, which NewsFeedFragment's onResume reaches and which
  * refreshes a feed left alone for a few minutes, and NewsFeedFragment's foreground auto-scroll. The
  * first check after the UI was hidden decides, and every check within {@link #SAME_RETURN_MS} of it
- * gets the same answer. Later checks of those three are Facebook's own.
+ * gets the same answer. The same three run again when the feed comes back from another screen
+ * inside the app, a post's own page or its comments on some accounts, and outside a return they
+ * keep the feed while the switch is on (#378).
  *
  * <p>Inside the app, a tab switch back to Home or the feed back from another screen reaches four
  * more: the feed's hot-start check, its stale-post executor (from the visibility change, and from
@@ -113,7 +115,7 @@ public final class ReturnRefresh {
      * Called from the feed's warm-start check once it knows the feed has stories, before it looks
      * at how long the feed sat idle. True skips the check the way Facebook's own skip does, so an
      * empty feed still loads. Asked by the hot-start check inside the app, with no return pending,
-     * it gets the in-app answer instead.
+     * it gets the hot start's in-app answer, counted as the hot start's.
      */
     public static boolean holdWarmStart() {
         try {
@@ -303,15 +305,15 @@ public final class ReturnRefresh {
     }
 
     /**
-     * Decides one check. A check outside any tracked return (a resume or tab switch with nothing
-     * hidden, or past {@link #SAME_RETURN_MS} of the last one) isn't a decision at all: it's
-     * {@link Decision#countable countable} false so callers don't count it either way, the bug
-     * behind #22's "let Facebook refresh 15" from a switch that never once refused a real return.
+     * Decides one check. A check outside any tracked return (a resume with nothing hidden, or past
+     * {@link #SAME_RETURN_MS} of the last one) is the feed coming back from another screen inside
+     * the app, and gets the in-app answer: it keeps the feed while the switch is on, however long
+     * that screen was open (#378). It used to go to Facebook, uncounted, and on accounts whose post
+     * page or comments leave the feed for another screen, Back from them reloaded it.
      */
     private static Decision decide(long now, String check) {
         final long away;
         final String reason;
-        final boolean countable;
         synchronized (ReturnRefresh.class) {
             long at = hiddenAt;
             if (at >= 0) {
@@ -320,27 +322,24 @@ public final class ReturnRefresh {
                 away = now - at;
                 reason = refreshBecause(now, at);
                 decidedBecause = reason;
-                countable = true;
             } else if (decidedAt >= 0 && now >= decidedAt && now - decidedAt <= SAME_RETURN_MS) {
                 away = -1;
                 reason = decidedBecause;
-                countable = true;
             } else {
                 decidedAt = -1;
                 away = -2;
-                reason = "no return from the background";
-                countable = false;
+                reason = offBecause();
             }
         }
-        boolean hold = countable && reason == null;
+        boolean hold = reason == null;
         String logReason = away == -1 && reason != null ? "as the first check of this return decided" : reason;
         Logger.printDebug(() -> "Return refresh: " + check
-                + (away >= 0 ? " after " + away / 1000 + " s away" : away == -1 ? " in the same return" : "")
+                + (away >= 0 ? " after " + away / 1000 + " s away" : away == -1 ? " in the same return" : " inside the app")
                 + (hold ? ": keeping the feed" : ": Facebook goes ahead, " + logReason));
-        return new Decision(hold, countable, reason);
+        return new Decision(hold, true, reason);
     }
 
-    /** The outcome of one {@link #decide} call: whether to hold, and whether it belongs to a count. */
+    /** The outcome of one check: whether to hold, and whether it belongs to a count. */
     private static final class Decision {
         final boolean hold;
         final boolean countable;

@@ -52,16 +52,20 @@ public class ReturnRefreshTest {
         ReturnRefresh.skipAt(Long.MAX_VALUE);
     }
 
-    /** A return within ten minutes keeps the feed for its own checks, and only for those. */
-    @Test public void aReturnWithinTenMinutesKeepsPositionForThatReturnOnly() {
+    /**
+     * A return within ten minutes keeps the feed. One past them lets Facebook refresh, for its own
+     * checks only: the feed back from another screen afterwards is inside the app and keeps it.
+     */
+    @Test public void aReturnPastTenMinutesLetsFacebookRefreshForThatReturnOnly() {
         long back = 1_000 + 10 * 60 * 1000;
-        assertFalse(ReturnRefresh.skipAt(100));
         ReturnRefresh.uiHidden(1_000);
         assertTrue(ReturnRefresh.skipAt(back));
         assertTrue(ReturnRefresh.skipAt(back));
-        assertFalse(ReturnRefresh.skipAt(back + ReturnRefresh.SAME_RETURN_MS + 1));
         ReturnRefresh.uiHidden(1_000);
         assertFalse(ReturnRefresh.skipAt(back + 1));
+        assertFalse("a later check of the same return", ReturnRefresh.skipAt(back + 2));
+        assertTrue("the feed back from another screen",
+                ReturnRefresh.skipAt(back + 2 + ReturnRefresh.SAME_RETURN_MS + 1));
     }
 
     /** #23: with No time limit on, a return after any absence keeps the feed, for that return only. */
@@ -71,7 +75,7 @@ public class ReturnRefreshTest {
         ReturnRefresh.uiHidden(1_000);
         assertTrue(ReturnRefresh.skipAt(back));
         assertTrue(ReturnRefresh.askAt(back + 1, ReturnRefresh.WARM_START));
-        assertFalse(ReturnRefresh.askAt(back + ReturnRefresh.SAME_RETURN_MS + 1, ReturnRefresh.WARM_START));
+        assertTrue("inside the app", ReturnRefresh.askAt(back + ReturnRefresh.SAME_RETURN_MS + 1, ReturnRefresh.WARM_START));
         Settings.BLOCK_RETURN_REFRESH.save(false);
         ReturnRefresh.uiHidden(1_000);
         assertFalse(ReturnRefresh.skipAt(1_000 + 11 * 60 * 1000));
@@ -108,9 +112,9 @@ public class ReturnRefreshTest {
         assertTrue(ReturnRefresh.askAt(back, ReturnRefresh.WARM_START));
         assertTrue(ReturnRefresh.skipAt(back + 40));
 
-        // A check after the return's own, a tab switch back to the feed, is Facebook's.
-        assertFalse(ReturnRefresh.askAt(back + ReturnRefresh.SAME_RETURN_MS + 1, ReturnRefresh.WARM_START));
-        assertFalse(ReturnRefresh.skipAt(back + ReturnRefresh.SAME_RETURN_MS + 2));
+        // A check after the return's own, the feed back from another screen, is inside the app (#378).
+        assertTrue(ReturnRefresh.askAt(back + ReturnRefresh.SAME_RETURN_MS + 1, ReturnRefresh.WARM_START));
+        assertTrue(ReturnRefresh.skipAt(back + ReturnRefresh.SAME_RETURN_MS + 2));
     }
 
     /**
@@ -229,15 +233,26 @@ public class ReturnRefreshTest {
         assertFalse("a return decides itself", ReturnRefresh.askedByHotStartInApp(40_001));
     }
 
-    /** Outside the app's hot start, the warm-start check with no return pending is Facebook's own. */
-    @Test public void aWarmStartCheckOutsideAHotStartIsFacebooksOwn() {
-        assertFalse(ReturnRefresh.holdWarmStart());
-        ReturnRefresh.hotStart();
-        assertTrue(ReturnRefresh.holdWarmStart());
-        assertFalse("answered once", ReturnRefresh.holdWarmStart());
-        Settings.BLOCK_RETURN_REFRESH.save(false);
-        ReturnRefresh.hotStart();
-        assertFalse("switch off", ReturnRefresh.holdWarmStart());
+    /**
+     * #378: the warm-start check with no return pending is the feed back from another screen, and
+     * keeps the feed whether the hot-start check asked it or the feed's onResume did. Each counts
+     * under its own label.
+     */
+    @Test public void aWarmStartCheckInsideTheAppKeepsTheFeed() {
+        HookStatus.clear();
+        try {
+            assertTrue("onResume", ReturnRefresh.holdWarmStart());
+            ReturnRefresh.hotStart();
+            assertTrue("the hot start", ReturnRefresh.holdWarmStart());
+            String report = String.join("\n", HookStatus.report());
+            assertTrue(report, report.contains("kept the feed at warm start 1, kept the feed at hot start 1"));
+            Settings.BLOCK_RETURN_REFRESH.save(false);
+            assertFalse("switch off", ReturnRefresh.holdWarmStart());
+            ReturnRefresh.hotStart();
+            assertFalse("switch off", ReturnRefresh.holdWarmStart());
+        } finally {
+            HookStatus.clear();
+        }
     }
 
     /**
@@ -253,9 +268,9 @@ public class ReturnRefreshTest {
             String report = String.join("\n", HookStatus.report());
             assertTrue(report, report.contains(FamilyNames.RETURN_REFRESH + ": invoked 2"));
             assertTrue(report, report.contains("kept the feed on resume 1, kept the feed at warm start 1"));
-            // With nothing hidden since, a later warm-start check is Facebook's.
+            // With nothing hidden since, a later warm-start check is inside the app and keeps it too.
             SystemClock.sleep(ReturnRefresh.SAME_RETURN_MS + 1);
-            assertFalse(ReturnRefresh.holdWarmStart());
+            assertTrue(ReturnRefresh.holdWarmStart());
         } finally {
             HookStatus.clear();
         }
@@ -283,7 +298,7 @@ public class ReturnRefreshTest {
                 "Return refresh: Facebook's screens were hidden",
                 "Return refresh: feed resume after 420 s away: keeping the feed",
                 "Return refresh: warm start in the same return: keeping the feed",
-                "Return refresh: warm start: Facebook goes ahead, no return from the background",
+                "Return refresh: warm start inside the app: keeping the feed",
                 "Return refresh: warm start after 660 s away: Facebook goes ahead, away over ten minutes",
                 "Return refresh: foreground auto-scroll in the same return: Facebook goes ahead, "
                         + "as the first check of this return decided",
@@ -387,24 +402,34 @@ public class ReturnRefreshTest {
     }
 
     /**
-     * #22-style: with the switch on and no background return, a feed resume or tab switch runs
-     * the same "not a return" branch every time. It used to land in the shared refusal label, so
-     * five rounds of skip/holdWarmStart/holdAutoScroll gave "invoked 15 ... let Facebook refresh
-     * 15" for a working install that never refused anything. That branch isn't a decision, so it
-     * counts nothing beyond the invoke.
+     * #378: Back from a post's page or its comments, on accounts where those are another screen,
+     * runs the feed's resume callback, its warm-start check and its auto-scroll with nothing hidden.
+     * They went to Facebook, which reloaded the feed with Keep feed position on return on. Now each
+     * keeps the feed while the switch is on and counts as kept, never under a refusal label (#22's
+     * "let Facebook refresh 15" from a switch that never refused anything). Switched off, each is
+     * Facebook's and says why.
      */
-    @Test public void aResumeWithNoBackgroundReturnCountsNothingButInvoked() {
+    @Test public void theFeedBackFromAnotherScreenKeepsItsPlace() {
         HookStatus.clear();
         try {
             for (int i = 0; i < 5; i++) {
-                assertFalse(ReturnRefresh.skip());
-                assertFalse(ReturnRefresh.holdWarmStart());
-                assertFalse(ReturnRefresh.holdAutoScroll());
+                assertTrue(ReturnRefresh.skip());
+                assertTrue(ReturnRefresh.holdWarmStart());
+                assertTrue(ReturnRefresh.holdAutoScroll());
             }
             String report = String.join("\n", HookStatus.report());
             assertTrue(report, report.contains(FamilyNames.RETURN_REFRESH + ": invoked 15"));
+            assertTrue(report, report.contains("kept the feed on resume 5, kept the feed at warm start 5, "
+                    + "kept the feed from the foreground auto-scroll 5"));
             assertFalse(report, report.contains("let Facebook refresh"));
-            assertFalse(report, report.contains("kept the feed"));
+
+            HookStatus.clear();
+            Settings.BLOCK_RETURN_REFRESH.save(false);
+            assertFalse(ReturnRefresh.skip());
+            assertFalse(ReturnRefresh.holdWarmStart());
+            assertFalse(ReturnRefresh.holdAutoScroll());
+            String off = String.join("\n", HookStatus.report());
+            assertTrue(off, off.contains("let Facebook refresh: switch off 3"));
         } finally {
             HookStatus.clear();
         }
