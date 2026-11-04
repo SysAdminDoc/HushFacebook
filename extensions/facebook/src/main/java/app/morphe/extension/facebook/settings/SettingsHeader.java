@@ -24,7 +24,7 @@ import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 
 /**
- * The top of the settings page: Facebook's icon, Hushfacebook's name in Facebook's blues and the
+ * The top of the settings page: Hushfacebook's logo, its name in Facebook's blues and the
  * version line, centred over the search and the rows. Nothing on it can be tapped. HushGram's is a
  * row of its list; this list's rows are counted and placed by position, so the three parts go
  * straight into the page's {@link HeaderColumn}, which slides them up under the bar as the list
@@ -35,6 +35,8 @@ final class SettingsHeader {
     static final String ICON = "hushfacebook-header-icon";
     static final String NAME = "hushfacebook-header-name";
     static final String VERSION = "hushfacebook-header-version";
+    /** The drawable the settings patch adds for the icon, as SettingsLogo.kt names it. */
+    static final String LOGO = "hushfacebook_settings_logo";
 
     private SettingsHeader() {
     }
@@ -92,12 +94,25 @@ final class SettingsHeader {
     }
 
     /**
-     * The app's own launcher icon, which Icon style may have redrawn when it was patched, or the
-     * patched mark the Built-in changes section wears when the package has none to give.
+     * Hushfacebook's logo, which the settings patch writes into res/drawable-nodpi so it ships with
+     * every patched build. Without it, the app's own launcher icon, which Icon style may have redrawn,
+     * or the patched mark the Built-in changes section wears when the package has none to give.
      */
     static Drawable icon(Context context, ScreenColors colors) {
-        Drawable own = launcherIcon(context);
+        Drawable own = bundledLogo(context);
+        if (own == null) own = launcherIcon(context);
         return own != null ? own : SettingsIcons.icon(context, SettingsIcons.PATCHED, colors.heading);
+    }
+
+    @Nullable
+    private static Drawable bundledLogo(Context context) {
+        try {
+            int id = context.getResources().getIdentifier(LOGO, "drawable", context.getPackageName());
+            return id == 0 ? null : context.getResources().getDrawable(id, context.getTheme());
+        } catch (RuntimeException ex) {
+            Logger.printException(() -> "Could not load the settings logo", ex);
+            return null;
+        }
     }
 
     @Nullable

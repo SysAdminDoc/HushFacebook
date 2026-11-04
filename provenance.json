@@ -487,7 +487,27 @@
       "commit": "bb6775bf5f81ea821a078632305ece87bb328f30",
       "via": [],
       "license": "GPL-3.0-only",
-      "changes": "Ported from HushGram's settings header: the centred launcher icon, the name in the gradient title and the version line, at HushGram's sizes. HushGram's is a row of its list; here the three parts go straight into the settings screen's collapsing column over the list, the gradient is Facebook's blues lifted to 7:1 on the page, the icon falls back to the patched mark in the heading colour, and the version line names Facebook."
+      "changes": "Ported from HushGram's settings header: the centred launcher icon, the name in the gradient title and the version line, at HushGram's sizes. HushGram's is a row of its list; here the three parts go straight into the settings screen's collapsing column over the list, the gradient is Facebook's blues lifted to 7:1 on the page, the icon is Hushfacebook's logo from the drawable SettingsLogo.kt adds (then the launcher icon, then the patched mark in the heading colour), and the version line names Facebook."
+    },
+    {
+      "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/settings/SettingsLogo.kt"
+      ],
+      "origin": "ported",
+      "upstream": "https://github.com/SysAdminDoc/HushGram",
+      "commit": "bb6775bf5f81ea821a078632305ece87bb328f30",
+      "via": [],
+      "license": "GPL-3.0-only",
+      "changes": "Ported from HushGram's app icon patch (AppIcons.kt: artFiles and the write loop of addAppIcons): pictures the patch carries in its own resources go into the decoded res folder's drawable-nodpi, after asking the decoder for the patch's names and refusing before any write when one is already there. Here it's one picture, Hushfacebook's logo for the settings header, added by a resource patch the settings patch depends on, with no aliases or adaptive icons."
+    },
+    {
+      "paths": [
+        "patches/src/main/resources/app/morphe/patches/facebook/misc/settings/settings_logo.png"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Hushfacebook's own logo (assets/icons/icon-256.png), 256 px with clear corners, bundled so the settings header shows it on every patched build."
     },
     {
       "paths": [

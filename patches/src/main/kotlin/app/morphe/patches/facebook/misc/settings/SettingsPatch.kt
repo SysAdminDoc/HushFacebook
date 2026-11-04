@@ -118,6 +118,9 @@ val settingsPatch = bytecodePatch(
     dependsOn(appLabelPatch { appName })
     // So does the icon's look (#278).
     dependsOn(launcherIconPatch { iconStyle })
+    // The settings page's header shows Hushfacebook's logo, which ships with this patch into
+    // drawable-nodpi. See SettingsLogo.kt.
+    dependsOn(settingsLogoPatch)
     dependsOn(facebookExtensionPatch)
     // Every patch depends on this one, so a copy renamed with Clone app works whatever is picked,
     // and the patches Morphe runs before Clone app bring it in early enough. See ClonedPackage.kt.
