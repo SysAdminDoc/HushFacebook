@@ -198,6 +198,8 @@ public final class SettingsBackup {
             Settings.STORIES_TRAY_CIRCLES,
             Settings.STORY_PLAY_BUTTON,
             Settings.STORY_DOUBLE_TAP,
+            Settings.HIDE_STORY_CREDITS,
+            Settings.HIDE_STORY_REPLY_SUGGESTIONS,
             Settings.PINCH_TO_ZOOM,
             Settings.PINCH_TO_ZOOM_KEEP,
             Settings.PINCH_TO_ZOOM_DOUBLE_TAP,

@@ -584,6 +584,10 @@ public class PausedHooksTest {
         // A single tap in a story waits to see whether a second one comes.
         probes.put(PatchFamily.STORY_TAPS,
                 Collections.singletonList(app.morphe.extension.facebook.stories.StoryTapsForTests::holdsATap));
+        // A story's credit line leaves its credits out and its suggested replies draw nothing.
+        probes.put(PatchFamily.STORY_VIEWER_CLEANUP, Arrays.asList(
+                app.morphe.extension.facebook.stories.StoryViewerCleanup::hideCredits,
+                app.morphe.extension.facebook.stories.StoryViewerCleanup::hideReplySuggestions));
         // A photo's song gets the longer clip.
         probes.put(PatchFamily.STORY_MUSIC_LENGTH, Collections.singletonList(() -> StoryMusic.clipLength(15000) == 30000));
         probes.put(PatchFamily.SPONSORED_REELS, Arrays.asList(

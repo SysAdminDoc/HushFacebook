@@ -465,6 +465,20 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting STORY_DOUBLE_TAP =
             new BooleanSetting("hushfacebook_story_double_tap", FALSE);
 
+    /**
+     * The song and effect credits leave the line under the poster's name on a story ({@link
+     * app.morphe.extension.facebook.stories.StoryViewerCleanup}, #380). Starts off. Read as the line draws.
+     */
+    public static final BooleanSetting HIDE_STORY_CREDITS =
+            new BooleanSetting("hushfacebook_hide_story_credits", FALSE);
+
+    /**
+     * The row of suggested replies leaves the bottom of a story ({@link
+     * app.morphe.extension.facebook.stories.StoryViewerCleanup}, #380). Starts off. Read as the row draws.
+     */
+    public static final BooleanSetting HIDE_STORY_REPLY_SUGGESTIONS =
+            new BooleanSetting("hushfacebook_hide_story_reply_suggestions", FALSE);
+
     /** The two page filters that take server-inlined ads out of Reels and Watch. */
     public static final BooleanSetting HIDE_SPONSORED_REELS =
             new BooleanSetting("hushfacebook_hide_sponsored_reels", TRUE);

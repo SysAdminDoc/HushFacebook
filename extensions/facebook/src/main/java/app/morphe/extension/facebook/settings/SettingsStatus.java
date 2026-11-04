@@ -94,6 +94,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean storyViewerCleanup() {
+        return false;
+    }
+
     public static boolean storiesTrayCircles() {
         return false;
     }

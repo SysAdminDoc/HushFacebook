@@ -2493,3 +2493,7 @@ A tap in the middle of a story shows a play and pause button, like Reels. Taps o
 Stories change only on a double tap, the left side for the one before and anywhere else for the next. A single tap pauses or plays the story, or shows the play button when that's on.	快拍只在双击时切换，左侧切到上一条，其他位置切到下一条。单击会暂停或播放快拍，开启播放按钮时则显示该按钮。
 Pause story	暂停快拍
 Play story	播放快拍
+Hide song and effect credits	隐藏歌曲和特效署名
+Hide reply suggestions	隐藏回复建议
+Takes the song and effect credits off the line under the poster's name on a story. Applies from the next story you open.	去掉快拍中发布者名字下方那行的歌曲和特效署名。从你打开的下一个快拍开始生效。
+Takes the row of suggested replies off the bottom of a story. The reply box stays. Applies from the next story you open.	去掉快拍底部那一排建议回复。回复框会保留。从你打开的下一个快拍开始生效。

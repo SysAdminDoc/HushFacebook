@@ -752,6 +752,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/StoryViewerCleanup.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/stories/cleanup/StoryViewerCleanupPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: switches that take the song and effect credits off a story's subtitle line and the suggested replies off its bottom. Facebook 585 draws each as a Litho component that names itself in its class initializer, so the patch finds the one-credit line, the turning credit line and the reply suggestions by those names and asks the extension at the top of each render. On a yes the one-credit line and the suggestions draw nothing, as Facebook's own render already does for a story without them, and the turning line answers the plain subtitle its constructor kept, unless the flag render tests before its Trending or Suggested label is set."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/profile/ProfileNotes.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/profile/HideProfileNotesPatch.kt"
       ],

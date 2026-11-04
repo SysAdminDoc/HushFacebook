@@ -2552,3 +2552,7 @@ A tap in the middle of a story shows a play and pause button, like Reels. Taps o
 Stories change only on a double tap, the left side for the one before and anywhere else for the next. A single tap pauses or plays the story, or shows the play button when that's on.	Истории переключаются только двойным нажатием, слева на предыдущую, в любом другом месте на следующую. Одиночное нажатие ставит Историю на паузу или продолжает её, либо показывает кнопку воспроизведения, если она включена.
 Pause story	Приостановить Историю
 Play story	Воспроизвести Историю
+Hide song and effect credits	Скрыть подписи песни и эффекта
+Hide reply suggestions	Скрыть варианты ответа
+Takes the song and effect credits off the line under the poster's name on a story. Applies from the next story you open.	Убирает подписи песни и эффекта из строки под именем автора Истории. Действует со следующей открытой Истории.
+Takes the row of suggested replies off the bottom of a story. The reply box stays. Applies from the next story you open.	Убирает ряд предложенных ответов внизу Истории. Поле ответа остаётся. Действует со следующей открытой Истории.

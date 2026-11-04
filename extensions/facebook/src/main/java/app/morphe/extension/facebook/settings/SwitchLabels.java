@@ -101,6 +101,8 @@ final class SwitchLabels {
         if (setting == Settings.STORIES_TRAY_CIRCLES) return L10n.t("Round stories tray");
         if (setting == Settings.STORY_PLAY_BUTTON) return L10n.t("Story play button");
         if (setting == Settings.STORY_DOUBLE_TAP) return L10n.t("Double tap for next story");
+        if (setting == Settings.HIDE_STORY_CREDITS) return L10n.t("Hide song and effect credits");
+        if (setting == Settings.HIDE_STORY_REPLY_SUGGESTIONS) return L10n.t("Hide reply suggestions");
         if (setting == Settings.PINCH_TO_ZOOM) return L10n.t("Pinch to zoom");
         if (setting == Settings.PINCH_TO_ZOOM_KEEP) return L10n.t("Stay zoomed");
         if (setting == Settings.PINCH_TO_ZOOM_DOUBLE_TAP) return L10n.t("Double tap to zoom");
