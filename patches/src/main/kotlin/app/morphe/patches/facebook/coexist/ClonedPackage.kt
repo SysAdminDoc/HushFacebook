@@ -644,8 +644,10 @@ private val clonedPackageManifestPatch = resourcePatch {
     }
 
     finalize {
+        // The stock list is read before any patch runs, so the providers patches add since (Search
+        // photo's) are read here, still under the stock package until this moves them.
         val followed = document("AndroidManifest.xml").use {
-            it.followRenamedPackage(packageMetadata.packageName, stockAuthorities, stockPermissions)
+            it.followRenamedPackage(packageMetadata.packageName, stockAuthorities + it.ownAuthorities(packageMetadata.packageName), stockPermissions)
         } ?: return@finalize
         patchLog.info(
             "The package was renamed, so ${followed.declarations} permission declaration(s) still under the old name " +

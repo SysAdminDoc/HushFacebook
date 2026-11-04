@@ -1237,6 +1237,12 @@ With Stop Story auto-advance on, a finished story plays again from the start ins
 Save photo in post menus	Guardar foto en los menús de publicaciones
 # context: summary of the Save photo in post menus switch; "Save any photo" is the label of the switch above it and "Save photo" is the menu item, so use their translations
 With Save any photo on, a post with photos gets Save photo in its three-dot menu too. A post with several saves each one, one after another.	Con Guardar cualquier foto activado, una publicación con fotos también muestra Guardar foto en su menú de tres puntos. Si tiene varias, se guardan una tras otra.
+Search photo	Buscar foto
+Search photo with	Buscar foto con
+Search photo in post menus	Buscar foto en los menús de publicaciones
+With Save any photo on, a post with one photo gets Search photo in its three-dot menu. It hands the photo to the app you pick, such as Google Lens, to look up what's in it or copy its text.	Con Guardar cualquier foto activado, una publicación con una sola foto tiene Buscar foto en su menú de tres puntos. Pasa la foto a la app que elijas, como Google Lens, para saber qué hay en ella o copiar su texto.
+No app on this phone can search with a photo	Ninguna app de este teléfono puede buscar con una foto
+Couldn't get this photo. Try again in a moment.	No se pudo obtener esta foto. Vuelve a intentarlo en un momento.
 # context: menu item in a post's three-dot menu that saves the post's one photo to the phone
 Save photo	Guardar foto
 # context: primary save row for a Story that reshares a Reel

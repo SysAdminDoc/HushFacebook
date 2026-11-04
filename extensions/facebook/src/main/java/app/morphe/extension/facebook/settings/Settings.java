@@ -2214,6 +2214,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_post_menu_photo_save", FALSE);
 
     /**
+     * Download any photo's third switch (#245, #248): Search photo in the three-dot menu of a post
+     * holding one photo, handing that photo to the app picked in Android's chooser, such as Google
+     * Lens, to look up what's in it or copy its text. Off until you turn it on, and it needs
+     * {@link #DOWNLOAD_PHOTOS} on too.
+     */
+    public static final BooleanSetting POST_MENU_PHOTO_SEARCH =
+            new BooleanSetting("hushfacebook_post_menu_photo_search", FALSE);
+
+    /**
      * Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of
      * its options list (issue #151). Facebook's sheet keeps the rows it tags itself above them, and
      * on photo posts that list is the More options page. The row under a post has no room for a

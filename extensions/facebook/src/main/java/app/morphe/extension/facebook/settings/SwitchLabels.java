@@ -255,6 +255,7 @@ final class SwitchLabels {
         if (setting == Settings.CLIPBOARD_DOWNLOAD) return L10n.t("Offer to download copied links");
         if (setting == Settings.DOWNLOAD_PHOTOS) return L10n.t("Save any photo");
         if (setting == Settings.POST_MENU_PHOTO_SAVE) return L10n.t("Save photo in post menus");
+        if (setting == Settings.POST_MENU_PHOTO_SEARCH) return L10n.t("Search photo in post menus");
         if (setting == Settings.OPEN_IN_ANOTHER_APP) return L10n.t("Open videos in another app");
         if (setting == Settings.POST_MENU_DOWNLOAD_FIRST) return L10n.t("Download first in post menus");
         if (setting == Settings.DOWNLOAD_COMPATIBLE) return L10n.t("Save videos other apps can open");

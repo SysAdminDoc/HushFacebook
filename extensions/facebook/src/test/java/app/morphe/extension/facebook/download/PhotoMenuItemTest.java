@@ -85,8 +85,13 @@ public class PhotoMenuItemTest {
         PauseForTests.resume();
         Settings.DOWNLOAD_PHOTOS.resetToDefault();
         Settings.POST_MENU_PHOTO_SAVE.resetToDefault();
+        Settings.POST_MENU_PHOTO_SEARCH.resetToDefault();
         Settings.POST_MENU_DOWNLOAD_FIRST.resetToDefault();
         HookStatus.clear();
+    }
+
+    private static String title(Menu menu, int at) {
+        return String.valueOf(menu.getItem(at).getTitle());
     }
 
     private Menu filled(Object item) {
@@ -183,6 +188,67 @@ public class PhotoMenuItemTest {
             assertEquals("the tap took a slot", SaveSlotsForTests.SLOTS, MediaDownload.savesInFlight());
             assertEquals("a photo went to the downloader", before, saved.size());
         }
+    }
+
+    /** Search photo (#245, #248): a one-photo post's menu only, with or without Save photo. */
+    @Test
+    public void searchPhotoGoesOnAOnePhotoPostOnly() {
+        Settings.POST_MENU_PHOTO_SEARCH.save(true);
+        Menu menu = filled(PhotoMenuItemForTests.photoPost());
+        assertEquals(4, menu.size());
+        assertEquals("Save photo", title(menu, 2));
+        assertEquals("Search photo", title(menu, 3));
+        Menu albums = filled(album(3));
+        assertEquals("an album got Search photo", 3, albums.size());
+        assertEquals("Save all photos", title(albums, 2));
+
+        Settings.POST_MENU_PHOTO_SAVE.save(false);
+        assertEquals("Search photo alone", "Search photo", added(filled(PhotoMenuItemForTests.photoPost())));
+        assertEquals("an album with only Search photo on got a row", 2, filled(album(3)).size());
+        Settings.DOWNLOAD_PHOTOS.save(false);
+        assertEquals("Save any photo off", 2, filled(PhotoMenuItemForTests.photoPost()).size());
+        Settings.DOWNLOAD_PHOTOS.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused", 2, filled(PhotoMenuItemForTests.photoPost()).size());
+    }
+
+    /** With Download first, Save photo stays above Search photo in either kind of menu. */
+    @Test
+    public void downloadFirstKeepsSavePhotoAboveSearchPhoto() {
+        Settings.POST_MENU_PHOTO_SEARCH.save(true);
+        Settings.POST_MENU_DOWNLOAD_FIRST.save(true);
+        Menu androids = filled(PhotoMenuItemForTests.photoPost());
+        assertEquals("Save photo", title(androids, 0));
+        assertEquals("Search photo", title(androids, 1));
+        assertEquals("Save video", title(androids, 2));
+
+        Menu facebooks = VideoMenuItemForTests.facebooksSortedMenu();
+        PhotoMenuItem.add(facebooks, new View(context), PhotoMenuItemForTests.photoPost(), VideoMenuItemForTests.ICON,
+                ATTACHMENTS, MEDIA, ATTACHED_STORY, SUBATTACHMENTS);
+        assertEquals(4, facebooks.size());
+        assertEquals("Save photo", title(facebooks, 0));
+        assertEquals("Search photo", title(facebooks, 1));
+        assertEquals("Save video", title(facebooks, 2));
+    }
+
+    /** A tap on Search photo starts the search, here refused at the fetch, and says so. */
+    @Test
+    public void searchPhotoTakesTheTap() throws InterruptedException {
+        Settings.POST_MENU_PHOTO_SEARCH.save(true);
+        Settings.POST_MENU_PHOTO_SAVE.save(false);
+        Menu menu = filled(PhotoMenuItemForTests.photoPost());
+        MenuItem item = menu.getItem(2);
+        assertEquals("Search photo", String.valueOf(item.getTitle()));
+        ShadowToast.reset();
+        assertTrue("the tap wasn't taken", menu.performIdentifierAction(item.getItemId(), 0));
+        long deadline = System.nanoTime() + 20_000_000_000L;
+        while (ShadowToast.getTextOfLatestToast() == null) {
+            assertTrue("the search never answered", System.nanoTime() < deadline);
+            Thread.sleep(10);
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+        }
+        assertEquals("Couldn't get this photo. Try again in a moment.", ShadowToast.getTextOfLatestToast());
+        assertEquals("the search went through a save", 0, saved.size());
     }
 
     @Test

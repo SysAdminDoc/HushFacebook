@@ -1461,6 +1461,8 @@
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/MenuTop.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/PhotoMenuItem.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/PhotoSave.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/PhotoSearch.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/PhotoSearchFiles.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/downloads/photo/CommentGifAnchors.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/downloads/photo/DownloadPhotoPatch.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/downloads/photo/PhotoSaveAnchors.kt",
@@ -1469,7 +1471,7 @@
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook from Facebook 577, 580 and 581: the photo viewer's two reads of can_viewer_download ask the switch, and Save photo's kept newSavePhotoAction hands its listener to the extension, which saves the photo's biggest image through Hushfacebook's downloader and falls back to Facebook's own save; and, behind a second switch, Save photo in the menu of a post holding photos, added through the same post menu hook as Download to phone, reading the post's attachments, an album's subattachments and the post a share wraps through the kept GraphQL models' getters found by their field hashes, and saving each photo in turn; and Save GIF in a GIF comment's long-press sheet, built with the sheet's own Save photo row builder and icon from the comment's animated image. A save asks Meta's CDN for the biggest copy through the same resize call Facebook's own Save photo makes, and a picture the CDN sends as AVIF or WebP is written out as a JPEG."
+      "changes": "Written for Hushfacebook from Facebook 577, 580 and 581: the photo viewer's two reads of can_viewer_download ask the switch, and Save photo's kept newSavePhotoAction hands its listener to the extension, which saves the photo's biggest image through Hushfacebook's downloader and falls back to Facebook's own save; and, behind a second switch, Save photo in the menu of a post holding photos, added through the same post menu hook as Download to phone, reading the post's attachments, an album's subattachments and the post a share wraps through the kept GraphQL models' getters found by their field hashes, and saving each photo in turn; and, behind a third switch, Search photo in the menu of a post holding one photo (#245, #248), which fetches the photo into a cache folder of its own and hands it to the app picked in Android's chooser through an unexported, read-only provider the patch declares; and Save GIF in a GIF comment's long-press sheet, built with the sheet's own Save photo row builder and icon from the comment's animated image. A save asks Meta's CDN for the biggest copy through the same resize call Facebook's own Save photo makes, and a picture the CDN sends as AVIF or WebP is written out as a JPEG."
     },
     {
       "paths": [

@@ -7,6 +7,7 @@ package app.morphe.patches.facebook.downloads.photo
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patches.facebook.downloads.video.GRAPHQL_STORY_ATTACHMENT
 import app.morphe.patches.facebook.downloads.video.IMMUTABLE_LIST
 import app.morphe.patches.facebook.downloads.video.callAfterMenuFill
@@ -19,6 +20,8 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
+import org.w3c.dom.Document
+import org.w3c.dom.Element
 
 /** The extension call that adds Save photo to a post's menu once Facebook has filled it. */
 internal const val ADD_PHOTO_ITEM = "Lapp/morphe/extension/facebook/download/PhotoMenuItem;->add(" +
@@ -27,6 +30,40 @@ internal const val ADD_PHOTO_ITEM = "Lapp/morphe/extension/facebook/download/Pho
 
 /** The helper this patch adds to the class that builds every post menu, beside the video patch's. */
 internal const val PHOTO_MENU_HELPER = "hushfacebookPhotoMenuItem"
+
+/** The provider that serves a Search photo tap's photo to the app picked in the chooser. */
+internal const val PHOTO_SEARCH_PROVIDER = "app.morphe.extension.facebook.download.PhotoSearchFiles"
+
+/** Its authority after the package's name, as the extension's PhotoSearch.AUTHORITY_SUFFIX builds it. */
+internal const val PHOTO_SEARCH_AUTHORITY_SUFFIX = ".hushfacebook.photosearch"
+
+private fun Document.all(tag: String): List<Element> =
+    getElementsByTagName(tag).let { list -> (0 until list.length).mapNotNull { list.item(it) as? Element } }
+
+/**
+ * Declares [PHOTO_SEARCH_PROVIDER] under [packageName]: unexported, so only an app a chooser's
+ * intent granted can read, and only the one photo it was granted. A manifest without a single
+ * application is refused. A second run leaves the one declaration it made.
+ */
+internal fun Document.declarePhotoSearchProvider(packageName: String) {
+    val application = all("application").singleOrNull()
+        ?: throw PatchException("$PHOTO_PATCH: the manifest has no single <application>")
+    if (all("provider").any { it.getAttribute("android:name") == PHOTO_SEARCH_PROVIDER }) return
+    application.appendChild(
+        createElement("provider").apply {
+            setAttribute("android:name", PHOTO_SEARCH_PROVIDER)
+            setAttribute("android:authorities", packageName + PHOTO_SEARCH_AUTHORITY_SUFFIX)
+            setAttribute("android:exported", "false")
+            setAttribute("android:grantUriPermissions", "true")
+        },
+    )
+}
+
+private val photoSearchProviderPatch = resourcePatch {
+    execute {
+        document("AndroidManifest.xml").use { it.declarePhotoSearchProvider(packageMetadata.packageName) }
+    }
+}
 
 /**
  * The hash of `subattachments`, the field a multi-photo post's attachment lists its photos in.
@@ -44,7 +81,9 @@ internal val SUBATTACHMENTS_FIELD = "subattachments".hashCode()
  * Its second switch puts Save photo in a post's own three-dot menu too, through the same place
  * Download any video adds its item ([postMenu]): after Facebook fills the menu, the extension's
  * PhotoMenuItem adds the item when the post holds photos, saving the one photo, or each photo of a
- * multi-photo post's attachment one after another.
+ * multi-photo post's attachment one after another. Its third switch adds Search photo there for a
+ * post with one photo (#245, #248), which hands the photo to the app picked in Android's chooser
+ * through the unexported provider [declarePhotoSearchProvider] declares.
  *
  * A comment's long-press sheet gets Save GIF on a GIF comment, next to where Facebook puts Save
  * photo on a photo one (#226, CommentGifAnchors.kt), behind the first switch.
@@ -59,7 +98,7 @@ val downloadPhotoPatch = bytecodePatch(
     default = true,
 ) {
     category("Downloads")
-    dependsOn(settingsPatch, facebookExtensionPatch)
+    dependsOn(settingsPatch, facebookExtensionPatch, photoSearchProviderPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {

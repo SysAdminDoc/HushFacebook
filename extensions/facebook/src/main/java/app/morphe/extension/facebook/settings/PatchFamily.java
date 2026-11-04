@@ -224,7 +224,7 @@ public enum PatchFamily {
             Settings.DOWNLOAD_VIDEOS, Settings.CLIPBOARD_DOWNLOAD, Settings.POST_MENU_DOWNLOAD_FIRST,
             Settings.OPEN_IN_ANOTHER_APP),
     PHOTO_DOWNLOAD(FamilyNames.PHOTO_DOWNLOAD, "photoDownload", null,
-            Settings.DOWNLOAD_PHOTOS, Settings.POST_MENU_PHOTO_SAVE),
+            Settings.DOWNLOAD_PHOTOS, Settings.POST_MENU_PHOTO_SAVE, Settings.POST_MENU_PHOTO_SEARCH),
     START_TAB(FamilyNames.START_TAB, "startTab", null,
             Settings.OPEN_ON_CHOSEN_TAB),
     FOLLOWING_HOME(FamilyNames.FOLLOWING_HOME, "followingHome", null,

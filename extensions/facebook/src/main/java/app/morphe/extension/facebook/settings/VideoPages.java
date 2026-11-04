@@ -478,6 +478,8 @@ final class VideoPages {
                                 + " " + L10n.t("A GIF comment gets Save GIF when you long-press it.")));
                 downloads.addPreference(toggle(context, Settings.POST_MENU_PHOTO_SAVE,
                         L10n.t("With Save any photo on, a post with photos gets Save photo in its three-dot menu too. A post with several saves each one, one after another.")));
+                downloads.addPreference(toggle(context, Settings.POST_MENU_PHOTO_SEARCH,
+                        L10n.t("With Save any photo on, a post with one photo gets Search photo in its three-dot menu. It hands the photo to the app you pick, such as Google Lens, to look up what's in it or copy its text.")));
             }
             // Every save reads these, a story's and a reel's as much as a feed video's, so they're here
             // whichever download patch is in, the compatible ones above the quality they keep within.

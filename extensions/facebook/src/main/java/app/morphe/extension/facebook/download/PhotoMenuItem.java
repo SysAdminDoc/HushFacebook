@@ -31,9 +31,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * photo gets Save photo, which saves it; a post whose attachment lists several (an album, as
  * Facebook draws a collage) gets Save all photos, which saves each of them one after another. A
  * shared post's photos are the shared post's. The photos are read while the menu opens, when
- * Facebook's models are still live, and each saves at the biggest size the post carries.
+ * Facebook's models are still live, and each saves at the biggest size the post carries. With
+ * {@link Settings#POST_MENU_PHOTO_SEARCH} on, a post with one photo also gets Search photo
+ * ({@link PhotoSearch}), with or without Save photo's own switch.
  *
- * <p>With either switch off, paused, or before the settings are ready, the menu is Facebook's own.
+ * <p>With Save any photo off, both of its menu switches off, paused, or before the settings are
+ * ready, the menu is Facebook's own.
  * Nothing here names a class or member Facebook renames: the post and its attachments are kept
  * GraphQL models whose getters the patch finds by the field each one reads, and a photo's images
  * are read through the tree accessors Facebook keeps.
@@ -80,26 +83,47 @@ public final class PhotoMenuItem {
     public static void add(Menu menu, View anchor, Object item, int icon, String attachmentsGetter,
                            String mediaGetter, String attachedStoryGetter, String subattachmentsGetter) {
         try {
-            if (!enabled() || menu == null) return;
+            boolean save = enabled();
+            boolean search = PhotoSearch.enabled();
+            if (!(save || search) || menu == null) return;
             HookStatus.invoked(FamilyNames.PHOTO_DOWNLOAD);
 
             List<Photo> photos = photosOf(item, attachmentsGetter, mediaGetter, attachedStoryGetter, subattachmentsGetter);
             if (photos.isEmpty()) return;
 
-            MenuItem entry = MenuTop.add(menu, photos.size() == 1 ? L10n.t("Save photo") : L10n.t("Save all photos"));
-            if (entry == null) return;
-            if (icon != 0) entry.setIcon(icon);
             Context context = anchor == null ? null : anchor.getContext();
-            entry.setOnMenuItemClickListener(tapped -> {
-                tap(context, photos);
-                return true;
-            });
+            // A search takes one picture, so an album's menu doesn't get it. With Download first,
+            // each row goes above the rows before it in Facebook's menu, so there Search photo goes
+            // in first to land under Save photo.
+            boolean searchable = search && photos.size() == 1;
+            boolean searchFirst = searchable && Settings.POST_MENU_DOWNLOAD_FIRST.get() && !MenuTop.androids(menu);
+            if (searchFirst) addSearch(menu, context, photos.get(0).url);
+            if (save) {
+                MenuItem entry = MenuTop.add(menu, photos.size() == 1 ? L10n.t("Save photo") : L10n.t("Save all photos"));
+                if (entry != null) {
+                    if (icon != 0) entry.setIcon(icon);
+                    entry.setOnMenuItemClickListener(tapped -> {
+                        tap(context, photos);
+                        return true;
+                    });
+                }
+            }
+            if (searchable && !searchFirst) addSearch(menu, context, photos.get(0).url);
             HookStatus.bound(FamilyNames.PHOTO_DOWNLOAD, "post menu photo item");
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.PHOTO_DOWNLOAD, "post menu photo item", t);
             Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, SOURCE,
                 () -> "could not add Save photo to a post's menu", t);
         }
+    }
+
+    private static void addSearch(Menu menu, Context context, String url) {
+        MenuItem entry = MenuTop.add(menu, L10n.t("Search photo"));
+        if (entry == null) return;
+        entry.setOnMenuItemClickListener(tapped -> {
+            PhotoSearch.tap(context, url);
+            return true;
+        });
     }
 
     /** Both switches on, Hushfacebook running and its settings ready. */

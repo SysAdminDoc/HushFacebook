@@ -1241,6 +1241,12 @@ With Stop Story auto-advance on, a finished story plays again from the start ins
 Save photo in post menus	在貼文選單加入儲存相片
 # context: summary of the Save photo in post menus switch; "Save any photo" is the label of the switch above it and "Save photo" is the menu item, so use their translations
 With Save any photo on, a post with photos gets Save photo in its three-dot menu too. A post with several saves each one, one after another.	啟用「儲存任何相片」後，含有相片的貼文也會在三點選單中顯示「儲存相片」。若有多張相片，會依序儲存每一張。
+Search photo	以圖搜尋
+Search photo with	以圖搜尋方式
+Search photo in post menus	在貼文選單中以圖搜尋
+With Save any photo on, a post with one photo gets Search photo in its three-dot menu. It hands the photo to the app you pick, such as Google Lens, to look up what's in it or copy its text.	開啟「儲存任何相片」後，只有一張相片的貼文會在三點選單中顯示「以圖搜尋」。相片會交給你選擇的應用程式（例如 Google 智慧鏡頭），用來查詢圖中內容或複製其中的文字。
+No app on this phone can search with a photo	這支手機上沒有可以用相片搜尋的應用程式
+Couldn't get this photo. Try again in a moment.	無法取得這張相片。請稍後再試。
 # context: menu item in a post's three-dot menu that saves the post's one photo to the phone
 Save photo	儲存相片
 # context: menu item in a post's three-dot menu that saves every photo of a post with several photos

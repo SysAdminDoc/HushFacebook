@@ -1237,6 +1237,12 @@ With Stop Story auto-advance on, a finished story plays again from the start ins
 Save photo in post menus	Lưu ảnh trong menu bài viết
 # context: summary of the Save photo in post menus switch; "Save any photo" is the label of the switch above it and "Save photo" is the menu item, so use their translations
 With Save any photo on, a post with photos gets Save photo in its three-dot menu too. A post with several saves each one, one after another.	Khi Lưu mọi ảnh bật, bài viết có ảnh cũng có mục Lưu ảnh trong menu ba chấm. Với bài viết có nhiều ảnh, từng ảnh sẽ được lưu lần lượt.
+Search photo	Tìm bằng ảnh
+Search photo with	Tìm bằng ảnh với
+Search photo in post menus	Tìm bằng ảnh trong menu bài viết
+With Save any photo on, a post with one photo gets Search photo in its three-dot menu. It hands the photo to the app you pick, such as Google Lens, to look up what's in it or copy its text.	Khi bật Lưu mọi ảnh, bài viết có một ảnh sẽ có Tìm bằng ảnh trong menu ba chấm. Ảnh được gửi tới ứng dụng bạn chọn, như Google Lens, để xem trong ảnh có gì hoặc sao chép chữ trong ảnh.
+No app on this phone can search with a photo	Không có ứng dụng nào trên điện thoại này tìm được bằng ảnh
+Couldn't get this photo. Try again in a moment.	Không lấy được ảnh này. Thử lại sau giây lát.
 # context: menu item in a post's three-dot menu that saves the post's one photo to the phone
 Save photo	Lưu ảnh
 # context: primary save row for a Story that reshares a Reel
