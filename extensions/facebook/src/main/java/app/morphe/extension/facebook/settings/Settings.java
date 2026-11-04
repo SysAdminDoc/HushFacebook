@@ -810,7 +810,9 @@ public class Settings extends BaseSettings {
      * out empty ({@link app.morphe.extension.facebook.reels.ReelDeclutter#skipUpNextFetch} and
      * {@link app.morphe.extension.facebook.reels.ReelDeclutter#hideUpNextVideos}, #367), and the
      * player keeps no empty room for it under the seek bar ({@link
-     * app.morphe.extension.facebook.reels.ReelDeclutter#skipUpNextRoom}, #375). Off by default.
+     * app.morphe.extension.facebook.reels.ReelDeclutter#skipUpNextRoom}, #375). In the Shorts
+     * viewer most feed videos open in, the UP NEXT pill isn't shown ({@link
+     * app.morphe.extension.facebook.reels.ReelDeclutter#hideUpNextPill}, #375). Off by default.
      */
     public static final BooleanSetting HIDE_UP_NEXT =
             new BooleanSetting("hushfacebook_hide_up_next", FALSE);

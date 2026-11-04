@@ -159,6 +159,8 @@ val cleanUpReelsPatch = bytecodePatch(
         // #367: the UP NEXT bar under a video opened from the feed, at its lookup and its getter,
         // and #375: the room the player keeps for it under the seek bar.
         hideUpNext()
+        // #375: the UP NEXT pill in the Shorts viewer a feed video opens in.
+        hideShortsUpNext()
         // #228: the clip each tile of the feed's Reels row plays, and where it stops.
         playFeedReelsWhole()
         // #349: each page of reels, kept to authors the Follow button wouldn't offer to follow.

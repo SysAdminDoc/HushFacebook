@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.reels;
 
 import android.icu.text.DateFormat;
+import android.view.View;
 
 import androidx.annotation.Nullable;
 
@@ -14,8 +15,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import app.morphe.extension.facebook.ads.MarketplaceListingAge;
@@ -158,12 +161,14 @@ public final class ReelDeclutter {
 
     /**
      * Counted under its own name each time the UP NEXT bar's lookup is skipped, each time its
-     * videos are handed out empty (#367) and each time no room is kept for it (#375).
+     * videos are handed out empty (#367), each time no room is kept for it and each time the
+     * full-screen viewer's UP NEXT pill isn't shown (#375).
      */
     static final String UP_NEXT_ROUTE = "Video Up next";
     static final String UP_NEXT_FETCH = "Up next lookup";
     static final String UP_NEXT_VIDEOS = "Up next videos";
     static final String UP_NEXT_ROOM = "Up next room";
+    static final String UP_NEXT_PILL = "Up next pill";
 
     /**
      * Counted under its own name for each tile of the feed's Reels row, as its end is handed in, and
@@ -267,6 +272,12 @@ public final class ReelDeclutter {
 
     /** What has had its debug line, so each kind of change is logged once. */
     private static final Set<String> LOGGED = ConcurrentHashMap.newKeySet();
+
+    /**
+     * The pill containers {@link #hideUpNextPill} hid, held weakly, with how each showed before, so
+     * the next other pill puts it back. One Facebook had already put away isn't in here.
+     */
+    private static final Map<View, Integer> HID_PILLS = new WeakHashMap<>();
 
     private ReelDeclutter() {
     }
@@ -553,6 +564,50 @@ public final class ReelDeclutter {
      */
     public static boolean skipUpNextRoom() {
         return hidesUpNext(UP_NEXT_ROOM, "Up next: no room kept under the seek bar");
+    }
+
+    /**
+     * Injection point, first thing in what shows a pill over the bottom of the full-screen viewer a
+     * feed video opens in (#375), with
+     * the pill's container, its kind and the two kinds that are the UP NEXT pill: the one over a
+     * video and the one over a card that isn't a video. True when the pill is one of those and the
+     * switch is on: the container is hidden and Facebook returns before it shows it. Any other pill,
+     * the 2x speed one included, and any pill once the switch is off, gets a container this hid shown
+     * again first, since Facebook only shows what's inside it. Never throws: false shows the pill.
+     */
+    public static boolean hideUpNextPill(@Nullable View pill, @Nullable Integer kind, int peekKind, int nextKind) {
+        boolean upNext = kind != null && (kind == peekKind || kind == nextKind);
+        if (!upNext || !hidesUpNext(UP_NEXT_PILL, "Up next: pill not shown")) {
+            showHiddenPill(pill);
+            return false;
+        }
+        try {
+            if (pill != null) {
+                int was = pill.getVisibility();
+                pill.setVisibility(View.GONE);
+                if (was != View.GONE) {
+                    synchronized (HID_PILLS) {
+                        HID_PILLS.put(pill, was);
+                    }
+                }
+            }
+        } catch (Throwable failure) {
+            Logger.printException(() -> "Up next pill: could not hide its container", failure);
+        }
+        return true;
+    }
+
+    private static void showHiddenPill(@Nullable View pill) {
+        if (pill == null) return;
+        try {
+            Integer was;
+            synchronized (HID_PILLS) {
+                was = HID_PILLS.remove(pill);
+            }
+            if (was != null) pill.setVisibility(was);
+        } catch (Throwable failure) {
+            Logger.printException(() -> "Up next pill: could not show its container again", failure);
+        }
     }
 
     private static boolean hidesUpNext(String kind, String message) {

@@ -12,6 +12,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** A long press on the title at the top of the other tabs opens the Hush settings too. Before, only the logo on Home did. (#374)
 * **Facebook:** With `Show when listings went up` on, a listing's date sits right under its price, where Facebook puts Just listed, so you don't have to scroll down to the place line for it. Cars and other vehicles keep Facebook's own Listed line. (#303)
 * **Facebook:** `Hide Up next on videos` also takes away the empty space Facebook kept for that bar, so the seek bar sits back at the bottom of the video. (#375)
+* **Facebook:** Most videos you open from the feed play in a second full-screen viewer, and it kept its own UP NEXT pill. `Hide Up next on videos` now hides that pill there too. (#375)
 * **Facebook:** `Show full post text` opens long reel captions whole again on Facebook 585. (#268)
 * **Facebook:** `Burn-in guard` dims the eye that `View stories anonymously` puts on stories, along with the story's other buttons. It used to stay at full brightness.
 * **Facebook:** With the Material You theme, a color you pick in `Accent color` now reaches the plus on Create story and the Find friends button too. They kept the wallpaper's color before. (#272)
