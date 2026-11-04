@@ -8,11 +8,13 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.InsetDrawable;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -46,6 +48,7 @@ import java.util.List;
 import app.morphe.extension.facebook.ads.MarketplaceSearchSyntax;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.facebook.settings.ShimmerTitle;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
@@ -626,31 +629,38 @@ public final class MarketplaceFilterButton {
         }
     }
 
-    /** The dialog's title, with a ? beside it that opens how the lists work. */
+    /**
+     * The dialog's title in the gradient every Hushfacebook title wears, with a ? beside it that
+     * opens how the lists work.
+     */
     private static View title(Context themed, int pad) {
         float density = themed.getResources().getDisplayMetrics().density;
         LinearLayout row = new LinearLayout(themed);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(pad, pad, Math.round(12 * density), 0);
+        // The ? is drawn 8 dp inside its target, so its outline stays 12 dp from the edge.
+        row.setPadding(pad, pad, Math.round(4 * density), 0);
         TextView title = new TextView(themed);
         title.setText(L10n.t("Advanced Marketplace filters"));
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        title.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+        int ink = title.getCurrentTextColor();
+        ShimmerTitle.wear(title, surfaceOf(themed));
         row.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
         TextView help = new TextView(themed);
-        int size = Math.round(32 * density);
+        int target = Math.round(48 * density);
         help.setText("?");
         help.setGravity(Gravity.CENTER);
         help.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         help.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        GradientDrawable circle = new GradientDrawable();
-        circle.setShape(GradientDrawable.OVAL);
-        circle.setStroke(Math.round(1.5f * density), title.getCurrentTextColor());
-        help.setBackground(circle);
+        // A 32 dp rounded square in a 48 dp target.
+        GradientDrawable outline = new GradientDrawable();
+        outline.setCornerRadius(8 * density);
+        outline.setStroke(Math.round(1.5f * density), ink);
+        help.setBackground(new InsetDrawable(outline, Math.round(8 * density)));
         help.setContentDescription(L10n.t("How Adv. Filters works"));
-        help.setOnClickListener(tapped -> new AlertDialog.Builder(themed)
+        help.setOnClickListener(tapped -> ShimmerTitle.wearTitleOf(new AlertDialog.Builder(themed)
                 .setTitle(L10n.t("How Adv. Filters works"))
                 .setMessage(L10n.t("Type a word or a phrase and tap Add. A phrase of more than one word has to be in "
                         + "the title as written. A term matches anywhere in a title, so cat also matches cats. Put it in "
@@ -658,9 +668,19 @@ public final class MarketplaceFilterButton {
                         + "search box and searches again.")
                         + "\n\n" + L10n.t("You can also type \"word\", -word or in:place straight into the search box."))
                 .setPositiveButton(L10n.t("OK"), null)
-                .show());
-        row.addView(help, new LinearLayout.LayoutParams(size, size));
+                .show()));
+        row.addView(help, new LinearLayout.LayoutParams(target, target));
         return row;
+    }
+
+    /** The opaque colour the dialog's theme paints its panel in. */
+    private static int surfaceOf(Context themed) {
+        TypedArray styled = themed.obtainStyledAttributes(new int[]{android.R.attr.colorBackground});
+        try {
+            return styled.getColor(0, Color.BLACK) | 0xFF000000;
+        } finally {
+            styled.recycle();
+        }
     }
 
     /** Searches the last search's own words with the lists as its rules. */
