@@ -8,23 +8,61 @@
 package app.morphe.extension.facebook.settings;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.Base64;
 
-/** Original Material icons embedded in the payload, which adds no Android resources. */
+import androidx.annotation.Nullable;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+/**
+ * Original Material icons embedded in the payload, which adds no Android resources. Every row on
+ * the settings page leads with one: its own, one picked by the words of its key, or its
+ * section's. They only decorate, so a screen reader never hears them.
+ */
 final class SettingsIcons {
     private SettingsIcons() { }
 
+    /** Each icon decoded once. The page is built on the main thread, and every row carries one. */
+    private static final Map<String, Bitmap> DECODED = new HashMap<>();
+
     static Drawable icon(Context context, String encoded, int color) {
-        byte[] bytes = Base64.decode(encoded, Base64.DEFAULT);
-        android.graphics.Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-        bitmap.setDensity(640); // The original 96 px icon is shown at 24 dp.
-        BitmapDrawable icon = new BitmapDrawable(context.getResources(), bitmap);
+        BitmapDrawable icon = new BitmapDrawable(context.getResources(), bitmap(encoded));
         icon.setTintList(ScreenColors.dimmedWhenDisabled(color));
         icon.setAutoMirrored(encoded == BACK);
         return icon;
+    }
+
+    private static Bitmap bitmap(String encoded) {
+        synchronized (DECODED) {
+            Bitmap found = DECODED.get(encoded);
+            if (found != null) return found;
+            byte[] bytes = Base64.decode(encoded, Base64.DEFAULT);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            bitmap.setDensity(640); // The original 96 px icon is shown at 24 dp.
+            DECODED.put(encoded, bitmap);
+            return bitmap;
+        }
+    }
+
+    /**
+     * The icon for the row keyed [key]: the first rule in {@link #BY_WORD} with a word of the key,
+     * or [fallback], the row's section's, when none has one or there's no key.
+     */
+    static String forKey(@Nullable String key, String fallback) {
+        if (key == null) return fallback;
+        List<String> words = Arrays.asList(key.toLowerCase(Locale.ROOT).split("_"));
+        for (String[] rule : BY_WORD) {
+            for (int i = 1; i < rule.length; i++) if (words.contains(rule[i])) return rule[0];
+        }
+        return fallback;
     }
 
     static final String BACK = "iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAQAAABIkb+zAAAAuUlEQVR42u3VSw7BYBhG4W+MNRrbRUWEVbnbV7UMxFhJ3+Y57wbOSf5LFQAAAAD8hqbW2fptt022fr9ttn6/XbZ+v322fr9Vtv69FvTp06dPnz59+vTp06dPnz59+gPp/2Ph+m26fpuuL2ACR2gCl3gCz+gEPjIJ4064SRhBwrXmEiR8n3CRIEHCc2cJI0g41UyCBAndjhIkDJFwyE9YViUnNBVGk63/mRCp/06I1X8lROsDAAAAGDMP5dIlT2gEqj8AAAAASUVORK5CYII=";
@@ -59,4 +97,41 @@ final class SettingsIcons {
     static final String BUG = "iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAQAAABIkb+zAAADLElEQVR42u2azUuUQRzHP26YBxHUi1QYK4hQl4x8N2IRT0HiMTGI0kvpCp57gxAs8c/oEBFeDA972YSVwmuSSopaVgfBVypfVp8OGrGzz+bzzPQ8M8J8nuMwv/l+dnd2dmcGLBaLxWKxWCzyFJOgVqpnDQmK9cefxGFNQqGGVRwm9SocxndwWKNOIr6jV+FvfAeHdeol4mtUyIzvRyEzvjaFhBDCwWGDBon4Dg6J8AVqWXNVaJSIv0qNjg9RXQ6FppMRH6CedZdAm/TwnFHmWcTBYZF53jDEPdPiAzSw4RLK+6M5PkCjgoIB8QGa2DzJ8aGSGSmBD0RNiH/DdSJ7fQ+u645/m7TSJN7jls74XewrxXdw2Oeurvit7OUI9Y2X9HH16DMepYk4L45WBbd3oVXP1F11jZPgQs4+F3mXYy5Uhh0/QsolyA96jul3igfsuvRMEQlXoM8lxDyXPPVtZtmld19QUb1OxinKPNc8zyfPdUMSWPIRH6Cc7yYJbFMt8QMkbY7AQ6nKw6YIzJIvVbmQz2YItEnXvmmCQEqp+nv9AkNK1YeDFxAZFQbo8imcSbfQOhL8GjwlDBlTErgmtE4EL7AiDFmlJHBWaJ0LXmBbGLJISaBAaN0KXuC4SeZ3UgY+aa2AFQh4ITO9vhWwAlbAClgBuxJbASvwP9kSBixQEijK2uMLnDlhyDNKAlVC60rwAhPCkM1KArGsPe7AGRGGvKMk0CW0job/f+CZUvUh/SvxW6XqKRM2d+UPq9vM2J2ekdxez2fWlAOOJ1KVH5tzQrPLFd91L7Nj0iHfF8p9VT3n6XQmRAGHjz4UzmbtcYf4f+CQXpehvnq8wFTt+ur3Eip5JF3nwtOsH3eZnOaR61WDJHmETEWOyx7LxLO23A8p5D5LOS57VKCBWNZZwZ/nF6+JU0+UCBGi1BHnFT9zHpPH0EQnB8oXng7oRCMdHr/Ncz07dKCZFoV7oxu0YAAVjEvFH9czdd2I0O/z8uU6/WHf0TqOUgY83uDdZIBSjKSEbpL/+GY6IEk3JRhOGe0MMsY0C6RJs8A0YwzS7vNWl8VisVgsFovlGH4D9Dc4z+cWYOoAAAAASUVORK5CYII=";
     static final String DELETE = "iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAQAAABIkb+zAAAAu0lEQVR42u3ZsQ2EMBBFwU1ohibpwBKUQx3QCDESF10OktdnTvOcoz+SISFCkiRJNZriunmmd8/vkvBsfneE5/N/QLgaHwAAAACAvgCS2rzMAAAAAADvAvT2PAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAuh2pv7mPfMCWCtjyASUVUPIBY5xp888Yo0FzGmCOJg2xpsxfY4hoRVgqX6Qzlnbzv+9Cib3CR/WIPUqbuy9JkvRvfQCtxXysUcK+VwAAAABJRU5ErkJggg==";
     static final String LICENSE = "iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAQAAABIkb+zAAABKElEQVR42u3bSwrCMBSF4TOpi6m4RncQaREX04GraF1IcVipA2dOLOQ+sPznzpP7QZoQSiRCCCFkS1oVTZq1VtY5o/lGvZbq1tMIjQaz5lMInXH7wYTWcPGkEIpL+4GE0Q0QRJgdASGE7ymtxgkjeAPcCf4AZ0IEwJUQA3AkRAHcCHEAJ0IkwIUQC3AgRAPMCfEAY0IGwJSQAzAkZAHMCHkAI0ImwISQC1gBANgNIG0+AAAAAAAAAAAAxwFrf3EAAAAAAID/BnASAwAAAAD3AU5iAAAAAOA+wEkMAAAAAPsE+D6A+FVzPWBMBYz1gEsqoNQDjk7PsLbUotbis7qmATqbfeGge0r7gxqrre2gm17Bi6e3a/+Tkzo99AzYOCcVm7VPCCFk/3kD5oU8DTR8py8AAAAASUVORK5CYII=";
+
+    /**
+     * An icon, then the words of a key that call for it. Earlier rules win, so Don't save search
+     * history is a search and Hide the reel download button a download. Declared after the icons
+     * it names.
+     */
+    private static final String[][] BY_WORD = {
+            {BLOCK, "sponsored", "promoted", "ads", "ad", "affiliate", "commission", "rewarded", "upsells",
+                    "upgrades", "promotions", "ai", "meta", "muse", "imagine"},
+            {BUG, "crash", "debug", "diagnostics", "logging"},
+            {SEARCH, "search", "searches", "zoom"},
+            {DOWNLOADS, "download", "downloads", "save", "saved", "filename", "subfolder", "folder", "storage", "clipboard"},
+            {NOTIFICATIONS, "notification", "notifications", "badge", "badges", "count", "dot", "reminder", "quiet"},
+            {COMMENTS, "comment", "comments", "reply", "replies", "composer", "reaction", "reactions"},
+            {CHATS, "chat", "chats", "messenger", "receipts", "whatsapp", "calls"},
+            {REELS, "reel", "reels"},
+            {STORIES, "story", "stories", "memories", "memory", "photo", "photos", "carousel", "tray"},
+            {PAUSE, "pause", "break", "breaks"},
+            {LINKS, "link", "links", "share", "sharing", "shared", "externally"},
+            {MARKETPLACE, "marketplace", "shop", "seller", "listing", "listings"},
+            {TELEMETRY, "analytics", "screenshot", "screenshots", "detection"},
+            {NETWORK, "connection", "data"},
+            {MOON, "burn", "dark", "amoled", "dim"},
+            {SETTINGS, "settings"},
+            {APPEARANCE, "accent", "color", "emoji", "font", "logo", "header", "translucent", "rounded", "size", "style"},
+            {PLAYBACK, "video", "videos", "playback", "play", "audio", "sound", "muted", "mute", "music", "hdr", "sdr",
+                    "renditions", "quality", "speed", "speeds", "seek", "loop", "pip", "picture", "cast", "speaker",
+                    "progress", "2x", "replays", "silent", "frame", "controls", "watched"},
+            {PHONE, "tab", "tabs", "subtab", "bar", "bars", "haptics", "transitions", "phone"},
+            {EXPORT, "export", "backup"},
+            {DELETE, "clear", "remove", "delete"},
+            // After clear, so a row that clears a history keeps the bin.
+            {UPDATES, "update", "updates", "releases", "history", "hours", "date", "dates", "time", "order", "newest"},
+            {MENU, "menu", "shortcut", "tiles"},
+            {FEED, "feed", "feeds", "home"},
+            {OPENING, "open", "opens", "opening", "start"},
+    };
 }

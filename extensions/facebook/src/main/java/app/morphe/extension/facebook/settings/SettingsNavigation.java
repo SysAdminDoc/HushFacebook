@@ -65,7 +65,6 @@ final class SettingsNavigation extends BaseAdapter {
     private final ListAdapter source;
     private final List<Section> sections = new ArrayList<>();
     private final List<Preference> visible = new ArrayList<>();
-    private final Object guideLinks = new Object();
     /** Which rows the person hasn't seen yet, for the dot beside them. Null when it couldn't start. */
     @Nullable private final NewRowDots dots;
     private final Set<String> expanded = new LinkedHashSet<>();
@@ -167,6 +166,7 @@ final class SettingsNavigation extends BaseAdapter {
         guideIcon(Settings.TAP_TO_PLAY, SettingsIcons.PLAYBACK);
         guideIcon(Settings.HIDE_REELS_TAB, SettingsIcons.REELS);
         guideIcon(Settings.MARKETPLACE_ONLY, SettingsIcons.MARKETPLACE);
+        giveIcons();
         support = link(context, L10n.t("Support"), L10n.t("Reports, restart and app information"), SettingsIcons.ABOUT);
         support.setKey(SUPPORT);
         support.setOnPreferenceClickListener(ignored -> { toggle(SUPPORT); return true; });
@@ -277,7 +277,7 @@ final class SettingsNavigation extends BaseAdapter {
             Preference link = link(screen.getContext(), title, detail, icon);
             link.setKey("section_" + id);
             link.setOnPreferenceClickListener(ignored -> { toggle(id); return true; });
-            sections.add(new Section(id, (PreferenceCategory) candidate, link, alias));
+            sections.add(new Section(id, (PreferenceCategory) candidate, link, icon, alias));
             return;
         }
     }
@@ -650,6 +650,7 @@ final class SettingsNavigation extends BaseAdapter {
                 ? (Preference) first.getTag() : pendingAnchor;
         int position = visible.indexOf(anchor);
         int offset = first == null ? pendingOffset : first.getTop();
+        giveIcons();
         visible.clear();
         List<String> terms = SettingsSearch.terms(query);
         // Switches that are on (#353) sits above the sections, on the main list and in search.
@@ -823,18 +824,12 @@ final class SettingsNavigation extends BaseAdapter {
             // Posted from the new row, it runs after this layout has put the row in the window.
             row.post(() -> row.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null));
         }
-        if (item instanceof SettingsRows.Subheading) {
-            // Drawn on the page like a section title, lined up with the cards it sits over.
-            // Support's own two sit flush with its rows, which belong to no section.
-            if (query.isEmpty() && item.getParent() instanceof PreferenceCategory)
-                row.setPaddingRelative(row.getPaddingStart() + dp(12), row.getPaddingTop(), row.getPaddingEnd(), row.getPaddingBottom());
-        } else if (!(item instanceof PreferenceCategory)) {
+        // A subheading is drawn on the page like a section title, over the cards it names.
+        if (!(item instanceof SettingsRows.Subheading) && !(item instanceof PreferenceCategory)) {
             Object group = group(item);
             boolean first = position == 0 || group(getItem(position - 1)) != group;
             boolean last = position + 1 == getCount() || group(getItem(position + 1)) != group;
-            palette().paintSurface(row, item, first, last);
-            if (query.isEmpty() && item.getParent() instanceof PreferenceCategory)
-                row.setPaddingRelative(row.getPaddingStart() + dp(12), row.getPaddingTop(), row.getPaddingEnd(), row.getPaddingBottom());
+            palette().paintSurface(row, item, first, last, overview(item));
         }
         String sectionId = headerId(item);
         if (sectionId != null) bindHeader(row, item, sectionId);
@@ -974,23 +969,34 @@ final class SettingsNavigation extends BaseAdapter {
         if (item == screen.getPreference(0) || item == restart || item == buildDetails) return item;
         if (headerId(item) != null || item instanceof SettingsRows.Subheading) return item;
         if (item == report || item == restartNow || item == supportProject) return support;
-        if (!query.trim().isEmpty() && item.getParent() != null) return item.getParent();
-        String key = item.getKey();
-        if (Settings.DEFAULT_COMMENT_ORDER.key.equals(key) || Settings.COMMENT_ORDER.key.equals(key)) {
-            return Settings.COMMENT_ORDER;
-        }
-        if (Settings.NEWEST_REELS_FIRST.key.equals(key) || Settings.REELS_ORDER.key.equals(key)) {
-            return Settings.REELS_ORDER;
-        }
-        // Guide destinations form one list; independent selectors keep their own surfaces.
-        if (key != null && key.startsWith("action_show_")) return guideLinks;
-        if (Settings.OPEN_ON_CHOSEN_TAB.key.equals(key) || Settings.START_TAB.key.equals(key)
-                || Settings.FEEDS_SUBTAB.key.equals(key)) return Settings.OPEN_ON_CHOSEN_TAB;
-        if (Settings.PLAYBACK_QUALITY.key.equals(key) || Settings.REELS_PLAYBACK_QUALITY.key.equals(key)
-                || Settings.STORIES_PLAYBACK_QUALITY.key.equals(key)) return Settings.PLAYBACK_QUALITY;
-        if (Settings.DOWNLOAD_QUALITY.key.equals(key)) return item;
+        // A section's rows share one card, which a subheading inside it closes and opens again.
         if (item.getParent() != null) return item.getParent();
         return sections;
+    }
+
+    /**
+     * Whether [item] is drawn edge to edge as a row of the page itself (a section's button, the
+     * status card, a notice) rather than in a section's inset card. Support's own rows belong to
+     * no section and still sit in its card.
+     */
+    private boolean overview(Preference item) {
+        return !(item.getParent() instanceof PreferenceCategory)
+                && item != report && item != restartNow && item != supportProject;
+    }
+
+    /**
+     * Gives every row of every section the icon it leads with: its own, one its key's words call
+     * for, or its section's. Rows a page adds later get theirs at the next rebuild.
+     */
+    private void giveIcons() {
+        Context context = screen.getContext();
+        for (Section section : sections) {
+            for (int i = 0; i < section.category.getPreferenceCount(); i++) {
+                Preference row = section.category.getPreference(i);
+                if (row instanceof SettingsRows.Subheading || row instanceof PreferenceCategory || row.getIcon() != null) continue;
+                row.setIcon(SettingsIcons.icon(context, SettingsIcons.forKey(row.getKey(), section.icon), palette().heading));
+            }
+        }
     }
 
     private static ScreenColors palette() { return ScreenColors.current(); }
@@ -999,12 +1005,15 @@ final class SettingsNavigation extends BaseAdapter {
         final String id;
         final PreferenceCategory category;
         final Preference link;
+        /** The section's icon, which a row of it with none of its own and no telling word leads with. */
+        final String icon;
         /** The section's earlier name, which search still finds it by, or null. */
         @Nullable final CharSequence alias;
-        Section(String id, PreferenceCategory category, Preference link, @Nullable CharSequence alias) {
+        Section(String id, PreferenceCategory category, Preference link, String icon, @Nullable CharSequence alias) {
             this.id = id;
             this.category = category;
             this.link = link;
+            this.icon = icon;
             this.alias = alias;
         }
     }

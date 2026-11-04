@@ -291,7 +291,6 @@ final class ScreenColors {
         TextView title = row.findViewById(android.R.id.title);
         if (title != null) {
             title.setTextColor(dimmedWhenDisabled(this.title));
-            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
             title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
             if (title.getParent() instanceof View) {
                 View text = (View) title.getParent();
@@ -302,7 +301,6 @@ final class ScreenColors {
         TextView summary = row.findViewById(android.R.id.summary);
         if (summary != null) {
             summary.setTextColor(dimmedWhenDisabled(this.summary));
-            summary.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
             summary.setLineSpacing(0, 1);
         }
         View widget = row.findViewById(android.R.id.switch_widget);
@@ -311,31 +309,39 @@ final class ScreenColors {
                     {-android.R.attr.state_enabled}, {android.R.attr.state_checked}, {}};
             Switch toggle = (Switch) widget;
             GradientDrawable thumb = new GradientDrawable();
+            thumb.setShape(GradientDrawable.RECTANGLE);
             thumb.setCornerRadius(dp(row, 4));
             thumb.setSize(dp(row, 20), dp(row, 20));
             thumb.setColor(Color.WHITE);
             GradientDrawable track = new GradientDrawable();
             track.setCornerRadius(dp(row, 6));
-            track.setSize(dp(row, 42), dp(row, 24));
+            track.setSize(dp(row, 40), dp(row, 24));
             track.setColor(Color.WHITE);
             toggle.setThumbDrawable(thumb);
             toggle.setTrackDrawable(track);
-            toggle.setSwitchMinWidth(dp(row, 44));
+            toggle.setSwitchMinWidth(dp(row, 40));
+            toggle.setSplitTrack(false);
             toggle.setThumbTintList(new ColorStateList(states, new int[]{half(onAccent), half(offThumb()), onAccent, offThumb()}));
             toggle.setTrackTintList(new ColorStateList(states, new int[]{half(accent), half(switchOff), accent, switchOff}));
         }
         paintChevron(row, preference);
         ImageView icon = row.findViewById(android.R.id.icon);
+        // Decoration: the row's title already says what it is, so a screen reader skips the icon.
+        if (icon != null) icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         if (icon != null && preference.getIcon() != null) {
             ViewGroup.LayoutParams imageSize = icon.getLayoutParams();
             imageSize.width = dp(row, 24);
             imageSize.height = dp(row, 24);
             icon.setLayoutParams(imageSize);
+            icon.setPadding(0, 0, 0, 0);
+            icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            icon.setBackground(null);
             if (icon.getParent() instanceof ViewGroup) {
                 ViewGroup frame = (ViewGroup) icon.getParent();
-                frame.setPaddingRelative(0, 0, dp(row, 16), 0);
+                frame.setPaddingRelative(0, 0, dp(row, 14), 0);
+                frame.setMinimumWidth(0);
                 ViewGroup.LayoutParams size = frame.getLayoutParams();
-                size.width = dp(row, 40);
+                size.width = dp(row, 38);
                 frame.setLayoutParams(size);
             }
         }
@@ -346,30 +352,70 @@ final class ScreenColors {
         paintSurface(row, preference, first, last);
     }
 
-    /** Group boundaries follow the visible rows, including a filtered search result. */
+    /** {@link #paintSurface(View, Preference, boolean, boolean, boolean)} for a row a section doesn't hold, on the page itself. */
     void paintSurface(View row, Preference preference, boolean first, boolean last) {
-        GradientDrawable surface = new GradientDrawable();
-        surface.setColor(card);
-        surface.setStroke(dp(row, 1), focusStroke(heading, outline));
-        Drawable inset = new InsetDrawable(surface, 0, first ? 0 : -dp(row, 1), 0, 0);
-        row.setBackground(preference.isSelectable()
-                ? new RippleDrawable(ColorStateList.valueOf(half(accent)), inset, null) : inset);
-        // Explicit padding after the inset background prevents its padding from moving the text.
-        // Astryx spaces in 4 dp steps, so 8 above and below rather than 7.
-        row.setPaddingRelative(dp(row, 16), dp(row, 8), dp(row, 16), dp(row, 8));
-        row.setMinimumHeight(dp(row, 52));
+        paintSurface(row, preference, first, last, !(preference.getParent() instanceof PreferenceCategory));
     }
 
-    /** A section title. */
+    /**
+     * Group boundaries follow the visible rows, including a filtered search result. A row on the
+     * page itself ([overview]) runs edge to edge with square corners and its side and top strokes
+     * pushed a dp off its bounds, so the page has no hairline down either edge and one between
+     * rows. A section's rows share one card, inset 18 dp, rounded at its top and bottom, with
+     * 4 dp more room above its first row and below its last. The card's height is the row's: its
+     * text wraps at any font size and the row grows to fit.
+     */
+    void paintSurface(View row, Preference preference, boolean first, boolean last, boolean overview) {
+        float radius = overview ? 0 : dp(row, 10);
+        GradientDrawable surface = new GradientDrawable();
+        surface.setColor(card);
+        surface.setStroke(dp(row, 1), preference.isSelectable() ? interactionOutline(outline)
+                : ColorStateList.valueOf(outline));
+        surface.setCornerRadii(new float[]{
+                first ? radius : 0, first ? radius : 0,
+                first ? radius : 0, first ? radius : 0,
+                last ? radius : 0, last ? radius : 0,
+                last ? radius : 0, last ? radius : 0});
+        int side = overview ? -dp(row, 1) : dp(row, 18);
+        Drawable inset = new InsetDrawable(surface, side, overview ? -dp(row, 1) : first ? dp(row, 4) : -dp(row, 1),
+                side, !overview && last ? dp(row, 4) : 0);
+        row.setBackground(preference.isSelectable()
+                ? new RippleDrawable(interactionRipple(heading), inset, null).mutate() : inset);
+        // Explicit padding after the inset background prevents its padding from moving the text.
+        // Astryx spaces in 4 dp steps, so 8 above and below; a section's row puts its 2 dp more,
+        // and the card's 4 dp of room, on its parts, which stay centred on the card.
+        int horizontal = overview ? 20 : 30;
+        row.setPaddingRelative(dp(row, horizontal), dp(row, 8), dp(row, horizontal), dp(row, 8));
+        int above = overview ? 0 : 2 + (first ? 4 : 0);
+        int below = overview ? 0 : 2 + (last ? 4 : 0);
+        if (row instanceof LinearLayout && ((LinearLayout) row).getOrientation() == LinearLayout.HORIZONTAL) {
+            ViewGroup parts = (ViewGroup) row;
+            for (int index = 0; index < parts.getChildCount(); index++) {
+                ViewGroup.LayoutParams place = parts.getChildAt(index).getLayoutParams();
+                if (!(place instanceof ViewGroup.MarginLayoutParams)) continue;
+                ((ViewGroup.MarginLayoutParams) place).topMargin = dp(row, above);
+                ((ViewGroup.MarginLayoutParams) place).bottomMargin = dp(row, below);
+                parts.getChildAt(index).setLayoutParams(place);
+            }
+        }
+        row.setMinimumHeight(dp(row, overview ? 52 : 64));
+        TextView title = row.findViewById(android.R.id.title);
+        if (title != null) title.setTextSize(TypedValue.COMPLEX_UNIT_SP, overview ? 15 : 16);
+        TextView summary = row.findViewById(android.R.id.summary);
+        if (summary != null) summary.setTextSize(TypedValue.COMPLEX_UNIT_SP, overview ? 12 : 13);
+    }
+
+    /** A section title, in the heading colour, over the cards it names. */
     void paintHeading(View row) {
         TextView title = row.findViewById(android.R.id.title);
         if (title != null) {
-            title.setTextColor(summary);
-            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
-            title.setLetterSpacing(0.07f);
+            title.setTextColor(heading);
+            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+            title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+            title.setLetterSpacing(0.055f);
             title.setAllCaps(true);
         }
-        row.setPaddingRelative(dp(row, 16), dp(row, 16), dp(row, 16), dp(row, 8));
+        row.setPaddingRelative(dp(row, 22), dp(row, 20), dp(row, 22), dp(row, 8));
     }
 
     /** Marks the chevron a row was given, so a recycled row's can be found and taken off. */
@@ -757,6 +803,30 @@ final class ScreenColors {
         return new ColorStateList(new int[][]{{android.R.attr.state_enabled, android.R.attr.state_focused},
                 {android.R.attr.state_enabled, android.R.attr.state_selected}, {}},
                 new int[]{focused, focused, resting});
+    }
+
+    /**
+     * A row's or a field's edge: [normal] at rest, at 38% when it's disabled, and in the heading
+     * colour while a keyboard, a mouse or a list's own selection is on it (focused, hovered,
+     * selected, activated or checked), so each of those stays visible.
+     */
+    ColorStateList interactionOutline(int normal) {
+        return interactionOutline(normal, heading);
+    }
+
+    private static ColorStateList interactionOutline(int normal, int focused) {
+        return new ColorStateList(new int[][]{
+                {-android.R.attr.state_enabled}, {android.R.attr.state_focused},
+                {android.R.attr.state_hovered}, {android.R.attr.state_selected},
+                {android.R.attr.state_activated}, {android.R.attr.state_checked}, {}},
+                new int[]{(normal & 0x00FFFFFF) | (Math.round(Color.alpha(normal) * 0.38f) << 24),
+                        focused, focused, focused, focused, focused, normal});
+    }
+
+    /** A press ripple in [color] at 20%, and none on a disabled control. */
+    static ColorStateList interactionRipple(int color) {
+        return new ColorStateList(new int[][]{{-android.R.attr.state_enabled}, {}},
+                new int[]{Color.TRANSPARENT, (color & 0x00FFFFFF) | 0x33000000});
     }
 
     /** A quiet outlined action with the same touch target as the dialog buttons. */
