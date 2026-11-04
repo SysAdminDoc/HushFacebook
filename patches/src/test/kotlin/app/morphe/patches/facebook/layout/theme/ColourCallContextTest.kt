@@ -56,21 +56,30 @@ class ColourCallContextTest {
     }
 
     @Test
-    fun `changed and newly added classes stay visible and an evicted index falls back to a full walk`() {
-        for (evicted in listOf(false, true)) {
-            val negative = type("Lfixture/Negative;", "return-void")
-            val app = PatchContexts.of(listOf(negative))
-            assertNotNull(ReferenceIndex.of(app))
-            app.mutableClassDefBy(negative.type).methods.add(method(negative.type, "added", read))
-            val added = type("Lfixture/Added;", read)
-            val pool = BytecodePatchContext::class.java.getMethod("getPatchClasses\$morphe_patcher").invoke(app)
-            pool.javaClass.getMethod("addClass\$morphe_patcher", ClassDef::class.java).invoke(pool, added)
-            if (evicted) ReferenceIndex.drop(app)
-            val counts = app.rerouteColourCalls(YOU_COLOUR_CALLS)
-            assertEquals("evicted=$evicted", 2, counts.getValue(CONTEXT_GET_COLOR))
-            for (owner in listOf(negative.type, added.type)) {
-                assertEquals(listOf(YOU_COLOUR_CALLS.getValue(CONTEXT_GET_COLOR)), app.references(owner))
+    fun `changed and newly added classes stay visible and an evicted index is rebuilt or falls back to a full walk`() {
+        val hasRoom = ReferenceIndex.hasRoom
+        try {
+            for (eviction in listOf("kept", "rebuilt", "full walk")) {
+                val negative = type("Lfixture/Negative;", "return-void")
+                val app = PatchContexts.of(listOf(negative))
+                assertNotNull(ReferenceIndex.of(app))
+                app.mutableClassDefBy(negative.type).methods.add(method(negative.type, "added", read))
+                val added = type("Lfixture/Added;", read)
+                val pool = BytecodePatchContext::class.java.getMethod("getPatchClasses\$morphe_patcher").invoke(app)
+                pool.javaClass.getMethod("addClass\$morphe_patcher", ClassDef::class.java).invoke(pool, added)
+                if (eviction != "kept") ReferenceIndex.drop(app)
+                ReferenceIndex.hasRoom = { eviction == "rebuilt" }
+                val counts = app.rerouteColourCalls(YOU_COLOUR_CALLS)
+                // With no room now, only an index the walk itself built or kept is there to answer.
+                ReferenceIndex.hasRoom = { false }
+                assertEquals(eviction, eviction == "full walk", ReferenceIndex.of(app) == null)
+                assertEquals(eviction, 2, counts.getValue(CONTEXT_GET_COLOR))
+                for (owner in listOf(negative.type, added.type)) {
+                    assertEquals(listOf(YOU_COLOUR_CALLS.getValue(CONTEXT_GET_COLOR)), app.references(owner))
+                }
             }
+        } finally {
+            ReferenceIndex.hasRoom = hasRoom
         }
     }
 

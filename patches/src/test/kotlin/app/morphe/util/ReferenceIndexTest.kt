@@ -88,6 +88,11 @@ class ReferenceIndexTest {
             context.reached(names = listOf("wanted"), strings = listOf("needle")),
         )
         assertEquals(emptyList<String>(), context.reached(strings = listOf("absent")))
+        // Enough keys that the walk reads each run once instead of searching it for each.
+        assertEquals(
+            order.filter { it in setOf(calls.type, holds.type, arrays.type, declares.type) },
+            context.reached(types = listOf(target) + (1..6).map { "Lfixture/Absent$it;" }, strings = listOf("needle")),
+        )
         assertNotNull(ReferenceIndex.of(context))
         assertSame(ReferenceIndex.of(context), ReferenceIndex.of(context))
     }
@@ -106,12 +111,40 @@ class ReferenceIndexTest {
     }
 
     @Test
-    fun `once memory pressure takes the index back, a walk reaches every class and builds nothing`() {
-        val context = PatchContexts.of(all)
-        assertEquals(listOf(holds.type), context.reached(strings = listOf("needle")))
-        ReferenceIndex.drop(context)
-        assertEquals(context.allTypes(), context.reached(strings = listOf("needle")))
-        assertNull(ReferenceIndex.of(context))
+    fun `once memory pressure takes the index back, a walk with room builds it again, twice at most`() {
+        val hasRoom = ReferenceIndex.hasRoom
+        try {
+            // The test JVM's heap may hold large fixture dexes from other tests.
+            ReferenceIndex.hasRoom = { true }
+            val context = PatchContexts.of(all)
+            assertEquals(listOf(holds.type), context.reached(strings = listOf("needle")))
+            repeat(2) {
+                ReferenceIndex.drop(context)
+                assertEquals(listOf(holds.type), context.reached(strings = listOf("needle")))
+            }
+            ReferenceIndex.drop(context)
+            assertEquals(context.allTypes(), context.reached(strings = listOf("needle")))
+            assertNull(ReferenceIndex.of(context))
+        } finally {
+            ReferenceIndex.hasRoom = hasRoom
+        }
+    }
+
+    @Test
+    fun `once memory pressure takes the index back, a walk without room reaches every class and builds nothing`() {
+        val hasRoom = ReferenceIndex.hasRoom
+        try {
+            val context = PatchContexts.of(all)
+            ReferenceIndex.hasRoom = { false }
+            assertEquals(listOf(holds.type), context.reached(strings = listOf("needle")))
+            ReferenceIndex.drop(context)
+            assertEquals(context.allTypes(), context.reached(strings = listOf("needle")))
+            assertNull(ReferenceIndex.of(context))
+            ReferenceIndex.hasRoom = { true }
+            assertEquals(listOf(holds.type), context.reached(strings = listOf("needle")))
+        } finally {
+            ReferenceIndex.hasRoom = hasRoom
+        }
     }
 
     @Test
@@ -208,8 +241,12 @@ class ReferenceIndexTest {
                     strings.forEach { string ->
                         check("string", string, context.reached(strings = listOf(string))) { string in it.strings }
                     }
+                    // A walk wanting many keys at once (the clipboard writers' callers want dozens).
+                    types.chunked(24).forEach { some ->
+                        check("types", some.joinToString(), context.reached(types = some)) { held -> some.any { it in held.types } }
+                    }
                     // The point of the index: a walk reaches a small part of the classes.
-                    val walks = types.size + names.size + strings.size
+                    val walks = types.size + names.size + strings.size + types.chunked(24).size
                     assertTrue(
                         "${bundle.name}: walks reached $reachedTotal classes, ${classes.size} each",
                         reachedTotal < walks * classes.size / 10,
