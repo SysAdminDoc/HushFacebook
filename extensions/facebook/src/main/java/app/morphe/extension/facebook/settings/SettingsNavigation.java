@@ -173,7 +173,8 @@ final class SettingsNavigation extends BaseAdapter {
         guideIcon(Settings.HIDE_REELS_TAB, SettingsIcons.REELS);
         guideIcon(Settings.MARKETPLACE_ONLY, SettingsIcons.MARKETPLACE);
         giveIcons();
-        support = link(context, L10n.t("Support"), L10n.t("Reports, restart and app information"), SettingsIcons.ABOUT);
+        // Its own mark, so it isn't read as a second About.
+        support = link(context, L10n.t("Support"), L10n.t("Reports, restart and app information"), SettingsIcons.HELP);
         support.setKey(SUPPORT);
         support.setOnPreferenceClickListener(ignored -> { toggle(SUPPORT); return true; });
         supportHeading = new SettingsRows.Heading(context);
