@@ -9,7 +9,9 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
+import app.morphe.patches.facebook.shared.MOBILE_CONFIG
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.classDefForEachReferencing
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -18,6 +20,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -51,10 +54,24 @@ class DoubleTapSkipFixtureTest {
                 FixtureDex.forEach(bundle) { dex ->
                     dex.classes.filterTo(owners) { owner -> owner.methods.any { loadsOf(it, flag).isNotEmpty() } }
                 }
+                val context = PatchContexts.of(owners + ExtensionDex.classDef(SETTINGS_STATUS))
+
+                // The patch finds the lambda and the reads through the reference index, which hands each
+                // walk only the classes naming a skip field or MobileConfig. Before anything changes,
+                // each walk has to reach what the full scans above found, or a lambda or player builder
+                // Facebook rewrites would go unhooked without a refusal.
+                val walkedLambdas = mutableListOf<String>()
+                context.classDefForEachReferencing(names = SKIP_FIELDS.keys) { if (isDoubleTapSkip(it)) walkedLambdas += it.type }
+                assertEquals("$name: the skip field walk reaches the lambda", lambdas.map { it.type }, walkedLambdas)
+                val walked = mutableSetOf<String>()
+                context.classDefForEachReferencing(types = listOf(MOBILE_CONFIG)) { walked += it.type }
+                assertEquals("$name: the MobileConfig walk reaches every class loading the skip flag",
+                    emptyList<String>(), owners.map { it.type }.filterNot { it in walked })
+                assertFalse("$name: the MobileConfig walk is keyed, so SettingsStatus isn't handed to it", SETTINGS_STATUS in walked)
+
                 val reads = owners.flatMap { owner -> owner.methods.flatMap { readsOf(it, flag) } }
                 assertTrue("$name: the lambda and a player builder read the flag, found ${reads.size}", reads.size >= 2)
 
-                val context = PatchContexts.of(owners + ExtensionDex.classDef(SETTINGS_STATUS))
                 doubleTapSkipPatch.execute(context)
 
                 for ((method, inMethod) in reads.groupBy { it.method }) {
