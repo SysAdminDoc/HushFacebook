@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.List;
 
 import app.morphe.extension.facebook.feed.GenAiReelFilter;
+import app.morphe.extension.facebook.feed.PostLanguages;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
@@ -33,6 +34,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * ({@link GenAiReelFilter#reelModel}). Only {@link #CAN_FOLLOW_STATUS} comes off. A followed author,
  * one that can't be followed, an item with no reel model (the cards between reels) and anything
  * that can't be read all stay, each counted under its own kind so a report says why.
+ *
+ * <p>The same filters run Hide posts in other languages on the tab ({@link ReelLanguages}, #382), so
+ * the page routes count what either rule took off, each under its own reason.
  *
  * <p>Off, paused, before the settings are ready, or when anything fails, the page goes on as
  * Facebook sent it.
@@ -113,23 +117,27 @@ public final class FollowedReels {
     }
 
     static Collection<?> followedOnly(Collection<?> page, String modelClassName, Statuses statuses, String route) {
+        return followedOnly(page, modelClassName, statuses, ReelLanguages.PATCHED, route);
+    }
+
+    static Collection<?> followedOnly(Collection<?> page, String modelClassName, Statuses statuses,
+            ReelLanguages.Captions captions, String route) {
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
             FeedFilterCounters.sawList(route, page == null ? 0 : page.size());
-            if (page == null || page.isEmpty() || !switchedOn()) return page;
-
+            if (page == null || page.isEmpty()) return page;
             boolean countItems = PAGES_ROUTE.equals(route);
-            ArrayList<Object> kept = new ArrayList<>(page.size());
-            int dropped = 0;
-            for (Object item : page) {
-                if (countItems ? drops(item, modelClassName, statuses)
-                        : NOT_FOLLOWED.equals(kindOf(item, modelClassName, statuses))) dropped++;
-                else kept.add(item);
-            }
-            if (dropped == 0) return page;
+            Pass pass = Pass.start(modelClassName, statuses, captions, countItems);
+            if (pass == null) return page;
 
-            FeedFilterCounters.removed(route, dropped, NOT_FOLLOWED);
-            final int droppedItems = dropped;
+            ArrayList<Object> kept = new ArrayList<>(page.size());
+            for (Object item : page) {
+                if (!pass.drops(item)) kept.add(item);
+            }
+            if (pass.dropped() == 0) return page;
+
+            pass.countOn(route);
+            final int droppedItems = pass.dropped();
             final String where = countItems ? "dropped " : "announcement dropped ";
             Logger.diagnosticDebug(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE,
                     () -> where + droppedItems + " of " + page.size());
@@ -156,16 +164,22 @@ public final class FollowedReels {
     }
 
     static List<?> followedSections(List<?> page, String modelClassName, Statuses statuses) {
+        return followedSections(page, modelClassName, statuses, ReelLanguages.PATCHED);
+    }
+
+    static List<?> followedSections(List<?> page, String modelClassName, Statuses statuses,
+            ReelLanguages.Captions captions) {
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
             FeedFilterCounters.sawList(SECTIONS_ROUTE, page == null ? 0 : page.size());
-            if (page == null || page.isEmpty() || !switchedOn()) return page;
+            if (page == null || page.isEmpty()) return page;
+            Pass pass = Pass.start(modelClassName, statuses, captions, true);
+            if (pass == null) return page;
 
-            ReelSections.Result result = ReelSections.strip(page, item -> drops(item, modelClassName, statuses),
-                    FamilyNames.REEL_DECLUTTER, SOURCE);
+            ReelSections.Result result = ReelSections.strip(page, pass::drops, FamilyNames.REEL_DECLUTTER, SOURCE);
             if (result.dropped == 0) return page;
 
-            FeedFilterCounters.removed(SECTIONS_ROUTE, result.dropped, NOT_FOLLOWED);
+            pass.countOn(SECTIONS_ROUTE);
             Logger.diagnosticDebug(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE,
                     () -> "section filter dropped " + result.dropped + " item(s) from " + page.size() + " section(s)");
             return result.page;
@@ -184,6 +198,70 @@ public final class FollowedReels {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, "followed reels switch read", failure);
             return false;
+        }
+    }
+
+    /**
+     * One page's run of the rules switched on: this followed-only rule and Hide posts in other
+     * languages ({@link ReelLanguages}), with how many items each took off.
+     */
+    private static final class Pass {
+        private final boolean followedOnly;
+        private final boolean languages;
+        private final String modelClassName;
+        private final Statuses statuses;
+        private final ReelLanguages.Captions captions;
+        /** Whether each item read is counted on the rules' item routes; the listener walk's copy isn't. */
+        private final boolean countItems;
+        private int notFollowed;
+        private int otherLanguage;
+
+        private Pass(boolean followedOnly, boolean languages, String modelClassName, Statuses statuses,
+                ReelLanguages.Captions captions, boolean countItems) {
+            this.followedOnly = followedOnly;
+            this.languages = languages;
+            this.modelClassName = modelClassName;
+            this.statuses = statuses;
+            this.captions = captions;
+            this.countItems = countItems;
+        }
+
+        /** The run for a page, or null when neither rule is on and the page passes as it came. */
+        @Nullable
+        static Pass start(String modelClassName, Statuses statuses, ReelLanguages.Captions captions,
+                boolean countItems) {
+            boolean followedOnly = switchedOn();
+            boolean languages = ReelLanguages.switchedOn();
+            if (!followedOnly && !languages) return null;
+            return new Pass(followedOnly, languages, modelClassName, statuses, captions, countItems);
+        }
+
+        /**
+         * Whether [item] comes off. The follow rule reads first, so a reel both rules would take is
+         * counted once, as not followed, and its caption is never guessed at.
+         */
+        boolean drops(Object item) {
+            if (followedOnly && (countItems ? FollowedReels.drops(item, modelClassName, statuses)
+                    : NOT_FOLLOWED.equals(kindOf(item, modelClassName, statuses)))) {
+                notFollowed++;
+                return true;
+            }
+            if (languages && (countItems ? ReelLanguages.drops(item, modelClassName, captions)
+                    : ReelLanguages.hides(ReelLanguages.kindOf(item, modelClassName, captions)))) {
+                otherLanguage++;
+                return true;
+            }
+            return false;
+        }
+
+        int dropped() {
+            return notFollowed + otherLanguage;
+        }
+
+        /** What came off the page, on [route] under each rule's reason. */
+        void countOn(String route) {
+            if (notFollowed > 0) FeedFilterCounters.removed(route, notFollowed, NOT_FOLLOWED);
+            if (otherLanguage > 0) FeedFilterCounters.removed(route, otherLanguage, PostLanguages.REASON);
         }
     }
 

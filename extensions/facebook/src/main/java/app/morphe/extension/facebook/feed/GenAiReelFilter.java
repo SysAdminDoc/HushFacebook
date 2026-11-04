@@ -470,6 +470,32 @@ public final class GenAiReelFilter {
         return null;
     }
 
+    /**
+     * The GraphQLStory a Reels item keeps, read the way {@link #reelModel} reads the model: the item
+     * itself, one of its fields, or the holder in one of its fields that pairs the reel's model with
+     * its story. Null when it keeps none. For Hide posts in other languages, which reads a reel's
+     * caption off its story.
+     */
+    @Nullable
+    public static Object reelStory(@Nullable Object item, String modelClassName) throws IllegalAccessException {
+        if (item == null) return null;
+        Readers readers = READERS.computeIfAbsent(modelClassName,
+                name -> Readers.lookUp(name, GenAiReelFilter.class.getClassLoader()));
+        if (readers.story == null) return null;
+        if (readers.story.isInstance(item)) return item;
+        Object story = held(item, readers.story);
+        if (story != null) return story;
+        for (Field field : FIELDS.computeIfAbsent(item.getClass(), GenAiReelFilter::instanceFields)) {
+            Object value = field.get(item);
+            if (value == null) continue;
+            for (Field view : readers.holderViews(value.getClass())) {
+                Object kept = view.get(value);
+                if (readers.story.isInstance(kept)) return kept;
+            }
+        }
+        return null;
+    }
+
     private static Field[] instanceFields(Class<?> itemClass) {
         List<Field> fields = new ArrayList<>();
         for (Class<?> type = itemClass; type != null && type != Object.class; type = type.getSuperclass()) {
