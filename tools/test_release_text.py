@@ -29,7 +29,7 @@ Every change, newest first.
 
 ### Added
 
-* **Facebook:** New patch, `Hide x`, with a switch under **News feed**.
+* New patch, `Hide x`, with a switch under **News feed**.
 
 ### Changed
 
@@ -38,11 +38,11 @@ Every change, newest first.
 
 ## 0.1.0 (2026-01-02)
 
-* **Facebook:** The first release.
+* The first release.
 
 ### Added
 
-* **Facebook:** Something.
+* Something.
 """
 
 README = """# Hushfacebook
@@ -133,10 +133,19 @@ class CutTest(Repo):
         self.cut()
         text = self.text("CHANGELOG.md")
         self.assertNotIn("## Unreleased", text)
-        self.assertIn("## 0.2.0 (2026-02-03)\n\n* **Facebook:** Two new switches for Facebook 581.0.0.45.58.\n\n"
-                      "### Added\n\n* **Facebook:** New patch", text)
+        self.assertIn("## 0.2.0 (2026-02-03)\n\n* Two new switches for Facebook 581.0.0.45.58.\n\n"
+                      "### Added\n\n* New patch", text)
         self.assertIn("## 0.1.0 (2026-01-02)", text)
         self.assertTrue(text.startswith("# Changelog\n\nEvery change, newest first.\n\n## 0.2.0"))
+
+    def test_drops_a_leftover_facebook_label_and_accepts_unlabeled_bullets(self):
+        write(self.root / "CHANGELOG.md", CHANGELOG.replace(
+            "* New patch, `Hide x`", "* **Facebook:** New patch, `Hide x`"))
+        self.cut()
+        text = self.text("CHANGELOG.md")
+        self.assertNotIn("**Facebook:** ", text.split("## 0.1.0")[0])
+        self.assertIn("### Added\n\n* New patch, `Hide x`", text)
+        self.assertIn("* **Tooling:** The gate runs twice.", text)
 
     def test_refuses_a_version_that_is_already_there(self):
         self.refused(lambda: release_text.cut(self.root, "0.1.0", "x", "2026-02-03"), "already has 0.1.0")
@@ -144,18 +153,18 @@ class CutTest(Repo):
     def test_refuses_an_unscoped_or_wrapped_bullet(self):
         write(self.root / "CHANGELOG.md", CHANGELOG.replace("* **Tooling:** The gate runs twice.",
                                                             "* **Compatibility:** Facebook 582."))
-        self.refused(self.cut, "isn't scoped")
+        self.refused(self.cut, "labeled for something other")
         write(self.root / "CHANGELOG.md", CHANGELOG.replace("The gate runs twice.", "The gate runs\n  twice."))
         self.refused(self.cut, "more than one line")
 
     def test_refuses_a_bullet_above_the_first_heading_and_a_dash(self):
-        write(self.root / "CHANGELOG.md", CHANGELOG.replace("## Unreleased\n", "## Unreleased\n\n* **Facebook:** Loose.\n"))
+        write(self.root / "CHANGELOG.md", CHANGELOG.replace("## Unreleased\n", "## Unreleased\n\n* Loose.\n"))
         self.refused(self.cut, "outside a ### heading")
         write(self.root / "CHANGELOG.md", CHANGELOG.replace("runs twice", "runs twice — always"))
         self.refused(self.cut, "dash")
 
     def test_refuses_a_summary_written_as_a_bullet_and_a_bad_date(self):
-        self.refused(lambda: self.cut(summary="* **Facebook:** Hello."), "bullet's text alone")
+        self.refused(lambda: self.cut(summary="* Hello."), "bullet's text alone")
         self.refused(lambda: self.cut(date="2026-13-01"), "isn't a date")
 
     def test_refuses_a_changelog_with_nothing_unreleased(self):
@@ -182,6 +191,15 @@ class BumpTest(Repo):
 class NotesTest(Repo):
     CHECKED = ("Local checks passed. All 3 patches applied without forcing to Facebook 581.0.0.45.58 (both builds) "
                "and 580.0.0.51.74.")
+
+    def test_notes_and_description_take_a_labeled_bullet_without_its_label(self):
+        write(self.root / "CHANGELOG.md", CHANGELOG.replace(
+            "* New patch, `Hide x`", "* **Facebook:** New patch, `Hide x`"))
+        self.cut()
+        write(self.root / "CHANGELOG.md", self.text("CHANGELOG.md").replace(
+            "* New patch, `Hide x`", "* **Facebook:** New patch, `Hide x`"))
+        self.assertIn("- New patch, `Hide x`", self.notes())
+        self.assertNotIn("Facebook:", self.notes())
 
     def notes(self, checked=CHECKED, draft=False):
         return release_text.github_notes(self.root, "0.2.0", checked, draft)[0]
@@ -235,7 +253,7 @@ class NotesTest(Repo):
 
     def test_maps_reported_issues_after_the_changes(self):
         write(self.root / "CHANGELOG.md", CHANGELOG.replace(
-            "## 0.1.0", "### Reported issues\n\n* **Facebook:** #12 Reels froze: fixed, see Other changes.\n\n## 0.1.0"))
+            "## 0.1.0", "### Reported issues\n\n* #12 Reels froze: fixed, see Other changes.\n\n## 0.1.0"))
         self.cut()
         notes = self.notes()
         self.assertIn("- Reels open on the `first` frame.\n\nReported issues\n\n"
@@ -277,9 +295,9 @@ class IndexTest(Repo):
             "475215365, or its 32-bit build 475215364. Build 580.0.0.51.74 (475019344) still works. The .mpp is a "
             "patch bundle, not a Facebook APK. Keep the manager's existing signing key when updating.",
             "### Added",
-            "* **Facebook:** New patch, `Hide x`, with a switch under **News feed**.",
+            "* New patch, `Hide x`, with a switch under **News feed**.",
             "### Changed",
-            "* **Facebook - Reels:** Reels open on the **first** frame.\n* **Tooling:** The gate runs twice.",
+            "* Reels open on the **first** frame.\n* **Tooling:** The gate runs twice.",
         ])
         self.assertIn("The latest release is [v0.2.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.2.0), "
                       "with 3 patches. It includes all changes since v0.1.0, among them two new switches, as the "
@@ -308,7 +326,7 @@ class IndexTest(Repo):
         description = json.loads(self.text("patches-bundle.json"))["description"]
         facts, groups = description.split("\n\n### ", 1)
         self.assertNotIn("580.0.0.51.74 with 90 patches", facts)
-        self.assertTrue(groups.startswith("Added\n\n* **Facebook:** New patch"))
+        self.assertTrue(groups.startswith("Added\n\n* New patch"))
         self.assertIn("as on Facebook 580.0.0.51.74 with 90 patches.", groups)
         self.assertNotIn("Two new switches for Facebook", description, "the cut summary bullet is the prose's job")
 

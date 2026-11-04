@@ -12,13 +12,15 @@ Each command checks its inputs and writes nothing when a check fails. scripts/re
 runs them in order, and each one can also run alone.
 
 cut          Renames "## Unreleased" to "## X.Y.Z (date)" and puts the summary first as a
-             Facebook bullet, which Morphe Manager shows and the GitHub notes open with.
+             plain bullet (no label, which is how a Facebook change is written), which Morphe
+             Manager shows and the GitHub notes open with. A leftover "**Facebook:** " label on any
+             Unreleased bullet is dropped by the cut.
 bump         The version in gradle.properties and the README's version badge.
 check-translations
              Every table in extensions/shared/library/src/main/l10n translates the same strings,
              and L10nTranslations.java is what scripts/gen-l10n.py makes of them.
 github-notes The notes for a GitHub release, from the whole CHANGELOG section: every bullet kept,
-             the scope label taken off, bold turned into backticks, Tooling bullets under
+             any leftover Facebook label taken off, bold turned into backticks, Tooling bullets under
              "Behind the scenes". The in-app update check (ReleaseCheck.java) reads the Facebook
              build a release targets from the notes, so the first sentence it would read has to
              name the newest declared build.
@@ -44,8 +46,12 @@ REPOSITORY = "SysAdminDoc/Hushfacebook"
 PACKAGE = "com.facebook.katana"
 VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 DASHES = ("—", "–")
-# Morphe Manager's scope: "Facebook", or "Facebook - <area>", and the development-only "Tooling".
-BULLET = re.compile(r"^\* \*\*(?P<scope>Facebook(?: - [^*]+)?|Tooling):\*\* (?P<text>\S.*)$")
+# A bullet with no label is a Facebook change: the repo patches one app, so a "Facebook:" label only
+# repeated it. A bullet may still carry that label (or "Facebook - <area>"), which counts the same, and
+# "Tooling" marks the development-only ones. Any other label is refused, since it names no change to the app.
+APP = "Facebook"
+BULLET = re.compile(r"^\* (?:\*\*(?P<scope>Facebook(?: - [^*]+)?|Tooling):\*\* )?(?P<text>\S.*)$")
+OTHER_LABEL = re.compile(r"^\* \*\*[^*]+:\*\* ")
 GROUPS = {"Added": "New in this release", "Fixed": "Fixes", "Changed": "Other changes", "Removed": "Removed",
           "Reported issues": "Reported issues"}
 TOOLING_GROUP = "Behind the scenes"
@@ -109,16 +115,17 @@ def parse_section(body: str, name: str) -> tuple[list[str], list[tuple[str, str,
             heading = line[4:].strip()
             continue
         bullet = BULLET.match(line)
+        if bullet and not bullet.group("scope") and OTHER_LABEL.match(line):
+            fail(f"a {name} bullet is labeled for something other than Tooling, so Morphe Manager can't show it as a "
+                 f"{APP} change (leave the label off): {line[:80]}")
         if not bullet:
-            if line.startswith("* "):
-                fail(f"a {name} bullet isn't scoped Facebook or Tooling, so Morphe Manager can't show it: {line[:80]}")
             fail(f"a {name} bullet runs over more than one line, join it: {line[:80]}")
         if any(d in line for d in DASHES):
             fail(f"a {name} bullet has an em or en dash: {line[:80]}")
         if heading is None:
             loose.append(line)
         else:
-            grouped.append((heading, bullet.group("scope"), bullet.group("text")))
+            grouped.append((heading, bullet.group("scope") or APP, bullet.group("text")))
     return loose, grouped
 
 
@@ -143,11 +150,12 @@ def cut(root: Path, version: str, summary: str, date: str | None = None) -> str:
         fail("an Unreleased bullet sits outside a ### heading, put it under one: " + loose[0][:80])
     if not grouped:
         fail("Unreleased has no bullets")
-    if summary.startswith("* ") or BULLET.match(summary):
-        fail("the summary is the bullet's text alone; cut adds the Facebook label")
+    if summary.startswith("* ") or OTHER_LABEL.match("* " + summary):
+        fail("the summary is the bullet's text alone; cut writes the bullet")
     heading = f"## {version} ({date})"
-    body = text[start:end].lstrip("\n")
-    new = text[: start - len("## Unreleased\n")] + heading + "\n\n* **Facebook:** " + summary + "\n\n" + body + text[end:]
+    # A bullet that still opens with "**Facebook:** " loses the label here, so released text never has it.
+    body = re.sub(rf"(?m)^\* \*\*{APP}:\*\* ", "* ", text[start:end].lstrip("\n"))
+    new = text[: start - len("## Unreleased\n")] + heading + "\n\n* " + summary + "\n\n" + body + text[end:]
     write(changelog, new)
     return f"{len(grouped)} bullets and the summary under {heading}"
 
@@ -302,7 +310,7 @@ def github_notes(root: Path, version: str, checked: str | None, draft: bool = Fa
         fail(f"CHANGELOG has no dated {version} heading. Run cut first.")
     bounds = section_bounds(text, match.group(0)[3:])
     loose, grouped = parse_section(text[bounds[0]:bounds[1]], version)
-    if len(loose) != 1 or not loose[0].startswith("* **Facebook:** "):
+    if len(loose) != 1 or BULLET.match(loose[0]).group("scope") == "Tooling":
         fail(f"the {version} section opens with {len(loose)} bullets before its first ### heading, and the notes "
              "open with one, the Facebook summary cut writes")
     intro = plain(BULLET.match(loose[0]).group("text"))
@@ -372,7 +380,8 @@ def changelog_groups(root: Path, version: str) -> str:
         fail(f"the {version} section has no bullets under a ### heading for the description")
     blocks: dict[str, list[str]] = {}
     for heading, scope, bullet in grouped:
-        blocks.setdefault(heading, []).append(f"* **{scope}:** {bullet}")
+        # Facebook changes go in unlabeled, the way the CHANGELOG writes them. Tooling keeps its label.
+        blocks.setdefault(heading, []).append(f"* **{scope}:** {bullet}" if scope == "Tooling" else f"* {bullet}")
     return "\n\n".join(f"### {heading}\n\n" + "\n".join(bullets) for heading, bullets in blocks.items())
 
 
