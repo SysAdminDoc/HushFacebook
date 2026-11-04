@@ -63,7 +63,8 @@ public enum PatchFamily {
     POST_WORDS(FamilyNames.POST_WORDS, "postWords", null,
             Settings.HIDE_POSTS_WITH_WORDS, Settings.POST_WORDS_WHOLE_WORDS, Settings.HIDE_POSTS_FROM_SOURCES,
             Settings.HIDE_PHOTO_POSTS, Settings.HIDE_VIDEO_POSTS, Settings.HIDE_LINK_POSTS,
-            Settings.HIDE_BACKGROUND_POSTS, Settings.HIDE_REPOSTS, Settings.HIDE_PAGE_POSTS),
+            Settings.HIDE_BACKGROUND_POSTS, Settings.HIDE_REPOSTS, Settings.HIDE_PAGE_POSTS,
+            Settings.HIDE_OTHER_LANGUAGES),
     POST_PROMPTS(FamilyNames.POST_PROMPTS, "postPrompts", null,
             Settings.HIDE_POST_PROMPTS, Settings.HIDE_POST_FOLLOW_LINK, Settings.HIDE_POST_JOIN_BUTTON, Settings.HIDE_POST_COUNTS,
             Settings.HIDE_POST_REACTIONS, Settings.HIDE_COMMENT_REACTIONS),
@@ -573,7 +574,8 @@ public enum PatchFamily {
             anyOn = Settings.HIDE_POSTS_WITH_WORDS.savedValue() || Settings.HIDE_POSTS_FROM_SOURCES.savedValue()
                     || Settings.HIDE_PHOTO_POSTS.savedValue() || Settings.HIDE_VIDEO_POSTS.savedValue()
                     || Settings.HIDE_LINK_POSTS.savedValue() || Settings.HIDE_BACKGROUND_POSTS.savedValue()
-                    || Settings.HIDE_REPOSTS.savedValue() || Settings.HIDE_PAGE_POSTS.savedValue();
+                    || Settings.HIDE_REPOSTS.savedValue() || Settings.HIDE_PAGE_POSTS.savedValue()
+                    || Settings.HIDE_OTHER_LANGUAGES.savedValue();
         }
         // The theme runs with its switches off and while paused: they only flatten the cards and draw the lines.
         if (this == AMOLED_THEME) {

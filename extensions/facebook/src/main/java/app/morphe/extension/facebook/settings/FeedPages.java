@@ -47,6 +47,7 @@ import app.morphe.extension.facebook.settings.SettingsRows.Row;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.settings.BaseSettings;
+import app.morphe.extension.shared.settings.StringSetting;
 
 /**
  * The category pages for the feed: Opening Facebook, News feed, Stories, and Comments and writing. Each method adds its section to the page
@@ -418,6 +419,10 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_PAGE_POSTS,
                         L10n.t("Hides posts written by Pages, the ones you follow too. Posts from friends and groups "
                                 + "stay, and so does a friend's share of a Page's post.")));
+                feed.addPreference(toggle(context, Settings.HIDE_OTHER_LANGUAGES,
+                        L10n.t("Hides posts written in a language you don't keep, going by the phone's own guess at each "
+                                + "post's words. Posts it isn't sure about stay, and nothing leaves the phone.")));
+                feed.addPreference(keptLanguagesRow(page, context));
                 feed.addPreference(reactionCeilingRow(context));
                 // For people who read Debug reports, where the type names come from, so it shows
                 // with Debug logging on, and from then on while anything's picked.
@@ -443,15 +448,18 @@ final class FeedPages {
         row.setPersistent(false);
         row.setSummary(leaveAloneSummary());
         row.setOnPreferenceClickListener(p -> {
-            showLeaveAlone(page, context, row);
+            showLanguages(page, context, Settings.TRANSLATE_LEAVE_ALONE, L10n.t("Languages to leave alone"),
+                    () -> row.setSummary(leaveAloneSummary()));
             return true;
         });
         return row;
     }
 
-    private static void showLeaveAlone(HushfacebookPreferenceFragment page, Context context, Row row) {
+    /** A list of every language Translate posts knows, ticked as [setting] holds them, that saves the ticks to it. */
+    private static void showLanguages(HushfacebookPreferenceFragment page, Context context, StringSetting setting,
+            String title, Runnable saved) {
         List<String> codes = TranslateLanguages.codes();
-        List<String> picked = Arrays.asList(Settings.TRANSLATE_LEAVE_ALONE.get().split(","));
+        List<String> picked = Arrays.asList(setting.get().split(","));
         CharSequence[] names = new CharSequence[codes.size()];
         boolean[] ticked = new boolean[codes.size()];
         for (int i = 0; i < names.length; i++) {
@@ -459,7 +467,7 @@ final class FeedPages {
             ticked[i] = picked.contains(codes.get(i));
         }
         AlertDialog list = page.show(new AlertDialog.Builder(context)
-                .setTitle(L10n.t("Languages to leave alone"))
+                .setTitle(title)
                 .setMultiChoiceItems(names, ticked, (shown, which, isTicked) -> ticked[which] = isTicked)
                 .setPositiveButton(L10n.t("Save"), null)
                 .setNegativeButton(L10n.t("Cancel"), null));
@@ -469,19 +477,50 @@ final class FeedPages {
             for (int i = 0; i < ticked.length; i++) {
                 if (ticked[i]) kept.add(codes.get(i));
             }
-            Settings.TRANSLATE_LEAVE_ALONE.save(TextUtils.join(",", kept));
-            row.setSummary(leaveAloneSummary());
+            setting.save(TextUtils.join(",", kept));
+            saved.run();
             list.dismiss();
         });
     }
 
-    private static String leaveAloneSummary() {
+    private static List<String> languageNames(StringSetting setting) {
         List<String> names = new ArrayList<>();
-        for (String code : Settings.TRANSLATE_LEAVE_ALONE.get().split(",")) {
+        for (String code : setting.get().split(",")) {
             if (!code.isEmpty()) names.add(TranslateLanguages.name(code));
         }
+        return names;
+    }
+
+    private static String leaveAloneSummary() {
+        List<String> names = languageNames(Settings.TRANSLATE_LEAVE_ALONE);
         if (names.isEmpty()) return L10n.t("None picked. Posts in every language can be translated.");
         return L10n.f("Left alone: %s", L10n.join(names));
+    }
+
+    /** The row's key, for the settings search. The setting it writes is a list of codes. */
+    static final String KEPT_LANGUAGES_ROW = "action_kept_languages";
+
+    /** The languages Hide posts in other languages keeps, picked from the same list. */
+    static Preference keptLanguagesRow(HushfacebookPreferenceFragment page, Context context) {
+        Row row = new Row(context);
+        row.setKey(KEPT_LANGUAGES_ROW);
+        row.setTitle(L10n.t("Languages to keep"));
+        row.setPersistent(false);
+        row.setSummary(keptLanguagesSummary());
+        row.setOnPreferenceClickListener(p -> {
+            showLanguages(page, context, Settings.KEPT_LANGUAGES, L10n.t("Languages to keep"),
+                    () -> row.setSummary(keptLanguagesSummary()));
+            return true;
+        });
+        return row;
+    }
+
+    private static String keptLanguagesSummary() {
+        List<String> names = languageNames(Settings.KEPT_LANGUAGES);
+        if (names.isEmpty()) {
+            return L10n.f("None picked, so posts in %s stay.", TranslateLanguages.name(TranslateLanguages.phone()));
+        }
+        return L10n.f("Kept: %s", L10n.join(names));
     }
 
     static Preference feedTypesRow(HushfacebookPreferenceFragment page, Context context) {

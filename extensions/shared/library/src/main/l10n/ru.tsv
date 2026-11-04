@@ -1389,6 +1389,11 @@ Hide reposts	Скрывать репосты
 Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Скрывает публикации, которыми делятся другие публикации, с подписью или без нее. Исходные публикации остаются. По умолчанию выключено, поскольку функция еще не проверялась на реальной Ленте.
 Hide posts from Pages	Скрывать публикации Страниц
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	Скрывает публикации Страниц, в том числе тех, на которые вы подписаны. Публикации друзей и групп остаются, как и репосты публикаций Страниц, которыми поделились друзья.
+Hide posts in other languages	Скрывать публикации на других языках
+Hides posts written in a language you don't keep, going by the phone's own guess at each post's words. Posts it isn't sure about stay, and nothing leaves the phone.	Скрывает публикации на языке, которого нет в вашем списке, по собственной оценке телефона для текста каждой публикации. Публикации, в которых он не уверен, остаются, и ничего не покидает телефон.
+Languages to keep	Оставляемые языки
+None picked, so posts in %s stay.	Ничего не выбрано, поэтому остаются публикации на языке: %s.
+Kept: %s	Остаются: %s
 # context: switch title in Privacy: asks for the phone's own screen lock before Facebook shows
 Lock Facebook	Блокировать Facebook
 Save crashes to Downloads	Сохранять сведения о сбоях в Загрузки

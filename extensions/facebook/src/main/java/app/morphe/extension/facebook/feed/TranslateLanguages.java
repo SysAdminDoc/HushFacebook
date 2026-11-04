@@ -47,7 +47,7 @@ public final class TranslateLanguages {
     }
 
     /** The code Google Translate takes for the phone's language. */
-    static String phone() {
+    public static String phone() {
         return normal(Locale.getDefault().toLanguageTag());
     }
 

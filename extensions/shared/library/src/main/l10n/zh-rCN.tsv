@@ -1359,6 +1359,11 @@ Hide reposts	隐藏转发的帖子
 Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	隐藏分享了另一条帖子的帖子，无论有无附言。原创帖子保留。默认关闭，因为尚未在真实动态上试过。
 Hide posts from Pages	隐藏公共主页的帖子
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	隐藏公共主页发布的帖子，包括你关注的主页。好友和小组的帖子会保留，好友分享的公共主页帖子也会保留。
+Hide posts in other languages	隐藏其他语言的帖子
+Hides posts written in a language you don't keep, going by the phone's own guess at each post's words. Posts it isn't sure about stay, and nothing leaves the phone.	根据手机自己对每条帖子文字的判断，隐藏用你未保留的语言写的帖子。手机不确定的帖子会保留，所有内容都不会离开手机。
+Languages to keep	要保留的语言
+None picked, so posts in %s stay.	未选择任何语言，因此保留%s帖子。
+Kept: %s	保留：%s
 # context: switch title in Privacy: asks for the phone's own screen lock before Facebook shows
 Lock Facebook	锁定 Facebook
 Save crashes to Downloads	将崩溃记录保存到“下载”

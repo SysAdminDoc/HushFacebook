@@ -1363,6 +1363,11 @@ Hide reposts	Sembunyikan postingan yang dibagikan ulang
 Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Menyembunyikan postingan yang membagikan postingan lain, dengan atau tanpa keterangan. Postingan asli tetap ada. Mati secara bawaan, karena belum dicoba di feed sungguhan.
 Hide posts from Pages	Sembunyikan postingan dari Halaman
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	Menyembunyikan postingan yang ditulis Halaman, termasuk yang kamu ikuti. Postingan dari teman dan grup tetap ada, begitu juga postingan Halaman yang dibagikan teman.
+Hide posts in other languages	Sembunyikan postingan dalam bahasa lain
+Hides posts written in a language you don't keep, going by the phone's own guess at each post's words. Posts it isn't sure about stay, and nothing leaves the phone.	Menyembunyikan postingan yang ditulis dalam bahasa yang tidak kamu pertahankan, berdasarkan tebakan ponsel sendiri atas teks setiap postingan. Postingan yang tidak pasti tetap ada, dan tidak ada yang keluar dari ponsel.
+Languages to keep	Bahasa yang tetap ada
+None picked, so posts in %s stay.	Belum ada yang dipilih, jadi postingan dalam %s tetap ada.
+Kept: %s	Tetap ada: %s
 # context: switch title in Privacy: asks for the phone's own screen lock before Facebook shows
 Lock Facebook	Kunci Facebook
 Save crashes to Downloads	Simpan crash ke Download

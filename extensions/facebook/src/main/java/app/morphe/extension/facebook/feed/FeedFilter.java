@@ -566,6 +566,10 @@ public final class FeedFilter {
             if (reason == null && wordsPatched && Settings.HIDE_PAGE_POSTS.get()) {
                 reason = pagesReason(feedUnit, PostSources.ACTORS);
             }
+            if (reason == null && wordsPatched && Settings.HIDE_OTHER_LANGUAGES.get()) {
+                reason = languageReason(feedUnit, messageAccessor, attachedAccessor, PostSources.ATTACHMENTS,
+                        PostText.ACTION_LINKS);
+            }
             if (reason == null && wordsPatched && typeReaders != null) {
                 reason = typesReason(feedUnit, typeReaders, attachedAccessor);
             }
@@ -853,6 +857,27 @@ public final class FeedFilter {
         FeedFilterCounters.removed(WORDS_ROUTE, 1, verdict.reason);
         PostWords.HIDDEN.incrementAndGet();
         return WORDS_REASON;
+    }
+
+    /**
+     * Hide posts in other languages: {@link PostLanguages#REASON} when the phone is sure the words the
+     * word filter reads of a post are in languages that aren't kept, otherwise null. Every story it's
+     * asked about is counted on its route under what it decided, or why nothing was read, and a post
+     * whose words can't be read is kept.
+     */
+    static String languageReason(Object feedUnit, StoryFlag.Accessor message, StoryFlag.Accessor attached,
+            StoryFlag.Accessor links, StoryFlag.Accessor actionLinks) {
+        FeedFilterCounters.sawList(PostLanguages.ROUTE, 1);
+        PostText.Read read = PostText.read(feedUnit, message, attached, links, actionLinks);
+        if (read.outcome != PostText.Outcome.TEXT) {
+            FeedFilterCounters.sawKind(PostLanguages.ROUTE, read.outcome.reason);
+            return null;
+        }
+        String kind = PostLanguages.judge(read.texts, Settings.KEPT_LANGUAGES.get());
+        FeedFilterCounters.sawKind(PostLanguages.ROUTE, kind);
+        if (!PostLanguages.REASON.equals(kind)) return null;
+        FeedFilterCounters.removed(PostLanguages.ROUTE, 1, kind);
+        return PostLanguages.REASON;
     }
 
     /**

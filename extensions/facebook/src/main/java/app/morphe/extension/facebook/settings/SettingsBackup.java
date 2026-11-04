@@ -164,6 +164,7 @@ public final class SettingsBackup {
             Settings.HIDE_BACKGROUND_POSTS,
             Settings.HIDE_REPOSTS,
             Settings.HIDE_PAGE_POSTS,
+            Settings.HIDE_OTHER_LANGUAGES,
             Settings.HIDE_POST_PROMPTS,
             Settings.HIDE_POST_FOLLOW_LINK,
             Settings.HIDE_POST_JOIN_BUTTON,

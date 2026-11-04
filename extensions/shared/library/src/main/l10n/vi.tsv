@@ -1363,6 +1363,11 @@ Hide reposts	Ẩn bài viết được chia sẻ lại
 Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Ẩn bài viết chia sẻ lại bài viết khác, dù có lời bình hay không. Bài viết gốc vẫn giữ nguyên. Mặc định tắt vì chưa được thử trên bảng tin thật.
 Hide posts from Pages	Ẩn bài viết từ Trang
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	Ẩn bài viết do Trang đăng, kể cả Trang bạn theo dõi. Bài viết của bạn bè và nhóm vẫn còn, bài viết của Trang do bạn bè chia sẻ cũng vậy.
+Hide posts in other languages	Ẩn bài viết bằng ngôn ngữ khác
+Hides posts written in a language you don't keep, going by the phone's own guess at each post's words. Posts it isn't sure about stay, and nothing leaves the phone.	Ẩn bài viết bằng ngôn ngữ bạn không giữ lại, dựa trên phán đoán của chính điện thoại về chữ trong mỗi bài viết. Bài viết mà nó không chắc thì vẫn còn, và không có gì rời khỏi điện thoại.
+Languages to keep	Ngôn ngữ giữ lại
+None picked, so posts in %s stay.	Chưa chọn ngôn ngữ nào, nên bài viết bằng %s vẫn còn.
+Kept: %s	Giữ lại: %s
 # context: switch title in Privacy: asks for the phone's own screen lock before Facebook shows
 Lock Facebook	Khóa Facebook
 Save crashes to Downloads	Lưu sự cố vào thư mục Download

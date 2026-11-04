@@ -1363,6 +1363,11 @@ Hide reposts	Yeniden paylaşılan gönderileri gizle
 Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Başka bir gönderiyi paylaşan gönderileri, açıklamalı ya da açıklamasız, gizler. Özgün gönderiler kalır. Varsayılan olarak kapalı, çünkü gerçek bir akışta henüz denenmedi.
 Hide posts from Pages	Sayfalardan gelen gönderileri gizle
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	Sayfaların yazdığı gönderileri gizler, takip ettiğin sayfalar da dahil. Arkadaşlarının ve grupların gönderileri kalır, bir arkadaşının paylaştığı sayfa gönderisi de kalır.
+Hide posts in other languages	Diğer dillerdeki gönderileri gizle
+Hides posts written in a language you don't keep, going by the phone's own guess at each post's words. Posts it isn't sure about stay, and nothing leaves the phone.	Telefonun her gönderinin metni için kendi tahminine göre, tutmadığın bir dilde yazılmış gönderileri gizler. Emin olmadığı gönderiler kalır ve hiçbir şey telefondan çıkmaz.
+Languages to keep	Tutulacak diller
+None picked, so posts in %s stay.	Hiçbiri seçilmedi, bu yüzden %s gönderiler kalır.
+Kept: %s	Tutulan: %s
 # context: switch title in Privacy: asks for the phone's own screen lock before Facebook shows
 Lock Facebook	Facebook'u kilitle
 Save crashes to Downloads	Çökmeleri İndirilenler'e kaydet

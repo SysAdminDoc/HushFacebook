@@ -323,6 +323,21 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_page_posts", FALSE);
 
     /**
+     * Feed posts whose words the phone is sure are in a language not on {@link #KEPT_LANGUAGES}
+     * (#382, {@link app.morphe.extension.facebook.feed.PostLanguages}). A post with no words, or
+     * none the phone is sure of, stays. Off by default.
+     */
+    public static final BooleanSetting HIDE_OTHER_LANGUAGES =
+            new BooleanSetting("hushfacebook_hide_other_languages", FALSE);
+
+    /**
+     * The languages {@link #HIDE_OTHER_LANGUAGES} keeps, as Google Translate codes separated by
+     * commas, like {@link #TRANSLATE_LEAVE_ALONE}. Empty keeps the phone's language. Not a switch.
+     */
+    public static final StringSetting KEPT_LANGUAGES =
+            new StringSetting("hushfacebook_kept_languages", "");
+
+    /**
      * The reaction count above which feed posts are hidden, read from the feed unit's own feedback
      * ({@link app.morphe.extension.facebook.feed.PostReactions}). Off hides nothing. Not a switch:
      * a list picks the count, and a paused Facebook reads Off.

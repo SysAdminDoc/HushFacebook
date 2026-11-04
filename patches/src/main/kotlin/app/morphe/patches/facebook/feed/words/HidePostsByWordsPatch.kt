@@ -53,7 +53,9 @@ internal const val PATCH = "Hide posts by words"
  * ReactionAnchors.kt), and counts them with the kept `getCachedInt(int)`. Its Hide reposts switch
  * needs nothing more: it asks the shared post accessor whether a story wraps another, and reads
  * no text. Its Hide posts from Pages switch (#262) reads the authors stub too, and asks each
- * author's kept `getTypeName()` whether it's a Page.
+ * author's kept `getTypeName()` whether it's a Page. Its Hide posts in other languages switch
+ * (#382) reads the same text as the word filter and asks the phone's own text classifier for each
+ * text's language, so it needs no stub of its own.
  *
  * The lists live in Hushfacebook's settings on the phone. Nothing here reads a post until a
  * switch is on and its list has something in it, and nothing of the text, the names or the lists
@@ -63,8 +65,8 @@ internal const val PATCH = "Hide posts by words"
 val hidePostsByWordsPatch = bytecodePatch(
     name = "Hide posts by words",
     description = "Hides feed posts with words you list, or from people, Pages or sites you list, so you skip " +
-        "topics you're tired of. Photo, video, link and colored background posts, or every post a Page wrote, can " +
-        "go too. Starts off. Turn it " +
+        "topics you're tired of. Photo, video, link and colored background posts, every post a Page wrote, or " +
+        "posts in languages you don't read can go too. Starts off. Turn it " +
         "on in Hushfacebook settings > News feed.",
     default = true,
 ) {
