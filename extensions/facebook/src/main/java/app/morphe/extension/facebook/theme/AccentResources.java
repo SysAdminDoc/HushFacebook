@@ -150,7 +150,22 @@ public final class AccentResources {
 
     private static boolean watching;
 
+    /** Makes a loader from a resource table's bytes, read from a memory file named {@code name}. */
+    interface LoaderMaker {
+        ResourcesLoader make(String name, byte[] table) throws Exception;
+    }
+
+    /** Package-visible for tests, which have no memory files ({@link #loaderFor}) to read a table from. */
+    static LoaderMaker maker = AccentResources::loaderFor;
+
     private AccentResources() {}
+
+    /** Forgets the loaders made so far and the Material You list read, so a test's maker makes the next ones. */
+    static synchronized void forgetLoadersForTests() {
+        LOADERS.clear();
+        YOU_LOADERS.clear();
+        youAccents = null;
+    }
 
     /**
      * Filled in by the patch: the colour resources Facebook's FDS styles give a token, where they
@@ -361,8 +376,21 @@ public final class AccentResources {
     }
 
     /**
-     * Gives the assets behind {@code activity}'s resources the chosen accent's table, and takes
-     * another preset's off.
+     * Gives the application's assets the accent's tables once, as Facebook's application starts:
+     * the patch calls this right after the extension gets its context, before Facebook sets itself
+     * up. Facebook builds Home's feed while it starts, before its first activity, on the
+     * application's assets, and every activity shares those. A table added only as each activity is
+     * created came after the feed had read its colours, so the plus on Create story kept the
+     * wallpaper's accent under a picked one (#272), as AMOLED's surfaces once kept the patch's grey (#214).
+     */
+    public static void load() {
+        Context context = Utils.getContext();
+        if (context != null && Utils.settingsReady()) recolour(context);
+    }
+
+    /**
+     * Gives the assets behind {@code context}'s resources the chosen accent's table, and takes
+     * another preset's off: an activity's as it's created, and the application's from {@link #load}.
      *
      * <p>Facebook's activities hand out their own Resources (582 {@code LX/4bk;}), which take the
      * implementation of the Resources they wrap once, as they're made (582 {@code LX/3ml;}), and
@@ -376,14 +404,14 @@ public final class AccentResources {
      *
      * <p>Under the Material You theme the accent picked for it gives its own table instead ({@link #youTable}).
      */
-    static void recolour(Activity activity) {
+    static void recolour(Context context) {
         try {
             Preset preset = Utils.settingsReady() ? AccentColor.chosen() : null;
             Preset you = SettingsStatus.materialYouTheme() ? AccentColor.pickedForMaterialYou() : null;
-            ResourcesLoader wanted = preset == null ? null : loader(activity.getPackageName(), preset);
-            ResourcesLoader wantedYou = you == null ? null : youLoader(activity, you);
+            ResourcesLoader wanted = preset == null ? null : loader(context.getPackageName(), preset);
+            ResourcesLoader wantedYou = you == null ? null : youLoader(context, you);
             if (wanted == null && wantedYou == null && LOADERS.isEmpty() && YOU_LOADERS.isEmpty()) return;
-            Resources onAssets = onAssets(activity.getResources());
+            Resources onAssets = onAssets(context.getResources());
             for (ResourcesLoader other : LOADERS.values()) {
                 if (other != wanted) onAssets.removeLoaders(other);
             }
@@ -393,7 +421,7 @@ public final class AccentResources {
             if (wanted != null) onAssets.addLoaders(wanted);
             if (wantedYou != null) onAssets.addLoaders(wantedYou);
         } catch (Throwable failure) {
-            // Throwable, as in every hook: this runs as each activity is created.
+            // Throwable, as in every hook: this runs as Facebook starts and as each activity is created.
             Logger.printException(() -> "Accent color: could not give the resources the accent", failure);
         }
     }
@@ -423,7 +451,7 @@ public final class AccentResources {
         Answer answer = answer(preset);
         if (answer.ids.length == 0) return null;
         byte[] table = ColourTable.write(packageName, answer.ids, answer.colours, answer.nights, answer.hasNight);
-        ResourcesLoader loader = loaderFor("hushfacebook-accent.arsc", table);
+        ResourcesLoader loader = maker.make("hushfacebook-accent.arsc", table);
         LOADERS.put(preset, loader);
         Logger.printDebug(() -> "Accent color: " + answer.ids.length + " colour resources take " + preset.fileValue);
         return loader;
@@ -435,21 +463,21 @@ public final class AccentResources {
      * wrapper, which answers some strings from its own language packs.
      */
     @Nullable
-    private static ResourcesLoader youLoader(Activity activity, Preset preset) throws Exception {
+    private static ResourcesLoader youLoader(Context context, Preset preset) throws Exception {
         ResourcesLoader known = YOU_LOADERS.get(preset);
         if (known != null) return known;
         List<YouAccent> accents = youAccents;
         if (accents == null) {
-            Resources resources = onAssets(activity.getResources());
-            String packageName = activity.getPackageName();
+            Resources resources = onAssets(context.getResources());
+            String packageName = context.getPackageName();
             int list = resources.getIdentifier(YOU_ACCENTS, "string", packageName);
             accents = parseYouAccents(list == 0 ? null : resources.getString(list),
                     name -> resources.getIdentifier(name, "color", packageName));
             youAccents = accents;
         }
-        byte[] table = youTable(activity.getPackageName(), accents, AccentColor.palette(preset));
+        byte[] table = youTable(context.getPackageName(), accents, AccentColor.palette(preset));
         if (table == null) return null;
-        ResourcesLoader loader = loaderFor("hushfacebook-you-accent.arsc", table);
+        ResourcesLoader loader = maker.make("hushfacebook-you-accent.arsc", table);
         YOU_LOADERS.put(preset, loader);
         int count = accents.size();
         Logger.printDebug(() -> "Accent color: " + count + " Material You colour resources take " + preset.fileValue);

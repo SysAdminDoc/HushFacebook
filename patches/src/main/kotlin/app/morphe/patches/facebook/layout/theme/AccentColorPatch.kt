@@ -34,8 +34,8 @@ private const val COLOUR_SPAN = "Landroid/text/style/ForegroundColorSpan;"
  * An accent colour for Facebook's blue (links, buttons, switches). It rides route one of the
  * themes: the Mig dark scheme and the FDS colour resolvers, hooked the way AMOLED and Material You
  * hook them. Route five ([accentResourcePatch]) lists the colour resources behind the FDS tokens for
- * the extension, which answers for them as each activity is created, for what Facebook inflates from
- * layout XML. Route six is its one anchor of its own: Bloks, whose box fills (the profile's Add to
+ * the extension, which answers for them as Facebook starts and as each activity is created, for what
+ * Facebook inflates from layout XML ([loadAccentTables]). Route six is its one anchor of its own: Bloks, whose box fills (the profile's Add to
  * story button) and text colours (a profile's bio link) Facebook's server sends as hex colours
  * ([hookBloksFills], [hookBloksText]). Route seven shares the themes' React Native hooks
  * ([hookReactColours]) for the colours a screen's JavaScript sets. The extension
@@ -59,6 +59,7 @@ val accentColorPatch = bytecodePatch(
     execute {
         enableStatus("accentColor")
         fillResourceBlues(accentResourceBlues)
+        loadAccentTables()
         hookBloksFills()
         hookBloksText()
         // Route seven: the React Native hooks the themes share, which leave hooks already in place.

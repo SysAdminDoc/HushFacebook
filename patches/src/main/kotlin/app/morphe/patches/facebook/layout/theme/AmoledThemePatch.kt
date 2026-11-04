@@ -1350,18 +1350,24 @@ internal fun BytecodePatchContext.fillLightSurfaces(table: String) {
 }
 
 /**
- * Calls AmoledTheme.load in the application's onCreate, right after the extension's setContext,
- * which [facebookExtensionPatch] puts first: the Background color row's colour is in place before
- * Facebook's own startup reads a colour.
+ * Calls AmoledTheme.load as Facebook starts ([callAsFacebookStarts]): the Background color row's
+ * colour is in place before Facebook's own startup reads a colour.
  */
-internal fun BytecodePatchContext.loadBackgroundRow() {
+internal fun BytecodePatchContext.loadBackgroundRow() = callAsFacebookStarts("$AMOLED->load()V")
+
+/**
+ * Calls [target], a static method with no parameters, in the application's onCreate right after the
+ * extension's setContext, which [facebookExtensionPatch] puts first: before Facebook's own startup,
+ * which builds Home's feed on the application's resources, reads a colour.
+ */
+internal fun BytecodePatchContext.callAsFacebookStarts(target: String) {
     val setContext = "$EXTENSION_CLASS_DESCRIPTOR->setContext(Landroid/content/Context;)V"
     val onCreate = declaredInHierarchy(FACEBOOK_APPLICATION, "onCreate")
     val index = onCreate.implementation!!.instructions.indexOfFirst {
         (it as? ReferenceInstruction)?.reference?.toString() == setContext
     }
     if (index < 0) throw PatchException("$FACEBOOK_APPLICATION.onCreate doesn't hand the extension its context")
-    onCreate.addInstruction(index + 1, "invoke-static {}, $AMOLED->load()V")
+    onCreate.addInstruction(index + 1, "invoke-static {}, $target")
 }
 
 /** Puts route two's [table] in AmoledTheme.routeTwoColours, for light mode to read colours back. */

@@ -127,6 +127,12 @@ internal val accentResourcePatch = resourcePatch {
     }
 }
 
+/**
+ * The application's resources take the accent's tables as Facebook starts, before its startup builds
+ * Home's feed on them (#272). Each activity's still take them as it's created.
+ */
+internal fun BytecodePatchContext.loadAccentTables() = callAsFacebookStarts("$ACCENT_RESOURCES->load()V")
+
 /** Puts route five's [table] in AccentResources.resourceBlues. An empty table leaves it null. */
 internal fun BytecodePatchContext.fillResourceBlues(table: String) {
     if (table.isEmpty()) return
