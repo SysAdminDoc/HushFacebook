@@ -1360,7 +1360,7 @@ Hides posts that share another post, with or without a caption. Original posts s
 Hide posts from Pages	隐藏公共主页的帖子
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	隐藏公共主页发布的帖子，包括你关注的主页。好友和小组的帖子会保留，好友分享的公共主页帖子也会保留。
 Hide posts in other languages	隐藏其他语言的帖子
-Hides posts written in a language you don't keep, going by the phone's own guess at each post's words. Posts it isn't sure about stay, and nothing leaves the phone.	根据手机自己对每条帖子文字的判断，隐藏用你未保留的语言写的帖子。手机不确定的帖子会保留，所有内容都不会离开手机。
+Hides posts and Reels tab reels in a language you don't keep, going by the phone's own guess at each post's words or reel's caption. Ones it isn't sure about stay, and nothing leaves the phone.	根据手机自己对每条帖子文字或每个 Reels 短视频说明的判断，隐藏用你未保留的语言写的帖子和 Reels 标签页里的短视频。手机不确定的内容会保留，所有内容都不会离开手机。
 Languages to keep	要保留的语言
 None picked, so posts in %s stay.	未选择任何语言，因此保留%s帖子。
 Kept: %s	保留：%s

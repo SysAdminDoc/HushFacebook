@@ -420,8 +420,9 @@ final class FeedPages {
                         L10n.t("Hides posts written by Pages, the ones you follow too. Posts from friends and groups "
                                 + "stay, and so does a friend's share of a Page's post.")));
                 feed.addPreference(toggle(context, Settings.HIDE_OTHER_LANGUAGES,
-                        L10n.t("Hides posts written in a language you don't keep, going by the phone's own guess at each "
-                                + "post's words. Posts it isn't sure about stay, and nothing leaves the phone.")));
+                        L10n.t("Hides posts and Reels tab reels in a language you don't keep, going by the phone's own "
+                                + "guess at each post's words or reel's caption. Ones it isn't sure about stay, and nothing "
+                                + "leaves the phone.")));
                 feed.addPreference(keptLanguagesRow(page, context));
                 feed.addPreference(reactionCeilingRow(context));
                 // For people who read Debug reports, where the type names come from, so it shows
