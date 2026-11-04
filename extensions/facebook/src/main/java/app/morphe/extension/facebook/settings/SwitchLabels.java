@@ -119,6 +119,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_COMMENT_DOWNVOTE_BUTTON) return L10n.t("Hide dislike on comments");
         if (setting == Settings.HIDE_COMMENT_LIKE_BUTTON) return L10n.t("Hide Like on comments");
         if (setting == Settings.COMMENT_BLOCK_BUTTON) return L10n.t("Block button on comments");
+        if (setting == Settings.REACTOR_BLOCK_BUTTON) return L10n.t("Block button on reaction lists");
         if (setting == Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS) return L10n.t("Hide related groups");
         if (setting == Settings.HIDE_SHOP_LINK_COMMENTS) return L10n.t("Hide comments with shop links");
         if (setting == Settings.HIDE_COMMENTS_WITH_WORDS) return L10n.t("Hide comments with your words");

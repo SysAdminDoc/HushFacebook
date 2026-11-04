@@ -1254,6 +1254,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_comment_block_button", FALSE);
 
     /**
+     * The button at the end of each row of a post's reaction list (Add friend, Message and the
+     * rest) becomes a Block button that opens Facebook's own block sheet for that person
+     * ({@link app.morphe.extension.facebook.comments.ReactorBlock}, #271). Off by default. A
+     * change shows on lists opened after it.
+     */
+    public static final BooleanSetting REACTOR_BLOCK_BUTTON =
+            new BooleanSetting("hushfacebook_reactor_block_button", FALSE);
+
+    /**
      * Comments whose words link to an online shop, like the Shopee links pasted under reels, are
      * left out with their replies ({@link app.morphe.extension.facebook.comments.CommentSheetOptions},
      * #118). Off by default. A change shows on the next comments drawn.

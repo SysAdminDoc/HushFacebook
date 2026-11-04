@@ -2422,6 +2422,9 @@ Block button on comments	Blockieren-Button bei Kommentaren
 The thumbs-down on a comment becomes Block. One tap opens Facebook's own block screen for that person.	Der Daumen runter bei einem Kommentar wird zu Blockieren. Ein Tippen öffnet den Blockieren-Bildschirm von Facebook für diese Person.
 Block	Blockieren
 Couldn't open Block for this comment.	Blockieren war für diesen Kommentar nicht möglich.
+Block button on reaction lists	Blockieren-Button in Reaktionslisten
+In the list of people who reacted to a post, the button on each row, like Add friend or Message, becomes Block. One tap opens Facebook's own block screen.	In der Liste der Personen, die auf einen Beitrag reagiert haben, wird die Schaltfläche in jeder Zeile, etwa Freund hinzufügen oder Nachricht, zu Blockieren. Ein Tippen öffnet den Blockieren-Bildschirm von Facebook.
+Couldn't open Block for this person.	Blockieren war für diese Person nicht möglich.
 this person	diese Person
 Most viewed on profile Reels	Meistgesehen in Profil-Reels
 A profile's Reels tab lists its most viewed reels first instead of the newest. Off keeps Facebook's order. Only the reels the tab has loaded are sorted, and a reel with no view count stays after the rest.	Der Reels-Tab eines Profils zeigt zuerst die am meisten angesehenen Reels statt der neuesten. Aus lässt Facebooks Reihenfolge. Sortiert werden nur die Reels, die der Tab geladen hat, und ein Reel ohne Aufrufzahl bleibt hinter den übrigen.

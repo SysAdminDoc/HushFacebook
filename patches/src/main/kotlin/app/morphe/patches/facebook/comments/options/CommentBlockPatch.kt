@@ -161,7 +161,36 @@ internal fun commentBlockSites(
     }
     val unit = ((unitLoad as ReferenceInstruction).reference as FieldReference).let { "${it.definingClass}->${it.name}:${it.type}" }
 
-    // The block helper.
+    val block = blockHelper(helpers, classOf, ::refuse)
+    if (block.helper == click.definingClass) refuse("the helper and the click are in one class")
+
+    // The sheet's failure handler: an instance (Throwable)V method.
+    val failure = failures.singleOrNull {
+        !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
+            it.parameterTypes.map { type -> type.toString() } == listOf("Ljava/lang/Throwable;")
+    }
+
+    return CommentBlockSites(
+        render, icon.index, iconRegister, scratch, "${iconField.definingClass}->$blockName:${iconField.type}",
+        label.index, labelRegister, click, unit, component.type, block.helper, block.profile, block.source,
+        failure,
+    )
+}
+
+/** Facebook's profile Block helper class, and the profile interface and source enum its method takes. */
+internal class BlockHelper(val helper: String, val profile: String, val source: String)
+
+/**
+ * The profile Block helper among [helpers] (the methods loading [BLOCK_SHEET_QUERY]): the one
+ * instance (Context, source enum, session, profile interface, long, long, boolean) method. Refuses
+ * through [refuse] unless there's exactly one, its source enum has [PROFILE_SOURCE] and its profile
+ * is an interface.
+ */
+internal fun blockHelper(
+    helpers: List<Method>,
+    classOf: (String) -> ClassDef?,
+    refuse: (String) -> Nothing,
+): BlockHelper {
     val helper = helpers.singleOrNull {
         !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" && it.parameterTypes.size == 7 &&
             it.parameterTypes[0].toString() == "Landroid/content/Context;" &&
@@ -176,19 +205,7 @@ internal fun commentBlockSites(
     val profileType = helper.parameterTypes[3].toString()
     val profile = classOf(profileType) ?: refuse("no class $profileType")
     if (!AccessFlags.INTERFACE.isSet(profile.accessFlags)) refuse("$profileType isn't an interface")
-    if (helper.definingClass == click.definingClass) refuse("the helper and the click are in one class")
-
-    // The sheet's failure handler: an instance (Throwable)V method.
-    val failure = failures.singleOrNull {
-        !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
-            it.parameterTypes.map { type -> type.toString() } == listOf("Ljava/lang/Throwable;")
-    }
-
-    return CommentBlockSites(
-        render, icon.index, iconRegister, scratch, "${iconField.definingClass}->$blockName:${iconField.type}",
-        label.index, labelRegister, click, unit, component.type, helper.definingClass, profileType, sourceType,
-        failure,
-    )
+    return BlockHelper(helper.definingClass, profileType, sourceType)
 }
 
 /**
@@ -209,7 +226,7 @@ internal val commentBlockPatch = bytecodePatch {
     }
 }
 
-private fun BytecodePatchContext.blockHolders(string: String) =
+internal fun BytecodePatchContext.blockHolders(string: String) =
     classDefByStrings(string, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
 
 /** Puts the hooks into [sites]' methods, [mutable] reading the class to change. */

@@ -2422,6 +2422,9 @@ Block button on comments	Yorumlarda Engelle düğmesi
 The thumbs-down on a comment becomes Block. One tap opens Facebook's own block screen for that person.	Yorumdaki beğenmeme düğmesi Engelle olur. Bir dokunuş, o kişi için Facebook'un kendi engelleme ekranını açar.
 Block	Engelle
 Couldn't open Block for this comment.	Bu yorum için Engelle açılamadı.
+Block button on reaction lists	Tepki listelerinde Engelle düğmesi
+In the list of people who reacted to a post, the button on each row, like Add friend or Message, becomes Block. One tap opens Facebook's own block screen.	Bir gönderiye tepki verenler listesinde her satırdaki düğme, örneğin Arkadaş ekle veya Mesaj, Engelle olur. Bir dokunuş Facebook'un kendi engelleme ekranını açar.
+Couldn't open Block for this person.	Bu kişi için Engelle açılamadı.
 this person	bu kişi
 Most viewed on profile Reels	Profil Reels'te en çok izlenenler
 A profile's Reels tab lists its most viewed reels first instead of the newest. Off keeps Facebook's order. Only the reels the tab has loaded are sorted, and a reel with no view count stays after the rest.	Bir profilin Reels sekmesi, en yeniler yerine en çok izlenen reels'leri önce listeler. Kapalıyken Facebook'un sırası korunur. Yalnızca sekmenin yüklediği reels'ler sıralanır ve izlenme sayısı olmayan bir reel diğerlerinin arkasında kalır.

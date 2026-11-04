@@ -2476,6 +2476,9 @@ Block button on comments	Кнопка блокировки в комментар
 The thumbs-down on a comment becomes Block. One tap opens Facebook's own block screen for that person.	Значок дизлайка в комментарии заменяется кнопкой «Заблокировать». Одно нажатие открывает собственный экран блокировки Facebook для этого пользователя.
 Block	Заблокировать
 Couldn't open Block for this comment.	Не удалось открыть экран блокировки для этого комментария.
+Block button on reaction lists	Кнопка блокировки в списках реакций
+In the list of people who reacted to a post, the button on each row, like Add friend or Message, becomes Block. One tap opens Facebook's own block screen.	В списке людей, отреагировавших на публикацию, кнопка в каждой строке, например «Добавить в друзья» или «Написать», заменяется кнопкой «Заблокировать». Одно нажатие открывает экран блокировки Facebook.
+Couldn't open Block for this person.	Не удалось открыть экран блокировки для этого человека.
 this person	этого человека
 Most viewed on profile Reels	Самые просматриваемые Reels в профиле
 A profile's Reels tab lists its most viewed reels first instead of the newest. Off keeps Facebook's order. Only the reels the tab has loaded are sorted, and a reel with no view count stays after the rest.	На вкладке Reels профиля сначала показываются ролики с наибольшим количеством просмотров, а не самые новые. Если выключено, используется порядок Facebook. Сортируются только загруженные вкладкой Reels; ролики без счетчика просмотров остаются в конце.

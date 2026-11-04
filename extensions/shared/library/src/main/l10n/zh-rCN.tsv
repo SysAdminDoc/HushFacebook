@@ -2417,6 +2417,9 @@ Block button on comments	评论上的屏蔽按钮
 The thumbs-down on a comment becomes Block. One tap opens Facebook's own block screen for that person.	评论上的踩按钮变成屏蔽。点一下就会为这个人打开 Facebook 自己的屏蔽页面。
 Block	屏蔽
 Couldn't open Block for this comment.	无法为这条评论打开屏蔽。
+Block button on reaction lists	心情列表上的屏蔽按钮
+In the list of people who reacted to a post, the button on each row, like Add friend or Message, becomes Block. One tap opens Facebook's own block screen.	在对帖子发表心情的用户列表中，每一行的按钮（如加好友或发消息）会变成屏蔽。点一下就会打开 Facebook 自己的屏蔽页面。
+Couldn't open Block for this person.	无法为这个人打开屏蔽。
 this person	这个人
 Most viewed on profile Reels	主页 Reels 按观看次数排序
 A profile's Reels tab lists its most viewed reels first instead of the newest. Off keeps Facebook's order. Only the reels the tab has loaded are sorted, and a reel with no view count stays after the rest.	主页的 Reels 标签页先列出观看次数最多的 Reels，而不是最新的。关闭时保持 Facebook 的顺序。只会排序标签页已加载的 Reels，没有观看次数的 Reels 排在其余之后。

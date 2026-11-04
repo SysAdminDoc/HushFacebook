@@ -2426,6 +2426,9 @@ Block button on comments	留言上的封鎖按鈕
 The thumbs-down on a comment becomes Block. One tap opens Facebook's own block screen for that person.	留言上的倒讚按鈕會變成封鎖。點一下就會為這個人開啟 Facebook 自己的封鎖畫面。
 Block	封鎖
 Couldn't open Block for this comment.	無法為這則留言開啟封鎖。
+Block button on reaction lists	心情列表上的封鎖按鈕
+In the list of people who reacted to a post, the button on each row, like Add friend or Message, becomes Block. One tap opens Facebook's own block screen.	在對貼文表達心情的人員清單中，每一列的按鈕（例如加朋友或傳送訊息）會變成封鎖。點一下就會開啟 Facebook 自己的封鎖畫面。
+Couldn't open Block for this person.	無法為這個人開啟封鎖。
 this person	這個人
 Most viewed on profile Reels	個人檔案 Reels 依觀看次數排序
 A profile's Reels tab lists its most viewed reels first instead of the newest. Off keeps Facebook's order. Only the reels the tab has loaded are sorted, and a reel with no view count stays after the rest.	個人檔案的 Reels 分頁會先列出觀看次數最多的 Reels，而不是最新的。關閉時維持 Facebook 的順序。只會排序分頁已載入的 Reels，沒有觀看次數的 Reels 會排在其餘之後。

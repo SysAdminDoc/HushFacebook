@@ -68,6 +68,10 @@ public final class CommentBlock {
     /** When a tap last handed a comment's author to the helper, 0 once its failure was read. */
     static volatile long tappedAt;
 
+    /** Where that tap was, as the log names it, and the counter its sheet's failure goes to. */
+    static volatile String tappedPlace = "Comment block";
+    static volatile String tappedFailed = BLOCK_FAILED;
+
     private CommentBlock() {
     }
 
@@ -227,6 +231,15 @@ public final class CommentBlock {
     /** Calls Facebook's profile Block helper for [author]. False when the helper isn't there to call. */
     static boolean open(Context context, Author author, Class<?> helper, Class<?> profile, Class<?> source)
             throws ReflectiveOperationException {
+        return open(context, author, helper, profile, source, "Comment block", BLOCK_FAILED);
+    }
+
+    /**
+     * The same for a tap at [place], as the log names it, whose sheet's failure is counted under
+     * [failed].
+     */
+    static boolean open(Context context, Author author, Class<?> helper, Class<?> profile, Class<?> source,
+            String place, String failed) throws ReflectiveOperationException {
         Method call = helperMethod(helper, profile, source);
         if (call == null) return false;
         Object sourceConstant = null;
@@ -240,8 +253,10 @@ public final class CommentBlock {
         Object instance = constructor.newInstance();
         call.setAccessible(true);
         long viewer = viewerId(author.session);
-        Logger.printDebug(() -> "Comment block: the block sheet opens for a comment's author, the session "
+        Logger.printDebug(() -> place + ": the block sheet opens, the session "
                 + (viewer == 0L ? "names no user" : "names its user"));
+        tappedPlace = place;
+        tappedFailed = failed;
         tappedAt = System.currentTimeMillis();
         call.invoke(instance, context, sourceConstant, author.session, stand, viewer, Long.parseLong(author.id), Boolean.FALSE);
         return true;
@@ -265,8 +280,9 @@ public final class CommentBlock {
             if (at == 0L || System.currentTimeMillis() - at > TAP_WINDOW_MS) return;
             tappedAt = 0L;
             String reason = reason(failure);
-            HookStatus.counted(FAMILY, BLOCK_FAILED);
-            Logger.printInfo(() -> "Comment block: Facebook's block sheet failed: " + reason);
+            String place = tappedPlace;
+            HookStatus.counted(FAMILY, tappedFailed);
+            Logger.printInfo(() -> place + ": Facebook's block sheet failed: " + reason);
         } catch (Throwable unexpected) {
             HookStatus.threw(FAMILY, "comment block failure", unexpected);
         }
