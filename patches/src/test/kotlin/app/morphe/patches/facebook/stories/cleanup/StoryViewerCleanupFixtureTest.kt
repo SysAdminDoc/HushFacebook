@@ -8,12 +8,14 @@ import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
@@ -31,8 +33,9 @@ import org.junit.Test
  * credit line, one as the turning credit line and one as the reply suggestions, each with a render.
  * After the patch each render asks the extension first, and on a yes the credit line and the reply
  * suggestions answer null while the turning line answers the plain subtitle its constructor kept,
- * unless Facebook marked the story with one of its labels.
- * Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * unless Facebook marked the story with one of its labels. Each progress listener hands the
+ * extension its segments and its own progress argument right after it moves them, where only that
+ * move reaches. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class StoryViewerCleanupFixtureTest {
     private val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -138,10 +141,99 @@ class StoryViewerCleanupFixtureTest {
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
+    /** The code-unit offset each instruction of [code] starts at. */
+    private fun offsets(code: List<Instruction>): List<Int> = code.runningFold(0) { at, it -> at + it.codeUnits }.dropLast(1)
+
     @Test
-    fun `the extension has both hooks`() {
-        for (hook in listOf(HIDE_CREDITS, HIDE_REPLY_SUGGESTIONS)) {
-            val method = ExtensionDex.classDef(STORY_VIEWER_CLEANUP).methods.singleOrNull {
+    fun `each declared build's progress listeners hand over the segments and progress after moving them`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val listeners = FixtureDex.classesHolding(bundle, PROGRESS_TRACE)
+                    .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+                val looked = mutableMapOf<String, ClassDef?>()
+                val lookup = { type: String ->
+                    if (type in looked) looked[type] else FixtureDex.classes(bundle, setOf(type))[type].also { looked[type] = it }
+                }
+                val methods = listeners.flatMap { listener ->
+                    listener.methods.filter { holdsString(it, PROGRESS_TRACE) }.map { listener to it }
+                }
+                val moves = methods.associate { (_, method) -> method to segmentsMove(method, lookup) }
+
+                // Positive controls: one listener moves a view of segments through its interface and one a
+                // holder of the segments drawable, and neither writes over the progress it was handed.
+                assertEquals("$name: the progress listeners", 2, methods.size)
+                assertTrue("$name: a listener doesn't move its segments once, right before it returns",
+                    moves.values.all { it != null })
+                assertEquals("$name: listeners moving a view of segments", 1, moves.values.count { it!!.drawable == null })
+                assertEquals("$name: listeners moving a holder of the segments drawable", 1,
+                    moves.values.count { it!!.drawable != null })
+                assertTrue("$name: a listener writes over its progress",
+                    methods.all { (_, method) -> keeps(method, lastArgument(method)) })
+
+                val context = PatchContexts.of((listeners + looked.values.filterNotNull()).distinctBy { it.type })
+                context.followStoryProgress()
+                for ((listener, method) in methods) {
+                    val move = moves.getValue(method)!!
+                    val where = "$name: ${listener.type}->${method.name}"
+                    val patchedMethod = context.mutableClassDefBy(listener.type).methods.single {
+                        it.name == method.name && it.parameterTypes.map(CharSequence::toString) ==
+                            method.parameterTypes.map(CharSequence::toString)
+                    }
+                    val original = method.code()
+                    val code = patchedMethod.code()
+                    val hook = listOf(Opcode.MOVE_OBJECT_FROM16) +
+                        (if (move.drawable != null) listOf(Opcode.IGET_OBJECT) else emptyList()) +
+                        listOf(Opcode.MOVE_FROM16, Opcode.INVOKE_STATIC)
+                    val start = move.index + 1
+                    assertEquals("$where: Facebook's code up to the move is kept",
+                        original.take(start).unpadded(), code.take(start).unpadded())
+                    assertEquals("$where: hands over the segments and progress right before it returns",
+                        hook + Opcode.RETURN_VOID, code.subList(start, start + hook.size + 1).map { it.opcode })
+                    assertEquals("$where: from the register the move went to", move.register,
+                        (code[start] as TwoRegisterInstruction).registerB)
+                    assertEquals("$where: the segments into v0", 0, (code[start] as TwoRegisterInstruction).registerA)
+                    move.drawable?.let {
+                        val read = code[start + 1] as TwoRegisterInstruction
+                        assertEquals("$where: reading the segments drawable out of the holder",
+                            "${it.definingClass}->${it.name}:${it.type}", code[start + 1].reference())
+                        assertEquals("$where: from the holder in v0 into v0", listOf(0, 0), listOf(read.registerA, read.registerB))
+                    }
+                    // The progress is the last parameter's register, counted from the parameters: past the
+                    // locals, `this` and every parameter before it, a wide one taking two.
+                    val words = { type: CharSequence -> if (type.toString() == "J" || type.toString() == "D") 2 else 1 }
+                    val parameters = patchedMethod.parameterTypes
+                    val progress = patchedMethod.implementation!!.registerCount - (1 + parameters.sumOf(words)) + 1 +
+                        parameters.dropLast(1).sumOf(words)
+                    val handed = code[start + hook.size - 2] as TwoRegisterInstruction
+                    assertEquals("$where: with the progress it was handed", progress, handed.registerB)
+                    assertEquals("$where: the progress into v1", 1, handed.registerA)
+                    val call = code[start + hook.size - 1] as FiveRegisterInstruction
+                    assertEquals("$where: to the extension", SEGMENTS_MOVED, code[start + hook.size - 1].reference())
+                    assertEquals("$where: handing over v0 and v1", listOf(2, 0, 1),
+                        listOf(call.registerCount, call.registerC, call.registerD))
+                    assertEquals("$where: the rest is Facebook's",
+                        original.drop(start).unpadded(), code.drop(start + hook.size).unpadded())
+                    val at = offsets(code)
+                    val inserted = (start until start + hook.size).map { at[it] }.toSet()
+                    assertTrue("$where: a branch lands in the hook, so it runs without the move", code.indices.none { i ->
+                        val branch = code[i] as? OffsetInstruction
+                        branch != null && at[i] + branch.codeOffset in inserted
+                    })
+                }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    @Test
+    fun `the extension has every hook`() {
+        for ((owner, hook) in listOf(STORY_VIEWER_CLEANUP to HIDE_CREDITS, STORY_VIEWER_CLEANUP to HIDE_REPLY_SUGGESTIONS,
+            STORY_PROGRESS_BAR to SEGMENTS_MOVED)) {
+            val method = ExtensionDex.classDef(owner).methods.singleOrNull {
                 "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == hook
             }
             assertNotNull("the extension has no $hook", method)

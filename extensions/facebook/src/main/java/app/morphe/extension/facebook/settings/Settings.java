@@ -479,6 +479,13 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_STORY_REPLY_SUGGESTIONS =
             new BooleanSetting("hushfacebook_hide_story_reply_suggestions", FALSE);
 
+    /**
+     * A thin bar along the bottom of a story fills as it plays ({@link
+     * app.morphe.extension.facebook.stories.StoryProgressBar}, #380). Starts off. Read as the story plays.
+     */
+    public static final BooleanSetting STORY_PROGRESS_BAR =
+            new BooleanSetting("hushfacebook_story_progress_bar", FALSE);
+
     /** The two page filters that take server-inlined ads out of Reels and Watch. */
     public static final BooleanSetting HIDE_SPONSORED_REELS =
             new BooleanSetting("hushfacebook_hide_sponsored_reels", TRUE);

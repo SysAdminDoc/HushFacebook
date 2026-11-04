@@ -127,6 +127,7 @@ import app.morphe.extension.facebook.search.SearchHistory;
 import app.morphe.extension.facebook.stories.StoryAdvance;
 import app.morphe.extension.facebook.stories.StorySeenForTests;
 import app.morphe.extension.facebook.stories.StoryMusic;
+import app.morphe.extension.facebook.stories.StoryProgressBarForTests;
 import app.morphe.extension.facebook.stories.StoryTapsForTests;
 import app.morphe.extension.facebook.stories.StoryUpload;
 import app.morphe.extension.facebook.stories.StoryViewerCleanup;
@@ -366,6 +367,7 @@ public class ColdStartHooksTest {
         assertFalse("a story's credit line drawn before the context lost its credits", StoryViewerCleanup.hideCredits());
         assertFalse("a story's suggested replies drawn before the context drew nothing",
                 StoryViewerCleanup.hideReplySuggestions());
+        assertFalse("a story played before the context got a progress bar", StoryProgressBarForTests.drawsABar());
         assertFalse(PlayerSourcesForTests.recordsAPlayer());
         assertFalse("a post menu built before the context got the video item", VideoMenuItemForTests.addsAnItem());
         assertFalse("a post menu built before the context got the photo item", PhotoMenuItemForTests.addsAnItem());

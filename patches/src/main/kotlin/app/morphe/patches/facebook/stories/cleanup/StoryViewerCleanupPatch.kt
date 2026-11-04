@@ -74,16 +74,16 @@ internal const val HIDE_REPLY_SUGGESTIONS = "$STORY_VIEWER_CLEANUP->hideReplySug
 
 /**
  * Takes the song and effect credits off the line under the poster's name on a story, and the
- * suggested replies off the bottom (#380).
+ * suggested replies off the bottom, and can draw a progress bar along the bottom (#380).
  *
- * In the default selection with both switches off, so nothing changes until one is turned on.
+ * In the default selection with every switch off, so nothing changes until one is turned on.
  */
 @Suppress("unused")
 val storyViewerCleanupPatch = bytecodePatch(
     name = "Clean up the story viewer",
     description = "Switches that take the song and effect credits off the line under the poster's name on a story, and the " +
-        "suggested replies off the bottom while the reply box stays. Both start off. Turn them on in Hushfacebook " +
-        "settings > Stories.",
+        "suggested replies off the bottom while the reply box stays, plus one that adds a thin progress bar along the " +
+        "bottom like the one on Reels. All start off. Turn them on in Hushfacebook settings > Stories.",
 ) {
     category("Stories")
     dependsOn(settingsPatch, facebookExtensionPatch)
@@ -92,11 +92,12 @@ val storyViewerCleanupPatch = bytecodePatch(
     execute {
         requireStatusMethod("storyViewerCleanup")
         cleanUpStoryViewer()
+        followStoryProgress()
         enableStatus("storyViewerCleanup")
     }
 }
 
-private fun refuse(detail: String): Nothing = throw PatchException("$STORY_VIEWER_CLEANUP_PATCH: $detail")
+internal fun refuse(detail: String): Nothing = throw PatchException("$STORY_VIEWER_CLEANUP_PATCH: $detail")
 
 /** [classDef]'s render: one instance method by that name, taking the scope and answering an object. */
 internal fun renderOf(classDef: ClassDef): Method? = classDef.methods.singleOrNull {

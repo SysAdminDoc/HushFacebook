@@ -2506,3 +2506,5 @@ Hide song and effect credits	隱藏歌曲和特效署名
 Hide reply suggestions	隱藏回覆建議
 Takes the song and effect credits off the line under the poster's name on a story. Applies from the next story you open.	移除限時動態中發布者名稱下方那行的歌曲和特效署名。從你開啟的下一則限時動態開始生效。
 Takes the row of suggested replies off the bottom of a story. The reply box stays. Applies from the next story you open.	移除限時動態底部那一排建議回覆。回覆框會保留。從你開啟的下一則限時動態開始生效。
+Progress bar at the bottom	底部進度列
+Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	在限時動態底部顯示一條隨播放逐漸填滿的細條，和 Reels 上的一樣。
