@@ -641,9 +641,8 @@ final class ScreenColors {
     }
 
     /**
-     * A dialog on show: its surface, title, message, buttons and text field. A single or multiple
-     * choice list's rows take the screen's colours through {@link DialogChoices}; any other list's
-     * rows keep the theme's.
+     * A dialog on show: its surface, title, message, list rows, buttons and text field. Every list's
+     * rows take the screen's colours through {@link DialogChoices}, with their picks kept.
      */
     void paint(@Nullable AlertDialog dialog) {
         if (dialog == null) return;
@@ -655,7 +654,7 @@ final class ScreenColors {
             panel.setStroke(dp(window.getDecorView(), 1), outline);
             window.setBackgroundDrawable(panel);
             int width = Math.min(dialog.getContext().getResources().getDisplayMetrics().widthPixels
-                    - dp(window.getDecorView(), 40), dp(window.getDecorView(), 560));
+                    - dp(window.getDecorView(), 32), dp(window.getDecorView(), 560));
             window.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
         }
         @SuppressWarnings("DiscouragedApi")
@@ -664,6 +663,7 @@ final class ScreenColors {
         if (title != null) {
             ShimmerTitle.wear(title, this.dialog);
             title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+            title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
             title.setSingleLine(false);
             title.setMaxLines(Integer.MAX_VALUE);
         }
@@ -671,51 +671,61 @@ final class ScreenColors {
         // one on show there: AlertDialog's own sits GONE above it, and findViewById finds that first.
         if (window != null) paintMessages(window.getDecorView());
         android.widget.ListView choices = dialog.getListView();
-        if (choices != null && choices.getAdapter() != null && !(choices.getAdapter() instanceof DialogChoices)) {
-            if (choices.getChoiceMode() == android.widget.ListView.CHOICE_MODE_SINGLE) {
-                int selected = choices.getCheckedItemPosition();
-                choices.setAdapter(new DialogChoices(choices.getAdapter(), this));
-                if (selected >= 0) choices.setItemChecked(selected, true);
-                choices.setDivider(null);
-            } else if (choices.getChoiceMode() == android.widget.ListView.CHOICE_MODE_MULTIPLE) {
-                // A new adapter clears the list's ticks, so they go back on after it.
-                android.util.SparseBooleanArray ticked = choices.getCheckedItemPositions();
-                ticked = ticked == null ? new android.util.SparseBooleanArray() : ticked.clone();
-                choices.setAdapter(new DialogChoices(choices.getAdapter(), this));
-                for (int i = 0; i < ticked.size(); i++) {
-                    if (ticked.valueAt(i)) choices.setItemChecked(ticked.keyAt(i), true);
-                }
-                choices.setDivider(null);
-            }
+        if (choices != null && choices.getAdapter() != null && !(choices.getAdapter() instanceof DialogChoices)
+                && !(choices.getAdapter() instanceof ChoiceCards)) {
+            DialogChoices.swap(choices, new DialogChoices(choices.getAdapter(), this));
+            choices.setDivider(null);
         }
         for (int which : new int[]{AlertDialog.BUTTON_POSITIVE, AlertDialog.BUTTON_NEGATIVE, AlertDialog.BUTTON_NEUTRAL}) {
             Button button = dialog.getButton(which);
             if (button == null) continue;
-            boolean primary = which == AlertDialog.BUTTON_POSITIVE;
-            GradientDrawable surface = new GradientDrawable();
-            surface.setColor(new ColorStateList(new int[][]{{-android.R.attr.state_enabled}, {}},
-                    new int[]{primary ? outline : this.dialog, primary ? accent : this.dialog}));
-            surface.setCornerRadius(dp(button, ELEMENT_RADIUS));
-            surface.setStroke(dp(button, 2), new ColorStateList(
-                    new int[][]{{-android.R.attr.state_enabled}, {android.R.attr.state_focused}, {}},
-                    new int[]{Color.TRANSPARENT, this.title, primary ? accent : Color.TRANSPARENT}));
-            RippleDrawable background = new RippleDrawable(ColorStateList.valueOf(half(primary ? onAccent : accent)),
-                    surface, null);
+            paintAction(button, which == AlertDialog.BUTTON_POSITIVE);
             // The framework button's own insets: the 48dp touch height keeps a 36dp fill, clear of
             // the dialog's edge like every Material button.
-            background.setLayerInsetRelative(0, dp(button, 4), dp(button, 6), dp(button, 4), dp(button, 6));
-            button.setBackground(background);
-            button.setTextColor(primary
-                    ? new ColorStateList(new int[][]{{-android.R.attr.state_enabled}, {}}, new int[]{summary, onAccent})
-                    : dimmedWhenDisabled(secondaryActionText()));
-            button.setAllCaps(false);
-            button.setSingleLine(false);
-            button.setMaxLines(3);
-            button.setMinHeight(dp(button, 48));
-            button.setPaddingRelative(dp(button, 16), dp(button, 6), dp(button, 16), dp(button, 6));
+            ((RippleDrawable) button.getBackground()).setLayerInsetRelative(
+                    0, dp(button, 4), dp(button, 6), dp(button, 4), dp(button, 6));
         }
         View field = dialog.findViewById(android.R.id.edit);
         if (field instanceof EditText) paintField((EditText) field);
+    }
+
+    /**
+     * A dialog's button as a card: the primary one filled in the accent, the others on the card
+     * colour, each outlined, at least 48 dp tall and 64 wide, wrapping a long word rather than
+     * cutting it off.
+     */
+    private void paintAction(TextView action, boolean primary) {
+        GradientDrawable surface = new GradientDrawable();
+        surface.setColor(dimmedWhenDisabled(primary ? accent : card));
+        surface.setCornerRadius(dp(action, ELEMENT_RADIUS));
+        surface.setStroke(dp(action, 2), interactionOutline(primary ? accent : outline,
+                primary ? onAccent : heading));
+        action.setBackgroundTintList(null);
+        // View's tint pass mutates the background after setting its state. Mutate first so
+        // that pass can't replace enabled children with fresh, empty-state copies.
+        action.setBackground(new RippleDrawable(
+                interactionRipple(primary ? onAccent : heading), surface, null).mutate());
+        action.setTextColor(dimmedWhenDisabled(primary ? onAccent : secondaryActionText()));
+        action.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        action.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        action.setAllCaps(false);
+        action.setSingleLine(false);
+        action.setMaxLines(Integer.MAX_VALUE);
+        action.setEllipsize(null);
+        action.setHorizontallyScrolling(false);
+        action.setGravity(android.view.Gravity.CENTER);
+        action.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        action.setMinHeight(dp(action, 48));
+        action.setMinimumHeight(dp(action, 48));
+        action.setMinWidth(dp(action, 64));
+        action.setMinimumWidth(dp(action, 64));
+        action.setPaddingRelative(dp(action, 16), dp(action, 12), dp(action, 16), dp(action, 12));
+    }
+
+    /** A list row's fill: [normal] at rest, the accent at 13% once it's picked. */
+    ColorStateList choiceFill(int normal) {
+        return new ColorStateList(new int[][]{{android.R.attr.state_checked}, {}},
+                new int[]{(accent & 0x00FFFFFF) | 0x22000000, normal});
     }
 
     /**
@@ -726,14 +736,14 @@ final class ScreenColors {
         field.setHintTextColor(summary);
         GradientDrawable outline = new GradientDrawable();
         outline.setColor(dialog);
-        outline.setCornerRadius(dp(field, ELEMENT_RADIUS));
-        outline.setStroke(dp(field, 2), new ColorStateList(
-                new int[][]{{-android.R.attr.state_enabled}, {android.R.attr.state_focused}, {}},
-                new int[]{this.outline, heading, switchOff}));
+        outline.setCornerRadius(dp(field, CONTAINER_RADIUS));
+        outline.setStroke(dp(field, 2), interactionOutline(switchOff));
         field.setBackgroundTintList(null);
         field.setBackground(outline);
         field.setPaddingRelative(dp(field, 12), dp(field, 10), dp(field, 12), dp(field, 10));
         field.setTextColor(dimmedWhenDisabled(title));
+        field.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        field.setMinHeight(dp(field, 48));
         field.setHighlightColor(half(accent));
         Drawable cursor = field.getTextCursorDrawable();
         if (cursor != null) {
@@ -762,7 +772,12 @@ final class ScreenColors {
     }
 
     private void paintMessages(View view) {
-        if (view instanceof TextView && view.getId() == android.R.id.message) ((TextView) view).setTextColor(summary);
+        if (view instanceof TextView && view.getId() == android.R.id.message) {
+            TextView message = (TextView) view;
+            message.setTextColor(dimmedWhenDisabled(summary));
+            message.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+            message.setLineSpacing(dp(view, 2), 1);
+        }
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
             for (int index = 0; index < group.getChildCount(); index++) paintMessages(group.getChildAt(index));
