@@ -742,6 +742,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/StoryTaps.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/stories/taps/StoryTapsPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: a play and pause button over a story and stories that change only on a double tap. Facebook 585's story tap controller is found by the string it writes into its trace, and its back and forward navigations by the enum constants they pass, so the extension is asked in front of each and can skip it. Facebook's gesture listener gets a double tap callback that hands the second tap's lift to its own single tap code. The pause is Facebook's own, made through the controller's pauser under the reason its play and pause toggle uses, and the button is a view the extension adds to the window."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/profile/ProfileNotes.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/profile/HideProfileNotesPatch.kt"
       ],

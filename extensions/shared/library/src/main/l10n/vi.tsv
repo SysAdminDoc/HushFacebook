@@ -2492,3 +2492,9 @@ GmsCore support	Hỗ trợ GmsCore
 Version %1$s for Facebook %2$s	Phiên bản %1$s cho Facebook %2$s
 Show all settings as a list	Hiện tất cả cài đặt dạng danh sách
 Show settings by category	Hiện cài đặt theo danh mục
+Story play button	Nút phát tin
+Double tap for next story	Nhấn đúp để sang tin tiếp theo
+A tap in the middle of a story shows a play and pause button, like Reels. Taps on the sides still change stories.	Chạm vào giữa tin sẽ hiện nút phát và tạm dừng, giống Reels. Chạm hai bên vẫn chuyển tin.
+Stories change only on a double tap, the left side for the one before and anywhere else for the next. A single tap pauses or plays the story, or shows the play button when that's on.	Tin chỉ chuyển khi nhấn đúp, bên trái về tin trước và chỗ khác sang tin tiếp theo. Chạm một lần sẽ tạm dừng hoặc phát tin, hoặc hiện nút phát khi tùy chọn đó đang bật.
+Pause story	Tạm dừng tin
+Play story	Phát tin

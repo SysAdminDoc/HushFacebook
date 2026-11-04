@@ -3822,6 +3822,44 @@
       "options": []
     },
     {
+      "name": "Story viewer taps",
+      "description": "A tap in the middle of a story shows a play and pause button, like Reels, and a second switch makes stories change only on a double tap, so a single tap pauses or plays instead. Both start off. Turn them on in Hushfacebook settings > Stories.",
+      "category": "Stories",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "585.0.0.47.54"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "585.0.0.47.54",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 476015655,
+                "ARMEABI_V7A": 476015543
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Tab bar at the bottom",
       "description": "Moves Facebook's tab bar to the bottom of the screen on accounts that have it at the top, where it's easier to reach. `Tab bar position` can also put it at the top, as older Facebook had it, or leave it where Facebook puts it. `Tab bar while scrolling` lets it slide away as you scroll or keeps it on screen, and another switch keeps the top bar on screen. One gives tablets and unfolded phones the phone layout so the bar can move there too, and one makes the top bar and the tab bar see-through. Another hides the phone's status bar on the main screen until you swipe down from the top. Three more take the Messenger button, its unread count or the Facebook logo out of the top bar. Starts off. Pick it in Hushfacebook settings > Tabs and navigation, then restart Facebook. The see-through and status bar switches sit under Appearance.",
       "category": "Navigation",

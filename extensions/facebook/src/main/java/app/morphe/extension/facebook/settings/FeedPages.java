@@ -640,7 +640,7 @@ final class FeedPages {
                 || build.contains(PatchFamily.STORY_AUTO_ADVANCE) || build.contains(PatchFamily.STORY_SEEN)
                 || build.contains(PatchFamily.STORY_DOWNLOAD) || build.contains(PatchFamily.STORY_UPLOAD_HD)
                 || build.contains(PatchFamily.STORY_MUSIC_LENGTH) || build.contains(PatchFamily.STORIES_TRAY_CIRCLES)
-                || build.contains(PatchFamily.PINCH_TO_ZOOM)) {
+                || build.contains(PatchFamily.STORY_TAPS) || build.contains(PatchFamily.PINCH_TO_ZOOM)) {
             PreferenceCategory stories = category(screen, L10n.t("Stories"));
             if (build.contains(PatchFamily.SPONSORED_STORIES)) {
                 stories.addPreference(toggle(context, Settings.HIDE_SPONSORED_STORIES,
@@ -714,6 +714,16 @@ final class FeedPages {
                         L10n.t("Draws the stories row on Home as round pictures, like Instagram. Applies the next time "
                                 + "Home loads its stories.")));
                 stories.addPreference(HushfacebookPreferenceFragment.sizeRow(context));
+            }
+            if (build.contains(PatchFamily.STORY_TAPS)) {
+                // Read on each tap, so a change shows from the next one.
+                stories.addPreference(toggle(context, Settings.STORY_PLAY_BUTTON,
+                        L10n.t("A tap in the middle of a story shows a play and pause button, like Reels. Taps on the "
+                                + "sides still change stories.")));
+                stories.addPreference(toggle(context, Settings.STORY_DOUBLE_TAP,
+                        L10n.t("Stories change only on a double tap, the left side for the one before and anywhere else "
+                                + "for the next. A single tap pauses or plays the story, or shows the play button when "
+                                + "that's on.")));
             }
             if (build.contains(PatchFamily.PINCH_TO_ZOOM)) {
                 // Asked as each second finger lands, so a change shows from the next pinch.

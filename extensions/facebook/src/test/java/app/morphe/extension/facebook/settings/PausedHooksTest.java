@@ -581,6 +581,9 @@ public class PausedHooksTest {
         // A tile in the stories row comes out round.
         probes.put(PatchFamily.STORIES_TRAY_CIRCLES,
                 Collections.singletonList(app.morphe.extension.facebook.stories.StoriesTrayCirclesForTests::rounds));
+        // A single tap in a story waits to see whether a second one comes.
+        probes.put(PatchFamily.STORY_TAPS,
+                Collections.singletonList(app.morphe.extension.facebook.stories.StoryTapsForTests::holdsATap));
         // A photo's song gets the longer clip.
         probes.put(PatchFamily.STORY_MUSIC_LENGTH, Collections.singletonList(() -> StoryMusic.clipLength(15000) == 30000));
         probes.put(PatchFamily.SPONSORED_REELS, Arrays.asList(

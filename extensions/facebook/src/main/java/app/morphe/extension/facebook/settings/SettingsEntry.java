@@ -74,6 +74,7 @@ import app.morphe.extension.facebook.reels.BurnInGuard;
 import app.morphe.extension.facebook.reels.FeedVideoAlone;
 import app.morphe.extension.facebook.reels.ViewerTopBar;
 import app.morphe.extension.facebook.stories.StorySeenButton;
+import app.morphe.extension.facebook.stories.StoryTaps;
 import app.morphe.extension.facebook.theme.AccentResources;
 import app.morphe.extension.facebook.theme.AmoledResources;
 import app.morphe.extension.facebook.theme.MaterialYouTheme;
@@ -781,6 +782,7 @@ public final class SettingsEntry {
             // Only with Download any video in the build, whose switch it is an option of.
             if (SettingsStatus.videoDownload()) ClipboardLink.onResumed(activity);
             if (SettingsStatus.storySeen()) StorySeenButton.activityResumed(activity);
+            if (SettingsStatus.storyTaps()) StoryTaps.activityResumed(activity);
             if (openPending) openWhenSettled(activity);
             relabelIfStale(activity);
             SavedShortcut.refresh(activity);
@@ -795,6 +797,7 @@ public final class SettingsEntry {
             SavedFileActions.onPaused(activity);
             ClipboardLink.onPaused(activity);
             StorySeenButton.activityPaused(activity);
+            if (SettingsStatus.storyTaps()) StoryTaps.activityPaused(activity);
             ScreenTransitions.activityPaused(activity);
             ScreenLog.paused(activity);
             if (resumed != null && resumed.get() == activity) resumed = null;

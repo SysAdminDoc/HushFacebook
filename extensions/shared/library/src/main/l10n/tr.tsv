@@ -2492,3 +2492,9 @@ GmsCore support	GmsCore desteği
 Version %1$s for Facebook %2$s	Facebook %2$s için sürüm %1$s
 Show all settings as a list	Tüm ayarları liste olarak göster
 Show settings by category	Ayarları kategoriye göre göster
+Story play button	Hikaye oynatma düğmesi
+Double tap for next story	Sonraki hikaye için çift dokun
+A tap in the middle of a story shows a play and pause button, like Reels. Taps on the sides still change stories.	Bir hikayenin ortasına dokunmak, Reels'teki gibi bir oynat ve duraklat düğmesi gösterir. Kenarlara dokunmak yine hikayeyi değiştirir.
+Stories change only on a double tap, the left side for the one before and anywhere else for the next. A single tap pauses or plays the story, or shows the play button when that's on.	Hikayeler yalnızca çift dokunuşla değişir, sol taraf bir öncekine, başka her yer bir sonrakine geçer. Tek dokunuş hikayeyi duraklatır veya oynatır, ya da açıksa oynatma düğmesini gösterir.
+Pause story	Hikayeyi duraklat
+Play story	Hikayeyi oynat

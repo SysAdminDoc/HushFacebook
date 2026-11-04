@@ -451,6 +451,20 @@ public class Settings extends BaseSettings {
     public static final StringSetting STORIES_TRAY_SIZE =
             new StringSetting("hushfacebook_stories_tray_size", "");
 
+    /**
+     * A tap in the middle of a story shows a play and pause button, like Reels ({@link
+     * app.morphe.extension.facebook.stories.StoryTaps}, #380). Starts off. Read on each tap.
+     */
+    public static final BooleanSetting STORY_PLAY_BUTTON =
+            new BooleanSetting("hushfacebook_story_play_button", FALSE);
+
+    /**
+     * Stories change only on a double tap, and a single tap pauses ({@link
+     * app.morphe.extension.facebook.stories.StoryTaps}, #380). Starts off. Read on each tap.
+     */
+    public static final BooleanSetting STORY_DOUBLE_TAP =
+            new BooleanSetting("hushfacebook_story_double_tap", FALSE);
+
     /** The two page filters that take server-inlined ads out of Reels and Watch. */
     public static final BooleanSetting HIDE_SPONSORED_REELS =
             new BooleanSetting("hushfacebook_hide_sponsored_reels", TRUE);

@@ -2546,3 +2546,9 @@ GmsCore support	Поддержка GmsCore
 Version %1$s for Facebook %2$s	Версия %1$s для Facebook %2$s
 Show all settings as a list	Показать все настройки списком
 Show settings by category	Показать настройки по категориям
+Story play button	Кнопка воспроизведения в Историях
+Double tap for next story	Двойное нажатие для следующей Истории
+A tap in the middle of a story shows a play and pause button, like Reels. Taps on the sides still change stories.	Нажатие в центре Истории показывает кнопку воспроизведения и паузы, как в Reels. Нажатия по краям по-прежнему переключают Истории.
+Stories change only on a double tap, the left side for the one before and anywhere else for the next. A single tap pauses or plays the story, or shows the play button when that's on.	Истории переключаются только двойным нажатием, слева на предыдущую, в любом другом месте на следующую. Одиночное нажатие ставит Историю на паузу или продолжает её, либо показывает кнопку воспроизведения, если она включена.
+Pause story	Приостановить Историю
+Play story	Воспроизвести Историю

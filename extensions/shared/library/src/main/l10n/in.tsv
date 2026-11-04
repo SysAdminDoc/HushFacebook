@@ -2492,3 +2492,9 @@ GmsCore support	Dukungan GmsCore
 Version %1$s for Facebook %2$s	Versi %1$s untuk Facebook %2$s
 Show all settings as a list	Tampilkan semua pengaturan sebagai daftar
 Show settings by category	Tampilkan pengaturan per kategori
+Story play button	Tombol putar cerita
+Double tap for next story	Ketuk dua kali untuk cerita berikutnya
+A tap in the middle of a story shows a play and pause button, like Reels. Taps on the sides still change stories.	Ketukan di tengah cerita menampilkan tombol putar dan jeda, seperti Reels. Ketukan di sisi tetap mengganti cerita.
+Stories change only on a double tap, the left side for the one before and anywhere else for the next. A single tap pauses or plays the story, or shows the play button when that's on.	Cerita hanya berganti dengan ketukan dua kali, sisi kiri ke cerita sebelumnya dan tempat lain ke berikutnya. Ketukan sekali menjeda atau memutar cerita, atau menampilkan tombol putar jika aktif.
+Pause story	Jeda cerita
+Play story	Putar cerita

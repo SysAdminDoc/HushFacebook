@@ -101,6 +101,8 @@ public enum PatchFamily {
             Settings.LONGER_STORY_MUSIC),
     STORIES_TRAY_CIRCLES(FamilyNames.STORIES_TRAY_CIRCLES, "storiesTrayCircles", null,
             Settings.STORIES_TRAY_CIRCLES),
+    STORY_TAPS(FamilyNames.STORY_TAPS, "storyTaps", null,
+            Settings.STORY_PLAY_BUTTON, Settings.STORY_DOUBLE_TAP),
     PINCH_TO_ZOOM(FamilyNames.PINCH_TO_ZOOM, "pinchToZoom", null,
             Settings.PINCH_TO_ZOOM, Settings.PINCH_TO_ZOOM_KEEP, Settings.PINCH_TO_ZOOM_DOUBLE_TAP),
     SPONSORED_REELS(FamilyNames.SPONSORED_REELS, "sponsoredReels", "Part of the Reels ad blocking",

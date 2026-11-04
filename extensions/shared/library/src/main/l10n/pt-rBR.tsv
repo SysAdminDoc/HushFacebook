@@ -2378,3 +2378,9 @@ GmsCore support	Suporte ao GmsCore
 Version %1$s for Facebook %2$s	Versão %1$s para Facebook %2$s
 Show all settings as a list	Mostrar todas as configurações em lista
 Show settings by category	Mostrar configurações por categoria
+Story play button	Botão de reproduzir nos stories
+Double tap for next story	Toque duplo para o próximo story
+A tap in the middle of a story shows a play and pause button, like Reels. Taps on the sides still change stories.	Um toque no meio de um story mostra um botão de reproduzir e pausar, como nos Reels. Toques nas laterais continuam trocando de story.
+Stories change only on a double tap, the left side for the one before and anywhere else for the next. A single tap pauses or plays the story, or shows the play button when that's on.	Os stories só mudam com um toque duplo, o lado esquerdo para o anterior e qualquer outro lugar para o próximo. Um toque pausa ou reproduz o story, ou mostra o botão de reproduzir quando ele está ativado.
+Pause story	Pausar story
+Play story	Reproduzir story
