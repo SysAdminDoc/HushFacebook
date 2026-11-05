@@ -2032,6 +2032,10 @@ Adds a cast button to feed videos. It hands the video to a casting app you have,
 Cast this video	Transmitir este vídeo
 Full player button on feed videos	Botão de player completo nos vídeos do feed
 Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	Adiciona um botão aos vídeos do feed que abre o vídeo no player completo do próprio Facebook, com todos os controles. Vídeos ao vivo também ganham o botão. Com “Tocar para reproduzir” ligado, “Controles de vídeo no feed” também precisa estar ligado.
+# context: a switch under Video and audio; with it on, a video opened full screen starts with its details and comments panel closed, so the video is in the middle of the screen
+Open full screen videos centered	Abrir vídeos em tela cheia centralizados
+# context: that switch's summary; the arrow is the small button under the video that opens and closes the details and comments panel
+Videos you open full screen, from a comment or a link, start with their details and comments folded away, so the video sits in the middle of the screen. The arrow under it still brings them back.	Vídeos que você abre em tela cheia, de um comentário ou de um link, começam com os detalhes e os comentários recolhidos, então o vídeo fica no meio da tela. A seta embaixo dele ainda os traz de volta.
 Open in the full player	Abrir no player completo
 Seek bar on feed videos	Barra de progresso nos vídeos do feed
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Mostra uma barra na parte de baixo de um vídeo do feed. Arraste e solte para pular para esse ponto. Vídeos ao vivo e anúncios mantêm os próprios controles. Com “Tocar para reproduzir” ligado, “Controles de vídeo no feed” também precisa estar ligado.

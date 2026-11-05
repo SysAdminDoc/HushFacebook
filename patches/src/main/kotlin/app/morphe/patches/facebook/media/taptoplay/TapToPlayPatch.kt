@@ -74,6 +74,11 @@ val tapToPlayPatch = bytecodePatch(
         } catch (moved: PatchException) {
             patchLog.warning("${moved.message}. The patch goes on without saying where a reel's start came.")
         }
+        try {
+            hookCenteredFullscreen()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on, and full screen videos open as Facebook lays them out.")
+        }
         val checker = hookAutoplaySetting()
         hookReelPlayButton(checker)
         hookReelPlayback()

@@ -2190,6 +2190,10 @@ Adds a cast button to feed videos. It hands the video to a casting app you have,
 Cast this video	Транслировать это видео
 Full player button on feed videos	Кнопка полного плеера для видео в Ленте
 Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	Добавляет к видео в Ленте кнопку, которая открывает видео в полном плеере Facebook со всеми его элементами управления. Прямые эфиры тоже ее получают. Если включено воспроизведение по нажатию, необходимо также включить встроенные элементы управления видео в Ленте.
+# context: a switch under Video and audio; with it on, a video opened full screen starts with its details and comments panel closed, so the video is in the middle of the screen
+Open full screen videos centered	Открывать полноэкранные видео по центру
+# context: that switch's summary; the arrow is the small button under the video that opens and closes the details and comments panel
+Videos you open full screen, from a comment or a link, start with their details and comments folded away, so the video sits in the middle of the screen. The arrow under it still brings them back.	Видео, которые вы открываете на весь экран из комментария или по ссылке, начинаются со свёрнутыми подробностями и комментариями, поэтому видео оказывается посередине экрана. Стрелка под ним по-прежнему возвращает их.
 Open in the full player	Открыть в полном плеере
 Seek bar on feed videos	Полоса перемотки для видео в Ленте
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Показывает внизу видео в Ленте полосу перемотки. Перетащите ползунок и отпустите, чтобы перейти к нужному моменту. Для прямых эфиров и рекламы остаются собственные элементы управления. Если включено воспроизведение по нажатию, необходимо также включить встроенные элементы управления видео в Ленте.

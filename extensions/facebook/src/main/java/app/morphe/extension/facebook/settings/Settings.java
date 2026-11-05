@@ -1466,6 +1466,14 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * A video opened in Facebook's full screen player, from a comment or a link, starts with its
+     * details and comments folded away, so it sits in the middle of the screen the way the
+     * player's own chevron leaves it (#242). Asked as each video is set up. Starts off.
+     */
+    public static final BooleanSetting CENTER_FULL_SCREEN_VIDEOS =
+            new BooleanSetting("hushfacebook_center_full_screen_videos", FALSE);
+
+    /**
      * A video longer than two minutes that was left partway picks up where it was left, once, the
      * next time a player starts it ({@link app.morphe.extension.facebook.media.ResumePlayback}).
      * Starts off. Off or paused, nothing is saved or looked up and videos start as Facebook starts

@@ -2141,6 +2141,10 @@ Adds a cast button to feed videos. It hands the video to a casting app you have,
 Cast this video	投屏此视频
 Full player button on feed videos	动态视频上的完整播放器按钮
 Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	为动态中的视频添加一个按钮，在 Facebook 自己的完整播放器中打开视频，附带全部控件。直播视频也有。开启“点按播放”时，还需要开启“动态消息视频控件”。
+# context: a switch under Video and audio; with it on, a video opened full screen starts with its details and comments panel closed, so the video is in the middle of the screen
+Open full screen videos centered	全屏视频居中打开
+# context: that switch's summary; the arrow is the small button under the video that opens and closes the details and comments panel
+Videos you open full screen, from a comment or a link, start with their details and comments folded away, so the video sits in the middle of the screen. The arrow under it still brings them back.	从评论或链接全屏打开的视频会先收起详情和评论，让视频位于屏幕中间。下方的箭头仍可重新展开。
 Open in the full player	在完整播放器中打开
 Seek bar on feed videos	动态视频上的进度条
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	在动态视频底部显示一条进度条。拖动后松开即可跳到该位置。直播视频和广告仍使用它们自己的控件。开启“点按播放”时，还需要开启“动态消息视频控件”。

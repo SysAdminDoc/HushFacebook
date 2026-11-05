@@ -320,6 +320,7 @@ public final class SettingsBackup {
             Settings.FEED_VIDEO_CAST_BUTTON,
             Settings.FEED_VIDEO_SEEK_BAR,
             Settings.FEED_VIDEO_FULL_PLAYER_BUTTON,
+            Settings.CENTER_FULL_SCREEN_VIDEOS,
             Settings.RESUME_LONG_VIDEOS,
             Settings.RECENTLY_WATCHED,
             Settings.FRAME_STEP,

@@ -114,6 +114,7 @@ import app.morphe.extension.facebook.comments.ReactorBlock;
 import app.morphe.extension.facebook.composer.TagSuggestionsForTests;
 import app.morphe.extension.facebook.media.HdrBrightnessForTests;
 import app.morphe.extension.facebook.media.PictureInPictureForTests;
+import app.morphe.extension.facebook.media.CenteredFullscreenForTests;
 import app.morphe.extension.facebook.media.FeedSound;
 import app.morphe.extension.facebook.media.FrameStepForTests;
 import app.morphe.extension.facebook.media.PinchZoomForTests;
@@ -800,7 +801,9 @@ public class PausedHooksTest {
                         Settings.INLINE_FEED_VIDEO_CONTROLS.save(true);
                     }
                 },
-                () -> TapToPlay.showReelPlayButton(false)));
+                () -> TapToPlay.showReelPlayButton(false),
+                // A full screen video starts with its details and comments folded away (#242).
+                CenteredFullscreenForTests::centersAVideo));
         // A long video left at 5:00 is saved, and its next start seeks back there.
         // A long video picks up where it was left, and a reel played on and a story viewed go on the
         // Recently watched list (#183).

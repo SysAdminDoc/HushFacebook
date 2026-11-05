@@ -351,6 +351,10 @@ final class VideoPages {
                     playback.addPreference(toggle(context, Settings.FEED_VIDEO_CAST_BUTTON,
                             L10n.t("Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.")));
                 }
+                // Asked as the full screen player sets each video up, so it applies to the next one you open.
+                playback.addPreference(toggle(context, Settings.CENTER_FULL_SCREEN_VIDEOS,
+                        L10n.t("Videos you open full screen, from a comment or a link, start with their details and comments folded away, "
+                                + "so the video sits in the middle of the screen. The arrow under it still brings them back.")));
             }
             if (build.contains(PatchFamily.RESUME_LONG_VIDEOS)) {
                 playback.addPreference(toggle(context, Settings.RESUME_LONG_VIDEOS,

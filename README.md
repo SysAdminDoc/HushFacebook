@@ -77,6 +77,8 @@ To keep Reel downloads in More without the sidebar button, leave **Download** on
 
 **Cast button on feed videos**, the last of these, puts a cast button in a feed video's top right corner. Facebook has no casting of its own anymore, so the button hands the video to a casting app you have, like Web Video Caster. It starts off.
 
+**Open full screen videos centered** is for videos that open in Facebook's full screen player, say from a comment or a link. Facebook opens them with the details and comments under the video, which pushes a wide video up to the top of the screen. With this on they start with that panel folded away, so the video sits in the middle. The arrow under the video still brings the panel back. It starts off and applies to the next video you open.
+
 ### Blocking Reels
 
 Reels turn up in several places, and no one switch covers them all. Searching the settings for "block reels" brings up a map of them.
