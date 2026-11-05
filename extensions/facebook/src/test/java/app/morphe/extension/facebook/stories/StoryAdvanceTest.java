@@ -120,6 +120,30 @@ public class StoryAdvanceTest {
         assertFalse(line().contains(StoryAdvance.REPLAYED));
     }
 
+    /** Stands in for Facebook's navigation reasons, which keep their names. */
+    private enum NavigationReason { TAP_FORWARD, AUTO_ADVANCE, SWIPE_FORWARD }
+
+    @Test public void aForwardTapOnTheLastCardMovesOnWhileTheSwitchIsOn() {
+        StoryAdvance.held(new Object());
+        assertTrue(StoryAdvance.lastCardTap(NavigationReason.TAP_FORWARD));
+        assertFalse("the held story is let go", StoryAdvance.finished());
+        assertTrue(line().contains("Counted: " + StoryAdvance.LAST_CARD_TAPS + " 1"));
+        assertTrue("a last story still playing moves on too", StoryAdvance.lastCardTap(NavigationReason.TAP_FORWARD));
+        Settings.LOOP_STORIES.save(true);
+        assertTrue("and one Loop stories keeps playing", StoryAdvance.lastCardTap(NavigationReason.TAP_FORWARD));
+
+        assertFalse("the completion keeps its own reason", StoryAdvance.lastCardTap(NavigationReason.AUTO_ADVANCE));
+        assertFalse(StoryAdvance.lastCardTap(NavigationReason.SWIPE_FORWARD));
+        assertFalse(StoryAdvance.lastCardTap(null));
+        assertFalse("only Facebook's enum, never a string", StoryAdvance.lastCardTap("TAP_FORWARD"));
+
+        Settings.BLOCK_STORY_AUTO_ADVANCE.save(false);
+        assertFalse("Facebook's own last card with the switch off", StoryAdvance.lastCardTap(NavigationReason.TAP_FORWARD));
+        Settings.BLOCK_STORY_AUTO_ADVANCE.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse(StoryAdvance.lastCardTap(NavigationReason.TAP_FORWARD));
+    }
+
     /** The diagnostic report's line for the patch, or empty when it has none. */
     private static String line() {
         List<String> report = HookStatus.report();

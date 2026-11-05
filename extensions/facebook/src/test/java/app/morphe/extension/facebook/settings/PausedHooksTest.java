@@ -305,6 +305,9 @@ public class PausedHooksTest {
     /** Stands in for FDS's colour token enum: the theme goes by the constant's name. */
     private enum Surface { CARD_BACKGROUND }
 
+    /** Stands in for Facebook's story navigation reasons, which the last-card tap goes by. */
+    private enum NavigationReason { TAP_FORWARD }
+
     @After
     public void restore() {
         PauseForTests.resume();
@@ -569,7 +572,9 @@ public class PausedHooksTest {
         probes.put(PatchFamily.SUGGESTED_STORIES, Arrays.asList(allStories(SuggestedStoriesForTests::hidesSuggestions),
                 allStories(SuggestedStoriesForTests::hidesPageStories), allStories(SuggestedStoriesForTests::hidesSeenStories),
                 SuggestedStoriesForTests::keepsOnlyWatchedStories));
-        probes.put(PatchFamily.STORY_AUTO_ADVANCE, Arrays.asList(StoryAdvance::waitForTap, StoryAdvance::loop));
+        // A forward tap on a bucket's last card gets the completion's reason (#380).
+        probes.put(PatchFamily.STORY_AUTO_ADVANCE, Arrays.asList(StoryAdvance::waitForTap, StoryAdvance::loop,
+                () -> StoryAdvance.lastCardTap(NavigationReason.TAP_FORWARD)));
         // The story viewer's report of the stories you viewed goes out whole, and with Mark as seen
         // on a marked card goes alone and the button follows the card on screen.
         probes.put(PatchFamily.STORY_SEEN, Arrays.asList(

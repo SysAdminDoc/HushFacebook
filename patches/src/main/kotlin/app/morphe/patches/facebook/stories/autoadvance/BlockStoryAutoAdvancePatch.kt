@@ -15,6 +15,7 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.refresh.enumConstant
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
@@ -29,6 +30,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
@@ -42,6 +44,13 @@ private const val LOOP_FAILED = "$EXTENSION_PACKAGE/stories/StoryAdvance;->loopF
 internal const val STORY_ADVANCE = "$EXTENSION_PACKAGE/stories/StoryAdvance;"
 internal const val HELD = "$STORY_ADVANCE->held(Ljava/lang/Object;)V"
 internal const val PROGRESSED = "$STORY_ADVANCE->progressed(I)V"
+internal const val LAST_CARD_TAP = "$STORY_ADVANCE->lastCardTap(Ljava/lang/Object;)Z"
+
+/** The trace Facebook's forward navigation writes as it picks the next card, the next bucket or leaving. */
+internal const val NEXT_OR_EXIT = "StoryViewerNavigationDelegate.moveToNextBucketOrThreadOrExit"
+
+/** Facebook's name for the navigation reason a story's own completion moves on with. */
+internal const val NAVIGATION_AUTO_ADVANCE = "AUTO_ADVANCE"
 
 /** The extension's stub the patch fills with a call to [RESTART_HELPER], for the play button's replay. */
 internal const val RESTART_STUB = "restart"
@@ -67,6 +76,11 @@ internal const val RESTART_HELPER = "hushfacebookRestartStory"
  * is still held. Facebook also moves on from a finished story when a touch lifts: its controller's
  * touch release calls the navigator itself once the stored progress is complete, so that call is
  * asked the same question.
+ *
+ * Some surfaces, a Page's stories among them, ignore a forward tap on a bucket's last card and
+ * leave only through the completion, so a held last story could never be left by a tap (#380).
+ * Facebook's forward navigation compares its reason with the completion's at the start of its
+ * last-card branch, and there a tap's reason becomes the completion's while the switch is on.
  */
 @Suppress("unused")
 val blockStoryAutoAdvancePatch = bytecodePatch(
@@ -125,6 +139,17 @@ val blockStoryAutoAdvancePatch = bytecodePatch(
         )
         // The callback's last parameter is the progress, 0 to 1000.
         mutable.addInstructions(0, "invoke-static/range { p3 .. p3 }, $PROGRESSED")
+        // A forward tap on a bucket's last card goes where the finished story would have (#380).
+        val (forward, branch) = lastCardNavigation()
+        val mutableForward = mutableClassDefBy(forward.definingClass).methods.single {
+            it.name == forward.name && it.returnType == forward.returnType &&
+                it.parameterTypes.map(CharSequence::toString) == forward.parameterTypes.map(CharSequence::toString)
+        }
+        mutableForward.addInstructionsWithLabels(
+            branch.index,
+            lastCardBlock(mutableForward.waitForTapRegister(branch.index), branch.reason, branch.autoAdvance),
+            ExternalLabel("last", mutableForward.getInstruction(branch.index)),
+        )
         enableStatus("storyAutoAdvance")
     }
 }
@@ -149,6 +174,75 @@ internal fun releaseNavigations(holder: ClassDef, callback: Method, navigator: M
                     ref.parameterTypes.map(CharSequence::toString) == navigator.parameterTypes.map(CharSequence::toString)
             }.map { (index, _) -> method to index }
         }
+
+/** Where the last-card branch of Facebook's forward navigation starts, the register holding the reason there, and the completion's reason. */
+internal data class LastCardBranch(val index: Int, val reason: Int, val autoAdvance: String)
+
+/**
+ * The branch Facebook's forward navigation takes on a bucket's last card: it asks a boolean method
+ * whether to move to the next bucket, and when that answers true the branch starts by comparing the
+ * navigation's reason with [autoAdvance], the reason a story's own completion moves on with. Null
+ * unless exactly one comparison sits right where such an answer branches.
+ */
+internal fun lastCardBranch(navigation: Method, autoAdvance: String): LastCardBranch? {
+    val body = navigation.implementation?.instructions?.toList() ?: return null
+    val sites = (3 until body.size - 1).mapNotNull { i ->
+        val load = body[i]
+        if (load.opcode != Opcode.SGET_OBJECT || (load as ReferenceInstruction).reference.toString() != autoAdvance) {
+            return@mapNotNull null
+        }
+        if (body[i + 1].opcode != Opcode.IF_NE && body[i + 1].opcode != Opcode.IF_EQ) return@mapNotNull null
+        val compare = body[i + 1] as TwoRegisterInstruction
+        val reason = when ((load as OneRegisterInstruction).registerA) {
+            compare.registerA -> compare.registerB
+            compare.registerB -> compare.registerA
+            else -> return@mapNotNull null
+        }
+        val asked = (body[i - 3] as? ReferenceInstruction)?.reference as? MethodReference
+        val answered = body[i - 2].opcode == Opcode.MOVE_RESULT && body[i - 1].opcode == Opcode.IF_EQZ &&
+            (body[i - 2] as OneRegisterInstruction).registerA == (body[i - 1] as OneRegisterInstruction).registerA
+        if (asked?.returnType == "Z" && answered) LastCardBranch(i, reason, autoAdvance) else null
+    }
+    return sites.singleOrNull()
+}
+
+/**
+ * Facebook's forward navigation, the instance method holding [NEXT_OR_EXIT], and its last-card
+ * branch, with the completion's reason read off the navigation's reason enum. Throws naming what's
+ * missing.
+ */
+internal fun BytecodePatchContext.lastCardNavigation(): Pair<Method, LastCardBranch> {
+    val found = classDefByStrings(NEXT_OR_EXIT, StringComparisonType.EQUALS).flatMap { def ->
+        def.methods.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" && holdsString(it, NEXT_OR_EXIT) }
+    }
+    val navigation = found.singleOrNull() ?: throw PatchException(
+        "Stop Story auto-advance: expected one forward navigation holding \"$NEXT_OR_EXIT\", found ${found.size}",
+    )
+    val reasons = navigation.parameterTypes.mapNotNull { type ->
+        classDefByOrNull(type.toString())?.let { enumConstant(it, NAVIGATION_AUTO_ADVANCE) }
+    }
+    val autoAdvance = reasons.singleOrNull() ?: throw PatchException(
+        "Stop Story auto-advance: expected one reason enum with $NAVIGATION_AUTO_ADVANCE among " +
+            "${navigation.definingClass}->${navigation.name}'s parameters ${navigation.parameterTypes}",
+    )
+    val branch = lastCardBranch(navigation, autoAdvance) ?: throw PatchException(
+        "Stop Story auto-advance: expected one last-card branch comparing the reason with $autoAdvance in " +
+            "${navigation.definingClass}->${navigation.name}",
+    )
+    return navigation to branch
+}
+
+/**
+ * What goes first in the last-card branch: while the extension says so, a forward tap's reason
+ * becomes the completion's, so the branch moves on to the next bucket or leaves, as it does once a
+ * story finishes by itself.
+ */
+internal fun lastCardBlock(register: Int, reason: Int, autoAdvance: String) = """
+    invoke-static/range { v$reason .. v$reason }, $LAST_CARD_TAP
+    move-result v$register
+    if-eqz v$register, :last
+    sget-object v$reason, $autoAdvance
+"""
 
 /** What goes in front of a touch release's navigation: skip it while the extension holds the story. */
 internal fun releaseBlock(register: Int) = """

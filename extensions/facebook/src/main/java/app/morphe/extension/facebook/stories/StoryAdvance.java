@@ -15,13 +15,19 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
  * Called when Facebook reports a Story's progress as complete, or when a touch lifts on a story
- * whose progress is complete, and with every progress of the story playing.
+ * whose progress is complete, with every progress of the story playing, and when a forward tap
+ * reaches a bucket's last card.
  */
 public final class StoryAdvance {
     /** What a finished story started again is counted under. */
     static final String LOOPED = "stories looped";
     /** What a held story started again from the play button is counted under. */
     static final String REPLAYED = "stories replayed";
+    /** What a forward tap on a bucket's last card that moved on is counted under. */
+    static final String LAST_CARD_TAPS = "last story taps";
+
+    /** The name of Facebook's navigation reason for a tap on the forward side of a story. */
+    static final String TAP_FORWARD = "TAP_FORWARD";
 
     /** The progress Facebook reports a finished card with. */
     static final int COMPLETE = 1000;
@@ -122,6 +128,28 @@ public final class StoryAdvance {
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_AUTO_ADVANCE, "Story replay", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, where Facebook's forward navigation takes its branch for a bucket's last
+     * card, with the navigation's reason: true has the patch give that branch the reason a story's
+     * own completion moves on with. Some surfaces, a Page's stories among them, ignore a forward
+     * tap on the last card and leave only through that completion, which this switch holds, so
+     * the stories never closed there (#380). With the switch on, a forward tap on the last card
+     * goes where the finished story would have gone, held or still playing, Loop stories too.
+     * Never throws.
+     */
+    public static boolean lastCardTap(Object reason) {
+        try {
+            if (!(reason instanceof Enum) || !TAP_FORWARD.equals(((Enum<?>) reason).name())) return false;
+            if (!Utils.settingsReady() || !Settings.BLOCK_STORY_AUTO_ADVANCE.get()) return false;
+            held = NONE;
+            HookStatus.counted(FamilyNames.STORY_AUTO_ADVANCE, LAST_CARD_TAPS);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_AUTO_ADVANCE, "Story last card tap", failure);
             return false;
         }
     }

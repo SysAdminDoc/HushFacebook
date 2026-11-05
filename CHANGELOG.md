@@ -20,6 +20,7 @@ Changes in each Hushfacebook version, newest first.
 
 * `Hide song and effect credits` now also takes the song and effect pills off the row under the poster's name. Most stories put the song there rather than on the line under the name, so the switch used to miss it. (#380)
 * With `Stop Story auto-advance` on, lifting your finger off a story that already finished doesn't jump to the next one anymore. (#380)
+* With `Stop Story auto-advance` on, a tap forward on the last story of a Page closes the stories (or moves to the next person's) like the finished story would have. On a Page that tap did nothing, so you had to swipe the viewer away. (#380)
 * `Rounded tab bar` drops the thin grey line that ran across the top of the pill, with or without `See-through bars`. Facebook draws that line over the tabs instead of above them, so the pill kept it as a hard stripe. Turning the switch off brings it back. (#383)
 * A Threads post in your feed opens in Threads again when you've patched Threads too, and so does the Threads button in Facebook's menu. A patched Threads is signed with a different key than Facebook, so Facebook's own check dropped the link and the tap did nothing. Now the link goes to Threads by itself, with nothing else from Facebook attached. (#385)
 * With `Double tap to zoom` on, a fast scroll on a profile or Page stops as soon as your finger lands on it. It used to slide on for a moment whenever that finger landed on a photo or video, since the first tap waited to see if a second one was coming.
