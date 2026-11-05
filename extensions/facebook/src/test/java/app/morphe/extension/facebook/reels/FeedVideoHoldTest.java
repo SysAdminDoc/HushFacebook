@@ -440,6 +440,37 @@ public class FeedVideoHoldTest {
     }
 
     @Test
+    public void aHoldFacebooksOwnHoldSpedUpFirstIsStillThisOnesAndThePullLocksIt() {
+        speeds.put(player, 1f);
+        int[] at = middleOf(container);
+        send(event(MotionEvent.ACTION_DOWN, at));
+        // Facebook's own feed video hold runs out first and plays the video at 2x (#387).
+        speeds.put(player, 2f);
+        holdLongEnough();
+        String status = statusLine(FamilyNames.HOLD_REEL_FOR_2X);
+        assertTrue(status, status.contains(FeedVideoHold.TAKEN_FROM_FACEBOOK + " 1"));
+        assertTrue(status, status.contains(FeedVideoHold.HELD + " 1"));
+        assertFalse(status, status.contains(FeedVideoHold.ALREADY_FAST));
+
+        int[] below = {at[0], at[1] + FeedVideoHold.PULL_TO_KEEP_DP + 10};
+        assertEquals("the pull never reaches the feed, so it doesn't scroll", MotionEvent.ACTION_CANCEL,
+                send(event(MotionEvent.ACTION_MOVE, below)).getActionMasked());
+        // That cancel ends Facebook's hold, which puts its own speed back.
+        speeds.put(player, 1f);
+        waitFor(50);
+        assertEquals("the held video went back to 2x", 2f, speeds.get(player), 0f);
+        assertEquals(MotionEvent.ACTION_CANCEL, send(event(MotionEvent.ACTION_UP, below)).getActionMasked());
+        waitFor(100);
+        assertEquals("the lift kept it at 2x", 2f, speeds.get(player), 0f);
+        status = statusLine(FamilyNames.HOLD_REEL_FOR_2X);
+        assertTrue(status, status.contains(FeedVideoHold.KEPT + " 1"));
+
+        send(event(MotionEvent.ACTION_DOWN, at));
+        assertEquals(MotionEvent.ACTION_CANCEL, send(event(MotionEvent.ACTION_UP, at)).getActionMasked());
+        assertEquals("the tap put back the speed it had before the press", 1f, speeds.get(player), 0f);
+    }
+
+    @Test
     public void aMoveOrAnEarlyLiftStopsTheHold() {
         int[] at = middleOf(container);
         send(event(MotionEvent.ACTION_DOWN, at));
