@@ -39,7 +39,8 @@ import com.android.tools.smali.dexlib2.iface.Method
  * - The controller's page of sections also brings the controller. On an account whose pages held
  *   only reels from people it doesn't follow, every page came back empty and the viewer ended on
  *   Facebook's spinner or error (0.21.0 release walk, 2026-11-05), so the first reel of each
- *   controller's first page stays.
+ *   controller's first page stays, and a controller whose pages lose every reel ten times in a row
+ *   stops being filtered, with a toast saying so.
  */
 
 private const val FOLLOWED_REELS = "$EXTENSION_PACKAGE/reels/FollowedReels;"
