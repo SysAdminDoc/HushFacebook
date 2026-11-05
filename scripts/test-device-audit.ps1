@@ -7,7 +7,7 @@ $auditAst = [System.Management.Automation.Language.Parser]::ParseFile($auditPath
 if ($parseErrors.Count) { throw ($parseErrors -join "`n") }
 $testFunctions = @('Assert-AuditLease', 'Assert-AuditSteps', 'Assert-AuditForeground', 'Invoke-Adb',
     'Get-AuditLocales', 'Get-AuditNightMode', 'Restore-AuditState', 'Format-Shell',
-    'New-AuditBaseline', 'Get-AuditOff', 'Compare-AuditWalk', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Get-SettingsPages', 'Test-AuditSectionShown', 'Test-SettingsScreen', 'Get-AuditLocaleTable', 'Write-Step', 'Test-AuditDestination', 'Select-AuditTapNode', 'Find-AuditTapNode', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList', 'Get-AuditLauncher', 'Get-Report',
+    'New-AuditBaseline', 'Get-AuditOff', 'Compare-AuditWalk', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Get-SettingsPages', 'Test-AuditSectionShown', 'Test-SettingsScreen', 'Get-AuditLocaleTable', 'Write-Step', 'Test-AuditDestination', 'Select-AuditTapNode', 'Select-AuditQueryField', 'Find-AuditTapNode', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList', 'Get-AuditLauncher', 'Get-Report',
     'Test-AuditReelViewer', 'Get-AuditReelProof', 'Close-AuditHoldCover', 'Open-AuditRoute', 'Test-AuditKeyboard', 'Test-AuditSettingsRestored', 'ConvertFrom-AuditJsonTable', 'Resolve-AuditStateBefore', 'Get-AuditCrashes')
 foreach ($functionName in $testFunctions) {
     $definition = $auditAst.Find({ param($node)
@@ -389,6 +389,56 @@ try {
     Invoke-Adb shell input text news | Out-Null
     Invoke-Adb shell input keyevent KEYCODE_ENTER | Out-Null
     Assert-That (@($script:adbCalls | Where-Object { $_ -like '* input *' }).Count -eq 2) 'The query was not typed and submitted.'
+    # Enter can land on the first typeahead row, so the query step may tap the field holding the query
+    # once, with the keyboard open, and nowhere else.
+    $dumpBeforeQueryTap = $script:uiDump
+    function New-QueryDump([string]$Fields) {
+        return "<?xml version=`"1.0`"?><hierarchy>$Fields<node package=`"$Package`" class=`"android.widget.TextView`" text=`"news`" bounds=`"[0,300][1080,420]`" clickable=`"true`" /></hierarchy>"
+    }
+    $queryField = "<node package=`"$Package`" class=`"android.widget.EditText`" text=`"news`" bounds=`"[120,60][900,180]`" />"
+    $script:uiDump = New-QueryDump $queryField
+    $script:auditQueryTaps = 0
+    $script:adbCalls.Clear()
+    Assert-Throws { Invoke-Adb shell input tap 540 360 } 'A query-step tap went to the typeahead row repeating the query.'
+    Assert-Throws { Invoke-Adb shell input tap 900 120 } 'A query-step tap went just past the search field.'
+    Assert-Throws { Invoke-Adb shell input tap 500 } 'A query-step tap with no Y was sent.'
+    Assert-That (-not @($script:adbCalls | Where-Object { $_ -like '* input *' }).Count) 'A query-step tap escaped the search field guard.'
+    Invoke-Adb shell input tap 510 120 | Out-Null
+    Assert-That (@($script:adbCalls | Where-Object { $_ -like '* input tap 510 120' }).Count -eq 1) 'A tap in the field holding the query was refused with the keyboard open.'
+    $script:adbCalls.Clear()
+    Assert-Throws { Invoke-Adb shell input tap 510 120 } 'The search field got a second tap in one query step.'
+    Invoke-Adb shell input keyevent KEYCODE_ENTER | Out-Null
+    Assert-That (@($script:adbCalls | Where-Object { $_ -like '* input *' }).Count -eq 1) 'Enter was refused after the field tap.'
+    foreach ($case in @(
+            @("<node package=`"$Package`" class=`"android.widget.EditText`" text=`"new`" bounds=`"[120,60][900,180]`" />", 'a field holding other text'),
+            @("<node package=`"$Package`" class=`"android.widget.EditText`" text=`"News`" bounds=`"[120,60][900,180]`" />", 'a field holding the query in another case'),
+            @(($queryField + $queryField.Replace('[120,60][900,180]', '[120,200][900,280]')), 'one of two fields holding the query'),
+            @("<node package=`"com.other.app`" class=`"android.widget.EditText`" text=`"news`" bounds=`"[120,60][900,180]`" />", "another app's field"),
+            @("<node package=`"$Package`" class=`"android.widget.EditText`" text=`"news`" bounds=`"[900,60][120,180]`" />", 'a field with inverted bounds'),
+            @('', 'a screen with no search field'))) {
+        $script:uiDump = New-QueryDump $case[0]
+        $script:auditQueryTaps = 0
+        $script:adbCalls.Clear()
+        Assert-Throws { Invoke-Adb shell input tap 510 120 } "A query-step tap went to $($case[1])."
+        Assert-That (-not @($script:adbCalls | Where-Object { $_ -like '* input *' }).Count) "A tap escaped the guard on $($case[1])."
+    }
+    $script:uiDump = New-QueryDump $queryField
+    $script:auditQueryTaps = 0
+    Assert-Throws { Invoke-Adb shell input tap 510.4 120 } 'A query-step tap with a fractional X was sent.'
+    Assert-Throws { Invoke-Adb shell input tap 510 -120 } 'A query-step tap with a negative Y was sent.'
+    $script:auditQueryTaps = 0
+    # A Comment node under the tap passes the navigation check, so only the keyboard guard is left to refuse it.
+    $script:uiDump = New-QueryDump ($queryField + "<node package=`"$Package`" class=`"android.view.View`" content-desc=`"Comment`" bounds=`"[400,60][620,180]`" clickable=`"true`" />")
+    $inputQuery = $false
+    Assert-Throws { Invoke-Adb shell input tap 510 120 } 'The search field got a tap across the open keyboard outside the query step.'
+    $inputQuery = $true
+    $script:uiDump = New-QueryDump $queryField
+    Assert-Throws { Invoke-Adb shell input swipe 10 20 10 5 } 'The query step sent a swipe across the open keyboard.'
+    $script:imeState = '  mInputShown=false'
+    Assert-Throws { Invoke-Adb shell input tap 510 120 } 'The search field got a tap with no keyboard open.'
+    $script:imeState = "  mShowRequested=true`n  mInputShown=true"
+    Assert-That (-not @($script:adbCalls | Where-Object { $_ -like '* input *' }).Count) 'Input escaped the query step guard.'
+    $script:uiDump = $dumpBeforeQueryTap
     $script:imeState = '  mInputShown=false'
     $script:adbCalls.Clear()
     Assert-Throws { Invoke-Adb shell input text news } 'The query was typed with no keyboard open.'

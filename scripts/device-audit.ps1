@@ -251,7 +251,18 @@ function Invoke-Adb {
                 if ($fresh.Count -eq 0) { throw 'No fresh Facebook UI nodes. No input was sent.' }
             }
             $nodeWindow = $script:auditWindowIdentity
-            if ($arguments[2] -eq 'tap') {
+            $queryTap = $inputQuery -and $arguments[2] -eq 'tap'
+            if ($queryTap) {
+                # One tap per query step, and only inside the one search field holding the query.
+                if ($script:auditQueryTaps -ge 1) { throw 'The search field already got its tap. No tap was sent.' }
+                $field = Select-AuditQueryField $fresh
+                if ($arguments.Count -ne 5 -or $arguments[3] -notmatch '^\d+$' -or $arguments[4] -notmatch '^\d+$' -or
+                        $null -eq $field -or $field.bounds -notmatch '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$' -or
+                        [int]$arguments[3] -lt [int]$Matches[1] -or [int]$arguments[3] -ge [int]$Matches[3] -or
+                        [int]$arguments[4] -lt [int]$Matches[2] -or [int]$arguments[4] -ge [int]$Matches[4]) {
+                    throw 'The tap is not inside the one search field holding the query. No tap was sent.'
+                }
+            } elseif ($arguments[2] -eq 'tap') {
                 if ($inputNodeLabel -cnotin @('Comment', 'Settings and privacy', 'Feeds')) {
                     throw 'No permitted navigation node was selected. No tap was sent.'
                 }
@@ -267,7 +278,8 @@ function Invoke-Adb {
             # in Facebook search on the S22, 2026-10-18), and the query needs the field focused.
             $keyboard = $arguments[2] -ne 'keyevent' -and (Test-AuditKeyboard)
             if ($typing -and $arguments[2] -eq 'text' -and -not $keyboard) { throw 'No keyboard is open for the query. Nothing was typed.' }
-            if (-not $typing -and $keyboard) { throw 'The keyboard is open. No swipe or tap was sent.' }
+            if (-not $typing -and -not $queryTap -and $keyboard) { throw 'The keyboard is open. No swipe or tap was sent.' }
+            if ($queryTap -and -not $keyboard) { throw 'No keyboard is open for the search field tap. No tap was sent.' }
             # A dump can take seconds. An overlay may have taken input while it was running.
             Assert-AuditForeground
             if ($nodeWindow -cne $script:auditWindowIdentity) {
@@ -276,6 +288,7 @@ function Invoke-Adb {
             if ($inputWindow -and $inputWindow -cne $script:auditWindowIdentity) {
                 throw 'The verified destination window changed. No input was sent.'
             }
+            if ($queryTap) { $script:auditQueryTaps++ }
         }
     }
     $preference = $ErrorActionPreference
@@ -523,6 +536,16 @@ function Select-AuditTapNode([string]$Label, [object[]]$Nodes, [string[]]$Repeat
                 [int]$Matches[3] -gt $outer[2] -or [int]$Matches[4] -gt $outer[3]) { return $null }
     }
     return $rows[0]
+}
+
+# The search field once the query is typed: Facebook's one EditText on screen, holding exactly the
+# query. A typeahead row repeating the query, a second field or other text is no target.
+function Select-AuditQueryField([object[]]$Nodes) {
+    $fields = @($Nodes | Where-Object { $_.package -ceq $Package -and $_.class -ceq 'android.widget.EditText' })
+    if ($fields.Count -ne 1 -or $fields[0].text -cne $AuditQuery -or
+            $fields[0].bounds -notmatch '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$' -or
+            [int]$Matches[3] -le [int]$Matches[1] -or [int]$Matches[4] -le [int]$Matches[2]) { return $null }
+    return $fields[0]
 }
 
 function Find-AuditTapNode([string]$Label) {
@@ -1150,9 +1173,29 @@ try {
                 }
                 $inputWindow = $routeWindow
                 $inputQuery = $true
+                $script:auditQueryTaps = 0
                 try {
                     Invoke-Adb shell input text $AuditQuery | Out-Null
                     Start-Sleep -Seconds 2
+                    # Enter straight after typing went to the first typeahead row about 2 times in 10
+                    # (emulator-5590, 0.21.0) and searched nothing. A tap in the field first, then
+                    # Enter, submitted every time.
+                    $field = Select-AuditQueryField @(Get-UiNodes)
+                    if ($field -and $field.bounds -match '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$' -and
+                            [int]$Matches[1] -ge 0 -and [int]$Matches[2] -ge 0 -and [int]$Matches[3] -le $width -and [int]$Matches[4] -le $height) {
+                        $fieldX = [int](([int]$Matches[1] + [int]$Matches[3]) / 2)
+                        $fieldY = [int](([int]$Matches[2] + [int]$Matches[4]) / 2)
+                        # The field can change before Invoke-Adb's own dump. A refused tap leaves Enter,
+                        # which checks the screen again before it goes.
+                        try {
+                            Invoke-Adb shell input tap $fieldX $fieldY | Out-Null
+                            Start-Sleep -Milliseconds 800
+                        } catch {
+                            $summary.Add("Walk: the search field tap at step $stepNumber was refused ($($_.Exception.Message)). Enter sent without it.")
+                        }
+                    } else {
+                        $summary.Add("Walk: no single search field held the query at step $stepNumber. Enter sent without the tap.")
+                    }
                     Invoke-Adb shell input keyevent KEYCODE_ENTER | Out-Null
                 } finally { $inputWindow = $null; $inputQuery = $false }
                 $routeStep = $null

@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Fixed
 
 * With `Double tap to zoom` on, a fast scroll on a profile or Page stops as soon as your finger lands on it. It used to slide on for a moment whenever that finger landed on a photo or video, since the first tap waited to see if a second one was coming.
+* **Tooling:** The device walk taps the search field before it presses Enter. About 2 times in 10, Enter right after typing the search word went to the first suggestion under the field and searched nothing. The tap only goes to the one search field holding that word, once per search, and is refused anywhere else. Checked in the audit's tests.
 
 ## 0.21.0 (2026-11-05)
 
