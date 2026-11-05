@@ -33,17 +33,16 @@ pluginManagement {
     }
 }
 
-// app.morphe:morphe-patches-gradle-plugin 1.3.4 brings kotlin-gradle-plugin 2.4.10 as a
-// runtimeElements dependency, and 2.4.10 is inside CVE-2026-53914 (GHSA-r937-wjx7-w2jp), a
-// deserialisation flaw in the Kotlin build cache. 2.4.20 is the first release outside it.
-// Nothing in this tree requests a Kotlin plugin by id, so pluginManagement's eachPlugin has
-// nothing to rewrite: the version has to be forced on the settings classpath itself. Take this
-// out when the plugin moves past 2.4.20 on its own; gradle/verification-metadata.xml is what
-// says which version actually resolved. It does not reach :patches:patcherProvidedClasspath,
-// where the patcher's own kotlin-stdlib and kotlin-reflect stay at 2.4.10.
+// app.morphe:morphe-patches-gradle-plugin 2.1.0 brings kotlin-gradle-plugin 2.4.21.
+// CVE-2026-53914 (GHSA-r937-wjx7-w2jp), a deserialisation flaw in the Kotlin build cache, covers
+// every release before 2.4.20, so Kotlin needs no force here any more;
+// gradle/verification-metadata.xml says which version actually resolved. kotlin-stdlib and
+// kotlin-reflect on this classpath still resolve to 2.4.10, the copies Gradle 9.8.2 ships and
+// pins; they aren't the build cache code.
 //
 // The same classpath brings Bouncy Castle 1.79, the version AGP's apkzlib, builder and
-// sdk-common ask for, and 1.79 is inside six of the advisories gradle/libs.versions.toml lists.
+// sdk-common ask for (the plugin itself asks for 1.77), and 1.79 is inside six of the
+// advisories gradle/libs.versions.toml lists.
 // :patches and :extensions:facebook each force their own graphs to
 // the reviewed release, but neither reaches this one: a force on a project configuration cannot
 // touch the classpath the plugins themselves resolve on, and that classpath is where the
@@ -53,9 +52,6 @@ pluginManagement {
 buildscript {
     configurations.all {
         resolutionStrategy.eachDependency {
-            if (requested.group == "org.jetbrains.kotlin") {
-                useVersion("2.4.21")
-            }
             if (requested.group == "org.bouncycastle") {
                 useVersion("1.86")
             }
@@ -75,7 +71,7 @@ val allowMavenLocal = providers.gradleProperty("allowMavenLocal")
     .getOrElse(false)
 
 plugins {
-    id("app.morphe.patches") version "1.3.4"
+    id("app.morphe.patches") version "2.1.0"
 }
 
 // The plugin is resolved here, before any project's build script. A project buildEnvironment

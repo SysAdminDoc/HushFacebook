@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Changed
 
 * You need Morphe Manager 2.4.0 or newer now. The patches are built on Morphe patcher 2.2.0, the one Manager 2.4.0 ships with, and older Managers refuse a bundle built on it, so update Manager before you patch. On a computer, use morphe-desktop 2.0.0 or newer.
+* **Tooling:** The build runs on Morphe's patches Gradle plugin 2.1.0. It brings the Kotlin Gradle plugin 2.4.21 itself, so the build stopped forcing that version over the 2.4.10 the old plugin asked for.
 
 ### Fixed
 
