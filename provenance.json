@@ -831,6 +831,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/suggested/FeedEndHint.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: the bottom of Home. In Facebook 585 Home's list ends with an empty component whose visibility handlers call one static method of its class with a visible flag, and that method opens a trace named InterruptionStateManager.onEndOfFeedUnitVisible. The patch finds the one static method holding that trace whose last parameter is a boolean and hands the flag to the extension first thing, so it can say Hush hid the suggestions after the last post it kept."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/suggested/GroupJoinState.kt"
       ],
       "origin": "original",

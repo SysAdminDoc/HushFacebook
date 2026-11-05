@@ -591,16 +591,21 @@ public final class FeedFilter {
             // a boosted page post the link opens as a sponsored edge, so holding ads back hid the
             // linked post and spent the link on the suggested post after it.
             if (LinkedPost.isPost(feedUnit) && LinkedPost.takeFirst()) {
+                FeedEndHint.kept();
                 if (reason == null) return false;
                 FeedFilterCounters.sawKind(FEED_ROUTE, LinkedPost.KEPT_KIND);
                 final String setAside = reason;
                 Logger.printDebug(() -> "Feed filter: kept the post a link opened (" + setAside + ")");
                 return false;
             }
-            if (reason == null) return false;
+            if (reason == null) {
+                FeedEndHint.kept();
+                return false;
+            }
 
             FeedFilterCounters.removed(FEED_ROUTE, 1, reason);
             HiddenTally.hid(kind);
+            FeedEndHint.hid(kind);
             // A page this empties can leave Home's scroll fetcher at the end of its list with no
             // reason to ask again, so TailFetch asks for it from now on.
             TailFetch.hidEdge();

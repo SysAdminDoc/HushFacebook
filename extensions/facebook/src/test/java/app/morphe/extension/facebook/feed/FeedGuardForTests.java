@@ -4,11 +4,16 @@
  */
 package app.morphe.extension.facebook.feed;
 
+import android.os.Looper;
+
 import com.facebook.graphql.model.GraphQLMedia;
 import com.facebook.graphql.model.GraphQLStory;
 import com.facebook.graphql.model.GraphQLStoryAttachment;
 import com.facebook.graphql.modelutil.BaseModelWithTree;
 import com.facebook.graphservice.tree.TreeJNI;
+
+import org.robolectric.Shadows;
+import org.robolectric.shadows.ShadowToast;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,6 +67,23 @@ public final class FeedGuardForTests {
 
     public static boolean hides(Object category, Object feedUnit) {
         return FeedFilter.hideEdge(category, feedUnit, true, true);
+    }
+
+    /**
+     * Whether the bottom of Home says why it ends after the feed guard hid enough suggestions in a
+     * row. Starts from a fresh start and leaves one behind.
+     */
+    public static boolean endOfHomeSaysWhy() {
+        FeedEndHint.resetForTests();
+        ShadowToast.reset();
+        try {
+            for (int i = 0; i < FeedEndHint.SHOWN_AFTER; i++) FeedEndHint.hid(HiddenTally.Kind.SUGGESTED);
+            FeedEndHint.endVisible(true);
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            return ShadowToast.getTextOfLatestToast() != null;
+        } finally {
+            FeedEndHint.resetForTests();
+        }
     }
 
     /** The swap guard with both feed patches in: whether an edge swapped in over another stays out. */

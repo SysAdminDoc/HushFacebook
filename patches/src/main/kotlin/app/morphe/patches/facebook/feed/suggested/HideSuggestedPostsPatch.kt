@@ -196,6 +196,12 @@ val hideSuggestedPostsPatch = bytecodePatch(
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so the end of the feed keeps its Find friends card.")
         }
+        // Past friends' posts Home is all suggestions, so with those hidden it looks stuck (#258).
+        try {
+            hookFeedEndHint()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so Home ends without saying Hush hid the suggestions after it.")
+        }
         // The Groups tab's feed never reaches the edge filter, so its suggested groups card goes at the card's layout (#347).
         try {
             hookSuggestedGroupsCard()

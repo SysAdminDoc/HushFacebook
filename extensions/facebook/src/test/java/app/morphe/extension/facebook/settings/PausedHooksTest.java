@@ -429,6 +429,8 @@ public class PausedHooksTest {
                 () -> !NotificationFooter.show(true),
                 // The end of the feed is built without its Find friends card.
                 () -> FindFriendsCard.unit("card") == null,
+                // The bottom of Home says Hush hid the suggestions after it.
+                FeedGuardForTests::endOfHomeSaysWhy,
                 // The Groups tab's suggested groups card lays out as nothing.
                 SuggestedGroupsCard::hide,
                 // The search screen draws its For you section as an empty row.
