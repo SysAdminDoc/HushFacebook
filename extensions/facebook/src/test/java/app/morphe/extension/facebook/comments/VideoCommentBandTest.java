@@ -26,8 +26,8 @@ import app.morphe.extension.shared.settings.SettingReadsForTests;
 
 /**
  * The Shorts viewer a feed video opens in (#375): with Hide the video comment box on, the comment
- * bar its root renders is dropped, and only after that drop does the seek bar go down to the bottom,
- * counted. Its list sizes the videos before any root has picked a bar, so with the switch on a video
+ * bar its root renders is dropped, and only after a pick that came back with no bar does the seek bar
+ * go down to the bottom, counted. Its list sizes the videos before any root has picked a bar, so with the switch on a video
  * keeps its full height, counted, unless its viewer's root kept a bar, the reply bar under a reel
  * shared in a chat say, which keeps the band for that viewer alone. Off by default, under no other
  * switch, and Facebook's when paused, before the settings are ready, or when the switch can't be read.
@@ -120,17 +120,24 @@ public class VideoCommentBandTest {
         CommentSheetOptions.keptShortsBar(BAR, viewer);
         assertEquals("the seek bar went under another bar", BAND, seekBar());
         assertEquals("another bar lost its band", BAND, video(viewer));
-        // So does a pick of no bar at all, where the band was never Facebook's to keep.
+        // A pick of no bar at all gives the video its full height too, so the seek bar goes down with
+        // it instead of staying where the caption now ends (the feed reel scroller's overlap).
         CommentSheetOptions.pickingShortsBar();
         CommentSheetOptions.keptShortsBar(null, viewer);
-        assertEquals("a pick of no bar moved the seek bar", BAND, seekBar());
+        assertEquals("a pick of no bar left the seek bar over the caption",
+                CommentSheetOptions.NO_BAR_SEEK_BAR_DP, seekBar());
         assertEquals("a pick of no bar kept the video's band", 0, video(viewer));
+        CommentSheetOptions.pickingShortsBar();
+        assertEquals("the next render started with the seek bar down", BAND, seekBar());
 
         assertTrue(render(viewer));
         assertEquals(CommentSheetOptions.NO_BAR_SEEK_BAR_DP, seekBar());
         Settings.HIDE_VIDEO_COMMENT_COMPOSER.save(false);
         assertEquals("turning the switch off didn't give the band back", BAND, video(viewer));
         assertEquals("turning the switch off left the seek bar down", BAND, seekBar());
+        CommentSheetOptions.pickingShortsBar();
+        CommentSheetOptions.keptShortsBar(null, viewer);
+        assertEquals("a pick of no bar with the switch off moved the seek bar", BAND, seekBar());
     }
 
     /**

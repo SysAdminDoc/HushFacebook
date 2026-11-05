@@ -53,10 +53,14 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  *
  * The root places the seek bar from the band height (`LX/0BX4;->A00`, the static that adds 44 dp,
  * read twice in its `render`, handed the viewer's config `LX/0DhY;`), not from the video, so it
- * stayed over the caption once the video grew. Each read goes through the extension, and once this
- * render dropped the bar it answers 3 dp, what the root uses where the viewer has no bar. Right after
+ * stayed over the caption once the video grew. Each read goes through the extension. Right after
  * the pick the extension also gets the bar the root got back and that config, which the root loads
- * once on every path before the pick, and a bar it didn't drop marks the config.
+ * once on every path before the pick, and a bar it didn't drop marks the config. A pick that came back
+ * with no bar while the switch is on, dropped or none to begin with (the pick has five other returns,
+ * two of them null), makes both reads in that render answer 3 dp, what the root uses where the viewer
+ * has no bar, since the list gives that video its full height either way. Answering 3 dp only after
+ * a drop left the seek bar under the caption in the feed reel scroller (VideoHomeRootFragment in
+ * FbMainTabActivity, opened from a feed post's Reel button) on 2026-11-04.
  *
  * The videos' height comes from the viewer's list root (`LX/0BXZ;->BJw`, which logs
  * onRenderVideoHomeRootComponent), the one caller of the kept Kotlin function [VDD_SLOT_HEIGHT],
