@@ -125,7 +125,10 @@ public final class FullPostText {
     public static boolean allowTruncation(boolean allow) {
         try {
             HookStatus.bound(FAMILY, FIRST_STATE);
-            return allow && !on();
+            if (!allow || !on()) return allow;
+            // A post that starts whole never reaches the cutter, so this is where the switch shows it ran.
+            HookStatus.invoked(FAMILY);
+            return false;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, FIRST_STATE, failure);
             return allow;
@@ -141,6 +144,7 @@ public final class FullPostText {
         try {
             HookStatus.bound(FAMILY, REEL_CAPTION);
             if (expanded || !on()) return expanded;
+            HookStatus.invoked(FAMILY);
             HookStatus.counted(FAMILY, REEL_CAPTION_WHOLE);
             if (!reelLogged) {
                 reelLogged = true;

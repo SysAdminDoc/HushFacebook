@@ -123,10 +123,8 @@
     "Open comments with a gesture",
     "Open Messenger from the top bar",
     "Open on a chosen tab",
-    "Photo carousel",
     "Picture-in-picture",
     "Post action buttons",
-    "Remove the gap above Marketplace listings",
     "Restore screens on re-signed builds",
     "Resume long videos",
     "Round stories tray",
@@ -135,7 +133,6 @@
     "Skip silent parts",
     "Tab bar at the bottom",
     "Tap to play",
-    "Translate posts",
     "Turn off auto-translation",
     "Turn off haptics",
     "Turn off HDR brightness",
@@ -189,7 +186,6 @@
     "Photo carousel",
     "Pinch to zoom",
     "Remove the gap above Marketplace listings",
-    "Show full post text",
     "Translate posts"
   ]
 }

@@ -99,6 +99,8 @@ public class FullPostTextTest {
         Settings.SHOW_FULL_POST_TEXT.save(true);
         assertFalse("a post still starts cut", FullPostText.allowTruncation(true));
         assertFalse(FullPostText.allowTruncation(false));
+        // A post that starts whole never reaches the cutter, so its first state is what counts the run.
+        assertEquals(FamilyNames.FULL_POST_TEXT + ": invoked 1, 1 found, 0 missing", statusLine());
     }
 
     @Test
@@ -111,7 +113,7 @@ public class FullPostTextTest {
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertFalse("a paused Hushfacebook still started a reel caption whole", FullPostText.reelCaptionExpanded(false));
         PauseForTests.resume();
-        assertEquals(FamilyNames.FULL_POST_TEXT + ": invoked 0, 1 found, 0 missing. Counted: "
+        assertEquals(FamilyNames.FULL_POST_TEXT + ": invoked 1, 1 found, 0 missing. Counted: "
                 + FullPostText.REEL_CAPTION_WHOLE + " 1", statusLine());
     }
 
