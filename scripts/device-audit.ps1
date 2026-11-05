@@ -492,11 +492,25 @@ function Open-AuditRoute([string]$Route, [bool]$Reel) {
 # The one node a "tap:<label>" step may tap, or $null. A row can repeat its label on a child that
 # isn't clickable (the menu's Settings and privacy row on the S22), so several matches still
 # name one target when exactly one is clickable and every other match sits inside it.
-function Select-AuditTapNode([string]$Label, [object[]]$Nodes) {
+# Comment sits under every post, so two short posts put two on one screen, and any of them opens a
+# comment sheet: the topmost clickable one a tap may reach is taken. Every other label must name
+# one target.
+function Select-AuditTapNode([string]$Label, [object[]]$Nodes, [string[]]$Repeated = @('Comment')) {
     $boundsPattern = '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$'
     $found = @($Nodes | Where-Object { $_.text -ceq $Label -or $_.'content-desc' -ceq $Label } |
         Where-Object { $_.package -ceq $Package -and $_.bounds -match $boundsPattern })
     if ($found.Count -eq 1) { return $found[0] }
+    if ($found.Count -gt 1 -and $Repeated -ccontains $Label) {
+        $reachable = @($found | Where-Object { $_.clickable -ceq 'true' } | ForEach-Object {
+            $null = $_.bounds -match $boundsPattern
+            $box = @([int]$Matches[1], [int]$Matches[2], [int]$Matches[3], [int]$Matches[4])
+            if ($box[2] -gt $box[0] -and $box[3] -gt $box[1] -and [int](($box[1] + $box[3]) / 2) -ge $MinimumTapY) {
+                [pscustomobject]@{ Node = $_; Top = $box[1] }
+            }
+        })
+        if ($reachable.Count -eq 0) { return $null }
+        return @($reachable | Sort-Object Top)[0].Node
+    }
     $rows = @($found | Where-Object { $_.clickable -ceq 'true' })
     if ($found.Count -lt 2 -or $rows.Count -ne 1) { return $null }
     $null = $rows[0].bounds -match $boundsPattern
@@ -851,12 +865,29 @@ function Get-SettingsPages {
     return @('') + @($pages) + @('support')
 }
 
+# The Hush settings screen by its own words. The Hushfacebook name scrolls away with the header, so
+# a page opened at its section, or scrolled to the bottom, shows only the fixed toolbar's list
+# toggle, under either of its labels and in the page's language.
+function Test-SettingsScreen([string[]]$Text, [object]$Rows) {
+    foreach ($label in @('Hushfacebook', 'Show all settings as a list', 'Show settings by category')) {
+        $words = $label
+        if ($Rows -is [Collections.IDictionary] -and $Rows.Contains($label) -and -not [string]::IsNullOrEmpty([string]$Rows[$label])) {
+            $words = [string]$Rows[$label]
+        }
+        if ($Text -ccontains $words) { return $true }
+    }
+    return $false
+}
+
+# Back until no Hush settings screen is left. Back first takes a page back from its section jump,
+# then closes the screen.
 function Close-Settings {
-    for ($i = 0; $i -lt 3; $i++) {
-        $text = Get-ScreenText
+    for ($i = 0; $i -lt 4; $i++) {
+        $text = @(Get-ScreenText)
         $record = ((Invoke-Adb shell "cat $AuditDir/page.json 2>/dev/null; true") -join "`n").Trim()
         $shown = if ($record) { $record | ConvertFrom-Json } else { $null }
-        if (-not ($text -contains 'Hushfacebook' -or $text -contains 'Search settings' -or
+        $table = if ($shown) { Get-AuditLocaleTable ([string]$shown.locale) $shown.localeTags } else { $null }
+        if (-not ((Test-SettingsScreen $text $(if ($table) { $table.Rows } else { $null })) -or $text -contains 'Search settings' -or
                 ($shown -and $shown.schema -in @(2, 3) -and $text -contains $shown.title))) { return }
         Invoke-Adb shell input keyevent KEYCODE_BACK | Out-Null
         Start-Sleep -Milliseconds 900
@@ -957,7 +988,7 @@ function Save-SettingsPages([string]$Pass, [string]$RequestedLocale = '') {
             }
         }
         $opened = (Test-AuditSectionShown $shown $page) -and $localeMatches -and
-            $allText.Contains('Hushfacebook') -and $allText.Contains($shown.title)
+            (Test-SettingsScreen @($allText) $(if ($table) { $table.Rows } else { $null })) -and $allText.Contains($shown.title)
         $results.Add([pscustomobject]@{ Page = $(if ($page) { $page } else { 'Home' }); Name = $name; Shots = $shots
             Opened = $opened; Locale = $shown.locale; TextLocale = $(if ($table) { $table.Tag } else { $null })
             ExpandedSections = $shown.expandedSections; SectionRows = $shown.sectionRows; TargetExpanded = $shown.targetExpanded })
