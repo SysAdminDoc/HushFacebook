@@ -194,6 +194,17 @@ public final class PinchZoom {
     private static boolean replaying;
     private static final Handler later = new Handler(Looper.getMainLooper());
     private static final Runnable replayLater = PinchZoom::replayHeld;
+    /**
+     * A finger landing this soon after a list in the window last scrolled is stopping a fling, so it
+     * goes to Facebook at once. Held, the list slid on under it for the double tap time.
+     */
+    static final long STOPS_A_FLING_MS = 150;
+    /** When a view in a watched window last scrolled, in uptime millis. */
+    private static long scrolledAt = Long.MIN_VALUE / 2;
+    private static final ViewTreeObserver.OnScrollChangedListener scrolled =
+            () -> scrolledAt = SystemClock.uptimeMillis();
+    /** The windows whose scrolling [scrolled] hears, so each gets the listener once. */
+    private static final Map<ViewTreeObserver, Boolean> watched = new WeakHashMap<>();
 
     private PinchZoom() {
     }
@@ -412,7 +423,11 @@ public final class PinchZoom {
         if (!doubleTapOn() || storyViewer(activity)) return false;
         Window window = activity.getWindow();
         View root = window == null ? null : window.getDecorView();
-        if (!(root instanceof ViewGroup) || places.target(activity, root, event.getX(), event.getY()) == null) return false;
+        if (!(root instanceof ViewGroup)) return false;
+        watchScrolling(root);
+        // Android's own lists take a finger on a moving list as a stop, never a tap.
+        if (event.getEventTime() - scrolledAt <= STOPS_A_FLING_MS) return false;
+        if (places.target(activity, root, event.getX(), event.getY()) == null) return false;
         HookStatus.invoked(FAMILY);
         held.add(MotionEvent.obtain(event));
         heldFrom = new WeakReference<>(activity);
@@ -421,6 +436,17 @@ public final class PinchZoom {
         // Still down after the double tap time, it's no tap: Facebook gets it, and its hold opens a menu.
         later.postDelayed(replayLater, ViewConfiguration.getDoubleTapTimeout());
         return true;
+    }
+
+    /**
+     * [root]'s window notes when anything in it scrolls. A list scrolling marks the window each frame
+     * it moves, a fling's every frame included, and the window tells its scroll listeners as it draws.
+     */
+    private static void watchScrolling(View root) {
+        ViewTreeObserver observer = root.getViewTreeObserver();
+        if (!observer.isAlive() || watched.containsKey(observer)) return;
+        observer.addOnScrollChangedListener(scrolled);
+        watched.put(observer, Boolean.TRUE);
     }
 
     /** True when [event], a finger landing, is close enough in time and place to the held tap to be its second. */
@@ -894,6 +920,11 @@ public final class PinchZoom {
         forgetTaps();
         replaying = false;
         profiles.clear();
+        for (ViewTreeObserver observer : watched.keySet()) {
+            if (observer.isAlive()) observer.removeOnScrollChangedListener(scrolled);
+        }
+        watched.clear();
+        scrolledAt = Long.MIN_VALUE / 2;
         snapshots = PinchZoom::snapshot;
         places = PinchZoom::mediaUnder;
         frames = PinchZoom::frame;

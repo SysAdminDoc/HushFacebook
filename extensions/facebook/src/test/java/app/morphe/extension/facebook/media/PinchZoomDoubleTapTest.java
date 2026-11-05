@@ -16,6 +16,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -30,6 +31,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.util.ReflectionHelpers;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -46,7 +48,7 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * Double tap to zoom (#220): two quick taps on a profile photo zoom it to twice its size about the
  * tap, and a second double tap puts it back. A profile's photos open on a tap, so the first tap is
  * held from Facebook until the double tap time runs out, then reaches it as it came. A drag, a second
- * finger or a hold goes on to Facebook at once. The story viewer, the switch off and Hushfacebook
+ * finger or a hold goes on to Facebook at once, and so does a finger stopping a fling. The story viewer, the switch off and Hushfacebook
  * paused leave every tap to Facebook untouched.
  */
 @RunWith(RobolectricTestRunner.class)
@@ -200,6 +202,50 @@ public class PinchZoomDoubleTapTest {
         waitPastDoubleTap();
         assertEquals(4, activity.received.size());
         assertNull(PinchZoom.zoom());
+    }
+
+    /** A flick down the profile from its photo, which Facebook gets once it drags. */
+    private void fling() {
+        long now = SystemClock.uptimeMillis();
+        send(activity, MotionEvent.ACTION_DOWN, now, now, 250, 300);
+        send(activity, MotionEvent.ACTION_MOVE, now, now + 20, 250, 700);
+        send(activity, MotionEvent.ACTION_UP, now, now + 40, 250, 900);
+        activity.received.clear();
+    }
+
+    /** The profile's list moves a frame, as a list marks its window each frame of a fling. */
+    private void listScrolls() {
+        ReflectionHelpers.callInstanceMethod(activity.getWindow().getDecorView().getViewTreeObserver(),
+                "dispatchOnScrollChanged");
+    }
+
+    @Test
+    public void aFingerStoppingAFlingGoesToFacebookAtOnce() {
+        fling();
+        listScrolls();
+        long landsAt = SystemClock.uptimeMillis() + 16;
+        send(activity, MotionEvent.ACTION_DOWN, landsAt, landsAt, 250, 300);
+        assertEquals("a finger stopping a fling was held, so the profile slid on under it",
+                actions(MotionEvent.ACTION_DOWN), activity.received);
+        send(activity, MotionEvent.ACTION_UP, landsAt, landsAt + 50, 250, 300);
+        assertEquals(actions(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP), activity.received);
+        waitPastDoubleTap();
+        assertEquals("the stop reached Facebook twice", 2, activity.received.size());
+        assertNull(PinchZoom.zoom());
+    }
+
+    @Test
+    public void aDoubleTapStillZoomsOnceTheProfileStops() {
+        fling();
+        listScrolls();
+        waitPastDoubleTap();
+        long now = SystemClock.uptimeMillis();
+        tap(now, 250, 300);
+        assertTrue("a tap on a settled profile wasn't held", activity.received.isEmpty());
+        tap(now + 150, 255, 305);
+        assertNotNull("a double tap after the profile stopped didn't zoom", PinchZoom.zoom());
+        waitPastDoubleTap();
+        assertTrue(activity.received.isEmpty());
     }
 
     @Test

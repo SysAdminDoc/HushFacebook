@@ -2,6 +2,12 @@
 
 Changes in each Hushfacebook version, newest first.
 
+## Unreleased
+
+### Fixed
+
+* With `Double tap to zoom` on, a fast scroll on a profile or Page stops as soon as your finger lands on it. It used to slide on for a moment whenever that finger landed on a photo or video, since the first tap waited to see if a second one was coming.
+
 ## 0.21.0 (2026-11-05)
 
 * This one stays on Facebook 585.0.0.47.54 and Morphe Manager 2.3.0 or newer, so just update the patches and repatch. The Hush settings got a new look with a `Switches that are on` list and a Custom accent color, and they come in Russian now. New switches put a post's photos in a carousel, turn Reels gray, start a break after 20 reels, translate or hide posts in other languages, and add a seek bar and a full player button to feed videos. Stories can get a play button and a progress bar along the bottom. There are plenty of fixes too, like comments that stopped loading after the first ten and Back from a post jumping the feed to the top.
