@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* New `Dim around a zoom` under `Pinch to zoom`. Turn it off and the rest of the screen stays as it is while you zoom into a photo or story, instead of going dark behind it. It's on by default, so zooms look the same as before until you change it. (#220)
 * New `Search photo in post menus`, right under `Save photo in post menus`. A post with one photo gets Search photo in its three-dot menu, and a tap hands that photo to the app you pick, like Google Lens, so you can find out what's in it or copy the text out of it. The photo comes from Facebook's servers at the biggest size the post has, and only the app you pick can read it. It's off by default and needs `Save any photo` on. (#245, #248)
 * `Rounded tab bar` now puts a soft blue spot behind the tab you're on, a smaller pill inside the bar's own, so it's easier to see where you are. It moves with you when you switch tabs, Facebook's own press ripple still shows, and it goes away with the switch. (#383)
 * With `Default comment order` on All comments, a post whose comments open in Most relevant and get switched over no longer stops after the first ten or so with a spinner under them. The switch happened while Facebook was still loading the first batch, and that left the next page loading forever until you closed the comments and opened them again. It now waits a second for that first batch, the way a tap of your own would. (#384)

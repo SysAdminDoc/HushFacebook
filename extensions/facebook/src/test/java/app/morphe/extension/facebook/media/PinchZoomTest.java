@@ -126,6 +126,7 @@ public class PinchZoomTest {
         PinchZoom.resetForTests();
         Settings.PINCH_TO_ZOOM.resetToDefault();
         Settings.PINCH_TO_ZOOM_KEEP.resetToDefault();
+        Settings.PINCH_TO_ZOOM_DIM.resetToDefault();
         Settings.LONG_PRESS_OPENS_COMMENTS.resetToDefault();
         HookStatus.clear();
     }
@@ -326,6 +327,38 @@ public class PinchZoomTest {
         // The next tap is Facebook's.
         assertEquals(MotionEvent.ACTION_DOWN, touch(event(MotionEvent.ACTION_DOWN, new float[][] {{250, 300}})));
         assertEquals(MotionEvent.ACTION_UP, touch(event(MotionEvent.ACTION_UP, new float[][] {{250, 300}})));
+    }
+
+    @Test
+    public void dimAroundAZoomStartsOn() {
+        assertTrue(Settings.PINCH_TO_ZOOM_DIM.defaultValue);
+    }
+
+    @Test
+    public void withDimAroundAZoomOffTheWindowBehindStaysAsItIs() {
+        Settings.PINCH_TO_ZOOM_DIM.save(false);
+        touch(event(MotionEvent.ACTION_DOWN, new float[][] {{250, 300}}));
+        touch(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{250, 300}, {350, 300}}));
+        PinchZoom.Zoom zoom = PinchZoom.zoom();
+        assertNotNull("no zoom started", zoom);
+        assertTrue("the copy isn't over the window", zoom.shown());
+
+        touch(event(MotionEvent.ACTION_MOVE, new float[][] {{0, 300}, {700, 300}}));
+        assertEquals("the zoom didn't grow", PinchZoom.MOST, zoom.copy.getScaleX(), 0.01f);
+        assertEquals("the window behind darkened", 0f, zoom.scrim.getAlpha(), 0.001f);
+
+        // Back on, the next zoom darkens again.
+        touch(event(pointer(MotionEvent.ACTION_POINTER_UP, 1), new float[][] {{0, 300}, {700, 300}}));
+        touch(event(MotionEvent.ACTION_UP, new float[][] {{0, 300}}));
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertNull(PinchZoom.zoom());
+        Settings.PINCH_TO_ZOOM_DIM.save(true);
+        touch(event(MotionEvent.ACTION_DOWN, new float[][] {{250, 300}}));
+        touch(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{250, 300}, {350, 300}}));
+        touch(event(MotionEvent.ACTION_MOVE, new float[][] {{0, 300}, {700, 300}}));
+        PinchZoom.Zoom next = PinchZoom.zoom();
+        assertNotNull("no second zoom started", next);
+        assertEquals("the window behind didn't darken", PinchZoom.SCRIM, next.scrim.getAlpha(), 0.001f);
     }
 
     @Test

@@ -1750,6 +1750,10 @@ With Pinch to zoom on, the photo or story stays zoomed when you let go, and a st
 Double tap to zoom	Doppeltippen zum Zoomen
 # context: summary of that switch; "Pinch to zoom" is the label of the switch two rows above it, so use its translation; a story is the full-screen picture or video someone shares for a day
 With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. A single tap still opens the photo, a moment later.	Wenn „Zum Zoomen auseinanderziehen“ an ist, zoomst du mit zweimaligem Antippen eines Fotos auf einem Profil dort hinein, wo du getippt hast, und mit nochmaligem Doppeltippen wieder heraus. Einmal antippen öffnet das Foto weiterhin, nur einen Moment später.
+# context: a switch under Pinch to zoom; with it on, the rest of the screen gets darker behind a zoomed photo or story
+Dim around a zoom	Um den Zoom abdunkeln
+# context: that switch's summary; "Pinch to zoom" is the label of the switch above it, so use its translation; a story is the full-screen picture or video someone shares for a day
+With Pinch to zoom on, the screen around a photo or story darkens as you zoom in. Turn it off to keep the rest of the screen as it is.	Wenn „Zum Zoomen auseinanderziehen“ an ist, wird der Bildschirm um ein Foto oder eine Story dunkler, während du hineinzoomst. Schalte es aus, damit der Rest des Bildschirms bleibt, wie er ist.
 No ads downloaded in advance	Keine im Voraus geladenen Anzeigen
 No ad tracking	Kein Anzeigen-Tracking
 No Facebook ads in other apps	Keine Facebook-Anzeigen in anderen Apps

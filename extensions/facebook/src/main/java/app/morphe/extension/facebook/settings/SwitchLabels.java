@@ -107,6 +107,7 @@ final class SwitchLabels {
         if (setting == Settings.PINCH_TO_ZOOM) return L10n.t("Pinch to zoom");
         if (setting == Settings.PINCH_TO_ZOOM_KEEP) return L10n.t("Stay zoomed");
         if (setting == Settings.PINCH_TO_ZOOM_DOUBLE_TAP) return L10n.t("Double tap to zoom");
+        if (setting == Settings.PINCH_TO_ZOOM_DIM) return L10n.t("Dim around a zoom");
         if (setting == Settings.DOWNLOAD_STORIES) return L10n.t("Save any story");
         if (setting == Settings.SAVE_STORY_PHOTOS) return L10n.t("Save photo on more stories");
         if (setting == Settings.DEFAULT_COMMENT_ORDER) return L10n.t("Default comment order");

@@ -1750,6 +1750,10 @@ With Pinch to zoom on, the photo or story stays zoomed when you let go, and a st
 Double tap to zoom	Nhấn đúp để thu phóng
 # context: summary of that switch; "Pinch to zoom" is the label of the switch two rows above it, so use its translation; a story is the full-screen picture or video someone shares for a day
 With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. A single tap still opens the photo, a moment later.	Khi bật Chụm để thu phóng, nhấn đúp vào ảnh trên trang cá nhân để phóng to tại chỗ bạn nhấn, nhấn đúp lần nữa để thu lại. Nhấn một lần vẫn mở ảnh, chỉ chậm hơn một chút.
+# context: a switch under Pinch to zoom; with it on, the rest of the screen gets darker behind a zoomed photo or story
+Dim around a zoom	Làm tối xung quanh khi thu phóng
+# context: that switch's summary; "Pinch to zoom" is the label of the switch above it, so use its translation; a story is the full-screen picture or video someone shares for a day
+With Pinch to zoom on, the screen around a photo or story darkens as you zoom in. Turn it off to keep the rest of the screen as it is.	Khi bật Chụm để thu phóng, màn hình xung quanh ảnh hoặc tin sẽ tối dần khi bạn phóng to. Tắt đi để giữ nguyên phần còn lại của màn hình.
 No ads downloaded in advance	Không có quảng cáo tải trước
 No ad tracking	Không theo dõi quảng cáo
 No Facebook ads in other apps	Không có quảng cáo của Facebook trong ứng dụng khác

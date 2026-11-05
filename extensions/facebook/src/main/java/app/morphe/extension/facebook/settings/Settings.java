@@ -1537,6 +1537,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_pinch_to_zoom_double_tap", FALSE, Setting.parent(PINCH_TO_ZOOM));
 
     /**
+     * Pinch to zoom's fourth switch (#220): the screen around a zoomed photo or story darkens as the
+     * zoom grows. Off, the zoom grows over the screen as it is. Starts on, the way zooms always
+     * looked. Asked as each zoom starts.
+     */
+    public static final BooleanSetting PINCH_TO_ZOOM_DIM =
+            new BooleanSetting("hushfacebook_pinch_to_zoom_dim", TRUE, Setting.parent(PINCH_TO_ZOOM));
+
+    /**
      * Videos, reels and video stories start at the quality in {@link #PLAYBACK_QUALITY}, through
      * the same per-video choice Facebook's own quality menu makes
      * ({@link app.morphe.extension.facebook.media.QualityChoice}). A pick in that menu still wins

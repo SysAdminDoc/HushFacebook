@@ -100,7 +100,7 @@ public final class PinchZoom {
     private static final String FAMILY = FamilyNames.PINCH_TO_ZOOM;
     /** The most a pinch zooms. */
     static final float MOST = 4f;
-    /** How dark the window behind the copy gets at full zoom. */
+    /** How dark the window behind the copy gets at full zoom, with Dim around a zoom on. */
     static final float SCRIM = 0.75f;
     /** How long the spring back takes, before the system's animation scale. */
     static final long SETTLE_MILLIS = 200;
@@ -249,6 +249,7 @@ public final class PinchZoom {
         HookStatus.bound(FAMILY, "pinch");
         Zoom started = new Zoom((ViewGroup) root, area, event);
         started.keep = Settings.PINCH_TO_ZOOM_KEEP.get();
+        started.darkest = darkest();
         zoom = started;
         swallowing = true;
         holding = storyViewer(activity);
@@ -330,6 +331,11 @@ public final class PinchZoom {
 
     private static boolean doubleTapOn() {
         return Utils.settingsReady() && Settings.PINCH_TO_ZOOM.get() && Settings.PINCH_TO_ZOOM_DOUBLE_TAP.get();
+    }
+
+    /** How dark the window behind a new zoom gets at full zoom (Dim around a zoom). */
+    private static float darkest() {
+        return Settings.PINCH_TO_ZOOM_DIM.get() ? SCRIM : 0f;
     }
 
     /** Drops any held tap and second tap without handing them on. */
@@ -478,6 +484,7 @@ public final class PinchZoom {
         Zoom started = new Zoom((ViewGroup) root, area, event);
         started.doubleTap = true;
         started.scale = DOUBLE_TAP_SCALE;
+        started.darkest = darkest();
         zoom = started;
         snapshots.take(activity, target, area, copy -> {
             try {
@@ -789,6 +796,8 @@ public final class PinchZoom {
         boolean blank;
         /** Stay zoomed was on when the zoom started. */
         boolean keep;
+        /** How dark the window behind gets at full zoom: {@link PinchZoom#SCRIM}, or 0 with Dim around a zoom off. */
+        float darkest = SCRIM;
         /** The fingers lifted and the zoom stayed. */
         boolean parked;
         /** Where a touch on the kept zoom landed, and whether it has since dragged or pinched. */
@@ -935,7 +944,7 @@ public final class PinchZoom {
         private void apply() {
             copy.setScaleX(scale);
             copy.setScaleY(scale);
-            scrim.setAlpha(SCRIM * Math.min(1f, (scale - 1f) / (MOST - 1f) * 3f));
+            scrim.setAlpha(darkest * Math.min(1f, (scale - 1f) / (MOST - 1f) * 3f));
         }
 
         /** With Stay zoomed on, whether the zoom stays when the fingers lift: it shows, zoomed past {@link PinchZoom#KEPT_LEAST}. */

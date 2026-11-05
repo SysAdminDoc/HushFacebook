@@ -1752,6 +1752,10 @@ With Pinch to zoom on, the photo or story stays zoomed when you let go, and a st
 Double tap to zoom	雙擊縮放
 # context: summary of that switch; "Pinch to zoom" is the label of the switch two rows above it, so use its translation; a story is the full-screen picture or video someone shares for a day
 With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. A single tap still opens the photo, a moment later.	啟用「雙指縮放」後，雙擊個人檔案上的相片可放大點按位置，再次雙擊可還原。單次點按仍會開啟相片，但稍有延遲。
+# context: a switch under Pinch to zoom; with it on, the rest of the screen gets darker behind a zoomed photo or story
+Dim around a zoom	縮放時調暗周圍
+# context: that switch's summary; "Pinch to zoom" is the label of the switch above it, so use its translation; a story is the full-screen picture or video someone shares for a day
+With Pinch to zoom on, the screen around a photo or story darkens as you zoom in. Turn it off to keep the rest of the screen as it is.	啟用「雙指縮放」後，放大相片或限時動態時，周圍的畫面會隨之變暗。關閉後，畫面其餘部分維持原樣。
 No ads downloaded in advance	不預先下載廣告
 No ad tracking	不進行廣告追蹤
 No Facebook ads in other apps	不在其他應用程式顯示 Facebook 廣告
