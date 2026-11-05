@@ -8,7 +8,11 @@ import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.feed.GenAiReelFilter;
 import app.morphe.extension.facebook.feed.PostLanguages;
@@ -37,6 +41,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>The same filters run Hide posts in other languages on the tab ({@link ReelLanguages}, #382), so
  * the page routes count what either rule took off, each under its own reason.
+ *
+ * <p>The first reel a Reels viewer opens on always stays, whatever either rule says. Facebook can't
+ * show an empty viewer: on an account whose pages held only reels from people it doesn't follow, it
+ * fetched page after page, had every one emptied, and ended on its spinner or "Something went wrong"
+ * (the 0.21.0 release walk, 2026-11-05). So the controller comes in with each page of sections, and
+ * the first reel of its first page is kept and remembered, which also keeps the reel someone opened
+ * the viewer on. Every later page is filtered as usual.
  *
  * <p>Off, paused, before the settings are ready, or when anything fails, the page goes on as
  * Facebook sent it.
@@ -69,6 +80,14 @@ public final class FollowedReels {
     static final String NO_MODEL = "no reel model";
     static final String NOT_PATCHED = "status reader not patched";
     static final String READ_FAILED = "read failed";
+
+    /** Counted on {@link #SECTIONS_ROUTE} for each viewer's first reel, kept without asking either rule. */
+    static final String FIRST_REEL = "first reel of a viewer";
+
+    /** The Reels controllers that have had their first reel. Weak, so a closed viewer's goes with it. */
+    private static final Map<Object, Boolean> OPENED = new WeakHashMap<>();
+    /** Those first reels, which every route keeps. */
+    private static final Set<Object> FIRST_REELS = Collections.newSetFromMap(new WeakHashMap<>());
 
     /** What {@link #followStatus} answers until the patch fills it in. */
     static final Object UNPATCHED = new Object();
@@ -154,27 +173,34 @@ public final class FollowedReels {
     /**
      * Injection point, before a page of sections reaches the Reels controller: the same page with
      * the reels of authors you don't follow taken out of each section's list, or the very same page
-     * when there were none. Never throws.
+     * when there were none. The first reel of the controller's first page stays. Never throws.
      *
+     * @param controller     the Reels controller the page is for, the method's own instance.
      * @param page           the sections about to be added to the Reels list.
      * @param modelClassName binary name of the reel model's class, as the patch resolved it.
      */
-    public static List<?> followedSections(List<?> page, String modelClassName) {
-        return followedSections(page, modelClassName, PATCHED);
+    public static List<?> followedSections(Object controller, List<?> page, String modelClassName) {
+        return followedSections(controller, page, modelClassName, PATCHED, ReelLanguages.PATCHED);
     }
 
     static List<?> followedSections(List<?> page, String modelClassName, Statuses statuses) {
-        return followedSections(page, modelClassName, statuses, ReelLanguages.PATCHED);
+        return followedSections(null, page, modelClassName, statuses, ReelLanguages.PATCHED);
     }
 
     static List<?> followedSections(List<?> page, String modelClassName, Statuses statuses,
             ReelLanguages.Captions captions) {
+        return followedSections(null, page, modelClassName, statuses, captions);
+    }
+
+    static List<?> followedSections(@Nullable Object controller, List<?> page, String modelClassName,
+            Statuses statuses, ReelLanguages.Captions captions) {
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
             FeedFilterCounters.sawList(SECTIONS_ROUTE, page == null ? 0 : page.size());
             if (page == null || page.isEmpty()) return page;
             Pass pass = Pass.start(modelClassName, statuses, captions, true);
             if (pass == null) return page;
+            keepFirstReel(controller, page, modelClassName);
 
             ReelSections.Result result = ReelSections.strip(page, pass::drops, FamilyNames.REEL_DECLUTTER, SOURCE);
             if (result.dropped == 0) return page;
@@ -188,6 +214,46 @@ public final class FollowedReels {
             Logger.diagnosticError(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE,
                     () -> "could not filter a page of sections", failure);
             return page;
+        }
+    }
+
+    /**
+     * Remembers the first reel of [controller]'s first page holding one, so no rule takes it, and
+     * the controller, so it happens once. A page of cards alone leaves the controller waiting for
+     * its first reel. Without a controller nothing is kept.
+     */
+    private static void keepFirstReel(@Nullable Object controller, List<?> page, String modelClassName) {
+        if (controller == null) return;
+        synchronized (OPENED) {
+            if (OPENED.containsKey(controller)) return;
+            Object first = ReelSections.firstItem(page, item -> {
+                try {
+                    return GenAiReelFilter.reelModel(item, modelClassName) != null;
+                } catch (Throwable unreadable) {
+                    return false;
+                }
+            });
+            if (first == null) return;
+            OPENED.put(controller, Boolean.TRUE);
+            FIRST_REELS.add(first);
+        }
+        FeedFilterCounters.sawKind(SECTIONS_ROUTE, FIRST_REEL);
+        Logger.diagnosticDebug(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE, () -> "kept a new viewer's first reel");
+    }
+
+    /** Whether [item] is a viewer's first reel, which every route keeps. */
+    private static boolean firstReel(Object item) {
+        if (item == null) return false;
+        synchronized (OPENED) {
+            return FIRST_REELS.contains(item);
+        }
+    }
+
+    /** Forgets every viewer, for a test that opens a new one. */
+    static void forgetViewers() {
+        synchronized (OPENED) {
+            OPENED.clear();
+            FIRST_REELS.clear();
         }
     }
 
@@ -238,9 +304,11 @@ public final class FollowedReels {
 
         /**
          * Whether [item] comes off. The follow rule reads first, so a reel both rules would take is
-         * counted once, as not followed, and its caption is never guessed at.
+         * counted once, as not followed, and its caption is never guessed at. A viewer's first reel
+         * is never read.
          */
         boolean drops(Object item) {
+            if (firstReel(item)) return false;
             if (followedOnly && (countItems ? FollowedReels.drops(item, modelClassName, statuses)
                     : NOT_FOLLOWED.equals(kindOf(item, modelClassName, statuses)))) {
                 notFollowed++;

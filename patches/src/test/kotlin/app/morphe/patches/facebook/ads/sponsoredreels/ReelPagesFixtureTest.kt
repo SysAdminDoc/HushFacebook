@@ -8,12 +8,17 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.reels.FOLLOWED_REEL_SECTION_FILTER
 import app.morphe.patches.facebook.reels.THREADS_CARD_SECTION_FILTER
+import app.morphe.patches.facebook.reels.filterSectionsWithControllerFirst
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -105,6 +110,56 @@ class ReelPagesFixtureTest {
                     method.assertFilteredAtTop("$where, the AI filter", page, at = first)
                     method.assertFilteredAtTop("$where, the ad filter", page, at = first + 5)
                 }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /**
+     * Only reels from accounts I follow's section filter on the controller's page method, with the
+     * controller in front so the extension can keep each viewer's first reel: `this` copied into v0,
+     * the page into v1, the class name in v2, and the answer copied back into the page's register.
+     */
+    @Test
+    fun `the followed reels section filter passes the controller in each declared build`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                forgetMatches()
+                val anchors = FixtureDex.classesHolding(bundle, "VideoHomeDataControllerSfdAdsUtil") +
+                    FixtureDex.classesHolding(bundle, "VideoHomeDataControllerImpl.maybeInsertAds")
+                val taken = anchors.flatMap { it.methods }.filter { it.name == "<init>" }
+                    .flatMap { method -> method.parameterTypes.map { it.toString() } }
+                    .filter { it.startsWith("L") }.toSet()
+                val context = PatchContexts.of(anchors + FixtureDex.classes(bundle, taken).values)
+                val addPage = with(context) { reelPages(SPONSORED_REELS_PATCH) }.addPage
+                val page = pin(bundle, version)[2].second
+                val where = "${bundle.name}: ${addPage.definingClass}->${addPage.name}"
+
+                addPage.filterSectionsWithControllerFirst("fixture.Model", FOLLOWED_REEL_SECTION_FILTER)
+
+                val body = addPage.implementation!!.instructions.toList()
+                assertEquals(
+                    "$where: the controller, the page and the answer",
+                    listOf(
+                        listOf(Opcode.MOVE_OBJECT_FROM16, 0, page - 1),
+                        listOf(Opcode.MOVE_OBJECT_FROM16, 1, page),
+                        listOf(Opcode.MOVE_OBJECT_16, page, 1),
+                    ),
+                    listOf(0, 1, 5).map { at ->
+                        val move = body[at] as TwoRegisterInstruction
+                        listOf(body[at].opcode, move.registerA, move.registerB)
+                    },
+                )
+                val call = body[3] as FiveRegisterInstruction
+                assertEquals("$where: the filter call", listOf(3, 0, 1, 2),
+                    listOf(call.registerCount, call.registerC, call.registerD, call.registerE))
+                assertEquals("$where: the filter", FOLLOWED_REEL_SECTION_FILTER,
+                    ((body[3] as ReferenceInstruction).reference as MethodReference).toString())
+                assertEquals("$where: the answer", listOf(Opcode.MOVE_RESULT_OBJECT, 1),
+                    listOf(body[4].opcode, (body[4] as OneRegisterInstruction).registerA))
                 checked += version
             }
         }

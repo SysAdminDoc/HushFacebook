@@ -76,6 +76,33 @@ public final class ReelSections {
         return new Result(sectionEmptied ? kept : page, dropped);
     }
 
+    /** Whether an item is the one looked for. Asked in page order until one says yes. */
+    public interface Pick {
+        boolean picks(Object item);
+    }
+
+    /**
+     * The first item, in page order, that {@code pick} says yes to, read from the item lists the walk
+     * reads, or null when there is none. A section that can't be read is passed over. Never throws.
+     */
+    public static Object firstItem(List<?> page, Pick pick) {
+        for (Object section : page) {
+            if (section == null) continue;
+            try {
+                for (Field field : section.getClass().getDeclaredFields()) {
+                    List<?> items = itemsOf(field, section);
+                    if (items == null) continue;
+                    for (Object item : items) {
+                        if (pick.picks(item)) return item;
+                    }
+                }
+            } catch (Throwable ignored) {
+                // The strip that follows reads this section again and records why it can't.
+            }
+        }
+        return null;
+    }
+
     /** The number of items {@code drop} took out of the item lists of the section. */
     private static int stripItems(Object section, Drop drop, String family, String source) {
         if (section == null) return 0;

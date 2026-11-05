@@ -8,14 +8,18 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patches.facebook.ads.sponsoredreels.LIST
 import app.morphe.patches.facebook.ads.sponsoredreels.dropItemFirst
 import app.morphe.patches.facebook.ads.sponsoredreels.filterPageFirst
-import app.morphe.patches.facebook.ads.sponsoredreels.filterSectionsFirst
 import app.morphe.patches.facebook.ads.sponsoredreels.reelPages
 import app.morphe.patches.facebook.ads.sponsoredreels.toBinaryName
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.freeLocalsAt
+import app.morphe.patches.facebook.misc.extension.parameterRegister
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.singleOrPatchException
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.Method
 
@@ -32,6 +36,10 @@ import com.android.tools.smali.dexlib2.iface.Method
  * - The patch fills the extension's stub with that call and puts the extension's filter on every
  *   way a page of reels enters the Reels list, as Hide AI-detected posts does with its own, with
  *   the model's class beside each. The extension drops a reel only when the answer is CAN_SUBSCRIBE.
+ * - The controller's page of sections also brings the controller. On an account whose pages held
+ *   only reels from people it doesn't follow, every page came back empty and the viewer ended on
+ *   Facebook's spinner or error (0.21.0 release walk, 2026-11-05), so the first reel of each
+ *   controller's first page stays.
  */
 
 private const val FOLLOWED_REELS = "$EXTENSION_PACKAGE/reels/FollowedReels;"
@@ -40,7 +48,7 @@ internal const val FOLLOWED_REEL_FILTER =
 internal const val ANNOUNCED_FOLLOWED_REEL_FILTER =
     "$FOLLOWED_REELS->followedOnlyAnnounced(Ljava/util/Collection;Ljava/lang/String;)Ljava/util/Collection;"
 internal const val FOLLOWED_REEL_SECTION_FILTER =
-    "$FOLLOWED_REELS->followedSections(Ljava/util/List;Ljava/lang/String;)Ljava/util/List;"
+    "$FOLLOWED_REELS->followedSections(Ljava/lang/Object;Ljava/util/List;Ljava/lang/String;)Ljava/util/List;"
 
 /** The extension's stub the patch fills: `Object followStatus(Object model, Object unused, boolean fresh)`. */
 internal const val FOLLOW_STATUS_STUB = "followStatus"
@@ -127,5 +135,31 @@ internal fun BytecodePatchContext.keepFollowedReels() {
     pages.pageInserts.forEach { it.filterPageFirst(model, FOLLOWED_REEL_FILTER, PATCH) }
     pages.announcePage.filterPageFirst(model, ANNOUNCED_FOLLOWED_REEL_FILTER, PATCH)
     pages.insertItem.dropItemFirst(model, FOLLOWED_REEL_FILTER, PATCH)
-    pages.addPage.filterSectionsFirst(model, FOLLOWED_REEL_SECTION_FILTER, PATCH)
+    pages.addPage.filterSectionsWithControllerFirst(model, FOLLOWED_REEL_SECTION_FILTER)
+}
+
+/**
+ * Sends the page of sections this controller method receives through [filter] before its own code
+ * runs, with the controller in front and [className] behind, the way [filterSectionsFirst] sends it
+ * without the controller. The extension keeps the first reel of each controller's first page, since
+ * Facebook can't show a viewer whose every page came back empty. Three locals from [freeLocalsAt],
+ * each written before it's read, so a filter put in front borrows the same ones.
+ */
+internal fun MutableMethod.filterSectionsWithControllerFirst(className: String, filter: String) {
+    if (AccessFlags.STATIC.isSet(accessFlags)) throw PatchException("$PATCH: $definingClass->$name is static, with no controller to pass")
+    val sections = parameterTypes.indices.filter { parameterTypes[it].toString() == LIST }
+        .singleOrPatchException("$PATCH: the one List parameter of $definingClass->$name")
+    val (controller, copy, label) = freeLocalsAt(PATCH, 0, 3)
+    val register = parameterRegister(sections)
+    addInstructions(
+        0,
+        """
+            move-object/from16 v$controller, p0
+            move-object/from16 v$copy, $register
+            const-string v$label, "$className"
+            invoke-static { v$controller, v$copy, v$label }, $filter
+            move-result-object v$copy
+            move-object/16 $register, v$copy
+        """,
+    )
 }

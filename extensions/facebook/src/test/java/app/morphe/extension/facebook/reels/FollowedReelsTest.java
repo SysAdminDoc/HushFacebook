@@ -62,8 +62,79 @@ public class FollowedReelsTest {
     public void restore() {
         PauseForTests.resume();
         Settings.FOLLOWED_REELS_ONLY.resetToDefault();
+        FollowedReels.forgetViewers();
         FeedFilterCounters.clear();
         HookStatus.clear();
+    }
+
+    private static List<?> viewerPage(Object controller, Section... sections) {
+        return FollowedReels.followedSections(controller, Arrays.asList(sections), FollowedReelsForTests.MODEL,
+                FollowedReelsForTests.STATUSES, ReelLanguages.PATCHED);
+    }
+
+    /**
+     * A viewer whose first page holds only reels from authors you don't follow keeps its first reel,
+     * since Facebook can't show an empty viewer (0.21.0 release walk), and every route keeps that reel.
+     * The next page of the same viewer is filtered as usual, and a new viewer gets its own first reel.
+     */
+    @Test
+    public void aNewViewerKeepsItsFirstReelAndOnlyThatOne() {
+        Settings.FOLLOWED_REELS_ONLY.save(true);
+        Object viewer = new Object();
+        Object card = new Object();
+        Item first = FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE);
+        Section opening = new Section(new ArrayList<>(Arrays.asList(card, first,
+                FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE))));
+
+        assertEquals(Collections.singletonList(opening), viewerPage(viewer, opening));
+        assertEquals(Arrays.asList(card, first), opening.items);
+        List<Object> itemLevel = page(first);
+        assertSame(itemLevel, FollowedReelsForTests.followedOnly(itemLevel));
+        String sections = line(FollowedReels.SECTIONS_ROUTE);
+        assertNotNull(FeedFilterCounters.report().toString(), sections);
+        assertTrue(sections, sections.contains(FollowedReels.FIRST_REEL + " 1"));
+        assertTrue(sections, sections.contains("1 removed"));
+
+        Section next = new Section(new ArrayList<>(Collections.singletonList(
+                FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE))));
+        assertTrue(viewerPage(viewer, next).isEmpty());
+
+        Item another = FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE);
+        Section otherViewer = new Section(new ArrayList<>(Collections.singletonList(another)));
+        assertEquals(Collections.singletonList(otherViewer), viewerPage(new Object(), otherViewer));
+        assertEquals(Collections.singletonList(another), otherViewer.items);
+    }
+
+    /** A first page of cards alone leaves the viewer waiting for its first reel. */
+    @Test
+    public void cardsAloneLeaveTheViewerWaitingForItsFirstReel() {
+        Settings.FOLLOWED_REELS_ONLY.save(true);
+        Object viewer = new Object();
+        viewerPage(viewer, new Section(new ArrayList<>(Collections.singletonList(new Object()))));
+        Item first = FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE);
+        Section reels = new Section(new ArrayList<>(Arrays.asList(first,
+                FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE))));
+
+        viewerPage(viewer, reels);
+
+        assertEquals(Collections.singletonList(first), reels.items);
+    }
+
+    /** Off, the first page goes on as Facebook sent it and uses up nothing. */
+    @Test
+    public void offTheViewerKeepsItsFirstReelForLater() {
+        Object viewer = new Object();
+        List<?> page = Collections.singletonList(new Section(new ArrayList<>(Collections.singletonList(
+                FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE)))));
+        assertSame(page, FollowedReels.followedSections(viewer, page, FollowedReelsForTests.MODEL,
+                FollowedReelsForTests.STATUSES, ReelLanguages.PATCHED));
+
+        Settings.FOLLOWED_REELS_ONLY.save(true);
+        Item first = FollowedReelsForTests.reel(FollowStatus.CAN_SUBSCRIBE);
+        Section reels = new Section(new ArrayList<>(Collections.singletonList(first)));
+        viewerPage(viewer, reels);
+
+        assertEquals(Collections.singletonList(first), reels.items);
     }
 
     private static String line(String route) {
