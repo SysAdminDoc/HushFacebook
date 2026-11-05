@@ -503,22 +503,49 @@ function Open-AuditRoute([string]$Route, [bool]$Reel) {
     }
 }
 
+# True when $Inner sits somewhere inside $Outer in the dump's tree. Only dumped nodes carry a parent.
+function Test-AuditNodeHolds($Outer, $Inner) {
+    if ($Inner -isnot [Xml.XmlNode]) { return $false }
+    for ($parent = $Inner.ParentNode; $null -ne $parent; $parent = $parent.ParentNode) {
+        if ([object]::ReferenceEquals($parent, $Outer)) { return $true }
+    }
+    return $false
+}
+
+# True when a clickable Facebook node other than the target, its rows or its parts holds the
+# target's middle, where a tap on it would land.
+function Test-AuditTapCovered($Target, [object[]]$Nodes) {
+    if ($Target.bounds -notmatch '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$') { return $true }
+    $x = [int](([int]$Matches[1] + [int]$Matches[3]) / 2)
+    $y = [int](([int]$Matches[2] + [int]$Matches[4]) / 2)
+    foreach ($other in $Nodes) {
+        if ([object]::ReferenceEquals($other, $Target) -or $other.clickable -cne 'true' -or $other.package -cne $Package -or
+                $other.bounds -notmatch '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$') { continue }
+        if ($x -lt [int]$Matches[1] -or $x -ge [int]$Matches[3] -or $y -lt [int]$Matches[2] -or $y -ge [int]$Matches[4]) { continue }
+        if (-not (Test-AuditNodeHolds $other $Target) -and -not (Test-AuditNodeHolds $Target $other)) { return $true }
+    }
+    return $false
+}
+
 # The one node a "tap:<label>" step may tap, or $null. A row can repeat its label on a child that
 # isn't clickable (the menu's Settings and privacy row on the S22), so several matches still
 # name one target when exactly one is clickable and every other match sits inside it.
 # Comment sits under every post, so two short posts put two on one screen, and any of them opens a
-# comment sheet: the topmost clickable one a tap may reach is taken. Every other label must name
-# one target.
+# comment sheet: the topmost clickable one a tap may reach is taken. A Comment scrolled under the
+# top bar, the header row or the tab bar can't be reached, since the tap lands on what covers its
+# middle (the all-on feed's drawer button on the S22, 2026-11-05, opened the drawer). Every other
+# label must name one target.
 function Select-AuditTapNode([string]$Label, [object[]]$Nodes, [string[]]$Repeated = @('Comment')) {
     $boundsPattern = '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$'
     $found = @($Nodes | Where-Object { $_.text -ceq $Label -or $_.'content-desc' -ceq $Label } |
         Where-Object { $_.package -ceq $Package -and $_.bounds -match $boundsPattern })
-    if ($found.Count -eq 1) { return $found[0] }
+    if ($found.Count -eq 1 -and -not ($Repeated -ccontains $Label -and (Test-AuditTapCovered $found[0] $Nodes))) { return $found[0] }
     if ($found.Count -gt 1 -and $Repeated -ccontains $Label) {
         $reachable = @($found | Where-Object { $_.clickable -ceq 'true' } | ForEach-Object {
             $null = $_.bounds -match $boundsPattern
             $box = @([int]$Matches[1], [int]$Matches[2], [int]$Matches[3], [int]$Matches[4])
-            if ($box[2] -gt $box[0] -and $box[3] -gt $box[1] -and [int](($box[1] + $box[3]) / 2) -ge $MinimumTapY) {
+            if ($box[2] -gt $box[0] -and $box[3] -gt $box[1] -and [int](($box[1] + $box[3]) / 2) -ge $MinimumTapY -and
+                    -not (Test-AuditTapCovered $_ $Nodes)) {
                 [pscustomobject]@{ Node = $_; Top = $box[1] }
             }
         })

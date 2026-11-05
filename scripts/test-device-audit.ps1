@@ -7,7 +7,7 @@ $auditAst = [System.Management.Automation.Language.Parser]::ParseFile($auditPath
 if ($parseErrors.Count) { throw ($parseErrors -join "`n") }
 $testFunctions = @('Assert-AuditLease', 'Assert-AuditSteps', 'Assert-AuditForeground', 'Invoke-Adb',
     'Get-AuditLocales', 'Get-AuditNightMode', 'Restore-AuditState', 'Format-Shell',
-    'New-AuditBaseline', 'Get-AuditOff', 'Compare-AuditWalk', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Get-SettingsPages', 'Test-AuditSectionShown', 'Test-SettingsScreen', 'Get-AuditLocaleTable', 'Write-Step', 'Test-AuditDestination', 'Select-AuditTapNode', 'Select-AuditQueryField', 'Find-AuditTapNode', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList', 'Get-AuditLauncher', 'Get-Report',
+    'New-AuditBaseline', 'Get-AuditOff', 'Compare-AuditWalk', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Get-SettingsPages', 'Test-AuditSectionShown', 'Test-SettingsScreen', 'Get-AuditLocaleTable', 'Write-Step', 'Test-AuditDestination', 'Test-AuditNodeHolds', 'Test-AuditTapCovered', 'Select-AuditTapNode', 'Select-AuditQueryField', 'Find-AuditTapNode', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList', 'Get-AuditLauncher', 'Get-Report',
     'Test-AuditReelViewer', 'Get-AuditReelProof', 'Close-AuditHoldCover', 'Open-AuditRoute', 'Test-AuditKeyboard', 'Test-AuditSettingsRestored', 'ConvertFrom-AuditJsonTable', 'Resolve-AuditStateBefore', 'Get-AuditCrashes')
 foreach ($functionName in $testFunctions) {
     $definition = $auditAst.Find({ param($node)
@@ -512,6 +512,34 @@ try {
     } finally { $MinimumTapY = 0 }
     Assert-That ($null -eq (Select-AuditTapNode 'Comment' @((New-TapNode 'Comment' '[24,474][106,556]' 'false'), (New-TapNode 'Comment' '[24,866][106,948]' 'false')))) 'An unclickable Comment label was tapped.'
     Assert-That ([object]::ReferenceEquals((Select-AuditTapNode 'Comment' @($lowerComment, $upperComment, (New-TapNode 'Comment' '[24,100][106,182]' 'true' 'com.other.app'))), $upperComment)) 'A foreign Comment node was taken over Facebook''s.'
+    # A Comment scrolled under the top bar or the tab bar sends its tap there (the drawer button on
+    # the S22, 2026-11-05). The bounds are the S22's all-on feed; the nodes are parsed the way
+    # Get-UiNodes parses a dump, so rows and parts are found through the tree.
+    function Get-TestTapNodes([string]$Body) {
+        return @(([xml]"<?xml version=`"1.0`"?><hierarchy>$Body</hierarchy>").SelectNodes('//node') | Where-Object { $_.package -ceq $Package })
+    }
+    function New-XmlTapNode([string]$Label, [string]$Bounds, [string]$Inside = '') {
+        return "<node package=`"$Package`" class=`"android.widget.Button`" content-desc=`"$Label`" bounds=`"$Bounds`" clickable=`"true`">$Inside</node>"
+    }
+    $coveredPost = "<node package=`"$Package`" content-desc=`"`" bounds=`"[0,75][1080,600]`" clickable=`"true`">" + (New-XmlTapNode 'Comment' '[124,92][248,216]') + '</node>'
+    $openPost = "<node package=`"$Package`" content-desc=`"`" bounds=`"[0,1100][1080,1400]`" clickable=`"true`">" + (New-XmlTapNode 'Comment' '[124,1200][248,1324]') + '</node>'
+    $topBar = "<node package=`"$Package`" content-desc=`"`" bounds=`"[0,75][1080,199]`" clickable=`"true`">" + (New-XmlTapNode 'Menu' '[24,92][200,182]') + '</node>'
+    $feedNodes = Get-TestTapNodes ($coveredPost + $openPost + $topBar)
+    $feedPick = Select-AuditTapNode 'Comment' $feedNodes
+    Assert-That ($null -ne $feedPick -and $feedPick.bounds -ceq '[124,1200][248,1324]') 'A Comment under the top bar was taken over one in the open.'
+    Assert-That ($null -eq (Select-AuditTapNode 'Comment' (Get-TestTapNodes ($coveredPost + $topBar)))) 'The one Comment on screen, under the top bar, was taken.'
+    $tabBar = (New-XmlTapNode 'Comment' '[162,2131][324,2255]') + (New-XmlTapNode 'Marketplace, tab 2 of 6' '[180,2116][360,2274]')
+    Assert-That ($null -eq (Select-AuditTapNode 'Comment' (Get-TestTapNodes $tabBar))) 'A Comment under the tab bar was taken.'
+    $labelInside = "<node package=`"$Package`" class=`"android.view.ViewGroup`" content-desc=`"Comment`" text=`"Comment`" bounds=`"[150,120][230,190]`" clickable=`"false`" />"
+    $labelledCover = $coveredPost.Replace('[248,216]" clickable="true">', '[248,216]" clickable="true">' + $labelInside)
+    Assert-That ($null -eq (Select-AuditTapNode 'Comment' (Get-TestTapNodes ($labelledCover + $topBar)))) 'A covered Comment whose label repeats on a child was taken.'
+    $insidePick = Select-AuditTapNode 'Comment' (Get-TestTapNodes $coveredPost)
+    Assert-That ($null -ne $insidePick -and $insidePick.bounds -ceq '[124,92][248,216]') 'The clickable post row holding a Comment counted as covering it.'
+    $partsPick = Select-AuditTapNode 'Comment' (Get-TestTapNodes ($openPost.Replace('[248,1324]" clickable="true">', '[248,1324]" clickable="true">' + (New-XmlTapNode 'Comment icon' '[150,1220][222,1304]'))))
+    Assert-That ($null -ne $partsPick -and $partsPick.bounds -ceq '[124,1200][248,1324]') 'A clickable part inside a Comment counted as covering it.'
+    $foreignBar = "<node package=`"com.other.app`" content-desc=`"`" bounds=`"[0,75][1080,199]`" clickable=`"true`" />"
+    $foreignNodes = @(([xml]"<hierarchy>$coveredPost$foreignBar</hierarchy>").SelectNodes('//node'))
+    Assert-That ($foreignNodes[1].'content-desc' -ceq 'Comment' -and -not (Test-AuditTapCovered $foreignNodes[1] $foreignNodes)) 'Another app''s node counted as covering a Comment.'
     Write-TestLease -Owner 'replacement'
     Assert-Throws { Invoke-Adb shell input tap 10 10 } 'Ownership loss during the walk permitted input.'
 

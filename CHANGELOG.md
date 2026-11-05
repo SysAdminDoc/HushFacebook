@@ -9,6 +9,7 @@ Changes in each Hushfacebook version, newest first.
 * With `Double tap to zoom` on, a fast scroll on a profile or Page stops as soon as your finger lands on it. It used to slide on for a moment whenever that finger landed on a photo or video, since the first tap waited to see if a second one was coming.
 * **Tooling:** The device walk taps the search field before it presses Enter. About 2 times in 10, Enter right after typing the search word went to the first suggestion under the field and searched nothing. The tap only goes to the one search field holding that word, once per search, and is refused anywhere else. Checked in the audit's tests.
 * **Tooling:** A post that shows its whole text from the start now counts as a `Show full post text` run in the hook status, and so does a reel caption that opens whole. With the switch on, Facebook never cuts the post, so the only count it used to get came from the cutter and the device walk read the switch as idle. The walk requires it again.
+* **Tooling:** The device walk won't tap a `Comment` button that's scrolled under the top bar, a header row or the tab bar anymore. A tap there lands on whatever covers the button, so on the all-on feed it opened the drawer instead of a comment sheet. The walk now takes the next `Comment` it can actually reach, or scrolls on.
 
 ## 0.21.0 (2026-11-05)
 
