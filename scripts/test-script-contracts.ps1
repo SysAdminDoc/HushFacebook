@@ -641,20 +641,25 @@ $unchanged = Get-ManifestDelta -Stock $facts -Patched $facts
 Assert-True (@(ConvertTo-ManifestDeltaEntries -Delta $unchanged).Count -eq 0) `
     'An unchanged manifest produced a delta.'
 
-# The checked-in allowlist approves one change and nothing else: Install beside Meta's apps renames
-# the two permissions Facebook shares with Messenger, Lite, Business Suite and Workplace, which the
-# receipt reads as the two new names asked for and the two old ones no longer asked for.
+# The checked-in allowlist approves three reviewed changes and nothing else. Install beside Meta's
+# apps renames the two permissions Facebook shares with Messenger, Lite, Business Suite and
+# Workplace, which the receipt reads as the two new names asked for and the two old ones no longer
+# asked for. Open in Facebook exports its share target, and GmsCore support swaps Google's push
+# RECEIVE permission for microG-RE's.
 $checkedInAllowlist = @(Read-ManifestDeltaAllowlist -Path (Join-Path $PSScriptRoot 'manifest-delta-allowlist.txt') |
     Where-Object { $_ })
-$renameEntries = @(
+$reviewedEntries = @(
     'permission-added app.hushfacebook.permission.prod.FB_APP_COMMUNICATION',
     'permission-added app.hushfacebook.receiver.permission.ACCESS',
     'permission-removed com.facebook.permission.prod.FB_APP_COMMUNICATION',
-    'permission-removed com.facebook.receiver.permission.ACCESS')
+    'permission-removed com.facebook.receiver.permission.ACCESS',
+    'exported-added activity:app.morphe.extension.facebook.misc.OpenInFacebook',
+    'permission-added app.revanced.android.c2dm.permission.RECEIVE',
+    'permission-removed com.google.android.c2dm.permission.RECEIVE')
 Assert-True ((@($checkedInAllowlist | Sort-Object -CaseSensitive) -join "`n") -ceq
-        (@($renameEntries | Sort-Object -CaseSensitive) -join "`n")) `
-    ('The checked-in manifest delta allowlist approves something besides the permission rename, or ' +
-     "less than all of it: $($checkedInAllowlist -join ', ')")
+        (@($reviewedEntries | Sort-Object -CaseSensitive) -join "`n")) `
+    ('The checked-in manifest delta allowlist approves something besides the three reviewed changes, or ' +
+     "less than all of them: $($checkedInAllowlist -join ', ')")
 
 $allowlistRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("receipt-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $allowlistRoot | Out-Null
@@ -1192,20 +1197,22 @@ try {
     Assert-True ($stale.Reason -like '*any more*') `
         "The stale allowlist entry was refused for the wrong reason: $($stale.Reason)"
 
-    # The checked-in allowlist, against receipts that carry the permission rename on both builds.
-    # The rename passes. The rename plus any other change is refused, naming only the other, and a
-    # rename that stopped halfway is refused for the half no patch makes any more.
+    # The checked-in allowlist, against receipts that carry its three reviewed changes on both
+    # builds: the permission rename, the share target export and the microG push permission. They
+    # pass. They plus any other change are refused, naming only the other, and a rename that
+    # stopped halfway is refused for the half no patch makes any more.
     $withRename = {
         param($r)
         foreach ($target in $r.targets) {
             $target.manifestDelta.permissionsAdded = @('app.hushfacebook.permission.prod.FB_APP_COMMUNICATION',
-                'app.hushfacebook.receiver.permission.ACCESS')
+                'app.hushfacebook.receiver.permission.ACCESS', 'app.revanced.android.c2dm.permission.RECEIVE')
             $target.manifestDelta.permissionsRemoved = @('com.facebook.permission.prod.FB_APP_COMMUNICATION',
-                'com.facebook.receiver.permission.ACCESS')
+                'com.facebook.receiver.permission.ACCESS', 'com.google.android.c2dm.permission.RECEIVE')
+            $target.manifestDelta.exportedComponentsAdded = @('activity:app.morphe.extension.facebook.misc.OpenInFacebook')
         }
     }
     $renamed = Test-TestReceipt -Receipt (New-TestReceipt -Mutate $withRename) -Approved $checkedInAllowlist
-    Assert-True $renamed.Valid "A receipt carrying the approved permission rename was refused: $($renamed.Reason)"
+    Assert-True $renamed.Valid "A receipt carrying the approved manifest changes was refused: $($renamed.Reason)"
     $unrenamed = Test-TestReceipt -Receipt (New-TestReceipt) -Approved $checkedInAllowlist
     Assert-True (-not $unrenamed.Valid -and $unrenamed.Reason -like '*any more*') `
         "A receipt without the rename passed the allowlist that approves it: $($unrenamed.Reason)"
@@ -1217,7 +1224,7 @@ try {
             @{ Name = 'another permission dropped'; Entry = 'permission-removed android.permission.CAMERA'
                 Change = { param($t) $t.manifestDelta.permissionsRemoved = @($t.manifestDelta.permissionsRemoved) + 'android.permission.CAMERA' } },
             @{ Name = 'a component exported'; Entry = 'exported-added receiver:com.facebook.device_id.UniqueIdSupplier'
-                Change = { param($t) $t.manifestDelta.exportedComponentsAdded = @('receiver:com.facebook.device_id.UniqueIdSupplier') } },
+                Change = { param($t) $t.manifestDelta.exportedComponentsAdded = @($t.manifestDelta.exportedComponentsAdded) + 'receiver:com.facebook.device_id.UniqueIdSupplier' } },
             @{ Name = 'a component no longer exported'; Entry = 'exported-removed activity:com.facebook.katana.ProxyAuth'
                 Change = { param($t) $t.manifestDelta.exportedComponentsRemoved = @('activity:com.facebook.katana.ProxyAuth') } })) {
         $receipt = New-TestReceipt -Mutate { param($r) & $withRename $r; & $other.Change $r.targets[1] }
@@ -1230,12 +1237,15 @@ try {
         param($r)
         & $withRename $r
         foreach ($target in $r.targets) {
-            $target.manifestDelta.permissionsAdded = @('app.hushfacebook.permission.prod.FB_APP_COMMUNICATION')
-            $target.manifestDelta.permissionsRemoved = @('com.facebook.permission.prod.FB_APP_COMMUNICATION')
+            $target.manifestDelta.permissionsAdded = @('app.hushfacebook.permission.prod.FB_APP_COMMUNICATION',
+                'app.revanced.android.c2dm.permission.RECEIVE')
+            $target.manifestDelta.permissionsRemoved = @('com.facebook.permission.prod.FB_APP_COMMUNICATION',
+                'com.google.android.c2dm.permission.RECEIVE')
         }
     }
     $half = Test-TestReceipt -Receipt $halfway -Approved $checkedInAllowlist
-    Assert-True (-not $half.Valid -and $half.Reason -like '*any more*receiver.permission.ACCESS*') `
+    Assert-True (-not $half.Valid -and $half.Reason -like '*any more*receiver.permission.ACCESS*' -and
+            $half.Reason -notlike '*c2dm*' -and $half.Reason -notlike '*OpenInFacebook*') `
         "A rename of one permission of the two passed the allowlist of both: $($half.Reason)"
 
     # The SBOM a receipt names. Each refusal has to name the SBOM fact that failed rather than trip
@@ -5755,12 +5765,14 @@ try {
 
     $androidName = 'http://schemas.android.com/apk/res/android:name(0x01010003)='
     $androidExported = '          A: http://schemas.android.com/apk/res/android:exported(0x01010010)=true'
-    # Facebook asks for the two permissions it shares with Meta's other apps, and the patched build
-    # asks for them under the names Install beside Meta's apps gives them: the change the checked-in
-    # allowlist approves, and the only one the patches make here.
+    # Facebook asks for the two permissions it shares with Meta's other apps and for Google's push,
+    # and the patched build asks for the two under the names Install beside Meta's apps gives them
+    # and for microG-RE's push in place of Google's, and exports Open in Facebook's share target: the
+    # changes the checked-in allowlist approves, and the only ones the patches make here.
     function Get-FixtureManifest([string]$Build, [string]$Code, [switch]$WithSplit, [switch]$Renamed,
             [string]$Package = $releaseTarget.PackageName) {
         $prefix = if ($Renamed) { 'app.hushfacebook.' } else { 'com.facebook.' }
+        $push = if ($Renamed) { 'app.revanced.android.c2dm.' } else { 'com.google.android.c2dm.' }
         $lines = @(
             'N: android=http://schemas.android.com/apk/res/android (line=1)',
             '  E: manifest (line=1)',
@@ -5773,10 +5785,17 @@ try {
             "        A: $androidName`"${prefix}permission.prod.FB_APP_COMMUNICATION`" (Raw: `"${prefix}permission.prod.FB_APP_COMMUNICATION`")",
             '      E: uses-permission (line=12)',
             "        A: $androidName`"${prefix}receiver.permission.ACCESS`" (Raw: `"${prefix}receiver.permission.ACCESS`")",
+            '      E: uses-permission (line=13)',
+            "        A: $androidName`"${push}permission.RECEIVE`" (Raw: `"${push}permission.RECEIVE`")",
             '      E: application (line=20)',
             '        E: activity (line=21)',
             "          A: $androidName`"com.facebook.katana.LoginActivity`" (Raw: `"com.facebook.katana.LoginActivity`")",
             $androidExported)
+        if ($Renamed) {
+            $lines += @('        E: activity (line=30)',
+                "          A: $androidName`"app.morphe.extension.facebook.misc.OpenInFacebook`" (Raw: `"app.morphe.extension.facebook.misc.OpenInFacebook`")",
+                $androidExported)
+        }
         if ($WithSplit) {
             $lines += @('        E: activity (line=40)',
                 "          A: $androidName`"com.facebook.split.FeatureActivity`" (Raw: `"com.facebook.split.FeatureActivity`")",
@@ -5867,7 +5886,7 @@ try {
     }
 
     # A fixture for every declared build and the newer one: one target each, only the newer build
-    # forced, every patch applied, and no manifest change but the rename, because the patched
+    # forced, every patch applied, and no manifest change but the reviewed ones, because the patched
     # manifest is held to the merge and not to the base.
     $builtBuilds = @($releaseTarget.PackageVersions) + @($newerBuild)
     $allFixtures = @($builtBuilds | ForEach-Object { $fixturePaths[$_] })
@@ -5898,10 +5917,10 @@ try {
             "The receipt does not hash the $label fixture it was given."
         Assert-True (@($builtTarget.patches | Where-Object { $_.applied }).Count -eq $releaseNames.Count) `
             "The receipt does not record every patch applied to $label."
-        # The rename is the patches' change. The split's activity the merge brings in is the merge's.
-        $changes = @(ConvertTo-ManifestDeltaEntries -Delta $builtTarget.manifestDelta)
+        # The reviewed changes are the patches'. The split's activity the merge brings in is the merge's.
+        $changes = @(ConvertTo-ManifestDeltaEntries -Delta $builtTarget.manifestDelta | Sort-Object -Unique -CaseSensitive)
         Assert-True (($changes -join "`n") -ceq (@($checkedInAllowlist | Sort-Object -Unique -CaseSensitive) -join "`n")) `
-            "The receipt records other manifest changes for $label than the patches' rename: $($changes -join ', ')"
+            "The receipt records other manifest changes for $label than the patches' reviewed ones: $($changes -join ', ')"
     }
     # Each fixture merged once, and the CLI handed that merge rather than the bundle: the CLI deletes
     # its own merge, and the manifest delta above is taken against this one.

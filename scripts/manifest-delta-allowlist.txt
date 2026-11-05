@@ -27,3 +27,16 @@ permission-added app.hushfacebook.permission.prod.FB_APP_COMMUNICATION
 permission-added app.hushfacebook.receiver.permission.ACCESS
 permission-removed com.facebook.permission.prod.FB_APP_COMMUNICATION
 permission-removed com.facebook.receiver.permission.ACCESS
+
+# Open in Facebook from the share menu (#111). The share target has to be exported or no other
+# app's share sheet can list it. It takes text/plain only, keeps the first facebook.com, fb.com,
+# fb.watch or fb.me address in it (a Facebook host, never one inside another site's address) and
+# hands that to Facebook's own link screen by package and class, then finishes. Anything else it
+# drops, so another app reaches nothing through it that a facebook.com link it opens couldn't.
+exported-added activity:app.morphe.extension.facebook.misc.OpenInFacebook
+
+# GmsCore support, for phones without Google Play services. Push comes from microG-RE there, which
+# sends under its own app.revanced.android.c2dm names, so Facebook asks for that RECEIVE permission
+# in place of Google's. Nothing is granted that Google's name didn't grant, to a different sender.
+permission-added app.revanced.android.c2dm.permission.RECEIVE
+permission-removed com.google.android.c2dm.permission.RECEIVE
