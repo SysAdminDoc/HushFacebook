@@ -54,7 +54,8 @@ param(
     # The walk, step by step. A link is opened and swiped -Swipes times. "tap:<label>" taps the
     # node whose text or description is exactly <label>, from a fresh dump, scrolling back up to
     # find it, and only labels that open or expand something belong here: never Like, Follow,
-    # Add friend, Send or a person. "longpress" holds the middle of the screen, "back" goes back.
+    # Add friend, Send or a person. "longpress" holds the screen's center line 3/8 of the way down,
+    # "back" goes back.
     # "query" types $AuditQuery into the search field fb://search just opened and submits it.
     # No fb://groups or fb://friends: all-on hides those tabs, and their links then land nowhere
     # or on Android's app chooser.
@@ -576,7 +577,7 @@ function Send-Profile([string]$Json) {
 }
 
 # The keys to turn off: [WalkKeys] that -On didn't ask for, then every -Off key, each once. The
-# walk's hold in the middle of a reel reaches Hold a reel for 2x only with Long press opens
+# walk's hold on a reel reaches Hold a reel for 2x only with Long press opens
 # comments and Only on the right edge off: either one sends it to the comment sheet or Facebook's
 # menu instead. With the reel waiting for Tap to play, that hold is the only thing on the walk that
 # sets a reel's speed (585 sets none for a reel that hasn't started), so Hold a reel for 2x and
@@ -1023,6 +1024,10 @@ if ($size -notmatch '(\d+)x(\d+)\s*$') { throw "Could not read the screen size: 
 $width = [int]$Matches[1]; $height = [int]$Matches[2]
 if ($MinimumTapY -ge $height) { throw 'MinimumTapY must be below the bottom of the screen.' }
 $swipeX = [int]($width / 2); $swipeFrom = [int]($height * 0.75); $swipeTo = [int]($height * 0.3)
+# A reel waiting for Tap to play has Facebook's play button at the middle of the screen, which takes
+# a hold there as a press of its own: the reel stays paused and Hold a reel for 2x never hears it.
+# 3/8 of the way down is still the reel and clear of that button.
+$holdY = [int]($height * 0.375)
 $sdk = [int](((Invoke-Adb shell getprop ro.build.version.sdk) -join '').Trim())
 if ($Locales.Count -gt 0 -and $sdk -lt 33) { throw 'App-locale passes require Android 13 or newer.' }
 $stateBefore = [ordered]@{ schema = 1; serial = $Serial; device = $deviceIdentity; package = $Package
@@ -1122,7 +1127,7 @@ try {
             } elseif ($step -eq 'longpress') {
                 $inputReel = $routeReel
                 $inputWindow = if ($routeReel) { $routeWindow }
-                try { Invoke-Adb shell input swipe $swipeX ([int]($height / 2)) $swipeX ([int]($height / 2)) 2500 | Out-Null }
+                try { Invoke-Adb shell input swipe $swipeX $holdY $swipeX $holdY 2500 | Out-Null }
                 finally { $inputReel = $false; $inputWindow = $null }
                 Start-Sleep -Seconds 1
                 $inputReel = $routeReel
