@@ -49,6 +49,8 @@ public class StoryTapsTest {
     public void restore() {
         Settings.STORY_PLAY_BUTTON.resetToDefault();
         Settings.STORY_DOUBLE_TAP.resetToDefault();
+        Settings.BLOCK_STORY_AUTO_ADVANCE.resetToDefault();
+        StoryAdvance.forgetForTests();
         StoryTaps.forgetForTests();
     }
 
@@ -144,6 +146,61 @@ public class StoryTapsTest {
         assertFalse("Facebook changes stories", tap(2000, width * .9f));
         assertFalse("the next story plays", StoryTaps.paused());
         assertEquals(View.GONE, button.getVisibility());
+    }
+
+    /**
+     * #380: a story Stop Story auto-advance holds at its end shows the button with the replay
+     * symbol, which stays, and a tap on it starts the story again with any pause from here off.
+     */
+    @Test
+    public void aStoryHeldAtItsEndShowsAReplayButtonThatStartsItAgain() {
+        Settings.STORY_PLAY_BUTTON.save(true);
+        Settings.BLOCK_STORY_AUTO_ADVANCE.save(true);
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        float width = viewerWithAPauser(activity);
+        assertTrue(tap(1000, width * .5f));
+        View button = activity.getWindow().getDecorView().findViewWithTag(StoryTaps.TAG);
+        assertTrue("paused from here", button.performClick());
+        assertTrue(StoryTaps.paused());
+
+        int[] restarts = {0};
+        StoryAdvance.restartForTests = () -> restarts[0]++;
+        Object callback = new Object();
+        StoryAdvance.held(callback);
+        shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(View.VISIBLE, button.getVisibility());
+        assertEquals("Replay story", button.getContentDescription().toString());
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(5));
+        assertEquals("it waits on the last frame", View.VISIBLE, button.getVisibility());
+
+        assertTrue(button.performClick());
+        assertEquals(1, restarts[0]);
+        assertFalse("the pause came off", StoryTaps.paused());
+        assertEquals("Pause story", button.getContentDescription().toString());
+        StoryAdvance.progressed(0);
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(5));
+        assertEquals("put away once the story plays", View.GONE, button.getVisibility());
+    }
+
+    @Test
+    public void withDoubleTapAndNoButtonASingleTapReplaysAHeldStory() {
+        Settings.STORY_DOUBLE_TAP.save(true);
+        Settings.BLOCK_STORY_AUTO_ADVANCE.save(true);
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        viewerWithAPauser(activity);
+        int[] restarts = {0};
+        StoryAdvance.restartForTests = () -> restarts[0]++;
+        Object callback = new Object();
+        StoryAdvance.held(callback);
+        assertTrue(tap(1000, 300));
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
+        assertEquals(1, restarts[0]);
+        assertFalse(StoryAdvance.finished());
+        // A story that's playing pauses as before.
+        assertTrue(tap(5000, 300));
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
+        assertEquals(1, restarts[0]);
+        assertTrue(StoryTaps.paused());
     }
 
     @Test

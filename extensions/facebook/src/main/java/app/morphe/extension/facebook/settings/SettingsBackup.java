@@ -200,6 +200,7 @@ public final class SettingsBackup {
             Settings.STORY_DOUBLE_TAP,
             Settings.HIDE_STORY_CREDITS,
             Settings.HIDE_STORY_REPLY_SUGGESTIONS,
+            Settings.HIDE_STORY_SUBSCRIBE,
             Settings.STORY_PROGRESS_BAR,
             Settings.PINCH_TO_ZOOM,
             Settings.PINCH_TO_ZOOM_KEEP,

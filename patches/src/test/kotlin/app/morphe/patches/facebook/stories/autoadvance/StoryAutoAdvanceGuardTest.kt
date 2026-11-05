@@ -11,7 +11,10 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
@@ -63,9 +66,36 @@ class StoryAutoAdvanceGuardTest {
         val body = method.implementation!!.instructions.toList()
         assertEquals(Opcode.MOVE_RESULT, body[6].opcode)
         assertEquals(0, (body[6] as OneRegisterInstruction).registerA)
-        // Held, the callback's class gets the story to start again when Loop stories is on.
-        assertEquals(Opcode.INVOKE_STATIC_RANGE, body[8].opcode)
-        assertEquals(Opcode.RETURN_VOID, body[9].opcode)
+        // Held, the extension keeps the callback for a replay, and the callback's class gets the
+        // story to start again when Loop stories is on.
+        assertEquals(HELD, ((body[8] as ReferenceInstruction).reference as MethodReference).toString())
+        assertEquals(Opcode.INVOKE_STATIC_RANGE, body[9].opcode)
+        assertEquals(Opcode.RETURN_VOID, body[10].opcode)
+    }
+
+    /** A touch release that moves a finished story on: the guard skips the call, and only the call. */
+    @Test
+    fun `a touch release skips its navigation while the story is held`() {
+        val method = callback(
+            2,
+            """
+                iget v1, p0, Lfixture/Controller;->progress:I
+                const/16 v0, 0x3e8
+                if-ne v1, v0, :done
+                const/4 v0, 0x0
+                invoke-static {v0, p0}, $navigate
+                :done
+                return-void
+            """,
+        )
+        val register = method.waitForTapRegister(4)
+        assertEquals("the call still reads v0", 1, register)
+        method.addInstructionsWithLabels(4, releaseBlock(register), ExternalLabel("held", method.getInstruction(5)))
+        val body = method.implementation!!.instructions.toList()
+        assertEquals(Opcode.IF_NEZ, body[6].opcode)
+        assertEquals(Opcode.INVOKE_STATIC, body[7].opcode)
+        assertEquals("lands on the return after the call", 8, (body[6] as BuilderOffsetInstruction).target.location.index)
+        assertEquals(Opcode.RETURN_VOID, body[8].opcode)
     }
 
     /**

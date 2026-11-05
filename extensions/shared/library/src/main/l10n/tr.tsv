@@ -2527,9 +2527,12 @@ A tap in the middle of a story shows a play and pause button, like Reels. Taps o
 Stories change only on a double tap, the left side for the one before and anywhere else for the next. A single tap pauses or plays the story, or shows the play button when that's on.	Hikayeler yalnızca çift dokunuşla değişir, sol taraf bir öncekine, başka her yer bir sonrakine geçer. Tek dokunuş hikayeyi duraklatır veya oynatır, ya da açıksa oynatma düğmesini gösterir.
 Pause story	Hikayeyi duraklat
 Play story	Hikayeyi oynat
+Replay story	Hikayeyi yeniden oynat
 Hide song and effect credits	Şarkı ve efekt bilgilerini gizle
 Hide reply suggestions	Yanıt önerilerini gizle
 Takes the song and effect credits off the line under the poster's name on a story. Applies from the next story you open.	Hikayede paylaşan kişinin adının altındaki satırdan şarkı ve efekt bilgilerini kaldırır. Açtığın bir sonraki hikayeden itibaren geçerli olur.
 Takes the row of suggested replies off the bottom of a story. The reply box stays. Applies from the next story you open.	Bir hikayenin altındaki önerilen yanıtlar satırını kaldırır. Yanıt kutusu kalır. Açtığın bir sonraki hikayeden itibaren geçerli olur.
+Hide the Subscribe button	Abone ol düğmesini gizle
+Takes the Subscribe button off the top of a story. Applies from the next story you open.	Bir hikayenin üstündeki Abone ol düğmesini kaldırır. Açtığın bir sonraki hikayeden itibaren geçerli olur.
 Progress bar at the bottom	Altta ilerleme çubuğu
 Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	Bir hikayenin altında, oynatıldıkça dolan ince bir çubuk gösterir, Reels'teki gibi.

@@ -59,6 +59,15 @@ class StoryLoopFixtureTest {
                     guard!!.exceptionHandlers.single().exceptionType)
                 assertEquals("${bundle.name}: the handler reads the throwable", Opcode.MOVE_EXCEPTION,
                     helper[LOOP_RESTART_TO + 1].opcode)
+
+                // The play button's replay makes the same restart with no switch, answering whether it
+                // reached the reset (#380).
+                assertFalse("${bundle.name}: the class already has the restart helper", owner.methods.any { it.name == RESTART_HELPER })
+                val restart = restartHelper(owner.type, route).implementation!!.instructions.toList()
+                assertEquals("${bundle.name}: the restart helper's body", 11, restart.size)
+                assertEquals(Opcode.INVOKE_VIRTUAL, restart[0].opcode)
+                assertEquals(Opcode.INVOKE_INTERFACE, restart[6].opcode)
+                assertEquals(Opcode.RETURN, restart[8].opcode)
                 checked += version
             }
         }

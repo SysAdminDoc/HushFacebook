@@ -2527,9 +2527,12 @@ A tap in the middle of a story shows a play and pause button, like Reels. Taps o
 Stories change only on a double tap, the left side for the one before and anywhere else for the next. A single tap pauses or plays the story, or shows the play button when that's on.	Stories wechseln nur bei Doppeltippen, links zur vorherigen und überall sonst zur nächsten. Einfaches Tippen pausiert die Story oder spielt sie ab, oder zeigt die Play-Taste, wenn sie an ist.
 Pause story	Story pausieren
 Play story	Story abspielen
+Replay story	Story erneut abspielen
 Hide song and effect credits	Song- und Effekt-Credits ausblenden
 Hide reply suggestions	Antwortvorschläge ausblenden
 Takes the song and effect credits off the line under the poster's name on a story. Applies from the next story you open.	Entfernt die Song- und Effekt-Credits aus der Zeile unter dem Namen der Person, die die Story gepostet hat. Gilt ab der nächsten Story, die du öffnest.
 Takes the row of suggested replies off the bottom of a story. The reply box stays. Applies from the next story you open.	Entfernt die Reihe mit Antwortvorschlägen unten in einer Story. Das Antwortfeld bleibt. Gilt ab der nächsten Story, die du öffnest.
+Hide the Subscribe button	Abonnieren-Button ausblenden
+Takes the Subscribe button off the top of a story. Applies from the next story you open.	Entfernt den Abonnieren-Button oben in einer Story. Gilt ab der nächsten Story, die du öffnest.
 Progress bar at the bottom	Fortschrittsbalken unten
 Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	Zeigt unten in einer Story einen dünnen Balken, der sich beim Abspielen füllt, wie bei Reels.

@@ -4,6 +4,7 @@
  */
 package app.morphe.extension.facebook.stories;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -36,6 +37,7 @@ public class StoryAdvanceTest {
     }
 
     @After public void restore() {
+        StoryAdvance.forgetForTests();
         PauseForTests.resume();
         Settings.BLOCK_STORY_AUTO_ADVANCE.resetToDefault();
         Settings.LOOP_STORIES.resetToDefault();
@@ -69,6 +71,53 @@ public class StoryAdvanceTest {
         Settings.LOOP_STORIES.save(false);
         assertFalse(StoryAdvance.loop());
         assertFalse(line().contains(StoryAdvance.LOOPED));
+    }
+
+    @Test public void aHeldStoryStaysFinishedUntilACardPlaysAgain() {
+        Object callback = new Object();
+        StoryAdvance.held(callback);
+        assertTrue(StoryAdvance.finished());
+        StoryAdvance.progressed(StoryAdvance.COMPLETE);
+        assertTrue("still on its last frame", StoryAdvance.finished());
+        StoryAdvance.progressed(0);
+        assertFalse("the next card started", StoryAdvance.finished());
+
+        StoryAdvance.held(callback);
+        Settings.BLOCK_STORY_AUTO_ADVANCE.save(false);
+        assertFalse("nothing holds it with the switch off", StoryAdvance.finished());
+        Settings.BLOCK_STORY_AUTO_ADVANCE.save(true);
+        StoryAdvance.progressed(10);
+
+        Settings.LOOP_STORIES.save(true);
+        StoryAdvance.held(callback);
+        assertFalse("Loop stories starts it again by itself", StoryAdvance.finished());
+    }
+
+    @Test public void replayRestartsTheHeldStoryOnceAndCountsIt() {
+        assertFalse("nothing held", StoryAdvance.replay());
+        Object callback = new Object();
+        StoryAdvance.held(callback);
+        assertFalse("no restart to make", StoryAdvance.replay());
+        assertTrue("still held for the next try", StoryAdvance.finished());
+
+        int[] restarts = {0};
+        StoryAdvance.restartForTests = () -> restarts[0]++;
+        assertTrue(StoryAdvance.replay());
+        assertEquals(1, restarts[0]);
+        assertFalse(StoryAdvance.finished());
+        assertTrue(line().contains("Counted: " + StoryAdvance.REPLAYED + " 1"));
+        assertFalse("used up", StoryAdvance.replay());
+        assertEquals(1, restarts[0]);
+    }
+
+    @Test public void aRestartThatThrowsLeavesTheStoryWhereItIs() {
+        Object callback = new Object();
+        StoryAdvance.held(callback);
+        StoryAdvance.restartForTests = () -> {
+            throw new IllegalStateException("viewer detached");
+        };
+        assertFalse(StoryAdvance.replay());
+        assertFalse(line().contains(StoryAdvance.REPLAYED));
     }
 
     /** The diagnostic report's line for the patch, or empty when it has none. */

@@ -471,7 +471,7 @@
     },
     {
       "name": "Clean up the story viewer",
-      "description": "Switches that take the song and effect credits off the line under the poster's name on a story, and the suggested replies off the bottom while the reply box stays, plus one that adds a thin progress bar along the bottom like the one on Reels. All start off. Turn them on in Hushfacebook settings > Stories.",
+      "description": "Switches that take the song and effect credits and the Subscribe button off a story, and the suggested replies off the bottom while the reply box stays, plus one that adds a thin progress bar along the bottom like the one on Reels. All start off. Turn them on in Hushfacebook settings > Stories.",
       "category": "Stories",
       "use": true,
       "dependencies": [

@@ -43,6 +43,7 @@ public class StoryViewerCleanupTest {
         PauseForTests.resume();
         Settings.HIDE_STORY_CREDITS.resetToDefault();
         Settings.HIDE_STORY_REPLY_SUGGESTIONS.resetToDefault();
+        Settings.HIDE_STORY_SUBSCRIBE.resetToDefault();
         HookStatus.clear();
     }
 
@@ -76,6 +77,44 @@ public class StoryViewerCleanupTest {
         assertEquals(FamilyNames.STORY_VIEWER_CLEANUP + ": invoked 4, 2 found, 0 missing. Counted: "
                         + StoryViewerCleanup.CREDITS_HIDDEN + " 1, " + StoryViewerCleanup.SUGGESTIONS_HIDDEN + " 1",
                 statusLine());
+    }
+
+    /** Stand-ins for Facebook's pill types, which keep their names in the app. */
+    private enum Pill { MUSIC, SOUND_SYNC, EFFECT, AI_STYLES, CLOSE_FRIEND, POST_RESHARED_TO_STORY, SOMETHING_NEW }
+
+    /** #380: the song and effect pills under the poster's name go with the credit line, the rest stay. */
+    @Test
+    public void theCreditsSwitchDropsOnlySongAndEffectPills() {
+        assertFalse("off, a song pill went", StoryViewerCleanup.dropCredit(Pill.MUSIC));
+        Settings.HIDE_STORY_CREDITS.save(true);
+        for (Pill pill : new Pill[] {Pill.MUSIC, Pill.SOUND_SYNC, Pill.EFFECT, Pill.AI_STYLES}) {
+            assertTrue(pill + " stayed", StoryViewerCleanup.dropCredit(pill));
+        }
+        for (Pill pill : new Pill[] {Pill.CLOSE_FRIEND, Pill.POST_RESHARED_TO_STORY, Pill.SOMETHING_NEW}) {
+            assertFalse(pill + " went", StoryViewerCleanup.dropCredit(pill));
+        }
+        assertFalse("a pill with no type went", StoryViewerCleanup.dropCredit(null));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused, a song pill went", StoryViewerCleanup.dropCredit(Pill.MUSIC));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("a song pill went before the settings were ready", StoryViewerCleanup.dropCredit(Pill.MUSIC)));
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.PILLS_DROPPED + " 4"));
+    }
+
+    @Test
+    public void theSubscribeSwitchStartsOffAndHidesOnlyTheSubscribeButton() {
+        assertFalse(Settings.HIDE_STORY_SUBSCRIBE.defaultValue);
+        assertTrue(PatchFamily.STORY_VIEWER_CLEANUP.switches.contains(Settings.HIDE_STORY_SUBSCRIBE));
+        assertFalse("off, the button went", StoryViewerCleanup.hideSubscribe());
+        Settings.HIDE_STORY_SUBSCRIBE.save(true);
+        assertTrue(StoryViewerCleanup.hideSubscribe());
+        assertFalse("it hid the credits", StoryViewerCleanup.hideCredits());
+        assertFalse("it dropped a song pill", StoryViewerCleanup.dropCredit(Pill.MUSIC));
+        PauseForTests.pause(HushfacebookPause.Reason.CRASH_LOOP);
+        assertFalse("paused, the button went", StoryViewerCleanup.hideSubscribe());
+        PauseForTests.resume();
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.SUBSCRIBE_HIDDEN + " 1"));
     }
 
     @Test

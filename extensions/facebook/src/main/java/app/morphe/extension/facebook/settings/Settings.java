@@ -480,6 +480,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_story_reply_suggestions", FALSE);
 
     /**
+     * The Subscribe pill leaves the top of a story ({@link
+     * app.morphe.extension.facebook.stories.StoryViewerCleanup}, #380). Starts off. Read as the pill draws.
+     */
+    public static final BooleanSetting HIDE_STORY_SUBSCRIBE =
+            new BooleanSetting("hushfacebook_hide_story_subscribe", FALSE);
+
+    /**
      * A thin bar along the bottom of a story fills as it plays ({@link
      * app.morphe.extension.facebook.stories.StoryProgressBar}, #380). Starts off. Read as the story plays.
      */

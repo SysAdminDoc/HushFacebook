@@ -25,10 +25,17 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Field
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 /*
  * The song line under the poster's name on a story, and the suggested replies above the reply box
@@ -53,6 +60,16 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   builds the chip row (ContextualReplyOnViewerComponent, LX/0Ca2;). Its render answers null.
  * - The chooser isn't hooked: its registers are reused for other types further on, so an early
  *   answer there could fail verification. Each component's render is hooked first thing instead.
+ * - On most stories the song is a pill under the name instead (#380, que102's video, 11-05), drawn by
+ *   StoryViewerMultipleAttributionLinksColumnComponent (LX/0cVh;). Its render walks the story's
+ *   links, reads each one's type (an enum, LX/05KM;, whose names are MUSIC, EFFECT, SPOTIFY and so
+ *   on) and switches on its ordinal to build that pill, the switch's fall-through being the step to
+ *   the next link. The patch asks the extension about the type right before the ordinal and, on a
+ *   yes, takes that step, so the pill is never built.
+ * - The Subscribe pill under the name (LX/0b2T;) names nothing itself. Its click handler, a shared
+ *   lambda class, casts it back from a field in the case that hands "SubscribeButtonComponent" to
+ *   the subscribe call, so the pill is the nearest component cast before that string with the
+ *   pill's three fields. Its render answers null itself for a card it's been told to skip.
  */
 
 internal const val STORY_VIEWER_CLEANUP_PATCH = "Clean up the story viewer"
@@ -71,6 +88,23 @@ private const val LABEL_REACH = 12
 internal const val STORY_VIEWER_CLEANUP = "$EXTENSION_PACKAGE/stories/StoryViewerCleanup;"
 internal const val HIDE_CREDITS = "$STORY_VIEWER_CLEANUP->hideCredits()Z"
 internal const val HIDE_REPLY_SUGGESTIONS = "$STORY_VIEWER_CLEANUP->hideReplySuggestions()Z"
+internal const val DROP_CREDIT = "$STORY_VIEWER_CLEANUP->dropCredit(Ljava/lang/Enum;)Z"
+internal const val HIDE_SUBSCRIBE = "$STORY_VIEWER_CLEANUP->hideSubscribe()Z"
+
+/** The column of credit pills under the poster's name, by the name it gives itself. */
+internal const val LINKS_COLUMN = "StoryViewerMultipleAttributionLinksColumnComponent"
+
+/** Two of the pill types' names, which the type enum's static initializer must hold. */
+internal val PILL_TYPE_NAMES = listOf("MUSIC", "EFFECT")
+
+/** What the Subscribe pill's click handler hands the subscribe call. */
+internal const val SUBSCRIBE_CLICK = "SubscribeButtonComponent"
+
+/** The Subscribe pill's fields: the session, the card and whether it shows on this card only. */
+internal val SUBSCRIBE_FIELDS = listOf("Lcom/facebook/auth/usersession/FbUserSession;", "Lcom/facebook/stories/model/StoryCard;", "Z")
+
+/** How far before the string the click handler casts the pill: 48 instructions in 585. */
+private const val SUBSCRIBE_REACH = 80
 
 /**
  * Takes the song and effect credits off the line under the poster's name on a story, and the
@@ -81,7 +115,7 @@ internal const val HIDE_REPLY_SUGGESTIONS = "$STORY_VIEWER_CLEANUP->hideReplySug
 @Suppress("unused")
 val storyViewerCleanupPatch = bytecodePatch(
     name = "Clean up the story viewer",
-    description = "Switches that take the song and effect credits off the line under the poster's name on a story, and the " +
+    description = "Switches that take the song and effect credits and the Subscribe button off a story, and the " +
         "suggested replies off the bottom while the reply box stays, plus one that adds a thin progress bar along the " +
         "bottom like the one on Reels. All start off. Turn them on in Hushfacebook settings > Stories.",
 ) {
@@ -92,6 +126,8 @@ val storyViewerCleanupPatch = bytecodePatch(
     execute {
         requireStatusMethod("storyViewerCleanup")
         cleanUpStoryViewer()
+        dropCreditPills()
+        hideSubscribePill()
         followStoryProgress()
         enableStatus("storyViewerCleanup")
     }
@@ -214,4 +250,115 @@ internal fun BytecodePatchContext.cleanUpStoryViewer() {
 
     val (_, suggestions) = component(REPLY_SUGGESTIONS)
     suggestions.answerWhen(HIDE_REPLY_SUGGESTIONS, "const/4 v0, 0x0")
+}
+
+/**
+ * Where the links column's render sorts a pill by its type: the call at [read] answers the type
+ * into [type], a null check follows, then the ordinal at [ordinal] goes into [scratch] for the
+ * switch, whose fall-through at [next] is the step to the next link. [typeClass] is the enum.
+ */
+internal data class PillSwitch(val read: Int, val type: Int, val ordinal: Int, val scratch: Int, val next: Int, val typeClass: String)
+
+private val INVOKES = setOf(Opcode.INVOKE_INTERFACE, Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_INTERFACE_RANGE, Opcode.INVOKE_VIRTUAL_RANGE)
+
+/** The one register an invoke of one register names, or null. */
+private fun Instruction.soleRegister(): Int? = when (this) {
+    is RegisterRangeInstruction -> startRegister.takeIf { registerCount == 1 }
+    is FiveRegisterInstruction -> registerC.takeIf { registerCount == 1 }
+    else -> null
+}
+
+/**
+ * The one place in [render] where a no-argument call answers an object, a null check on it
+ * follows, and its `Enum.ordinal()` feeds a switch whose fall-through soon jumps back up, the
+ * loop's step to its next item. Null unless there's exactly one.
+ */
+internal fun pillSwitch(render: Method): PillSwitch? {
+    val code = render.implementation?.instructions?.toList() ?: return null
+    val at = code.runningFold(0) { offset, it -> offset + it.codeUnits }
+    val found = (3 until code.size - 3).mapNotNull { i ->
+        val ordinal = code[i]
+        val ordinalRef = (ordinal as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
+        if (ordinal.opcode != Opcode.INVOKE_VIRTUAL && ordinal.opcode != Opcode.INVOKE_VIRTUAL_RANGE) return@mapNotNull null
+        if (ordinalRef.definingClass != "Ljava/lang/Enum;" || ordinalRef.name != "ordinal") return@mapNotNull null
+        val type = ordinal.soleRegister() ?: return@mapNotNull null
+        val (read, result, check) = Triple(code[i - 3], code[i - 2], code[i - 1])
+        val readRef = (read as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
+        val (moved, switch) = code[i + 1] to code[i + 2]
+        val scratch = (moved as? OneRegisterInstruction)?.registerA ?: return@mapNotNull null
+        val shaped = read.opcode in INVOKES && readRef.parameterTypes.isEmpty() && readRef.returnType.startsWith("L") &&
+            result.opcode == Opcode.MOVE_RESULT_OBJECT && (result as OneRegisterInstruction).registerA == type &&
+            check.opcode == Opcode.IF_EQZ && (check as OneRegisterInstruction).registerA == type &&
+            moved.opcode == Opcode.MOVE_RESULT && scratch <= 15 &&
+            (switch.opcode == Opcode.SPARSE_SWITCH || switch.opcode == Opcode.PACKED_SWITCH) &&
+            (switch as OneRegisterInstruction).registerA == scratch
+        // The step: a jump back above the read, within the few instructions after the switch.
+        val steps = (i + 3 until minOf(code.size, i + 7)).any { j ->
+            val jump = code[j]
+            (jump.opcode == Opcode.GOTO || jump.opcode == Opcode.GOTO_16 || jump.opcode == Opcode.GOTO_32) &&
+                at[j] + (jump as OffsetInstruction).codeOffset < at[i - 3]
+        }
+        if (shaped && steps) PillSwitch(i - 3, type, i, scratch, i + 3, readRef.returnType) else null
+    }
+    return found.singleOrNull()
+}
+
+/**
+ * Leaves the song and effect pills out of the column under the poster's name: right before the
+ * ordinal, the extension hears the pill's type, and on a yes the loop takes its step to the next
+ * link. The switch register is free there, since the ordinal is about to fill it.
+ */
+internal fun BytecodePatchContext.dropCreditPills() {
+    val (_, render) = component(LINKS_COLUMN)
+    val site = pillSwitch(render) ?: refuse("$LINKS_COLUMN doesn't switch on one pill type's ordinal inside its loop")
+    val enum = classDefByOrNull(site.typeClass)?.takeIf { it.superclass == "Ljava/lang/Enum;" }
+        ?: refuse("$LINKS_COLUMN's pill type ${site.typeClass} isn't an enum")
+    val names = enum.methods.singleOrNull { it.name == "<clinit>" }
+    if (names == null || PILL_TYPE_NAMES.any { !holdsString(names, it) }) {
+        refuse("$LINKS_COLUMN's pill type ${site.typeClass} doesn't name $PILL_TYPE_NAMES")
+    }
+    render.addInstructionsWithLabels(
+        site.ordinal,
+        """
+            invoke-static/range { v${site.type} .. v${site.type} }, $DROP_CREDIT
+            move-result v${site.scratch}
+            if-nez v${site.scratch}, :next_pill
+        """,
+        ExternalLabel("next_pill", render.getInstruction(site.next)),
+    )
+}
+
+/** Whether [classDef] is a component with the Subscribe pill's three instance fields and a render. */
+internal fun isSubscribePill(classDef: ClassDef): Boolean = renderOf(classDef) != null &&
+    classDef.fields.filter { !AccessFlags.STATIC.isSet(it.accessFlags) }.map { it.type }.sorted() == SUBSCRIBE_FIELDS.sorted()
+
+/**
+ * The types the Subscribe pill's click handler in [holder] casts its component to: for each
+ * [SUBSCRIBE_CLICK] string, the nearest check-cast before it to a class [lookup] finds to be the pill.
+ */
+internal fun subscribePills(holder: ClassDef, lookup: (String) -> ClassDef?): Set<String> =
+    holder.methods.filter { holdsString(it, SUBSCRIBE_CLICK) }.flatMap { method ->
+        val code = method.implementation!!.instructions.toList()
+        code.indices.filter {
+            (code[it].opcode == Opcode.CONST_STRING || code[it].opcode == Opcode.CONST_STRING_JUMBO) &&
+                ((code[it] as ReferenceInstruction).reference as StringReference).string == SUBSCRIBE_CLICK
+        }.mapNotNull { at ->
+            (at - 1 downTo maxOf(0, at - SUBSCRIBE_REACH)).asSequence()
+                .filter { code[it].opcode == Opcode.CHECK_CAST }
+                .map { ((code[it] as ReferenceInstruction).reference as TypeReference).type }
+                .firstOrNull { type -> lookup(type)?.let(::isSubscribePill) == true }
+        }
+    }.toSet()
+
+/** Hooks the Subscribe pill's render to answer null, as it does itself for a card it skips. */
+internal fun BytecodePatchContext.hideSubscribePill() {
+    val pills = classDefByStrings(SUBSCRIBE_CLICK, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+        .flatMap { subscribePills(it) { type -> classDefByOrNull(type) } }.toSet()
+    val pill = pills.singleOrNull() ?: refuse("expected one Subscribe pill cast before $SUBSCRIBE_CLICK, found ${pills.size}")
+    val render = renderOf(classDefByOrNull(pill)!!)!!
+    mutableClassDefBy(pill).methods.single {
+        it.name == render.name && it.returnType == render.returnType &&
+            it.parameterTypes.map(CharSequence::toString) == render.parameterTypes.map(CharSequence::toString)
+    }.answerWhen(HIDE_SUBSCRIBE, "const/4 v0, 0x0")
 }

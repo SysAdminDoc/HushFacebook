@@ -10,6 +10,7 @@ import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RectF;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -45,7 +46,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * listener takes a quick second tap as a double tap and drops it, so the patch also gives the
  * listener a double tap callback that hands the second tap's lift to the same tap code ({@link
  * #secondTap}). The pause is Facebook's own, under the reason its own play and pause toggle pauses
- * with, made through stubs the patch fills in. Main thread. Never throws.
+ * with, made through stubs the patch fills in. A story that Stop Story auto-advance holds on its
+ * last frame gets a replay button in place of play and pause, which starts it again ({@link
+ * StoryAdvance#replay}). Main thread. Never throws.
  */
 public final class StoryTaps {
     /** What a double tap that changed stories is counted under. */
@@ -164,6 +167,20 @@ public final class StoryTaps {
         }
     }
 
+    /**
+     * Stop Story auto-advance held a finished story on its last frame, on whatever thread Facebook
+     * reports progress on: with the play button on, it shows with the replay symbol.
+     */
+    static void storyFinished() {
+        main.post(() -> {
+            try {
+                if (Utils.settingsReady() && Settings.STORY_PLAY_BUTTON.get() && StoryAdvance.finished()) show();
+            } catch (Throwable failure) {
+                HookStatus.threw(FamilyNames.STORY_TAPS, "Story replay button", failure);
+            }
+        });
+    }
+
     /** The story viewer, or whatever window Facebook shows a story in, comes to the front. */
     public static void activityResumed(Activity activity) {
         resumed = new WeakReference<>(activity);
@@ -255,10 +272,18 @@ public final class StoryTaps {
         return gap >= 0 && gap <= ViewConfiguration.getDoubleTapTimeout() && dx * dx + dy * dy <= slop * slop;
     }
 
-    /** A held tap that no second tap came for: the play button when that's on, else a pause or play. */
+    /**
+     * A held tap that no second tap came for: the play button when that's on, else a pause or
+     * play, or a replay of a story held on its last frame.
+     */
     private static void singleTap() {
         try {
-            if (!Utils.settingsReady() || !Settings.STORY_DOUBLE_TAP.get() || !canPause()) return;
+            if (!Utils.settingsReady() || !Settings.STORY_DOUBLE_TAP.get()) return;
+            if (!Settings.STORY_PLAY_BUTTON.get() && StoryAdvance.finished()) {
+                replay();
+                return;
+            }
+            if (!canPause()) return;
             if (Settings.STORY_PLAY_BUTTON.get()) {
                 show();
             } else {
@@ -404,7 +429,7 @@ public final class StoryTaps {
     static boolean show() {
         PlayButton shown = button(true);
         if (shown == null) return false;
-        shown.playing(!paused());
+        shown.state(!paused(), StoryAdvance.finished());
         shown.animate().cancel();
         if (shown.getVisibility() != View.VISIBLE) {
             shown.setAlpha(0f);
@@ -430,14 +455,18 @@ public final class StoryTaps {
         shown.animate().alpha(0f).setDuration(FADE_MS).withEndAction(() -> shown.setVisibility(View.GONE));
     }
 
-    /** Keeps a showing button's symbol right, and hides it a while after the last tap once the story plays. */
+    /**
+     * Keeps a showing button's symbol right, and hides it a while after the last tap once the story
+     * plays. On a story held at its end it stays, offering the replay.
+     */
     private static void refresh() {
         try {
             PlayButton shown = button(false);
             if (shown == null || shown.getVisibility() != View.VISIBLE) return;
             boolean playing = !paused();
-            shown.playing(playing);
-            if (playing && SystemClock.uptimeMillis() - touched >= HIDE_AFTER_MS) {
+            boolean finished = StoryAdvance.finished();
+            shown.state(playing, finished);
+            if (playing && !finished && SystemClock.uptimeMillis() - touched >= HIDE_AFTER_MS) {
                 hide(true);
                 return;
             }
@@ -449,16 +478,32 @@ public final class StoryTaps {
 
     private static void buttonTapped() {
         try {
-            boolean pause = !paused();
-            if (!setPaused(pause)) return;
+            if (StoryAdvance.finished()) {
+                if (!replay()) return;
+            } else {
+                boolean pause = !paused();
+                if (!setPaused(pause)) return;
+            }
             touched = SystemClock.uptimeMillis();
             PlayButton shown = button(false);
-            if (shown != null) shown.playing(!pause);
+            if (shown != null) shown.state(!paused(), StoryAdvance.finished());
             main.removeCallbacks(refresh);
             main.postDelayed(refresh, REFRESH_MS);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_TAPS, "Story play button tap", failure);
         }
+    }
+
+    /**
+     * Starts a story held on its last frame again. A pause from here comes off first, so the story
+     * plays from the start rather than waiting there. False when nothing restarted.
+     */
+    private static boolean replay() {
+        Object target = pauser.get();
+        Object reason = pauseReason();
+        if (target != null && reason != null && paused()) resumeWith(target, reason);
+        pausedHere = false;
+        return StoryAdvance.replay();
     }
 
     /** Forgets every tap, pauser and window, for tests. */
@@ -479,21 +524,27 @@ public final class StoryTaps {
         readFields = new ArrayList<>();
     }
 
-    /** The play and pause button: a dark disc with a white symbol, pause bars while the story plays. */
+    /**
+     * The play and pause button: a dark disc with a white symbol, pause bars while the story plays
+     * and a circular arrow on a story held at its end.
+     */
     static final class PlayButton extends View {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Path path = new Path();
-        boolean playing;
+        private final RectF arc = new RectF();
+        boolean playing, finished;
 
         PlayButton(Context context) {
             super(context);
-            playing(true);
+            state(true, false);
         }
 
-        void playing(boolean now) {
-            if (playing == now && getContentDescription() != null) return;
-            playing = now;
-            setContentDescription(now ? L10n.t("Pause story") : L10n.t("Play story"));
+        void state(boolean nowPlaying, boolean nowFinished) {
+            if (playing == nowPlaying && finished == nowFinished && getContentDescription() != null) return;
+            playing = nowPlaying;
+            finished = nowFinished;
+            setContentDescription(nowFinished ? L10n.t("Replay story")
+                    : nowPlaying ? L10n.t("Pause story") : L10n.t("Play story"));
             invalidate();
         }
 
@@ -508,7 +559,22 @@ public final class StoryTaps {
             paint.setColor(0xFFFFFFFF);
             // The symbol's square box, centered on the disc.
             float s = r * 1.7f, x = cx - s / 2, y = cy - s / 2;
-            if (playing) {
+            if (finished) {
+                // Three quarters of a ring from the top round to the left, with an arrowhead at the
+                // top pointing into the gap.
+                float ring = s * .22f, top = cy + s * .03f - ring;
+                arc.set(cx - ring, top, cx + ring, top + 2 * ring);
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(s * .08f);
+                canvas.drawArc(arc, -90f, 270f, false, paint);
+                paint.setStyle(Paint.Style.FILL);
+                path.reset();
+                path.moveTo(cx - s * .12f, top);
+                path.lineTo(cx + s * .02f, top - s * .11f);
+                path.lineTo(cx + s * .02f, top + s * .11f);
+                path.close();
+                canvas.drawPath(path, paint);
+            } else if (playing) {
                 canvas.drawRect(x + s * .32f, y + s * .28f, x + s * .44f, y + s * .72f, paint);
                 canvas.drawRect(x + s * .56f, y + s * .28f, x + s * .68f, y + s * .72f, paint);
             } else {

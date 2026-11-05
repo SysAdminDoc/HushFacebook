@@ -741,6 +741,8 @@ final class FeedPages {
                 stories.addPreference(toggle(context, Settings.HIDE_STORY_REPLY_SUGGESTIONS,
                         L10n.t("Takes the row of suggested replies off the bottom of a story. The reply box stays. "
                                 + "Applies from the next story you open.")));
+                stories.addPreference(toggle(context, Settings.HIDE_STORY_SUBSCRIBE,
+                        L10n.t("Takes the Subscribe button off the top of a story. Applies from the next story you open.")));
                 stories.addPreference(toggle(context, Settings.STORY_PROGRESS_BAR,
                         L10n.t("Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.")));
             }
