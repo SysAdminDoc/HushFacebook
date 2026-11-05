@@ -51,6 +51,10 @@ import app.morphe.extension.shared.settings.Setting;
  * is left alone. A host gets its visibility back when Litho takes it off the screen, so one Litho
  * hands to something else comes back as Facebook left it. Off, paused, before the settings are
  * ready, or when anything here fails, the bar is Facebook's own.
+ *
+ * <p>A second switch takes Back itself, the clickable host nearest the bar's start, the same way
+ * (#388). On the Reels tab's header that host is Menu, so with the title switch on as well the
+ * header keeps nothing on its start side (#390). The phone's own back still works.
  */
 public final class ViewerTopBar {
     private static final String FAMILY = FamilyNames.REEL_DECLUTTER;
@@ -62,6 +66,9 @@ public final class ViewerTopBar {
 
     /** Counted for each part of the Reels tab's title taken off its header. */
     static final String TITLE_HIDDEN = "Reels title hidden";
+
+    /** Counted for each Back (or Menu, on the Reels tab) taken off a viewer's top bar. */
+    static final String BACK_HIDDEN = "Viewer Back button hidden";
 
     /** How many levels under the bar a button is looked for. 585's sit 2 to 5 down. */
     static final int MAX_DEPTH = 8;
@@ -146,7 +153,7 @@ public final class ViewerTopBar {
 
     private static void laidOut(Activity activity) {
         int id = id();
-        if (id == 0 || (hidden.isEmpty() && !on() && !titleOn())) return;
+        if (id == 0 || (hidden.isEmpty() && !on() && !titleOn() && !backOn())) return;
         if (FeedVideoAlone.PLAYER_SCREENS.contains(activity.getClass().getName())) {
             View bar = activity.findViewById(id);
             if (bar != null) tidy(bar);
@@ -171,6 +178,11 @@ public final class ViewerTopBar {
         return Utils.settingsReady() && !Setting.isPaused() && Settings.HIDE_VIEWER_TOP_BUTTONS.get();
     }
 
+    /** Whether the bar's Back, Menu on the Reels tab, goes now (#388, #390). */
+    private static boolean backOn() {
+        return Utils.settingsReady() && !Setting.isPaused() && Settings.HIDE_VIEWER_BACK_BUTTON.get();
+    }
+
     /**
      * Hides each far button of [bar] while the switch is on, and shows again any it hid that no
      * longer is one, or every one when the switch is off. Answers how many it hid this time.
@@ -186,14 +198,17 @@ public final class ViewerTopBar {
     static int tidy(View bar, boolean tab) {
         boolean on = on();
         boolean title = tab && titleOn();
+        boolean start = backOn();
         List<View> far = on ? farButtons(bar) : new ArrayList<>();
         List<View> titles = title ? titleHosts(bar) : new ArrayList<>();
+        View back = start ? backButton(bar) : null;
         List<View> wanted = new ArrayList<>(far);
         wanted.addAll(titles);
+        if (back != null) wanted.add(back);
         for (View host : new ArrayList<>(hidden.keySet())) {
             if (host != null && !wanted.contains(host) && within(bar, host)) show(host);
         }
-        if (!on && !title) return 0;
+        if (!on && !title && !start) return 0;
         HookStatus.invoked(FAMILY);
         if (title && !titleLogged.containsKey(bar)) {
             titleLogged.put(bar, Boolean.TRUE);
@@ -224,6 +239,14 @@ public final class ViewerTopBar {
         if (count > 0) {
             int hid = count;
             Logger.printDebug(() -> "Viewer top bar: hid " + hid + " button" + (hid == 1 ? "" : "s") + " past Back");
+        }
+        if (back != null && back.getVisibility() == View.VISIBLE) {
+            back.setVisibility(View.INVISIBLE);
+            remember(back);
+            count++;
+            HookStatus.bound(FAMILY, "viewer back");
+            HookStatus.counted(FAMILY, BACK_HIDDEN);
+            Logger.printDebug(() -> "Viewer top bar: hid " + (tab ? "Back or Menu on a tab's header" : "Back"));
         }
         return count;
     }
@@ -301,20 +324,10 @@ public final class ViewerTopBar {
         List<View> found = new ArrayList<>();
         List<View> far = new ArrayList<>();
         buttons(bar, 0, found);
-        if (found.isEmpty() || bar.getWidth() <= 0) return far;
+        View back = back(bar, found);
+        if (back == null) return far;
         boolean rtl = bar.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
         int middle = bar.getWidth() / 2;
-        View back = null;
-        int backStart = Integer.MAX_VALUE;
-        for (View host : found) {
-            int[] at = offset(bar, host);
-            int start = rtl ? bar.getWidth() - (at[0] + host.getWidth()) : at[0];
-            if (start + host.getWidth() / 2 < middle && start < backStart) {
-                back = host;
-                backStart = start;
-            }
-        }
-        if (back == null) return far;
         int[] backAt = offset(bar, back);
         int backTop = backAt[1];
         int backBottom = backAt[1] + back.getHeight();
@@ -327,6 +340,35 @@ public final class ViewerTopBar {
             far.add(host);
         }
         return far;
+    }
+
+    /**
+     * Back in [bar], the clickable host nearest its start on the start half: Back over an opened
+     * video or reel, Menu on the Reels tab's header. Null when no clickable host sits there.
+     */
+    @Nullable
+    static View backButton(View bar) {
+        List<View> found = new ArrayList<>();
+        buttons(bar, 0, found);
+        return back(bar, found);
+    }
+
+    @Nullable
+    private static View back(View bar, List<View> found) {
+        if (found.isEmpty() || bar.getWidth() <= 0) return null;
+        boolean rtl = bar.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
+        int middle = bar.getWidth() / 2;
+        View back = null;
+        int backStart = Integer.MAX_VALUE;
+        for (View host : found) {
+            int[] at = offset(bar, host);
+            int start = rtl ? bar.getWidth() - (at[0] + host.getWidth()) : at[0];
+            if (start + host.getWidth() / 2 < middle && start < backStart) {
+                back = host;
+                backStart = start;
+            }
+        }
+        return back;
     }
 
     /** Adds the clickable Litho hosts under [view] to [found], a clickable host's own children passed over. */

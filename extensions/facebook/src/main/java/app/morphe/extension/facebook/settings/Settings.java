@@ -746,6 +746,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reels_tab_title", FALSE);
 
     /**
+     * Back at the start of the top bar of a video or reel opened full screen goes, and Menu in the
+     * same spot on the Reels tab's header ({@link app.morphe.extension.facebook.reels.ViewerTopBar},
+     * #388, #390). The phone's own back still goes back. Asked after each layout of the screen.
+     */
+    public static final BooleanSetting HIDE_VIEWER_BACK_BUTTON =
+            new BooleanSetting("hushfacebook_hide_viewer_back_button", FALSE);
+
+    /**
      * Burn-in guard on the Reels screen ({@link app.morphe.extension.facebook.reels.BurnInGuard},
      * #288): once the screen has gone {@link #BURN_IN_WAIT} without a touch, what shows beside the
      * video fades, and with {@link BurnInMode#DIM_AND_SHIFT} the screen also moves a step every two

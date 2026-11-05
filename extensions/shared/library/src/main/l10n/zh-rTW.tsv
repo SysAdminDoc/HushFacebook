@@ -2486,6 +2486,8 @@ Hide the X on posts	隱藏貼文上的 X
 Takes the X off the top corner of posts in your feed. The three-dot menu next to it stays. A change shows on the posts drawn after it.	移除動態中貼文右上角的 X，旁邊的三點選單保留。變更會在之後載入的貼文上生效。
 Hide the Reels title	隱藏 Reels 標題
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	移除 Reels 分頁頂部的 Reels 字樣。旁邊的按鈕會保留。
+Hide Back on opened videos	隱藏已開啟影片的返回按鈕
+Takes the Back arrow off the top of a video or reel you open, and Menu off the top of the Reels tab. Your phone's back gesture or button still goes back.	移除你開啟的影片或 Reels 上方的返回箭頭，以及 Reels 分頁上方的選單按鈕。手機的返回手勢或返回鍵仍然可以返回。
 Videos in search results wait for a tap	搜尋結果中的影片等你點一下
 Videos in search results don't start by themselves. Tap one to play it. Works with Tap to play on or off.	搜尋結果中的影片不會自動播放。點一下某個影片即可播放。無論「點一下播放」開啟或關閉都有效。
 Custom color	自訂顏色

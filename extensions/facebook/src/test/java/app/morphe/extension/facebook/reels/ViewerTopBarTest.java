@@ -91,6 +91,7 @@ public class ViewerTopBarTest {
         PauseForTests.resume();
         Settings.HIDE_VIEWER_TOP_BUTTONS.resetToDefault();
         Settings.HIDE_REELS_TAB_TITLE.resetToDefault();
+        Settings.HIDE_VIEWER_BACK_BUTTON.resetToDefault();
         ViewerTopBar.reset();
         HookStatus.clear();
     }
@@ -268,6 +269,61 @@ public class ViewerTopBarTest {
         assertEquals(View.VISIBLE, back.getVisibility());
         assertEquals(View.INVISIBLE, leftSearch.getVisibility());
         assertEquals(View.INVISIBLE, leftProfile.getVisibility());
+    }
+
+    /** #388: Back over an opened video goes with its own switch, and the buttons past it stay. */
+    @Test
+    public void backGoesWithItsOwnSwitchAndComesBackOff() {
+        assertEquals(0, ViewerTopBar.tidy(bar));
+        assertEquals("Back went with its switch off", View.VISIBLE, back.getVisibility());
+
+        Settings.HIDE_VIEWER_BACK_BUTTON.save(true);
+        assertEquals(1, ViewerTopBar.tidy(bar));
+        assertEquals(View.INVISIBLE, back.getVisibility());
+        assertEquals("Search went with Back", View.VISIBLE, search.getVisibility());
+        assertEquals(View.VISIBLE, profile.getVisibility());
+        assertTrue(reported(ViewerTopBar.BACK_HIDDEN));
+        assertEquals("a hidden Back was counted twice", 0, ViewerTopBar.tidy(bar));
+
+        Settings.HIDE_VIEWER_TOP_BUTTONS.save(true);
+        ViewerTopBar.tidy(bar);
+        assertEquals("the far buttons lost their place once Back went", View.INVISIBLE, search.getVisibility());
+        assertEquals(View.INVISIBLE, profile.getVisibility());
+
+        Settings.HIDE_VIEWER_BACK_BUTTON.save(false);
+        ViewerTopBar.tidy(bar);
+        assertEquals("Back stayed away with its switch off", View.VISIBLE, back.getVisibility());
+        assertEquals(View.INVISIBLE, search.getVisibility());
+
+        Settings.HIDE_VIEWER_BACK_BUTTON.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        ViewerTopBar.tidy(bar);
+        assertEquals("a paused Hushfacebook hid Back", View.VISIBLE, back.getVisibility());
+    }
+
+    /** #390: on the Reels tab's header Menu sits where Back would, so the title, Menu and the far buttons all go. */
+    @Test
+    public void theReelsTabsHeaderCanLoseMenuAndItsTitleToo() {
+        Settings.HIDE_VIEWER_BACK_BUTTON.save(true);
+        Settings.HIDE_REELS_TAB_TITLE.save(true);
+        Settings.HIDE_VIEWER_TOP_BUTTONS.save(true);
+        Activity main = Robolectric.buildActivity(Activity.class).setup().get();
+        ComponentHost[] header = reelsTab(main);
+        ComponentHost title = new ComponentHost(main);
+        place((ViewGroup) header[0].getParent(), title, 160, 45, 360, 146);
+
+        ViewerTopBar.resumed(main);
+        layOut(main);
+
+        assertEquals("Menu stayed", View.INVISIBLE, header[0].getVisibility());
+        assertEquals(View.INVISIBLE, header[1].getVisibility());
+        assertEquals(View.INVISIBLE, header[2].getVisibility());
+        assertEquals("the title stayed", View.INVISIBLE, title.getVisibility());
+
+        Settings.HIDE_VIEWER_BACK_BUTTON.save(false);
+        layOut(main);
+        assertEquals("Menu stayed away with its switch off", View.VISIBLE, header[0].getVisibility());
+        assertEquals(View.INVISIBLE, title.getVisibility());
     }
 
     private boolean reported(String counted) {
