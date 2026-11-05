@@ -2544,6 +2544,11 @@ Hide the Subscribe button	Abone ol düğmesini gizle
 Takes the Subscribe button off the top of a story. Applies from the next story you open.	Bir hikayenin üstündeki Abone ol düğmesini kaldırır. Açtığın bir sonraki hikayeden itibaren geçerli olur.
 Progress bar at the bottom	Altta ilerleme çubuğu
 Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	Bir hikayenin altında, oynatıldıkça dolan ince bir çubuk gösterir, Reels'teki gibi.
+Seek bar on stories	Hikayelerde sarma çubuğu
+Fade the story seek bar	Hikaye sarma çubuğunu soldur
+Story position	Hikaye konumu
+Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	Bir video hikayenin altında, içinde ilerlemek için sürükleyebileceğiniz bir çubuk gösterir. Siz sürüklerken hikaye bekler. “Altta ilerleme çubuğu” video hikayelerde ona yer açar.
+With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	“Hikayelerde sarma çubuğu” açıkken çubuk, hikaye başladıktan ya da ona son dokunuşunuzdan birkaç saniye sonra solar. Bir dokunuş ya da duraklatma onu geri getirir.
 Clean mode	Temiz mod
 Clean mode button on reels	Reels'te temiz mod düğmesi
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	Bir reel'in yanındaki düğmelere bir temiz mod düğmesi ekler. Onları gizlemek için dokun, kaydırırken temiz mod açık kalır. Facebook'un kendi temiz mod düğmesi onları geri getirir.

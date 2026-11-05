@@ -242,6 +242,8 @@ final class SwitchLabels {
         if (setting == Settings.FEED_VIDEO_SEEK_BAR_LOWER) return L10n.t("Lower the seek bar and speaker");
         if (setting == Settings.FEED_VIDEO_FULL_PLAYER_BUTTON) return L10n.t("Full player button on feed videos");
         if (setting == Settings.CENTER_FULL_SCREEN_VIDEOS) return L10n.t("Open full screen videos centered");
+        if (setting == Settings.STORY_SEEK_BAR) return L10n.t("Seek bar on stories");
+        if (setting == Settings.STORY_SEEK_BAR_FADE) return L10n.t("Fade the story seek bar");
         if (setting == Settings.RESUME_LONG_VIDEOS) return L10n.t("Resume long videos");
         if (setting == Settings.RECENTLY_WATCHED) return L10n.t("Remember what you watch");
         if (setting == Settings.FRAME_STEP) return L10n.t("Frame step");

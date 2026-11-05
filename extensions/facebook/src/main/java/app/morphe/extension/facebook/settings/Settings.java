@@ -1503,6 +1503,30 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * A seek bar along the bottom of a video story, where {@link #STORY_PROGRESS_BAR} draws, which
+     * makes way for it. A drag holds the story and the let go moves it there (#386). Starts off.
+     */
+    public static final BooleanSetting STORY_SEEK_BAR =
+            new BooleanSetting("hushfacebook_story_seek_bar", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
+     * With {@link #STORY_SEEK_BAR} on, the bar fades a few seconds after the story starts or was
+     * last touched. Its own switch, apart from the feed's (#386). Starts off.
+     */
+    public static final BooleanSetting STORY_SEEK_BAR_FADE =
+            new BooleanSetting("hushfacebook_story_seek_bar_fade", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
      * A button on a feed video, beside the play/pause one, that opens the video in Facebook's own
      * full player with all its controls, the way Recently watched opens one (#239). Live videos
      * get it too. Starts off.

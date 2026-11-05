@@ -2548,6 +2548,11 @@ Hide the Subscribe button	隱藏訂閱按鈕
 Takes the Subscribe button off the top of a story. Applies from the next story you open.	移除限時動態頂部的訂閱按鈕。從你開啟的下一則限時動態開始生效。
 Progress bar at the bottom	底部進度列
 Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	在限時動態底部顯示一條隨播放逐漸填滿的細條，和 Reels 上的一樣。
+Seek bar on stories	限時動態上的進度列
+Fade the story seek bar	淡化限時動態進度列
+Story position	限時動態播放位置
+Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	在影片限時動態底部顯示一條可以拖曳的進度列，用來在限時動態裡前後移動。拖曳時限時動態會等你放開。在影片限時動態上，「底部進度列」會讓位給它。
+With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	開啟「限時動態上的進度列」後，進度列會在限時動態開始或你最後一次觸碰幾秒後變淡。觸碰或暫停就會恢復。
 Clean mode	簡潔模式
 Clean mode button on reels	Reels 上的簡潔模式按鈕
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	在 Reels 側邊的按鈕中加入簡潔模式按鈕。點按它即可隱藏這些按鈕，滑動時簡潔模式會保持開啟。Facebook 內建的簡潔模式按鈕可讓它們重新顯示。

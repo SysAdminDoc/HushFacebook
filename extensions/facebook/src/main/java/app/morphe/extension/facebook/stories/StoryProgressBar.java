@@ -20,6 +20,7 @@ import androidx.annotation.Nullable;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import app.morphe.extension.facebook.reels.FeedVideoControls;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Utils;
@@ -124,9 +125,9 @@ public final class StoryProgressBar {
         bar.move(shift + left, bottom - thickness, shift + right, bottom, progress);
     }
 
-    /** The story's card: [host] or the nearest view around it at least half its window tall. */
+    /** The story's card: [host] or the nearest view around it at least half its window tall. Also where a story's seek bar goes. */
     @Nullable
-    static View cardOf(View host) {
+    public static View cardOf(View host) {
         int tall = host.getRootView().getHeight() / 2;
         if (tall <= 0) return null;
         View at = host;
@@ -209,6 +210,8 @@ public final class StoryProgressBar {
 
         @Override
         public void draw(@NonNull Canvas canvas) {
+            // A video story's seek bar shows the same thing in this spot, and takes it (#386).
+            if (FeedVideoControls.storyBarShowing()) return;
             Rect at = getBounds();
             canvas.drawRect(at, track);
             canvas.drawRect(at.left, at.top, at.left + at.width() * progress, at.bottom, fill);

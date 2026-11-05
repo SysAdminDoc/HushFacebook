@@ -183,7 +183,7 @@ public enum PatchFamily {
             Settings.INLINE_FEED_VIDEO_CONTROLS,
             Settings.FEED_VIDEO_CAST_BUTTON, Settings.FEED_VIDEO_SEEK_BAR, Settings.FEED_VIDEO_SEEK_BAR_FADE,
             Settings.FEED_VIDEO_SEEK_BAR_LOWER, Settings.FEED_VIDEO_FULL_PLAYER_BUTTON,
-            Settings.CENTER_FULL_SCREEN_VIDEOS),
+            Settings.CENTER_FULL_SCREEN_VIDEOS, Settings.STORY_SEEK_BAR, Settings.STORY_SEEK_BAR_FADE),
     RESUME_LONG_VIDEOS(FamilyNames.RESUME_LONG_VIDEOS, "resumeLongVideos", null,
             Settings.RESUME_LONG_VIDEOS, Settings.RECENTLY_WATCHED, Settings.BREAK_AFTER_REELS),
     FRAME_STEP(FamilyNames.FRAME_STEP, "frameStep", null,

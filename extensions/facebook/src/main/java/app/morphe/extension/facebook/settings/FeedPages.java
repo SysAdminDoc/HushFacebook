@@ -749,6 +749,16 @@ final class FeedPages {
                 stories.addPreference(toggle(context, Settings.STORY_PROGRESS_BAR,
                         L10n.t("Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.")));
             }
+            if (build.contains(PatchFamily.TAP_TO_PLAY)) {
+                // Read as each story's video draws, so a change shows on the story that's open.
+                stories.addPreference(toggle(context, Settings.STORY_SEEK_BAR,
+                        L10n.t("Shows a bar along the bottom of a video story that you drag to move through it. The "
+                                + "story waits while you drag. Progress bar at the bottom makes way for it on video stories.")));
+                stories.addPreference(toggle(context, Settings.STORY_SEEK_BAR_FADE,
+                        L10n.t("With Seek bar on stories on, the bar fades a few seconds after the story starts or you "
+                                + "last touched it. A touch or a pause brings it back."))
+                        .needs(Settings.STORY_SEEK_BAR));
+            }
             if (build.contains(PatchFamily.PINCH_TO_ZOOM)) {
                 // Asked as each second finger lands, so a change shows from the next pinch.
                 stories.addPreference(toggle(context, Settings.PINCH_TO_ZOOM,

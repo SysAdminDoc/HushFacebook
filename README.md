@@ -81,6 +81,8 @@ To keep Reel downloads in More without the sidebar button, leave **Download** on
 
 **Open full screen videos centered** is for videos that open in Facebook's full screen player, say from a comment or a link. Facebook opens them with the details and comments under the video, which pushes a wide video up to the top of the screen. With this on they start with that panel folded away, so the video sits in the middle. The arrow under the video still brings the panel back. It starts off and applies to the next video you open.
 
+**Seek bar on stories**, under **Stories**, gives a video story a bar along its bottom that you drag to move through it. The story waits while you drag and plays on when you let go. On a video story it sits where **Progress bar at the bottom** draws its line, and that line steps aside for it. Live stories and ads get no bar. **Fade the story seek bar** has its own switch, separate from the feed's, so the story bar only fades if you want it to. Both are off at first.
+
 ### Blocking Reels
 
 Reels turn up in several places, and no one switch covers them all. Searching the settings for "block reels" brings up a map of them.

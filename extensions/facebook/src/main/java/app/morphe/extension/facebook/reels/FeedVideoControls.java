@@ -47,6 +47,7 @@ import app.morphe.extension.facebook.media.TapToPlay;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.facebook.settings.SettingsStatus;
+import app.morphe.extension.facebook.stories.StoryProgressBar;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
@@ -62,7 +63,8 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * The cast button also needs the video patch, whose player record holds the file it hands over.
  * A seek bar can run just above the video's bottom edge too, clear of Facebook's own buttons there (#326).
  * Two more switches can lower the bar and those buttons together, and fade the bar and the speaker
- * while the video plays untouched (#386). A live video gets play/pause and the full player button but no cast button or seek bar, having
+ * while the video plays untouched (#386). A video story in the story viewer can get the seek bar
+ * alone, along its card's bottom, with a fade switch of its own (#386). A live video gets play/pause and the full player button but no cast button or seek bar, having
  * no file to hand over and no end to seek to. The full player button, next to play, opens the video
  * in Facebook's own player with all its controls (#239).
  */
@@ -84,6 +86,11 @@ public final class FeedVideoControls {
     /** How long the bar and the speaker stay bright after the video starts or a touch, how faint they get, and how long that takes (#386). */
     static final long FADE_AFTER_MS = 3000, FADE_ANIMATION_MS = 300;
     static final float FADED_ALPHA = 0.3f;
+    /**
+     * A story's seek bar: its touch height, how far its bottom sits above the story card's, which
+     * puts its line where Progress bar at the bottom draws, and its gap from the card's sides (#386).
+     */
+    static final int STORY_BAR_DP = 28, STORY_ABOVE_DP = 7, STORY_SIDE_DP = 8;
     private static final long TICK_MS = 250;
     /** Facebook's link handler, which opens a watch link in its own video player. */
     static final String URI_HANDLER = "com.facebook.katana.IntentUriHandler";
@@ -94,6 +101,8 @@ public final class FeedVideoControls {
     private static final int LANDED_WITHIN_MS = 1000;
     private static final Map<Object, Control> players = new WeakHashMap<>();
     private static Handler main;
+    /** The seek bar last put on a story, which Progress bar at the bottom makes way for while it shows. */
+    private static volatile WeakReference<Scrub> storyBar = new WeakReference<>(null);
 
     interface Players {
         ViewGroup view(Object player);
@@ -262,14 +271,30 @@ public final class FeedVideoControls {
         return inBuild() && Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.get();
     }
 
+    private static boolean storySeekOn() {
+        return inBuild() && Settings.STORY_SEEK_BAR.get();
+    }
+
+    private static boolean storyFadeOn() {
+        return storySeekOn() && Settings.STORY_SEEK_BAR_FADE.get();
+    }
+
+    /** Whether [player] plays a story, which gets the seek bar and none of the feed's buttons. */
+    private static boolean storyPlayer(Object player) {
+        Object origin = access.origin(player);
+        return origin != null && TapToPlay.isStoryOrigin(origin.toString());
+    }
+
     private static void refresh(Control control) {
         try {
             Object player = control.player.get();
             ViewGroup container = control.expected.get();
-            boolean play = playOn();
-            boolean cast = castOn();
-            boolean seek = seekOn();
-            boolean open = openOn();
+            boolean story = player != null && storyPlayer(player);
+            control.story = story;
+            boolean play = !story && playOn();
+            boolean cast = !story && castOn();
+            boolean seek = story ? storySeekOn() : seekOn();
+            boolean open = !story && openOn();
             if ((!play && !cast && !seek && !open) || control.released || player == null || container == null
                     || access.view(player) != container) {
                 control.remove(true);
@@ -280,7 +305,7 @@ public final class FeedVideoControls {
                 control.remove(false);
                 return;
             }
-            Target target = target(control, play, open, cast);
+            Target target = story ? storyTarget(control) : target(control, play, open, cast);
             if (target == null) {
                 control.remove(false);
                 return;
@@ -341,11 +366,12 @@ public final class FeedVideoControls {
             current = new Scrub(control, target);
             target.content.addView(current, new FrameLayout.LayoutParams(area.width(), area.height(),
                     Gravity.LEFT | Gravity.TOP));
-            HookStatus.bound(FAMILY, "feed video seek bar");
+            HookStatus.bound(FAMILY, control.story ? "story seek bar" : "feed video seek bar");
             current.update(player);
             control.wake();
             control.tick();
         }
+        if (control.story && storyBar.get() != current) storyBar = new WeakReference<>(current);
         // A drag's time needs room above the line, which stays put at the bottom.
         int lift = current.dragging ? Math.round(TIME_DP * current.getResources().getDisplayMetrics().density) : 0;
         FrameLayout.LayoutParams layout = (FrameLayout.LayoutParams) current.getLayoutParams();
@@ -466,9 +492,75 @@ public final class FeedVideoControls {
 
     /** Whether a bar ending at window position [bottom] reaches the strip Android keeps for its home swipe. No app can claim touches there, so the bar would look live and never get a drag. */
     private static boolean inGestureStrip(View content, int bottom) {
+        return bottom > gestureTop(content);
+    }
+
+    /** Where that strip starts in the window, or no limit while the insets aren't known. */
+    private static int gestureTop(View content) {
         WindowInsets insets = insetsForTests != null ? insetsForTests : content.getRootWindowInsets();
-        return insets != null
-                && bottom > content.getRootView().getHeight() - insets.getInsets(WindowInsets.Type.mandatorySystemGestures()).bottom;
+        return insets == null ? Integer.MAX_VALUE
+                : content.getRootView().getHeight() - insets.getInsets(WindowInsets.Type.mandatorySystemGestures()).bottom;
+    }
+
+    /**
+     * Where the seek bar goes on the story [control] shows, or null when it has none. It runs along
+     * the bottom of the story's card where Progress bar at the bottom draws, which makes way for it,
+     * and never sits in the home swipe's strip. A story opened from the feed's tray plays in the
+     * viewer, while the tray's own small preview never gets one (#386).
+     */
+    @Nullable
+    private static Target storyTarget(Control control) {
+        Object player = control.player.get();
+        ViewGroup container = control.expected.get();
+        if (player == null || container == null || control.released || access.view(player) != container
+                || !container.isAttachedToWindow() || !container.isShown() || !container.hasWindowFocus()) return null;
+        control.restoreCorners();
+        Object params = access.params(player);
+        String id = params == null ? null : access.videoId(params);
+        if (params == null || id == null || id.isEmpty() || !access.eligible(params)) {
+            return miss(control, "no video id, or an ad, audio or GIF");
+        }
+        View content = container.getRootView().findViewById(android.R.id.content);
+        if (!(content instanceof FrameLayout) || !descendant(container, content)) return miss(control, "outside the screen's content");
+        View card = StoryProgressBar.cardOf(container);
+        if (card == null || !descendant(card, content)) return miss(control, "no story card");
+        List<View> surfaces = new ArrayList<>(2);
+        surfaces(container, surfaces);
+        if (surfaces.size() > 1) return miss(control, "more than one video surface");
+        View surface = surfaces.isEmpty() ? container : surfaces.get(0);
+        Rect visible = new Rect();
+        Rect clip = new Rect();
+        Rect shown = new Rect();
+        if (!card.getGlobalVisibleRect(visible) || !content.getGlobalVisibleRect(clip) || !visible.intersect(clip)
+                || !surface.getGlobalVisibleRect(shown)) {
+            return miss(control, "scrolled out of view");
+        }
+        // A card part way through a swipe to the next person's stories shows only part of its width.
+        if (visible.width() < card.getWidth() - 1) return miss(control, "its card is moving");
+        // The feed's row of stories plays narrow previews. A wide video in the viewer is short but spans the card.
+        if (shown.width() * 2 < visible.width()) return miss(control, "too small for the story viewer");
+        float density = container.getResources().getDisplayMetrics().density;
+        boolean live = access.live(params);
+        Rect bar = live ? noBar(control, "a live story has no end to seek to", null)
+                : storyBarArea(control, visible, content, density);
+        int[] at = new int[2];
+        content.getLocationInWindow(at);
+        at[0] += content.getPaddingLeft();
+        at[1] += content.getPaddingTop();
+        if (bar != null) bar.offset(-at[0], -at[1]);
+        control.missed = null;
+        return new Target(params, id, surface, (FrameLayout) content, 0, 0, 0, 0, 0, bar, live);
+    }
+
+    /** The story bar's spot in the window along the bottom of [card], the card's visible part. */
+    @Nullable
+    private static Rect storyBarArea(Control control, Rect card, View content, float density) {
+        int bottom = Math.min(card.bottom - Math.round(STORY_ABOVE_DP * density), gestureTop(content));
+        int height = Math.round(STORY_BAR_DP * density);
+        int side = Math.round(STORY_SIDE_DP * density);
+        if (bottom - height < card.centerY() || card.width() <= 2 * side) return noBar(control, "too little of its card shows", null);
+        control.missedBar = null;
+        return new Rect(card.left + side, bottom - height, card.right - side, bottom);
     }
 
     /**
@@ -496,8 +588,9 @@ public final class FeedVideoControls {
             control.missedBar = null;
         } else if (!why.equals(control.missedBar)) {
             control.missedBar = why;
+            String what = control.story ? "Story seek bar" : "Feed video seek bar";
             Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
-                    () -> "Feed video seek bar: none, " + why + (detail == null ? "" : " " + detail));
+                    () -> what + ": none, " + why + (detail == null ? "" : " " + detail));
         }
         return null;
     }
@@ -612,7 +705,8 @@ public final class FeedVideoControls {
         String said = speaker.toString();
         if (control.speakerSaid != null && !control.speakerSaid.equals(said)) control.wake();
         control.speakerSaid = said;
-        boolean dim = playing && fadeOn() && !bar.dragging && SystemClock.uptimeMillis() >= control.wakeUntil;
+        boolean dim = playing && (control.story ? storyFadeOn() : fadeOn()) && !bar.dragging
+                && SystemClock.uptimeMillis() >= control.wakeUntil;
         if (bar != null) bar.dimmer.to(dim);
         for (Corner corner : new ArrayList<>(control.corners.values())) corner.dimmer.to(dim && corner.speakerSide);
     }
@@ -663,8 +757,9 @@ public final class FeedVideoControls {
             control.missed = null;
         } else if (!why.equals(control.missed)) {
             control.missed = why;
+            String what = control.story ? "Story seek bar" : "Inline feed button";
             Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
-                    () -> "Inline feed button: none, " + why + (detail == null ? "" : " " + detail));
+                    () -> what + ": none, " + why + (detail == null ? "" : " " + detail));
         }
         return null;
     }
@@ -730,7 +825,7 @@ public final class FeedVideoControls {
     /** Whether [view], made for [videoId]'s [params] on [surface], still sits on that video. */
     private static boolean stillOver(Control control, View view, WeakReference<Object> params, String videoId,
             WeakReference<View> surface) {
-        Target current = target(control, false, false, false);
+        Target current = control.story ? storyTarget(control) : target(control, false, false, false);
         return current != null && current.params == params.get() && videoId.equals(current.videoId)
                 && current.surface == surface.get() && view.getParent() == current.content;
     }
@@ -738,8 +833,9 @@ public final class FeedVideoControls {
     /** The bar was let go, or moved by a screen reader, at [bar]'s progress. */
     private static void seek(Scrub bar) {
         Control control = bar.control;
+        String what = control.story ? "story seek" : "feed video seek";
         try {
-            if (!seekOn() || control.bar != bar || control.generation != bar.generation) return;
+            if (!(control.story ? storySeekOn() : seekOn()) || control.bar != bar || control.generation != bar.generation) return;
             Object player = control.player.get();
             if (player == null || !stillOver(control, bar, bar.params, bar.videoId, bar.surface)) {
                 control.remove(false);
@@ -749,10 +845,40 @@ public final class FeedVideoControls {
             access.seek(player, bar.getProgress());
             bar.landing = bar.getProgress();
             bar.landingUntil = SystemClock.uptimeMillis() + LANDING_MS;
-            HookStatus.counted(FAMILY, "feed video seek");
+            HookStatus.counted(FAMILY, what);
         } catch (Throwable failure) {
             control.remove(true);
-            HookStatus.threw(FAMILY, "feed video seek", failure);
+            HookStatus.threw(FAMILY, what, failure);
+        }
+    }
+
+    /**
+     * A drag on a story's bar holds the story where it is, so it can't run out and move on to the
+     * next one before the bar is let go. Answers whether this paused it, which a let go undoes.
+     */
+    private static boolean hold(Scrub bar) {
+        Control control = bar.control;
+        try {
+            if (!control.story || control.bar != bar || control.generation != bar.generation) return false;
+            Object player = control.player.get();
+            if (player == null || !access.playing(player)) return false;
+            access.command(player, false);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "story seek", failure);
+            return false;
+        }
+    }
+
+    /** Plays the story [hold] paused again, once [bar] was let go and still sits on it. */
+    private static void resume(Scrub bar) {
+        Control control = bar.control;
+        try {
+            Object player = control.player.get();
+            if (player == null || control.bar != bar || control.generation != bar.generation) return;
+            access.command(player, true);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "story seek", failure);
         }
     }
 
@@ -781,6 +907,8 @@ public final class FeedVideoControls {
         volatile WeakReference<ViewGroup> expected = new WeakReference<>(null);
         volatile long generation;
         volatile boolean released;
+        /** A story's player, which gets only the story seek bar. */
+        volatile boolean story;
         /** The last reason the debug log gave for no button, or null since one showed. */
         @Nullable String missed;
         /** The same for the seek bar, which can miss while the buttons show. */
@@ -928,6 +1056,8 @@ public final class FeedVideoControls {
         final Dimmer dimmer = new Dimmer(this);
         boolean dragging;
         boolean cancelled;
+        /** A drag on a story's bar paused it, and the let go plays it again. */
+        boolean held;
         int landing = -1;
         long landingUntil;
         Scrub(Control control, Target target) {
@@ -943,7 +1073,7 @@ public final class FeedVideoControls {
             setThumbOffset(0);
             setPadding(0, 0, 0, 0);
             setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-            setContentDescription(L10n.t("Feed video position"));
+            setContentDescription(L10n.t(control.story ? "Story position" : "Feed video position"));
             paint.setTextAlign(Paint.Align.CENTER);
             setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
                 @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
@@ -951,11 +1081,16 @@ public final class FeedVideoControls {
                 }
                 @Override public void onStartTrackingTouch(SeekBar bar) {
                     dragging = true;
+                    held = hold(Scrub.this);
                     invalidate();
                 }
                 @Override public void onStopTrackingTouch(SeekBar bar) {
                     dragging = false;
                     if (!cancelled) seek(Scrub.this);
+                    if (held) {
+                        held = false;
+                        resume(Scrub.this);
+                    }
                     control.wake();
                     invalidate();
                 }
@@ -1195,6 +1330,15 @@ public final class FeedVideoControls {
         return false;
     }
 
+    /**
+     * Whether a story's seek bar shows, so Progress bar at the bottom of the stories package leaves
+     * it the spot and the two never draw over each other. Cheap, since that bar asks on each frame.
+     */
+    public static boolean storyBarShowing() {
+        Scrub bar = storyBar.get();
+        return bar != null && bar.control.story && bar.control.bar == bar && bar.isShown();
+    }
+
     @Nullable static SeekBar showingBar(Object player) {
         synchronized (players) {
             Control control = players.get(player);
@@ -1230,6 +1374,7 @@ public final class FeedVideoControls {
             players.clear();
         }
         access = PATCHED;
+        storyBar = new WeakReference<>(null);
         inBuildForTests = null;
         videoPatchInBuildForTests = null;
         insetsForTests = null;

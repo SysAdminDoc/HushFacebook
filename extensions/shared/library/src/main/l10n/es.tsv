@@ -2544,6 +2544,11 @@ Hide the Subscribe button	Ocultar el botón Suscribirse
 Takes the Subscribe button off the top of a story. Applies from the next story you open.	Quita el botón Suscribirse de la parte superior de una historia. Se aplica desde la próxima historia que abras.
 Progress bar at the bottom	Barra de progreso abajo
 Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	Muestra una barra fina en la parte inferior de una historia que se llena mientras se reproduce, como la de Reels.
+Seek bar on stories	Barra de progreso en historias
+Fade the story seek bar	Atenuar la barra de progreso de las historias
+Story position	Posición de la historia
+Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.	Muestra una barra en la parte inferior de una historia de video que puedes arrastrar para moverte por ella. La historia espera mientras arrastras. “Barra de progreso abajo” le deja su lugar en las historias de video.
+With Seek bar on stories on, the bar fades a few seconds after the story starts or you last touched it. A touch or a pause brings it back.	Con “Barra de progreso en historias” activado, la barra se atenúa unos segundos después de que empieza la historia o de que la tocas por última vez. Un toque o una pausa la hacen volver.
 Clean mode	Modo limpio
 Clean mode button on reels	Botón de modo limpio en reels
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	Añade un botón de modo limpio a los botones del lateral de un reel. Tócalo para ocultarlos, y el modo limpio sigue activo mientras deslizas. El propio botón de modo limpio de Facebook los vuelve a mostrar.

@@ -624,7 +624,7 @@ public final class TapToPlay {
      * viewer's players say fb_stories_video_view, and a story opened from somewhere else carries
      * the story viewer as its sub-origin. A reel's sub-origin makes it a reel.
      */
-    static boolean isStoryOrigin(@Nullable String origin) {
+    public static boolean isStoryOrigin(@Nullable String origin) {
         if (origin == null) return false;
         int split = origin.indexOf("::");
         String main = split < 0 ? origin : origin.substring(0, split);

@@ -146,6 +146,8 @@ public class FeedVideoControlsTest {
         Settings.FEED_VIDEO_SEEK_BAR.resetToDefault();
         Settings.FEED_VIDEO_SEEK_BAR_FADE.resetToDefault();
         Settings.FEED_VIDEO_SEEK_BAR_LOWER.resetToDefault();
+        Settings.STORY_SEEK_BAR.resetToDefault();
+        Settings.STORY_SEEK_BAR_FADE.resetToDefault();
         Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.resetToDefault();
         Settings.TAP_TO_PLAY.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
@@ -1243,5 +1245,185 @@ public class FeedVideoControlsTest {
         assertTrue(cast.getParent() == null);
         assertTrue(bar.getParent() == null);
         assertEquals(1, content.getChildCount());
+    }
+
+    private FrameLayout card;
+
+    /** The story viewer in place of the feed: a card most of the window tall, its video filling it, half a minute long. */
+    private void storyShows() {
+        root.removeAllViews();
+        card = new FrameLayout(activity);
+        place(root, card, 0, 100, 1080, 1800);
+        FrameLayout video = new FrameLayout(activity);
+        place(card, video, 0, 0, 1080, 1800);
+        place(video, new SurfaceView(activity), 0, 0, 1080, 1800);
+        player.view = video;
+        player.origin = "fb_stories_video_view";
+        player.length = 30000;
+        player.position = 3000;
+        layout();
+        attach(player);
+        layout();
+    }
+
+    private void storyBarOn() {
+        save(Settings.STORY_SEEK_BAR, true);
+        layout();
+    }
+
+    private int cardBottom() { return on(card)[1] + 1800 - FeedVideoControls.STORY_ABOVE_DP; }
+
+    @Test public void aStoryGetsOnlyItsOwnSeekBarAlongTheCardsBottom() {
+        storyShows();
+        save(Settings.FEED_VIDEO_SEEK_BAR, true);
+        layout();
+        assertNull("the feed's switch leaves stories alone", bar());
+        assertNull("and so do the feed's buttons", button());
+        assertFalse(FeedVideoControls.storyBarShowing());
+        storyBarOn();
+        SeekBar bar = bar();
+        assertNotNull(bar);
+        assertEquals("Story position", bar.getContentDescription());
+        assertNull(button());
+        assertNull(cast());
+        assertNull(open());
+        assertEquals(on(card)[0] + FeedVideoControls.STORY_SIDE_DP, on(bar)[0]);
+        assertEquals(1080 - 2 * FeedVideoControls.STORY_SIDE_DP, bar.getWidth());
+        assertEquals(FeedVideoControls.STORY_BAR_DP, bar.getHeight());
+        assertEquals("its line sits where Progress bar at the bottom draws", cardBottom(), on(bar)[1] + bar.getHeight());
+        assertEquals(30000, bar.getMax());
+        assertEquals(3000, bar.getProgress());
+        assertTrue("Progress bar at the bottom makes way", FeedVideoControls.storyBarShowing());
+        player.position = 9000;
+        tick();
+        assertEquals(9000, bar.getProgress());
+        assertTrue(seeks.isEmpty());
+        assertTrue(commands.isEmpty());
+        save(Settings.STORY_SEEK_BAR, false);
+        assertNull(bar());
+        assertFalse("and gets its spot back", FeedVideoControls.storyBarShowing());
+    }
+
+    @Test public void theStorySwitchLeavesFeedVideosAlone() {
+        save(Settings.STORY_SEEK_BAR, true);
+        player.length = 60000;
+        layout();
+        assertNull(bar());
+        barOn();
+        assertEquals("Feed video position", bar().getContentDescription());
+        assertFalse(FeedVideoControls.storyBarShowing());
+    }
+
+    @Test public void aDragHoldsAPlayingStoryAndTheLetGoSeeksThenPlaysItOn() {
+        storyShows();
+        player.playing = true;
+        storyBarOn();
+        SeekBar bar = bar();
+        int middle = bar.getWidth() / 2;
+        touch(bar, MotionEvent.ACTION_DOWN, 100);
+        assertEquals("the story waits while it's dragged", java.util.Arrays.asList(false), commands);
+        touch(bar, MotionEvent.ACTION_MOVE, middle);
+        assertTrue("and moves on the let go", seeks.isEmpty());
+        touch(bar, MotionEvent.ACTION_UP, middle);
+        assertEquals(java.util.Arrays.asList(15000), seeks);
+        assertEquals(java.util.Arrays.asList(false, true), commands);
+        assertTrue(player.playing);
+
+        commands.clear();
+        seeks.clear();
+        player.playing = false;
+        FeedVideoControls.changed(player);
+        drain();
+        touch(bar, MotionEvent.ACTION_DOWN, 100);
+        touch(bar, MotionEvent.ACTION_MOVE, middle / 2);
+        touch(bar, MotionEvent.ACTION_UP, middle / 2);
+        assertEquals(1, seeks.size());
+        assertTrue("a paused story stays paused", commands.isEmpty());
+        assertFalse(player.playing);
+
+        seeks.clear();
+        player.playing = true;
+        FeedVideoControls.changed(player);
+        drain();
+        touch(bar, MotionEvent.ACTION_DOWN, 100);
+        touch(bar, MotionEvent.ACTION_MOVE, middle);
+        touch(bar, MotionEvent.ACTION_CANCEL, middle);
+        assertTrue("a cancelled drag moves nothing", seeks.isEmpty());
+        assertEquals("but the story plays on", java.util.Arrays.asList(false, true), commands);
+    }
+
+    @Test public void aStorysBarFadesOnlyWithItsOwnSwitch() {
+        storyShows();
+        player.playing = true;
+        storyBarOn();
+        save(Settings.FEED_VIDEO_SEEK_BAR, true);
+        save(Settings.FEED_VIDEO_SEEK_BAR_FADE, true);
+        SeekBar bar = bar();
+        long fade = FeedVideoControls.FADE_AFTER_MS + FeedVideoControls.FADE_ANIMATION_MS + 250;
+        play(fade);
+        assertEquals("the feed's fade leaves stories alone", 1f, bar.getAlpha(), 0f);
+        save(Settings.STORY_SEEK_BAR_FADE, true);
+        play(fade);
+        assertEquals(FeedVideoControls.FADED_ALPHA, bar.getAlpha(), 0.01f);
+        touch(bar, MotionEvent.ACTION_DOWN, 100);
+        play(FeedVideoControls.FADE_ANIMATION_MS + 250);
+        assertEquals("a touch brings it back", 1f, bar.getAlpha(), 0.01f);
+        touch(bar, MotionEvent.ACTION_UP, 100);
+        play(fade);
+        assertEquals("it fades again as the story plays on", FeedVideoControls.FADED_ALPHA, bar.getAlpha(), 0.01f);
+        save(Settings.STORY_SEEK_BAR_FADE, false);
+        play(FeedVideoControls.FADE_ANIMATION_MS + 250);
+        assertEquals(1f, bar.getAlpha(), 0.01f);
+    }
+
+    @Test public void liveStoriesAdsMovingCardsAndTheTraysPreviewsGetNoBar() {
+        storyShows();
+        storyBarOn();
+        assertNotNull(bar());
+        player.params.live = true;
+        FeedVideoControls.changed(player);
+        drain();
+        assertNull("a live story has no end to seek to", bar());
+        player.params.live = false;
+        player.params.ordinary = false;
+        FeedVideoControls.changed(player);
+        drain();
+        assertNull(bar());
+        player.params.ordinary = true;
+        FeedVideoControls.changed(player);
+        drain();
+        assertNotNull(bar());
+
+        card.setTranslationX(400);
+        refreshAfterLayout();
+        assertNull("a card part way through a swipe", bar());
+        card.setTranslationX(0);
+        refreshAfterLayout();
+        assertNotNull(bar());
+
+        FrameLayout.LayoutParams small = (FrameLayout.LayoutParams) player.view.getLayoutParams();
+        small.width = 300;
+        small.height = 500;
+        player.view.setLayoutParams(small);
+        refreshAfterLayout();
+        assertNull("a narrow preview, like the feed's row of stories", bar());
+        small.width = 1080;
+        player.view.setLayoutParams(small);
+        refreshAfterLayout();
+        layout();
+        assertNotNull("a wide video in the viewer still gets it", bar());
+        assertEquals("along the card's bottom, not the video's", cardBottom(), on(bar())[1] + bar().getHeight());
+    }
+
+    @Test public void aStoryBarInTheGestureStripMovesUpOutOfIt() {
+        storyShows();
+        storyBarOn();
+        int strip = bar().getRootView().getHeight() - (cardBottom() - 50);
+        FeedVideoControls.insetsForTests = gestureStrip(strip);
+        refreshAfterLayout();
+        layout();
+        assertNotNull("lifted, never dropped", bar());
+        assertEquals(cardBottom() - 50, on(bar())[1] + bar().getHeight());
+        assertEquals(FeedVideoControls.STORY_BAR_DP, bar().getHeight());
     }
 }
