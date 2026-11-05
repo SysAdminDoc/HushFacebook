@@ -2158,6 +2158,10 @@ Videos you open full screen, from a comment or a link, start with their details 
 Open in the full player	Tam oynatıcıda aç
 Seek bar on feed videos	Akış videolarında sarma çubuğu
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Akıştaki bir videonun altında bir çubuk gösterir. Sürükleyip bırakarak o noktaya atlayın. Canlı videolar ve reklamlar kendi denetimlerini korur. “Oynatmak için dokun” açıksa “Akış videosu denetimleri” de açık olmalıdır.
+Fade the seek bar and speaker	Sarma çubuğunu ve hoparlörü soldur
+Lower the seek bar and speaker	Sarma çubuğunu ve hoparlörü aşağı al
+While a feed video plays, its seek bar and Facebook's speaker button fade a few seconds after it starts or you last touch them. Touch the bar or pause the video and they come back. Needs Seek bar on feed videos on.	Akıştaki bir video oynarken sarma çubuğu ve Facebook'un hoparlör düğmesi, video başladıktan ya da onlara son dokunuşunuzdan birkaç saniye sonra solar. Çubuğa dokunun ya da videoyu duraklatın, geri gelirler. “Akış videolarında sarma çubuğu” açık olmalıdır.
+Moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. Needs Seek bar on feed videos on.	Akıştaki bir videonun sarma çubuğunu, Facebook'un hoparlör ve etiketlenen kişiler düğmeleriyle birlikte alt kenara yaklaştırır. “Akış videolarında sarma çubuğu” açık olmalıdır.
 Feed video position	Akış videosu konumu
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Rozet rengi

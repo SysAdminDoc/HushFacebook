@@ -2202,6 +2202,10 @@ Videos you open full screen, from a comment or a link, start with their details 
 Open in the full player	Открыть в полном плеере
 Seek bar on feed videos	Полоса перемотки для видео в Ленте
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Показывает внизу видео в Ленте полосу перемотки. Перетащите ползунок и отпустите, чтобы перейти к нужному моменту. Для прямых эфиров и рекламы остаются собственные элементы управления. Если включено воспроизведение по нажатию, необходимо также включить встроенные элементы управления видео в Ленте.
+Fade the seek bar and speaker	Приглушать полосу перемотки и кнопку звука
+Lower the seek bar and speaker	Опустить полосу перемотки и кнопку звука
+While a feed video plays, its seek bar and Facebook's speaker button fade a few seconds after it starts or you last touch them. Touch the bar or pause the video and they come back. Needs Seek bar on feed videos on.	Пока видео в Ленте воспроизводится, его полоса перемотки и кнопка звука Facebook становятся бледнее через несколько секунд после начала или после последнего касания. Коснитесь полосы или поставьте видео на паузу, и они вернутся. Нужна включённая «Полоса перемотки для видео в Ленте».
+Moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. Needs Seek bar on feed videos on.	Опускает полосу перемотки видео в Ленте ближе к нижнему краю вместе с кнопками звука и отмеченных людей Facebook. Нужна включённая «Полоса перемотки для видео в Ленте».
 Feed video position	Позиция видео в Ленте
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Цвет значков

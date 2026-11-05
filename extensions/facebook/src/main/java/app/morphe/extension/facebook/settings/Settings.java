@@ -1477,6 +1477,32 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * With {@link #FEED_VIDEO_SEEK_BAR} on, a playing video's bar and Facebook's speaker fade a few
+     * seconds after the video starts, a touch on the bar or speaker, or a pause (#386). Its own
+     * switch, since not everyone wants it. Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_SEEK_BAR_FADE =
+            new BooleanSetting("hushfacebook_feed_video_seek_bar_fade", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
+     * With {@link #FEED_VIDEO_SEEK_BAR} on, the bar and Facebook's buttons in the video's bottom
+     * corners, the speaker and the tagged people, sit closer to the video's bottom edge (#386).
+     * Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_SEEK_BAR_LOWER =
+            new BooleanSetting("hushfacebook_feed_video_seek_bar_lower", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
      * A button on a feed video, beside the play/pause one, that opens the video in Facebook's own
      * full player with all its controls, the way Recently watched opens one (#239). Live videos
      * get it too. Starts off.

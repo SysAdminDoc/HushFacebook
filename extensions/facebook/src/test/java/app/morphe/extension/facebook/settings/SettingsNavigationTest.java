@@ -1765,6 +1765,8 @@ public class SettingsNavigationTest {
         assertTrue(contains(Settings.TAP_TO_PLAY.key));
         assertTrue(contains(Settings.INLINE_FEED_VIDEO_CONTROLS.key));
         assertTrue(contains(Settings.FEED_VIDEO_SEEK_BAR.key));
+        assertTrue(contains(Settings.FEED_VIDEO_SEEK_BAR_FADE.key));
+        assertTrue(contains(Settings.FEED_VIDEO_SEEK_BAR_LOWER.key));
         assertEquals(before, list().getCount());
         assertEquals(anchor, ((Preference) list().getItemAtPosition(list().getFirstVisiblePosition())).getKey());
         assertEquals(offset, list().getChildAt(0).getTop());

@@ -2044,6 +2044,10 @@ Videos you open full screen, from a comment or a link, start with their details 
 Open in the full player	Abrir no player completo
 Seek bar on feed videos	Barra de progresso nos vídeos do feed
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Mostra uma barra na parte de baixo de um vídeo do feed. Arraste e solte para pular para esse ponto. Vídeos ao vivo e anúncios mantêm os próprios controles. Com “Tocar para reproduzir” ligado, “Controles de vídeo no feed” também precisa estar ligado.
+Fade the seek bar and speaker	Esmaecer a barra de progresso e o alto-falante
+Lower the seek bar and speaker	Abaixar a barra de progresso e o alto-falante
+While a feed video plays, its seek bar and Facebook's speaker button fade a few seconds after it starts or you last touch them. Touch the bar or pause the video and they come back. Needs Seek bar on feed videos on.	Enquanto um vídeo do feed toca, a barra de progresso e o botão de alto-falante do Facebook esmaecem alguns segundos depois que ele começa ou depois do seu último toque. Toque na barra ou pause o vídeo e eles voltam. Precisa de “Barra de progresso nos vídeos do feed” ligado.
+Moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. Needs Seek bar on feed videos on.	Aproxima a barra de progresso de um vídeo do feed da borda de baixo, junto com os botões de alto-falante e de pessoas marcadas do Facebook. Precisa de “Barra de progresso nos vídeos do feed” ligado.
 Feed video position	Posição do vídeo do feed
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Cor dos selos

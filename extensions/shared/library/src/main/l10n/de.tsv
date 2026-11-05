@@ -2158,6 +2158,10 @@ Videos you open full screen, from a comment or a link, start with their details 
 Open in the full player	Im vollständigen Player öffnen
 Seek bar on feed videos	Suchleiste bei Feed-Videos
 Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Zeigt eine Leiste am unteren Rand eines Feed-Videos. Zieh sie und lass los, um zu dieser Stelle zu springen. Live-Videos und Werbung behalten ihre eigene Steuerung. Ist „Zum Abspielen tippen“ an, muss auch „Wiedergabesteuerung im Feed“ an sein.
+Fade the seek bar and speaker	Suchleiste und Lautsprecher verblassen lassen
+Lower the seek bar and speaker	Suchleiste und Lautsprecher tiefer setzen
+While a feed video plays, its seek bar and Facebook's speaker button fade a few seconds after it starts or you last touch them. Touch the bar or pause the video and they come back. Needs Seek bar on feed videos on.	Während ein Feed-Video läuft, verblassen seine Suchleiste und Facebooks Lautsprecher-Taste ein paar Sekunden nach dem Start oder deiner letzten Berührung. Berühre die Leiste oder pausiere das Video, dann sind sie wieder da. Dafür muss „Suchleiste bei Feed-Videos“ an sein.
+Moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. Needs Seek bar on feed videos on.	Setzt die Suchleiste eines Feed-Videos näher an den unteren Rand, zusammen mit Facebooks Tasten für Lautsprecher und markierte Personen. Dafür muss „Suchleiste bei Feed-Videos“ an sein.
 Feed video position	Position im Feed-Video
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Badge-Farbe

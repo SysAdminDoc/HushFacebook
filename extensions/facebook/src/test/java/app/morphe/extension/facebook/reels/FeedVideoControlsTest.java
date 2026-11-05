@@ -27,6 +27,7 @@ import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.SeekBar;
 
 import androidx.recyclerview.widget.RecyclerView;
@@ -143,6 +144,8 @@ public class FeedVideoControlsTest {
         Settings.INLINE_FEED_VIDEO_CONTROLS.resetToDefault();
         Settings.FEED_VIDEO_CAST_BUTTON.resetToDefault();
         Settings.FEED_VIDEO_SEEK_BAR.resetToDefault();
+        Settings.FEED_VIDEO_SEEK_BAR_FADE.resetToDefault();
+        Settings.FEED_VIDEO_SEEK_BAR_LOWER.resetToDefault();
         Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.resetToDefault();
         Settings.TAP_TO_PLAY.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
@@ -262,6 +265,147 @@ public class FeedVideoControlsTest {
         assertEquals("a position past the end stays on the bar", 60000, bar.getProgress());
         assertTrue("following the player moves nothing", seeks.isEmpty());
         assertTrue(commands.isEmpty());
+    }
+
+    /** One of Facebook's buttons on the video, a 32 px image a screen reader names. */
+    private View cornerButton(int left, int top, String said) {
+        ImageView view = new ImageView(activity);
+        view.setContentDescription(said);
+        place(player.view, view, left, top, 32, 32);
+        return view;
+    }
+
+    /** A playing video moving on for [ms], a tick at a time. */
+    private void play(long ms) {
+        for (long gone = 0; gone < ms; gone += 250) {
+            if (player.playing) player.position += 250;
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));
+        }
+    }
+
+    private static void save(app.morphe.extension.shared.settings.BooleanSetting setting, boolean value) {
+        setting.save(value);
+        FeedVideoControls.settingsChanged();
+        drain();
+    }
+
+    @Test public void lowerMovesTheBarAndFacebooksCornerButtonsDownTogetherAndPutsThemBack() {
+        View speaker = cornerButton(1040, 540, "Unmute sound");
+        View tagged = cornerButton(8, 540, "Tagged people");
+        View caption = cornerButton(8, 480, "Above the strip the bar leaves");
+        View middle = cornerButton(524, 540, "Not near a side");
+        speaker.setTranslationY(3);
+        layout();
+        barOn();
+        int edge = on(player.view)[1] + 600;
+        assertEquals(edge - FeedVideoControls.BAR_LIFT_DP, on(bar())[1] + bar().getHeight());
+        assertEquals("off, nothing of Facebook's moves", 3f, speaker.getTranslationY(), 0f);
+
+        save(Settings.FEED_VIDEO_SEEK_BAR_LOWER, true);
+        refreshAfterLayout();
+        layout();
+        assertEquals("the speaker keeps the offset Facebook gave it", 3f + FeedVideoControls.LOWER_DP, speaker.getTranslationY(), 0f);
+        assertEquals((float) FeedVideoControls.LOWER_DP, tagged.getTranslationY(), 0f);
+        assertEquals(0f, caption.getTranslationY(), 0f);
+        assertEquals(0f, middle.getTranslationY(), 0f);
+        assertEquals("the bar comes down with them", edge - FeedVideoControls.BAR_LIFT_DP + FeedVideoControls.LOWER_DP,
+                on(bar())[1] + bar().getHeight());
+        assertEquals(FeedVideoControls.BAR_DP, bar().getHeight());
+
+        // Facebook moves the speaker 10 lower itself, which leaves 11 under it above the margin.
+        speaker.setTranslationY(speaker.getTranslationY() + 10);
+        tick();
+        refreshAfterLayout();
+        layout();
+        assertEquals("all of them stop that much lower, clear of the edge", 13f + 11f, speaker.getTranslationY(), 0f);
+        assertEquals(11f, tagged.getTranslationY(), 0f);
+        assertEquals("and the bar stays clear of them", edge - FeedVideoControls.BAR_LIFT_DP + 11, on(bar())[1] + bar().getHeight());
+
+        save(Settings.FEED_VIDEO_SEEK_BAR_LOWER, false);
+        refreshAfterLayout();
+        layout();
+        assertEquals("off, Facebook's own offset is all that's left", 13f, speaker.getTranslationY(), 0f);
+        assertEquals(0f, tagged.getTranslationY(), 0f);
+        assertEquals(edge - FeedVideoControls.BAR_LIFT_DP, on(bar())[1] + bar().getHeight());
+
+        save(Settings.FEED_VIDEO_SEEK_BAR_LOWER, true);
+        refreshAfterLayout();
+        assertEquals(11f, tagged.getTranslationY(), 0f);
+        player.view.removeView(tagged);
+        assertEquals("a button that leaves the screen goes back first, so a recycled view never keeps the move",
+                0f, tagged.getTranslationY(), 0f);
+        save(Settings.FEED_VIDEO_SEEK_BAR, false);
+        assertEquals("without the bar nothing stays moved", 13f, speaker.getTranslationY(), 0f);
+    }
+
+    @Test public void fadeDimsTheBarAndTheSpeakerWhileItPlaysAndATouchOrAPauseBringsThemBack() {
+        View speaker = cornerButton(1040, 540, "Unmute sound");
+        View tagged = cornerButton(8, 540, "Tagged people");
+        layout();
+        player.playing = true;
+        barOn();
+        save(Settings.FEED_VIDEO_SEEK_BAR_FADE, true);
+        SeekBar bar = bar();
+        long fade = FeedVideoControls.FADE_AFTER_MS + FeedVideoControls.FADE_ANIMATION_MS + 250;
+        play(1000);
+        assertEquals("it stays bright a few seconds after it starts", 1f, bar.getAlpha(), 0f);
+        assertEquals(1f, speaker.getAlpha(), 0f);
+        play(fade);
+        assertEquals(FeedVideoControls.FADED_ALPHA, bar.getAlpha(), 0.01f);
+        assertEquals("the speaker fades with it", FeedVideoControls.FADED_ALPHA, speaker.getAlpha(), 0.01f);
+        assertEquals("the tagged people across from it don't", 1f, tagged.getAlpha(), 0f);
+        assertEquals("fading moves nothing", 0f, speaker.getTranslationY(), 0f);
+
+        touch(bar, MotionEvent.ACTION_DOWN, 270);
+        play(FeedVideoControls.FADE_ANIMATION_MS + 250);
+        assertEquals("a touch brings them back", 1f, bar.getAlpha(), 0.01f);
+        assertEquals(1f, speaker.getAlpha(), 0.01f);
+        play(fade);
+        assertEquals("and they stay while it's held", 1f, bar.getAlpha(), 0.01f);
+        touch(bar, MotionEvent.ACTION_UP, 270);
+        play(fade);
+        assertEquals("let go, they fade again", FeedVideoControls.FADED_ALPHA, bar.getAlpha(), 0.01f);
+
+        speaker.setContentDescription("Mute sound");
+        play(FeedVideoControls.FADE_ANIMATION_MS + 500);
+        assertEquals("a tap on the speaker brings them back", 1f, speaker.getAlpha(), 0.01f);
+        assertEquals(1f, bar.getAlpha(), 0.01f);
+        play(fade);
+        assertEquals(FeedVideoControls.FADED_ALPHA, speaker.getAlpha(), 0.01f);
+
+        player.playing = false;
+        FeedVideoControls.changed(player);
+        drain();
+        play(fade);
+        assertEquals("a paused video keeps them bright", 1f, bar.getAlpha(), 0.01f);
+        assertEquals(1f, speaker.getAlpha(), 0.01f);
+
+        player.playing = true;
+        FeedVideoControls.changed(player);
+        drain();
+        play(fade);
+        assertEquals(FeedVideoControls.FADED_ALPHA, bar.getAlpha(), 0.01f);
+        save(Settings.FEED_VIDEO_SEEK_BAR_FADE, false);
+        play(FeedVideoControls.FADE_ANIMATION_MS + 250);
+        assertEquals("off, they come back for good", 1f, bar.getAlpha(), 0.01f);
+        assertEquals(1f, speaker.getAlpha(), 0.01f);
+    }
+
+    @Test public void fadeLeavesAButtonFacebookHidItselfHidden() {
+        View speaker = cornerButton(1040, 540, "Unmute sound");
+        layout();
+        player.playing = true;
+        barOn();
+        save(Settings.FEED_VIDEO_SEEK_BAR_FADE, true);
+        play(FeedVideoControls.FADE_AFTER_MS + FeedVideoControls.FADE_ANIMATION_MS + 250);
+        assertEquals(FeedVideoControls.FADED_ALPHA, speaker.getAlpha(), 0.01f);
+        speaker.setAlpha(0f);
+        player.playing = false;
+        FeedVideoControls.changed(player);
+        drain();
+        play(FeedVideoControls.FADE_ANIMATION_MS + 250);
+        assertEquals(1f, bar().getAlpha(), 0.01f);
+        assertEquals(0f, speaker.getAlpha(), 0f);
     }
 
     @Test public void aDragMovesOnlyTheBarUntilItsLetGoThenSeeksOnceAndLeavesPlaybackAlone() {

@@ -355,6 +355,12 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.FEED_VIDEO_SEEK_BAR,
                         L10n.t("Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. "
                     + "With Tap to play on, it needs Inline feed video controls on too.")));
+                playback.addPreference(toggle(context, Settings.FEED_VIDEO_SEEK_BAR_FADE,
+                        L10n.t("While a feed video plays, its seek bar and Facebook's speaker button fade a few seconds after it starts or you last touch them. "
+                                + "Touch the bar or pause the video and they come back. Needs Seek bar on feed videos on.")));
+                playback.addPreference(toggle(context, Settings.FEED_VIDEO_SEEK_BAR_LOWER,
+                        L10n.t("Moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. "
+                                + "Needs Seek bar on feed videos on.")));
                 // The tap hands over the file the video patch's player record found.
                 if (build.contains(PatchFamily.VIDEO_DOWNLOAD)) {
                     playback.addPreference(toggle(context, Settings.FEED_VIDEO_CAST_BUTTON,
