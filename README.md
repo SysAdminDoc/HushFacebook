@@ -22,7 +22,7 @@ Each row in the [patch table](#patches) says how its switch starts. The ad filte
 
 This project has no connection to Meta or to the Morphe project. Neither endorses it, and neither wrote it.
 
-The latest release is [v0.20.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.20.0), with 109 patches. It includes all changes since v0.19.0, among them a move to Facebook 585.0.0.47.54, a burn-in guard for videos, reels that can show when they were posted, and switches for the search button, Like under comments, the Subscribe button and the stories you've already watched, as the [changelog](CHANGELOG.md) describes.
+The latest release is [v0.21.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.21.0), with 117 patches. It includes all changes since v0.20.0, among them a new look for the Hush settings with a list of the switches that are on, settings in Russian, photo carousels in the feed, gray Reels with a break after 20 of them, and a seek bar on feed videos, as the [changelog](CHANGELOG.md) describes.
 
 [Add to Morphe](https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook) | [Download a release](https://github.com/SysAdminDoc/Hushfacebook/releases/latest) | [Browse the patches](#patches)
 
