@@ -673,6 +673,9 @@ public class PausedHooksTest {
                 // Its button takes the sticky way, and a reel taken out keeps it (#304).
                 () -> ReelCleanMode.stickyClean(false),
                 () -> ReelCleanMode.cleanButtonState(ReelCleanMode.markLeftClean(new Object[] {Boolean.FALSE})[0]) == Boolean.TRUE,
+                // And that kept button is laid over the details, not under them (#329).
+                () -> ReelCleanMode.cleanButtonState(ReelCleanMode.markLeftClean(new Object[] {Boolean.FALSE})[0]) == Boolean.TRUE
+                        && ReelCleanMode.floatCleanButton(),
                 ReelLoopForTests::stopsAReel,
                 // A video whose audio Facebook would pick in Spanish is asked for no language.
                 () -> !"es".equals(OriginalAudio.language("es")),

@@ -137,11 +137,45 @@ public final class ReelCleanMode {
      */
     @SuppressWarnings("NumberEquality")
     public static Object cleanButtonState(Object facebook) {
+        KEPT_BUTTON.remove();
         try {
-            return facebook == LEFT_CLEAN && on() ? Boolean.TRUE : facebook;
+            if (facebook != LEFT_CLEAN || !on()) return facebook;
+            KEPT_BUTTON.set(Boolean.TRUE);
+            return Boolean.TRUE;
         } catch (Throwable failure) {
             Logger.printException(() -> "Reel Clean mode: could not read its switch for the button", failure);
             return facebook;
+        }
+    }
+
+    /** Counted each time a kept button is laid over the reel's details instead of below them. */
+    static final String FLOATED_BUTTON = "Kept Clean mode button laid over the details";
+
+    /**
+     * Whether the button the builder is making right now is one {@link #cleanButtonState} kept for a
+     * reel taken out of Clean mode. The builder reads its value and makes its button in one call, on
+     * one thread, so the answer is kept per thread between the two.
+     */
+    private static final ThreadLocal<Boolean> KEPT_BUTTON = new ThreadLocal<>();
+
+    /**
+     * Injection point, in the Clean mode button's builder once it has the style of the button's row
+     * (#329). True for a button kept for a reel taken out of Clean mode, and the patch then sets the
+     * row to an absolute position at the overlay's bottom end. Facebook's design makes no row there,
+     * so in the column it took the room of its own height from the reel's details, which all moved up
+     * and left a gap over the seek bar. Laid over the column, the button stays where it sits over a
+     * clean reel and the details sit where Facebook puts them. Never throws.
+     */
+    public static boolean floatCleanButton() {
+        try {
+            boolean kept = KEPT_BUTTON.get() == Boolean.TRUE;
+            KEPT_BUTTON.remove();
+            if (!kept) return false;
+            HookStatus.counted(FAMILY, FLOATED_BUTTON);
+            return true;
+        } catch (Throwable failure) {
+            Logger.printException(() -> "Reel Clean mode: could not place the kept button", failure);
+            return false;
         }
     }
 }

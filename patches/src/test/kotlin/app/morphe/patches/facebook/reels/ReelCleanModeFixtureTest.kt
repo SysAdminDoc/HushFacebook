@@ -139,19 +139,11 @@ class ReelCleanModeFixtureTest {
             for (bundle in bundles) {
                 val name = bundle.name
                 val overlayPart = CLEAN_MODE_PARTS.first()
-                val literals = listOf(CLEAR_MODE_EVENT, CLEAR_MODE_TAP, OVERLAY_CLEAR_MODE_UPDATE, overlayPart)
+                val literals = listOf(CLEAR_MODE_EVENT, CLEAR_MODE_TAP, OVERLAY_CLEAR_MODE_UPDATE, overlayPart) + FLOAT_LITERALS
                 val holding = literals.associateWith { literal ->
                     FixtureDex.classesHolding(bundle, literal).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
                 }
-                // The classes the search looks into: what the tap calls, and what the overlay calls with an AtomicReference.
-                val tapCalls = holding.getValue(CLEAR_MODE_TAP).flatMap { methodsHolding(it, CLEAR_MODE_TAP) }
-                    .flatMap { method -> method.code().mapNotNull { it.called()?.definingClass } }
-                val overlayCalls = holding.getValue(overlayPart).flatMap { it.methods }.flatMap { method ->
-                    method.code().mapNotNull { instruction ->
-                        instruction.called()?.takeIf { ATOMIC_REFERENCE in it.parameterTypes.map(CharSequence::toString) }?.definingClass
-                    }
-                }
-                val candidates = FixtureDex.classes(bundle, (tapCalls + overlayCalls).toSet())
+                val candidates = buttonClasses(bundle, holding)
                 val hooks = cleanModeButtonHooks(holders = holding::getValue, classOf = candidates::get)
                 assertEquals("$name: the setter, the tap, the listener and the builder",
                     listOf(STICKY_CLEAN, STICKY_CLEAN, MARK_LEFT_CLEAN, CLEAN_BUTTON_STATE), hooks.map { it.call })
@@ -182,7 +174,12 @@ class ReelCleanModeFixtureTest {
                     it is OneRegisterInstruction && it.registerA == returned && it.opcode != Opcode.IF_NEZ
                 }.let { it.opcode == Opcode.CONST_4 && (it as NarrowLiteralInstruction).narrowLiteral == 0 })
 
-                val pool: Collection<ClassDef> = (holding.values.flatten() + candidates.values).associateBy { it.type }.values
+                // The patch also lays a kept button over the details (#329), with Litho's helpers.
+                val float = floatFor(bundle, builder.method, holding, candidates)
+                assertTrue("$name: the builder's own hook comes before the float", builder.moveResult + 1 < float.at)
+                val helpers = FixtureDex.classes(bundle, setOf(float.positionType, float.position).map { it.substringBefore("->") }.toSet())
+
+                val pool: Collection<ClassDef> = (holding.values.flatten() + candidates.values + helpers.values).associateBy { it.type }.values
                 val context = PatchContexts.of(pool)
                 with(context) { toggleReelCleanMode() }
                 for (hook in hooks) {
@@ -190,7 +187,8 @@ class ReelCleanModeFixtureTest {
                     val original = hook.method.code()
                     val patched = context.mutableClassDefBy(hook.owner.type).methods.single { it.sameAs(hook.method) }.code()
                     val at = hook.moveResult + 1
-                    assertEquals("$where gains two instructions", original.size + 2, patched.size)
+                    val block = if (hook === builder) floatSmaliSize(float) else 0
+                    assertEquals("$where gains two instructions, and the builder its float", original.size + 2 + block, patched.size)
                     val call = patched[at]
                     assertEquals("$where: the extension is asked", Opcode.INVOKE_STATIC_RANGE, call.opcode)
                     assertEquals("$where: the extension is asked", hook.call, call.called().toString())
@@ -199,9 +197,99 @@ class ReelCleanModeFixtureTest {
                     assertEquals("$where: its answer goes back in the same register", original[hook.moveResult].opcode, patched[at + 1].opcode)
                     assertEquals("$where: its answer goes back in the same register", hook.register,
                         (patched[at + 1] as OneRegisterInstruction).registerA)
-                    assertEquals("$where: Facebook's code stays", original.map { it.opcode },
-                        patched.take(at).map { it.opcode } + patched.drop(at + 2).map { it.opcode })
+                    val unhooked = patched.take(at) + patched.drop(at + 2)
+                    if (block > 0) {
+                        assertEquals("$where: the float is asked where the row has its style", FLOAT_CLEAN_BUTTON,
+                            unhooked[float.at].called().toString())
+                    }
+                    val facebooks = if (block > 0) unhooked.take(float.at) + unhooked.drop(float.at + block) else unhooked
+                    assertEquals("$where: Facebook's code stays", original.map { it.opcode }, facebooks.map { it.opcode })
                 }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", declaredBundles().keys, checked)
+    }
+
+    /** Whether [method] names [type] in its parameters or in a field its code reads. */
+    private fun names(method: Method, type: String) = method.parameterTypes.any { it.toString() == type } ||
+        method.implementation?.instructions?.any { ((it as? ReferenceInstruction)?.reference as? FieldReference)?.definingClass == type } == true
+
+    /** The literals the float's search starts from: Yoga's absolute position type and an edge name. */
+    private val FLOAT_LITERALS = listOf("ABSOLUTE", POSITION_BOTTOM)
+
+    /** The classes the button's search looks into: what the tap calls, and what the overlay calls with an AtomicReference. */
+    private fun buttonClasses(bundle: File, holding: Map<String, List<ClassDef>>): MutableMap<String, ClassDef> {
+        val tapCalls = holding.getValue(CLEAR_MODE_TAP).flatMap { methodsHolding(it, CLEAR_MODE_TAP) }
+            .flatMap { method -> method.code().mapNotNull { it.called()?.definingClass } }
+        val overlayCalls = holding.getValue(CLEAN_MODE_PARTS.first()).flatMap { it.methods }.flatMap { method ->
+            method.code().mapNotNull { instruction ->
+                instruction.called()?.takeIf { ATOMIC_REFERENCE in it.parameterTypes.map(CharSequence::toString) }?.definingClass
+            }
+        }
+        return FixtureDex.classes(bundle, (tapCalls + overlayCalls).toSet()).toMutableMap()
+    }
+
+    /** The float for [builder], looking up the dimension class into [candidates] as the patch would. */
+    private fun floatFor(bundle: File, builder: Method, holding: Map<String, List<ClassDef>>, candidates: MutableMap<String, ClassDef>): FloatHook {
+        val classOf = { type: String ->
+            candidates[type] ?: FixtureDex.classes(bundle, setOf(type))[type]?.also { candidates[type] = it }
+        }
+        val staticsNaming = { type: String ->
+            FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it == type } }) { isStaticMethod(it) && names(it, type) }
+        }
+        return cleanButtonFloat(builder, holding::getValue, classOf, staticsNaming)
+    }
+
+    private fun floatSmaliSize(hook: FloatHook) = floatSmali(hook).lines().count { it.isNotBlank() }
+
+    @Test
+    fun `each declared build's kept Clean mode button is laid over the details, not under them`() {
+        val checked = mutableSetOf<String>()
+        for ((version, bundles) in declaredBundles()) {
+            for (bundle in bundles) {
+                val name = bundle.name
+                val literals = listOf(CLEAR_MODE_EVENT, CLEAR_MODE_TAP, OVERLAY_CLEAR_MODE_UPDATE, CLEAN_MODE_PARTS.first()) + FLOAT_LITERALS
+                val holding = literals.associateWith { literal ->
+                    FixtureDex.classesHolding(bundle, literal).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+                }
+                val candidates = buttonClasses(bundle, holding)
+                val builder = cleanModeButtonHooks(holders = holding::getValue, classOf = candidates::get).last()
+                assertEquals("$name: the last hook is the builder's", CLEAN_BUTTON_STATE, builder.call)
+                val float = floatFor(bundle, builder.method, holding, candidates)
+
+                // The row's style goes from the margin helper to the row's constructor untouched.
+                val original = builder.method.code()
+                assertEquals("$name: the block doesn't follow the style's move-result", Opcode.MOVE_RESULT_OBJECT, original[float.at - 1].opcode)
+                assertEquals("$name: the style register", float.style, (original[float.at - 1] as OneRegisterInstruction).registerA)
+                assertTrue("$name: the end and bottom insets", float.end in 1..EDGES && float.bottom in 1..EDGES && float.end != float.bottom)
+                assertTrue("$name: the position type is Yoga's absolute one", float.absolute.contains("->") && float.absolute.endsWith(";"))
+
+                val context = PatchContexts.of((holding.values.flatten() + candidates.values).associateBy { it.type }.values)
+                val mutable = context.mutableClassDefBy(builder.owner.type).methods.single { it.sameAs(builder.method) }
+                mutable.floatKeptButton(float)
+                val patched = mutable.code()
+                val added = patched.size - original.size
+                val where = "$name: ${builder.owner.type}->${builder.method.name}"
+                assertEquals("$where: Facebook's code up to the block stays", original.take(float.at).map { it.opcode },
+                    patched.take(float.at).map { it.opcode })
+                assertEquals("$where: Facebook's code after the block stays", original.drop(float.at).map { it.opcode },
+                    patched.drop(float.at + added).map { it.opcode })
+                val block = patched.subList(float.at, float.at + added)
+                assertEquals("$where: the extension is asked first", FLOAT_CLEAN_BUTTON, block[0].called().toString())
+                val jumpAt = float.at + 2
+                assertEquals("$where: a no jumps", Opcode.IF_EQZ, patched[jumpAt].opcode)
+                assertEquals("$where: a no lands on Facebook's next instruction", float.at + added,
+                    patched.target(jumpAt, patched[jumpAt] as OffsetInstruction))
+                val calls = block.mapNotNull { it.called()?.toString() }
+                assertEquals("$where: the block's calls", listOf(FLOAT_CLEAN_BUTTON, float.positionType,
+                    "${float.dimension}-><init>(J)V", float.position), calls)
+                val last = block.last()
+                assertEquals("$where: the style goes back to the row", Opcode.MOVE_RESULT_OBJECT, last.opcode)
+                assertEquals("$where: the style goes back to the row", float.style, (last as OneRegisterInstruction).registerA)
+                val insets = block.single { it.called()?.toString() == float.position } as RegisterRangeInstruction
+                assertEquals("$where: the position helper gets the style and nine dimensions", float.range, insets.startRegister)
+                assertEquals("$where: the position helper gets the style and nine dimensions", EDGES + 1, insets.registerCount)
                 checked += version
             }
         }

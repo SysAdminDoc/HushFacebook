@@ -143,6 +143,43 @@ public class ReelCleanModeTest {
     }
 
     @Test
+    public void aKeptButtonIsLaidOverTheDetailsAndNoOtherIs() throws InterruptedException {
+        Settings.REEL_CLEAN_MODE.save(true);
+        Object[] left = {Boolean.FALSE};
+        ReelCleanMode.markLeftClean(left);
+        ReelCleanMode.cleanButtonState(left[0]);
+        assertTrue("a kept button stayed in the column under the details (#329)", ReelCleanMode.floatCleanButton());
+        assertFalse("the answer carried over to the next button", ReelCleanMode.floatCleanButton());
+
+        // A clean reel's button is Facebook's own, in the column, even right after a kept one's read.
+        ReelCleanMode.cleanButtonState(Boolean.TRUE);
+        assertFalse("a clean reel's button moved", ReelCleanMode.floatCleanButton());
+        ReelCleanMode.cleanButtonState(left[0]);
+        ReelCleanMode.cleanButtonState(Boolean.TRUE);
+        assertFalse("an earlier build's kept button moved a clean reel's", ReelCleanMode.floatCleanButton());
+
+        // Another thread making another reel's button doesn't see this one's.
+        ReelCleanMode.cleanButtonState(left[0]);
+        boolean[] elsewhere = {true};
+        Thread other = new Thread(() -> elsewhere[0] = ReelCleanMode.floatCleanButton());
+        other.start();
+        other.join();
+        assertFalse("a button on another thread was moved", elsewhere[0]);
+        assertTrue("this thread's kept button was lost", ReelCleanMode.floatCleanButton());
+        String line = statusLine();
+        assertTrue("the kept buttons weren't counted: " + line, line != null && line.contains(ReelCleanMode.FLOATED_BUTTON + " 2"));
+
+        // Off, or paused, the button is Facebook's again and nothing moves.
+        Settings.REEL_CLEAN_MODE.save(false);
+        ReelCleanMode.cleanButtonState(left[0]);
+        assertFalse("off, a button moved", ReelCleanMode.floatCleanButton());
+        Settings.REEL_CLEAN_MODE.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        ReelCleanMode.cleanButtonState(left[0]);
+        assertFalse("paused, a button moved", ReelCleanMode.floatCleanButton());
+    }
+
+    @Test
     public void offOrPausedTheButtonIsFacebooks() {
         assertFalse("off, the button took the sticky way", ReelCleanMode.stickyClean(false));
         Object[] left = {Boolean.FALSE};
