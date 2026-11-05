@@ -52,7 +52,9 @@ val pinchToZoomPatch = bytecodePatch(
     name = "Pinch to zoom",
     description = "Pinch a story or a photo on someone's profile to zoom in, like you can on photos in the feed. It " +
         "goes back when you let go, unless you turn on Stay zoomed under it, which keeps the zoom until you tap or " +
-        "press Back. Starts off. Turn it on in Hushfacebook settings > Stories.",
+        "press Back. Keep videos playing while zoomed, another switch under it, lets a video on a profile or Page " +
+        "play on while you zoom, and with Stay zoomed you press and hold to pause it. Starts off. Turn it on in " +
+        "Hushfacebook settings > Stories.",
     default = true,
 ) {
     category("Stories")
