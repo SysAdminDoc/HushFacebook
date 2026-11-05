@@ -864,7 +864,7 @@ Holding a video in the feed or in Watch plays it at double speed until you let g
 Locked at 2x. Tap the video to go back.	已鎖定 2x。輕觸影片即可恢復。
 Hide the pull down to lock hint	隱藏「下拉鎖定」提示
 Hide the 2x popups	隱藏 2x 彈出提示
-Holding a video for 2x shows no pill at all, so no "Speed: 2x", "Release to lock" or "Locked at 2x speed". The hold and the lock still work.	按住影片以 2x 播放時不顯示任何提示，包括「速度：2x」、「放開以鎖定」和「已鎖定 2x 速度」。按住和鎖定仍可使用。
+Holding a video for 2x shows no pill at all, so no "Speed: 2x", "Release to lock" or "Locked at 2x speed", and feed videos drop the "2x speed" tip. The hold and the lock still work.	按住影片以 2x 播放時不顯示任何提示，包括「速度：2x」、「放開以鎖定」和「已鎖定 2x 速度」，動態消息中的影片也不再顯示「2x 速度」提示。按住和鎖定仍可使用。
 # context: summary of that switch; the quoted hint is Facebook's own text on the pill over a video held for 2x, translate it the way Facebook would; the switches above are Hold a reel for 2x's
 Holding a video for 2x shows the plain 2x pill, without the "Pull down to lock 2x speed" hint. Pulling down still locks it. It works without the switches above.	長按影片以 2 倍速播放時只顯示一般的 2x 標籤，不顯示「下拉鎖定 2 倍速」提示。下拉仍可鎖定。不必啟用上方的開關即可使用。
 Default playback quality	預設播放畫質

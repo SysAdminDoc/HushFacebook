@@ -416,6 +416,24 @@ internal fun reelLockPopupGates(gesture: Method): List<Int> {
  */
 internal const val LOCK_POPUP_ANNOUNCE = "announceForAccessibility"
 
+/**
+ * Feed videos also show a "2x speed" chip teaching Facebook's own hold (#343). A small class keeps
+ * when it last showed under a kept pref key (585: LX/06yo;), and its one check answers whether to
+ * show it now, at most once per server-set interval, until Facebook's hold is used. Hush's hold
+ * takes that gesture, so the chip kept coming back. The patch asks LockHint first in the check.
+ */
+internal const val HOLD_NUX_SHOWN = "feed_video_hold_2x_speed_nux_last_shown_ms"
+internal const val HIDES_HOLD_NUX = "$LOCK_HINT_CLASS->hidesHoldNux()Z"
+
+/** The NUX check: an instance method taking nothing, answering a boolean, that reads the clock. */
+internal fun isHoldNuxCheck(method: Method): Boolean =
+    !AccessFlags.STATIC.isSet(method.accessFlags) && method.implementation != null &&
+        method.returnType == "Z" && method.parameterTypes.isEmpty() &&
+        method.code.any {
+            val called = (it as? ReferenceInstruction)?.reference as? MethodReference
+            called != null && called.definingClass == "Ljava/lang/System;" && called.name == "currentTimeMillis"
+        }
+
 internal fun isLockPopupShower(method: Method): Boolean {
     if (method.returnType != "V" || method.parameters() != listOf("Z")) return false
     val calls = method.code.mapNotNull { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.name }

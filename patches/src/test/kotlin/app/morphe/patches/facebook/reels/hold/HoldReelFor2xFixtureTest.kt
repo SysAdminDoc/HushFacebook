@@ -224,11 +224,16 @@ class HoldReelFor2xFixtureTest {
                 val showers = FixtureDex.methodsWhere(bundle, { true }, ::isLockPopupShower)
                 assertEquals("$name: seek bar lock popups: ${showers.map(::key)}", 1, showers.size)
                 val popupClass = FixtureDex.classes(bundle, setOf(lockPopupComponent(showers.single())!!)).values.single()
+                // And the feed video "2x speed" tip: one check in the class keeping when it last showed.
+                val nuxChecks = FixtureDex.classesHolding(bundle, HOLD_NUX_SHOWN).flatMap { it.methods.filter(::isHoldNuxCheck) }
+                assertEquals("$name: feed video 2x tip checks: ${nuxChecks.map(::key)}", 1, nuxChecks.size)
+                val nuxCheck = nuxChecks.single()
+                val nuxClass = FixtureDex.classes(bundle, setOf(nuxCheck.definingClass)).values.single()
 
                 val activity = FixtureDex.classes(bundle, setOf(FRAGMENT_ACTIVITY)).values.single()
                 val componentClasses = components.filter { c -> checks.any { it.definingClass == c.type } }
                 val classes: List<ClassDef> = (handlers + listeners + componentClasses + edgeClass + activity + player + configClass +
-                    speedUpClasses + speedClass + attachHolders + pillStates + pillClass + reelPillStates + reelPillClass + gestureClass + popupClass +
+                    speedUpClasses + speedClass + attachHolders + pillStates + pillClass + reelPillStates + reelPillClass + gestureClass + popupClass + nuxClass +
                     FixtureDex.classes(bundle, setOf(showers.single().definingClass)).values.single() + ExtensionDex.classDef(REEL_HOLD) +
                     ExtensionDex.classDef(FEED_VIDEO_HOLD) + ExtensionDex.classDef(SETTINGS_STATUS))
                     .distinctBy { it.type }
@@ -256,6 +261,7 @@ class HoldReelFor2xFixtureTest {
                 assertEquals("$name: the guard hooks the attach", 0, hooks(attach, FEED_ATTACHED))
                 assertEquals("$name: the guard hooks the 2x pill", 0, hooks(pill, LOCK_HINT_PILL))
                 assertEquals("$name: the guard hooks the Reels 2x pill", 0, hooks(reelPill, LOCK_HINT_REEL_PILL))
+                assertEquals("$name: the guard hooks the feed video 2x tip", 0, hooks(nuxCheck, HIDES_HOLD_NUX))
 
                 // The patcher runs the guard first, as a dependency, then the patch.
                 val context = PatchContexts.of(classes)
@@ -310,6 +316,16 @@ class HoldReelFor2xFixtureTest {
                     assertEquals("$name: ${component.type} draws as before past the hook",
                         before.map { it.opcode }, after.drop(5).map { it.opcode })
                 }
+
+                // First in the tip's check, ahead of the lock it takes: a yes from the extension answers false.
+                val nuxBefore = nuxCheck.code()
+                val nuxAfter = patched(nuxCheck)
+                assertEquals("$name: the 2x tip check asks", HIDES_HOLD_NUX, nuxAfter[0].call.toString())
+                assertEquals("$name: the 2x tip check takes the answer", Opcode.MOVE_RESULT, nuxAfter[1].opcode)
+                assertEquals("$name: the 2x tip check branches", Opcode.IF_EQZ, nuxAfter[2].opcode)
+                assertEquals("$name: the 2x tip check answers no", Opcode.RETURN, nuxAfter[4].opcode)
+                assertEquals("$name: the 2x tip check runs as before past the hook",
+                    nuxBefore.map { it.opcode }, nuxAfter.drop(5).map { it.opcode })
 
                 fun assertAnswers(method: Method, hook: String, flags: Set<String>) {
                     val before = method.code()

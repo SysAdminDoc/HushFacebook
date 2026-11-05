@@ -306,7 +306,7 @@ final class VideoPages {
                             + "hint. Pulling down still locks it. It works without the switches above.")));
             reels.addPreference(toggle(context, Settings.HIDE_2X_POPUPS,
                     L10n.t("Holding a video for 2x shows no pill at all, so no \"Speed: 2x\", \"Release to lock\" or "
-                            + "\"Locked at 2x speed\". The hold and the lock still work.")));
+                            + "\"Locked at 2x speed\", and feed videos drop the \"2x speed\" tip. The hold and the lock still work.")));
         }
         if (build.contains(PatchFamily.REEL_DOWNLOAD)) {
             subheading(reels, L10n.t("Saving reels"));

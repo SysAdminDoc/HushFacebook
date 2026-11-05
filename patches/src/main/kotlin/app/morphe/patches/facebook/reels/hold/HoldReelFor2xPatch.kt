@@ -198,13 +198,42 @@ internal fun BytecodePatchContext.applyFeedVideoHold(anchors: ReelHoldAnchors, f
  * through the extension's LockHint and back, and first in the Reels pill's, its hints flag does.
  * A build where either pill moved keeps the rest of Hold a reel for 2x, with that pill's hint left
  * as Facebook draws it and a warning saying why. Hide the 2x popups hooks the same two pills' renders,
- * the reel gesture's two toasts and the seek bar plugin's component.
+ * the reel gesture's two toasts, the seek bar plugin's component and the feed video "2x speed" tip.
  */
 internal fun BytecodePatchContext.applyLockHint() {
     applyVideoLockHint()
     applyReelLockHint()
     applyReelLockPopups()
     applyVideoLockPopup()
+    applyFeedHoldNux()
+}
+
+/**
+ * First in the feed video "2x speed" tip's check, a yes from the extension answers false, ahead of
+ * the lock the check takes, so its timer is neither read nor saved.
+ */
+private fun BytecodePatchContext.applyFeedHoldNux() {
+    val checks = classDefByStrings(HOLD_NUX_SHOWN, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .flatMap { holder -> holder.methods.filter(::isHoldNuxCheck) }
+    val check = checks.singleOrNull() ?: return patchLog.warning(
+        "$PATCH: expected one feed video 2x tip check, found ${checks.size}. Hide the 2x popups leaves that tip alone in this build",
+    )
+    val mutable = mutableClassDefBy(check.definingClass).findMutableMethodOf(check)
+    if (mutable.localRegisterCount() < 1) return patchLog.warning(
+        "$PATCH: the feed video 2x tip check has no register free. Hide the 2x popups leaves that tip alone in this build",
+    )
+    mutable.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { }, $HIDES_HOLD_NUX
+            move-result v0
+            if-eqz v0, :check
+            const/4 v0, 0x0
+            return v0
+        """,
+        ExternalLabel("check", mutable.getInstruction(0)),
+    )
 }
 
 private fun BytecodePatchContext.applyReelLockPopups() {

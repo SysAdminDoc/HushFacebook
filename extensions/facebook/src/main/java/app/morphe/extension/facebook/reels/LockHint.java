@@ -25,8 +25,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>Hide the 2x popups goes further: {@link #hidesPill} is asked first in both pills' renders, and a
  * yes draws nothing, whatever the state. {@link #lockPopupShows} takes the line Facebook shows
- * when a lock starts or ends, "Locked at 2x speed" and "Back to normal speed", the same way. The
- * hold, the lock and what they hide on the reel stay Facebook's, since only the drawing is skipped.
+ * when a lock starts or ends, "Locked at 2x speed" and "Back to normal speed", the same way.
+ * {@link #hidesHoldNux} keeps the "2x speed" tip off feed videos (#343): Facebook shows it on a
+ * timer to teach its own hold, and only stops once that hold is used, which never happens while
+ * Hush's hold takes the gesture. The hold, the lock and what they hide on the reel stay Facebook's,
+ * since only the drawing is skipped.
  */
 public final class LockHint {
     /** Counted under the patch's name each time a hint is drawn as the plain pill. */
@@ -35,6 +38,8 @@ public final class LockHint {
     static final String PILL_HIDDEN = "2x pill hidden";
     /** Counted under the patch's name each time a lock starts or ends without its popup. */
     static final String POPUP_HIDDEN = "2x lock popup hidden";
+    /** Counted under the patch's name each time a feed video skips Facebook's "2x speed" tip. */
+    static final String NUX_HIDDEN = "feed video 2x tip hidden";
 
     private static final String FAMILY = FamilyNames.HOLD_REEL_FOR_2X;
 
@@ -107,6 +112,14 @@ public final class LockHint {
      */
     public static boolean lockPopupShows(boolean shows) {
         return shows && !hides(POPUP_HIDDEN);
+    }
+
+    /**
+     * Injection point, first in the check Facebook makes before a feed video shows its "2x speed"
+     * tip. True answers no tip, so the check returns before it reads or saves its timer. Never throws.
+     */
+    public static boolean hidesHoldNux() {
+        return hides(NUX_HIDDEN);
     }
 
     private static boolean hides(String counted) {

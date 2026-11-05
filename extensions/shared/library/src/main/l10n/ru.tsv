@@ -882,7 +882,7 @@ Holding a video in the feed or in Watch plays it at double speed until you let g
 Locked at 2x. Tap the video to go back.	Скорость 2x закреплена. Нажмите на видео, чтобы вернуть прежнюю.
 Hide the pull down to lock hint	Скрывать подсказку о блокировке скорости свайпом вниз
 Hide the 2x popups	Скрывать всплывающие подсказки 2x
-Holding a video for 2x shows no pill at all, so no "Speed: 2x", "Release to lock" or "Locked at 2x speed". The hold and the lock still work.	При удержании видео для скорости 2x подсказка не появляется совсем: ни «Скорость: 2x», ни «Отпустите, чтобы зафиксировать», ни «Зафиксирована скорость 2x». Удержание и фиксация по-прежнему работают.
+Holding a video for 2x shows no pill at all, so no "Speed: 2x", "Release to lock" or "Locked at 2x speed", and feed videos drop the "2x speed" tip. The hold and the lock still work.	При удержании видео для скорости 2x подсказка не появляется совсем: ни «Скорость: 2x», ни «Отпустите, чтобы зафиксировать», ни «Зафиксирована скорость 2x», а видео в ленте больше не показывают подсказку «Скорость 2x». Удержание и фиксация по-прежнему работают.
 # context: summary of that switch; the quoted hint is Facebook's own text on the pill over a video held for 2x, translate it the way Facebook would; the switches above are Hold a reel for 2x's
 Holding a video for 2x shows the plain 2x pill, without the "Pull down to lock 2x speed" hint. Pulling down still locks it. It works without the switches above.	При удержании видео на скорости 2x показывается только значок 2x без подсказки «Проведите вниз, чтобы зафиксировать скорость 2x». Свайп вниз по-прежнему фиксирует скорость. Работает независимо от переключателей выше.
 Default playback quality	Качество воспроизведения по умолчанию
