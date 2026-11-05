@@ -9,6 +9,11 @@ public final class ForceDarkModeForTests {
     private ForceDarkModeForTests() {
     }
 
+    /** Puts the patch in the build, or takes it out, for a test in another package; null asks the build again. */
+    public static void inBuild(Boolean inBuild) {
+        ForceDarkMode.inBuildForTests = inBuild;
+    }
+
     /** Whether the controller's light answer comes back dark. */
     public static boolean forcesDark() {
         ForceDarkMode.inBuildForTests = true;

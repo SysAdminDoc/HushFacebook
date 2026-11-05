@@ -54,6 +54,16 @@ public final class ForceDarkMode {
     }
 
     /**
+     * Whether the switch is on in a build with the patch, and Hushfacebook isn't paused. The
+     * settings page opened from a forced dark Facebook reads it to go dark too, since it otherwise
+     * follows the phone's night mode, and on a tablet whose Facebook has no Dark mode row the phone
+     * is often light (#259).
+     */
+    public static boolean forcing() {
+        return inBuild() && Utils.settingsReady() && Settings.FORCE_DARK_MODE.get();
+    }
+
+    /**
      * Whether Force dark mode is in this build. The controller's answer also goes through here when
      * only a theme hooked it, and then the switch isn't on the screen, so it isn't read.
      */

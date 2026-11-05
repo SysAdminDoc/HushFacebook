@@ -48,6 +48,7 @@ import app.morphe.extension.facebook.download.DownloadQuality;
 import app.morphe.extension.facebook.theme.AmoledBackground;
 import app.morphe.extension.facebook.theme.AmoledForTests;
 import app.morphe.extension.facebook.theme.AmoledTheme;
+import app.morphe.extension.facebook.theme.ForceDarkModeForTests;
 import app.morphe.extension.facebook.theme.PalettesForTests;
 import app.morphe.extension.facebook.theme.TonePalette;
 import app.morphe.extension.shared.SettingsContextRule;
@@ -79,7 +80,30 @@ public class ScreenColorsTest {
         PatchFamily.inBuildForTests = null;
         ScreenColors.shown = null;
         Settings.FONT_SOURCE.resetToDefault();
+        Settings.FORCE_DARK_MODE.resetToDefault();
+        ForceDarkModeForTests.inBuild(null);
         AmoledForTests.reset();
+    }
+
+    /**
+     * Force dark mode keeps Facebook dark on a phone in light mode, and the settings page opened
+     * from it goes dark with it. It stayed light on a tablet whose Facebook has no Dark mode row
+     * (#259). A build without the patch doesn't read the switch.
+     */
+    @Test
+    public void forceDarkModeTakesThePageDarkOnALightPhone() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.MATERIAL_YOU_THEME);
+        RuntimeEnvironment.setQualifiers("+notnight");
+        Context context = RuntimeEnvironment.getApplication();
+        ForceDarkModeForTests.inBuild(true);
+        assertTrue("a light phone without the switch shows the light page", ScreenColors.forScreen(context).light);
+
+        Settings.FORCE_DARK_MODE.save(true);
+        assertFalse("Force dark mode left the page light", ScreenColors.forScreen(context).light);
+        assertEquals(android.R.style.Theme_Material_NoActionBar, ScreenColors.themeFor(context));
+
+        ForceDarkModeForTests.inBuild(false);
+        assertTrue("a build without the patch read its switch", ScreenColors.forScreen(context).light);
     }
 
     /** The WCAG contrast ratio of two opaque colours, 1 to 21. */

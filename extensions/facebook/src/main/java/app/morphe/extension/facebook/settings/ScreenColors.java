@@ -38,14 +38,16 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import app.morphe.extension.facebook.theme.AmoledTheme;
+import app.morphe.extension.facebook.theme.ForceDarkMode;
 import app.morphe.extension.facebook.theme.MaterialYouTheme;
 import app.morphe.extension.facebook.theme.TonePalette;
 import app.morphe.extension.shared.settings.preference.ImmediateAction;
 
 /**
  * The colours of the Hushfacebook screen, its rows and its dialogs when the Material You theme is
- * in this build. The screen then follows the phone's dark or light setting, in the tones of the
- * wallpaper palette (Android 12 and newer) or of the fixed palette Android 11 gets.
+ * in this build. The screen then follows the phone's dark or light setting, and stays dark while
+ * Force dark mode keeps Facebook dark, in the tones of the wallpaper palette (Android 12 and newer)
+ * or of the fixed palette Android 11 gets.
  *
  * <p>A tone is a lightness, so the contrast of each pair below is the same for any wallpaper. The
  * pairs are Material 3's: the page is the neutral at tone 10 in dark and 99 in light, text is the
@@ -266,13 +268,15 @@ final class ScreenColors {
 
     /**
      * The colours for a screen shown in this context: the phone's palette, dark or light as the
-     * context's configuration says. Null when the Material You theme isn't in this build.
+     * context's configuration says, and dark while Force dark mode keeps Facebook dark. Null when
+     * the Material You theme isn't in this build.
      */
     @Nullable
     static ScreenColors forScreen(Context context) {
         if (!PatchFamily.MATERIAL_YOU_THEME.inBuild()) return null;
         int night = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-        return new ScreenColors(MaterialYouTheme.phonePalette(context), night != Configuration.UI_MODE_NIGHT_YES);
+        boolean light = night != Configuration.UI_MODE_NIGHT_YES && !ForceDarkMode.forcing();
+        return new ScreenColors(MaterialYouTheme.phonePalette(context), light);
     }
 
     /** The framework theme rows and dialogs are built with, so what this class doesn't paint still reads. */

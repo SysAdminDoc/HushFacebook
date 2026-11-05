@@ -4,6 +4,7 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+* With `Force dark mode` on, the Hushfacebook settings go dark along with Facebook. On a phone or tablet in light mode they stayed light, which stood out most on tablets where Facebook's own settings have no Dark mode. (#259)
 * New `Open full screen videos centered` under Video and audio. A video you open in Facebook's full screen player, from a comment or a link, starts with its details and comments folded away, so a wide video sits in the middle of the screen instead of up at the top. The arrow under it still opens the panel. It's off by default. (#242)
 * New `Dim around a zoom` under `Pinch to zoom`. Turn it off and the rest of the screen stays as it is while you zoom into a photo or story, instead of going dark behind it. It's on by default, so zooms look the same as before until you change it. (#220)
 * New `Keep videos playing while zoomed` under `Pinch to zoom`. A video you zoom into on a profile or Page keeps playing under your fingers, where it used to stop on the frame it showed. With `Stay zoomed` on too, press and hold the zoom to pause the video and hold again to play it. Stories still hold still while you zoom. It's off by default. (#220)
