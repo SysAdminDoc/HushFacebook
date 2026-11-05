@@ -702,6 +702,8 @@ public class PausedHooksTest {
                     ReelDeclutter.noteAuthorPill(true);
                     return ReelDeclutter.authorPillSlot(new Object()) == null;
                 },
+                // And the fan-subscription pill some Pages get in that row's slots.
+                () -> ReelDeclutter.fanPillSlot(new Object()) == null,
                 // So is the speaker button under it.
                 () -> !ReelDeclutter.showsSoundButton(true),
                 // And the footer's speaker, when the footer builds it.

@@ -599,6 +599,35 @@ public class ReelDeclutterTest {
         assertTrue("turning the switch off didn't bring the pill back", ReelDeclutter.showAuthorPill(true, true));
     }
 
+    /**
+     * The fan-subscription pill some Pages get always says Subscribe, so its slot empties with the
+     * switch on, and with no note from a builder. It comes back with the switch off, paused, and
+     * when the switch can't be read.
+     */
+    @Test
+    public void theFanSubscribePillGoesWithTheSwitchOn() {
+        Object slot = new Object();
+        assertSame("the fan pill went with the switch off", slot, ReelDeclutter.fanPillSlot(slot));
+        Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON.save(true);
+        assertNull("the slot kept the fan pill", ReelDeclutter.fanPillSlot(slot));
+        ReelDeclutter.noteAuthorPill(false);
+        assertNull("a Follow note from the shared builder kept the fan pill", ReelDeclutter.fanPillSlot(slot));
+        assertSame("the fan slot took the shared builder's note", slot, ReelDeclutter.authorPillSlot(slot));
+        assertEquals(ReelDeclutter.SUBSCRIBE_ROUTE + ": 4 lists, 4 items, 2 removed. Last reason: " + ReelDeclutter.SUBSCRIBE
+                + ". Removed: " + ReelDeclutter.SUBSCRIBE + " 2. Kinds: " + ReelDeclutter.SUBSCRIBE + " 3, "
+                + ReelDeclutter.FOLLOW + " 1", line(ReelDeclutter.SUBSCRIBE_ROUTE));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame("the fan pill went while paused", slot, ReelDeclutter.fanPillSlot(slot));
+        PauseForTests.resume();
+        SettingReadsForTests.breakReads(Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON);
+        try {
+            assertSame("a switch that can't be read emptied the fan slot", slot, ReelDeclutter.fanPillSlot(slot));
+        } finally {
+            SettingReadsForTests.mend(Settings.HIDE_VIDEO_SUBSCRIBE_BUTTON);
+        }
+    }
+
     /** The report counts each pill under its kind and the Subscribe pills it took away. */
     @Test
     public void theReportCountsBothPillsAndTheSubscribeOnesTaken() {

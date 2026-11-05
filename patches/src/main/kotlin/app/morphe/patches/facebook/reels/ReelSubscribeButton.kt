@@ -14,9 +14,11 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.firstHolding
 import app.morphe.util.namedRegisters
 import app.morphe.util.readsAfter
 import app.morphe.util.writersReaching
@@ -57,6 +59,12 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   owner answer into 1, 0, or -1 for a Subscribe that goes, and -1 takes that way. The patch checks
  *   nothing on that way reads a register the row wrote since its own branch there, so the two ways
  *   in agree on every register it uses.
+ * - Some Pages get a fan-subscription pill instead, which says Subscribe whoever the owner is. A
+ *   builder in the shared builder's class (LX/09bY;->A09) loads its tag "fubs_video_subscribe_button"
+ *   and returns it without asking the owner check, and only the viewer row calls it, twice: once into
+ *   the row's own slot (LX/02y0;) and once, through a getter, into a LX/02zm; slot. Each of those
+ *   slots asks the extension whether to keep it. The patch checks that every way from the call ends
+ *   in that slot and that the row can't reach the slot any other way.
  */
 
 internal const val SHOW_AUTHOR_PILL = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->showAuthorPill(ZZ)Z"
@@ -64,6 +72,11 @@ internal const val NOTE_AUTHOR_PILL = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->
 internal const val AUTHOR_PILL_SLOT =
     "$EXTENSION_PACKAGE/reels/ReelDeclutter;->authorPillSlot(Ljava/lang/Object;)Ljava/lang/Object;"
 internal const val AUTHOR_PILL_ANSWER = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->authorPillAnswer(Z)I"
+internal const val FAN_PILL_SLOT =
+    "$EXTENSION_PACKAGE/reels/ReelDeclutter;->fanPillSlot(Ljava/lang/Object;)Ljava/lang/Object;"
+
+/** The test tag of the fan-subscription pill, which says Subscribe on every video it's built for. */
+internal const val FAN_PILL_TAG = "fubs_video_subscribe_button"
 
 /** The test tag both places that build the author's Follow or Subscribe pill load. */
 internal const val AUTHOR_PILL_TAG = "video_author_follow_button"
@@ -78,6 +91,7 @@ private const val PATCH = "Clean up Reels"
 private val STRINGS = setOf(Opcode.CONST_STRING, Opcode.CONST_STRING_JUMBO)
 private val INVOKE_STATIC = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
 private val INVOKE_DIRECT = setOf(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE)
+private val RETURNS = setOf(Opcode.RETURN, Opcode.RETURN_VOID, Opcode.RETURN_WIDE, Opcode.RETURN_OBJECT)
 
 /**
  * One method loading [AUTHOR_PILL_TAG]: where the tag is loaded, the register the owner answer is
@@ -270,11 +284,86 @@ internal fun BytecodePatchContext.pillSlots(builder: Method, key: String): List<
     return slots
 }
 
+/** The methods loading [FAN_PILL_TAG] that return an object: the fan-subscription pill's builder. */
+internal fun fanPillBuilders(holders: List<Method>): List<Method> = holders.filter { it.returnType.startsWith("L") }
+
+/** Whether [method] can get from its start to [target] without passing [avoid], through handlers too. */
+private fun reachableWithout(method: Method, target: Int, avoid: Int): Boolean {
+    val flow = ControlFlow.of(method)
+    val seen = BooleanArray(flow.instructions.size)
+    val pending = ArrayDeque(listOf(0))
+    while (pending.isNotEmpty()) {
+        val at = pending.removeFirst()
+        if (at == avoid || seen[at]) continue
+        if (at == target) return true
+        seen[at] = true
+        pending += flow.normal[at]
+        pending += flow.exceptional[at]
+    }
+    return false
+}
+
+/**
+ * Every row slot built from what the fan-subscription pill's [builder] returns. On every way from
+ * each call, while its result is still held, the first constructor, return or throw met must be a
+ * two-argument constructor whose first parameter is [key], and the method must reach that
+ * constructor only through the call, so a slot it hooks never holds anything but that pill.
+ */
+internal fun BytecodePatchContext.fanPillSlots(builder: Method, key: String): List<PillSlot> {
+    val slots = mutableListOf<PillSlot>()
+    val builderSignature = builder.parameterTypes.map(CharSequence::toString)
+    val isSlot = { instruction: Instruction ->
+        instruction.opcode in INVOKE_DIRECT &&
+            instruction.call?.let { it.name == "<init>" && it.signature().let { types -> types.size == 2 && types[0] == key } } == true
+    }
+    val stops = { instruction: Instruction -> isSlot(instruction) || instruction.opcode in RETURNS || instruction.opcode == Opcode.THROW }
+    classDefForEachReferencing(types = listOf(builder.definingClass)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
+        for (method in classDef.methods) {
+            val code = method.implementation?.instructions?.toList() ?: continue
+            for (site in code.indices) {
+                val call = code[site].call ?: continue
+                if (call.definingClass != builder.definingClass || call.name != builder.name ||
+                    call.returnType != builder.returnType || call.signature() != builderSignature
+                ) continue
+                val where = "$PATCH: ${method.definingClass}->${method.name}"
+                if (code.getOrNull(site + 1)?.opcode != Opcode.MOVE_RESULT_OBJECT) {
+                    throw PatchException("$where drops the fan-subscription pill it builds")
+                }
+                val ends = method.firstHolding(site + 1, stops, handlers = false)
+                if (ends.isEmpty() || !ends.all { isSlot(code[it]) }) {
+                    throw PatchException("$where puts the fan-subscription pill somewhere but a row slot")
+                }
+                for (init in ends) {
+                    if (reachableWithout(method, init, site)) {
+                        throw PatchException("$where reaches the fan-subscription pill's slot without building the pill")
+                    }
+                    slots += PillSlot(method, init, arguments(code[init]).first(), code[init].call!!.definingClass)
+                }
+            }
+        }
+    }
+    return slots.distinctBy { it.method.key() to it.init }
+}
+
+/** Puts [slot] through the extension's [descriptor] right after its constructor, cast back to its class. */
+private fun slotHook(slot: PillSlot, descriptor: String) = PillHook(slot.method, slot.init) {
+    addInstructions(
+        slot.init + 1,
+        """
+            invoke-static/range { v${slot.register} .. v${slot.register} }, $descriptor
+            move-result-object v${slot.register}
+            check-cast v${slot.register}, ${slot.type}
+        """,
+    )
+}
+
 /**
  * Hooks the Subscribe pill beside a full-screen video's author: the viewer row asks the extension
  * whether to build it, and every row slot holding the shared builder's pill asks whether to keep
- * it. Refuses unless the row and the shared builder are each found once with the owner check, and
- * the builder's pill lands in at least one slot.
+ * it, and so does every slot holding the fan-subscription pill. Refuses unless the row and the
+ * shared builder are each found once with the owner check, the fan builder is found once, and each
+ * builder's pill lands in at least one slot.
  */
 internal fun BytecodePatchContext.hideSubscribePill() {
     val ownerChecks = mutableMapOf<String, Boolean>()
@@ -315,20 +404,22 @@ internal fun BytecodePatchContext.hideSubscribePill() {
     val key = slotKey(row) ?: throw PatchException("$PATCH: the author row puts its pill in no slot")
     val slots = pillSlots(builder.method, key)
     if (slots.isEmpty()) throw PatchException("$PATCH: no row slot holds the pill builder's pill")
-    if (slots.any { it.register > 255 }) throw PatchException("$PATCH: a pill slot sits past v255")
+    val fanBuilders = fanPillBuilders(
+        classDefByStrings(FAN_PILL_TAG, StringComparisonType.EQUALS)
+            .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+            .flatMap { owner -> owner.methods.filter { holdsString(it, FAN_PILL_TAG) } },
+    )
+    val fanBuilder = fanBuilders.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one builder returning the \"$FAN_PILL_TAG\" pill, found ${fanBuilders.size}",
+    )
+    val fanSlots = fanPillSlots(fanBuilder, key)
+    if (fanSlots.isEmpty()) throw PatchException("$PATCH: no row slot holds the fan-subscription pill")
+    if ((slots + fanSlots).any { it.register > 255 }) throw PatchException("$PATCH: a pill slot sits past v255")
+    if ((slots + fanSlots).distinctBy { it.method.key() to it.init }.size != slots.size + fanSlots.size) {
+        throw PatchException("$PATCH: a row slot holds both the shared pill and the fan-subscription pill")
+    }
 
-    val hooks = slots.map { slot ->
-        PillHook(slot.method, slot.init) {
-            addInstructions(
-                slot.init + 1,
-                """
-                    invoke-static/range { v${slot.register} .. v${slot.register} }, $AUTHOR_PILL_SLOT
-                    move-result-object v${slot.register}
-                    check-cast v${slot.register}, ${slot.type}
-                """,
-            )
-        }
-    } + PillHook(row.method, set) {
+    val hooks = slots.map { slotHook(it, AUTHOR_PILL_SLOT) } + fanSlots.map { slotHook(it, FAN_PILL_SLOT) } + PillHook(row.method, set) {
         addInstructions(
             set + 1,
             """

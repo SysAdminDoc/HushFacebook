@@ -86,7 +86,17 @@ class ReelSubscribeButtonFixtureTest {
                 val footers = footerMethods.mapNotNull { footerPill(it, isOwnerCheck) }
                 assertEquals("$name: rows building their own pill", 1, footers.size)
                 val footer = footers.single()
-                val classes = (holders + footerHolders + called.values + FixtureDex.classes(bundle, callers).values).distinctBy { it.type }
+                val fanHolders = FixtureDex.classesHolding(bundle, FAN_PILL_TAG)
+                    .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+                val fanBuilder = fanPillBuilders(fanHolders.flatMap { owner -> owner.methods.filter { it.loads(FAN_PILL_TAG) } }).singleOrNull()
+                assertNotNull("$name: one builder returning the fan-subscription pill", fanBuilder)
+                val fanCallers = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.contains(fanBuilder!!.definingClass) }) { method ->
+                    method.implementation?.instructions?.any {
+                        it.call?.let { call -> call.definingClass == fanBuilder!!.definingClass && call.name == fanBuilder.name } == true
+                    } == true
+                }.map { it.definingClass }.toSet()
+                val classes = (holders + footerHolders + fanHolders + called.values +
+                    FixtureDex.classes(bundle, callers + fanCallers).values).distinctBy { it.type }
                 assertThrows("$name: no owner check must refuse the patch", PatchException::class.java) {
                     PatchContexts.of(classes.filter { it.type != ownerClass.type }).hideSubscribePill()
                 }
@@ -103,7 +113,8 @@ class ReelSubscribeButtonFixtureTest {
                 assertEquals("$name: into the flag's register", flag, (rowCode[show - 1] as OneRegisterInstruction).registerA)
                 assertEquals("$name: set to 1", 1, (rowCode[show - 1] as NarrowLiteralInstruction).narrowLiteral)
                 assertEquals("$name: the row gains two instructions",
-                    row.method.code().size + 2, rowCode.size - rowCode.count { it.call?.toString() == AUTHOR_PILL_SLOT } * 3)
+                    row.method.code().size + 2,
+                    rowCode.size - rowCode.count { it.call?.toString() == AUTHOR_PILL_SLOT || it.call?.toString() == FAN_PILL_SLOT } * 3)
 
                 val footerCode = context.mutableClassDefBy(footer.method.definingClass).method(footer.method).code()
                 val answers = footerCode.indices.filter { footerCode[it].call?.toString() == AUTHOR_PILL_ANSWER }
@@ -144,6 +155,30 @@ class ReelSubscribeButtonFixtureTest {
                 }
                 // 585: the viewer row's slot after the wrapper, and two in the reel footer's render.
                 assertTrue("$name: fewer than three pill slots hooked ($slots)", slots >= 3)
+
+                var fanSlots = 0
+                for (type in fanCallers) {
+                    for (method in context.mutableClassDefBy(type).methods) {
+                        val code = method.implementation?.instructions?.toList() ?: continue
+                        for (at in code.indices.filter { code[it].call?.toString() == FAN_PILL_SLOT }) {
+                            val init = code[at - 1].call
+                            assertEquals("$name: a fan slot hook follows a constructor", "<init>", init?.name)
+                            assertEquals("$name: of a row slot", slotKey(row), init!!.parameterTypes.first().toString())
+                            val register = arguments(code[at]).single()
+                            assertEquals("$name: the hook passes the new slot", arguments(code[at - 1]).first(), register)
+                            assertEquals("$name: the extension's answer replaces the slot", Opcode.MOVE_RESULT_OBJECT, code[at + 1].opcode)
+                            assertEquals("$name: into the same register", register, (code[at + 1] as OneRegisterInstruction).registerA)
+                            assertEquals("$name: cast back to the slot's class", init.definingClass,
+                                ((code[at + 2] as ReferenceInstruction).reference as TypeReference).type)
+                            assertTrue("$name: the fan slot comes after the fan pill is built", code.subList(0, at).any {
+                                it.call?.let { call -> call.definingClass == fanBuilder!!.definingClass && call.name == fanBuilder.name } == true
+                            })
+                            fanSlots++
+                        }
+                    }
+                }
+                // 585: the viewer row puts the fan pill in its own slot and, through a getter, in a second one.
+                assertEquals("$name: fan-subscription pill slots hooked", 2, fanSlots)
                 checked += version
                 abis += name.substringAfter("-$version-").substringBefore(".apkm")
             }
@@ -154,7 +189,7 @@ class ReelSubscribeButtonFixtureTest {
 
     @Test
     fun `the extension has the hooks`() {
-        for (descriptor in listOf(SHOW_AUTHOR_PILL, NOTE_AUTHOR_PILL, AUTHOR_PILL_SLOT, AUTHOR_PILL_ANSWER)) {
+        for (descriptor in listOf(SHOW_AUTHOR_PILL, NOTE_AUTHOR_PILL, AUTHOR_PILL_SLOT, AUTHOR_PILL_ANSWER, FAN_PILL_SLOT)) {
             val name = descriptor.substringAfter("->").substringBefore("(")
             val hook = ExtensionDex.classDef(descriptor.substringBefore("->")).methods.singleOrNull { it.name == name }
             assertNotNull("the extension has no ReelDeclutter.$name", hook)

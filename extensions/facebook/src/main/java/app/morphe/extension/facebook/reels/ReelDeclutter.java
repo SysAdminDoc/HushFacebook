@@ -63,7 +63,9 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  *       owners and Follow for the rest. The row hands {@link #showAuthorPill} both its answers
  *       where it decides to build the pill. A builder Facebook shares for the same pill elsewhere
  *       notes which one it builds ({@link #noteAuthorPill}), and its callers hand
- *       {@link #authorPillSlot} the slot they wrap it in. Only a Subscribe pill goes (#291).
+ *       {@link #authorPillSlot} the slot they wrap it in. Only a Subscribe pill goes (#291). Some
+ *       Pages get a fan-subscription pill there instead, from a builder that never asks the owner,
+ *       and the row hands each slot it wraps that pill in to {@link #fanPillSlot}.
  *   <li>The comment Facebook picks to show under a reel and the bubbles of friends who reacted each
  *       come from a query a runnable starts. {@link #skipHotComment} and {@link #skipSocialBubbles}
  *       are asked first thing in each, and true makes the runnable return before it queries.
@@ -398,6 +400,16 @@ public final class ReelDeclutter {
         boolean subscribe = Boolean.TRUE.equals(BUILDING_SUBSCRIBE.get());
         BUILDING_SUBSCRIBE.remove();
         return hideSubscribePill(subscribe) ? null : slot;
+    }
+
+    /**
+     * Injection point, in the viewer's author row, right after it wraps the fan-subscription pill
+     * some Pages get instead in one of its slots (#291). That pill says Subscribe whoever owns the
+     * video, so null, the slot for no pill, is the answer while the switch is on. Never throws:
+     * anything else answers the slot as it came.
+     */
+    public static Object fanPillSlot(Object slot) {
+        return hideSubscribePill(true) ? null : slot;
     }
 
     /**
