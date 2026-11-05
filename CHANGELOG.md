@@ -4,6 +4,10 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+### Changed
+
+* You need Morphe Manager 2.4.0 or newer now. The patches are built on Morphe patcher 2.2.0, the one Manager 2.4.0 ships with, and older Managers refuse a bundle built on it, so update Manager before you patch. On a computer, use morphe-desktop 2.0.0 or newer.
+
 ### Fixed
 
 * With `Double tap to zoom` on, a fast scroll on a profile or Page stops as soon as your finger lands on it. It used to slide on for a moment whenever that finger landed on a photo or video, since the first tap waited to see if a second one was coming.

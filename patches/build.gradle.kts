@@ -902,12 +902,10 @@ patches {
     }
 }
 
-// Morphe patcher 1.12.0 asks for Bouncy Castle 1.77 and the Android build tools it brings ask
-// for 1.79, so this module's graph resolved at 1.79: 1.77 is inside all six advisories
-// (CVE-2025-8916 1.44 to 1.78, CVE-2026-5588 1.67 to 1.83, CVE-2025-14813, CVE-2026-0636
-// fixed in 1.84, CVE-2026-8763, CVE-2026-13506 fixed in 1.85) and 1.79 is inside all but
-// CVE-2025-8916. None of it reaches the
-// payload, and the APK a user gets is
+// Morphe patcher asks for Bouncy Castle 1.77 and the Android build tools in this graph ask for
+// 1.79, so this module's graph resolved at 1.79: gradle/libs.versions.toml lists the advisories,
+// with 1.77 inside all twelve and 1.79 inside six. None of it reaches the payload, and the APK a
+// user gets is
 // signed by their own Manager with its own patcher, so this is the build and signing classpath
 // here rather than anything shipped. The repository's rule is that a known-affected component
 // does not stay in a reproducible graph either way. Every request is rewritten to the reviewed
@@ -1043,10 +1041,12 @@ dependencies {
     // Reads the signing certificate of every retained fixture. The patcher already brings this
     // exact version at run time; this puts it on the test compile classpath as well.
     testImplementation("com.android.tools.build:apksig:9.1.1")
-    // Reads the resource tables of the fixtures, for the Material You theme's colour table. The
-    // patcher already brings this exact version at run time; this puts it on the test compile
-    // classpath as well.
-    testImplementation("com.github.REAndroid:arsclib:a28c6fb2a7")
+    // Reads the resource tables of the fixtures, for the Material You theme's colour table. This is
+    // the module and commit the patcher brings at run time (2.1.0 and 2.2.0 both pin 4695b583ef);
+    // it puts that copy on the test compile classpath as well. REAndroid's own arsclib is a
+    // different module that shares most of its com.reandroid classes, so it would sit beside the
+    // patcher's copy instead of merging with it.
+    testImplementation("com.github.MorpheApp:ARSCLib:4695b583ef")
 }
 
 // The patch tests run in two parts. fixtureTest takes the ones that read the Facebook fixtures,
