@@ -26,7 +26,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * Manager key, so the scope keeps nothing, logs "Components matching the intent were found but none
  * match the given scope" and answers null, and the tap does nothing. The scope's null goes through
  * {@link #publicLink} first. For a plain web link to one of those two apps, it answers a new intent
- * that carries the link and nothing else, aimed at the app's own link activity the scope found.
+ * that carries the link and nothing else, aimed at the app's own link activity the scope found. A
+ * Threads card in the feed opens Threads with a {@code barcelona://} link by package rather than a web
+ * link (#385), and that goes to Threads' link activity the same way.
  *
  * <p>The new intent holds only the action, the address and the browsable category: no extras, no
  * clip data, no permissions the dropped intent may have carried. A family intent can carry sign-in
@@ -42,6 +44,8 @@ public final class FamilyLinkHandoff {
 
     static final String INSTAGRAM = "com.instagram.android";
     static final String THREADS = "com.instagram.barcelona";
+    /** Threads' own link scheme, which Facebook opens Threads with from a Threads card or bookmark. */
+    static final String THREADS_SCHEME = "barcelona";
 
     /**
      * The intent to start instead of the one the scope dropped, or null to keep Facebook's refusal.
@@ -55,8 +59,18 @@ public final class FamilyLinkHandoff {
             Uri link = dropped.getData();
             if (link == null) return null;
             String scheme = link.getScheme();
-            if (!"https".equalsIgnoreCase(scheme) && !"http".equalsIgnoreCase(scheme)) return null;
-            String app = appFor(link.getHost());
+            String app;
+            if ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) {
+                app = appFor(link.getHost());
+            } else if (THREADS_SCHEME.equalsIgnoreCase(scheme) && dropped.getComponent() == null
+                    && (dropped.getPackage() == null || THREADS.equals(dropped.getPackage()))) {
+                // A Threads card or bookmark asks for Threads by package with Threads' own scheme
+                // (#385). Facebook first tries Threads' main activity by name; that stays refused, so
+                // Facebook falls back to this by-package intent, which Threads' link activity takes.
+                app = THREADS;
+            } else {
+                return null;
+            }
             if (app == null) return null;
 
             HookStatus.invoked(FamilyNames.RESTORE_TRUST);

@@ -80,6 +80,64 @@ public class FamilyLinkHandoffTest {
         assertEquals(FamilyLinkHandoff.THREADS, handoff.getComponent().getPackageName());
     }
 
+    private static final ActivityInfo THREADS_LINKS =
+            activity(FamilyLinkHandoff.THREADS, "com.instagram.barcelona.url.BarcelonaUrlHandlerActivity", true);
+
+    /** What Facebook's Threads card sends when Threads is installed: Threads' own scheme, by package (#385). */
+    private static Intent threadsCard(String link) {
+        return dropped(link).setPackage(FamilyLinkHandoff.THREADS);
+    }
+
+    @Test
+    public void aThreadsCardGoesToThreadsLinkActivityWithOnlyTheLink() {
+        // Threads 454 reads barcelona://media?id={media id}, the post's numeric id.
+        String card = "barcelona://media?id=3435311686544693883";
+
+        Intent handoff = FamilyLinkHandoff.publicLink(threadsCard(card), Arrays.asList(INSTAGRAM_LINKS, THREADS_LINKS));
+
+        assertEquals(Intent.ACTION_VIEW, handoff.getAction());
+        assertEquals(Uri.parse(card), handoff.getData());
+        assertEquals(FamilyLinkHandoff.THREADS, handoff.getComponent().getPackageName());
+        assertEquals("com.instagram.barcelona.url.BarcelonaUrlHandlerActivity", handoff.getComponent().getClassName());
+        assertTrue(handoff.hasCategory(Intent.CATEGORY_BROWSABLE));
+        assertNull("no extras leave with it", handoff.getExtras());
+        assertNull("no clip data leaves with it", handoff.getClipData());
+        assertEquals("only the new-task flag carries over", Intent.FLAG_ACTIVITY_NEW_TASK, handoff.getFlags());
+
+        Intent bookmark = FamilyLinkHandoff.publicLink(threadsCard("barcelona://mainfeed"), Collections.singletonList(THREADS_LINKS));
+        assertEquals(Uri.parse("barcelona://mainfeed"), bookmark.getData());
+    }
+
+    @Test
+    public void aThreadsLinkWithNoPackageStillOnlyGoesToThreads() {
+        ActivityInfo lookalike = activity("com.example.lookalike", "com.example.lookalike.Links", true);
+
+        Intent handoff = FamilyLinkHandoff.publicLink(dropped("barcelona://mainfeed"), Arrays.asList(lookalike, THREADS_LINKS));
+
+        assertEquals(FamilyLinkHandoff.THREADS, handoff.getComponent().getPackageName());
+        assertEquals("com.instagram.barcelona.url.BarcelonaUrlHandlerActivity", handoff.getComponent().getClassName());
+        assertNull(FamilyLinkHandoff.publicLink(dropped("barcelona://mainfeed"), Collections.singletonList(lookalike)));
+    }
+
+    @Test
+    public void facebookTryingThreadsMainActivityByNameKeepsTheRefusal() {
+        // Refused, Facebook falls back to the by-package intent above, which Threads' link filter takes.
+        Intent named = threadsCard("barcelona://media?id=3435311686544693883")
+                .setClassName(FamilyLinkHandoff.THREADS, "com.instagram.barcelona.mainactivity.BarcelonaActivity");
+        assertNull(FamilyLinkHandoff.publicLink(named, Collections.singletonList(THREADS_LINKS)));
+    }
+
+    @Test
+    public void threadsSchemeOnlyEverGoesToThreads() {
+        Intent elsewhere = dropped("barcelona://media?id=3435311686544693883").setPackage("com.example.lookalike");
+        assertNull(FamilyLinkHandoff.publicLink(elsewhere, Collections.singletonList(THREADS_LINKS)));
+        assertNull(FamilyLinkHandoff.publicLink(threadsCard("barcelona://mainfeed"), Collections.singletonList(INSTAGRAM_LINKS)));
+        ActivityInfo hidden = activity(FamilyLinkHandoff.THREADS, "com.instagram.barcelona.Internal", false);
+        assertNull(FamilyLinkHandoff.publicLink(threadsCard("barcelona://mainfeed"), Collections.singletonList(hidden)));
+        assertNull(FamilyLinkHandoff.publicLink(threadsCard("barcelona://mainfeed").setAction(Intent.ACTION_SEND),
+                Collections.singletonList(THREADS_LINKS)));
+    }
+
     @Test
     public void theAppIsPickedByItsExactPackage() {
         ActivityInfo lookalike = activity("com.instagram.android.clone", "com.clone.Links", true);
