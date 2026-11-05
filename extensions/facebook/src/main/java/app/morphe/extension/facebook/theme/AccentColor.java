@@ -246,6 +246,33 @@ public final class AccentColor {
         return bloksFill(color, preset);
     }
 
+    /**
+     * Facebook's blue {@code color} as the theme in force draws its blues, for a colour Hushfacebook
+     * paints itself, such as the Rounded tab bar's spot (#383), so it sits with the tab icon the theme
+     * recoloured: the Material You palette's accent with that theme in the build, the Accent color's
+     * otherwise, and {@code color} itself for Facebook's own blue, a build without either patch or
+     * before the settings are ready. The alpha is {@code color}'s.
+     */
+    public static int themedBlue(int color) {
+        return themedBlue(color, SettingsStatus.materialYouTheme(), SettingsStatus.accentColor());
+    }
+
+    /** {@link #themedBlue(int)} with [materialYou] and [accent] saying which of the two patches is in the build. */
+    static int themedBlue(int color, boolean materialYou, boolean accent) {
+        if (!Utils.settingsReady()) return color;
+        TonePalette palette;
+        if (materialYou) {
+            palette = MaterialYouTheme.palette();
+        } else {
+            if (!accent) return color;
+            Preset preset = chosen();
+            if (preset == null) return color;
+            palette = palette(preset);
+        }
+        int opaque = palette.sameLightness(TonePalette.ACCENT, color | 0xFF000000);
+        return (color & 0xFF000000) | (opaque & 0x00FFFFFF);
+    }
+
     /** The accent in force, or null for Facebook's own blue: unset, paused, or the Material You theme in charge. */
     @Nullable
     static Preset chosen() {

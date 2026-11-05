@@ -13,12 +13,14 @@ Changes in each Hushfacebook version, newest first.
 
 * You need Morphe Manager 2.4.0 or newer now. The patches are built on Morphe patcher 2.2.0, the one Manager 2.4.0 ships with, and older Managers refuse a bundle built on it, so update Manager before you patch. On a computer, use morphe-desktop 2.0.0 or newer.
 * **Tooling:** The build runs on Morphe's patches Gradle plugin 2.1.0. It brings the Kotlin Gradle plugin 2.4.21 itself, so the build stopped forcing that version over the 2.4.10 the old plugin asked for.
+* The spot behind the tab you're on in `Rounded tab bar` takes its colour from `Accent color`, the Material You theme or the `Selected tab color` you picked, so it matches the tab's icon. It was always Facebook's blue before. (#383)
 * **Tooling:** The build can sign a bundle with a MorpheSig1 signature, the kind Manager 2.3.0 and newer check, once a signing key is set up for it. The release index then publishes the matching public key, though only when the bundle it points at was signed with it, and never a key that differs from one it already published. The build refuses a bundle signed by any other key. Nothing is signed yet.
 
 ### Fixed
 
 * `Hide song and effect credits` now also takes the song and effect pills off the row under the poster's name. Most stories put the song there rather than on the line under the name, so the switch used to miss it. (#380)
 * With `Stop Story auto-advance` on, lifting your finger off a story that already finished doesn't jump to the next one anymore. (#380)
+* `Rounded tab bar` drops the thin grey line that ran across the top of the pill, with or without `See-through bars`. Facebook draws that line over the tabs instead of above them, so the pill kept it as a hard stripe. Turning the switch off brings it back. (#383)
 * A Threads post in your feed opens in Threads again when you've patched Threads too, and so does the Threads button in Facebook's menu. A patched Threads is signed with a different key than Facebook, so Facebook's own check dropped the link and the tap did nothing. Now the link goes to Threads by itself, with nothing else from Facebook attached. (#385)
 * With `Double tap to zoom` on, a fast scroll on a profile or Page stops as soon as your finger lands on it. It used to slide on for a moment whenever that finger landed on a photo or video, since the first tap waited to see if a second one was coming.
 * **Tooling:** The device walk taps the search field before it presses Enter. About 2 times in 10, Enter right after typing the search word went to the first suggestion under the field and searched nothing. The tap only goes to the one search field holding that word, once per search, and is refused anywhere else. Checked in the audit's tests.

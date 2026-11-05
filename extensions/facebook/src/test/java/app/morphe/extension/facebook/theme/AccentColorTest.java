@@ -232,6 +232,28 @@ public class AccentColorTest {
         assertEquals(0xFF0866FF, AccentColor.mig(0xFF0866FF, token));
     }
 
+    /**
+     * #383: the Rounded tab bar's faint spot takes the chosen accent and keeps its own alpha, with
+     * Accent color in the build only, so a saved accent from another build can't tint it alone.
+     */
+    @Test
+    public void theTabBarSpotTakesTheChosenAccentWithThePatchInTheBuild() {
+        int spot = 0x330866FF;
+        assertEquals("Facebook's blue chosen", spot, AccentColor.themedBlue(spot, false, true));
+
+        Settings.ACCENT_COLOR.save(AccentColor.Preset.TEAL);
+        int teal = AccentColor.themedBlue(spot, false, true);
+        assertEquals("the spot's own alpha", 0x33, teal >>> 24);
+        int red = (teal >> 16) & 0xFF;
+        int green = (teal >> 8) & 0xFF;
+        int blue = teal & 0xFF;
+        assertTrue("teal, not Facebook's blue: #" + Integer.toHexString(teal), green > red + 40 && green * 2 > blue);
+        assertEquals("without Accent color in the build, Facebook's blue", spot, AccentColor.themedBlue(spot, false, false));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused, Facebook's blue", spot, AccentColor.themedBlue(spot, false, true));
+    }
+
     /** Stands in for an FDS token: only the constant name matters. */
     enum Token {
         ACCENT

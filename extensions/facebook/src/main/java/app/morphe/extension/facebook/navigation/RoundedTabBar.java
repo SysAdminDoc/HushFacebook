@@ -28,6 +28,9 @@ import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.facebook.settings.SettingsStatus;
+import app.morphe.extension.facebook.theme.AccentColor;
+import app.morphe.extension.facebook.theme.MarkColors;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -38,13 +41,16 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * bars finds it, the highest view above Facebook's row of tabs that is still bar sized, and as each
  * frame of the main screen draws it gets an outline around its row of tabs, clipped to that outline,
  * and a scale about a point that keeps the pill's bottom a few dp above where the row ended. The
- * part of the bar outside the row (a line over it, the strip it keeps over the phone's navigation
- * bar) is clipped away with the rest, and so is the bottom of a row Facebook lays out down over the
- * navigation bar, so the feed shows around the gesture handle.
+ * part of the bar outside the row (the strip it keeps over the phone's navigation bar) is clipped
+ * away with the rest, and so is the bottom of a row Facebook lays out down over the navigation bar,
+ * so the feed shows around the gesture handle. Facebook 585 lays its thin line along the top of the
+ * bar over the row, not above it, so the clip keeps it as a hard edge across the pill: that line is
+ * faded while the bar is a pill and gets its alpha back with the bar's shape (#383).
  *
- * <p>The selected tab gets a spot behind its icon, a smaller pill in Facebook's blue (#383). It's a
- * layer over that tab's own background, so Facebook's press ripple stays, and it moves to the next
- * tab Facebook marks selected.
+ * <p>The selected tab gets a spot behind its icon, a smaller pill in Facebook's blue, or the colour
+ * Accent color or the Material You theme gives that blue, or the picked Selected tab color (#383).
+ * It's a layer over that tab's own background, so Facebook's press ripple stays, and it moves to
+ * the next tab Facebook marks selected.
  *
  * <p>Nothing is laid out again: the scale and the clip are drawing properties, so Facebook's pages
  * keep their padding, scroll-away keeps sliding the bar, and a tap goes to the tab drawn under the
@@ -68,6 +74,8 @@ public final class RoundedTabBar {
     static final float SPOT_ACROSS_DP = 4f;
     /** How far the spot stays inside the part of its tab the pill shows, above and below, in dp. */
     static final float SPOT_DOWN_DP = 7f;
+    /** The thickest view along the top of the row still taken for Facebook's line, in dp. 585's is 2 px. */
+    static final float LINE_MAX_DP = 2f;
 
     private static final String FAMILY = FamilyNames.BOTTOM_TAB_BAR;
 
@@ -188,7 +196,41 @@ public final class RoundedTabBar {
         if (bar.getPivotY() != pivotY) bar.setPivotY(pivotY);
         if (bar.getScaleX() != SCALE) bar.setScaleX(SCALE);
         if (bar.getScaleY() != SCALE) bar.setScaleY(SCALE);
+        fadeLine(bar, row, shape);
         return fresh;
+    }
+
+    /**
+     * Facebook's line along the top of [bar] that crosses the top of [row], the pill, in the bar's
+     * coordinates: a child of the bar with nothing in it, nearly as wide as the bar and at most
+     * {@link #LINE_MAX_DP} tall. A line above the row is clipped away with the rest and isn't one.
+     */
+    @Nullable
+    static View lineOver(View bar, Rect row) {
+        if (!(bar instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) bar;
+        int thickest = Math.round(LINE_MAX_DP * bar.getResources().getDisplayMetrics().density);
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            if (child.getVisibility() != View.VISIBLE) continue;
+            if (child instanceof ViewGroup && ((ViewGroup) child).getChildCount() > 0) continue;
+            int height = child.getHeight();
+            if (height <= 0 || height > thickest || child.getWidth() * 10 < bar.getWidth() * 9) continue;
+            if (child.getTop() < row.top + thickest && child.getBottom() > row.top) return child;
+        }
+        return null;
+    }
+
+    /** Fades the line over the top of [bar]'s pill, keeping the alpha Facebook gave it for {@link Shape#restore}. */
+    static void fadeLine(View bar, Rect row, Shape shape) {
+        View line = shape.line.get();
+        if (line == null || line.getParent() != bar) {
+            line = lineOver(bar, row);
+            if (line == null) return;
+            shape.line = new WeakReference<>(line);
+            shape.lineAlpha = line.getAlpha();
+        }
+        if (line.getAlpha() != 0f) line.setAlpha(0f);
     }
 
     /**
@@ -261,6 +303,9 @@ public final class RoundedTabBar {
         final Pill pill = new Pill();
         final Rect scratch = new Rect();
         final int[] at = new int[2];
+        /** Facebook's line over the top of the pill, faded, and the alpha it had. Weak: it's the bar's child. */
+        WeakReference<View> line = new WeakReference<>(null);
+        float lineAlpha = 1f;
 
         Shape(View bar) {
             facebooksOutline = bar.getOutlineProvider();
@@ -273,6 +318,8 @@ public final class RoundedTabBar {
         }
 
         void restore(View bar) {
+            View faded = line.get();
+            if (faded != null && faded.getParent() == bar) faded.setAlpha(lineAlpha);
             bar.setOutlineProvider(facebooksOutline);
             bar.setClipToOutline(facebooksClip);
             bar.setScaleX(scaleX);
@@ -300,19 +347,38 @@ public final class RoundedTabBar {
         }
     }
 
-    /** The spot: [area], in its tab's coordinates, with ends as round as it is tall. */
+    /**
+     * The spot's colour: Facebook's faint blue as the theme in force gives it, then the picked
+     * Selected tab color over that, the order the selected tab's icon gets them in ({@code SelectedTab}).
+     */
+    static int spotColor() {
+        return spotColor(AccentColor.themedBlue(SPOT_COLOR), SettingsStatus.markColors());
+    }
+
+    /** [themed], the spot's themed blue, with the picked Selected tab color when [markColors] is in the build. */
+    static int spotColor(int themed, boolean markColors) {
+        if (!markColors || !Utils.settingsReady()) return themed;
+        Integer picked = MarkColors.colour(Settings.TAB_COLOR.get());
+        return picked == null ? themed : (themed & 0xFF000000) | (picked & 0x00FFFFFF);
+    }
+
+    /**
+     * The spot: [area], in its tab's coordinates, with ends as round as it is tall, in
+     * {@link #spotColor}, so it matches the selected tab's icon with Accent color, the Material You
+     * theme or a picked Selected tab color too.
+     */
     static final class Spot extends Drawable {
         final Rect area = new Rect();
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final RectF round = new RectF();
-
-        Spot() {
-            paint.setColor(SPOT_COLOR);
-        }
+        private int alpha = 255;
 
         @Override
         public void draw(Canvas canvas) {
             if (area.isEmpty()) return;
+            int color = spotColor();
+            paint.setColor(color);
+            paint.setAlpha((color >>> 24) * alpha / 255);
             round.set(area);
             float radius = round.height() / 2f;
             canvas.drawRoundRect(round, radius, radius, paint);
@@ -320,7 +386,13 @@ public final class RoundedTabBar {
 
         @Override
         public void setAlpha(int alpha) {
-            paint.setAlpha((SPOT_COLOR >>> 24) * alpha / 255);
+            this.alpha = alpha;
+            invalidateSelf();
+        }
+
+        /** The paint's colour as the last draw left it, for a test. */
+        int paintColor() {
+            return paint.getColor();
         }
 
         @Override

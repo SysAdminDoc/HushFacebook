@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.graphics.drawable.ColorDrawable;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
@@ -23,7 +24,7 @@ public final class RoundedTabBarForTests {
     public final Activity activity;
     public final FrameLayout window;
     public final FrameLayout page;
-    public final LinearLayout holder;
+    public final ViewGroup holder;
     public final View line;
     public final TranslucentBarsForTests.TabBar tabBar;
     public final View strip;
@@ -38,23 +39,46 @@ public final class RoundedTabBarForTests {
      * 62 pixels itself, with nothing under it, the way Facebook 585 lays it out over a gesture handle.
      */
     public RoundedTabBarForTests(boolean overNavigation) {
+        this(overNavigation, false);
+    }
+
+    /**
+     * The holder as 585's view tree shows it on a phone (#383): a frame with the row of tabs at its
+     * top and, drawn after it, the 2 pixel line over the row's first 2 pixels rather than above it.
+     */
+    public static RoundedTabBarForTests lineOverTheRow() {
+        return new RoundedTabBarForTests(false, true);
+    }
+
+    private RoundedTabBarForTests(boolean overNavigation, boolean lineOverRow) {
         activity = Robolectric.buildActivity(Activity.class).setup().get();
         window = new FrameLayout(activity);
         page = new FrameLayout(activity);
         page.setBackground(new ColorDrawable(0xFF000000));
         window.addView(page, new FrameLayout.LayoutParams(720, 1600));
 
-        holder = new LinearLayout(activity);
-        holder.setOrientation(LinearLayout.VERTICAL);
-        holder.setBackground(new ColorDrawable(TranslucentBarsForTests.TAB_COLOUR));
         line = new View(activity);
         line.setBackground(new ColorDrawable(0xFF3E4042));
-        holder.addView(line, new LinearLayout.LayoutParams(720, 2));
         tabBar = new TranslucentBarsForTests.TabBar(activity);
         tabBar.addView(new View(activity), new LinearLayout.LayoutParams(120, 112));
-        holder.addView(tabBar, new LinearLayout.LayoutParams(720, overNavigation ? 174 : 112));
         strip = new View(activity);
-        holder.addView(strip, new LinearLayout.LayoutParams(720, overNavigation ? 0 : 62));
+        if (lineOverRow) {
+            FrameLayout frame = new FrameLayout(activity);
+            frame.addView(tabBar, new FrameLayout.LayoutParams(720, 112, Gravity.TOP));
+            FrameLayout.LayoutParams under = new FrameLayout.LayoutParams(720, 62, Gravity.TOP);
+            under.topMargin = 112;
+            frame.addView(strip, under);
+            frame.addView(line, new FrameLayout.LayoutParams(720, 2, Gravity.TOP));
+            holder = frame;
+        } else {
+            LinearLayout column = new LinearLayout(activity);
+            column.setOrientation(LinearLayout.VERTICAL);
+            column.addView(line, new LinearLayout.LayoutParams(720, 2));
+            column.addView(tabBar, new LinearLayout.LayoutParams(720, overNavigation ? 174 : 112));
+            column.addView(strip, new LinearLayout.LayoutParams(720, overNavigation ? 0 : 62));
+            holder = column;
+        }
+        holder.setBackground(new ColorDrawable(TranslucentBarsForTests.TAB_COLOUR));
         window.addView(holder, new FrameLayout.LayoutParams(720, 176, Gravity.BOTTOM));
 
         activity.setContentView(window, new FrameLayout.LayoutParams(720, 1600));

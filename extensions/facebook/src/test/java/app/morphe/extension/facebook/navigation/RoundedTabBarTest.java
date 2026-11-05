@@ -10,6 +10,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Insets;
 import android.graphics.Outline;
 import android.graphics.Rect;
@@ -62,6 +64,7 @@ public class RoundedTabBarTest {
         RoundedTabBar.insetsForTests = null;
         PauseForTests.resume();
         Settings.ROUNDED_TAB_BAR.resetToDefault();
+        Settings.TAB_COLOR.resetToDefault();
         HookStatus.clear();
     }
 
@@ -109,6 +112,7 @@ public class RoundedTabBarTest {
         float bottom = screen.holder.getPivotY() + RoundedTabBar.SCALE * (114 - screen.holder.getPivotY());
         assertEquals(106f, bottom, 0.01f);
         assertEquals("the row of tabs itself keeps its size", 1f, screen.tabBar.getScaleX(), 0f);
+        assertEquals("a line above the row is clipped away, not faded", 1f, screen.line.getAlpha(), 0f);
 
         Rect pill = new Rect();
         assertEquals(50.5f, RoundedTabBar.pillInWindow(screen.holder, pill), 0.6f);
@@ -173,6 +177,50 @@ public class RoundedTabBarTest {
         screen.shaper.update();
         assertNull("off, the tab is Facebook's again", tabs[3].getBackground());
         assertFalse(screen.holder.getClipToOutline());
+    }
+
+    /**
+     * #383: 585 draws its 2 pixel line over the top of the row of tabs, inside the pill, as a hard
+     * edge. The pill fades it, a frame that puts it back fades it again, and off it's Facebook's.
+     */
+    @Test
+    public void theLineFacebookDrawsOverTheRowFadesWithThePillAndComesBack() {
+        RoundedTabBarForTests screen = RoundedTabBarForTests.lineOverTheRow();
+        screen.line.setAlpha(0.8f);
+        screen.shaper.update();
+
+        float[] radius = new float[1];
+        assertEquals("the pill is the row, with the line inside it", new Rect(0, 0, 720, 112), outlineOf(screen, radius));
+        assertEquals("the line is faded", 0f, screen.line.getAlpha(), 0f);
+        assertEquals("the strip under the row isn't a line", 1f, screen.strip.getAlpha(), 0f);
+
+        screen.line.setAlpha(0.8f);
+        screen.shaper.update();
+        assertEquals("a frame after Facebook set it again fades it again", 0f, screen.line.getAlpha(), 0f);
+
+        Settings.ROUNDED_TAB_BAR.save(false);
+        screen.shaper.update();
+        assertFalse(screen.holder.getClipToOutline());
+        assertEquals("off, the line has Facebook's alpha back", 0.8f, screen.line.getAlpha(), 0f);
+    }
+
+    /** #383: the spot takes a picked Selected tab color over the theme's blue, at the spot's own alpha. */
+    @Test
+    public void theSpotTakesThePickedSelectedTabColor() {
+        int themed = 0x3300897B;
+        assertEquals("nothing picked, the theme's blue", themed, RoundedTabBar.spotColor(themed, true));
+        Settings.TAB_COLOR.save("#FF8800");
+        assertEquals("picked, its colour at the spot's alpha", 0x33FF8800, RoundedTabBar.spotColor(themed, true));
+        assertEquals("without Badge and logo colors in the build, the pick is ignored", themed,
+                RoundedTabBar.spotColor(themed, false));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused, the theme's blue", themed, RoundedTabBar.spotColor(themed, true));
+        PauseForTests.resume();
+
+        RoundedTabBar.Spot spot = new RoundedTabBar.Spot();
+        spot.area.set(0, 0, 40, 20);
+        spot.draw(new Canvas(Bitmap.createBitmap(40, 20, Bitmap.Config.ARGB_8888)));
+        assertEquals("a build with neither theme nor marks draws Facebook's faint blue", RoundedTabBar.SPOT_COLOR, spot.paintColor());
     }
 
     @Test
