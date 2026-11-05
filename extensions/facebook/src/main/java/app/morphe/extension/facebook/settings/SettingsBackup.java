@@ -236,6 +236,7 @@ public final class SettingsBackup {
             Settings.HIDE_REEL_THREADS_CARDS,
             Settings.FOLLOWED_REELS_ONLY,
             Settings.REEL_CLEAN_MODE,
+            Settings.REEL_CLEAN_BUTTON,
             Settings.PLAY_REELS_ONCE,
             Settings.ORIGINAL_AUDIO,
             Settings.HIDE_REEL_SEARCH_PILL,

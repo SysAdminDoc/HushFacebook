@@ -18,7 +18,9 @@ import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.cloneMutable
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -26,6 +28,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -289,10 +292,18 @@ private fun parameterRegisters(method: Method): List<Int> {
  * The four hooks of the Clean mode button. [holders] answers the classes with a method loading a
  * literal, and [classOf] a class by type. Refuses unless each is found exactly once.
  */
-internal fun cleanModeButtonHooks(
-    holders: (String) -> List<ClassDef>,
-    classOf: (String) -> ClassDef?,
-): List<ButtonHook> {
+/** The Clean mode button's [tap] in [tapOwner], calling the [store]'s [setter] at [setterAt]. */
+private class SetterSite(
+    val event: String,
+    val tapOwner: ClassDef,
+    val tap: Method,
+    val tapCode: List<Instruction>,
+    val setterAt: Int,
+    val store: ClassDef,
+    val setter: Method,
+)
+
+private fun setterSite(holders: (String) -> List<ClassDef>, classOf: (String) -> ClassDef?): SetterSite {
     val event = clearModeEvent(holders(CLEAR_MODE_EVENT)) ?: refuse("expected one class whose toString loads \"$CLEAR_MODE_EVENT\"")
 
     val taps = holders(CLEAR_MODE_TAP).flatMap { owner -> methodsHolding(owner, CLEAR_MODE_TAP).map { owner to it } }
@@ -310,8 +321,22 @@ internal fun cleanModeButtonHooks(
     val setterAt = (minOf(literalAt, tapCode.size) - 1 downTo 0).firstOrNull { at ->
         (tapCode[at].reference as? MethodReference)?.let(::setterOf) != null
     } ?: refuse("the method loading \"$CLEAR_MODE_TAP\" calls no Clean mode setter before it")
+    val (store, setter) = setterOf(tapCode[setterAt].reference as MethodReference)!!
+    return SetterSite(event, tapOwner, tap, tapCode, setterAt, store, setter)
+}
+
+internal fun cleanModeButtonHooks(
+    holders: (String) -> List<ClassDef>,
+    classOf: (String) -> ClassDef?,
+): List<ButtonHook> {
+    val site = setterSite(holders, classOf)
+    val tapOwner = site.tapOwner
+    val tap = site.tap
+    val tapCode = site.tapCode
+    val setterAt = site.setterAt
+    val store = site.store
+    val setter = site.setter
     val setterCall = tapCode[setterAt]
-    val (store, setter) = setterOf(setterCall.reference as MethodReference)!!
 
     // The sticky check: the setter's first no-argument yes-or-no call, asked before anything else.
     val setterCode = setter.code()
@@ -389,6 +414,139 @@ internal fun cleanModeButtonHooks(
 
 private val VIRTUAL_CALLS = setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE)
 
+/*
+ * The sidebar's Clean mode button (#391), read from 585 arm64, 2026-11-05.
+ *
+ * - The store (585 LX/09hR;) is a public final class the injector makes through its one
+ *   constructor, which takes nothing and ends in its one return-void.
+ * - The setter (585 LX/09hR;->A01(LX/02xO;LX/0DhY;Z)V) returns at once without a player and for an
+ *   account without sticky Clean mode, then logs. Its work comes next: it sets the flag, takes the
+ *   bus from its lazy holder, posts the event made from the source and the value (21-29), and
+ *   returns. The work reads nothing but the store, the source and the value.
+ * - The tap hands the setter Facebook's own source, a static field read just before the call (585
+ *   LX/02xO;->A1g).
+ *
+ * The patch keeps the store as it's made and copies the setter into the store as [STORE_SWITCH],
+ * whose first instructions read the tap's source and jump to the work, so nothing checks a reel or
+ * the account. The extension's switchStore stub calls the copy with no player.
+ */
+
+/** The copy of the store's setter, made public in the store. */
+internal const val STORE_SWITCH = "hushfacebookSwitch"
+
+internal const val KEEP_STORE = "$CLEAN_MODE->keepStore($OBJECT)V"
+
+private const val SWITCH_STORE = "switchStore"
+
+/** The [store]'s [setter], whose work from [workAt] sets the flag and posts the event from Facebook's [source]. */
+internal class StoreSwitch(val store: ClassDef, val setter: Method, val source: FieldReference, val workAt: Int)
+
+/** Where the sidebar's Clean mode button switches the store. Refuses unless all of it is as read from 585. */
+internal fun cleanModeStoreSwitch(
+    holders: (String) -> List<ClassDef>,
+    classOf: (String) -> ClassDef?,
+): StoreSwitch {
+    val site = setterSite(holders, classOf)
+    val store = site.store
+    val setter = site.setter
+    if (!AccessFlags.PUBLIC.isSet(store.accessFlags)) refuse("the Clean mode store ${store.type} isn't public")
+    val init = store.methods.filter { it.name == "<init>" }
+    if (init.singleOrNull()?.parameterTypes?.isEmpty() != true ||
+        init.single().code().count { it.opcode == Opcode.RETURN_VOID } != 1
+    ) refuse("the Clean mode store ${store.type} isn't made by one constructor taking nothing")
+    val parameters = setter.parameterTypes.map(CharSequence::toString)
+    if (AccessFlags.STATIC.isSet(setter.accessFlags) || parameters.size != 3 || parameters.last() != "Z" ||
+        parameters.take(2).any { !it.startsWith("L") }
+    ) refuse("the Clean mode setter ${store.type}->${setter.name} doesn't take a source, a player and a value")
+
+    // The tap's source: the last write of the call's source register before the call.
+    val sourceRegister = site.tapCode[site.setterAt].registers().getOrNull(1)
+        ?: refuse("the Clean mode button's tap calls the setter with a range")
+    val write = (site.setterAt - 1 downTo 0).map { site.tapCode[it] }.firstOrNull { it.written() == sourceRegister }
+    val source = write?.takeIf { it.opcode == Opcode.SGET_OBJECT }?.reference as? FieldReference
+    if (source == null || source.type != parameters.first()) {
+        refuse("the Clean mode button's tap doesn't hand the setter a static ${parameters.first()}")
+    }
+
+    // The work: from the flag's read and set to the next return, in a line, reading only what it was given.
+    val code = setter.code()
+    val workAt = code.indices.firstOrNull { at ->
+        code[at].opcode == Opcode.IGET_OBJECT &&
+            (code[at].reference as FieldReference).let { it.definingClass == store.type && it.type == ATOMIC_BOOLEAN } &&
+            code.getOrNull(at + 1)?.calls() == ATOMIC_BOOLEAN_SET
+    } ?: refuse("the Clean mode setter doesn't set its flag")
+    val end = (workAt until code.size).firstOrNull { code[it].opcode == Opcode.RETURN_VOID }
+        ?: refuse("the Clean mode setter's work doesn't return")
+    val (sourceParameter, _, valueParameter) = parameterRegisters(setter)
+    val known = mutableSetOf(sourceParameter - 1, sourceParameter, valueParameter)
+    for (at in workAt until end) {
+        val instruction = code[at]
+        if (instruction is OffsetInstruction || instruction.opcode == Opcode.THROW) {
+            refuse("the Clean mode setter's work branches at $at")
+        }
+        instruction.reads().firstOrNull { it !in known }?.let { refuse("the Clean mode setter's work reads v$it at $at") }
+        instruction.written()?.let { known += it }
+    }
+    if ((workAt until end).none { code[it].opcode == Opcode.NEW_INSTANCE && (code[it].reference as TypeReference).type == site.event }) {
+        refuse("the Clean mode setter's work doesn't make the Clean mode event")
+    }
+    return StoreSwitch(store, setter, source, workAt)
+}
+
+/** The register [this] writes, or null. A check-cast writes the register it reads. */
+private fun Instruction.written(): Int? =
+    (this as? OneRegisterInstruction)?.registerA?.takeIf { opcode.setsRegister() }
+
+/** The registers [this] reads. */
+private fun Instruction.reads(): List<Int> {
+    val all = when (this) {
+        is FiveRegisterInstruction, is RegisterRangeInstruction -> registers()
+        is ThreeRegisterInstruction -> listOf(registerA, registerB, registerC)
+        is TwoRegisterInstruction -> listOf(registerA, registerB)
+        is OneRegisterInstruction -> listOf(registerA)
+        else -> emptyList()
+    }
+    return if (written() != null && opcode != Opcode.CHECK_CAST) all.drop(1) else all
+}
+
+/**
+ * The store keeps itself in the extension as it's made, its setter gets a copy that goes straight
+ * to the work, and the extension's stub calls the copy with a null in the source's and the
+ * player's places, the copy reading the source itself.
+ */
+private fun BytecodePatchContext.switchFromSidebar(switch: StoreSwitch) {
+    val store = mutableClassDefBy(switch.store)
+    store.methods.single { it.name == "<init>" }.let { init ->
+        val end = init.implementation!!.instructions.indexOfFirst { it.opcode == Opcode.RETURN_VOID }
+        init.addInstructions(end, "invoke-static { p0 }, $KEEP_STORE")
+    }
+    val copy = switch.setter.cloneMutable(name = STORE_SWITCH, accessFlags = AccessFlags.PUBLIC.value or AccessFlags.FINAL.value)
+    copy.addInstructionsWithLabels(
+        0,
+        """
+            sget-object p1, ${switch.source}
+            goto :work
+        """,
+        ExternalLabel("work", copy.getInstruction(switch.workAt)),
+    )
+    store.methods.add(copy)
+    val signature = "${switch.store.type}->$STORE_SWITCH(${switch.setter.parameterTypes.joinToString("")})V"
+    val stub = mutableClassDefBy(CLEAN_MODE).methods.singleOrNull {
+        it.name == SWITCH_STORE && AccessFlags.STATIC.isSet(it.accessFlags) &&
+            it.parameterTypes.map(CharSequence::toString) == listOf(OBJECT, OBJECT, "Z")
+    } ?: refuse("the extension has no $SWITCH_STORE stub")
+    // p1 only lends its register to the null.
+    stub.addInstructions(
+        0,
+        """
+            check-cast p0, ${switch.store.type}
+            const/4 p1, 0x0
+            invoke-virtual { p0, p1, p1, p2 }, $signature
+            return-void
+        """,
+    )
+}
+
 /**
  * The Clean mode button switches both ways while "Always use Clean mode" is on: its tap and the
  * store take Facebook's sticky way, the overlay marks a reel the person took out, and the builder
@@ -401,6 +559,15 @@ internal fun BytecodePatchContext.toggleReelCleanMode() {
     }
     val classOf = { type: String -> classDefByOrNull(type) }
     val hooks = cleanModeButtonHooks(holders, classOf)
+    // #391: the sidebar's Clean mode button goes through the store. Read before any edit, and a
+    // build that moved it only loses that button, so it warns rather than refusing the patch.
+    val storeSwitch = try {
+        cleanModeStoreSwitch(holders, classOf)
+    } catch (refused: PatchException) {
+        patchLog.warning("${refused.message} Reels get no Clean mode button on their sidebar.")
+        null
+    }
+    storeSwitch?.let { switchFromSidebar(it) }
     // #329: the builder's row for a kept button goes over the details. Its block sits further down
     // the builder than the value's read, so it goes in first.
     val builder = hooks.last()

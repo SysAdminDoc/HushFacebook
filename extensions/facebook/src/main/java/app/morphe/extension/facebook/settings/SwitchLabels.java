@@ -171,6 +171,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_REEL_THREADS_CARDS) return L10n.t("Hide Threads cards between reels");
         if (setting == Settings.FOLLOWED_REELS_ONLY) return L10n.t("Only reels from accounts I follow");
         if (setting == Settings.REEL_CLEAN_MODE) return L10n.t("Always use Clean mode");
+        if (setting == Settings.REEL_CLEAN_BUTTON) return L10n.t("Clean mode button on reels");
         if (setting == Settings.PLAY_REELS_ONCE) return L10n.t("Play reels once");
         if (setting == Settings.ORIGINAL_AUDIO) return L10n.t("Keep the original audio");
         if (setting == Settings.HIDE_REEL_SEARCH_PILL) return L10n.t("Hide the search pill on reels");

@@ -131,6 +131,12 @@ final class VideoPages {
                     L10n.t("Opens reels and videos in Facebook's Clean mode, which hides the buttons down the side. You can "
                             + "still leave Clean mode as usual. Off by default, since it hasn't been tried on a real "
                             + "account yet.")));
+            // The button goes in the sidebar the reel Download patch builds into.
+            if (build.contains(PatchFamily.REEL_DOWNLOAD)) {
+                reels.addPreference(toggle(context, Settings.REEL_CLEAN_BUTTON,
+                        L10n.t("Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, "
+                                + "and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.")));
+            }
             reels.addPreference(toggle(context, Settings.PLAY_REELS_ONCE,
                     L10n.t("A reel stops on its last frame instead of starting over. Tap it to watch again, or swipe to "
                             + "the next one. Feed videos and stories aren't changed. Off by default, since it hasn't "

@@ -476,7 +476,8 @@ public class PatchFamilyTest {
         Settings.HIDE_REEL_FOLLOW_BUTTON.save(true);
         assertEquals("Clean up Reels: on (hushfacebook_hide_reel_chips=off, hushfacebook_hide_reel_follow_button=on, "
                         + "hushfacebook_hide_video_subscribe_button=off, hushfacebook_hide_reel_social_footer=off, hushfacebook_hide_reel_threads_cards=off, "
-                        + "hushfacebook_followed_reels_only=off, hushfacebook_reel_clean_mode=off, hushfacebook_play_reels_once=off, "
+                        + "hushfacebook_followed_reels_only=off, hushfacebook_reel_clean_mode=off, hushfacebook_reel_clean_button=off, "
+                        + "hushfacebook_play_reels_once=off, "
                         + "hushfacebook_original_audio=off, hushfacebook_hide_reel_search_pill=off, "
                         + "hushfacebook_hide_viewer_top_buttons=off, hushfacebook_hide_reels_tab_title=off, "
                         + "hushfacebook_hide_viewer_back_button=off, hushfacebook_burn_in_guard=OFF, "

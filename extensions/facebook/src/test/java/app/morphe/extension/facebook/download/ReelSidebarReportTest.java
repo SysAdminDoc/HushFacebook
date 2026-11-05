@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import app.morphe.extension.facebook.reels.ReelCleanMode;
+import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -50,6 +52,7 @@ public class ReelSidebarReportTest {
         Settings.DOWNLOAD_REELS.resetToDefault();
         Settings.SHOW_REEL_DOWNLOAD_BUTTON.resetToDefault();
         Settings.REEL_CAST_BUTTON.resetToDefault();
+        Settings.REEL_CLEAN_BUTTON.resetToDefault();
     }
 
     private static String line() {
@@ -237,10 +240,61 @@ public class ReelSidebarReportTest {
         assertEquals(0, MediaDownload.savesInFlight());
     }
 
+    /**
+     * Issue #391: the Clean mode button goes in the same sidebar under its own switch, once the
+     * Clean mode store was kept. With only it on, the sidebar is built for it, the older layout
+     * switches for it, and its tap slot turns Clean mode on once a tap and never saves the reel.
+     */
+    @Test
+    public void theCleanModeButtonGetsTheSidebarAndItsTapNeverSaves() throws Exception {
+        Settings.SHOW_REEL_DOWNLOAD_BUTTON.save(false);
+        ReelCleanMode.keepStore(STORE);
+        assertFalse("the Clean mode button started on", ReelDownload.showsButton());
+
+        Settings.REEL_CLEAN_BUTTON.save(true);
+        assertTrue("only Clean mode on built no sidebar for it", ReelDownload.showsButton());
+        assertTrue("the older layout kept the reel from its Clean mode button", ReelDownload.verticalUfi(false));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("a paused build showed the Clean mode button", ReelDownload.showsButton());
+        PauseForTests.resume();
+        String line = line();
+        assertTrue(line, line.contains(ReelDownload.SIDEBAR_WITH_CLEAN + " 1"));
+        assertTrue(line, line.contains(ReelDownload.LAYOUT_SWITCHED + " 1"));
+        HookStatus.clear();
+
+        AtomicInteger saves = new AtomicInteger();
+        MediaDownload.detailsForTests = details -> saves.incrementAndGet();
+        List<String> report;
+        try {
+            FileNameTemplateTest.ReelSourceParams reel = new FileNameTemplateTest.ReelSourceParams(new VideoPlayerParams(
+                    "VideoId: 2233445566778899", new FileNameTemplateTest.ReelSource(
+                            "https://video-iad3-1.xx.fbcdn.net/o1/v/t2/f2/m69/clip_720p.mp4?oh=1&oe=2")));
+            for (int slot = 0; slot <= 6; slot++) {
+                new ReelDownload(reel, RuntimeEnvironment.getApplication(), "hd", "sd", "manifest",
+                        slot, slot == 1, null, ReelDownload.CLEAN).invoke(null);
+            }
+            // Read before the log clear below, which clears Hook status with it.
+            report = HookStatus.report();
+        } finally {
+            MediaDownload.detailsForTests = null;
+            LogBufferManager.clearLogBuffer();
+        }
+        assertEquals("a Clean mode slot saved the reel", 0, saves.get());
+        assertEquals(0, MediaDownload.savesInFlight());
+        assertEquals("only the tap slot turned Clean mode on, once",
+                Collections.singletonList(FamilyNames.REEL_DECLUTTER + ": invoked 1, 1 found, 0 missing. Counted: "
+                        + "Clean mode turned on from the sidebar button 1"),
+                report);
+    }
+
+    /** Facebook's Clean mode store, held here so the extension's weak hold on it lasts the test. */
+    private static final Object STORE = new Object();
+
     /** The phrases are the whole of what a count says: no id, name or address of a reel. */
     @Test
     public void everyCountedPhraseIsFixedText() {
         for (String phrase : new String[]{ReelDownload.SIDEBAR_WITH_BUTTON, ReelDownload.SIDEBAR_WITH_CAST,
+                ReelDownload.SIDEBAR_WITH_CLEAN,
                 ReelDownload.SIDEBAR_SWITCH_OFF,
                 ReelDownload.SIDEBAR_HIDDEN, ReelDownload.SIDEBAR_PAUSED, ReelDownload.SIDEBAR_NOT_READY,
                 ReelDownload.OTHER_SIDEBAR, ReelDownload.LAYOUT_NEWER, ReelDownload.LAYOUT_SWITCHED,

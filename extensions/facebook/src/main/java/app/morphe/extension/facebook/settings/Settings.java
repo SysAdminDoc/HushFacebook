@@ -699,6 +699,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_reel_clean_mode", FALSE);
 
     /**
+     * A Clean mode button on a reel's sidebar, under the other buttons (#391). Its tap puts the
+     * viewer in Facebook's own Clean mode, which then stays on from reel to reel until Facebook's
+     * Clean mode button over a clean reel turns it off. It goes through Clean up Reels' store hooks
+     * and Download any reel's sidebar, so a build without either shows no button. Starts off.
+     */
+    public static final BooleanSetting REEL_CLEAN_BUTTON =
+            new BooleanSetting("hushfacebook_reel_clean_button", FALSE);
+
+    /**
      * A reel stops on its last frame instead of starting over, so a tap plays it again and a swipe
      * moves on. Feed videos, stories and every other video play as Facebook has them. Off until
      * it's turned on, since nobody has seen it on a phone yet.

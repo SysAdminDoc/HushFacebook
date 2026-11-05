@@ -12,6 +12,7 @@ import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 
+import app.morphe.extension.facebook.reels.ReelCleanMode;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.L10n;
@@ -47,6 +48,8 @@ import kotlin.jvm.functions.Function1;
  *
  * <p>The same class sits behind the Cast button the patch adds under it (#182). A cast handler's
  * tap hands the reel's file to a casting app ({@link OpenInAnotherApp#castReel}) instead of saving.
+ * A Clean mode handler's tap (#391) puts the viewer in Facebook's Clean mode
+ * ({@link ReelCleanMode#enterClean}).
  */
 public final class ReelDownload implements Function1<Object, Object> {
 
@@ -85,8 +88,13 @@ public final class ReelDownload implements Function1<Object, Object> {
      */
     private final Object story;
 
-    /** Whether this is a handler of the Cast button, whose tap casts rather than saves. */
-    private final boolean cast;
+    /** The button kinds the patch builds, each with its own tap. */
+    static final int SAVE = 0;
+    static final int CAST = 1;
+    static final int CLEAN = 2;
+
+    /** Which button this handler belongs to: the Download button, Cast (#182) or Clean mode (#391). */
+    private final int kind;
 
     /** A handler with no story of the reel: the name then has no poster and no post day. */
     public ReelDownload(
@@ -125,6 +133,21 @@ public final class ReelDownload implements Function1<Object, Object> {
         Object story,
         boolean cast
     ) {
+        this(playerParams, context, hdField, sdField, manifestField, slot, saves, story, cast ? CAST : SAVE);
+    }
+
+    /** The patch's handler, [kind] naming its button: {@link #SAVE}, {@link #CAST} or {@link #CLEAN}. */
+    public ReelDownload(
+        Object playerParams,
+        Context context,
+        String hdField,
+        String sdField,
+        String manifestField,
+        int slot,
+        boolean saves,
+        Object story,
+        int kind
+    ) {
         this.playerParams = playerParams;
         this.context = context;
         this.hdField = hdField;
@@ -133,7 +156,7 @@ public final class ReelDownload implements Function1<Object, Object> {
         this.slot = slot;
         this.saves = saves;
         this.story = story;
-        this.cast = cast;
+        this.kind = kind;
     }
 
     /*
@@ -147,6 +170,7 @@ public final class ReelDownload implements Function1<Object, Object> {
     static final String SIDEBAR_PAUSED = "UDD sidebar without Download, paused";
     static final String SIDEBAR_NOT_READY = "UDD sidebar without Download, settings not ready";
     static final String SIDEBAR_WITH_CAST = "UDD sidebar with Cast";
+    static final String SIDEBAR_WITH_CLEAN = "UDD sidebar with Clean mode";
     static final String OTHER_SIDEBAR = "FbShorts sidebar, which gets no Download";
     static final String LAYOUT_NEWER = "newer reel button layout from Facebook";
     static final String LAYOUT_SWITCHED = "older reel button layout switched for Download";
@@ -168,9 +192,11 @@ public final class ReelDownload implements Function1<Object, Object> {
                 HookStatus.counted(FamilyNames.REEL_DOWNLOAD, LAYOUT_NEWER);
                 return true;
             }
-            // The Cast button goes in the same sidebar, so it wants the newer layout too (#182).
+            // The Cast (#182) and Clean mode (#391) buttons go in the same sidebar, so they want
+            // the newer layout too.
             boolean shows = Utils.settingsReady() && (Settings.DOWNLOAD_REELS.get()
-                    && Settings.SHOW_REEL_DOWNLOAD_BUTTON.get() || Settings.REEL_CAST_BUTTON.get());
+                    && Settings.SHOW_REEL_DOWNLOAD_BUTTON.get() || Settings.REEL_CAST_BUTTON.get()
+                    || ReelCleanMode.cleanButton());
             HookStatus.counted(FamilyNames.REEL_DOWNLOAD, shows ? LAYOUT_SWITCHED : LAYOUT_OLDER);
             return shows;
         } catch (Throwable t) {
@@ -183,9 +209,10 @@ public final class ReelDownload implements Function1<Object, Object> {
 
     /**
      * Whether the sidebar Facebook is building for a reel gets the Download button, the Cast button
-     * (#182) or both. The patch asks before it builds either, so with both off, paused, or before the
-     * settings are ready, the reel has only Facebook's own buttons; the helper then asks
-     * {@link #downloadButton} and {@link #castButton} for each one. Hiding the Download button leaves
+     * (#182), the Clean mode button (#391) or more than one. The patch asks before it builds any, so
+     * with all of them off, paused, or before the settings are ready, the reel has only Facebook's
+     * own buttons; the helper then asks {@link #downloadButton}, {@link #castButton} and
+     * {@link ReelCleanMode#cleanButton} for each one. Hiding the Download button leaves
      * the More menu's download alone. Each answer and its reason are counted in Hook status. Never
      * throws: false is Facebook's own path.
      */
@@ -203,7 +230,9 @@ public final class ReelDownload implements Function1<Object, Object> {
                     : enabled ? SIDEBAR_HIDDEN : SIDEBAR_SWITCH_OFF);
             boolean casts = Settings.REEL_CAST_BUTTON.get();
             if (casts) HookStatus.counted(FamilyNames.REEL_DOWNLOAD, SIDEBAR_WITH_CAST);
-            return shows || casts;
+            boolean cleans = ReelCleanMode.cleanButton();
+            if (cleans) HookStatus.counted(FamilyNames.REEL_DOWNLOAD, SIDEBAR_WITH_CLEAN);
+            return shows || casts || cleans;
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "button switch", t);
             Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, SOURCE,
@@ -276,10 +305,15 @@ public final class ReelDownload implements Function1<Object, Object> {
     @Override
     public Object invoke(Object argument) {
         try {
-            // A Cast button's tap slot casts and its other slots stay silent. A long press copies
-            // nothing there, since that's the Download button's.
-            if (cast) {
+            // A Cast button's tap slot casts, a Clean mode button's hides the sidebar, and their
+            // other slots stay silent. A long press copies nothing there, since that's the Download
+            // button's.
+            if (kind == CAST) {
                 if (saves) castTap();
+                return null;
+            }
+            if (kind == CLEAN) {
+                if (saves) ReelCleanMode.enterClean();
                 return null;
             }
             // Only the tap slot saves. The others get the same object, so that no parameter of

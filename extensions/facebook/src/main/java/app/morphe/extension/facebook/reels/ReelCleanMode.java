@@ -4,8 +4,13 @@
  */
 package app.morphe.extension.facebook.reels;
 
+import androidx.annotation.Nullable;
+
+import java.lang.ref.WeakReference;
+
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -57,6 +62,90 @@ public final class ReelCleanMode {
         return Utils.settingsReady() && Settings.REEL_CLEAN_MODE.get();
     }
 
+    /** Whether the sidebar's Clean mode button (#391) is switched on, store or not. */
+    private static boolean buttonOn() {
+        return Utils.settingsReady() && Settings.REEL_CLEAN_BUTTON.get();
+    }
+
+    /** Counted each time the sidebar's Clean mode button puts the viewer in Clean mode. */
+    static final String ENTERED_FROM_SIDEBAR = "Clean mode turned on from the sidebar button";
+
+    /**
+     * Facebook's Clean mode store (#391), kept as it's made. Weakly, since Facebook's injector owns
+     * it and a new session makes a new one. Package-private so a test can start without one.
+     */
+    static volatile WeakReference<Object> store;
+
+    /**
+     * Injection point, at the end of the Clean mode store's constructor, with the new store. Never
+     * throws.
+     */
+    public static void keepStore(Object facebook) {
+        try {
+            if (facebook != null) store = new WeakReference<>(facebook);
+        } catch (Throwable failure) {
+            Logger.printException(() -> "Reel Clean mode: could not keep the store", failure);
+        }
+    }
+
+    @Nullable
+    private static Object keptStore() {
+        WeakReference<Object> kept = store;
+        return kept == null ? null : kept.get();
+    }
+
+    /**
+     * Whether a reel's sidebar gets the Clean mode button: its switch is on and the store it goes
+     * through was kept, which only a build with Clean up Reels does. Never throws.
+     */
+    public static boolean cleanButton() {
+        try {
+            return buttonOn() && keptStore() != null;
+        } catch (Throwable failure) {
+            return false;
+        }
+    }
+
+    /** The sidebar button's name, in the phone's language. Never throws. */
+    public static String cleanLabel() {
+        try {
+            return L10n.t("Clean mode");
+        } catch (Throwable failure) {
+            return "Clean mode";
+        }
+    }
+
+    /**
+     * The sidebar button's tap. It sets the store's remembered choice the way Facebook's own menu
+     * item does for accounts with sticky Clean mode, and the store tells the overlay, which hides the
+     * sidebar. The choice then holds for each reel that follows, until Facebook's Clean mode button
+     * over a clean reel turns it off through {@link #stickyClean}. Never throws.
+     */
+    public static void enterClean() {
+        try {
+            HookStatus.invoked(FAMILY);
+            Object kept = keptStore();
+            if (kept == null || !buttonOn()) {
+                Logger.printInfo(() -> "Reel Clean mode: no store to switch from the sidebar button");
+                return;
+            }
+            switchStore(kept, null, true);
+            HookStatus.bound(FAMILY, "Clean mode sidebar button");
+            HookStatus.counted(FAMILY, ENTERED_FROM_SIDEBAR);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Clean mode sidebar button", failure);
+            Logger.printException(() -> "Reel Clean mode: the sidebar button could not turn it on", failure);
+        }
+    }
+
+    /**
+     * Filled by the patch: calls the store's copy of its setter with [clean]. The copy skips the
+     * setter's checks of the reel and the account, takes Facebook's own source of a Clean mode tap,
+     * and goes straight to setting the choice and telling the overlay. [spare] only lends the patch
+     * a register for the source and the player the copy doesn't read.
+     */
+    public static void switchStore(Object store, @Nullable Object spare, boolean clean) { }
+
     /**
      * Injection point, right after a part of the Reels viewer reads Facebook's remembered Clean
      * mode flag as it's made. True starts that part clean. Never throws.
@@ -91,14 +180,16 @@ public final class ReelCleanMode {
     /**
      * Injection point, where the Clean mode button's tap and the store's setter ask whether this
      * account keeps its Clean mode choice. A yes while the switch is on, so a tap sets the choice
-     * and tells the overlay, which flips the button. Never throws.
+     * and tells the overlay, which flips the button. The sidebar's Clean mode button turns Clean mode
+     * on through the choice, so with that button on it's a yes too, and Facebook's button over a
+     * clean reel turns the choice back off. Never throws.
      *
      * @param facebook what Facebook's sticky Clean mode check answered.
      */
     public static boolean stickyClean(boolean facebook) {
         try {
             HookStatus.invoked(FAMILY);
-            if (facebook || !on()) return facebook;
+            if (facebook || !(on() || buttonOn())) return facebook;
             HookStatus.bound(FAMILY, "Clean mode button");
             HookStatus.counted(FAMILY, SWITCHED_BY_BUTTON);
             return true;

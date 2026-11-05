@@ -23,6 +23,11 @@ import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstructio
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -179,9 +184,44 @@ class ReelCleanModeFixtureTest {
                 assertTrue("$name: the builder's own hook comes before the float", builder.moveResult + 1 < float.at)
                 val helpers = FixtureDex.classes(bundle, setOf(float.positionType, float.position).map { it.substringBefore("->") }.toSet())
 
-                val pool: Collection<ClassDef> = (holding.values.flatten() + candidates.values + helpers.values).associateBy { it.type }.values
+                // #391: where the sidebar's button switches the store, read before the patch.
+                val switch = cleanModeStoreSwitch(holders = holding::getValue, classOf = candidates::get)
+                assertEquals("$name: the store is the setter's own class", setter.owner.type, switch.store.type)
+                assertEquals("$name: the switch copies the setter", setter.method.name, switch.setter.name)
+                assertEquals("$name: the tap's source is a static of the setter's first type",
+                    switch.setter.parameterTypes.first().toString(), switch.source.type)
+                val setterCode = setter.method.code()
+                assertEquals("$name: the work starts at the flag's read", Opcode.IGET_OBJECT, setterCode[switch.workAt].opcode)
+                assertTrue("$name: the work comes after the setter's checks", switch.workAt > setter.moveResult)
+
+                val pool: Collection<ClassDef> = (holding.values.flatten() + candidates.values + helpers.values).associateBy { it.type }.values +
+                    extensionStub()
                 val context = PatchContexts.of(pool)
                 with(context) { toggleReelCleanMode() }
+
+                val store = context.mutableClassDefBy(switch.store.type)
+                val init = store.methods.single { it.name == "<init>" }.code()
+                assertEquals("$name: the store keeps itself as it's made", KEEP_STORE, init[init.size - 2].called().toString())
+                assertEquals("$name: and still returns", Opcode.RETURN_VOID, init.last().opcode)
+                val copy = store.methods.single { it.name == STORE_SWITCH }
+                assertTrue("$name: the copy is public", AccessFlags.PUBLIC.isSet(copy.accessFlags))
+                assertTrue("$name: the copy isn't static", !AccessFlags.STATIC.isSet(copy.accessFlags))
+                val copyCode = copy.code()
+                val sourceRegister = copy.implementation!!.registerCount - 3
+                assertEquals("$name: the copy reads the tap's source into the source's place", Opcode.SGET_OBJECT, copyCode[0].opcode)
+                assertEquals("$name: the copy reads the tap's source", switch.source.toString(),
+                    ((copyCode[0] as ReferenceInstruction).reference as FieldReference).toString())
+                assertEquals("$name: into the source's place", sourceRegister, (copyCode[0] as OneRegisterInstruction).registerA)
+                assertEquals("$name: then jumps to the work", switch.workAt + 2, copyCode.target(1, copyCode[1] as OffsetInstruction))
+                assertEquals("$name: the copy's work is the setter's own", setterCode.drop(switch.workAt).map { it.opcode },
+                    copyCode.drop(switch.workAt + 2).map { it.opcode })
+                val stub = context.mutableClassDefBy(CLEAN_MODE_EXTENSION).methods.single { it.name == "switchStore" }.code()
+                assertEquals("$name: the stub casts the store and calls the copy",
+                    listOf(Opcode.CHECK_CAST, Opcode.CONST_4, Opcode.INVOKE_VIRTUAL, Opcode.RETURN_VOID),
+                    stub.take(4).map { it.opcode })
+                assertEquals("$name: the stub calls the copy",
+                    "${switch.store.type}->$STORE_SWITCH(${switch.setter.parameterTypes.joinToString("")})V",
+                    stub[2].called().toString())
                 for (hook in hooks) {
                     val where = "$name: ${hook.owner.type}->${hook.method.name}"
                     val original = hook.method.code()
@@ -210,6 +250,21 @@ class ReelCleanModeFixtureTest {
         }
         assertEquals("a declared build has no fixture", declaredBundles().keys, checked)
     }
+
+    private val CLEAN_MODE_EXTENSION = "Lapp/morphe/extension/facebook/reels/ReelCleanMode;"
+
+    /** The extension's empty switchStore stub, as the patch finds it in a built extension. */
+    private fun extensionStub(): ClassDef = ImmutableClassDef(
+        CLEAN_MODE_EXTENSION, AccessFlags.PUBLIC.value or AccessFlags.FINAL.value, "Ljava/lang/Object;", null, null, null, null,
+        listOf(
+            ImmutableMethod(
+                CLEAN_MODE_EXTENSION, "switchStore",
+                listOf("Ljava/lang/Object;", "Ljava/lang/Object;", "Z").map { ImmutableMethodParameter(it, null, null) },
+                "V", AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, null, null,
+                ImmutableMethodImplementation(3, listOf(ImmutableInstruction10x(Opcode.RETURN_VOID)), null, null),
+            ),
+        ),
+    )
 
     /** Whether [method] names [type] in its parameters or in a field its code reads. */
     private fun names(method: Method, type: String) = method.parameterTypes.any { it.toString() == type } ||

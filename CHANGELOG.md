@@ -10,6 +10,7 @@ Changes in each Hushfacebook version, newest first.
 * When `Stop Story auto-advance` holds a story at its end, `Story play button` turns into a replay button that starts it over. With `Double tap for next story` on and no play button, one tap on the finished story does the same. (#380)
 * `Hide the X on posts` under News feed takes the X off the top corner of posts in your feed. The three-dot menu next to it stays. It's off until you turn it on. (#389)
 * `Hide Back on opened videos` under Reels and Watch takes the Back arrow off the top of a video or reel you open, and Menu off the top of the Reels tab. Your phone's back gesture or button still goes back. Turn it on with `Hide the Reels title` and `Hide the top right buttons on opened videos` and the Reels tab's header is empty. It starts off. (#388, #390)
+* `Clean mode button on reels` under Reels and Watch puts a Clean mode button on a reel's sidebar, below Download and Cast. One tap hides the buttons down the side, and the reels you swipe to after it open clean too. Facebook's own Clean mode button brings them back. It needs the reel download patch and starts off. (#391)
 
 ### Changed
 

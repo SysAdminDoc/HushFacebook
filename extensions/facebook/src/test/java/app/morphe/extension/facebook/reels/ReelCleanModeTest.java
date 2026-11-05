@@ -41,12 +41,15 @@ public class ReelCleanModeTest {
     @Before
     public void start() {
         HookStatus.clear();
+        ReelCleanMode.store = null;
     }
 
     @After
     public void restore() {
         PauseForTests.resume();
         Settings.REEL_CLEAN_MODE.resetToDefault();
+        Settings.REEL_CLEAN_BUTTON.resetToDefault();
+        ReelCleanMode.store = null;
         HookStatus.clear();
     }
 
@@ -217,5 +220,71 @@ public class ReelCleanModeTest {
         assertFalse("a new reel reads the switch as it's made", Settings.REEL_CLEAN_MODE.rebootApp);
         assertTrue("Pause and the report don't know the switch",
                 PatchFamily.REEL_DECLUTTER.switches.contains(Settings.REEL_CLEAN_MODE));
+        assertFalse("a new sidebar reads the button's switch as it's made", Settings.REEL_CLEAN_BUTTON.rebootApp);
+        assertTrue("Pause and the report don't know the button's switch",
+                PatchFamily.REEL_DECLUTTER.switches.contains(Settings.REEL_CLEAN_BUTTON));
+    }
+
+    /**
+     * Issue #391: the sidebar's Clean mode button turns Clean mode on through the store, and only
+     * once the store was kept, which a build without Clean up Reels never does.
+     */
+    @Test
+    public void theSidebarButtonNeedsItsSwitchAndTheStore() {
+        assertFalse("the button's switch doesn't start off", Settings.REEL_CLEAN_BUTTON.get());
+        Object facebooks = new Object();
+        ReelCleanMode.keepStore(facebooks);
+        assertFalse("off, the sidebar got the button", ReelCleanMode.cleanButton());
+
+        Settings.REEL_CLEAN_BUTTON.save(true);
+        assertTrue("on with a store, the sidebar got no button", ReelCleanMode.cleanButton());
+        ReelCleanMode.store = null;
+        assertFalse("without a store, the sidebar got a button that does nothing", ReelCleanMode.cleanButton());
+        ReelCleanMode.keepStore(null);
+        assertFalse("a missing store was kept", ReelCleanMode.cleanButton());
+
+        ReelCleanMode.keepStore(facebooks);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("a paused Hushfacebook showed the button", ReelCleanMode.cleanButton());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("the button showed before the settings were ready", ReelCleanMode.cleanButton()));
+        assertEquals("Clean mode", ReelCleanMode.cleanLabel());
+    }
+
+    @Test
+    public void aTapOnTheSidebarButtonIsCountedOnlyWithAStore() {
+        Settings.REEL_CLEAN_BUTTON.save(true);
+        ReelCleanMode.enterClean();
+        String line = statusLine();
+        assertFalse("a tap with no store was counted: " + line, line != null && line.contains("Counted"));
+
+        Object facebooks = new Object();
+        ReelCleanMode.keepStore(facebooks);
+        ReelCleanMode.enterClean();
+        assertEquals(FamilyNames.REEL_DECLUTTER + ": invoked 2, 1 found, 0 missing. Counted: "
+                + ReelCleanMode.ENTERED_FROM_SIDEBAR + " 1", statusLine());
+
+        Settings.REEL_CLEAN_BUTTON.save(false);
+        ReelCleanMode.enterClean();
+        assertTrue("a tap with the switch off was counted: " + statusLine(),
+                statusLine().endsWith(ReelCleanMode.ENTERED_FROM_SIDEBAR + " 1"));
+    }
+
+    /**
+     * With only the sidebar button on, Facebook's own button over a clean reel still takes the
+     * sticky way, so it turns the choice the sidebar button set back off. A reel it takes out isn't
+     * marked, since that's Always use Clean mode's, so it's Facebook's plain no and the sidebar
+     * comes back.
+     */
+    @Test
+    public void onlyTheSidebarButtonOnFacebooksButtonStillTurnsItOff() {
+        Settings.REEL_CLEAN_BUTTON.save(true);
+        assertTrue("Facebook's button didn't take the sticky way", ReelCleanMode.stickyClean(false));
+        assertFalse("a new reel started clean without Always use Clean mode", ReelCleanMode.startClean(false));
+        Object[] left = {Boolean.FALSE};
+        ReelCleanMode.markLeftClean(left);
+        assertSame("a reel taken out was marked without Always use Clean mode", Boolean.FALSE, left[0]);
+        assertSame(Boolean.FALSE, ReelCleanMode.cleanButtonState(left[0]));
     }
 }

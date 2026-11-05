@@ -113,9 +113,24 @@ private const val CAST_TEST_ID = "cast_button"
 private const val CAST_LABEL = "$HANDLER->castLabel()Ljava/lang/String;"
 internal const val CAST_ICON = "GOOGLE_CAST"
 
-/** Asked inside the helper, once the sidebar's switch said yes, for each of the two buttons. */
+/**
+ * The Clean mode button (#391), whose tap the Clean up Reels patch's store hooks carry out. It draws
+ * the icon of Facebook's own Clean mode control (fds_control_clear_mode).
+ */
+private const val CLEAN_MODE = "Lapp/morphe/extension/facebook/reels/ReelCleanMode;"
+private const val CLEAN_TEST_ID = "clean_mode_button"
+private const val CLEAN_LABEL = "$CLEAN_MODE->cleanLabel()Ljava/lang/String;"
+internal const val CLEAN_ICON = "SIDEBAR_RIGHT_BLANK"
+
+/** Asked inside the helper, once the sidebar's switch said yes, for each of the three buttons. */
 private const val DOWNLOAD_BUTTON = "$HANDLER->downloadButton()Z"
 private const val CAST_BUTTON = "$HANDLER->castButton()Z"
+private const val CLEAN_BUTTON = "$CLEAN_MODE->cleanButton()Z"
+
+/** What each button's handlers are, as [HANDLER] takes it. */
+private const val SAVE_KIND = 0
+private const val CAST_KIND = 1
+private const val CLEAN_KIND = 2
 
 /**
  * What is written under the icon.
@@ -372,6 +387,8 @@ val downloadReelPatch = bytecodePatch(
         // whose enum lost it keeps the Download button.
         val castIcon = mutableClassDefByOrNull(iconEnumType)?.let { enumConstant(it, CAST_ICON) }
         if (castIcon == null) patchLog.warning("$PATCH: $iconEnumType names no $CAST_ICON, so reels get no Cast button.")
+        val cleanIcon = mutableClassDefByOrNull(iconEnumType)?.let { enumConstant(it, CLEAN_ICON) }
+        if (cleanIcon == null) patchLog.warning("$PATCH: $iconEnumType names no $CLEAN_ICON, so reels get no Clean mode button.")
 
         // ---- what the component holds --------------------------------------------------------
         //
@@ -422,7 +439,7 @@ val downloadReelPatch = bytecodePatch(
             null,
             MutableMethodImplementation(HELPER_LOCALS + 6),
         ).toMutable().apply {
-            fun button(icon: String, testId: String, label: String, cast: Boolean) = buildButton(
+            fun button(icon: String, testId: String, label: String, kind: Int) = buildButton(
                 factory = factory,
                 parameters = parameters,
                 trailingBooleans = parameters.size - 16,
@@ -440,13 +457,14 @@ val downloadReelPatch = bytecodePatch(
                 marker = "${marker.definingClass}->${marker.name}($iconEnumType)${marker.returnType}",
                 testId = testId,
                 label = label,
-                cast = cast,
+                kind = kind,
             )
             addInstructions(
                 0,
                 helperBody(
-                    download = button("${icon!!.definingClass}->${icon!!.name}:$iconEnumType", TEST_ID, LABEL, cast = false),
-                    cast = castIcon?.let { button(it, CAST_TEST_ID, CAST_LABEL, cast = true) },
+                    download = button("${icon!!.definingClass}->${icon!!.name}:$iconEnumType", TEST_ID, LABEL, SAVE_KIND),
+                    cast = castIcon?.let { button(it, CAST_TEST_ID, CAST_LABEL, CAST_KIND) },
+                    clean = cleanIcon?.let { button(it, CLEAN_TEST_ID, CLEAN_LABEL, CLEAN_KIND) },
                 ),
             )
         }
@@ -1027,11 +1045,12 @@ internal fun <T : Field> fieldOfType(fields: Iterable<T>, type: String, what: St
     fields.filter { it.type.toString() == type }.singleOrPatchException("$PATCH: $what")
 
 /**
- * The helper's whole body: the Download button and then the Cast button (#182), each built only
- * when its own switch is on. The sidebar's block asked whether either is, so it calls the helper for
- * a sidebar that gets one or both. [cast] is null on a build whose icon enum has no cast icon.
+ * The helper's whole body: the Download button, the Cast button (#182) and the Clean mode button
+ * (#391), each built only when its own switch is on. The sidebar's block asked whether any is, so it
+ * calls the helper for a sidebar that gets at least one. [cast] and [clean] are null on a build whose
+ * icon enum lacks their icon.
  */
-private fun helperBody(download: String, cast: String?): String = """
+private fun helperBody(download: String, cast: String?, clean: String?): String = """
         invoke-static { }, $DOWNLOAD_BUTTON
         move-result v0
         if-eqz v0, :no_download
@@ -1044,6 +1063,14 @@ $download
         if-eqz v0, :no_cast
 $it
         :no_cast
+"""
+} ?: "") + (clean?.let {
+    """
+        invoke-static { }, $CLEAN_BUTTON
+        move-result v0
+        if-eqz v0, :no_clean
+$it
+        :no_clean
 """
 } ?: "") + """
         return-void
@@ -1082,7 +1109,7 @@ private fun buildButton(
     marker: String,
     testId: String,
     label: String,
-    cast: Boolean,
+    kind: Int,
 ): String {
     val signature = "${factory.definingClass}->${factory.name}" +
         parameters.joinToString("", "(", ")") + factory.returnType
@@ -1095,7 +1122,7 @@ private fun buildButton(
         move-object/from16 v6, p0
         move-object/from16 v3, p3
 
-${handlers(hdField, sdField, manifestField, cast)}
+${handlers(hdField, sdField, manifestField, kind)}
         invoke-static { }, $label
         move-result-object v1
 
@@ -1162,10 +1189,11 @@ private fun trailingBooleanArguments(count: Int): String =
  *
  * Only the tap slot saves. The others are still given a handler rather than null, because the
  * factory is not documented to accept null, and a handler that returns without a word costs
- * nothing. Each gets the player (v4), the context (v5) and the reel's story (v3), and whether it
- * belongs to the Cast button, whose tap casts instead of saving.
+ * nothing. Each gets the player (v4), the context (v5) and the reel's story (v3), and the [kind] of
+ * button it belongs to: the Cast button's tap casts and the Clean mode button's hides the sidebar
+ * instead of saving.
  */
-private fun handlers(hd: String, sd: String, manifest: String, cast: Boolean) = (0..6).joinToString("\n") { slot ->
+private fun handlers(hd: String, sd: String, manifest: String, kind: Int) = (0..6).joinToString("\n") { slot ->
     val saves = if (slot == TAP_SLOT) 1 else 0
 
     """
@@ -1178,8 +1206,8 @@ private fun handlers(hd: String, sd: String, manifest: String, cast: Boolean) = 
         const/16 v26, 0x$slot
         const/16 v27, 0x$saves
         move-object/from16 v28, v3
-        const/16 v29, 0x${if (cast) 1 else 0}
-        invoke-direct/range { v20 .. v29 }, $HANDLER-><init>($OBJECT${CONTEXT}Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZ${OBJECT}Z)V
+        const/16 v29, 0x$kind
+        invoke-direct/range { v20 .. v29 }, $HANDLER-><init>($OBJECT${CONTEXT}Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZ${OBJECT}I)V
         move-object/from16 v${8 + slot}, v20
     """
 }
