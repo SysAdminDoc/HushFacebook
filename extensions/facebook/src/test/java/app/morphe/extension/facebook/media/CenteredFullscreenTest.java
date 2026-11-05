@@ -58,7 +58,74 @@ public class CenteredFullscreenTest {
         CenteredFullscreenForTests.Manager manager = new CenteredFullscreenForTests.Manager();
         CenteredFullscreen.started(manager, false);
         assertTrue(manager.quiet.get());
+        // The player's layout moves the video to the middle only when the listeners hear of it,
+        // after the flag is already on.
+        assertEquals("listeners told", 1, manager.told);
+        assertTrue("quiet when told", manager.quietWhenTold);
         assertTrue("counted", status().contains(CenteredFullscreen.CENTERED));
+    }
+
+    @Test
+    public void listenersThatArriveAfterTheStartHearItOnceTogether() {
+        CenteredFullscreenForTests.Manager manager = new CenteredFullscreenForTests.Manager();
+        CenteredFullscreen.started(manager, false);
+        // The player's own component and the comment bar start listening after the setup (the S22
+        // showed the panel folded but the video at the top and the comment bar still up).
+        CenteredFullscreen.listening(manager);
+        CenteredFullscreen.listening(manager);
+        assertEquals("not before the listener is in the list", 1, manager.told);
+        CenteredFullscreenForTests.runMain();
+        assertEquals("one notice for both", 2, manager.told);
+        assertTrue("quiet when told", manager.quietWhenTold);
+        CenteredFullscreen.listening(manager);
+        CenteredFullscreenForTests.runMain();
+        assertEquals("a later listener hears it too", 3, manager.told);
+    }
+
+    @Test
+    public void aListenerThatStartsOverOnEveryNoticeCantKeepItTelling() {
+        CenteredFullscreenForTests.Manager manager = new CenteredFullscreenForTests.Manager();
+        CenteredFullscreen.started(manager, false);
+        for (int i = 0; i < CenteredFullscreen.RETELLS * 3; i++) {
+            CenteredFullscreen.listening(manager);
+            CenteredFullscreenForTests.runMain();
+        }
+        assertEquals(1 + CenteredFullscreen.RETELLS, manager.told);
+    }
+
+    @Test
+    public void onceThePanelIsBackListenersAreFacebooks() {
+        CenteredFullscreenForTests.Manager manager = new CenteredFullscreenForTests.Manager();
+        CenteredFullscreen.started(manager, false);
+        CenteredFullscreen.listening(manager);
+        manager.quiet.set(false); // the chevron, before the notice ran
+        CenteredFullscreenForTests.runMain();
+        assertEquals("no notice for a panel that's back", 1, manager.told);
+        manager.quiet.set(true); // the chevron again: Facebook tells its listeners itself
+        CenteredFullscreen.listening(manager);
+        CenteredFullscreenForTests.runMain();
+        assertEquals("the manager is Facebook's again", 1, manager.told);
+    }
+
+    @Test
+    public void listenersOfAManagerNeverStartedHereAreLeftAlone() {
+        CenteredFullscreenForTests.Manager quietAlready = new CenteredFullscreenForTests.Manager();
+        quietAlready.quiet.set(true);
+        CenteredFullscreen.started(quietAlready, false);
+        CenteredFullscreenForTests.Manager keptOut = new CenteredFullscreenForTests.Manager();
+        CenteredFullscreen.started(keptOut, true);
+        CenteredFullscreenForTests.Manager unanswered = new CenteredFullscreenForTests.Manager();
+        unanswered.answers = false;
+        CenteredFullscreen.started(unanswered, false);
+        Settings.CENTER_FULL_SCREEN_VIDEOS.save(false);
+        CenteredFullscreenForTests.Manager off = new CenteredFullscreenForTests.Manager();
+        CenteredFullscreen.started(off, false);
+        for (CenteredFullscreenForTests.Manager manager : new CenteredFullscreenForTests.Manager[]{quietAlready, keptOut, unanswered, off}) {
+            CenteredFullscreen.listening(manager);
+        }
+        CenteredFullscreen.listening(new Object());
+        CenteredFullscreenForTests.runMain();
+        assertEquals(0, quietAlready.told + keptOut.told + unanswered.told + off.told);
     }
 
     @Test
@@ -67,6 +134,16 @@ public class CenteredFullscreenTest {
         manager.quiet.set(true);
         CenteredFullscreen.started(manager, false);
         assertTrue(manager.quiet.get());
+        assertEquals("listeners told", 0, manager.told);
+        assertFalse(status().contains(CenteredFullscreen.CENTERED));
+    }
+
+    @Test
+    public void aManagerWhoseListenersCantBeToldKeepsItsPanel() {
+        CenteredFullscreenForTests.Manager manager = new CenteredFullscreenForTests.Manager();
+        manager.answers = false;
+        CenteredFullscreen.started(manager, false);
+        assertFalse("never half quiet", manager.quiet.get());
         assertFalse(status().contains(CenteredFullscreen.CENTERED));
     }
 
@@ -83,6 +160,7 @@ public class CenteredFullscreenTest {
         CenteredFullscreenForTests.Manager manager = new CenteredFullscreenForTests.Manager();
         CenteredFullscreen.started(manager, false);
         assertFalse(manager.quiet.get());
+        assertEquals("listeners told", 0, manager.told);
     }
 
     @Test
@@ -93,6 +171,7 @@ public class CenteredFullscreenTest {
             CenteredFullscreenForTests.Manager manager = new CenteredFullscreenForTests.Manager();
             CenteredFullscreen.started(manager, false);
             assertFalse("paused by " + reason, manager.quiet.get());
+            assertEquals("paused by " + reason + ": listeners told", 0, manager.told);
             PauseForTests.resume();
         }
     }
