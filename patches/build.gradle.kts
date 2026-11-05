@@ -13,8 +13,14 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.file.Files
+import java.security.KeyFactory
 import java.security.MessageDigest
+import java.security.Signature
+import java.security.spec.PKCS8EncodedKeySpec
+import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
+import java.util.Base64
+import java.util.HexFormat
 import java.util.UUID
 import java.util.jar.Manifest
 import java.util.zip.CRC32
@@ -251,6 +257,69 @@ fun pinBundleTimestamp(bundle: File, epochSeconds: Long, source: BuildSourceSnap
         }
     }
     bundle.writeBytes(rebuilt.toByteArray())
+}
+
+/**
+ * Signs the finished bundle the way Morphe's PatchBundleSignature.sign does, byte for byte: an
+ * Ed25519 signature over "MorpheSig1" and the SHA-256 of the archive, kept in the zip comment as
+ * `MorpheSig1 <public key> <signature>`. Manager 2.3.0 and newer check it against the public_key
+ * the source's patches-bundle.json publishes and pin that key on the first signed install, so a
+ * bundle signed by any other key would strand everyone who updates.
+ *
+ * Not the plugin's own signer: it signs build/libs inside buildAndroid, and pinBundleTimestamp
+ * rewrites the zip afterwards without a comment. Not the patcher's class either, which isn't on
+ * this script's classpath. JCA has had Ed25519 since Java 15, and the 32-byte seed behind the
+ * fixed PKCS#8 header is the same key the patcher derives from it (Ed25519 is deterministic, so
+ * both write the same comment).
+ *
+ * The key file holds the Base64 seed, the text Morphe's tooling writes to morphe-signing.key.
+ * It has to sit outside the repository, and its public half has to be the key morphe-signing.pub
+ * publishes, written the way the comment writes it, or nothing is signed.
+ */
+fun signBundle(bundle: File, keyFile: File, publishedKeyFile: File, repositoryRoot: File) {
+    if (keyFile.canonicalFile.startsWith(repositoryRoot.canonicalFile)) {
+        throw GradleException("The signing key $keyFile is inside the repository. Keep it outside, where git can't pick it up.")
+    }
+    if (!publishedKeyFile.isFile) {
+        throw GradleException("A signing key is set (HUSHFACEBOOK_SIGNING_KEY_FILE or the hushfacebook.signingKeyFile " +
+            "Gradle property) and ${publishedKeyFile.name} is missing, " +
+            "so nothing would tell Manager which key to expect. Nothing was signed.")
+    }
+    val seed = runCatching { Base64.getDecoder().decode(keyFile.readText().trim()) }.getOrNull()
+    if (seed == null || seed.size != 32) {
+        throw GradleException("$keyFile doesn't hold a Base64 Ed25519 seed of 32 bytes. Nothing was signed.")
+    }
+    val published = publishedKeyFile.readText().trim()
+    val publicKey = runCatching { Base64.getDecoder().decode(published) }.getOrNull()
+    if (publicKey == null || publicKey.size != 32 || Base64.getEncoder().encodeToString(publicKey) != published) {
+        throw GradleException("${publishedKeyFile.name} doesn't hold a Base64 Ed25519 public key of 32 bytes, " +
+            "written as a MorpheSig1 comment writes it. Nothing was signed.")
+    }
+
+    val archive = bundle.readBytes()
+    val end = archive.size - 22
+    if (end < 0 || archive[end] != 0x50.toByte() || archive[end + 1] != 0x4b.toByte() ||
+        archive[end + 2] != 5.toByte() || archive[end + 3] != 6.toByte() ||
+        archive[archive.size - 2] != 0.toByte() || archive[archive.size - 1] != 0.toByte()) {
+        throw GradleException("$bundle doesn't end in a zip directory record with no comment, so it can't be signed.")
+    }
+    val message = "MorpheSig1".toByteArray(Charsets.US_ASCII) + MessageDigest.getInstance("SHA-256").digest(archive)
+    val keys = KeyFactory.getInstance("Ed25519")
+    val signer = Signature.getInstance("Ed25519")
+    signer.initSign(keys.generatePrivate(PKCS8EncodedKeySpec(HexFormat.of().parseHex("302e020100300506032b657004220420") + seed)))
+    signer.update(message)
+    val signature = signer.sign()
+    val check = Signature.getInstance("Ed25519")
+    check.initVerify(keys.generatePublic(X509EncodedKeySpec(HexFormat.of().parseHex("302a300506032b6570032100") + publicKey)))
+    check.update(message)
+    if (!check.verify(signature)) {
+        throw GradleException("The key in $keyFile isn't the one ${publishedKeyFile.name} publishes. Nothing was signed.")
+    }
+
+    val comment = "MorpheSig1 $published ${Base64.getEncoder().encodeToString(signature)}".toByteArray(Charsets.US_ASCII)
+    archive[archive.size - 2] = (comment.size and 0xff).toByte()
+    archive[archive.size - 1] = (comment.size shr 8).toByte()
+    bundle.writeBytes(archive + comment)
 }
 
 /**
@@ -1258,7 +1327,9 @@ tasks {
             ),
             rootProject.file("patches-list.json").absolutePath,
             project.version.toString(),
-            layout.buildDirectory.file("release/bundle.sha256").get().asFile.absolutePath
+            layout.buildDirectory.file("release/bundle.sha256").get().asFile.absolutePath,
+            // The key a signature has to name. Missing means no key is published yet.
+            rootProject.file("morphe-signing.pub").absolutePath
         )
     }
     // The extensions the bundle carries, found the way the Morphe plugin's patches plugin finds
@@ -1329,6 +1400,17 @@ tasks {
         // Why the stamp is zero, when the tree is the reason, said where the stamp is written: the
         // release receipt refuses such a bundle, and only this build saw the tree it came from.
         val unheldChanges = if (sourceDateEpochFromEnvironment == null) uncommittedChanges else emptyList()
+        // A path outside the repository, never MORPHE_SIGNING_KEY: the plugin signs build/libs
+        // itself when that is set, and pinBundleTimestamp throws its comment away. See signBundle.
+        // ~/.gradle/gradle.properties reaches every build, a shell opened before the variable was set included.
+        // An empty variable (Git Bash's `export X=`) still counts as set, so it falls through to the property.
+        val signingKeyPath = providers.environmentVariable("HUSHFACEBOOK_SIGNING_KEY_FILE").filter { it.isNotBlank() }
+            .orElse(providers.gradleProperty("hushfacebook.signingKeyFile")).orNull?.takeIf { it.isNotBlank() }
+        val publishedKeyFile = rootProject.file("morphe-signing.pub")
+        val repositoryRoot = rootDir
+        // A key set or changed is a different bundle, never an up-to-date one.
+        inputs.property("signing", listOf(signingKeyPath.orEmpty(),
+            if (publishedKeyFile.isFile) publishedKeyFile.readText().trim() else ""))
         doLast {
             if (snapshotBuildIdentity() != buildSourceSnapshot || snapshotInputTimes() != buildIdentityInputTimes) {
                 throw GradleException("Build source inputs changed during compilation. Rebuild before using this bundle.")
@@ -1353,6 +1435,16 @@ tasks {
                 logger.warn("The working tree had uncommitted changes as the build started ($shown), so " +
                     "$releaseBundleName is stamped 0 rather than HEAD's commit time, and no release receipt " +
                     "will take it. Commit or stash them and build again to release it.")
+            }
+            // After the timestamp, so the signature covers the bytes that ship; a rebuild compares
+            // entries, which the comment doesn't touch.
+            if (signingKeyPath != null) {
+                signBundle(releaseBundle, File(signingKeyPath), publishedKeyFile, repositoryRoot)
+            } else if (publishedKeyFile.isFile) {
+                logger.warn("Neither HUSHFACEBOOK_SIGNING_KEY_FILE nor the hushfacebook.signingKeyFile Gradle " +
+                    "property is set, so $releaseBundleName is unsigned while " +
+                    "morphe-signing.pub publishes a key. Manager refuses it from this source, and no release " +
+                    "receipt will take it.")
             }
             // Record only at the producer boundary. Standalone verification must not
             // bless a modified bundle by generating its own expected checksum.

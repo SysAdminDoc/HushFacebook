@@ -7,6 +7,7 @@
  */
 package app.morphe.util
 
+import app.morphe.patcher.patch.PatchBundleSignature
 import app.morphe.patcher.patch.loadPatchesFromJar
 import com.google.gson.JsonParser
 import java.io.File
@@ -19,7 +20,7 @@ import java.security.MessageDigest
 object BundleVerifier {
     @JvmStatic
     fun main(args: Array<String>) {
-        require(args.size == 4) { "Expected bundle, patch list, version and build checksum" }
+        require(args.size == 5) { "Expected bundle, patch list, version, build checksum and published key file" }
         val bundle = File(args[0])
         require(bundle.isFile) { "Bundle not found: $bundle" }
         JarFile(bundle).use { jar ->
@@ -54,6 +55,8 @@ object BundleVerifier {
         require(actualDigest == expectedDigest) {
             "Bundle differs from the Android build output; a DEX or JVM payload may be stale"
         }
+        val publishedKey = File(args[4]).takeIf { it.isFile }?.readText()?.trim()
+        val signer = requireSignature(bundle, publishedKey)
         val metadata = File(args[1]).reader().use { JsonParser.parseReader(it).asJsonObject }
         require(metadata["version"].asString == "v${args[2]}") { "Patch list version is stale" }
         val listed = metadata.getAsJsonArray("patches").map { it.asJsonObject["name"].asString }
@@ -66,7 +69,33 @@ object BundleVerifier {
             "Patch list mismatch: bundle has ${bundled.size}, metadata has ${listed.size}; " +
                 "missing=${listed.toSet() - bundled.toSet()}, extra=${bundled.toSet() - listed.toSet()}"
         }
-        println("Verified ${bundle.name}: ${bundled.size} patches and all three non-empty DEX payloads")
+        println("Verified ${bundle.name}: ${bundled.size} patches and all three non-empty DEX payloads, " +
+            (signer?.let { "signed by ${PatchBundleSignature.fingerprint(it)}" } ?: "unsigned"))
+    }
+
+    /**
+     * The key that signed [bundle], or null when it carries no MorpheSig1 comment.
+     *
+     * Manager 2.3.0 and newer refuse a bundle whose signature doesn't match its bytes, and once the
+     * source's index publishes a key (morphe-signing.pub, [publishedKey]) or Manager has pinned one,
+     * any bundle that key didn't sign. A bundle signed by another key would strand everyone who
+     * updates, and one signed while no key is published would get pinned with nothing in the index
+     * to say so, so both are refused here. An unsigned bundle passes: the release receipt is what
+     * insists on a signature once a key is published.
+     */
+    fun requireSignature(bundle: File, publishedKey: String?): String? {
+        val signer = try {
+            PatchBundleSignature.verify(bundle)
+        } catch (failure: SecurityException) {
+            throw IllegalArgumentException(failure.message, failure)
+        }
+        if (signer != null) {
+            require(signer == publishedKey) {
+                if (publishedKey == null) "Bundle is signed by $signer, and morphe-signing.pub publishes no key"
+                else "Bundle is signed by $signer, not by morphe-signing.pub's $publishedKey"
+            }
+        }
+        return signer
     }
 
     /**

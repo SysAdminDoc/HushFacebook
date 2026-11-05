@@ -8,6 +8,7 @@ Changes in each Hushfacebook version, newest first.
 
 * You need Morphe Manager 2.4.0 or newer now. The patches are built on Morphe patcher 2.2.0, the one Manager 2.4.0 ships with, and older Managers refuse a bundle built on it, so update Manager before you patch. On a computer, use morphe-desktop 2.0.0 or newer.
 * **Tooling:** The build runs on Morphe's patches Gradle plugin 2.1.0. It brings the Kotlin Gradle plugin 2.4.21 itself, so the build stopped forcing that version over the 2.4.10 the old plugin asked for.
+* **Tooling:** The build can sign a bundle with a MorpheSig1 signature, the kind Manager 2.3.0 and newer check, once a signing key is set up for it. The release index then publishes the matching public key, though only when the bundle it points at was signed with it, and never a key that differs from one it already published. The build refuses a bundle signed by any other key. Nothing is signed yet.
 
 ### Fixed
 

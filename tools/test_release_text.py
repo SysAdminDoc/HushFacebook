@@ -3,6 +3,7 @@
 Run from the repository root: py -3.13 -I -m unittest discover -s tools -p "test_*.py"
 """
 
+import base64
 import contextlib
 import io
 import json
@@ -12,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -338,6 +340,65 @@ class IndexTest(Repo):
         self.refused(lambda: self.index(version="0.1.0"), "already names 0.1.0")
         self.refused(lambda: self.index(created="2026-02-03T17:04:05Z"), "no Z or offset")
         self.refused(lambda: release_text.index(self.root, "0.2.0", "2026-02-03T17:04:05", "x.", "y", 0, 820), "neither is zero")
+
+    KEY = base64.b64encode(bytes(range(32))).decode("ascii")
+    SIG = base64.b64encode(bytes(range(64))).decode("ascii")
+
+    def stage(self, comment: bytes, version="0.2.0"):
+        """The bundle -Stage bundle leaves in build/release-assets, with this zip comment."""
+        folder = self.root / "build" / "release-assets" / version
+        folder.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(folder / f"patches-{version}.mpp", "w") as bundle:
+            bundle.writestr("classes.dex", b"dex\n")
+            bundle.comment = comment
+
+    def test_publishes_the_signing_key_of_a_signed_source(self):
+        key = self.KEY
+        write(self.root / "morphe-signing.pub", key + "\n")
+        self.stage(f"MorpheSig1 {key} {self.SIG}".encode("ascii"))
+        self.index()
+        bundle = json.loads(self.text("patches-bundle.json"))
+        self.assertEqual(list(bundle), ["created_at", "description", "download_url", "signature_download_url", "version",
+                                        "public_key"])
+        self.assertEqual(bundle["public_key"], key)
+
+    def test_refuses_a_public_key_manager_could_not_match(self):
+        # The last case decodes to the same 32 bytes as "A" * 43 + "=", but it's not the string a signature carries.
+        for written in (base64.b64encode(bytes(31)).decode("ascii"), base64.b64encode(bytes(32)).decode("ascii").rstrip("="),
+                        "not a key", "A" * 42 + "B="):
+            write(self.root / "morphe-signing.pub", written + "\n")
+            self.refused(self.index, "morphe-signing.pub isn't a Base64 Ed25519 public key")
+
+    def test_refuses_to_publish_a_key_the_shipped_bundle_was_not_signed_with(self):
+        write(self.root / "morphe-signing.pub", self.KEY + "\n")
+        self.refused(self.index, "no patches-0.2.0.mpp in build/release-assets/0.2.0")
+        other = base64.b64encode(bytes(32)).decode("ascii")
+        unread = "carries no signature Manager can read"
+        # Manager's startsWith is case-sensitive, so the lowercase comment is an unsigned bundle to it. It decodes
+        # the key and the signature as strict Base64 before checking anything, so a malformed one is refused too.
+        for comment, said in ((b"", unread), (f"morphesig1 {self.KEY} {self.SIG}".encode("ascii"), unread),
+                              (f"MorpheSig1 {self.KEY} !!notbase64!!".encode("ascii"), unread),
+                              (f"MorpheSig1 {self.KEY} {self.SIG}\n".encode("ascii"), unread),
+                              (f"MorpheSig1 {self.KEY} c2ln".encode("ascii"), unread),
+                              (f"MorpheSig1 {self.KEY[:-4]} {self.SIG}".encode("ascii"), unread),
+                              (f"MorpheSig1 {other} {self.SIG}".encode("ascii"), "signed by another key")):
+            self.stage(comment)
+            self.refused(self.index, said, "HUSHFACEBOOK_SIGNING_KEY_FILE", "hushfacebook.signingKeyFile")
+        self.assertNotIn("public_key", json.loads(self.text("patches-bundle.json")))
+
+    def test_refuses_to_change_a_published_signing_key(self):
+        bundle = json.loads(self.text("patches-bundle.json"))
+        bundle["public_key"] = base64.b64encode(bytes(32)).decode("ascii")
+        write(self.root / "patches-bundle.json", json.dumps(bundle, indent=2) + "\n")
+        write(self.root / "morphe-signing.pub", self.KEY + "\n")
+        self.stage(f"MorpheSig1 {self.KEY} {self.SIG}".encode("ascii"))
+        self.refused(self.index, "isn't the key patches-bundle.json publishes")
+
+    def test_refuses_to_drop_a_published_signing_key(self):
+        bundle = json.loads(self.text("patches-bundle.json"))
+        bundle["public_key"] = base64.b64encode(bytes(range(32))).decode("ascii")
+        write(self.root / "patches-bundle.json", json.dumps(bundle, indent=2) + "\n")
+        self.refused(self.index, "morphe-signing.pub is gone", "pinned that key")
 
     def test_refuses_a_readme_without_one_latest_release_sentence(self):
         write(self.root / "README.md", README.replace("The latest release is", "Our latest release is"))

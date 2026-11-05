@@ -157,6 +157,36 @@ if ($bundleManifest.timestamp -ne $expectedStamp) {
         "It was built from another commit, or with SOURCE_DATE_EPOCH set to something else. Build it again " +
         'from this commit. Nothing was patched.')
 }
+# Once morphe-signing.pub exists, the index publishes it and Manager refuses any bundle that key
+# didn't sign. verifyBundle already checked the signature against the bytes; this is the release
+# saying the bundle has one, since a build without HUSHFACEBOOK_SIGNING_KEY_FILE leaves it off.
+$publishedKeyPath = Join-Path $Root 'morphe-signing.pub'
+if (Test-Path -LiteralPath $publishedKeyPath -PathType Leaf) {
+    $publishedKey = (Get-Content -LiteralPath $publishedKeyPath -Raw).Trim()
+    $bundleBytes = [IO.File]::ReadAllBytes($Bundle)
+    $signer = $null
+    # The end of central directory record is the last one whose comment reaches the end of the file.
+    for ($at = $bundleBytes.Length - 22; $at -ge [Math]::Max(0, $bundleBytes.Length - 22 - 65535); $at--) {
+        if ($bundleBytes[$at] -eq 0x50 -and $bundleBytes[$at + 1] -eq 0x4b -and $bundleBytes[$at + 2] -eq 5 -and
+            $bundleBytes[$at + 3] -eq 6 -and
+            ($bundleBytes[$at + 20] + 256 * $bundleBytes[$at + 21]) -eq ($bundleBytes.Length - $at - 22)) {
+            $comment = [Text.Encoding]::ASCII.GetString($bundleBytes, $at + 22, $bundleBytes.Length - $at - 22)
+            # Case-sensitive like Manager's startsWith, which reads "morphesig1" as an unsigned bundle.
+            if ($comment -cmatch '^MorpheSig1 (\S+) \S+$') { $signer = $Matches[1] }
+            break
+        }
+    }
+    if ($signer -cne $publishedKey) {
+        # A user variable set after this shell opened never reached the build, so say that rather than "set it".
+        $why = if ($signer) {
+            'Point HUSHFACEBOOK_SIGNING_KEY_FILE, or hushfacebook.signingKeyFile in ~/.gradle/gradle.properties, at the key morphe-signing.pub was made from'
+        } elseif (-not $env:HUSHFACEBOOK_SIGNING_KEY_FILE -and [Environment]::GetEnvironmentVariable('HUSHFACEBOOK_SIGNING_KEY_FILE', 'User')) {
+            'HUSHFACEBOOK_SIGNING_KEY_FILE is in your user environment, but this shell opened before it was set, so the build never saw it. Open a new shell, or put hushfacebook.signingKeyFile in ~/.gradle/gradle.properties,'
+        } else { 'Set HUSHFACEBOOK_SIGNING_KEY_FILE, or hushfacebook.signingKeyFile in ~/.gradle/gradle.properties, to the key file' }
+        throw ("The bundle isn't signed by morphe-signing.pub's key ($(if ($signer) { "it names $signer" } else { 'it has no signature' })), " +
+            "and Manager refuses it once the index publishes that key. $why and build again. Nothing was patched.")
+    }
+}
 # And what changed after the build started: an edit made and put back since leaves the tree clean
 # and the stamp right, and a file written after the bundle is the trace it leaves.
 $newerSources = @(Get-SourcesNewerThanBundle -Root $Root -Bundle $Bundle)

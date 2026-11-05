@@ -31,6 +31,8 @@ index        patches-bundle.json, the README's latest-release sentence and the b
 """
 
 import argparse
+import base64
+import binascii
 import contextlib
 import datetime
 import importlib.util
@@ -398,6 +400,35 @@ def swap(text: str, pattern: str, replacement: str, name: str) -> str:
     return new
 
 
+def strict_b64_length(text: str) -> int:
+    """How many bytes [text] decodes to as strict Base64, as java.util.Base64's basic decoder reads it, or -1."""
+    try:
+        return len(base64.b64decode(text, validate=True))
+    except (binascii.Error, ValueError):
+        return -1
+
+
+def bundle_signer(path: Path) -> str | None:
+    """The public key a well-formed MorpheSig1 comment names, or None.
+
+    Well formed is what Manager's PatchBundleSignature needs before it checks anything: the exact tag, a
+    32-byte key and a 64-byte signature in strict Base64 (it turns a decode failure into a refusal). This
+    doesn't verify the signature itself. signBundle in patches/build.gradle.kts verifies its own before it
+    writes the comment.
+    """
+    data = path.read_bytes()
+    # The end record is the last thing in the file, followed only by a comment of at most 65535 bytes.
+    for start in range(len(data) - 22, max(-1, len(data) - 22 - 65536), -1):
+        if data[start:start + 4] == b"PK\x05\x06" and start + 22 + int.from_bytes(data[start + 20:start + 22], "little") == len(data):
+            comment = data[start + 22:].decode("latin-1")
+            parts = comment.split(" ")
+            # Case-sensitive, as the reference's startsWith is: "morphesig1" reads there as unsigned.
+            if not comment.startswith("MorpheSig1 ") or len(parts) != 3:
+                return None
+            return parts[1] if strict_b64_length(parts[1]) == 32 and strict_b64_length(parts[2]) == 64 else None
+    fail(f"{path.name} has no zip end record")
+
+
 def index(root: Path, version: str, created: str, bundle_summary: str, readme_summary: str,
           runtime: int, patch: int) -> str:
     if not VERSION.match(version):
@@ -419,6 +450,35 @@ def index(root: Path, version: str, created: str, bundle_summary: str, readme_su
     previous = str(bundle.get("version", ""))
     if previous == version:
         fail(f"patches-bundle.json already names {version}")
+    # Morphe Manager 2.4.0 takes the first bundle of a source signed by public_key, then pins the key
+    # that signed it and refuses any later bundle not signed by that key, an unsigned one included.
+    signing = {}
+    public_key_path = root / "morphe-signing.pub"
+    if public_key_path.exists():
+        public_key = read(public_key_path).strip()
+        try:
+            raw = base64.b64decode(public_key, validate=True)
+        except binascii.Error:
+            raw = b""
+        # Manager compares the key as a string, so it has to be the one form a signature comment carries.
+        if len(raw) != 32 or base64.b64encode(raw).decode("ascii") != public_key:
+            fail("morphe-signing.pub isn't a Base64 Ed25519 public key, 32 bytes written as a MorpheSig1 comment writes them")
+        if bundle.get("public_key", public_key) != public_key:
+            fail("morphe-signing.pub isn't the key patches-bundle.json publishes. Every Manager that installed a signed "
+                 "bundle pinned the published key and refuses one signed by another, so sign with that key.")
+        # The index points download_url at this release's bundle, so it names the key only when that bundle carries it.
+        shipped = root / "build" / "release-assets" / version / f"patches-{version}.mpp"
+        if not shipped.is_file():
+            fail(f"there's no {shipped.name} in build/release-assets/{version} to read the signer from. Run -Stage bundle first.")
+        signer = bundle_signer(shipped)
+        if signer != public_key:
+            fail(f"{shipped.name} {'carries no signature Manager can read' if signer is None else 'is signed by another key'}, and Manager refuses it "
+                 "under an index that publishes morphe-signing.pub's key. Rebuild it with HUSHFACEBOOK_SIGNING_KEY_FILE, or "
+                 "the hushfacebook.signingKeyFile Gradle property, pointing at that key.")
+        signing["public_key"] = public_key
+    elif "public_key" in bundle:
+        fail("patches-bundle.json publishes a signing key and morphe-signing.pub is gone. A Manager that installed a "
+             "signed bundle pinned that key and refuses a bundle without it, so put the file back.")
 
     first = f"Hushfacebook v{version} targets Facebook {newest} ({PACKAGE}), the newest release"
     first += f", and {spoken(older)} still work." if older else "."
@@ -456,6 +516,7 @@ def index(root: Path, version: str, created: str, bundle_summary: str, readme_su
         "description": description,
         "download_url": f"https://github.com/{REPOSITORY}/releases/download/v{version}/patches-{version}.mpp",
         "version": version,
+        **signing,
     })
     readme_path = root / "README.md"
     sentence = (f"The latest release is [v{version}](https://github.com/{REPOSITORY}/releases/tag/v{version}), with "
