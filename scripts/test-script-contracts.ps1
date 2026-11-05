@@ -1816,7 +1816,15 @@ $ErrorActionPreference = 'Stop'
 function Try-Change([scriptblock]$Change) { try { & $Change; 'went' } catch { 'refused' } }
 function Try-Hold([string]$Path, [switch]$Directory) {
     try { (Open-HeldFile -Path $Path -Directory:$Directory).Dispose(); 'held' }
-    catch { if ($_.Exception.Message -like '*is a link*') { 'refused' } else { 'threw ' + $_.Exception.Message } }
+    catch {
+        if ($_.Exception.Message -like '*is a link*') { return 'refused' }
+        # Windows with redirection guard on won't follow a link an ordinary user made, from any process
+        # (ERROR_UNTRUSTED_MOUNT_POINT, 448), so the open fails before the link check can see it.
+        for ($e = $_.Exception; $e; $e = $e.InnerException) {
+            if (($e -is [ComponentModel.Win32Exception] -and $e.NativeErrorCode -eq 448) -or ($e.HResult -band 0xFFFF) -eq 448) { return 'untrusted' }
+        }
+        'threw ' + $_.Exception.Message
+    }
 }
 $lines = @()
 $outside = Join-Path $Work 'outside'
@@ -1891,11 +1899,12 @@ Set-Content -LiteralPath $Result -Value $lines
             "A held folder under $heldShell could be renamed, kept files from being copied in and removed, or the control failed: $heldSays"
         Assert-True ($heldLines[3] -ceq 'file refused refused checked went') `
             "A held file under $heldShell could be written or deleted, or the control failed: $heldSays"
-        Assert-True ($heldLines[4] -ceq 'junction refused' -and $heldLines[5] -ceq 'through held') `
+        Assert-True ($heldLines[4] -cin @('junction refused', 'junction untrusted') -and $heldLines[5] -cin @('through held', 'through untrusted')) `
             "Open-HeldFile under $heldShell held a junction as a folder, or refused a real file reached through one: $heldSays"
-        Assert-True ($heldLines[6] -in @('symlink refused', 'symlink unavailable')) `
+        Assert-True ($heldLines[6] -cin @('symlink refused', 'symlink unavailable', 'symlink untrusted')) `
             "Open-HeldFile under $heldShell held a file symbolic link as the file: $heldSays"
         if ($heldLines[6] -ceq 'symlink unavailable') { Write-Host "[scripts] no file symbolic links here, so that hold case was skipped under $heldShell" }
+        if ($heldLines[5] -ceq 'through untrusted') { Write-Host "[scripts] Windows here won't follow a junction an ordinary user made, so holding a file through one went unchecked under $heldShell" }
         Remove-TreeWithoutFollowingLinks -Path $heldWork
     }
     $atNoAllowlist = Resolve-ReceiptManifestAllowlist -Root $toolchainRoot -Commit $releaseCommitSha -WorkingPath $allowlistFile
