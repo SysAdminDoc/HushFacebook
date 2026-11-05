@@ -1754,6 +1754,10 @@ With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapp
 Dim around a zoom	Oscurecer alrededor del zoom
 # context: that switch's summary; "Pinch to zoom" is the label of the switch above it, so use its translation; a story is the full-screen picture or video someone shares for a day
 With Pinch to zoom on, the screen around a photo or story darkens as you zoom in. Turn it off to keep the rest of the screen as it is.	Con Pellizcar para hacer zoom activado, la pantalla alrededor de una foto o historia se oscurece mientras amplías. Desactívalo para dejar el resto de la pantalla como está.
+# context: a switch under Pinch to zoom; with it on, a video you zoom keeps moving instead of freezing on the frame it showed
+Keep videos playing while zoomed	Seguir reproduciendo videos con zoom
+# context: that switch's summary; "Pinch to zoom" and "Stay zoomed" are the labels of switches above it, so use their translations; a Page is a business's or public figure's Facebook page; a story is the full-screen picture or video someone shares for a day
+With Pinch to zoom on, a video you zoom on a profile or Page keeps playing. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it. Stories hold still while you zoom.	Con Pellizcar para hacer zoom activado, un video al que le haces zoom en un perfil o una página sigue reproduciéndose. Si también activas Mantener el zoom, mantén presionado el zoom para pausar el video, y otra vez para reproducirlo. Las historias se quedan quietas mientras haces zoom.
 No ads downloaded in advance	Sin anuncios descargados por adelantado
 No ad tracking	Sin seguimiento de anuncios
 No Facebook ads in other apps	Sin anuncios de Facebook en otras apps

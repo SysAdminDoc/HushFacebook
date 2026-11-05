@@ -21,6 +21,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
@@ -127,6 +128,7 @@ public class PinchZoomTest {
         Settings.PINCH_TO_ZOOM.resetToDefault();
         Settings.PINCH_TO_ZOOM_KEEP.resetToDefault();
         Settings.PINCH_TO_ZOOM_DIM.resetToDefault();
+        Settings.PINCH_TO_ZOOM_LIVE.resetToDefault();
         Settings.LONG_PRESS_OPENS_COMMENTS.resetToDefault();
         HookStatus.clear();
     }
@@ -1113,5 +1115,187 @@ public class PinchZoomTest {
         assertEquals("Back closed the story under the kept zoom", 0, viewer.backs);
         assertEquals("Facebook's held finger never let go",
                 Arrays.asList(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_CANCEL), viewer.handed);
+    }
+
+    /** Stands in for a video Tap to play knows: whether it plays, and what it was told. */
+    private static final class Video {
+        boolean playing = true;
+        final List<Boolean> told = new ArrayList<>();
+    }
+
+    private TextureView video;
+    private final List<Bitmap> shownFrames = new ArrayList<>();
+
+    /**
+     * Keep videos playing while zoomed on, a video over the profile's photo, frames read from it
+     * standing in for its own, and Tap to play knowing [known].
+     */
+    private void videoOnScreen(List<Object> known) {
+        Settings.PINCH_TO_ZOOM_LIVE.save(true);
+        video = new TextureView(activity);
+        ((ViewGroup) photo.getParent()).addView(video, new FrameLayout.LayoutParams(600, 600));
+        layOut(activity);
+        PinchZoom.places = (screen, root, x, y) -> video;
+        PinchZoom.frames = (zoom, source, next) -> {
+            assertSame("a frame came from something other than the video", video, source);
+            Bitmap frame = zoom.spare(source.getWidth(), source.getHeight());
+            zoom.showFrame(frame, null);
+            shownFrames.add(frame);
+            next.run();
+        };
+        PinchZoom.players = new PinchZoom.Players() {
+            public List<Object> known() { return known; }
+            public View view(Object player) { return video; }
+            public boolean playing(Object player) { return ((Video) player).playing; }
+            public void command(Object player, boolean play) {
+                ((Video) player).playing = play;
+                ((Video) player).told.add(play);
+            }
+        };
+    }
+
+    private static void idle(long millis) {
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(millis));
+    }
+
+    /** A finger held still on the kept zoom for the long-press time, then lifted. True when the lift kept it. */
+    private boolean holdOnKept(PinchZoom.Zoom zoom) {
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_DOWN, new float[][] {{300, 300}})));
+        idle(ViewConfiguration.getLongPressTimeout() + 10);
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_UP, new float[][] {{300, 300}})));
+        return zoom.parked && !zoom.settling;
+    }
+
+    @Test
+    public void keepVideosPlayingStartsOff() {
+        assertFalse(Settings.PINCH_TO_ZOOM_LIVE.defaultValue);
+    }
+
+    @Test
+    public void aZoomOnAVideoFollowsItsFramesInTwoBuffers() {
+        videoOnScreen(new ArrayList<>());
+        touch(event(MotionEvent.ACTION_DOWN, new float[][] {{250, 300}}));
+        touch(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{250, 300}, {350, 300}}));
+        PinchZoom.Zoom zoom = PinchZoom.zoom();
+        assertNotNull(zoom);
+        assertSame(video, zoom.source);
+        for (int i = 0; i < 3; i++) idle(PinchZoom.FRAME_MILLIS + 1);
+        assertEquals("frames taken", 3, shownFrames.size());
+        assertNotSame("a frame was written into the one showing", shownFrames.get(0), shownFrames.get(1));
+        assertSame("more than two buffers", shownFrames.get(0), shownFrames.get(2));
+        assertEquals("the copy isn't the video's size", 600, shownFrames.get(0).getWidth());
+        assertSame("the copy doesn't show the newest frame", shownFrames.get(2),
+                ((android.graphics.drawable.BitmapDrawable) zoom.copy.getDrawable()).getBitmap());
+
+        // The fingers lift and the copy stops following the video.
+        touch(event(pointer(MotionEvent.ACTION_POINTER_UP, 1), new float[][] {{250, 300}, {350, 300}}));
+        int taken = shownFrames.size();
+        idle(1000);
+        assertEquals("frames went on after the zoom", taken, shownFrames.size());
+        assertNull(PinchZoom.zoom());
+    }
+
+    @Test
+    public void offAZoomOnAVideoStaysOnItsFirstFrame() {
+        videoOnScreen(new ArrayList<>());
+        Settings.PINCH_TO_ZOOM_LIVE.save(false);
+        touch(event(MotionEvent.ACTION_DOWN, new float[][] {{250, 300}}));
+        touch(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{250, 300}, {350, 300}}));
+        PinchZoom.Zoom zoom = PinchZoom.zoom();
+        assertNotNull(zoom);
+        assertNull(zoom.source);
+        idle(500);
+        assertEquals(0, shownFrames.size());
+    }
+
+    @Test
+    public void onlyAVideoSurfaceOutsideTheStoryViewerIsFollowed() {
+        Settings.PINCH_TO_ZOOM_LIVE.save(true);
+        TextureView texture = new TextureView(activity);
+        assertSame(texture, PinchZoom.liveSource(activity, texture));
+        android.view.SurfaceView surface = new android.view.SurfaceView(activity);
+        assertSame(surface, PinchZoom.liveSource(activity, surface));
+        assertNull("a photo was followed", PinchZoom.liveSource(activity, photo));
+        assertNull("a story was followed", PinchZoom.liveSource(storyViewer(), texture));
+    }
+
+    @Test
+    public void aHoldOnAKeptVideoZoomPausesItAndTheNextPlaysIt() {
+        Video playing = new Video();
+        videoOnScreen(new ArrayList<>(Arrays.asList(playing)));
+        PinchZoom.Zoom zoom = keptZoom();
+        assertTrue("the hold's lift let go of the zoom", holdOnKept(zoom));
+        assertEquals("the hold didn't pause the video", Arrays.asList(false), playing.told);
+        assertTrue(holdOnKept(zoom));
+        assertEquals("the second hold didn't play it", Arrays.asList(false, true), playing.told);
+
+        // Paused by a hold, then the zoom goes: the video plays on.
+        assertTrue(holdOnKept(zoom));
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_DOWN, new float[][] {{300, 300}})));
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_UP, new float[][] {{300, 300}})));
+        assertTrue("a tap didn't let go", zoom.settling);
+        assertEquals(Arrays.asList(false, true, false, true), playing.told);
+        assertTrue(playing.playing);
+    }
+
+    @Test
+    public void aVideoPausedBeforeTheZoomPlaysOnAHoldAndStaysPlaying() {
+        Video paused = new Video();
+        paused.playing = false;
+        videoOnScreen(new ArrayList<>(Arrays.asList(paused)));
+        PinchZoom.Zoom zoom = keptZoom();
+        assertTrue(holdOnKept(zoom));
+        assertEquals(Arrays.asList(true), paused.told);
+        back(decor());
+        assertTrue(zoom.settling);
+        assertEquals("letting go paused it again", Arrays.asList(true), paused.told);
+    }
+
+    @Test
+    public void aFingerThatMovesOrLiftsEarlyIsntAHold() {
+        Video playing = new Video();
+        videoOnScreen(new ArrayList<>(Arrays.asList(playing)));
+        PinchZoom.Zoom zoom = keptZoom();
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_DOWN, new float[][] {{300, 300}})));
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_MOVE, new float[][] {{360, 380}})));
+        idle(ViewConfiguration.getLongPressTimeout() + 10);
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_UP, new float[][] {{360, 380}})));
+        assertTrue(zoom.parked);
+        assertTrue("a drag paused the video", playing.told.isEmpty());
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_DOWN, new float[][] {{300, 300}})));
+        idle(ViewConfiguration.getLongPressTimeout() / 2);
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_UP, new float[][] {{300, 300}})));
+        idle(ViewConfiguration.getLongPressTimeout());
+        assertTrue("a tap paused the video", playing.told.isEmpty());
+        assertTrue("a tap kept the zoom", zoom.settling);
+    }
+
+    @Test
+    public void withNoPlayerKnownAHoldStopsTheFrameAndTheNextGoesOn() {
+        videoOnScreen(new ArrayList<>());
+        PinchZoom.Zoom zoom = keptZoom();
+        idle(PinchZoom.FRAME_MILLIS * 2);
+        assertTrue("no frames before the hold", shownFrames.size() > 0);
+        assertTrue(holdOnKept(zoom));
+        assertTrue(zoom.frozen);
+        int taken = shownFrames.size();
+        idle(PinchZoom.FRAME_MILLIS * 5);
+        assertEquals("the held frame moved on", taken, shownFrames.size());
+        assertTrue(holdOnKept(zoom));
+        assertFalse(zoom.frozen);
+        idle(PinchZoom.FRAME_MILLIS * 3);
+        assertTrue("frames didn't go on", shownFrames.size() > taken);
+    }
+
+    @Test
+    public void aHoldOnAKeptPhotoDoesNothing() {
+        Settings.PINCH_TO_ZOOM_LIVE.save(true);
+        PinchZoom.Zoom zoom = keptZoom();
+        assertNull(zoom.source);
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_DOWN, new float[][] {{300, 300}})));
+        idle(ViewConfiguration.getLongPressTimeout() + 10);
+        assertFalse(zoom.heldDown);
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_UP, new float[][] {{300, 300}})));
+        assertTrue("a held tap on a photo zoom kept it", zoom.settling);
     }
 }

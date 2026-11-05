@@ -9,6 +9,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -16,6 +17,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -41,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import app.morphe.extension.facebook.reels.FeedVideoControls;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Utils;
@@ -74,7 +77,16 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>The copy is read from the window's last frame, which holds a playing video as well as a photo
  * (a SurfaceView's from its own surface), so a video zooms on the frame it showed when the fingers
- * landed.
+ * landed, unless Keep videos playing while zoomed is on.
+ *
+ * <p>With Keep videos playing while zoomed on (#220), a zoom on a video surface outside the story
+ * viewer, a TextureView or a SurfaceView, follows it: about every {@link #FRAME_MILLIS} the copy
+ * takes the video's newest frame, read from the view itself, so the video plays on under the
+ * fingers. Frames go into two buffers in turn, so none is written while it shows. With Stay zoomed
+ * on too, a finger held still on the kept zoom for the long-press time pauses the video, through the
+ * player Tap to play knows for it, and a second hold plays it again. With no player known, the frame
+ * just holds. Letting the zoom go plays a video a hold paused. A story stays a still copy, since the
+ * story viewer keeps the story paused for the zoom.
  *
  * <p>With Stay zoomed on (#220), dropping to one finger drags the copy instead of ending the zoom,
  * and a zoom past {@link #KEPT_LEAST} stays where the fingers left it when they all lift. A touch
@@ -112,6 +124,8 @@ public final class PinchZoom {
     static final int SMALLEST_DP = 64;
     /** The story viewer's activity, a kept class name. 584 opens it as one of its subclasses too ({@link #storyViewer}). */
     static final String STORY_VIEWER = "com.facebook.stories.viewer.activity.StoryViewerActivity";
+    /** How often a zoom that keeps a video playing takes its next frame: about 30 a second. */
+    static final long FRAME_MILLIS = 33;
 
     /** The root views ProfileFragment made, weakly held. Main thread. */
     private static final Map<View, Boolean> profiles = new WeakHashMap<>();
@@ -130,8 +144,34 @@ public final class PinchZoom {
         @Nullable View target(Activity activity, View root, float x, float y);
     }
 
+    /** Reads [source]'s frame on screen now into [zoom]'s copy, then runs [next] on the main thread. */
+    interface Frames {
+        void read(Zoom zoom, View source, Runnable next);
+    }
+
+    /** The players Tap to play knows, and pausing or playing one. */
+    interface Players {
+        List<Object> known();
+        @Nullable View view(Object player);
+        boolean playing(Object player);
+        void command(Object player, boolean play);
+    }
+
+    private static final Players PATCHED_PLAYERS = new Players() {
+        public List<Object> known() { return FeedVideoControls.knownPlayers(); }
+        public View view(Object player) { return FeedVideoControls.playerView(player); }
+        public boolean playing(Object player) { return FeedVideoControls.isPlaying(player); }
+        public void command(Object player, boolean play) {
+            // Tap to play holds back a start it didn't arm, so a video a hold paused is armed first.
+            if (play) TapToPlay.armForResume(player);
+            FeedVideoControls.commandPlayer(player, play);
+        }
+    };
+
     static volatile Snapshots snapshots = PinchZoom::snapshot;
     static volatile Places places = PinchZoom::mediaUnder;
+    static volatile Frames frames = PinchZoom::frame;
+    static volatile Players players = PATCHED_PLAYERS;
 
     /** The gesture took the second finger, so every later event Facebook gets of it is a cancel. */
     private static boolean swallowing;
@@ -250,6 +290,7 @@ public final class PinchZoom {
         Zoom started = new Zoom((ViewGroup) root, area, event);
         started.keep = Settings.PINCH_TO_ZOOM_KEEP.get();
         started.darkest = darkest();
+        started.source = liveSource(activity, target);
         zoom = started;
         swallowing = true;
         holding = storyViewer(activity);
@@ -308,9 +349,12 @@ public final class PinchZoom {
         }
         if (ends) {
             steering = false;
+            kept.cancelHold();
             // With gesture navigation the system cancels an edge swipe before it sends Back, and
             // Back has to find the zoom still up, or it goes on to close Facebook's screen.
             if (action == MotionEvent.ACTION_CANCEL) return true;
+            // The hold paused or played the video, so its lift lets nothing go.
+            if (kept.heldDown) return true;
             boolean tapped = !kept.moved && !kept.pinched;
             // A double tap zoom is let go by a second double tap, so the first tap of it does nothing
             // and the second never reaches Facebook as a tap on the photo.
@@ -320,8 +364,10 @@ public final class PinchZoom {
         }
         if (action == MotionEvent.ACTION_MOVE) {
             kept.drag(event);
+            if (kept.moved) kept.cancelHold();
         } else if (action == MotionEvent.ACTION_POINTER_DOWN) {
             kept.pinched = true;
+            kept.cancelHold();
             kept.rebase(event, -1);
         } else if (action == MotionEvent.ACTION_POINTER_UP) {
             kept.rebase(event, event.getActionIndex());
@@ -485,6 +531,7 @@ public final class PinchZoom {
         started.doubleTap = true;
         started.scale = DOUBLE_TAP_SCALE;
         started.darkest = darkest();
+        started.source = liveSource(activity, target);
         zoom = started;
         snapshots.take(activity, target, area, copy -> {
             try {
@@ -560,6 +607,78 @@ public final class PinchZoom {
             if (STORY_VIEWER.equals(type.getName())) return true;
         }
         return false;
+    }
+
+    /**
+     * With Keep videos playing while zoomed on, [target] when it's a video surface outside the story
+     * viewer, the view whose frames the zoom follows. Otherwise null, and the copy stays still.
+     */
+    @Nullable
+    static View liveSource(Activity activity, View target) {
+        if (!Settings.PINCH_TO_ZOOM_LIVE.get() || storyViewer(activity)) return null;
+        return target instanceof TextureView || target instanceof SurfaceView ? target : null;
+    }
+
+    /** The player Tap to play knows whose view is [source] or holds it, or null for none. */
+    @Nullable
+    static Object playerOf(@Nullable View source) {
+        if (source == null) return null;
+        for (Object player : players.known()) {
+            View view = players.view(player);
+            if (view != null && within(source, view)) return player;
+        }
+        return null;
+    }
+
+    /** True when [view] is [ancestor] or sits inside it. */
+    private static boolean within(View view, View ancestor) {
+        for (Object at = view; at instanceof View; at = ((View) at).getParent()) {
+            if (at == ancestor) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Reads [source]'s frame on screen now into [zoom]'s next buffer and shows it, then runs [next].
+     * A TextureView hands its frame back before its own transform, so the transform places it; a
+     * SurfaceView's comes from its surface, cut to the zoom's area. A frame that can't be read leaves
+     * the last one showing.
+     */
+    static void frame(Zoom zoom, View source, Runnable next) {
+        if (source instanceof TextureView) {
+            TextureView texture = (TextureView) source;
+            Bitmap buffer = texture.isAvailable() ? zoom.spare(texture.getWidth(), texture.getHeight()) : null;
+            if (buffer != null) {
+                texture.getBitmap(buffer);
+                zoom.showFrame(buffer, placement(texture, zoom.area));
+            }
+            next.run();
+            return;
+        }
+        Rect surface = source instanceof SurfaceView ? surfaceArea((SurfaceView) source, zoom.area) : null;
+        Bitmap buffer = surface == null ? null : zoom.spare(zoom.area.width(), zoom.area.height());
+        if (buffer == null) {
+            next.run();
+            return;
+        }
+        PixelCopy.request((SurfaceView) source, surface, buffer, result -> {
+            try {
+                if (result == PixelCopy.SUCCESS) zoom.showFrame(buffer, null);
+            } catch (Throwable failure) {
+                HookStatus.threw(FAMILY, "zoom frame", failure);
+            } finally {
+                next.run();
+            }
+        }, later);
+    }
+
+    /** Where a TextureView's frame, before its transform, goes in a copy over [area]. */
+    static Matrix placement(TextureView texture, Rect area) {
+        Matrix place = texture.getTransform(null);
+        int[] at = new int[2];
+        texture.getLocationInWindow(at);
+        place.postTranslate(at[0] - area.left, at[1] - area.top);
+        return place;
     }
 
     /** [target]'s bounds in [root]'s window, cut to what [root] shows, or null when that's empty. */
@@ -777,6 +896,8 @@ public final class PinchZoom {
         profiles.clear();
         snapshots = PinchZoom::snapshot;
         places = PinchZoom::mediaUnder;
+        frames = PinchZoom::frame;
+        players = PATCHED_PLAYERS;
     }
 
     /** One zoom: the layer over the window and where the fingers started. */
@@ -800,6 +921,24 @@ public final class PinchZoom {
         float darkest = SCRIM;
         /** The fingers lifted and the zoom stayed. */
         boolean parked;
+        /** The video surface the copy follows (Keep videos playing while zoomed), or null for a still copy. */
+        @Nullable View source;
+        /** The finger on the kept zoom stayed still for the long-press time, and paused or played the video. */
+        boolean heldDown;
+        /** The player a hold paused, which plays again when the zoom springs back. */
+        @Nullable Object pausedPlayer;
+        /** A hold with no player known stopped the copy on its frame. */
+        boolean frozen;
+        /** The copy is taking the video's frames. */
+        private boolean ticking;
+        /** The two frame buffers, and which one shows now, or -1 for neither. */
+        private final Bitmap[] buffers = new Bitmap[2];
+        private int shownBuffer = -1;
+        private final Runnable tick = this::tick;
+        private final Runnable nextTick = () -> {
+            if (ticking && !settling) later.postDelayed(this.tick, FRAME_MILLIS);
+        };
+        private final Runnable hold = this::held;
         /** Where a touch on the kept zoom landed, and whether it has since dragged or pinched. */
         private float downX;
         private float downY;
@@ -905,6 +1044,106 @@ public final class PinchZoom {
             root.addView(layer, new ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             apply();
+            if (source != null) {
+                ticking = true;
+                later.postDelayed(tick, FRAME_MILLIS);
+            }
+        }
+
+        /** Takes the video's newest frame, unless a hold froze the copy, and comes back for the next. */
+        private void tick() {
+            View from = source;
+            if (!ticking || settling || from == null) return;
+            try {
+                // A video scrolled away keeps its last frame.
+                if (!from.isAttachedToWindow()) {
+                    ticking = false;
+                    return;
+                }
+                if (frozen) nextTick.run();
+                else frames.read(this, from, nextTick);
+            } catch (Throwable failure) {
+                ticking = false;
+                HookStatus.threw(FAMILY, "zoom frame", failure);
+            }
+        }
+
+        /**
+         * The buffer the next frame goes into, [width] by [height]: the one not showing, so a frame is
+         * never written while it's drawn. Null for an empty size.
+         */
+        @Nullable
+        Bitmap spare(int width, int height) {
+            if (width <= 0 || height <= 0) return null;
+            int index = shownBuffer == 0 ? 1 : 0;
+            Bitmap buffer = buffers[index];
+            if (buffer == null || buffer.getWidth() != width || buffer.getHeight() != height) {
+                buffer = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                // Drawn pixel for pixel, so a placement matrix maps the frame as the video lays it out.
+                buffer.setDensity(Bitmap.DENSITY_NONE);
+                buffers[index] = buffer;
+            }
+            return buffer;
+        }
+
+        /** Shows [frame] in the copy, placed by [place] where it's a TextureView's, or stretched over it. */
+        void showFrame(Bitmap frame, @Nullable Matrix place) {
+            if (settling) return;
+            if (place != null) {
+                copy.setScaleType(ImageView.ScaleType.MATRIX);
+                copy.setImageMatrix(place);
+            } else {
+                copy.setScaleType(ImageView.ScaleType.FIT_XY);
+            }
+            copy.setImageBitmap(frame);
+            shownBuffer = frame == buffers[0] ? 0 : frame == buffers[1] ? 1 : -1;
+        }
+
+        /** The finger on the kept zoom moved, pinched or lifted before the long-press time. */
+        void cancelHold() {
+            later.removeCallbacks(hold);
+        }
+
+        /**
+         * The finger stayed still on the kept zoom for the long-press time. A video a hold paused
+         * plays again. Otherwise the player Tap to play knows for it pauses, or plays when it was
+         * already paused, and with no player known the copy stops on its frame or goes on again.
+         */
+        private void held() {
+            try {
+                if (!parked || settling || moved || pinched || source == null) return;
+                heldDown = true;
+                layer.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                Object paused = pausedPlayer;
+                if (paused != null) {
+                    pausedPlayer = null;
+                    frozen = false;
+                    players.command(paused, true);
+                    return;
+                }
+                if (frozen) {
+                    frozen = false;
+                    return;
+                }
+                Object player = playerOf(source);
+                if (player == null) {
+                    frozen = true;
+                } else if (players.playing(player)) {
+                    players.command(player, false);
+                    pausedPlayer = player;
+                } else {
+                    players.command(player, true);
+                }
+            } catch (Throwable failure) {
+                HookStatus.threw(FAMILY, "zoom hold", failure);
+            }
+        }
+
+        /** No more frames or holds. */
+        private void stopTicks() {
+            ticking = false;
+            later.removeCallbacks(tick);
+            later.removeCallbacks(hold);
         }
 
         /**
@@ -991,6 +1230,10 @@ public final class PinchZoom {
             downY = event.getY();
             moved = false;
             pinched = false;
+            heldDown = false;
+            cancelHold();
+            // A finger held still on a kept zoom that follows a video pauses it or plays it.
+            if (source != null && parked) later.postDelayed(hold, ViewConfiguration.getLongPressTimeout());
             rebase(event, -1);
         }
 
@@ -1020,6 +1263,17 @@ public final class PinchZoom {
             if (settling) return;
             settling = true;
             unpark();
+            stopTicks();
+            // The video a hold paused plays on once the zoom goes.
+            Object paused = pausedPlayer;
+            pausedPlayer = null;
+            if (paused != null) {
+                try {
+                    players.command(paused, true);
+                } catch (Throwable failure) {
+                    HookStatus.threw(FAMILY, "zoom hold", failure);
+                }
+            }
             scale = 1f;
             if (layer.getParent() == null) {
                 if (zoom == this) zoom = null;
@@ -1043,11 +1297,16 @@ public final class PinchZoom {
         void remove() {
             settling = true;
             unpark();
+            stopTicks();
+            pausedPlayer = null;
             root.removeOnAttachStateChangeListener(detached);
             copy.animate().cancel();
             scrim.animate().cancel();
             if (layer.getParent() == root) root.removeView(layer);
             copy.setImageDrawable(null);
+            buffers[0] = null;
+            buffers[1] = null;
+            shownBuffer = -1;
         }
 
         boolean shown() {

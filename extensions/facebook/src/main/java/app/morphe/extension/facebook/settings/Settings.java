@@ -1553,6 +1553,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_pinch_to_zoom_dim", TRUE, Setting.parent(PINCH_TO_ZOOM));
 
     /**
+     * Pinch to zoom's fifth switch (#220): a video zoomed on a profile or Page keeps playing in the
+     * zoom, its copy redrawn from the video's own surface, and a press and hold on a kept zoom pauses
+     * the video and plays it again. A story stays one frame, held as before. Off, a video zooms on
+     * the frame it showed. Asked as each zoom starts.
+     */
+    public static final BooleanSetting PINCH_TO_ZOOM_LIVE =
+            new BooleanSetting("hushfacebook_pinch_to_zoom_live", FALSE, Setting.parent(PINCH_TO_ZOOM));
+
+    /**
      * Videos, reels and video stories start at the quality in {@link #PLAYBACK_QUALITY}, through
      * the same per-video choice Facebook's own quality menu makes
      * ({@link app.morphe.extension.facebook.media.QualityChoice}). A pick in that menu still wins

@@ -1794,6 +1794,10 @@ With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapp
 Dim around a zoom	Затемнять вокруг увеличения
 # context: that switch's summary; "Pinch to zoom" is the label of the switch above it, so use its translation; a story is the full-screen picture or video someone shares for a day
 With Pinch to zoom on, the screen around a photo or story darkens as you zoom in. Turn it off to keep the rest of the screen as it is.	Если включено масштабирование жестом, экран вокруг фото или Истории темнеет, пока вы увеличиваете. Выключите, чтобы остальная часть экрана оставалась как есть.
+# context: a switch under Pinch to zoom; with it on, a video you zoom keeps moving instead of freezing on the frame it showed
+Keep videos playing while zoomed	Не останавливать видео при увеличении
+# context: that switch's summary; "Pinch to zoom" and "Stay zoomed" are the labels of switches above it, so use their translations; a Page is a business's or public figure's Facebook page; a story is the full-screen picture or video someone shares for a day
+With Pinch to zoom on, a video you zoom on a profile or Page keeps playing. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it. Stories hold still while you zoom.	Если включено масштабирование жестом, видео, которое вы увеличили в профиле или на Странице, продолжает играть. Если также включено «Сохранять масштаб», нажмите и удерживайте увеличенное изображение, чтобы поставить видео на паузу, и еще раз, чтобы воспроизвести его. Истории во время увеличения не двигаются.
 No ads downloaded in advance	Не загружать рекламу заранее
 No ad tracking	Не отслеживать рекламу
 No Facebook ads in other apps	Не показывать рекламу Facebook в других приложениях

@@ -205,6 +205,7 @@ public final class SettingsBackup {
             Settings.PINCH_TO_ZOOM_KEEP,
             Settings.PINCH_TO_ZOOM_DOUBLE_TAP,
             Settings.PINCH_TO_ZOOM_DIM,
+            Settings.PINCH_TO_ZOOM_LIVE,
             Settings.HIDE_SPONSORED_REELS,
             Settings.HIDE_SPONSORED_SEARCH_RESULTS,
             Settings.HIDE_SPONSORED_PROFILE_POSTS,

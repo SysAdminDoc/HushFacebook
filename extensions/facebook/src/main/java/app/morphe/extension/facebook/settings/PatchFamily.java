@@ -107,7 +107,7 @@ public enum PatchFamily {
             Settings.HIDE_STORY_CREDITS, Settings.HIDE_STORY_REPLY_SUGGESTIONS, Settings.STORY_PROGRESS_BAR),
     PINCH_TO_ZOOM(FamilyNames.PINCH_TO_ZOOM, "pinchToZoom", null,
             Settings.PINCH_TO_ZOOM, Settings.PINCH_TO_ZOOM_KEEP, Settings.PINCH_TO_ZOOM_DOUBLE_TAP,
-            Settings.PINCH_TO_ZOOM_DIM),
+            Settings.PINCH_TO_ZOOM_DIM, Settings.PINCH_TO_ZOOM_LIVE),
     SPONSORED_REELS(FamilyNames.SPONSORED_REELS, "sponsoredReels", "Part of the Reels ad blocking",
             Settings.HIDE_SPONSORED_REELS),
     SPONSORED_SEARCH(FamilyNames.SPONSORED_SEARCH, "sponsoredSearch", null,

@@ -1749,6 +1749,10 @@ With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapp
 Dim around a zoom	缩放时调暗周围
 # context: that switch's summary; "Pinch to zoom" is the label of the switch above it, so use its translation; a story is the full-screen picture or video someone shares for a day
 With Pinch to zoom on, the screen around a photo or story darkens as you zoom in. Turn it off to keep the rest of the screen as it is.	开启双指缩放后，放大照片或快拍时，周围的屏幕会随之变暗。关闭后，屏幕其余部分保持原样。
+# context: a switch under Pinch to zoom; with it on, a video you zoom keeps moving instead of freezing on the frame it showed
+Keep videos playing while zoomed	缩放时视频继续播放
+# context: that switch's summary; "Pinch to zoom" and "Stay zoomed" are the labels of switches above it, so use their translations; a Page is a business's or public figure's Facebook page; a story is the full-screen picture or video someone shares for a day
+With Pinch to zoom on, a video you zoom on a profile or Page keeps playing. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it. Stories hold still while you zoom.	开启双指缩放后，在个人主页或公共主页上缩放的视频会继续播放。同时开启保持放大时，长按放大的画面可暂停视频，再次长按继续播放。缩放时快拍会保持静止。
 No ads downloaded in advance	不提前下载广告
 No ad tracking	不进行广告跟踪
 No Facebook ads in other apps	其他应用中没有 Facebook 广告

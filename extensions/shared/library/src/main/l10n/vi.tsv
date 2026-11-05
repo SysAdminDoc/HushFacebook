@@ -1754,6 +1754,10 @@ With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapp
 Dim around a zoom	Làm tối xung quanh khi thu phóng
 # context: that switch's summary; "Pinch to zoom" is the label of the switch above it, so use its translation; a story is the full-screen picture or video someone shares for a day
 With Pinch to zoom on, the screen around a photo or story darkens as you zoom in. Turn it off to keep the rest of the screen as it is.	Khi bật Chụm để thu phóng, màn hình xung quanh ảnh hoặc tin sẽ tối dần khi bạn phóng to. Tắt đi để giữ nguyên phần còn lại của màn hình.
+# context: a switch under Pinch to zoom; with it on, a video you zoom keeps moving instead of freezing on the frame it showed
+Keep videos playing while zoomed	Tiếp tục phát video khi thu phóng
+# context: that switch's summary; "Pinch to zoom" and "Stay zoomed" are the labels of switches above it, so use their translations; a Page is a business's or public figure's Facebook page; a story is the full-screen picture or video someone shares for a day
+With Pinch to zoom on, a video you zoom on a profile or Page keeps playing. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it. Stories hold still while you zoom.	Khi bật Chụm để thu phóng, video bạn thu phóng trên trang cá nhân hoặc Trang vẫn tiếp tục phát. Nếu bật cả Giữ thu phóng, nhấn giữ vùng thu phóng để tạm dừng video, và nhấn giữ lần nữa để phát tiếp. Tin đứng yên khi bạn thu phóng.
 No ads downloaded in advance	Không có quảng cáo tải trước
 No ad tracking	Không theo dõi quảng cáo
 No Facebook ads in other apps	Không có quảng cáo của Facebook trong ứng dụng khác
