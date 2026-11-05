@@ -2478,6 +2478,8 @@ Restore feed sound after opened videos	Restaurar el sonido del feed tras abrir v
 A video you open plays with its sound as usual. Back in the feed, the sound is what it was before you opened it, even after a long watch.	Un vídeo que abres suena como siempre. Al volver al feed, el sonido queda como estaba antes de abrirlo, aunque lo hayas visto mucho rato.
 Hide the Join button on posts	Ocultar el botón Unirte en las publicaciones
 Hides the Join button next to the group's name on posts from groups you haven't joined, and the Join group bar under their videos. A change shows on the posts drawn after it.	Oculta el botón Unirte junto al nombre del grupo en las publicaciones de grupos a los que no te has unido, y la barra Unirte al grupo debajo de sus videos. Un cambio se ve en las publicaciones que se carguen después.
+Hide the X on posts	Ocultar la X en las publicaciones
+Takes the X off the top corner of posts in your feed. The three-dot menu next to it stays. A change shows on the posts drawn after it.	Quita la X de la esquina superior de las publicaciones de tu feed. El menú de tres puntos de al lado se queda. Un cambio se ve en las publicaciones que se carguen después.
 Hide the Reels title	Ocultar el título Reels
 Takes the word Reels off the top of the Reels tab. The buttons beside it stay.	Quita la palabra Reels de la parte de arriba de la pestaña Reels. Los botones de al lado se quedan.
 Videos in search results wait for a tap	Los videos de los resultados de búsqueda esperan un toque

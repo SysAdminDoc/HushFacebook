@@ -8,6 +8,7 @@ Changes in each Hushfacebook version, newest first.
 
 * `Hide the Subscribe button` under Stories takes the Subscribe button off the top of a story. It's off until you turn it on. (#380)
 * When `Stop Story auto-advance` holds a story at its end, `Story play button` turns into a replay button that starts it over. With `Double tap for next story` on and no play button, one tap on the finished story does the same. (#380)
+* `Hide the X on posts` under News feed takes the X off the top corner of posts in your feed. The three-dot menu next to it stays. It's off until you turn it on. (#389)
 
 ### Changed
 

@@ -140,6 +140,42 @@ public final class PostPrompts {
         }
     }
 
+    private static volatile boolean postXLogged;
+
+    /** Counted under the patch's name each time a post's header is answered out of its X. */
+    static final String POST_X_HIDDEN = "Post X kept out";
+
+    /**
+     * The entry the X hook calls, handed the check's answer as an int for the same reason as
+     * {@link #keep(int)}.
+     */
+    public static boolean showPostX(int shown) {
+        return showPostX(shown != 0);
+    }
+
+    /**
+     * The hook, at each return of the check that decides whether a feed post's header gets the X
+     * next to its three-dot menu (#389). The header plugin that draws the X and the header builder
+     * both ask it, so a no leaves the header as Facebook draws it for a post with no X. A yes
+     * becomes a no while the switch is on; everything else is Facebook's answer.
+     */
+    public static boolean showPostX(boolean shown) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!shown || !Utils.settingsReady() || !Settings.HIDE_POST_X.get()) return shown;
+            HookStatus.bound(FAMILY, "post X");
+            HookStatus.counted(FAMILY, POST_X_HIDDEN);
+            if (!postXLogged) {
+                postXLogged = true;
+                Logger.printDebug(() -> "Post prompts: a post header's X was kept out");
+            }
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "post X", failure);
+            return shown;
+        }
+    }
+
     private static volatile boolean joinBarLogged;
 
     /** Counted under the patch's name each time a group's video is drawn without its Join group bar. */

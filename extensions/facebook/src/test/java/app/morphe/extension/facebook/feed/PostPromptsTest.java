@@ -45,6 +45,7 @@ public class PostPromptsTest {
         Settings.HIDE_POST_PROMPTS.resetToDefault();
         Settings.HIDE_POST_FOLLOW_LINK.resetToDefault();
         Settings.HIDE_POST_JOIN_BUTTON.resetToDefault();
+        Settings.HIDE_POST_X.resetToDefault();
         Settings.HIDE_POST_COUNTS.resetToDefault();
         Settings.HIDE_POST_REACTIONS.resetToDefault();
         Settings.HIDE_COMMENT_REACTIONS.resetToDefault();
@@ -118,6 +119,26 @@ public class PostPromptsTest {
         Settings.HIDE_POST_FOLLOW_LINK.save(true);
         Settings.HIDE_POST_JOIN_BUTTON.save(false);
         assertFalse("the follow switch hid the Join group bar", PostPrompts.hideVideoJoinBar());
+    }
+
+    /** The X: starts off, so Facebook's yes stands; on, a yes becomes a no; paused, the yes is back. */
+    @Test
+    public void theXStaysUntilItsSwitchIsOn() {
+        assertFalse("the switch doesn't start off", Settings.HIDE_POST_X.get());
+        assertTrue("the X went with the switch off", PostPrompts.showPostX(1));
+        assertFalse(PostPrompts.showPostX(0));
+
+        Settings.HIDE_POST_FOLLOW_LINK.save(true);
+        Settings.HIDE_POST_JOIN_BUTTON.save(true);
+        assertTrue("another post switch hid the X", PostPrompts.showPostX(true));
+
+        Settings.HIDE_POST_X.save(true);
+        assertFalse("a post kept its X", PostPrompts.showPostX(1));
+        assertFalse("a post without an X got one", PostPrompts.showPostX(false));
+        assertTrue("the status line doesn't count the hidden X", statusLine().contains(PostPrompts.POST_X_HIDDEN + " 1"));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue("a paused Hushfacebook hid the X", PostPrompts.showPostX(true));
     }
 
     @Test

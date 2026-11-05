@@ -168,6 +168,7 @@ public final class SettingsBackup {
             Settings.HIDE_POST_PROMPTS,
             Settings.HIDE_POST_FOLLOW_LINK,
             Settings.HIDE_POST_JOIN_BUTTON,
+            Settings.HIDE_POST_X,
             Settings.HIDE_POST_COUNTS,
             Settings.HIDE_POST_REACTIONS,
             Settings.HIDE_COMMENT_REACTIONS,

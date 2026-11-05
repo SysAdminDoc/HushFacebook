@@ -53,6 +53,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_POST_PROMPTS) return L10n.t("Hide post prompts");
         if (setting == Settings.HIDE_POST_FOLLOW_LINK) return L10n.t("Hide the Follow link on posts");
         if (setting == Settings.HIDE_POST_JOIN_BUTTON) return L10n.t("Hide the Join button on posts");
+        if (setting == Settings.HIDE_POST_X) return L10n.t("Hide the X on posts");
         if (setting == Settings.HIDE_POST_COUNTS) return L10n.t("Hide counts on posts");
         if (setting == Settings.HIDE_POST_REACTIONS) return L10n.t("Hide the reaction preview on posts");
         if (setting == Settings.HIDE_COMMENT_REACTIONS) return L10n.t("Hide the reaction preview on comments");
