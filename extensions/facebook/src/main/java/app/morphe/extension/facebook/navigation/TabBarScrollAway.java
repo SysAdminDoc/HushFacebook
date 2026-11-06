@@ -162,15 +162,19 @@ public final class TabBarScrollAway {
      * below the bar and the video's letterbox read as a black strip. While the main screen shows the
      * Reels tab the answer is 0, so the reel fills the screen behind the bar. Off the feed alone
      * isn't enough, since Facebook turns scroll-away off on Notifications, Groups and Feeds too, and
-     * those need the padding or the bar covers their first rows (#328). Anywhere else, with the top
-     * bar off, with the bottom bar on, paused, before the settings are ready or on a failure, it's
-     * Facebook's own number.
+     * those need the padding or the bar covers their first rows (#328). With Reels first on the bar,
+     * Facebook treats it as its feed and leaves scroll-away on there, so the title bar slides off as
+     * the reels move and a pad by its height left a black band over every reel after the first
+     * (#390). There the answer is 0 too, unless Keep the top bar on screen holds the bar. Anywhere
+     * else, with the top bar off, with the bottom bar on, paused, before the settings are ready or on
+     * a failure, it's Facebook's own number.
      */
     public static int pagesTop(int padding) {
         try {
-            if (padding == 0 || !offTheFeed) return padding;
+            if (padding == 0) return padding;
             HookStatus.invoked(FAMILY);
             if (!Utils.settingsReady() || Settings.BOTTOM_TAB_BAR.get() || !Settings.TOP_TAB_BAR.get()) return padding;
+            if (!offTheFeed && Settings.KEEP_TOP_BAR.get()) return padding;
             if (!onReelsTab()) return padding;
             HookStatus.bound(FAMILY, "reel under the top bar");
             HookStatus.counted(FAMILY, REEL_UNDER_BAR);

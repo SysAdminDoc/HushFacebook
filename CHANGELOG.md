@@ -26,6 +26,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* With the tab bar at the top and Reels first on it, a black band no longer sits above every reel after the first. With Reels first, Facebook treats it like Home and slides its title bar away as you swipe, but the reels stayed pushed down by the bar's height. Now the reel runs under the bars, the way it already did with Reels anywhere else on the bar. With `Keep the top bar on screen` on, the title bar stays and the reel still starts below it. (#390)
 * With `Only the first reel waits` on, a reel you open from a tile in the feed now waits for your tap too. Before, the tap on the tile counted as playing it, so the first reel never waited on Facebook builds where Reels opens from the feed instead of a tab. With just `Tap to play` on, tapping a tile still plays the reel it opens. (#91)
 * A diagnostic report saved after `Clear diagnostic data` has the Marketplace response shapes and video format lines again. Both were written once a run, so anything Facebook loaded before the clear was missing from the new report, the same problem the search screen's lines had.
 * `Hide song and effect credits` now also takes the song and effect pills off the row under the poster's name. Most stories put the song there rather than on the line under the name, so the switch used to miss it. (#380)

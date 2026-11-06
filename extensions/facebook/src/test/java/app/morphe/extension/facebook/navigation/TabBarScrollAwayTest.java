@@ -410,15 +410,37 @@ public class TabBarScrollAwayTest {
     @Test
     public void theReelRunsUnderATopBarOnlyOnTheReelsTab() {
         Settings.TOP_TAB_BAR.save(true);
-        onTab(new WatchTab());
+        onTab(new FeedTab());
         assertEquals("the feed keeps its padding", 150, TabBarScrollAway.pagesTop(150));
+        onTab(new WatchTab());
         TabBarScrollAway.topBarsLetGo();
         assertEquals("on the Reels tab the top bar's padding is dropped", 0, TabBarScrollAway.pagesTop(150));
         assertEquals("a zero stays zero", 0, TabBarScrollAway.pagesTop(0));
         String line = statusLine();
         assertTrue(line, line != null && line.contains(TabBarScrollAway.REEL_UNDER_BAR + " 1"));
         TabBarScrollAway.topBarsTakenBack();
+        onTab(new FeedTab());
         assertEquals("back on the feed", 150, TabBarScrollAway.pagesTop(150));
+    }
+
+    @Test
+    public void reelsFirstOnTheBarRunsUnderTheTopBarUnlessTheBarIsKept() {
+        Settings.TOP_TAB_BAR.save(true);
+        // Reels first on the bar: Facebook treats it as its feed, so scroll-away stays on there (#390).
+        onTab(new WatchTab());
+        assertEquals("the title bar slides off the reels, so no band is left where it was", 0,
+                TabBarScrollAway.pagesTop(150));
+        Settings.KEEP_TOP_BAR.save(true);
+        assertEquals("a kept title bar stays, so the reel starts below it", 150, TabBarScrollAway.pagesTop(150));
+        TabBarScrollAway.topBarsLetGo();
+        assertEquals("Reels further along the bar, where Facebook hides the title bar itself", 0,
+                TabBarScrollAway.pagesTop(150));
+        TabBarScrollAway.topBarsTakenBack();
+        Settings.KEEP_TOP_BAR.save(false);
+        onTab(new FeedTab());
+        assertEquals("Home with the title bar free to slide keeps its padding", 150, TabBarScrollAway.pagesTop(150));
+        onTab(null);
+        assertEquals("a main screen with no tab yet keeps it too", 150, TabBarScrollAway.pagesTop(150));
     }
 
     @Test
