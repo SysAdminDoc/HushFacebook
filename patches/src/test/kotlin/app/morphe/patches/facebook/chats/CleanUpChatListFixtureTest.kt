@@ -250,22 +250,36 @@ class CleanUpChatListFixtureTest {
                 val renderHooked = patched(context, section.method).body()
                 val drawn = "$name ${section.method.definingClass}->${section.method.name}"
                 val shape = { code: List<Instruction> -> code.map { it.opcode to it.target() } }
-                assertEquals("$drawn: three instructions in", renderStock.size + 3, renderHooked.size)
-                assertEquals("$drawn: the hook call", Opcode.INVOKE_STATIC, renderHooked[0].opcode)
-                assertEquals("$drawn: the hook", HIDES_NOTES_ROW, renderHooked[0].target())
-                assertEquals("$drawn: no arguments", 0, (renderHooked[0] as FiveRegisterInstruction).registerCount)
-                assertEquals("$drawn: the answer", Opcode.MOVE_RESULT, renderHooked[1].opcode)
-                assertEquals("$drawn: lands in v0", 0, (renderHooked[1] as OneRegisterInstruction).registerA)
-                assertEquals("$drawn: a yes jumps", Opcode.IF_NEZ, renderHooked[2].opcode)
-                assertEquals("$drawn: tests v0", 0, (renderHooked[2] as OneRegisterInstruction).registerA)
-                assertEquals("$drawn: to the render's own empty way out", section.exit + 3,
-                    (renderHooked[2] as BuilderOffsetInstruction).target.location.index)
+                // Dating's Matches screen draws its new matches with this section (#337): the render compares
+                // its inbox's style to Dating's, and the hook hands that inbox over so the row stays there.
+                val owner = sectionOwners.single { it.type == section.method.definingClass }
+                val inbox = notesSectionInbox(owner)
+                assertTrue("$name: the section keeps one ThreadListParams", inbox != null)
+                assertTrue("$drawn: the render tells Dating's inbox by its style",
+                    holdsString(section.method, "mib_style_gemstone"))
+                assertEquals("$drawn: five instructions in", renderStock.size + 5, renderHooked.size)
+                assertEquals("$drawn: this copied down", Opcode.MOVE_OBJECT_FROM16, renderHooked[0].opcode)
+                assertEquals("$drawn: into v0", 0, (renderHooked[0] as TwoRegisterInstruction).registerA)
+                assertEquals("$drawn: from p0", locals(section.method), (renderHooked[0] as TwoRegisterInstruction).registerB)
+                assertEquals("$drawn: the inbox read", Opcode.IGET_OBJECT, renderHooked[1].opcode)
+                assertEquals("$drawn: the section's params", "${inbox!!.definingClass}->${inbox.name}:${inbox.type}", renderHooked[1].target())
+                assertEquals("$drawn: the hook call", Opcode.INVOKE_STATIC, renderHooked[2].opcode)
+                assertEquals("$drawn: the hook", HIDES_NOTES_ROW, renderHooked[2].target())
+                val call = renderHooked[2] as FiveRegisterInstruction
+                assertEquals("$drawn: the params handed over", 1, call.registerCount)
+                assertEquals("$drawn: from v0", 0, call.registerC)
+                assertEquals("$drawn: the answer", Opcode.MOVE_RESULT, renderHooked[3].opcode)
+                assertEquals("$drawn: lands in v0", 0, (renderHooked[3] as OneRegisterInstruction).registerA)
+                assertEquals("$drawn: a yes jumps", Opcode.IF_NEZ, renderHooked[4].opcode)
+                assertEquals("$drawn: tests v0", 0, (renderHooked[4] as OneRegisterInstruction).registerA)
+                assertEquals("$drawn: to the render's own empty way out", section.exit + 5,
+                    (renderHooked[4] as BuilderOffsetInstruction).target.location.index)
                 assertTrue("$drawn: which builds an object, reads its result and returns it",
-                    emptyExit(renderHooked, section.exit + 3))
-                assertEquals("$drawn: a no runs the stock render from its first instruction", shape(renderStock), shape(renderHooked.drop(3)))
+                    emptyExit(renderHooked, section.exit + 5))
+                assertEquals("$drawn: a no runs the stock render from its first instruction", shape(renderStock), shape(renderHooked.drop(5)))
                 assertEquals(
                     "$drawn: Facebook's branches land where they did",
-                    branches(renderStock).map { (from, to) -> from + 3 to to + 3 },
+                    branches(renderStock).map { (from, to) -> from + 5 to to + 5 },
                     branches(renderHooked).drop(1),
                 )
 

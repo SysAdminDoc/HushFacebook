@@ -19,6 +19,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 import java.util.AbstractList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -97,11 +98,11 @@ public class ChatListTest {
 
     @Test
     public void withTheNotesSwitchOnTheWholeRowGoes() {
-        assertFalse("off, Chats draws its own row", ChatList.hidesNotesRow());
+        assertFalse("off, Chats draws its own row", ChatList.hidesNotesRow(CHATS));
         assertEquals(ChatList.NOTES_ROW_ROUTE + ": 1 lists, 1 items, 0 removed", counterLine(ChatList.NOTES_ROW_ROUTE));
 
         Settings.HIDE_CHAT_NOTES_TRAY.save(true);
-        assertTrue("on, the section hands back its own empty result", ChatList.hidesNotesRow());
+        assertTrue("on, the section hands back its own empty result", ChatList.hidesNotesRow(CHATS));
         assertEquals(ChatList.NOTES_ROW_ROUTE + ": 2 lists, 2 items, 1 removed. Last reason: " + ChatList.NOTES_HIDDEN
                 + ". Removed: " + ChatList.NOTES_HIDDEN + " 1", counterLine(ChatList.NOTES_ROW_ROUTE));
         // The tiles' own count is separate from the row's.
@@ -111,23 +112,79 @@ public class ChatListTest {
         Settings.HIDE_CHAT_NOTES_TRAY.save(false);
         Settings.HIDE_CHAT_PROMOTIONS.save(true);
         Settings.HIDE_CHAT_META_AI_BUTTON.save(true);
-        assertFalse(ChatList.hidesNotesRow());
+        assertFalse(ChatList.hidesNotesRow(CHATS));
     }
 
     @Test
     public void pausedOrNotReadyTheNotesRowIsFacebooks() {
         Settings.HIDE_CHAT_NOTES_TRAY.save(true);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
-        assertFalse(ChatList.hidesNotesRow());
+        assertFalse(ChatList.hidesNotesRow(CHATS));
         PauseForTests.pause(HushfacebookPause.Reason.CRASH_LOOP);
-        assertFalse(ChatList.hidesNotesRow());
+        assertFalse(ChatList.hidesNotesRow(CHATS));
         PauseForTests.resume();
         boolean[] hidden = {true, true};
-        SettingsContextRule.withoutContext(() -> hidden[0] = ChatList.hidesNotesRow());
-        SettingsContextRule.beforeThePauseIsDecided(() -> hidden[1] = ChatList.hidesNotesRow());
+        SettingsContextRule.withoutContext(() -> hidden[0] = ChatList.hidesNotesRow(CHATS));
+        SettingsContextRule.beforeThePauseIsDecided(() -> hidden[1] = ChatList.hidesNotesRow(CHATS));
         assertFalse(hidden[0]);
         assertFalse(hidden[1]);
-        assertTrue(ChatList.hidesNotesRow());
+        assertTrue(ChatList.hidesNotesRow(CHATS));
+    }
+
+    /** Stands in for Facebook's ThreadListParams: an inbox with its style among other text fields. */
+    static final class InboxForTests {
+        final String surface;
+        final String style;
+        final long id = 7;
+
+        InboxForTests(String surface, String style) {
+            this.surface = surface;
+            this.style = style;
+        }
+    }
+
+    /** Chats' inbox, and Dating's Matches screen, which Facebook gives Dating's own style. */
+    static final InboxForTests CHATS = new InboxForTests("inbox", "mib_style_default");
+    static final InboxForTests DATING = new InboxForTests("inbox", "mib_style_gemstone");
+
+    /** Stands in for Facebook's tile: a Dating match or conversation in fields typed from Dating's package, often empty. */
+    static final class TileForTests {
+        final String name;
+        final app.morphe.extension.facebook.chats.gemstone.NewMatchForTests match;
+
+        TileForTests(String name, app.morphe.extension.facebook.chats.gemstone.NewMatchForTests match) {
+            this.name = name;
+            this.match = match;
+        }
+    }
+
+    /** #337: Dating's Matches screen draws its new matches with the notes section, and keeps them with the switch on. */
+    @Test
+    public void datingsNewMatchesRowStaysWithTheNotesSwitchOn() {
+        Settings.HIDE_CHAT_NOTES_TRAY.save(true);
+        assertFalse("Dating's inbox keeps its row", ChatList.hidesNotesRow(DATING));
+        assertTrue("Chats' row still goes", ChatList.hidesNotesRow(CHATS));
+        assertTrue("an inbox the patch couldn't read is taken as Chats", ChatList.hidesNotesRow(null));
+        assertEquals(ChatList.NOTES_ROW_ROUTE + ": 3 lists, 3 items, 2 removed. Last reason: " + ChatList.NOTES_HIDDEN
+                + ". Removed: " + ChatList.NOTES_HIDDEN + " 2. Kinds: " + ChatList.DATING_KEPT + " 1",
+                counterLine(ChatList.NOTES_ROW_ROUTE));
+        List<String> missing = HookStatus.missing(FamilyNames.CHAT_LIST);
+        assertTrue(missing.toString(), missing.isEmpty());
+    }
+
+    @Test
+    public void datingsNewMatchTilesStayWithTheNotesSwitchOn() {
+        Settings.HIDE_CHAT_NOTES_TRAY.save(true);
+        List<TileForTests> matches = Arrays.asList(
+                new TileForTests("a new match", new app.morphe.extension.facebook.chats.gemstone.NewMatchForTests()),
+                new TileForTests("another", null));
+        assertSame(matches, ChatList.notesTiles(matches));
+        // Facebook's tile with its Dating fields empty is an ordinary tile, and goes.
+        List<TileForTests> plain = Arrays.asList(new TileForTests("a friend note", null), new TileForTests("active", null));
+        assertEquals(Collections.emptyList(), ChatList.notesTiles(plain));
+        assertEquals(ChatList.NOTES_ROUTE + ": 2 lists, 4 items, 2 removed. Last reason: " + ChatList.NOTES_HIDDEN
+                + ". Removed: " + ChatList.NOTES_HIDDEN + " 2. Kinds: " + ChatList.DATING_KEPT + " 1",
+                counterLine(ChatList.NOTES_ROUTE));
     }
 
     @Test

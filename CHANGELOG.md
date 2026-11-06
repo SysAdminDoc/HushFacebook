@@ -36,6 +36,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* `Hide the notes and active now row` leaves Dating's new matches alone. Dating's Matches screen is the same inbox as Chats, and its row of new matches is drawn by the same section as the notes row, so the switch emptied it too. Pausing Hushfacebook was the only way to get them back. (#337)
 * `Hide reel interest prompts` also takes away the "To what extent does this video match your interests?" survey Facebook puts between reels. It's a card of its own, not the prompt laid over a reel, so it kept showing up. (#405)
 * With `View stories anonymously` on, someone's stories that you watched partway open at the first one you haven't watched, even after Facebook restarts. Opening them from their profile picture or from the tray used to start over at the first story. (#218)
 * `Pinch to zoom` on a video on a profile or Page zooms just the video now. Facebook draws those videos taller than the post that shows them and lets the post cut off the rest, and the zoom used to copy all of it, so bits of the posts above and below came along. (#220)

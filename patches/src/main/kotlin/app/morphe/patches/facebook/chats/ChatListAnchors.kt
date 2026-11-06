@@ -454,6 +454,15 @@ internal fun notesRowExit(method: Method): NotesRowExit? {
 private val PAYLOAD_JUMPS = setOf(Opcode.PACKED_SWITCH, Opcode.SPARSE_SWITCH, Opcode.FILL_ARRAY_DATA)
 
 /**
+ * The notes section's field holding the ThreadListParams of the inbox it draws for, the one
+ * instance field of [owner] of that type, or null. Dating's Matches screen draws its new matches
+ * with the same section under Dating's own inbox style (585: `A09`, whose style the render compares
+ * to "mib_style_gemstone"), so the hook reads it to leave that row alone (#337).
+ */
+internal fun notesSectionInbox(owner: ClassDef): FieldReference? =
+    owner.fields.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == THREAD_LIST_PARAMS }.singleOrNull()
+
+/**
  * Whether [at] starts a new object of no arguments whose field of type [returns] is read and
  * returned. The object is made with `new-instance` and its `<init>()`, or (585, read 2026-10-29,
  * arm64 `LX/0Duf;->A0a()` in `LX/0G5V;->A0o`) by a static factory of no arguments Redex outlined

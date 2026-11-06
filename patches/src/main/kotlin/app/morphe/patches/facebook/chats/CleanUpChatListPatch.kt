@@ -24,11 +24,12 @@ import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.cloneMutableAndPreserveParameters
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 private const val CHAT_LIST = "$EXTENSION_PACKAGE/chats/ChatList;"
 internal const val NOTES_TILES_HOOK = "$CHAT_LIST->notesTiles(Ljava/util/List;)Ljava/util/List;"
-internal const val HIDES_NOTES_ROW = "$CHAT_LIST->hidesNotesRow()Z"
+internal const val HIDES_NOTES_ROW = "$CHAT_LIST->hidesNotesRow(Ljava/lang/Object;)Z"
 internal const val HIDES_PROMOTION = "$CHAT_LIST->hidesPromotion()Z"
 internal const val META_AI_BUTTON_HOOK = "$CHAT_LIST->metaAiButton(Ljava/lang/Object;)Ljava/lang/Object;"
 internal const val PICKER_META_AI_HOOK = "$CHAT_LIST->showsSearchMetaAiButton(Z)Z"
@@ -68,6 +69,10 @@ val cleanUpChatListPatch = bytecodePatch(
         val section = sections.singleOrNull() ?: throw PatchException(
             "$CHAT_LIST_PATCH: expected one render loading \"$NOTES_SECTION\" and \"$NOTES_SECTION_KEY\" with an " +
                 "empty way out, found ${sections.size}",
+        )
+        val inbox = classDefByOrNull(section.method.definingClass)?.let(::notesSectionInbox) ?: throw PatchException(
+            "$CHAT_LIST_PATCH: expected the notes section ${section.method.definingClass} to keep one " +
+                "ThreadListParams, so Dating's row can be told apart, found none or several",
         )
         val questions = PROMOTION_TAGS.map { tag ->
             val found = classDefByStrings(tag, StringComparisonType.EQUALS).mapNotNull { bannerQuestion(it, tag) }
@@ -119,7 +124,7 @@ val cleanUpChatListPatch = bytecodePatch(
             it.name == gate.method.name && it.parameterTypes.map(Any::toString) == gate.method.parameterTypes.map(Any::toString)
         }
         tray.emptyTilesWhileHidden(store.store, store.list)
-        render.leaveNotesRowEmptyWhileHidden(section.exit)
+        render.leaveNotesRowEmptyWhileHidden(section.exit, inbox)
         row.dropMetaAiButtonWhileHidden(button)
         picker.lowerMetaAiFlagWhileHidden(gate)
         // 577's diode question has no local at all (it works in its parameter registers), so a
@@ -154,16 +159,21 @@ internal fun MutableMethod.emptyTilesWhileHidden(store: Int, list: Int) {
 }
 
 /**
- * First thing in the notes row's render: ask the extension, and while the switch says the row goes,
- * jump to the render's own empty way out at [exit], so the row isn't drawn at all, your own note
- * tile included. Otherwise Facebook's render runs from its first instruction.
+ * First thing in the notes row's render: hand the extension the section's [inbox] params, and while
+ * the switch says the row goes, jump to the render's own empty way out at [exit], so the row isn't
+ * drawn at all, your own note tile included. Otherwise Facebook's render runs from its first
+ * instruction. The params tell Dating's Matches screen, which draws its new matches with this
+ * section, from Chats. `this` is copied down first, since a big render's `p0` sits past `iget-object`'s
+ * reach.
  */
-internal fun MutableMethod.leaveNotesRowEmptyWhileHidden(exit: Int) {
+internal fun MutableMethod.leaveNotesRowEmptyWhileHidden(exit: Int, inbox: FieldReference) {
     requireLocals(CHAT_LIST_PATCH, 1)
     addInstructionsWithLabels(
         0,
         """
-            invoke-static { }, $HIDES_NOTES_ROW
+            move-object/from16 v0, p0
+            iget-object v0, v0, ${inbox.definingClass}->${inbox.name}:${inbox.type}
+            invoke-static { v0 }, $HIDES_NOTES_ROW
             move-result v0
             if-nez v0, :empty
         """,

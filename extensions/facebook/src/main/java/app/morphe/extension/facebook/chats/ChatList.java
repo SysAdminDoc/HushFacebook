@@ -6,8 +6,12 @@ package app.morphe.extension.facebook.chats;
 
 import androidx.annotation.Nullable;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -22,6 +26,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * active friends above the chats stores its tiles, and hands back no tiles while Hide the notes and active now row
  * is on. {@link #hidesNotesRow} sits first in the section that draws that row, and answers yes with the same
  * switch, which the patch turns into the section's own empty result, so your own note tile goes too.
+ * Dating's Matches screen is the same inbox drawn with Dating's style, and its row of new matches is
+ * that section and state, so both leave Dating's row alone.
  * {@link #hidesPromotion} sits first in the show question of each promotion banner at the
  * top of Chats, and answers yes while Hide chat list promotions is on, which the patch turns into
  * a no for Facebook. {@link #metaAiButton} takes the Meta AI button the search row just built and
@@ -47,7 +53,8 @@ public final class ChatList {
 
     /**
      * Injection point, right before the tile state stores its list. The tiles Facebook built, or
-     * an empty list while the notes switch is on. Never throws.
+     * an empty list while the notes switch is on. Tiles from Dating stay: its Matches screen is the
+     * same inbox, and its row of new matches goes through this state too (#337). Never throws.
      */
     @Nullable
     public static List<?> notesTiles(@Nullable List<?> tiles) {
@@ -56,6 +63,10 @@ public final class ChatList {
             if (tiles == null || tiles.isEmpty()) return tiles;
             FeedFilterCounters.sawList(NOTES_ROUTE, tiles.size());
             if (!Utils.settingsReady() || !Settings.HIDE_CHAT_NOTES_TRAY.get()) return tiles;
+            if (holdsDatingTile(tiles)) {
+                FeedFilterCounters.sawKind(NOTES_ROUTE, DATING_KEPT);
+                return tiles;
+            }
             FeedFilterCounters.removed(NOTES_ROUTE, tiles.size(), NOTES_HIDDEN);
             return Collections.emptyList();
         } catch (Throwable failure) {
@@ -66,19 +77,78 @@ public final class ChatList {
 
     /**
      * Injection point, first thing in the render of the section that draws the notes row. True has
-     * the section hand back its own empty result, so the row isn't drawn and leaves no gap. Never throws.
+     * the section hand back its own empty result, so the row isn't drawn and leaves no gap. Dating's
+     * Matches screen draws its new matches with the same section, so a section whose inbox has
+     * Dating's style keeps its row (#337). Never throws.
+     *
+     * @param params the section's ThreadListParams, the inbox it draws for, or null.
      */
-    public static boolean hidesNotesRow() {
+    public static boolean hidesNotesRow(@Nullable Object params) {
         try {
             HookStatus.invoked(FamilyNames.CHAT_LIST);
             FeedFilterCounters.sawList(NOTES_ROW_ROUTE, 1);
             if (!Utils.settingsReady() || !Settings.HIDE_CHAT_NOTES_TRAY.get()) return false;
+            if (datingInbox(params)) {
+                FeedFilterCounters.sawKind(NOTES_ROW_ROUTE, DATING_KEPT);
+                return false;
+            }
             FeedFilterCounters.removed(NOTES_ROW_ROUTE, 1, NOTES_HIDDEN);
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.CHAT_LIST, "notes row", failure);
             return false;
         }
+    }
+
+    /** What a row left alone because it's Dating's is counted under. */
+    static final String DATING_KEPT = "Dating new matches kept";
+
+    /** The inbox style Facebook gives Dating's Matches screen, the same text its own section compares. */
+    static final String DATING_STYLE = "mib_style_gemstone";
+
+    /** Dating's models live in a package with this in its name, Facebook's own name for Dating. */
+    static final String DATING_PACKAGE = ".gemstone.";
+
+    /** Per class, the fields to read: the String fields of an inbox's params, the Dating-typed fields of a tile. */
+    private static final ConcurrentHashMap<Class<?>, Field[]> STYLE_FIELDS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Class<?>, Field[]> DATING_FIELDS = new ConcurrentHashMap<>();
+
+    /** Whether [params], an inbox's ThreadListParams, has Dating's style in one of its text fields. */
+    static boolean datingInbox(@Nullable Object params) throws IllegalAccessException {
+        if (params == null) return false;
+        for (Field field : fields(STYLE_FIELDS, params.getClass(), false)) {
+            if (DATING_STYLE.equals(field.get(params))) return true;
+        }
+        return false;
+    }
+
+    /** Whether one of [tiles] carries a Dating match or conversation in a field typed from Dating's package. */
+    static boolean holdsDatingTile(List<?> tiles) throws IllegalAccessException {
+        for (Object tile : tiles) {
+            if (tile == null) continue;
+            for (Field field : fields(DATING_FIELDS, tile.getClass(), true)) {
+                if (field.get(tile) != null) return true;
+            }
+        }
+        return false;
+    }
+
+    private static Field[] fields(ConcurrentHashMap<Class<?>, Field[]> cache, Class<?> type, boolean dating) {
+        Field[] known = cache.get(type);
+        if (known != null) return known;
+        List<Field> found = new ArrayList<>();
+        for (Field field : type.getDeclaredFields()) {
+            if (Modifier.isStatic(field.getModifiers())) continue;
+            boolean wanted = dating
+                    ? field.getType().getName().contains(DATING_PACKAGE)
+                    : field.getType() == String.class;
+            if (!wanted) continue;
+            field.setAccessible(true);
+            found.add(field);
+        }
+        Field[] read = found.toArray(new Field[0]);
+        cache.put(type, read);
+        return read;
     }
 
     /**
