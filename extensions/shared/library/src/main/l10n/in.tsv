@@ -1930,6 +1930,10 @@ Takes the phone's status bar, with the time and battery, off Facebook's main scr
 Open feed videos on their own	Buka video feed tersendiri
 # context: summary of that switch; the Reels tab itself still scrolls normally
 A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. The Reels tab keeps scrolling. Off by default, since it hasn't been tried on a real account yet.	Video yang kamu ketuk di feed terbuka sendiri dalam layar penuh, tanpa reel untuk digeser setelahnya. Tab Reels tetap bisa digulir. Mati secara default, karena belum dicoba di akun sungguhan.
+# context: switch title under Reels and Watch; on, tapping Watch again when a video in the news feed ends plays it again in the feed instead of opening it in the Reels viewer
+Replay feed videos in place	Putar ulang video feed di tempat
+# context: summary of that switch; Watch again is Facebook's own button shown when a feed video ends, so use Facebook's wording in your language if you know it
+Watch again at the end of a feed video plays it again right there, instead of opening it in Reels.	“Tonton lagi” di akhir video feed memutarnya lagi di situ juga, bukan membukanya di Reels.
 Hide the new comments pop-up	Sembunyikan pop-up komentar baru
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	Gelembung “komentar baru” tidak muncul lagi saat kamu membaca komentar. Komentar baru tetap tampil di daftar.

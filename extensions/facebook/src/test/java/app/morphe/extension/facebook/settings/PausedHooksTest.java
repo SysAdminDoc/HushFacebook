@@ -176,6 +176,7 @@ import app.morphe.extension.facebook.reels.ReelMidCardsForTests;
 import app.morphe.extension.facebook.reels.ReelPrompts;
 import app.morphe.extension.facebook.reels.SeenStateSendForTests;
 import app.morphe.extension.facebook.reels.TapShowsControls;
+import app.morphe.extension.facebook.reels.WatchAgain;
 import app.morphe.extension.facebook.search.MetaAiSearchForTests;
 import app.morphe.extension.facebook.search.PreSearchSectionsForTests;
 import app.morphe.extension.facebook.search.SearchDateRange;
@@ -750,7 +751,9 @@ public class PausedHooksTest {
                     return FeedVideoAlone.seedOnly(new Object());
                 },
                 // And that viewer's list shows no loading page after the video.
-                FeedVideoAloneForTests::dropsTheLoadingPage));
+                FeedVideoAloneForTests::dropsTheLoadingPage,
+                // Watch again at the end of a feed video replays it in place instead of opening Reels (#403).
+                () -> !WatchAgain.opensElsewhere(true)));
         // A reel that would get the interest prompt is answered as one that doesn't.
         probes.put(PatchFamily.REEL_PROMPTS, Collections.singletonList(() -> !ReelPrompts.keep(true)));
         // The Reels batcher's send of the reels you watched never reaches its executor.

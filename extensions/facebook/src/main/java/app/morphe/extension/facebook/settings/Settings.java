@@ -948,6 +948,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_feed_videos_alone", FALSE);
 
     /**
+     * Watch again at the end of a feed video plays it again where it is instead of opening it in
+     * the Reels viewer ({@link app.morphe.extension.facebook.reels.WatchAgain}, #403). Off by
+     * default. A change shows on the next tap.
+     */
+    public static final BooleanSetting WATCH_AGAIN_IN_PLACE =
+            new BooleanSetting("hushfacebook_watch_again_in_place", FALSE);
+
+    /**
      * The batches of watched reels the Reels viewer sends as FbShortsSeenStateMutation: only their
      * ids, the record Facebook ranks the Reels feed with, which nobody else sees. Held back, reels
      * already watched may come back in the feed.

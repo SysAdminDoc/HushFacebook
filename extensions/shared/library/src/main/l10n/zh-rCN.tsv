@@ -1925,6 +1925,10 @@ Takes the phone's status bar, with the time and battery, off Facebook's main scr
 Open feed videos on their own	单独打开动态中的视频
 # context: summary of that switch; the Reels tab itself still scrolls normally
 A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. The Reels tab keeps scrolling. Off by default, since it hasn't been tried on a real account yet.	在动态中点按的视频会单独全屏打开，之后没有可继续滑动的 Reels。Reels 标签页仍可正常滚动。默认关闭，因为尚未在真实账号上试过。
+# context: switch title under Reels and Watch; on, tapping Watch again when a video in the news feed ends plays it again in the feed instead of opening it in the Reels viewer
+Replay feed videos in place	在动态中原地重播视频
+# context: summary of that switch; Watch again is Facebook's own button shown when a feed video ends, so use Facebook's wording in your language if you know it
+Watch again at the end of a feed video plays it again right there, instead of opening it in Reels.	动态中的视频结束时点按“再看一遍”，会在原处重新播放，而不是在 Reels 中打开。
 Hide the new comments pop-up	隐藏新评论弹窗
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	阅读评论时不再弹出“新评论”气泡。新评论仍会显示在列表中。

@@ -266,6 +266,7 @@ public final class SettingsBackup {
             Settings.HIDE_UP_NEXT,
             Settings.HIDE_REEL_FULLSCREEN_PILL,
             Settings.FEED_VIDEOS_ALONE,
+            Settings.WATCH_AGAIN_IN_PLACE,
             Settings.PLAY_FEED_REELS_WHOLE,
             Settings.DONT_SEND_REEL_WATCH_HISTORY,
             Settings.NEWEST_REELS_FIRST,

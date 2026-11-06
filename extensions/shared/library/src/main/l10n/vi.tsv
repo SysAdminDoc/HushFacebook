@@ -1930,6 +1930,10 @@ Takes the phone's status bar, with the time and battery, off Facebook's main scr
 Open feed videos on their own	Mở video trong bảng tin riêng lẻ
 # context: summary of that switch; the Reels tab itself still scrolls normally
 A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. The Reels tab keeps scrolling. Off by default, since it hasn't been tried on a real account yet.	Video bạn chạm vào trong bảng tin sẽ mở riêng ở chế độ toàn màn hình, không có reels để vuốt tiếp sau đó. Tab Reels vẫn cuộn như bình thường. Mặc định tắt vì chưa được thử trên tài khoản thật.
+# context: switch title under Reels and Watch; on, tapping Watch again when a video in the news feed ends plays it again in the feed instead of opening it in the Reels viewer
+Replay feed videos in place	Phát lại video trong bảng tin ngay tại chỗ
+# context: summary of that switch; Watch again is Facebook's own button shown when a feed video ends, so use Facebook's wording in your language if you know it
+Watch again at the end of a feed video plays it again right there, instead of opening it in Reels.	"Xem lại" ở cuối video trong bảng tin sẽ phát lại video ngay tại đó, thay vì mở nó trong Reels.
 Hide the new comments pop-up	Ẩn bong bóng bình luận mới
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	Bong bóng "bình luận mới" không còn bật lên khi bạn đọc bình luận. Bình luận mới vẫn hiện trong danh sách.
