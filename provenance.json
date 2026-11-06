@@ -867,6 +867,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostFollowText.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #396: the Follow a collab post or a partnership ad adds after its second name. In Facebook 585 CollabFollowTitleTextPlugin and FBPADualHeaderFollowTextPlugin (kept class names) each build that \" · Follow\" text themselves and hand it to the title segment's (click, CharSequence) constructor as their last step, outside the follow check Hide the Follow link on posts already answers. The patch hands the text to the extension right before that constructor, and the extension answers an empty text of the same kind while the switch is on, so the header has no dot, no word and nothing to tap."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostJoinButton.kt"
       ],
       "origin": "original",

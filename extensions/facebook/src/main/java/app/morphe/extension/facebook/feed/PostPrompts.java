@@ -111,6 +111,29 @@ public final class PostPrompts {
         }
     }
 
+    /**
+     * The hook in the two title plugins that build their own " · Follow" text, a collab post's and a
+     * partnership ad's second name (#396), handed that text just before the title segment takes it.
+     * While the switch is on the segment gets an empty text of the same kind, so the header carries
+     * no dot, no word and nothing to tap. Everything else gets Facebook's text back.
+     */
+    public static CharSequence followText(CharSequence text) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (text == null || text.length() == 0 || !Utils.settingsReady() || !Settings.HIDE_POST_FOLLOW_LINK.get()) return text;
+            HookStatus.bound(FAMILY, "follow text");
+            HookStatus.counted(FAMILY, FOLLOW_HIDDEN);
+            if (!followLogged) {
+                followLogged = true;
+                Logger.printDebug(() -> "Post prompts: a post header's Follow link was kept out");
+            }
+            return text.subSequence(0, 0);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "follow text", failure);
+            return text;
+        }
+    }
+
     private static volatile boolean joinLogged;
 
     /** Counted under the patch's name each time a header is built without its Join button. */

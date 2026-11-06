@@ -56,7 +56,8 @@ internal const val STORY_MODEL = "Lcom/facebook/graphql/model/GraphQLStory;"
  * taking the story and answering Z. The header's plugin picker asks it to decide whether the plugin
  * is needed, and the title builder asks it again before appending the text, so a no from the check
  * leaves the title as a header without that plugin builds it. Its answers go through the extension
- * the same way.
+ * the same way. A collab post and a partnership ad build their own " · Follow" text in two other
+ * plugins, and the same switch empties that text (PostFollowText.kt, #396).
  *
  * The third switch, also off by default, takes the numbers off a post's Like, Comment and Share
  * buttons by having their one text builder give its zero answer (PostCounts.kt, #180). The fourth,
@@ -95,6 +96,7 @@ internal fun BytecodePatchContext.hidePromptChecks() {
     mutableClassDefBy(check.definingClass).findMutableMethodOf(check).filterBooleanReturns(PATCH, KEEP)
     val follow = findFollowLinkCheck()
     mutableClassDefBy(follow.definingClass).findMutableMethodOf(follow).filterBooleanReturns(PATCH, SHOW_FOLLOW_LINK)
+    hidePostFollowTexts()
 }
 
 private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")

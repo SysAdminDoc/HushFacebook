@@ -185,6 +185,27 @@ public class PostPromptsTest {
     }
 
     /**
+     * A collab post's or a partnership ad's own " . Follow" text (#396): Facebook's text until the
+     * switch is on, then an empty text of the same kind, so a span-carrying builder stays one.
+     */
+    @Test
+    public void theCollabFollowTextEmptiesOnlyWithTheSwitchOn() {
+        android.text.SpannableStringBuilder follow = new android.text.SpannableStringBuilder(" . Follow");
+        assertEquals(follow, PostPrompts.followText(follow));
+
+        Settings.HIDE_POST_FOLLOW_LINK.save(true);
+        CharSequence hidden = PostPrompts.followText(follow);
+        assertEquals("a collab header kept its Follow text", 0, hidden.length());
+        assertTrue("the empty text lost its span type", hidden instanceof android.text.Spannable);
+        assertEquals("the plugin's own text was changed", " . Follow", follow.toString());
+        assertNull(PostPrompts.followText(null));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("a paused Hushfacebook hid the collab Follow text", follow, PostPrompts.followText(follow));
+        PauseForTests.resume();
+    }
+
+    /**
      * The counts (#180): the switch starts off, so the count builder writes Facebook's number. On,
      * the builder is told to give its zero answer, the empty text that leaves the word on the
      * button, and the status line counts it. Off again, the number is back.

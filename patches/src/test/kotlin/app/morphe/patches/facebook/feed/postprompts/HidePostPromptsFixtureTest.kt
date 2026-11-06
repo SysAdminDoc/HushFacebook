@@ -78,10 +78,40 @@ class HidePostPromptsFixtureTest {
                 val followReturns = followOriginal.withIndex().filter { it.value.opcode == Opcode.RETURN }
                 assertTrue("$name: the follow check never returns", followReturns.isNotEmpty())
 
+                // The collab and partnership ad plugins build their own Follow text (#396): one builder each,
+                // handing one text to the title segment's constructor.
+                val textPlugins = FixtureDex.classes(bundle, setOf(COLLAB_FOLLOW_PLUGIN, DUAL_HEADER_FOLLOW_PLUGIN))
+                assertEquals("$name: follow text plugins", 2, textPlugins.size)
+                val builders = textPlugins.mapValues { (_, textPlugin) -> followTextBuilder(textPlugin) }
+                val builderOriginals = builders.mapValues { (_, builder) -> builder.code() }
+                val constructions = builders.mapValues { (_, builder) -> segmentConstructions(builder).single() }
+
                 // The counts and reaction preview hooks have their own fixture tests (PostCounts, ReactionPreview).
-                val context = PatchContexts.of(listOf(component, plugin, ExtensionDex.classDef(SETTINGS_STATUS)))
+                val context = PatchContexts.of(listOf(component, plugin) + textPlugins.values + ExtensionDex.classDef(SETTINGS_STATUS))
                 context.hidePromptChecks()
                 context.enableStatus("postPrompts")
+
+                for ((type, builder) in builders) {
+                    val (at, text) = constructions.getValue(type)
+                    val patchedBuilder = context.mutableClassDefBy(type).methods
+                        .single { it.name == builder.name && it.parameterTypes == builder.parameterTypes }.code()
+                    assertEquals("$name: two instructions added to ${builder.name} on $type",
+                        builderOriginals.getValue(type).size + 2, patchedBuilder.size)
+                    val call = patchedBuilder[at]
+                    assertEquals("$name: the follow text call on $type", Opcode.INVOKE_STATIC_RANGE, call.opcode)
+                    assertEquals("$name: the follow text call on $type", FOLLOW_TEXT,
+                        ((call as ReferenceInstruction).reference as MethodReference).toString())
+                    assertEquals("$name: the text handed over on $type", text, (call as RegisterRangeInstruction).startRegister)
+                    assertEquals("$name: one register handed over on $type", 1, call.registerCount)
+                    assertEquals("$name: the extension's text on $type", Opcode.MOVE_RESULT_OBJECT, patchedBuilder[at + 1].opcode)
+                    assertEquals("$name: the extension's text lands where the segment reads it on $type", text,
+                        (patchedBuilder[at + 1] as OneRegisterInstruction).registerA)
+                    assertEquals("$name: the segment takes the text right after on $type",
+                        builderOriginals.getValue(type)[at].opcode, patchedBuilder[at + 2].opcode)
+                    for ((branch, target) in branchTargets(patchedBuilder)) {
+                        assertTrue("$name: the branch at $branch on $type skips the follow text call", target != at + 2)
+                    }
+                }
 
                 val followPatched = context.mutableClassDefBy(FOLLOW_TEXT_PLUGIN).methods
                     .single { it.name == followCheck.name && isFollowLinkCheck(it) }.code()
