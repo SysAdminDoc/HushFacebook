@@ -14,6 +14,7 @@ import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -66,7 +67,10 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * while the video plays untouched (#386). A video story in the story viewer can get the seek bar
  * alone, along its card's bottom, with a fade switch of its own (#386). A live video gets play/pause and the full player button but no cast button or seek bar, having
  * no file to hand over and no end to seek to. The full player button, next to play, opens the video
- * in Facebook's own player with all its controls (#239).
+ * in Facebook's own player with all its controls, a wide one in the full screen player that turns
+ * sideways rather than the upright reels viewer (#239). Like that player, a feed video can also
+ * get buttons that jump back or ahead 10 seconds and one that steps its speed, and the seek bar can
+ * show the time so far and the time left at its ends (#239). A live video gets none of those.
  */
 public final class FeedVideoControls {
     private static final String FAMILY = FamilyNames.TAP_TO_PLAY;
@@ -94,8 +98,14 @@ public final class FeedVideoControls {
     private static final long TICK_MS = 250;
     /** Facebook's link handler, which opens a watch link in its own video player. */
     static final String URI_HANDLER = "com.facebook.katana.IntentUriHandler";
+    /** The full screen video player's own link, which takes the video id. */
+    static final String FULL_SCREEN_LINK = "fb://fullscreen_video/";
     /** What a [Button] does. */
-    static final int PLAY = 0, CAST = 1, OPEN = 2;
+    static final int PLAY = 0, CAST = 1, OPEN = 2, BACK = 3, AHEAD = 4, SPEED = 5;
+    /** How far the skip buttons jump, as Facebook's own player does (#239). */
+    static final int SKIP_MS = 10000;
+    /** The speeds the speed button steps through, a tap at a time, from 1x back round to it (#239). */
+    static final float[] SPEEDS = {1f, 1.25f, 1.5f, 2f, 0.5f};
     /** How long the bar waits for a seek to land, and how near the spot counts as landed. */
     static final long LANDING_MS = 3000;
     private static final int LANDED_WITHIN_MS = 1000;
@@ -114,10 +124,14 @@ public final class FeedVideoControls {
         boolean playing(Object player);
         void command(Object player, boolean play);
         void cast(View from, String videoId);
-        void open(View from, String videoId);
+        /** [wide] is a video wider than it's tall, which goes to the full screen player that turns sideways. */
+        void open(View from, String videoId, boolean wide);
         int position(Object player);
         int length(Object player, Object params);
         void seek(Object player, int positionMs);
+        /** The player's speed, or NaN when the build can't read it. */
+        float speed(Object player);
+        void speed(Object player, float speed);
     }
 
     private static final Players PATCHED = new Players() {
@@ -130,10 +144,10 @@ public final class FeedVideoControls {
         public boolean playing(Object player) { return isPlaying(player); }
         public void command(Object player, boolean play) { commandPlayer(player, play); }
         public void cast(View from, String videoId) { OpenInAnotherApp.cast(from.getContext(), videoId); }
-        public void open(View from, String videoId) {
+        public void open(View from, String videoId, boolean wide) {
             // With Tap to play on, the player this tap opens plays, as one a tapped feed video opens does.
             TapToPlay.feedVideoOpening();
-            openFullPlayer(from.getContext(), videoId);
+            openFullPlayer(from.getContext(), videoId, wide);
         }
         public int position(Object player) { return playerPosition(player); }
         public int length(Object player, Object params) {
@@ -141,10 +155,14 @@ public final class FeedVideoControls {
             return length > 0 ? length : paramsLength(params);
         }
         public void seek(Object player, int positionMs) { seekPlayer(player, null, positionMs); }
+        // Hold a reel for 2x fills both: the getter for reels and feed videos alike, the setter for a feed video's hold.
+        public float speed(Object player) { return ReelHold.playerSpeed(player); }
+        public void speed(Object player, float speed) { FeedVideoHold.setPlayerSpeed(player, speed); }
     };
     static volatile Players access = PATCHED;
     @Nullable static volatile Boolean inBuildForTests;
     @Nullable static volatile Boolean videoPatchInBuildForTests;
+    @Nullable static volatile Boolean speedInBuildForTests;
     @Nullable static volatile WindowInsets insetsForTests;
 
     private FeedVideoControls() { }
@@ -170,10 +188,19 @@ public final class FeedVideoControls {
     /** [slot] only lends the patch a register for Facebook's trigger. */
     public static void seekPlayer(Object player, @Nullable Object slot, int positionMs) { }
 
-    /** Opens [videoId] in Facebook's own player through its link handler, as Recently watched does. */
-    static void openFullPlayer(Context context, String videoId) {
+    /**
+     * Opens [videoId] in Facebook's own player through its link handler, as Recently watched does.
+     * A watch link lands in the upright reels viewer, which letterboxes a [wide] video (#239). So a
+     * wide one gets the full screen player's own link instead (DeprecatedFullscreenVideoPlayerActivity
+     * in 585, comments under the video), which plays it across the screen when the phone turns
+     * sideways. Facebook's link map only knows that link with a loop value
+     * (`fullscreen_video/{video_id}?loop={loop}`) and drops anything else on Home, and its video
+     * link interceptor sends it to the reels viewer too unless it carries force_fs=1.
+     */
+    static void openFullPlayer(Context context, String videoId, boolean wide) {
         String link = SendLink.videoLink(videoId);
         if (link == null) return;
+        if (wide) link = FULL_SCREEN_LINK + videoId + "?loop=false&force_fs=1";
         Intent view = new Intent(Intent.ACTION_VIEW, Uri.parse(link)).setClassName(context.getPackageName(), URI_HANDLER);
         if (!(context instanceof Activity)) view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(view);
@@ -271,6 +298,21 @@ public final class FeedVideoControls {
         return inBuild() && Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.get();
     }
 
+    private static boolean skipOn() {
+        return inBuild() && Settings.FEED_VIDEO_SKIP_BUTTONS.get();
+    }
+
+    /** The speed button needs Hold a reel for 2x, whose patch reaches the player's speed. */
+    private static boolean speedOn() {
+        if (!inBuild()) return false;
+        Boolean forced = speedInBuildForTests;
+        return (forced != null ? forced : SettingsStatus.reelHold()) && Settings.FEED_VIDEO_SPEED_BUTTON.get();
+    }
+
+    private static boolean timesOn() {
+        return seekOn() && Settings.FEED_VIDEO_SEEK_BAR_TIMES.get();
+    }
+
     private static boolean storySeekOn() {
         return inBuild() && Settings.STORY_SEEK_BAR.get();
     }
@@ -295,8 +337,10 @@ public final class FeedVideoControls {
             boolean cast = !story && castOn();
             boolean seek = story ? storySeekOn() : seekOn();
             boolean open = !story && openOn();
-            if ((!play && !cast && !seek && !open) || control.released || player == null || container == null
-                    || access.view(player) != container) {
+            boolean skip = !story && skipOn();
+            boolean speed = !story && speedOn();
+            if ((!play && !cast && !seek && !open && !skip && !speed) || control.released || player == null
+                    || container == null || access.view(player) != container) {
                 control.remove(true);
                 return;
             }
@@ -305,15 +349,28 @@ public final class FeedVideoControls {
                 control.remove(false);
                 return;
             }
-            Target target = story ? storyTarget(control) : target(control, play, open, cast);
+            Target target = story ? storyTarget(control) : target(control, play, open, cast, skip, speed);
             if (target == null) {
                 control.remove(false);
                 return;
             }
-            control.button = place(control, control.button, play ? target : null, PLAY);
-            control.open = place(control, control.open, open ? target : null, OPEN);
-            control.cast = place(control, control.cast, cast && !target.live ? target : null, CAST);
+            // A live video has no end to skip toward and plays at its own pace, so it gets neither.
+            skip &= !target.live;
+            speed &= !target.live;
+            // Play first, then the skips round it as in Facebook's player, speed, and the full player last (#239).
+            int left = target.left;
+            control.button = place(control, control.button, play ? target : null, PLAY, left);
+            if (play) left += target.step;
+            control.back = place(control, control.back, skip ? target : null, BACK, left);
+            if (skip) left += target.step;
+            control.ahead = place(control, control.ahead, skip ? target : null, AHEAD, left);
+            if (skip) left += target.step;
+            control.speed = place(control, control.speed, speed ? target : null, SPEED, left);
+            if (speed) left += target.step;
+            control.open = place(control, control.open, open ? target : null, OPEN, left);
+            control.cast = place(control, control.cast, cast && !target.live ? target : null, CAST, target.right);
             if (control.button != null) control.button.state(access.playing(player));
+            if (control.speed != null) control.speed.rate(access.speed(player));
             control.bar = placeBar(control, control.bar, seek ? target : null, player);
             dim(control, player);
         } catch (Throwable failure) {
@@ -324,7 +381,7 @@ public final class FeedVideoControls {
 
     /** Keeps, makes or drops one button for [target]: null takes it off. Answers what's showing. */
     @Nullable
-    private static Button place(Control control, @Nullable Button current, @Nullable Target target, int kind) {
+    private static Button place(Control control, @Nullable Button current, @Nullable Target target, int kind, int left) {
         if (current != null && (target == null || current.generation != control.generation
                 || current.params.get() != target.params || current.surface.get() != target.surface
                 || !current.videoId.equals(target.videoId)
@@ -338,9 +395,9 @@ public final class FeedVideoControls {
             target.content.addView(current, new FrameLayout.LayoutParams(target.size, target.size,
                     Gravity.LEFT | Gravity.TOP));
             HookStatus.bound(FAMILY, kind == CAST ? "inline cast button"
-                    : kind == OPEN ? "inline full player button" : "inline feed button");
+                    : kind == OPEN ? "inline full player button" : kind == BACK || kind == AHEAD ? "inline skip buttons"
+                    : kind == SPEED ? "inline speed button" : "inline feed button");
         }
-        int left = kind == CAST ? target.right : kind == OPEN ? target.next : target.left;
         FrameLayout.LayoutParams layout = (FrameLayout.LayoutParams) current.getLayoutParams();
         if (layout.leftMargin != left || layout.topMargin != target.top) {
             layout.leftMargin = left;
@@ -407,10 +464,11 @@ public final class FeedVideoControls {
 
     /**
      * Where the buttons go on the video [control] shows, or null when none fit. It needs room for
-     * each of [play], [open] and [cast] that's on, and always for one.
+     * each of [play], [open], [cast], the two [skip] buttons and [speed] that's on and the video
+     * gets, and always for one.
      */
     @Nullable
-    private static Target target(Control control, boolean play, boolean open, boolean cast) {
+    private static Target target(Control control, boolean play, boolean open, boolean cast, boolean skip, boolean speed) {
         Object player = control.player.get();
         ViewGroup container = control.expected.get();
         if (player == null || container == null || control.released || access.view(player) != container
@@ -467,7 +525,8 @@ public final class FeedVideoControls {
         int size = Math.round(SIZE_DP * density);
         int margin = Math.round(MARGIN_DP * density);
         int down = Math.round(TOP_DP * density);
-        int buttons = Math.max(1, (play ? 1 : 0) + (open ? 1 : 0) + (cast && !live ? 1 : 0));
+        int buttons = Math.max(1, (play ? 1 : 0) + (open ? 1 : 0) + (cast && !live ? 1 : 0)
+                + (skip && !live ? 2 : 0) + (speed && !live ? 1 : 0));
         int across = size * buttons + margin * (buttons + 1);
         if (visible.width() < across || visible.height() < down + size + margin) return miss(control, "too little of it shows");
         int[] at = new int[2];
@@ -486,7 +545,7 @@ public final class FeedVideoControls {
         if (bar != null) bar.offset(-at[0], -at[1]);
         control.missed = null;
         int left = visible.left - at[0] + margin;
-        return new Target(params, id, surface, (FrameLayout) content, size, left, play ? left + size + margin : left,
+        return new Target(params, id, surface, (FrameLayout) content, size, left, size + margin,
                 visible.right - at[0] - margin - size, visible.top - at[1] + down, bar, live);
     }
 
@@ -790,15 +849,29 @@ public final class FeedVideoControls {
         }
         Control control = button.control;
         try {
-            boolean on = button.kind == CAST ? castOn() : button.kind == OPEN ? openOn() : playOn();
-            Button current = button.kind == CAST ? control.cast : button.kind == OPEN ? control.open : control.button;
+            int kind = button.kind;
+            boolean on = kind == CAST ? castOn() : kind == OPEN ? openOn() : kind == BACK || kind == AHEAD ? skipOn()
+                    : kind == SPEED ? speedOn() : playOn();
+            Button current = kind == CAST ? control.cast : kind == OPEN ? control.open : kind == BACK ? control.back
+                    : kind == AHEAD ? control.ahead : kind == SPEED ? control.speed : control.button;
             if (!on || current != button || control.generation != button.generation) return;
             Object player = control.player.get();
             if (player == null || !stillOver(control, button, button.params, button.videoId, button.surface)) {
                 control.remove(false);
                 return;
             }
-            if (button.kind == CAST) {
+            if (kind == BACK || kind == AHEAD) {
+                skip(control, player, button, kind == AHEAD ? SKIP_MS : -SKIP_MS);
+                return;
+            }
+            if (kind == SPEED) {
+                float next = nextSpeed(access.speed(player));
+                access.speed(player, next);
+                button.rate(next);
+                HookStatus.counted(FAMILY, "inline speed");
+                return;
+            }
+            if (kind == CAST) {
                 access.cast(button, button.videoId);
                 HookStatus.counted(FAMILY, "inline cast");
                 return;
@@ -809,8 +882,10 @@ public final class FeedVideoControls {
                     access.command(player, false);
                     refresh(control);
                 }
-                access.open(button, button.videoId);
-                HookStatus.counted(FAMILY, "inline full player");
+                View surface = button.surface.get();
+                boolean wide = surface != null && surface.getWidth() > surface.getHeight();
+                access.open(button, button.videoId, wide);
+                HookStatus.counted(FAMILY, wide ? "inline full player, wide" : "inline full player");
                 return;
             }
             access.command(player, !access.playing(player));
@@ -822,10 +897,55 @@ public final class FeedVideoControls {
         }
     }
 
+    /**
+     * Moves [player] [by] milliseconds, kept inside the video. A tap before the last skip landed
+     * counts from where that one asked for, since the player reports its old spot until then, so
+     * three quick taps jump 30 seconds.
+     */
+    private static void skip(Control control, Object player, Button button, int by) {
+        Object params = button.params.get();
+        int length = params == null ? 0 : access.length(player, params);
+        if (length <= 0) return;
+        long now = SystemClock.uptimeMillis();
+        int position = Math.max(0, Math.min(length, access.position(player)));
+        int from = control.skipTo >= 0 && now < control.skipUntil && Math.abs(position - control.skipTo) > LANDED_WITHIN_MS
+                ? control.skipTo : position;
+        int to = Math.max(0, Math.min(length, from + by));
+        ResumePlayback.placedByYou(player);
+        access.seek(player, to);
+        control.skipTo = to;
+        control.skipUntil = now + LANDING_MS;
+        Scrub bar = control.bar;
+        if (bar != null && !bar.dragging) {
+            bar.landing = to;
+            bar.landingUntil = now + LANDING_MS;
+            bar.setProgress(to);
+        }
+        control.wake();
+        HookStatus.counted(FAMILY, "inline skip");
+    }
+
+    /** The speed after [now] in {@link #SPEEDS}. One off the list goes back to 1x. */
+    static float nextSpeed(float now) {
+        if (Float.isNaN(now) || now <= 0f) now = 1f;
+        for (int i = 0; i < SPEEDS.length; i++) {
+            if (Math.abs(SPEEDS[i] - now) < 0.01f) return SPEEDS[(i + 1) % SPEEDS.length];
+        }
+        return 1f;
+    }
+
+    /** How the speed button writes [speed]: 1x, 1.25x, 0.5x. */
+    static String speedLabel(float speed) {
+        if (Float.isNaN(speed) || speed <= 0f) speed = 1f;
+        String number = Math.abs(speed - Math.round(speed)) < 0.005f ? Integer.toString(Math.round(speed))
+                : String.format(java.util.Locale.US, "%.2f", speed).replaceAll("0+$", "");
+        return number + "x";
+    }
+
     /** Whether [view], made for [videoId]'s [params] on [surface], still sits on that video. */
     private static boolean stillOver(Control control, View view, WeakReference<Object> params, String videoId,
             WeakReference<View> surface) {
-        Target current = control.story ? storyTarget(control) : target(control, false, false, false);
+        Target current = control.story ? storyTarget(control) : target(control, false, false, false, false, false);
         return current != null && current.params == params.get() && videoId.equals(current.videoId)
                 && current.surface == surface.get() && view.getParent() == current.content;
     }
@@ -845,6 +965,9 @@ public final class FeedVideoControls {
             access.seek(player, bar.getProgress());
             bar.landing = bar.getProgress();
             bar.landingUntil = SystemClock.uptimeMillis() + LANDING_MS;
+            // A skip tapped before this lands counts from here, not the old spot the player still reports.
+            control.skipTo = bar.landing;
+            control.skipUntil = bar.landingUntil;
             HookStatus.counted(FAMILY, what);
         } catch (Throwable failure) {
             control.remove(true);
@@ -887,16 +1010,16 @@ public final class FeedVideoControls {
         final String videoId;
         final View surface;
         final FrameLayout content;
-        /** Play's spot, the full player button's next to it, and cast's across from them. */
-        final int size, left, next, right, top;
+        /** The first button's spot, how far along each next one in its row sits, and cast's across from them. */
+        final int size, left, step, right, top;
         /** Where the seek bar goes in [content], or null when it has no place. */
         @Nullable final Rect bar;
         /** A live video, which gets no cast button or seek bar. */
         final boolean live;
-        Target(Object params, String videoId, View surface, FrameLayout content, int size, int left, int next, int right,
+        Target(Object params, String videoId, View surface, FrameLayout content, int size, int left, int step, int right,
                 int top, @Nullable Rect bar, boolean live) {
             this.params = params; this.videoId = videoId; this.surface = surface; this.content = content;
-            this.size = size; this.left = left; this.next = next; this.right = right; this.top = top; this.bar = bar;
+            this.size = size; this.left = left; this.step = step; this.right = right; this.top = top; this.bar = bar;
             this.live = live;
         }
     }
@@ -918,7 +1041,13 @@ public final class FeedVideoControls {
         @Nullable Button button;
         @Nullable Button open;
         @Nullable Button cast;
+        @Nullable Button back;
+        @Nullable Button ahead;
+        @Nullable Button speed;
         @Nullable Scrub bar;
+        /** Where the last skip asked the player to go, and until when it may still be on its way. */
+        int skipTo = -1;
+        long skipUntil;
         /** Facebook's corner buttons the two seek bar switches moved or dimmed, put back when this lets go of them (#386). */
         final Map<View, Corner> corners = new WeakHashMap<>();
         /** How far Lower the seek bar moved them down, which the bar moves too. */
@@ -975,6 +1104,9 @@ public final class FeedVideoControls {
             if (button != null) detach(button);
             if (open != null) detach(open);
             if (cast != null) detach(cast);
+            if (back != null) detach(back);
+            if (ahead != null) detach(ahead);
+            if (speed != null) detach(speed);
             if (bar != null) {
                 detach(bar);
                 if (main != null) main.removeCallbacks(mover);
@@ -982,7 +1114,11 @@ public final class FeedVideoControls {
             button = null;
             open = null;
             cast = null;
+            back = null;
+            ahead = null;
+            speed = null;
             bar = null;
+            skipTo = -1;
             if (!listeners) return;
             ViewGroup view = observed.get();
             if (view != null) view.removeOnAttachStateChangeListener(this);
@@ -1009,6 +1145,8 @@ public final class FeedVideoControls {
         final WeakReference<View> surface;
         final Look look = new Look();
         boolean playing;
+        /** What the speed button shows, set from the player. */
+        String speed = speedLabel(1f);
         Button(Control control, Target target, int kind) {
             super(target.content.getContext());
             this.control = control;
@@ -1023,9 +1161,19 @@ public final class FeedVideoControls {
             if (kind == PLAY) {
                 state(false);
             } else {
-                setContentDescription(L10n.t(kind == CAST ? "Cast this video" : "Open in the full player"));
+                setContentDescription(L10n.t(kind == CAST ? "Cast this video" : kind == BACK ? "Back 10 seconds"
+                        : kind == AHEAD ? "Ahead 10 seconds" : kind == SPEED ? "Playback speed" : "Open in the full player"));
                 setTooltipText(getContentDescription());
+                if (kind == SPEED && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) setStateDescription(speed);
             }
+        }
+        /** The speed button shows [value], the player's speed. */
+        void rate(float value) {
+            String label = speedLabel(value);
+            if (kind != SPEED || label.equals(speed)) return;
+            speed = label;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) setStateDescription(label);
+            invalidate();
         }
         void state(boolean value) {
             if (kind != PLAY || getContentDescription() != null && playing == value) return;
@@ -1035,7 +1183,7 @@ public final class FeedVideoControls {
             invalidate();
         }
         @Override protected void onDraw(Canvas canvas) {
-            look.draw(canvas, getWidth(), getHeight(), getResources().getDisplayMetrics().density, kind, playing);
+            look.draw(canvas, getWidth(), getHeight(), getResources().getDisplayMetrics().density, kind, playing, speed);
         }
     }
 
@@ -1056,6 +1204,8 @@ public final class FeedVideoControls {
         final Dimmer dimmer = new Dimmer(this);
         boolean dragging;
         boolean cancelled;
+        /** The times show at the line's ends. */
+        boolean times;
         /** A drag on a story's bar paused it, and the let go plays it again. */
         boolean held;
         int landing = -1;
@@ -1103,11 +1253,35 @@ public final class FeedVideoControls {
             setVisibility(length > 0 ? View.VISIBLE : View.GONE);
             if (length <= 0) return;
             if (getMax() != length) setMax(length);
+            times(!control.story && timesOn());
             int position = Math.max(0, Math.min(length, access.position(player)));
             // The player reports the old spot until a seek lands, which would spring the bar back.
             if (landing >= 0 && Math.abs(position - landing) > LANDED_WITHIN_MS && SystemClock.uptimeMillis() < landingUntil) return;
             landing = -1;
             setProgress(position);
+        }
+        /**
+         * With Times on the seek bar on, the time so far shows at the line's left end and the time
+         * left at its right, as in Facebook's player (#239). The line makes room for them, and a
+         * SeekBar maps a touch between its paddings, so the time under a finger stays the one it gets.
+         */
+        void times(boolean on) {
+            int room = 0;
+            if (on && getMax() > 0) {
+                paint.setTextSize(timeSize());
+                room = Math.round(paint.measureText("-" + ProgressBar.time(getMax()))
+                        + 8 * getResources().getDisplayMetrics().density);
+            }
+            boolean changed = on != times;
+            times = on;
+            if (getPaddingLeft() != room || getPaddingRight() != room) {
+                setPadding(room, 0, room, 0);
+            } else if (changed) {
+                invalidate();
+            }
+        }
+        private float timeSize() {
+            return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 11, getResources().getDisplayMetrics());
         }
         @Override protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
             super.onLayout(changed, left, top, right, bottom);
@@ -1129,15 +1303,30 @@ public final class FeedVideoControls {
             float y = getHeight() - 6 * density;
             float half = 1.5f * density;
             float radius = (dragging ? 8 : 6) * density;
-            float x = getMax() <= 0 ? 0 : getWidth() * (float) getProgress() / getMax();
+            // The line runs between the paddings, which hold the times when they show.
+            float start = getPaddingLeft(), end = getWidth() - getPaddingRight();
+            float x = getMax() <= 0 ? start : start + Math.max(0, end - start) * getProgress() / getMax();
             paint.setColor(0x4D000000);
-            canvas.drawRect(0, y - half - density, getWidth(), y + half + density, paint);
+            canvas.drawRect(start, y - half - density, end, y + half + density, paint);
             paint.setColor(0x80FFFFFF);
-            canvas.drawRect(0, y - half, getWidth(), y + half, paint);
+            canvas.drawRect(start, y - half, end, y + half, paint);
             paint.setColor(0xFFFFFFFF);
-            canvas.drawRect(0, y - half, x, y + half, paint);
+            canvas.drawRect(start, y - half, x, y + half, paint);
             canvas.drawCircle(Math.max(radius, Math.min(getWidth() - radius, x)), y, radius, paint);
+            if (times && getMax() > 0) drawTimes(canvas, y, density);
             if (dragging) drawTime(canvas, x, y - radius - 2 * density, density);
+        }
+        /** The time so far at the left end and the time left at the right, white with a dark edge so they read on any video. */
+        private void drawTimes(Canvas canvas, float y, float density) {
+            paint.setTextSize(timeSize());
+            paint.setShadowLayer(2 * density, 0, 0, 0xCC000000);
+            float base = y - (paint.ascent() + paint.descent()) / 2;
+            paint.setTextAlign(Paint.Align.LEFT);
+            canvas.drawText(ProgressBar.time(getProgress()), 2 * density, base, paint);
+            paint.setTextAlign(Paint.Align.RIGHT);
+            canvas.drawText("-" + ProgressBar.time(getMax() - getProgress()), getWidth() - 2 * density, base, paint);
+            paint.setTextAlign(Paint.Align.CENTER);
+            paint.clearShadowLayer();
         }
         /** Where a let go would land, on a small dark pill just above the line, kept on the video. */
         private void drawTime(Canvas canvas, float x, float bottom, float density) {
@@ -1246,15 +1435,29 @@ public final class FeedVideoControls {
             draw(canvas, width, height, density, cast ? CAST : PLAY, playing);
         }
         void draw(Canvas canvas, int width, int height, float density, int kind, boolean playing) {
+            draw(canvas, width, height, density, kind, playing, speedLabel(1f));
+        }
+        void draw(Canvas canvas, int width, int height, float density, int kind, boolean playing, String speed) {
             float cx = width / 2f, cy = height / 2f;
             float r = Math.min(Math.min(cx, cy), DISC_DP / 2f * density);
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(0x66000000);
+            if (kind == SPEED) {
+                // A pill as wide as the button, so 1.25x fits at a size that reads.
+                float half = Math.min(cx, r * 1.3f);
+                rect.set(cx - half, cy - r * .8f, cx + half, cy + r * .8f);
+                canvas.drawRoundRect(rect, r * .8f, r * .8f, paint);
+                paint.setColor(0xFFFFFFFF);
+                drawLabel(canvas, speed, cx, cy, Math.min(r * .75f, (half * 2 - 6 * density) / Math.max(1, speed.length()) * 1.6f));
+                return;
+            }
             canvas.drawCircle(cx, cy, r, paint);
             paint.setColor(0xFFFFFFFF);
             // The symbol's square box, centered on the disc.
             float s = r * 1.7f, x = cx - s / 2, y = cy - s / 2;
-            if (kind == CAST) {
+            if (kind == BACK || kind == AHEAD) {
+                drawSkip(canvas, x, y, s, kind == AHEAD);
+            } else if (kind == CAST) {
                 drawCast(canvas, x, y, s);
             } else if (kind == OPEN) {
                 drawCorners(canvas, x, y, s);
@@ -1290,6 +1493,38 @@ public final class FeedVideoControls {
             }
             paint.setStyle(Paint.Style.FILL);
             canvas.drawCircle(x + stroke * .5f, y - stroke * .5f, stroke * .9f, paint);
+        }
+        /**
+         * Facebook's own skip symbol in the [s] box at [left], [top]: a circle open at its top with an
+         * arrowhead pointing [ahead] or back, and 10 inside it.
+         */
+        private void drawSkip(Canvas canvas, float left, float top, float s, boolean ahead) {
+            float cx = left + s / 2, cy = top + s / 2, r = s * .36f, stroke = s * .07f, dir = ahead ? 1 : -1;
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(stroke);
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            rect.set(cx - r, cy - r, cx + r, cy + r);
+            // Clockwise from the gap's far side, round the bottom, to just short of the top, where the
+            // arrowhead goes on into the gap: upper right for ahead, upper left for back.
+            canvas.drawArc(rect, ahead ? 325 : 275, 300, false, paint);
+            paint.setStyle(Paint.Style.FILL);
+            path.reset();
+            float x = cx - dir * r * .09f, y = cy - r;
+            path.moveTo(x + dir * s * .14f, y);
+            path.lineTo(x, y - s * .1f);
+            path.lineTo(x, y + s * .1f);
+            path.close();
+            canvas.drawPath(path, paint);
+            drawLabel(canvas, "10", cx, cy, r);
+        }
+        /** [text] centered on [cx], [cy], [size] pixels tall, in white bold. */
+        private void drawLabel(Canvas canvas, String text, float cx, float cy, float size) {
+            paint.setStyle(Paint.Style.FILL);
+            paint.setTextAlign(Paint.Align.CENTER);
+            paint.setTextSize(size);
+            paint.setFakeBoldText(true);
+            canvas.drawText(text, cx, cy - (paint.ascent() + paint.descent()) / 2, paint);
+            paint.setFakeBoldText(false);
         }
         /** The usual full screen symbol in the [s] box at [left], [top]: a bracket in each corner. */
         private void drawCorners(Canvas canvas, float left, float top, float s) {
@@ -1367,6 +1602,20 @@ public final class FeedVideoControls {
         }
     }
 
+    @Nullable static View showingSkip(Object player, boolean ahead) {
+        synchronized (players) {
+            Control control = players.get(player);
+            return control == null ? null : ahead ? control.ahead : control.back;
+        }
+    }
+
+    @Nullable static View showingSpeed(Object player) {
+        synchronized (players) {
+            Control control = players.get(player);
+            return control == null ? null : control.speed;
+        }
+    }
+
     static void reset() {
         for (Control control : snapshot()) control.remove(true);
         synchronized (players) {
@@ -1377,6 +1626,7 @@ public final class FeedVideoControls {
         storyBar = new WeakReference<>(null);
         inBuildForTests = null;
         videoPatchInBuildForTests = null;
+        speedInBuildForTests = null;
         insetsForTests = null;
     }
 }

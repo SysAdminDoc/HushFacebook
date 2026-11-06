@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.reels;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.graphics.Bitmap;
@@ -50,5 +51,32 @@ public class FeedVideoButtonLookTest {
             }
             assertTrue("a white symbol for cast=" + kind[0] + " playing=" + kind[1], white > SIZE);
         }
+    }
+
+    private static Bitmap draw(int kind, String speed) {
+        Bitmap bitmap = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888);
+        new FeedVideoControls.Look().draw(new Canvas(bitmap), SIZE, SIZE, DENSITY, kind, false, speed);
+        return bitmap;
+    }
+
+    private static int white(Bitmap bitmap) {
+        int white = 0;
+        for (int x = 0; x < SIZE; x++) {
+            for (int y = 0; y < SIZE; y++) if (bitmap.getPixel(x, y) == Color.WHITE) white++;
+        }
+        return white;
+    }
+
+    @Test public void theSkipAndSpeedSymbolsDrawWhiteInsideTheirTarget() {
+        for (int kind : new int[] {FeedVideoControls.BACK, FeedVideoControls.AHEAD, FeedVideoControls.SPEED}) {
+            Bitmap bitmap = draw(kind, "1x");
+            assertEquals(0, Color.alpha(bitmap.getPixel(1, 1)));
+            assertEquals(0, Color.alpha(bitmap.getPixel(SIZE - 2, SIZE - 2)));
+            assertTrue("a white symbol for kind " + kind, white(bitmap) > (kind == FeedVideoControls.SPEED ? 20 : SIZE));
+        }
+        assertFalse("back and ahead point different ways",
+                draw(FeedVideoControls.BACK, "1x").sameAs(draw(FeedVideoControls.AHEAD, "1x")));
+        assertFalse("the speed button writes its speed",
+                draw(FeedVideoControls.SPEED, "1x").sameAs(draw(FeedVideoControls.SPEED, "1.25x")));
     }
 }

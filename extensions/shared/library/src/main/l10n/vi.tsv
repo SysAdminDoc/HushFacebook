@@ -2151,6 +2151,15 @@ Cast button on feed videos	Nút truyền trên video bảng tin
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Thêm nút truyền vào video trên bảng tin. Nút này chuyển video sang ứng dụng truyền bạn có, như Web Video Caster, để phát lên TV. Facebook không còn tính năng truyền riêng nữa.
 Cast this video	Truyền video này
 Full player button on feed videos	Nút trình phát đầy đủ trên video bảng tin
+Skip buttons on feed videos	Nút tua trên video bảng tin
+Speed button on feed videos	Nút tốc độ trên video bảng tin
+Times on the seek bar	Thời gian trên thanh tua
+Back 10 seconds	Lùi 10 giây
+Ahead 10 seconds	Tới 10 giây
+Playback speed	Tốc độ phát
+Adds buttons to feed videos that jump back or ahead 10 seconds, like Facebook's own player has. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Thêm vào video bảng tin các nút lùi hoặc tới 10 giây, giống trình phát của chính Facebook. Video trực tiếp và quảng cáo vẫn giữ điều khiển riêng. Khi Nhấn để phát bật, Nút điều khiển video trong bảng tin cũng phải bật.
+Adds a button to feed videos that shows their speed. Each tap moves to the next one: 1x, 1.25x, 1.5x, 2x, then 0.5x. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Thêm vào video bảng tin một nút hiển thị tốc độ. Mỗi lần nhấn chuyển sang tốc độ tiếp theo: 1x, 1.25x, 1.5x, 2x, rồi 0.5x. Video trực tiếp và quảng cáo vẫn giữ điều khiển riêng. Khi Nhấn để phát bật, Nút điều khiển video trong bảng tin cũng phải bật.
+Shows how far into a feed video you are at the left end of its seek bar, and how much is left at the right end. Needs Seek bar on feed videos on.	Hiển thị thời gian đã xem ở đầu trái thanh tua của video bảng tin, và thời gian còn lại ở đầu phải. Cần bật Thanh tua trên video bảng tin.
 Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	Thêm nút vào video bảng tin để mở video trong trình phát đầy đủ của Facebook, với mọi nút điều khiển. Video trực tiếp cũng có nút này. Khi Nhấn để phát bật, Nút điều khiển video trong bảng tin cũng phải bật.
 # context: a switch under Video and audio; with it on, a video opened full screen starts with its details and comments panel closed, so the video is in the middle of the screen
 Open full screen videos centered	Mở video toàn màn hình ở giữa

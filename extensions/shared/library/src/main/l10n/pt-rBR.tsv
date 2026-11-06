@@ -2037,6 +2037,15 @@ Cast button on feed videos	Botão de transmitir nos vídeos do feed
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Adiciona um botão de transmitir aos vídeos do feed. Ele entrega o vídeo a um app de transmissão que você tenha, como o Web Video Caster, que o envia para sua TV. O Facebook não tem mais transmissão própria.
 Cast this video	Transmitir este vídeo
 Full player button on feed videos	Botão de player completo nos vídeos do feed
+Skip buttons on feed videos	Botões de pular nos vídeos do feed
+Speed button on feed videos	Botão de velocidade nos vídeos do feed
+Times on the seek bar	Tempos na barra de progresso
+Back 10 seconds	Voltar 10 segundos
+Ahead 10 seconds	Avançar 10 segundos
+Playback speed	Velocidade de reprodução
+Adds buttons to feed videos that jump back or ahead 10 seconds, like Facebook's own player has. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Adiciona aos vídeos do feed botões que voltam ou avançam 10 segundos, como no player do próprio Facebook. Vídeos ao vivo e anúncios mantêm os próprios controles. Com “Tocar para reproduzir” ligado, “Controles de vídeo no feed” também precisa estar ligado.
+Adds a button to feed videos that shows their speed. Each tap moves to the next one: 1x, 1.25x, 1.5x, 2x, then 0.5x. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Adiciona aos vídeos do feed um botão que mostra a velocidade. Cada toque passa para a próxima: 1x, 1.25x, 1.5x, 2x e depois 0.5x. Vídeos ao vivo e anúncios mantêm os próprios controles. Com “Tocar para reproduzir” ligado, “Controles de vídeo no feed” também precisa estar ligado.
+Shows how far into a feed video you are at the left end of its seek bar, and how much is left at the right end. Needs Seek bar on feed videos on.	Mostra quanto já passou de um vídeo do feed na ponta esquerda da barra de progresso e quanto falta na ponta direita. Precisa de “Barra de progresso nos vídeos do feed” ligado.
 Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	Adiciona um botão aos vídeos do feed que abre o vídeo no player completo do próprio Facebook, com todos os controles. Vídeos ao vivo também ganham o botão. Com “Tocar para reproduzir” ligado, “Controles de vídeo no feed” também precisa estar ligado.
 # context: a switch under Video and audio; with it on, a video opened full screen starts with its details and comments panel closed, so the video is in the middle of the screen
 Open full screen videos centered	Abrir vídeos em tela cheia centralizados

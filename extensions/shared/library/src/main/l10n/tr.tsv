@@ -2151,6 +2151,15 @@ Cast button on feed videos	Akış videolarında yayınla düğmesi
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Akış videolarına bir yayınla düğmesi ekler. Videoyu, Web Video Caster gibi sende olan bir yayın uygulamasına verir, o da TV'ne gönderir. Facebook'un artık kendi yayınlama özelliği yok.
 Cast this video	Bu videoyu yayınla
 Full player button on feed videos	Akış videolarında tam oynatıcı düğmesi
+Skip buttons on feed videos	Akış videolarında atlama düğmeleri
+Speed button on feed videos	Akış videolarında hız düğmesi
+Times on the seek bar	Sarma çubuğunda süreler
+Back 10 seconds	10 saniye geri
+Ahead 10 seconds	10 saniye ileri
+Playback speed	Oynatma hızı
+Adds buttons to feed videos that jump back or ahead 10 seconds, like Facebook's own player has. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Akış videolarına, Facebook'un kendi oynatıcısındaki gibi 10 saniye geri veya ileri atlayan düğmeler ekler. Canlı videolar ve reklamlar kendi denetimlerini korur. “Oynatmak için dokun” açıksa “Akış videosu denetimleri” de açık olmalıdır.
+Adds a button to feed videos that shows their speed. Each tap moves to the next one: 1x, 1.25x, 1.5x, 2x, then 0.5x. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Akış videolarına hızlarını gösteren bir düğme ekler. Her dokunuş bir sonrakine geçer: 1x, 1.25x, 1.5x, 2x, sonra 0.5x. Canlı videolar ve reklamlar kendi denetimlerini korur. “Oynatmak için dokun” açıksa “Akış videosu denetimleri” de açık olmalıdır.
+Shows how far into a feed video you are at the left end of its seek bar, and how much is left at the right end. Needs Seek bar on feed videos on.	Bir akış videosunun ne kadarını izlediğinizi sarma çubuğunun sol ucunda, ne kadar kaldığını sağ ucunda gösterir. “Akış videolarında sarma çubuğu” açık olmalıdır.
 Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	Akış videolarına, videoyu Facebook'un kendi tam oynatıcısında tüm denetimleriyle açan bir düğme ekler. Canlı videolarda da bulunur. “Oynatmak için dokun” açıksa “Akış videosu denetimleri” de açık olmalıdır.
 # context: a switch under Video and audio; with it on, a video opened full screen starts with its details and comments panel closed, so the video is in the middle of the screen
 Open full screen videos centered	Tam ekran videoları ortada aç

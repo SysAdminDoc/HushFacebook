@@ -2195,6 +2195,15 @@ Cast button on feed videos	Кнопка трансляции для видео �
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	Добавляет кнопку трансляции к видео в Ленте. Она передает видео в установленное приложение для трансляции, например Web Video Caster, которое отправляет его на телевизор. В Facebook больше нет собственной функции трансляции.
 Cast this video	Транслировать это видео
 Full player button on feed videos	Кнопка полного плеера для видео в Ленте
+Skip buttons on feed videos	Кнопки перемотки для видео в Ленте
+Speed button on feed videos	Кнопка скорости для видео в Ленте
+Times on the seek bar	Время на полосе перемотки
+Back 10 seconds	Назад на 10 секунд
+Ahead 10 seconds	Вперёд на 10 секунд
+Playback speed	Скорость воспроизведения
+Adds buttons to feed videos that jump back or ahead 10 seconds, like Facebook's own player has. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Добавляет к видео в Ленте кнопки, которые перематывают на 10 секунд назад или вперёд, как в собственном плеере Facebook. Для прямых эфиров и рекламы остаются собственные элементы управления. Если включено воспроизведение по нажатию, необходимо также включить встроенные элементы управления видео в Ленте.
+Adds a button to feed videos that shows their speed. Each tap moves to the next one: 1x, 1.25x, 1.5x, 2x, then 0.5x. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	Добавляет к видео в Ленте кнопку, которая показывает скорость. Каждое нажатие переключает на следующую: 1x, 1.25x, 1.5x, 2x, затем 0.5x. Для прямых эфиров и рекламы остаются собственные элементы управления. Если включено воспроизведение по нажатию, необходимо также включить встроенные элементы управления видео в Ленте.
+Shows how far into a feed video you are at the left end of its seek bar, and how much is left at the right end. Needs Seek bar on feed videos on.	Показывает на левом конце полосы перемотки видео в Ленте, сколько уже просмотрено, а на правом, сколько осталось. Нужна включённая «Полоса перемотки для видео в Ленте».
 Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	Добавляет к видео в Ленте кнопку, которая открывает видео в полном плеере Facebook со всеми его элементами управления. Прямые эфиры тоже ее получают. Если включено воспроизведение по нажатию, необходимо также включить встроенные элементы управления видео в Ленте.
 # context: a switch under Video and audio; with it on, a video opened full screen starts with its details and comments panel closed, so the video is in the middle of the screen
 Open full screen videos centered	Открывать полноэкранные видео по центру

@@ -2155,6 +2155,15 @@ Cast button on feed videos	動態影片上的投放按鈕
 Adds a cast button to feed videos. It hands the video to a casting app you have, such as Web Video Caster, which sends it to your TV. Facebook has no casting of its own anymore.	為動態中的影片加入投放按鈕。它會把影片交給你已安裝的投放應用程式（例如 Web Video Caster），由它傳送到電視。Facebook 已不再內建投放功能。
 Cast this video	投放這部影片
 Full player button on feed videos	動態影片上的完整播放器按鈕
+Skip buttons on feed videos	動態影片上的快轉倒轉按鈕
+Speed button on feed videos	動態影片上的速度按鈕
+Times on the seek bar	進度列上的時間
+Back 10 seconds	倒轉 10 秒
+Ahead 10 seconds	快轉 10 秒
+Playback speed	播放速度
+Adds buttons to feed videos that jump back or ahead 10 seconds, like Facebook's own player has. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	為動態影片加入倒轉或快轉 10 秒的按鈕，和 Facebook 本身的播放器一樣。直播影片和廣告仍使用各自的控制項。開啟「點按播放」時，也需要開啟「動態消息影片控制項」。
+Adds a button to feed videos that shows their speed. Each tap moves to the next one: 1x, 1.25x, 1.5x, 2x, then 0.5x. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	為動態影片加入一個顯示播放速度的按鈕。每點一下就切換到下一個速度：1x、1.25x、1.5x、2x，然後是 0.5x。直播影片和廣告仍使用各自的控制項。開啟「點按播放」時，也需要開啟「動態消息影片控制項」。
+Shows how far into a feed video you are at the left end of its seek bar, and how much is left at the right end. Needs Seek bar on feed videos on.	在動態影片進度列的左端顯示已播放的時間，右端顯示剩餘時間。需要開啟「動態影片上的進度列」。
 Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	為動態中的影片加入一個按鈕，在 Facebook 本身的完整播放器中開啟影片，附帶所有控制項。直播影片也有。開啟「點按播放」時，也需要開啟「動態消息影片控制項」。
 # context: a switch under Video and audio; with it on, a video opened full screen starts with its details and comments panel closed, so the video is in the middle of the screen
 Open full screen videos centered	全螢幕影片置中開啟

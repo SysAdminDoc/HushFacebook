@@ -1540,6 +1540,43 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * Two buttons on a feed video, beside the play/pause one, that jump back or ahead 10 seconds,
+     * as in Facebook's own player (#239). Live videos don't get them. Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_SKIP_BUTTONS =
+            new BooleanSetting("hushfacebook_feed_video_skip_buttons", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
+     * A button on a feed video that shows its speed and steps it on a tap: 1x, 1.25x, 1.5x, 2x,
+     * then 0.5x (#239). Needs Hold a reel for 2x in the build, whose patch reaches the player's
+     * speed. Live videos don't get it. Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_SPEED_BUTTON =
+            new BooleanSetting("hushfacebook_feed_video_speed_button", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
+     * With {@link #FEED_VIDEO_SEEK_BAR} on, the time so far shows at the bar's left end and the
+     * time left at its right, as in Facebook's own player (#239). Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_SEEK_BAR_TIMES =
+            new BooleanSetting("hushfacebook_feed_video_seek_bar_times", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
      * A video opened in Facebook's full screen player, from a comment or a link, starts with its
      * details and comments folded away, so it sits in the middle of the screen the way the
      * player's own chevron leaves it (#242). Asked as each video is set up. Starts off.
