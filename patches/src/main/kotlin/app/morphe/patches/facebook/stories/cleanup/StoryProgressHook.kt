@@ -4,10 +4,10 @@
  */
 package app.morphe.patches.facebook.stories.cleanup
 
-import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
-import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -102,11 +102,15 @@ internal fun keeps(method: Method, register: Int): Boolean = method.implementati
     it.opcode.setsRegister() && written == register || it.opcode.setsWideRegister() && written + 1 == register
 }
 
-/** The progress listeners: each method writing [PROGRESS_TRACE], with the class it's in. */
+/**
+ * The progress listeners: each method writing [PROGRESS_TRACE] ([methodsNaming]), with the class
+ * it's in. 585's Android 9 build moves the trace into a string table (LX/0Akj;) that one of its two
+ * listeners (LX/0bWy;) asks, so a listener is a holder or a caller of a table holding it, never the
+ * table itself.
+ */
 internal fun BytecodePatchContext.progressListeners(): List<Pair<ClassDef, Method>> =
-    classDefByStrings(PROGRESS_TRACE, StringComparisonType.EQUALS)
-        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
-        .flatMap { listener -> listener.methods.filter { holdsString(it, PROGRESS_TRACE) }.map { listener to it } }
+    methodsNaming(PROGRESS_TRACE) { !isStringTable(it) }.distinct()
+        .map { method -> classDefBy(method.definingClass) to method }
 
 /** Hands the extension each listener's segments and progress, right after the listener moves them. */
 internal fun BytecodePatchContext.followStoryProgress() {

@@ -9,6 +9,9 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -22,6 +25,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -43,8 +47,14 @@ class StoryViewerCleanupFixtureTest {
     private fun Method.code() = implementation!!.instructions.toList()
     private fun Instruction.reference() = (this as ReferenceInstruction).reference.toString()
 
-    /** Opcodes past the NOP that pads a switch payload, which moves when the code above it grows. */
-    private fun List<Instruction>.unpadded() = map { it.opcode }.filter { it != Opcode.NOP }
+    /**
+     * Opcodes past the NOP that pads a switch payload, which moves when the code above it grows. A
+     * goto reads as GOTO whatever its width: the hook can push a branch past a plain goto's reach, and
+     * dexlib2 widens it (585's Android 9 build, LX/0CA6;->IP3).
+     */
+    private fun List<Instruction>.unpadded() = map { it.opcode }.filter { it != Opcode.NOP }.map {
+        if (it == Opcode.GOTO_16 || it == Opcode.GOTO_32) Opcode.GOTO else it
+    }
 
     private fun component(bundle: File, name: String): ClassDef {
         val found = FixtureDex.classesHolding(bundle, name).filterNot { it.type.startsWith(EXTENSION_PACKAGE) }
@@ -166,14 +176,23 @@ class StoryViewerCleanupFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val listeners = FixtureDex.classesHolding(bundle, PROGRESS_TRACE)
+                // 585's Android 9 build moves the trace into a string table one listener asks, so the
+                // table's callers count too, and the table itself never does.
+                val holders = FixtureDex.classesHolding(bundle, PROGRESS_TRACE)
                     .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+                val tables = holders.associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+                val asking = FixtureDex.methodsWhere(bundle, { dex -> dex.methodSection.any { it.definingClass in tables } }) {
+                    !holdsString(it, PROGRESS_TRACE) && namesString(it, PROGRESS_TRACE, resolve)
+                }
+                val listeners = (holders + FixtureDex.classes(bundle, asking.map { it.definingClass }.toSet()).values)
+                    .distinctBy { it.type }
                 val looked = mutableMapOf<String, ClassDef?>()
                 val lookup = { type: String ->
                     if (type in looked) looked[type] else FixtureDex.classes(bundle, setOf(type))[type].also { looked[type] = it }
                 }
                 val methods = listeners.flatMap { listener ->
-                    listener.methods.filter { holdsString(it, PROGRESS_TRACE) }.map { listener to it }
+                    listener.methods.filter { !isStringTable(it) && namesString(it, PROGRESS_TRACE, resolve) }.map { listener to it }
                 }
                 val moves = methods.associate { (_, method) -> method to segmentsMove(method, lookup) }
 
