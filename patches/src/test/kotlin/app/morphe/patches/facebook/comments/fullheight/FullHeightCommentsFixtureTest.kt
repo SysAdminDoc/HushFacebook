@@ -9,6 +9,7 @@ import app.morphe.PatchContexts
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
@@ -143,13 +144,22 @@ class FullHeightCommentsFixtureTest {
         assertEquals("$where: the share is a float", "F", share.type)
         val at = site.index
         val owner = site.method.definingClass
+        val self = site.method.implementation!!.registerCount - 1
         if (owner == SIMPLE_POPOVER) {
             // 584: the override is folded into the popover's own answer, and the hook follows the
-            // one cast of this to the comment sheet's fragment.
-            val cast = site.method.implementation!!.instructions.toList()[at - 1]
+            // one cast of this to the comment sheet's fragment. 585's Android 9 build casts a copy
+            // of this made right before the cast.
+            val code = site.method.implementation!!.instructions.toList()
+            val cast = code[at - 1]
             assertEquals("$where: the hook follows the cast", Opcode.CHECK_CAST, cast.opcode)
             assertEquals("$where: the cast is to the comment sheet's fragment", UFI_POPOVER, cast.reference())
-            assertEquals("$where: of this", site.fragment, (cast as OneRegisterInstruction).registerA)
+            assertEquals("$where: of the fragment's register", site.fragment, (cast as OneRegisterInstruction).registerA)
+            if (site.fragment != self) {
+                val copy = code[at - 2]
+                assertTrue("$where: v${site.fragment} is a copy of this", copy.opcode == Opcode.MOVE_OBJECT || copy.opcode == Opcode.MOVE_OBJECT_FROM16)
+                assertEquals("$where: v${site.fragment} is a copy of this", listOf(site.fragment, self),
+                    (copy as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) })
+            }
         } else {
             assertEquals("$where: an override of the comment sheet's fragment", UFI_POPOVER, owner)
             assertEquals("$where: asks first", 0, at)
@@ -166,7 +176,7 @@ class FullHeightCommentsFixtureTest {
         val register = (patched[at] as TwoRegisterInstruction).registerA
         assertTrue("$where: the hook writes v$register, which isn't a local", register < method.localRegisterCount())
         assertTrue("$where: the hook writes v$register, which is still read", register !in RegisterLiveness.of(site.method).liveInto(at))
-        assertEquals("$where: from this fragment", method.implementation!!.registerCount - 1, (patched[at] as TwoRegisterInstruction).registerB)
+        assertEquals("$where: from this fragment", site.fragment, (patched[at] as TwoRegisterInstruction).registerB)
         assertEquals("$where: the extension is asked", Opcode.INVOKE_STATIC, patched[at + 1].opcode)
         assertEquals("$where: the extension is asked", FILLS_SCREEN, patched[at + 1].reference())
         val call = patched[at + 1] as FiveRegisterInstruction
@@ -273,7 +283,9 @@ class FullHeightCommentsFixtureTest {
     }
 
     private fun description(bundle: File) {
-        val gate = descriptionGate(holders(bundle, DESCRIPTION_TAP))
+        // 585's Android 9 build asks a string table for the tap's name.
+        val tables = holders(bundle, DESCRIPTION_TAP).associateBy { it.type }
+        val gate = descriptionGate(holders(bundle, DESCRIPTION_SPLIT)) { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
         val where = "${bundle.name}: ${gate.method.descriptor()}"
         val code = gate.method.implementation!!.instructions.toList()
         val at = gate.index

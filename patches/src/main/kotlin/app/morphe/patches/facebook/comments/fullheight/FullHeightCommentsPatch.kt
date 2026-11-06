@@ -15,8 +15,10 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
-import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.methodsHolding
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -135,7 +137,8 @@ private const val INT_VALUE = "Ljava/lang/Number;->intValue()I"
  * `FbShortsViewerDescriptionComponentSpec`) reads a server gate, and when it's open tries the split
  * screen through one of those launchers (585 `LX/0cvi;->A00`, "mfc_caption"). A no there opens the
  * regular sheet instead of growing the text, so with the switch on "more" opened the comments (#269).
- * The gate is the last boolean [MOBILE_CONFIG] call before the handler loads [DESCRIPTION_TAP], its
+ * The gate is the last boolean [MOBILE_CONFIG] call before the handler loads [DESCRIPTION_TAP] (on the
+ * Android 9 build, `LX/0eGm;->A00`, before it asks the string table `LX/0fY4;->A00` for it), its
  * `move-result` followed by an `if-eqz` on the same register that skips to the text's own expansion.
  * Between the two, the extension is handed the gate's answer and its own goes back into the same
  * register, so with the switch on the gate reads closed and the description expands in place.
@@ -209,7 +212,8 @@ val fullHeightCommentsPatch = bytecodePatch(
         val feedbackParams = classDefByOrNull(FEEDBACK_PARAMS) ?: refuse("$FEEDBACK_PARAMS isn't in this build")
         val watchAndComment = watchAndCommentField(feedbackParams)
         val tapThrough = tapThroughSite(popover)
-        val description = descriptionGate(holders(DESCRIPTION_TAP))
+        val tapTables = holders(DESCRIPTION_TAP).associateBy { it.type }
+        val description = descriptionGate(holders(DESCRIPTION_SPLIT)) { call -> tapTables[call.definingClass]?.let { resolveStatic(it, call) } }
 
         mutableClassDefBy(POPOVER_PARAMS).methods.single { it.descriptor() == sheet.descriptor() }
             .raiseSheet(height)
@@ -355,30 +359,45 @@ internal fun fillsScreenSite(popover: ClassDef, ufiPopover: ClassDef): FillsScre
 
 /**
  * The instruction after [method]'s one `instance-of vX, this, UFI` / `if-eqz vX` / `check-cast
- * this, UFI`, where `this` holds the comment sheet's fragment, as its [FillsScreenSite].
+ * this, UFI`, where `this` holds the comment sheet's fragment, as its [FillsScreenSite]. 585's
+ * Android 9 build copies `this` first and casts the copy (`move-object v2, v6` / `check-cast v2,
+ * UFI`); the copy then holds the fragment.
  */
 private fun foldedSite(method: Method): FillsScreenSite {
     val code = method.implementation!!.instructions.toList()
     val self = method.localRegisterCount()
     fun names(instruction: Instruction, opcode: Opcode) = instruction.opcode == opcode &&
         ((instruction as ReferenceInstruction).reference as? TypeReference)?.type == UFI_POPOVER
-    val casts = (0 until code.size - 3).filter { at ->
+    fun castsTo(instruction: Instruction, register: Int) =
+        names(instruction, Opcode.CHECK_CAST) && (instruction as OneRegisterInstruction).registerA == register
+    // Each test: the instance-of's index, the cast's index and the register the cast leaves the fragment in.
+    val casts = (0 until code.size - 3).mapNotNull { at ->
         val test = code[at]
         val skip = code[at + 1]
-        val cast = code[at + 2]
-        names(test, Opcode.INSTANCE_OF) && (test as TwoRegisterInstruction).registerB == self &&
-            skip.opcode == Opcode.IF_EQZ && (skip as OneRegisterInstruction).registerA == test.registerA &&
-            names(cast, Opcode.CHECK_CAST) && (cast as OneRegisterInstruction).registerA == self
+        val next = code[at + 2]
+        if (!names(test, Opcode.INSTANCE_OF) || (test as TwoRegisterInstruction).registerB != self ||
+            skip.opcode != Opcode.IF_EQZ || (skip as OneRegisterInstruction).registerA != test.registerA
+        ) {
+            return@mapNotNull null
+        }
+        when {
+            castsTo(next, self) -> Triple(at, at + 2, self)
+            next.opcode in OBJECT_MOVES && (next as TwoRegisterInstruction).registerB == self && castsTo(code[at + 3], next.registerA) ->
+                Triple(at, at + 3, next.registerA)
+            else -> null
+        }
     }
-    val at = casts.singleOrNull()
+    val (at, cast, fragment) = casts.singleOrNull()
         ?: refuse("expected ${method.descriptor()} to test and cast this to $UFI_POPOVER once, found ${casts.size}")
-    val index = at + 3
+    val index = cast + 1
     val flow = ControlFlow.of(method)
-    val jumps = flow.instructions.indices.filter { it != at + 2 && (index in flow.normal[it] || index in flow.exceptional[it]) }
+    val jumps = flow.instructions.indices.filter { it != cast && (index in flow.normal[it] || index in flow.exceptional[it]) }
     if (jumps.isNotEmpty()) refuse("${method.descriptor()} jumps to the instruction after its cast from ${jumps.joinToString()}")
-    method.requireThisIntact(PATCH, listOf(at))
-    return FillsScreenSite(method, index, self, method.freeLocalsAt(PATCH, index, 1).single())
+    method.requireThisIntact(PATCH, (at until cast).toList())
+    return FillsScreenSite(method, index, fragment, method.freeLocalsAt(PATCH, index, 1).single())
 }
+
+private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16)
 
 /** The one float field of [UFI_POPOVER] that [fills] reads: the share of the screen's height. */
 internal fun shareField(fills: Method): FieldReference {
@@ -526,21 +545,24 @@ internal fun MutableMethod.skipSplitScreen() {
 internal data class DescriptionGate(val method: Method, val index: Int, val register: Int)
 
 /**
- * The gate in the one method among [holders] holding [DESCRIPTION_TAP] and [DESCRIPTION_SPLIT]: the
- * last boolean call to [MOBILE_CONFIG] before the first string, whose `move-result` an `if-eqz` on the
- * same register follows. Nothing else may jump to that `if-eqz`, or the hook would be skipped on that path.
+ * The gate in the one method among [holders] holding [DESCRIPTION_SPLIT] that names [DESCRIPTION_TAP]:
+ * the last boolean call to [MOBILE_CONFIG] before the first string, whose `move-result` an `if-eqz` on
+ * the same register follows. Nothing else may jump to that `if-eqz`, or the hook would be skipped on
+ * that path. 585's Android 9 build asks a string table [resolve] finds for [DESCRIPTION_TAP]
+ * (`LX/0fY4;->A00(I)String` from `LX/0eGm;->A00`) instead of loading it, so that call stands in for the string.
  */
-internal fun descriptionGate(holders: List<ClassDef>): DescriptionGate {
-    val found = holders.flatMap { methodsHolding(it, DESCRIPTION_TAP) }.filter { holdsString(it, DESCRIPTION_SPLIT) }
+internal fun descriptionGate(holders: List<ClassDef>, resolve: (MethodReference) -> Method? = { null }): DescriptionGate {
+    val found = holders.flatMap { methodsHolding(it, DESCRIPTION_SPLIT) }.filter { namesString(it, DESCRIPTION_TAP, resolve) }
         .distinctBy { it.descriptor() }
     val method = found.singleOrNull() ?: refuse(
-        "expected one method holding \"$DESCRIPTION_TAP\" and \"$DESCRIPTION_SPLIT\", found ${found.size}: " +
+        "expected one method holding \"$DESCRIPTION_SPLIT\" and naming \"$DESCRIPTION_TAP\", found ${found.size}: " +
             found.joinToString { it.descriptor() },
     )
     val code = method.implementation!!.instructions.toList()
-    val tap = code.indexOfFirst {
-        it.opcode in STRINGS && ((it as ReferenceInstruction).reference as StringReference).string == DESCRIPTION_TAP
-    }
+    val tap = code.indices.firstOrNull { at ->
+        val named = code[at].opcode in STRINGS && ((code[at] as ReferenceInstruction).reference as StringReference).string == DESCRIPTION_TAP
+        named || tableStringAt(code, at, resolve) == DESCRIPTION_TAP
+    } ?: refuse("${method.descriptor()} names \"$DESCRIPTION_TAP\" only where its string table can't be read")
     // Only an invoke carries a method reference.
     val gate = (tap - 1 downTo 0).firstOrNull { at ->
         val call = (code[at] as? ReferenceInstruction)?.reference as? MethodReference
