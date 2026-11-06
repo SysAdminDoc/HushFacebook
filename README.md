@@ -316,7 +316,7 @@ adb shell touch /sdcard/Android/media/com.facebook.katana/hushfacebook-safe-mode
 adb shell am force-stop com.facebook.katana
 ```
 
-That one has been seen working on Android 16. It hasn't been tried on Android 11 yet.
+That one has been seen working on Android 11 and Android 16.
 
 A pause only changes what the switches answer and every patch's code stays in place. So if Facebook keeps closing, or the file can't be made, patch again without the patch you suspect, signed with the same key, and install it over your copy. Your sign-in and settings stay. The next diagnostic report you export shows the error that closed Facebook.
 
