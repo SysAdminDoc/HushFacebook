@@ -262,7 +262,8 @@ val downloadReelPatch = bytecodePatch(
         //
         // Up to 582 the builder is the component's own render, which takes the scoped context
         // alone and reads the component's fields. 583 leaves the body in the component's spec,
-        // handed the scoped context, then the fields and the state, and the render only calls it.
+        // handed the scoped context, then the fields and the state, and the render only calls it
+        // (585's Android 9 build does too, with the scoped context among the fields).
         // The component, whose fields the player and the story are found by, is the render's class.
         val (renderClass, render) = if (sidebar.parameterTypes.size == 1) {
             sidebarClass to sidebar
@@ -874,15 +875,18 @@ internal fun iconMarkers(builder: Method, iconEnumType: String, resolve: (Method
 
 /**
  * Whether [method] is a render handing everything to [builder], the sidebar's builder kept in its
- * spec: it takes one parameter, the scoped context [builder] takes first, and calls [builder]. On
- * 583 the builder (arm64 LX/APP;->A02, armeabi-v7a LX/AR8;->A02, 37 parameters) is handed the
- * scoped context, then the component's fields and its state, by the component's render
- * (LX/APO;->A1C, LX/AR7;->A1C).
+ * spec: it takes one parameter, the scoped context, which [builder] takes exactly once, and calls
+ * [builder]. On 583 the builder (arm64 LX/APP;->A02, armeabi-v7a LX/AR8;->A02, 37 parameters) is
+ * handed the scoped context first, then the component's fields and its state, by the component's
+ * render (LX/APO;->A1C, LX/AR7;->A1C). 585's Android 9 build moves it among the fields: its builder
+ * (LX/09f2;->A03, rendered by LX/0B9q;->A15) takes the tree props first and the scoped context
+ * thirteenth, so where it sits doesn't decide, only that it's there once.
  */
 internal fun rendersThrough(method: Method, builder: Method): Boolean {
-    val scoped = builder.parameterTypes.firstOrNull()?.toString() ?: return false
-    if (method.parameterTypes.size != 1 || method.parameterTypes.single().toString() != scoped) return false
+    if (method.parameterTypes.size != 1) return false
+    val scoped = method.parameterTypes.single().toString()
     val parameters = builder.parameterTypes.map(CharSequence::toString)
+    if (parameters.count { it == scoped } != 1) return false
     return method.instructions().any { instruction ->
         instruction.methodReference()?.let {
             it.definingClass == builder.definingClass && it.name == builder.name &&

@@ -399,6 +399,28 @@ class DownloadReelShapesTest {
         assertTrue("no call to the builder", !rendersThrough(noCall, builder))
     }
 
+    /** 585's Android 9 build hands its builder the tree props first and the scoped context later on. */
+    @Test
+    fun `the scoped context may come later in the builder's parameters, once`() {
+        val builder = method(
+            "Lfixture/Spec;", "build", listOf("Lfixture/Props;", session, "Lfixture/Scope;"), "Lfixture/Component;",
+            "const/4 v0, 0x0\nreturn-object v0",
+        )
+        val call = "invoke-virtual/range { v0 .. v3 }, Lfixture/Spec;->build(Lfixture/Props;${session}Lfixture/Scope;)Lfixture/Component;"
+        val render = method("Lfixture/Sidebar;", "render", listOf("Lfixture/Scope;"), "Lfixture/Component;",
+            "const/4 v0, 0x0\nconst/4 v1, 0x0\nconst/4 v2, 0x0\n$call\nmove-result-object v0\nreturn-object v0")
+        assertTrue(rendersThrough(render, builder))
+
+        val twice = method(
+            "Lfixture/Spec;", "build", listOf("Lfixture/Scope;", session, "Lfixture/Scope;"), "Lfixture/Component;",
+            "const/4 v0, 0x0\nreturn-object v0",
+        )
+        val twiceCall = "invoke-virtual/range { v0 .. v3 }, Lfixture/Spec;->build(Lfixture/Scope;${session}Lfixture/Scope;)Lfixture/Component;"
+        val rendersTwice = method("Lfixture/Sidebar;", "render", listOf("Lfixture/Scope;"), "Lfixture/Component;",
+            "const/4 v0, 0x0\nconst/4 v1, 0x0\nconst/4 v2, 0x0\n$twiceCall\nmove-result-object v0\nreturn-object v0")
+        assertTrue("a builder taking the scoped type twice", !rendersThrough(rendersTwice, twice))
+    }
+
     private val handler = "Lkotlin/jvm/functions/Function1;"
     private val factory = "Lfixture/Factory;->make($session$handler$handler$handler$handler)Lfixture/Button;"
 
