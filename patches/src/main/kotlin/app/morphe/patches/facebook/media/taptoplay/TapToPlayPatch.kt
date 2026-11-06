@@ -84,6 +84,11 @@ val tapToPlayPatch = bytecodePatch(
         val checker = hookAutoplaySetting()
         hookReelPlayButton(checker)
         hookReelPlayback()
+        try {
+            hookReelAutoplayDisabled()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on, and a reel's play button can come back while it plays.")
+        }
         hookTouches()
         enableStatus("tapToPlay")
     }

@@ -74,7 +74,8 @@ class TapToPlayFixtureTest {
 
                 // One pass over the build for the classes holding the anchors' strings.
                 val holders = mutableMapOf<String, MutableList<ClassDef>>()
-                val anchors = listOf(GROOT_PLAY, LEGACY_PLAY, AUTOPLAY_SETTINGS_CHECKER, REELS_CONTROLS, REELS_PLAYBACK_STARTED)
+                val anchors = listOf(GROOT_PLAY, LEGACY_PLAY, AUTOPLAY_SETTINGS_CHECKER, REELS_CONTROLS, REELS_PLAYBACK_STARTED,
+                    REELS_AUTOPLAY_DISABLED)
                 FixtureDex.forEach(fixture) { dex ->
                     val strings = anchors.filter { anchor -> dex.stringSection.any { it == anchor } }
                     if (strings.isEmpty()) return@forEach
@@ -141,7 +142,13 @@ class TapToPlayFixtureTest {
                     owner.methods.any { it.returnType == "V" && it.parameterTypes.size == 1 && holdsString(it, REELS_PLAYBACK_STARTED) }
                 }
                 val playback = playbackOwner.methods.single { holdsString(it, REELS_PLAYBACK_STARTED) }
-                val playbackClasses = mutableMapOf(playbackOwner.type to playbackOwner)
+                fun disabledHandler(method: Method) = !AccessFlags.STATIC.isSet(method.accessFlags) &&
+                    method.returnType == "V" && method.parameterTypes.size == 1 && holdsString(method, REELS_AUTOPLAY_DISABLED)
+                val disabledOwner = holders.getValue(REELS_AUTOPLAY_DISABLED).single { owner ->
+                    owner.methods.any(::disabledHandler)
+                }
+                val disabled = disabledOwner.methods.single(::disabledHandler)
+                val playbackClasses = mutableMapOf(playbackOwner.type to playbackOwner, disabledOwner.type to disabledOwner)
                 repeat(2) {
                     val references = playbackClasses.values.flatMap { owner ->
                         owner.fields.map { it.type } + owner.methods.flatMap { method ->
@@ -316,6 +323,25 @@ class TapToPlayFixtureTest {
                 assertEquals("$name: cleanup keeps the original decision register",
                     (eventCode[cleanup + 1] as OneRegisterInstruction).registerA,
                     (eventCode[cleanup + 2] as OneRegisterInstruction).registerA)
+
+                // A late "autoplay disabled" event asks the extension with the player's state, and only
+                // a no reaches the store that shows the button (#91).
+                val disabledCode = patched(disabled).implementation!!.instructions.toList()
+                val ask = disabledCode.indices.single { disabledCode[it].call?.toString() == KEEP_REEL_PLAYING }
+                assertEquals("$name: the state read", listOf(Opcode.IGET_OBJECT, Opcode.IF_EQZ),
+                    disabledCode.subList(ask - 4, ask - 2).map { it.opcode })
+                assertTrue("$name: the state read's call", disabledCode[ask - 2].opcode in
+                    setOf(Opcode.INVOKE_INTERFACE, Opcode.INVOKE_VIRTUAL))
+                val stateRead = disabledCode[ask - 2].call!!
+                assertTrue("$name: the read answers the player's state",
+                    playbackClasses[stateRead.returnType]?.let { isEnumNaming(it, PLAYBACK_STATE_NAMES) } == true)
+                assertEquals("$name: the answer and the store", listOf(Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.RETURN_VOID,
+                    Opcode.NOP, Opcode.SGET_OBJECT, Opcode.IPUT_OBJECT), disabledCode.subList(ask + 1, ask + 7).map { it.opcode })
+                val initial = (disabledCode[ask + 5] as ReferenceInstruction).reference as FieldReference
+                assertEquals("$name: the store is the button's state", "AUTOPLAY_OFF_INIT_STATE",
+                    playbackClasses[initial.type]?.let { enumConstantFields(it)[initial.name] })
+                assertEquals("$name: the handler keeps its original code",
+                    disabled.implementation!!.instructions.count() + 9, disabledCode.size)
 
                 // Every touch goes to the tap clock with the screen and the event, and on unchanged.
                 val dispatch = patched(touchDispatches(classes.getValue(FRAGMENT_ACTIVITY)).single())

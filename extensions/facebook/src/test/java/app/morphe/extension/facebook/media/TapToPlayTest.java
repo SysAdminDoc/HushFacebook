@@ -88,6 +88,11 @@ public class TapToPlayTest {
 
     private enum ReelControl { AUTOPLAY_OFF_INIT_STATE, PLAYING, PAUSED, PLAYBACK_COMPLETE, UNKNOWN }
 
+    private enum PlayerState {
+        UNINITIALIZED, UNPREPARED, PREPARED, ATTEMPT_TO_PLAY, PLAYING, SEEKING, ATTEMPT_TO_PAUSE, PAUSED,
+        FINISH_ONE_LOOP, PLAYBACK_COMPLETE, ERROR
+    }
+
     @Test
     public void aStartInAPictureInPictureWindowGoesAheadAndKeepsItsPlayerArmed() {
         long now = SystemClock.uptimeMillis();
@@ -201,6 +206,23 @@ public class TapToPlayTest {
                 assertFalse(TapToPlay.clearReelPlayButton(false, ReelControl.AUTOPLAY_OFF_INIT_STATE)));
         SettingsContextRule.beforeThePauseIsDecided(() ->
                 assertTrue(TapToPlay.clearReelPlayButton(true, ReelControl.AUTOPLAY_OFF_INIT_STATE)));
+    }
+
+    @Test
+    public void aLateAutoplayDisabledEventLeavesAPlayingReelWithoutItsButton() {
+        assertTrue("a playing reel keeps its button off (#91)", TapToPlay.keepReelPlaying(PlayerState.PLAYING));
+        for (PlayerState state : PlayerState.values()) {
+            if (state == PlayerState.PLAYING) continue;
+            assertFalse("a reel that isn't playing gets its button: " + state, TapToPlay.keepReelPlaying(state));
+        }
+        assertFalse(TapToPlay.keepReelPlaying(null));
+        assertFalse(TapToPlay.keepReelPlaying("PLAYING"));
+        Settings.TAP_TO_PLAY.save(false);
+        assertFalse("with the switch off Facebook's event goes through", TapToPlay.keepReelPlaying(PlayerState.PLAYING));
+        Settings.TAP_TO_PLAY.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse(TapToPlay.keepReelPlaying(PlayerState.PLAYING));
+        PauseForTests.resume();
     }
 
     @Test

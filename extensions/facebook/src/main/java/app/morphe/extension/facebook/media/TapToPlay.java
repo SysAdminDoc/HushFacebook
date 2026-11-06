@@ -519,6 +519,25 @@ public final class TapToPlay {
         }
     }
 
+    /**
+     * Runs where the Reels controls take Facebook's "autoplay disabled" event, which a reel's
+     * autoplay check posts when it fails. The controls only listen for it on accounts where a
+     * Facebook server flag turns that listener on, and there the event can land after the reel
+     * started playing, past {@link #clearReelPlayButton}, so the play button comes back over the
+     * playing reel until a tap (#91). True drops the event when [playerState] is PLAYING.
+     */
+    public static boolean keepReelPlaying(Object playerState) {
+        try {
+            HookStatus.invoked(FamilyNames.TAP_TO_PLAY);
+            if (!on() || !(playerState instanceof Enum)) return false;
+            HookStatus.bound(FamilyNames.TAP_TO_PLAY, "Reels autoplay check");
+            return "PLAYING".equals(((Enum<?>) playerState).name());
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.TAP_TO_PLAY, "Reels autoplay check", failure);
+            return false;
+        }
+    }
+
     private static void logReelButtonOnce() {
         synchronized (LOG_LOCK) {
             if (reelButtonLogged) return;

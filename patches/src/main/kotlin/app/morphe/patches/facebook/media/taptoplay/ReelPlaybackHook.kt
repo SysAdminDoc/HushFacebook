@@ -22,9 +22,12 @@ import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 internal const val REELS_PLAYBACK_STARTED = "reels_autoplay_started"
+internal const val REELS_AUTOPLAY_DISABLED = "reels_autoplay_disabled"
 internal const val CLEAR_REEL_PLAY_BUTTON = "$TAP_TO_PLAY->clearReelPlayButton(ZLjava/lang/Object;)Z"
+internal const val KEEP_REEL_PLAYING = "$TAP_TO_PLAY->keepReelPlaying(Ljava/lang/Object;)Z"
 internal val REEL_CONTROL_NAMES = listOf("AUTOPLAY_OFF_INIT_STATE", "PLAYING", "PAUSED", "PLAYBACK_COMPLETE")
 internal val PLAYBACK_STATE_NAMES = listOf("UNINITIALIZED", "PREPARED", "ATTEMPT_TO_PLAY", "PLAYING", "PAUSED", "SEEKING")
 
@@ -134,5 +137,83 @@ internal fun BytecodePatchContext.hookReelPlayback() {
         iget-object v$scratch, v$scratch, $control
         invoke-static { v$answer, v$scratch }, $CLEAR_REEL_PLAY_BUTTON
         move-result v$answer
+    """)
+}
+
+/**
+ * A reel's autoplay check (GrootVideoController's onCanAutoplay) posts an "autoplay disabled" event
+ * each time it fails, and the Reels controls answer it by storing AUTOPLAY_OFF_INIT_STATE, the state
+ * that shows the play button. The controls only subscribe to that event where a MobileConfig flag
+ * says so (585: `LX/091d;->A1F` registers the handler under `0x8106fc028c2dc2`, off on the test
+ * account), and there the event can land after the PLAYING event cleared the button, leaving it over
+ * a playing reel until a tap (#91). Before that store the extension is asked with the player's
+ * state, read the way the controls' own update reads it, and a yes ends the handler there. On 585
+ * the handler is a shared lambda's switch (`LX/0AEP;->A06`, case 3), the controls `LX/09hU`, and the
+ * state read `A09` then `Er5()`.
+ */
+internal fun BytecodePatchContext.hookReelAutoplayDisabled() {
+    fun refuse(detail: String): Nothing = throw PatchException("$PATCH: Reels autoplay check: $detail")
+    val handler = classDefByStrings(REELS_AUTOPLAY_DISABLED, StringComparisonType.EQUALS)
+        .flatMap { it.methods }.filter {
+            !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
+                it.parameterTypes.size == 1 && holdsString(it, REELS_AUTOPLAY_DISABLED)
+        }.singleOrNull() ?: refuse("expected one autoplay-disabled handler")
+    val code = handler.implementation!!.instructions.toList()
+    val mark = code.indexOfFirst {
+        ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == REELS_AUTOPLAY_DISABLED
+    }
+    if (mark < 0) refuse("the handler does not load its marker")
+    val store = (mark + 1 until code.size).firstOrNull { index ->
+        code[index].opcode == Opcode.IPUT_OBJECT &&
+            ((code[index] as ReferenceInstruction).reference as FieldReference).type.let { type ->
+                classDefByOrNull(type)?.let { isEnumNaming(it, REEL_CONTROL_NAMES) } == true
+            }
+    } ?: refuse("no control state store after the marker")
+    val control = (code[store] as ReferenceInstruction).reference as FieldReference
+    val init = enumConstantFields(classDefBy(control.type)).entries
+        .singleOrNull { it.value == "AUTOPLAY_OFF_INIT_STATE" }?.key
+        ?: refuse("the control state has no unique AUTOPLAY_OFF_INIT_STATE constant")
+    val write = code[store] as TwoRegisterInstruction
+    val load = code[store - 1]
+    val loaded = (load as? ReferenceInstruction)?.reference as? FieldReference
+    if (load.opcode != Opcode.SGET_OBJECT || loaded?.definingClass != control.type || loaded.name != init ||
+        (load as OneRegisterInstruction).registerA != write.registerA) {
+        refuse("the store is not of AUTOPLAY_OFF_INIT_STATE")
+    }
+    // The controls' own read of the player's state: one of their fields, asked with no arguments
+    // for the state enum.
+    val controls = classDefBy(control.definingClass)
+    val reads = controls.methods.flatMap { method ->
+        val body = method.implementation?.instructions?.toList().orEmpty()
+        (1 until body.size).mapNotNull { index ->
+            val field = (body[index - 1] as? ReferenceInstruction)?.reference as? FieldReference
+            val call = (body[index] as? ReferenceInstruction)?.reference as? MethodReference
+            val opcode = body[index].opcode
+            if (body[index - 1].opcode != Opcode.IGET_OBJECT || field?.definingClass != controls.type ||
+                call == null || call.parameterTypes.isNotEmpty() || call.definingClass != field.type ||
+                (opcode != Opcode.INVOKE_INTERFACE && opcode != Opcode.INVOKE_VIRTUAL) ||
+                invokeRegisters(body[index]).singleOrNull() != (body[index - 1] as TwoRegisterInstruction).registerA ||
+                classDefByOrNull(call.returnType)?.let { isEnumNaming(it, PLAYBACK_STATE_NAMES) } != true
+            ) return@mapNotNull null
+            Triple(field.toString(), opcode, call.toString())
+        }
+    }.toSet()
+    val (source, opcode, read) = reads.singleOrNull() ?: refuse("expected one read of the player's state")
+    val target = write.registerB
+    if (target > 15) refuse("the controls register does not fit")
+    val mutable = mutableClassDefBy(handler.definingClass).findMutableMethodOf(handler)
+    val scratch = mutable.freeLocalsAt(PATCH, store - 1, 1).single()
+    val invoke = if (opcode == Opcode.INVOKE_INTERFACE) "invoke-interface" else "invoke-virtual"
+    mutable.addInstructionsAtControlFlowLabel(store - 1, """
+        iget-object v$scratch, v$target, $source
+        if-eqz v$scratch, :keep
+        $invoke { v$scratch }, $read
+        move-result-object v$scratch
+        invoke-static { v$scratch }, $KEEP_REEL_PLAYING
+        move-result v$scratch
+        if-eqz v$scratch, :keep
+        return-void
+        :keep
+        nop
     """)
 }
