@@ -579,18 +579,24 @@ public class PatchFamilyTest {
                 .startsWith("Block promotional notifications: on ("));
         Settings.NOTIFICATION_QUIET_HOURS.resetToDefault();
         Settings.BLOCK_EVENT_NOTIFICATIONS.resetToDefault();
-        // Opening Messenger from the icon and leaving calls and chats to it each work without the
-        // other, so either one on turns the patch on, and a pause takes both out.
+        // Opening Messenger from the icon, leaving calls and chats to it and opening chats in it
+        // each work without the others, so any one on turns the patch on, and a pause takes all out.
         assertEquals("Open Messenger from the top bar: disabled by its switch (hushfacebook_open_messenger_app=off, "
-                        + "hushfacebook_leave_calls_and_chats_to_messenger=off)",
+                        + "hushfacebook_leave_calls_and_chats_to_messenger=off, hushfacebook_open_chats_in_messenger=off)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.MESSENGER_ICON), false).get(0));
         Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER.save(true);
         assertEquals("Open Messenger from the top bar: on (hushfacebook_open_messenger_app=off, "
-                        + "hushfacebook_leave_calls_and_chats_to_messenger=on)",
+                        + "hushfacebook_leave_calls_and_chats_to_messenger=on, hushfacebook_open_chats_in_messenger=off)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.MESSENGER_ICON), false).get(0));
         assertEquals("Open Messenger from the top bar: disabled while paused (saved hushfacebook_open_messenger_app=off, "
-                        + "hushfacebook_leave_calls_and_chats_to_messenger=on)",
+                        + "hushfacebook_leave_calls_and_chats_to_messenger=on, hushfacebook_open_chats_in_messenger=off)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.MESSENGER_ICON), true).get(0));
+        Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER.resetToDefault();
+        Settings.OPEN_CHATS_IN_MESSENGER.save(true);
+        assertEquals("Open Messenger from the top bar: on (hushfacebook_open_messenger_app=off, "
+                        + "hushfacebook_leave_calls_and_chats_to_messenger=off, hushfacebook_open_chats_in_messenger=on)",
+                PatchFamily.reportLines(EnumSet.of(PatchFamily.MESSENGER_ICON), false).get(0));
+        Settings.OPEN_CHATS_IN_MESSENGER.resetToDefault();
         Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER.resetToDefault();
 
         List<String> paused = PatchFamily.reportLines(build, true);

@@ -2566,3 +2566,5 @@ With Seek bar on stories on, the bar fades a few seconds after the story starts 
 Clean mode	簡潔模式
 Clean mode button on reels	Reels 上的簡潔模式按鈕
 Adds a Clean mode button to the buttons down the side of a reel. Tap it to hide them, and Clean mode stays on as you swipe. Facebook's own Clean mode button brings them back.	在 Reels 側邊的按鈕中加入簡潔模式按鈕。點按它即可隱藏這些按鈕，滑動時簡潔模式會保持開啟。Facebook 內建的簡潔模式按鈕可讓它們重新顯示。
+Open chats in Messenger	在 Messenger 中開啟聊天
+Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	在 Messenger 應用程式中開啟聊天，而不是在 Facebook 內開啟，包括個人檔案上的「傳送訊息」按鈕，前提是已安裝並啟用 Messenger。未安裝 Messenger 時，聊天仍在 Facebook 中開啟。變更後請重新啟動 Facebook。

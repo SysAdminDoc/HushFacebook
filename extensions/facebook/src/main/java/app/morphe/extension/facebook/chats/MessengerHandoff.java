@@ -74,6 +74,16 @@ public final class MessengerHandoff {
     /** Counted when the switch was on but no enabled Messenger was there, so Facebook kept it. */
     static final String NO_MESSENGER = "no Messenger, Facebook rang or notified";
 
+    /** Counted when Facebook's chats gate was told its chats open in Messenger (#392). */
+    static final String CHATS_LEFT = "chats opened in Messenger";
+
+    /** Counted when Open chats in Messenger was on but Meta's Messenger wasn't there. */
+    static final String NO_MESSENGER_FOR_CHATS = "no Messenger, chats stayed in Facebook";
+
+    /** Whether Meta's Messenger was installed and enabled when the gate first asked, or null before then. */
+    @Nullable
+    private static volatile Boolean metaMessenger;
+
     /**
      * The chat notifications Messenger posts itself, by their kept class names: a new message, a
      * reaction to one, a message request, a missed call, and the placeholder Facebook posts for an
@@ -118,6 +128,55 @@ public final class MessengerHandoff {
      */
     public static boolean inBuild() {
         return false;
+    }
+
+    /**
+     * Whether this build carries Open chats in Messenger's hook. The patch answers true here once
+     * it found Facebook's chats gate, so the settings page offers the switch only where it works.
+     */
+    public static boolean chatsInBuild() {
+        return false;
+    }
+
+    /**
+     * Injection point, first thing in the gate Facebook asks before it opens a chat inside
+     * Facebook (#392). True has the gate answer false, which sends the chat to Messenger the way
+     * Facebook already does for accounts Meta hasn't moved into its own Chats. True only while the
+     * switch is on and Meta's Messenger, {@code com.facebook.orca}, is installed and enabled: a copy
+     * under another package name isn't one Facebook knows to open. Facebook asks the gate often
+     * (the jewel count, chat pushes), so the lookup is kept for the process, and the switch restarts
+     * Facebook. Never throws.
+     */
+    public static boolean chatsInMessenger() {
+        try {
+            HookStatus.invoked(FamilyNames.MESSENGER_ICON);
+            if (!Utils.settingsReady() || !Settings.OPEN_CHATS_IN_MESSENGER.get()) return false;
+            if (!metaMessengerInstalled()) {
+                HookStatus.counted(FamilyNames.MESSENGER_ICON, NO_MESSENGER_FOR_CHATS);
+                return false;
+            }
+            HookStatus.counted(FamilyNames.MESSENGER_ICON, CHATS_LEFT);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.MESSENGER_ICON, "Messenger chats", failure);
+            return false;
+        }
+    }
+
+    /** Meta's Messenger, installed and enabled, looked up on the first call with a context and kept. */
+    private static boolean metaMessengerInstalled() {
+        Boolean known = metaMessenger;
+        if (known != null) return known;
+        Context context = Utils.getContext();
+        if (context == null) return false;
+        boolean found = MessengerCard.lookUp(context.getPackageManager());
+        metaMessenger = found;
+        return found;
+    }
+
+    /** Drops the kept Messenger answer, as a new Facebook process starts without it. For tests. */
+    static void forgetMessenger() {
+        metaMessenger = null;
     }
 
     /**

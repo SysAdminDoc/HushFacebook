@@ -15,6 +15,7 @@ Changes in each Hushfacebook version, newest first.
 * `Lower the seek bar and speaker` moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. They come down together, so the bar never lands on the speaker. Both new switches need `Seek bar on feed videos` and start off. (#386)
 * `Seek bar on stories` under Stories puts a seek bar along the bottom of a video story. Drag it to move through the story, which waits while you drag and plays on when you let go. On video stories it takes the spot of `Progress bar at the bottom`, so the two never stack. Live stories and ads don't get one. It's off until you turn it on. (#386, #380)
 * `Fade the story seek bar` lets that bar fade a few seconds after a story starts or you last touch it, separate from the feed's fade switch. A touch or a pause brings it back. It needs `Seek bar on stories` and starts off. (#386)
+* `Open chats in Messenger` under Chats sends your chats to the Messenger app instead of opening them inside Facebook, and that includes the Message button on someone's profile. Some accounts get chats inside Facebook even with Messenger installed, and this switch is for them. It only kicks in while Messenger is installed and turned on, starts off, and needs a Facebook restart after you flip it. (#392)
 
 ### Changed
 

@@ -281,6 +281,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_CHAT_META_AI_BUTTON) return L10n.t("Hide the Meta AI button in Chats");
         if (setting == Settings.OPEN_MESSENGER_APP) return L10n.t("Open the Messenger app");
         if (setting == Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER) return L10n.t("Leave calls and chats to Messenger");
+        if (setting == Settings.OPEN_CHATS_IN_MESSENGER) return L10n.t("Open chats in Messenger");
         if (setting == Settings.SAVED_SHORTCUT) return L10n.t("Saved shortcut");
         if (setting == Settings.WATCH_HISTORY_SHORTCUT) return L10n.t("Watch history shortcut");
         if (setting == Settings.FREE_STUFF_SHORTCUT) return L10n.t("Free stuff shortcut");

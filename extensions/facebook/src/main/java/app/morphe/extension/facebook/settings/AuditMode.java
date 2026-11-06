@@ -79,6 +79,7 @@ public final class AuditMode {
             Settings.OPEN_LINKS_EXTERNALLY,
             Settings.OPEN_MESSENGER_APP,
             Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER,
+            Settings.OPEN_CHATS_IN_MESSENGER,
             Settings.HIDE_PHOTO_POSTS,
             Settings.HIDE_VIDEO_POSTS,
             Settings.HIDE_LINK_POSTS,

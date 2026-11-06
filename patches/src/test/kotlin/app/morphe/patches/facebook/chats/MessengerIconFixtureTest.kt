@@ -126,10 +126,14 @@ class MessengerIconFixtureTest {
                 val tapClass = FixtureDex.classesHolding(bundle, REELS_TAB_ENTRY).single { owner -> owner.methods.any(::isIconTap) }
                 val tap = tapClass.methods.single(::isIconTap)
                 val handlerType = buttonHandlerCalls(tap).map { it.definingClass }.distinct().single()
-                val classes = FixtureDex.classes(bundle, setOf(handlerType, FRAGMENT_ACTIVITY))
+                val classes = FixtureDex.classes(bundle, setOf(handlerType, FRAGMENT_ACTIVITY, INBOX_ROUTER))
                 val handoffClasses = HandoffFixture.classes(bundle)
+                // Open chats in Messenger: the router's onCreate asks one gate, a static of its own class.
+                val router = classes.getValue(INBOX_ROUTER)
+                val gateCall = chatsGateCalls(routerOnCreate(router.methods)!!).single()
+                val gateClass = FixtureDex.classes(bundle, setOf(gateCall.definingClass)).getValue(gateCall.definingClass)
                 val context = PatchContexts.of(
-                    (listOf(tapClass, classes.getValue(handlerType), classes.getValue(FRAGMENT_ACTIVITY),
+                    (listOf(tapClass, classes.getValue(handlerType), classes.getValue(FRAGMENT_ACTIVITY), router, gateClass,
                         ExtensionDex.classDef(SETTINGS_STATUS), ExtensionDex.classDef(HANDOFF)) + handoffClasses).distinctBy { it.type },
                 )
                 openMessengerFromTopBarPatch.execute(context)
@@ -185,6 +189,21 @@ class MessengerIconFixtureTest {
                 val inBuild = context.mutableClassDefBy(HANDOFF).methods.single { it.name == "inBuild" }
                 assertEquals("$name: MessengerHandoff.inBuild still answers false", 1,
                     (inBuild.implementation!!.instructions.first() as NarrowLiteralInstruction).narrowLiteral)
+                // The chats gate asks the extension before anything else and answers false on its
+                // word (#392), and the settings page offers the switch.
+                val gate = context.mutableClassDefBy(gateCall.definingClass).methods.single {
+                    it.name == gateCall.name && it.returnType == "Z" &&
+                        it.parameterTypes.map(Any::toString) == gateCall.parameterTypes.map(Any::toString)
+                }
+                val gateCode = gate.implementation!!.instructions.toList()
+                assertEquals("$name: the chats gate doesn't ask first", 0, firstCall(gate, CHATS_IN_MESSENGER))
+                assertEquals("$name: the chats gate's early answer", listOf(Opcode.MOVE_RESULT, Opcode.IF_EQZ,
+                    Opcode.CONST_4, Opcode.RETURN), gateCode.subList(1, 5).map { it.opcode })
+                assertEquals("$name: the chats gate's early answer isn't false", 0,
+                    (gateCode[3] as NarrowLiteralInstruction).narrowLiteral)
+                val chatsInBuild = context.mutableClassDefBy(HANDOFF).methods.single { it.name == "chatsInBuild" }
+                assertEquals("$name: MessengerHandoff.chatsInBuild still answers false", 1,
+                    (chatsInBuild.implementation!!.instructions.first() as NarrowLiteralInstruction).narrowLiteral)
                 checked += version
             }
         }

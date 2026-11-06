@@ -443,6 +443,7 @@ public final class SettingsBackup {
             Settings.HIDE_CHAT_META_AI_BUTTON,
             Settings.OPEN_MESSENGER_APP,
             Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER,
+            Settings.OPEN_CHATS_IN_MESSENGER,
             Settings.HIDE_MENU_UPGRADES,
             Settings.HIDE_MENU_ALSO_FROM_META,
             Settings.HIDE_MENU_HELP,

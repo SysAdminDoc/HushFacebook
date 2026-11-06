@@ -55,6 +55,12 @@ final class AppPages {
         return forced != null ? forced.contains(PatchFamily.MESSENGER_ICON) : MessengerHandoff.inBuild();
     }
 
+    /** Whether this build carries Open chats in Messenger's hook, counted in the same way for tests. */
+    static boolean chatsInBuild() {
+        Set<PatchFamily> forced = PatchFamily.inBuildForTests;
+        return forced != null ? forced.contains(PatchFamily.MESSENGER_ICON) : MessengerHandoff.chatsInBuild();
+    }
+
     /** Chats: the Get Messenger card, the chat list clean-up, the Messenger icon and leaving calls to Messenger. */
     static void chats(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context,
             Set<PatchFamily> build) {
@@ -89,6 +95,13 @@ final class AppPages {
                                 + "enabled. Restart Facebook after changing this switch, or after installing, removing, enabling "
                                 + "or disabling Messenger, so call routing updates. If you're signed out of Messenger, you'll "
                                 + "miss calls and messages.")));
+            }
+            // A build without Facebook's chats gate keeps the icon without this switch (#392).
+            if (build.contains(PatchFamily.MESSENGER_ICON) && chatsInBuild()) {
+                chats.addPreference(toggle(context, Settings.OPEN_CHATS_IN_MESSENGER,
+                        L10n.t("Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile "
+                                + "included, while Messenger is installed and enabled. Without Messenger, chats stay in "
+                                + "Facebook. Restart Facebook after changing it.")));
             }
             if (build.contains(PatchFamily.ORIGINAL_CHAT_MEDIA)) {
                 chats.addPreference(toggle(context, Settings.ORIGINAL_CHAT_MEDIA,

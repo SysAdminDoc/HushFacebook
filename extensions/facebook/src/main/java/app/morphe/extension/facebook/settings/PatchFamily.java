@@ -268,7 +268,7 @@ public enum PatchFamily {
     CHAT_LIST(FamilyNames.CHAT_LIST, "chatListCleanup", null,
             Settings.HIDE_CHAT_NOTES_TRAY, Settings.HIDE_CHAT_PROMOTIONS, Settings.HIDE_CHAT_META_AI_BUTTON),
     MESSENGER_ICON(FamilyNames.MESSENGER_ICON, "messengerIcon", null,
-            Settings.OPEN_MESSENGER_APP, Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER),
+            Settings.OPEN_MESSENGER_APP, Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER, Settings.OPEN_CHATS_IN_MESSENGER),
     MENU_PROMOTIONS(FamilyNames.MENU_PROMOTIONS, "menuPromotions", null,
             Settings.HIDE_MENU_UPGRADES, Settings.HIDE_MENU_ALSO_FROM_META, Settings.HIDE_MENU_HELP,
             Settings.KEEP_MENU_SETTINGS_EXPANDED, Settings.HIDE_MENU_MUSE, Settings.HIDE_MENU_META_AI),

@@ -43,6 +43,7 @@ internal const val DROP_RING = "$HANDOFF->dropRing()Z"
 internal const val DROP_CHAT = "$HANDOFF->dropChat(Ljava/lang/Object;)Z"
 internal const val DROP_CHAT_PUSH = "$HANDOFF->dropChatPush(Ljava/lang/String;)Z"
 internal const val CLIENT_CAPABILITIES = "$HANDOFF->clientCapabilities(J)J"
+internal const val CHATS_IN_MESSENGER = "$HANDOFF->chatsInMessenger()Z"
 
 /**
  * Has a tap on the Messenger icon in Facebook's top bar open the Messenger app, while the switch
@@ -69,6 +70,12 @@ internal const val CLIENT_CAPABILITIES = "$HANDOFF->clientCapabilities(J)J"
  * one of the icon's stops the patch; a build missing one of the handoff's keeps the icon, leaves
  * every handoff hook out and says so in the patch log, and the extension's MessengerHandoff.inBuild
  * stays false so the settings page doesn't offer the second switch.
+ *
+ * The third switch, Open chats in Messenger (#392), goes first in Facebook's chats gate
+ * (ChatsGateAnchors.kt) and answers false while it's on and Meta's Messenger is installed, so the
+ * Message button on a profile and the rest of Facebook's chat routes open Messenger, as they
+ * already do on accounts Meta hasn't moved into Facebook's Chats. A build without the gate keeps
+ * the rest, says so in the patch log, and MessengerHandoff.chatsInBuild stays false.
  */
 @Suppress("unused")
 val openMessengerFromTopBarPatch = bytecodePatch(
@@ -79,7 +86,8 @@ val openMessengerFromTopBarPatch = bytecodePatch(
         "Starts off. Turn it on in Hushfacebook settings > Chats and Messenger. Also carries Leave calls and chats to " +
         "Messenger, a separate switch that starts off and leaves calls and chat notifications to Messenger " +
         "while it's installed and enabled. Restart Facebook after changing the switch or whether Messenger is " +
-        "installed or enabled, so call routing updates.",
+        "installed or enabled, so call routing updates. Open chats in Messenger, another switch that starts off, " +
+        "opens chats in Messenger instead of inside Facebook, the Message button on a profile included.",
     default = true,
 ) {
     category("Chats")
@@ -109,11 +117,21 @@ val openMessengerFromTopBarPatch = bytecodePatch(
         val handoffInBuild = mutableClassDefBy(HANDOFF).methods.singleOrNull {
             it.name == "inBuild" && it.returnType == "Z" && it.parameterTypes.isEmpty()
         } ?: throw PatchException("$ICON_PATCH: the extension has no $HANDOFF->inBuild()")
+        val chatsInBuild = mutableClassDefBy(HANDOFF).methods.singleOrNull {
+            it.name == "chatsInBuild" && it.returnType == "Z" && it.parameterTypes.isEmpty()
+        } ?: throw PatchException("$ICON_PATCH: the extension has no $HANDOFF->chatsInBuild()")
         // The handoff is the second switch's; a build missing one of its anchors keeps the icon.
         val handoff = try {
             handoffTargets()
         } catch (missing: PatchException) {
             patchLog.warning("${missing.message}, so Leave calls and chats to Messenger isn't in this build")
+            null
+        }
+        // The chats gate is the third switch's, and the same goes for it.
+        val gate = try {
+            chatsGate()
+        } catch (missing: PatchException) {
+            patchLog.warning("${missing.message}, so $CHATS_SWITCH isn't in this build")
             null
         }
         mutableClassDefBy(tap.definingClass).methods.single { it.isSameAs(tap) }.openMessengerFirst(TAP_LONG_PRESS)
@@ -130,6 +148,10 @@ val openMessengerFromTopBarPatch = bytecodePatch(
             mutableClassDefBy(TRAY_MANAGER).methods.single { it.isSameAs(handoff.trayPost.method) }
                 .postNothingWhenBlocked(handoff.trayPost.notification, DROP_CHAT_PUSH, ICON_PATCH)
             handoffInBuild.returnEarly(true)
+        }
+        if (gate != null) {
+            mutableClassDefBy(gate.definingClass).methods.single { it.isSameAs(gate) }.leaveChatsToMessengerFirst()
+            chatsInBuild.returnEarly(true)
         }
         enableStatus("messengerIcon")
     }
@@ -253,6 +275,27 @@ internal fun MutableMethod.parseNoRingFirst() {
             if-eqz v0, :facebook
             const/4 v0, 0x0
             return-object v0
+        """,
+        ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * First thing in Facebook's chats gate: ask the extension, and answer false while it says chats
+ * open in Messenger, the answer Facebook gives an account whose chats it hands to Messenger.
+ * Otherwise the gate runs from its own first instruction. v0 is free at index 0.
+ */
+internal fun MutableMethod.leaveChatsToMessengerFirst() {
+    if (returnType != "Z") throw PatchException("$ICON_PATCH: $definingClass->$name doesn't answer a boolean")
+    requireLocals(ICON_PATCH, 1)
+    addInstructionsWithLabels(
+        0,
+        """
+            invoke-static {}, $CHATS_IN_MESSENGER
+            move-result v0
+            if-eqz v0, :facebook
+            const/4 v0, 0x0
+            return v0
         """,
         ExternalLabel("facebook", getInstruction(0)),
     )

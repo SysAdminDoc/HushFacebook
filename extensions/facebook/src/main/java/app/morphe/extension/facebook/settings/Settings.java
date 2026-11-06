@@ -1901,6 +1901,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_leave_calls_and_chats_to_messenger", FALSE, true);
 
     /**
+     * While Meta's Messenger is installed and enabled, chats open in Messenger instead of inside
+     * Facebook, the Message button on a profile included (#392). Starts off. Facebook keeps its
+     * Messenger lookup for the process, so the switch restarts it. Without Messenger, chats stay in
+     * Facebook.
+     */
+    public static final BooleanSetting OPEN_CHATS_IN_MESSENGER =
+            new BooleanSetting("hushfacebook_open_chats_in_messenger", FALSE, true);
+
+    /**
      * The Upgrades section of Facebook's Menu, the group Facebook types UPSELL, with its offers.
      * Only that group goes: Settings, Help and support and the rest of the Menu stay. A Menu built
      * before the switch changed keeps the group on screen even though its sections ask again (#184),

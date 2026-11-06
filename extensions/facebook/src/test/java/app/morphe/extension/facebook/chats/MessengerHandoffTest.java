@@ -61,7 +61,9 @@ public class MessengerHandoffTest {
     public void restore() {
         PauseForTests.resume();
         Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER.resetToDefault();
+        Settings.OPEN_CHATS_IN_MESSENGER.resetToDefault();
         MessengerIconForTests.uninstall();
+        MessengerHandoff.forgetMessenger();
         HookStatus.clear();
     }
 
@@ -374,5 +376,46 @@ public class MessengerHandoffTest {
         failing.set(false);
         assertEquals(0x215L, MessengerHandoff.clientCapabilities(0x217L));
         assertAllDropped("the package manager is back", callAndMessage());
+    }
+
+    /**
+     * Open chats in Messenger (#392): off until it's turned on, so Facebook's chats gate keeps its
+     * own answer with Messenger right there. On, with Meta's Messenger installed and enabled, the
+     * gate is told the chat opens in Messenger, and that's counted. The switch restarts Facebook.
+     */
+    @Test
+    public void openChatsInMessengerSendsChatsToMessengerOnlyWhileOnWithMessenger() {
+        assertFalse("the switch starts on", Settings.OPEN_CHATS_IN_MESSENGER.get());
+        assertTrue("the switch doesn't restart Facebook, which keeps its Messenger lookup",
+                Settings.OPEN_CHATS_IN_MESSENGER.rebootApp);
+        MessengerCardForTests.install(true);
+        MessengerHandoff.forgetMessenger();
+        assertFalse("an off switch sent a chat to Messenger", MessengerHandoff.chatsInMessenger());
+        Settings.OPEN_CHATS_IN_MESSENGER.save(true);
+        assertTrue("on with Messenger, the chat stayed in Facebook", MessengerHandoff.chatsInMessenger());
+        assertEquals(PREFIX + "invoked 2, 0 found, 0 missing. Counted: " + MessengerHandoff.CHATS_LEFT + " 1",
+                statusLine());
+    }
+
+    /**
+     * Without Meta's Messenger, or with it disabled, chats stay in Facebook: there'd be nothing for
+     * Facebook to open. The answer is kept for the process, as Facebook asks the gate often.
+     */
+    @Test
+    public void openChatsInMessengerKeepsChatsInFacebookWithoutMessenger() {
+        Settings.OPEN_CHATS_IN_MESSENGER.save(true);
+        MessengerCardForTests.uninstall();
+        MessengerHandoff.forgetMessenger();
+        assertFalse("no Messenger, yet the chat went to it", MessengerHandoff.chatsInMessenger());
+        MessengerCardForTests.install(false);
+        MessengerHandoff.forgetMessenger();
+        assertFalse("a disabled Messenger got the chat", MessengerHandoff.chatsInMessenger());
+        assertEquals(PREFIX + "invoked 2, 0 found, 0 missing. Counted: "
+                + MessengerHandoff.NO_MESSENGER_FOR_CHATS + " 2", statusLine());
+        // Installed later in the same process, the kept answer stands until Facebook restarts.
+        MessengerCardForTests.install(true);
+        assertFalse("the kept answer was looked up again", MessengerHandoff.chatsInMessenger());
+        MessengerHandoff.forgetMessenger();
+        assertTrue("a new process didn't find Messenger", MessengerHandoff.chatsInMessenger());
     }
 }
