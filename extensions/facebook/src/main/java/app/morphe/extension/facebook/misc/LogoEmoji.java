@@ -70,32 +70,38 @@ public final class LogoEmoji {
 
     /**
      * [base] with [emoji] drawn right after it. The tail is as tall as [base] and as wide as both
-     * with a small gap. Color filters and tints reach [base] only.
+     * with a small gap. Color filters and tints reach [base] only. In a header that centers what it
+     * shows ([centered]), the tail keeps the emoji's room empty before [base] too, so [base] stays
+     * at the center where it was (#399).
      */
     static final class Tail extends Drawable implements Drawable.Callback {
         final Drawable base;
         final String emoji;
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.SUBPIXEL_TEXT_FLAG);
+        final boolean centered;
+        // No subpixel positioning: an emoji is a picture, and a part-pixel offset resamples it soft (#399).
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         private final Rect ink = new Rect();
         private final int height;
         private final int baseWidth;
         private final int gap;
         private final int emojiWidth;
 
-        Tail(Drawable base, String emoji, int height) {
+        Tail(Drawable base, String emoji, int height, boolean centered) {
             this.base = base;
             this.emoji = emoji;
+            this.centered = centered;
             this.height = Math.max(1, height);
             int intrinsic = base.getIntrinsicWidth();
             // A wordmark with no width of its own takes the room that's left once the emoji has its own.
             this.baseWidth = intrinsic > 0 ? intrinsic : -1;
             this.gap = Math.max(1, this.height / 6);
             paint.setColor(Color.BLACK);
-            // Sized the way the header's words are: the emoji's ink height fills the wordmark's.
+            // Sized the way the header's words are: the emoji's ink height fills the wordmark's, at a
+            // whole pixel size so its picture is scaled once and stays crisp.
             paint.setTextSize(100f);
             paint.getTextBounds(emoji, 0, emoji.length(), ink);
             float size = ink.height() > 0 ? 100f * this.height / ink.height() : this.height;
-            paint.setTextSize(size);
+            paint.setTextSize(Math.max(1, (int) size));
             paint.getTextBounds(emoji, 0, emoji.length(), ink);
             float measured = paint.measureText(emoji);
             this.emojiWidth = Math.max(1, Math.round(measured > 0 ? measured : this.height));
@@ -107,21 +113,28 @@ public final class LogoEmoji {
             return emoji;
         }
 
+        /** The empty room before the base: the emoji's, mirrored, when the header centers the tail. */
+        private int lead() {
+            return centered ? gap + emojiWidth : 0;
+        }
+
         @Override
         public void draw(@NonNull Canvas canvas) {
             Rect bounds = getBounds();
-            int baseRight = baseWidth > 0 ? bounds.left + baseWidth : bounds.right - gap - emojiWidth;
-            base.setBounds(bounds.left, bounds.top, Math.max(bounds.left, baseRight), bounds.bottom);
+            int left = bounds.left + lead();
+            int baseRight = baseWidth > 0 ? left + baseWidth : bounds.right - gap - emojiWidth;
+            base.setBounds(left, bounds.top, Math.max(left, baseRight), bounds.bottom);
             base.draw(canvas);
-            float y = ink.height() > 0
+            // On whole pixels, so the emoji's picture isn't spread across two.
+            float y = Math.round(ink.height() > 0
                     ? bounds.exactCenterY() - (ink.top + ink.bottom) / 2f
-                    : bounds.exactCenterY() - (paint.ascent() + paint.descent()) / 2f;
+                    : bounds.exactCenterY() - (paint.ascent() + paint.descent()) / 2f);
             canvas.drawText(emoji, baseRight + gap, y, paint);
         }
 
         @Override
         public int getIntrinsicWidth() {
-            return baseWidth > 0 ? baseWidth + gap + emojiWidth : -1;
+            return baseWidth > 0 ? lead() + baseWidth + gap + emojiWidth : -1;
         }
 
         @Override

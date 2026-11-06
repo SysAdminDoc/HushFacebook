@@ -181,10 +181,17 @@ public final class HeaderText {
                 // Facebook's own wordmark stays, with the emoji after it.
                 mark = image.getDrawable();
                 if (mark == null || mark instanceof LogoEmoji.Tail) return null;
+                // Placed the way Facebook places its wordmark (#399): the header stretches the logo's
+                // view past the wordmark and draws it from the start, so centering it there pushed the
+                // logo right.
+                Drawable shown = new LogoEmoji.Tail(mark, emoji, height, centers(image.getScaleType()));
+                slot = height;
+                image.setImageDrawable(shown);
+                return shown;
             } else {
                 return null;
             }
-            Drawable shown = emoji.isEmpty() ? mark : new LogoEmoji.Tail(mark, emoji, height);
+            Drawable shown = emoji.isEmpty() ? mark : new LogoEmoji.Tail(mark, emoji, height, true);
             slot = height;
             show(image, shown);
             return shown;
@@ -194,6 +201,12 @@ public final class HeaderText {
     private static void show(ImageView image, Drawable mark) {
         image.setImageDrawable(mark);
         image.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+    }
+
+    /** Whether [type] puts a drawable smaller than the view at the view's center across. */
+    static boolean centers(@Nullable ImageView.ScaleType type) {
+        return type == ImageView.ScaleType.CENTER || type == ImageView.ScaleType.CENTER_INSIDE
+                || type == ImageView.ScaleType.CENTER_CROP || type == ImageView.ScaleType.FIT_CENTER;
     }
 
     /**

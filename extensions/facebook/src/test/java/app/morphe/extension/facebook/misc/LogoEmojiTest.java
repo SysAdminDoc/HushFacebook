@@ -73,6 +73,8 @@ public class LogoEmojiTest {
         final List<String> texts = new ArrayList<>();
         final List<float[]> places = new ArrayList<>();
         final List<ColorFilter> filters = new ArrayList<>();
+        final List<Float> sizes = new ArrayList<>();
+        final List<Integer> flags = new ArrayList<>();
 
         Recorder() {
             super(Bitmap.createBitmap(400, 60, Bitmap.Config.ARGB_8888));
@@ -83,6 +85,8 @@ public class LogoEmojiTest {
             texts.add(text);
             places.add(new float[]{x, y});
             filters.add(paint.getColorFilter());
+            sizes.add(paint.getTextSize());
+            flags.add(paint.getFlags());
         }
     }
 
@@ -153,7 +157,7 @@ public class LogoEmojiTest {
     @Test
     public void theEmojiIsDrawnRightAfterTheWordmarkAtItsHeight() {
         Wordmark wordmark = new Wordmark();
-        LogoEmoji.Tail tail = new LogoEmoji.Tail(wordmark, PUMPKIN, 24);
+        LogoEmoji.Tail tail = new LogoEmoji.Tail(wordmark, PUMPKIN, 24, false);
         assertEquals("as tall as the wordmark", 24, tail.getIntrinsicHeight());
         assertTrue("wider than the wordmark by the emoji", tail.getIntrinsicWidth() > 120);
 
@@ -202,7 +206,57 @@ public class LogoEmojiTest {
         assertSame("Facebook's wordmark stays", wordmark, tail.base);
         assertEquals(PUMPKIN, tail.emoji());
         assertEquals("the wordmark's height", 24, tail.getIntrinsicHeight());
-        assertEquals(ImageView.ScaleType.CENTER_INSIDE, logo.getScaleType());
+        // Facebook draws its wordmark from the start of a stretched view; centering it moved the logo (#399).
+        assertEquals("Facebook's own scale type stays", ImageView.ScaleType.MATRIX, logo.getScaleType());
+        assertFalse("nothing is mirrored before a logo drawn from the start", tail.centered);
+    }
+
+    @Test
+    public void aCenteredHeaderKeepsTheLogoWhereItWas() {
+        Wordmark wordmark = new Wordmark();
+        ImageView logo = header(wordmark);
+        logo.setScaleType(ImageView.ScaleType.CENTER);
+        Settings.LOGO_EMOJI.save(PUMPKIN);
+
+        HeaderText.dress(logo);
+
+        LogoEmoji.Tail tail = (LogoEmoji.Tail) logo.getDrawable();
+        assertTrue(tail.centered);
+        assertEquals(ImageView.ScaleType.CENTER, logo.getScaleType());
+        int width = tail.getIntrinsicWidth();
+        tail.setBounds(0, 0, width, 24);
+        tail.draw(new Recorder());
+        assertEquals("the wordmark keeps its width", 120, wordmark.drawnIn.width());
+        assertEquals("with as much room before it as the emoji takes after it, so its center doesn't move",
+                width - wordmark.drawnIn.right, wordmark.drawnIn.left);
+    }
+
+    @Test
+    public void theEmojiLandsOnWholePixelsAtAWholeSize() {
+        Wordmark wordmark = new Wordmark();
+        LogoEmoji.Tail tail = new LogoEmoji.Tail(wordmark, PUMPKIN, 24, false);
+        tail.setBounds(0, 0, tail.getIntrinsicWidth(), 24);
+        Recorder canvas = new Recorder();
+        tail.draw(canvas);
+
+        float size = canvas.sizes.get(0);
+        assertEquals("a whole text size", Math.floor(size), size, 0f);
+        float[] at = canvas.places.get(0);
+        assertEquals("a whole x", Math.floor(at[0]), at[0], 0f);
+        assertEquals("a whole y", Math.floor(at[1]), at[1], 0f);
+        assertEquals("no subpixel text positioning", 0, canvas.flags.get(0) & Paint.SUBPIXEL_TEXT_FLAG);
+        assertTrue("the emoji's picture is filtered when scaled", (canvas.flags.get(0) & Paint.FILTER_BITMAP_FLAG) != 0);
+    }
+
+    @Test
+    public void onlyCenteringScaleTypesCountAsCentered() {
+        assertTrue(HeaderText.centers(ImageView.ScaleType.CENTER));
+        assertTrue(HeaderText.centers(ImageView.ScaleType.CENTER_INSIDE));
+        assertTrue(HeaderText.centers(ImageView.ScaleType.CENTER_CROP));
+        assertTrue(HeaderText.centers(ImageView.ScaleType.FIT_CENTER));
+        assertFalse(HeaderText.centers(ImageView.ScaleType.MATRIX));
+        assertFalse(HeaderText.centers(ImageView.ScaleType.FIT_START));
+        assertFalse(HeaderText.centers(null));
     }
 
     @Test
