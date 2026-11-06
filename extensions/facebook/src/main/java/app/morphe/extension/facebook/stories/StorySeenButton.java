@@ -348,7 +348,7 @@ public final class StorySeenButton {
      * subclasses (DefaultNavBar, BlackNavBar, Floating), so the kept name is looked for up the class's
      * parents.
      */
-    static boolean isViewer(Activity activity) {
+    public static boolean isViewer(Activity activity) {
         for (Class<?> type = activity.getClass(); type != null; type = type.getSuperclass()) {
             if (VIEWER.equals(type.getName())) return true;
         }

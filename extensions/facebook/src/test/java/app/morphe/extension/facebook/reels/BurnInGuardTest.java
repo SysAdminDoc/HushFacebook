@@ -26,6 +26,7 @@ import android.widget.FrameLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.facebook.inspiration.activity.InspirationCameraActivity;
+import com.facebook.stories.viewer.activity.StoryViewerActivity;
 
 import org.junit.After;
 import org.junit.Before;
@@ -243,6 +244,100 @@ public class BurnInGuardTest {
         } finally {
             story.close();
         }
+    }
+
+    /**
+     * A photo story has no video surface: the photo and the layer over it holding the story's button
+     * stand in for one, so the header, the tap zones, the reply bar and that button dim and the photo
+     * doesn't (#401, laid out as 585's story card on an S22). The same screen outside the story viewer
+     * is left alone.
+     */
+    @Test
+    public void aPhotoStoryDimsAroundThePhotoAndOnlyInTheStoryViewer() {
+        ActivityController<StoryViewerActivity> story = Robolectric.buildActivity(StoryViewerActivity.class).setup();
+        try {
+            Activity screen = story.get();
+            View[] card = photoStory(screen);
+            View decor = screen.getWindow().getDecorView();
+            decor.measure(View.MeasureSpec.makeMeasureSpec(W, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(H, View.MeasureSpec.EXACTLY));
+            decor.layout(0, 0, W, H);
+            story.windowFocusChanged(true);
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+
+            BurnInGuard.resumed(screen);
+            assertNotNull("the photo stands in for the video", BurnInGuard.reelOf(decor));
+            after(IDLE + 100);
+            assertEquals("the photo", 1f, card[0].getAlpha(), 0f);
+            assertEquals("the layer over it", 1f, card[1].getAlpha(), 0f);
+            assertEquals("the card", 1f, card[6].getAlpha(), 0f);
+            assertEquals("the story's button", BurnInGuard.IDLE_LEVEL, card[2].getAlpha(), 0f);
+            assertEquals("the header", BurnInGuard.IDLE_LEVEL, card[3].getAlpha(), 0f);
+            assertEquals("the next tap zone", BurnInGuard.IDLE_LEVEL, card[4].getAlpha(), 0f);
+            assertEquals("the reply bar", BurnInGuard.IDLE_LEVEL, card[5].getAlpha(), 0f);
+
+            // A tap on the story's button brings them back.
+            tapOnIn(screen, card[2]);
+            assertEquals("the header after a tap", 1f, card[3].getAlpha(), 0f);
+            BurnInGuard.paused(screen);
+        } finally {
+            story.close();
+        }
+
+        View[] card = photoStory(activity);
+        layout();
+        Settings.BURN_IN_GUARD.save(BurnInMode.DIM);
+        BurnInGuard.resumed(activity);
+        assertNull("no stand-in outside the story viewer", BurnInGuard.reelOf(activity.getWindow().getDecorView()));
+        after(IDLE * 3);
+        assertEquals("the header", 1f, card[3].getAlpha(), 0f);
+        assertEquals("the reply bar", 1f, card[5].getAlpha(), 0f);
+    }
+
+    /**
+     * A story card with a photo and no video: the photo, the layer over it, the button on that layer,
+     * the header, the next tap zone, the reply bar under the card, and the card.
+     */
+    private View[] photoStory(Activity screen) {
+        FrameLayout frame = new FrameLayout(screen);
+        screen.setContentView(frame);
+        FrameLayout card = new FrameLayout(screen);
+        int bottom = H * 83 / 100;
+        place(frame, card, 0, 50, W, bottom);
+        View photo = new View(screen);
+        card.addView(photo, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout layer = new FrameLayout(screen);
+        card.addView(layer, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        View learnMore = clickable(screen);
+        place(layer, learnMore, W / 3, bottom - 450, W * 2 / 3, bottom - 330);
+        View header = clickable(screen);
+        place(card, header, 0, 0, W, 200);
+        View next = clickable(screen);
+        place(card, next, W - 160, 0, W, bottom - 50);
+        View reply = clickable(screen);
+        place(frame, reply, 0, bottom + 20, W, bottom + 200);
+        return new View[]{photo, layer, learnMore, header, next, reply, card};
+    }
+
+    private static View clickable(Activity screen) {
+        View view = new View(screen);
+        view.setOnClickListener(clicked -> { });
+        return view;
+    }
+
+    private static void tapOnIn(Activity screen, View view) {
+        float[] at = middleOf(view);
+        long now = SystemClock.uptimeMillis();
+        for (int action : new int[]{MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP}) {
+            MotionEvent event = MotionEvent.obtain(now, now, action, at[0], at[1], 0);
+            try {
+                screen.getWindow().getDecorView().dispatchTouchEvent(event);
+            } finally {
+                event.recycle();
+            }
+        }
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
     }
 
     /**

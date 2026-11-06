@@ -45,6 +45,7 @@ import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.facebook.stories.StorySeenButton;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.Setting;
@@ -60,8 +61,9 @@ import app.morphe.extension.shared.settings.Setting;
  * about 87% of an S22's window with the tab bar showing, a tall video in the feed about 58% and a
  * landscape one about 26%. A video opened from the feed plays on a page of Facebook's full-screen
  * viewer sized to the video, so a wide one there is small too, but its page is the screen's size
- * ({@link #onAFullPage}, #370). Facebook's camera and story editor fill the screen with a preview
- * too, and their shutter and tools are never dimmed ({@link #camera}).
+ * ({@link #onAFullPage}, #370). A photo story plays on no surface at all, so in the story viewer the
+ * photo's own layers stand in for one ({@link #pictures}, #401). Facebook's camera and story editor
+ * fill the screen with a preview too, and their shutter and tools are never dimmed ({@link #camera}).
  *
  * <p>The dim: once the Reels screen has gone the Dim after choice ({@link BurnInWait}) without a
  * touch, what shows beside the video is drawn at {@link #IDLE_LEVEL} of what Facebook draws it at,
@@ -159,6 +161,8 @@ public final class BurnInGuard {
     private static WeakReference<Activity> front = new WeakReference<>(null);
     /** The activity in front lets the screen under it show through ({@link #seeThrough}). */
     private static boolean frontSeeThrough;
+    /** The activity in front is the story viewer ({@link StorySeenButton#isViewer}). */
+    private static boolean frontStory;
     /** The decor view whose observer has the listeners. */
     private static WeakReference<View> observed = new WeakReference<>(null);
     private static boolean layoutWatched;
@@ -233,6 +237,7 @@ public final class BurnInGuard {
             leave();
             front = new WeakReference<>(activity);
             frontSeeThrough = seeThrough(activity);
+            frontStory = StorySeenButton.isViewer(activity);
             View decor = activity.getWindow() == null ? null : activity.getWindow().peekDecorView();
             if (decor == null) return;
             ViewTreeObserver observer = decor.getViewTreeObserver();
@@ -289,7 +294,7 @@ public final class BurnInGuard {
             watchLayouts(mode != BurnInMode.OFF);
             long now = SystemClock.uptimeMillis();
             List<View> surfaces = mode == BurnInMode.OFF || decor == null || camera(activity)
-                    ? Collections.<View>emptyList() : surfaces(decor);
+                    ? Collections.<View>emptyList() : playing(decor);
             boolean on = decor != null && reelOf(decor, surfaces) != null;
             if (!on && guarding && mode != BurnInMode.OFF && decor != null) {
                 // Mid-swipe, or a moment without focus: what's dimmed stays so, and a second look decides.
@@ -352,7 +357,54 @@ public final class BurnInGuard {
     /** The video the Reels screen in [decor] plays, or null when [decor] isn't showing it. */
     @Nullable
     static View reelOf(View decor) {
-        return reelOf(decor, surfaces(decor));
+        return reelOf(decor, playing(decor));
+    }
+
+    /**
+     * What a pass keeps bright in [decor]: its shown video surfaces, and in the story viewer, when
+     * none of them fills the screen, the photo's layers as well ({@link #pictures}, #401).
+     */
+    private static List<View> playing(View decor) {
+        List<View> found = surfaces(decor);
+        if (!frontStory || reelOf(decor, found) != null) return found;
+        List<View> pictures = pictures(decor);
+        pictures.addAll(found);
+        return pictures;
+    }
+
+    /**
+     * The deepest shown views in [decor]'s content frame each the size of at least {@link
+     * #REELS_SHARE} of the window, with no shown child that is: on a photo story, the layers that
+     * draw the photo and the layer over it holding the story's button (585 on an S22: a 1080x1920
+     * media frame in a 1080x2316 window, with the header, the tap zones and the reply bar beside it).
+     * Size rather than the part on the screen, so the photo the pager holds ready beside the one
+     * showing keeps its branch bright, as a reel's surface does. Looks at no more than {@link
+     * #MAX_VIEWS} views.
+     */
+    private static List<View> pictures(View decor) {
+        List<View> found = new ArrayList<>();
+        View content = decor.findViewById(android.R.id.content);
+        long least = (long) Math.ceil(REELS_SHARE * decor.getWidth() * decor.getHeight());
+        if (content == null || least <= 0L) return found;
+        ArrayDeque<View> pending = new ArrayDeque<>();
+        pending.add(content);
+        int seen = 0;
+        while (!pending.isEmpty() && seen++ < MAX_VIEWS) {
+            View view = pending.poll();
+            boolean deeper = false;
+            if (view instanceof ViewGroup) {
+                ViewGroup group = (ViewGroup) view;
+                for (int i = 0; i < group.getChildCount(); i++) {
+                    View child = group.getChildAt(i);
+                    if (child.getVisibility() == View.VISIBLE && (long) child.getWidth() * child.getHeight() >= least) {
+                        pending.add(child);
+                        deeper = true;
+                    }
+                }
+            }
+            if (!deeper && view != content) found.add(view);
+        }
+        return found;
     }
 
     /**
@@ -791,7 +843,7 @@ public final class BurnInGuard {
             if (dimming && decor != null) {
                 try {
                     // Still on Reels: a layout that opened another screen is left to the pass, which brings them back.
-                    List<View> surfaces = surfaces(decor);
+                    List<View> surfaces = playing(decor);
                     if (reelOf(decor, surfaces) != null) dimAll(decor, surfaces);
                 } catch (Throwable failure) {
                     HookStatus.threw(FAMILY, "burn-in guard layout dim", failure);
@@ -833,6 +885,7 @@ public final class BurnInGuard {
         leave();
         if (handler != null) handler.removeCallbacks(TICK);
         frontSeeThrough = false;
+        frontStory = false;
         tickAt = -1L;
         touchedAt = 0L;
         doubtSince = -1L;
