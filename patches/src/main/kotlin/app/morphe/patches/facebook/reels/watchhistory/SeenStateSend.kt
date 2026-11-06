@@ -82,14 +82,21 @@ private fun Instruction.loads(string: String): Boolean =
 
 /**
  * The index where the flush hands the seen-state send to its executor, or null when [method]
- * isn't that flush: a void instance method taking nothing that fills [VIDEO_IDS] (loading it, or
- * through the constructor of the input it builds before naming the mutation) and makes one
- * `Executor.execute` call after it loads the mutation's name, whose runnable is a new instance of
- * the Runnable Redex left [SEEN_STATE_SEND] on and reaches the call by no other way. [classOf]
- * looks a class up by its type.
+ * isn't that flush: a void instance method that fills [VIDEO_IDS] (loading it, or through the
+ * constructor of the input it builds before naming the mutation) and makes one `Executor.execute`
+ * call after it loads the mutation's name, whose runnable is a new instance of the Runnable Redex
+ * left [SEEN_STATE_SEND] on and reaches the call by no other way. [classOf] looks a class up by its
+ * type.
+ *
+ * The flush takes nothing where the helper's send is inlined into it (every build before 585's
+ * Android 9 one, and 585's other builds). 585's Android 9
+ * build keeps the helper's send apart (LX/09pq;->A00, taking the session, the two id lists and the
+ * callback), and the flush calls it once with the queue already emptied, so there the send point
+ * is in the helper and takes arguments. Only that send builds its own `$1` runnable, so the
+ * runnable's name is what says this is the method, whatever it takes.
  */
 internal fun sendPoint(method: Method, classOf: (String) -> ClassDef?): Int? {
-    if (method.returnType != "V" || method.parameterTypes.isNotEmpty() || AccessFlags.STATIC.isSet(method.accessFlags)) return null
+    if (method.returnType != "V" || AccessFlags.STATIC.isSet(method.accessFlags)) return null
     val instructions = method.implementation?.instructions?.toList() ?: return null
     val named = instructions.indices.singleOrNull { instructions[it].loads(SEEN_STATE_MUTATION) } ?: return null
     if (!holdsString(method, VIDEO_IDS) && (0 until named).none { instructions[it].fillsVideoIds(classOf) }) return null

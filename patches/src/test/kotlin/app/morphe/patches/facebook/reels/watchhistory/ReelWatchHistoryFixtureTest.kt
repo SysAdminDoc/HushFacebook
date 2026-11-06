@@ -119,13 +119,37 @@ class ReelWatchHistoryFixtureTest {
 
                 // The queue is emptied before anything else: every Set the batcher keeps is cleared,
                 // and every clear comes before the mutation is named. A batch the hook holds back is
-                // already out of the queue, so nothing keeps it for a later send.
+                // already out of the queue, so nothing keeps it for a later send. 585's Android 9
+                // build keeps the helper's send apart from the flush, so there the batcher is the
+                // send's one caller, a void method taking nothing, and every clear comes before it
+                // calls the send.
                 val named = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == SEEN_STATE_MUTATION }
-                val queues = owner.fields.filter { it.type == "Ljava/util/Set;" && !AccessFlags.STATIC.isSet(it.accessFlags) }
-                val clears = code.indices.filter { code[it].call?.let { c -> c.definingClass == "Ljava/util/Set;" && c.name == "clear" } == true }
+                val sameCall = { call: MethodReference? ->
+                    call != null && call.definingClass == flush.definingClass && call.name == flush.name &&
+                        call.parameterTypes.map { it.toString() } == flush.parameterTypes.map { it.toString() }
+                }
+                val (batcher, batcherCode, emptiedBy) = if (flush.parameterTypes.isEmpty()) {
+                    Triple(owner, code, named)
+                } else {
+                    val callers = FixtureDex.methodsWhere(bundle, { dex -> dex.methodSection.any(sameCall) }) { method ->
+                        method.implementation?.instructions?.any { sameCall(it.call) } == true
+                    }
+                    assertEquals("$name: callers of the send", 1, callers.size)
+                    val caller = callers.single()
+                    assertTrue("$name: the flush isn't a void method taking nothing",
+                        caller.returnType == "V" && caller.parameterTypes.isEmpty())
+                    val callerCode = caller.implementation!!.instructions.toList()
+                    val calls = callerCode.indices.filter { sameCall(callerCode[it].call) }
+                    assertEquals("$name: the flush's calls to the send", 1, calls.size)
+                    Triple(FixtureDex.classes(bundle, setOf(caller.definingClass)).getValue(caller.definingClass), callerCode, calls.single())
+                }
+                val queues = batcher.fields.filter { it.type == "Ljava/util/Set;" && !AccessFlags.STATIC.isSet(it.accessFlags) }
+                val clears = batcherCode.indices.filter {
+                    batcherCode[it].call?.let { c -> c.definingClass == "Ljava/util/Set;" && c.name == "clear" } == true
+                }
                 assertTrue("$name: the batcher keeps no queue", queues.isNotEmpty())
                 assertEquals("$name: queues cleared", queues.size, clears.size)
-                assertTrue("$name: a queue is cleared after the mutation is named", clears.all { it < named })
+                assertTrue("$name: a queue is cleared after the mutation is named", clears.all { it < emptiedBy })
 
                 // The mutation is chosen: its name goes into the query's constructor and nowhere else.
                 val nameReads = flush.literalReads(named)

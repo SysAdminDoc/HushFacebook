@@ -107,6 +107,18 @@ class ReelWatchHistoryShapesTest {
         assertEquals(4, sendPoint(flush(), lookup(sendClass())))
     }
 
+    /** 585's Android 9 build keeps the helper's send apart: the session, both id lists and the callback. */
+    @Test
+    fun `a helper send taking the batch as arguments is found the same way`() {
+        val arguments = listOf(
+            "Lcom/facebook/auth/usersession/FbUserSession;", "Ljava/util/List;", "Ljava/util/List;",
+            "Lkotlin/jvm/functions/Function0;",
+        )
+        assertEquals(4, sendPoint(flush(parameters = arguments, registers = 12), lookup(sendClass())))
+        assertNull("another helper's runnable", sendPoint(flush(parameters = arguments, registers = 12),
+            lookup(sendClass(redexName = "FbShortsViewerFooterHotCommentHelper\$createHotCommentQueryRunnable\$1"))))
+    }
+
     private val input = "Lfixture/Input;"
 
     /** A GraphQL input whose `(List)` constructor loads [field], the way 584's merged `LX/7nD` loads `video_ids`. */
@@ -146,9 +158,8 @@ class ReelWatchHistoryShapesTest {
     }
 
     @Test
-    fun `only a void instance method taking nothing is the flush`() {
+    fun `only a void instance method is the flush`() {
         val send = lookup(sendClass())
-        assertNull(sendPoint(flush(parameters = listOf("Ljava/lang/Object;"), registers = 9), send))
         assertNull(sendPoint(flush(static = true), send))
         assertNull(sendPoint(flush(returnType = "Z"), send))
     }
