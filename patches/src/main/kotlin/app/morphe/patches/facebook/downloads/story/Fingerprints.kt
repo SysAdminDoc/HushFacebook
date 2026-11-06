@@ -58,16 +58,19 @@ internal fun isSaveStoryAction(method: Method, resolve: (MethodReference) -> Met
 /** Kept name. The list builder the story menu's builder adds its items to. */
 internal const val LIST_BUILDER = "Lcom/google/common/collect/ImmutableList\$Builder;"
 
+private val LIST_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+
 /**
  * Where the menu builder adds the save item, for Save photo to be built the same way right after:
- * [addIndex] is the `ImmutableList$Builder.add` of the item, [init] the item's constructor, whose
- * range call puts the item in [itemRegister] and its arguments up to [lastRegister], the first of
- * them the save action in [actionRegister]. [titleRegister] holds the first String the constructor
- * takes, the title the story menu draws in place of the item's string resource when it's set (the
- * menu's renderer reads it first), and [listRegister] the list builder.
+ * [addIndex] is the `ImmutableList$Builder.add` of the item, [init] the item's constructor at
+ * [initIndex], whose range call puts the item in [itemRegister] and its arguments up to
+ * [lastRegister], the first of them the save action in [actionRegister]. [titleRegister] holds the
+ * first String the constructor takes, the title the story menu draws in place of the item's string
+ * resource when it's set (the menu's renderer reads it first), and [listRegister] the list builder.
  */
 internal class SaveItemSite(
     val addIndex: Int,
+    val initIndex: Int,
     val init: MethodReference,
     val itemRegister: Int,
     val lastRegister: Int,
@@ -79,8 +82,9 @@ internal class SaveItemSite(
 /**
  * The [SaveItemSite] of [builder], the menu method that creates [action]. The item is constructed
  * by one range call, whose first argument after the item is the action the builder just created,
- * the list builder's `add` of the item follows at once and the method returns right after, so
- * reusing the call's registers for a second item disturbs nothing that still runs.
+ * the list builder's `add` of the item follows at once (585's Android 9 build moves the list
+ * builder into a low register in between) and the method returns right after, so reusing the
+ * call's registers for a second item disturbs nothing that still runs.
  */
 internal fun saveItemSite(builder: Method, action: ClassDef): SaveItemSite {
     val where = "${builder.definingClass}->${builder.name}"
@@ -99,11 +103,19 @@ internal fun saveItemSite(builder: Method, action: ClassDef): SaveItemSite {
     val (addIndex, add) = adds.single()
     add as FiveRegisterInstruction
 
-    val construction = instructions.getOrNull(addIndex - 1)
+    // Only a copy of the list builder into the register the add reads may sit between the two.
+    val listMove = instructions.getOrNull(addIndex - 1)?.takeIf {
+        it.opcode in LIST_MOVES && (it as OneRegisterInstruction).registerA == add.registerC
+    }
+    val initIndex = if (listMove != null) addIndex - 2 else addIndex - 1
+    val construction = instructions.getOrNull(initIndex)
     val init = (construction as? ReferenceInstruction)?.reference as? MethodReference
     check(construction is RegisterRangeInstruction && construction.opcode == Opcode.INVOKE_DIRECT_RANGE &&
         init != null && init.name == "<init>" && construction.startRegister == add.registerD) {
         "$where: the item list's add doesn't follow the item's range constructor"
+    }
+    check(add.registerC !in construction.startRegister until construction.startRegister + construction.registerCount) {
+        "$where: the list builder sits in a register the item's constructor reads"
     }
     check(construction.startRegister + 1 == actionRegisters.single() &&
         init.parameterTypes.firstOrNull()?.toString() in action.interfaces) {
@@ -120,7 +132,7 @@ internal fun saveItemSite(builder: Method, action: ClassDef): SaveItemSite {
         parameters.take(title).sumOf { if (it == "J" || it == "D") 2L else 1L }.toInt()
 
     // iget-object and a non-range invoke name their registers in four bits.
-    val site = SaveItemSite(addIndex, init, construction.startRegister,
+    val site = SaveItemSite(addIndex, initIndex, init, construction.startRegister,
         construction.startRegister + construction.registerCount - 1, actionRegisters.single(), titleRegister,
         add.registerC)
     check(maxOf(site.itemRegister, site.actionRegister, site.titleRegister, site.listRegister) < 16) {

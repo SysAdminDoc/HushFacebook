@@ -135,11 +135,13 @@ class SaveStoryActionFixtureTest {
                 site = saveItemSite(patchedBuilder, action)
                 assertEquals("$name: the native constructor and add are retained", primarySite.addIndex + 2, site.addIndex)
                 val titled = patchedBuilder.implementation!!.instructions.toList()
-                val ask = titled[primarySite.addIndex - 1] as FiveRegisterInstruction
+                val ask = titled[primarySite.initIndex] as FiveRegisterInstruction
                 assertEquals("$name: primary title reads action and original title, never the uninitialized item",
                     listOf(2, site.actionRegister, site.titleRegister), listOf(ask.registerCount, ask.registerC, ask.registerD))
                 assertEquals("$name: primary title result goes back to the title argument", site.titleRegister,
-                    (titled[primarySite.addIndex] as OneRegisterInstruction).registerA)
+                    (titled[primarySite.initIndex + 1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: the item's constructor follows the title", site.init.toString(),
+                    ((titled[primarySite.initIndex + 2] as ReferenceInstruction).reference as MethodReference).toString())
                 assertEquals("$name: a cross-class bridge must be public static", AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
                     helper.accessFlags)
                 assertEquals("$name: the bridge belongs to the card field's owner", action.type, helper.definingClass)

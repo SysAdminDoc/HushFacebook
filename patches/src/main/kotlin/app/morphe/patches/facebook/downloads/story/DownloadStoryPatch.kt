@@ -377,7 +377,7 @@ internal fun addStorySaveTitle(builder: MutableMethod, action: ClassDef, storyCa
             return-object v0
         """)
     }
-    builder.addInstructions(site.addIndex - 1, """
+    builder.addInstructions(site.initIndex, """
         invoke-static { v${site.actionRegister}, v${site.titleRegister} }, ${action.type}->$SAVE_TITLE_HELPER(${action.type}Ljava/lang/String;)Ljava/lang/String;
         move-result-object v${site.titleRegister}
     """)
