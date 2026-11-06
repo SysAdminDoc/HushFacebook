@@ -26,6 +26,8 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* On a Marketplace listing whose price dropped, the crossed-out old price stays level with the new one now. The date line under the price used to push it down so it floated between the price and the date. (#303)
+* A listing's date shows once, under its price. The place line near the bottom said it again, so it now reads just like Facebook's, unless the price couldn't get the date (cars keep it there). (#303)
 * With Reels first on the tab bar, a black band no longer sits above every reel after the first, whether the tab bar is at the top or the bottom. With Reels first, Facebook treats it like Home and slides its title bar away as you swipe, but the reels stayed pushed down by the bar's height. Now the reel runs up to the top of the screen once the bar has gone. With `Keep the top bar on screen` on, the title bar stays and the reel still starts below it. (#390)
 * With `Only the first reel waits` on, a reel you open from a tile in the feed now waits for your tap too. Before, the tap on the tile counted as playing it, so the first reel never waited on Facebook builds where Reels opens from the feed instead of a tab. With just `Tap to play` on, tapping a tile still plays the reel it opens. (#91)
 * A diagnostic report saved after `Clear diagnostic data` has the Marketplace response shapes and video format lines again. Both were written once a run, so anything Facebook loaded before the clear was missing from the new report, the same problem the search screen's lines had.

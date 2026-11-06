@@ -14,6 +14,7 @@ import android.text.TextPaint;
 import android.text.style.AbsoluteSizeSpan;
 import android.text.style.CharacterStyle;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.StrikethroughSpan;
 import android.text.style.UpdateAppearance;
 import android.util.TypedValue;
 
@@ -25,6 +26,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,7 +48,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>The same date also goes on a line of its own under the listing's price, where Facebook writes
  * "Just listed" for a day-old one ({@link #priceLine}). JavaScript writes the price from the
  * answer's listing_price, so the answer's amount and title say which text React builds is the price.
- * A vehicle gets no such line: Facebook already writes "Listed 3 weeks ago" under its price.
+ * A vehicle gets no such line: Facebook already writes "Listed 3 weeks ago" under its price. Once
+ * the date sits under the price, the place line React builds after it goes back to Facebook's own
+ * text, so the date shows once. A struck-through old price drawn beside the price gets an empty line
+ * of the same height, so the row Facebook centres them in keeps the two prices level.
  *
  * <p>Read from 585's MarketplacePDPSurfaceQuery on the S22, 2026-10-31:
  * data.viewer.marketplace_pdp.listing.primary_mp_ent has creation_time (seconds) and location_text
@@ -89,6 +94,16 @@ public final class MarketplaceListingAge {
     @Nullable
     private static Priced titled;
     private static int since;
+    /** The dates put under a price lately, oldest first, for their place lines. Guarded by PRICED. */
+    private static final LinkedHashSet<String> PLACED = new LinkedHashSet<>();
+    /**
+     * How many more texts may be the old price drawn beside the price that got a date, and the date
+     * line's size for the old price's empty line. Guarded by PRICED.
+     */
+    private static int struckLeft;
+    private static int struckSize;
+    /** What fills the old price's empty line: a space no layout drops. */
+    static final String BLANK = String.valueOf((char) 0xA0);
     /** The price comes this many texts after the title at most: a listing page draws it right under. */
     static final int MAX_BETWEEN = 4;
     /** Longer texts are neither a title nor a price. */
@@ -100,6 +115,9 @@ public final class MarketplaceListingAge {
     static final float LINE_SP = 14;
     /** How strongly the date line shows the price's colour, so it reads as the quieter line. */
     static final float LINE_ALPHA = 0.7f;
+    /** What the hook status counts when an old price gets its empty line, and a place line loses its date. */
+    static final String OLD_PRICE_LEVEL = "old price lined up with the dated price";
+    static final String PLACE_UNDATED = "place line left without the date the price has";
 
     private MarketplaceListingAge() {
     }
@@ -395,14 +413,19 @@ public final class MarketplaceListingAge {
      * listing's title, then its price right under it. When a listing whose page answered lately had
      * its title built, the next few texts are looked at for its price, and that one gets the date on
      * a line of its own under it. React measures and draws what this returns, so the page makes room
-     * for the line. Anything else, or the date switched off, comes back as it was.
+     * for the line. A struck-through old price right after it gets an empty line of the same size,
+     * and a place line carrying a date that went under a price comes back without it. Anything else,
+     * or the date switched off, comes back as it was.
      */
     public static Spannable priceLine(@Nullable Spannable text) {
         if (!anyPriced || text == null) return text;
         try {
             int length = text.length();
             String shown = length == 0 || length > MAX_TEXT_CHARS ? null : text.toString();
-            Priced line;
+            Priced line = null;
+            int blank = 0;
+            int placeAt = -1;
+            String placed = null;
             synchronized (PRICED) {
                 Priced named = shown == null ? null : PRICED.get(shown);
                 if (named != null) {
@@ -410,19 +433,58 @@ public final class MarketplaceListingAge {
                     since = 0;
                     return text;
                 }
-                if (titled == null) return text;
-                if (++since > MAX_BETWEEN) {
-                    titled = null;
-                    return text;
+                if (struckLeft > 0 && shown != null) {
+                    struckLeft--;
+                    if (struck(text, shown)) {
+                        struckLeft = 0;
+                        blank = struckSize;
+                    }
                 }
-                if (shown == null || length > MAX_PRICE_CHARS || !pricedAs(shown, titled.amount)) return text;
-                line = titled;
-                titled = null;
+                if (blank == 0 && shown != null) {
+                    for (String label : PLACED) {
+                        int at = shown.indexOf(DOT + label);
+                        if (at >= 0) {
+                            placeAt = at;
+                            placed = label;
+                            break;
+                        }
+                    }
+                }
+                if (blank == 0 && placed == null) {
+                    if (titled == null) return text;
+                    if (++since > MAX_BETWEEN) {
+                        titled = null;
+                        return text;
+                    }
+                    if (shown == null || length > MAX_PRICE_CHARS || !pricedAs(shown, titled.amount)) return text;
+                    line = titled;
+                    titled = null;
+                }
             }
             if (!MarketplaceAdFilter.listingDate()) return text;
+            if (blank > 0) {
+                HookStatus.counted(FamilyNames.SPONSORED_MARKETPLACE, OLD_PRICE_LEVEL);
+                Logger.printDebug(() -> "Listing date: gave the old price beside the dated price an empty line");
+                return underneath(text, BLANK, blank);
+            }
+            if (placed != null) {
+                HookStatus.counted(FamilyNames.SPONSORED_MARKETPLACE, PLACE_UNDATED);
+                Logger.printDebug(() -> "Listing date: the place line goes without the date the price has");
+                SpannableStringBuilder out = new SpannableStringBuilder(text);
+                out.delete(placeAt, placeAt + DOT.length() + placed.length());
+                return out;
+            }
             HookStatus.bound(FamilyNames.SPONSORED_MARKETPLACE, MarketplaceAdFilter.PRICE_LINE);
             Logger.printDebug(() -> "Listing date: put the date on a line under the listing's price");
-            return withLine(text, line.label);
+            Spannable dated = withLine(text, line.label);
+            synchronized (PRICED) {
+                PLACED.remove(line.label);
+                PLACED.add(line.label);
+                if (PLACED.size() > MAX_PRICED) PLACED.remove(PLACED.iterator().next());
+                struckLeft = MAX_BETWEEN;
+                struckSize = lineSize(text, length);
+            }
+            return dated;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.SPONSORED_MARKETPLACE, "listing date under the price", failure);
             return text;
@@ -434,16 +496,28 @@ public final class MarketplaceListingAge {
      * cents the price leaves off. A text with more letters than a currency has isn't a price.
      */
     static boolean pricedAs(String shown, String amount) {
+        String number = priceDigits(shown);
+        if (number == null) return false;
+        return amount.equals(number) || amount.equals(number + "00") || amount.equals(number + "000");
+    }
+
+    /** The digits of [shown] when it reads as a price, one line with a currency's letters at most. */
+    @Nullable
+    static String priceDigits(String shown) {
         StringBuilder digits = new StringBuilder();
         int letters = 0;
         for (int i = 0; i < shown.length(); i++) {
             char c = shown.charAt(i);
             if (c >= '0' && c <= '9') digits.append(c);
-            else if (c == '\n' || (Character.isLetter(c) && ++letters > MAX_PRICE_LETTERS)) return false;
+            else if (c == '\n' || (Character.isLetter(c) && ++letters > MAX_PRICE_LETTERS)) return null;
         }
-        if (digits.length() == 0) return false;
-        String number = digits.toString();
-        return amount.equals(number) || amount.equals(number + "00") || amount.equals(number + "000");
+        return digits.length() == 0 ? null : digits.toString();
+    }
+
+    /** Whether [text], reading [shown], is a price crossed out: what a listing's old price looks like. */
+    static boolean struck(Spanned text, String shown) {
+        return shown.length() <= MAX_PRICE_CHARS && priceDigits(shown) != null
+                && text.getSpans(0, text.length(), StrikethroughSpan.class).length > 0;
     }
 
     /** Whether [text] is a whole number of up to 18 digits. */
@@ -462,23 +536,35 @@ public final class MarketplaceListingAge {
      */
     static Spannable withLine(Spannable price, String label) {
         int end = price.length();
-        SpannableStringBuilder out = new SpannableStringBuilder(price);
-        out.append('\n').append(label);
+        Integer colour = null;
+        for (ForegroundColorSpan each : price.getSpans(0, end, ForegroundColorSpan.class)) {
+            colour = each.getForegroundColor();
+        }
+        SpannableStringBuilder out = underneath(price, label, lineSize(price, end));
+        out.setSpan(new LineColour(colour), end + 1, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return out;
+    }
+
+    /** The date line's size in pixels: {@link #LINE_SP}, or the price's own when that's smaller. */
+    static int lineSize(Spanned price, int end) {
+        int size = Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, LINE_SP,
+                Resources.getSystem().getDisplayMetrics()));
+        for (AbsoluteSizeSpan each : price.getSpans(0, end, AbsoluteSizeSpan.class)) {
+            if (!each.getDip() && each.getSize() > 0) size = Math.min(size, each.getSize());
+        }
+        return size;
+    }
+
+    /** [text] with [line] under it at [size] pixels. [text]'s own styles end where it does. */
+    static SpannableStringBuilder underneath(Spannable text, String line, int size) {
+        int end = text.length();
+        SpannableStringBuilder out = new SpannableStringBuilder(text);
+        out.append('\n').append(line);
         int total = out.length();
         for (Object span : out.getSpans(0, total, Object.class)) {
             if (out.getSpanEnd(span) > end) out.setSpan(span, out.getSpanStart(span), end, out.getSpanFlags(span));
         }
-        int size = Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, LINE_SP,
-                Resources.getSystem().getDisplayMetrics()));
-        Integer colour = null;
-        for (AbsoluteSizeSpan each : price.getSpans(0, end, AbsoluteSizeSpan.class)) {
-            if (!each.getDip() && each.getSize() > 0) size = Math.min(size, each.getSize());
-        }
-        for (ForegroundColorSpan each : price.getSpans(0, end, ForegroundColorSpan.class)) {
-            colour = each.getForegroundColor();
-        }
         out.setSpan(new AbsoluteSizeSpan(size), end + 1, total, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        out.setSpan(new LineColour(colour), end + 1, total, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return out;
     }
 
@@ -506,6 +592,9 @@ public final class MarketplaceListingAge {
             anyPriced = false;
             titled = null;
             since = 0;
+            PLACED.clear();
+            struckLeft = 0;
+            struckSize = 0;
         }
     }
 
