@@ -636,6 +636,43 @@ public class PinchZoomTest {
     }
 
     /**
+     * A profile video's TextureView can run past the post that clips it, a tall video centered in a
+     * shorter post, and the zoom copies only what the post shows of it, never the posts above and
+     * below it (#220). A holder that lets what it holds draw past it doesn't cut the copy.
+     */
+    @Test
+    public void aVideoRunningPastThePostThatClipsItZoomsOnlyWhatThePostShows() {
+        FrameLayout content = (FrameLayout) photo.getParent();
+        FrameLayout post = new FrameLayout(activity);
+        FrameLayout.LayoutParams lower = new FrameLayout.LayoutParams(1080, 400);
+        lower.topMargin = 700;
+        content.addView(post, lower);
+        TextureView video = new TextureView(activity);
+        FrameLayout.LayoutParams taller = new FrameLayout.LayoutParams(1080, 1000);
+        taller.topMargin = -300;
+        post.addView(video, taller);
+        layOut(activity);
+        assertSame(video, PinchZoom.mediaUnder(activity, decor(), 540, 900));
+
+        touch(event(MotionEvent.ACTION_DOWN, new float[][] {{490, 900}}));
+        touch(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{490, 900}, {590, 900}}));
+        PinchZoom.Zoom zoom = PinchZoom.zoom();
+        assertNotNull("no zoom started", zoom);
+        int[] at = new int[2];
+        post.getLocationInWindow(at);
+        assertEquals("the copy reached past the post", at[1], zoom.area.top);
+        assertEquals("the copy reached past the post", at[1] + 400, zoom.area.bottom);
+        assertEquals(400, copies.get(0).getHeight());
+
+        post.setClipChildren(false);
+        video.getLocationInWindow(at);
+        android.graphics.Rect whole = PinchZoom.area(decor(), video);
+        assertNotNull(whole);
+        assertEquals(at[1], whole.top);
+        assertEquals(at[1] + 1000, whole.bottom);
+    }
+
+    /**
      * The news feed shares its activity with a profile and zooms its own photos, so a photo that
      * isn't inside a root ProfileFragment handed over is left to Facebook.
      */

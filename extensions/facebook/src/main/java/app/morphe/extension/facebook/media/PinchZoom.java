@@ -27,6 +27,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.widget.FrameLayout;
@@ -707,17 +708,27 @@ public final class PinchZoom {
         return place;
     }
 
-    /** [target]'s bounds in [root]'s window, cut to what [root] shows, or null when that's empty. */
+    /**
+     * [target]'s bounds in [root]'s window, cut to each view holding it that clips what it holds and
+     * to what [root] shows, or null when that's empty. A profile video's TextureView runs past the
+     * post that clips it, and copying all of it took in the posts above and below (#220).
+     */
     @Nullable
     static Rect area(View root, View target) {
         int[] at = new int[2];
-        target.getLocationInWindow(at);
-        int[] rootAt = new int[2];
-        root.getLocationInWindow(rootAt);
-        Rect area = new Rect(at[0], at[1], at[0] + target.getWidth(), at[1] + target.getHeight());
-        Rect shown = new Rect(rootAt[0], rootAt[1], rootAt[0] + root.getWidth(), rootAt[1] + root.getHeight());
-        if (!area.intersect(shown) || area.isEmpty()) return null;
+        Rect area = bounds(target, at);
+        for (ViewParent parent = target.getParent(); parent instanceof ViewGroup && parent != root; parent = parent.getParent()) {
+            ViewGroup holder = (ViewGroup) parent;
+            if (holder.getClipChildren() && !area.intersect(bounds(holder, at))) return null;
+        }
+        if (!area.intersect(bounds(root, at)) || area.isEmpty()) return null;
         return area;
+    }
+
+    /** [view]'s bounds in its window. */
+    private static Rect bounds(View view, int[] at) {
+        view.getLocationInWindow(at);
+        return new Rect(at[0], at[1], at[0] + view.getWidth(), at[1] + view.getHeight());
     }
 
     /**
