@@ -432,7 +432,7 @@ public class MarketplaceResponseDiagnosticsTest {
         }
         String report = LogBufferManager.buildExportText();
         assertEquals(MarketplaceResponseDiagnostics.MAX_SHAPES, report.split("model=none", -1).length - 1);
-        LogBufferManager.clearLogBuffer();
+        // No clear in between: a clear starts the budget over.
 
         Object repeated = new Object();
         String retained = privateShape(1);
@@ -442,7 +442,6 @@ public class MarketplaceResponseDiagnosticsTest {
         report = LogBufferManager.buildExportText();
         assertTrue(report, report.contains("payloads=2 capture=complete"));
         assertFalse(report.contains("capture=incomplete"));
-        LogBufferManager.clearLogBuffer();
 
         Object omitted = new Object();
         String overflow = privateShape(MarketplaceResponseDiagnostics.MAX_SHAPES + 1);
@@ -450,9 +449,27 @@ public class MarketplaceResponseDiagnosticsTest {
         assertNull(MarketplaceAdFilter.responseEnd(omitted));
         report = LogBufferManager.buildExportText();
         assertTrue(report, report.contains("payloads=1 capture=incomplete(shape budget)"));
-        assertFalse(report.contains("capture=complete"));
+        assertEquals(report, 1, report.split("capture=incomplete", -1).length - 1);
         assertFalse(report.contains("other_string:" + (MarketplaceResponseDiagnostics.MAX_SHAPES + 1)));
         assertPrivateShapeDataAbsent(report);
+    }
+
+    /** A report taken after a diagnostic clear still has the shapes of a response seen before it. */
+    @Test
+    public void aShapeLoggedBeforeADiagnosticClearLogsAgainAfterIt() {
+        String field = "is_shipping_offered:boolean";
+        MarketplaceAdFilterForTests.responseWhole(THEMED, response());
+        int before = LogBufferManager.buildExportText().split(field, -1).length - 1;
+        assertTrue("no shape line for the listing", before > 0);
+        LogBufferManager.clearLogBuffer();
+        assertFalse(LogBufferManager.buildExportText().contains(field));
+        MarketplaceAdFilterForTests.responseWhole(THEMED, response());
+        String report = LogBufferManager.buildExportText();
+        assertEquals(report, before, report.split(field, -1).length - 1);
+        // Without a clear the same shapes aren't written twice.
+        MarketplaceAdFilterForTests.responseWhole(THEMED, response());
+        report = LogBufferManager.buildExportText();
+        assertEquals(report, before, report.split(field, -1).length - 1);
     }
 
     @Test
@@ -464,9 +481,11 @@ public class MarketplaceResponseDiagnosticsTest {
         }
         String report = LogBufferManager.buildExportText();
         assertEquals(8, report.split("response summary payloads=", -1).length - 1);
-        LogBufferManager.clearLogBuffer();
+        // No clear in between: a clear starts the budget over.
         assertSame(payload, MarketplaceAdFilterForTests.responseWhole(RELATED, payload));
-        assertFalse(LogBufferManager.buildExportText().contains("summary omitted"));
+        report = LogBufferManager.buildExportText();
+        assertEquals(report, 8, report.split("response summary payloads=", -1).length - 1);
+        assertFalse(report.contains("summary omitted"));
 
         Object request = new Object();
         String overflow = payload.repeat(9);
@@ -475,7 +494,14 @@ public class MarketplaceResponseDiagnosticsTest {
         assertSame(overflow, MarketplaceAdFilterForTests.responseWhole(RELATED, overflow));
         report = LogBufferManager.buildExportText();
         assertEquals(report, 1, report.split("response summary omitted: summary budget", -1).length - 1);
-        assertFalse(report.contains("response summary payloads="));
+        assertFalse(report.contains("response summary payloads=9"));
+        assertPrivateShapeDataAbsent(report);
+
+        LogBufferManager.clearLogBuffer();
+        assertSame(overflow, MarketplaceAdFilterForTests.responseWhole(RELATED, overflow));
+        report = LogBufferManager.buildExportText();
+        assertTrue("a clear starts the budget over", report.contains("response summary payloads=9"));
+        assertFalse(report.contains("summary omitted"));
         assertPrivateShapeDataAbsent(report);
     }
 

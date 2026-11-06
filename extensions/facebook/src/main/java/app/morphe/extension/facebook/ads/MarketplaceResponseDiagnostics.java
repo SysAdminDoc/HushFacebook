@@ -19,6 +19,7 @@ import java.util.WeakHashMap;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
+import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.BaseSettings;
 
 /**
@@ -104,6 +105,12 @@ final class MarketplaceResponseDiagnostics {
     private static final Map<Object, Observer> observers = new WeakHashMap<>();
     private static final Map<String, Set<String>> shapes = new HashMap<>();
     private static final Set<String> summaryBudgetNotices = new HashSet<>();
+    /**
+     * The diagnostic clear the logged shapes belong to. A clear empties the report, so every shape
+     * logs again after one: a response Facebook loaded before the clear would otherwise leave a
+     * report taken after it with no line for it.
+     */
+    private static long shapesGeneration = -1;
 
     private MarketplaceResponseDiagnostics() {
     }
@@ -346,6 +353,12 @@ final class MarketplaceResponseDiagnostics {
     private static boolean record(String query, String shape, boolean summary) {
         boolean retained = true;
         synchronized (shapes) {
+            long current = HookStatus.generation();
+            if (shapesGeneration != current) {
+                shapesGeneration = current;
+                shapes.clear();
+                summaryBudgetNotices.clear();
+            }
             String key = query + (summary ? " summary" : " shapes");
             Set<String> seen = shapes.get(key);
             if (seen == null) { seen = new HashSet<>(); shapes.put(key, seen); }

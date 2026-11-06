@@ -105,6 +105,22 @@ public class PlaybackFormatEvidenceTest {
         assertFalse(format.containsKey("color-transfer-request"));
     }
 
+    /** A report taken after a diagnostic clear still has the line for a format seen before it. */
+    @Test
+    public void aFormatSeenBeforeADiagnosticClearIsWrittenAgainAfterIt() {
+        String line = PlaybackFormatEvidence.PREFIX + "platform input video/av01 1080x1920 transfer=PQ";
+        PlaybackFormatEvidence.platformInput(video(1080, MediaFormat.COLOR_TRANSFER_ST2084));
+        assertTrue(evidence().contains(line));
+        LogBufferManager.clearLogBuffer();
+        assertFalse(evidence().contains(line));
+        PlaybackFormatEvidence.platformInput(video(1080, MediaFormat.COLOR_TRANSFER_ST2084));
+        assertTrue(evidence().contains(line));
+        // Without a clear it's still one line until the 50th repeat.
+        PlaybackFormatEvidence.platformInput(video(1080, MediaFormat.COLOR_TRANSFER_ST2084));
+        String logs = evidence();
+        assertEquals(logs, logs.indexOf(line), logs.lastIndexOf(line));
+    }
+
     /** The report files it with the other media lines, Turn off HDR brightness's among them, not under feed. */
     @Test
     public void theLineGoesUnderTheReportsOtherCategoryByItsOwnName() {

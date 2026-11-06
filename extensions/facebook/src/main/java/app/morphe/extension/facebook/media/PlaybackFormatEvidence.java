@@ -15,6 +15,7 @@ import java.util.Map;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
+import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.BaseSettings;
 
 /**
@@ -36,6 +37,7 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * and nothing else Facebook put in the format, such as a link or an id, is read. Audio formats
  * are skipped. Each distinct line is written once and again every 50th time it repeats, for
  * {@link #MAX_SHAPES} distinct lines a run, and one more line then says the rest were left out.
+ * A diagnostic clear starts the count over, so a report taken after one still has the lines.
  * Off, before the settings are ready, or when anything here fails, nothing is read and Facebook's
  * call goes on as it was. Pause leaves it on, since it only reads.
  */
@@ -51,6 +53,12 @@ public final class PlaybackFormatEvidence {
 
     private static final Map<String, Integer> shapes = new LinkedHashMap<>();
     private static boolean omissionReported;
+    /**
+     * The diagnostic clear the kept lines belong to. A clear empties the report, so every line
+     * writes again after one: a video that started before the clear would otherwise leave a report
+     * taken after it with no line for its format.
+     */
+    private static long shapesGeneration = -1;
 
     private PlaybackFormatEvidence() {
     }
@@ -92,6 +100,12 @@ public final class PlaybackFormatEvidence {
     /** The line to write for [shape], or null when it's a repeat or past the limit. */
     @Nullable
     private static synchronized String retain(String shape) {
+        long current = HookStatus.generation();
+        if (shapesGeneration != current) {
+            shapesGeneration = current;
+            shapes.clear();
+            omissionReported = false;
+        }
         Integer previous = shapes.get(shape);
         if (previous != null) {
             int count = previous == Integer.MAX_VALUE ? previous : previous + 1;
