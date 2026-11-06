@@ -101,7 +101,7 @@ val cleanUpReelsPatch = bytecodePatch(
 ) {
     category("Reels")
     dependsOn(settingsPatch)
-    dependsOn(facebookExtensionPatch, reelLoopPatch, reelBindingPatch)
+    dependsOn(facebookExtensionPatch, reelLoopPatch, reelBindingPatch, feedVideoOpeningPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {

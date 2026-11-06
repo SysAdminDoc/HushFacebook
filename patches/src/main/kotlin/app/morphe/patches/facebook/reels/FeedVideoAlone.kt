@@ -11,10 +11,13 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
+import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.util.ControlFlow
 import app.morphe.util.writersReaching
@@ -313,12 +316,17 @@ internal fun isLoaderFetchMore(method: Method): Boolean =
     method.returnType == "Z" && !AccessFlags.STATIC.isSet(method.accessFlags) && holdsString(method, SEED_TAIL)
 
 /** The one method in the app, outside the extension, that [matches] among the classes holding [anchor]. */
-private fun BytecodePatchContext.oneMethodHolding(anchor: String, what: String, matches: (Method) -> Boolean): MutableMethod {
+private fun BytecodePatchContext.oneMethodHolding(
+    anchor: String,
+    what: String,
+    matches: (Method) -> Boolean,
+    patch: String = PATCH,
+): MutableMethod {
     val found = classDefByStrings(anchor, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
         .flatMap { owner -> owner.methods.filter(matches).map { owner to it } }
     val (owner, method) = found.singleOrNull()
-        ?: throw PatchException("$PATCH: expected one $what holding \"$anchor\", found ${found.size}")
+        ?: throw PatchException("$patch: expected one $what holding \"$anchor\", found ${found.size}")
     return mutableClassDefBy(owner.type).methods.single {
         it.name == method.name && it.returnType == method.returnType &&
             it.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
@@ -390,17 +398,67 @@ internal fun implementsSeedCheck(classDef: ClassDef, method: Method, check: Meth
     check.definingClass in classDef.interfaces && method.name == check.name && method.returnType == "Z" &&
         method.parameterTypes.isEmpty() && method.implementation != null
 
+/** What the feed video opening hooks are called in a refusal or warning of their own. */
+private const val OPENING = "Feed video opening"
+
+/** The Warion step, the reels viewer's entry, and where the entry has read the video's origin. */
+internal data class FeedVideoOpening(val warion: MutableMethod, val entry: MutableMethod, val origin: OriginRead)
+
+/** Finds where a feed video opens its player, refusing as [patch] unless each anchor finds one method. */
+private fun BytecodePatchContext.findFeedVideoOpening(patch: String): FeedVideoOpening {
+    val warion = oneMethodHolding(WARION_CLICK, "Warion step answering void", ::isWarionStep, patch)
+    val entry = oneMethodHolding(VIEWER_ENTRY, "reels viewer entry answering void", ::isViewerEntry, patch)
+    val origin = originRead(entry)
+        ?: throw PatchException("$patch: the reels viewer's entry reads no $PLAYER_ORIGIN field into a low register")
+    return FeedVideoOpening(warion, entry, origin)
+}
+
 /**
- * Hooks the Warion step, the reels viewer's entry, the reels list's loading page, the Warion
- * viewer's opening and closing, both reels fetch mores and the data source's seed check, and fills
- * the extension's origin stub. Refuses unless each anchor finds one method.
+ * Tells the extension a feed video is opening its player: first thing in the Warion step, and in the
+ * reels viewer's entry right after it reads the video's origin. Tap to play lets a tapped feed video
+ * that starts late play on these, and Clean up Reels keeps the video alone on them, so they're a
+ * patch of their own both bring (#393: with Tap to play alone a slow start was held). Changes
+ * nothing unless both anchors find one method.
+ */
+internal fun BytecodePatchContext.hookFeedVideoOpening() {
+    val (warion, entry, origin) = findFeedVideoOpening(OPENING)
+    warion.addInstruction(0, "invoke-static { }, $FEED_VIDEO_TAPPED")
+    entry.addInstruction(origin.index, "invoke-static { v${origin.origin} }, $VIEWER_OPENING")
+}
+
+/**
+ * The feed video opening hooks ([hookFeedVideoOpening]). Nameless, so Tap to play and Clean up Reels
+ * carry it. A build missing an anchor goes on without it, with a warning, so Tap to play's other
+ * parts still apply; Clean up Reels refuses then.
+ */
+internal val feedVideoOpeningPatch = bytecodePatch {
+    dependsOn(facebookExtensionPatch)
+
+    execute {
+        try {
+            hookFeedVideoOpening()
+        } catch (missing: Exception) {
+            // A missing anchor is a PatchException with its reason; anything else is a bug, named as one.
+            val why = if (missing is PatchException) missing.message else "$OPENING: ${missing::class.java.name}: ${missing.message}"
+            patchLog.warning("$why. Feed videos open without telling the extension.")
+        }
+    }
+}
+
+/** Whether [instruction] calls [hook]. */
+private fun calls(instruction: Instruction, hook: String) =
+    ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == hook
+
+/**
+ * Hooks the reels list's loading page, the Warion viewer's opening and closing, both reels fetch
+ * mores and the data source's seed check, and fills the extension's origin stub. Refuses unless each
+ * anchor finds one method and [feedVideoOpeningPatch] has hooked the Warion step and the entry.
  */
 internal fun BytecodePatchContext.keepFeedVideosAlone() {
-    oneMethodHolding(WARION_CLICK, "Warion step answering void", ::isWarionStep)
-        .addInstruction(0, "invoke-static { }, $FEED_VIDEO_TAPPED")
-    val entry = oneMethodHolding(VIEWER_ENTRY, "reels viewer entry answering void", ::isViewerEntry)
-    val origin = originRead(entry)
-        ?: throw PatchException("$PATCH: the reels viewer's entry reads no $PLAYER_ORIGIN field into a low register")
+    val (warion, entry, origin) = findFeedVideoOpening(PATCH)
+    if (!calls(warion.getInstruction(0), FEED_VIDEO_TAPPED) || !calls(entry.getInstruction(origin.index), VIEWER_OPENING)) {
+        throw PatchException("$PATCH: a feed video opening doesn't tell the extension, see the warning before this")
+    }
     val originField = (entry.getInstruction(origin.index - 1) as ReferenceInstruction).reference as FieldReference
     val paramsType = originField.definingClass
     if (paramsType !in entry.parameterTypes.map(CharSequence::toString)) {
@@ -414,7 +472,7 @@ internal fun BytecodePatchContext.keepFeedVideosAlone() {
     ) {
         throw PatchException("$PATCH: $paramsType or its origin field isn't a public instance field the extension can read")
     }
-    val list = oneMethodHolding(LOADING_PAGE, "reels list builder answering an object") { isListBuilder(it, paramsType) }
+    val list = oneMethodHolding(LOADING_PAGE, "reels list builder answering an object", { isListBuilder(it, paramsType) })
     val gate = loadingPageRead(list, paramsType)
         ?: throw PatchException("$PATCH: the reels list builder doesn't read whether more are coming past its params check")
     val paging = paginationRead(list, paramsType) { buildsPaginationPage(it) }
@@ -425,7 +483,6 @@ internal fun BytecodePatchContext.keepFeedVideosAlone() {
             it.parameterTypes.map(CharSequence::toString) == listOf(OBJECT)
     } ?: throw PatchException("$PATCH: $FEED_VIDEO_ALONE has no static Object $VIEWER_ORIGIN(Object)")
 
-    entry.addInstruction(origin.index, "invoke-static { v${origin.origin} }, $VIEWER_OPENING")
     stub.addInstructions(
         0,
         """

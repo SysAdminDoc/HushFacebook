@@ -379,9 +379,10 @@ public final class TapToPlay {
     }
 
     /**
-     * Clean up Reels' hooks, as a video tapped in a feed opens Facebook's player: its Warion step, and
-     * the reels viewer reading a feed as where the video opens from. Called whatever that patch's own
-     * switches say (#239).
+     * The feed video opening hooks Tap to play and Clean up Reels both bring, as a video tapped in a
+     * feed opens Facebook's player: its Warion step, and the reels viewer reading a feed as where the
+     * video opens from. Called whatever Clean up Reels' own switches say (#239), and with Tap to play
+     * patched alone (#393).
      */
     public static void feedVideoOpening() {
         try {

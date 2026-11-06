@@ -7,7 +7,9 @@ package app.morphe.patches.facebook.reels
 import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
+import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.media.taptoplay.tapToPlayPatch
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -26,6 +28,7 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -179,10 +182,13 @@ class FeedVideoAloneFixtureTest {
                 assertEquals("$name: classes answering $check", 1, sources.size)
                 val (sourceOwner, source) = sources.single()
 
-                val context = PatchContexts.of(
-                    (listOf(warionOwner, entryOwner, fetchOwner, loaderOwner, fragment, sourceOwner, listOwner, params,
-                        ExtensionDex.classDef(FEED_VIDEO_ALONE)) + pageOwners).distinctBy { it.type },
-                )
+                val classes = (listOf(warionOwner, entryOwner, fetchOwner, loaderOwner, fragment, sourceOwner, listOwner, params,
+                    ExtensionDex.classDef(FEED_VIDEO_ALONE)) + pageOwners).distinctBy { it.type }
+                // Positive control: Clean up Reels refuses when the opening hooks it rests on aren't in.
+                val unhooked = assertThrows(PatchException::class.java) { PatchContexts.of(classes).keepFeedVideosAlone() }
+                assertTrue("$name: ${unhooked.message}", unhooked.message.orEmpty().contains("doesn't tell the extension"))
+                val context = PatchContexts.of(classes)
+                context.hookFeedVideoOpening()
                 context.keepFeedVideosAlone()
 
                 val listed = context.mutableClassDefBy(listOwner.type).methods.single { it.sameAs(list) }.code()
@@ -268,6 +274,13 @@ class FeedVideoAloneFixtureTest {
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    @Test
+    fun `Tap to play and Clean up Reels both bring the feed video opening hooks`() {
+        // #393: Tap to play patched without Clean up Reels held a tapped feed video whose player started late.
+        assertTrue("Tap to play doesn't bring them", feedVideoOpeningPatch in tapToPlayPatch.dependencies)
+        assertTrue("Clean up Reels doesn't bring them", feedVideoOpeningPatch in cleanUpReelsPatch.dependencies)
     }
 
     @Test

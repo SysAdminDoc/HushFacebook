@@ -27,6 +27,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* With `Tap to play` on, a feed video you tap plays even when its player is slow to start. A start more than a second after the tap used to count as the video starting by itself, so on a slow connection it sat paused, unless Clean up Reels was patched in too. (#393)
 * On a Marketplace listing whose price dropped, the crossed-out old price stays level with the new one now. The date line under the price used to push it down so it floated between the price and the date. (#303)
 * A listing's date shows once, under its price. The place line near the bottom said it again, so it now reads just like Facebook's, unless the price couldn't get the date (cars keep it there). (#303)
 * With Reels first on the tab bar, a black band no longer sits above every reel after the first, whether the tab bar is at the top or the bottom. With Reels first, Facebook treats it like Home and slides its title bar away as you swipe, but the reels stayed pushed down by the bar's height. Now the reel runs up to the top of the screen once the bar has gone. With `Keep the top bar on screen` on, the title bar stays and the reel still starts below it. (#390)
