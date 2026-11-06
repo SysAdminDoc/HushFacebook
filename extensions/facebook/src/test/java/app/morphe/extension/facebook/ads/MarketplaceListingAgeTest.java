@@ -12,6 +12,8 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.content.res.Resources;
+import android.graphics.Canvas;
+import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -311,6 +313,34 @@ public class MarketplaceListingAgeTest {
         assertEquals("Facebook's colour stays", 1, colours.length);
         assertEquals(undated.length(), undated.getSpanEnd(colours[0]));
         assertTrue(statusLine().contains(MarketplaceListingAge.PLACE_UNDATED));
+    }
+
+    /** How 585's React crosses text out: a span that draws its own line, not Android's. */
+    abstract static class DrawnDecoration {
+        public abstract void draw(Canvas canvas, Layout layout, int start, int end);
+    }
+
+    static final class DrawnLineThrough extends DrawnDecoration {
+        @Override
+        public void draw(Canvas canvas, Layout layout, int start, int end) {
+        }
+    }
+
+    @Test
+    public void anOldPriceReactCrossesOutWithALineItDrawsGetsTheEmptyLineToo() {
+        long listed = System.currentTimeMillis() / 1000 - 21 * DAY;
+        MarketplaceAdFilterForTests.responseWhole(PAGE, priced(answer(listed, "Moncton, NB"), "17500"));
+        MarketplaceListingAge.priceLine(new SpannableString("Polaroid Camera"));
+        MarketplaceListingAge.priceLine(price("$175", 60));
+
+        assertFalse(MarketplaceListingAge.drawsLine(ForegroundColorSpan.class));
+        SpannableString old = price("$200", 48);
+        old.setSpan(new DrawnLineThrough(), 0, 4, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        Spannable level = MarketplaceListingAge.priceLine(old);
+        assertEquals("$200\n" + MarketplaceListingAge.BLANK, level.toString());
+        DrawnLineThrough[] lines = level.getSpans(0, level.length(), DrawnLineThrough.class);
+        assertEquals(1, lines.length);
+        assertEquals("the line through stops at the old price", 4, level.getSpanEnd(lines[0]));
     }
 
     @Test

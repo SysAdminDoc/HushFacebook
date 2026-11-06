@@ -5,8 +5,10 @@
 package app.morphe.extension.facebook.ads;
 
 import android.content.res.Resources;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.icu.text.RelativeDateTimeFormatter;
+import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -20,6 +22,7 @@ import android.util.TypedValue;
 
 import androidx.annotation.Nullable;
 
+import java.lang.reflect.Method;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -31,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.theme.ReactColours;
@@ -102,6 +106,8 @@ public final class MarketplaceListingAge {
      */
     private static int struckLeft;
     private static int struckSize;
+    /** Each span class asked about, and whether it draws a line on its text ({@link #drawsLine}). */
+    private static final Map<Class<?>, Boolean> DRAWS_LINE = new ConcurrentHashMap<>();
     /** What fills the old price's empty line: a space no layout drops. */
     static final String BLANK = String.valueOf((char) 0xA0);
     /** The price comes this many texts after the title at most: a listing page draws it right under. */
@@ -514,10 +520,38 @@ public final class MarketplaceListingAge {
         return digits.length() == 0 ? null : digits.toString();
     }
 
-    /** Whether [text], reading [shown], is a price crossed out: what a listing's old price looks like. */
+    /**
+     * Whether [text], reading [shown], is a price crossed out: what a listing's old price looks
+     * like. Android's line through counts, and so does React's own, which 585 draws itself rather
+     * than through the paint (#303).
+     */
     static boolean struck(Spanned text, String shown) {
-        return shown.length() <= MAX_PRICE_CHARS && priceDigits(shown) != null
-                && text.getSpans(0, text.length(), StrikethroughSpan.class).length > 0;
+        if (shown.length() > MAX_PRICE_CHARS || priceDigits(shown) == null) return false;
+        for (Object span : text.getSpans(0, text.length(), Object.class)) {
+            if (span instanceof StrikethroughSpan || drawsLine(span.getClass())) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Whether a span of class [kind] draws a line on the text itself, given the canvas, the text's
+     * layout and where it starts and ends: React's line through or under text in 585. Nothing
+     * else React puts on a short price draws itself. Asked once per class.
+     */
+    static boolean drawsLine(Class<?> kind) {
+        Boolean known = DRAWS_LINE.get(kind);
+        if (known != null) return known;
+        boolean draws = false;
+        for (Method method : kind.getMethods()) {
+            Class<?>[] takes = method.getParameterTypes();
+            if (method.getReturnType() == void.class && takes.length == 4 && takes[0] == Canvas.class
+                    && takes[1] == Layout.class && takes[2] == int.class && takes[3] == int.class) {
+                draws = true;
+                break;
+            }
+        }
+        DRAWS_LINE.put(kind, draws);
+        return draws;
     }
 
     /** Whether [text] is a whole number of up to 18 digits. */
