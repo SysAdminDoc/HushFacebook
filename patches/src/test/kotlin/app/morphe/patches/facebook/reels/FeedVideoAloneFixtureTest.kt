@@ -11,7 +11,10 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.media.taptoplay.tapToPlayPatch
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -22,6 +25,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
@@ -101,11 +105,18 @@ class FeedVideoAloneFixtureTest {
                 assertTrue("$name: $paramsType isn't public", AccessFlags.PUBLIC.isSet(params.accessFlags))
                 val originDef = params.fields.single { it.name == originField.name && it.type == PLAYER_ORIGIN }
                 assertTrue("$name: the origin field isn't public", AccessFlags.PUBLIC.isSet(originDef.accessFlags))
-                val listOwners = FixtureDex.classesHolding(bundle, LOADING_PAGE)
+                // The Android 9 build names the string through a table, so the builder is found among
+                // every method naming it, the table's callers included, as the patch finds it.
+                val nameHolders = FixtureDex.classesHolding(bundle, LOADING_PAGE)
                     .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
-                val lists = listOwners.flatMap { owner -> owner.methods.filter { isListBuilder(it, paramsType) }.map { owner to it } }
-                assertEquals("$name: list builders holding $LOADING_PAGE", 1, lists.size)
-                val (listOwner, list) = lists.single()
+                val holderTypes = nameHolders.associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> holderTypes[call.definingClass]?.let { resolveStatic(it, call) } }
+                val lists = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in holderTypes } }) {
+                    !it.definingClass.startsWith(EXTENSION_PACKAGE) && isListBuilder(it, paramsType) && namesString(it, LOADING_PAGE, resolve)
+                }.distinctBy { "${it.definingClass}->${it.name}${it.parameterTypes.joinToString("")}${it.returnType}" }
+                assertEquals("$name: list builders naming $LOADING_PAGE", 1, lists.size)
+                val list = lists.single()
+                val listOwner = FixtureDex.classes(bundle, setOf(list.definingClass)).getValue(list.definingClass)
                 val gate = loadingPageRead(list, paramsType)!!
                 val listCode = list.code()
                 assertEquals("$name: the answer is a boolean field read", Opcode.IGET_BOOLEAN, listCode[gate.index - 1].opcode)
@@ -138,17 +149,23 @@ class FeedVideoAloneFixtureTest {
                 val paging = paginationRead(list, paramsType, ::buildsPage)
                     ?: throw AssertionError("$name: the list builder doesn't read whether to add its pagination page")
                 assertTrue("$name: the pagination read comes after the loading page's", paging.index > gate.index)
-                assertEquals("$name: both reads hand over the same params", gate.params, paging.params)
+                // Android 9 has written over the params' low copy by the pagination read, never their parameter.
+                val paramsArgument = list.parameterTypes.map(CharSequence::toString).indexOf(paramsType)
+                    .takeIf { it >= 0 }?.let { list.parameterRegisterNumber(it) }
+                assertTrue("$name: the pagination read hands over v${paging.params}, not the params",
+                    paging.params == gate.params || paging.params == paramsArgument && paging.params > 15)
                 val pageBranch = listCode[paging.index]
                 assertTrue("$name: the flag decides a branch", pageBranch.opcode in setOf(Opcode.IF_NE, Opcode.IF_EQZ))
                 // Positive control: past the branch, before where it skips to, the builder calls the page's builder.
                 val pageSkipTo = listAddresses.indexOf(listAddresses[paging.index] + (pageBranch as OffsetInstruction).codeOffset)
-                val pageCall = (paging.index + 1 until listCode.size).first { at ->
-                    listCode[at].opcode in setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE) &&
-                        buildsPage((listCode[at] as ReferenceInstruction).reference as MethodReference)
-                }
+                val pageCall = (paging.index + 1 until listCode.size).first { at -> buildsPaginationPageAt(listCode, at, ::buildsPage) }
                 assertTrue("$name: the branch doesn't skip the page's builder", paging.index < pageCall && pageCall < pageSkipTo)
-                assertEquals("$name: a read with no page builder", null, paginationRead(list, paramsType) { false })
+                if (listCode[pageCall].opcode in setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)) {
+                    assertEquals("$name: a read with no page builder", null, paginationRead(list, paramsType) { false })
+                } else {
+                    // Android 9 inlines the page: its name goes straight into the call that builds it.
+                    assertTrue("$name: the inlined page isn't named", listCode[pageCall].opcode in setOf(Opcode.CONST_STRING, Opcode.CONST_STRING_JUMBO))
+                }
 
                 // Positive control: the check turns down the trace's other holders of the same class, and
                 // a static or void copy of the fetch more wouldn't pass it.
@@ -183,7 +200,7 @@ class FeedVideoAloneFixtureTest {
                 val (sourceOwner, source) = sources.single()
 
                 val classes = (listOf(warionOwner, entryOwner, fetchOwner, loaderOwner, fragment, sourceOwner, listOwner, params,
-                    ExtensionDex.classDef(FEED_VIDEO_ALONE)) + pageOwners).distinctBy { it.type }
+                    ExtensionDex.classDef(FEED_VIDEO_ALONE)) + pageOwners + nameHolders).distinctBy { it.type }
                 // Positive control: Clean up Reels refuses when the opening hooks it rests on aren't in.
                 val unhooked = assertThrows(PatchException::class.java) { PatchContexts.of(classes).keepFeedVideosAlone() }
                 assertTrue("$name: ${unhooked.message}", unhooked.message.orEmpty().contains("doesn't tell the extension"))
@@ -192,19 +209,28 @@ class FeedVideoAloneFixtureTest {
                 context.keepFeedVideosAlone()
 
                 val listed = context.mutableClassDefBy(listOwner.type).methods.single { it.sameAs(list) }.code()
-                assertEquals("$name: four instructions added to the list builder", listCode.size + 4, listed.size)
+                // A params parameter past v15 is copied into a local for the call first.
+                val copies = if (paging.params > 15) 1 else 0
+                assertEquals("$name: instructions added to the list builder", listCode.size + 4 + copies, listed.size)
                 // The loading page's two instructions push the pagination read's down by two.
-                for ((read, at) in listOf(gate to gate.index, paging to paging.index + 2)) {
+                for ((read, at) in listOf(gate to gate.index, paging to paging.index + 2 + copies)) {
                     val ask = listed[at]
                     assertEquals("$name: the builder asks the extension at ${read.index}", MORE_REELS_COMING, called(ask))
                     ask as FiveRegisterInstruction
+                    val handed = if (read.params <= 15) read.params else {
+                        val copy = listed[at - 1]
+                        assertEquals("$name: the params copied out of their parameter at ${read.index}",
+                            listOf(Opcode.MOVE_OBJECT_FROM16, read.params), listOf(copy.opcode, (copy as TwoRegisterInstruction).registerB))
+                        assertTrue("$name: the copy writes over the answer at ${read.index}", copy.registerA != read.more)
+                        copy.registerA
+                    }
                     assertEquals("$name: handed the answer, then the params at ${read.index}",
-                        listOf(2, read.more, read.params), listOf(ask.registerCount, ask.registerC, ask.registerD))
+                        listOf(2, read.more, handed), listOf(ask.registerCount, ask.registerC, ask.registerD))
                     assertEquals("$name: its answer back where Facebook's was at ${read.index}",
                         listOf(Opcode.MOVE_RESULT, read.more),
                         listOf(listed[at + 1].opcode, (listed[at + 1] as OneRegisterInstruction).registerA))
                 }
-                val added = setOf(gate.index, gate.index + 1, paging.index + 2, paging.index + 3)
+                val added = setOf(gate.index, gate.index + 1) + (paging.index + 2 until paging.index + 4 + copies)
                 assertEquals("$name: the rest of the list builder is Facebook's",
                     listCode.map { it.opcode }, listed.filterIndexed { at, _ -> at !in added }.map { it.opcode })
                 val stub = context.mutableClassDefBy(FEED_VIDEO_ALONE).methods.single { it.name == VIEWER_ORIGIN }.code()
