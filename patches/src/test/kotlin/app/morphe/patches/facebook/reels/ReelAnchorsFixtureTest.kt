@@ -158,6 +158,8 @@ class ReelAnchorsFixtureTest {
                     val pinned = mapOf(
                         "585.0.0.47.54 arm64-v8a" to "LX/0ACw;:155:A1Z LX/0ACj;:107:A0F",
                         "585.0.0.47.54 armeabi-v7a" to "LX/0AD1;:155:A1Z LX/0ACo;:105:A0F",
+                        // Android 9: the dump makes the first lambda and the helper the second, each flag read in its first switch.
+                        "585.0.0.47.54 arm64-v8a-minapi28-storeless" to "LX/0cLU;:10:invoke LX/0ADL;:157:invoke",
                     )["$version $abi"]
                     assertEquals(name, pinned, follow.flags.joinToString(" ") { "${it.lambda}:${it.key}:${it.reader.name}" })
                 } else {

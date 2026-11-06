@@ -472,7 +472,7 @@ private fun pickedLambdas(helper: Method): List<PickedLambda>? {
  * read 2026-10-16). The dump writes the answer of a static helper that has the config pick one of two
  * lambdas (`A0f` on 583, by whether the viewer is Shorts in the Watch tab). Each lambda is a key into a
  * merged Kotlin lambda class, a case of its `invoke()` ([flagReader]) that reads one MobileConfig flag
- * and boxes it. Three helper shapes have been seen:
+ * and boxes it. Four helper shapes have been seen:
  * - 583 (A02) and 584 (A03): `(config, Function0, I)String` makes the second lambda of the first
  *   one's class from its int. The first lambda is the answer of the static call that also wrote the
  *   previous value (583 A05), keyed by its last int, or 584 makes it in the dump with `new-instance`.
@@ -480,6 +480,9 @@ private fun pickedLambdas(helper: Method): List<PickedLambda>? {
  *   turns into text with `String.valueOf(Z)`. The first lambda is the maker's answer as on 583, and the
  *   helper makes the second one of a class of its own from its int.
  * - 585, the UDD value (LX/0Ap7;->A00): `(config, I, I)String` makes both lambdas, one from each int.
+ * - 585's Android 9 build, both values (LX/0ArK;->A01): `(config, Function0, I)String` as on 584, the
+ *   first lambda made in the dump with `new-instance`, but the helper makes the second of a class of
+ *   its own from its int, as the Player tab's helper does on 585's other builds.
  */
 internal fun followFlagsAt(body: List<Instruction>, literal: Int, classOf: (String) -> ClassDef?): List<FollowFlag>? {
     val name = (body[literal] as? OneRegisterInstruction)?.registerA ?: return null
@@ -497,12 +500,16 @@ internal fun followFlagsAt(body: List<Instruction>, literal: Int, classOf: (Stri
         it.sameAs(pick) && AccessFlags.STATIC.isSet(it.accessFlags) && it.implementation != null
     } ?: return null
     // Each lambda of the pair as its class and the key that names its case.
-    val lambdas: List<Pair<String, Int>> = if (pick.returnType == "Ljava/lang/String;" && parameters.drop(1) == listOf(FUNCTION0, "I")) {
+    val oneClass: List<Pair<String, Int>>? = if (pick.returnType == "Ljava/lang/String;" && parameters.drop(1) == listOf(FUNCTION0, "I")) {
         // The helper makes its lambda of the first one's class, so both keys name cases of one lambda.
-        val (lambdaType, firstKey) = firstLambdaOf(body, picker, registers[1]) ?: return null
-        if (helper.body().none { it.opcode == Opcode.NEW_INSTANCE && (it as ReferenceInstruction).reference.toString() == lambdaType }) return null
-        listOf(lambdaType to firstKey, lambdaType to (constantAt(body, picker, registers[2]) ?: return null))
+        firstLambdaOf(body, picker, registers[1])?.takeIf { (lambdaType, _) ->
+            helper.body().any { it.opcode == Opcode.NEW_INSTANCE && (it as ReferenceInstruction).reference.toString() == lambdaType }
+        }?.let { (lambdaType, firstKey) -> listOf(lambdaType to firstKey, lambdaType to (constantAt(body, picker, registers[2]) ?: return null)) }
     } else {
+        null
+    }
+    // Otherwise each lambda is passed in or made by the helper (585, and 585's Android 9 build's LX/0ArK;->A01).
+    val lambdas: List<Pair<String, Int>> = oneClass ?: run {
         pickedLambdas(helper)?.map { lambda ->
             when (lambda) {
                 is PassedIn -> firstLambdaOf(body, picker, registers[lambda.parameter]) ?: return null
