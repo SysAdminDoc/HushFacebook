@@ -217,14 +217,31 @@ internal fun BytecodePatchContext.storyTapRoute(tap: Method): StoryTapRoute {
     )
 }
 
-/** Whether [method] asks `instance-of` [type] of its own `this`. */
+/**
+ * Whether [method] asks `instance-of` [type] of its own `this`, or of a copy of it a plain
+ * `move-object` made and nothing wrote over since (585's Android 9 build copies `this` from v17 to v1
+ * first, `LX/0DCd;->Ia7`).
+ */
 internal fun checksThisIs(method: Method, type: String): Boolean {
     val code = method.implementation ?: return false
     val thisRegister = code.registerCount - 1 - method.parameterTypes.map { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }.sum()
-    return code.instructions.any {
-        it.opcode == Opcode.INSTANCE_OF && (it as TwoRegisterInstruction).registerB == thisRegister &&
-            (it as ReferenceInstruction).reference.toString() == type
+    val copies = mutableSetOf(thisRegister)
+    val moves = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+    for (instruction in code.instructions) {
+        if (instruction.opcode == Opcode.INSTANCE_OF && (instruction as TwoRegisterInstruction).registerB in copies &&
+            (instruction as ReferenceInstruction).reference.toString() == type
+        ) {
+            return true
+        }
+        val written = (instruction as? OneRegisterInstruction)?.registerA ?: continue
+        if (instruction.opcode in moves && (instruction as TwoRegisterInstruction).registerB in copies) {
+            copies += written
+        } else if (instruction.opcode.setsRegister() && written != thisRegister) {
+            copies -= written
+            if (instruction.opcode.setsWideRegister()) copies -= written + 1
+        }
     }
+    return false
 }
 
 /** Whether [method] is a gesture listener's single tap lift that hands the tap to a method named [tapName] on (MotionEvent, View). */
