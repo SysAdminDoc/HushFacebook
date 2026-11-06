@@ -14,6 +14,7 @@ import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.appicons.logoDressSite
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.settings.CREATE_WORDMARK_VIEW
 import app.morphe.patches.facebook.misc.settings.WORDMARK_NAVIGATION_BAR
 import app.morphe.patches.facebook.misc.settings.settingsPatch
@@ -459,17 +460,29 @@ internal fun MutableMethod.hideSearchButtonAfter(site: AddedButtonSite) {
     addInstructions(site.addView + 1, "invoke-static/range { v${site.register} .. v${site.register} }, $HIDE_SEARCH_BUTTON_HOOK")
 }
 
-/** Puts the search button's hook after the newer bar keeps its search glyph, with the name of the bar's screen. */
+/**
+ * Puts the search button's hook after the newer bar keeps its search glyph, with the name of the bar's
+ * screen. 585's Android 9 build keeps the bar (p0) past v15 in that method (NavigationBar->A0F, p0
+ * is v18), out of the iget's reach, so there the bar is first copied into the free register.
+ */
 internal fun MutableMethod.hideSearchGlyphAfter(site: SearchGlyphSite) {
     val at = site.kept + 1
     val screen = findFreeRegister(at, site.register)
-    if (maxOf(site.register, screen, implementation!!.registerCount - 1) > 15) {
-        refuse("the glyph (v${site.register}), the free v$screen or the bar is past v15 in ${site.method.definingClass}->${site.method.name}")
+    if (maxOf(site.register, screen) > 15) {
+        refuse("the glyph (v${site.register}) or the free v$screen is past v15 in ${site.method.definingClass}->${site.method.name}")
+    }
+    val read = if (localRegisterCount() > 15) {
+        """
+            move-object/from16 v$screen, p0
+            iget-object v$screen, v$screen, ${site.screenField.smali()}
+        """
+    } else {
+        "iget-object v$screen, p0, ${site.screenField.smali()}"
     }
     addInstructions(
         at,
         """
-            iget-object v$screen, p0, ${site.screenField.smali()}
+            $read
             invoke-static { v${site.register}, v$screen }, $BAR_SEARCH_BUTTON_HOOK
         """,
     )

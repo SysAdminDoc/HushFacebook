@@ -10,6 +10,7 @@ import app.morphe.PatchContexts
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.settings.CREATE_WORDMARK_VIEW
 import app.morphe.patches.facebook.misc.settings.LOGO_TOUCH_STAND_IN
 import app.morphe.patches.facebook.misc.settings.WORDMARK_NAVIGATION_BAR
@@ -203,14 +204,25 @@ class TopBarButtonsFixtureTest {
                 // The newer bar's search glyph: right after the bar keeps it, the bar's screen name is read
                 // and the hook gets both.
                 val newerSearchAfter = context.mutableClassDefBy(NAVIGATION_BAR).findMutableMethodOf(newerSearch.method).code()
+                // 585's Android 9 build keeps the bar past v15 there, so the hook copies it into the
+                // read's register first.
+                val barRegister = newerSearch.method.localRegisterCount()
+                val copied = if (barRegister > 15) 1 else 0
                 // Not counting nops: the method ends in a switch payload, which the hook can shift off its alignment.
-                assertEquals("$name: the newer search method grew by its read and hook only", newerSearchBefore + 2,
+                assertEquals("$name: the newer search method grew by its read and hook only", newerSearchBefore + 2 + copied,
                     newerSearchAfter.count { it.opcode != Opcode.NOP })
-                val screenRead = newerSearchAfter[newerSearch.kept + 1]
+                val screenRead = newerSearchAfter[newerSearch.kept + 1 + copied]
+                if (copied == 1) {
+                    val copy = newerSearchAfter[newerSearch.kept + 1]
+                    assertEquals("$name: the bar is copied before the read", Opcode.MOVE_OBJECT_FROM16, copy.opcode)
+                    assertEquals("$name: the bar is copied into the read's register",
+                        listOf((screenRead as TwoRegisterInstruction).registerB, barRegister),
+                        (copy as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) })
+                }
                 assertEquals("$name: the screen name is read right after the iput-object", Opcode.IGET_OBJECT, screenRead.opcode)
                 assertEquals("$name: the read takes the bar's screen field", newerSearch.screenField.name,
                     ((screenRead as ReferenceInstruction).reference as FieldReference).name)
-                val newerHook = newerSearchAfter[newerSearch.kept + 2]
+                val newerHook = newerSearchAfter[newerSearch.kept + 2 + copied]
                 assertEquals("$name: the newer search hook follows the read", BAR_SEARCH_BUTTON_HOOK, newerHook.call())
                 assertEquals("$name: the newer search hook is invoke-static", Opcode.INVOKE_STATIC, newerHook.opcode)
                 assertEquals("$name: the newer search hook hands over the glyph",
