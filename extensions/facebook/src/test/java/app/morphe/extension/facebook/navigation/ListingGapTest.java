@@ -39,7 +39,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * Remove the gap above Marketplace listings: each side of the safe area keeps only what overlaps
  * the React Native root, so a listing that starts below the status bar gets no top inset and a page
  * drawn edge to edge keeps them all. Before the root is placed, the frame the page fills stands in for
- * it. Off, paused, or with nothing laid out, the insets go to Facebook as they came.
+ * it. Off, paused, or with nothing laid out, the insets go to Facebook as they came, and an ask with
+ * nothing laid out is counted. React Native's SafeAreaView gets the same trim to the root it sits in.
  */
 @RunWith(RobolectricTestRunner.class)
 public class ListingGapTest {
@@ -125,6 +126,59 @@ public class ListingGapTest {
             assertEquals(FamilyNames.LISTING_GAP + ": invoked 1, 1 found, 0 missing. Counted: "
                     + ListingGap.TRIMMED + " 1", statusLine());
         }
+    }
+
+    @Test
+    public void aSafeAreaViewInAListingBelowTheStatusBarPadsNothingOnTop() {
+        // React Native's SafeAreaView pads by what Android hands it, without asking the module.
+        try (ActivityController<Activity> controller = ListingGapForTests.listing(ListingGapForTests.PAGE_TOP, ListingGapForTests.ROOT_TAG)) {
+            View decor = controller.get().getWindow().getDecorView();
+            View safeArea = decor.findViewById(ListingGapForTests.CHILD_TAG);
+            View root = ListingGapForTests.root(controller);
+            assertSame(root, ListingGap.rootAbove(safeArea));
+            int[] at = new int[2];
+            root.getLocationInWindow(at);
+            Insets whole = Insets.of(0, at[1] + 10, 0, 0);
+            Insets trimmed = (Insets) ListingGap.viewInsets(whole, safeArea);
+            assertEquals("the part of the top inset over the page", 10, trimmed.top);
+            assertEquals(0, trimmed.bottom);
+            Insets module = (Insets) ListingGap.insets(whole, decor);
+            assertEquals("the module's answer agrees", 10, module.top);
+            assertEquals("each place Facebook pads from is its own anchor",
+                    FamilyNames.LISTING_GAP + ": invoked 2, 2 found, 0 missing. Counted: "
+                    + ListingGap.VIEW_TRIMMED + " 1, " + ListingGap.TRIMMED + " 1", statusLine());
+        }
+    }
+
+    @Test
+    public void aSafeAreaViewKeepsTheInsetsItsPageSitsUnder() {
+        try (ActivityController<Activity> controller = ListingGapForTests.listing(ListingGapForTests.PAGE_TOP, ListingGapForTests.ROOT_TAG)) {
+            View safeArea = controller.get().getWindow().getDecorView().findViewById(ListingGapForTests.CHILD_TAG);
+            // The page fills the window's width and runs to its bottom, so the sides and bottom stay.
+            Insets sides = Insets.of(24, 0, 24, 48);
+            assertSame(sides, ListingGap.viewInsets(sides, safeArea));
+            Settings.REMOVE_LISTING_GAP.save(false);
+            Insets under = Insets.of(0, 400, 0, 0);
+            assertSame("off", under, ListingGap.viewInsets(under, safeArea));
+        }
+        Insets whole = Insets.of(0, 400, 0, 0);
+        assertNull(ListingGap.viewInsets(null, new View(RuntimeEnvironment.getApplication())));
+        assertSame("not a view", whole, ListingGap.viewInsets(whole, "view"));
+    }
+
+    @Test
+    public void anAskBeforeThePageHasAFrameIsCounted() {
+        // Nothing the page will fill is laid out, so the insets go out whole, and the export says so.
+        android.content.Context context = RuntimeEnvironment.getApplication();
+        Insets whole = Insets.of(0, 136, 0, 0);
+        assertSame(whole, ListingGap.insets(whole, new FrameLayout(context)));
+        FrameLayout detached = new FrameLayout(context);
+        View safeArea = new View(context);
+        detached.addView(safeArea);
+        assertNull("not in a root", ListingGap.rootAbove(safeArea));
+        assertSame(whole, ListingGap.viewInsets(whole, safeArea));
+        assertEquals(FamilyNames.LISTING_GAP + ": invoked 2, 0 found, 0 missing. Counted: "
+                + ListingGap.UNMEASURED + " 2", statusLine());
     }
 
     @Test

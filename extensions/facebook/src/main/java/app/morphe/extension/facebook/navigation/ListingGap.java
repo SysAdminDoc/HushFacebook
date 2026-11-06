@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.navigation;
 
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 
 import androidx.annotation.Nullable;
@@ -47,17 +48,27 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the room inside the deepest laid out view the content frame reaches through views with one showing
  * child each, less the margins of a child still waiting for its first layout. The decor is also
  * asked to hand the insets out again after the next layout that places the root, which makes the
- * module send the page the root's answer. With neither laid out the insets go out whole. The insets
- * are androidx's, which the extension doesn't compile against, so they're read and made by name.
- * Nothing here may throw into Facebook: the module is asked from the JavaScript thread as well as
- * the main one.
+ * module send the page the root's answer. With neither laid out the insets go out whole, and that's
+ * counted, since a page that kept that answer would show the band. The insets are androidx's, which
+ * the extension doesn't compile against, so they're read and made by name. Nothing here may throw
+ * into Facebook: the module is asked from the JavaScript thread as well as the main one.
+ *
+ * <p>React Native's own SafeAreaView doesn't ask the module. It reads the insets Android hands the
+ * view and pads what it holds by them, so a page laid out with one gets the band back even with the
+ * module's answer trimmed. Its insets come here too, with the view, and are trimmed the same way to
+ * the root the view sits in.
  */
 public final class ListingGap {
     /** Counted under the patch's name each time a page is handed less than the window's insets. */
     static final String TRIMMED = "safe area trimmed to the page";
+    /** Counted each time a SafeAreaView is handed less than the window's insets. */
+    static final String VIEW_TRIMMED = "safe area view trimmed to the page";
+    /** Counted each time a page asks before anything it will fill is laid out. */
+    static final String UNMEASURED = "asked before the page had a frame";
 
     private static final String FAMILY = FamilyNames.LISTING_GAP;
     private static final String ANCHOR = "safe area insets";
+    private static final String VIEW_ANCHOR = "safe area view";
 
     /** Layouts to wait for a root to appear before the decor stops being watched. */
     static final int LAYOUTS_TO_WAIT = 20;
@@ -82,11 +93,30 @@ public final class ListingGap {
      */
     public static Object insets(@Nullable Object insets, @Nullable Object decor) {
         if (insets == null || !(decor instanceof View)) return insets;
+        return answer(insets, (View) decor, null, ANCHOR, TRIMMED);
+    }
+
+    /**
+     * Injection point, in the insets listener of React Native's SafeAreaView, after it reads [insets],
+     * androidx Insets, and casts [view], the SafeAreaView: the insets the view pads by instead,
+     * [insets] itself when nothing changes.
+     */
+    public static Object viewInsets(@Nullable Object insets, @Nullable Object view) {
+        if (insets == null || !(view instanceof View)) return insets;
+        View safeArea = (View) view;
+        return answer(insets, safeArea.getRootView(), safeArea, VIEW_ANCHOR, VIEW_TRIMMED);
+    }
+
+    /**
+     * [insets] trimmed to the page in [window]: the root [inside] sits in, or with no [inside] the
+     * window's first root, or before that root is placed the frame it will fill.
+     */
+    private static Object answer(Object insets, View window, @Nullable View inside, String anchor, String counted) {
         try {
             HookStatus.invoked(FAMILY);
             if (!Utils.settingsReady() || !Settings.REMOVE_LISTING_GAP.get()) return insets;
-            View window = (View) decor;
-            View root = reactRoot(window);
+            String what = inside == null ? "safe area" : "safe area view";
+            View root = inside == null ? reactRoot(window) : rootAbove(inside);
             int[] page;
             String measured;
             if (root != null && root.isLaidOut()) {
@@ -98,21 +128,26 @@ public final class ListingGap {
                 askAgainAfterLayout(window);
                 page = frameOf(window);
                 measured = "frame";
-                if (page == null) return insets;
+                if (page == null) {
+                    HookStatus.counted(FAMILY, UNMEASURED);
+                    Logger.printDebug(() -> "Remove the gap above Marketplace listings: " + what
+                            + " asked for before the page had a frame, so it goes out whole");
+                    return insets;
+                }
             }
-            HookStatus.bound(FAMILY, ANCHOR);
+            HookStatus.bound(FAMILY, anchor);
             Field[] fields = sidesOf(insets.getClass());
             int[] whole = new int[4];
             for (int side = 0; side < 4; side++) whole[side] = fields[side].getInt(insets);
             int[] trimmed = trim(whole, page[0], page[1], page[2], page[3], window.getWidth(), window.getHeight());
-            Logger.printDebug(() -> "Remove the gap above Marketplace listings: safe area " + Arrays.toString(whole)
+            Logger.printDebug(() -> "Remove the gap above Marketplace listings: " + what + " " + Arrays.toString(whole)
                     + " to " + Arrays.toString(trimmed) + " for a page " + measured + " at " + page[0] + "," + page[1]);
             if (Arrays.equals(whole, trimmed)) return insets;
             Object answer = insetsOf.invoke(null, trimmed[0], trimmed[1], trimmed[2], trimmed[3]);
-            HookStatus.counted(FAMILY, TRIMMED);
+            HookStatus.counted(FAMILY, counted);
             return answer;
         } catch (Throwable failure) {
-            HookStatus.threw(FAMILY, ANCHOR, failure);
+            HookStatus.threw(FAMILY, anchor, failure);
             return insets;
         }
     }
@@ -146,6 +181,15 @@ public final class ListingGap {
                     if (child != null) queue.add(child);
                 }
             }
+        }
+        return null;
+    }
+
+    /** The React Native root view [view] sits in: its nearest ancestor that is one, or null. */
+    @Nullable
+    static View rootAbove(View view) {
+        for (ViewParent parent = view.getParent(); parent instanceof View; parent = parent.getParent()) {
+            if (isReactRoot((View) parent)) return (View) parent;
         }
         return null;
     }
