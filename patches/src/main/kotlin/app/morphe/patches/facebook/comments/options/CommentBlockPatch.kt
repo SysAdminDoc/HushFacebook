@@ -19,7 +19,13 @@ import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.patches.facebook.misc.extension.liveAcrossInjection
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
+import app.morphe.patches.facebook.misc.extension.requireParameterIntact
+import app.morphe.patches.facebook.misc.extension.requireThisIntact
+import app.morphe.util.ControlFlow
+import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -29,6 +35,8 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import java.util.BitSet
 
 /*
  * Block button on comments (#271), read from 585 on 2026-10-31. The obfuscated names are for
@@ -38,7 +46,9 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * ([COMMENT_DOWNVOTE]) returns (585 arm64 LX/09zR). Its `render` draws an icon constant of an icon
  * enum, HAND_THUMBS_DOWN, and builds a label-and-click pair with `<init>(String, Function1)`.
  * Its click is a case of a shared lambda class, the static method of two objects that loads
- * "CommentsDownvotePluginKComponent.undoReactionThenDownvote" (LX/0azF;->A06). The profile Block
+ * "CommentsDownvotePluginKComponent.undoReactionThenDownvote" (LX/0azF;->A06). 585's Android 9
+ * build keeps that case inline, an arm of the lambda's own invoke(Object) switch (LX/0faE;->invoke),
+ * and the tap hook goes on that arm instead (read 2026-11-06). The profile Block
  * row's own helper is the one instance method that loads "FBBlockProfileBottomsheetGraphQLQuery"
  * (LX/0Nuv;->A01): it takes (Context, source enum, session, profile interface, long, long, boolean)
  * and opens Facebook's block sheet, which asks before it blocks.
@@ -89,6 +99,8 @@ internal class CommentBlockSites(
     val labelAt: Int,
     val labelRegister: Int,
     val click: Method,
+    val clickAt: Int,
+    val clickRegister: Int,
     val unit: String,
     val component: String,
     val helper: String,
@@ -145,21 +157,23 @@ internal fun commentBlockSites(
     val label = labels.singleOrNull() ?: refuse("expected one label and click pair in ${render.name}, found ${labels.size}")
     val labelRegister = (label.value as? FiveRegisterInstruction)?.registerD ?: refuse("the label call isn't a five-register call")
 
-    // The click.
-    val click = clicks.singleOrNull {
+    // The click: a static method of two objects, or on 585's Android 9 build, where the lambda
+    // class keeps its cases inline, one arm of its invoke(Object).
+    val outlined = clicks.singleOrNull {
         AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Ljava/lang/Object;" &&
             it.parameterTypes.map { type -> type.toString() } == listOf("Ljava/lang/Object;", "Ljava/lang/Object;")
-    } ?: refuse("expected one thumbs-down click, found ${clicks.size}")
-    if (click.localRegisterCount() < 6) refuse("${click.name} has no registers for the hook")
-    val clickCode = click.implementation!!.instructions.toList()
-    val ret = clickCode.indexOfLast { it.opcode == Opcode.RETURN_OBJECT }
-    val unitLoad = clickCode.getOrNull(ret - 1)
-    if (ret < 1 || unitLoad?.opcode != Opcode.SGET_OBJECT ||
-        (unitLoad as OneRegisterInstruction).registerA != (clickCode[ret] as OneRegisterInstruction).registerA
-    ) {
-        refuse("${click.name} doesn't end by returning a loaded constant")
     }
-    val unit = ((unitLoad as ReferenceInstruction).reference as FieldReference).let { "${it.definingClass}->${it.name}:${it.type}" }
+    val inlined = if (outlined != null) null else clicks.singleOrNull {
+        !AccessFlags.STATIC.isSet(it.accessFlags) && it.name == "invoke" && it.returnType == "Ljava/lang/Object;" &&
+            it.parameterTypes.map { type -> type.toString() } == listOf("Ljava/lang/Object;")
+    }
+    val click = outlined ?: inlined ?: refuse("expected one thumbs-down click, found ${clicks.size}")
+    val tap = if (outlined == null) inlinedTap(click) else {
+        if (click.localRegisterCount() < 6) refuse("${click.name} has no registers for the hook")
+        val clickCode = click.implementation!!.instructions.toList()
+        val ret = clickCode.indexOfLast { it.opcode == Opcode.RETURN_OBJECT }
+        TapSite(0, 0, loadedConstant(click, ret) ?: refuse("${click.name} doesn't end by returning a loaded constant"))
+    }
 
     val block = blockHelper(helpers, classOf, ::refuse)
     if (block.helper == click.definingClass) refuse("the helper and the click are in one class")
@@ -172,9 +186,76 @@ internal fun commentBlockSites(
 
     return CommentBlockSites(
         render, icon.index, iconRegister, scratch, "${iconField.definingClass}->$blockName:${iconField.type}",
-        label.index, labelRegister, click, unit, component.type, block.helper, block.profile, block.source,
-        failure,
+        label.index, labelRegister, click, tap.at, tap.first, tap.unit, component.type, block.helper, block.profile,
+        block.source, failure,
     )
+}
+
+/** Where the tap hook goes, the first of the six registers in a row it writes, and the constant a yes returns. */
+private class TapSite(val at: Int, val first: Int, val unit: String)
+
+/** The field the return-object at [ret] of [method] hands back, when the instruction before it loads it into that register. */
+private fun loadedConstant(method: Method, ret: Int): String? {
+    val code = method.implementation!!.instructions.toList()
+    val load = code.getOrNull(ret - 1) ?: return null
+    if (code[ret].opcode != Opcode.RETURN_OBJECT || load.opcode != Opcode.SGET_OBJECT ||
+        (load as OneRegisterInstruction).registerA != (code[ret] as OneRegisterInstruction).registerA
+    ) {
+        return null
+    }
+    return ((load as ReferenceInstruction).reference as FieldReference).let { "${it.definingClass}->${it.name}:${it.type}" }
+}
+
+/**
+ * The thumbs-down's arm of a lambda class that keeps its cases inline (585 Android 9:
+ * `LX/0faE;->invoke`, case 1, where 585 calls the static `LX/0azF;->A06` with the lambda and the
+ * argument): the method switches once, on an int field of its own class, [DOWNVOTE_CLICK] is reached
+ * from one arm only, and nothing but the switch lands on that arm. The hook goes on the arm and reads
+ * `this` and the argument from their own registers, which nothing on the way there writes, so the
+ * extension is handed what the static click is handed. Every return the arm reaches gives back one
+ * loaded constant, which a yes returns too.
+ */
+private fun inlinedTap(click: Method): TapSite {
+    val code = click.implementation!!.instructions.toList()
+    val flow = ControlFlow.of(click)
+    val switches = code.indices.filter { code[it].opcode == Opcode.PACKED_SWITCH || code[it].opcode == Opcode.SPARSE_SWITCH }
+    val switch = switches.singleOrNull() ?: refuse("${click.name} has ${switches.size} switches, expected one")
+    val selector = (code[switch] as OneRegisterInstruction).registerA
+    val case = click.writersReaching(switch, selector).singleOrNull()?.let { code.getOrNull(it) }
+    val caseField = (case as? ReferenceInstruction)?.reference as? FieldReference
+    if (case?.opcode != Opcode.IGET || caseField?.definingClass != click.definingClass || caseField?.type != "I") {
+        refuse("${click.name} doesn't switch on an int field of its own class")
+    }
+    val loads = code.indices.filter {
+        (code[it].opcode == Opcode.CONST_STRING || code[it].opcode == Opcode.CONST_STRING_JUMBO) &&
+            ((code[it] as ReferenceInstruction).reference as? StringReference)?.string == DOWNVOTE_CLICK
+    }
+    val load = loads.singleOrNull() ?: refuse("${click.name} loads \"$DOWNVOTE_CLICK\" ${loads.size} times, expected once")
+    fun reachedFrom(start: Int): BitSet {
+        val seen = BitSet().apply { set(start) }
+        val pending = ArrayDeque(listOf(start))
+        while (pending.isNotEmpty()) {
+            val at = pending.removeFirst()
+            (flow.normal[at] + flow.exceptional[at]).forEach { if (!seen[it]) { seen.set(it); pending += it } }
+        }
+        return seen
+    }
+    val arms = flow.normal[switch].distinct().filter { reachedFrom(it)[load] }
+    val arm = arms.singleOrNull() ?: refuse("\"$DOWNVOTE_CLICK\" is reached from ${arms.size} arms of ${click.name}, expected one")
+    val into = code.indices.filter { arm in flow.normal[it] || arm in flow.exceptional[it] }
+    if (into != listOf(switch)) refuse("instruction(s) ${into.joinToString()} land on the thumbs-down's arm of ${click.name}, expected the switch alone")
+    click.requireThisIntact(PATCH, listOf(arm))
+    click.requireParameterIntact(PATCH, 0, listOf(arm))
+
+    val reached = reachedFrom(arm)
+    val units = code.indices.filter { reached[it] && code[it].opcode == Opcode.RETURN_OBJECT }.map { loadedConstant(click, it) }
+    val unit = units.distinct().singleOrNull() ?: refuse("the thumbs-down's arm of ${click.name} returns ${units.distinct()}, expected one loaded constant")
+
+    // Six registers in a row for the call's range; the rest of the hook reaches v255.
+    val live = click.liveAcrossInjection(arm)
+    val first = (0..minOf(click.localRegisterCount(), 256) - 6).firstOrNull { start -> (start until start + 6).none { it in live } }
+        ?: refuse("${click.name} has no six registers in a row free at the thumbs-down's arm")
+    return TapSite(arm, first, unit)
 }
 
 /** Facebook's profile Block helper class, and the profile interface and source enum its method takes. */
@@ -252,23 +333,26 @@ internal fun hookCommentBlock(sites: CommentBlockSites, mutable: (String) -> Cla
         ExternalLabel("keep", render.getInstruction(after)),
     )
     val click = mutable(sites.click.definingClass).methods.single { it.descriptor() == sites.click.descriptor() } as MutableMethod
-    click.addInstructionsWithLabels(
-        0,
-        """
-            move-object/from16 v0, p0
-            move-object/from16 v1, p1
-            const-class v2, ${sites.component}
-            const-class v3, ${sites.helper}
-            const-class v4, ${sites.profile}
-            const-class v5, ${sites.source}
-            invoke-static/range {v0 .. v5}, $BLOCK_TAP_CALL
-            move-result v0
-            if-eqz v0, :tap
-            sget-object v0, ${sites.unit}
-            return-object v0
-        """,
-        ExternalLabel("tap", click.getInstruction(0)),
-    )
+    val r = sites.clickRegister
+    val tap = """
+        move-object/from16 v$r, p0
+        move-object/from16 v${r + 1}, p1
+        const-class v${r + 2}, ${sites.component}
+        const-class v${r + 3}, ${sites.helper}
+        const-class v${r + 4}, ${sites.profile}
+        const-class v${r + 5}, ${sites.source}
+        invoke-static/range {v$r .. v${r + 5}}, $BLOCK_TAP_CALL
+        move-result v$r
+        if-eqz v$r, :tap
+        sget-object v$r, ${sites.unit}
+        return-object v$r
+    """
+    if (sites.clickAt == 0) {
+        click.addInstructionsWithLabels(0, tap, ExternalLabel("tap", click.getInstruction(0)))
+    } else {
+        // A switch arm: the hook takes over the arm's label, so the switch lands on it.
+        click.addInstructionsAtControlFlowLabel(sites.clickAt, "$tap\n:tap\nnop")
+    }
     val failure = sites.failure ?: return
     val handler = mutable(failure.definingClass).methods.single { it.descriptor() == failure.descriptor() } as MutableMethod
     handler.addInstructions(0, "invoke-static/range {p1 .. p1}, $BLOCK_FAILED_CALL")

@@ -735,12 +735,17 @@ internal fun likeBuilder(plugin: ClassDef?): Method {
 
 /**
  * What writes Like, for both Like plugins: the one method [builder], the kept plugin's, calls that
- * takes a GraphQLComment and answers a SpannableString. Refuses with any other number of them.
+ * takes a GraphQLComment and answers a SpannableString. 585's Android 9 build reads the comment's
+ * feedback id in [builder] and hands the writer (`LX/05QE;->A00`) that instead, so with no such call
+ * it's the one SpannableString call taking [builder]'s own argument, the comment's context. Refuses
+ * with any other number of them.
  */
 internal fun likeText(builder: Method): MethodReference {
-    val writers = calls(builder).filter {
-        it.returnType == "Landroid/text/SpannableString;" && GRAPHQL_COMMENT in it.parameterTypes
-    }.distinctBy { it.descriptor() }
+    val spannables = calls(builder).filter { it.returnType == "Landroid/text/SpannableString;" }
+    val context = builder.parameterTypes.single().toString()
+    val writers = spannables.filter { GRAPHQL_COMMENT in it.parameterTypes }
+        .ifEmpty { spannables.filter { call -> call.parameterTypes.any { it.toString() == context } } }
+        .distinctBy { it.descriptor() }
     return writers.singleOrNull() ?: refuse(
         "expected ${builder.descriptor()} to write Like through one method, found ${writers.size}: " +
             writers.joinToString { it.descriptor() },
@@ -885,6 +890,7 @@ private fun literalBefore(code: List<Instruction>, index: Int, register: Int): I
 
 private val UPDATE_FACTORIES = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
 private val UPDATE_CONSTRUCTORS = setOf(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE)
+private val INT_MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
 
 /** The index of the last call before [EXPAND_REPLIES] in [update] that builds something from an Object[] and an int. */
 private fun expandBuild(update: Method): Int {
@@ -1359,10 +1365,15 @@ private fun ranIntoOnlyFromBefore(method: Method, at: Int): Boolean {
 
 /** [count] locals from v0 to v15 that nothing reads from instruction [at] on, leaving out [keep]. */
 private fun lowFreeRegisters(method: Method, at: Int, count: Int, keep: Set<Int> = emptySet()): List<Int> {
-    val live = RegisterLiveness.of(method).liveInto(at)
-    val free = (0 until minOf(method.localRegisterCount(), 16)).filter { it !in live && it !in keep }
+    val free = lowRegistersFree(method, at, keep)
     if (free.size < count) refuse("${method.descriptor()} has ${free.size} free low registers at instruction $at, not $count")
     return free.take(count)
+}
+
+/** Every local register below v16 that nothing reads from instruction [at] on, minus [keep]. */
+private fun lowRegistersFree(method: Method, at: Int, keep: Set<Int>): List<Int> {
+    val live = RegisterLiveness.of(method).liveInto(at)
+    return (0 until minOf(method.localRegisterCount(), 16)).filter { it !in live && it !in keep }
 }
 
 /** Refuses unless [register] holds at [at] what it holds at [readAt]: the same writes reach both. */
@@ -1425,7 +1436,19 @@ private fun hideInSender(sender: Method): Pair<Int, List<Insertion>> {
     sender.requireSameValue(build, 0, self)
 
     val (wanted) = lowFreeRegisters(sender, switch, 1, setOf(on))
-    val (read, sent) = lowFreeRegisters(sender, build, 2, setOf(number, self))
+    // 585's Android 9 build sends from a merged lambda (`LX/0D8q;->invoke`) with one low register
+    // free there, so the number is then compared by subtracting it, which needs no second register.
+    val free = lowRegistersFree(sender, build, setOf(number, self))
+    val read = free.firstOrNull() ?: refuse("$where has no free low register at instruction $build")
+    val compare = free.getOrNull(1)?.let { sent ->
+        """
+            const/16 v$sent, $HIDE_REPLIES
+            if-ne v$read, v$sent, :keep
+        """
+    } ?: """
+            add-int/lit16 v$read, v$read, -$HIDE_REPLIES
+            if-nez v$read, :keep
+        """
     return key to listOf(
         Insertion(
             switch,
@@ -1439,8 +1462,7 @@ private fun hideInSender(sender: Method): Pair<Int, List<Insertion>> {
             build,
             """
                 iget v$read, v$self, ${kind.smali()}
-                const/16 v$sent, $HIDE_REPLIES
-                if-ne v$read, v$sent, :keep
+                $compare
                 const/16 v$number, $HIDE_REPLIES
             """,
         ),
@@ -1479,10 +1501,15 @@ private fun hideRowInDraw(draw: Method, sender: Method, senderKey: Int, flag: Fi
     val ask = (answer downTo maxOf(answer - 6, 2)).firstOrNull { index ->
         code[index].methodCall()?.let { it.returnType == OBJECT && it.parameterTypes.map(CharSequence::toString) == listOf(FUNCTION_1) } == true
     } ?: refuse("$where's third open check doesn't ask the comment's props")
-    val keptType = code[ask - 2].madeType() ?: refuse("$where doesn't make its question right before asking")
+    // 585's Android 9 build (`LX/0CBe;->A0j`) moves the question's number into a low register
+    // between making the question and starting it, so one such move may sit between them.
+    val number = code[ask - 1].namedRegisters().last()
+    val moved = code[ask - 2].takeIf { it.opcode in INT_MOVES && (it as TwoRegisterInstruction).registerA == number } as TwoRegisterInstruction?
+    val keptType = code.getOrNull(if (moved == null) ask - 2 else ask - 3)?.madeType()
+        ?: refuse("$where doesn't make its question right before asking")
     val keptInit = code[ask - 1].methodCall()?.takeIf { it.definingClass == keptType && it.name == "<init>" }
         ?: refuse("$where doesn't make its question right before asking")
-    val keptWhich = literalBefore(code, ask - 1, code[ask - 1].namedRegisters().last())
+    val keptWhich = (if (moved == null) literalBefore(code, ask - 1, number) else literalBefore(code, ask - 2, moved.registerB))
         ?: refuse("$where makes its question with a number that isn't a literal")
     val props = code[ask].namedRegisters().first()
 

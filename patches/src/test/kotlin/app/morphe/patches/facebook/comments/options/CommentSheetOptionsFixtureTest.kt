@@ -743,9 +743,12 @@ class CommentSheetOptionsFixtureTest {
         val original = method.implementation!!.instructions.toList()
         method.insertAll(part.insertions)
         val patched = method.implementation!!.instructions.toList()
-        val lengths = sizes ?: listOf(patched.size - original.size)
+        // A payload's alignment nop comes or goes when the code before it changes by an odd number of
+        // units (585's Android 9 sender widens a goto), so nops are left out of the counts.
+        fun List<Instruction>.withoutNops() = filter { it.opcode != Opcode.NOP }
+        val lengths = sizes ?: listOf(patched.withoutNops().size - original.withoutNops().size)
         assertEquals("$where: one length for each place", part.insertions.size, lengths.size)
-        assertEquals("$where gains the blocks alone", original.size + lengths.sum(), patched.size)
+        assertEquals("$where gains the blocks alone", original.withoutNops().size + lengths.sum(), patched.withoutNops().size)
         val flow = ControlFlow.of(method)
         var shift = 0
         val blocks = part.insertions.sortedBy { it.at }.zip(lengths).map { (insertion, length) ->
@@ -761,7 +764,7 @@ class CommentSheetOptionsFixtureTest {
             block.toList() to start
         }
         val facebooks = patched.indices.filter { index -> blocks.none { (block, start) -> index in start until start + block.size } }
-        assertEquals("$where: Facebook's code stays", original.opcodes(), facebooks.map { patched[it] }.opcodes())
+        assertEquals("$where: Facebook's code stays", original.withoutNops().opcodes(), facebooks.map { patched[it] }.withoutNops().opcodes())
         return blocks.map { it.first }
     }
 
@@ -809,9 +812,20 @@ class CommentSheetOptionsFixtureTest {
         val (toArm, toUpdate) = added(senderWhere, restMethod(sender.method), sender, listOf(3, 4))
         assertEquals("$senderWhere: the switch's shape", listOf(Opcode.CONST_16, Opcode.IF_NE, Opcode.CONST_16), toArm.map { it.opcode })
         assertEquals("$senderWhere: looks for the number", HIDE_REPLIES, toArm[0].literal())
-        assertEquals("$senderWhere: takes the arm that names the update", 7, toArm[2].literal())
-        assertEquals("$senderWhere: the update's shape", listOf(Opcode.IGET, Opcode.CONST_16, Opcode.IF_NE, Opcode.CONST_16), toUpdate.map { it.opcode })
-        assertEquals("$senderWhere: looks for the number", HIDE_REPLIES, toUpdate[1].literal())
+        // 585's Android 9 build sends from a merged lambda, where expand is case 70 and one low register is free.
+        val merged = "-minapi28" in name
+        assertEquals("$senderWhere: takes the arm that names the update", if (merged) 70 else 7, toArm[2].literal())
+        if (merged) {
+            assertEquals("$senderWhere: the update's shape", listOf(Opcode.IGET, Opcode.ADD_INT_LIT16, Opcode.IF_NEZ, Opcode.CONST_16), toUpdate.map { it.opcode })
+            assertEquals("$senderWhere: looks for the number", -HIDE_REPLIES, toUpdate[1].literal())
+            val read = (toUpdate[0] as TwoRegisterInstruction).registerA
+            assertEquals("$senderWhere: subtracts it from what it read", listOf(read, read),
+                (toUpdate[1] as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) })
+            assertEquals("$senderWhere: tests the difference", read, (toUpdate[2] as OneRegisterInstruction).registerA)
+        } else {
+            assertEquals("$senderWhere: the update's shape", listOf(Opcode.IGET, Opcode.CONST_16, Opcode.IF_NE, Opcode.CONST_16), toUpdate.map { it.opcode })
+            assertEquals("$senderWhere: looks for the number", HIDE_REPLIES, toUpdate[1].literal())
+        }
         assertEquals("$senderWhere: sends the number", HIDE_REPLIES, toUpdate[3].literal())
         val kind = toUpdate[0].reference()
         assertEquals("$senderWhere: reads what its switch reads", sender.method.implementation!!.instructions.first().reference(), kind)
