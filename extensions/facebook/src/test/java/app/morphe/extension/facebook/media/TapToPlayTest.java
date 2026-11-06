@@ -1131,9 +1131,13 @@ public class TapToPlayTest {
         assertTrue("a fresh screen a tap opened", autoplayedReel(new Object()));
     }
 
-    /** With Only the first reel waits on, the reel a tile opened counts as the played one. */
+    /**
+     * #91: with Only the first reel waits on, the reel a tile opens is the first reel, so it waits
+     * for its own tap, whether the tile's screen or the feed's player rule would have played it.
+     * Once that tap plays it, the reels swiped to after it play.
+     */
     @Test
-    public void aTilesReelStartsARun() {
+    public void withOnlyTheFirstReelWaitingATilesReelWaitsThenStartsTheRun() {
         Settings.TAP_TO_PLAY_REELS_AFTER_FIRST.save(true);
         try {
             long now = 100_000;
@@ -1141,10 +1145,20 @@ public class TapToPlayTest {
             Activity viewer = Robolectric.buildActivity(Activity.class).setup().get();
             TapToPlay.screenCreated(viewer, now - 100);
             TapToPlay.activityResumed(viewer);
-            assertTrue("the reel the tile opened", reelAt(new Object(), now + 800));
+            Object first = new Object();
+            assertFalse("the reel the tile opened", reelAt(first, now + 800));
+            assertFalse("Facebook's restart of it", reelAt(first, now + 900));
+            tapAt(now + 2_000);
+            assertTrue("a tap on the waiting first reel", decide(first, Trigger.BY_USER, now + 2_050));
             TapToPlay.nonTapGesture();
             TapClock.forget();
-            assertTrue("the reel swiped to next", reelAt(new Object(), now + 3_000));
+            assertTrue("the reel swiped to next", decide(new Object(), Trigger.BY_SHORT_FORM_VIDEO_FULLY_VISIBLE, now + 3_000));
+
+            TapToPlayForTests.forget();
+            tapAt(now + 20_000);
+            TapToPlay.feedVideoOpened(now + 20_100);
+            assertFalse("a reel a tap opened through the feed's player", reelAt(new Object(), now + 21_500));
+            assertFalse("which leaves nothing for a plain video after it", plainVideoAt(new Object(), now + 21_600));
         } finally {
             Settings.TAP_TO_PLAY_REELS_AFTER_FIRST.resetToDefault();
         }

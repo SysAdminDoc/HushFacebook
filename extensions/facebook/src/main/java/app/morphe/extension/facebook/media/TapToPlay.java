@@ -62,7 +62,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *       {@link #TAPPED_SCREEN_WINDOW_MS} ago, that screen is in front, and nothing has been swiped
  *       since ({@link #activityCreated}). A tile in Home's Reels row, or a reel in the feed, opens
  *       its reel in a screen of its own, so the tap on it is the tap for that reel (#106). The
- *       Reels tab opens no screen, so its first reel still waits, and so do the tiles in the feed.</li>
+ *       Reels tab opens no screen, so its first reel still waits, and so do the tiles in the feed.
+ *       With {@link Settings#TAP_TO_PLAY_REELS_AFTER_FIRST} on, the reel a tap opened is the first
+ *       reel, and it waits like the Reels tab's (#91).</li>
  *   <li>It's the first start since a video tapped in a feed opened Facebook's player no more than
  *       {@link #TAPPED_SCREEN_WINDOW_MS} ago ({@link #feedVideoOpening}), the trigger isn't one Facebook
  *       sends because something came into view or came back unless a reel's, and nothing has been
@@ -679,10 +681,14 @@ public final class TapToPlay {
         boolean linked = !armed && !control && !tapped && !window && !back && BY_USER.equals(trigger) && takeLink(now);
         boolean reelStart = REEL_IN_VIEW.equals(trigger) || autoplayedReel;
         boolean free = !armed && !control && !tapped && !window && !back && !linked;
+        // With Only the first reel waits on, the reel a tap opened is that first reel, so it waits for
+        // a tap of its own. The tap is still taken, so no later reel gets it (#91).
+        boolean firstWaits = reelStart && Settings.TAP_TO_PLAY_REELS_AFTER_FIRST.get();
         // A tile in Home's Reels row opens its reel in a screen of its own: that tap was for this reel (#106).
-        boolean opened = free && reelStart && takeTappedScreen(now);
+        boolean opened = free && reelStart && takeTappedScreen(now) && !firstWaits;
         // A video tapped in a feed opens Facebook's player, and a plain one's start isn't a reel's (#239).
-        boolean feedVideo = free && !opened && (reelStart || !visibilityDriven(trigger)) && takeFeedVideo(now);
+        boolean feedVideo = free && !opened && (reelStart || !visibilityDriven(trigger)) && takeFeedVideo(now)
+                && !firstWaits;
         // One tap opens one video: whichever rule played it, the other has nothing left to wait for.
         if (opened || feedVideo) {
             dropTappedScreen();
