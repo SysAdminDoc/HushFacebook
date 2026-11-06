@@ -88,12 +88,14 @@ class ShowFullPostTextFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Place("LX/03Bn;", 5, 2, "LX/02iG;", "LX/039x;"),
             "armeabi-v7a" to Place("LX/03Bn;", 5, 2, "LX/02iG;", "LX/039x;"),
+            "arm64-v8a-minapi28-storeless" to Place("LX/03CW;", 5, 2, "LX/02iz;", "LX/03Ag;"),
         ),
     )
 
     /** Each declared build's reel caption component, by ABI. */
     private val captionComponentOf = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to "LX/09as;", "armeabi-v7a" to "LX/09ax;"),
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to "LX/09as;", "armeabi-v7a" to "LX/09ax;",
+            "arm64-v8a-minapi28-storeless" to "LX/09bQ;"),
     )
 
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()

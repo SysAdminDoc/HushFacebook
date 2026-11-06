@@ -314,8 +314,8 @@ final class FeedPages {
             }
             if (build.contains(PatchFamily.FULL_POST_TEXT)) {
                 feed.addPreference(toggle(context, Settings.SHOW_FULL_POST_TEXT,
-                        L10n.t("Posts in the feed and captions on reels show all of their text, so there's no See more to tap. "
-                                + "Tap the text to fold it back.")));
+                        L10n.t("Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold "
+                                + "it back. Reel captions have their own switch under Reels and Watch.")));
             }
             if (build.contains(PatchFamily.TRANSLATE_POSTS)) {
                 feed.addPreference(toggle(context, Settings.TRANSLATE_POST_LINK,

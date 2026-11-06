@@ -48,6 +48,7 @@ public class FullPostTextTest {
     public void restore() {
         PauseForTests.resume();
         Settings.SHOW_FULL_POST_TEXT.resetToDefault();
+        Settings.SHOW_FULL_REEL_CAPTIONS.resetToDefault();
         HookStatus.clear();
         FullPostText.forgetForTests();
     }
@@ -107,7 +108,7 @@ public class FullPostTextTest {
     public void aReelCaptionStartsWholeOnlyWithTheSwitchOn() {
         assertFalse("a reel caption started whole with the switch off", FullPostText.reelCaptionExpanded(false));
         assertTrue("Facebook's own expanded start was folded", FullPostText.reelCaptionExpanded(true));
-        Settings.SHOW_FULL_POST_TEXT.save(true);
+        Settings.SHOW_FULL_REEL_CAPTIONS.save(true);
         assertTrue("a reel caption still starts cut", FullPostText.reelCaptionExpanded(false));
         assertTrue(FullPostText.reelCaptionExpanded(true));
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
@@ -115,6 +116,21 @@ public class FullPostTextTest {
         PauseForTests.resume();
         assertEquals(FamilyNames.FULL_POST_TEXT + ": invoked 1, 1 found, 0 missing. Counted: "
                 + FullPostText.REEL_CAPTION_WHOLE + " 1", statusLine());
+    }
+
+    /** #398: feed posts and reel captions each follow their own switch. */
+    @Test
+    public void feedPostsAndReelCaptionsHaveSeparateSwitches() {
+        Settings.SHOW_FULL_POST_TEXT.save(true);
+        assertNull("the feed switch didn't show a post whole", FullPostText.cut(cut(), new Story("1")));
+        assertFalse("the feed switch alone started a reel caption whole", FullPostText.reelCaptionExpanded(false));
+
+        Settings.SHOW_FULL_POST_TEXT.save(false);
+        Settings.SHOW_FULL_REEL_CAPTIONS.save(true);
+        SpannableString cut = cut();
+        assertSame("the reel switch alone showed a post whole", cut, FullPostText.cut(cut, new Story("1")));
+        assertTrue("the reel switch alone started a post whole", FullPostText.allowTruncation(true));
+        assertTrue("the reel switch didn't start a reel caption whole", FullPostText.reelCaptionExpanded(false));
     }
 
     @Test

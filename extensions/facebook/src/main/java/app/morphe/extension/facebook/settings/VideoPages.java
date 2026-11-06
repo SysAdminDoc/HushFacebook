@@ -233,6 +233,12 @@ final class VideoPages {
                     L10n.t("The reels in your feed's Reels row play from the start and keep going, instead of "
                             + "repeating a second or two. Tiles drawn after a change pick it up.")));
         }
+        // Show full post text's reel half, a switch of its own since #398, read as each caption starts.
+        if (build.contains(PatchFamily.FULL_POST_TEXT)) {
+            reels.addPreference(toggle(context, Settings.SHOW_FULL_REEL_CAPTIONS,
+                    L10n.t("Long captions on reels show all of their text right away. Tap the caption to fold it back. "
+                            + "A change shows from the next reel.")));
+        }
         if (build.contains(PatchFamily.REEL_WATCH_HISTORY)) {
             reels.addPreference(toggle(context, Settings.DONT_SEND_REEL_WATCH_HISTORY,
                     L10n.t("Stops sending Facebook your list of watched reels. It uses the list to rank your feed, so reels "

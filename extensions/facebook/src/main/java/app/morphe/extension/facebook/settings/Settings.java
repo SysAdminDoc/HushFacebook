@@ -2831,12 +2831,20 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_keep_post_dates", TRUE);
 
     /**
-     * Posts in the feed and reel captions show their whole text instead of Facebook's cut with See more
-     * ({@link app.morphe.extension.facebook.feed.FullPostText}). A change shows on the posts and reels
-     * drawn after it.
+     * Posts in the feed show their whole text instead of Facebook's cut with See more
+     * ({@link app.morphe.extension.facebook.feed.FullPostText}). A change shows on the posts drawn
+     * after it.
      */
     public static final BooleanSetting SHOW_FULL_POST_TEXT =
-            new BooleanSetting("hushfacebook_show_full_post_text", FALSE);
+            new BooleanSetting(ReelCaptionSetting.FEED_KEY, FALSE);
+
+    /**
+     * Reel captions start whole instead of cut with "more" (#398, split from
+     * {@link #SHOW_FULL_POST_TEXT}, whose stored value it takes over once). A change shows on the
+     * reels drawn after it.
+     */
+    public static final BooleanSetting SHOW_FULL_REEL_CAPTIONS =
+            new ReelCaptionSetting("hushfacebook_show_full_reel_captions");
 
     /**
      * A post in another language gets a Translate line under its text, and a tap sends the text to

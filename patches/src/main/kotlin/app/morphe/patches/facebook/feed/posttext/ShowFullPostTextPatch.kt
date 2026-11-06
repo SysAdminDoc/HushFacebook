@@ -92,7 +92,8 @@ val showFullPostTextPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Show full post text",
     description = "Shows all of a post's text in the feed, and a reel's caption, so you don't have to tap See more. " +
-        "A tap on the text folds it back. Starts off. Turn it on in Hushfacebook settings > News feed.",
+        "A tap on the text folds it back. Starts off. Turn posts on in Hushfacebook settings > News feed, " +
+        "and reel captions under Reels and Watch.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)

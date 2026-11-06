@@ -34,8 +34,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * through until a tap opens it again.
  *
  * <p>A reel's caption (FbShortsViewerDescriptionComponent) keeps an "expanded" state that "more"
- * flips. Its first value goes through the extension too, so with the switch on a long caption starts
- * whole, and a tap folds it; Facebook keeps that per reel by itself (#268).
+ * flips. Its first value goes through the extension too, so with Show full reel captions on a long
+ * caption starts whole, and a tap folds it; Facebook keeps that per reel by itself (#268). That
+ * switch is apart from the feed's (#398).
  *
  * <p>Off, paused, before the settings are ready, or when anything here fails, the cut and the state
  * are Facebook's own.
@@ -92,6 +93,11 @@ public final class FullPostText {
         return Utils.settingsReady() && Settings.SHOW_FULL_POST_TEXT.get();
     }
 
+    /** Reel captions have a switch of their own (#398). */
+    private static boolean reelsOn() {
+        return Utils.settingsReady() && Settings.SHOW_FULL_REEL_CAPTIONS.get();
+    }
+
     /**
      * The hook, right after Facebook cuts a post's text, handed the cut text, or null when the text
      * fit, and the post's story. Answers null while the switch is on, so the whole text shows, unless
@@ -143,7 +149,7 @@ public final class FullPostText {
     public static boolean reelCaptionExpanded(boolean expanded) {
         try {
             HookStatus.bound(FAMILY, REEL_CAPTION);
-            if (expanded || !on()) return expanded;
+            if (expanded || !reelsOn()) return expanded;
             HookStatus.invoked(FAMILY);
             HookStatus.counted(FAMILY, REEL_CAPTION_WHOLE);
             if (!reelLogged) {

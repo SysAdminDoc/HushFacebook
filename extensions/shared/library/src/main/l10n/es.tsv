@@ -1000,7 +1000,9 @@ The phone's language	El idioma del teléfono
 Languages to leave alone	Idiomas que no se traducen
 None picked. Posts in every language can be translated.	Ninguno elegido. Se pueden traducir publicaciones en cualquier idioma.
 Left alone: %s	No se traducen: %s
-Posts in the feed and captions on reels show all of their text, so there's no See more to tap. Tap the text to fold it back.	Las publicaciones del feed y las descripciones de los reels muestran todo su texto, así que no hay que tocar Ver más. Toca el texto para volver a contraerlo.
+Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold it back. Reel captions have their own switch under Reels and Watch.	Las publicaciones del feed muestran todo su texto, así que no hay que tocar Ver más. Toca el texto para volver a contraerlo. Las descripciones de los reels tienen su propio interruptor en Reels y Watch.
+Show full reel captions	Mostrar las descripciones completas de los reels
+Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Las descripciones largas de los reels muestran todo su texto desde el principio. Toca la descripción para volver a contraerla. El cambio se aplica desde el siguiente reel.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Ver quién compartió
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Añade Ver quién compartió al menú de una publicación. Abre la lista de Facebook de las personas que la compartieron.
