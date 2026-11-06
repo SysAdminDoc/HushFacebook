@@ -17,6 +17,7 @@ Changes in each Hushfacebook version, newest first.
 * `Fade the story seek bar` lets that bar fade a few seconds after a story starts or you last touch it, separate from the feed's fade switch. A touch or a pause brings it back. It needs `Seek bar on stories` and starts off. (#386)
 * `Open chats in Messenger` under Chats sends your chats to the Messenger app instead of opening them inside Facebook, and that includes the Message button on someone's profile. Some accounts get chats inside Facebook even with Messenger installed, and this switch is for them. It only kicks in while Messenger is installed and turned on, starts off, and needs a Facebook restart after you flip it. (#392)
 * `Hide the Fullscreen button` under Reels and Watch takes the Fullscreen button off the black space under a wide video in Reels. It's off until you turn it on. (#394)
+* **Tooling:** `scripts/superpack-unpack.ps1` turns Facebook's Android 9+ build into one the patcher can read. That build keeps most of its code in a compressed store, which the script decodes on a connected phone with Facebook's own decoder. Every decoded file has to match the SHA-1 the build lists, and what comes out is an APK or bundle laid out like the Android 11+ build. It's the first step toward patching the Android 9+ build. (#102)
 
 ### Changed
 
