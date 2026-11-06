@@ -876,6 +876,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/StoryRings.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/stories/rings/HideStoryRingsPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #397: the story and LIVE rings on profile pictures. In Facebook 585 the feed's post header decorators build components that name themselves FeedStoryRingComponent and FeedLiveRingComponent, and their ring checks ask two statics that take the post's GraphQLActor and answer whether to draw a ring; the patch hands every answer of both to the extension. The comment ring helper is the static of the class holding the comment StoryRingPlugin name that answers a ring state, and the patch has it answer the state Facebook builds for someone with no story when the extension says so. The profile photo (FDSProfilePhoto, a kept class name) takes its ring kind as a constructor argument that may be null, and in the two renders that test for a ring the patch passes that argument through the extension, which answers null while the switch is on."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostJoinButton.kt"
       ],
       "origin": "original",

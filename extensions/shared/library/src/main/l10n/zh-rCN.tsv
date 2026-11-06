@@ -2564,3 +2564,9 @@ Open chats in Messenger	在 Messenger 中打开聊天
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	在 Messenger 应用中打开聊天，而不是在 Facebook 内打开，包括个人主页上的“发消息”按钮，前提是 Messenger 已安装并启用。没有 Messenger 时，聊天仍在 Facebook 中打开。更改后请重新启动 Facebook。
 Hide the Fullscreen button	隐藏“全屏”按钮
 Takes the Fullscreen button off the space under a wide video in Reels. A change shows from the next video.	去掉 Reels 中宽屏视频下方空白处的“全屏”按钮。更改从下一个视频起生效。
+Hide rings in the feed	隐藏动态中的圆环
+Hide rings in comments	隐藏评论中的圆环
+Hide rings on profiles	隐藏主页上的圆环
+Takes the story and LIVE rings off the profile pictures at the top of posts. Tapping the picture opens the profile. Applies to posts drawn after the change.	去掉帖子顶部头像上的快拍和 LIVE 圆环。点按头像会打开个人主页。对更改后显示的帖子生效。
+Takes the story ring off the profile pictures next to comments. Applies to comments drawn after the change.	去掉评论旁头像上的快拍圆环。对更改后显示的评论生效。
+Takes the story and LIVE rings off the picture on a profile, and in the lists and search results that show it the same way. Applies the next time the picture draws.	去掉个人主页头像上的快拍和 LIVE 圆环，以及以同样方式显示头像的列表和搜索结果中的圆环。从头像下次显示时生效。

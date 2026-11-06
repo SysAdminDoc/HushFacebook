@@ -107,6 +107,9 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_STORY_REPLY_SUGGESTIONS) return L10n.t("Hide reply suggestions");
         if (setting == Settings.HIDE_STORY_SUBSCRIBE) return L10n.t("Hide the Subscribe button");
         if (setting == Settings.STORY_PROGRESS_BAR) return L10n.t("Progress bar at the bottom");
+        if (setting == Settings.HIDE_FEED_STORY_RINGS) return L10n.t("Hide rings in the feed");
+        if (setting == Settings.HIDE_COMMENT_STORY_RINGS) return L10n.t("Hide rings in comments");
+        if (setting == Settings.HIDE_PROFILE_STORY_RINGS) return L10n.t("Hide rings on profiles");
         if (setting == Settings.PINCH_TO_ZOOM) return L10n.t("Pinch to zoom");
         if (setting == Settings.PINCH_TO_ZOOM_KEEP) return L10n.t("Stay zoomed");
         if (setting == Settings.PINCH_TO_ZOOM_DOUBLE_TAP) return L10n.t("Double tap to zoom");

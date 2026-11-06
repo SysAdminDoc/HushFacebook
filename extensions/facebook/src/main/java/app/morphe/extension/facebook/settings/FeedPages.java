@@ -651,7 +651,7 @@ final class FeedPages {
                 || build.contains(PatchFamily.STORY_DOWNLOAD) || build.contains(PatchFamily.STORY_UPLOAD_HD)
                 || build.contains(PatchFamily.STORY_MUSIC_LENGTH) || build.contains(PatchFamily.STORIES_TRAY_CIRCLES)
                 || build.contains(PatchFamily.STORY_TAPS) || build.contains(PatchFamily.STORY_VIEWER_CLEANUP)
-                || build.contains(PatchFamily.PINCH_TO_ZOOM)) {
+                || build.contains(PatchFamily.STORY_RINGS) || build.contains(PatchFamily.PINCH_TO_ZOOM)) {
             PreferenceCategory stories = category(screen, L10n.t("Stories"));
             if (build.contains(PatchFamily.SPONSORED_STORIES)) {
                 stories.addPreference(toggle(context, Settings.HIDE_SPONSORED_STORIES,
@@ -748,6 +748,18 @@ final class FeedPages {
                         L10n.t("Takes the Subscribe button off the top of a story. Applies from the next story you open.")));
                 stories.addPreference(toggle(context, Settings.STORY_PROGRESS_BAR,
                         L10n.t("Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.")));
+            }
+            if (build.contains(PatchFamily.STORY_RINGS)) {
+                // Read each time a picture draws, so a change shows on what's drawn after it.
+                stories.addPreference(toggle(context, Settings.HIDE_FEED_STORY_RINGS,
+                        L10n.t("Takes the story and LIVE rings off the profile pictures at the top of posts. Tapping "
+                                + "the picture opens the profile. Applies to posts drawn after the change.")));
+                stories.addPreference(toggle(context, Settings.HIDE_COMMENT_STORY_RINGS,
+                        L10n.t("Takes the story ring off the profile pictures next to comments. Applies to comments "
+                                + "drawn after the change.")));
+                stories.addPreference(toggle(context, Settings.HIDE_PROFILE_STORY_RINGS,
+                        L10n.t("Takes the story and LIVE rings off the picture on a profile, and in the lists and "
+                                + "search results that show it the same way. Applies the next time the picture draws.")));
             }
             if (build.contains(PatchFamily.TAP_TO_PLAY)) {
                 // Read as each story's video draws, so a change shows on the story that's open.

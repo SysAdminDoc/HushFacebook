@@ -2569,3 +2569,9 @@ Open chats in Messenger	Sohbetleri Messenger'da aç
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	Messenger yüklü ve etkin olduğu sürece sohbetleri Facebook'un içinde değil Messenger uygulamasında açar, bir profildeki Mesaj düğmesi de dahil. Messenger yoksa sohbetler Facebook'ta kalır. Değiştirdikten sonra Facebook'u yeniden başlat.
 Hide the Fullscreen button	Tam ekran düğmesini gizle
 Takes the Fullscreen button off the space under a wide video in Reels. A change shows from the next video.	Reels'te geniş bir videonun altındaki boşluktan Tam ekran düğmesini kaldırır. Değişiklik sonraki videodan itibaren görünür.
+Hide rings in the feed	Akıştaki halkaları gizle
+Hide rings in comments	Yorumlardaki halkaları gizle
+Hide rings on profiles	Profillerdeki halkaları gizle
+Takes the story and LIVE rings off the profile pictures at the top of posts. Tapping the picture opens the profile. Applies to posts drawn after the change.	Gönderilerin üstündeki profil resimlerinden hikaye ve LIVE halkalarını kaldırır. Resme dokunmak profili açar. Değişiklikten sonra gösterilen gönderiler için geçerli.
+Takes the story ring off the profile pictures next to comments. Applies to comments drawn after the change.	Yorumların yanındaki profil resimlerinden hikaye halkasını kaldırır. Değişiklikten sonra gösterilen yorumlar için geçerli.
+Takes the story and LIVE rings off the picture on a profile, and in the lists and search results that show it the same way. Applies the next time the picture draws.	Bir profildeki resimden ve onu aynı şekilde gösteren listelerle arama sonuçlarından hikaye ve LIVE halkalarını kaldırır. Resim bir sonraki gösterildiğinde geçerli olur.

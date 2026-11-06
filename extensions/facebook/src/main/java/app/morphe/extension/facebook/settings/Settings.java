@@ -493,6 +493,25 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting STORY_PROGRESS_BAR =
             new BooleanSetting("hushfacebook_story_progress_bar", FALSE);
 
+    /**
+     * The story and LIVE rings leave the profile pictures at the top of posts, and a tap on the picture
+     * opens the profile ({@link app.morphe.extension.facebook.stories.StoryRings}, #397). Starts off.
+     * Read as each post's header draws.
+     */
+    public static final BooleanSetting HIDE_FEED_STORY_RINGS =
+            new BooleanSetting("hushfacebook_hide_feed_story_rings", FALSE);
+
+    /** The story ring leaves the profile pictures beside comments (#397). Starts off. Read as each comment draws. */
+    public static final BooleanSetting HIDE_COMMENT_STORY_RINGS =
+            new BooleanSetting("hushfacebook_hide_comment_story_rings", FALSE);
+
+    /**
+     * The story and LIVE rings leave the profile picture on a profile, and the lists and search
+     * results that draw it the same way (#397). Starts off. Read as the picture draws.
+     */
+    public static final BooleanSetting HIDE_PROFILE_STORY_RINGS =
+            new BooleanSetting("hushfacebook_hide_profile_story_rings", FALSE);
+
     /** The two page filters that take server-inlined ads out of Reels and Watch. */
     public static final BooleanSetting HIDE_SPONSORED_REELS =
             new BooleanSetting("hushfacebook_hide_sponsored_reels", TRUE);

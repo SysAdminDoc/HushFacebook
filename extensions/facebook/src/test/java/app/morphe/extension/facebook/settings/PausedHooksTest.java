@@ -604,6 +604,11 @@ public class PausedHooksTest {
                 app.morphe.extension.facebook.stories.StoryViewerCleanup::hideCredits,
                 app.morphe.extension.facebook.stories.StoryViewerCleanup::hideReplySuggestions,
                 app.morphe.extension.facebook.stories.StoryProgressBarForTests::drawsABar));
+        // A profile picture in the feed, beside a comment and on a profile draws without its ring.
+        probes.put(PatchFamily.STORY_RINGS, Arrays.asList(
+                () -> !app.morphe.extension.facebook.stories.StoryRings.feedRing(1),
+                app.morphe.extension.facebook.stories.StoryRings::hideCommentRing,
+                () -> app.morphe.extension.facebook.stories.StoryRings.profileRing("ring") == null));
         // A photo's song gets the longer clip.
         probes.put(PatchFamily.STORY_MUSIC_LENGTH, Collections.singletonList(() -> StoryMusic.clipLength(15000) == 30000));
         probes.put(PatchFamily.SPONSORED_REELS, Arrays.asList(

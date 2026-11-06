@@ -368,6 +368,12 @@ public class ColdStartHooksTest {
         assertFalse("a story's suggested replies drawn before the context drew nothing",
                 StoryViewerCleanup.hideReplySuggestions());
         assertFalse("a story played before the context got a progress bar", StoryProgressBarForTests.drawsABar());
+        assertTrue("a post header drawn before the context lost its story ring",
+                app.morphe.extension.facebook.stories.StoryRings.feedRing(1));
+        assertFalse("a comment drawn before the context lost its story ring",
+                app.morphe.extension.facebook.stories.StoryRings.hideCommentRing());
+        assertEquals("a profile drawn before the context lost its story ring", "ring",
+                app.morphe.extension.facebook.stories.StoryRings.profileRing("ring"));
         assertFalse(PlayerSourcesForTests.recordsAPlayer());
         assertFalse("a post menu built before the context got the video item", VideoMenuItemForTests.addsAnItem());
         assertFalse("a post menu built before the context got the photo item", PhotoMenuItemForTests.addsAnItem());
