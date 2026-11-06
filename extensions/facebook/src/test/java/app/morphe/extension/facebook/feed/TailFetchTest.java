@@ -50,15 +50,44 @@ public class TailFetchTest {
     }
 
     /**
-     * Once the guard hides an edge, the end of the list on screen asks again, and only the end: a row
-     * above the last, or a list with no rows, leaves the fetcher's answer.
+     * Once the guard hides an edge, the end of the list on screen asks again: a row well above the
+     * end, or a list with no rows, leaves the fetcher's answer.
      */
     @Test
     public void aHiddenEdgeMakesTheEndOfTheListAsk() {
         assertTrue(FeedGuardForTests.hides(Category.SPONSORED, new Object()));
-        assertFalse("not at the end", TailFetch.askAgain(7, 10, 1_000));
+        assertFalse("well above the end", TailFetch.askAgain(7, 40, 1_000));
         assertFalse("no rows yet", TailFetch.askAgain(0, 0, 1_000));
         assertTrue("the loading row on screen", TailFetch.askAgain(9, 10, 1_000));
+    }
+
+    /**
+     * #139: within AHEAD_ROWS of the end it asks before the end comes, once for each length of the
+     * list, so a load already running isn't asked for on every scroll, and new rows ask again.
+     */
+    @Test
+    public void nearTheEndAsksAheadOncePerLength() {
+        TailFetch.hidEdge();
+        int rows = 30;
+        int first = rows - 1 - TailFetch.AHEAD_ROWS;
+        assertFalse("a row before the window", TailFetch.askAgain(first - 1, rows, 1_000));
+        assertTrue("the window's first row", TailFetch.askAgain(first, rows, 1_000));
+        assertFalse("the same length again", TailFetch.askAgain(first + 2, rows, 1_100));
+        assertFalse("the same length, much later", TailFetch.askAgain(first + 3, rows, 60_000));
+        assertFalse("the page landed, end out of reach", TailFetch.askAgain(first + 3, rows + 4, 60_100));
+        assertTrue("the page landed, end in reach", TailFetch.askAgain(first + 4, rows + 4, 60_150));
+        assertTrue("the end still asks on its own clock", TailFetch.askAgain(rows + 3, rows + 4, 60_200));
+    }
+
+    /** Before the guard has hidden anything, or paused, the window ahead asks nothing either. */
+    @Test
+    public void aheadNeedsAHiddenEdgeAndNoPause() {
+        assertFalse(TailFetch.askAgain(25, 30, 1_000));
+        TailFetch.hidEdge();
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse(TailFetch.askAgain(25, 30, 1_000));
+        PauseForTests.resume();
+        assertTrue(TailFetch.askAgain(25, 30, 1_000));
     }
 
     /** At most one ask every RETRY_MS, however often the fetcher runs at the end of the list. */

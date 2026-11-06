@@ -28,16 +28,30 @@ import app.morphe.extension.shared.settings.Setting;
  *
  * <p>With the end of the list on screen it also lets {@link FeedEndHint} say why Home stops there,
  * before the wait between asks, so a page of hidden suggestions landing between two asks still counts.
+ *
+ * <p>It also asks ahead, while the end is still {@link #AHEAD_ROWS} rows off (#139). Hidden edges
+ * never become rows, so a page the guard thinned adds only a few, and the fetcher's own ask comes
+ * two posts from the end: the next posts were still loading when the last ones went by, and arrived
+ * two or three at a time while Home showed its waiting row. One ask ahead per length of the list is
+ * enough, since the loader runs one load at a time and says so, and only new rows make another ask
+ * worth it.
  */
 public final class TailFetch {
     /** The diagnostic report's count of the asks this added. */
     static final String ASKED_AGAIN = "Home asked for more posts at the end of the list";
 
+    /** The diagnostic report's count of the asks this made before the end of the list. */
+    static final String ASKED_AHEAD = "Home asked for more posts ahead of the end of the list";
+
     /** The shortest time between two asks this adds. */
     static final long RETRY_MS = 2000;
 
+    /** How many rows short of the end of the list Home asks ahead. */
+    static final int AHEAD_ROWS = 8;
+
     private static volatile boolean hidAny;
     private static long askedAtMs = Long.MIN_VALUE;
+    private static int askedAheadAtRows = -1;
 
     private TailFetch() {
     }
@@ -61,8 +75,8 @@ public final class TailFetch {
     static boolean askAgain(int lastRow, int rows, long nowMs) {
         try {
             if (!hidAny || !Utils.settingsReady() || Setting.isPaused()) return false;
-            // Not at the end of the list: the fetcher's own rule moves on with the next scroll.
-            if (rows <= 0 || lastRow < rows - 1) return false;
+            if (rows <= 0) return false;
+            if (lastRow < rows - 1) return askAhead(lastRow, rows);
             FeedEndHint.atEndOfList();
             synchronized (TailFetch.class) {
                 if (askedAtMs != Long.MIN_VALUE && nowMs - askedAtMs < RETRY_MS) return false;
@@ -77,6 +91,21 @@ public final class TailFetch {
         }
     }
 
+    /**
+     * Before the end of the list: asks once for each length of the list when the last row on screen
+     * is within {@link #AHEAD_ROWS} of the end, and leaves the fetcher's answer further up.
+     */
+    private static boolean askAhead(int lastRow, int rows) {
+        if (lastRow < rows - 1 - AHEAD_ROWS) return false;
+        synchronized (TailFetch.class) {
+            if (askedAheadAtRows == rows) return false;
+            askedAheadAtRows = rows;
+        }
+        HookStatus.counted(family(), ASKED_AHEAD);
+        Logger.printDebug(() -> "Feed filter: " + ASKED_AHEAD + " (row " + lastRow + " of " + rows + ")");
+        return true;
+    }
+
     /** The family the guard's own counts go under first. */
     static String family() {
         return SettingsStatus.suggestedPosts() ? FamilyNames.SUGGESTED_POSTS : FamilyNames.SPONSORED_POSTS;
@@ -86,6 +115,7 @@ public final class TailFetch {
         hidAny = false;
         synchronized (TailFetch.class) {
             askedAtMs = Long.MIN_VALUE;
+            askedAheadAtRows = -1;
         }
     }
 }
