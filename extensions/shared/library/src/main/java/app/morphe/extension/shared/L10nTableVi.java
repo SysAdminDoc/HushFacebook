@@ -1951,8 +1951,8 @@ final class L10nTableVi {
                 "Reel m\u1edbi nh\u1ea5t tr\u01b0\u1edbc");
         table.put("News feed",
                 "B\u1ea3ng tin");
-        table.put("No \"Are you interested in this reel?\" prompt on reels. The reel plays as usual.",
-                "Kh\u00f4ng c\u00f2n c\u00e2u h\u1ecfi \"B\u1ea1n c\u00f3 quan t\u00e2m \u0111\u1ebfn reel n\u00e0y kh\u00f4ng?\" tr\u00ean reel. Reel v\u1eabn ph\u00e1t nh\u01b0 b\u00ecnh th\u01b0\u1eddng.");
+        table.put("No \"Are you interested in this reel?\" prompt on reels, and no survey card between them asking how well a video matches your interests.",
+                "Kh\u00f4ng c\u00f2n c\u00e2u h\u1ecfi \"B\u1ea1n c\u00f3 quan t\u00e2m \u0111\u1ebfn reel n\u00e0y kh\u00f4ng?\" tr\u00ean reel, v\u00e0 kh\u00f4ng c\u00f2n th\u1ebb kh\u1ea3o s\u00e1t gi\u1eefa c\u00e1c reel h\u1ecfi video h\u1ee3p v\u1edbi s\u1edf th\u00edch c\u1ee7a b\u1ea1n \u0111\u1ebfn m\u1ee9c n\u00e0o.");
         table.put("No Facebook ads in other apps",
                 "Kh\u00f4ng c\u00f3 qu\u1ea3ng c\u00e1o c\u1ee7a Facebook trong \u1ee9ng d\u1ee5ng kh\u00e1c");
         table.put("No Meta Verified offer after you post, and no Meta Verified label under the names on posts. Posting works as usual.",

@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.feed.refresh.enumConstant
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.filterBooleanReturns
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.patches.facebook.reels.reelMidCardsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findMutableMethodOf
@@ -48,16 +49,21 @@ internal const val KEEP = "$REEL_PROMPTS->keep(I)Z"
  * the reel's position too. The reel overlay asks it before building the prompt
  * and before keeping a place for it, so a no leaves the reel as one without a prompt. Each of its
  * answers goes through the extension, which turns a yes into a no while the switch is on.
+ *
+ * The "To what extent does this video match your interests?" survey between reels (#405) is a
+ * Reels mid-card, and goes through reelMidCardsPatch's hook, which Clean up Reels shares, under
+ * the same switch.
  */
 @Suppress("unused")
 val hideReelPromptsPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Hide reel interest prompts",
-    description = "Removes the \"Are you interested in this reel?\" prompt, so reels play without the " +
-        "interruption. On by default. Turn it off in Hushfacebook settings > Reels and Watch.",
+    description = "Removes the \"Are you interested in this reel?\" prompt and the survey between reels " +
+        "asking how well a video matches your interests, so reels play without the interruption. On by " +
+        "default. Turn it off in Hushfacebook settings > Reels and Watch.",
 ) {
     category("Reels")
-    dependsOn(settingsPatch)
+    dependsOn(settingsPatch, reelMidCardsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {

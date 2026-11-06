@@ -7,8 +7,13 @@ package app.morphe.patches.facebook.reels
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
+import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patches.facebook.ads.sponsoredreels.filterSectionsFirst
+import app.morphe.patches.facebook.ads.sponsoredreels.reelPages
+import app.morphe.patches.facebook.ads.sponsoredreels.toBinaryName
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.ClassDef
 
@@ -32,10 +37,18 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
  * - The Reels controller's page method, the one the page filters already go on, walks each
  *   section's items, picks out this item class and reads its type the same way (581
  *   LX/5IF;->A0K through LX/58Z;->A02). So a mid-card is in the section lists ReelSections walks.
+ * - The "To what extent does this video match your interests?" survey between reels (#405) is a
+ *   mid-card of the same enum, USER_SURVEY (585 LX/05VV; and LX/06Zc;, drawn by
+ *   FbShortsSingleVideoUserSurveyMidcardComponent, LX/0cYi;).
  */
 
 /** The mid-card type of the Threads card. */
 internal const val THREADS_MID_CARD = "THREADS_MIDCARD"
+
+/** The mid-card type of the interest survey (#405). */
+internal const val USER_SURVEY = "USER_SURVEY"
+
+private const val MID_CARDS = "Reel mid-cards"
 
 internal const val REEL_MID_CARDS = "$EXTENSION_PACKAGE/reels/ReelMidCards;"
 internal const val MID_CARD_TYPE_STUB = "midCardType"
@@ -175,6 +188,27 @@ internal class MidCardScan {
             ),
             null,
         )
+    }
+}
+
+/**
+ * The mid-card filter's hook, shared by Clean up Reels (the Threads card, #85) and Hide reel
+ * interest prompts (the interest survey, #405), so it goes in once whichever of them is picked. Each
+ * page of sections the Reels controller takes goes through the same walk the sponsored reels and
+ * GenAI filters use, with the mid-card item's class beside it, and the extension reads each
+ * mid-card's type through the stub this fills. What comes off is the extension's call, by which of
+ * the two patches the build carries and their switches.
+ */
+internal val reelMidCardsPatch = bytecodePatch {
+    dependsOn(facebookExtensionPatch)
+
+    execute {
+        val scan = MidCardScan()
+        classDefForEach { classDef -> if (!classDef.type.startsWith(EXTENSION_PACKAGE)) scan.visit(classDef) }
+        val resolved = scan.resolve()
+        val card = resolved.found ?: throw PatchException("$MID_CARDS: ${resolved.problem}")
+        fillMidCardTypeStub(card)
+        reelPages(MID_CARDS).addPage.filterSectionsFirst(card.item.toBinaryName(), THREADS_CARD_SECTION_FILTER, MID_CARDS)
     }
 }
 

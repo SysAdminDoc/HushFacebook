@@ -93,7 +93,7 @@ Reels turn up in several places, and no one switch covers them all. Searching th
 | Reels and videos that start playing by themselves | **Tap to play**, under Video and audio. |
 | The Reels tab in Facebook's tab bar | **Hide the Reels tab**, under Reels and Watch, after a restart. Facebook's own setting works too, under Settings, Tab bar, Customize the bar, then Hide next to Reels. |
 | The dot or new count on the Reels tab | **Hide the Reels tab dot**, under Reels and Watch. |
-| The "Are you interested in this reel?" prompt | **Hide reel interest prompts**, under Reels and Watch. |
+| The "Are you interested in this reel?" prompt, or the survey between reels asking how well a video matches your interests | **Hide reel interest prompts**, under Reels and Watch. |
 | Everything except Marketplace | **Marketplace only**, under Opening Facebook. After a restart it keeps Marketplace, Notifications and Profile/Menu and drops the other tabs. |
 | Everything except Events | **Events only**, under Opening Facebook. After a restart it keeps Events, Notifications and Profile/Menu and drops the other tabs. Marketplace only wins if both are on. |
 
@@ -167,7 +167,7 @@ Each row says what the patch does, how its switch starts and which settings sect
 | `Hide the Reels tab` | Takes the Reels tab, called Video on some accounts, off the tab bar, so Reels isn't one tap away. Reels in your feed and reel links still open. Starts off. Turn it on in Hushfacebook settings > Reels and Watch, then restart Facebook. |
 | `Hide the Reels tab dot` | Takes the new-item dot and count off the Reels tab, called Video on some accounts, so it stops calling for your attention. Other tabs keep theirs. On by default. Turn it off in Hushfacebook settings > Reels and Watch. |
 | `Hide tab badges` | Takes the dot and count off the tabs you pick, and Facebook's count off its app icon, so the app nags you less. Notifications still arrive and still show in the Notifications tab. Starts off. Turn on the ones you want in Hushfacebook settings > Tabs and navigation. |
-| `Hide reel interest prompts` | Removes the "Are you interested in this reel?" prompt, so reels play without the interruption. On by default. Turn it off in Hushfacebook settings > Reels and Watch. |
+| `Hide reel interest prompts` | Removes the "Are you interested in this reel?" prompt and the survey between reels asking how well a video matches your interests, so reels play without the interruption. On by default. Turn it off in Hushfacebook settings > Reels and Watch. |
 | `Hide suggested and promoted posts` | Removes what Facebook adds to the feed besides ads, like "Suggested for you" posts, "People you may know" and suggested groups, so you see more from people you follow. Most of its switches are on by default. Change them in Hushfacebook settings > News feed. |
 | `Hide Meta AI in search` | Removes the Meta AI answer and Ask Meta AI prompts from search results, and stops suggestions from sending your search to Meta AI. You get plain results for people, groups, Pages and posts. On by default. Turn it off in Hushfacebook settings > Search. |
 | `Don't save search history` | Stops Facebook from adding what you search for, and the pages and profiles you open from a search, to your search history, so there's nothing to clear by hand. Searches already there stay until you delete them. Starts off. Turn it on in Hushfacebook settings > Search. |

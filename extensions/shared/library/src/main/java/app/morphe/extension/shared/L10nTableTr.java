@@ -1951,8 +1951,8 @@ final class L10nTableTr {
                 "\u00d6nce en yeni reels");
         table.put("News feed",
                 "Ak\u0131\u015f");
-        table.put("No \"Are you interested in this reel?\" prompt on reels. The reel plays as usual.",
-                "Reels'te \u201cBu reel ile ilgileniyor musun?\u201d sorusu \u00e7\u0131kmaz. Reel her zamanki gibi oynar.");
+        table.put("No \"Are you interested in this reel?\" prompt on reels, and no survey card between them asking how well a video matches your interests.",
+                "Reels'te \u201cBu reel ile ilgileniyor musun?\u201d sorusu ve reels aras\u0131nda bir videonun ilgi alanlar\u0131na ne kadar uydu\u011funu soran anket kart\u0131 \u00e7\u0131kmaz.");
         table.put("No Facebook ads in other apps",
                 "Di\u011fer uygulamalarda Facebook reklam\u0131 yok");
         table.put("No Meta Verified offer after you post, and no Meta Verified label under the names on posts. Posting works as usual.",

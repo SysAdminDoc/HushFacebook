@@ -1682,10 +1682,11 @@
     },
     {
       "name": "Hide reel interest prompts",
-      "description": "Removes the \"Are you interested in this reel?\" prompt, so reels play without the interruption. On by default. Turn it off in Hushfacebook settings > Reels and Watch.",
+      "description": "Removes the \"Are you interested in this reel?\" prompt and the survey between reels asking how well a video matches your interests, so reels play without the interruption. On by default. Turn it off in Hushfacebook settings > Reels and Watch.",
       "category": "Reels",
       "use": true,
       "dependencies": [
+        "BytecodePatch",
         "Hushfacebook settings"
       ],
       "compatiblePackages": {

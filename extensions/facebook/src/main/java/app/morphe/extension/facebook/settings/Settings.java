@@ -2938,7 +2938,9 @@ public class Settings extends BaseSettings {
 
     /**
      * Reels come without the "Are you interested in this reel?" prompt
-     * ({@link app.morphe.extension.facebook.reels.ReelPrompts}). A change shows on the reels built
+     * ({@link app.morphe.extension.facebook.reels.ReelPrompts}) or the "To what extent does this
+     * video match your interests?" survey card between them (#405,
+     * {@link app.morphe.extension.facebook.reels.ReelMidCards}). A change shows on the reels built
      * after it.
      */
     public static final BooleanSetting HIDE_REEL_PROMPTS =

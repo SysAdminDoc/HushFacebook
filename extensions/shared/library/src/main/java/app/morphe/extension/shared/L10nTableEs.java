@@ -1951,8 +1951,8 @@ final class L10nTableEs {
                 "Reels m\u00e1s recientes primero");
         table.put("News feed",
                 "Feed");
-        table.put("No \"Are you interested in this reel?\" prompt on reels. The reel plays as usual.",
-                "Sin la pregunta \u201c\u00bfTe interesa este reel?\u201d en los reels. El reel se reproduce como siempre.");
+        table.put("No \"Are you interested in this reel?\" prompt on reels, and no survey card between them asking how well a video matches your interests.",
+                "Sin la pregunta \u201c\u00bfTe interesa este reel?\u201d en los reels, ni la tarjeta de encuesta entre ellos sobre cu\u00e1nto encaja un video con tus intereses.");
         table.put("No Facebook ads in other apps",
                 "Sin anuncios de Facebook en otras apps");
         table.put("No Meta Verified offer after you post, and no Meta Verified label under the names on posts. Posting works as usual.",

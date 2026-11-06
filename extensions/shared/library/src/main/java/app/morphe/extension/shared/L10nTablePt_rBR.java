@@ -1951,8 +1951,8 @@ final class L10nTablePt_rBR {
                 "Reels mais recentes primeiro");
         table.put("News feed",
                 "Feed de not\u00edcias");
-        table.put("No \"Are you interested in this reel?\" prompt on reels. The reel plays as usual.",
-                "Sem a pergunta \u201cVoc\u00ea tem interesse neste reel?\u201d nos reels. O reel toca como sempre.");
+        table.put("No \"Are you interested in this reel?\" prompt on reels, and no survey card between them asking how well a video matches your interests.",
+                "Sem a pergunta \u201cVoc\u00ea tem interesse neste reel?\u201d nos reels, nem o cart\u00e3o de pesquisa entre eles sobre o quanto um v\u00eddeo combina com seus interesses.");
         table.put("No Facebook ads in other apps",
                 "Sem an\u00fancios do Facebook em outros apps");
         table.put("No Meta Verified offer after you post, and no Meta Verified label under the names on posts. Posting works as usual.",

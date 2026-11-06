@@ -1043,8 +1043,8 @@ Hide the Feeds header	Скрывать заголовок вкладки «Ле�
 Shows the Feeds tab straight on its posts, without the title row or the filters. Restart Facebook to see the change.	Открывает вкладку «Ленты» сразу со списком публикаций, без строки заголовка и фильтров. Перезапустите Facebook, чтобы увидеть изменения.
 # context: switch title under Reels and Watch; the prompt is Facebook's "Are you interested in this reel?" question on a reel
 Hide reel interest prompts	Скрывать вопросы об интересе к Reels
-# context: description of that switch; the quoted text is Facebook's own prompt, so use Facebook's wording in your language if you know it
-No "Are you interested in this reel?" prompt on reels. The reel plays as usual.	В Reels больше не появляется вопрос «Вам интересен этот Reels?». Видео воспроизводится как обычно.
+# context: description of that switch; the quoted text is Facebook's own prompt, so use Facebook's wording in your language if you know it; the survey card is Facebook's "To what extent does this video match your interests?" card shown between reels
+No "Are you interested in this reel?" prompt on reels, and no survey card between them asking how well a video matches your interests.	В Reels больше не появляется вопрос «Вам интересен этот Reels?», а между видео нет опроса о том, насколько ролик соответствует вашим интересам.
 # context: switch title under News feed; affiliate product links are the shop links creators add to their posts to earn a commission
 Hide affiliate product links	Скрывать партнерские ссылки на товары
 Hides product cards from shopping links that creators add to posts, reels and comments.	Скрывает карточки товаров из партнерских ссылок, которые авторы добавляют в публикации, Reels и комментарии.

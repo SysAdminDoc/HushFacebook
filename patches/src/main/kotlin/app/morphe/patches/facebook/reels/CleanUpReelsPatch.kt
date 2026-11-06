@@ -12,9 +12,6 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
-import app.morphe.patches.facebook.ads.sponsoredreels.filterSectionsFirst
-import app.morphe.patches.facebook.ads.sponsoredreels.reelPages
-import app.morphe.patches.facebook.ads.sponsoredreels.toBinaryName
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -102,7 +99,7 @@ val cleanUpReelsPatch = bytecodePatch(
 ) {
     category("Reels")
     dependsOn(settingsPatch)
-    dependsOn(facebookExtensionPatch, reelLoopPatch, reelBindingPatch, feedVideoOpeningPatch)
+    dependsOn(facebookExtensionPatch, reelLoopPatch, reelBindingPatch, feedVideoOpeningPatch, reelMidCardsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {
@@ -115,7 +112,7 @@ val cleanUpReelsPatch = bytecodePatch(
         audioLine.returnNullWhen(HIDE_AUDIO_LINE)
         hideFollowButtons()
         skipFooterQueries()
-        hideThreadsCards()
+        // #85: the Threads card between reels goes through reelMidCardsPatch's hook.
         startReelsInCleanMode()
         // #304: and its button over a clean reel switches Clean mode off and back on.
         toggleReelCleanMode()
@@ -393,20 +390,6 @@ internal fun MutableMethod.returnVoidWhen(hook: String) {
         """,
         ExternalLabel("facebooks_query", getInstruction(0)),
     )
-}
-
-/**
- * The Threads card between reels comes off each page of sections the Reels controller takes, through
- * the same walk the sponsored reels and GenAI filters use, with the mid-card item's class beside it.
- * The extension reads each mid-card's type through the stub this fills, and drops the Threads one.
- */
-private fun BytecodePatchContext.hideThreadsCards() {
-    val scan = MidCardScan()
-    classDefForEach { classDef -> if (!classDef.type.startsWith(EXTENSION_PACKAGE)) scan.visit(classDef) }
-    val resolved = scan.resolve()
-    val card = resolved.found ?: throw PatchException("$PATCH: ${resolved.problem}")
-    fillMidCardTypeStub(card)
-    reelPages(PATCH).addPage.filterSectionsFirst(card.item.toBinaryName(), THREADS_CARD_SECTION_FILTER, PATCH)
 }
 
 private fun MutableMethod.sameSignatureAs(other: MethodReference) =

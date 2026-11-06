@@ -93,7 +93,8 @@ final class VideoPages {
         }
         if (build.contains(PatchFamily.REEL_PROMPTS)) {
             reels.addPreference(toggle(context, Settings.HIDE_REEL_PROMPTS,
-                    L10n.t("No \"Are you interested in this reel?\" prompt on reels. The reel plays as usual.")));
+                    L10n.t("No \"Are you interested in this reel?\" prompt on reels, and no survey card between them "
+                            + "asking how well a video matches your interests.")));
         }
         // Both reel filters work on each batch of reels as it arrives, so a change leaves the
         // reels already loaded as they are, and the rows say so.

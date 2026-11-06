@@ -1017,8 +1017,8 @@ Hide the Feeds header	Ẩn đầu trang Bảng feed
 Shows the Feeds tab straight on its posts, without the title row or the filters. Restart Facebook to see the change.	Hiện thẳng bài viết trong tab Bảng feed, không có hàng tiêu đề hay bộ lọc. Khởi động lại Facebook để thấy thay đổi.
 # context: switch title under Reels and Watch; the prompt is Facebook's "Are you interested in this reel?" question on a reel
 Hide reel interest prompts	Ẩn câu hỏi quan tâm trên reel
-# context: description of that switch; the quoted text is Facebook's own prompt, so use Facebook's wording in your language if you know it
-No "Are you interested in this reel?" prompt on reels. The reel plays as usual.	Không còn câu hỏi "Bạn có quan tâm đến reel này không?" trên reel. Reel vẫn phát như bình thường.
+# context: description of that switch; the quoted text is Facebook's own prompt, so use Facebook's wording in your language if you know it; the survey card is Facebook's "To what extent does this video match your interests?" card shown between reels
+No "Are you interested in this reel?" prompt on reels, and no survey card between them asking how well a video matches your interests.	Không còn câu hỏi "Bạn có quan tâm đến reel này không?" trên reel, và không còn thẻ khảo sát giữa các reel hỏi video hợp với sở thích của bạn đến mức nào.
 # context: switch title under News feed; affiliate product links are the shop links creators add to their posts to earn a commission
 Hide affiliate product links	Ẩn liên kết sản phẩm tiếp thị liên kết
 # context: description of that switch; "Commission eligible" is Facebook's own label, so use Facebook's wording in your language if you know it

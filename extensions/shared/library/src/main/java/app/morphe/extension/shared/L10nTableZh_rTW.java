@@ -1951,8 +1951,8 @@ final class L10nTableZh_rTW {
                 "\u512a\u5148\u64ad\u653e\u6700\u65b0 Reels");
         table.put("News feed",
                 "\u52d5\u614b\u6d88\u606f");
-        table.put("No \"Are you interested in this reel?\" prompt on reels. The reel plays as usual.",
-                "Reels \u4e0d\u518d\u986f\u793a\u300c\u4f60\u5c0d\u9019\u5247 Reels \u611f\u8208\u8da3\u55ce\uff1f\u300d\u63d0\u793a\u3002Reels \u4ecd\u7167\u5e38\u64ad\u653e\u3002");
+        table.put("No \"Are you interested in this reel?\" prompt on reels, and no survey card between them asking how well a video matches your interests.",
+                "Reels \u4e0d\u518d\u986f\u793a\u300c\u4f60\u5c0d\u9019\u5247 Reels \u611f\u8208\u8da3\u55ce\uff1f\u300d\u63d0\u793a\uff0cReels \u4e4b\u9593\u4e5f\u4e0d\u518d\u986f\u793a\u8a62\u554f\u5f71\u7247\u662f\u5426\u7b26\u5408\u4f60\u8208\u8da3\u7684\u8abf\u67e5\u5361\u7247\u3002");
         table.put("No Facebook ads in other apps",
                 "\u4e0d\u5728\u5176\u4ed6\u61c9\u7528\u7a0b\u5f0f\u986f\u793a Facebook \u5ee3\u544a");
         table.put("No Meta Verified offer after you post, and no Meta Verified label under the names on posts. Posting works as usual.",

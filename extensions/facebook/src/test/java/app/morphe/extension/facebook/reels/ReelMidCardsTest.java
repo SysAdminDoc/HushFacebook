@@ -11,6 +11,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,19 +34,29 @@ import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
- * The Threads card filter of Clean up Reels: on, the Threads card comes off its section and the
- * report counts it, while a reel and every other mid-card stay. Off, paused, unpatched or failing,
- * the page goes on as Facebook sent it.
+ * The mid-card filter Clean up Reels and Hide reel interest prompts share: on, the Threads card
+ * and the interest survey each come off their section while their own patch is in and their
+ * switch is on, and the report counts them, while a reel and every other mid-card stay. Off,
+ * paused, unpatched or failing, the page goes on as Facebook sent it.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
 public class ReelMidCardsTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
+    @Before
+    public void bothPatchesInTheBuild() {
+        ReelMidCards.threadsPatchForTests = Boolean.TRUE;
+        ReelMidCards.promptsPatchForTests = Boolean.TRUE;
+    }
+
     @After
     public void restore() {
         PauseForTests.resume();
+        ReelMidCards.threadsPatchForTests = null;
+        ReelMidCards.promptsPatchForTests = null;
         Settings.HIDE_REEL_THREADS_CARDS.resetToDefault();
+        Settings.HIDE_REEL_PROMPTS.resetToDefault();
         FeedFilterCounters.clear();
         HookStatus.clear();
     }
@@ -94,6 +105,82 @@ public class ReelMidCardsTest {
         assertTrue(line, line.contains("mid-card THREADS_MIDCARD 1"));
         assertTrue(line, line.contains("mid-card PYML_MIDCARD 1"));
         assertTrue(line, line.contains(ReelMidCards.NOT_A_MID_CARD + " Object 1"));
+    }
+
+    /**
+     * #405: the "To what extent does this video match your interests?" survey between reels comes
+     * off with Hide reel interest prompts, on from the start, while the Threads card stays with its
+     * own switch off.
+     */
+    @Test
+    public void theInterestSurveyComesOffWithTheInterestPromptSwitch() {
+        assertTrue(Settings.HIDE_REEL_PROMPTS.defaultValue);
+        Object reel = new Object();
+        MidCard survey = new MidCard(MidCardType.USER_SURVEY);
+        MidCard threads = new MidCard(MidCardType.THREADS_MIDCARD);
+        Section section = section(reel, survey, threads);
+        List<Section> page = Collections.singletonList(section);
+
+        assertSame(page, ReelMidCardsForTests.withoutThreadsCards(page));
+        assertEquals(Arrays.asList(reel, threads), section.items);
+
+        String line = line();
+        assertNotNull(FeedFilterCounters.report().toString(), line);
+        assertTrue(line, line.contains("Removed: mid-card USER_SURVEY 1"));
+        assertFalse(line, line.contains("Removed: mid-card THREADS_MIDCARD"));
+    }
+
+    /** With both switches on, both cards come off and the report names each. */
+    @Test
+    public void bothSwitchesOnTakeBothCards() {
+        Settings.HIDE_REEL_THREADS_CARDS.save(true);
+        Object reel = new Object();
+        Section section = section(new MidCard(MidCardType.THREADS_MIDCARD), reel, new MidCard(MidCardType.USER_SURVEY));
+
+        ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(section));
+        assertEquals(Collections.singletonList(reel), section.items);
+
+        String line = line();
+        assertTrue(line, line.contains("2 removed"));
+        assertTrue(line, line.contains("mid-card THREADS_MIDCARD 1"));
+        assertTrue(line, line.contains("mid-card USER_SURVEY 1"));
+    }
+
+    /** With Hide reel interest prompts turned off, the survey stays. */
+    @Test
+    public void theInterestPromptSwitchOffKeepsTheSurvey() {
+        Settings.HIDE_REEL_PROMPTS.save(false);
+        MidCard survey = new MidCard(MidCardType.USER_SURVEY);
+        Section section = section(new Object(), survey);
+        List<Section> page = Collections.singletonList(section);
+
+        assertSame(page, ReelMidCardsForTests.withoutThreadsCards(page));
+        assertTrue(section.items.contains(survey));
+    }
+
+    /**
+     * The hook goes in with either patch, so each card answers to its own: a build without Hide
+     * reel interest prompts keeps the survey and one without Clean up Reels keeps the Threads card,
+     * whatever a restored backup saved for their switches.
+     */
+    @Test
+    public void aCardStaysWhenItsPatchIsNotInTheBuild() {
+        Settings.HIDE_REEL_THREADS_CARDS.save(true);
+        MidCard survey = new MidCard(MidCardType.USER_SURVEY);
+        MidCard threads = new MidCard(MidCardType.THREADS_MIDCARD);
+
+        ReelMidCards.promptsPatchForTests = Boolean.FALSE;
+        Section noPrompts = section(new Object(), survey, threads);
+        ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(noPrompts));
+        assertTrue("no Hide reel interest prompts, the survey stays", noPrompts.items.contains(survey));
+        assertFalse(noPrompts.items.contains(threads));
+
+        ReelMidCards.promptsPatchForTests = Boolean.TRUE;
+        ReelMidCards.threadsPatchForTests = Boolean.FALSE;
+        Section noCleanUp = section(new Object(), survey, threads);
+        ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(noCleanUp));
+        assertTrue("no Clean up Reels, the Threads card stays", noCleanUp.items.contains(threads));
+        assertFalse(noCleanUp.items.contains(survey));
     }
 
     /** Every item that isn't a mid-card is counted by its class, so a report tells two kinds of reel item apart. */

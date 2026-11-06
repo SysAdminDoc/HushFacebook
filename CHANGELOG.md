@@ -34,6 +34,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* `Hide reel interest prompts` also takes away the "To what extent does this video match your interests?" survey Facebook puts between reels. It's a card of its own, not the prompt laid over a reel, so it kept showing up. (#405)
 * With `View stories anonymously` on, someone's stories that you watched partway open at the first one you haven't watched, even after Facebook restarts. Opening them from their profile picture or from the tray used to start over at the first story. (#218)
 * `Pinch to zoom` on a video on a profile or Page zooms just the video now. Facebook draws those videos taller than the post that shows them and lets the post cut off the rest, and the zoom used to copy all of it, so bits of the posts above and below came along. (#220)
 * With `Tap to play` on, a feed video you tap plays even when its player is slow to start. A start more than a second after the tap used to count as the video starting by itself, so on a slow connection it sat paused, unless Clean up Reels was patched in too. (#393)

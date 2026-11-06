@@ -1951,8 +1951,8 @@ final class L10nTableIn {
                 "Reel terbaru dulu");
         table.put("News feed",
                 "Kabar Beranda");
-        table.put("No \"Are you interested in this reel?\" prompt on reels. The reel plays as usual.",
-                "Tanpa pertanyaan \u201cApakah Anda tertarik dengan reel ini?\u201d di reel. Reel diputar seperti biasa.");
+        table.put("No \"Are you interested in this reel?\" prompt on reels, and no survey card between them asking how well a video matches your interests.",
+                "Tanpa pertanyaan \u201cApakah Anda tertarik dengan reel ini?\u201d di reel, dan tanpa kartu survei di antara reel yang menanyakan seberapa cocok video dengan minat Anda.");
         table.put("No Facebook ads in other apps",
                 "Tanpa iklan Facebook di aplikasi lain");
         table.put("No Meta Verified offer after you post, and no Meta Verified label under the names on posts. Posting works as usual.",
