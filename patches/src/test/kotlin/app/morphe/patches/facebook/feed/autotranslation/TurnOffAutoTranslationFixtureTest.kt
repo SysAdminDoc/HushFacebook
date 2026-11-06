@@ -12,6 +12,7 @@ import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.shared.compat.AppCompatibilities
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -20,6 +21,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -40,6 +42,8 @@ class TurnOffAutoTranslationFixtureTest {
         val enumClass: ClassDef,
         val models: List<ClassDef>,
         val footer: ClassDef,
+        /** The classes of the static methods the footer's methods hand their work to (585 Android 9: its render's). */
+        val outlined: Collection<ClassDef>,
         val commentEnum: ClassDef,
         val commentBodies: List<ClassDef>,
     )
@@ -65,7 +69,20 @@ class TurnOffAutoTranslationFixtureTest {
         assertEquals("$name: comment translation type enums", 1, commentEnums.size)
         val bodies = FixtureDex.classesHolding(bundle, COMMENT_TOGGLE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         assertTrue("$name: no class loads \"$COMMENT_TOGGLE\"", bodies.isNotEmpty())
-        return Anchors(enums.single(), models, footers.single(), commentEnums.single(), bodies)
+        val outlined = FixtureDex.classes(bundle, footers.single().methods.flatMap(::handedTo).toSet()).values
+        return Anchors(enums.single(), models, footers.single(), outlined, commentEnums.single(), bodies)
+    }
+
+    /** The classes of the static methods [caller] calls that return what it returns and take its first parameter first. */
+    private fun handedTo(caller: Method): List<String> {
+        val first = caller.parameterTypes.firstOrNull()?.toString() ?: return emptyList()
+        if (caller.returnType == "V") return emptyList()
+        return caller.implementation?.instructions?.toList().orEmpty()
+            .filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
+            .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
+            .filter { it.returnType == caller.returnType && it.parameterTypes.firstOrNull()?.toString() == first }
+            .map { it.definingClass }
+            .filter { it != caller.definingClass }
     }
 
     private fun rangeCall(instruction: Instruction, target: String, register: Int, where: String) {
@@ -92,12 +109,18 @@ class TurnOffAutoTranslationFixtureTest {
                 val anchors = anchors(bundle)
                 assertEquals("$name: models with a translation_type getter", 1, anchors.models.size)
                 val context = PatchContexts.of(
-                    anchors.models + anchors.enumClass + anchors.footer + anchors.commentEnum + anchors.commentBodies +
+                    anchors.models + anchors.enumClass + anchors.footer + anchors.outlined + anchors.commentEnum + anchors.commentBodies +
                         ExtensionDex.classDef(SETTINGS_STATUS),
                 )
                 val getter = context.findTranslationTypeGetter()
                 val reads = context.findCaptionReads()
                 assertEquals("$name: caption reads", 2, reads.size)
+                // A read outside the footer sits in a static body one of its methods hands its work to.
+                for (read in reads.filter { it.method.definingClass != anchors.footer.type }) {
+                    assertTrue("$name: ${read.method} is static", AccessFlags.STATIC.isSet(read.method.accessFlags))
+                    assertTrue("$name: ${read.method} is handed the footer's work",
+                        anchors.footer.methods.any { read.method.definingClass in handedTo(it) })
+                }
                 val comments = context.findCommentTypeReads()
                 assertEquals("$name: comment translation type reads", 2, comments.size)
                 assertEquals("$name: the enum the comment body reads", anchors.commentEnum.type, comments.first().enumType)

@@ -26,6 +26,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.util.MethodUtil
 
 internal const val PATCH = "Turn off auto-translation"
 
@@ -179,8 +180,11 @@ internal fun BytecodePatchContext.findTranslationTypeGetter(): TranslationTypeGe
 /**
  * The reads of the reel's caption field in the reels footer: the class with the method that loads
  * [CAPTION_TRIGGER], and in it each `getBooleanValue` whose key is a constant [CAPTION_TRANSLATABLE_KEY]
- * loaded just before, followed by the move-result that takes its answer. Refuses unless the method
- * with the trigger reads it once and the class reads it twice. Changes nothing.
+ * loaded just before, followed by the move-result that takes its answer. When the class's own
+ * methods don't hold both reads, the [outlinedBodies] they hand their work to count as theirs: 585's
+ * Android 9 build reads it in `LX/0B94;->A1A`, the trigger, and in `LX/0DSJ;->A00`, a static method
+ * the render `LX/0B94;->A15(LX/01QC;)LX/01Jx;` hands everything to. Refuses unless the method with
+ * the trigger reads it once and the class reads it twice. Changes nothing.
  */
 internal fun BytecodePatchContext.findCaptionReads(): List<CaptionRead> {
     val footers = classDefByStrings(CAPTION_TRIGGER, StringComparisonType.EQUALS)
@@ -189,14 +193,39 @@ internal fun BytecodePatchContext.findCaptionReads(): List<CaptionRead> {
         .distinctBy { it.type }
     val footer = footers.singleOrNull()
         ?: refuse("expected one class loading \"$CAPTION_TRIGGER\", found ${footers.size}")
-    val reads = footer.methods.flatMap(::captionReads)
+    var reads = footer.methods.flatMap(::captionReads)
     val triggers = footer.methods.filter { holdsString(it, CAPTION_TRIGGER) }
-    val inTrigger = reads.count { it.method in triggers }
+    var inTrigger = reads.count { it.method in triggers }
+    if (inTrigger != 1 || reads.size != 2) {
+        val outlined = footer.methods.flatMap { caller ->
+            outlinedBodies(caller).flatMap { body -> captionReads(body).map { caller to it } }
+        }
+        reads = reads + outlined.map { (_, read) -> read }
+        inTrigger += outlined.count { (caller, _) -> caller in triggers }
+    }
     if (inTrigger != 1 || reads.size != 2) {
         refuse("${footer.type} reads the caption field $inTrigger times where it asks for a translation and " +
             "${reads.size} times in all, expected 1 and 2")
     }
     return reads
+}
+
+/**
+ * The static methods of other classes [caller] hands its work to: each one [caller] calls that
+ * returns what [caller] returns, never void, and takes [caller]'s first parameter first.
+ */
+internal fun BytecodePatchContext.outlinedBodies(caller: Method): List<Method> {
+    val first = caller.parameterTypes.firstOrNull()?.toString() ?: return emptyList()
+    if (caller.returnType == "V") return emptyList()
+    val code = caller.implementation?.instructions?.toList() ?: return emptyList()
+    return code.filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
+        .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
+        .filter {
+            it.definingClass != caller.definingClass && it.returnType == caller.returnType &&
+                it.parameterTypes.firstOrNull()?.toString() == first
+        }
+        .distinctBy { it.toString() }
+        .mapNotNull { call -> classDefByOrNull(call.definingClass)?.methods?.firstOrNull { MethodUtil.methodSignaturesMatch(it, call) } }
 }
 
 /** The reads of [CAPTION_TRANSLATABLE_KEY] in [method]: const, getBooleanValue with that key, move-result. */
