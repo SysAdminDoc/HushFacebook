@@ -79,7 +79,7 @@ val hideMenuPromotionsPatch = bytecodePatch(
     default = true,
 ) {
     category("Interface")
-    dependsOn(settingsPatch)
+    dependsOn(settingsPatch, menuSubpagesPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {

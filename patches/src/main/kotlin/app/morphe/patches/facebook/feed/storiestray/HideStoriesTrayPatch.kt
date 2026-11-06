@@ -11,6 +11,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patches.facebook.feed.hook.feedFilterHookPatch
+import app.morphe.patches.facebook.menu.menuSubpagesPatch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.settings.settingsPatch
@@ -63,7 +64,8 @@ val hideStoriesTrayPatch = bytecodePatch(
         "want in Hushfacebook settings > News feed.",
 ) {
     category("Stories")
-    dependsOn(settingsPatch, feedFilterHookPatch)
+    // A Menu built while the tray first goes could open its pages over the Menu (#276).
+    dependsOn(settingsPatch, feedFilterHookPatch, menuSubpagesPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {
