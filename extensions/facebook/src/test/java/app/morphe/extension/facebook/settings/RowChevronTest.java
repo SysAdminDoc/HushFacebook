@@ -302,8 +302,8 @@ public class RowChevronTest {
         assertNotNull("no list in the dialog", list);
         int width = controller.get().getResources().getDisplayMetrics().widthPixels;
         list.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(400_000, View.MeasureSpec.EXACTLY));
-        list.layout(0, 0, width, 400_000);
+                View.MeasureSpec.makeMeasureSpec(1_000_000, View.MeasureSpec.EXACTLY));
+        list.layout(0, 0, width, 1_000_000);
         List<View> rows = new ArrayList<>();
         for (int index = 0; index < list.getChildCount(); index++) rows.add(list.getChildAt(index));
         assertEquals("the list left rows off", list.getAdapter().getCount(), rows.size());

@@ -219,6 +219,10 @@ final class VideoPages {
                     L10n.t("Takes the UP NEXT bar with the next video off the bottom of a video you open from the "
                             + "feed, and the empty space kept for it, so the seek bar stays at the bottom. A change "
                             + "shows from the next video you open.")));
+            // Asked as the pill draws, so a change shows from the next video (#394).
+            reels.addPreference(toggle(context, Settings.HIDE_REEL_FULLSCREEN_PILL,
+                    L10n.t("Takes the Fullscreen button off the space under a wide video in Reels. "
+                            + "A change shows from the next video.")));
             // Asked as a feed video's player asks for more, so a change shows from the next feed video.
             reels.addPreference(toggle(context, Settings.FEED_VIDEOS_ALONE,
                     L10n.t("A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. "

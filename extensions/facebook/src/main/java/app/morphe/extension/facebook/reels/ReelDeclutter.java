@@ -85,6 +85,10 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  *   <li>A video that keeps buffering has Facebook post a runnable that shows "This is taking a
  *       while. Try checking your network connection." {@link #hideSlowConnectionMessage} is asked
  *       first thing in it, and true makes it return before the message is built (#222).
+ *   <li>A wide video in the Reels viewer gets a Fullscreen pill in the black space under it, a
+ *       component of its own that draws nothing while the phone is sideways. {@link
+ *       #hideFullscreenPill} is asked first thing as it draws, and true answers that same nothing
+ *       (#394).
  *   <li>A video opened from the feed gets an UP NEXT bar under its seek bar, naming the video
  *       Facebook lines up after it. Facebook's controller for that bar looks the next video up once
  *       per video, keeps what came back, and hands it to the bar and the end screen. {@link
@@ -160,6 +164,10 @@ public final class ReelDeclutter {
     /** Counted under its own name each time a video's slow connection message isn't shown. */
     static final String SLOW_ROUTE = "Slow connection message";
     static final String SLOW_MESSAGE = "slow connection message";
+
+    /** Counted under its own name each time a wide video's Fullscreen pill isn't drawn (#394). */
+    static final String FULLSCREEN_ROUTE = "Video Fullscreen pill";
+    static final String FULLSCREEN_PILL = "Fullscreen pill";
 
     /**
      * Counted under its own name each time the UP NEXT bar's lookup is skipped, each time its
@@ -546,6 +554,29 @@ public final class ReelDeclutter {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, SLOW_MESSAGE, failure);
             Logger.printException(() -> "Slow connection message: could not read its switch", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, first thing in the render of the Fullscreen pill under a wide video in the
+     * Reels viewer (#394). True makes the render answer null, the nothing it answers on its own while
+     * the phone is sideways, so no pill is drawn. Never throws: false draws it.
+     */
+    public static boolean hideFullscreenPill() {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            FeedFilterCounters.sawList(FULLSCREEN_ROUTE, 1);
+            FeedFilterCounters.sawKind(FULLSCREEN_ROUTE, FULLSCREEN_PILL);
+            boolean hide = Utils.settingsReady() && Settings.HIDE_REEL_FULLSCREEN_PILL.get();
+            if (hide) {
+                FeedFilterCounters.removed(FULLSCREEN_ROUTE, 1, FULLSCREEN_PILL);
+                logOnce(FULLSCREEN_PILL, () -> "Video Fullscreen pill: not drawn");
+            }
+            return hide;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, FULLSCREEN_PILL, failure);
+            Logger.printException(() -> "Video Fullscreen pill: could not read its switch", failure);
             return false;
         }
     }

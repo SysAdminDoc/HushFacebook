@@ -88,6 +88,7 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_AUDIO_LINE.resetToDefault();
         Settings.HIDE_SLOW_CONNECTION_MESSAGE.resetToDefault();
         Settings.HIDE_UP_NEXT.resetToDefault();
+        Settings.HIDE_REEL_FULLSCREEN_PILL.resetToDefault();
         Settings.PLAY_FEED_REELS_WHOLE.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         FeedFilterCounters.clear();
@@ -290,6 +291,41 @@ public class ReelDeclutterTest {
         assertEquals(ReelDeclutter.SLOW_ROUTE + ": 5 lists, 5 items, 1 removed. Last reason: " + ReelDeclutter.SLOW_MESSAGE
                 + ". Removed: " + ReelDeclutter.SLOW_MESSAGE + " 1. Kinds: " + ReelDeclutter.SLOW_MESSAGE + " 5",
                 line(ReelDeclutter.SLOW_ROUTE));
+    }
+
+    /**
+     * A wide video's Fullscreen pill (#394) draws until its switch is on, then not, and it comes back
+     * paused, before the settings are ready and once the switch is off again.
+     */
+    @Test
+    public void theFullscreenPillDrawsUntilItsSwitchIsOn() {
+        assertFalse(Settings.HIDE_REEL_FULLSCREEN_PILL.defaultValue);
+        assertFalse("the other Reels switches took the pill", ReelDeclutter.hideFullscreenPill());
+        Settings.HIDE_REEL_FULLSCREEN_PILL.save(true);
+        assertTrue(ReelDeclutter.hideFullscreenPill());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("the pill went while paused", ReelDeclutter.hideFullscreenPill());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse("the pill went before the settings were ready",
+                ReelDeclutter.hideFullscreenPill()));
+        Settings.HIDE_REEL_FULLSCREEN_PILL.save(false);
+        assertFalse("turning the switch off didn't bring the pill back", ReelDeclutter.hideFullscreenPill());
+        assertEquals(ReelDeclutter.FULLSCREEN_ROUTE + ": 5 lists, 5 items, 1 removed. Last reason: " + ReelDeclutter.FULLSCREEN_PILL
+                + ". Removed: " + ReelDeclutter.FULLSCREEN_PILL + " 1. Kinds: " + ReelDeclutter.FULLSCREEN_PILL + " 5",
+                line(ReelDeclutter.FULLSCREEN_ROUTE));
+    }
+
+    /** A Fullscreen pill switch that can't be read draws the pill, and the report names the hook. */
+    @Test
+    public void aFullscreenPillSwitchThatCantBeReadDrawsThePill() {
+        SettingReadsForTests.breakReads(Settings.HIDE_REEL_FULLSCREEN_PILL);
+        try {
+            assertFalse(ReelDeclutter.hideFullscreenPill());
+        } finally {
+            SettingReadsForTests.mend(Settings.HIDE_REEL_FULLSCREEN_PILL);
+        }
+        assertTrue(HookStatus.missing(FamilyNames.REEL_DECLUTTER).toString(), HookStatus.missing(FamilyNames.REEL_DECLUTTER)
+                .contains("a working '" + ReelDeclutter.FULLSCREEN_PILL + "' hook (it threw " + NullPointerException.class.getName() + ")"));
     }
 
     /**

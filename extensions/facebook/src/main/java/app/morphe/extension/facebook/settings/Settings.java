@@ -902,6 +902,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_up_next", FALSE);
 
     /**
+     * The Fullscreen pill under a wide video in the Reels viewer isn't drawn ({@link
+     * app.morphe.extension.facebook.reels.ReelDeclutter#hideFullscreenPill}, #394). Off by default.
+     * A change shows as the next video draws.
+     */
+    public static final BooleanSetting HIDE_REEL_FULLSCREEN_PILL =
+            new BooleanSetting("hushfacebook_hide_reel_fullscreen_pill", FALSE);
+
+    /**
      * The tiles in the feed's Reels row play their reel from the start to its end instead of the
      * short clip Facebook picks, which is often one second played over and over
      * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#allowsPreviewClip} and
