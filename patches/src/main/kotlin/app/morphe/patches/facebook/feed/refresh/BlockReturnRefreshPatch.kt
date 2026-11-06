@@ -154,7 +154,7 @@ val blockReturnRefreshPatch = bytecodePatch(
         "is, stops Back on a scrolled Home from jumping to the top and reloading. Both start off. Turn them on in " +
         "Hushfacebook settings > News feed.",
 ) {
-    category("Feed")
+    category("Navigation")
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
