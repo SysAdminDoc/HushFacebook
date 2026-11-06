@@ -25,6 +25,9 @@ import app.morphe.extension.shared.settings.Setting;
  * one edge away in this process, and at most once every {@link #RETRY_MS}. The loader itself says
  * whether a load is already running or the feed has ended, as it does for its own asks. Paused, or
  * before anything was hidden, the fetcher decides as it ships.
+ *
+ * <p>With the end of the list on screen it also lets {@link FeedEndHint} say why Home stops there,
+ * before the wait between asks, so a page of hidden suggestions landing between two asks still counts.
  */
 public final class TailFetch {
     /** The diagnostic report's count of the asks this added. */
@@ -60,6 +63,7 @@ public final class TailFetch {
             if (!hidAny || !Utils.settingsReady() || Setting.isPaused()) return false;
             // Not at the end of the list: the fetcher's own rule moves on with the next scroll.
             if (rows <= 0 || lastRow < rows - 1) return false;
+            FeedEndHint.atEndOfList();
             synchronized (TailFetch.class) {
                 if (askedAtMs != Long.MIN_VALUE && nowMs - askedAtMs < RETRY_MS) return false;
                 askedAtMs = nowMs;

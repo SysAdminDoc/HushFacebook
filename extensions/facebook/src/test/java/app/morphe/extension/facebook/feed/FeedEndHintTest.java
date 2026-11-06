@@ -34,9 +34,10 @@ import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
  * The bottom of Home's hint (#258, Discussion #371): once the feed guard has hidden ten suggestions
- * in a row since the last post it kept, the bottom of Home coming into view says why Home ends, once.
- * Fewer, a kept post since, other kinds of hidden posts, the marker leaving view, paused, or before
- * the settings are ready, it says nothing.
+ * in a row since the last post it kept, the end of Home's list on screen (or Facebook's bottom marker
+ * coming into view) says why Home ends, once. Fewer, a kept post since, other kinds of hidden posts,
+ * rows above the end, the marker leaving view, paused, or before the settings are ready, it says
+ * nothing.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -49,6 +50,7 @@ public class FeedEndHintTest {
     @Before
     public void start() {
         FeedEndHint.resetForTests();
+        TailFetch.resetForTests();
         ShadowToast.reset();
     }
 
@@ -59,6 +61,7 @@ public class FeedEndHintTest {
         Settings.HIDE_SUGGESTED_FOR_YOU.resetToDefault();
         Settings.HIDE_SPONSORED_POSTS.resetToDefault();
         FeedEndHint.resetForTests();
+        TailFetch.resetForTests();
         FeedFilterCounters.clear();
         HookStatus.clear();
     }
@@ -77,6 +80,13 @@ public class FeedEndHintTest {
         return ShadowToast.getTextOfLatestToast();
     }
 
+    /** Home's scroll fetcher runs with this row the last one on screen, and the toast it showed, if any. */
+    private static String scrollTo(int lastRow, int rows, long nowMs) {
+        TailFetch.askAgain(lastRow, rows, nowMs);
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        return ShadowToast.getTextOfLatestToast();
+    }
+
     private static String statusLine() {
         for (String line : HookStatus.report()) {
             if (line.startsWith(FamilyNames.SUGGESTED_POSTS + ":")) return line;
@@ -90,6 +100,40 @@ public class FeedEndHintTest {
         assertEquals("Hush hid the suggested posts after this, so Home ends here.", reachTheBottom());
         String line = statusLine();
         assertTrue(line, line.contains(FeedEndHint.SHOWN + " 1"));
+    }
+
+    @Test
+    public void theEndOfTheListSaysWhyWithoutFacebooksMarker() {
+        // On a phone Facebook kept paging suggestions and its bottom marker never mounted.
+        hideSuggestions(FeedEndHint.SHOWN_AFTER);
+        assertEquals("Hush hid the suggested posts after this, so Home ends here.", scrollTo(9, 10, 1_000));
+        assertTrue(statusLine(), statusLine().contains(FeedEndHint.SHOWN + " 1"));
+        ShadowToast.reset();
+        assertNull("once per start, whichever end says it", reachTheBottom());
+    }
+
+    @Test
+    public void rowsAboveTheEndOfTheListSayNothing() {
+        hideSuggestions(FeedEndHint.SHOWN_AFTER);
+        assertNull(scrollTo(7, 10, 1_000));
+        assertTrue(scrollTo(9, 10, 1_000) != null);
+    }
+
+    @Test
+    public void theWaitBetweenAsksDoesntHoldItBack() {
+        hideSuggestions(FeedEndHint.SHOWN_AFTER - 1);
+        assertNull(scrollTo(9, 10, 1_000));
+        // The page Facebook sent for that ask was more hidden suggestions, and the next swipe comes
+        // sooner than the fetcher may ask again.
+        hideSuggestions(1);
+        assertTrue(scrollTo(9, 10, 1_000 + TailFetch.RETRY_MS / 2) != null);
+    }
+
+    @Test
+    public void theEndOfTheListAfterAKeptPostSaysNothing() {
+        hideSuggestions(FeedEndHint.SHOWN_AFTER);
+        assertFalse(FeedGuardForTests.hides(Category.ORGANIC, new GraphQLStory()));
+        assertNull(scrollTo(9, 10, 1_000));
     }
 
     @Test
