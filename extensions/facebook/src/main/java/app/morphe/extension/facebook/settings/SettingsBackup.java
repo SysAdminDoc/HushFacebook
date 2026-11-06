@@ -172,6 +172,8 @@ public final class SettingsBackup {
             Settings.HIDE_POST_COUNTS,
             Settings.HIDE_POST_REACTIONS,
             Settings.HIDE_COMMENT_REACTIONS,
+            Settings.HIDE_FEED_PROFILE_PICTURES,
+            Settings.HIDE_COMMENT_PROFILE_PICTURES,
             Settings.HIDE_SEEN_POSTS,
             Settings.SEEN_POSTS_COME_BACK_ONCE,
             Settings.HIDE_META_AI_QUESTIONS,

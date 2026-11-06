@@ -63,6 +63,7 @@ import app.morphe.extension.facebook.feed.FeedFilter;
 import app.morphe.extension.facebook.feed.SeenPostsForTests;
 import app.morphe.extension.facebook.feed.FeedGuardForTests;
 import app.morphe.extension.facebook.feed.HomeBack;
+import app.morphe.extension.facebook.feed.ProfilePictures;
 import app.morphe.extension.facebook.feed.ProfileSuggestionsForTests;
 import app.morphe.extension.facebook.feed.RelatedPosts;
 import app.morphe.extension.facebook.feed.ReturnRefresh;
@@ -375,6 +376,10 @@ public class ColdStartHooksTest {
                 StoryRings.hideCommentRing());
         assertEquals("a profile drawn before the context lost its story ring", "ring",
                 StoryRings.profileRing("ring"));
+        assertEquals("a post header drawn before the context lost its picture", "person",
+                ProfilePictures.feedPicture("person"));
+        assertEquals("a comment drawn before the context lost its picture", "picture",
+                ProfilePictures.commentPicture("picture"));
         assertFalse(PlayerSourcesForTests.recordsAPlayer());
         assertFalse("a post menu built before the context got the video item", VideoMenuItemForTests.addsAnItem());
         assertFalse("a post menu built before the context got the photo item", PhotoMenuItemForTests.addsAnItem());

@@ -68,6 +68,8 @@ public enum PatchFamily {
     POST_PROMPTS(FamilyNames.POST_PROMPTS, "postPrompts", null,
             Settings.HIDE_POST_PROMPTS, Settings.HIDE_POST_FOLLOW_LINK, Settings.HIDE_POST_JOIN_BUTTON, Settings.HIDE_POST_X,
             Settings.HIDE_POST_COUNTS, Settings.HIDE_POST_REACTIONS, Settings.HIDE_COMMENT_REACTIONS),
+    PROFILE_PICTURES(FamilyNames.PROFILE_PICTURES, "profilePictures", null,
+            Settings.HIDE_FEED_PROFILE_PICTURES, Settings.HIDE_COMMENT_PROFILE_PICTURES),
     SEEN_POSTS(FamilyNames.SEEN_POSTS, "seenPosts", null,
             Settings.HIDE_SEEN_POSTS, Settings.SEEN_POSTS_COME_BACK_ONCE),
     META_AI_QUESTIONS(FamilyNames.META_AI_QUESTIONS, "metaAiQuestions", null,

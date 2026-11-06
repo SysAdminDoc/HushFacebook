@@ -57,6 +57,8 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_POST_COUNTS) return L10n.t("Hide counts on posts");
         if (setting == Settings.HIDE_POST_REACTIONS) return L10n.t("Hide the reaction preview on posts");
         if (setting == Settings.HIDE_COMMENT_REACTIONS) return L10n.t("Hide the reaction preview on comments");
+        if (setting == Settings.HIDE_FEED_PROFILE_PICTURES) return L10n.t("Hide profile pictures on posts");
+        if (setting == Settings.HIDE_COMMENT_PROFILE_PICTURES) return L10n.t("Hide profile pictures in comments");
         if (setting == Settings.HIDE_SEEN_POSTS) return L10n.t("Hide posts you've already seen");
         if (setting == Settings.SEEN_POSTS_COME_BACK_ONCE) return L10n.t("Let each post come back once");
         if (setting == Settings.HIDE_META_AI_QUESTIONS) return L10n.t("Hide Meta AI questions under posts");

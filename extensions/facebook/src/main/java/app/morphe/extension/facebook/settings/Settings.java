@@ -2809,6 +2809,21 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_comment_reaction_preview", FALSE);
 
     /**
+     * The profile picture leaves the top of posts, and the name moves over into its space
+     * ({@link app.morphe.extension.facebook.feed.ProfilePictures}, #400). Off by default. Read as each
+     * post's header draws.
+     */
+    public static final BooleanSetting HIDE_FEED_PROFILE_PICTURES =
+            new BooleanSetting("hushfacebook_hide_feed_profile_pictures", FALSE);
+
+    /**
+     * The profile picture leaves comments, and the name and text move over into its space (#400). Off
+     * by default. Read as each comment draws.
+     */
+    public static final BooleanSetting HIDE_COMMENT_PROFILE_PICTURES =
+            new BooleanSetting("hushfacebook_hide_comment_profile_pictures", FALSE);
+
+    /**
      * Posts you've already scrolled past stay out of the feed on later loads
      * ({@link app.morphe.extension.facebook.feed.SeenPosts}). Off by default: it remembers which
      * posts you saw, on the phone only. Posts already on screen are never touched, and a change

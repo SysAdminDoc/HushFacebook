@@ -2570,3 +2570,7 @@ Hide rings on profiles	隐藏主页上的圆环
 Takes the story and LIVE rings off the profile pictures at the top of posts. Tapping the picture opens the profile. Applies to posts drawn after the change.	去掉帖子顶部头像上的快拍和 LIVE 圆环。点按头像会打开个人主页。对更改后显示的帖子生效。
 Takes the story ring off the profile pictures next to comments. Applies to comments drawn after the change.	去掉评论旁头像上的快拍圆环。对更改后显示的评论生效。
 Takes the story and LIVE rings off the picture on a profile, and in the lists and search results that show it the same way. Applies the next time the picture draws.	去掉个人主页头像上的快拍和 LIVE 圆环，以及以同样方式显示头像的列表和搜索结果中的圆环。从头像下次显示时生效。
+Hide profile pictures on posts	隐藏帖子上的头像
+Hide profile pictures in comments	隐藏评论中的头像
+Takes the profile picture off the top of posts, so the name starts where the picture was. A change shows on the posts drawn after it.	去掉帖子顶部的头像，名字从头像原来的位置开始。更改对之后显示的帖子生效。
+Takes the profile picture off comments, so the name and text start where the picture was. A change shows on the comments drawn after it.	去掉评论中的头像，名字和内容从头像原来的位置开始。更改对之后显示的评论生效。

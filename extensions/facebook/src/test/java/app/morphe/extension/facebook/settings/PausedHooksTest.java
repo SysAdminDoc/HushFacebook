@@ -99,6 +99,7 @@ import app.morphe.extension.facebook.feed.MetaAiQuestions;
 import app.morphe.extension.facebook.feed.NotificationFooter;
 import app.morphe.extension.facebook.feed.PostDates;
 import app.morphe.extension.facebook.feed.PostPrompts;
+import app.morphe.extension.facebook.feed.ProfilePictures;
 import app.morphe.extension.facebook.feed.ProfileSuggestionsForTests;
 import app.morphe.extension.facebook.feed.RelatedPosts;
 import app.morphe.extension.facebook.misc.AppLockForTests;
@@ -529,6 +530,10 @@ public class PausedHooksTest {
                 () -> PostPrompts.hideReactionPreview(true),
                 // So is the count beside a post's faces.
                 () -> PostPrompts.reactionCount("56") == null));
+        // A post header gets no person to draw a picture from, and a comment row no picture to add.
+        probes.put(PatchFamily.PROFILE_PICTURES, Arrays.asList(
+                () -> ProfilePictures.feedPicture("person") == null,
+                () -> ProfilePictures.commentPicture("picture") == null));
         // A post the store remembers is dropped by the feed guard while the switch is on.
         probes.put(PatchFamily.SEEN_POSTS, Collections.singletonList(SeenPostsForTests::hidesARememberedPost));
         // The pill socket's yes for Meta AI's questions is answered as a no, so it draws no row for

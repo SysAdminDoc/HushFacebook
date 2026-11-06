@@ -172,6 +172,7 @@ final class FeedPages {
                 || build.contains(PatchFamily.AFFILIATE_LINKS)
                 || build.contains(PatchFamily.POST_WORDS)
                 || build.contains(PatchFamily.POST_PROMPTS)
+                || build.contains(PatchFamily.PROFILE_PICTURES)
                 || build.contains(PatchFamily.SEEN_POSTS)
                 || build.contains(PatchFamily.META_AI_QUESTIONS)
                 || build.contains(PatchFamily.POST_DATES)
@@ -285,6 +286,12 @@ final class FeedPages {
                         L10n.t("Hides the stacked reaction icons and the reactions count under posts. The space stays, "
                                 + "so a tap where they were still opens the list of reactions. To take the number off the Like "
                                 + "button too, turn on Hide counts on posts.")));
+            }
+            if (build.contains(PatchFamily.PROFILE_PICTURES)) {
+                // Read as each post's header is built, so a change shows on the posts drawn after it.
+                feed.addPreference(toggle(context, Settings.HIDE_FEED_PROFILE_PICTURES,
+                        L10n.t("Takes the profile picture off the top of posts, so the name starts where the picture "
+                                + "was. A change shows on the posts drawn after it.")));
             }
             if (build.contains(PatchFamily.META_AI_QUESTIONS)) {
                 feed.addPreference(toggle(context, Settings.HIDE_META_AI_QUESTIONS,
@@ -809,7 +816,8 @@ final class FeedPages {
         boolean reactions = build.contains(PatchFamily.POST_PROMPTS);
         boolean fullHeight = build.contains(PatchFamily.FULL_HEIGHT_COMMENTS);
         boolean tags = build.contains(PatchFamily.TAG_SUGGESTIONS);
-        if (!order && !summaries && !options && !reactions && !fullHeight && !tags) return;
+        boolean pictures = build.contains(PatchFamily.PROFILE_PICTURES);
+        if (!order && !summaries && !options && !reactions && !fullHeight && !tags && !pictures) return;
         PreferenceCategory comments = category(screen, L10n.t("Comments and writing"));
         if (order) {
             comments.addPreference(toggle(context, Settings.DEFAULT_COMMENT_ORDER,
@@ -825,6 +833,12 @@ final class FeedPages {
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_REACTIONS,
                     L10n.t("Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap "
                             + "where they were still opens the list of reactions.")));
+        }
+        if (pictures) {
+            // Read as each comment is built, so a change shows on the comments drawn after it.
+            comments.addPreference(toggle(context, Settings.HIDE_COMMENT_PROFILE_PICTURES,
+                    L10n.t("Takes the profile picture off comments, so the name and text start where the picture "
+                            + "was. A change shows on the comments drawn after it.")));
         }
         if (options) {
             comments.addPreference(toggle(context, Settings.LIKE_ONLY,

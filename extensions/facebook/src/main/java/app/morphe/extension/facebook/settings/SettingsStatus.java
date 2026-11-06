@@ -394,6 +394,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean profilePictures() {
+        return false;
+    }
+
     public static boolean seenPosts() {
         return false;
     }

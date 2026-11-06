@@ -886,6 +886,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/ProfilePictures.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/profilepictures/HideProfilePicturesPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #400: the profile pictures at the top of posts and next to comments. In Facebook 585 the one static holding the FeedStoryBaseHeader.shell.fds trace name switches on the header's actor type, every case jumps to one merge with the picture model in one register, and its default sets that register to null, Facebook's own header with no picture; the patch hands the model to the extension on the merge's own label, so every case passes through it. The comment render holding the comment_profile_picture test tag builds the picture's wrapper once and adds it to the row, which already skips null and has a null path of its own; the patch hands the built picture to the extension right after the build. The extension answers null while each switch is on."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostJoinButton.kt"
       ],
       "origin": "original",
