@@ -527,9 +527,12 @@ public final class AppLock {
 
     /**
      * Whether the phone has a screen lock this could ask for. Without one Facebook is never covered,
-     * and a cover already up goes, since no check could pass.
+     * and a cover already up goes, since no check could pass. Android 9's prompt can't fall back to
+     * the PIN, so a phone without a fingerprint would stay covered for good: there's no lock below
+     * Android 10.
      */
     public static boolean canLock(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false;
         KeyguardManager keyguard = context.getSystemService(KeyguardManager.class);
         return keyguard != null && keyguard.isDeviceSecure();
     }
@@ -1042,13 +1045,23 @@ public final class AppLock {
     }
 
     /** Android's own prompt: a biometric the phone counts as at least weak, or its PIN, pattern or password. */
+    @SuppressWarnings("deprecation") // Android 10's way to the PIN, replaced in 11.
     private static void askAndroid(Activity activity, Answer answer) {
-        BiometricPrompt prompt = new BiometricPrompt.Builder(activity)
+        // canLock keeps Android 9 from getting here.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            answer.refused(BiometricPrompt.BIOMETRIC_ERROR_HW_NOT_PRESENT, null);
+            return;
+        }
+        BiometricPrompt.Builder builder = new BiometricPrompt.Builder(activity)
                 .setTitle(L10n.t("Unlock Facebook"))
-                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK
-                        | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
-                .setConfirmationRequired(false)
-                .build();
+                .setConfirmationRequired(false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            builder.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK
+                    | BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+        } else {
+            builder.setDeviceCredentialAllowed(true);
+        }
+        BiometricPrompt prompt = builder.build();
         CancellationSignal cancellation = new CancellationSignal();
         promptCancellation = cancellation;
         prompt.authenticate(cancellation, activity.getMainExecutor(),

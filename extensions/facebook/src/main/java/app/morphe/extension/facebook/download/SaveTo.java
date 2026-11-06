@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.download;
 
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 
@@ -47,7 +48,11 @@ public enum SaveTo {
 
     /** The MediaStore collection that takes a video ([video] true) or a photo under {@link #directory}. */
     Uri collection(boolean video) {
-        if (this == DOWNLOAD) return MediaStore.Downloads.EXTERNAL_CONTENT_URI;
+        if (this == DOWNLOAD) {
+            // Android 9 has no Downloads collection, and any file can be a row of its own.
+            return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? MediaStore.Downloads.EXTERNAL_CONTENT_URI
+                    : MediaStore.Files.getContentUri("external");
+        }
         return video ? MediaStore.Video.Media.EXTERNAL_CONTENT_URI : MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
     }
 
@@ -56,7 +61,8 @@ public enum SaveTo {
      * phone's storage, exactly as before cards could be picked, when [volume] is null (#274).
      */
     Uri collection(boolean video, String volume) {
-        if (volume == null) return collection(video);
+        // A card is only ever picked from Android 11 on (SaveStorage.cards).
+        if (volume == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return collection(video);
         if (this == DOWNLOAD) return MediaStore.Downloads.getContentUri(volume);
         return video ? MediaStore.Video.Media.getContentUri(volume) : MediaStore.Images.Media.getContentUri(volume);
     }

@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -387,18 +388,35 @@ public final class StartTabRoute {
         private boolean shown;
         /** Whether the screen is resumed, so in front of the person. */
         volatile boolean inFront;
+        /**
+         * The screen watched. Android 9 has callbacks only for the whole app, which hear every
+         * screen, so there the others are passed over. Null from Android 10, where they're the
+         * screen's own.
+         */
+        @Nullable
+        private final WeakReference<Activity> only;
 
-        private Landing(StartTab asked, StartTab chosen) {
+        private Landing(StartTab asked, StartTab chosen, @Nullable Activity only) {
             this.asked = asked;
             this.chosen = chosen;
+            this.only = only == null ? null : new WeakReference<>(only);
         }
 
         static void watch(Activity activity, StartTab asked, StartTab chosen) {
-            activity.registerActivityLifecycleCallbacks(new Landing(asked, chosen));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                activity.registerActivityLifecycleCallbacks(new Landing(asked, chosen, null));
+            } else {
+                activity.getApplication().registerActivityLifecycleCallbacks(new Landing(asked, chosen, activity));
+            }
+        }
+
+        private boolean watched(Activity activity) {
+            return only == null || only.get() == activity;
         }
 
         @Override
         public void onActivityPostResumed(@NonNull Activity activity) {
+            if (!watched(activity)) return;
             inFront = true;
             if (shown) return;
             shown = true;
@@ -408,7 +426,9 @@ public final class StartTabRoute {
 
         @Override
         public void onActivityDestroyed(@NonNull Activity activity) {
-            activity.unregisterActivityLifecycleCallbacks(this);
+            if (!watched(activity)) return;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) activity.unregisterActivityLifecycleCallbacks(this);
+            else activity.getApplication().unregisterActivityLifecycleCallbacks(this);
             settled(activity);
         }
 
@@ -422,11 +442,13 @@ public final class StartTabRoute {
 
         @Override
         public void onActivityResumed(@NonNull Activity activity) {
+            // Android 9 never calls onActivityPostResumed, and the check waits a moment anyway.
+            if (only != null) onActivityPostResumed(activity);
         }
 
         @Override
         public void onActivityPaused(@NonNull Activity activity) {
-            inFront = false;
+            if (watched(activity)) inFront = false;
         }
 
         @Override

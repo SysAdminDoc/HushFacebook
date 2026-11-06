@@ -554,11 +554,16 @@ public final class FeedVideoControls {
         return bottom > gestureTop(content);
     }
 
-    /** Where that strip starts in the window, or no limit while the insets aren't known. */
+    /** Where that strip starts in the window, or no limit while the insets aren't known. Android 9 keeps no such strip. */
+    @SuppressWarnings("deprecation") // Android 10's way to the strip, replaced in 11.
     private static int gestureTop(View content) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return Integer.MAX_VALUE;
         WindowInsets insets = insetsForTests != null ? insetsForTests : content.getRootWindowInsets();
-        return insets == null ? Integer.MAX_VALUE
-                : content.getRootView().getHeight() - insets.getInsets(WindowInsets.Type.mandatorySystemGestures()).bottom;
+        if (insets == null) return Integer.MAX_VALUE;
+        int strip = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                ? insets.getInsets(WindowInsets.Type.mandatorySystemGestures()).bottom
+                : insets.getMandatorySystemGestureInsets().bottom;
+        return content.getRootView().getHeight() - strip;
     }
 
     /**
@@ -1286,7 +1291,8 @@ public final class FeedVideoControls {
         @Override protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
             super.onLayout(changed, left, top, right, bottom);
             // A SeekBar only claims the spot around a thumb drawable, and this one draws its own, so a drag starting near the screen's side went to Back.
-            setSystemGestureExclusionRects(Collections.singletonList(new Rect(0, 0, right - left, bottom - top)));
+            // Android 9 has no side swipe for Back.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) setSystemGestureExclusionRects(Collections.singletonList(new Rect(0, 0, right - left, bottom - top)));
         }
         @Override public boolean onTouchEvent(MotionEvent event) {
             // A cancel stops the tracking too, and isn't a let go.

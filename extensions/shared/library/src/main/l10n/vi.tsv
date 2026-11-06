@@ -1387,6 +1387,7 @@ A few seconds after you leave Facebook, it closes all the way and leaves your re
 Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.	Facebook yêu cầu vân tay, khuôn mặt hoặc khóa màn hình khi khởi động và khi bạn quay lại sau khoảng thời gian bên dưới. Điện thoại của bạn cần có khóa màn hình.
 # context: toast when Lock Facebook is turned on and the phone has no screen lock to ask for
 Set a screen lock in your phone's settings first, so Facebook has something to ask for.	Hãy đặt khóa màn hình trong cài đặt điện thoại trước, để Facebook có thứ để yêu cầu.
+Lock Facebook needs Android 10 or newer.	Khóa Facebook cần Android 10 trở lên.
 # context: title of the row and list that picks how long Facebook may be away before it locks
 Lock after	Khóa sau
 # context: Lock after choice: Facebook locks the moment you leave it

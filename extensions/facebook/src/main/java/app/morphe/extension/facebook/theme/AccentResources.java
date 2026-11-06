@@ -11,6 +11,7 @@ import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.content.res.loader.ResourcesLoader;
 import android.content.res.loader.ResourcesProvider;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.system.Os;
@@ -403,8 +404,12 @@ public final class AccentResources {
      * included.
      *
      * <p>Under the Material You theme the accent picked for it gives its own table instead ({@link #youTable}).
+     *
+     * <p>Resource loaders came in Android 11. On Android 9 and 10 the accent reaches only the
+     * colours Facebook's code resolves.
      */
     static void recolour(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
         try {
             Preset preset = Utils.settingsReady() ? AccentColor.chosen() : null;
             Preset you = SettingsStatus.materialYouTheme() ? AccentColor.pickedForMaterialYou() : null;
@@ -486,6 +491,7 @@ public final class AccentResources {
 
     /** A loader for the resource {@code table}, read from memory named {@code name}. AMOLED's Background color makes its own the same way. */
     static ResourcesLoader loaderFor(String name, byte[] table) throws Exception {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) throw new UnsupportedOperationException("No resource loaders before Android 11");
         FileDescriptor memory = Os.memfd_create(name, 0);
         try {
             // A stream on a descriptor it didn't open leaves the descriptor open when it closes.

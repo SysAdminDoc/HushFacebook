@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.OperationCanceledException;
 import android.preference.Preference;
@@ -546,7 +547,8 @@ public class FontFilePreference extends Preference implements ImmediateAction {
         // The override switch can change without picking a new file or rebuilding this page.
         show();
         super.onBindView(view);
-        // A screen reader hears Font file as unavailable during a copy, and this says why.
-        view.setStateDescription(role == CHOOSE ? runningLine : null);
+        // A screen reader hears Font file as unavailable during a copy, and this says why. Below
+        // Android 11 it reads the summary, which says it too.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) view.setStateDescription(role == CHOOSE ? runningLine : null);
     }
 }

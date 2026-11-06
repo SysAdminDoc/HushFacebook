@@ -9,6 +9,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.OperationCanceledException;
 import android.preference.Preference;
@@ -438,6 +439,7 @@ public class HeaderPicturePreference extends Preference implements ImmediateActi
         show();
         super.onBindView(view);
         // A screen reader hears Home header picture as unavailable during a copy, and this says why.
-        view.setStateDescription(role == CHOOSE ? runningLine : null);
+        // Below Android 11 it reads the summary, which says it too.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) view.setStateDescription(role == CHOOSE ? runningLine : null);
     }
 }

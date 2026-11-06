@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.download;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Environment;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
@@ -55,6 +56,8 @@ public final class SaveStorage {
      */
     public static List<Card> cards(Context context) {
         if (cardsForTests != null) return cardsForTests;
+        // Before Android 11 a card takes no app's media without a permission, so saves stay on the phone.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return Collections.emptyList();
         try {
             StorageManager storage = context.getSystemService(StorageManager.class);
             if (storage == null) return Collections.emptyList();

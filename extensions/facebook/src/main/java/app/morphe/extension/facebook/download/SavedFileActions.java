@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.provider.MediaStore;
@@ -239,13 +240,23 @@ public final class SavedFileActions {
     private static String readableMime(Context application, Request request) {
         if (!mediaItem(request.uri) || request.mime == null
                 || !(request.mime.startsWith("video/") || request.mime.startsWith("image/"))) return null;
-        try (Cursor row = application.getContentResolver().query(request.uri,
-                new String[]{MediaStore.MediaColumns.OWNER_PACKAGE_NAME, MediaStore.MediaColumns.IS_PENDING,
-                        MediaStore.MediaColumns.MIME_TYPE, MediaStore.MediaColumns.IS_TRASHED}, null, null, null)) {
-            if (row == null || !row.moveToFirst() || !application.getPackageName().equals(row.getString(0))
-                    || row.getInt(1) != 0 || row.getInt(3) != 0) return null;
+        // Owner and pending columns came in Android 10 and trash in 11. Asking for one an older
+        // MediaStore lacks fails the whole query, so Android 9 checks only the type of its own save.
+        boolean owned = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+        boolean trash = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+        String[] columns = trash
+                ? new String[]{MediaStore.MediaColumns.MIME_TYPE, MediaStore.MediaColumns.OWNER_PACKAGE_NAME,
+                        MediaStore.MediaColumns.IS_PENDING, MediaStore.MediaColumns.IS_TRASHED}
+                : owned
+                ? new String[]{MediaStore.MediaColumns.MIME_TYPE, MediaStore.MediaColumns.OWNER_PACKAGE_NAME,
+                        MediaStore.MediaColumns.IS_PENDING}
+                : new String[]{MediaStore.MediaColumns.MIME_TYPE};
+        try (Cursor row = application.getContentResolver().query(request.uri, columns, null, null, null)) {
+            if (row == null || !row.moveToFirst()) return null;
+            if (owned && (!application.getPackageName().equals(row.getString(1)) || row.getInt(2) != 0)) return null;
+            if (trash && row.getInt(3) != 0) return null;
             // MediaStore can normalize its MIME after indexing. Use that current type at the tap.
-            String mime = row.getString(2);
+            String mime = row.getString(0);
             if (mime == null || !(mime.startsWith("video/") || mime.startsWith("image/"))) return null;
             try (ParcelFileDescriptor file = application.getContentResolver().openFileDescriptor(request.uri, "r")) {
                 return file == null ? null : mime;
@@ -262,7 +273,9 @@ public final class SavedFileActions {
         if (path.size() < 3 || !("external".equals(path.get(0)) || "external_primary".equals(path.get(0)))) return false;
         boolean collection = path.size() == 3 && "downloads".equals(path.get(1))
                 || path.size() == 4 && ("video".equals(path.get(1)) || "images".equals(path.get(1)))
-                && "media".equals(path.get(2));
+                && "media".equals(path.get(2))
+                // Android 9 keeps a Download save in the files table (SaveTo.collection).
+                || path.size() == 3 && "file".equals(path.get(1)) && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q;
         if (!collection) return false;
         try { return Long.parseLong(path.get(path.size() - 1)) > 0; }
         catch (NumberFormatException invalid) { return false; }

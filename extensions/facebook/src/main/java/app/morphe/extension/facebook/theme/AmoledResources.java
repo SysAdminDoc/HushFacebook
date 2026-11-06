@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.res.loader.ResourcesLoader;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -297,8 +298,10 @@ public final class AmoledResources {
      * as soon as {@link AmoledTheme#load} has the row's colour. Facebook builds Home's feed while it
      * starts, before its first activity, on the application's assets, and every activity shares
      * those, so the feed's page, its composer and the Reels row kept the patch's colour (#214).
+     * Android 9 and 10 have no resource loaders, so there the row reaches only what its hooks see.
      */
     static void recolour(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
         try {
             if (!inUse()) return;
             ResourcesLoader wanted = loader(context);

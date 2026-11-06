@@ -1273,6 +1273,7 @@ A few seconds after you leave Facebook, it closes all the way and leaves your re
 Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.	O Facebook pede sua digital, rosto ou bloqueio de tela ao abrir e quando você volta depois do tempo abaixo. O celular precisa de um bloqueio de tela.
 # context: toast when Lock Facebook is turned on and the phone has no screen lock to ask for
 Set a screen lock in your phone's settings first, so Facebook has something to ask for.	Primeiro configure um bloqueio de tela nas configurações do celular, para o Facebook ter o que pedir.
+Lock Facebook needs Android 10 or newer.	Bloquear o Facebook precisa do Android 10 ou mais recente.
 # context: title of the row and list that picks how long Facebook may be away before it locks
 Lock after	Bloquear depois de
 # context: Lock after choice: Facebook locks the moment you leave it

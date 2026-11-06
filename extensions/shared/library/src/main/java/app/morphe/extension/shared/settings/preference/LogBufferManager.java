@@ -16,6 +16,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.AtomicFile;
 import android.database.Cursor;
@@ -272,6 +273,7 @@ public final class LogBufferManager {
         if (context == null) throw new IOException("Application context unavailable");
         String fileName = "morphe-diagnostics-" + fileTimestamp() + "-"
                 + Long.toHexString(System.nanoTime()) + ".txt";
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return writeToAppFolder(context, fileName, exportText);
         ContentResolver resolver = context.getContentResolver();
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
@@ -296,6 +298,23 @@ public final class LogBufferManager {
             deleteIncomplete(resolver, pendingUri, error);
             throw error;
         }
+    }
+
+    /**
+     * Android 9 has no Downloads collection, so the report goes to the app's own folder on the
+     * phone's storage, which a file manager there opens and which needs no storage permission.
+     */
+    static String writeToAppFolder(Context context, String fileName, String exportText) throws IOException {
+        File folder = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+        if (folder == null || (!folder.isDirectory() && !folder.mkdirs())) throw new IOException("No folder for the report file");
+        File file = new File(folder, fileName);
+        try (OutputStream output = new FileOutputStream(file)) {
+            writeText(output, exportText);
+        } catch (IOException failure) {
+            if (!file.delete()) Logger.printDebug(() -> "Diagnostic export: the unfinished report file stays");
+            throw failure;
+        }
+        return "Android/data/" + context.getPackageName() + "/files/" + Environment.DIRECTORY_DOWNLOADS + "/" + fileName;
     }
 
     private static String providerDisplayName(ContentResolver resolver, Uri uri) throws IOException {
@@ -623,6 +642,8 @@ public final class LogBufferManager {
                 app.morphe.extension.shared.diagnostics.DiagnosticCategory.PATCH_ERRORS.value)) {
             return "";
         }
+        // Android keeps exit records from Android 11 on.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return "";
         try {
             Context context = Utils.getContext();
             if (context == null) return "";

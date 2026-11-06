@@ -13,6 +13,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
+import android.os.Build;
 import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
@@ -153,7 +154,18 @@ public final class RoundedTabBar {
     /** The phone's navigation bar at the bottom of [window], the gesture handle or the buttons, in pixels. */
     static int navigationInset(View window) {
         WindowInsets insets = insetsForTests != null ? insetsForTests : window.getRootWindowInsets();
-        return insets == null ? 0 : insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+        return insets == null ? 0 : navigationBottom(insets);
+    }
+
+    /**
+     * The navigation bar's part of [insets] at the bottom, in pixels. Android 10 and older have no
+     * inset types, and their stable insets are the bars whether they show or not, the keyboard left out.
+     */
+    @SuppressWarnings("deprecation") // The stable insets are all Android had before 11.
+    static int navigationBottom(WindowInsets insets) {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                ? insets.getInsets(WindowInsets.Type.navigationBars()).bottom
+                : insets.getStableInsetBottom();
     }
 
     /**

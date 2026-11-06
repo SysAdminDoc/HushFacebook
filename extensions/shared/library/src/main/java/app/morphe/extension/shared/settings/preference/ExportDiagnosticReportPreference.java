@@ -9,6 +9,7 @@ package app.morphe.extension.shared.settings.preference;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.os.Build;
 import android.preference.Preference;
 import android.util.AttributeSet;
 import android.view.View;
@@ -105,7 +106,8 @@ public class ExportDiagnosticReportPreference extends Preference {
     @Override
     protected void onBindView(View view) {
         super.onBindView(view);
-        view.setStateDescription(state == State.IDLE ? null : statusLine());
+        // Below Android 11 TalkBack reads the summary, which already says the state.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) view.setStateDescription(state == State.IDLE ? null : statusLine());
     }
 
     /**

@@ -413,9 +413,11 @@ public final class PostTranslation {
         return language;
     }
 
-    /** What the phone's own classifier makes of the text, when it's sure. Nothing leaves the phone. */
+    /** What the phone's own classifier makes of the text, when it's sure. Nothing leaves the phone. Android 9 has none. */
     @Nullable
     private static String detectOnPhone(String text) {
+        // The nested Build class below shadows android.os.Build.
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) return null;
         Context context = Utils.getContext();
         TextClassificationManager manager = context == null ? null : context.getSystemService(TextClassificationManager.class);
         if (manager == null) return null;

@@ -18,6 +18,7 @@ Changes in each Hushfacebook version, newest first.
 * `Open chats in Messenger` under Chats sends your chats to the Messenger app instead of opening them inside Facebook, and that includes the Message button on someone's profile. Some accounts get chats inside Facebook even with Messenger installed, and this switch is for them. It only kicks in while Messenger is installed and turned on, starts off, and needs a Facebook restart after you flip it. (#392)
 * `Hide the Fullscreen button` under Reels and Watch takes the Fullscreen button off the black space under a wide video in Reels. It's off until you turn it on. (#394)
 * **Tooling:** `scripts/superpack-unpack.ps1` turns Facebook's Android 9+ build into one the patcher can read. That build keeps most of its code in a compressed store, which the script decodes on a connected phone with Facebook's own decoder. Every decoded file has to match the SHA-1 the build lists, and what comes out is an APK or bundle laid out like the Android 11+ build. It's the first step toward patching the Android 9+ build. (#102)
+* **Tooling:** Hush's own code now runs on Android 9 and 10, the next step toward that build. Anything that needs Android 10 or 11 checks first and does what the phone allows. On Android 9 a save goes straight into its folder, which takes storage access, so the first save asks for it and the next one goes through. `Lock Facebook` needs Android 10 or newer, and below Android 11 the accent and AMOLED colors cover a bit less of Facebook. Android 11 and newer work just as before. (#102)
 
 ### Changed
 

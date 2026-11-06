@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.feed;
 
 import android.content.Context;
 import android.icu.util.ULocale;
+import android.os.Build;
 import android.view.textclassifier.TextClassificationManager;
 import android.view.textclassifier.TextLanguage;
 
@@ -283,9 +284,10 @@ public final class PostLanguages {
         FeedFilterCounters.sawKind(GUESS_ROUTE, bucket);
     }
 
-    /** What the phone's own classifier makes of the text, when it's sure. Nothing leaves the phone. */
+    /** What the phone's own classifier makes of the text, when it's sure. Nothing leaves the phone. Android 9 has none. */
     @Nullable
     private static String detectOnPhone(String sample) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null;
         Context context = Utils.getContext();
         TextClassificationManager manager = context == null ? null : context.getSystemService(TextClassificationManager.class);
         if (manager == null) throw new IllegalStateException("no text classifier yet");

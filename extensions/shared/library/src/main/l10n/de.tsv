@@ -1387,6 +1387,7 @@ A few seconds after you leave Facebook, it closes all the way and leaves your re
 Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.	Facebook fragt beim Start und nach der unten gewählten Zeit nach deinem Fingerabdruck, Gesicht oder deiner Bildschirmsperre. Dein Telefon braucht eine Bildschirmsperre.
 # context: toast when Lock Facebook is turned on and the phone has no screen lock to ask for
 Set a screen lock in your phone's settings first, so Facebook has something to ask for.	Richte zuerst in den Einstellungen deines Handys eine Displaysperre ein, damit Facebook etwas abfragen kann.
+Lock Facebook needs Android 10 or newer.	Facebook sperren braucht Android 10 oder neuer.
 # context: title of the row and list that picks how long Facebook may be away before it locks
 Lock after	Sperren nach
 # context: Lock after choice: Facebook locks the moment you leave it

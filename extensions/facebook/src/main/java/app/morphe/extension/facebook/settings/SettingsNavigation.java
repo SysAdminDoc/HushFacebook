@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.settings;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -892,7 +893,8 @@ final class SettingsNavigation extends BaseAdapter {
     private void bindHeader(View row, Preference item, String id) {
         boolean open = expanded.contains(id);
         row.setAccessibilityHeading(true);
-        row.setStateDescription(L10n.t(open ? "Expanded" : "Collapsed"));
+        // Below Android 11 TalkBack offers Expand or Collapse instead.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) row.setStateDescription(L10n.t(open ? "Expanded" : "Collapsed"));
         View arrow = row.findViewWithTag(ScreenColors.CHEVRON);
         if (arrow != null) {
             boolean rtl = row.getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
@@ -905,7 +907,7 @@ final class SettingsNavigation extends BaseAdapter {
                 super.onInitializeAccessibilityNodeInfo(host, info);
                 boolean shown = expanded.contains(id);
                 info.setHeading(true);
-                info.setStateDescription(L10n.t(shown ? "Expanded" : "Collapsed"));
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) info.setStateDescription(L10n.t(shown ? "Expanded" : "Collapsed"));
                 info.addAction(shown ? AccessibilityNodeInfo.AccessibilityAction.ACTION_COLLAPSE
                         : AccessibilityNodeInfo.AccessibilityAction.ACTION_EXPAND);
             }

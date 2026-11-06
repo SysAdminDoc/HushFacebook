@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -16,6 +17,7 @@ import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import java.lang.ref.WeakReference;
 import java.util.Map;
@@ -102,7 +104,11 @@ public final class HiddenStatusBar {
         try {
             if (top <= 0 || content == null || !on()) return top;
             WindowInsets insets = content.getRootWindowInsets();
-            Boolean showing = insets == null ? null : insets.isVisible(WindowInsets.Type.statusBars());
+            // Android 10 and older can't say, and Facebook draws no strip there anyway.
+            Boolean showing = null;
+            if (insets != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                showing = insets.isVisible(WindowInsets.Type.statusBars());
+            }
             return topInset(top, screenOf(content.getContext()), showing);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "hidden status bar strip", failure);
@@ -135,7 +141,7 @@ public final class HiddenStatusBar {
         synchronized (WINDOWS) {
             Checks checks = WINDOWS.get(window);
             if (checks == null) {
-                checks = new Checks(new WindowBar(window));
+                checks = new Checks(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ? new WindowBar(window) : new FlagsBar(window));
                 WINDOWS.put(window, checks);
                 ViewTreeObserver observer = window.getDecorView().getViewTreeObserver();
                 observer.addOnGlobalLayoutListener(checks);
@@ -198,7 +204,62 @@ public final class HiddenStatusBar {
         void forget(Checks checks);
     }
 
+    /** Stops [window]'s layout and focus calls to [checks]. */
+    private static void unwatch(@Nullable Window window, Checks checks) {
+        if (window == null) return;
+        ViewTreeObserver observer = window.getDecorView().getViewTreeObserver();
+        if (!observer.isAlive()) return;
+        observer.removeOnGlobalLayoutListener(checks);
+        observer.removeOnWindowFocusChangeListener(checks);
+    }
+
+    /**
+     * A window's own status bar on Android 9 and 10, through the flags its decor view asks of the
+     * system. The sticky kind lets a swipe show the bar for a moment and keeps the flags, so it's
+     * still asked away after.
+     */
+    @SuppressWarnings("deprecation") // The flags are all Android had before 11.
+    static final class FlagsBar implements Bar {
+        static final int AWAY = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+
+        private final WeakReference<Window> window;
+
+        FlagsBar(Window window) {
+            this.window = new WeakReference<>(window);
+        }
+
+        @Nullable
+        @Override
+        public Boolean showing() {
+            Window window = this.window.get();
+            if (window == null) return null;
+            return (window.getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0;
+        }
+
+        @Override
+        public void hide() {
+            Window window = this.window.get();
+            if (window == null) return;
+            View decor = window.getDecorView();
+            decor.setSystemUiVisibility(decor.getSystemUiVisibility() | AWAY);
+        }
+
+        @Override
+        public void show() {
+            Window window = this.window.get();
+            if (window == null) return;
+            View decor = window.getDecorView();
+            decor.setSystemUiVisibility(decor.getSystemUiVisibility() & ~AWAY);
+        }
+
+        @Override
+        public void forget(Checks checks) {
+            unwatch(window.get(), checks);
+        }
+    }
+
     /** A window's own status bar, through its insets. */
+    @RequiresApi(Build.VERSION_CODES.R)
     static final class WindowBar implements Bar {
         private final WeakReference<Window> window;
 
@@ -231,12 +292,7 @@ public final class HiddenStatusBar {
 
         @Override
         public void forget(Checks checks) {
-            Window window = this.window.get();
-            if (window == null) return;
-            ViewTreeObserver observer = window.getDecorView().getViewTreeObserver();
-            if (!observer.isAlive()) return;
-            observer.removeOnGlobalLayoutListener(checks);
-            observer.removeOnWindowFocusChangeListener(checks);
+            unwatch(window.get(), checks);
         }
 
         @Nullable

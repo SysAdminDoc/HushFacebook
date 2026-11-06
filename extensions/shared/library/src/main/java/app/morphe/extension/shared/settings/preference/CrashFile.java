@@ -10,10 +10,12 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,7 +37,8 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  *
  * <p>MediaStore's Downloads collection needs no storage permission on Android 10 and newer, and an
  * app sees only its own files there, so the limit counts only crash files this install wrote. Each
- * write removes the oldest past {@link #KEEP} minus one before adding the new one.
+ * write removes the oldest past {@link #KEEP} minus one before adding the new one. Android 9 has
+ * no Downloads collection, so there a crash gets no file and the diagnostic report still keeps it.
  *
  * <p>It runs inside the crash handler, so it does as little as it can: one query, the deletes, one
  * insert and one write. It never throws, and a failure leaves no half-written file behind.
@@ -78,6 +81,7 @@ public final class CrashFile {
      */
     @Nullable
     static Uri write(Context context, String report, long now) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null;
         Uri uri = null;
         try {
             ContentResolver resolver = context.getContentResolver();
@@ -111,6 +115,7 @@ public final class CrashFile {
     }
 
     /** Removes this install's crash files past the newest {@link #KEEP} minus one. */
+    @RequiresApi(Build.VERSION_CODES.Q)
     private static void prune(ContentResolver resolver) {
         List<Long> ids = new ArrayList<>();
         try (Cursor cursor = resolver.query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,

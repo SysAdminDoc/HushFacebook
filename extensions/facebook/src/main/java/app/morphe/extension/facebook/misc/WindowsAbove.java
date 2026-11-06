@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.misc;
 import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.os.Build;
 import android.view.View;
 import android.view.inspector.WindowInspector;
 
@@ -24,8 +25,12 @@ public final class WindowsAbove {
 
     private WindowsAbove() {}
 
-    /** The app's window roots [activity] has open above [decor], top one first, up to [max]. */
+    /**
+     * The app's window roots [activity] has open above [decor], top one first, up to [max]. None on
+     * Android 9, which has no public list of an app's windows.
+     */
     public static List<View> of(Activity activity, View decor, int max) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return new ArrayList<>();
         return of(activity, decor, WindowInspector.getGlobalWindowViews(), max);
     }
 

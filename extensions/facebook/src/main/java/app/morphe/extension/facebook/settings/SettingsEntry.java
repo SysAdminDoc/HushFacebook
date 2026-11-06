@@ -36,6 +36,7 @@ import android.view.ViewConfiguration;
 import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -328,7 +329,7 @@ public final class SettingsEntry {
                     && existing.getIntent() != null
                     && open.getComponent().equals(existing.getIntent().getComponent())) return;
             // Evicts the lowest-ranked dynamic shortcut when Facebook's own fill the limit.
-            manager.pushDynamicShortcut(shortcut(app, longLabel, open));
+            push(manager, shortcut(app, longLabel, open));
             Logger.printInfo(() -> "Settings entry: launcher shortcut published");
         } catch (Exception ex) {
             Logger.printException(() -> "Settings entry: could not publish the shortcut", ex);
@@ -359,7 +360,7 @@ public final class SettingsEntry {
             final int rank = existing.getRank();
             if (rank == 0) return;
             CharSequence label = existing.getLongLabel();
-            manager.pushDynamicShortcut(shortcut(app, label != null ? label : L10n.t(app, "Hushfacebook settings"), openIntent(app)));
+            push(manager, shortcut(app, label != null ? label : L10n.t(app, "Hushfacebook settings"), openIntent(app)));
             Logger.printInfo(() -> "Settings entry: launcher shortcut moved back in front from rank " + rank);
         } catch (Exception ex) {
             Logger.printException(() -> "Settings entry: could not put the shortcut back in front", ex);
@@ -425,6 +426,30 @@ public final class SettingsEntry {
                 .build();
     }
 
+    /**
+     * Pushes [shortcut] in front. Android 9 and 10 have no push, so there it's added, or updated
+     * when it's already there, after the last-ranked dynamic shortcut makes room at the limit.
+     */
+    static void push(ShortcutManager manager, ShortcutInfo shortcut) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            manager.pushDynamicShortcut(shortcut);
+            return;
+        }
+        List<ShortcutInfo> dynamic = manager.getDynamicShortcuts();
+        ShortcutInfo last = null;
+        for (ShortcutInfo info : dynamic) {
+            if (info.getId().equals(shortcut.getId())) {
+                last = null;
+                break;
+            }
+            if (last == null || info.getRank() > last.getRank()) last = info;
+        }
+        if (last != null && dynamic.size() >= manager.getMaxShortcutCountPerActivity()) {
+            manager.removeDynamicShortcuts(Collections.singletonList(last.getId()));
+        }
+        manager.addDynamicShortcuts(Collections.singletonList(shortcut));
+    }
+
     // Facebook's own calls that change its dynamic shortcuts come here instead: the patch sends each
     // ShortcutManager call of these names to the method of the same name here, the manager first.
     // Facebook pushes its Notifications, Friends and Reels shortcuts, and one per Messenger chat it
@@ -435,7 +460,7 @@ public final class SettingsEntry {
     // Hide the Reels tab on, Facebook's Reels shortcut is left out of each call first (ReelsTab).
 
     public static void pushDynamicShortcut(ShortcutManager manager, ShortcutInfo shortcut) {
-        if (!ReelsTab.dropsShortcut(manager, shortcut)) manager.pushDynamicShortcut(shortcut);
+        if (!ReelsTab.dropsShortcut(manager, shortcut)) push(manager, shortcut);
         keepFirst();
     }
 

@@ -18,6 +18,7 @@ import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.OperationCanceledException;
@@ -1406,7 +1407,8 @@ public class SettingsBackupPreference extends Preference {
     @Override
     protected void onBindView(View view) {
         super.onBindView(view);
-        // A screen reader hears the row as unavailable, and this says why.
-        view.setStateDescription(busyLine);
+        // A screen reader hears the row as unavailable, and this says why. Below Android 11 the
+        // summary has to.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) view.setStateDescription(busyLine);
     }
 }

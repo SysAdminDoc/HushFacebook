@@ -4,19 +4,26 @@
  */
 package app.morphe.extension.facebook.notifications;
 
+import android.Manifest;
+import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
 import android.provider.MediaStore;
 
 import androidx.annotation.Nullable;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import app.morphe.extension.shared.Logger;
+import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
 
 /**
@@ -37,8 +45,9 @@ import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
  * into the Notifications folder through MediaStore, it's in Android's sound picker for any
  * category, by name.
  *
- * <p>Nothing here needs a permission: from API 29 an app may insert media it creates, and the
- * row is created pending and published only after the last byte, like a save.
+ * <p>Nothing here needs a permission from Android 10 on: an app may insert media it creates, and
+ * the row is created pending and published only after the last byte, like a save. Android 9
+ * needs storage access to write the file itself ({@link #saveFile}).
  */
 public final class NotificationSound {
 
@@ -59,6 +68,9 @@ public final class NotificationSound {
 
     /** An MP4 up to this size is held whole so its title tag can be dropped; the stock chime is 32 KB. */
     static final int MAX_UNTITLED = 4 * 1024 * 1024;
+
+    /** Android 9's storage access request, told apart from Facebook's own by this code. */
+    private static final int STORAGE_REQUEST = 0x4847;
 
     /** What a save of the chime came to. */
     public enum Outcome {
@@ -120,6 +132,8 @@ public final class NotificationSound {
             String mime = mime(head, got);
             String name = TITLE + extension(mime);
 
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return saveFile(context, resolver, mime, name, head, got, in);
+
             String existing = existing(resolver, collection, name);
             if (existing != null) return new Result(Outcome.ALREADY_THERE, existing);
 
@@ -137,20 +151,7 @@ public final class NotificationSound {
             }
             try (OutputStream out = resolver.openOutputStream(item, "w")) {
                 if (out == null) throw new IOException("MediaStore gave no way to write");
-                // An MP4's own title tag would become the row's title once the scanner reads the
-                // file, and the picker shows that; the stock chime carries one. Small enough to
-                // hold, the whole file is written without its tag, so the title is the name.
-                byte[] read = "audio/mp4".equals(mime) ? readUpTo(head, got, in, MAX_UNTITLED) : null;
-                if (read != null && read.length <= MAX_UNTITLED) {
-                    out.write(Mp4Title.untitled(read));
-                } else {
-                    // Not MP4, or too big to hold: a straight copy, starting with whatever was read.
-                    if (read != null) out.write(read);
-                    else out.write(head, 0, got);
-                    byte[] buffer = new byte[8192];
-                    int n;
-                    while ((n = in.read(buffer)) > 0) out.write(buffer, 0, n);
-                }
+                copy(out, mime, head, got, in);
             } catch (IOException | RuntimeException e) {
                 remove(resolver, item);
                 Logger.diagnosticError(DiagnosticCategory.SETTINGS, SOURCE, () -> "the chime could not be copied", e);
@@ -174,6 +175,72 @@ public final class NotificationSound {
             } catch (IOException ignored) {
                 // Read to the end or given up on; nothing to do about a close that fails.
             }
+        }
+    }
+
+    /** Writes the chime, starting with the [got] bytes of [head] already read from [in]. */
+    private static void copy(OutputStream out, String mime, byte[] head, int got, InputStream in) throws IOException {
+        // An MP4's own title tag would become the row's title once the scanner reads the
+        // file, and the picker shows that; the stock chime carries one. Small enough to
+        // hold, the whole file is written without its tag, so the title is the name.
+        byte[] read = "audio/mp4".equals(mime) ? readUpTo(head, got, in, MAX_UNTITLED) : null;
+        if (read != null && read.length <= MAX_UNTITLED) {
+            out.write(Mp4Title.untitled(read));
+        } else {
+            // Not MP4, or too big to hold: a straight copy, starting with whatever was read.
+            if (read != null) out.write(read);
+            else out.write(head, 0, got);
+            byte[] buffer = new byte[8192];
+            int n;
+            while ((n = in.read(buffer)) > 0) out.write(buffer, 0, n);
+        }
+    }
+
+    /**
+     * Android 9's way in: MediaStore there has no folders or pending rows of its own, so the file
+     * goes straight into the public Notifications folder and its row names that path. Writing
+     * there needs storage access. Without it the first tap asks for it and fails, and the next
+     * one saves.
+     */
+    @SuppressWarnings("deprecation")
+    private static Result saveFile(Context context, ContentResolver resolver, String mime, String name,
+            byte[] head, int got, InputStream in) throws IOException {
+        if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            Activity front = Utils.getActivity();
+            if (front != null) Utils.runOnMainThread(() -> front.requestPermissions(
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_REQUEST));
+            Logger.diagnosticInfo(DiagnosticCategory.SETTINGS, SOURCE, () -> "asked for the storage access Android 9 needs to add a sound");
+            return new Result(Outcome.FAILED, null);
+        }
+        File folder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_NOTIFICATIONS);
+        File file = new File(folder, name);
+        if (file.exists()) return new Result(Outcome.ALREADY_THERE, name);
+        if (!folder.isDirectory() && !folder.mkdirs()) throw new IOException("the Notifications folder couldn't be made");
+        try (OutputStream out = new FileOutputStream(file)) {
+            copy(out, mime, head, got, in);
+        } catch (IOException | RuntimeException e) {
+            removeFile(file);
+            Logger.diagnosticError(DiagnosticCategory.SETTINGS, SOURCE, () -> "the chime could not be copied", e);
+            return new Result(Outcome.FAILED, null);
+        }
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.MediaColumns.DATA, file.getAbsolutePath());
+        values.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+        values.put(MediaStore.MediaColumns.TITLE, TITLE);
+        values.put(MediaStore.MediaColumns.MIME_TYPE, mime);
+        values.put(MediaStore.Audio.AudioColumns.IS_NOTIFICATION, 1);
+        if (resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values) == null) {
+            removeFile(file);
+            Logger.diagnosticError(DiagnosticCategory.SETTINGS, SOURCE, () -> "MediaStore refused a new notification sound", null);
+            return new Result(Outcome.FAILED, null);
+        }
+        Logger.diagnosticInfo(DiagnosticCategory.SETTINGS, SOURCE, () -> "saved " + name + " as " + mime);
+        return new Result(Outcome.SAVED, name);
+    }
+
+    private static void removeFile(File file) {
+        if (file.exists() && !file.delete()) {
+            Logger.diagnosticError(DiagnosticCategory.SETTINGS, SOURCE, () -> "could not remove the unfinished sound", null);
         }
     }
 

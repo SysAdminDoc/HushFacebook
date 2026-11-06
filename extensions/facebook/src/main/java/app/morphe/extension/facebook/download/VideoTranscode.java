@@ -10,6 +10,7 @@ import android.media.MediaCodecList;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
+import android.os.Build;
 import android.os.SystemClock;
 import android.view.Surface;
 
@@ -268,7 +269,9 @@ final class VideoTranscode {
 
             // A stated frame rate makes findDecoderForFormat demand that speed at this size, and a
             // conversion doesn't need real time, so it's left out of the question.
-            format.removeKey(MediaFormat.KEY_FRAME_RATE);
+            // Android 9 has no removeKey, and a null string is the documented way to clear it there.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) format.removeKey(MediaFormat.KEY_FRAME_RATE);
+            else format.setString(MediaFormat.KEY_FRAME_RATE, null);
             String decoderName = codecs.findDecoderForFormat(format);
             decoder = decoderName != null
                 ? MediaCodec.createByCodecName(decoderName)

@@ -236,8 +236,8 @@ android {
     namespace = "app.morphe.extension.facebook"
 
     defaultConfig {
-        // Facebook 584 declares minSdk 30, so nothing below it can run this code.
-        minSdk = 30
+        // Facebook's Android 9+ build declares minSdk 28 (#102), the lowest floor this code runs at.
+        minSdk = 28
     }
 
     compileOptions {

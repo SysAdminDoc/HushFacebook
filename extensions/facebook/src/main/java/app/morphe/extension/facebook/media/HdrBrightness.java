@@ -228,7 +228,9 @@ public final class HdrBrightness {
     /** Whether [codec] is a Qualcomm Codec2 decoder, under its own name or an alias. False when unreadable. */
     static boolean qualcomm(MediaCodec codec) {
         try {
-            return qualcomm(codec.getCanonicalName(), codec.getName());
+            // Android 9 has no aliases, so its name is the codec's own.
+            String own = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? codec.getCanonicalName() : codec.getName();
+            return qualcomm(own, codec.getName());
         } catch (Throwable unreadable) {
             return false;
         }

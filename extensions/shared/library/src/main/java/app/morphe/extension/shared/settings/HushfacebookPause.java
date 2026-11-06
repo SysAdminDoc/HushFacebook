@@ -8,12 +8,14 @@ package app.morphe.extension.shared.settings;
 import android.app.ActivityManager;
 import android.app.ApplicationExitInfo;
 import android.content.Context;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Process;
 import android.os.SystemClock;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -270,25 +272,35 @@ public final class HushfacebookPause {
             return false;
         }
         boolean markedByHandler = parts.length > 2 && CRASHED.equals(parts[2]);
-        ApplicationExitInfo exit = firstExitSince(context, pid, started);
-        if (exit != null) {
-            int reason = exit.getReason();
-            boolean crash = reason == ApplicationExitInfo.REASON_CRASH
-                    || reason == ApplicationExitInfo.REASON_CRASH_NATIVE
-                    || reason == ApplicationExitInfo.REASON_ANR;
-            // Android writes a crash down when it is reported, before any "keeps stopping"
-            // dialog holds the process open, so the first record since the start says when
-            // the crash happened. A process that lived past the minute by the clock on the
-            // wall, the device asleep or not, did not die young.
-            return crash && exit.getTimestamp() - started <= START_WINDOW_MS;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Boolean young = exitSaysDiedYoung(context, pid, started);
+            if (young != null) return young;
         }
         return markedByHandler;
+    }
+
+    /** What Android's exit record since the start says, or null when it kept none. */
+    @RequiresApi(Build.VERSION_CODES.R)
+    @Nullable
+    private static Boolean exitSaysDiedYoung(Context context, int pid, long started) {
+        ApplicationExitInfo exit = firstExitSince(context, pid, started);
+        if (exit == null) return null;
+        int reason = exit.getReason();
+        boolean crash = reason == ApplicationExitInfo.REASON_CRASH
+                || reason == ApplicationExitInfo.REASON_CRASH_NATIVE
+                || reason == ApplicationExitInfo.REASON_ANR;
+        // Android writes a crash down when it is reported, before any "keeps stopping"
+        // dialog holds the process open, so the first record since the start says when
+        // the crash happened. A process that lived past the minute by the clock on the
+        // wall, the device asleep or not, did not die young.
+        return crash && exit.getTimestamp() - started <= START_WINDOW_MS;
     }
 
     /**
      * The earliest exit Android recorded for the pid since the start, or null when there is
      * none. A record older than the start belonged to an earlier process that had the same pid.
      */
+    @RequiresApi(Build.VERSION_CODES.R)
     @Nullable
     private static ApplicationExitInfo firstExitSince(Context context, int pid, long started) {
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);

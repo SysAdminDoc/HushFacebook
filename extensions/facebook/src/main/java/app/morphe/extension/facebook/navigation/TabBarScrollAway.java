@@ -375,7 +375,7 @@ public final class TabBarScrollAway {
                 int current = pager.getPaddingBottom();
                 int facebooks = this.facebooks;
                 int wanted = keptPadding(current, facebooks, ours, at[1] + pager.getHeight(),
-                        pager.getRootView().getHeight(), insets.getInsets(WindowInsets.Type.navigationBars()).bottom);
+                        pager.getRootView().getHeight(), RoundedTabBar.navigationBottom(insets));
                 // A padding of Facebook's own for another kind of page stays, and the overlap comes
                 // back once Facebook puts the bar's padding back.
                 if (wanted < 0 || wanted == current) return;

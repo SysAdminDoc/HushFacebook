@@ -177,7 +177,8 @@ public final class MarketplaceFilterButton {
         if (screen == null) return false;
         try {
             WindowInsets insets = screen.getWindow().getDecorView().getRootWindowInsets();
-            if (insets != null) return insets.isVisible(WindowInsets.Type.ime());
+            // Android 10 and older can't say whether the keyboard is up, so a focused field stands for it.
+            if (insets != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) return insets.isVisible(WindowInsets.Type.ime());
             return screen.getCurrentFocus() instanceof EditText;
         } catch (Throwable unreadable) {
             return false;

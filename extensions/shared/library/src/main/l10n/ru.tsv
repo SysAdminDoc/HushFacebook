@@ -1413,6 +1413,7 @@ A few seconds after you leave Facebook, it closes all the way and leaves your re
 Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.	При запуске Facebook и после возвращения в приложение по истечении указанного ниже времени запрашивает отпечаток пальца, распознавание лица или блокировку экрана. На телефоне должна быть настроена блокировка экрана.
 # context: toast when Lock Facebook is turned on and the phone has no screen lock to ask for
 Set a screen lock in your phone's settings first, so Facebook has something to ask for.	Сначала настройте блокировку экрана в параметрах телефона, чтобы Facebook мог запрашивать ее.
+Lock Facebook needs Android 10 or newer.	Чтобы блокировать Facebook, нужен Android 10 или новее.
 # context: title of the row and list that picks how long Facebook may be away before it locks
 Lock after	Блокировать через
 # context: Lock after choice: Facebook locks the moment you leave it

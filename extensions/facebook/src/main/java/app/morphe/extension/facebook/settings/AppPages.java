@@ -15,6 +15,7 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Context;
+import android.os.Build;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
@@ -592,8 +593,10 @@ final class AppPages {
                         + "time below. Your phone needs a screen lock."));
         lock.setOnPreferenceChangeListener((preference, value) -> {
             if (Boolean.TRUE.equals(value) && !AppLock.canLock(context)) {
-                Utils.showToastLong(L10n.t("Set a screen lock in your phone's settings first, so Facebook has "
-                        + "something to ask for."));
+                Utils.showToastLong(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+                        ? L10n.t("Lock Facebook needs Android 10 or newer.")
+                        : L10n.t("Set a screen lock in your phone's settings first, so Facebook has "
+                                + "something to ask for."));
                 return false;
             }
             return true;

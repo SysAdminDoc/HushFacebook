@@ -7,13 +7,22 @@
  */
 package app.morphe.extension.facebook.download;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
 import android.provider.MediaStore;
 
+import androidx.annotation.Nullable;
+
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -23,14 +32,20 @@ import java.util.List;
 import java.util.Map;
 
 import app.morphe.extension.shared.Logger;
+import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
 
 /**
  * Writes a fetched file into the gallery of the device.
  *
- * <p>The target of these patches declares {@code minSdk 30}, so scoped storage is the only storage
- * there is and MediaStore is the only way in. Nothing here needs a permission: from API 29 an app
- * can insert media that it creates, and needs no permission for it.
+ * <p>From Android 10 scoped storage is the only storage there is and MediaStore is the only way in.
+ * Nothing there needs a permission: an app can insert media that it creates, and needs no
+ * permission for it.
+ *
+ * <p>Facebook's Android 9+ build runs on Android 9 too (#102), where MediaStore takes no folder and
+ * no pending flag. There the file is written straight into the public folder, with the storage
+ * permission Facebook declares, and goes into the gallery once its last byte is in
+ * ({@link #openFile}). A save without the permission asks for it and fails, and the next one works.
  *
  * <p>The entry is created with {@code IS_PENDING} set, and it is published only after the last
  * byte arrives. So a failed fetch never leaves a playable looking file of the wrong length in the
@@ -42,6 +57,9 @@ final class MediaStoreWriter implements Downloader.Sink {
     /** The source every gallery event carries in the diagnostic report. */
     private static final String SOURCE = "MediaStoreWriter";
 
+    /** Android 9's request for the storage permission. Facebook's screen gets the answer and ignores it. */
+    private static final int STORAGE_REQUEST = 0x4846;
+
     private final Context context;
     private final boolean video;
 
@@ -49,6 +67,9 @@ final class MediaStoreWriter implements Downloader.Sink {
     private final PostDetails details;
 
     private Uri item;
+    /** Android 9's file in the public folder, and the collection its row goes into once it's whole. */
+    private File file;
+    private Uri fileCollection;
     private OutputStream stream;
     private String location;
     private String mediaMime;
@@ -109,6 +130,7 @@ final class MediaStoreWriter implements Downloader.Sink {
         SaveStorage.Card card = SaveStorage.current(context);
         shownLocation = card == null ? location : card.label + "/" + location;
         Uri collection = to.collection(video, card == null ? null : card.volume);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return openFile(mime, collection);
 
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, name(mime, collection));
@@ -144,9 +166,64 @@ final class MediaStoreWriter implements Downloader.Sink {
         return stream;
     }
 
+    /**
+     * Android 9's way in: a new file in the public folder under {@link #location}, which needs
+     * Facebook's storage permission. Without it, Android's dialog asking for it comes up over
+     * Facebook and this save fails, so the one after the person allows it goes through.
+     */
+    @SuppressWarnings("deprecation") // The public folder is Android 9's only way in.
+    private OutputStream openFile(String mime, Uri collection) throws IOException {
+        if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            Activity front = Utils.getActivity();
+            if (front != null) Utils.runOnMainThread(() -> front.requestPermissions(
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_REQUEST));
+            throw new IOException("Facebook has no storage permission yet");
+        }
+        File folder = new File(Environment.getExternalStorageDirectory(), location);
+        if (!folder.isDirectory() && !folder.mkdirs()) throw new IOException("the save folder couldn't be made");
+        file = free(folder, name(mime, collection));
+        if (file == null) throw new IOException("every numbered name was taken in the save folder");
+        fileCollection = collection;
+        stream = new FileOutputStream(file);
+        return stream;
+    }
+
+    /** Android 9's file named [name] in [folder], numbered as MediaStore numbers one, or null past (31). */
+    @Nullable
+    static File free(File folder, String name) {
+        File file = new File(folder, name);
+        if (!file.exists()) return file;
+        int dot = name.lastIndexOf('.');
+        String stem = dot > 0 ? name.substring(0, dot) : name;
+        String suffix = dot > 0 ? name.substring(dot) : "";
+        for (int number = 1; number <= 31; number++) {
+            file = new File(folder, stem + " (" + number + ")" + suffix);
+            if (!file.exists()) return file;
+        }
+        return null;
+    }
+
+    /** Android 9's commit: the whole file goes into the gallery as a row of its own. */
+    @SuppressWarnings("deprecation") // DATA is how Android 9 learns a file's place.
+    private void commitFile() throws IOException {
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.MediaColumns.DATA, file.getAbsolutePath());
+        values.put(MediaStore.MediaColumns.DISPLAY_NAME, file.getName());
+        values.put(MediaStore.MediaColumns.MIME_TYPE, mediaMime);
+        values.put(MediaStore.MediaColumns.SIZE, file.length());
+        item = context.getContentResolver().insert(fileCollection, values);
+        if (item == null) throw new IOException("the gallery refused the saved file");
+        file = null;
+        committed = true;
+    }
+
     @Override
     public void commit() throws IOException {
         close();
+        if (file != null) {
+            commitFile();
+            return;
+        }
 
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.IS_PENDING, 0);
@@ -166,6 +243,14 @@ final class MediaStoreWriter implements Downloader.Sink {
             // A failed close must not keep the pending row from being removed.
         }
 
+        if (file != null) {
+            // Android 9's half-written file, which no gallery row names yet.
+            if (file.exists() && !file.delete()) {
+                Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "the unfinished file stays in the save folder", null);
+            }
+            file = null;
+            return;
+        }
         if (item == null) return;
         Uri row = item;
         item = null;
@@ -248,7 +333,12 @@ final class MediaStoreWriter implements Downloader.Sink {
      * lookup MediaStore refuses, counts as not there, and MediaStore's own numbering still keeps the
      * save. The report gets the kind of failure only, never the name, which can hold the poster's.
      */
+    @SuppressWarnings("deprecation") // Android 9's public folder.
     private boolean inSaveFolder(Uri collection, String displayName) {
+        // Android 9's MediaStore keeps no folder to ask about, and the folder is right there.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return new File(new File(Environment.getExternalStorageDirectory(), location), displayName).exists();
+        }
         try (Cursor cursor = context.getContentResolver().query(collection,
                 new String[] { MediaStore.MediaColumns._ID }, SAME_NAME_IN_FOLDER,
                 new String[] { displayName, location + "/", location }, null)) {

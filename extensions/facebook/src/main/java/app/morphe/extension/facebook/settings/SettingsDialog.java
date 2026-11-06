@@ -10,6 +10,7 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -145,7 +146,7 @@ public final class SettingsDialog extends DialogFragment {
             window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
             // With three-button navigation Android lays a grey scrim under the buttons; the
             // screen is black edge to edge, so the scrim only shows as a grey band.
-            window.setNavigationBarContrastEnforced(false);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) window.setNavigationBarContrastEnforced(false);
             window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
             // Below Android 15 this window draws its own bars in the framework theme's colours,
             // grey and black, which a light page's dark icons can't be read on. The page's colour
@@ -265,11 +266,22 @@ public final class SettingsDialog extends DialogFragment {
         // Facebook targets a recent API, so its windows are edge to edge: keep the bars and the
         // keyboard off the content.
         root.setOnApplyWindowInsetsListener((view, insets) -> {
-            android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
-            view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            padForBars(view, insets);
             return insets;
         });
         return root;
+    }
+
+    /** Pads [view] off the bars and the keyboard. Before Android 11 the system window insets hold both. */
+    @SuppressWarnings("deprecation")
+    private static void padForBars(View view, WindowInsets insets) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+        } else {
+            view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
+                    insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
+        }
     }
 
     /** Lets the header follow [list]: it slides up under the bar as the rows scroll. */
@@ -469,8 +481,14 @@ public final class SettingsDialog extends DialogFragment {
                 if (searchBox.getVisibility() != View.VISIBLE) return;
                 search.requestFocus();
                 search.setSelection(search.length());
-                WindowInsetsController keyboard = search.getWindowInsetsController();
-                if (keyboard != null) keyboard.show(WindowInsets.Type.ime());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    WindowInsetsController keyboard = search.getWindowInsetsController();
+                    if (keyboard != null) keyboard.show(WindowInsets.Type.ime());
+                } else {
+                    android.view.inputmethod.InputMethodManager keyboard =
+                            getContext().getSystemService(android.view.inputmethod.InputMethodManager.class);
+                    if (keyboard != null) keyboard.showSoftInput(search, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+                }
             });
         } else if (!home || query.isEmpty()) {
             search.clearFocus();
@@ -500,9 +518,13 @@ public final class SettingsDialog extends DialogFragment {
         if (typingAtPause) outState.putBoolean(TYPING, true);
     }
 
+    @SuppressWarnings("deprecation")
     private static boolean keyboardShowing(View view) {
         WindowInsets insets = view.getRootWindowInsets();
-        return insets != null && insets.isVisible(WindowInsets.Type.ime());
+        if (insets == null) return false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) return insets.isVisible(WindowInsets.Type.ime());
+        // Before Android 11 the keyboard shows only as a bottom inset taller than the bars'.
+        return insets.getSystemWindowInsetBottom() > insets.getStableInsetBottom();
     }
 
     /** How many settings the search shows, or -1 when there is no search. */
@@ -534,10 +556,20 @@ public final class SettingsDialog extends DialogFragment {
         Dialog dialog = getDialog();
         Window window = dialog == null ? null : dialog.getWindow();
         if (colors == null || !colors.light || window == null) return;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            lightBarsBefore11(window.getDecorView());
+            return;
+        }
         WindowInsetsController bars = window.getInsetsController();
         if (bars == null) return;
         int dark = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
         bars.setSystemBarsAppearance(dark, dark);
+    }
+
+    @SuppressWarnings("deprecation")
+    private static void lightBarsBefore11(View decor) {
+        decor.setSystemUiVisibility(decor.getSystemUiVisibility()
+                | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
     }
 
     private int background() {

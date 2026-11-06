@@ -1383,6 +1383,7 @@ A few seconds after you leave Facebook, it closes all the way and leaves your re
 Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.	Facebook 会在启动时，以及你在下方设定的时间后返回时，要求验证你的指纹、面部或屏幕锁。你的手机需要设置屏幕锁。
 # context: toast when Lock Facebook is turned on and the phone has no screen lock to ask for
 Set a screen lock in your phone's settings first, so Facebook has something to ask for.	请先在手机设置中设置屏幕锁，这样 Facebook 才有可验证的内容。
+Lock Facebook needs Android 10 or newer.	锁定 Facebook 需要 Android 10 或更高版本.
 # context: title of the row and list that picks how long Facebook may be away before it locks
 Lock after	锁定时间
 # context: Lock after choice: Facebook locks the moment you leave it

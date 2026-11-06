@@ -20,6 +20,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.InsetDrawable;
 import android.graphics.drawable.RippleDrawable;
+import android.os.Build;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceGroup;
@@ -749,6 +750,8 @@ final class ScreenColors {
         field.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         field.setMinHeight(dp(field, 48));
         field.setHighlightColor(half(accent));
+        // Android 9 can't swap the cursor or handles, so they keep the framework's colour there.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return;
         Drawable cursor = field.getTextCursorDrawable();
         if (cursor != null) {
             cursor = cursor.mutate();
