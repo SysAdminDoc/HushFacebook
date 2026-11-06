@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -54,6 +55,14 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * node without the string is matched by the module names its template carries, and its Debug line
  * lists them as {@code template_modules}.
  *
+ * <p>Not every query row has that key: on the S22 the Visited entities row names VISITED_ENTITIES
+ * only as a value deeper in its template (585, 2026-11-05), and a reporter's For you and People you
+ * may know stayed with nothing but RECENT_SEARCH and one unnamed row in the log (#80, 0.21.0). A node
+ * whose template names no module is matched by {@link #FOR_YOU_MODULE} or
+ * {@link #PEOPLE_YOU_MAY_KNOW_MODULE} standing whole anywhere in its template, and its Debug line lists
+ * the constants the template carries as {@code template_names}, so two unnamed rows no longer log as
+ * one line.
+ *
  * <p>With Debug logging on, this logs the GraphQL type names of the node and the module, read through
  * {@link FeedFilter#typeName}'s checks, and the module names. Only names survive: a type or module
  * name that isn't letters, underscores and at most four digits is logged as "other", so no id, title
@@ -76,6 +85,10 @@ public final class PreSearchSections {
     private static final int TEMPLATE_TREE = "nt_bundle_tree".hashCode();
     /** A module name in a template's logging data: the {@code module_name} key, its quotes and colon, the name. */
     private static final Pattern TEMPLATE_MODULE = Pattern.compile("module_name[^A-Za-z0-9_]{1,40}([A-Z][A-Z0-9_]*)(?![A-Za-z0-9_])");
+    /** A constant in a template, the way the server names modules and row kinds: capitals and digits joined by underscores, read whole. */
+    private static final Pattern TEMPLATE_CONSTANT = Pattern.compile("(?<![A-Za-z0-9_])[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+(?![A-Za-z0-9_])");
+    /** How many distinct constants are read off one node's templates at most. */
+    static final int MAX_TEMPLATE_NAMES = 256;
 
     /** The node type of the For you and People you may know entries. */
     static final String NULL_STATE_NODE = "SearchNullStateNativeTemplatesResult";
@@ -237,8 +250,9 @@ public final class PreSearchSections {
 
     /**
      * What the node's entry is, as the line it's counted under, when its switch is on: its type, and
-     * its module names, read whole, from its template when it has no {@code rendered_modules}. Null
-     * for any other entry, and nothing is read with both off.
+     * its module names, read whole, from its template when it has no {@code rendered_modules}, and
+     * when the template names none, the module's name standing whole anywhere in it. Null for any
+     * other entry, and nothing is read with both off.
      */
     @Nullable
     static String hidden(@Nullable Object node, boolean forYou, boolean people) {
@@ -246,7 +260,13 @@ public final class PreSearchSections {
         if (!NULL_STATE_NODE.equals(FeedFilter.typeName(node))) return null;
         String modules = renderedModules(node);
         if (modules == null) modules = templateModules(node);
-        if (modules == null) return null;
+        if (modules == null) {
+            // No module_name key either: the name can sit elsewhere in the template (#80).
+            Set<String> names = templateNames(node);
+            if (forYou && names.contains(FOR_YOU_MODULE)) return HIDDEN;
+            if (people && names.contains(PEOPLE_YOU_MAY_KNOW_MODULE)) return HIDDEN_PEOPLE;
+            return null;
+        }
         for (String name : modules.split(",")) {
             String module = name.trim();
             if (forYou && FOR_YOU_MODULE.equals(module)) return HIDDEN;
@@ -270,6 +290,8 @@ public final class PreSearchSections {
             if (NULL_STATE_NODE.equals(nodeType) && renderedModules(node) == null) {
                 String named = templateModules(node);
                 template = " template_modules=" + (named == null ? "none" : names(named));
+                Set<String> constants = named == null ? templateNames(node) : Collections.emptySet();
+                if (!constants.isEmpty()) template += " template_names=" + names(String.join(",", constants));
             }
             String source = from == null ? "" : " from=" + from;
             record("node=" + name(nodeType) + moduleName + " rendered_modules=" + modules + template + source);
@@ -320,17 +342,42 @@ public final class PreSearchSections {
      */
     @Nullable
     static String templateModules(Object node) {
-        Object view = PostDetails.tree(node, TEMPLATES_VIEW);
-        List<?> bundles = view == null ? null : PostDetails.trees(view, TEMPLATE_BUNDLES);
-        if (bundles == null) return null;
         Set<String> names = new LinkedHashSet<>();
-        for (Object bundle : bundles) {
-            String template = bundle == null ? null : PostDetails.string(bundle, TEMPLATE_TREE);
-            if (template == null) continue;
+        for (String template : templates(node)) {
             Matcher found = TEMPLATE_MODULE.matcher(template);
             while (names.size() <= MAX_MODULES && found.find()) names.add(found.group(1));
         }
         return names.isEmpty() ? null : String.join(",", names);
+    }
+
+    /**
+     * The constants the node's templates carry anywhere, in the order they first show, each one a
+     * {@link #name}, at most {@link #MAX_TEMPLATE_NAMES}. Empty when the node isn't live or has no
+     * template.
+     */
+    static Set<String> templateNames(Object node) {
+        Set<String> names = new LinkedHashSet<>();
+        for (String template : templates(node)) {
+            Matcher found = TEMPLATE_CONSTANT.matcher(template);
+            while (names.size() < MAX_TEMPLATE_NAMES && found.find()) {
+                String constant = found.group();
+                if (!"other".equals(name(constant))) names.add(constant);
+            }
+        }
+        return names;
+    }
+
+    /** The text of each of the node's templates, empty when it has none or isn't live. */
+    private static List<String> templates(Object node) {
+        Object view = PostDetails.tree(node, TEMPLATES_VIEW);
+        List<?> bundles = view == null ? null : PostDetails.trees(view, TEMPLATE_BUNDLES);
+        List<String> templates = new ArrayList<>();
+        if (bundles == null) return templates;
+        for (Object bundle : bundles) {
+            String template = bundle == null ? null : PostDetails.string(bundle, TEMPLATE_TREE);
+            if (template != null) templates.add(template);
+        }
+        return templates;
     }
 
     /** Module names for the log, each through {@link #name}, at most {@link #MAX_MODULES} of them. */

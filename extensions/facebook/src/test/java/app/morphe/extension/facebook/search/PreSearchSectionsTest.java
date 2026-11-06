@@ -259,8 +259,8 @@ public class PreSearchSectionsTest {
         assertSame(recent, PreSearchSections.queryNode(recent));
         QueryNode longer = new QueryNode(template("module_name", PreSearchSections.FOR_YOU_MODULE + "_V2"));
         assertSame(longer, PreSearchSections.queryNode(longer));
-        QueryNode elsewhere = new QueryNode(template("result_type", PreSearchSections.FOR_YOU_MODULE));
-        assertSame("only a module_name counts", elsewhere, PreSearchSections.queryNode(elsewhere));
+        QueryNode keyed = new QueryNode(template("module_name", "RECENT_SEARCH"), template("result_type", PreSearchSections.FOR_YOU_MODULE));
+        assertSame("a template that names its module is taken at its word", keyed, PreSearchSections.queryNode(keyed));
         QueryNode bare = new QueryNode();
         assertSame(bare, PreSearchSections.queryNode(bare));
         // A node that names its modules is taken at its word, and its template isn't read.
@@ -279,6 +279,58 @@ public class PreSearchSectionsTest {
         String line = statusLine();
         assertTrue(line, line.contains(PreSearchSections.HIDDEN + " 3"));
         assertTrue(line, line.contains(PreSearchSections.HIDDEN_PEOPLE + " 1"));
+    }
+
+    /**
+     * A template row as the S22's Visited entities row held it on 585: the row's kind is a value in
+     * the tree, with no module_name key anywhere, next to style constants and colors.
+     */
+    private static String row(String kind) {
+        return "{\"\\\"\":\"\\uc432\",\" \":[{\"p\":[{\"&\":\"" + kind + "\",\"*\":\"ns_recent_search\"}],"
+                + "\"8\":\"HEADLINE3_DEEMPHASIZED\",\"+\":\"FF080809\",\"0\":\"LEFT\"}]}";
+    }
+
+    @Test
+    public void withNoModuleNameTheModulesNameAnywhereInTheTemplateCounts() {
+        // #80: a reporter's 0.21.0 log had RECENT_SEARCH and one unnamed query row, and both rows stayed.
+        Settings.HIDE_SEARCH_FOR_YOU.save(true);
+        assertNull(PreSearchSections.queryNode(new QueryNode(row(PreSearchSections.FOR_YOU_MODULE))));
+        assertNull("one of the bundles is enough", PreSearchSections.queryNode(
+                new QueryNode(row("VISITED_ENTITIES"), template("result_type", PreSearchSections.FOR_YOU_MODULE))));
+        QueryNode people = new QueryNode(row(PreSearchSections.PEOPLE_YOU_MAY_KNOW_MODULE));
+        assertSame("People you may know leaves only with its own switch", people, PreSearchSections.queryNode(people));
+        Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW.save(true);
+        assertNull(PreSearchSections.queryNode(people));
+        // The S22's own unnamed rows, Visited entities and the Recent searches header, stay.
+        QueryNode visited = new QueryNode(row("VISITED_ENTITIES"));
+        assertSame(visited, PreSearchSections.queryNode(visited));
+        QueryNode recent = new QueryNode("{\"cds\":\"{\\\"SEARCH_NULL_STATE_RECENT_SEARCHES_MODULE_CDS\\\":\\\"nc66hi:0\\\"}\",\"v\":\"VISIBLE\"}");
+        assertSame(recent, PreSearchSections.queryNode(recent));
+        // Only the whole name counts, in capitals.
+        for (String near : new String[] {PreSearchSections.FOR_YOU_MODULE + "_V2", "OLD_" + PreSearchSections.FOR_YOU_MODULE,
+                PreSearchSections.FOR_YOU_MODULE.toLowerCase(java.util.Locale.ROOT), PreSearchSections.PEOPLE_YOU_MAY_KNOW_MODULE + "2"}) {
+            QueryNode node = new QueryNode(row(near));
+            assertSame(near, node, PreSearchSections.queryNode(node));
+        }
+        String line = statusLine();
+        assertTrue(line, line.contains(PreSearchSections.HIDDEN + " 2"));
+        assertTrue(line, line.contains(PreSearchSections.HIDDEN_PEOPLE + " 1"));
+    }
+
+    @Test
+    public void anUnnamedRowsLineListsTheConstantsItsTemplateCarries() {
+        PreSearchSections.queryNode(new QueryNode(row("VISITED_ENTITIES")));
+        PreSearchSections.queryNode(new QueryNode(row("SUGGESTED_SEARCHES")));
+        PreSearchSections.queryNode(new QueryNode(row("ROW_1000123456789")));
+        String log = log();
+        String node = PreSearchSections.PREFIX + "node=" + PreSearchSections.NULL_STATE_NODE + " rendered_modules=none template_modules=none";
+        // Two unnamed rows are two lines, where both used to log as one.
+        assertTrue(log, log.contains(node + " template_names=VISITED_ENTITIES,HEADLINE3_DEEMPHASIZED from=" + PreSearchSections.FROM_QUERY));
+        assertTrue(log, log.contains(node + " template_names=SUGGESTED_SEARCHES,HEADLINE3_DEEMPHASIZED from=" + PreSearchSections.FROM_QUERY));
+        // Colors aren't constants, and a name with an id in it never gets out.
+        assertTrue(log, log.contains(node + " template_names=HEADLINE3_DEEMPHASIZED from=" + PreSearchSections.FROM_QUERY));
+        assertFalse(log, log.contains("1000123456789"));
+        assertFalse(log, log.contains("FF080809"));
     }
 
     @Test
