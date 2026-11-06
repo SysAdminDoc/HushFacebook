@@ -71,7 +71,7 @@ val hideStoriesTrayPatch = bytecodePatch(
     execute {
         val legacy = classDefByStrings(ADD_STORIES_ADAPTER, StringComparisonType.EQUALS).flatMap(::legacyTrayAdapters)
         val classic = legacy.singleOrNull() ?: throw PatchException(
-            "Expected one static tray adapter holding \"$ADD_STORIES_ADAPTER\", found ${legacy.size}",
+            "Expected one tray adapter holding \"$ADD_STORIES_ADAPTER\", found ${legacy.size}",
         )
         val configuration = mutableClassDefBy(classic.definingClass)
         val unified = unifiedTrayAdapters(configuration).singleOrNull() ?: throw PatchException(

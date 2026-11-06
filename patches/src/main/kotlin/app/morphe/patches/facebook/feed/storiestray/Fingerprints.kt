@@ -28,9 +28,11 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  *   is on. The start and stop names also sit in the tray controller's constructor, which is why the
  *   sibling has to take the configuration class and the list builder too.
  *
- * Both take (the configuration class, `ImmutableList$Builder`) and are static. Their callers only look
- * the answer up in the finished list with `ImmutableList.indexOf`, which gives -1 for null, so null
- * is the state Facebook itself is in when the tray is gated off.
+ * Both take (the configuration class, `ImmutableList$Builder`) and are static. 585's Android 9 build
+ * leaves them instance methods of that class taking only the builder (`LX/02ie;->A00` and `A01`,
+ * private final, read 2026-11-06), the same methods with `this` where the static form passes the
+ * class. Their callers only look the answer up in the finished list with `ImmutableList.indexOf`,
+ * which gives -1 for null, so null is the state Facebook itself is in when the tray is gated off.
  */
 internal const val ADD_STORIES_ADAPTER = "NewsFeedAdapterConfiguration.addStoriesAdapter"
 internal const val TRAY_ADAPTER_START = "stories_tray_create_adapter_start"
@@ -48,17 +50,35 @@ internal const val IMMUTABLE_LIST_BUILDER = "Lcom/google/common/collect/Immutabl
  */
 internal const val INLINE_COMPOSER_ADAPTER = "NewsFeedAdapterConfiguration.<get-inlineComposerSectionAdapter>"
 
-/** The composer row getters of [configuration]: static, (its own class), an object back, and the trace name. */
+/**
+ * The composer row getters of [configuration]: static taking (its own class), or an instance method
+ * taking nothing as on 585's Android 9 build (`LX/02ie;->A02`), an object back, and the trace name.
+ */
 internal fun composerAdapters(configuration: ClassDef): List<Method> = configuration.methods.filter {
-    AccessFlags.STATIC.isSet(it.accessFlags) && it.implementation != null && it.returnType.startsWith("L") &&
-        it.parameterTypes.map(Any::toString) == listOf(it.definingClass) && holdsString(it, INLINE_COMPOSER_ADAPTER)
+    it.implementation != null && it.returnType.startsWith("L") &&
+        takesItsOwnClassAnd(it, emptyList()) && holdsString(it, INLINE_COMPOSER_ADAPTER)
 }
 
-/** Whether [method] has a tray adapter's shape: static, (its own class, list builder), an object back. */
+/**
+ * Whether [method] has a tray adapter's shape: static taking (its own class, list builder), or an
+ * instance method taking (list builder) as on 585's Android 9 build, an object back.
+ */
 internal fun isTrayAdapterShape(method: Method): Boolean =
-    AccessFlags.STATIC.isSet(method.accessFlags) && method.implementation != null &&
-        method.returnType.startsWith("L") &&
-        method.parameterTypes.map { it.toString() } == listOf(method.definingClass, IMMUTABLE_LIST_BUILDER)
+    method.implementation != null && method.returnType.startsWith("L") &&
+        takesItsOwnClassAnd(method, listOf(IMMUTABLE_LIST_BUILDER))
+
+/**
+ * Whether [method] takes an instance of its own class first and then [rest]: static with the class
+ * as its first parameter, or an instance method (no constructor) whose `this` is that instance.
+ */
+private fun takesItsOwnClassAnd(method: Method, rest: List<String>): Boolean {
+    val parameters = method.parameterTypes.map { it.toString() }
+    return if (AccessFlags.STATIC.isSet(method.accessFlags)) {
+        parameters == listOf(method.definingClass) + rest
+    } else {
+        !AccessFlags.CONSTRUCTOR.isSet(method.accessFlags) && parameters == rest
+    }
+}
 
 /** The classic tray adapter methods of [configuration]: the shape, and the trace name. */
 internal fun legacyTrayAdapters(configuration: ClassDef): List<Method> = configuration.methods.filter {
@@ -80,26 +100,26 @@ internal fun unifiedTrayAdapters(configuration: ClassDef): List<Method> = config
  * creation, and never again on a pull to refresh or a later resume. That's why the patch hides
  * the tray through its adapters' counts, which the feed reads on every change, and not where the
  * adapters are built, and why [buildsListOnce] is pinned on every declared build: a Facebook that
- * starts rebuilding the list would say so in the fixture test.
+ * starts rebuilding the list would say so in the fixture test. 585's Android 9 build leaves the
+ * adapters to one static method of the configuration class (`LX/02ie;->A04`, read 2026-11-06) that
+ * the guarded method calls, so that call stands in for the two.
  */
 internal const val CREATE_ADAPTER = "NewsFeedAdapterConfiguration.createAdapter"
 
 /**
  * Whether [builder] calls every one of [calls] and returns before the first of them when a field
  * of its own class is already set: an `iget-object` of one of its own fields, then an `if-nez` on
- * that register to an instruction past the last call.
+ * that register to an instruction past the last call. When [builder] calls them through one of
+ * [assemblers] that calls every one of [calls] itself, the guard has to skip the call to it.
  */
-internal fun buildsListOnce(builder: Method, calls: List<Method>): Boolean {
+internal fun buildsListOnce(builder: Method, calls: List<Method>, assemblers: List<Method> = emptyList()): Boolean {
     val instructions = builder.implementation?.instructions?.toList() ?: return false
     val addresses = IntArray(instructions.size + 1)
     for (i in instructions.indices) addresses[i + 1] = addresses[i] + instructions[i].codeUnits
-    val callIndexes = calls.map { call ->
-        instructions.indexOfFirst {
-            it.opcode.name.startsWith("invoke-static") &&
-                ((it as? ReferenceInstruction)?.reference as? MethodReference)?.refersTo(call) == true
-        }
-    }
-    if (callIndexes.any { it < 0 }) return false
+    val callIndexes = callIndexes(builder, calls)
+        ?: assemblers.singleOrNull { it != builder && callIndexes(it, calls) != null }
+            ?.let { callIndexes(builder, listOf(it)) }
+        ?: return false
     val firstCall = callIndexes.min()
     val lastCall = callIndexes.max()
     for (i in 0 until firstCall - 1) {
@@ -114,6 +134,23 @@ internal fun buildsListOnce(builder: Method, calls: List<Method>): Boolean {
     }
     return false
 }
+
+/**
+ * Where [method] first calls each of [calls], or null when it misses one. A static adapter is
+ * called with invoke-static, an instance one (585 Android 9) with invoke-direct.
+ */
+private fun callIndexes(method: Method, calls: List<Method>): List<Int>? {
+    val instructions = method.implementation?.instructions?.toList() ?: return null
+    val indexes = calls.map { call ->
+        instructions.indexOfFirst {
+            it.opcode in ADAPTER_CALLS &&
+                ((it as? ReferenceInstruction)?.reference as? MethodReference)?.refersTo(call) == true
+        }
+    }
+    return if (indexes.any { it < 0 }) null else indexes
+}
+
+private val ADAPTER_CALLS = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE, Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE)
 
 /**
  * Whether this reference names [method]. The parameter lists are compared by their spelling: a

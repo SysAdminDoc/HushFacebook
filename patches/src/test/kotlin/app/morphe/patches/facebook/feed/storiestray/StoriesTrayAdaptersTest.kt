@@ -68,6 +68,24 @@ class StoriesTrayAdaptersTest {
         assertEquals(listOf("A00"), found.map { it.name })
     }
 
+    /** 585's Android 9 build: instance methods taking only the builder, `this` standing in for the class. */
+    @Test
+    fun `an instance adapter takes only the list builder`() {
+        val instance = AccessFlags.PRIVATE.value or AccessFlags.FINAL.value
+        val found = legacyTrayAdapters(classOf(
+            method("A00", listOf(ADD_STORIES_ADAPTER), flags = instance, parameters = listOf(IMMUTABLE_LIST_BUILDER)),
+            method("A0w", listOf(ADD_STORIES_ADAPTER), flags = instance, parameters = emptyList()),
+            method("A0v", listOf(ADD_STORIES_ADAPTER), flags = instance,
+                parameters = listOf(IMMUTABLE_LIST_BUILDER, IMMUTABLE_LIST_BUILDER)),
+            method("<init>", listOf(ADD_STORIES_ADAPTER), flags = AccessFlags.PUBLIC.value or AccessFlags.CONSTRUCTOR.value,
+                parameters = listOf(IMMUTABLE_LIST_BUILDER), returnType = "V"),
+        ))
+        assertEquals(listOf("A00"), found.map { it.name })
+        val unified = unifiedTrayAdapters(classOf(method("A01", listOf(TRAY_ADAPTER_START, TOFU, TRAY_ADAPTER_STOP),
+            flags = instance, parameters = listOf(IMMUTABLE_LIST_BUILDER))))
+        assertEquals(listOf("A01"), unified.map { it.name })
+    }
+
     @Test
     fun `the unified adapter holds all three names and has the adapter shape`() {
         val all = listOf(TRAY_ADAPTER_START, TOFU, TRAY_ADAPTER_STOP)
@@ -105,6 +123,9 @@ class StoriesTrayAdaptersTest {
 
         assertTrue("an instance method", composerAdapters(classOf(method("A02", listOf(INLINE_COMPOSER_ADAPTER),
             flags = AccessFlags.PUBLIC.value, parameters = listOf(configuration)))).isEmpty())
+        // 585's Android 9 build: an instance getter taking nothing.
+        val instance = method("A02", listOf(INLINE_COMPOSER_ADAPTER), flags = AccessFlags.PUBLIC.value, parameters = emptyList())
+        assertEquals(listOf(instance), composerAdapters(classOf(instance)))
         assertTrue("the tray adapter shape", composerAdapters(classOf(method("A02", listOf(INLINE_COMPOSER_ADAPTER)))).isEmpty())
         assertTrue("no trace name", composerAdapters(classOf(method("A02", listOf(ADD_STORIES_ADAPTER),
             parameters = listOf(configuration)))).isEmpty())
@@ -159,6 +180,38 @@ class StoriesTrayAdaptersTest {
             buildsListOnce(builder(guard = Opcode.IF_EQZ), listOf(classic, unified)))
         assertFalse("one of the adapters is never called",
             buildsListOnce(builder(calls = listOf(classic)), listOf(classic, unified)))
+    }
+
+    /**
+     * 585's Android 9 build: the guarded method calls one static method of the configuration class
+     * that calls both instance adapters with invoke-direct.
+     */
+    @Test
+    fun `a list builder may call both adapters through one assembler`() {
+        val instance = AccessFlags.PRIVATE.value or AccessFlags.FINAL.value
+        val classic = method("A00", listOf(ADD_STORIES_ADAPTER), flags = instance, parameters = listOf(IMMUTABLE_LIST_BUILDER))
+        val unified = method("A01", listOf(TRAY_ADAPTER_START, TOFU, TRAY_ADAPTER_STOP), flags = instance,
+            parameters = listOf(IMMUTABLE_LIST_BUILDER))
+        fun assembler(calls: List<Method>) = ImmutableMethod(
+            configuration, "A04", listOf(ImmutableMethodParameter(configuration, null, null)), "Ljava/lang/Object;", static,
+            null, null,
+            ImmutableMethodImplementation(4, calls.map {
+                ImmutableInstruction35c(Opcode.INVOKE_DIRECT, 2, 3, 1, 0, 0, 0, reference(it))
+            } + ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0), null, null),
+        )
+        val both = assembler(listOf(classic, unified))
+        val adapters = listOf(classic, unified)
+        // With one call in the builder, 7 code units reach the return-void.
+        assertTrue(buildsListOnce(builder(calls = listOf(both), guardOffset = 7), adapters, listOf(classic, unified, both)))
+
+        assertFalse("no assembler offered", buildsListOnce(builder(calls = listOf(both), guardOffset = 7), adapters))
+        val one = assembler(listOf(classic))
+        assertFalse("the assembler calls one adapter",
+            buildsListOnce(builder(calls = listOf(one), guardOffset = 7), adapters, listOf(classic, unified, one)))
+        assertFalse("the guard lands before the assembler",
+            buildsListOnce(builder(calls = listOf(both), guardOffset = 2), adapters, listOf(classic, unified, both)))
+        assertFalse("the assembler is never called",
+            buildsListOnce(builder(calls = emptyList()), adapters, listOf(classic, unified, both)))
     }
 
     /** The settings row and the README tell the same story about when the switch acts. */

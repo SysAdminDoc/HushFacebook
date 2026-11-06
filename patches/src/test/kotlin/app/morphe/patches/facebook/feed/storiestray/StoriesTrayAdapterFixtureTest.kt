@@ -105,7 +105,8 @@ class StoriesTrayAdapterFixtureTest {
      * holding the createAdapter trace name calls both tray adapters and returns first thing while
      * the list it built before is still there, so they're asked once per feed view. A build that
      * rebuilds the list on a refresh fails here, and the simpler hook where they're built is the
-     * thing to revisit.
+     * thing to revisit. 585's Android 9 build calls them from one static method of the configuration
+     * class, which the guarded method calls.
      */
     @Test
     fun `every declared build asks the tray adapters from a list it builds once per feed view`() {
@@ -114,7 +115,8 @@ class StoriesTrayAdapterFixtureTest {
             val builders = FixtureDex.classesHolding(bundle, CREATE_ADAPTER).flatMap { methodsHolding(it, CREATE_ADAPTER) }
             assertEquals("${bundle.name}: ${builders.map { it.toString() }}", 1, builders.size)
             assertTrue("${bundle.name}: ${builders.single()} doesn't keep the list it built",
-                buildsListOnce(builders.single(), listOf(adapters.classic, adapters.unified)))
+                buildsListOnce(builders.single(), listOf(adapters.classic, adapters.unified),
+                    adapters.configuration.methods.toList()))
             builders.single().toString()
         }
     }
