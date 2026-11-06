@@ -31,6 +31,7 @@ import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -389,8 +390,8 @@ internal class RangeWrite(
 /**
  * In [method], the [RANGE_MONTHS] text formatted by the static call right after it and taken by a
  * move-result-object, then the first static call joining five Strings into one, taken the same way,
- * with the DateFormat of the last format(Date) call before it still in its register. Null when any
- * part is missing or a register is past v15.
+ * with the DateFormat of the last date written before it ([isDateFormatCall]) still in its register.
+ * Null when any part is missing or a register is past v15.
  */
 internal fun rangeWrite(method: Method): RangeWrite? {
     val code = method.implementation?.instructions?.toList() ?: return null
@@ -417,11 +418,7 @@ internal fun rangeWrite(method: Method): RangeWrite? {
     val labelResult = join + 1
     if (code[labelResult].opcode != Opcode.MOVE_RESULT_OBJECT) return null
     val label = (code[labelResult] as OneRegisterInstruction).registerA
-    val formatCall = (join - 1 downTo monthsResult).firstOrNull { at ->
-        val target = (code[at] as? ReferenceInstruction)?.reference as? MethodReference
-        code[at].opcode == Opcode.INVOKE_VIRTUAL && target != null && target.definingClass == "Ljava/text/DateFormat;" &&
-            target.name == "format" && target.parameterTypes.map(CharSequence::toString) == listOf("Ljava/util/Date;")
-    } ?: return null
+    val formatCall = (join - 1 downTo monthsResult).firstOrNull { at -> isDateFormatCall(code[at]) } ?: return null
     val format = (code[formatCall] as FiveRegisterInstruction).registerC
     // Nothing between that call and the label may write over the format's register.
     val overwritten = (formatCall + 1..labelResult).any { at ->
@@ -431,6 +428,24 @@ internal fun rangeWrite(method: Method): RangeWrite? {
     if (overwritten || maxOf(months, label, format) > 15 || format == label) return null
     return RangeWrite(monthsResult, months, labelResult, label, format)
 }
+
+/**
+ * Whether [instruction] writes a date with a DateFormat in its first argument: `DateFormat.format(Date)`,
+ * or, as on 585's Android 9 build, a static helper taking (DateFormat, Calendar) and answering a String
+ * (`LX/0Rzo;->A18`, which formats the calendar's time, read 2026-11-06).
+ */
+private fun isDateFormatCall(instruction: Instruction): Boolean {
+    val target = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    val parameters = target.parameterTypes.map(CharSequence::toString)
+    return when (instruction.opcode) {
+        Opcode.INVOKE_VIRTUAL -> target.definingClass == DATE_FORMAT && target.name == "format" &&
+            parameters == listOf("Ljava/util/Date;")
+        Opcode.INVOKE_STATIC -> target.returnType == STRING && parameters == listOf(DATE_FORMAT, "Ljava/util/Calendar;")
+        else -> false
+    }
+}
+
+private const val DATE_FORMAT = "Ljava/text/DateFormat;"
 
 /** The opcodes that load a register a OneRegisterInstruction names. */
 private val WRITES = setOf(

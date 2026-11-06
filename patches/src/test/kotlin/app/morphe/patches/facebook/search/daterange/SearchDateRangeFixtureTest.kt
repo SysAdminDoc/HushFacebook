@@ -158,6 +158,23 @@ class SearchDateRangeFixtureTest {
         } as FiveRegisterInstruction?
         // Its constructor takes the filter's name, then the label.
         assertTrue("$where builds a FilterPersistentState with the label", built != null && built.registerE == write.label)
+        // 585's Android 9 build writes each end through a static helper of (DateFormat, Calendar): it
+        // has to format the calendar's time with that DateFormat.
+        val helpers = stock.subList(write.monthsResult, write.labelResult).mapNotNull { instruction ->
+            val target = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            target?.takeIf {
+                instruction.opcode == Opcode.INVOKE_STATIC &&
+                    it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/text/DateFormat;", "Ljava/util/Calendar;")
+            }
+        }.distinctBy { it.toString() }
+        for (helper in helpers) {
+            val body = FixtureDex.classes(bundle, setOf(helper.definingClass)).values.single().methods
+                .single { it.name == helper.name && it.parameterTypes.map(CharSequence::toString) == helper.parameterTypes.map(CharSequence::toString) }
+                .implementation!!.instructions.map { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.toString() }
+            assertTrue("$where: $helper doesn't format the calendar's time with its DateFormat",
+                "Ljava/util/Calendar;->getTime()Ljava/util/Date;" in body &&
+                    "Ljava/text/DateFormat;->format(Ljava/util/Date;)Ljava/lang/String;" in body)
+        }
 
         val owner = FixtureDex.classes(bundle, setOf(sender.definingClass)).values.single()
         val mutable = PatchContexts.of(listOf(owner)).mutableClassDefBy(owner.type).methods
