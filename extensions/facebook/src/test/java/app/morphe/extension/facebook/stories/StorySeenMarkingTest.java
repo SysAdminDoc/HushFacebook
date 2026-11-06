@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.stories;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -25,7 +26,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -64,10 +67,13 @@ public class StorySeenMarkingTest {
      * consistency publish does. A bucket's answer asks the hook first, as the patched one does.
      */
     private final List<String> published = new ArrayList<>();
+    /** Cards Facebook's own start check turns down: no media yet, or its seen flag set. */
+    private final Set<String> flagged = new HashSet<>();
     private final StorySeen.Stories stories = new StorySeen.Stories() {
         @Override public String bucketId(Object bucket) { return ((Bucket) bucket).id; }
         @Override public List<?> cards(Object bucket) { return ((Bucket) bucket).cards; }
         @Override public String storyId(Object card) { return (String) card; }
+        @Override public boolean startsAt(Object card) { return !flagged.contains(card); }
         @Override public boolean hasUnwatched(Object bucket) {
             return !StorySeen.readsWatched(bucket) && ((Bucket) bucket).unwatched;
         }
@@ -424,6 +430,96 @@ public class StorySeenMarkingTest {
             @Override public void publishWatched(Object bucket, String bucketId) { }
         });
         assertFalse("Facebook's own start was overruled", StorySeen.watchedHere("s1"));
+        assertTrue(statusLine(), statusLine().contains("threw"));
+    }
+
+    private boolean openedLater() {
+        String line = statusLine();
+        return line != null && line.contains(StorySeen.OPENED_LATER);
+    }
+
+    @Test
+    public void aBucketOpenedNamingNoCardOrFacebooksStartOpensAtTheFirstStoryNotWatchedHere() {
+        // #218: a Page's picture opens its bucket naming no card, which skips the start check, and
+        // the tray names the card Facebook starts at, which wins over it.
+        Bucket page = new Bucket("b1", "s1", "s2", "s3", "s4");
+        StorySeen.viewed(page, "s1", helper, false);
+        StorySeen.viewed(page, "s2", helper, false);
+        StorySeen.viewed(page, "s3", helper, false);
+        StorySeen.useForTests(stories);
+        assertEquals("s4", StorySeen.startCard(page, null));
+        assertEquals("s4", StorySeen.startCard(page, ""));
+        assertEquals("s4", StorySeen.startCard(page, "s1"));
+        assertTrue(statusLine(), openedLater());
+    }
+
+    @Test
+    public void aCardPickedByNameAFreshBucketOrOneWatchedThroughKeepsFacebooksStart() {
+        Bucket page = new Bucket("b1", "s1", "s2", "s3");
+        // Negative controls: nothing watched here yet.
+        assertNull(StorySeen.startCard(page, null));
+        assertEquals("s1", StorySeen.startCard(page, "s1"));
+        StorySeen.viewed(page, "s1", helper, false);
+        // A card the launch picked that isn't Facebook's start stands, watched here or not.
+        assertEquals("s3", StorySeen.startCard(page, "s3"));
+        assertEquals("s2", StorySeen.startCard(page, "s2"));
+        assertEquals("a launch naming a card no longer in the bucket", "gone", StorySeen.startCard(page, "gone"));
+        assertFalse("a pick was counted as moved", openedLater());
+        // Every card watched here: Facebook's own start and its watched-bucket answer stand.
+        StorySeen.viewed(page, "s2", helper, false);
+        StorySeen.viewed(page, "s3", helper, false);
+        assertNull(StorySeen.startCard(page, null));
+        assertEquals("s1", StorySeen.startCard(page, "s1"));
+        assertFalse(openedLater());
+        assertNull("no bucket", StorySeen.startCard(null, null));
+    }
+
+    @Test
+    public void facebooksOwnCheckSaysWhichCardItStartsAt() {
+        // A first card Facebook's check turns down isn't its start, so naming the second one is.
+        Bucket page = new Bucket("b1", "s1", "s2", "s3");
+        flagged.add("s1");
+        StorySeen.viewed(page, "s2", helper, false);
+        assertEquals("s3", StorySeen.startCard(page, "s2"));
+        assertEquals("s3", StorySeen.startCard(page, null));
+        // Naming the card the check turns down is a pick of the launch's own.
+        assertEquals("s1", StorySeen.startCard(page, "s1"));
+        // A card after the start that the check turns down is passed over too.
+        flagged.add("s3");
+        assertEquals("s2", StorySeen.startCard(page, "s2"));
+        assertNull(StorySeen.startCard(page, null));
+    }
+
+    @Test
+    public void theSwitchOffOrAPauseLeavesTheCardTheLaunchNamed() {
+        Bucket page = new Bucket("b1", "s1", "s2");
+        StorySeen.viewed(page, "s1", helper, false);
+        Settings.VIEW_STORIES_ANONYMOUSLY.save(false);
+        assertNull(StorySeen.startCard(page, null));
+        assertEquals("s1", StorySeen.startCard(page, "s1"));
+        Settings.VIEW_STORIES_ANONYMOUSLY.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertNull(StorySeen.startCard(page, null));
+        assertEquals("s1", StorySeen.startCard(page, "s1"));
+        PauseForTests.resume();
+        assertFalse(openedLater());
+        assertEquals("the card was forgotten", "s2", StorySeen.startCard(page, null));
+    }
+
+    @Test
+    public void aFailureFindingTheStartCardLeavesTheLaunchAloneAndIsReported() {
+        StorySeen.viewed(new Bucket("b1", "s1", "s2"), "s1", helper, false);
+        HookStatus.clear();
+        StorySeen.useForTests(new StorySeen.Stories() {
+            @Override public String bucketId(Object bucket) { return "b1"; }
+            @Override public List<?> cards(Object bucket) { return Arrays.asList("s1", "s2"); }
+            @Override public String storyId(Object card) { return (String) card; }
+            @Override public boolean startsAt(Object card) { throw new IllegalStateException("renamed"); }
+            @Override public boolean hasUnwatched(Object bucket) { return true; }
+            @Override public void publishWatched(Object bucket, String bucketId) { }
+        });
+        assertNull(StorySeen.startCard(new Bucket("b1", "s1", "s2"), null));
+        assertEquals("s1", StorySeen.startCard(new Bucket("b1", "s1", "s2"), "s1"));
         assertTrue(statusLine(), statusLine().contains("threw"));
     }
 

@@ -16,7 +16,9 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableField
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
@@ -37,6 +39,7 @@ import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodRefere
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableStringReference
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableTypeReference
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
@@ -351,5 +354,61 @@ class StorySeenMarkingShapesTest {
         assertEquals(Opcode.CONST_4, start.at(3).opcode)
         assertEquals(Opcode.RETURN, start.at(4).opcode)
         assertEquals(Opcode.CHECK_CAST, start.at(5).opcode)
+    }
+
+    private val cardsType = "Lfixture/Cards;"
+    private val asked = ImmutableMethodReference(cardsType, "Cfw", listOf("Ljava/lang/Object;"), "Z")
+
+    /** 585's start picker (LX/0C5S;->A01) in short: the card interface's check asked of a card, then an index returned. */
+    private fun picker(
+        parameters: List<String> = listOf(cardsType, "Ljava/lang/Object;", string, "I", "I"),
+        asks: MethodReference = asked,
+        flags: Int = AccessFlags.PUBLIC.value or AccessFlags.STATIC.value or AccessFlags.FINAL.value,
+    ) = method(
+        "Lfixture/Picker;", "A01", parameters, "I", 17,
+        listOf(
+            ImmutableInstruction11n(Opcode.CONST_4, 10, -1),
+            invoke(Opcode.INVOKE_INTERFACE, asks, 12, 13),
+            ImmutableInstruction11x(Opcode.MOVE_RESULT, 0),
+            ImmutableInstruction11x(Opcode.RETURN, 10),
+        ),
+        flags,
+    )
+
+    @Test
+    fun `the start picker is the static method asking the card interface's check`() {
+        assertTrue(isStartPicker(picker(), cardsType, "Cfw"))
+        // Negative controls: an instance method, another interface's check, another method of the
+        // interface, and one taking no second int.
+        assertFalse(isStartPicker(picker(flags = AccessFlags.PUBLIC.value or AccessFlags.FINAL.value), cardsType, "Cfw"))
+        assertFalse(isStartPicker(picker(asks = ImmutableMethodReference("Lfixture/Other;", "Cfw", listOf("Ljava/lang/Object;"), "Z")), cardsType, "Cfw"))
+        assertFalse(isStartPicker(picker(), cardsType, "Cfx"))
+        assertFalse(isStartPicker(picker(parameters = listOf(cardsType, "Ljava/lang/Object;", string, "I")), cardsType, "Cfw"))
+    }
+
+    @Test
+    fun `the start picker goes on with the extension's card id for StoryBucket's interface only`() {
+        val picked = MutableMethod(picker())
+        picked.nameStartCard(starterType)
+        assertEquals(9, picked.implementation!!.instructions.count())
+        // Seventeen registers, five parameters: the interface is v12, the bucket v13, the card id v14.
+        val move = picked.at(0)
+        assertEquals(Opcode.MOVE_OBJECT_FROM16, move.opcode)
+        assertEquals(12, (move as TwoRegisterInstruction).registerB)
+        val type = picked.at(1)
+        assertEquals(Opcode.INSTANCE_OF, type.opcode)
+        assertEquals(starterType, ((type as ReferenceInstruction).reference as TypeReference).type)
+        val branch = picked.at(2) as BuilderOffsetInstruction
+        assertEquals(Opcode.IF_EQZ, branch.opcode)
+        assertEquals("the branch doesn't go on to Facebook's picker", 5, branch.target.location.index)
+        val hook = picked.at(3)
+        assertEquals(Opcode.INVOKE_STATIC_RANGE, hook.opcode)
+        assertEquals(START_CARD, ((hook as ReferenceInstruction).reference as MethodReference).smali())
+        assertEquals(13, (hook as RegisterRangeInstruction).startRegister)
+        assertEquals(2, hook.registerCount)
+        val answer = picked.at(4)
+        assertEquals(Opcode.MOVE_RESULT_OBJECT, answer.opcode)
+        assertEquals("the answer isn't the card id the picker goes on with", 14, (answer as OneRegisterInstruction).registerA)
+        assertEquals(Opcode.CONST_4, picked.at(5).opcode)
     }
 }

@@ -553,15 +553,19 @@ internal fun isStartCheck(method: Method): Boolean {
     ) return false
     val code = method.implementation?.instructions?.toList() ?: return false
     val casts = code.count { it.opcode == Opcode.CHECK_CAST && ((it as ReferenceInstruction).reference as TypeReference).type == STORY_CARD }
-    val calls = code.mapNotNull {
-        it.call(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE, Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE)
-    }
+    val calls = startCalls(method)
     val direct = code.count { it.call(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE, Opcode.INVOKE_SUPER, Opcode.INVOKE_SUPER_RANGE) != null }
     if (casts != 1 || calls.size != 2 || direct != 0) return false
     val (media, flag) = calls
     return media.definingClass == STORY_CARD && media.name == "getMedia" && media.parameterTypes.isEmpty() &&
         flag.definingClass == STORY_CARD && flag.parameterTypes.isEmpty() && flag.returnType == "Z"
 }
+
+/** The start check's virtual calls, in order: on a start check, getMedia() and then the seen flag. */
+internal fun startCalls(check: Method): List<MethodReference> =
+    check.implementation?.instructions?.mapNotNull {
+        it.call(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE, Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE)
+    }.orEmpty()
 
 /** Whether [method] is the interface's (Object, int)I method that casts its first argument to StoryBucket. */
 private fun isBucketIndex(method: Method): Boolean =
@@ -595,6 +599,79 @@ internal fun MutableMethod.skipWatchedCards() {
             return v0
         """,
         ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/*
+ * The method asking the start check (#218 again, read from 585 arm64 on 2026-11-06).
+ *
+ * The check is asked by a static method (585 LX/0C5S;->A01) taking the card interface, the bucket,
+ * the id of a card the launch names, and two ints. With no card named and the interface's bucket
+ * answer no (StoryBucket's hasUnwatched, which the extension answers first, #165), it returns the
+ * first card or the last without asking the check at all. A named card wins over the check's pick,
+ * and a tray launch names the card Facebook's own reading of the bucket starts at. Either way a
+ * bucket watched partway opened at card 1 after a restart, and the check's hook never ran. The hook
+ * goes first in that method, for StoryBucket's interface only (the other implementer reads trees),
+ * and hands the bucket and the named card's id to the extension, whose answer is the id named.
+ */
+internal const val START_CARD = "$STORY_SEEN->startCard(${OBJECT}${STRING})${STRING}"
+
+/** Whether [method] is the start picker: a static ([cards], Object, String, int, int)I method asking [cards]'s [check]. */
+internal fun isStartPicker(method: Method, cards: String, check: String): Boolean {
+    if (!AccessFlags.STATIC.isSet(method.accessFlags) || method.returnType != "I" ||
+        method.parameterTypes.map(Any::toString) != listOf(cards, OBJECT, STRING, "I", "I")
+    ) return false
+    return method.implementation?.instructions?.any {
+        it.call(Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE)?.let { call ->
+            call.definingClass == cards && call.name == check && call.returnType == "Z" &&
+                call.parameterTypes.map(Any::toString) == listOf(OBJECT)
+        } == true
+    } == true
+}
+
+/**
+ * First thing in the start picker: when its card interface is [owner], StoryBucket's, the card id
+ * it goes on with is the extension's answer. Every other interface goes straight on. The
+ * parameters are read before anything writes them, and the one local the hook needs is free there.
+ */
+internal fun MutableMethod.nameStartCard(owner: String) {
+    requireLocals(PATCH, 1)
+    val cards = parameterRegisterNumber(0)
+    val bucket = parameterRegisterNumber(1)
+    val cardId = parameterRegisterNumber(2)
+    addInstructionsWithLabels(
+        0,
+        """
+            move-object/from16 v0, v$cards
+            instance-of v0, v0, $owner
+            if-eqz v0, :facebook
+            invoke-static/range { v$bucket .. v$cardId }, $START_CARD
+            move-result-object v$cardId
+        """,
+        ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/** Fills the extension's stubs for Facebook's own start check from [check]'s two calls on the card. */
+internal fun fillStartStubs(stub: (name: String, answer: String, parameters: List<String>) -> MutableMethod, check: Method) {
+    val (media, flag) = startCalls(check)
+    stub("mediaOf", OBJECT, listOf(OBJECT)).addInstructions(
+        0,
+        """
+            check-cast p0, $STORY_CARD
+            invoke-virtual { p0 }, ${media.smali()}
+            move-result-object p0
+            return-object p0
+        """,
+    )
+    stub("seenFlagOf", "Z", listOf(OBJECT)).addInstructions(
+        0,
+        """
+            check-cast p0, $STORY_CARD
+            invoke-virtual { p0 }, ${flag.smali()}
+            move-result p0
+            return p0
+        """,
     )
 }
 

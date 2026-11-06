@@ -211,6 +211,32 @@ class StorySeenMarkingFixtureTest {
         for (index in code.indices) {
             assertEquals("$name: start check instruction $index changed", code[index].opcode, after[index + 5].opcode)
         }
+
+        // Its two calls, getMedia() and the seen flag, are public on StoryCard for the stubs (#218).
+        val calls = startCalls(check)
+        assertEquals("$name: the start check's calls", 2, calls.size)
+        for (call in calls) assertEquals("$name: ${call.name} isn't on StoryCard", STORY_CARD, call.definingClass)
+
+        // The one static method picking where a bucket opens, which takes the start card hook first.
+        val cards = interfaces.single()
+        val pickers = asking.filter { isStartPicker(it, cards, check.name) }
+        assertEquals("$name: start pickers", 1, pickers.size)
+        val picker = pickers.single()
+        val pickerCode = picker.implementation!!.instructions.toList()
+        val picked = MutableMethod(picker).apply { nameStartCard(owners.single().type) }.implementation!!.instructions.toList()
+        assertEquals("$name: instructions added to the start picker", pickerCode.size + 5, picked.size)
+        assertEquals(
+            "$name: the start card hook's form",
+            listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.INSTANCE_OF, Opcode.IF_EQZ, Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT_OBJECT),
+            picked.subList(0, 5).map { it.opcode },
+        )
+        val named = picked[3]
+        assertEquals("$name: the start card hook", START_CARD, named.call!!.smali())
+        assertEquals("$name: the start card hook reads the bucket", picker.parameterRegisterNumber(1), (named as RegisterRangeInstruction).startRegister)
+        assertEquals("$name: the start card hook's registers", 2, named.registerCount)
+        for (index in pickerCode.indices) {
+            assertEquals("$name: start picker instruction $index changed", pickerCode[index].opcode, picked[index + 5].opcode)
+        }
     }
 
     @Test
@@ -226,6 +252,9 @@ class StorySeenMarkingFixtureTest {
         assertTrue("StorySeen has no bucketMade hook", has("bucketMade", "V", obj))
         assertTrue("StorySeen has no watchedHere hook", has("watchedHere", "Z", obj))
         assertTrue("StorySeen has no readsWatched hook", has("readsWatched", "Z", obj))
+        assertTrue("StorySeen has no startCard hook", has("startCard", string, obj, string))
+        assertTrue("StorySeen has no mediaOf", has("mediaOf", obj, obj))
+        assertTrue("StorySeen has no seenFlagOf", has("seenFlagOf", "Z", obj))
         for (stub in listOf("bucketIdOf", "cardsOf", "storyIdOf", "sessionOf", "bucketTypeOf")) assertTrue("StorySeen has no $stub", has(stub, obj, obj))
         assertTrue("StorySeen has no hasUnwatchedOf", has("hasUnwatchedOf", "Z", obj))
         assertTrue("StorySeen has no publishSeen", has("publishSeen", "V", obj, string, string, string, "Z"))

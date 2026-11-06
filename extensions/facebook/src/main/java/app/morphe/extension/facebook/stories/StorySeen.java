@@ -64,7 +64,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * view never makes. So after a restart a bucket watched partway, or one that got a new card, opened
  * at card 1 again (#218). {@link #viewed} keeps every card it hears in a second {@link SeenBuckets},
  * and {@link #watchedHere} answers Facebook's start check for each one, so the viewer passes over
- * those and starts at the first card not watched. The flag itself isn't changed.
+ * those and starts at the first card not watched. The flag itself isn't changed. The method asking
+ * that check skips it when the launch names no card and the bucket reads as watched, and takes a
+ * named card over it, so {@link #startCard} goes first in that method and names the first card not
+ * watched here when the launch named none or named Facebook's own start.
  *
  * <p>Hide seen stories goes by the flag the servers send with each bucket of the tray, which a
  * held-back view never sets, so a bucket watched here came back after every refresh and restart
@@ -103,6 +106,9 @@ public final class StorySeen {
 
     /** What Hook status counts each card the viewer passed over, picking where a bucket opens, under (#218). */
     static final String PASSED_OVER = "opened past a card watched here";
+
+    /** What Hook status counts each bucket opened past Facebook's own start, at a card not watched here, under (#218). */
+    static final String OPENED_LATER = "opened at the first story not watched here";
 
     /** What Hook status counts each time a bucket answered Facebook as watched, under (#165). */
     static final String READ_WATCHED = "read as watched here";
@@ -167,6 +173,14 @@ public final class StorySeen {
 
         /** Publishes the bucket as watched to every copy of it the app holds. */
         void publishWatched(Object bucket, String bucketId);
+
+        /**
+         * Facebook's own check of a card while it picks where a bucket opens: the card has media
+         * and its seen flag is false. A card is taken to pass unless told otherwise.
+         */
+        default boolean startsAt(Object card) {
+            return true;
+        }
     }
 
     private static final Stories PATCHED = new Stories() {
@@ -183,6 +197,7 @@ public final class StorySeen {
             for (String type : typesFor(own)) publishSeen(session, bucketId, type, SEEN_FIELD, true);
             Logger.printDebug(() -> "Story views: published a " + own + " bucket as watched");
         }
+        @Override public boolean startsAt(Object card) { return mediaOf(card) != null && !seenFlagOf(card); }
     };
 
     /**
@@ -434,6 +449,53 @@ public final class StorySeen {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_SEEN, "story start", failure);
             return false;
+        }
+    }
+
+    /**
+     * Injection point, first thing in the method the viewer asks for the card a story bucket opens
+     * at, handed the bucket and the id of the card the launch names, if any. That method skips the
+     * check {@link #watchedHere} answers when no card is named and the bucket reads as watched, and
+     * a named card wins over the check, so a bucket watched partway still opened at card 1 after a
+     * restart (#218). The answer is the card to name instead: the first one Facebook's own check
+     * passes that wasn't watched here, when that's past Facebook's own start and the launch named
+     * no card or named that start. A card the launch picked itself stands, and so does everything
+     * with the switch off or paused, or every card from Facebook's start on watched. Never throws.
+     */
+    @Nullable
+    public static String startCard(@Nullable Object bucket, @Nullable String cardId) {
+        try {
+            if (bucket == null || !Utils.settingsReady() || !Settings.VIEW_STORIES_ANONYMOUSLY.get()) return cardId;
+            SeenBuckets watched = cardStore();
+            if (watched == null) return cardId;
+            Stories access = stories;
+            List<?> cards = access.cards(bucket);
+            if (cards == null) return cardId;
+            boolean named = cardId != null && !cardId.isEmpty();
+            long now = System.currentTimeMillis();
+            int start = -1;
+            for (int i = 0; i < cards.size(); i++) {
+                Object card = cards.get(i);
+                if (card == null || !access.startsAt(card)) continue;
+                String story = access.storyId(card);
+                if (start < 0) {
+                    start = i;
+                    if (named && !cardId.equals(story)) return cardId;
+                }
+                if (story == null || watched.newestWatched(story, now) != null) continue;
+                if (i == start) return cardId;
+                int at = i + 1, from = start + 1, of = cards.size();
+                HookStatus.counted(FamilyNames.STORY_SEEN, OPENED_LATER);
+                Logger.printDebug(() -> "Story views: a bucket opens at story " + at + " of " + of + ", not " + from);
+                return story;
+            }
+            if (start >= 0) {
+                Logger.printDebug(() -> "Story views: every story of a bucket of " + cards.size() + " from Facebook's start on was watched here");
+            }
+            return cardId;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_SEEN, "story start card", failure);
+            return cardId;
         }
     }
 
@@ -728,6 +790,16 @@ public final class StorySeen {
      * method Facebook's bucket answers from is_bucket_seen_by_viewer.
      */
     public static boolean hasUnwatchedOf(Object bucket) {
+        return false;
+    }
+
+    /** Filled in by the patch: the card's media, the first call of Facebook's start check, StoryCard.getMedia(). */
+    public static Object mediaOf(Object card) {
+        return UNPATCHED;
+    }
+
+    /** Filled in by the patch: the card's seen flag, the second call of Facebook's start check. */
+    public static boolean seenFlagOf(Object card) {
         return false;
     }
 
