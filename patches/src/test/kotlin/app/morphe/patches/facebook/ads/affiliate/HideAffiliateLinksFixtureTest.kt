@@ -10,6 +10,7 @@ import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.refresh.enumConstant
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.reels.prompts.INTEREST_PROMPT
 import app.morphe.patches.facebook.reels.prompts.isOverlayEnum
@@ -223,9 +224,13 @@ class HideAffiliateLinksFixtureTest {
 
                 val reelCheck = builders.flatMap { reelCardChecks(it, eyebrow!!) }.first()
                 val footerId = footerChecks.flatMap { footerIdCalls(it) }.first()
-                // The label's row: exactly one render names it, and it reads one flag.
-                val labelRenders = FixtureDex.classesHolding(bundle, COMMISSION_IMPRESSION)
-                    .flatMap { it.methods.filter(::isDisclosureRender) }
+                // The label's row: exactly one render names it, and it reads one flag. The Android 9
+                // build asks a string table for the impression's name, so the table goes along.
+                val labelTables = FixtureDex.classesHolding(bundle, COMMISSION_IMPRESSION)
+                    .filterNot { it.type.startsWith(EXTENSION_CLASSES) }.associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> labelTables[call.definingClass]?.let { resolveStatic(it, call) } }
+                val labelRenders = FixtureDex.classesHolding(bundle, DISCLOSURE_COMPONENT)
+                    .flatMap { classDef -> classDef.methods.filter { isDisclosureRender(it, resolve) } }
                 assertEquals("$name: renders naming $DISCLOSURE_COMPONENT", 1, labelRenders.size)
                 val labelRender = labelRenders.single()
                 val labelGate = disclosureGate(labelRender)
@@ -247,7 +252,7 @@ class HideAffiliateLinksFixtureTest {
                 val entryOriginal = entryWriter.code()
                 val types = (builders + footerChecks).map { it.definingClass }.toSet() + reelCheck.map { it.definingClass } +
                     setOf(footerId.definingClass, FLOATING_CARD_PLUGIN, ctaFilter.definingClass, labelRender.definingClass,
-                        labelGate!!.definingClass, entryWriter.definingClass)
+                        labelGate!!.definingClass, entryWriter.definingClass) + labelTables.keys
                 val classes = FixtureDex.classes(bundle, types)
                 assertEquals("$name: classes read", types, classes.keys)
                 val plugin = classes.getValue(FLOATING_CARD_PLUGIN)

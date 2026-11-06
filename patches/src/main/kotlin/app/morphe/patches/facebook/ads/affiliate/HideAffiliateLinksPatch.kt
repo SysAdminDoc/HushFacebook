@@ -17,7 +17,9 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.refresh.enumConstant
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.filterBooleanReturns
 import app.morphe.patches.facebook.misc.extension.filterObjectReturns
@@ -191,9 +193,13 @@ internal class AffiliateAnchors(
 /** The reel disclosure row's render, the check in front of it, and the flag both read. */
 internal class CommissionLabelAnchors(val render: Method, val gate: Method, val flag: Int)
 
-/** Whether [method] is the reel disclosure row's render, which draws the "Commission eligible" label. */
-internal fun isDisclosureRender(method: Method): Boolean =
-    method.name == "render" && holdsString(method, DISCLOSURE_COMPONENT) && holdsString(method, COMMISSION_IMPRESSION)
+/**
+ * Whether [method] is the reel disclosure row's render, which draws the "Commission eligible" label.
+ * It holds [DISCLOSURE_COMPONENT] and names [COMMISSION_IMPRESSION], which 585's Android 9 build asks
+ * a string table for (`LX/0CU0;->render` asks `LX/01Aj;->A00`); [resolve] finds that table.
+ */
+internal fun isDisclosureRender(method: Method, resolve: (MethodReference) -> Method?): Boolean =
+    method.name == "render" && holdsString(method, DISCLOSURE_COMPONENT) && namesString(method, COMMISSION_IMPRESSION, resolve)
 
 /** The check [render] asks first: its first static call answering a boolean about the session. */
 internal fun disclosureGate(render: Method): MethodReference? =
@@ -223,9 +229,12 @@ internal fun flagReads(method: Method): List<Pair<Int, Int>> {
 
 /** The label's render and check, each sure to read the flag once. Changes nothing. */
 internal fun BytecodePatchContext.findCommissionLabel(): CommissionLabelAnchors {
-    val renders = classDefByStrings(COMMISSION_IMPRESSION, StringComparisonType.EQUALS)
+    val tables = classDefByStrings(COMMISSION_IMPRESSION, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }.associateBy { it.type }
+    val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+    val renders = classDefByStrings(DISCLOSURE_COMPONENT, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        .flatMap { classDef -> classDef.methods.filter(::isDisclosureRender) }
+        .flatMap { classDef -> classDef.methods.filter { isDisclosureRender(it, resolve) } }
     val render = renders.singleOrNull() ?: refuse("expected one render naming $DISCLOSURE_COMPONENT, found ${renders.size}")
     val flag = flagReads(render).singleOrNull()?.second
         ?: refuse("expected one flag read in ${render.definingClass}->render")
