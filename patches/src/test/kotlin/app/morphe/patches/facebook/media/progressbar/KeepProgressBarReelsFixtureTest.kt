@@ -274,9 +274,21 @@ class KeepProgressBarReelsFixtureTest {
         // has found a usable position and length. The update reads the bar's maximum only past both checks, itself
         // or, on 583, through the base's helper that scales the position to the bar (LX/9gJ;->A01).
         assertTrue("$name: the writer no longer moves the bar", progress.writeTime.code().any { it.reference() == SET_PROGRESS })
-        val at = dragCheck(progress.update, progress)
-        val inflow = ControlFlow.of(progress.update)
-        val update = progress.update.code()
+        // 585's Android 9 build keeps the update a trace around a private method of the base that does
+        // the work, run on the base the update takes, so p0 is the same scrubber in both.
+        val body = progress.body
+        if (!body.sameAs(progress.update)) {
+            assertTrue("$name: ${base.type}->${body.name}, the update's body, isn't a private instance method taking nothing",
+                AccessFlags.PRIVATE.isSet(body.accessFlags) && !AccessFlags.STATIC.isSet(body.accessFlags) && body.parameterTypes.isEmpty())
+            val runs = progress.update.code().filter { it.reference() == "${base.type}->${body.name}()V" }
+            assertEquals("$where: runs of its body", 1, runs.size)
+            assertEquals("$where: runs its body on the scrubber it takes",
+                listOf(Opcode.INVOKE_DIRECT, progress.update.implementation!!.registerCount - 1),
+                listOf(runs.single().opcode, (runs.single() as FiveRegisterInstruction).registerC))
+        }
+        val at = dragCheck(body, progress)
+        val inflow = ControlFlow.of(body)
+        val update = body.code()
         val scalers = base.methods.filter { method -> method.implementation?.instructions?.any { it.reference() == GET_MAX } == true }
             .map { "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }.toSet()
         val maxReads = update.indices.filter { update[it].reference() == GET_MAX || update[it].reference() in scalers }.toSet()
@@ -291,7 +303,7 @@ class KeepProgressBarReelsFixtureTest {
         assertTrue("$where reaches its drag check without reading the bar's maximum, before its position checks", at !in reached)
 
         val context = PatchContexts.of(listOf(base))
-        val method = context.mutableClassDefBy(base.type).methods.single { it.sameAs(progress.update) }
+        val method = context.mutableClassDefBy(base.type).methods.single { it.sameAs(body) }
         val original = method.code()
         method.refreshesTimeWithBar(progress, looks)
         val patched = method.code()
@@ -302,7 +314,7 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$where: the scrubber moves into a local through the wide form", Opcode.MOVE_OBJECT_FROM16, patched[at].opcode)
         val register = (patched[at] as TwoRegisterInstruction).registerA
         val bar = (patched[at + 3] as TwoRegisterInstruction).registerA
-        val live = RegisterLiveness.of(progress.update).liveInto(at)
+        val live = RegisterLiveness.of(body).liveInto(at)
         for (borrowed in listOf(register, bar)) {
             assertTrue("$where: the hook writes v$borrowed, which isn't a low local", borrowed < minOf(local, 16))
             assertTrue("$where: the hook borrows v$borrowed, which Facebook reads on", borrowed !in live)
@@ -340,17 +352,17 @@ class KeepProgressBarReelsFixtureTest {
         val looks = found.looks
         val progress = found.progress
         val base = progress.base
-        val where = "$name: ${base.type}->${progress.update.name}"
+        val where = "$name: ${base.type}->${progress.body.name}"
         // The hook runs the passive look on the scrubber, which takes the active one in its place while kept.
         assertTrue("$name: ${looks.type}->${looks.passive.name} can't be run from the base's update",
             !AccessFlags.PRIVATE.isSet(looks.passive.accessFlags) && !AccessFlags.STATIC.isSet(looks.passive.accessFlags))
         assertTrue("$name: the update's class isn't the scrubber or its base", base.type in listOfNotNull(found.scrubber.type, found.scrubber.superclass))
 
         val context = PatchContexts.of(listOf(base))
-        val method = context.mutableClassDefBy(base.type).methods.single { it.sameAs(progress.update) }
+        val method = context.mutableClassDefBy(base.type).methods.single { it.sameAs(progress.body) }
         val original = method.code()
         val at = dragCheck(method, progress)
-        val live = RegisterLiveness.of(progress.update).liveInto(at)
+        val live = RegisterLiveness.of(progress.body).liveInto(at)
         // In the patch's order: the refresh goes in first, and the look check at the same index lands in front of it.
         method.refreshesTimeWithBar(progress, looks)
         method.looksAgainFirst(looks, at)
@@ -411,7 +423,7 @@ class KeepProgressBarReelsFixtureTest {
         val where = "$name: ${base.type}->${delay.name}"
         assertTrue("$where isn't static", AccessFlags.STATIC.isSet(delay.accessFlags))
         assertTrue("$where isn't asked by the progress update",
-            progress.update.code().any { it.reference() == "${base.type}->${delay.name}(${base.type})J" })
+            progress.body.code().any { it.reference() == "${base.type}->${delay.name}(${base.type})J" })
         // The hook borrows v0 and v1 for the wide answer: the scrubber is the one parameter register.
         assertTrue("$where has no two local registers for the hook", delay.implementation!!.registerCount - 1 >= 2)
 

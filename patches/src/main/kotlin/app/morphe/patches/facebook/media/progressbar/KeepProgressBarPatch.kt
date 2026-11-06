@@ -391,7 +391,7 @@ val keepProgressBarPatch = bytecodePatch(
         if (progress.base.type != scrubberBase(scrubber) || progress.base.type !in listOfNotNull(scrubberClass.type, scrubberClass.superclass)) {
             refuse("${progress.base.type}, which updates the progress, isn't the class holding ${scrubber.type}'s views")
         }
-        progress.update.freeLocalsAt(PATCH, dragCheck(progress.update, progress), 2)
+        progress.body.freeLocalsAt(PATCH, dragCheck(progress.body, progress), 2)
         val info = barInfo(progress.base, lengthChecks?.minimum)
         val handOver = reelHandOver(
             classDefByStrings(NEW_REELS_UNIT_SHOWN, StringComparisonType.EQUALS)
@@ -516,7 +516,7 @@ val keepProgressBarPatch = bytecodePatch(
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(info.builder) }.hasBarWhileKept(info)
         // The look check goes in after the time refresh, at the index the refresh took, so it lands
         // in front of it and a no to the look check still runs the refresh.
-        mutableClassDefBy(progress.base.type).methods.single { it.sameAs(progress.update) }.apply {
+        mutableClassDefBy(progress.base.type).methods.single { it.sameAs(progress.body) }.apply {
             val dragAt = dragCheck(this, progress)
             refreshesTimeWithBar(progress, scrubber)
             looksAgainFirst(scrubber, dragAt)
@@ -1397,8 +1397,40 @@ internal fun barInfo(base: ClassDef, lengthCheck: Method?): BarInfo {
 
 private fun Instruction.reference() = (this as? ReferenceInstruction)?.reference?.toString()
 
-/** The scrubber base's progress update and the method writing its time. */
-internal class ProgressUpdate(val base: ClassDef, val update: Method, val writeTime: Method)
+/**
+ * The scrubber base's progress update, the method writing its time, and the update's [body], where
+ * the update moves the bar and asks for a drag: the update itself, or the one method it hands that
+ * work to ([updateBody]).
+ */
+internal class ProgressUpdate(val base: ClassDef, val update: Method, val writeTime: Method, val body: Method = update)
+
+/**
+ * Where [update] moves the bar: [update] itself when it calls [writer], or else the one private
+ * instance `()V` method of [base] that calls [writer] and that [update] runs on the base it takes.
+ * 585's Android 9 build keeps the update a trace around such a method (LX/0AEa;->A08 runs
+ * LX/0AEa;->A06), and there `p0` is the same base the update takes, so every hook in the body reads
+ * it the same way. [update] itself when there's no such method, which [dragCheck] then refuses.
+ */
+internal fun updateBody(base: ClassDef, update: Method, writer: Method): Method {
+    val writerCall = "${base.type}->${writer.name}(${base.type})V"
+    if (update.calls(writerCall)) return update
+    val code = update.implementation?.instructions?.toList() ?: return update
+    val baseRegister = update.implementation!!.registerCount - 1
+    val bodies = code.mapNotNull { instruction ->
+        if (instruction.opcode != Opcode.INVOKE_DIRECT || (instruction as FiveRegisterInstruction).registerCount != 1 ||
+            instruction.registerC != baseRegister
+        ) {
+            return@mapNotNull null
+        }
+        val call = (instruction as ReferenceInstruction).reference as MethodReference
+        if (call.definingClass != base.type || call.returnType != "V" || call.parameterTypes.isNotEmpty()) return@mapNotNull null
+        base.methods.singleOrNull {
+            it.name == call.name && it.returnType == "V" && it.parameterTypes.isEmpty() &&
+                AccessFlags.PRIVATE.isSet(it.accessFlags) && !AccessFlags.STATIC.isSet(it.accessFlags) && it.calls(writerCall)
+        }
+    }.distinctBy { it.name }
+    return bodies.singleOrNull() ?: update
+}
 
 /**
  * The scrubber base's progress update (582 `LX/9c4;->A04`), the one static `(base)V` method of
@@ -1418,7 +1450,7 @@ internal fun progressUpdate(holders: List<ClassDef>): ProgressUpdate {
     val writers = base.methods.filter { base.takesItself(it) && it.calls(TEXT_VIEW_SET_TEXT) }
     val writer = writers.singleOrNull()
         ?: refuse("${base.type} has ${writers.size} static methods setting text, expected one, its time writer")
-    return ProgressUpdate(base, update, writer)
+    return ProgressUpdate(base, update, writer, updateBody(base, update, writer))
 }
 
 /**
@@ -1455,7 +1487,7 @@ internal fun dragCheck(update: Method, progress: ProgressUpdate): Int {
  */
 internal fun frameDelay(progress: ProgressUpdate): Method {
     val base = progress.base
-    val calls = progress.update.implementation!!.instructions.mapNotNull { instruction ->
+    val calls = progress.body.implementation!!.instructions.mapNotNull { instruction ->
         ((instruction as? ReferenceInstruction)?.takeIf { instruction.opcode == Opcode.INVOKE_STATIC }?.reference as? MethodReference)
             ?.takeIf {
                 it.definingClass == base.type && it.returnType == "J" &&
@@ -1463,7 +1495,7 @@ internal fun frameDelay(progress: ProgressUpdate): Method {
             }
     }.distinctBy { it.toString() }
     val call = calls.singleOrNull()
-        ?: refuse("${base.type}->${progress.update.name} asks ${calls.size} static methods for a wait, expected one")
+        ?: refuse("${base.type}->${progress.body.name} asks ${calls.size} static methods for a wait, expected one")
     return base.methods.singleOrNull { it.name == call.name && it.returnType == "J" && it.parameterTypes.size == 1 }
         ?: refuse("$call, the wait before the next progress update, isn't declared on ${base.type}")
 }
