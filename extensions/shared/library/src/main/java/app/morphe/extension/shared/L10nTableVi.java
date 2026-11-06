@@ -2223,8 +2223,8 @@ final class L10nTableVi {
                 "H\u00ecnh trong h\u00ecnh");
         table.put("Picture-in-picture button",
                 "N\u00fat h\u00ecnh trong h\u00ecnh");
-        table.put("Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.",
-                "D\u00f9ng hai ng\u00f3n tay \u0111\u1ec3 ph\u00f3ng to tin ho\u1eb7c \u1ea3nh tr\u00ean trang c\u00e1 nh\u00e2n c\u1ee7a ai \u0111\u00f3. \u1ea2nh tr\u1edf l\u1ea1i nh\u01b0 c\u0169 khi b\u1ea1n th\u1ea3 tay.");
+        table.put("Pinch a story, a video in your feed, or a photo on someone's profile or in Photo carousel to zoom in. It goes back when you let go.",
+                "D\u00f9ng hai ng\u00f3n tay \u0111\u1ec3 ph\u00f3ng to tin, video trong b\u1ea3ng feed ho\u1eb7c \u1ea3nh tr\u00ean trang c\u00e1 nh\u00e2n c\u1ee7a ai \u0111\u00f3 hay trong B\u0103ng chuy\u1ec1n \u1ea3nh. \u1ea2nh tr\u1edf l\u1ea1i nh\u01b0 c\u0169 khi b\u1ea1n th\u1ea3 tay.");
         table.put("Pinch to zoom",
                 "Ch\u1ee5m \u0111\u1ec3 thu ph\u00f3ng");
         table.put("Pink",
@@ -3397,8 +3397,8 @@ final class L10nTableVi {
                 "Khi Kh\u00f3a Facebook b\u1eadt, Facebook s\u1ebd kh\u00f3a khi b\u1ea1n \u0111\u00e3 r\u1eddi \u0111i \u0111\u01b0\u1ee3c %1$s.");
         table.put("With Opening pause on, Facebook will wait %1$s before it opens.",
                 "Khi b\u1eadt T\u1ea1m d\u1eebng khi m\u1edf, Facebook s\u1ebd ch\u1edd %1$s tr\u01b0\u1edbc khi m\u1edf.");
-        table.put("With Pinch to zoom on, a video you zoom on a profile or Page keeps playing. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it. Stories hold still while you zoom.",
-                "Khi b\u1eadt Ch\u1ee5m \u0111\u1ec3 thu ph\u00f3ng, video b\u1ea1n thu ph\u00f3ng tr\u00ean trang c\u00e1 nh\u00e2n ho\u1eb7c Trang v\u1eabn ti\u1ebfp t\u1ee5c ph\u00e1t. N\u1ebfu b\u1eadt c\u1ea3 Gi\u1eef thu ph\u00f3ng, nh\u1ea5n gi\u1eef v\u00f9ng thu ph\u00f3ng \u0111\u1ec3 t\u1ea1m d\u1eebng video, v\u00e0 nh\u1ea5n gi\u1eef l\u1ea7n n\u1eefa \u0111\u1ec3 ph\u00e1t ti\u1ebfp. Tin \u0111\u1ee9ng y\u00ean khi b\u1ea1n thu ph\u00f3ng.");
+        table.put("With Pinch to zoom on, a video you zoom keeps playing, stories included. To zoom a story on a still frame, hold it first and then pinch. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it.",
+                "Khi b\u1eadt Ch\u1ee5m \u0111\u1ec3 thu ph\u00f3ng, video b\u1ea1n thu ph\u00f3ng v\u1eabn ti\u1ebfp t\u1ee5c ph\u00e1t, k\u1ec3 c\u1ea3 trong tin. \u0110\u1ec3 thu ph\u00f3ng tin \u1edf m\u1ed9t khung h\u00ecnh t\u0129nh, h\u00e3y nh\u1ea5n gi\u1eef tin tr\u01b0\u1edbc r\u1ed3i m\u1edbi ch\u1ee5m. N\u1ebfu b\u1eadt c\u1ea3 Gi\u1eef thu ph\u00f3ng, nh\u1ea5n gi\u1eef v\u00f9ng thu ph\u00f3ng \u0111\u1ec3 t\u1ea1m d\u1eebng video, v\u00e0 nh\u1ea5n gi\u1eef l\u1ea7n n\u1eefa \u0111\u1ec3 ph\u00e1t ti\u1ebfp.");
         table.put("With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. A single tap still opens the photo, a moment later.",
                 "Khi b\u1eadt Ch\u1ee5m \u0111\u1ec3 thu ph\u00f3ng, nh\u1ea5n \u0111\u00fap v\u00e0o \u1ea3nh tr\u00ean trang c\u00e1 nh\u00e2n \u0111\u1ec3 ph\u00f3ng to t\u1ea1i ch\u1ed7 b\u1ea1n nh\u1ea5n, nh\u1ea5n \u0111\u00fap l\u1ea7n n\u1eefa \u0111\u1ec3 thu l\u1ea1i. Nh\u1ea5n m\u1ed9t l\u1ea7n v\u1eabn m\u1edf \u1ea3nh, ch\u1ec9 ch\u1eadm h\u01a1n m\u1ed9t ch\u00fat.");
         table.put("With Pinch to zoom on, the photo or story stays zoomed when you let go, and a story stays paused. Drag with one finger or pinch again. Tap or press Back when you're done.",

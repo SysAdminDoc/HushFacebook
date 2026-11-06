@@ -1743,8 +1743,8 @@ Longer music on photo stories	Nhạc dài hơn trên tin ảnh
 A song you add to a photo for your Story plays for up to 30 seconds instead of 15. Applies to the next song you pick.	Bài hát bạn thêm vào ảnh cho tin của mình sẽ phát tối đa 30 giây thay vì 15 giây. Áp dụng từ bài hát tiếp theo bạn chọn.
 # context: switch title under Stories; two fingers spread apart on a story or a profile photo make it bigger
 Pinch to zoom	Chụm để thu phóng
-# context: summary of that switch; "let go" means lifting your fingers off the screen
-Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.	Dùng hai ngón tay để phóng to tin hoặc ảnh trên trang cá nhân của ai đó. Ảnh trở lại như cũ khi bạn thả tay.
+# context: summary of that switch; "let go" means lifting your fingers off the screen; "Photo carousel" is the label of another switch, so use its translation
+Pinch a story, a video in your feed, or a photo on someone's profile or in Photo carousel to zoom in. It goes back when you let go.	Dùng hai ngón tay để phóng to tin, video trong bảng feed hoặc ảnh trên trang cá nhân của ai đó hay trong Băng chuyền ảnh. Ảnh trở lại như cũ khi bạn thả tay.
 # context: switch title under Stories, right below Pinch to zoom; the zoomed picture stays zoomed after the fingers lift
 Stay zoomed	Giữ thu phóng
 # context: summary of that switch; "Pinch to zoom" is the label of the switch above it, so use its translation; "Back" is the phone's Back button
@@ -1759,8 +1759,8 @@ Dim around a zoom	Làm tối xung quanh khi thu phóng
 With Pinch to zoom on, the screen around a photo or story darkens as you zoom in. Turn it off to keep the rest of the screen as it is.	Khi bật Chụm để thu phóng, màn hình xung quanh ảnh hoặc tin sẽ tối dần khi bạn phóng to. Tắt đi để giữ nguyên phần còn lại của màn hình.
 # context: a switch under Pinch to zoom; with it on, a video you zoom keeps moving instead of freezing on the frame it showed
 Keep videos playing while zoomed	Tiếp tục phát video khi thu phóng
-# context: that switch's summary; "Pinch to zoom" and "Stay zoomed" are the labels of switches above it, so use their translations; a Page is a business's or public figure's Facebook page; a story is the full-screen picture or video someone shares for a day
-With Pinch to zoom on, a video you zoom on a profile or Page keeps playing. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it. Stories hold still while you zoom.	Khi bật Chụm để thu phóng, video bạn thu phóng trên trang cá nhân hoặc Trang vẫn tiếp tục phát. Nếu bật cả Giữ thu phóng, nhấn giữ vùng thu phóng để tạm dừng video, và nhấn giữ lần nữa để phát tiếp. Tin đứng yên khi bạn thu phóng.
+# context: that switch's summary; "Pinch to zoom" and "Stay zoomed" are the labels of switches above it, so use their translations; a story is the full-screen picture or video someone shares for a day; "hold it first" means pressing and holding one finger on the story before the second finger comes down
+With Pinch to zoom on, a video you zoom keeps playing, stories included. To zoom a story on a still frame, hold it first and then pinch. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it.	Khi bật Chụm để thu phóng, video bạn thu phóng vẫn tiếp tục phát, kể cả trong tin. Để thu phóng tin ở một khung hình tĩnh, hãy nhấn giữ tin trước rồi mới chụm. Nếu bật cả Giữ thu phóng, nhấn giữ vùng thu phóng để tạm dừng video, và nhấn giữ lần nữa để phát tiếp.
 No ads downloaded in advance	Không có quảng cáo tải trước
 No ad tracking	Không theo dõi quảng cáo
 No Facebook ads in other apps	Không có quảng cáo của Facebook trong ứng dụng khác

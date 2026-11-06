@@ -213,6 +213,25 @@ public final class PhotoCarousel {
         }
     }
 
+    /**
+     * Whether [view] is a photo in a row of the carousel's photos, with the switch on: an item of a list
+     * that scrolls sideways, whose LithoView text names the row's photo. Pinch to zoom zooms these.
+     * Read fresh each time, since the row hands an item on to another post as it scrolls. Never throws.
+     */
+    public static boolean isRowPhoto(@Nullable View view) {
+        try {
+            if (view == null || !on()) return false;
+            String photo = photoClass();
+            if (photo == null || !(view.getParent() instanceof ViewGroup)) return false;
+            ViewGroup row = (ViewGroup) view.getParent();
+            if (!row.canScrollHorizontally(1) && !row.canScrollHorizontally(-1)) return false;
+            return isPhotoText(String.valueOf(view), photo);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "row photo", failure);
+            return false;
+        }
+    }
+
     /** Whether [item] is the row's photo, by the class name LithoView's text ends with. */
     private static boolean isPhoto(View item, String photo) {
         Boolean known = PHOTOS.get(item);

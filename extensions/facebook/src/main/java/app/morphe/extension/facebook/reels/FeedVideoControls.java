@@ -1550,6 +1550,13 @@ public final class FeedVideoControls {
         }
     }
 
+    /** Whether [player] plays in a feed, by the origin Facebook gave it: any feed, a page's, a group's or a profile's. */
+    public static boolean feedPlayer(@Nullable Object player) {
+        if (player == null) return false;
+        Object origin = access.origin(player);
+        return origin != null && FeedVideoAlone.fromFeed(origin.toString());
+    }
+
     /** Every player that has attached a video and not been dropped yet, for Pause reels while comments are open. */
     public static List<Object> knownPlayers() {
         List<Object> found = new ArrayList<>();

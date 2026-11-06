@@ -40,10 +40,12 @@ import androidx.annotation.RequiresApi;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import app.morphe.extension.facebook.feed.PhotoCarousel;
 import app.morphe.extension.facebook.reels.FeedVideoControls;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -51,7 +53,8 @@ import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
- * Pinch to zoom where Facebook has none of its own: a profile's photos and stories (#220).
+ * Pinch to zoom where Facebook has none of its own: a profile's photos, stories, feed videos and the
+ * photos in Photo carousel's rows (#220).
  *
  * <p>Every touch on a Facebook screen comes here first, from FbFragmentActivity's dispatchTouchEvent.
  * With the switch on, a second finger landing over something {@link #places} says may be zoomed starts
@@ -59,16 +62,20 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the point under the fingers and moving them drags it, and once fewer than two fingers are down it
  * springs back over the photo and the layer goes away. Facebook's own views never move.
  *
- * <p>Only a story or a profile is zoomed. The news feed has a pinch of its own, and the profile shares
- * its activity with the feed, so a profile is told apart by its view: ProfileFragment hands its root to
- * {@link #profile} as it's made, and a photo has to sit inside one of those. A story is the story
- * viewer's activity. On 584 a profile's photo grid is Litho hosts with no child view, the picture being
- * a drawable mounted straight into the host, so a host that draws no text counts as a photo, the way
+ * <p>Only a story, a profile, a feed video or a photo in Photo carousel's row is zoomed. The news feed
+ * has a pinch of its own for a post's photos, and the profile shares its activity with the feed, so a
+ * profile is told apart by its view: ProfileFragment hands its root to {@link #profile} as it's made,
+ * and a photo has to sit inside one of those. A feed video sits inside the view of a player Tap to play
+ * knows whose origin is a feed, a page's, a group's or a profile's ({@link #feedVideos}), and a
+ * carousel photo is an item {@link PhotoCarousel#isRowPhoto} names. A story is the story viewer's
+ * activity. On 584 a profile's photo grid is Litho hosts with no child view, the picture being a
+ * drawable mounted straight into the host, so a host that draws no text counts as a photo, the way
  * PostLongPress reads one.
  *
- * <p>On a profile, from the second finger on every event of the gesture reaches Facebook as a cancel,
- * so the first finger's tap, hold or swipe never fires and a photo doesn't open. In the story viewer
- * Facebook sees nothing of the gesture while the zoom lasts, so to it the first finger is still held
+ * <p>Outside the story viewer, from the second finger on every event of the gesture reaches Facebook
+ * as a cancel, so the first finger's tap, hold or swipe never fires and a photo doesn't open. In the
+ * story viewer, unless the zoom follows the video (below), Facebook sees nothing of the gesture while
+ * the zoom lasts, so to it the first finger is still held
  * where it was, its own hold that keeps the story paused, and the event that ends the zoom reaches it
  * as a cancel, so the story carries on from there without skipping ahead. A cancel straight away
  * would let the story play on under the zoom, and close the viewer when the last one ran out. On a
@@ -80,14 +87,16 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * (a SurfaceView's from its own surface), so a video zooms on the frame it showed when the fingers
  * landed, unless Keep videos playing while zoomed is on.
  *
- * <p>With Keep videos playing while zoomed on (#220), a zoom on a video surface outside the story
- * viewer, a TextureView or a SurfaceView, follows it: about every {@link #FRAME_MILLIS} the copy
+ * <p>With Keep videos playing while zoomed on (#220), a zoom on a video surface, a TextureView or a
+ * SurfaceView, follows it: about every {@link #FRAME_MILLIS} the copy
  * takes the video's newest frame, read from the view itself, so the video plays on under the
  * fingers. Frames go into two buffers in turn, so none is written while it shows. With Stay zoomed
  * on too, a finger held still on the kept zoom for the long-press time pauses the video, through the
  * player Tap to play knows for it, and a second hold plays it again. With no player known, the frame
- * just holds. Letting the zoom go plays a video a hold paused. A story stays a still copy, since the
- * story viewer keeps the story paused for the zoom.
+ * just holds. Letting the zoom go plays a video a hold paused. A story's video is followed too, and
+ * Facebook gets the cancel at once, so the story plays on under the zoom, which springs back once
+ * the story moves on and its video surface goes. A story held before the second finger, past the
+ * long-press time, stays the still copy Facebook paused it on, held as without the switch.
  *
  * <p>With Stay zoomed on (#220), dropping to one finger drags the copy instead of ending the zoom,
  * and a zoom past {@link #KEPT_LEAST} stays where the fingers left it when they all lift. A touch
@@ -154,6 +163,8 @@ public final class PinchZoom {
     interface Players {
         List<Object> known();
         @Nullable View view(Object player);
+        /** Whether [player] plays in a feed, a page's, a group's or a profile's included. */
+        boolean inFeed(Object player);
         boolean playing(Object player);
         void command(Object player, boolean play);
     }
@@ -161,6 +172,7 @@ public final class PinchZoom {
     private static final Players PATCHED_PLAYERS = new Players() {
         public List<Object> known() { return FeedVideoControls.knownPlayers(); }
         public View view(Object player) { return FeedVideoControls.playerView(player); }
+        public boolean inFeed(Object player) { return FeedVideoControls.feedPlayer(player); }
         public boolean playing(Object player) { return FeedVideoControls.isPlaying(player); }
         public void command(Object player, boolean play) {
             // Tap to play holds back a start it didn't arm, so a video a hold paused is armed first.
@@ -176,7 +188,7 @@ public final class PinchZoom {
 
     /** The gesture took the second finger, so every later event Facebook gets of it is a cancel. */
     private static boolean swallowing;
-    /** A story zoom: Facebook gets none of the gesture until the zoom ends, then a cancel. */
+    /** A story zoom on a still copy: Facebook gets none of the gesture until the zoom ends, then a cancel. */
     private static boolean holding;
     /** This touch landed on a kept zoom and steers it, so Facebook gets none of it. */
     private static boolean steering;
@@ -302,10 +314,17 @@ public final class PinchZoom {
         Zoom started = new Zoom((ViewGroup) root, area, event);
         started.keep = Settings.PINCH_TO_ZOOM_KEEP.get();
         started.darkest = darkest();
-        started.source = liveSource(activity, target);
+        started.source = liveSource(target);
+        started.story = storyViewer(activity);
+        // A story held before the pinch, its first finger down past the long-press time, stays the
+        // still frame Facebook paused it on, as without Keep videos playing while zoomed.
+        if (started.story && started.source != null
+                && event.getEventTime() - event.getDownTime() >= ViewConfiguration.getLongPressTimeout()) {
+            started.source = null;
+        }
         zoom = started;
         swallowing = true;
-        holding = storyViewer(activity);
+        holding = started.story && started.source == null;
         if (!holding) event.setAction(MotionEvent.ACTION_CANCEL);
         snapshots.take(activity, target, area, copy -> {
             try {
@@ -558,7 +577,7 @@ public final class PinchZoom {
         started.doubleTap = true;
         started.scale = DOUBLE_TAP_SCALE;
         started.darkest = darkest();
-        started.source = liveSource(activity, target);
+        started.source = liveSource(target);
         zoom = started;
         snapshots.take(activity, target, area, copy -> {
             try {
@@ -637,12 +656,12 @@ public final class PinchZoom {
     }
 
     /**
-     * With Keep videos playing while zoomed on, [target] when it's a video surface outside the story
-     * viewer, the view whose frames the zoom follows. Otherwise null, and the copy stays still.
+     * With Keep videos playing while zoomed on, [target] when it's a video surface, a TextureView or
+     * a SurfaceView, the view whose frames the zoom follows. Otherwise null, and the copy stays still.
      */
     @Nullable
-    static View liveSource(Activity activity, View target) {
-        if (!Settings.PINCH_TO_ZOOM_LIVE.get() || storyViewer(activity)) return null;
+    static View liveSource(View target) {
+        if (!Settings.PINCH_TO_ZOOM_LIVE.get()) return null;
         return target instanceof TextureView || target instanceof SurfaceView ? target : null;
     }
 
@@ -733,9 +752,10 @@ public final class PinchZoom {
 
     /**
      * The topmost shown view under ([x], [y]) that draws media, a view {@link #isMedia} names at least
-     * {@link #SMALLEST_DP} each way, in the story viewer or inside a profile, and the deepest such one
-     * where they nest. Inside a profile or the story viewer, a view on top that holds none, like the
-     * story viewer's clear overlay for taps, is looked past to the views under it, and a Litho host on
+     * {@link #SMALLEST_DP} each way, in the story viewer or inside a profile, a feed video's player or
+     * a carousel photo, and the deepest such one where they nest. Inside those, a view on top that
+     * holds none, like the story viewer's clear overlay for taps, is looked past to the views under
+     * it, and a Litho host on
      * top yields to the media right under it only when that's a picture spanning all of the host, like
      * the band a profile's cover draws over its photo. Above them a view is looked past only when it
      * draws nothing at the point, like the empty layer Facebook keeps over every screen, so a screen
@@ -745,14 +765,29 @@ public final class PinchZoom {
     @Nullable
     static View mediaUnder(Activity activity, View root, float x, float y) {
         int smallest = Math.round(SMALLEST_DP * root.getResources().getDisplayMetrics().density);
-        return mediaUnder(root, x, y, storyViewer(activity), smallest, new int[2], new boolean[1]);
+        boolean story = storyViewer(activity);
+        Map<View, Boolean> feedVideos = story ? new IdentityHashMap<>() : feedVideos(root);
+        return mediaUnder(root, x, y, story, feedVideos, smallest, new int[2], new boolean[1]);
+    }
+
+    /** The views of the feed videos Tap to play knows in [root]'s window, each a place a pinch zooms. */
+    private static Map<View, Boolean> feedVideos(View root) {
+        Map<View, Boolean> found = new IdentityHashMap<>();
+        for (Object player : players.known()) {
+            View view = players.view(player);
+            if (view != null && view.getRootView() == root && players.inFeed(player)) found.put(view, Boolean.TRUE);
+        }
+        return found;
     }
 
     /** [open] comes back true when the view found is a Litho host the next media under it still decides on. */
     @Nullable
-    private static View mediaUnder(View view, float x, float y, boolean zoomable, int smallest, int[] at, boolean[] open) {
+    private static View mediaUnder(View view, float x, float y, boolean zoomable, Map<View, Boolean> feedVideos,
+            int smallest, int[] at, boolean[] open) {
         open[0] = false;
-        if (!zoomable && profiles.containsKey(view)) zoomable = true;
+        if (!zoomable && (profiles.containsKey(view) || feedVideos.containsKey(view) || PhotoCarousel.isRowPhoto(view))) {
+            zoomable = true;
+        }
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
             // An open host found on top, kept until the next media under it decides.
@@ -761,7 +796,7 @@ public final class PinchZoom {
             for (int i = group.getChildCount() - 1; i >= 0; i--) {
                 View child = group.getChildAt(i);
                 if (!under(child, x, y, at)) continue;
-                View found = mediaUnder(child, x, y, zoomable, smallest, at, open);
+                View found = mediaUnder(child, x, y, zoomable, feedVideos, smallest, at, open);
                 if (found == null) {
                     if (!zoomable && covers(child, x, y, at)) return null;
                     continue;
@@ -965,6 +1000,8 @@ public final class PinchZoom {
         boolean parked;
         /** The video surface the copy follows (Keep videos playing while zoomed), or null for a still copy. */
         @Nullable View source;
+        /** A zoom in the story viewer, which springs back once the story it follows moves on. */
+        boolean story;
         /** The finger on the kept zoom stayed still for the long-press time, and paused or played the video. */
         boolean heldDown;
         /** The player a hold paused, which plays again when the zoom springs back. */
@@ -1097,9 +1134,10 @@ public final class PinchZoom {
             View from = source;
             if (!ticking || settling || from == null) return;
             try {
-                // A video scrolled away keeps its last frame.
-                if (!from.isAttachedToWindow()) {
+                if (!from.isAttachedToWindow() || story && !from.isShown()) {
                     ticking = false;
+                    // A story that moved on takes its zoom with it. A video scrolled away keeps its last frame.
+                    if (story) settle();
                     return;
                 }
                 if (frozen) nextTick.run();

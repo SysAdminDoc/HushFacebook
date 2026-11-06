@@ -2223,8 +2223,8 @@ final class L10nTableZh_rTW {
                 "\u5b50\u6bcd\u756b\u9762");
         table.put("Picture-in-picture button",
                 "\u5b50\u6bcd\u756b\u9762\u6309\u9215");
-        table.put("Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.",
-                "\u4ee5\u96d9\u6307\u7e2e\u653e\u9650\u6642\u52d5\u614b\u6216\u4ed6\u4eba\u500b\u4eba\u6a94\u6848\u4e0a\u7684\u76f8\u7247\u3002\u653e\u958b\u5f8c\u6703\u6062\u5fa9\u539f\u72c0\u3002");
+        table.put("Pinch a story, a video in your feed, or a photo on someone's profile or in Photo carousel to zoom in. It goes back when you let go.",
+                "\u4ee5\u96d9\u6307\u7e2e\u653e\u9650\u6642\u52d5\u614b\u3001\u52d5\u614b\u6d88\u606f\u4e2d\u7684\u5f71\u7247\u3001\u4ed6\u4eba\u500b\u4eba\u6a94\u6848\u4e0a\u7684\u76f8\u7247\u6216\u76f8\u7247\u8f2a\u64ad\u4e2d\u7684\u76f8\u7247\u3002\u653e\u958b\u5f8c\u6703\u6062\u5fa9\u539f\u72c0\u3002");
         table.put("Pinch to zoom",
                 "\u96d9\u6307\u7e2e\u653e");
         table.put("Pink",
@@ -3397,8 +3397,8 @@ final class L10nTableZh_rTW {
                 "\u555f\u7528\u300c\u9396\u5b9a Facebook\u300d\u5f8c\uff0c\u96e2\u958b\u9054 %1$s \u6642\u6703\u9396\u5b9a\u3002");
         table.put("With Opening pause on, Facebook will wait %1$s before it opens.",
                 "\u958b\u555f\u300c\u958b\u555f\u524d\u66ab\u505c\u300d\u5f8c\uff0cFacebook \u6703\u7b49\u5f85 %1$s\u518d\u958b\u555f\u3002");
-        table.put("With Pinch to zoom on, a video you zoom on a profile or Page keeps playing. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it. Stories hold still while you zoom.",
-                "\u555f\u7528\u300c\u96d9\u6307\u7e2e\u653e\u300d\u5f8c\uff0c\u5728\u500b\u4eba\u6a94\u6848\u6216\u7c89\u7d72\u5c08\u9801\u4e0a\u7e2e\u653e\u7684\u5f71\u7247\u6703\u7e7c\u7e8c\u64ad\u653e\u3002\u540c\u6642\u555f\u7528\u300c\u4fdd\u6301\u7e2e\u653e\u300d\u6642\uff0c\u9577\u6309\u7e2e\u653e\u7684\u756b\u9762\u53ef\u66ab\u505c\u5f71\u7247\uff0c\u518d\u6b21\u9577\u6309\u5373\u53ef\u7e7c\u7e8c\u64ad\u653e\u3002\u7e2e\u653e\u6642\u9650\u6642\u52d5\u614b\u6703\u4fdd\u6301\u975c\u6b62\u3002");
+        table.put("With Pinch to zoom on, a video you zoom keeps playing, stories included. To zoom a story on a still frame, hold it first and then pinch. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it.",
+                "\u555f\u7528\u300c\u96d9\u6307\u7e2e\u653e\u300d\u5f8c\uff0c\u7e2e\u653e\u7684\u5f71\u7247\u6703\u7e7c\u7e8c\u64ad\u653e\uff0c\u9650\u6642\u52d5\u614b\u4e5f\u4e00\u6a23\u3002\u5982\u8981\u5728\u975c\u6b62\u756b\u9762\u4e0a\u7e2e\u653e\u9650\u6642\u52d5\u614b\uff0c\u8acb\u5148\u9577\u6309\uff0c\u518d\u4ee5\u96d9\u6307\u7e2e\u653e\u3002\u540c\u6642\u555f\u7528\u300c\u4fdd\u6301\u7e2e\u653e\u300d\u6642\uff0c\u9577\u6309\u7e2e\u653e\u7684\u756b\u9762\u53ef\u66ab\u505c\u5f71\u7247\uff0c\u518d\u6b21\u9577\u6309\u5373\u53ef\u7e7c\u7e8c\u64ad\u653e\u3002");
         table.put("With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. A single tap still opens the photo, a moment later.",
                 "\u555f\u7528\u300c\u96d9\u6307\u7e2e\u653e\u300d\u5f8c\uff0c\u96d9\u64ca\u500b\u4eba\u6a94\u6848\u4e0a\u7684\u76f8\u7247\u53ef\u653e\u5927\u9ede\u6309\u4f4d\u7f6e\uff0c\u518d\u6b21\u96d9\u64ca\u53ef\u9084\u539f\u3002\u55ae\u6b21\u9ede\u6309\u4ecd\u6703\u958b\u555f\u76f8\u7247\uff0c\u4f46\u7a0d\u6709\u5ef6\u9072\u3002");
         table.put("With Pinch to zoom on, the photo or story stays zoomed when you let go, and a story stays paused. Drag with one finger or pinch again. Tap or press Back when you're done.",

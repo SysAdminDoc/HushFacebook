@@ -44,17 +44,18 @@ internal fun profileViewCreated(fragment: ClassDef): List<Method> = fragment.met
  * extension zooms a copy of the photo or story under two fingers and turns the rest of that
  * gesture into a cancel for Facebook, or in the story viewer keeps it from Facebook until the zoom
  * ends: a yes from it returns true before Facebook sees the event. Everything else it leaves as it
- * was. The news feed has its own pinch, so the extension zooms only in the story viewer and inside
- * a profile, whose root view ProfileFragment.onViewCreated hands it.
+ * was. The news feed has its own pinch for a post's photos, so the extension zooms only in the story
+ * viewer, inside a profile, whose root view ProfileFragment.onViewCreated hands it, on a feed video
+ * whose player Tap to play knows, and on a photo in Photo carousel's row.
  */
 @Suppress("unused")
 val pinchToZoomPatch = bytecodePatch(
     name = "Pinch to zoom",
-    description = "Pinch a story or a photo on someone's profile to zoom in, like you can on photos in the feed. It " +
-        "goes back when you let go, unless you turn on Stay zoomed under it, which keeps the zoom until you tap or " +
-        "press Back. Keep videos playing while zoomed, another switch under it, lets a video on a profile or Page " +
-        "play on while you zoom, and with Stay zoomed you press and hold to pause it. Starts off. Turn it on in " +
-        "Hushfacebook settings > Stories.",
+    description = "Pinch a story, a video in your feed, or a photo on someone's profile or in Photo carousel to zoom " +
+        "in, like you can on other photos in the feed. It goes back when you let go, unless you turn on Stay zoomed " +
+        "under it, which keeps the zoom until you tap or press Back. Keep videos playing while zoomed, another switch " +
+        "under it, lets a video play on while you zoom, stories included, and with Stay zoomed you press and hold to " +
+        "pause it. Starts off. Turn it on in Hushfacebook settings > Stories.",
     default = true,
 ) {
     category("Stories")

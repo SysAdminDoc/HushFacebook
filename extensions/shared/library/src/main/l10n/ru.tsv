@@ -1783,8 +1783,8 @@ Longer music on photo stories	Увеличить длительность муз
 A song you add to a photo for your Story plays for up to 30 seconds instead of 15. Applies to the next song you pick.	Добавленная к фото для Истории песня воспроизводится до 30 секунд вместо 15. Применяется к следующей выбранной песне.
 # context: switch title under Stories; two fingers spread apart on a story or a profile photo make it bigger
 Pinch to zoom	Масштабирование жестом
-# context: summary of that switch; "let go" means lifting your fingers off the screen
-Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.	Разведите пальцы на Истории или фото в чужом профиле, чтобы увеличить изображение. После отпускания пальцев масштаб вернется.
+# context: summary of that switch; "let go" means lifting your fingers off the screen; "Photo carousel" is the label of another switch, so use its translation
+Pinch a story, a video in your feed, or a photo on someone's profile or in Photo carousel to zoom in. It goes back when you let go.	Разведите пальцы на Истории, видео в ленте или фото в чужом профиле или в карусели фото, чтобы увеличить изображение. После отпускания пальцев масштаб вернется.
 # context: switch title under Stories, right below Pinch to zoom; the zoomed picture stays zoomed after the fingers lift
 Stay zoomed	Сохранять масштаб
 # context: summary of that switch; "Pinch to zoom" is the label of the switch above it, so use its translation; "Back" is the phone's Back button
@@ -1799,8 +1799,8 @@ Dim around a zoom	Затемнять вокруг увеличения
 With Pinch to zoom on, the screen around a photo or story darkens as you zoom in. Turn it off to keep the rest of the screen as it is.	Если включено масштабирование жестом, экран вокруг фото или Истории темнеет, пока вы увеличиваете. Выключите, чтобы остальная часть экрана оставалась как есть.
 # context: a switch under Pinch to zoom; with it on, a video you zoom keeps moving instead of freezing on the frame it showed
 Keep videos playing while zoomed	Не останавливать видео при увеличении
-# context: that switch's summary; "Pinch to zoom" and "Stay zoomed" are the labels of switches above it, so use their translations; a Page is a business's or public figure's Facebook page; a story is the full-screen picture or video someone shares for a day
-With Pinch to zoom on, a video you zoom on a profile or Page keeps playing. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it. Stories hold still while you zoom.	Если включено масштабирование жестом, видео, которое вы увеличили в профиле или на Странице, продолжает играть. Если также включено «Сохранять масштаб», нажмите и удерживайте увеличенное изображение, чтобы поставить видео на паузу, и еще раз, чтобы воспроизвести его. Истории во время увеличения не двигаются.
+# context: that switch's summary; "Pinch to zoom" and "Stay zoomed" are the labels of switches above it, so use their translations; a story is the full-screen picture or video someone shares for a day; "hold it first" means pressing and holding one finger on the story before the second finger comes down
+With Pinch to zoom on, a video you zoom keeps playing, stories included. To zoom a story on a still frame, hold it first and then pinch. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it.	Если включено масштабирование жестом, видео, которое вы увеличили, продолжает играть, в том числе в Историях. Чтобы увеличить Историю на неподвижном кадре, сначала нажмите и удерживайте ее, а затем разведите пальцы. Если также включено «Сохранять масштаб», нажмите и удерживайте увеличенное изображение, чтобы поставить видео на паузу, и еще раз, чтобы воспроизвести его.
 No ads downloaded in advance	Не загружать рекламу заранее
 No ad tracking	Не отслеживать рекламу
 No Facebook ads in other apps	Не показывать рекламу Facebook в других приложениях

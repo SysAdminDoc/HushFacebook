@@ -1738,8 +1738,8 @@ Longer music on photo stories	延长照片快拍的音乐
 A song you add to a photo for your Story plays for up to 30 seconds instead of 15. Applies to the next song you pick.	你为快拍照片添加的歌曲最长可播放 30 秒，而不是 15 秒。对你下次选择的歌曲生效。
 # context: switch title under Stories; two fingers spread apart on a story or a profile photo make it bigger
 Pinch to zoom	双指缩放
-# context: summary of that switch; "let go" means lifting your fingers off the screen
-Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.	在快拍或别人个人主页上的照片上用双指张开即可放大。松开手指后恢复原样。
+# context: summary of that switch; "let go" means lifting your fingers off the screen; "Photo carousel" is the label of another switch, so use its translation
+Pinch a story, a video in your feed, or a photo on someone's profile or in Photo carousel to zoom in. It goes back when you let go.	在快拍、动态中的视频、别人个人主页上的照片或照片轮播中的照片上用双指张开即可放大。松开手指后恢复原样。
 # context: switch title under Stories, right below Pinch to zoom; the zoomed picture stays zoomed after the fingers lift
 Stay zoomed	保持放大
 # context: summary of that switch; "Pinch to zoom" is the label of the switch above it, so use its translation; "Back" is the phone's Back button
@@ -1754,8 +1754,8 @@ Dim around a zoom	缩放时调暗周围
 With Pinch to zoom on, the screen around a photo or story darkens as you zoom in. Turn it off to keep the rest of the screen as it is.	开启双指缩放后，放大照片或快拍时，周围的屏幕会随之变暗。关闭后，屏幕其余部分保持原样。
 # context: a switch under Pinch to zoom; with it on, a video you zoom keeps moving instead of freezing on the frame it showed
 Keep videos playing while zoomed	缩放时视频继续播放
-# context: that switch's summary; "Pinch to zoom" and "Stay zoomed" are the labels of switches above it, so use their translations; a Page is a business's or public figure's Facebook page; a story is the full-screen picture or video someone shares for a day
-With Pinch to zoom on, a video you zoom on a profile or Page keeps playing. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it. Stories hold still while you zoom.	开启双指缩放后，在个人主页或公共主页上缩放的视频会继续播放。同时开启保持放大时，长按放大的画面可暂停视频，再次长按继续播放。缩放时快拍会保持静止。
+# context: that switch's summary; "Pinch to zoom" and "Stay zoomed" are the labels of switches above it, so use their translations; a story is the full-screen picture or video someone shares for a day; "hold it first" means pressing and holding one finger on the story before the second finger comes down
+With Pinch to zoom on, a video you zoom keeps playing, stories included. To zoom a story on a still frame, hold it first and then pinch. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it.	开启双指缩放后，缩放的视频会继续播放，快拍也一样。如需在静止画面上缩放快拍，请先长按，再用双指缩放。同时开启保持放大时，长按放大的画面可暂停视频，再次长按继续播放。
 No ads downloaded in advance	不提前下载广告
 No ad tracking	不进行广告跟踪
 No Facebook ads in other apps	其他应用中没有 Facebook 广告

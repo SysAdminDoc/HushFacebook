@@ -1629,8 +1629,8 @@ Longer music on photo stories	Música mais longa em Stories com foto
 A song you add to a photo for your Story plays for up to 30 seconds instead of 15. Applies to the next song you pick.	A música que você adiciona a uma foto do seu Story toca por até 30 segundos em vez de 15. Vale a partir da próxima música que você escolher.
 # context: switch title under Stories; two fingers spread apart on a story or a profile photo make it bigger
 Pinch to zoom	Pinçar para dar zoom
-# context: summary of that switch; "let go" means lifting your fingers off the screen
-Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.	Faça o movimento de pinça em um story ou em uma foto no perfil de alguém para dar zoom. Volta ao normal quando você solta.
+# context: summary of that switch; "let go" means lifting your fingers off the screen; "Photo carousel" is the label of another switch, so use its translation
+Pinch a story, a video in your feed, or a photo on someone's profile or in Photo carousel to zoom in. It goes back when you let go.	Faça o movimento de pinça em um story, em um vídeo do seu feed ou em uma foto no perfil de alguém ou no Carrossel de fotos para dar zoom. Volta ao normal quando você solta.
 # context: switch title under Stories, right below Pinch to zoom; the zoomed picture stays zoomed after the fingers lift
 Stay zoomed	Manter o zoom
 # context: summary of that switch; "Pinch to zoom" is the label of the switch above it, so use its translation; "Back" is the phone's Back button
@@ -1645,8 +1645,8 @@ Dim around a zoom	Escurecer ao redor do zoom
 With Pinch to zoom on, the screen around a photo or story darkens as you zoom in. Turn it off to keep the rest of the screen as it is.	Com Pinçar para dar zoom ativado, a tela ao redor de uma foto ou Story escurece enquanto você amplia. Desative para deixar o resto da tela como está.
 # context: a switch under Pinch to zoom; with it on, a video you zoom keeps moving instead of freezing on the frame it showed
 Keep videos playing while zoomed	Continuar reproduzindo vídeos com zoom
-# context: that switch's summary; "Pinch to zoom" and "Stay zoomed" are the labels of switches above it, so use their translations; a Page is a business's or public figure's Facebook page; a story is the full-screen picture or video someone shares for a day
-With Pinch to zoom on, a video you zoom on a profile or Page keeps playing. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it. Stories hold still while you zoom.	Com Pinçar para dar zoom ativado, um vídeo em que você dá zoom num perfil ou numa Página continua tocando. Com Manter o zoom ativado também, toque e segure o zoom para pausar o vídeo, e de novo para dar play. Stories ficam parados enquanto você dá zoom.
+# context: that switch's summary; "Pinch to zoom" and "Stay zoomed" are the labels of switches above it, so use their translations; a story is the full-screen picture or video someone shares for a day; "hold it first" means pressing and holding one finger on the story before the second finger comes down
+With Pinch to zoom on, a video you zoom keeps playing, stories included. To zoom a story on a still frame, hold it first and then pinch. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it.	Com Pinçar para dar zoom ativado, um vídeo em que você dá zoom continua tocando, inclusive nos stories. Para dar zoom num story parado, toque e segure primeiro e depois faça a pinça. Com Manter o zoom ativado também, toque e segure o zoom para pausar o vídeo, e de novo para dar play.
 No ads downloaded in advance	Sem anúncios baixados antes da hora
 No ad tracking	Sem rastreamento de anúncios
 No Facebook ads in other apps	Sem anúncios do Facebook em outros apps

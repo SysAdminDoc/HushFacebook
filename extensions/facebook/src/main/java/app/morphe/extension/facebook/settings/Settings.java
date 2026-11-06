@@ -1638,8 +1638,9 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_frame_step", FALSE);
 
     /**
-     * Two fingers on a profile's photo or a story zoom it in place, and it springs back when they
-     * lift ({@link app.morphe.extension.facebook.media.PinchZoom}, #220). Starts off. Asked as each
+     * Two fingers on a profile's photo, a story, a feed video or a photo in Photo carousel's row zoom
+     * it in place, and it springs back when they lift ({@link
+     * app.morphe.extension.facebook.media.PinchZoom}, #220). Starts off. Asked as each
      * second finger lands, so a change shows from the next pinch. Off or paused, every touch goes to
      * Facebook as before.
      */
@@ -1673,10 +1674,10 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_pinch_to_zoom_dim", TRUE, Setting.parent(PINCH_TO_ZOOM));
 
     /**
-     * Pinch to zoom's fifth switch (#220): a video zoomed on a profile or Page keeps playing in the
-     * zoom, its copy redrawn from the video's own surface, and a press and hold on a kept zoom pauses
-     * the video and plays it again. A story stays one frame, held as before. Off, a video zooms on
-     * the frame it showed. Asked as each zoom starts.
+     * Pinch to zoom's fifth switch (#220): a zoomed video keeps playing in the zoom, its copy redrawn
+     * from the video's own surface, and a press and hold on a kept zoom pauses the video and plays it
+     * again. A story plays on too, unless it was held before the pinch, which zooms the frame it
+     * paused on. Off, a video zooms on the frame it showed. Asked as each zoom starts.
      */
     public static final BooleanSetting PINCH_TO_ZOOM_LIVE =
             new BooleanSetting("hushfacebook_pinch_to_zoom_live", FALSE, Setting.parent(PINCH_TO_ZOOM));

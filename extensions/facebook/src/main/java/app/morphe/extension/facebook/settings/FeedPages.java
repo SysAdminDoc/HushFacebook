@@ -762,7 +762,8 @@ final class FeedPages {
             if (build.contains(PatchFamily.PINCH_TO_ZOOM)) {
                 // Asked as each second finger lands, so a change shows from the next pinch.
                 stories.addPreference(toggle(context, Settings.PINCH_TO_ZOOM,
-                        L10n.t("Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.")));
+                        L10n.t("Pinch a story, a video in your feed, or a photo on someone's profile or in Photo carousel "
+                                + "to zoom in. It goes back when you let go.")));
                 stories.addPreference(toggle(context, Settings.PINCH_TO_ZOOM_KEEP,
                         L10n.t("With Pinch to zoom on, the photo or story stays zoomed when you let go, and a story "
                                 + "stays paused. Drag with one finger or pinch again. Tap or press Back when you're done."))
@@ -776,9 +777,9 @@ final class FeedPages {
                                 + "Turn it off to keep the rest of the screen as it is."))
                         .needs(Settings.PINCH_TO_ZOOM));
                 stories.addPreference(toggle(context, Settings.PINCH_TO_ZOOM_LIVE,
-                        L10n.t("With Pinch to zoom on, a video you zoom on a profile or Page keeps playing. "
-                                + "With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it. "
-                                + "Stories hold still while you zoom."))
+                        L10n.t("With Pinch to zoom on, a video you zoom keeps playing, stories included. "
+                                + "To zoom a story on a still frame, hold it first and then pinch. "
+                                + "With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it."))
                         .needs(Settings.PINCH_TO_ZOOM));
             }
         }
