@@ -71,4 +71,24 @@ public class SuggestedGroupsCardTest {
     public void beforeTheSettingsAreReadyKeepsTheCard() {
         SettingsContextRule.withoutContext(() -> assertFalse(SuggestedGroupsCard.hide()));
     }
+
+    @Test
+    public void theGroupsTabsOwnRowGoesWithTheSwitchAndCountsApart() {
+        assertTrue(SuggestedGroupsCard.hideDiscoverRow());
+        String line = statusLine();
+        assertTrue(line, line.contains(SuggestedGroupsCard.DISCOVER_ROW_HIDDEN + " 1"));
+        assertFalse(line, line.contains(SuggestedGroupsCard.HIDDEN));
+    }
+
+    @Test
+    public void theGroupsTabsOwnRowStaysWhenOffOrPaused() {
+        Settings.HIDE_SUGGESTED_GROUPS.save(false);
+        assertFalse(SuggestedGroupsCard.hideDiscoverRow());
+        Settings.HIDE_SUGGESTED_GROUPS.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse(SuggestedGroupsCard.hideDiscoverRow());
+        PauseForTests.resume();
+        assertFalse(statusLine().contains(SuggestedGroupsCard.DISCOVER_ROW_HIDDEN));
+        SettingsContextRule.withoutContext(() -> assertFalse(SuggestedGroupsCard.hideDiscoverRow()));
+    }
 }

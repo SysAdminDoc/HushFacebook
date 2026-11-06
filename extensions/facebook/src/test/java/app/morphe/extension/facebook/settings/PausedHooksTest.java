@@ -433,6 +433,8 @@ public class PausedHooksTest {
                 FeedGuardForTests::endOfHomeSaysWhy,
                 // The Groups tab's suggested groups card lays out as nothing.
                 SuggestedGroupsCard::hide,
+                // So does the row of groups the Groups tab closes its feed with.
+                SuggestedGroupsCard::hideDiscoverRow,
                 // The search screen draws its For you section as an empty row.
                 PreSearchSectionsForTests::drawsForYouEmpty,
                 // The socket under a post's buttons gets a no for the Related posts list.

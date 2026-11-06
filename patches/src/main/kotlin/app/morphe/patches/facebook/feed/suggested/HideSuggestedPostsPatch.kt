@@ -208,6 +208,12 @@ val hideSuggestedPostsPatch = bytecodePatch(
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so the Groups tab keeps its suggested groups card.")
         }
+        // The Groups tab ends its feed with a "Suggested for you" row of its own, drawn without that card (#347).
+        try {
+            hookGroupsTabSuggestions()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so the end of the Groups tab keeps its suggested groups.")
+        }
         // A friend's post in a group you're not in is an ordinary story; its group's join state tells it apart (#195).
         try {
             if (fillGroupJoinStubs().targetGroup == null) {

@@ -18,6 +18,7 @@ import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 
@@ -31,6 +32,15 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
  * to GroupsYouShouldJoinFeedUnit, and that cast's Kotlin message is in no other method. The layout
  * answers null itself when its props say there's nothing to show (const/4 v4 0, then return-object v4
  * after a check), so the hook goes first and gives the same null while the switch is on.
+ *
+ * The Groups tab also closes its feed with an ENGAGE_END_OF_FEED block (LX/0k8w;, read 2026-11-06),
+ * and that block draws its "Suggested for you" row with a family of its own that never reaches
+ * GroupsYouShouldJoinComponent: GroupsTabDiscoverSuggestionHScroll (LX/0k3c;, the header with its X,
+ * the row of groups and the link under it) and GroupsTabDiscoverSuggestionRowUnitComponent (LX/0k2l;,
+ * one suggested group on its own). Both are Litho renders that answer null when there's nothing to
+ * show, so each gets the same guard, asking hideDiscoverRow so a diagnostic tells the two paths apart.
+ * The block's scroll section only ever picks the row on that surface, so the list variant
+ * (GroupsTabDiscoverSuggestionListSection) is left alone.
  */
 
 private const val PATCH = "Hide suggested and promoted posts"
@@ -87,12 +97,77 @@ internal fun BytecodePatchContext.hookSuggestedGroupsCard() {
     val layouts = groupsCardLayouts()
     val layout = layouts.singleOrNull()
         ?: throw PatchException("expected one layout casting to GroupsYouShouldJoinFeedUnit with a null answer, found ${layouts.size}")
+    answerNullOnYes(layout, HIDES_GROUPS_CARD)
+}
+
+/** The names the Groups tab's own suggestion layouts give themselves, one layout each. */
+internal val GROUPS_TAB_SUGGESTIONS = listOf(
+    "GroupsTabDiscoverSuggestionHScroll",
+    "GroupsTabDiscoverSuggestionRowUnitComponentSpec",
+)
+
+internal const val HIDES_GROUPS_TAB_SUGGESTIONS = "$EXTENSION_PACKAGE/feed/SuggestedGroupsCard;->hideDiscoverRow()Z"
+
+private val ZERO_CONSTANTS = setOf(Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST)
+
+private fun Instruction.writes(register: Int): Boolean {
+    if (this !is OneRegisterInstruction) return false
+    return (opcode.setsRegister() && registerA == register) || (opcode.setsWideRegister() && registerA + 1 == register)
+}
+
+/**
+ * The register [method] returns null in on its own: one a `return-object` hands back whose last
+ * write in the method is a constant 0. Null when there's none, which would mean null was never a
+ * layout this method gives.
+ */
+internal fun nullAnswerRegister(method: Method): Int? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    return code.filter { it.opcode == Opcode.RETURN_OBJECT }
+        .map { (it as OneRegisterInstruction).registerA }
+        .distinct()
+        .firstOrNull { register ->
+            val last = code.lastOrNull { it.writes(register) }
+            last != null && last.opcode in ZERO_CONSTANTS && (last as NarrowLiteralInstruction).narrowLiteral == 0
+        }
+}
+
+/**
+ * The layouts outside the extension naming themselves [name]: instance methods taking one argument
+ * and answering an object, with a null answer of their own.
+ */
+internal fun BytecodePatchContext.groupsTabSuggestionLayouts(name: String): List<Method> =
+    classDefByStrings(name, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .distinctBy { it.type }
+        .flatMap { methodsHolding(it, name) }
+        .filter { method ->
+            !AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.size == 1 &&
+                method.returnType.startsWith("L") && nullAnswerRegister(method) != null
+        }
+
+/**
+ * First thing in each of the Groups tab's own suggestion layouts: a yes from
+ * [HIDES_GROUPS_TAB_SUGGESTIONS] answers null. Hooks every one it finds once, then refuses naming
+ * any it couldn't.
+ */
+internal fun BytecodePatchContext.hookGroupsTabSuggestions() {
+    val missing = GROUPS_TAB_SUGGESTIONS.filter { name ->
+        val layout = groupsTabSuggestionLayouts(name).singleOrNull() ?: return@filter true
+        answerNullOnYes(layout, HIDES_GROUPS_TAB_SUGGESTIONS)
+        false
+    }
+    if (missing.isNotEmpty()) {
+        throw PatchException("expected one layout with a null answer naming each of ${missing.joinToString()}")
+    }
+}
+
+private fun BytecodePatchContext.answerNullOnYes(layout: Method, hook: String) {
     mutableClassDefBy(layout.definingClass).findMutableMethodOf(layout).apply {
         requireLocals(PATCH, 1)
         addInstructionsWithLabels(
             0,
             """
-                invoke-static { }, $HIDES_GROUPS_CARD
+                invoke-static { }, $hook
                 move-result v0
                 if-eqz v0, :lay_out
                 const/4 v0, 0x0
