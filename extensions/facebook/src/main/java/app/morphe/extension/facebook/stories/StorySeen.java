@@ -141,6 +141,8 @@ public final class StorySeen {
 
     /** Facebook's story bucket, which keeps its name. */
     private static final String REGULAR_BUCKET = "com.facebook.audience.snacks.model.RegularStoryBucket";
+    /** The bucket the viewer shows while a Page opened from its picture loads, with one stand-in card. */
+    private static final String LOADING_BUCKET = "com.facebook.audience.snacks.model.LightweightLoadingBucket";
 
     /**
      * Each copy of a bucket Facebook builds carries what its servers sent, so a copy built moments
@@ -175,11 +177,21 @@ public final class StorySeen {
         void publishWatched(Object bucket, String bucketId);
 
         /**
-         * Facebook's own check of a card while it picks where a bucket opens: the card has media
-         * and its seen flag is false. A card is taken to pass unless told otherwise.
+         * The first half of Facebook's own check of a card while it picks where a bucket opens: the
+         * card has its media. A card is taken to have it unless told otherwise.
          */
-        default boolean startsAt(Object card) {
+        default boolean hasMedia(Object card) {
             return true;
+        }
+
+        /** The other half: the card's seen flag, which the check wants clear. Clear unless told otherwise. */
+        default boolean seenFlag(Object card) {
+            return false;
+        }
+
+        /** Whether the bucket is the stand-in the viewer shows while the real one loads. Not unless told so. */
+        default boolean isLoading(Object bucket) {
+            return false;
         }
     }
 
@@ -197,7 +209,9 @@ public final class StorySeen {
             for (String type : typesFor(own)) publishSeen(session, bucketId, type, SEEN_FIELD, true);
             Logger.printDebug(() -> "Story views: published a " + own + " bucket as watched");
         }
-        @Override public boolean startsAt(Object card) { return mediaOf(card) != null && !seenFlagOf(card); }
+        @Override public boolean hasMedia(Object card) { return mediaOf(card) != null; }
+        @Override public boolean seenFlag(Object card) { return seenFlagOf(card); }
+        @Override public boolean isLoading(Object bucket) { return is(bucket, LOADING_BUCKET); }
     };
 
     /**
@@ -214,8 +228,13 @@ public final class StorySeen {
 
     /** Whether [bucket] is a RegularStoryBucket, the one kind whose tree the patch reads its type from. */
     private static boolean isRegular(Object bucket) {
-        for (Class<?> type = bucket.getClass(); type != null; type = type.getSuperclass()) {
-            if (REGULAR_BUCKET.equals(type.getName())) return true;
+        return is(bucket, REGULAR_BUCKET);
+    }
+
+    /** Whether [value] is of the class named [name] or one under it. */
+    private static boolean is(@Nullable Object value, String name) {
+        for (Class<?> type = value == null ? null : value.getClass(); type != null; type = type.getSuperclass()) {
+            if (name.equals(type.getName())) return true;
         }
         return false;
     }
@@ -374,7 +393,13 @@ public final class StorySeen {
             if (story == null || bucketId == null) return;
             long now = System.currentTimeMillis();
             SeenBuckets cards = cardStore();
-            if (cards != null) cards.watched(story, bucketId, now);
+            if (cards != null) {
+                cards.watched(story, bucketId, now);
+                Logger.printDebug(() -> {
+                    List<?> all = access.cards(bucket);
+                    return "Story views: watched story " + (all == null ? "?" : (all.indexOf(card) + 1) + " of " + all.size()) + " here";
+                });
+            }
             if (!story.equals(newestStory(bucket, access))) return;
             SeenBuckets seen = store();
             if (seen == null) return;
@@ -385,6 +410,14 @@ public final class StorySeen {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_SEEN, "story card viewed", failure);
         }
+    }
+
+    /** Empties [kept] and answers how many it held. */
+    private static int forget(@Nullable SeenBuckets kept, long now) {
+        if (kept == null) return 0;
+        int held = kept.size(now);
+        if (held > 0) kept.clear();
+        return held;
     }
 
     /** Hands a viewed card to Recently watched, which asks its own switch first. Never throws. */
@@ -410,11 +443,10 @@ public final class StorySeen {
             if (seen == null) return;
             long now = System.currentTimeMillis();
             if (!Settings.VIEW_STORIES_ANONYMOUSLY.savedValue()) {
-                if (!seen.isEmpty(now)) seen.clear();
-                SeenBuckets cards = cardStore();
-                if (cards != null && !cards.isEmpty(now)) cards.clear();
-                SeenBuckets tray = trayStore();
-                if (tray != null && !tray.isEmpty(now)) tray.clear();
+                int forgotten = forget(seen, now) + forget(cardStore(), now) + forget(trayStore(), now);
+                if (forgotten > 0) {
+                    Logger.printDebug(() -> "Story views: the switch is off, so " + forgotten + " watched buckets and stories were forgotten");
+                }
                 return;
             }
             if (!Settings.VIEW_STORIES_ANONYMOUSLY.get()) return;
@@ -457,10 +489,13 @@ public final class StorySeen {
      * at, handed the bucket and the id of the card the launch names, if any. That method skips the
      * check {@link #watchedHere} answers when no card is named and the bucket reads as watched, and
      * a named card wins over the check, so a bucket watched partway still opened at card 1 after a
-     * restart (#218). The answer is the card to name instead: the first one Facebook's own check
-     * passes that wasn't watched here, when that's past Facebook's own start and the launch named
-     * no card or named that start. A card the launch picked itself stands, and so does everything
-     * with the switch off or paused, or every card from Facebook's start on watched. Never throws.
+     * restart (#218). The answer is the card to name instead: the first one after Facebook's own
+     * start whose seen flag is clear and that wasn't watched here, when the launch named no card or
+     * named that start. Facebook's start is the first card with media and the flag clear, but a
+     * card past it doesn't need its media yet: a Page opened from its picture brings media for its
+     * first few cards only, and the picker finds a named card by its id alone. A card the launch
+     * picked itself stands, and so does everything with the switch off or paused, or every card
+     * from Facebook's start on watched. Never throws.
      */
     @Nullable
     public static String startCard(@Nullable Object bucket, @Nullable String cardId) {
@@ -476,27 +511,158 @@ public final class StorySeen {
             int start = -1;
             for (int i = 0; i < cards.size(); i++) {
                 Object card = cards.get(i);
-                if (card == null || !access.startsAt(card)) continue;
+                if (card == null || access.seenFlag(card) || (start < 0 && !access.hasMedia(card))) continue;
                 String story = access.storyId(card);
                 if (start < 0) {
                     start = i;
-                    if (named && !cardId.equals(story)) return cardId;
+                    if (named && !cardId.equals(story)) {
+                        int from = i;
+                        Logger.printDebug(() -> "Story views: a bucket of " + cards.size() + " opens at story " + position(cards, cardId, access)
+                                + ", which the launch named, not Facebook's start at " + (from + 1) + ": " + startReasons(cards, 0, watched, now, access));
+                        return cardId;
+                    }
                 }
                 if (story == null || watched.newestWatched(story, now) != null) continue;
-                if (i == start) return cardId;
+                if (i == start) {
+                    int from = i;
+                    Logger.printDebug(() -> "Story views: a bucket of " + cards.size() + " opens at Facebook's start at " + (from + 1)
+                            + ", not watched here: " + startReasons(cards, 0, watched, now, access));
+                    return cardId;
+                }
                 int at = i + 1, from = start + 1, of = cards.size();
                 HookStatus.counted(FamilyNames.STORY_SEEN, OPENED_LATER);
                 Logger.printDebug(() -> "Story views: a bucket opens at story " + at + " of " + of + ", not " + from);
                 return story;
             }
             if (start >= 0) {
-                Logger.printDebug(() -> "Story views: every story of a bucket of " + cards.size() + " from Facebook's start on was watched here");
+                int from = start;
+                Logger.printDebug(() -> "Story views: every story of a bucket of " + cards.size() + " from Facebook's start at "
+                        + (from + 1) + " on was watched here or seen: " + startReasons(cards, from, watched, now, access));
+            } else {
+                Logger.printDebug(() -> "Story views: no story of a bucket of " + cards.size() + " has media and an unset seen flag: "
+                        + startReasons(cards, 0, watched, now, access));
             }
             return cardId;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_SEEN, "story start card", failure);
             return cardId;
         }
+    }
+
+    /** The stand-in card of the loading bucket the viewer is replacing right now, if any (#218). */
+    @Nullable
+    private static WeakReference<Object> standIn;
+
+    /**
+     * Injection point, where the viewer takes in a new copy of the bucket on screen and has looked for
+     * the card it was on in it: handed the bucket the copy replaces and that card. A Page opened from
+     * its picture shows a loading bucket first, with one stand-in card for its first story, and the
+     * viewer stayed on that story once the real bucket came in without asking where it starts, so a
+     * story watched here played again (#218). The stand-in is kept for {@link #cardAfterLoading},
+     * which the viewer reaches next. Never throws.
+     */
+    public static void replacing(@Nullable Object replaced, @Nullable Object card) {
+        standIn = null;
+        try {
+            if (replaced != null && card != null && stories.isLoading(replaced)) standIn = new WeakReference<>(card);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_SEEN, "story loading bucket replaced", failure);
+        }
+    }
+
+    /**
+     * Injection point, right before the viewer checks whether the card it was on is the one at its
+     * place in the new copy of the bucket, then looks for it by id: handed the new copy and that card.
+     * When the card is the stand-in {@link #replacing} kept, the answer is the card of the new copy
+     * where {@link #startCard} opens it, so the viewer stops taking story 1 for the card it's on and
+     * moves on, through {@link #indexAfterLoading} for a posted story. Every other card stands, and so
+     * does the stand-in wherever {@link #startCard} leaves Facebook's start alone. Never throws.
+     */
+    @Nullable
+    public static Object cardAfterLoading(@Nullable Object bucket, @Nullable Object card) {
+        WeakReference<Object> kept = standIn;
+        standIn = null;
+        answered = null;
+        try {
+            if (bucket == null || card == null || kept == null || kept.get() != card) return card;
+            String id = startCard(bucket, null);
+            if (id == null) return card;
+            List<?> cards = stories.cards(bucket);
+            int at = cards == null ? -1 : indexOf(cards, id, stories);
+            if (at < 0) return card;
+            Object next = cards.get(at);
+            answered = new WeakReference<>(next);
+            return next;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_SEEN, "story start after loading", failure);
+            return card;
+        }
+    }
+
+    /** The card {@link #cardAfterLoading} answered last, until {@link #indexAfterLoading} takes it (#218). */
+    @Nullable
+    private static WeakReference<Object> answered;
+
+    /**
+     * Injection point, where the viewer falls back to moving to a card by its index once a new copy of
+     * the bucket is in: handed that copy, the card it looked for and the index it moves to. For a story
+     * that's posted, it moves to the index it kept, story 1's, without looking the card up, so when the
+     * card is the one {@link #cardAfterLoading} answered, the answer is that card's index (#218). Every
+     * other index stands. Never throws.
+     */
+    public static int indexAfterLoading(@Nullable Object bucket, @Nullable Object card, int index) {
+        WeakReference<Object> kept = answered;
+        answered = null;
+        try {
+            if (bucket == null || card == null || kept == null || kept.get() != card) return index;
+            List<?> cards = stories.cards(bucket);
+            String id = stories.storyId(card);
+            int at = cards == null || id == null ? -1 : indexOf(cards, id, stories);
+            if (at < 0) return index;
+            Logger.printDebug(() -> "Story views: the viewer moves to story " + (at + 1) + " of " + cards.size() + ", not " + (index + 1));
+            return at;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_SEEN, "story index after loading", failure);
+            return index;
+        }
+    }
+
+    /** Where the card [id] sits in [cards], counted from 0, or -1 when it isn't there. */
+    private static int indexOf(List<?> cards, String id, Stories access) {
+        for (int i = 0; i < cards.size(); i++) {
+            Object card = cards.get(i);
+            if (card != null && id.equals(access.storyId(card))) return i;
+        }
+        return -1;
+    }
+
+    /** Where the card [id] sits in [cards], counted from 1, or "?" when it isn't there, for Debug logging. */
+    private static String position(List<?> cards, String id, Stories access) {
+        int at = indexOf(cards, id, access);
+        return at < 0 ? "?" : String.valueOf(at + 1);
+    }
+
+    /**
+     * One letter for each card from [from] on, for Debug logging: w watched here, s Facebook's seen
+     * flag set, i no id, x no card, o none of those. Upper case when the card has no media yet.
+     */
+    private static String startReasons(List<?> cards, int from, SeenBuckets watched, long now, Stories access) {
+        StringBuilder reasons = new StringBuilder(cards.size() - from);
+        for (int i = from; i < cards.size(); i++) {
+            Object card = cards.get(i);
+            char reason;
+            if (card == null) {
+                reasons.append('x');
+                continue;
+            }
+            String story = access.storyId(card);
+            if (access.seenFlag(card)) reason = 's';
+            else if (story == null) reason = 'i';
+            else if (watched.newestWatched(story, now) != null) reason = 'w';
+            else reason = 'o';
+            reasons.append(access.hasMedia(card) ? reason : Character.toUpperCase(reason));
+        }
+        return reasons.toString();
     }
 
     /**

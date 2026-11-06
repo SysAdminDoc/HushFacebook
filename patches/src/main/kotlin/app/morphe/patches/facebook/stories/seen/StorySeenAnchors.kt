@@ -13,6 +13,7 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.tableStringAt
+import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
@@ -23,11 +24,13 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Field
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
@@ -676,6 +679,119 @@ internal fun fillStartStubs(stub: (name: String, answer: String, parameters: Lis
 }
 
 internal fun MethodReference.smali(): String = "$definingClass->$name(${parameterTypes.joinToString("")})$returnType"
+
+/*
+ * The viewer taking in a new copy of the bucket on screen (#218 again, read from 585 arm64 and
+ * armeabi-v7a on 2026-11-06, the same shape on both).
+ *
+ * A Page opened from its picture first shows a LightweightLoadingBucket with one stand-in card for its
+ * first story, and the start picker above is asked about that bucket only. When the real one arrives,
+ * the story navigation delegate's onDataChanged (585 LX/0C6n;->A0E) checks it's the same bucket with a
+ * static (StoryBucket, StoryBucket)Z taking the new copy first. For a loading bucket it then looks for
+ * the card it was on in the new copy by id and keeps the index found, story 1's. A static
+ * (StoryCard, StoryCard)Z compares the card at that index with the card it was on. When they differ and
+ * the card is a posted story, the delegate's own (reason, I)V "navigateToCard" moves the viewer to the
+ * index kept. The picker is never asked about the real bucket (traced on the S22 the same day). One hook
+ * goes right after the first lookup, while the old bucket is still in its register, and hands the
+ * extension that bucket and the card. The next goes right before the card check and swaps the card it
+ * was on for the extension's answer, and the last, right before that navigateToCard, swaps the index
+ * for the answer's.
+ */
+internal const val DATA_CHANGED = "StoryViewerNavigationDelegate.onDataChanged"
+internal const val REPLACING = "$STORY_SEEN->replacing($OBJECT$OBJECT)V"
+internal const val CARD_AFTER_LOADING = "$STORY_SEEN->cardAfterLoading($OBJECT$OBJECT)$OBJECT"
+internal const val INDEX_AFTER_LOADING = "$STORY_SEEN->indexAfterLoading($OBJECT${OBJECT}I)I"
+
+/**
+ * The hooks' places in onDataChanged: [REPLACING] goes before the instruction at [replacing], handed
+ * [replaced] and [oldCard], [CARD_AFTER_LOADING] before the card check at [check], handed [bucket]
+ * and [card], which takes its answer, and [INDEX_AFTER_LOADING] before the navigateToCard call at
+ * [navigate], handed [bucket], [card] and [index], which takes its answer.
+ */
+internal class LoadingSwap(
+    val replacing: Int,
+    val replaced: Int,
+    val oldCard: Int,
+    val check: Int,
+    val bucket: Int,
+    val card: Int,
+    val navigate: Int,
+    val index: Int,
+)
+
+/** Whether [method] loads [text] as a constant string. */
+internal fun loads(method: Method, text: String): Boolean =
+    method.implementation?.instructions?.any { it.string() == text } == true
+
+/**
+ * The hooks' places in [method], onDataChanged, or null when it isn't shaped as described above: one
+ * same-bucket check, then lookups of a card by id in the bucket that check takes first, with one card
+ * check between the first lookup and the rest, and the rest looking up the card that check takes
+ * second. After the card check, one call of the method's own class on `this`, taking an int it reads
+ * from a field right before, moves the viewer. The old bucket's register isn't written between the
+ * bucket check and the first hook, no branch lands where a hook goes, and the registers go in a plain
+ * invoke, so each is below 16.
+ */
+internal fun loadingSwap(method: Method): LoadingSwap? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    fun staticCall(i: Int, returns: String, vararg types: String) =
+        code[i].call(Opcode.INVOKE_STATIC)?.let { it.returnType == returns && it.takes(*types) } == true
+    val bucketCheck = code.indices.singleOrNull { staticCall(it, "Z", STORY_BUCKET, STORY_BUCKET) } ?: return null
+    val cardCheck = code.indices.singleOrNull { staticCall(it, "Z", STORY_CARD, STORY_CARD) } ?: return null
+    val lookups = code.indices.filter { it > bucketCheck && staticCall(it, "I", STORY_BUCKET, STORY_CARD) }
+    val first = lookups.firstOrNull() ?: return null
+    val later = lookups.filter { it > cardCheck }.map { code[it] as FiveRegisterInstruction }
+    if (first > cardCheck || later.isEmpty()) return null
+    val same = code[bucketCheck] as FiveRegisterInstruction
+    val firstLookup = code[first] as FiveRegisterInstruction
+    val compare = code[cardCheck] as FiveRegisterInstruction
+    if (lookups.any { (code[it] as FiveRegisterInstruction).registerC != same.registerC }) return null
+    if (later.any { it.registerD != compare.registerD }) return null
+    val result = code.getOrNull(first + 1)
+    if (result?.opcode != Opcode.MOVE_RESULT || (result as OneRegisterInstruction).registerA in setOf(same.registerD, firstLookup.registerD)) return null
+    val written = code.subList(bucketCheck + 1, first).any {
+        it.opcode.setsRegister() && (it as? OneRegisterInstruction)?.registerA == same.registerD
+    }
+    val targets = branchTargets(code)
+    if (written || first + 2 in targets || cardCheck in targets) return null
+    if (AccessFlags.STATIC.isSet(method.accessFlags)) return null
+    val self = method.localRegisterCount()
+    val navigate = code.indices.singleOrNull { i ->
+        i > cardCheck && code[i].call(Opcode.INVOKE_VIRTUAL)?.let {
+            it.definingClass == method.definingClass && it.returnType == "V" && it.parameterTypes.size == 2 && it.parameterTypes[1].toString() == "I"
+        } == true && (code[i] as FiveRegisterInstruction).registerC == self
+    } ?: return null
+    val move = code[navigate] as FiveRegisterInstruction
+    val index = code[navigate - 1]
+    if (index.opcode != Opcode.IGET || (index as TwoRegisterInstruction).registerA != move.registerE || navigate in targets) return null
+    if (move.registerE in setOf(same.registerC, compare.registerD)) return null
+    val swap = LoadingSwap(first + 2, same.registerD, firstLookup.registerD, cardCheck, same.registerC, compare.registerD, navigate, move.registerE)
+    return if (maxOf(swap.replaced, swap.oldCard, swap.bucket, swap.card, swap.index) < 16) swap else null
+}
+
+/**
+ * The three hooks in onDataChanged, the last place first so the earlier places stand: the index the
+ * viewer moves to and the card it was on become the extension's answers, the card cast back to the
+ * card type the check takes.
+ */
+internal fun MutableMethod.openAfterLoading(swap: LoadingSwap) {
+    addInstructions(
+        swap.navigate,
+        """
+            invoke-static { v${swap.bucket}, v${swap.card}, v${swap.index} }, $INDEX_AFTER_LOADING
+            move-result v${swap.index}
+        """,
+    )
+    addInstructions(
+        swap.check,
+        """
+            invoke-static { v${swap.bucket}, v${swap.card} }, $CARD_AFTER_LOADING
+            move-result-object v${swap.card}
+            check-cast v${swap.card}, $STORY_CARD
+        """,
+    )
+    addInstructions(swap.replacing, "invoke-static { v${swap.replaced}, v${swap.oldCard} }, $REPLACING")
+}
 
 /*
  * The eye's timing (#150, read from both 582 builds on 2026-10-14).

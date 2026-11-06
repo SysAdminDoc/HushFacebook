@@ -19,7 +19,9 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -29,6 +31,9 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+
+/** The trace name Facebook's story navigation delegate loads where it moves the viewer to a card by index. */
+private const val NAVIGATE_TO_CARD = "StoryViewerNavigationDelegate.navigateToCard"
 
 /**
  * What marking a watched bucket on the phone hooks and calls (#61), on every declared build: the
@@ -240,6 +245,71 @@ class StorySeenMarkingFixtureTest {
     }
 
     @Test
+    fun `each declared build's viewer asks the extension where a bucket opens once its loading stand-in is replaced`() = bundles { bundle ->
+        val name = bundle.name
+        val found = FixtureDex.classesHolding(bundle, DATA_CHANGED).flatMap { owner ->
+            owner.methods.filter { loads(it, DATA_CHANGED) }.mapNotNull { method -> loadingSwap(method)?.let { method to it } }
+        }
+        assertEquals("$name: onDataChanged methods shaped for the loading swap", 1, found.size)
+        val (method, swap) = found.single()
+        val code = method.implementation!!.instructions.toList()
+        fun static(returns: String, vararg types: String) = code.indices.filter { i ->
+            code[i].opcode == Opcode.INVOKE_STATIC && code[i].call!!.returnType == returns &&
+                code[i].call!!.parameterTypes.map(Any::toString) == types.toList()
+        }
+        val same = code[static("Z", STORY_BUCKET, STORY_BUCKET).single()] as FiveRegisterInstruction
+        val compare = code[static("Z", STORY_CARD, STORY_CARD).single()] as FiveRegisterInstruction
+        val lookups = static("I", STORY_BUCKET, STORY_CARD)
+        val first = code[swap.replacing - 2] as FiveRegisterInstruction
+        assertEquals("$name: the first hook follows the first lookup of the old card", lookups.first(), swap.replacing - 2)
+        assertEquals("$name: the first lookup's result", Opcode.MOVE_RESULT, code[swap.replacing - 1].opcode)
+        assertTrue("$name: the old card is looked up again after the card check", lookups.any { it > swap.check && (code[it] as FiveRegisterInstruction).registerD == swap.card })
+        val move = code[swap.navigate] as FiveRegisterInstruction
+        val navigate = code[swap.navigate].call!!
+        assertEquals("$name: the viewer moves on its own delegate", method.definingClass, navigate.definingClass)
+        val navigators = FixtureDex.classesHolding(bundle, NAVIGATE_TO_CARD).filter { it.type == method.definingClass }
+            .flatMap { owner -> owner.methods.filter { loads(it, NAVIGATE_TO_CARD) } }
+        assertEquals("$name: the call is the delegate's navigateToCard", listOf(navigate.name), navigators.map { it.name })
+        assertEquals("$name: the index moved to", swap.index, move.registerE)
+        val after = MutableMethod(method).apply { openAfterLoading(swap) }.implementation!!.instructions.toList()
+        assertEquals("$name: instructions added to onDataChanged", code.size + 6, after.size)
+        val indexHook = after[swap.navigate + 4] as FiveRegisterInstruction
+        assertEquals("$name: the index hook", INDEX_AFTER_LOADING, after[swap.navigate + 4].call!!.smali())
+        assertEquals(
+            "$name: the index hook reads the new copy, the card looked for and the index",
+            listOf(same.registerC, compare.registerD, swap.index),
+            listOf(indexHook.registerC, indexHook.registerD, indexHook.registerE),
+        )
+        val indexAnswer = after[swap.navigate + 5]
+        assertEquals("$name: the index hook's answer", Opcode.MOVE_RESULT, indexAnswer.opcode)
+        assertEquals("$name: the answer is the index moved to", swap.index, (indexAnswer as OneRegisterInstruction).registerA)
+        assertEquals("$name: navigateToCard follows the hook", navigate.smali(), after[swap.navigate + 6].call!!.smali())
+        val replacing = after[swap.replacing] as FiveRegisterInstruction
+        assertEquals("$name: the first hook", REPLACING, after[swap.replacing].call!!.smali())
+        assertEquals("$name: the first hook reads the bucket replaced and the old card", listOf(same.registerD, first.registerD), listOf(replacing.registerC, replacing.registerD))
+        val hook = after[swap.check + 1] as FiveRegisterInstruction
+        assertEquals("$name: the card hook", CARD_AFTER_LOADING, after[swap.check + 1].call!!.smali())
+        assertEquals("$name: the card hook reads the new copy and the card the check takes second", listOf(same.registerC, compare.registerD), listOf(hook.registerC, hook.registerD))
+        val answer = after[swap.check + 2]
+        assertEquals("$name: the card hook's answer", Opcode.MOVE_RESULT_OBJECT, answer.opcode)
+        assertEquals("$name: the answer is the card the check takes", compare.registerD, (answer as OneRegisterInstruction).registerA)
+        val cast = after[swap.check + 3]
+        assertEquals("$name: the answer's cast", Opcode.CHECK_CAST, cast.opcode)
+        assertEquals("$name: the answer is cast where it lands", compare.registerD, (cast as OneRegisterInstruction).registerA)
+        assertEquals("$name: the answer is cast to a story card", STORY_CARD, (cast as ReferenceInstruction).reference.toString())
+        assertEquals("$name: the card check follows the hook", code[swap.check].call!!.smali(), after[swap.check + 4].call!!.smali())
+        for (index in code.indices) {
+            val moved = when {
+                index < swap.replacing -> index
+                index < swap.check -> index + 1
+                index < swap.navigate -> index + 4
+                else -> index + 6
+            }
+            assertEquals("$name: onDataChanged instruction $index changed", code[index].opcode, after[moved].opcode)
+        }
+    }
+
+    @Test
     fun `the extension has the marking hooks and the stubs the patch fills`() {
         val seen = ExtensionDex.classDef(STORY_SEEN).methods
         fun has(name: String, answer: String, vararg parameters: String) = seen.any {
@@ -253,6 +323,9 @@ class StorySeenMarkingFixtureTest {
         assertTrue("StorySeen has no watchedHere hook", has("watchedHere", "Z", obj))
         assertTrue("StorySeen has no readsWatched hook", has("readsWatched", "Z", obj))
         assertTrue("StorySeen has no startCard hook", has("startCard", string, obj, string))
+        assertTrue("StorySeen has no replacing hook", has("replacing", "V", obj, obj))
+        assertTrue("StorySeen has no indexAfterLoading hook", has("indexAfterLoading", "I", obj, obj, "I"))
+        assertTrue("StorySeen has no cardAfterLoading hook", has("cardAfterLoading", obj, obj, obj))
         assertTrue("StorySeen has no mediaOf", has("mediaOf", obj, obj))
         assertTrue("StorySeen has no seenFlagOf", has("seenFlagOf", "Z", obj))
         for (stub in listOf("bucketIdOf", "cardsOf", "storyIdOf", "sessionOf", "bucketTypeOf")) assertTrue("StorySeen has no $stub", has(stub, obj, obj))
