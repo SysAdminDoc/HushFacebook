@@ -444,6 +444,25 @@ public class TabBarScrollAwayTest {
     }
 
     @Test
+    public void reelsFirstRunsUnderTheTitleBarWhereverTheTabBarSits() {
+        // Reels first with the bar at the bottom: scroll-away stays on and Facebook pads the reel by the title bar (#390).
+        Settings.BOTTOM_TAB_BAR.save(true);
+        onTab(new WatchTab());
+        assertEquals("tab bar at the bottom", 0, TabBarScrollAway.pagesTop(150));
+        Settings.BOTTOM_TAB_BAR.save(false);
+        assertEquals("tab bar where Facebook has it", 0, TabBarScrollAway.pagesTop(150));
+        Settings.KEEP_TOP_BAR.save(true);
+        assertEquals("a kept title bar stays, so the reel starts below it", 150, TabBarScrollAway.pagesTop(150));
+        Settings.KEEP_TOP_BAR.save(false);
+        Settings.BOTTOM_TAB_BAR.save(true);
+        TabBarScrollAway.topBarsLetGo();
+        assertEquals("Reels further along a bottom bar keeps Facebook's padding", 150, TabBarScrollAway.pagesTop(150));
+        TabBarScrollAway.topBarsTakenBack();
+        onTab(new FeedTab());
+        assertEquals("Home under a bottom bar keeps its padding", 150, TabBarScrollAway.pagesTop(150));
+    }
+
+    @Test
     public void theOtherTabsKeepTheirPaddingUnderATopBar() {
         Settings.TOP_TAB_BAR.save(true);
         TabBarScrollAway.topBarsLetGo();
@@ -479,7 +498,7 @@ public class TabBarScrollAwayTest {
     public void thePaddingStaysWithoutATopBarOrWhilePaused() {
         onTab(new WatchTab());
         TabBarScrollAway.topBarsLetGo();
-        assertEquals("top bar off", 150, TabBarScrollAway.pagesTop(150));
+        assertEquals("Reels further along with the top bar off", 150, TabBarScrollAway.pagesTop(150));
         Settings.TOP_TAB_BAR.save(true);
         Settings.BOTTOM_TAB_BAR.save(true);
         assertEquals("the bottom switch wins", 150, TabBarScrollAway.pagesTop(150));

@@ -153,8 +153,8 @@ public final class TabBarScrollAway {
         offTheFeed = false;
     }
 
-    /** Counted each time the top padding under a top tab bar is dropped so the reel fills the screen. */
-    static final String REEL_UNDER_BAR = "Reel run under the top tab bar";
+    /** Counted each time the top padding under the top bars is dropped so the reel fills the screen. */
+    static final String REEL_UNDER_BAR = "Reel run under the top bars";
 
     /**
      * The hook at the return of each method that answers how far down Facebook pads a page's
@@ -165,20 +165,24 @@ public final class TabBarScrollAway {
      * those need the padding or the bar covers their first rows (#328). With Reels first on the bar,
      * Facebook treats it as its feed and leaves scroll-away on there, so the title bar slides off as
      * the reels move and a pad by its height left a black band over every reel after the first
-     * (#390). There the answer is 0 too, unless Keep the top bar on screen holds the bar. Anywhere
-     * else, with the top bar off, with the bottom bar on, paused, before the settings are ready or on
-     * a failure, it's Facebook's own number.
+     * (#390). That happens wherever the tab bar sits, since only the title bar slides there, so the
+     * answer is 0 for it whatever the bar's position, unless Keep the top bar on screen holds the
+     * bar. Reels further along a bar that isn't at the top keeps Facebook's number: Facebook hides
+     * the title bar there itself. Anywhere else, paused, before the settings are ready or on a
+     * failure, it's Facebook's own number.
      */
     public static int pagesTop(int padding) {
         try {
             if (padding == 0) return padding;
             HookStatus.invoked(FAMILY);
-            if (!Utils.settingsReady() || Settings.BOTTOM_TAB_BAR.get() || !Settings.TOP_TAB_BAR.get()) return padding;
+            if (!Utils.settingsReady()) return padding;
+            boolean tabsOnTop = Settings.TOP_TAB_BAR.get() && !Settings.BOTTOM_TAB_BAR.get();
+            if (offTheFeed && !tabsOnTop) return padding;
             if (!offTheFeed && Settings.KEEP_TOP_BAR.get()) return padding;
             if (!onReelsTab()) return padding;
             HookStatus.bound(FAMILY, "reel under the top bar");
             HookStatus.counted(FAMILY, REEL_UNDER_BAR);
-            Logger.printDebug(() -> "Tab bar at the top: the reel runs under the bar");
+            Logger.printDebug(() -> "Top bars: the reel runs under them");
             return 0;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel under the top bar", failure);
