@@ -334,6 +334,23 @@ public class PreSearchSectionsTest {
     }
 
     @Test
+    public void aRowLoggedBeforeADiagnosticClearLogsAgainAfterIt() {
+        // Facebook builds the search screen once at start; a report taken after a clear had no line for it.
+        PreSearchSections.queryNode(new QueryNode(row("VISITED_ENTITIES")));
+        String line = PreSearchSections.PREFIX + "node=" + PreSearchSections.NULL_STATE_NODE
+                + " rendered_modules=none template_modules=none template_names=VISITED_ENTITIES";
+        assertTrue(log(), log().contains(line));
+        LogBufferManager.clearLogBuffer();
+        assertFalse(log(), log().contains(line));
+        PreSearchSections.queryNode(new QueryNode(row("VISITED_ENTITIES")));
+        assertTrue(log(), log().contains(line));
+        // Without a clear it's still one line a run.
+        PreSearchSections.queryNode(new QueryNode(row("VISITED_ENTITIES")));
+        String log = log();
+        assertEquals(log, log.indexOf(line), log.lastIndexOf(line));
+    }
+
+    @Test
     public void aQueryNodesLineNamesItsTemplatesModules() {
         PreSearchSections.queryNode(new QueryNode(template("module_name", "RECENT_SEARCH"),
                 nested(template("module_name", PreSearchSections.FOR_YOU_MODULE))));

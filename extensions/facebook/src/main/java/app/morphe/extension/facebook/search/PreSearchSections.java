@@ -117,6 +117,12 @@ public final class PreSearchSections {
     private static boolean budgetNoticed;
     /** Set once the budget is spent, so later entries aren't read at all. */
     private static volatile boolean full;
+    /**
+     * The diagnostic clear the logged lines belong to. A clear empties the report, so every line
+     * logs again after one: Facebook builds the search screen once at start, and a report taken after
+     * a clear otherwise had no line for it (#285).
+     */
+    private static long shapesGeneration = -1;
 
     private PreSearchSections() {
     }
@@ -280,7 +286,9 @@ public final class PreSearchSections {
      * alone), and which of Facebook's builders handed it over when {@code from} names one.
      */
     private static void log(@Nullable Object node, @Nullable Object module, boolean moduleRead, @Nullable String from) {
-        if (!enabled() || full) return;
+        if (!enabled()) return;
+        startOverIfCleared();
+        if (full) return;
         try {
             String nodeType = FeedFilter.typeName(node);
             // A node whose type can't be read may be released, and its strings aren't asked.
@@ -412,6 +420,18 @@ public final class PreSearchSections {
             }
         }
         return name;
+    }
+
+    /** Forgets what was logged once a diagnostic clear started a new report. */
+    private static void startOverIfCleared() {
+        long current = HookStatus.generation();
+        synchronized (shapes) {
+            if (shapesGeneration == current) return;
+            shapesGeneration = current;
+            shapes.clear();
+            budgetNoticed = false;
+            full = false;
+        }
     }
 
     private static void record(String shape) {
