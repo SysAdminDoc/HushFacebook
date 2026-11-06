@@ -21,6 +21,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -83,8 +84,14 @@ internal const val PROFILE_PHOTO = "Lcom/facebook/fds/profilephoto/FDSProfilePho
 /** The test tags a profile render gives its picture with and without a ring. */
 internal val PROFILE_RING_TAGS = listOf("profile_photo_unseen_story_ring_", "profile_photo_no_story_ring")
 
-/** Two of the ring kinds' names, which the ring enum's static initializer must hold. */
-internal val RING_NAMES = listOf("STORY_UNSEEN", "LIVE")
+/**
+ * The ring kinds' names, which the ring enum's static initializer must all hold. Facebook's color
+ * enum, which the photo also takes, has its own LIVE, STORY_SEEN and STORY_UNSEEN.
+ */
+internal val RING_NAMES = listOf("LIVE", "STORY_SEEN", "STORY_UNSEEN", "STORY_UNSEEN_CLOSE_FRIEND")
+
+/** The most constants a ring kind enum has, room for a kind or two more than today's four. */
+internal const val RING_KINDS_AT_MOST = 8
 
 /**
  * Takes the story and LIVE rings off profile pictures in the feed, in comments and on profiles,
@@ -94,7 +101,7 @@ internal val RING_NAMES = listOf("STORY_UNSEEN", "LIVE")
  */
 @Suppress("unused")
 val hideStoryRingsPatch = bytecodePatch(
-    name = STORY_RINGS_PATCH,
+    name = "Hide story rings",
     description = "Switches that take the story and LIVE rings off profile pictures at the top of posts, next to " +
         "comments and on profiles, one for each. All start off. Turn them on in Hushfacebook settings > Stories.",
 ) {
@@ -142,6 +149,7 @@ internal fun isDecoratorOf(classDef: ClassDef, components: Set<String>): Boolean
 /** Whether [classDef] is the ring kind enum. */
 internal fun isRingEnum(classDef: ClassDef): Boolean =
     classDef.superclass == "Ljava/lang/Enum;" &&
+        classDef.staticFields.count { it.type == classDef.type } in RING_NAMES.size..RING_KINDS_AT_MOST &&
         classDef.methods.any { method -> method.name == "<clinit>" && RING_NAMES.all { holdsString(method, it) } }
 
 /** The types of the classes whose [where] (`<init>` or `<clinit>`) loads [name]. */
@@ -155,7 +163,10 @@ private fun BytecodePatchContext.componentTypes(name: String, where: String): Se
 
 /** The check of the one feed header decorator building one of [components]. */
 private fun BytecodePatchContext.decoratorCheck(components: Set<String>, what: String): Method {
-    val found = classes.filter { isDecoratorOf(it, components) }.distinctBy { it.type }
+    val found = mutableListOf<ClassDef>()
+    classDefForEachReferencing(types = components) { classDef ->
+        if (isDecoratorOf(classDef, components) && found.none { it.type == classDef.type }) found += classDef
+    }
     val decorator = found.singleOrNull() ?: refuse("expected one feed header decorator building the $what, found ${found.size}")
     return decorator.methods.singleOrNull(::isRingCheck) ?: refuse("${decorator.type} has more than one ring check")
 }
@@ -177,7 +188,8 @@ internal fun BytecodePatchContext.ringEnum(): String {
     val photo = classDefByOrNull(PROFILE_PHOTO) ?: refuse("$PROFILE_PHOTO isn't in this build")
     val constructor = photo.methods.singleOrNull { it.name == "<init>" } ?: refuse("$PROFILE_PHOTO has more than one constructor")
     val found = constructor.parameterNames().filter { type -> classDefByOrNull(type)?.let(::isRingEnum) == true }
-    return found.singleOrNull() ?: refuse("$PROFILE_PHOTO's constructor takes ${found.size} ring kinds, not one")
+    return found.singleOrNull()
+        ?: refuse("$PROFILE_PHOTO's constructor takes ${found.size} ring kinds, not one: ${found.distinct().joinToString()}")
 }
 
 /** The one constructor of [type] taking something and then a ring kind, or null. */

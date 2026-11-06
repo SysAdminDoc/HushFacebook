@@ -18,6 +18,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -148,12 +149,14 @@ class HideStoryRingsFixtureTest {
                         assertEquals("$name: as a ring kind", ring, code[at - 1].reference())
                     }
                 }
-                val status = context.mutableClassDefBy(SETTINGS_STATUS).methods.single { it.name == "storyRings" }
+                val status = context.mutableClassDefBy(SETTINGS_STATUS).methods.single { it.name == "storyRings" }.code()
                 assertEquals("$name: the settings screen doesn't show the switches",
-                    listOf(Opcode.CONST_4, Opcode.RETURN), status.code().map { it.opcode })
+                    listOf(Opcode.CONST_4, Opcode.RETURN), status.take(2).map { it.opcode })
+                assertEquals("$name: the settings screen doesn't show the switches",
+                    1, (status[0] as NarrowLiteralInstruction).narrowLiteral)
                 checked += name
             }
         }
-        assertTrue("no fixture bundle for ${versions.joinToString()}", checked.isNotEmpty() || Fixtures.dir == null)
+        assertTrue("no fixture bundle for ${versions.joinToString()}", checked.isNotEmpty())
     }
 }
