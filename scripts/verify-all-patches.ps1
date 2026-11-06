@@ -257,9 +257,9 @@ try {
         $target = if ($null -ne $report) { "$($report.packageName) $($report.packageVersion)" } else { 'unknown target' }
         Write-Host "[verify] ${target}: applied $reportApplied, failed $reportFailed, CLI exit $cliExitCode"
         if ($null -ne $report) {
-            foreach ($failure in @($report.failedPatches)) {
-                $patchName = if ($null -ne $failure.patch) { $failure.patch.name } else { 'unknown patch' }
-                Write-Host "[verify] FAILED ${patchName}: $($failure.reason -split "`n" | Select-Object -First 1)"
+            $failures = Get-ReportFailures -Entries $report.failedPatches
+            foreach ($patchName in $failures.Keys) {
+                Write-Host "[verify] FAILED ${patchName}: $($failures[$patchName])"
             }
         }
         Write-Host "[verify] result file: $result"

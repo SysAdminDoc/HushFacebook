@@ -241,19 +241,13 @@ function Get-PatchVerdicts {
     $applied = [System.Collections.Generic.HashSet[string]]::new(
         [string[]]@(Get-ReportPatchNames -Entries $Report.appliedPatches),
         [System.StringComparer]::Ordinal)
-    $failures = @{}
-    foreach ($failure in @($Report.failedPatches)) {
-        $name = if ($null -ne $failure.patch) { [string]$failure.patch.name } else { $null }
-        if (-not $name) { continue }
-        $reason = ([string]$failure.reason -split "`n" | Select-Object -First 1).Trim()
-        $failures[$name] = $reason
-    }
+    $failures = Get-ReportFailures -Entries $Report.failedPatches
 
     $verdicts = New-Object System.Collections.Generic.List[object]
     foreach ($name in $Names) {
         if ($applied.Contains($name)) {
             $verdicts.Add([ordered]@{ name = $name; applied = $true; reason = $null })
-        } elseif ($failures.ContainsKey($name)) {
+        } elseif ($failures.Contains($name)) {
             $verdicts.Add([ordered]@{ name = $name; applied = $false; reason = $failures[$name] })
         } else {
             throw "The result report decided nothing about patch $name."

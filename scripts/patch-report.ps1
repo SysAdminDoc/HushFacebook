@@ -50,6 +50,23 @@ function Get-ReportPatchNames {
     return $names.ToArray()
 }
 
+# The CLI writes each failed patch as { name, error }; older reports nest it as { patch: { name }, reason }.
+# Returns the failed patch names in report order, each with the first line of its error.
+function Get-ReportFailures {
+    param([object]$Entries)
+    $failures = [ordered]@{}
+    foreach ($entry in @($Entries)) {
+        if ($null -eq $entry) { continue }
+        $patchName = [string]$entry.name
+        if (-not $patchName -and $null -ne $entry.patch) { $patchName = [string]$entry.patch.name }
+        if (-not $patchName) { continue }
+        $why = [string]$entry.error
+        if (-not $why) { $why = [string]$entry.reason }
+        $failures[$patchName] = ($why -split "`n" | Select-Object -First 1).Trim()
+    }
+    return $failures
+}
+
 function Get-PatchDependencyNames {
     param([object]$PatchList, [string[]]$RequestedNames)
 
