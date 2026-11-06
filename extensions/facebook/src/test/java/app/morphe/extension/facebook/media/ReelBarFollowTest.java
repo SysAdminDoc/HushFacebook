@@ -52,7 +52,9 @@ public class ReelBarFollowTest {
     private FrameLayout pager;
     private LithoView leaving;
     private LithoView coming;
+    private LithoView viewer;
     private FrameLayout host;
+    private FrameLayout plugin;
     private FrameLayout label;
     private FrameLayout screen;
     private TabBarContainerLayout tabBar;
@@ -63,7 +65,7 @@ public class ReelBarFollowTest {
         HookStatus.clear();
         Settings.KEEP_PROGRESS_BAR.save(true);
         activity = Robolectric.buildActivity(Activity.class).setup().get();
-        LithoView viewer = new LithoView(activity);
+        viewer = new LithoView(activity);
         FrameLayout list = new FrameLayout(activity);
         place(viewer, list, 0, 0, 1080, PAGE_HEIGHT);
         pager = new FrameLayout(activity);
@@ -74,7 +76,7 @@ public class ReelBarFollowTest {
         place(pager, coming, 0, PAGE_HEIGHT, 1080, 2 * PAGE_HEIGHT);
         host = new FrameLayout(activity);
         place(viewer, host, 0, 986, 1080, 2066);
-        FrameLayout plugin = new FrameLayout(activity);
+        plugin = new FrameLayout(activity);
         place(host, plugin, 0, 0, 1080, 1080);
         label = new FrameLayout(activity);
         place(plugin, label, 0, 918, 291, 1080);
@@ -254,6 +256,46 @@ public class ReelBarFollowTest {
         Settings.KEEP_PROGRESS_BAR.save(false);
         frame();
         assertEquals(0f, host.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void aScrubberFacebookMountsInANewHostIsLiftedThere() {
+        // See-through bars stretched the page 126 px under the tab bar, and Facebook mounted the
+        // scrubber in a new host that much lower (#395). The old host was the one still moving.
+        addTabBar(1980);
+        ReelBarFollow.updated(label);
+        frame();
+        assertTrue(host.getTranslationY() < 0f);
+
+        FrameLayout newHost = new FrameLayout(activity);
+        host.removeView(plugin);
+        viewer.removeView(host);
+        place(viewer, newHost, 0, 986 + 126, 1080, 2066 + 126);
+        place(newHost, plugin, 0, 0, 1080, 1080);
+        layOut();
+        frame();
+        frame();
+
+        float lift = 2018 + 126 + 6 * activity.getResources().getDisplayMetrics().density - 1980;
+        assertEquals("the line clears the tab bar again", -lift, newHost.getTranslationY(), 0f);
+        assertEquals("the old host has its place back", 0f, host.getTranslationY(), 0f);
+        frame();
+        assertEquals("and stays there", -lift, newHost.getTranslationY(), 0f);
+        assertTrue(HookStatus.report().toString().contains(ReelBarFollow.REHOSTED + " 1"));
+    }
+
+    @Test
+    public void aTabBarFacebookBuildsAgainIsTheOneTheLineClears() {
+        addTabBar(1980);
+        ReelBarFollow.updated(label);
+        frame();
+
+        screen.removeView(tabBar);
+        addTabBar(1900);
+        frame();
+
+        float lift = 2018 + 6 * activity.getResources().getDisplayMetrics().density - 1900;
+        assertEquals(-lift, host.getTranslationY(), 0f);
     }
 
     @Test

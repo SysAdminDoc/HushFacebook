@@ -60,6 +60,7 @@ final class ReelBarFollow {
     private static final String PAGE = "com.facebook.litho.LithoView";
     static final String FOLLOWED = "reel bar followed its reel";
     static final String LIFTED = "reel bar lifted above the tab bar";
+    static final String REHOSTED = "reel bar followed its scrubber into a new host";
     private static final String TAB_BAR = "com.facebook.navigation.tabbar.ui.TabBarContainerLayout";
     /** How far above the tab bar the line has to sit for the whole thumb to show. */
     private static final int LINE_CLEARANCE_DP = 6;
@@ -173,6 +174,17 @@ final class ReelBarFollow {
         return null;
     }
 
+    /** Whether [mover] is still [label] or one of the levels above it that {@link #start} walks. */
+    private static boolean holds(View mover, View label) {
+        View up = label;
+        for (int level = 0; level < LEVELS_UP && up != null; level++) {
+            if (up == mover) return true;
+            ViewParent above = up.getParent();
+            up = above instanceof View ? (View) above : null;
+        }
+        return false;
+    }
+
     /** The scrubber's line, the full-width view beside the time. */
     @Nullable
     private static View barBeside(View label) {
@@ -194,7 +206,7 @@ final class ReelBarFollow {
         private final WeakReference<ViewGroup> heldPager;
         final ViewTreeObserver tree;
         @Nullable
-        private final WeakReference<View> heldTabBar;
+        private WeakReference<View> heldTabBar;
         @Nullable
         private WeakReference<View> heldPage;
         /** What this added to the host's own translation, which Facebook may set as well. */
@@ -226,8 +238,18 @@ final class ReelBarFollow {
         private void place() {
             View mover = heldMover.get();
             ViewGroup pager = heldPager.get();
-            if (mover == null || pager == null || !pager.isAttachedToWindow()) {
+            View label = heldLabel.get();
+            if (mover == null || pager == null || label == null || !pager.isAttachedToWindow()) {
                 stop(mover);
+                return;
+            }
+            if (!holds(mover, label)) {
+                // Facebook mounted the scrubber in another host, as when See-through bars stretch
+                // the page under the tab bar (#395): the old one gets its place back, the new one moves.
+                stop(mover);
+                HookStatus.counted(FAMILY, REHOSTED);
+                Logger.printDebug(() -> "Reel bar: the scrubber moved to another host, following that one");
+                if (label.isAttachedToWindow()) start(label);
                 return;
             }
             boolean keeping = keeps();
@@ -247,7 +269,13 @@ final class ReelBarFollow {
         private int liftOver() {
             View tabBar = heldTabBar == null ? null : heldTabBar.get();
             View label = heldLabel.get();
-            if (tabBar == null || label == null || !tabBar.isShown()) return 0;
+            if (label == null) return 0;
+            if (tabBar != null && !tabBar.isAttachedToWindow()) {
+                // Facebook built the tab bar again, so the one held no longer shows where the tabs are.
+                tabBar = tabBarIn(label.getRootView(), TAB_BAR_LEVELS);
+                heldTabBar = tabBar == null ? null : new WeakReference<>(tabBar);
+            }
+            if (tabBar == null || !tabBar.isShown()) return 0;
             View bar = barBeside(label);
             if (bar == null) return 0;
             int[] at = new int[2];
