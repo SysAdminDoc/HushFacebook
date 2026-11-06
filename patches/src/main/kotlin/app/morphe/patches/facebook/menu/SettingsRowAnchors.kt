@@ -7,6 +7,7 @@ package app.morphe.patches.facebook.menu
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.util.ControlFlow
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -126,7 +127,8 @@ internal fun isLambdaInvoke(method: Method): Boolean =
  * The inlined tap in [method], a lambda's invoke naming [ROW_TAP_TRACE] (directly or through a string
  * table [resolve] finds): the last call answering a View before the trace, and before that the last
  * field read of a type [isRowItem] takes, with no way into the code between them but falling through
- * and no write to the item's register. Null for any other method.
+ * and no write to the item's register. Another way in before the view call is allowed when every
+ * write of the item reaching the hook reads that same field. Null for any other method.
  */
 internal fun inlinedRowTap(method: Method, resolve: (MethodReference) -> Method?, isRowItem: (String) -> Boolean): InlinedRowTap? {
     if (!isLambdaInvoke(method)) return null
@@ -154,8 +156,19 @@ internal fun inlinedRowTap(method: Method, resolve: (MethodReference) -> Method?
         flow.normal[from].forEach { into[it] += from }
         flow.exceptional[from].forEach { into[it] += from }
     }
-    if ((itemRead + 1..hook).any { at -> into[at] != listOf(at - 1) }) return null
-    if ((itemRead + 1 until hook).any { at -> writes(code[at], item) }) return null
+    if ((viewCall + 1..hook).any { at -> into[at] != listOf(at - 1) }) return null
+    if ((itemRead + 1..viewCall).all { at -> into[at] == listOf(at - 1) }) {
+        if ((itemRead + 1 until hook).any { at -> writes(code[at], item) }) return null
+    } else {
+        // 585's Android 9 build joins a second case of `LX/0V2Y;->invoke` (4, sharing the tap of 3, 5
+        // and 6) in after the item read, once it has read the item from the same field. So with another
+        // way in, every write of the item reaching the hook has to be a read of that one field.
+        val field = (code[itemRead] as ReferenceInstruction).reference as FieldReference
+        val writers = method.writersReaching(hook, item)
+        if (writers.any { at -> at < 0 || code[at].opcode != Opcode.IGET_OBJECT || (code[at] as ReferenceInstruction).reference != field }) {
+            return null
+        }
+    }
     return InlinedRowTap(method, hook, view, item, ((code[itemRead] as ReferenceInstruction).reference as FieldReference).type)
 }
 

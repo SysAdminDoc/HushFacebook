@@ -42,7 +42,7 @@ class SettingsRowFixtureTest {
      * into a lambda on both, as 583's 32-bit build did, so neither has a tap class to log from.
      */
     private val loggerCount = mapOf(
-        "585.0.0.47.54" to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0),
+        "585.0.0.47.54" to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0, "arm64-v8a-minapi28-storeless" to 0),
     )
 
     private fun Method.instructionList() = implementation?.instructions?.toList().orEmpty()
