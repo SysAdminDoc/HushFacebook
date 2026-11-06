@@ -23,7 +23,9 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
@@ -115,21 +117,35 @@ private fun Instruction.methodRef() = (this as? ReferenceInstruction)?.reference
 
 private fun MethodReference.parameters() = parameterTypes.map { it.toString() }
 
+private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+
 /**
  * [method]'s chip row, or null when it builds none: a chip made with a `(Z, String, String)`
  * constructor and added to a list builder, then, after that, a call to a static void method of a
- * class taking that class and a List, which draws the row.
+ * class taking that class and a List, which draws the row. 585's Android 9 build copies the builder
+ * into a register of its own between the two (`move-object/from16`), which leaves the chip alone.
  */
 internal fun chipRow(method: Method): ChipRow? {
     val code = method.implementation?.instructions?.toList() ?: return null
-    val add = (1 until code.size).firstOrNull { at ->
-        val call = code[at].methodRef() ?: return@firstOrNull false
-        val made = code[at - 1].methodRef() ?: return@firstOrNull false
-        code[at].opcode == Opcode.INVOKE_VIRTUAL && call.definingClass == LIST_BUILDER && call.name == "add" &&
-            code[at - 1].opcode == Opcode.INVOKE_DIRECT && made.name == "<init>" &&
-            made.parameters() == listOf("Z", "Ljava/lang/String;", "Ljava/lang/String;")
-    } ?: return null
-    val chipType = code[add - 1].methodRef()!!.definingClass
+    fun madeAt(at: Int): Int? {
+        val call = code[at].methodRef() ?: return null
+        if (code[at].opcode != Opcode.INVOKE_VIRTUAL || call.definingClass != LIST_BUILDER || call.name != "add") return null
+        val copy = code[at - 1].opcode in OBJECT_MOVES
+        val index = if (copy) at - 2 else at - 1
+        val made = code.getOrNull(index)?.methodRef() ?: return null
+        if (code[index].opcode != Opcode.INVOKE_DIRECT || made.name != "<init>" ||
+            made.parameters() != listOf("Z", "Ljava/lang/String;", "Ljava/lang/String;")
+        ) {
+            return null
+        }
+        // The chip the constructor made is the one added, and a copy in between doesn't write over it.
+        val chip = (code[index] as FiveRegisterInstruction).registerC
+        if ((code[at] as FiveRegisterInstruction).registerD != chip) return null
+        if (copy && (code[at - 1] as OneRegisterInstruction).registerA == chip) return null
+        return index
+    }
+    val (add, made) = (1 until code.size).firstNotNullOfOrNull { at -> madeAt(at)?.let { at to it } } ?: return null
+    val chipType = code[made].methodRef()!!.definingClass
     val draw = (add + 1 until code.size).firstNotNullOfOrNull { at ->
         code[at].methodRef()?.takeIf {
             code[at].opcode == Opcode.INVOKE_STATIC && it.returnType == "V" &&
