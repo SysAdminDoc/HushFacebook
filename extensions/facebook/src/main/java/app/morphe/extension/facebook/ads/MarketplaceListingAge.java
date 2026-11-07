@@ -54,7 +54,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * answer's listing_price, so the answer's amount and title say which text React builds is the price.
  * A vehicle gets no such line: Facebook already writes "Listed 3 weeks ago" under its price. Once
  * the date sits under the price, the place line React builds after it goes back to Facebook's own
- * text, so the date shows once. A struck-through old price drawn beside the price gets an empty line
+ * text, so the date shows once. A title two listings dated differently share gets no line under its
+ * price, and its place line keeps the date. A struck-through old price drawn beside the price gets an empty line
  * of the same height, so the row Facebook centres them in keeps the two prices level.
  *
  * <p>Read from 585's MarketplacePDPSurfaceQuery on the S22, 2026-10-31:
@@ -249,7 +250,7 @@ public final class MarketplaceListingAge {
                 }
                 Long seconds = times.get(price.getKey());
                 String label = seconds == null ? null : label(seconds, now);
-                if (label != null) priced(title, price.getValue(), label);
+                if (label != null) priced(title, price.getKey(), price.getValue(), label);
             }
             int untimed = 0, unwritten = 0, dated = 0;
             for (MarketplaceSearchAds.Value listing : listings) {
@@ -385,22 +386,36 @@ public final class MarketplaceListingAge {
                 RelativeDateTimeFormatter.RelativeUnit.YEARS);
     }
 
-    /** A listing's price as its page's answer gives it, and the line that goes under the price. */
+    /**
+     * A listing's price as its page's answer gives it, and the line that goes under the price. No
+     * line for a title two listings put up at different times share.
+     */
     static final class Priced {
+        final String id;
         final String amount;
+        @Nullable
         final String label;
 
-        Priced(String amount, String label) {
+        Priced(String id, String amount, @Nullable String label) {
+            this.id = id;
             this.amount = amount;
             this.label = label;
         }
     }
 
-    /** Remembers the listing called [title], priced [amount], for the line under its price. */
-    static void priced(String title, String amount, String label) {
+    /**
+     * Remembers the listing [id] called [title], priced [amount], for the line under its price. A
+     * seller who posts the same thing twice gives two listings one title and price, and a page
+     * Facebook shows from what it kept sends no answer to say which one it is, so a title seen with
+     * two listings dated differently gets no line under its price. Its place line keeps the date,
+     * which comes with the listing itself (#303).
+     */
+    static void priced(String title, String id, String amount, String label) {
         synchronized (PRICED) {
-            PRICED.remove(title);
-            PRICED.put(title, new Priced(amount, label));
+            Priced was = PRICED.remove(title);
+            boolean mixed = was != null && (was.label == null || !was.id.equals(id) && !was.label.equals(label));
+            if (mixed) Logger.printDebug(() -> "Listing date: two listings share a title, so its price gets no date");
+            PRICED.put(title, new Priced(id, amount, mixed ? null : label));
             if (PRICED.size() > MAX_PRICED) PRICED.remove(PRICED.keySet().iterator().next());
             anyPriced = true;
         }
@@ -435,7 +450,7 @@ public final class MarketplaceListingAge {
             synchronized (PRICED) {
                 Priced named = shown == null ? null : PRICED.get(shown);
                 if (named != null) {
-                    titled = named;
+                    titled = named.label == null ? null : named;
                     since = 0;
                     return text;
                 }

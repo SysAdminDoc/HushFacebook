@@ -366,6 +366,31 @@ public class MarketplaceListingAgeTest {
         assertSame("its price got no date, so the place line keeps it", kept, MarketplaceListingAge.priceLine(kept));
     }
 
+    @Test
+    public void twoListingsOfOneNameDatedDifferentlyLeaveThePriceAloneAndThePlaceDated() {
+        long now = System.currentTimeMillis() / 1000;
+        long older = now - 35 * DAY;
+        String first = priced(answer(older, "Alnwick, NB"), "80000");
+        String second = priced(answer(now - 5 * DAY, "Alnwick, NB"), "80000").replace("\"1234\"", "\"5678\"");
+        String dated = MarketplaceAdFilterForTests.responseWhole(PAGE, first);
+        MarketplaceAdFilterForTests.responseWhole(PAGE, second);
+        String place = "Alnwick, NB" + MarketplaceListingAge.DOT + "Listed 1 month ago (" + date(older) + ")";
+        assertTrue(dated, dated.contains(place));
+
+        MarketplaceListingAge.priceLine(new SpannableString("Polaroid Camera"));
+        SpannableString shown = price("$800", 60);
+        assertSame("the name and price can't say which of the two this is", shown, MarketplaceListingAge.priceLine(shown));
+        SpannableString kept = new SpannableString(place);
+        assertSame("the place line keeps the listing's own date", kept, MarketplaceListingAge.priceLine(kept));
+
+        MarketplaceListingAge.forgetPricesForTests();
+        MarketplaceAdFilterForTests.responseWhole(PAGE, first);
+        MarketplaceAdFilterForTests.responseWhole(PAGE, first);
+        MarketplaceListingAge.priceLine(new SpannableString("Polaroid Camera"));
+        assertEquals("one listing answering twice is still one", "$800\nListed 1 month ago (" + date(older) + ")",
+                MarketplaceListingAge.priceLine(price("$800", 60)).toString());
+    }
+
     /** [answer] with [fields] after data.listing's price. */
     private static String withFields(String answer, String fields) {
         String price = "\"currency\":\"USD\"},";
