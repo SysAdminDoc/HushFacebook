@@ -1373,6 +1373,10 @@ Hide reposts	Geteilte Beiträge ausblenden
 Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Blendet Beiträge aus, die einen anderen Beitrag teilen, mit oder ohne eigenen Text. Originalbeiträge bleiben. Standardmäßig aus, weil es auf einem echten Feed noch nicht ausprobiert wurde.
 Hide posts from Pages	Beiträge von Seiten ausblenden
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	Blendet Beiträge aus, die Seiten geschrieben haben, auch von Seiten, denen du folgst. Beiträge von Freunden und aus Gruppen bleiben, ebenso der Beitrag einer Seite, den ein Freund teilt.
+# context: switch title under News feed; the feed keeps only posts written by the user's Facebook friends
+Only friends' posts	Nur Beiträge von Freunden
+# context: summary of that switch; %1$s is the name of the Following feed on Home switch, which puts the newest posts first
+Shows only posts your friends wrote and hides Pages, groups, ads, suggested posts and feed reels. A post whose author it can't tell stays. Turn on %1$s too for the newest posts first.	Zeigt nur Beiträge, die deine Freunde geschrieben haben, und blendet Seiten, Gruppen, Werbung, vorgeschlagene Beiträge und Reels im Feed aus. Ein Beitrag, dessen Verfasser nicht erkennbar ist, bleibt. Schalte auch %1$s ein, um die neuesten Beiträge zuerst zu sehen.
 Hide posts in other languages	Beiträge in anderen Sprachen ausblenden
 Hides posts and Reels tab reels in a language you don't keep, going by the phone's own guess at each post's words or reel's caption. Ones it isn't sure about stay, and nothing leaves the phone.	Blendet Beiträge und Reels im Reels-Tab in einer Sprache aus, die du nicht behältst, nach der eigenen Einschätzung des Telefons zum Text jedes Beitrags oder zur Beschreibung jedes Reels. Was es nicht sicher erkennt, bleibt, und nichts verlässt das Telefon.
 Languages to keep	Sprachen, die bleiben

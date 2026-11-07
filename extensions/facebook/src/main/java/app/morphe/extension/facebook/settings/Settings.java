@@ -331,6 +331,16 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_page_posts", FALSE);
 
     /**
+     * Only friends' posts (#406): the feed keeps a post when one of its own authors is a friend
+     * ({@link app.morphe.extension.facebook.feed.PostSources#friendKind}). It also turns on the ads,
+     * suggested posts, People you may know, suggested groups, group posts, Pages and feed reels
+     * switches while it's on, without saving them. A post whose authors can't be read stays. Off
+     * until picked.
+     */
+    public static final BooleanSetting ONLY_FRIENDS_POSTS =
+            new BooleanSetting("hushfacebook_only_friends_posts", FALSE);
+
+    /**
      * Feed posts whose words the phone is sure are in a language not on {@link #KEPT_LANGUAGES}
      * (#382, {@link app.morphe.extension.facebook.feed.PostLanguages}). A post with no words, or
      * none the phone is sure of, stays. Off by default.

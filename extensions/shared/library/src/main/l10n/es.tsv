@@ -1373,6 +1373,10 @@ Hide reposts	Ocultar publicaciones compartidas
 Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Oculta las publicaciones que comparten otra publicación, con o sin texto propio. Las publicaciones originales se quedan. Apagado por defecto, porque aún no se ha probado en un feed real.
 Hide posts from Pages	Ocultar publicaciones de páginas
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	Oculta las publicaciones escritas por páginas, también las que sigues. Las publicaciones de amigos y grupos se quedan, y también la publicación de una página que comparte un amigo.
+# context: switch title under News feed; the feed keeps only posts written by the user's Facebook friends
+Only friends' posts	Solo publicaciones de amigos
+# context: summary of that switch; %1$s is the name of the Following feed on Home switch, which puts the newest posts first
+Shows only posts your friends wrote and hides Pages, groups, ads, suggested posts and feed reels. A post whose author it can't tell stays. Turn on %1$s too for the newest posts first.	Muestra solo las publicaciones que escribieron tus amigos y oculta páginas, grupos, anuncios, publicaciones sugeridas y reels del feed. Una publicación cuyo autor no se puede saber se queda. Activa también %1$s para ver primero las publicaciones más recientes.
 Hide posts in other languages	Ocultar publicaciones en otros idiomas
 Hides posts and Reels tab reels in a language you don't keep, going by the phone's own guess at each post's words or reel's caption. Ones it isn't sure about stay, and nothing leaves the phone.	Oculta las publicaciones y los reels de la pestaña Reels en un idioma que no conservas, según lo que el propio teléfono calcula del texto de cada publicación o de la descripción de cada reel. Lo que no tiene claro se queda, y nada sale del teléfono.
 Languages to keep	Idiomas que se quedan

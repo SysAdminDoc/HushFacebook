@@ -439,6 +439,10 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_PAGE_POSTS,
                         L10n.t("Hides posts written by Pages, the ones you follow too. Posts from friends and groups "
                                 + "stay, and so does a friend's share of a Page's post.")));
+                feed.addPreference(toggle(context, Settings.ONLY_FRIENDS_POSTS,
+                        L10n.f("Shows only posts your friends wrote and hides Pages, groups, ads, suggested posts and "
+                                + "feed reels. A post whose author it can't tell stays. Turn on %1$s too for the newest "
+                                + "posts first.", L10n.isolate(SwitchLabels.title(Settings.FOLLOWING_FEED_HOME)))));
                 feed.addPreference(toggle(context, Settings.HIDE_OTHER_LANGUAGES,
                         L10n.t("Hides posts and Reels tab reels in a language you don't keep, going by the phone's own "
                                 + "guess at each post's words or reel's caption. Ones it isn't sure about stay, and nothing "

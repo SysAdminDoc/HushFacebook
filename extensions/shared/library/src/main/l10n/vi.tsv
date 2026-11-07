@@ -1373,6 +1373,10 @@ Hide reposts	Ẩn bài viết được chia sẻ lại
 Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Ẩn bài viết chia sẻ lại bài viết khác, dù có lời bình hay không. Bài viết gốc vẫn giữ nguyên. Mặc định tắt vì chưa được thử trên bảng tin thật.
 Hide posts from Pages	Ẩn bài viết từ Trang
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	Ẩn bài viết do Trang đăng, kể cả Trang bạn theo dõi. Bài viết của bạn bè và nhóm vẫn còn, bài viết của Trang do bạn bè chia sẻ cũng vậy.
+# context: switch title under News feed; the feed keeps only posts written by the user's Facebook friends
+Only friends' posts	Chỉ bài viết của bạn bè
+# context: summary of that switch; %1$s is the name of the Following feed on Home switch, which puts the newest posts first
+Shows only posts your friends wrote and hides Pages, groups, ads, suggested posts and feed reels. A post whose author it can't tell stays. Turn on %1$s too for the newest posts first.	Chỉ hiện bài viết do bạn bè của bạn đăng và ẩn Trang, nhóm, quảng cáo, bài viết được gợi ý và thước phim trong bảng tin. Bài viết không xác định được tác giả vẫn còn. Bật thêm %1$s để xem bài mới nhất trước.
 Hide posts in other languages	Ẩn bài viết bằng ngôn ngữ khác
 Hides posts and Reels tab reels in a language you don't keep, going by the phone's own guess at each post's words or reel's caption. Ones it isn't sure about stay, and nothing leaves the phone.	Ẩn bài viết và thước phim trên tab Reels bằng ngôn ngữ bạn không giữ lại, dựa trên phán đoán của chính điện thoại về chữ trong mỗi bài viết hoặc chú thích của mỗi thước phim. Những gì nó không chắc thì vẫn còn, và không có gì rời khỏi điện thoại.
 Languages to keep	Ngôn ngữ giữ lại

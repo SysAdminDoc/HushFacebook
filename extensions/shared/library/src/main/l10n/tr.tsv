@@ -1373,6 +1373,10 @@ Hide reposts	Yeniden paylaşılan gönderileri gizle
 Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Başka bir gönderiyi paylaşan gönderileri, açıklamalı ya da açıklamasız, gizler. Özgün gönderiler kalır. Varsayılan olarak kapalı, çünkü gerçek bir akışta henüz denenmedi.
 Hide posts from Pages	Sayfalardan gelen gönderileri gizle
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	Sayfaların yazdığı gönderileri gizler, takip ettiğin sayfalar da dahil. Arkadaşlarının ve grupların gönderileri kalır, bir arkadaşının paylaştığı sayfa gönderisi de kalır.
+# context: switch title under News feed; the feed keeps only posts written by the user's Facebook friends
+Only friends' posts	Yalnızca arkadaş gönderileri
+# context: summary of that switch; %1$s is the name of the Following feed on Home switch, which puts the newest posts first
+Shows only posts your friends wrote and hides Pages, groups, ads, suggested posts and feed reels. A post whose author it can't tell stays. Turn on %1$s too for the newest posts first.	Yalnızca arkadaşlarının yazdığı gönderileri gösterir ve sayfaları, grupları, reklamları, önerilen gönderileri ve akıştaki reels videolarını gizler. Yazarı anlaşılamayan bir gönderi kalır. En yeni gönderileri önce görmek için %1$s seçeneğini de açın.
 Hide posts in other languages	Diğer dillerdeki gönderileri gizle
 Hides posts and Reels tab reels in a language you don't keep, going by the phone's own guess at each post's words or reel's caption. Ones it isn't sure about stay, and nothing leaves the phone.	Telefonun her gönderinin metni veya her reelin açıklaması için kendi tahminine göre, tutmadığın bir dilde yazılmış gönderileri ve Reels sekmesindeki reelleri gizler. Emin olmadıkları kalır ve hiçbir şey telefondan çıkmaz.
 Languages to keep	Tutulacak diller

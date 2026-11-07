@@ -55,7 +55,9 @@ internal const val PATCH = "Hide posts by words"
  * no text. Its Hide posts from Pages switch (#262) reads the authors stub too, and asks each
  * author's kept `getTypeName()` whether it's a Page. Its Hide posts in other languages switch
  * (#382) reads the same text as the word filter and asks the phone's own text classifier for each
- * text's language, so it needs no stub of its own.
+ * text's language, so it needs no stub of its own. Its Only friends' posts switch (#406) reads the
+ * authors stub as well, and asks each person author's `friendship_status` through the kept
+ * `getCachedString(int)`.
  *
  * The lists live in Hushfacebook's settings on the phone. Nothing here reads a post until a
  * switch is on and its list has something in it, and nothing of the text, the names or the lists

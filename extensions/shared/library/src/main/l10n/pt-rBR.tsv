@@ -1259,6 +1259,10 @@ Hide reposts	Ocultar publicações compartilhadas
 Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Oculta publicações que compartilham outra publicação, com ou sem legenda. As publicações originais continuam. Desligado por padrão, porque ainda não foi testado em um feed real.
 Hide posts from Pages	Ocultar publicações de Páginas
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	Oculta publicações escritas por Páginas, inclusive as que você segue. Publicações de amigos e grupos continuam, assim como a publicação de uma Página que um amigo compartilha.
+# context: switch title under News feed; the feed keeps only posts written by the user's Facebook friends
+Only friends' posts	Só publicações de amigos
+# context: summary of that switch; %1$s is the name of the Following feed on Home switch, which puts the newest posts first
+Shows only posts your friends wrote and hides Pages, groups, ads, suggested posts and feed reels. A post whose author it can't tell stays. Turn on %1$s too for the newest posts first.	Mostra só as publicações que seus amigos escreveram e oculta Páginas, grupos, anúncios, publicações sugeridas e reels do feed. Uma publicação cujo autor não dá para identificar continua. Ligue também %1$s para ver as publicações mais recentes primeiro.
 Hide posts in other languages	Ocultar publicações em outros idiomas
 Hides posts and Reels tab reels in a language you don't keep, going by the phone's own guess at each post's words or reel's caption. Ones it isn't sure about stay, and nothing leaves the phone.	Oculta publicações e reels da aba Reels em um idioma que você não mantém, pelo palpite do próprio celular sobre o texto de cada publicação ou a legenda de cada reel. O que ele não tem certeza continua, e nada sai do celular.
 Languages to keep	Idiomas que ficam

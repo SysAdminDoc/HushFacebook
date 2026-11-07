@@ -1369,6 +1369,10 @@ Hide reposts	隐藏转发的帖子
 Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	隐藏分享了另一条帖子的帖子，无论有无附言。原创帖子保留。默认关闭，因为尚未在真实动态上试过。
 Hide posts from Pages	隐藏公共主页的帖子
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	隐藏公共主页发布的帖子，包括你关注的主页。好友和小组的帖子会保留，好友分享的公共主页帖子也会保留。
+# context: switch title under News feed; the feed keeps only posts written by the user's Facebook friends
+Only friends' posts	仅显示好友的帖子
+# context: summary of that switch; %1$s is the name of the Following feed on Home switch, which puts the newest posts first
+Shows only posts your friends wrote and hides Pages, groups, ads, suggested posts and feed reels. A post whose author it can't tell stays. Turn on %1$s too for the newest posts first.	只显示好友发布的帖子，隐藏公共主页、小组、广告、推荐帖子和动态中的短视频。无法判断作者的帖子会保留。同时开启“%1$s”可以先看到最新的帖子。
 Hide posts in other languages	隐藏其他语言的帖子
 Hides posts and Reels tab reels in a language you don't keep, going by the phone's own guess at each post's words or reel's caption. Ones it isn't sure about stay, and nothing leaves the phone.	根据手机自己对每条帖子文字或每个 Reels 短视频说明的判断，隐藏用你未保留的语言写的帖子和 Reels 标签页里的短视频。手机不确定的内容会保留，所有内容都不会离开手机。
 Languages to keep	要保留的语言

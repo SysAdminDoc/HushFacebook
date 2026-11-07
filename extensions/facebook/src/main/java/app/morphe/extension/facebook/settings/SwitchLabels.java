@@ -89,6 +89,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_BACKGROUND_POSTS) return L10n.t("Hide posts on a colored background");
         if (setting == Settings.HIDE_REPOSTS) return L10n.t("Hide reposts");
         if (setting == Settings.HIDE_PAGE_POSTS) return L10n.t("Hide posts from Pages");
+        if (setting == Settings.ONLY_FRIENDS_POSTS) return L10n.t("Only friends' posts");
         if (setting == Settings.HIDE_OTHER_LANGUAGES) return L10n.t("Hide posts in other languages");
         if (setting == Settings.HIDE_SPONSORED_STORIES) return L10n.t("Hide sponsored stories");
         if (setting == Settings.HIDE_SUGGESTED_STORIES) return L10n.t("Hide suggested stories");

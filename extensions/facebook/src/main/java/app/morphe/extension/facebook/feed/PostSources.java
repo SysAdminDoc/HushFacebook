@@ -514,6 +514,95 @@ public final class PostSources {
         return any ? PAGE : NO_AUTHORS;
     }
 
+    /** A person's GraphQL type, as an author's {@code getTypeName()} answers it. */
+    static final String PERSON = "User";
+    /** The person field that says whether you're friends, or could ask to be. */
+    static final String FRIENDSHIP_FIELD = "friendship_status";
+    static final int FRIENDSHIP_KEY = FRIENDSHIP_FIELD.hashCode();
+    /** What {@link #friendKind} starts the kind of a post that isn't a friend's with. */
+    static final String NOT_A_FRIEND = "not a friend: ";
+    /** What {@link #friendKind} starts the kind of a friend's post with. */
+    static final String FRIEND = "friend: ";
+    /** A person whose friendship status reads nothing, so they count as a friend. */
+    static final String NO_FRIENDSHIP = "no friendship status";
+    /** The statuses of a person you aren't friends with: you could send a request, or one is on its way. */
+    private static final String[] NOT_FRIENDS = {"CAN_REQUEST", "OUTGOING_REQUEST", "INCOMING_REQUEST"};
+
+    /**
+     * What Only friends' posts reads of a feed unit (#406): {@link #FRIEND} and the status of the
+     * first of its own authors who is a friend; when none is, {@link #NOT_A_FRIEND} and why, the
+     * first author's type when it isn't a person (a Page's, say) or the status of a person you
+     * aren't friends with. A person whose status reads nothing counts as a friend, and so does
+     * {@code CANNOT_REQUEST}, which is what your own posts answer. An author whose type can't be
+     * read is skipped ({@link #UNKNOWN_AUTHOR} when that's all of them). The post a share wraps isn't
+     * read, so a friend's share stays. Never throws.
+     */
+    static String friendKind(@Nullable Object feedUnit, StoryFlag.Accessor actors) {
+        if (feedUnit == null) return Outcome.NO_UNIT.reason;
+        PostText.Members members = PostText.members();
+        if (members.story == null || members.treeModel == null) return Outcome.NO_READER.reason;
+        if (!members.story.isInstance(feedUnit)) return Outcome.NOT_A_STORY.reason;
+        Object authors;
+        try {
+            authors = actors.model(feedUnit);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.POST_WORDS, "author accessor", failure);
+            return Outcome.READ_FAILED.reason;
+        }
+        if (authors == StoryFlag.NOT_PATCHED) {
+            HookStatus.missingMember(FamilyNames.POST_WORDS, "method", StoryFlag.STORY_CLASS,
+                    "the " + ACTORS_FIELD + " accessor");
+            return Outcome.NO_ACCESSOR.reason;
+        }
+        boolean any = false;
+        String friend = null;
+        String notAFriend = null;
+        for (Object author : items(authors)) {
+            if (!members.treeModel.isInstance(author)) continue;
+            any = true;
+            String type = FeedFilter.typeName(author);
+            if (type == null || type.isEmpty()) continue;
+            if (!PERSON.equals(type)) {
+                if (notAFriend == null) notAFriend = NOT_A_FRIEND + type;
+                continue;
+            }
+            String status = friendship(author, members);
+            if (notFriends(status)) {
+                if (notAFriend == null) notAFriend = NOT_A_FRIEND + status;
+            } else if (friend == null) {
+                friend = FRIEND + (status == null || status.isEmpty() ? NO_FRIENDSHIP : status);
+            }
+        }
+        if (friend != null) return friend;
+        if (notAFriend != null) return notAFriend;
+        return any ? UNKNOWN_AUTHOR : NO_AUTHORS;
+    }
+
+    /** Whether what {@link #friendKind} found takes the post out under Only friends' posts. */
+    static boolean notAFriend(@Nullable String kind) {
+        return kind != null && kind.startsWith(NOT_A_FRIEND);
+    }
+
+    private static boolean notFriends(@Nullable String status) {
+        for (String state : NOT_FRIENDS) {
+            if (state.equals(status)) return true;
+        }
+        return false;
+    }
+
+    /** A person's friendship status as text, or null when the tree doesn't hold it as text. */
+    @Nullable
+    private static String friendship(Object person, PostText.Members members) {
+        if (members.cachedString == null) return null;
+        try {
+            Object status = members.cachedString.invoke(person, FRIENDSHIP_KEY);
+            return status instanceof String ? (String) status : null;
+        } catch (ReflectiveOperationException | RuntimeException unreadable) {
+            // A status the tree won't read as text counts as none, so the post stays.
+            return null;
+        }
+    }
+
     /** Adds [story]'s author ids and names and its link hosts to [found]. */
     private static Outcome readStory(Object story, StoryFlag.Accessor actors, StoryFlag.Accessor attachments,
             PostText.Members members, Found found) {

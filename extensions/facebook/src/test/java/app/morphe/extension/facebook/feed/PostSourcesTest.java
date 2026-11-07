@@ -50,6 +50,7 @@ public class PostSourcesTest {
         Settings.HIDE_POSTS_FROM_SOURCES.resetToDefault();
         Settings.HIDDEN_SOURCES.resetToDefault();
         Settings.HIDE_PAGE_POSTS.resetToDefault();
+        Settings.ONLY_FRIENDS_POSTS.resetToDefault();
         FeedFilterCounters.clear();
         HookStatus.clear();
     }
@@ -406,6 +407,116 @@ public class PostSourcesTest {
         PauseForTests.resume();
         assertFalse("a build whose authors stub isn't filled keeps the post", guard(page, true));
         assertEquals(FeedFilter.PAGES_ROUTE + ": 1 lists, 1 items, 0 removed. Kinds: "
+                + PostSources.Outcome.NO_ACCESSOR.reason + " 1", line(FeedFilter.PAGES_ROUTE));
+    }
+
+    /** A person author whose friendship status reads [status], as the feed's tree holds it. */
+    private static BaseModelWithTree person(String status) {
+        return typed(PostSources.PERSON).with(PostSources.FRIENDSHIP_FIELD, status);
+    }
+
+    @Test
+    public void aPostIsAFriendsWhenOneOfItsOwnAuthorsIsAFriend() {
+        GraphQLStory friendsPost = story(null, Arrays.asList(person("ARE_FRIENDS")), Collections.emptyList());
+        GraphQLStory strangersPost = story(null, Arrays.asList(person("CAN_REQUEST")), Collections.emptyList());
+        GraphQLStory asked = story(null, Arrays.asList(person("OUTGOING_REQUEST")), Collections.emptyList());
+        GraphQLStory asking = story(null, Arrays.asList(person("INCOMING_REQUEST")), Collections.emptyList());
+        GraphQLStory page = story(null, Arrays.asList(typed("Page")), Collections.emptyList());
+        GraphQLStory pageWithAFriend = story(null, Arrays.asList(typed("Page"), person("ARE_FRIENDS")),
+                Collections.emptyList());
+        GraphQLStory own = story(null, Arrays.asList(person("CANNOT_REQUEST")), Collections.emptyList());
+        GraphQLStory noStatus = story(null, Arrays.asList(typed(PostSources.PERSON)), Collections.emptyList());
+        GraphQLStory friendSharesAStranger = story(strangersPost, Arrays.asList(person("ARE_FRIENDS")),
+                Collections.emptyList());
+        GraphQLStory strangerSharesAFriend = story(friendsPost, Arrays.asList(person("CAN_REQUEST")),
+                Collections.emptyList());
+        GraphQLStory unread = story(null, Arrays.asList(typed(null)), Collections.emptyList());
+        GraphQLStory released = story(null, Arrays.asList(person("CAN_REQUEST").released()), Collections.emptyList());
+        GraphQLStory nobody = story(null, Collections.emptyList(), Collections.emptyList());
+
+        assertEquals(PostSources.FRIEND + "ARE_FRIENDS", PostSources.friendKind(friendsPost, actors));
+        assertEquals(PostSources.NOT_A_FRIEND + "CAN_REQUEST", PostSources.friendKind(strangersPost, actors));
+        assertEquals(PostSources.NOT_A_FRIEND + "OUTGOING_REQUEST", PostSources.friendKind(asked, actors));
+        assertEquals(PostSources.NOT_A_FRIEND + "INCOMING_REQUEST", PostSources.friendKind(asking, actors));
+        assertEquals(PostSources.NOT_A_FRIEND + "Page", PostSources.friendKind(page, actors));
+        assertEquals(PostSources.FRIEND + "ARE_FRIENDS", PostSources.friendKind(pageWithAFriend, actors));
+        assertEquals("your own posts stay", PostSources.FRIEND + "CANNOT_REQUEST", PostSources.friendKind(own, actors));
+        assertEquals("a status that reads nothing keeps the post",
+                PostSources.FRIEND + PostSources.NO_FRIENDSHIP, PostSources.friendKind(noStatus, actors));
+        assertEquals("a share is its sharer's", PostSources.FRIEND + "ARE_FRIENDS",
+                PostSources.friendKind(friendSharesAStranger, actors));
+        assertEquals(PostSources.NOT_A_FRIEND + "CAN_REQUEST", PostSources.friendKind(strangerSharesAFriend, actors));
+        assertEquals(PostSources.UNKNOWN_AUTHOR, PostSources.friendKind(unread, actors));
+        assertEquals("a released author isn't asked", PostSources.UNKNOWN_AUTHOR, PostSources.friendKind(released, actors));
+        assertEquals(PostSources.NO_AUTHORS, PostSources.friendKind(nobody, actors));
+        assertEquals(PostSources.Outcome.NOT_A_STORY.reason, PostSources.friendKind(new Object(), actors));
+        assertEquals(PostSources.Outcome.NO_UNIT.reason, PostSources.friendKind(null, actors));
+        assertEquals(PostSources.Outcome.NO_ACCESSOR.reason, PostSources.friendKind(page, PostSources.ACTORS));
+        assertEquals(PostSources.Outcome.READ_FAILED.reason, PostSources.friendKind(page, story -> {
+            throw new IllegalStateException("renamed");
+        }));
+
+        assertTrue(PostSources.notAFriend(PostSources.friendKind(page, actors)));
+        assertFalse(PostSources.notAFriend(PostSources.friendKind(friendsPost, actors)));
+        assertFalse("an author it can't read keeps the post", PostSources.notAFriend(PostSources.UNKNOWN_AUTHOR));
+        assertFalse(PostSources.notAFriend(PostSources.Outcome.NO_ACCESSOR.reason));
+        assertFalse(PostSources.notAFriend(null));
+    }
+
+    @Test
+    public void onlyFriendsPostsTakesEveryPostThatIsntAFriendsAndCountsEveryKind() {
+        GraphQLStory friendsPost = story(null, Arrays.asList(person("ARE_FRIENDS")), Collections.emptyList());
+        GraphQLStory page = story(null, Arrays.asList(typed("Page")), Collections.emptyList());
+        GraphQLStory strangersPost = story(null, Arrays.asList(person("CAN_REQUEST")), Collections.emptyList());
+
+        assertNull(FeedFilter.friendsReason(friendsPost, actors));
+        assertEquals(PostSources.NOT_A_FRIEND + "Page", FeedFilter.friendsReason(page, actors));
+        assertEquals(PostSources.NOT_A_FRIEND + "CAN_REQUEST", FeedFilter.friendsReason(strangersPost, actors));
+        assertEquals(FeedFilter.FRIENDS_ROUTE + ": 3 lists, 3 items, 2 removed. Last reason: not a friend: CAN_REQUEST. "
+                + "Removed: not a friend: CAN_REQUEST 1, not a friend: Page 1. "
+                + "Kinds: friend: ARE_FRIENDS 1, not a friend: CAN_REQUEST 1, not a friend: Page 1",
+                line(FeedFilter.FRIENDS_ROUTE));
+    }
+
+    @Test
+    public void onlyFriendsPostsTurnsOnTheSwitchesThatTakeTheRestWithoutSavingThem() {
+        assertFalse("off until picked", Settings.ONLY_FRIENDS_POSTS.defaultValue);
+        List<app.morphe.extension.shared.settings.BooleanSetting> implied = Arrays.asList(
+                Settings.HIDE_SPONSORED_POSTS, Settings.HIDE_SUGGESTED_POSTS, Settings.HIDE_PEOPLE_YOU_MAY_KNOW,
+                Settings.HIDE_SUGGESTED_GROUPS, Settings.HIDE_GROUP_POSTS, Settings.HIDE_PAGE_POSTS,
+                Settings.HIDE_FEED_REELS);
+        for (app.morphe.extension.shared.settings.BooleanSetting setting : implied) {
+            setting.save(false);
+            assertFalse(setting.key, FeedFilter.withFriendsOnly(setting));
+        }
+        Settings.ONLY_FRIENDS_POSTS.save(true);
+        for (app.morphe.extension.shared.settings.BooleanSetting setting : implied) {
+            assertTrue(setting.key, FeedFilter.withFriendsOnly(setting));
+            assertFalse("nothing saved: " + setting.key, setting.get());
+            setting.resetToDefault();
+        }
+    }
+
+    @Test
+    public void theFeedGuardAsksAboutFriendsOnlyWithTheSwitchOnAndNoPause() {
+        GraphQLStory page = story(null, Arrays.asList(typed("Page")), Collections.emptyList());
+        assertFalse(guard(page, true));
+        assertNull("nothing read with the switch off", line(FeedFilter.FRIENDS_ROUTE));
+
+        Settings.ONLY_FRIENDS_POSTS.save(true);
+        assertFalse(guard(page, false));
+        assertNull("nothing read without Hide posts by words", line(FeedFilter.FRIENDS_ROUTE));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse(guard(page, true));
+        assertNull("nothing read while paused", line(FeedFilter.FRIENDS_ROUTE));
+
+        PauseForTests.resume();
+        assertFalse("a build whose authors stub isn't filled keeps the post", guard(page, true));
+        assertEquals(FeedFilter.FRIENDS_ROUTE + ": 1 lists, 1 items, 0 removed. Kinds: "
+                + PostSources.Outcome.NO_ACCESSOR.reason + " 1", line(FeedFilter.FRIENDS_ROUTE));
+        assertEquals("Pages are asked about too, with their own switch off",
+                FeedFilter.PAGES_ROUTE + ": 1 lists, 1 items, 0 removed. Kinds: "
                 + PostSources.Outcome.NO_ACCESSOR.reason + " 1", line(FeedFilter.PAGES_ROUTE));
     }
 

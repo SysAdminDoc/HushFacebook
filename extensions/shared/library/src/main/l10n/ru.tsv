@@ -1399,6 +1399,10 @@ Hide reposts	Скрывать репосты
 Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Скрывает публикации, которыми делятся другие публикации, с подписью или без нее. Исходные публикации остаются. По умолчанию выключено, поскольку функция еще не проверялась на реальной Ленте.
 Hide posts from Pages	Скрывать публикации Страниц
 Hides posts written by Pages, the ones you follow too. Posts from friends and groups stay, and so does a friend's share of a Page's post.	Скрывает публикации Страниц, в том числе тех, на которые вы подписаны. Публикации друзей и групп остаются, как и репосты публикаций Страниц, которыми поделились друзья.
+# context: switch title under News feed; the feed keeps only posts written by the user's Facebook friends
+Only friends' posts	Только публикации друзей
+# context: summary of that switch; %1$s is the name of the Following feed on Home switch, which puts the newest posts first
+Shows only posts your friends wrote and hides Pages, groups, ads, suggested posts and feed reels. A post whose author it can't tell stays. Turn on %1$s too for the newest posts first.	Показывает только публикации ваших друзей и скрывает Страницы, группы, рекламу, рекомендованные публикации и Reels в ленте. Публикация, автора которой не удалось определить, остаётся. Включите также %1$s, чтобы сначала видеть самые новые публикации.
 Hide posts in other languages	Скрывать публикации на других языках
 Hides posts and Reels tab reels in a language you don't keep, going by the phone's own guess at each post's words or reel's caption. Ones it isn't sure about stay, and nothing leaves the phone.	Скрывает публикации и ролики во вкладке Reels на языке, которого нет в вашем списке, по собственной оценке телефона для текста каждой публикации или подписи к ролику. То, в чём он не уверен, остаётся, и ничего не покидает телефон.
 Languages to keep	Оставляемые языки
