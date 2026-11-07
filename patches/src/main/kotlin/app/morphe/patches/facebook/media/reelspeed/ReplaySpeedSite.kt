@@ -12,6 +12,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
@@ -165,12 +166,11 @@ internal fun BytecodePatchContext.offerReplaySpeed(sponsoredField: FieldReferenc
         .filter { classDef -> classDef.methods.any { holdsString(it, GEAR_SPEED_TAP) } }
         .map { it.type }
         .toSet()
-    val builders = classDefByStrings(ENGAGEMENT_STATE, StringComparisonType.EQUALS)
-        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        .flatMap { classDef -> classDef.methods.filter { holdsString(it, ENGAGEMENT_STATE) } }
+    // 585's Android 9+ build asks a string table (04Uy.A00) for the state instead of holding it (#102).
+    val builders = methodsNaming(ENGAGEMENT_STATE) { rowCasts(it, rowTypes).isNotEmpty() }
         .flatMap { method -> rowCasts(method, rowTypes).map { method to it } }
     val (builder, rowType) = builders.singleOrNull() ?: refuseReplay(
-        "expected one method holding \"$ENGAGEMENT_STATE\" that casts to a class holding \"$GEAR_SPEED_TAP\", " +
+        "expected one method naming \"$ENGAGEMENT_STATE\" that casts to a class holding \"$GEAR_SPEED_TAP\", " +
             "found ${builders.map { (method, row) -> "${method.label()} to $row" }}",
     )
     val method = mutableClassDefBy(builder.definingClass).findMutableMethodOf(builder)

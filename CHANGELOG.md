@@ -80,6 +80,7 @@ Changes in each Hushfacebook version, newest first.
 * **Tooling:** The device walk taps the search field before it presses Enter. About 2 times in 10, Enter right after typing the search word went to the first suggestion under the field and searched nothing. The tap only goes to the one search field holding that word, once per search, and is refused anywhere else. Checked in the audit's tests.
 * **Tooling:** A post that shows its whole text from the start now counts as a `Show full post text` run in the hook status, and so does a reel caption that opens whole. With the switch on, Facebook never cuts the post, so the only count it used to get came from the cutter and the device walk read the switch as idle. The walk requires it again.
 * **Tooling:** The device walk won't tap a `Comment` button that's scrolled under the top bar, a header row or the tab bar anymore. A tap there lands on whatever covers the button, so on the all-on feed it opened the drawer instead of a comment sheet. The walk now takes the next `Comment` it can actually reach, or scrolls on.
+* **Tooling:** `Keep the reel speed` goes in whole on Facebook's Android 9+ build. Two of its parts found nothing there and were left out with a warning: the gear menu's speed sheet ticking the speed a video really plays at, and `Speed on finished live videos`. That build finds the player in two steps and reads one of the gear menu's labels from a table of strings, and the patch now follows both. (#102)
 
 ## 0.21.0 (2026-11-05)
 

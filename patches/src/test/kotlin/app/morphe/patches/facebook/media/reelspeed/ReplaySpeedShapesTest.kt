@@ -68,12 +68,13 @@ class ReplaySpeedShapesTest {
         rowTest: String = "if-nez v2, :done",
         afterRow: String = "const/4 v1, 0x0",
         owner: String = builderType,
+        state: String = "const-string v3, \"$ENGAGEMENT_STATE\"",
     ) = method(
         """
             const/4 v0, 0x0
             $sponsoredRead
             $keep
-            const-string v3, "$ENGAGEMENT_STATE"
+            $state
             invoke-virtual { v3, v3 }, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
             move-result v4
             invoke-static { }, Lfixture/Config;->A0Z()Z
@@ -158,6 +159,51 @@ class ReplaySpeedShapesTest {
         assertEquals("Facebook's goto still goes to the row", listOf(row), flow.normal[14])
         assertEquals("the row is the supplier's call", Opcode.INVOKE_INTERFACE, after[row].opcode)
         assertEquals(before.map { it.opcode }, after.filterIndexed { index, _ -> index !in 9..12 }.map { it.opcode })
+    }
+
+    private val tableType = "Lfixture/Strings;"
+
+    /** A string table like the one 585's Android 9+ build asks for the state (04Uy.A00): index 0x156 answers it. */
+    private fun stringTable() = classOf(
+        tableType,
+        method(
+            """
+                packed-switch p0, :cases
+                const-string v0, "unused"
+                return-object v0
+                :state
+                const-string v0, "$ENGAGEMENT_STATE"
+                return-object v0
+                :cases
+                .packed-switch 0x156
+                    :state
+                .end packed-switch
+            """,
+            parameters = listOf("I"), returnType = "Ljava/lang/String;", registers = 2, owner = tableType,
+        ),
+    )
+
+    private fun askingTable(index: String) =
+        "const/16 v3, $index\ninvoke-static { v3 }, $tableType->A00(I)Ljava/lang/String;\nmove-result-object v3"
+
+    @Test
+    fun `a builder that asks a string table for the engagement state gets the hook too`() {
+        val original = builder(state = askingTable("0x156"))
+        val before = original.body()
+        val context = PatchContexts.of(listOf(classOf(builderType, original), speedRow(), stringTable()))
+        context.offerReplaySpeed(sponsored)
+        val after = context.mutableClassDefBy(builderType).methods.single().body()
+        assertEquals(listOf(Opcode.IF_NEZ, Opcode.IF_NEZ, Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT, Opcode.IF_NEZ, Opcode.IF_EQZ),
+            after.subList(10, 16).map { it.opcode })
+        assertEquals("the extension's question", OFFER_SPEED, (after[12] as ReferenceInstruction).reference.toString())
+        assertEquals(before.map { it.opcode }, after.filterIndexed { index, _ -> index !in 11..14 }.map { it.opcode })
+
+        // Another entry of the table names something else, so there's no builder.
+        val other = builder(state = askingTable("0x157"))
+        val elsewhere = PatchContexts.of(listOf(classOf(builderType, other), speedRow(), stringTable()))
+        assertThrows(PatchException::class.java) { elsewhere.offerReplaySpeed(sponsored) }
+        assertEquals("a builder naming nothing changed", other.body().size,
+            elsewhere.mutableClassDefBy(builderType).methods.single().body().size)
     }
 
     @Test

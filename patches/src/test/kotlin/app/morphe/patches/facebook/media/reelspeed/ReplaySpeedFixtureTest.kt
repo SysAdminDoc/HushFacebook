@@ -10,6 +10,9 @@ import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.media.resume.VIDEO_PLAYER_PARAMS
 import app.morphe.patches.facebook.media.resume.reportedValues
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -71,13 +74,21 @@ class ReplaySpeedFixtureTest {
                 val rows = FixtureDex.classesHolding(bundle, GEAR_SPEED_TAP).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
                 val rowTypes = rows.filter { row -> row.methods.any { holdsString(it, GEAR_SPEED_TAP) } }.map { it.type }.toSet()
                 val holders = FixtureDex.classesHolding(bundle, ENGAGEMENT_STATE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-                val builders = holders.flatMap { it.methods }.filter { holdsString(it, ENGAGEMENT_STATE) }.flatMap { method ->
-                    method.code().filter { it.opcode == Opcode.CHECK_CAST }
-                        .map { ((it as ReferenceInstruction).reference as TypeReference).type }
-                        .filter { it in rowTypes }.distinct().map { method to it }
-                }
-                assertEquals("$name: builders holding \"$ENGAGEMENT_STATE\" casting to a speed row", 1, builders.size)
+                // The Android 9+ build asks a string table for the state instead of holding it (#102).
+                val tables = holders.associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+                fun rowCasts(method: Method) = method.code().filter { it.opcode == Opcode.CHECK_CAST }
+                    .map { ((it as ReferenceInstruction).reference as TypeReference).type }
+                    .filter { it in rowTypes }.distinct()
+                val naming = holders.flatMap { it.methods }.filter { it.implementation != null && holdsString(it, ENGAGEMENT_STATE) } +
+                    FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in tables } }) {
+                        it.implementation != null && !holdsString(it, ENGAGEMENT_STATE) && rowCasts(it).isNotEmpty() &&
+                            namesString(it, ENGAGEMENT_STATE, resolve)
+                    }
+                val builders = naming.flatMap { method -> rowCasts(method).map { method to it } }
+                assertEquals("$name: builders naming \"$ENGAGEMENT_STATE\" casting to a speed row", 1, builders.size)
                 val (builder, rowType) = builders.single()
+                val builderClass = FixtureDex.classes(bundle, setOf(builder.definingClass)).values.single()
 
                 val site = replaySpeedSite(builder, rowType, sponsored)
                 val code = builder.code()
@@ -96,7 +107,10 @@ class ReplaySpeedFixtureTest {
                 }
 
                 // The tested register is set to 1 right after the engagement state compares equal.
-                val compare = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == ENGAGEMENT_STATE }
+                val compare = code.indices.firstOrNull { at ->
+                    ((code[at] as? ReferenceInstruction)?.reference as? StringReference)?.string == ENGAGEMENT_STATE ||
+                        tableStringAt(code, at, resolve) == ENGAGEMENT_STATE
+                } ?: throw AssertionError("$name: the builder doesn't name $ENGAGEMENT_STATE")
                 val engagedSet = (compare until minOf(compare + 8, code.size)).any { at ->
                     val instruction = code[at]
                     (instruction.opcode == Opcode.CONST_4 || instruction.opcode == Opcode.CONST_16) &&
@@ -123,7 +137,7 @@ class ReplaySpeedFixtureTest {
                 assertEquals("$name: offerSpeed's answer", "Z", offer.returnType)
                 assertTrue("$name: offerSpeed isn't public static",
                     AccessFlags.PUBLIC.isSet(offer.accessFlags) && AccessFlags.STATIC.isSet(offer.accessFlags))
-                val context = PatchContexts.of((rows + holders + listOf(extension)).distinctBy { it.type })
+                val context = PatchContexts.of((rows + holders + listOf(builderClass, extension)).distinctBy { it.type })
                 context.offerReplaySpeed(sponsored)
                 val patched = context.mutableClassDefBy(builder.definingClass).methods.single {
                     it.name == builder.name && it.returnType == builder.returnType &&
