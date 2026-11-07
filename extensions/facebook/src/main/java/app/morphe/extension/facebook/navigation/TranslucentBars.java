@@ -94,10 +94,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>Not every tab's page runs under the tab bar. Marketplace is a React Native page that its
  * FrameLayout holder stops at the tab bar's top edge, so nothing was there to show through (#250).
- * While the bars are see-through, a page that stops at the tab bar's top edge through its holder's
- * bottom padding or its own bottom margin, at least half the window tall and with a gap covering
- * the tab bar's rows, gets that gap taken away and runs under the bar the way Home's feed does.
- * The gap comes back when the bars stop. A page Facebook keeps putting the gap back on is left as
+ * While the bars are see-through or the tab bar is rounded, a page that stops at the tab bar's top
+ * edge through its holder's bottom padding or its own bottom margin, at least half the window tall
+ * and with a gap covering the tab bar's rows, gets that gap taken away and runs under the bar the
+ * way Home's feed does. With the pill alone, that gap showed black around it (#412). The gap comes
+ * back when both switches are off. A page Facebook keeps putting the gap back on is left as
  * Facebook has it, so the two never fight over its layout.
  *
  * <p>Any failure gives every fill back and stops the bars of that screen, which then look stock.
@@ -392,6 +393,22 @@ public final class TranslucentBars {
     }
 
     /**
+     * [view]'s top in the window where it's laid out, before any scale or slide: the edge a page
+     * stops at. Rounded tab bar draws the bar 90% of its size, which moves the row's drawn top a few
+     * pixels off that edge (#412).
+     */
+    static int laidOutTop(View view) {
+        int top = view.getTop();
+        ViewParent parent = view.getParent();
+        while (parent instanceof View) {
+            View holder = (View) parent;
+            top += holder.getTop() - holder.getScrollY();
+            parent = holder.getParent();
+        }
+        return top;
+    }
+
+    /**
      * The gap under [view] that its FrameLayout holder's bottom padding and its own bottom margin
      * make, or 0 when it isn't laid out by those alone (another holder, a gravity, a height of its own).
      */
@@ -581,10 +598,14 @@ public final class TranslucentBars {
         void update() {
             View window = this.window.get();
             if (window == null || stopped) return;
-            if (!on()) {
+            boolean seeThrough = on();
+            if (!seeThrough && !RoundedTabBar.on()) {
                 giveBack();
                 return;
             }
+            // Rounded tab bar alone still runs the page under the bar, so the feed shows around
+            // the pill instead of black (#412), with the fills Facebook's and no frost.
+            if (!seeThrough) giveBackFills();
             long now = SystemClock.uptimeMillis();
             if (lookAgain() && now >= nextLook) {
                 nextLook = now + RESCAN_MS;
@@ -609,8 +630,9 @@ public final class TranslucentBars {
                 }
                 if (now >= nextStretch && tabBar.equals(anchor.getClass().getName()) && rows.top > height / 2) {
                     nextStretch = now + RESCAN_MS;
-                    reachUnder(bar, rows, height, now);
+                    reachUnder(bar, laidOutTop(anchor), rows.height(), height, now);
                 }
+                if (!seeThrough) continue;
                 View under = blurs ? underNow(bar, rows) : null;
                 seen.setEmpty();
                 float shown = keep(bar, bar, row, under != null, 1f, 0);
@@ -626,19 +648,21 @@ public final class TranslucentBars {
                     }
                 }
             }
+            if (!seeThrough) return;
             forgetUnseen();
             dropStaleFrost();
         }
 
         /**
-         * Stretches the page under the tab bar [bar] when it stops at the top of the bar's [rows],
-         * in a window [height] tall (#250). A page Facebook puts the gap back on {@link
-         * #MAX_PUT_BACKS} times in a row, each within {@link #PUT_BACK_MS}, is left as Facebook has it.
+         * Stretches the page under the tab bar [bar] when it stops at [edge], the top of the bar's
+         * rows, with a gap of at least [rows] pixels, in a window [height] tall (#250). A page
+         * Facebook puts the gap back on {@link #MAX_PUT_BACKS} times in a row, each within {@link
+         * #PUT_BACK_MS}, is left as Facebook has it.
          */
-        private void reachUnder(View bar, Rect rows, int height, long now) {
+        private void reachUnder(View bar, int edge, int rows, int height, long now) {
             View page = under(bar);
             if (page == null) return;
-            View content = stopsAt(page, rows.top, height / 2, rows.height(), origin, 0);
+            View content = stopsAt(page, edge, height / 2, rows, origin, 0);
             if (content == null) return;
             Stretch stretch = stretched.get(content);
             if (stretch == null) {
@@ -842,6 +866,11 @@ public final class TranslucentBars {
         /** Every fill gets Facebook's alpha back, the frost goes and each stretched page gets its gap back. */
         void giveBack() {
             unstretch();
+            giveBackFills();
+        }
+
+        /** Every fill gets Facebook's alpha back and the frost goes. Stretched pages stay stretched. */
+        private void giveBackFills() {
             if (fills.isEmpty() && frosts.isEmpty()) return;
             for (Map.Entry<Drawable, Fill> entry : fills.entrySet()) giveBack(entry.getKey(), entry.getValue());
             if (!fills.isEmpty()) HookStatus.counted(FAMILY, GIVEN_BACK);

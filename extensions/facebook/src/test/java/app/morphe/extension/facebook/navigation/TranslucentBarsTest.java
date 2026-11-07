@@ -74,6 +74,7 @@ public class TranslucentBarsTest {
     public void restore() {
         PauseForTests.resume();
         Settings.TRANSLUCENT_BARS.resetToDefault();
+        Settings.ROUNDED_TAB_BAR.resetToDefault();
         HookStatus.clear();
     }
 
@@ -153,6 +154,48 @@ public class TranslucentBarsTest {
         assertTrue(statusLine(), statusLine().contains(TranslucentBars.STRETCHED + " 1"));
 
         Settings.TRANSLUCENT_BARS.save(false);
+        screen.bars.update();
+        screen.layOut();
+        assertEquals("the gap back", 160, holder.getPaddingBottom());
+        assertEquals(1440, market.getBottom());
+    }
+
+    /**
+     * #412: with Rounded tab bar on and the bars not see-through, a page that stops at the tab bar's
+     * top showed black around the pill. It runs under the pill now, every fill stays Facebook's, and
+     * the gap comes back once the pill goes too. The pill draws the bar 90% of its size, so the edge
+     * is where the row is laid out, not where it's drawn.
+     */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void aPageRunsUnderARoundedTabBarToo() {
+        Settings.TRANSLUCENT_BARS.save(false);
+        Settings.ROUNDED_TAB_BAR.save(true);
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        RoundedTabBar.Shaper shaper = new RoundedTabBar.Shaper(screen.window, TranslucentBarsForTests.TabBar.class.getName());
+        FrameLayout holder = new FrameLayout(screen.activity);
+        holder.setPadding(0, 0, 0, 160);
+        View market = new View(screen.activity);
+        holder.addView(market, new FrameLayout.LayoutParams(720, FrameLayout.LayoutParams.MATCH_PARENT));
+        screen.page.addView(holder, new FrameLayout.LayoutParams(720, 1600));
+        screen.layOut();
+        shaper.update();
+        View pill = TranslucentBars.barOf(screen.tabBar, screen.window.getHeight());
+        assertEquals("the bar is a pill", RoundedTabBar.SCALE, pill.getScaleY(), 0f);
+        int[] at = new int[2];
+        market.getLocationInWindow(at);
+        assertEquals("the page's edge is the row's laid-out top", at[1] + market.getHeight(),
+                TranslucentBars.laidOutTop(screen.tabBar));
+
+        screen.bars.update();
+        screen.layOut();
+        assertEquals("under the pill", 1600, market.getBottom());
+        assertTrue(statusLine(), statusLine().contains(TranslucentBars.STRETCHED + " 1"));
+        assertFalse(statusLine(), statusLine().contains(TranslucentBars.MADE_SEE_THROUGH));
+        assertEquals("the tab bar's fill is Facebook's", TranslucentBarsForTests.TAB_COLOUR,
+                ((ColorDrawable) screen.tabBar.getBackground()).getColor());
+
+        Settings.ROUNDED_TAB_BAR.save(false);
         screen.bars.update();
         screen.layOut();
         assertEquals("the gap back", 160, holder.getPaddingBottom());

@@ -39,6 +39,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* With `Rounded tab bar` on, Marketplace and other pages that stopped at the top of the tab bar now run under it, so the page shows around the pill instead of a black strip. This works with `See-through bars` off too. (#412)
 * `Hide the notes and active now row` leaves Dating's new matches alone. Dating's Matches screen is the same inbox as Chats, and its row of new matches is drawn by the same section as the notes row, so the switch emptied it too. Pausing Hushfacebook was the only way to get them back. (#337)
 * `Hide reel interest prompts` also takes away the "To what extent does this video match your interests?" survey Facebook puts between reels. It's a card of its own, not the prompt laid over a reel, so it kept showing up. (#405)
 * With `View stories anonymously` on, someone's stories that you watched partway open at the first one you haven't watched, even after Facebook restarts. Opening them from their profile picture or from the tray used to start over at the first story. (#218)
