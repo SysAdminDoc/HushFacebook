@@ -16,11 +16,13 @@ import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.util.MethodUtil
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -28,8 +30,9 @@ import java.io.File
 
 /**
  * Translate posts on every Facebook build the bundle declares: the post's text goes through the
- * extension before anything in the builder reads it, every return goes through it, and Show full
- * post text's hook lands on its own spot whichever of the two patches runs first. Reads the fixture
+ * extension before anything in the builder reads it, every return goes through it, a post opened to
+ * its whole text goes through it outside the builder, and Show full post text's hook lands on its
+ * own spot whichever of the two patches runs first. Reads the fixture
  * bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class TranslatePostsFixtureTest {
@@ -119,6 +122,67 @@ class TranslatePostsFixtureTest {
                     assertEquals(Opcode.IF_EQZ, both[at + 2].opcode)
                     assertEquals("$name: the text's hook after ${order.map { it.name }}", true, both[0].names(TRANSLATION_TEXT))
                     assertEquals("$name: hooks after ${order.map { it.name }}", original.size + 2 * (returns + 2), both.size)
+                }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    @Test
+    fun `each declared build translates a post opened to its whole text`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val builder = FixtureDex.methodsWhere(bundle, { true }) {
+                    !it.definingClass.startsWith(EXTENSION_CLASSES) && cutShaped(it)
+                }.single()
+                val step = wholeTextStep(builder)
+                assertTrue("$name: the builder runs its text through no static step of its class", step != null)
+                val callsStep = { instruction: Instruction -> instruction.names(step.toString()) }
+                // The builder is an ImmutableMethod, its parameters not Strings, so signatures compare and lists don't.
+                val callers = FixtureDex.methodsWhere(bundle, { true }) { method ->
+                    !method.definingClass.startsWith(EXTENSION_CLASSES) && method.implementation != null &&
+                        !(method.definingClass == builder.definingClass && MethodUtil.methodSignaturesMatch(method, builder)) &&
+                        method.implementation!!.instructions.any(callsStep)
+                }
+                // 585: the renderer a tap on a cut post takes, and the whole text the feed builds beside the cut one.
+                // The Android 9 build folds that renderer's cut into the builder, which runs both texts through the
+                // step itself, and the two outside it are left.
+                assertTrue("$name: expected two places building a post's whole text, found ${callers.size}", callers.size >= 2)
+
+                val classes = FixtureDex.classes(bundle, callers.map { it.definingClass }.toSet() + builder.definingClass + FRAGMENT_ACTIVITY)
+                val context = PatchContexts.of((classes.values + ExtensionDex.classDef(SETTINGS_STATUS)).toList())
+                translatePostsPatch.execute(context)
+                // The builder keeps its own hooks only, so a text it runs through the step goes through the extension once.
+                val builderCode = builder.code()
+                val builderReturns = builderCode.count { it.opcode == Opcode.RETURN_OBJECT }
+                assertEquals("$name: the builder's hooks", builderCode.size + 2 * (builderReturns + 1),
+                    context.mutableClassDefBy(builder.definingClass).methods.single {
+                        it.name == builder.name && MethodUtil.methodSignaturesMatch(it, builder)
+                    }.code().size)
+                for (caller in callers) {
+                    val original = caller.code()
+                    val calls = original.count(callsStep)
+                    val patched = context.mutableClassDefBy(caller.definingClass).methods.single {
+                        it.name == caller.name && it.parameterTypes == caller.parameterTypes
+                    }.code()
+                    val where = "$name: ${caller.definingClass}->${caller.name}"
+                    assertEquals("$where: four instructions per call", original.size + 4 * calls, patched.size)
+                    for ((at, call) in patched.withIndex().filter { callsStep(it.value) }) {
+                        val text = (call as? RegisterRangeInstruction)?.startRegister
+                            ?: (call as FiveRegisterInstruction).registerC
+                        assertTrue("$where: the text going in at $at isn't hooked", patched[at - 2].names(TRANSLATION_TEXT))
+                        assertEquals("$where: the text is handed over", text, (patched[at - 2] as RegisterRangeInstruction).startRegister)
+                        assertEquals("$where: the answer replaces the text", text, (patched[at - 1] as OneRegisterInstruction).registerA)
+                        val result = (patched[at + 1] as OneRegisterInstruction).registerA
+                        assertTrue("$where: what comes back at $at isn't hooked", patched[at + 2].names(TRANSLATION_SHOWN))
+                        assertEquals("$where: the step's answer is handed over", result, (patched[at + 2] as RegisterRangeInstruction).startRegister)
+                        assertEquals(Opcode.MOVE_RESULT_OBJECT, patched[at + 3].opcode)
+                        assertEquals(result, (patched[at + 3] as OneRegisterInstruction).registerA)
+                    }
                 }
                 checked += version
             }
