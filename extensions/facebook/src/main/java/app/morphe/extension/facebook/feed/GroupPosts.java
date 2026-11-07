@@ -59,6 +59,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 public final class GroupPosts {
     /** The route the report counts each story read for its group on, while the switch is on. */
     static final String ROUTE = "Groups you're not in";
+    /** The route Hide all group posts counts each story read on, while its switch is on. */
+    static final String ALL_ROUTE = "Group posts";
 
     /** The type name a story's target answers when the post was posted in a group. */
     static final String GROUP_TYPE = "Group";
@@ -519,16 +521,39 @@ public final class GroupPosts {
      */
     static boolean notJoined(@Nullable String kind) {
         if (kind == null) return false;
-        String state = kind.startsWith(WRAPPED) ? kind.substring(WRAPPED.length()) : kind;
-        for (String route : new String[] {TARGET_GROUP, TITLE_GROUP, ATTACHMENT_GROUP}) {
-            if (state.startsWith(route)) {
-                state = state.substring(route.length());
-                break;
-            }
-        }
+        String state = state(kind);
         for (String joinable : NOT_JOINED) {
             if (joinable.equals(state)) return true;
         }
         return false;
+    }
+
+    /**
+     * Whether what a read found is a group, whatever its join state, for Hide all group posts
+     * (#409): a join state, or a group that has none or whose state isn't an enum. A read that found
+     * no group, or couldn't read, keeps the post.
+     */
+    static boolean inAGroup(@Nullable String kind) {
+        if (kind == null) return false;
+        String state = state(kind);
+        if (state.isEmpty()) return false;
+        for (String none : NO_GROUP) {
+            // "wrapped post not readable" starts with the wrapped prefix, so check the whole kind too.
+            if (none.equals(kind) || none.equals(state)) return false;
+        }
+        return true;
+    }
+
+    /** What {@link #read} answers when it found no group, or couldn't tell. */
+    private static final String[] NO_GROUP = {NOT_A_STORY, NOT_PATCHED, RELEASED, NO_TARGET, NOT_A_GROUP,
+            READ_FAILED, NO_WRAPPED_READER};
+
+    /** [kind] without the route it was read through: the wrapped post's, then the target group's, title's or attachment's. */
+    private static String state(String kind) {
+        String state = kind.startsWith(WRAPPED) ? kind.substring(WRAPPED.length()) : kind;
+        for (String route : new String[] {TARGET_GROUP, TITLE_GROUP, ATTACHMENT_GROUP}) {
+            if (state.startsWith(route)) return state.substring(route.length());
+        }
+        return state;
     }
 }

@@ -530,8 +530,10 @@ public final class FeedFilter {
                     }
                 }
                 if (reason == null) kind = HiddenTally.Kind.GROUPS;
-                if (reason == null && groupReaders != null && Settings.HIDE_GROUP_POSTS_NOT_JOINED.get()) {
-                    reason = groupReason(feedUnit, groupReaders);
+                if (reason == null && groupReaders != null && Settings.HIDE_GROUP_POSTS.get()) {
+                    reason = groupReason(feedUnit, groupReaders, true);
+                } else if (reason == null && groupReaders != null && Settings.HIDE_GROUP_POSTS_NOT_JOINED.get()) {
+                    reason = groupReason(feedUnit, groupReaders, false);
                 }
             }
             if (reason == null) kind = HiddenTally.Kind.STORIES;
@@ -884,16 +886,18 @@ public final class FeedFilter {
      * Hide posts from groups you're not in: the group type and the join state, such as
      * {@code Group:CAN_JOIN}, when the post was posted in a group Facebook would show a Join button
      * for, or wraps one a friend commented on or shared ({@code Group:wrapped CAN_JOIN}), otherwise
-     * null. Nothing is read while the switch is off, and a post that can't be read stays. Each post
-     * it reads is counted on its route by what the read found.
+     * null. With [all], Hide all group posts (#409): any group, your own included, such as
+     * {@code Group:MEMBER}. Nothing is read while the switch is off, and a post that can't be read
+     * stays. Each post it reads is counted on the switch's route by what the read found.
      */
-    static String groupReason(Object feedUnit, GroupPosts.Readers readers) {
+    static String groupReason(Object feedUnit, GroupPosts.Readers readers, boolean all) {
+        String route = all ? GroupPosts.ALL_ROUTE : GroupPosts.ROUTE;
         String kind = GroupPosts.read(feedUnit, readers);
-        FeedFilterCounters.sawList(GroupPosts.ROUTE, 1);
-        FeedFilterCounters.sawKind(GroupPosts.ROUTE, kind);
-        if (!GroupPosts.notJoined(kind)) return null;
+        FeedFilterCounters.sawList(route, 1);
+        FeedFilterCounters.sawKind(route, kind);
+        if (!(all ? GroupPosts.inAGroup(kind) : GroupPosts.notJoined(kind))) return null;
         String reason = GroupPosts.GROUP_TYPE + ":" + kind;
-        FeedFilterCounters.removed(GroupPosts.ROUTE, 1, reason);
+        FeedFilterCounters.removed(route, 1, reason);
         return reason;
     }
 

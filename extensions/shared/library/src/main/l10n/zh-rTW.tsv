@@ -1957,6 +1957,10 @@ Skipping silent parts again	已恢復略過無聲片段
 Hide posts from groups you're not in	隱藏未加入社團的貼文
 # context: summary of that switch; a group post a friend commented on or shared reaches the feed wrapped in the friend's activity, and the switch hides it too
 Hides posts from groups you haven't joined, like a friend's post in a public group, and a group post a friend commented on or shared. Posts from your groups stay.	隱藏你尚未加入社團的貼文，例如朋友在公開社團中的貼文，以及朋友留言或分享過的社團貼文。你已加入社團的貼文仍會保留。
+# context: switch title under News feed; hides every post that comes from a group, including groups the user is a member of
+Hide all group posts	隱藏所有社團貼文
+# context: summary of that switch; the Groups tab is Facebook's own tab of group posts, which this switch leaves alone
+Hides every post from a group in your feed, your own groups' too, and a group post a friend commented on or shared. The Groups tab keeps its feed.	隱藏動態消息中所有來自社團的貼文，包括你已加入社團的貼文，以及朋友留言或分享過的社團貼文。社團分頁的動態仍會保留。
 # context: switch title under Search; For you is the section of searches Facebook suggests on the search screen before anything is typed, under a header that reads For you
 Hide For you in search	隱藏搜尋中的為你推薦
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing

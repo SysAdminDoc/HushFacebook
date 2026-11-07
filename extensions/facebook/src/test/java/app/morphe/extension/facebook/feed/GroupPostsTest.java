@@ -163,6 +163,7 @@ public class GroupPostsTest {
     public void restore() {
         PauseForTests.resume();
         Settings.HIDE_GROUP_POSTS_NOT_JOINED.resetToDefault();
+        Settings.HIDE_GROUP_POSTS.resetToDefault();
         FeedFilterCounters.clear();
         HookStatus.clear();
         LogBufferManager.clearLogBuffer();
@@ -238,6 +239,52 @@ public class GroupPostsTest {
         String feed = line(FeedFilter.FEED_ROUTE);
         assertNotNull(feed);
         assertTrue(feed, feed.contains("Group:CAN_JOIN 1"));
+    }
+
+    /**
+     * Hide all group posts (#409): a post in any group goes, your own groups' and one whose state
+     * Home didn't fetch included, and so does a group post a friend commented on or shared. A
+     * friend's own post and a post on a Page stay. It counts on its own route, and the switch for
+     * groups you're not in reads nothing more while it's on.
+     */
+    @Test
+    public void hideAllGroupPostsTakesEveryGroupsPostsAndLeavesTheRest() {
+        assertFalse("off until picked", Settings.HIDE_GROUP_POSTS.defaultValue);
+        Settings.HIDE_GROUP_POSTS.save(true);
+        Settings.HIDE_GROUP_POSTS_NOT_JOINED.save(true);
+        Stand stand = new Stand();
+        assertTrue("your group", guard(stand.inGroup(JoinState.MEMBER), stand.readers()));
+        assertTrue("a public group", guard(stand.inGroup(JoinState.CAN_JOIN), stand.readers()));
+        assertTrue("asked to join", guard(stand.inGroup(JoinState.REQUESTED), stand.readers()));
+        assertTrue("can't join", guard(stand.inGroup(JoinState.CANNOT_JOIN_OR_REQUEST), stand.readers()));
+        assertTrue("Home didn't fetch the state",
+                guard(stand.inGroup(JoinState.UNSET_OR_UNRECOGNIZED_ENUM_VALUE), stand.readers()));
+        assertTrue("a group with no state at all", guard(stand.inGroup(null), stand.readers()));
+        assertTrue("named as its target group", guard(stand.inTargetGroup(JoinState.MEMBER), stand.readers()));
+        assertTrue("your group's post a friend shared",
+                guard(stand.wrapping(stand.inGroup(JoinState.MEMBER)), stand.readers()));
+        assertFalse("a friend's own post", guard(new GraphQLStory(), stand.readers()));
+        GraphQLStory onAPage = new GraphQLStory();
+        BaseModelWithTree page = new BaseModelWithTree("Page") { };
+        stand.targets.put(onAPage, page);
+        assertFalse("a post on a Page", guard(onAPage, stand.readers()));
+        assertFalse("a share of a friend's own post", guard(stand.wrapping(new GraphQLStory()), stand.readers()));
+
+        String route = line(GroupPosts.ALL_ROUTE);
+        assertNotNull(route);
+        assertTrue(route, route.contains("11 lists, 11 items, 8 removed"));
+        assertTrue(route, route.contains("Group:MEMBER 1"));
+        assertTrue(route, route.contains("Group:" + GroupPosts.NO_STATE + " 1"));
+        assertTrue(route, route.contains("Group:" + GroupPosts.WRAPPED + "MEMBER 1"));
+        assertNull("the not-joined rule wasn't asked as well", line(GroupPosts.ROUTE));
+        assertTrue(GroupPosts.inAGroup(GroupPosts.TITLE_GROUP + GroupPosts.NO_STATE));
+        assertTrue(GroupPosts.inAGroup(GroupPosts.WRAPPED + GroupPosts.ATTACHMENT_GROUP + "MEMBER"));
+        for (String kept : new String[] {GroupPosts.NOT_A_STORY, GroupPosts.NOT_PATCHED, GroupPosts.RELEASED,
+                GroupPosts.NO_TARGET, GroupPosts.NOT_A_GROUP, GroupPosts.WRAPPED + GroupPosts.NOT_A_GROUP,
+                GroupPosts.TARGET_GROUP + GroupPosts.NOT_A_GROUP, GroupPosts.READ_FAILED,
+                GroupPosts.NO_WRAPPED_READER, "", null}) {
+            assertFalse(kept, GroupPosts.inAGroup(kept));
+        }
     }
 
     /**

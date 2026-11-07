@@ -224,6 +224,9 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_GROUP_POSTS_NOT_JOINED,
                         L10n.t("Hides posts from groups you haven't joined, like a friend's post in a public group, and a "
                                 + "group post a friend commented on or shared. Posts from your groups stay.")));
+                feed.addPreference(toggle(context, Settings.HIDE_GROUP_POSTS,
+                        L10n.t("Hides every post from a group in your feed, your own groups' too, and a group post a friend "
+                                + "commented on or shared. The Groups tab keeps its feed.")));
                 feed.addPreference(toggle(context, Settings.HIDE_STORIES_YOU_MIGHT_LIKE,
                         L10n.t("Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories "
                                 + "and the Stories tray stay.")));

@@ -1841,6 +1841,10 @@ Skipping silent parts again	Pulando as partes em silêncio de novo
 Hide posts from groups you're not in	Ocultar publicações de grupos dos quais você não participa
 # context: summary of that switch; a group post a friend commented on or shared reaches the feed wrapped in the friend's activity, and the switch hides it too
 Hides posts from groups you haven't joined, like a friend's post in a public group, and a group post a friend commented on or shared. Posts from your groups stay.	Oculta publicações de grupos dos quais você não participa, como a publicação de um amigo em um grupo público, e publicações de grupo que um amigo comentou ou compartilhou. As publicações dos seus grupos continuam.
+# context: switch title under News feed; hides every post that comes from a group, including groups the user is a member of
+Hide all group posts	Ocultar todas as publicações de grupos
+# context: summary of that switch; the Groups tab is Facebook's own tab of group posts, which this switch leaves alone
+Hides every post from a group in your feed, your own groups' too, and a group post a friend commented on or shared. The Groups tab keeps its feed.	Oculta todas as publicações de grupos no seu feed, inclusive as dos seus grupos, e publicações de grupo que um amigo comentou ou compartilhou. A aba Grupos mantém o feed dela.
 # context: switch title under Search; For you is the section of searches Facebook suggests on the search screen before anything is typed, under a header that reads For you
 Hide For you in search	Ocultar Para você na pesquisa
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing

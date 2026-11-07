@@ -1955,6 +1955,10 @@ Skipping silent parts again	Lại bỏ qua đoạn im lặng
 Hide posts from groups you're not in	Ẩn bài viết từ nhóm bạn chưa tham gia
 # context: summary of that switch; a group post a friend commented on or shared reaches the feed wrapped in the friend's activity, and the switch hides it too
 Hides posts from groups you haven't joined, like a friend's post in a public group, and a group post a friend commented on or shared. Posts from your groups stay.	Ẩn bài viết từ các nhóm bạn chưa tham gia, như bài viết của bạn bè trong một nhóm công khai, và bài viết nhóm mà bạn bè đã bình luận hoặc chia sẻ. Bài viết từ nhóm của bạn vẫn giữ nguyên.
+# context: switch title under News feed; hides every post that comes from a group, including groups the user is a member of
+Hide all group posts	Ẩn tất cả bài viết nhóm
+# context: summary of that switch; the Groups tab is Facebook's own tab of group posts, which this switch leaves alone
+Hides every post from a group in your feed, your own groups' too, and a group post a friend commented on or shared. The Groups tab keeps its feed.	Ẩn mọi bài viết từ nhóm trong bảng tin của bạn, kể cả nhóm của bạn, và bài viết nhóm mà bạn bè đã bình luận hoặc chia sẻ. Tab Nhóm vẫn giữ bảng tin của nó.
 # context: switch title under Search; For you is the section of searches Facebook suggests on the search screen before anything is typed, under a header that reads For you
 Hide For you in search	Ẩn Dành cho bạn trong tìm kiếm
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing

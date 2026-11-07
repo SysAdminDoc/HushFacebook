@@ -103,6 +103,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_group_posts_not_joined", FALSE);
 
     /**
+     * Every post from a group, your own groups' too (#409), found the way
+     * {@link #HIDE_GROUP_POSTS_NOT_JOINED} finds a group, whatever its join state. A group post a
+     * friend commented on or shared goes too. The Groups tab keeps its own feed. Off until picked.
+     */
+    public static final BooleanSetting HIDE_GROUP_POSTS =
+            new BooleanSetting("hushfacebook_hide_group_posts", FALSE);
+
+    /**
      * The row of Stories from people you aren't connected to that Facebook puts between posts,
      * "Stories you might like", found by the flag Facebook's own Discover unit reads for it. A row
      * of your friends' Stories and the Stories tray stay.

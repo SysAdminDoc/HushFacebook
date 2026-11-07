@@ -37,6 +37,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_PEOPLE_YOU_MAY_KNOW) return L10n.t("Hide \"People you may know\"");
         if (setting == Settings.HIDE_SUGGESTED_GROUPS) return L10n.t("Hide suggested groups");
         if (setting == Settings.HIDE_GROUP_POSTS_NOT_JOINED) return L10n.t("Hide posts from groups you're not in");
+        if (setting == Settings.HIDE_GROUP_POSTS) return L10n.t("Hide all group posts");
         if (setting == Settings.HIDE_STORIES_YOU_MIGHT_LIKE) return L10n.t("Hide \"Stories you might like\"");
         if (setting == Settings.HIDE_FEED_MEMORIES) return L10n.t("Hide Memories in the feed");
         if (setting == Settings.HIDE_FEED_FRIEND_REQUESTS) return L10n.t("Hide friend requests in the feed");
