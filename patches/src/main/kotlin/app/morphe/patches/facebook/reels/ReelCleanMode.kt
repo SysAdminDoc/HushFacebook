@@ -19,9 +19,11 @@ import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.patchLog
+import app.morphe.util.RegisterLiveness
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.cloneMutable
 import app.morphe.util.findMutableMethodOf
+import app.morphe.util.readsAfter
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -249,6 +251,12 @@ private fun MutableMethod.askAfter(moveResult: Int, register: Int, hook: String,
  * Hooked: the sticky check in the setter and the same call nearest before the setter in the tap,
  * the listener's boxed state, and the builder's first read of the reference, which only that no
  * check uses.
+ *
+ * The Android 9 build (585 minapi28, read 2026-11-07) inlines the builder into the overlay's render
+ * (LX/09xw;->A05, five AtomicReferences among its parameters). There the no check compares the value
+ * with a Boolean through the Kotlin areEqual and keeps its answer in that Boolean's register, a no
+ * skips past the button (LX/0grc;) to adding nothing to the column, and the same reference was read
+ * once before for another part. So the hook takes the last read before the button is made.
  */
 
 /** The point Facebook logs as the Clean mode button is tapped, in the tap's handler. */
@@ -262,13 +270,24 @@ internal const val ATOMIC_REFERENCE = "Ljava/util/concurrent/atomic/AtomicRefere
 private const val ATOMIC_REFERENCE_GET = "$ATOMIC_REFERENCE->get()Ljava/lang/Object;"
 private const val OBJECT = "Ljava/lang/Object;"
 private const val OBJECT_ARRAY = "[Ljava/lang/Object;"
+private const val ARRAY_LIST = "Ljava/util/ArrayList;"
 
 internal const val STICKY_CLEAN = "$CLEAN_MODE->stickyClean(Z)Z"
 internal const val MARK_LEFT_CLEAN = "$CLEAN_MODE->markLeftClean($OBJECT_ARRAY)$OBJECT_ARRAY"
 internal const val CLEAN_BUTTON_STATE = "$CLEAN_MODE->cleanButtonState($OBJECT)$OBJECT"
 
-/** One hook of the Clean mode button: [call] right after the move-result at [moveResult] in [owner]'s [method], on [register]. */
-internal data class ButtonHook(val owner: ClassDef, val method: Method, val moveResult: Int, val register: Int, val call: String)
+/**
+ * One hook of the Clean mode button: [call] right after the move-result at [moveResult] in [owner]'s
+ * [method], on [register]. The builder's also names the button class it [made].
+ */
+internal data class ButtonHook(
+    val owner: ClassDef,
+    val method: Method,
+    val moveResult: Int,
+    val register: Int,
+    val call: String,
+    val made: String? = null,
+)
 
 private fun Method.code() = implementation?.instructions?.toList().orEmpty()
 
@@ -389,28 +408,35 @@ internal fun cleanModeButtonHooks(
     }
     val (builderOwner, builder) = builders.singleOrNull()
         ?: refuse("expected one method the overlay calls with an AtomicReference to make $button, found ${builders.size}")
-    // Its first read of the reference goes straight into a static yes-or-no check of the value
-    // against a boolean, which keeps its answer in the same register, so the value isn't read again.
-    val reference = builder.parameterTypes.map(CharSequence::toString).indexOf(ATOMIC_REFERENCE)
-        .let { parameterRegisters(builder)[it] }
+    // Its last read of a reference before it makes the button goes straight into a static yes-or-no
+    // check of the value against a no, and nothing reads the value after that check. 585 keeps the
+    // check's answer in the value's own register. The Android 9 build inlines the builder into the
+    // overlay's render, which reads the same reference once before for another part and compares
+    // with a Boolean kept in another register, where its answer goes too.
     val builderCode = builder.code()
-    val readAt = builderCode.indexOfFirst { it.calls() == ATOMIC_REFERENCE_GET && it.registers().singleOrNull() == reference }
-    val value = kept(builderCode, readAt + 1, Opcode.MOVE_RESULT_OBJECT)?.takeIf { readAt >= 0 }
-        ?: refuse("the Clean mode button's builder doesn't read its AtomicReference")
+    val buttonAt = builderCode.indexOfFirst { it.opcode == Opcode.NEW_INSTANCE && (it.reference as TypeReference).type == button }
+    val readAt = (buttonAt - 1 downTo 0).firstOrNull { builderCode[it].calls() == ATOMIC_REFERENCE_GET }
+        ?: refuse("the Clean mode button's builder reads no AtomicReference before it makes $button")
+    val value = kept(builderCode, readAt + 1, Opcode.MOVE_RESULT_OBJECT)
+        ?: refuse("the Clean mode button's builder doesn't keep its AtomicReference's value")
     val check = builderCode.getOrNull(readAt + 2)
     val checkCall = check?.reference as? MethodReference
     if (check?.opcode !in STATIC_CALLS || checkCall?.returnType != "Z" ||
-        checkCall.parameterTypes.map { it.toString() } != listOf(OBJECT, "Z") ||
-        check.registers().first() != value || kept(builderCode, readAt + 3, Opcode.MOVE_RESULT) != value
+        checkCall.parameterTypes.map { it.toString() } !in VALUE_CHECKS ||
+        check.registers().first() != value || kept(builderCode, readAt + 3, Opcode.MOVE_RESULT) == null ||
+        builder.readsAfter(readAt + 2, value).isNotEmpty()
     ) refuse("the Clean mode button's builder doesn't check its AtomicReference's value right away")
 
     return listOf(
         ButtonHook(store, setter, gateAt + 1, setterGate, STICKY_CLEAN),
         ButtonHook(tapOwner, tap, tapGateAt + 1, tapGate, STICKY_CLEAN),
         ButtonHook(listenerOwner, listener, boxing + 1, kept(listenerCode, boxing + 1, Opcode.MOVE_RESULT_OBJECT)!!, MARK_LEFT_CLEAN),
-        ButtonHook(builderOwner, builder, readAt + 1, value, CLEAN_BUTTON_STATE),
+        ButtonHook(builderOwner, builder, readAt + 1, value, CLEAN_BUTTON_STATE, made = button),
     )
 }
+
+/** The builder's check of the reference's value: against a boolean (585), or a Boolean (the Android 9 build). */
+private val VALUE_CHECKS = listOf(listOf(OBJECT, "Z"), listOf(OBJECT, OBJECT))
 
 private val VIRTUAL_CALLS = setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE)
 
@@ -571,7 +597,7 @@ internal fun BytecodePatchContext.toggleReelCleanMode() {
     // #329: the builder's row for a kept button goes over the details. Its block sits further down
     // the builder than the value's read, so it goes in first.
     val builder = hooks.last()
-    val float = cleanButtonFloat(builder.method, holders, classOf) { type ->
+    val float = cleanButtonFloat(builder, holders, classOf) { type ->
         buildList {
             classDefForEachReferencing(types = listOf(type)) { classDef ->
                 if (!classDef.type.startsWith(EXTENSION_CLASSES)) addAll(classDef.methods.filter { isStaticMethod(it) })
@@ -595,7 +621,10 @@ internal fun BytecodePatchContext.toggleReelCleanMode() {
  *
  * - The builder makes the row's style with Litho's margin helper (585 LX/02dj;->A0D: the style,
  *   then nine dimensions for all, horizontal, vertical, start, top, end, bottom, left and right)
- *   and hands it first to the row's constructor (585 LX/02jJ;), the object it returns.
+ *   and hands it first to the row's constructor (585 LX/02jJ;), the object it returns. The row
+ *   also gets a list made from the button alone, which is how the patch finds it: the Android 9
+ *   build's inlined builder makes other rows the same way (LX/02eS;->A0D, LX/02k2;) and adds this
+ *   one to the column rather than returning it.
  * - Litho's Kotlin helpers set a position type (585 LX/02cP;->A08, the style and Yoga's position
  *   type enum, LX/0370;, which keeps the names "STATIC", "RELATIVE" and "ABSOLUTE") and position
  *   insets (585 LX/02cP;->A03, the style and nine dimensions, each read with one constant of an
@@ -623,8 +652,8 @@ private const val ENUM = "Ljava/lang/Enum;"
 
 /**
  * Where the kept button's row is laid over the details: in the builder at [at], right after the
- * margin helper's move-result keeps the row's style in [style]. The ten registers from [range] the
- * margin helper was handed aren't read again, so the block borrows them. [positionType] sets
+ * margin helper's move-result keeps the row's style in [style]. Nothing reads the ten registers from
+ * [range] there before writing them again, so the block borrows them. [positionType] sets
  * [absolute] on a style, and [position] sets its insets, the end one at [end] and the bottom one at
  * [bottom] among its [EDGES] dimensions, each a [dimension] made from a long.
  */
@@ -668,6 +697,7 @@ private fun Instruction.allRegisters(): List<Int> {
 }
 
 private val DIRECT_CALLS = setOf(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE)
+private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
 
 /**
  * The block that lays a kept button's row over the details, in [builder]. [holders] answers the
@@ -675,22 +705,49 @@ private val DIRECT_CALLS = setOf(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANG
  * methods of the classes that name a type. Refuses unless each part is found exactly once.
  */
 internal fun cleanButtonFloat(
-    builder: Method,
+    hook: ButtonHook,
     holders: (String) -> List<ClassDef>,
     classOf: (String) -> ClassDef?,
     staticsNaming: (String) -> List<Method>,
 ): FloatHook {
+    val builder = hook.method
+    val button = hook.made ?: refuse("the Clean mode button's builder hook names no button")
     val code = builder.code()
-    // The row: the one object of the builder's own return type it makes, constructed with its style first.
-    val rows = code.indices.filter {
-        code[it].opcode == Opcode.NEW_INSTANCE && (code[it].reference as TypeReference).type == builder.returnType
+    // The button goes alone into a list, made by a static call, while its register still holds it.
+    val buttonAt = code.indexOfFirst { it.opcode == Opcode.NEW_INSTANCE && (it.reference as TypeReference).type == button }
+    val made = (code.getOrNull(buttonAt) as? OneRegisterInstruction)?.registerA
+        ?: refuse("the Clean mode button's builder doesn't make $button")
+    val listAt = (buttonAt + 1 until code.size).firstOrNull { at ->
+        val call = code[at].reference as? MethodReference
+        code[at].opcode in STATIC_CALLS && call?.returnType == ARRAY_LIST &&
+            call.parameterTypes.map(CharSequence::toString) == listOf(OBJECT) && code[at].registers() == listOf(made)
+    } ?: refuse("the Clean mode button's builder doesn't put $button in a list")
+    if ((buttonAt + 1 until listAt).any { code[it].opcode.setsRegister() && (code[it] as? OneRegisterInstruction)?.registerA == made }) {
+        refuse("the Clean mode button's builder puts something else in $button's register before its list")
     }
-    val rowAt = rows.singleOrNull() ?: refuse("the Clean mode button's builder makes ${rows.size} of ${builder.returnType}")
-    val row = (code[rowAt] as OneRegisterInstruction).registerA
-    val constructorAt = (rowAt + 1 until code.size).firstOrNull { at ->
-        code[at].opcode in DIRECT_CALLS && code[at].calls()?.startsWith("${builder.returnType}-><init>(") == true &&
-            code[at].registers().firstOrNull() == row
-    } ?: refuse("the Clean mode button's builder doesn't construct its row")
+    val list = kept(code, listAt + 1, Opcode.MOVE_RESULT_OBJECT) ?: refuse("the Clean mode button's builder doesn't keep its list")
+    // The row: the next object it makes, constructed with its style first and handed that list. 585's
+    // builder returns it. The Android 9 build's, inlined into the overlay's render, adds it to the column.
+    val rowAt = (listAt + 2 until code.size).firstOrNull { code[it].opcode == Opcode.NEW_INSTANCE }
+        ?: refuse("the Clean mode button's builder makes no row after its list")
+    val rowType = (code[rowAt].reference as TypeReference).type
+    // Its constructor takes the row's register or a copy of it: the Android 9 build moves the row into a range.
+    val row = mutableSetOf((code[rowAt] as OneRegisterInstruction).registerA)
+    var constructorAt = -1
+    for (at in rowAt + 1 until code.size) {
+        val instruction = code[at]
+        if (instruction.opcode in DIRECT_CALLS && instruction.calls()?.startsWith("$rowType-><init>(") == true) {
+            if (instruction.registers().firstOrNull() in row) constructorAt = at
+            break
+        }
+        if (instruction.opcode in OBJECT_MOVES && (instruction as TwoRegisterInstruction).registerB in row) {
+            row += instruction.registerA
+        } else if (instruction.opcode.setsRegister()) {
+            (instruction as? OneRegisterInstruction)?.let { row -= it.registerA }
+        }
+    }
+    if (constructorAt < 0) refuse("the Clean mode button's builder doesn't construct its row")
+    if (list !in code[constructorAt].registers().drop(2)) refuse("the button's row $rowType isn't handed the button's list")
     val constructor = code[constructorAt].reference as MethodReference
     val styleType = constructor.parameterTypes.firstOrNull()?.toString() ?: refuse("the button's row takes no style")
     val style = code[constructorAt].registers()[1]
@@ -706,12 +763,16 @@ internal fun cleanButtonFloat(
     if (margins.opcode != Opcode.INVOKE_STATIC_RANGE || marginCall == null ||
         !isStyleHelper(marginCall.parameterTypes, marginCall.returnType, styleType, dimension)
     ) refuse("the button row's style doesn't come from Litho's margin helper")
-    val range = (margins as RegisterRangeInstruction).startRegister
-    if (range + EDGES > 255) refuse("the margin helper's registers run past v255")
-    val borrowed = range..range + EDGES
-    if (code.drop(keptAt + 1).any { instruction -> instruction.allRegisters().any { it in borrowed } }) {
-        refuse("the builder reads the margin helper's registers again")
-    }
+    if (style > 255) refuse("the button row's style sits past v255")
+    // The block borrows ten registers in a row that nothing reads before writing them again: the
+    // margin helper's when they're free, as on 585, otherwise the lowest free run. The Android 9
+    // build's inlined builder hands one of the margin helper's registers on to the row.
+    val live = RegisterLiveness.of(builder).liveInto(keptAt + 1)
+    val last = minOf(builder.implementation!!.registerCount, 256) - 1
+    fun free(start: Int) = start >= 0 && start + EDGES <= last && (start..start + EDGES).none { it in live }
+    val range = (margins as RegisterRangeInstruction).startRegister.takeIf(::free)
+        ?: (0..last - EDGES).firstOrNull(::free)
+        ?: refuse("the Clean mode button's builder has no ten registers free where its row gets its style")
 
     // The edge enum, and the position helper reading one of its edges for each dimension it's handed.
     val edges = holders(POSITION_BOTTOM).filter { enumStrings(it).containsAll(listOf(POSITION_END, POSITION_BOTTOM)) }
@@ -755,8 +816,8 @@ internal fun cleanButtonFloat(
     if (end == bottom) refuse("Litho's position helper reads $POSITION_END and $POSITION_BOTTOM from one dimension")
 
     // A dimension is made from a long, as the builder makes its own.
-    val made = classOf(dimension!!)?.methods?.any { it.name == "<init>" && it.parameterTypes.map(CharSequence::toString) == listOf("J") }
-    if (made != true) refuse("Litho's dimension $dimension isn't made from a long")
+    val fromLong = classOf(dimension!!)?.methods?.any { it.name == "<init>" && it.parameterTypes.map(CharSequence::toString) == listOf("J") }
+    if (fromLong != true) refuse("Litho's dimension $dimension isn't made from a long")
 
     return FloatHook(
         at = keptAt + 1,

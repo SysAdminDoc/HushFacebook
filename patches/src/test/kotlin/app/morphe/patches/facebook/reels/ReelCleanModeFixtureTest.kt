@@ -10,16 +10,19 @@ import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.RegisterLiveness
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
@@ -40,7 +43,8 @@ import java.io.File
  * the patch on those classes: the extension right after each move-result on the same register,
  * and nothing else in the method moved. And the Clean mode button (#304): the sticky check in the
  * store's setter and in the button's tap, the overlay's listener boxing its new value, and the
- * button builder's first read of the overlay's value, which only its "returns nothing" check uses.
+ * button builder's last read of the overlay's value before it makes the button, which only its
+ * "no button" check uses.
  * Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class ReelCleanModeFixtureTest {
@@ -166,21 +170,40 @@ class ReelCleanModeFixtureTest {
                 // The listener's boxing answers an Object[] the state update carries.
                 assertEquals("$name: the listener's boxing", Opcode.MOVE_RESULT_OBJECT, listener.method.code()[listener.moveResult].opcode)
 
-                // The builder's check of the reference's value is followed by a jump on its answer to returning nothing.
+                // The builder's check of the reference's value is followed by a jump on its answer past the
+                // button: to returning nothing (585), or, in the Android 9 build's inlined builder, to right
+                // after the button's row is made, with something else standing in the row's register.
                 val code = builder.method.code()
+                val answer = (code[builder.moveResult + 2] as OneRegisterInstruction).registerA
                 val jumpAt = (builder.moveResult + 3 until minOf(code.size, builder.moveResult + 6)).firstOrNull {
-                    code[it].opcode == Opcode.IF_NEZ && (code[it] as OneRegisterInstruction).registerA == builder.register
+                    code[it].opcode == Opcode.IF_NEZ && (code[it] as OneRegisterInstruction).registerA == answer
                 }
                 assertTrue("$name: the builder doesn't jump on its check", jumpAt != null)
-                val landing = code[code.target(jumpAt!!, code[jumpAt] as OffsetInstruction)]
-                assertEquals("$name: the builder's check doesn't lead to returning nothing", Opcode.RETURN_OBJECT, landing.opcode)
-                val returned = (landing as OneRegisterInstruction).registerA
-                assertTrue("$name: what the builder returns there isn't null", code.take(jumpAt).last {
-                    it is OneRegisterInstruction && it.registerA == returned && it.opcode != Opcode.IF_NEZ
-                }.let { it.opcode == Opcode.CONST_4 && (it as NarrowLiteralInstruction).narrowLiteral == 0 })
+                val madeAt = code.indexOfFirst {
+                    it.opcode == Opcode.NEW_INSTANCE && ((it as ReferenceInstruction).reference as TypeReference).type == builder.made
+                }
+                assertTrue("$name: the builder makes the button before its check", madeAt > jumpAt!!)
+                val landingAt = code.target(jumpAt, code[jumpAt] as OffsetInstruction)
+                val landing = code[landingAt]
+                if (landing.opcode == Opcode.RETURN_OBJECT) {
+                    val returned = (landing as OneRegisterInstruction).registerA
+                    assertTrue("$name: what the builder returns there isn't null", code.take(jumpAt).last {
+                        it is OneRegisterInstruction && it.registerA == returned && it.opcode != Opcode.IF_NEZ
+                    }.let { it.opcode == Opcode.CONST_4 && (it as NarrowLiteralInstruction).narrowLiteral == 0 })
+                } else {
+                    assertTrue("$name: the builder's check leads to ${landing.opcode}", landing.opcode in OBJECT_MOVES)
+                    val goto = code[landingAt + 1]
+                    assertTrue("$name: the builder's no doesn't go on", goto.opcode in GOTOS)
+                    val next = code.target(landingAt + 1, goto as OffsetInstruction)
+                    val rowMade = code[next - 1]
+                    assertTrue("$name: the builder's no doesn't land right after a row is made", next > madeAt &&
+                        rowMade.opcode in DIRECT_CALLS && rowMade.called()?.name == "<init>")
+                    assertTrue("$name: what stands in for the row isn't used where the no lands",
+                        (landing as TwoRegisterInstruction).registerA in code[next].named())
+                }
 
                 // The patch also lays a kept button over the details (#329), with Litho's helpers.
-                val float = floatFor(bundle, builder.method, holding, candidates)
+                val float = floatFor(bundle, builder, holding, candidates)
                 assertTrue("$name: the builder's own hook comes before the float", builder.moveResult + 1 < float.at)
                 val helpers = FixtureDex.classes(bundle, setOf(float.positionType, float.position).map { it.substringBefore("->") }.toSet())
 
@@ -285,8 +308,19 @@ class ReelCleanModeFixtureTest {
         return FixtureDex.classes(bundle, (tapCalls + overlayCalls).toSet()).toMutableMap()
     }
 
+    private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+    private val GOTOS = setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32)
+    private val DIRECT_CALLS = setOf(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE)
+
+    /** The registers a call names. */
+    private fun Instruction.named(): List<Int> = when (this) {
+        is RegisterRangeInstruction -> (startRegister until startRegister + registerCount).toList()
+        is FiveRegisterInstruction -> listOf(registerC, registerD, registerE, registerF, registerG).take(registerCount)
+        else -> emptyList()
+    }
+
     /** The float for [builder], looking up the dimension class into [candidates] as the patch would. */
-    private fun floatFor(bundle: File, builder: Method, holding: Map<String, List<ClassDef>>, candidates: MutableMap<String, ClassDef>): FloatHook {
+    private fun floatFor(bundle: File, builder: ButtonHook, holding: Map<String, List<ClassDef>>, candidates: MutableMap<String, ClassDef>): FloatHook {
         val classOf = { type: String ->
             candidates[type] ?: FixtureDex.classes(bundle, setOf(type))[type]?.also { candidates[type] = it }
         }
@@ -311,12 +345,16 @@ class ReelCleanModeFixtureTest {
                 val candidates = buttonClasses(bundle, holding)
                 val builder = cleanModeButtonHooks(holders = holding::getValue, classOf = candidates::get).last()
                 assertEquals("$name: the last hook is the builder's", CLEAN_BUTTON_STATE, builder.call)
-                val float = floatFor(bundle, builder.method, holding, candidates)
+                val float = floatFor(bundle, builder, holding, candidates)
 
                 // The row's style goes from the margin helper to the row's constructor untouched.
                 val original = builder.method.code()
                 assertEquals("$name: the block doesn't follow the style's move-result", Opcode.MOVE_RESULT_OBJECT, original[float.at - 1].opcode)
                 assertEquals("$name: the style register", float.style, (original[float.at - 1] as OneRegisterInstruction).registerA)
+                // Nothing reads the registers the block borrows before writing them again.
+                val live = RegisterLiveness.of(builder.method).liveInto(float.at)
+                assertTrue("$name: the block borrows live registers", (float.range..float.range + EDGES).none { it in live })
+                assertTrue("$name: the block's registers run past v255", float.range + EDGES <= 255)
                 assertTrue("$name: the end and bottom insets", float.end in 1..EDGES && float.bottom in 1..EDGES && float.end != float.bottom)
                 assertTrue("$name: the position type is Yoga's absolute one", float.absolute.contains("->") && float.absolute.endsWith(";"))
 
