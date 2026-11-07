@@ -5,11 +5,13 @@
 package app.morphe.patches.facebook.reels.watchhistory
 
 import app.morphe.patcher.StringComparisonType
+import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import com.android.tools.smali.dexlib2.iface.Method
 
 /**
  * Holds back the batches of watched reels Facebook's Reels viewer sends for its own ranking. See
@@ -24,13 +26,24 @@ import app.morphe.patches.shared.compat.AppCompatibilities
  * In the default selection with its switch off: it trades Facebook's record of what you've
  * watched for reels you've seen coming back, which is a choice to make, not a fix.
  */
+/** Puts [hold] at the start of the one method holding [literal] that [isSender] picks. */
+private fun BytecodePatchContext.holdSender(literal: String, isSender: (Method) -> Boolean, hold: String) {
+    val senders = classDefByStrings(literal, StringComparisonType.EQUALS).flatMap { owner -> owner.methods.filter(isSender) }
+    val sender = senders.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one static void method holding \"$literal\", found ${senders.size}")
+    mutableClassDefBy(sender.definingClass).methods.single {
+        it.name == sender.name && it.returnType == sender.returnType &&
+            it.parameterTypes.map(Any::toString) == sender.parameterTypes.map(Any::toString)
+    }.holdAtStart(hold)
+}
+
 @Suppress("unused")
 val dontSendReelWatchHistoryPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Don't send reel watch history",
-    description = "Stops sending Facebook the list of reels you've watched, so it learns less about what you " +
-        "watch. Reels you've already seen may come back. Starts off. Turn it on in Hushfacebook settings > Reels " +
-        "and Watch.",
+    description = "Stops sending Facebook the list of reels you've watched, and where you stopped in a video and how " +
+        "long you watched it, so it learns less about what you watch. Videos you've already seen may come back. " +
+        "Starts off. Turn it on in Hushfacebook settings > Reels and Watch.",
 ) {
     category("Privacy")
     dependsOn(settingsPatch)
@@ -48,6 +61,11 @@ val dontSendReelWatchHistoryPatch = bytecodePatch(
             it.name == flush.name && it.returnType == flush.returnType &&
                 it.parameterTypes.map(Any::toString) == flush.parameterTypes.map(Any::toString)
         }.withholdSendAt(index)
+
+        // #408: the position mutation and the view-time logger record the videos watched outside
+        // the Reels viewer. See WatchedVideoSends.kt.
+        holdSender(POSITION_MUTATION, ::positionSend, HOLD_POSITION)
+        holdSender(VIEW_TIME_POSITION, ::viewTimeLog, HOLD_VIEW_TIME)
         enableStatus("reelWatchHistory")
     }
 }

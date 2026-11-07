@@ -364,7 +364,7 @@ People looking at a post don't see that you're writing a comment.	查看帖子�
 Hide read receipts	隐藏已读回执
 People you chat with in Facebook's own chats can't see that you've read their messages. The chat can stay unread on this phone.	在 Facebook 自带聊天中与你聊天的人看不到你已读他们的消息。这部手机上的聊天可以保持未读状态。
 Facebook can't tell when you take a screenshot or record your screen, so it can't react.	Facebook 无法得知你何时截屏或录屏，因此不会作出反应。
-Stops sending Facebook your list of watched reels. It uses the list to rank your feed, so reels you've watched may come back.	停止向 Facebook 发送你已观看的 Reels 列表。它会用这份列表为你的动态消息排序，所以你看过的 Reels 可能会再次出现。
+Stops sending Facebook your list of watched reels, and where you stopped in each video and how long you watched it. Facebook ranks your feed with these, so videos you've watched may come back.	停止向 Facebook 发送你已观看的 Reels 列表，以及每个视频看到哪里、看了多久。它会用这些信息为你的动态消息排序，所以你看过的视频可能会再次出现。
 # context: switch title under Reels and Watch; the Reels tab shows the most recently posted reels before older ones
 Newest reels first	最新 Reels 优先
 # context: summary of that switch; "loaded" means the reels the app has already downloaded in the background, "placed" means reels already lined up as the next ones

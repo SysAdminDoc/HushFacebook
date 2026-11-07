@@ -246,8 +246,9 @@ final class VideoPages {
         }
         if (build.contains(PatchFamily.REEL_WATCH_HISTORY)) {
             reels.addPreference(toggle(context, Settings.DONT_SEND_REEL_WATCH_HISTORY,
-                    L10n.t("Stops sending Facebook your list of watched reels. It uses the list to rank your feed, so reels "
-                            + "you've watched may come back.")));
+                    L10n.t("Stops sending Facebook your list of watched reels, and where you stopped in each video and "
+                            + "how long you watched it. Facebook ranks your feed with these, so videos you've watched may "
+                            + "come back.")));
         }
         if (build.contains(PatchFamily.NEWEST_REELS_FIRST)) {
             Preference sort = toggle(context, Settings.NEWEST_REELS_FIRST,

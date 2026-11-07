@@ -364,7 +364,7 @@ People looking at a post don't see that you're writing a comment.	Người đang
 Hide read receipts	Ẩn trạng thái đã xem
 People you chat with in Facebook's own chats can't see that you've read their messages. The chat can stay unread on this phone.	Người bạn chat cùng trong phần chat của Facebook không thấy bạn đã đọc tin nhắn của họ. Đoạn chat có thể vẫn hiện là chưa đọc trên điện thoại này.
 Facebook can't tell when you take a screenshot or record your screen, so it can't react.	Facebook không biết khi bạn chụp hoặc quay màn hình nên không thể phản ứng.
-Stops sending Facebook your list of watched reels. It uses the list to rank your feed, so reels you've watched may come back.	Ngừng gửi cho Facebook danh sách reel bạn đã xem. Facebook dùng danh sách này để sắp xếp bảng tin, nên reel bạn đã xem có thể xuất hiện lại.
+Stops sending Facebook your list of watched reels, and where you stopped in each video and how long you watched it. Facebook ranks your feed with these, so videos you've watched may come back.	Ngừng gửi cho Facebook danh sách reel bạn đã xem, cùng vị trí bạn dừng ở mỗi video và thời gian bạn đã xem. Facebook dùng những thông tin này để sắp xếp bảng tin, nên video bạn đã xem có thể xuất hiện lại.
 # context: switch title under Reels and Watch; the Reels tab shows the most recently posted reels before older ones
 Newest reels first	Reel mới nhất trước
 # context: summary of that switch; "loaded" means the reels the app has already downloaded in the background, "placed" means reels already lined up as the next ones

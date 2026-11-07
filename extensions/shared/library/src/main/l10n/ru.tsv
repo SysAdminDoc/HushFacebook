@@ -370,7 +370,7 @@ People looking at a post don't see that you're writing a comment.	Другие �
 Hide read receipts	Скрывать уведомления о прочтении
 People you chat with in Facebook's own chats can't see that you've read their messages. The chat can stay unread on this phone.	Собеседники во встроенных чатах Facebook не видят, что вы прочитали их сообщения. На этом телефоне чат может оставаться непрочитанным.
 Facebook can't tell when you take a screenshot or record your screen, so it can't react.	Facebook не может определить, когда вы делаете снимок или запись экрана, и поэтому не может на это реагировать.
-Stops sending Facebook your list of watched reels. It uses the list to rank your feed, so reels you've watched may come back.	Не позволяет Facebook получать список просмотренных вами Reels. Facebook использует его для формирования Ленты, поэтому просмотренные Reels могут появляться снова.
+Stops sending Facebook your list of watched reels, and where you stopped in each video and how long you watched it. Facebook ranks your feed with these, so videos you've watched may come back.	Не позволяет Facebook получать список просмотренных вами Reels, а также место, где вы остановились в каждом видео, и время просмотра. Facebook использует их для формирования Ленты, поэтому просмотренные видео могут появляться снова.
 # context: switch title under Reels and Watch; the Reels tab shows the most recently posted reels before older ones
 Newest reels first	Сначала новые Reels
 # context: summary of that switch; "loaded" means the reels the app has already downloaded in the background, "placed" means reels already lined up as the next ones

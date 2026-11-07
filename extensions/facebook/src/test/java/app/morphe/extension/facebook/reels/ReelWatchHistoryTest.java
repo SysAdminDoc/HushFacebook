@@ -193,6 +193,38 @@ public class ReelWatchHistoryTest {
         ReelWatchHistory.send(refuses, new SeenStateSendForTests());
     }
 
+    /**
+     * #408: the watched-position mutation and the view-time events go out from feed videos, stories
+     * and reels outside the viewer. The switch holds both back, and the report counts each kind.
+     */
+    @Test
+    public void theSwitchHoldsBackTheWatchedPositionAndTheViewTimeToo() {
+        assertTrue(ReelWatchHistory.holdWatchedPosition());
+        assertTrue(ReelWatchHistory.holdViewTime());
+        assertTrue(ReelWatchHistory.holdViewTime());
+        assertEquals(ReelWatchHistory.ROUTE + ": 3 lists, 3 items, 3 removed. Last reason: " + ReelWatchHistory.VIEW_TIME
+                + ". Removed: " + ReelWatchHistory.VIEW_TIME + " 2, " + ReelWatchHistory.POSITION + " 1. Kinds: "
+                + ReelWatchHistory.VIEW_TIME + " 2, " + ReelWatchHistory.POSITION + " 1", counterLine());
+        assertEquals(FamilyNames.REEL_WATCH_HISTORY + ": invoked 3, 0 found, 0 missing", statusLine());
+    }
+
+    /** Off, paused or before settings are ready, both go out, and the report still shows them seen. */
+    @Test
+    public void offOrPausedTheWatchedPositionAndTheViewTimeGoOut() {
+        Settings.DONT_SEND_REEL_WATCH_HISTORY.save(false);
+        assertFalse(ReelWatchHistory.holdWatchedPosition());
+        assertFalse(ReelWatchHistory.holdViewTime());
+        assertEquals(ReelWatchHistory.ROUTE + ": 2 lists, 2 items, 0 removed. Kinds: "
+                + ReelWatchHistory.VIEW_TIME + " 1, " + ReelWatchHistory.POSITION + " 1", counterLine());
+
+        Settings.DONT_SEND_REEL_WATCH_HISTORY.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse(ReelWatchHistory.holdWatchedPosition());
+        assertFalse(ReelWatchHistory.holdViewTime());
+        PauseForTests.resume();
+        assertTrue(ReelWatchHistory.holdWatchedPosition());
+    }
+
     /** A failure inside the hook is reported, and the send goes out as Facebook handed it over. */
     @Test
     public void aFailureInsideTheHookLeavesTheSendToFacebook() {

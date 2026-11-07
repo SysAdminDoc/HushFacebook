@@ -737,7 +737,7 @@
     },
     {
       "name": "Don't send reel watch history",
-      "description": "Stops sending Facebook the list of reels you've watched, so it learns less about what you watch. Reels you've already seen may come back. Starts off. Turn it on in Hushfacebook settings > Reels and Watch.",
+      "description": "Stops sending Facebook the list of reels you've watched, and where you stopped in a video and how long you watched it, so it learns less about what you watch. Videos you've already seen may come back. Starts off. Turn it on in Hushfacebook settings > Reels and Watch.",
       "category": "Privacy",
       "use": true,
       "dependencies": [

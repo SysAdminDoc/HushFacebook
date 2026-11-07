@@ -601,12 +601,13 @@
       "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/reels/ReelWatchHistory.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/reels/watchhistory/DontSendReelWatchHistoryPatch.kt",
-        "patches/src/main/kotlin/app/morphe/patches/facebook/reels/watchhistory/SeenStateSend.kt"
+        "patches/src/main/kotlin/app/morphe/patches/facebook/reels/watchhistory/SeenStateSend.kt",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/reels/watchhistory/WatchedVideoSends.kt"
       ],
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook: the switch on the batches of watched reels Facebook's Reels viewer sends as FbShortsSeenStateMutation. The patch finds the batcher's flush in Facebook 577 and 580 by the mutation's name, its video_ids input and the Redex name of the runnable it hands its executor, and puts the extension in place of that hand-over. The extension holds a batch back while the switch is on and sends anything it doesn't recognise as Facebook handed it over."
+      "changes": "Written for Hushfacebook: the switch on the batches of watched reels Facebook's Reels viewer sends as FbShortsSeenStateMutation. The patch finds the batcher's flush in Facebook 577 and 580 by the mutation's name, its video_ids input and the Redex name of the runnable it hands its executor, and puts the extension in place of that hand-over. The extension holds a batch back while the switch is on and sends anything it doesn't recognise as Facebook handed it over. Since #408 the same switch also asks first thing in the static method sending SfdVideoPositionWatchedMutation and in the VOD/Reels view-time logger, each found by the literals it loads, and returns before either builds anything."
     },
     {
       "paths": [

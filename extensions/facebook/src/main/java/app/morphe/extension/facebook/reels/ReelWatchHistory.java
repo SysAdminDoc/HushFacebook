@@ -44,6 +44,12 @@ public final class ReelWatchHistory {
     /** What a batch held back is counted under. */
     static final String HELD_BACK = "watched reels";
 
+    /** What a held back watched-position mutation is counted under (#408). */
+    static final String POSITION = "watched position";
+
+    /** What a held back view-time event is counted under (#408). */
+    static final String VIEW_TIME = "view time";
+
     /** The send's class once it has been recognised, so later batches skip the lookup. */
     private static volatile Class<?> recognised;
 
@@ -74,6 +80,39 @@ public final class ReelWatchHistory {
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_WATCH_HISTORY, "reel watch history send", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, first in the method that sends SfdVideoPositionWatchedMutation: the furthest
+     * point you reached in a video you watched 10 seconds or more of, wherever it played. True
+     * returns before anything is built. Never throws.
+     */
+    public static boolean holdWatchedPosition() {
+        return hold(POSITION, "watched position send");
+    }
+
+    /**
+     * Injection point, first in the VOD/Reels view-time logger: the video's id, how long you
+     * watched it and the feed it came from. True returns before the event is built. Never throws.
+     */
+    public static boolean holdViewTime() {
+        return hold(VIEW_TIME, "view time event");
+    }
+
+    /** True when the switch is on, counted under [what]. Never throws. */
+    private static boolean hold(String what, String hook) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_WATCH_HISTORY);
+            FeedFilterCounters.sawList(ROUTE, 1);
+            FeedFilterCounters.sawKind(ROUTE, what);
+            if (!Utils.settingsReady() || !Settings.DONT_SEND_REEL_WATCH_HISTORY.get()) return false;
+            FeedFilterCounters.removed(ROUTE, 1, what);
+            Logger.printDebug(() -> "Reel watch history: held back a " + what);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_WATCH_HISTORY, hook, failure);
             return false;
         }
     }

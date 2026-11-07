@@ -34,6 +34,7 @@ Changes in each Hushfacebook version, newest first.
 * **Tooling:** The build runs on Morphe's patches Gradle plugin 2.1.0. It brings the Kotlin Gradle plugin 2.4.21 itself, so the build stopped forcing that version over the 2.4.10 the old plugin asked for.
 * The spot behind the tab you're on in `Rounded tab bar` takes its colour from `Accent color`, the Material You theme or the `Selected tab color` you picked, so it matches the tab's icon. It was always Facebook's blue before. (#383)
 * The README's "Facebook keeps closing" steps now say the `hushfacebook-safe-mode` file in `Android/media/com.facebook.katana` works on Android 11. It was only checked on Android 16 before. On Android 11 the file paused Hushfacebook, `Resume` deleted it, and `Save full report` landed in Download/Hushfacebook.
+* `Don't send reel watch history` also holds back where you stopped in a video and how long you watched it, which Facebook sends for feed videos as well as reels. (#408)
 * **Tooling:** The build can sign a bundle with a MorpheSig1 signature, the kind Manager 2.3.0 and newer check, once a signing key is set up for it. The release index then publishes the matching public key, though only when the bundle it points at was signed with it, and never a key that differs from one it already published. The build refuses a bundle signed by any other key. Nothing is signed yet.
 
 ### Fixed
