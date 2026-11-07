@@ -123,6 +123,20 @@ public class SearchPostsTabTest {
     }
 
     @Test
+    public void postsIsMarkedWhenNoChipIs() {
+        List<Chip> served = row("All", "Reels", "People");
+        for (int i = 0; i < served.size(); i++) served.set(i, new Chip(false, served.get(i).id, served.get(i).label));
+        List<?> out = SearchPostsTab.chips(served);
+        assertEquals(Arrays.asList("All", "Reels", "Posts", "People"), labelsOf(out));
+        assertTrue("the posts results' row marks Posts", ((Chip) out.get(2)).selected);
+
+        List<Chip> reelsOpen = row("All", "Reels", "People");
+        reelsOpen.set(0, new Chip(false, "All", "All"));
+        reelsOpen.set(1, new Chip(true, "Reels", "Reels"));
+        assertFalse("another tab's row leaves Posts unmarked", ((Chip) SearchPostsTab.chips(reelsOpen).get(2)).selected);
+    }
+
+    @Test
     public void withoutReelsPostsGoesAfterTheFirstChip() {
         assertEquals(Arrays.asList("All", "Posts", "People", "Groups"),
                 labelsOf(SearchPostsTab.chips(row("All", "People", "Groups"))));

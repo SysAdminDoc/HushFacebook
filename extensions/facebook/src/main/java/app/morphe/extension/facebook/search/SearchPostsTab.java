@@ -32,8 +32,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * answer just stopped listing it. The patch hands this class every row Facebook draws (the
  * answer's, the one it rebuilds after a tap, and its fallback row), and with the switch on a Posts
  * chip goes in after Reels (or after the first chip, All, when there's no Reels). A row that
- * already has Posts stays as it came. Facebook hides the row while the posts results are open, as
- * it does for Groups.
+ * already has Posts stays as it came. Facebook marks the chip of the open tab, and the row it
+ * draws over the posts results has none marked, so there the Posts chip goes in marked.
  */
 public final class SearchPostsTab {
     /** The posts tab, as Facebook's tab enum names it. */
@@ -93,7 +93,9 @@ public final class SearchPostsTab {
             Logger.printDebug(() -> "Search posts tab: chips stay " + names);
             return chips;
         }
-        Object chip = chipLike(chips.get(0), posts);
+        // Facebook marks the chip of the tab that's open, and Posts isn't one of its chips any
+        // more, so a row with none marked is the posts results' own row.
+        Object chip = chipLike(chips.get(0), posts, noneSelected(chips));
         if (chip == null) return chips;
         List<Object> out = new ArrayList<>(chips.size() + 1);
         out.addAll(chips);
@@ -142,22 +144,63 @@ public final class SearchPostsTab {
     }
 
     /**
-     * A new chip of [sample]'s kind, unselected and labelled [label], made the way Facebook makes
-     * every chip in the row: its (selected, id, label) constructor, with the label as the id too.
-     * Null when the kind has no such constructor.
+     * A new chip of [sample]'s kind, labelled [label] and [selected] or not, made the way Facebook
+     * makes every chip in the row: its (selected, id, label) constructor, with the label as the id
+     * too. Null when the kind has no such constructor.
      */
     @Nullable
-    static Object chipLike(Object sample, String label) throws ReflectiveOperationException {
-        for (Constructor<?> constructor : sample.getClass().getDeclaredConstructors()) {
+    static Object chipLike(Object sample, String label, boolean selected) throws ReflectiveOperationException {
+        Constructor<?> constructor = chipConstructor(sample.getClass());
+        if (constructor == null) {
+            Logger.printDebug(() -> "Search posts tab: no chip constructor on " + sample.getClass().getName());
+            return null;
+        }
+        return constructor.newInstance(selected, label, label);
+    }
+
+    @Nullable
+    private static Constructor<?> chipConstructor(Class<?> kind) {
+        for (Constructor<?> constructor : kind.getDeclaredConstructors()) {
             Class<?>[] types = constructor.getParameterTypes();
             if (types.length != 3 || types[0] != boolean.class || types[1] != String.class || types[2] != String.class) {
                 continue;
             }
             constructor.setAccessible(true);
-            return constructor.newInstance(false, label, label);
+            return constructor;
         }
-        Logger.printDebug(() -> "Search posts tab: no chip constructor on " + sample.getClass().getName());
         return null;
+    }
+
+    /**
+     * Whether no chip in [chips] is marked selected. False when it can't tell: a kind with no
+     * (selected, id, label) constructor, or no boolean field that constructor's first argument sets.
+     */
+    static boolean noneSelected(List<?> chips) throws ReflectiveOperationException {
+        Field selected = null;
+        for (Object chip : chips) {
+            if (chip == null) return false;
+            if (selected == null || selected.getDeclaringClass() != chip.getClass()) selected = selectedField(chip.getClass());
+            if (selected == null || selected.getBoolean(chip)) return false;
+        }
+        return true;
+    }
+
+    /** The boolean field [kind]'s (selected, id, label) constructor sets from its first argument, or null. */
+    @Nullable
+    static Field selectedField(Class<?> kind) throws ReflectiveOperationException {
+        Constructor<?> constructor = chipConstructor(kind);
+        if (constructor == null) return null;
+        Object on = constructor.newInstance(true, "", "");
+        Object off = constructor.newInstance(false, "", "");
+        Field found = null;
+        for (Field field : kind.getDeclaredFields()) {
+            if (field.getType() != boolean.class || Modifier.isStatic(field.getModifiers())) continue;
+            field.setAccessible(true);
+            if (field.getBoolean(on) == field.getBoolean(off)) continue;
+            if (found != null) return null;
+            found = field;
+        }
+        return found;
     }
 
     /**
