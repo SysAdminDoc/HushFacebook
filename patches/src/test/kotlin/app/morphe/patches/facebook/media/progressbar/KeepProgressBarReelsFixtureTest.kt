@@ -78,7 +78,10 @@ class KeepProgressBarReelsFixtureTest {
 
     private fun Instruction.reference() = (this as? ReferenceInstruction)?.reference?.toString()
 
-    private class Scrubber(val looks: ScrubberLooks, val scrubber: ClassDef, val progress: ProgressUpdate)
+    private class Scrubber(val looks: ScrubberLooks, val scrubber: ClassDef, val progress: ProgressUpdate) {
+        /** The class with the length checks: the scrubber, or on 585's Android 9 build the base it extends. */
+        val checksOn: ClassDef = lengthCheckOwner(scrubber, progress.base)
+    }
 
     private fun scrubber(bundle: File): Scrubber {
         val holders = FixtureDex.classesHolding(bundle, SCRUBBER_PASSIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
@@ -93,11 +96,38 @@ class KeepProgressBarReelsFixtureTest {
         return Scrubber(looks, scrubber, progress)
     }
 
+    private fun Instruction.calls(method: Method): Boolean {
+        val called = (this as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+        return called.definingClass == method.definingClass && called.name == method.name && called.returnType == method.returnType &&
+            called.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
+    }
+
+    /** The registry's method, and the class it's on: up to 585 the hand-over's own, on 585's Android 9 build a caller's. */
+    private data class Registry(val returns: RegistryReturns, val owner: ClassDef)
+
+    private fun registry(bundle: File, handOver: ReelHandOver): Registry {
+        val callers = mutableListOf<ClassDef>()
+        val returns = registryReturns(handOver) {
+            FixtureDex.forEach(bundle) { dex ->
+                if (dex.stringSection.none { it == handOver.method.definingClass }) return@forEach
+                for (classDef in dex.classes) {
+                    if (classDef.methods.any { method -> method.implementation?.instructions?.any { it.calls(handOver.method) } == true }) {
+                        callers += ImmutableClassDef.of(classDef)
+                    }
+                }
+            }
+            callers
+        }
+        val type = returns.method.definingClass
+        val owner = callers.firstOrNull { it.type == type } ?: FixtureDex.classes(bundle, setOf(type)).getValue(type)
+        return Registry(returns, owner)
+    }
+
     @Test
     fun `each declared build gives a short reel a bar while kept`() = bundles { bundle ->
         val name = bundle.name
         val found = scrubber(bundle)
-        val scrubber = found.scrubber
+        val scrubber = found.checksOn
         val check = scrubberLengthChecks(scrubber)?.minimum
         if (check == null) {
             // 584 has none of its own: the bar info builder works it out, and its hook answers it there.
@@ -130,7 +160,7 @@ class KeepProgressBarReelsFixtureTest {
     @Test
     fun `each declared build hooks the length checks a scrubber subclass overrides`() = bundles { bundle ->
         val name = bundle.name
-        val scrubber = scrubber(bundle).scrubber
+        val scrubber = scrubber(bundle).checksOn
         // 584 inlined the Reels tab's checks into the bar info builder, which the bar info test covers.
         val lengthChecks = scrubberLengthChecks(scrubber) ?: return@bundles
         val minimum = lengthChecks.minimum
@@ -174,7 +204,7 @@ class KeepProgressBarReelsFixtureTest {
         val name = bundle.name
         val found = scrubber(bundle)
         val base = found.progress.base
-        val info = barInfo(base, scrubberLengthChecks(found.scrubber)?.minimum)
+        val info = barInfo(base, scrubberLengthChecks(found.checksOn)?.minimum)
         val where = "$name: ${base.type}->${info.builder.name}"
         val code = info.builder.code()
         val init = code[info.call] as RegisterRangeInstruction
@@ -449,7 +479,7 @@ class KeepProgressBarReelsFixtureTest {
     fun `each declared build keeps a short reel from the faded bar while kept`() = bundles { bundle ->
         val name = bundle.name
         val found = scrubber(bundle)
-        val scrubber = found.scrubber
+        val scrubber = found.checksOn
         val checks = scrubberLengthChecks(scrubber)
         if (checks == null) {
             // 584 has none of its own: the bar info builder works it out, and its hook answers it there.
@@ -839,7 +869,7 @@ class KeepProgressBarReelsFixtureTest {
         val base = found.progress.base
         val holders = FixtureDex.classesHolding(bundle, NEW_REELS_UNIT_SHOWN).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val handOver = reelHandOver(holders, base.type)
-        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.scrubber)?.minimum).builder.returnType, handOver)
+        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.checksOn)?.minimum).builder.returnType, handOver)
         val owner = holders.single { it.type == handOver.method.definingClass }
         val where = "$name: ${owner.type}->${handOver.method.name}"
         val original = handOver.method.code()
@@ -937,17 +967,23 @@ class KeepProgressBarReelsFixtureTest {
         val base = scrubber(bundle).progress.base
         val holders = FixtureDex.classesHolding(bundle, NEW_REELS_UNIT_SHOWN).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val handOver = reelHandOver(holders, base.type)
-        val returns = registryReturns(handOver)
-        val owner = holders.single { it.type == handOver.method.definingClass }
-        val where = "$name: ${owner.type}->${handOver.method.name}"
-        val original = handOver.method.code()
+        val (returns, owner) = registry(bundle, handOver)
+        val registry = returns.method
+        val where = "$name: ${owner.type}->${registry.name}"
+        val original = registry.code()
         // #120: a reel that froze with another reel's bar logged no hand-over, so the registry returned at
         // its hide flag or for want of a scrubber holder, both ahead of the hand-over's hook.
         assertTrue("$where: the flag's test isn't ahead of the holder's", returns.test < returns.noHolder)
-        assertTrue("$where: the holder's test isn't ahead of the hand-over", returns.noHolder < handOver.at)
+        val handsOver = if (owner.type == handOver.method.definingClass && registry.sameAs(handOver.method)) handOver.at
+            else original.indexOfFirst { it.calls(handOver.method) }
+        assertTrue("$where: the holder's test isn't ahead of the hand-over", returns.noHolder < handsOver)
+        // 585's Android 9 build returns there too when the player isn't the Reels one.
+        val back = returns.test + 2
+        val originalFlow = ControlFlow.of(registry)
+        val earlier = original.indices.filter { it < returns.test && back in originalFlow.normal[it] }.toSet()
 
         val context = PatchContexts.of(listOf(owner))
-        val method = context.mutableClassDefBy(owner.type).methods.single { it.sameAs(handOver.method) }
+        val method = context.mutableClassDefBy(owner.type).methods.single { it.sameAs(registry) }
         method.notesNoScrubber(returns)
         method.notesRegistryAsk(returns)
         val patched = method.code()
@@ -967,7 +1003,7 @@ class KeepProgressBarReelsFixtureTest {
         // #120: the hand-over came too early for the scrubber's next load, so the extension keeps its arguments.
         assertEquals("$where: the extension gets the hand-over's arguments", MISSES_HAND_OVER, patched[none + 2].reference())
         val kept = patched[none + 2] as RegisterRangeInstruction
-        val registers = handOver.method.implementation!!.registerCount
+        val registers = registry.implementation!!.registerCount
         assertEquals("$where: all of them, the instance first", listOf(HAND_OVER_PARAMETERS + 1, registers - HAND_OVER_PARAMETERS - 1),
             listOf(kept.registerCount, kept.startRegister))
         assertEquals("$where: Facebook's test for a holder comes right after", Opcode.IF_EQZ, patched[none + 3].opcode)
@@ -978,7 +1014,7 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$where: a holder doesn't go straight on to Facebook's test", setOf(none + 1, none + 3), flow.normal[none].toSet())
         assertEquals("$where: something jumps onto Facebook's test for a holder", setOf(none, none + 2),
             patched.indices.filter { none + 3 in flow.normal[it] }.toSet())
-        assertEquals("$where: no holder no longer returns where the hide does", setOf(test + 2, none + 3),
+        assertEquals("$where: no holder no longer returns where the hide does", earlier + setOf(test + 2, none + 3),
             patched.indices.filter { test + 3 in flow.normal[it] }.toSet())
         assertEquals("$where: Facebook's code changed", original.map { it.opcode },
             patched.indices.filterNot { it in setOf(test, none, none + 1, none + 2) }.map { patched[it].opcode })
@@ -994,8 +1030,8 @@ class KeepProgressBarReelsFixtureTest {
         val base = found.progress.base
         val holders = FixtureDex.classesHolding(bundle, NEW_REELS_UNIT_SHOWN).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val handOver = reelHandOver(holders, base.type)
-        val returns = registryReturns(handOver)
-        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.scrubber)?.minimum).builder.returnType, handOver)
+        val returns = registry(bundle, handOver).returns
+        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.checksOn)?.minimum).builder.returnType, handOver)
         val load = scrubberLoad(base, another, returns)
         val clear = holderClear(base, returns)
         assertTrue("$name: the load's trace is gone", load.method.code().any {
@@ -1068,7 +1104,7 @@ class KeepProgressBarReelsFixtureTest {
         val looks = found.looks
         val base = found.progress.base
         val holders = FixtureDex.classesHolding(bundle, NEW_REELS_UNIT_SHOWN).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.scrubber)?.minimum).builder.returnType, reelHandOver(holders, base.type))
+        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.checksOn)?.minimum).builder.returnType, reelHandOver(holders, base.type))
         // Up to 582 the mount is the base's own, on 583 the Reels scrubber registry's hand-over runs it inline.
         val owner = if (another.mount.definingClass == base.type) base else holders.single { it.type == another.mount.definingClass }
         val context = PatchContexts.of(listOf(base, owner).distinctBy { it.type })
@@ -1152,7 +1188,8 @@ class KeepProgressBarReelsFixtureTest {
         val base = progress.base
         val where = "$name: ${base.type}->${progress.update.name}"
         checkUpdateAgain(progress)
-        val update = progress.update.code()
+        // 585's Android 9 build schedules it in the body the update runs.
+        val update = progress.update.code() + progress.body.code()
         assertTrue("$where no longer schedules its next run", update.any {
             val call = (it as? ReferenceInstruction)?.reference as? MethodReference
             it.opcode == Opcode.INVOKE_STATIC && call?.definingClass == base.type && call.returnType == "V" &&
@@ -1229,31 +1266,31 @@ class KeepProgressBarReelsFixtureTest {
         val base = found.progress.base
         val holders = FixtureDex.classesHolding(bundle, NEW_REELS_UNIT_SHOWN).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val handOver = reelHandOver(holders, base.type)
-        val returns = registryReturns(handOver)
-        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.scrubber)?.minimum).builder.returnType, handOver)
-        val owner = holders.single { it.type == handOver.method.definingClass }
-        val where = "$name: ${owner.type}->${handOver.method.name}"
-        val named = listOf(owner.type, another.info.substringBefore("->"), another.info.substringAfter(":")) +
-            handOver.method.parameterTypes.map(CharSequence::toString)
+        val (returns) = registry(bundle, handOver)
+        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.checksOn)?.minimum).builder.returnType, handOver)
+        val registry = returns.method
+        val where = "$name: ${registry.definingClass}->${registry.name}"
+        val named = listOf(registry.definingClass, another.info.substringBefore("->"), another.info.substringAfter(":")) +
+            registry.parameterTypes.map(CharSequence::toString)
         val classes = FixtureDex.classes(bundle, named.toSet())
-        checkHandOverAgain(handOver, returns, another) { classes[it] }
-        // The way back to null bar info: the registry reads the info, and takes none as another reel.
+        checkHandOverAgain(returns, another) { classes[it] }
+        // The way back to null bar info: the hand-over reads the info, and takes none as another reel.
         val code = handOver.method.code()
         val read = code.indexOfFirst { it.opcode == Opcode.IGET_OBJECT && it.reference() == another.info }
         assertTrue("$where no longer reads the scrubber's bar info", read >= 0)
         assertEquals("$where no longer tests for no bar info", Opcode.IF_EQZ, code.drop(read + 1).first { it.opcode in setOf(Opcode.IF_EQZ, Opcode.IF_NEZ) }.opcode)
 
         val context = PatchContexts.of(listOf(ExtensionDex.classDef(PROGRESS_BAR)))
-        context.fillHandOverAgain(handOver, another)
+        context.fillHandOverAgain(returns, another)
         val methods = context.mutableClassDefBy(PROGRESS_BAR).methods
         val again = methods.single(::isHandOverAgainStub).code()
-        val types = listOf(owner.type) + handOver.method.parameterTypes.map(CharSequence::toString)
+        val types = listOf(registry.definingClass) + registry.parameterTypes.map(CharSequence::toString)
         assertEquals("$where: the stub's code", List(HAND_OVER_PARAMETERS) { Opcode.CHECK_CAST } + listOf(Opcode.INVOKE_VIRTUAL_RANGE, Opcode.RETURN_VOID),
             again.map { it.opcode })
         assertEquals("$where: each argument cast to its type, the int aside", types.dropLast(1), again.take(HAND_OVER_PARAMETERS).map { it.reference() })
         assertEquals("$where: in its own register", (0 until HAND_OVER_PARAMETERS).toList(),
             again.take(HAND_OVER_PARAMETERS).map { (it as OneRegisterInstruction).registerA })
-        assertEquals("$where: the stub runs the hand-over", "${owner.type}->${handOver.method.name}(${types.drop(1).joinToString("")})V", again[HAND_OVER_PARAMETERS].reference())
+        assertEquals("$where: the stub runs the hand-over", "${registry.definingClass}->${registry.name}(${types.drop(1).joinToString("")})V", again[HAND_OVER_PARAMETERS].reference())
         val call = again[HAND_OVER_PARAMETERS] as RegisterRangeInstruction
         assertEquals("$where: on every argument it's handed", listOf(HAND_OVER_PARAMETERS + 1, 0), listOf(call.registerCount, call.startRegister))
 

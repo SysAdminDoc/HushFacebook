@@ -85,7 +85,8 @@ class KeepProgressBarFixtureTest {
         FixtureDex.forEach(bundle) { dex ->
             dex.classes.filter { it.superclass == scrubber.type }.mapTo(subclasses) { ImmutableClassDef.of(it) }
         }
-        val held = FixtureDex.classes(bundle, subclasses.flatMap { it.fields.map { field -> field.type } }.toSet())
+        // 585's Android 9 build keeps the reset on a class the scrubber's own field holds.
+        val held = FixtureDex.classes(bundle, (subclasses + scrubber).flatMap { it.fields.map { field -> field.type } }.toSet())
         val reset = chapterReset(scrubber, looks, subclasses) { held[it] }
         return reset to (held[reset.method.definingClass] ?: scrubber)
     }
@@ -148,7 +149,8 @@ class KeepProgressBarFixtureTest {
         assertTrue("$name: the active look doesn't load 255 for the thumb",
             looks.active.code().any { (it as? WideLiteralInstruction)?.wideLiteral == 255L })
         assertTrue("$name: the passive look doesn't set the bar's max height",
-            looks.passive.code().any { it.reference()?.endsWith("ProgressBar;->setMaxHeight(I)V") == true })
+            // 585's Android 9 build calls it through SeekBar.
+            looks.passive.code().any { it.reference() in setOf("Landroid/widget/ProgressBar;->setMaxHeight(I)V", "Landroid/widget/SeekBar;->setMaxHeight(I)V") })
         val registers = looks.passive.implementation!!.registerCount
         // The hook borrows v0 and v1: p0 is the one parameter register.
         assertTrue("$name: ${looks.type}->${looks.passive.name} has no two local registers for the hook", registers - 1 >= 2)
@@ -243,7 +245,7 @@ class KeepProgressBarFixtureTest {
             } == true
         })
         val base = FixtureDex.classes(bundle, setOf(scrubberBase(looks))).values.single()
-        val info = barInfo(base, scrubberLengthChecks(scrubber)?.minimum)
+        val info = barInfo(base, scrubberLengthChecks(lengthCheckOwner(scrubber, base))?.minimum)
         val (another, owner) = lightMount(bundle, base, info.builder.returnType)
         val mountCode = another.mount.code()
         // A match skips the reset of the bar's state, and both videos get the bar info's rebuild: 582 runs
@@ -312,7 +314,7 @@ class KeepProgressBarFixtureTest {
         val graph = graphHide(looks) { type -> FixtureDex.classes(bundle, setOf(type))[type] }
         val (chapters, _) = chapters(bundle, scrubber, looks)
         val base = FixtureDex.classes(bundle, setOf(scrubberBase(looks))).values.single()
-        val (another, owner) = lightMount(bundle, base, barInfo(base, scrubberLengthChecks(scrubber)?.minimum).builder.returnType)
+        val (another, owner) = lightMount(bundle, base, barInfo(base, scrubberLengthChecks(lengthCheckOwner(scrubber, base))?.minimum).builder.returnType)
         assertTrue("$name: the views holder isn't ${base.type}'s, so the base can't read it", looks.viewsField.startsWith("${base.type}->"))
 
         val context = PatchContexts.of(listOf(owner))

@@ -383,7 +383,6 @@ val keepProgressBarPatch = bytecodePatch(
         ) { classDefByOrNull(it) }
         val graph = graphHide(scrubber) { classDefByOrNull(it) }
         val scrubberClass = classDefByOrNull(scrubber.type) ?: refuse("${scrubber.type} went missing")
-        val lengthChecks = scrubberLengthChecks(scrubberClass)
         val progress = progressUpdate(
             classDefByStrings(SCRUBBER_UPDATE, StringComparisonType.EQUALS)
                 .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
@@ -391,6 +390,8 @@ val keepProgressBarPatch = bytecodePatch(
         if (progress.base.type != scrubberBase(scrubber) || progress.base.type !in listOfNotNull(scrubberClass.type, scrubberClass.superclass)) {
             refuse("${progress.base.type}, which updates the progress, isn't the class holding ${scrubber.type}'s views")
         }
+        val checksOwner = lengthCheckOwner(scrubberClass, progress.base)
+        val lengthChecks = scrubberLengthChecks(checksOwner)
         progress.body.freeLocalsAt(PATCH, dragCheck(progress.body, progress), 2)
         val info = barInfo(progress.base, lengthChecks?.minimum)
         val handOver = reelHandOver(
@@ -399,7 +400,13 @@ val keepProgressBarPatch = bytecodePatch(
             progress.base.type,
         )
         handOver.method.freeLocalsAt(PATCH, handOver.at, 3, parameters = true)
-        val returns = registryReturns(handOver)
+        val returns = registryReturns(handOver) {
+            buildList {
+                classDefForEachReferencing(types = listOf(handOver.method.definingClass)) { caller ->
+                    if (caller.methods.any { method -> method.implementation?.instructions?.any { callsMethod(it, handOver.method) } == true }) add(caller)
+                }
+            }
+        }
         val another = anotherVideo(progress.base, info.builder.returnType, handOver)
         val load = scrubberLoad(progress.base, another, returns)
         load.method.freeLocalsAt(PATCH, load.at, 3)
@@ -448,7 +455,7 @@ val keepProgressBarPatch = bytecodePatch(
             if (takesUpdater(it, updater)) controllers += it
             if (it.fields.any { field -> field.type == status.type }) statusOwners += it
             if (it.fields.any { field -> field.type == FUNCTION1 }) visibilityOwners += it
-            if (lengthChecks != null && it.type != scrubber.type &&
+            if (lengthChecks != null && it.type != checksOwner.type &&
                 it.methods.any { method -> method.sameAs(lengthChecks.minimum) || method.sameAs(lengthChecks.short) }
             ) {
                 checkHolders += it
@@ -467,9 +474,9 @@ val keepProgressBarPatch = bytecodePatch(
             refuse("$PROGRESS_BAR has no static void $UPDATE_AGAIN_STUB(Object)")
         }
         checkUpdateAgain(progress)
-        checkHandOverAgain(handOver, returns, another) { classDefByOrNull(it) }
+        checkHandOverAgain(returns, another) { classDefByOrNull(it) }
         val overrides = if (lengthChecks == null) emptyList() else {
-            lengthCheckOverrides(checkHolders, scrubber.type, listOf(lengthChecks.minimum, lengthChecks.short)) {
+            lengthCheckOverrides(checkHolders, checksOwner.type, listOf(lengthChecks.minimum, lengthChecks.short)) {
                 classDefByOrNull(it)?.superclass
             }
         }
@@ -500,14 +507,17 @@ val keepProgressBarPatch = bytecodePatch(
         }
         handOverMethod.notesHandOver(handOver, scrubber, another)
         // The registry's two early returns come ahead of the hook at the id's test, the later one first.
-        handOverMethod.notesNoScrubber(returns)
-        handOverMethod.notesRegistryAsk(returns)
+        // Up to 585 the registry's method is the hand-over's, on the Android 9 build a caller of it.
+        mutableClassDefBy(returns.method.definingClass).methods.single { it.sameAs(returns.method) }.apply {
+            notesNoScrubber(returns)
+            notesRegistryAsk(returns)
+        }
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(load.method) }.reportsLoad(scrubber, load, another)
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(holderClear.method) }.keepsNewerHolder(holderClear, load, returns)
         // 584 has no length checks of their own: the bar info hook answers them in the builder.
         if (lengthChecks != null) {
-            mutableClassDefBy(scrubber.type).methods.single { it.sameAs(lengthChecks.minimum) }.longEnoughWhileKept()
-            mutableClassDefBy(scrubber.type).methods.single { it.sameAs(lengthChecks.short) }.notShortWhileKept()
+            mutableClassDefBy(checksOwner.type).methods.single { it.sameAs(lengthChecks.minimum) }.longEnoughWhileKept()
+            mutableClassDefBy(checksOwner.type).methods.single { it.sameAs(lengthChecks.short) }.notShortWhileKept()
         }
         for ((type, check) in overrides) {
             val method = mutableClassDefBy(type).methods.single { it.sameAs(check) }
@@ -543,7 +553,7 @@ val keepProgressBarPatch = bytecodePatch(
         fillFooterLift(footer)
         mutableClassDefBy(footerSeek.type).methods.single { it.sameAs(footerSeek.method) }.keepsOverlayOnPress(footerSeek, visibility)
         fillUpdateAgain(progress)
-        fillHandOverAgain(handOver, another)
+        fillHandOverAgain(returns, another)
         if (plugin != null && sizes != null) {
             mutableClassDefBy(plugin.type).methods.single { it.sameAs(sizes.shrink) }
                 .fullSizeInstead(plugin.type, sizes.fullSize)
@@ -736,7 +746,9 @@ internal class ChapterReset(val owner: String, val method: Method, val field: St
  * into its base and left the marks to a helper the concrete scrubber holds (`LX/9iw;->A04`, a
  * `LX/7la;` whose own field leads back to the scrubber): then it's a method of the class of a final
  * instance field one of [subclasses], the classes extending [scrubber], declares, looked up through
- * [classOf]. Refuses unless there's one, and when it's private, since the light mount runs it.
+ * [classOf]. 585's Android 9 build has the scrubber itself hold it (`LX/0AFM;->A04`, a `LX/09Rz;`
+ * reset by `A01`), which is looked at when no subclass holds one. Refuses unless there's one, and
+ * when it's private, since the light mount runs it.
  */
 internal fun chapterReset(
     scrubber: ClassDef,
@@ -752,15 +764,16 @@ internal fun chapterReset(
             code.any { it.reference() == looks.barField } &&
             code.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == FULL_ALPHA }
     }
-    val own = resets(scrubber).map { ChapterReset(scrubber.type, it, null) }
-    val held = if (own.isNotEmpty()) emptyList() else subclasses.distinctBy { it.type }.flatMap { subclass ->
-        subclass.fields.filter {
+    fun heldBy(holders: List<ClassDef>) = holders.distinctBy { it.type }.flatMap { holder ->
+        holder.fields.filter {
             !AccessFlags.STATIC.isSet(it.accessFlags) && AccessFlags.FINAL.isSet(it.accessFlags) && it.type.startsWith("L")
         }.flatMap { field ->
             val helper = classOf(field.type) ?: return@flatMap emptyList()
-            resets(helper).map { ChapterReset(subclass.type, it, "${subclass.type}->${field.name}:${field.type}") }
+            resets(helper).map { ChapterReset(holder.type, it, "${holder.type}->${field.name}:${field.type}") }
         }
     }
+    val own = resets(scrubber).map { ChapterReset(scrubber.type, it, null) }
+    val held = if (own.isNotEmpty()) emptyList() else heldBy(subclasses).ifEmpty { heldBy(listOf(scrubber)) }
     val found = own + held
     val reset = found.singleOrNull()
         ?: refuse("${scrubber.type} and what its subclasses hold have ${found.size} static method(s) clearing its chapter marks and showing the bar again, expected one")
@@ -968,14 +981,15 @@ internal fun reelHandOver(holders: List<ClassDef>, base: String): ReelHandOver {
 }
 
 /**
- * The two ways the Reels scrubber registry's hand-over returns ahead of [ReelHandOver.at] (583
- * `LX/8fL;->A00`, indices 2 to 5 and 13): the test of its hide flag ([test]), a boolean field of its
- * own read into [flag] right before, which when set has its own one-`Integer` method hide every
- * scrubber's bar for the reel's key ([key]) and returns; and its test for a scrubber holder
- * ([noHolder], of [holder]), the reel's own or its default one, which returns at that same
- * `return-void` when there's neither.
+ * The two ways the Reels scrubber registry returns ahead of its hand-over, in the registry's method
+ * ([method], 583 `LX/8fL;->A00`, indices 2 to 5 and 13): the test of its hide flag ([test]), a boolean
+ * field of the registry read into [flag] right before, which when set has the registry's own
+ * one-`Integer` method hide every scrubber's bar for the reel's key ([key]) and returns; and its test
+ * for a scrubber holder ([noHolder], of [holder]), the reel's own or its default one, which returns at
+ * that same `return-void` when there's neither.
  */
 internal class RegistryReturns(
+    val method: Method,
     val test: Int,
     val flag: Int,
     val key: Int,
@@ -985,57 +999,81 @@ internal class RegistryReturns(
     val defaultHolder: String,
 )
 
+/** Whether [instruction] calls [method]. */
+private fun callsMethod(instruction: Instruction, method: Method): Boolean {
+    val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    return call.definingClass == method.definingClass && call.name == method.name && call.returnType == method.returnType &&
+        call.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
+}
+
 /**
- * Finds [RegistryReturns] in [handOver]'s method. Refuses unless the flag is read off the method's
- * own class ahead of the hand-over's hook and tested right after, with nothing else jumping onto
- * the test; the hide is the one call between that test and a `return-void`, on the method's own
- * class, taking just the key, which nothing writes before; exactly one other instruction, an
- * `if-eqz` ahead of the hook that only the instruction before reaches, jumps onto that return, and
- * that instruction reads the default holder off a field of the method's own class into the
- * register tested; and the flag, key and holder sit at v15 or below.
+ * The index ahead of [before] in [code] where a boolean field is read and tested right after by an
+ * `if-eqz`, then a void method of the field's class hides every bar for the key it's given, and a
+ * `return-void` follows: the registry's hide flag.
  */
-internal fun registryReturns(handOver: ReelHandOver): RegistryReturns {
-    val method = handOver.method
+private fun hideFlagRead(code: List<Instruction>, before: Int): Int? = (0 until minOf(before, code.size - 3)).firstOrNull { index ->
+    val field = (code[index] as? ReferenceInstruction)?.reference as? FieldReference
+    val hides = (code[index + 2] as? ReferenceInstruction)?.reference as? MethodReference
+    code[index].opcode == Opcode.IGET_BOOLEAN && field != null &&
+        code[index + 1].opcode == Opcode.IF_EQZ &&
+        (code[index + 1] as OneRegisterInstruction).registerA == (code[index] as TwoRegisterInstruction).registerA &&
+        code[index + 2].opcode == Opcode.INVOKE_VIRTUAL && hides != null && hides.definingClass == field.definingClass &&
+        hides.returnType == "V" && hides.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Integer;") &&
+        code[index + 3].opcode == Opcode.RETURN_VOID
+}
+
+/**
+ * Finds [RegistryReturns]. Up to 585 the registry's logic sits in [handOver]'s own method, ahead of its
+ * hook. 585's Android 9 build left the hand-over a method of the holder (`LX/09Rr;->A00`) and inlined
+ * the registry into its callers, and of those only `LX/0BDl;->A00` returns at the hide the way the
+ * registry does, so the registry's method is then the one of the methods [callers] declare that calls
+ * the hand-over with that hide ahead of the call. The other two copies (`LX/08a0;->A0D`,
+ * `LX/09xw;->A08`) go on past the hide or test the flag the other way round, and stay as they are.
+ * Refuses unless there's one such method, nothing but the read jumps onto the flag's test, and of the
+ * instructions jumping onto the hide's return, one is an `if-eqz` past the hide and ahead of the
+ * hand-over that only the instruction before reaches, that instruction reading the default holder off
+ * a field of the registry into the register tested; and the flag, key and holder sit at v15 or below.
+ * The Android 9 build's registry returns there for a reel whose player has no parameters yet too, ahead
+ * of the flag.
+ */
+internal fun registryReturns(handOver: ReelHandOver, callers: () -> List<ClassDef>): RegistryReturns {
+    val own = handOver.method.implementation!!.instructions.toList()
+    val (method, before) = if (hideFlagRead(own, handOver.at) != null) handOver.method to handOver.at else {
+        val found = callers().distinctBy { it.type }.flatMap { caller ->
+            caller.methods.mapNotNull { method ->
+                val code = method.implementation?.instructions?.toList() ?: return@mapNotNull null
+                val call = code.indices.firstOrNull { callsMethod(code[it], handOver.method) } ?: return@mapNotNull null
+                (method to call).takeIf { hideFlagRead(code, call) != null }
+            }
+        }
+        found.singleOrNull() ?: refuse(
+            "${handOver.method.definingClass}->${handOver.method.name} no longer reads a hide flag ahead of its hand-over, " +
+                "and ${found.size} of its callers do before calling it, expected one",
+        )
+    }
     val where = "${method.definingClass}->${method.name}"
     val code = method.implementation!!.instructions.toList()
-    val read = (0 until handOver.at).firstOrNull { index ->
-        code[index].opcode == Opcode.IGET_BOOLEAN &&
-            ((code[index] as ReferenceInstruction).reference as FieldReference).definingClass == method.definingClass
-    } ?: refuse("$where no longer reads a flag of its own ahead of its hand-over")
+    val read = hideFlagRead(code, before)!!
     val flag = (code[read] as TwoRegisterInstruction).registerA
+    val registry = ((code[read] as ReferenceInstruction).reference as FieldReference).definingClass
     val test = read + 1
-    if (code.getOrNull(test)?.opcode != Opcode.IF_EQZ || (code[test] as OneRegisterInstruction).registerA != flag) {
-        refuse("$where no longer tests its flag right after reading it")
-    }
-    val hide = code.getOrNull(test + 1)
-    val hides = (hide as? ReferenceInstruction)?.reference as? MethodReference
-    if (hide?.opcode != Opcode.INVOKE_VIRTUAL || hides == null || hides.definingClass != method.definingClass ||
-        hides.returnType != "V" || hides.parameterTypes.map(CharSequence::toString) != listOf("Ljava/lang/Integer;")
-    ) {
-        refuse("$where no longer hides every bar for the reel's key when its flag is set")
-    }
-    val key = (hide as FiveRegisterInstruction).registerD
-    if ((0 until test).any { writes(code[it], key) }) refuse("$where writes v$key, the reel's key, before its flag's test")
+    val key = (code[test + 1] as FiveRegisterInstruction).registerD
     val back = test + 2
-    if (code.getOrNull(back)?.opcode != Opcode.RETURN_VOID) refuse("$where no longer returns right after hiding every bar")
     val flow = ControlFlow.of(method)
     if (code.indices.any { it != read && test in flow.normal[it] }) refuse("$where has a jump onto its test of the flag")
-    val jumps = code.indices.filter { it != test + 1 && back in flow.normal[it] }
-    val noHolder = jumps.singleOrNull()
-        ?: refuse("$where returns at its hide's return-void from ${jumps.size} other places, expected one")
-    if (code[noHolder].opcode != Opcode.IF_EQZ || noHolder >= handOver.at) {
-        refuse("$where no longer tests for a scrubber holder ahead of its hand-over")
+    fun readsDefault(index: Int): Boolean {
+        val fallback = code.getOrNull(index - 1) ?: return false
+        return fallback.opcode == Opcode.IGET_OBJECT &&
+            (fallback as TwoRegisterInstruction).registerA == (code[index] as OneRegisterInstruction).registerA &&
+            ((fallback as ReferenceInstruction).reference as FieldReference).definingClass == registry
     }
+    val tests = code.indices.filter { it > back && it < before && back in flow.normal[it] && code[it].opcode == Opcode.IF_EQZ && readsDefault(it) }
+    val noHolder = tests.singleOrNull()
+        ?: refuse("$where tests ${tests.size} default scrubber holder(s) of $registry ahead of its hand-over and returns where it hides every bar, expected one")
     if (code.indices.any { it != noHolder - 1 && noHolder in flow.normal[it] }) refuse("$where has a jump onto its test for a scrubber holder")
     val holder = (code[noHolder] as OneRegisterInstruction).registerA
-    val fallback = code.getOrNull(noHolder - 1)
-    if (fallback?.opcode != Opcode.IGET_OBJECT || (fallback as TwoRegisterInstruction).registerA != holder ||
-        ((fallback as ReferenceInstruction).reference as FieldReference).definingClass != method.definingClass
-    ) {
-        refuse("$where no longer reads its default scrubber holder right before testing for one")
-    }
     if (maxOf(flag, key, holder) > 15) refuse("$where keeps its flag, the reel's key or the holder past v15")
-    return RegistryReturns(test, flag, key, noHolder, holder, (fallback as ReferenceInstruction).reference.toString())
+    return RegistryReturns(method, test, flag, key, noHolder, holder, (code[noHolder - 1] as ReferenceInstruction).reference.toString())
 }
 
 /**
@@ -1152,8 +1190,27 @@ private fun lengthChecks(scrubber: ClassDef, vararg opcodes: Opcode): List<Metho
         // The parameters take the last three registers: this, then the length and the boolean in their order.
         val parameters = check.parameterTypes.map(CharSequence::toString)
         val length = implementation.registerCount - parameters.size + parameters.indexOf("I")
-        implementation.instructions.any { it.opcode in opcodes && (it as TwoRegisterInstruction).registerA == length }
+        val holding = lengthRegisters(implementation.instructions.toList(), length)
+        implementation.instructions.any { it.opcode in opcodes && (it as TwoRegisterInstruction).registerA in holding }
     }
+
+private val MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+
+/**
+ * The [length] parameter's register and every register a plain `move` copies it into. 585's Android 9
+ * build copies the length before its short-reel compare (`LX/0AEa;->A1M`: `move/from16 v1, v17`, then
+ * `if-gt v1, v0`), where the other builds compare the parameter itself.
+ */
+private fun lengthRegisters(code: List<Instruction>, length: Int): Set<Int> {
+    val holding = mutableSetOf(length)
+    do {
+        val before = holding.size
+        for (instruction in code) {
+            if (instruction.opcode in MOVES && (instruction as TwoRegisterInstruction).registerB in holding) holding += instruction.registerA
+        }
+    } while (holding.size != before)
+    return holding
+}
 
 /** The scrubber's two length checks, [minimumLengthCheck] and [shortReelCheck]. */
 internal class LengthChecks(val minimum: Method, val short: Method)
@@ -1167,6 +1224,14 @@ internal fun scrubberLengthChecks(scrubber: ClassDef): LengthChecks? {
     if (lengthChecks(scrubber, *MINIMUM_COMPARES).isEmpty() && lengthChecks(scrubber, *SHORT_COMPARES).isEmpty()) return null
     return LengthChecks(minimumLengthCheck(scrubber), shortReelCheck(scrubber))
 }
+
+/**
+ * The class declaring the scrubber's length checks: the scrubber itself, or its [base] when the
+ * scrubber extends it and only the base has them. 585's Android 9 build moved the looks into a class
+ * extending the base (`LX/0AFM;` below `LX/0AEa;`) and left the checks on the base (`A1M`, `A1N`).
+ */
+internal fun lengthCheckOwner(scrubber: ClassDef, base: ClassDef): ClassDef =
+    if (base.type == scrubber.superclass && scrubberLengthChecks(scrubber) == null && scrubberLengthChecks(base) != null) base else scrubber
 
 /**
  * The scrubber's check that a reel is long enough for a bar (583 `LX/9h9;->A1U`). The scrubber has
@@ -2280,12 +2345,11 @@ internal fun isSetBarInfoStub(method: Method) = method.name == SET_BAR_INFO_STUB
  * its type are all reachable from the extension's package.
  */
 internal fun checkHandOverAgain(
-    handOver: ReelHandOver,
     returns: RegistryReturns,
     another: AnotherVideo,
     classOf: (String) -> ClassDef?,
 ) {
-    val method = handOver.method
+    val method = returns.method
     val where = "${method.definingClass}->${method.name}"
     val types = method.parameterTypes.map(CharSequence::toString)
     if (types.size != HAND_OVER_PARAMETERS || types[HAND_OVER_PARAMETERS - 2] != "Ljava/lang/Integer;" || types.last() != "I") {
@@ -2319,8 +2383,8 @@ internal fun checkHandOverAgain(
  * [HELD_BAR_INFO_STUB] and [SET_BAR_INFO_STUB] with the read and write of the scrubber's bar info. d8
  * gives these stubs no locals of their own, so everything happens in the argument registers.
  */
-internal fun BytecodePatchContext.fillHandOverAgain(handOver: ReelHandOver, another: AnotherVideo) {
-    val method = handOver.method
+internal fun BytecodePatchContext.fillHandOverAgain(returns: RegistryReturns, another: AnotherVideo) {
+    val method = returns.method
     val types = method.parameterTypes.map(CharSequence::toString)
     val extension = mutableClassDefBy(PROGRESS_BAR)
     val again = extension.methods.singleOrNull(::isHandOverAgainStub) ?: refuse("$PROGRESS_BAR has no static void $HAND_OVER_AGAIN_STUB")
