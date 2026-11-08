@@ -60,8 +60,9 @@ import app.morphe.extension.shared.settings.Setting;
  * arms the window again with Facebook's own arguments for that reel's player, in that reel's own
  * shape, worked out the way Facebook works it out when it arms. Facebook's own shape check takes
  * nothing wider than square, so a landscape reel opened no window; with the switch on, that check
- * says yes up to Android's widest window, 2.39 to one, and a landscape reel floats in a wide window
- * ({@link #wideFits}, #418). A reel of a shape the window doesn't take, wider still, isn't armed
+ * says yes up to Android's widest window, 2.39 to one ({@link #wideFits}, #418). A landscape reel
+ * floats in a square window ({@link #window}): a window wider than tall turns Facebook's screen
+ * landscape, and Facebook opens its video modal over the window. A reel of a shape the window doesn't take, wider still, isn't armed
  * again: it opens no window, as with Facebook's own arming, where before it opened in the last
  * reel's shape around the wide video (#126). And while the
  * window is armed, it sets Facebook's change of auto-enter aside and decides from the reel on screen:
@@ -167,6 +168,9 @@ public final class PictureInPicture {
 
     /** Counted each time Facebook's shape check takes a reel wider than square that it would turn away. */
     static final String WIDE = "landscape reel let into the window";
+
+    /** Counted each time a window wider than square is built square instead. */
+    static final String SQUARE = "wide window built square";
 
     /**
      * The narrowest and widest window armed for a reel, width to height: 1 by 2.39 and 2.39 by 1,
@@ -403,6 +407,29 @@ public final class PictureInPicture {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel shape check", failure);
             return false;
+        }
+    }
+
+    /**
+     * The hook, first thing in ReelsPipUtil's builder of the window's params, handed the [shape]
+     * every arming and every change of auto-enter builds them with. A window wider than tall gives
+     * Facebook's screen a landscape configuration, and Facebook answers it as if the phone turned:
+     * it opened its video modal over the window, which showed a spinner instead of the reel and was
+     * still there back full screen. Its builder also widened any shape past square to 2.39 to one.
+     * With the switch on, a shape wider than square gets a square window, which Android counts as
+     * portrait and the builder keeps, with the reel's whole video across it (#418). Anything else is
+     * kept as it came.
+     */
+    public static Rational window(Rational shape) {
+        try {
+            if (shape == null || !on() || !(shape.floatValue() > 1f)) return shape;
+            HookStatus.bound(FAMILY, "window shape");
+            HookStatus.counted(FAMILY, SQUARE);
+            Logger.printDebug(() -> "Picture-in-picture: a window " + shape + " wide gets a square one");
+            return new Rational(1, 1);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "window shape", failure);
+            return shape;
         }
     }
 

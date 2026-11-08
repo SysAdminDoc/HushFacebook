@@ -9,6 +9,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -446,6 +447,29 @@ public class PictureInPictureHoldTest {
 
         Settings.PICTURE_IN_PICTURE.save(false);
         assertFalse("switch off", PictureInPicture.wideFits(1777));
+    }
+
+    /**
+     * #418: a window wider than tall turns Facebook's screen landscape and brings its video modal
+     * up over the reel, so a wide shape is built square, and every other shape, and every shape with
+     * the switch off, is built as it came.
+     */
+    @Test
+    public void aLandscapeReelFloatsInASquareWindow() {
+        assertEquals("16 by 9", new Rational(1, 1), PictureInPicture.window(new Rational(1777, 1000)));
+        assertEquals("Android's widest", new Rational(1, 1), PictureInPicture.window(new Rational(239, 100)));
+        Rational tall = new Rational(9, 16);
+        assertSame("tall", tall, PictureInPicture.window(tall));
+        Rational square = new Rational(1, 1);
+        assertSame("square", square, PictureInPicture.window(square));
+        assertNull("no shape", PictureInPicture.window(null));
+        String line = statusLine();
+        assertNotNull("no status line", line);
+        assertTrue(line, line.contains(PictureInPicture.SQUARE + " 2"));
+
+        Settings.PICTURE_IN_PICTURE.save(false);
+        Rational wide = new Rational(1777, 1000);
+        assertSame("switch off", wide, PictureInPicture.window(wide));
     }
 
     /** Puts a view holding [id] on the screen, the way Marketplace's React Native root holds 1. */

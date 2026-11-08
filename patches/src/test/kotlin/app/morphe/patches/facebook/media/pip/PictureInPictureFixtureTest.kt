@@ -263,6 +263,23 @@ class PictureInPictureFixtureTest {
                 assertEquals("$name: Facebook's first instruction of the shape check moved", originalShapeCheck[0].opcode, shaped[5].opcode)
                 assertEquals("$name: the rest of Facebook's shape check", originalShapeCheck.size + 5, shaped.size)
 
+                // #418: the params builder gets its shape from the extension first, so a wide reel's window is square.
+                val builders = util.methods.filter(::isParamsBuilder)
+                assertEquals("$name: ${util.type}'s static params builders", 1, builders.size)
+                val builder = builders.single()
+                val originalBuilder = builder.code()
+                val built = context.mutableClassDefBy(util.type).methods.single {
+                    it.name == builder.name && it.shape() == builder.shape() && it.returnType == builder.returnType
+                }.code()
+                val shapeHandOver = built[0] as RegisterRangeInstruction
+                assertEquals("$name: the builder's first call", WINDOW_SHAPE, built[0].call.toString())
+                assertEquals("$name: the shape handed over", listOf(builder.localRegisterCount() + 1, 1),
+                    listOf(shapeHandOver.startRegister, shapeHandOver.registerCount))
+                assertEquals("$name: the shape handed back", Opcode.MOVE_RESULT_OBJECT, built[1].opcode)
+                assertEquals("$name: into the shape's own register", builder.localRegisterCount() + 1,
+                    (built[1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: the rest of Facebook's builder", originalBuilder.size + 2, built.size)
+
                 fun patchedOf(method: Method) = context.mutableClassDefBy(method.definingClass).methods.single {
                     it.name == method.name && it.shape() == method.shape() && it.returnType == method.returnType
                 }

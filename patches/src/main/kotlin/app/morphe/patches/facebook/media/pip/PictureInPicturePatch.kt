@@ -83,6 +83,8 @@ internal const val SURFACE_ALLOWED = "$PICTURE_IN_PICTURE->surfaceAllowed()Z"
 
 internal const val WIDE_FITS = "$PICTURE_IN_PICTURE->wideFits(I)Z"
 
+internal const val WINDOW_SHAPE = "$PICTURE_IN_PICTURE->window($RATIONAL)$RATIONAL"
+
 /** The float bits of 1000f, which ReelsPipUtil's shape check divides a reel's thousandths by. */
 internal const val THOUSAND_FLOAT_BITS = 0x447a0000
 
@@ -165,7 +167,13 @@ internal const val SHOWN_AGAIN = "$PICTURE_IN_PICTURE->shownAgain(${VIEW}I)V"
  * shape out of the window (#126). Facebook's own check of that shape (585 `LX/09OS;->A0B`, the
  * util's static (int) -> boolean dividing the thousandths it gets by 1000f) stops at square, so a
  * landscape reel opened no window at all. The extension goes first in it and says yes up to
- * Android's widest window, 2.39 to one (#418).
+ * Android's widest window, 2.39 to one (#418). Every arming and change of auto-enter builds the
+ * window's params in one static method of the util (585 `LX/09OS;->A00`, (Rect, Rational, List,
+ * boolean) -> PictureInPictureParams), which widened any shape past square to 2.39. A window wider
+ * than tall also turns Facebook's screen landscape, and Facebook then opened its video modal (the
+ * Watch topic feed, `target_fragment` 562, entry point FEED_INLINE_VIDEO_TAPPED) over the window,
+ * a spinner where the reel should be and a black page back full screen. The extension goes first
+ * in that builder and hands it a square shape for anything wider, which it keeps.
  *
  * In the window, Facebook's viewer (581 `LX/g7h;`) gives its container a new view id, and its
  * fragment finds the container by that id from the top of the screen. A React Native view can
@@ -249,9 +257,12 @@ val pictureInPicturePatch = bytecodePatch(
         val home = findHome(check, gate, disarms)
         applyPipCheck(check)
         applySurfaceGate(gate)
-        // Landscape reels in a wide window (#418); without it they open none, as Facebook has them.
+        // Landscape reels in a square window (#418); without both hooks they open none, as Facebook
+        // has them, since a wide window brings Facebook's video modal up over it.
         try {
-            applyShapeCheck(findShapeCheck(check, step))
+            val shape = findShapeCheck(check, step)
+            applyWindowShape(findParamsBuilder(check))
+            applyShapeCheck(shape)
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so landscape reels open no window.")
         }
@@ -442,6 +453,38 @@ internal fun BytecodePatchContext.applyShapeCheck(shape: Method) {
             return v0
         """,
         ExternalLabel("facebook", method.getInstruction(0)),
+    )
+}
+
+/**
+ * Whether [method] is ReelsPipUtil's builder of the window's params: static (Rect, Rational, List,
+ * boolean) -> PictureInPictureParams, setting the builder's aspect ratio.
+ */
+internal fun isParamsBuilder(method: Method): Boolean =
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == PIP_PARAMS &&
+        method.shape() == listOf(RECT, RATIONAL, "Ljava/util/List;", "Z") &&
+        method.calls().any { it.definingClass == PIP_PARAMS_BUILDER && it.name == "setAspectRatio" }
+
+/** ReelsPipUtil's one params builder, in [check]'s class. Changes nothing. */
+internal fun BytecodePatchContext.findParamsBuilder(check: Method): Method {
+    val util = classDefBy(check.definingClass)
+    val builders = util.methods.filter(::isParamsBuilder)
+    return builders.singleOrNull()
+        ?: refuse("${util.type} has ${builders.size} static (Rect, Rational, List, boolean) params builders, expected 1")
+}
+
+/**
+ * The extension goes first in the params builder, handed the window's shape, and the builder goes
+ * on with the shape it hands back: square for anything wider (#418).
+ */
+internal fun BytecodePatchContext.applyWindowShape(builder: Method) {
+    val method = mutableClassDefBy(builder.definingClass).findMutableMethodOf(builder)
+    method.addInstructions(
+        0,
+        """
+            invoke-static/range { p1 .. p1 }, $WINDOW_SHAPE
+            move-result-object p1
+        """,
     )
 }
 
