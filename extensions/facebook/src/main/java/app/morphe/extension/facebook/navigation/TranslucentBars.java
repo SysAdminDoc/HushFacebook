@@ -99,7 +99,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * and with a gap covering the tab bar's rows, gets that gap taken away and runs under the bar the
  * way Home's feed does. With the pill alone, that gap showed black around it (#412). The gap comes
  * back when both switches are off. A page Facebook keeps putting the gap back on is left as
- * Facebook has it, so the two never fight over its layout.
+ * Facebook has it, so the two never fight over its layout. Video controls Facebook pins to the
+ * bottom of a whole-screen viewer, as the Reels tab does its time and seek bar, are held above the
+ * tab bar's rows meanwhile ({@link ControlsLift}).
  *
  * <p>Any failure gives every fill back and stops the bars of that screen, which then look stock.
  */
@@ -572,6 +574,8 @@ public final class TranslucentBars {
         private final Map<View, Boolean> shortOfBox = new IdentityHashMap<>();
         /** Each page stretched under the tab bar, by the page (#250). */
         final Map<View, Stretch> stretched = new WeakHashMap<>();
+        /** Facebook's video controls held above the tab bar while pages run under it (#412). */
+        final ControlsLift controls = new ControlsLift();
         private boolean describedNothingUnder;
         private long nextLook;
         private long nextStretch;
@@ -622,6 +626,8 @@ public final class TranslucentBars {
             frame++;
             int height = window.getHeight();
             boolean blurs = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && window.isHardwareAccelerated();
+            // The top of the tab bar's rows on screen, when they're along the bottom.
+            int cover = Integer.MAX_VALUE;
             for (int i = 0; i < anchors.size(); i++) {
                 View anchor = shown(i);
                 if (anchor == null) continue;
@@ -636,9 +642,13 @@ public final class TranslucentBars {
                     if (other.getHeight() > 0) row = Math.min(row, other.getHeight());
                     if (other.getGlobalVisibleRect(visible)) rows.union(visible);
                 }
-                if (now >= nextStretch && tabBar.equals(anchor.getClass().getName()) && rows.top > height / 2) {
+                boolean tabsBelow = tabBar.equals(anchor.getClass().getName()) && rows.top > height / 2;
+                if (tabsBelow) cover = Math.min(cover, rows.top);
+                if (now >= nextStretch && tabsBelow) {
                     nextStretch = now + RESCAN_MS;
-                    reachUnder(bar, laidOutTop(anchor), rows.height(), height, now);
+                    int edge = laidOutTop(anchor);
+                    reachUnder(bar, edge, rows.height(), height, now);
+                    controls.find(under(bar), edge, height);
                 }
                 if (!seeThrough) continue;
                 View under = blurs ? underNow(bar, rows) : null;
@@ -656,6 +666,7 @@ public final class TranslucentBars {
                     }
                 }
             }
+            controls.place(cover);
             if (!seeThrough) return;
             forgetUnseen();
             dropStaleFrost();
@@ -871,9 +882,13 @@ public final class TranslucentBars {
             }
         }
 
-        /** Every fill gets Facebook's alpha back, the frost goes and each stretched page gets its gap back. */
+        /**
+         * Every fill gets Facebook's alpha back, the frost goes, each stretched page gets its gap
+         * back and each video controls host its place.
+         */
         void giveBack() {
             unstretch();
+            controls.giveBack();
             giveBackFills();
         }
 
