@@ -1484,6 +1484,19 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/coexist/CloneInstallPatch.kt"
+      ],
+      "origin": "ported",
+      "upstream": "https://github.com/SysAdminDoc/HushMessenger",
+      "commit": "71a9b696aec15db5b960143afcd9f007b118babd",
+      "via": [
+        "https://github.com/rushiranpise/morphe-patches"
+      ],
+      "license": "GPL-3.0-only",
+      "changes": "HushMessenger's clone install moved to Facebook. The manifest rename and the two options are Messenger's: permissions, provider authorities, task affinities, push categories, meta-data values and the queries entries that name the app follow the new package, with the same reserved names and checks. Facebook's own process affinities (an empty one and the ':' ones) are left alone, the label goes through Hushfacebook's App name string, and the one check that compares a launched component's package with Facebook's name is handed the running package through OwnAuthorities so the copy's own screens open. Recents labels are hooked so a task shows the copy's name, the patch marks itself in SettingsStatus, and Messenger's backup, attachment and dedup sites are left to the shared package rename Hushfacebook already applies."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/chats/VideoLocation.java"
       ],
       "origin": "original",

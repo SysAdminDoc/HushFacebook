@@ -508,6 +508,65 @@
       "options": []
     },
     {
+      "name": "Clone install under another package name",
+      "description": "Installs a second copy of Facebook beside the first under its own package name and app name, for a phone where Facebook came preinstalled and a patched one won't install over it. Hushfacebook settings open in the copy the same way. It isn't selected by default because push notifications may not reach the copy, and you only need it for a second Facebook. Turn on Expert mode in Manager to pick it. Works as soon as you patch it in, with no switch.",
+      "category": "Fixes",
+      "use": false,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings",
+        "Install beside Meta's apps",
+        "ResourcePatch"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "585.0.0.47.54"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "585.0.0.47.54",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 476015655,
+                "ARMEABI_V7A": 476015543
+              }
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "clonePackageName",
+          "title": "Package name",
+          "description": "The copy's unique app ID, like com.facebook.katana.hush. Use words joined by dots, each starting with a letter. It can't match Facebook or another Meta app.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "com.facebook.katana.hush",
+          "values": null
+        },
+        {
+          "key": "cloneAppName",
+          "title": "App name",
+          "description": "The name shown under the copy's home screen icon. Up to 40 characters, starting with a letter or number.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "Facebook Clone",
+          "values": null
+        }
+      ]
+    },
+    {
       "name": "Comment sheet options",
       "description": "Small fixes for comments. Stop a long press on Like from opening reactions, hide the GIF and sticker buttons, show every reply without tapping View replies, load a whole reply thread as you scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, put Block on reaction lists, hide Like on comments, hide Related groups under group posts, hide comments with shop links or your words, hide who is typing and the new comments pop-up, hide the emoji row over the comment box, hide the line over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in Hushfacebook settings > Comments and writing.",
       "category": "Comments",

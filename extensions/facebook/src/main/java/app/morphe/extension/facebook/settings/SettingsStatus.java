@@ -310,6 +310,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean cloneInstall() {
+        return false;
+    }
+
     public static boolean openInFacebook() {
         return false;
     }

@@ -150,12 +150,14 @@ internal fun Document.followRenamedPackage(
         }
     }
 
+    // A clone named under the stock package (com.facebook.katana.hush) already moved its own, which
+    // would otherwise read as stock ones here and move a second time.
     var authorities = 0
     for (provider in elements("provider")) {
         val entries = provider.getAttribute("android:authorities").split(';')
         val moved = entries.map { entry ->
             val authority = entry.trim()
-            if (authority !in stockAuthorities) return@map entry
+            if (authority !in stockAuthorities || authority.startsWith("$renamedTo.")) return@map entry
             authorities++
             entry.replace(authority, movedUnder(authority))
         }

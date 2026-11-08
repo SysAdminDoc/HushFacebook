@@ -2546,6 +2546,7 @@ There's no Facebook link in what you shared.	你分享的内容中没有 Faceboo
 Open in Facebook from the share menu	分享菜单中的 Open in Facebook
 Share a Facebook link from Messenger's browser or any other app and pick Open in Facebook, and it opens here.	在 Messenger 的浏览器或其他应用中分享 Facebook 链接，选择 Open in Facebook，即可在这里打开。
 GmsCore support	GmsCore 支持
+Clone install under another package name	以其他包名安装副本
 Version %1$s for Facebook %2$s	版本 %1$s，适用于 Facebook %2$s
 Show all settings as a list	以列表显示所有设置
 Show settings by category	按类别显示设置

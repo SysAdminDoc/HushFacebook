@@ -28,6 +28,8 @@ class DefaultSelectionPolicyTest {
             "can't install over it, and it doesn't work on a Root Mount install.",
         "GmsCore support" to "Facebook stops asking Google Play services and asks microG-RE instead, so on a phone " +
             "without microG-RE it gets no push notifications.",
+        "Clone install under another package name" to "It installs the patched app as a second Facebook under " +
+            "another package name, which may not get push notifications, and only someone who wants two needs it.",
     )
 
     private fun shippedPatches() = run {

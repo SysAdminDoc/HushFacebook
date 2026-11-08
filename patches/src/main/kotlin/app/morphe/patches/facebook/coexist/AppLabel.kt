@@ -100,12 +100,12 @@ internal fun Document.labelWith(reference: String): Int {
     return relabeled.size
 }
 
-/** Adds the [APP_NAME_STRING] resource holding [name], or rewrites it when a build already has one. */
-internal fun Document.putAppName(name: String) {
+/** Adds the [stringName] resource holding [name], or rewrites it when a build already has one. */
+internal fun Document.putAppName(name: String, stringName: String = APP_NAME_STRING) {
     val resources = documentElement
-    val string = resources.childElements("string").firstOrNull { it.getAttribute("name") == APP_NAME_STRING }
+    val string = resources.childElements("string").firstOrNull { it.getAttribute("name") == stringName }
         ?: createElement("string").also {
-            it.setAttribute("name", APP_NAME_STRING)
+            it.setAttribute("name", stringName)
             resources.appendChild(it)
         }
     string.setAttribute("translatable", "false")

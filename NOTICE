@@ -23,6 +23,9 @@ Disable Play Store updates is Morphe's own patch from morphe-patches, with
 its file notices kept and Hushfacebook's changes marked in them. GmsCore
 support is HushMessenger's, which adapted HushPinterest's copy of the patch
 Morphe and ReVanced wrote, with Hushfacebook's changes marked in its header.
+Clone install under another package name is HushMessenger's too, whose
+package rename is adapted from rushiranpise's morphe-patches, with both
+credited and Hushfacebook's changes marked in its header.
 The settings screen's header is HushGram's, with its changes marked the same way.
 The notices below are reproduced from those projects. Morphe requires its text to be
 carried in derivative works and shown to the person using the software, so it
@@ -36,6 +39,7 @@ Hushfacebook, then More settings, About and Licenses.
   HushPinterest               https://github.com/SysAdminDoc/HushPinterest
   JhouHank's translation      https://github.com/JhouHank/HushFacebook
   morphe-patches (Andrew's)   https://github.com/andrewliang25/morphe-patches
+  morphe-patches (rushiranpise) https://github.com/rushiranpise/morphe-patches
   FroggoMorphePatches         https://github.com/SapitoSucio/FroggoMorphePatches
   FroggoMorphePatches (Arun)  https://github.com/ArunTS96/FroggoMorphePatches
   tiktok-patches-for-morphe   https://github.com/icysymmetra/tiktok-patches-for-morphe

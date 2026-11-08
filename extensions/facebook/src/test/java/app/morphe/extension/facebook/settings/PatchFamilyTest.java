@@ -446,8 +446,8 @@ public class PatchFamilyTest {
                         + "Hide read receipts, Send chat photos and videos at original quality, Block promotional "
                         + "notifications, Block ad telemetry, Disable Audience Network, AMOLED black theme, Material "
                         + "You theme, Accent color, Badge and logo colors, Restore screens on re-signed builds, Start on x86 devices, "
-                        + "Install beside Meta's apps, Disable Play Store updates, GmsCore support, Open in Facebook from "
-                        + "the share menu, Hushfacebook in the Menu",
+                        + "Install beside Meta's apps, Disable Play Store updates, GmsCore support, Clone install under "
+                        + "another package name, Open in Facebook from the share menu, Hushfacebook in the Menu",
                 "left out of Manager's default selection: Hide suggested and promoted posts, Hide Stories tray, Hide "
                         + "Reels in the feed, Block background-return feed refresh, Hide AI-detected posts, Hide "
                         + "posts by words, Hide post prompts, Hide profile pictures, Hide seen posts, Hide Meta AI questions under posts, "
