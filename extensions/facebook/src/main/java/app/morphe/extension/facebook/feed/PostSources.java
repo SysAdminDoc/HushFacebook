@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.feed;
 import androidx.annotation.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.IDN;
 import java.net.URLDecoder;
 import java.text.Normalizer;
@@ -566,7 +567,7 @@ public final class PostSources {
                 if (notAFriend == null) notAFriend = NOT_A_FRIEND + type;
                 continue;
             }
-            String status = friendship(author, members);
+            String status = friendship(author);
             if (notFriends(status)) {
                 if (notAFriend == null) notAFriend = NOT_A_FRIEND + status;
             } else if (friend == null) {
@@ -590,15 +591,32 @@ public final class PostSources {
         return false;
     }
 
-    /** A person's friendship status as text, or null when the tree doesn't hold it as text. */
+    /** The tree's public {@code getString(int)}, found on the first person asked. */
     @Nullable
-    private static String friendship(Object person, PostText.Members members) {
-        if (members.cachedString == null) return null;
+    private static volatile Method treeString;
+
+    /**
+     * A person's friendship status as text, or null when the tree doesn't hold it or can't be read.
+     * Facebook reads this field with {@code getCachedEnum}, which keeps its enum in the model's own
+     * cache and casts whatever it finds there, so a String {@code getCachedString} left in that slot
+     * crashed Facebook's next read of it. So it's read straight from the tree with
+     * {@code getString(int)}, the read {@code getCachedEnum} makes itself, which caches nothing. A
+     * person whose tree is gone isn't asked.
+     */
+    @Nullable
+    private static String friendship(Object person) {
         try {
-            Object status = members.cachedString.invoke(person, FRIENDSHIP_KEY);
+            Method read = treeString;
+            if (read == null) {
+                Method found = person.getClass().getMethod("getString", int.class);
+                if (found.getReturnType() != String.class) return null;
+                treeString = read = found;
+            }
+            if (FeedFilter.released(person)) return null;
+            Object status = read.invoke(person, FRIENDSHIP_KEY);
             return status instanceof String ? (String) status : null;
         } catch (ReflectiveOperationException | RuntimeException unreadable) {
-            // A status the tree won't read as text counts as none, so the post stays.
+            // A status the tree won't read counts as none, so the post stays.
             return null;
         }
     }

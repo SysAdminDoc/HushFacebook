@@ -463,6 +463,25 @@ public class PostSourcesTest {
         assertFalse(PostSources.notAFriend(null));
     }
 
+    /** Facebook's friendship status enum, as GraphQLActor reads it through getCachedEnum. */
+    private enum FriendshipStatus { UNSET_OR_UNRECOGNIZED_ENUM_VALUE, ARE_FRIENDS, CAN_REQUEST }
+
+    @Test
+    public void readingAFriendshipLeavesFacebooksOwnReadOfItWorking() {
+        BaseModelWithTree stranger = person("CAN_REQUEST");
+        GraphQLStory strangersPost = story(null, Arrays.asList(stranger), Collections.emptyList());
+        assertEquals(PostSources.NOT_A_FRIEND + "CAN_REQUEST", PostSources.friendKind(strangersPost, actors));
+        assertEquals("Facebook's own enum read after ours (#406 crash)", FriendshipStatus.CAN_REQUEST,
+                stranger.getCachedEnum(PostSources.FRIENDSHIP_KEY, FriendshipStatus.class,
+                        FriendshipStatus.UNSET_OR_UNRECOGNIZED_ENUM_VALUE));
+
+        BaseModelWithTree friend = person("ARE_FRIENDS");
+        assertEquals(FriendshipStatus.ARE_FRIENDS, friend.getCachedEnum(PostSources.FRIENDSHIP_KEY,
+                FriendshipStatus.class, FriendshipStatus.UNSET_OR_UNRECOGNIZED_ENUM_VALUE));
+        assertEquals("ours after Facebook's still reads the status", PostSources.FRIEND + "ARE_FRIENDS",
+                PostSources.friendKind(story(null, Arrays.asList(friend), Collections.emptyList()), actors));
+    }
+
     @Test
     public void onlyFriendsPostsTakesEveryPostThatIsntAFriendsAndCountsEveryKind() {
         GraphQLStory friendsPost = story(null, Arrays.asList(person("ARE_FRIENDS")), Collections.emptyList());
