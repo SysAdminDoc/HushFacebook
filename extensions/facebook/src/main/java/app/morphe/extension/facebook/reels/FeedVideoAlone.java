@@ -318,6 +318,7 @@ public final class FeedVideoAlone {
      * @param origin Facebook's player origin, "surface::subsurface" as text.
      */
     public static void reelsViewerOpening(@Nullable Object origin) {
+        SavedChain.viewerOpening(origin == null ? null : origin.toString());
         try {
             HookStatus.invoked(FAMILY);
             if (origin != null && fromFeed(origin.toString())) TapToPlay.feedVideoOpening();

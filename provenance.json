@@ -1783,6 +1783,16 @@
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
       "changes": "Written for Hushfacebook: Newest reels first, for issue #134, from Facebook 584. The Reels ranker that logs as FbShortsUDDCSRRanker reranks the loaded pool in place each time it places the next reel, and its callers take the head of the list. The patch finds that rerank by the tag, its (object, List, int) shape and its one static (List, Comparator) sort, checks that the sort's list register holds the List parameter at every return, and hands the list to the extension before each return, branches into a return included. Every kept-name createSignalForModel, which makes a pool item's ranking signal, gets a hook before each return: it casts the parameter to the model class the method casts to, reads that class's one FeedType field and, when the extension says the feed is one of the fb_shorts feeds, the parameter interface's one no-argument Object getter, the reel's GraphQL edge. The extension reads the edge's node creation_time, keeps it by the signal (whose equals follows its key) in a weak map, and at the rerank's return puts the timed signals in their own slots newest first with a stable sort, leaving untimed items where they are."
+    },
+    {
+      "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/reels/SavedChain.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/reels/SavedChain.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #404: Play saved videos in a row, a switch of Clean up Reels. Facebook 585 has no route that plays Saved in order (its saved reels link bounces to the main screen, and Saved and Your library both play the tapped reel, then suggestions). The patch puts a static call first in the touch dispatch of FbFragmentActivity and of DelegatingFbFragmentFrameworkActivity, the base of the Saved page and its viewer, whose own dispatch hands touches to its delegate without running FbFragmentActivity's. The extension keeps the card a press landed on (a child of a scrolling list with a same-width sibling), starts a chain when the Reels viewer opens with a saved:: player origin soon after, and when the reel ends or a second player binds after the viewer settles, finishes the viewer, waits for the Saved page to resume, scrolls the next card into view if it has to and taps it with a synthesized finger press through the page's own dispatch."
     }
   ]
 }

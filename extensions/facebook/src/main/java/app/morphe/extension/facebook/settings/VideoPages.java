@@ -251,6 +251,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SAVED_VIDEOS_IN_PLAYER,
                     L10n.t("A video you tap in Saved plays in the video player instead of Reels, where the next "
                             + "swipe is a suggested reel.")));
+            // Asked as a reel opened from Saved ends or is swiped past (#404).
+            reels.addPreference(toggle(context, Settings.SAVED_VIDEOS_IN_ORDER,
+                    L10n.t("A video you open from Saved goes on to the next one in Saved when it ends or when you "
+                            + "swipe up, instead of a suggested reel.")));
             // Asked before each next video, so a change shows from the next one (#427).
             reels.addPreference(toggle(context, Settings.SKIP_STILL_WATCHING,
                     L10n.t("Reels and videos keep going to the next one without pausing to ask if you're still "

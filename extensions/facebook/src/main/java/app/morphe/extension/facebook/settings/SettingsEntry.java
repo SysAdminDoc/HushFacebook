@@ -75,6 +75,7 @@ import app.morphe.extension.facebook.notifications.PushDiagnostics;
 import app.morphe.extension.facebook.reels.BurnInGuard;
 import app.morphe.extension.facebook.reels.FeedVideoAlone;
 import app.morphe.extension.facebook.reels.GrayReels;
+import app.morphe.extension.facebook.reels.SavedChain;
 import app.morphe.extension.facebook.reels.ViewerTopBar;
 import app.morphe.extension.facebook.stories.StorySeenButton;
 import app.morphe.extension.facebook.stories.StoryTaps;
@@ -198,8 +199,10 @@ public final class SettingsEntry {
             // And Burn-in guard (#288): the activity in front, for a video filling the screen.
             // And Show Reels in gray: the same screen, grayed while it shows, when Turn off HDR
             // brightness can move its video into the window (its row shows only then too).
+            // And Play saved videos in a row (#404): the viewer a saved card opened, and Saved coming back.
             if (SettingsStatus.reelDeclutter()) {
                 FeedVideoAlone.watch(context);
+                SavedChain.watch(context);
                 ViewerTopBar.watch(context);
                 BurnInGuard.install(context);
                 if (SettingsStatus.turnOffHdrBrightness()) GrayReels.install(context);

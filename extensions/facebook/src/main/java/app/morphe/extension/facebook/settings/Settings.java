@@ -991,6 +991,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_saved_videos_in_player", FALSE);
 
     /**
+     * A reel opened from Saved goes on to the next one in Saved when it ends or is swiped past,
+     * instead of a suggested reel ({@link app.morphe.extension.facebook.reels.SavedChain}, #404).
+     * Off by default. A change shows on the next video opened from Saved.
+     */
+    public static final BooleanSetting SAVED_VIDEOS_IN_ORDER =
+            new BooleanSetting("hushfacebook_saved_videos_in_order", FALSE);
+
+    /**
      * Reels and videos go on to the next one without Facebook holding it back to ask "Are you still
      * watching?" ({@link app.morphe.extension.facebook.reels.StillWatching}, #427). Off by default.
      * Asked before each next video, so a change shows from the next one.

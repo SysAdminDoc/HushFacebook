@@ -80,10 +80,12 @@ public final class ReelBinding {
      * Injection point, right after the Reels controller's player field is set. Any setting, a player
      * or none, is a reel taking the screen, which Open shared reels on their own waits for, with Debug
      * logging on or off: none comes for a reel Facebook plays with a player of its own, a live link's
-     * among them (#421).
+     * among them (#421). A second player in a viewer opened from Saved is a swipe, which Play saved
+     * videos in a row turns into the next saved video (#404).
      */
     public static void bound(@Nullable Object controller, @Nullable Object player) {
         FeedVideoAlone.reelOnScreen();
+        SavedChain.bound(player);
         try {
             if (controller == null || !debug()) return;
             log(bind(controller, player));
@@ -92,8 +94,12 @@ public final class ReelBinding {
         }
     }
 
-    /** Injection point, right after the end-of-video step reads its player. */
+    /**
+     * Injection point, right after the end-of-video step reads its player. In a viewer opened from
+     * Saved, Play saved videos in a row goes on to the next saved video (#404).
+     */
     public static void ended(@Nullable Object player) {
+        SavedChain.ended(player);
         try {
             if (player == null || !debug()) return;
             log(end(player));
