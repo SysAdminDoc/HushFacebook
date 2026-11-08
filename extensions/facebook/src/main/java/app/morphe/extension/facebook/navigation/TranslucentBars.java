@@ -711,6 +711,9 @@ public final class TranslucentBars {
         private boolean describedNothingUnder;
         private long nextLook;
         private long nextStretch;
+        /** Whether a frame is booked for when the stretch may look again ({@link #wakeAfter}). */
+        private boolean wakeBooked;
+        private final Runnable wake = this::wake;
         private int frame;
         private boolean stopped;
 
@@ -760,6 +763,8 @@ public final class TranslucentBars {
             boolean blurs = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && window.isHardwareAccelerated();
             // The top of the tab bar's rows on screen, when they're along the bottom.
             int cover = Integer.MAX_VALUE;
+            boolean stretchLooked = false;
+            boolean stretchWaits = false;
             for (int i = 0; i < anchors.size(); i++) {
                 View anchor = shown(i);
                 if (anchor == null) continue;
@@ -776,11 +781,14 @@ public final class TranslucentBars {
                 }
                 boolean tabsBelow = tabBar.equals(anchor.getClass().getName()) && rows.top > height / 2;
                 if (tabsBelow) cover = Math.min(cover, rows.top);
-                if (now >= nextStretch && tabsBelow) {
+                if (tabsBelow && now >= nextStretch) {
                     nextStretch = now + RESCAN_MS;
+                    stretchLooked = true;
                     int edge = laidOutTop(anchor);
                     reachUnder(bar, edge, rows.height(), height, now);
                     controls.find(under(bar), edge, height);
+                } else if (tabsBelow) {
+                    stretchWaits = true;
                 }
                 if (!seeThrough) continue;
                 View under = blurs ? underNow(bar, rows) : null;
@@ -799,9 +807,28 @@ public final class TranslucentBars {
                 }
             }
             controls.place(cover);
+            if (stretchWaits && !stretchLooked) wakeAfter(window, nextStretch - now);
             if (!seeThrough) return;
             forgetUnseen();
             dropStaleFrost();
+        }
+
+        /**
+         * Books one frame [delay] ms from now, when the stretch may look again, after a frame came
+         * too soon for it (#412). Marketplace can finish laying out its gap inside that wait and then
+         * draw nothing more, which left the black strip around the pill until the next touch, five
+         * seconds or more. The booked frame looks, so it books none of its own.
+         */
+        private void wakeAfter(View window, long delay) {
+            if (wakeBooked) return;
+            wakeBooked = true;
+            window.postDelayed(wake, Math.max(0, delay));
+        }
+
+        private void wake() {
+            wakeBooked = false;
+            View window = this.window.get();
+            if (window != null && !stopped) window.invalidate();
         }
 
         /**
@@ -1142,6 +1169,7 @@ public final class TranslucentBars {
             stopped = true;
             View window = this.window.get();
             if (window == null) return;
+            window.removeCallbacks(wake);
             ViewTreeObserver observer = window.getViewTreeObserver();
             if (!observer.isAlive()) return;
             observer.removeOnPreDrawListener(this);

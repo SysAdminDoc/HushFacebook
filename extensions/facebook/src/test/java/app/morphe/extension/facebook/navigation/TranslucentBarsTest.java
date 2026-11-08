@@ -10,6 +10,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
 import android.content.Context;
@@ -202,6 +203,42 @@ public class TranslucentBarsTest {
         screen.layOut();
         assertEquals("the gap back", 160, holder.getPaddingBottom());
         assertEquals(1440, market.getBottom());
+    }
+
+    /**
+     * #412: Marketplace lays out its gap inside the stretch's one-second wait and then draws nothing
+     * more, so the black strip stayed around the pill until a touch, five seconds or more on a
+     * phone. A frame that comes too soon books one more for when the wait ends, that frame
+     * stretches the page, and it books none of its own.
+     */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void aGapLaidOutDuringTheWaitIsTakenWithoutATouch() {
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        FrameLayout holder = new FrameLayout(screen.activity);
+        View market = new View(screen.activity);
+        holder.addView(market, new FrameLayout.LayoutParams(720, FrameLayout.LayoutParams.MATCH_PARENT));
+        screen.page.addView(holder, new FrameLayout.LayoutParams(720, 1600));
+        screen.layOut();
+        screen.bars.update();
+        assertEquals("nothing stops at the tab bar yet", 1600, market.getBottom());
+
+        ShadowLooper.idleMainLooper(300, TimeUnit.MILLISECONDS);
+        holder.setPadding(0, 0, 0, 160);
+        screen.layOut();
+        screen.bars.update();
+        assertEquals("that frame came too soon to stretch", 1440, market.getBottom());
+
+        shadowOf(screen.window).clearWasInvalidated();
+        ShadowLooper.idleMainLooper(TranslucentBars.RESCAN_MS, TimeUnit.MILLISECONDS);
+        assertTrue("a frame is booked for when the wait ends", shadowOf(screen.window).wasInvalidated());
+        screen.bars.update();
+        screen.layOut();
+        assertEquals("under the tab bar", 1600, market.getBottom());
+
+        shadowOf(screen.window).clearWasInvalidated();
+        ShadowLooper.idleMainLooper(3 * TranslucentBars.RESCAN_MS, TimeUnit.MILLISECONDS);
+        assertFalse("the booked frame books none", shadowOf(screen.window).wasInvalidated());
     }
 
     /** A page held off the tab bar by its own bottom margin, which Facebook keeps putting back, is left alone. */
