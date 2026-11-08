@@ -13,6 +13,7 @@ import app.morphe.patches.facebook.downloads.reel.SIDEBAR
 import app.morphe.patches.facebook.downloads.reel.hookSidebarLayout
 import app.morphe.patches.facebook.downloads.reel.isSidebarBuilder
 import app.morphe.patches.facebook.downloads.reel.sidebarAssemblyIndex
+import app.morphe.patches.facebook.downloads.reel.sidebarRender
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.search.branchTarget
@@ -59,6 +60,9 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  *   says so (arm64 LX/0DhY;->BUh, its only return before the assembly). [OFFER_SPEAKER] asks the same
  *   thing and doesn't mark that reel. The older button layout (from 499 on arm64) has no assembly either,
  *   so the switch asks for the newer one, the way the Download button does (#316).
+ * - 585's Android 9 build (minapi28, read 2026-11-07) splits the side column: its builder
+ *   (LX/09f2;->A03) holds the assembly, and the component the reel's builder news up (LX/0B9q) holds
+ *   the reel and reads the layout's flag in the render that calls the builder ([sidebarRender]).
  * - The corner and the video controls then drop theirs for a marked reel ([REEL_SPEAKER_STAYS]), and
  *   the builder is told to build the speaker while the side column asks ([REEL_FOOTER_LEAVES_SPEAKER]),
  *   since a server flag can leave it to the controls. Its other caller, the video settings row, isn't
@@ -133,6 +137,22 @@ internal fun earlyExitAsk(render: Method, assemblyIndex: Int, parameters: Collec
     )
 }
 
+/**
+ * What makes the side column leave before its assembly, wherever it's asked. On 585 the [builder] is
+ * its own [render] and leaves in front of its assembly at [assemblyIndex]. On the Android 9 build the
+ * builder never does, and the render (LX/0B9q;->A15) returns at 0165, before it calls the builder,
+ * when LX/0DkQ;->BV1()Z says yes. A split build where both leave is refused.
+ */
+internal fun sideColumnExitAsk(builder: Method, render: Method, assemblyIndex: Int, parameters: Collection<String>): MethodReference? {
+    val ownExit = earlyExitAsk(builder, assemblyIndex, parameters)
+    if (render === builder) return ownExit
+    if (ownExit != null) throw PatchException("$PATCH: ${builder.definingClass}->${builder.name} and its render both leave early")
+    val code = render.code()
+    val callsBuilder = code.indexOfFirst { instruction -> instruction.calledMethod()?.let { isCalledBy(builder, it) } == true }
+    if (callsBuilder < 0) throw PatchException("$PATCH: ${render.definingClass}->${render.name} doesn't call ${builder.definingClass}->${builder.name}")
+    return earlyExitAsk(render, callsBuilder, parameters)
+}
+
 /** The one instruction of [code] that [picks] picks, or a refusal naming [what]. */
 private fun oneOf(code: List<Instruction>, what: String, picks: (Instruction) -> Boolean): Int =
     code.indices.filter { picks(code[it]) }.singleOrNull()
@@ -196,6 +216,11 @@ internal fun BytecodePatchContext.moveReelSpeakerAboveMenu(footer: SpeakerSite, 
         .filter { outsideExtension(it.type) }.distinctBy { it.type }
         .flatMap { owner -> owner.methods.filter { isSidebarBuilder(it, owner.methods) }.map { owner to it } }
         .singleOrNull() ?: throw PatchException("$PATCH: expected one render of \"$SIDEBAR\"")
+    // The side column's component, which the reel's builder news up and whose fields hold the reel, is
+    // the class rendering it: the builder's own on 585, the one handing it the scoped context on the
+    // Android 9 build (LX/0B9q for LX/09f2;->A03). The button layout's flag is read in that render too.
+    val (componentType, layoutRender) = sidebarRender(render, PATCH)
+    val component = mutableClassDefBy(componentType)
     val renderCode = render.code()
     val assemblyIndex = sidebarAssemblyIndex(renderCode)
     val assembly = renderCode.getOrNull(assemblyIndex)
@@ -203,7 +228,7 @@ internal fun BytecodePatchContext.moveReelSpeakerAboveMenu(footer: SpeakerSite, 
     if (assembly !is RegisterRangeInstruction) throw PatchException("$PATCH: the assembly isn't called with a range")
     val assemblyCall = assembly.calledMethod()!!
     val taken = assemblyCall.parameterTypes.map(CharSequence::toString)
-    val item = reelItemType(builder, sidebarClass, assemblyCall)
+    val item = reelItemType(builder, component, assemblyCall)
         ?: throw PatchException("$PATCH: the speaker's builder, the side column and its assembly share no one reel type")
 
     // All but the render's context comes from the corner's fields.
@@ -220,19 +245,19 @@ internal fun BytecodePatchContext.moveReelSpeakerAboveMenu(footer: SpeakerSite, 
     val passed = maxOf(itemAt, contextAt, listAt) + 1
     if (!taken.take(passed).all(CharSequence::isObjectType)) throw PatchException("$PATCH: the assembly takes a primitive in front of the button list")
 
-    val asks = earlyExitAsk(render, assemblyIndex, parameters)
+    val asks = sideColumnExitAsk(render, layoutRender, assemblyIndex, parameters)
     val askField = asks?.let { ask -> corner.fields.singleOrNull { it.type.toString() == ask.definingClass } }
     if (asks != null && askField == null) throw PatchException("$PATCH: the corner doesn't hold ${asks.definingClass}")
 
     val (builderOwner, reelBuilder) = classDefByStrings(FOOTER_COMPONENT, StringComparisonType.EQUALS)
         .filter { outsideExtension(it.type) }.distinctBy { it.type }
         .flatMap { owner -> methodsHolding(owner, FOOTER_COMPONENT).map { owner.type to it } }
-        .filter { (_, method) -> newInstanceTypes(method).containsAll(listOf(corner.type, sidebarClass.type)) }
+        .filter { (_, method) -> newInstanceTypes(method).containsAll(listOf(corner.type, componentType)) }
         .singleOrNull() ?: throw PatchException("$PATCH: expected one method of \"$FOOTER_COMPONENT\" to new up the corner and the side column")
     val reelBuilderCode = reelBuilder.code()
     val marked = oneOf(reelBuilderCode, "write of the side column's reel") { instruction ->
         instruction.opcode == Opcode.IPUT_OBJECT && ((instruction as ReferenceInstruction).reference as FieldReference).let {
-            it.definingClass == sidebarClass.type && it.type == item
+            it.definingClass == componentType && it.type == item
         }
     }
     val made = oneOf(reelBuilderCode, "construction of the corner") { instruction ->
@@ -247,8 +272,8 @@ internal fun BytecodePatchContext.moveReelSpeakerAboveMenu(footer: SpeakerSite, 
     val controlsSlot = controls?.let { reelSlot(it, item) }
 
     // The older button layout never reaches the assembly. This one can still refuse, so it goes first.
-    val sidebarRender = mutableClassDefBy(sidebarClass.type).methods.single { isCalledBy(it, render) }
-    hookSidebarLayout(sidebarRender, REEL_SPEAKER_LAYOUT)
+    val layoutMethod = component.methods.single { isCalledBy(it, layoutRender) }
+    hookSidebarLayout(layoutMethod, REEL_SPEAKER_LAYOUT)
 
     // Called as soon as the reel's builder has the corner: marks the reel unless its side column leaves early.
     val cornerType = corner.type
@@ -338,10 +363,11 @@ internal fun BytecodePatchContext.moveReelSpeakerAboveMenu(footer: SpeakerSite, 
     places.forEach { (index, call) -> reelBuilderMutable.addInstructions(index, call) }
 
     // Last into the list, so it lands behind every other button, the Download one included.
-    val assemblyNow = sidebarAssemblyIndex(sidebarRender.code())
-    val start = (sidebarRender.code()[assemblyNow] as RegisterRangeInstruction).startRegister
+    val sidebarBuilder = mutableClassDefBy(sidebarClass.type).methods.single { isCalledBy(it, render) }
+    val assemblyNow = sidebarAssemblyIndex(sidebarBuilder.code())
+    val start = (sidebarBuilder.code()[assemblyNow] as RegisterRangeInstruction).startRegister
     val descriptor = "$cornerType->$SIDE_SPEAKER(${OBJECT.repeat(passed)})V"
-    sidebarRender.addInstructionsAtControlFlowLabel(
+    sidebarBuilder.addInstructionsAtControlFlowLabel(
         assemblyNow,
         "invoke-static/range { v$start .. v${start + passed - 1} }, $descriptor",
     )

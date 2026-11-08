@@ -265,15 +265,7 @@ val downloadReelPatch = bytecodePatch(
         // handed the scoped context, then the fields and the state, and the render only calls it
         // (585's Android 9 build does too, with the scoped context among the fields).
         // The component, whose fields the player and the story are found by, is the render's class.
-        val (renderClass, render) = if (sidebar.parameterTypes.size == 1) {
-            sidebarClass to sidebar
-        } else {
-            val renders = mutableListOf<Pair<String, Method>>()
-            classDefForEachReferencing(types = listOf(sidebar.definingClass)) { classDef ->
-                classDef.methods.filter { rendersThrough(it, sidebar) }.forEach { renders += classDef.type to it }
-            }
-            renders.singleOrPatchException("$PATCH: the one render handing the scoped context to $sidebarClass->$sidebarName")
-        }
+        val (renderClass, render) = sidebarRender(sidebar, PATCH)
         val component = mutableClassDefBy(renderClass)
 
         val scopedType = render.parameterTypes
@@ -893,6 +885,21 @@ internal fun rendersThrough(method: Method, builder: Method): Boolean {
                 it.parameterTypes.map(CharSequence::toString) == parameters
         } == true
     }
+}
+
+/**
+ * The side column's render for its builder [sidebar], and the render's class. The builder is the
+ * render when it takes the scoped context alone (585). Otherwise it's the one method handing it the
+ * scoped context ([rendersThrough]): 585's Android 9 build renders LX/09f2;->A03 from LX/0B9q;->A15,
+ * and that render, not the builder, reads the button layout's flag.
+ */
+internal fun BytecodePatchContext.sidebarRender(sidebar: Method, patch: String): Pair<String, Method> {
+    if (sidebar.parameterTypes.size == 1) return sidebar.definingClass to sidebar
+    val renders = mutableListOf<Pair<String, Method>>()
+    classDefForEachReferencing(types = listOf(sidebar.definingClass)) { classDef ->
+        classDef.methods.filter { rendersThrough(it, sidebar) }.forEach { renders += classDef.type to it }
+    }
+    return renders.singleOrPatchException("$patch: the one render handing the scoped context to ${sidebar.definingClass}->${sidebar.name}")
 }
 
 /**

@@ -6,13 +6,20 @@ package app.morphe.patches.facebook.reels
 
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
+import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.methodsHolding
+import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.search.branchTarget
+import app.morphe.util.ControlFlow
+import app.morphe.util.RegisterLiveness
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -53,6 +60,12 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   transition list (A1A), which builds all the keys unconditionally. With no gate to find, the
  *   patch hooks the builder's answer the way the footer's is hooked, matching the call by what the
  *   builder is (it holds the key and news up the toggle), not by its name or shape.
+ * - 585's Android 9 build (minapi28, read 2026-11-07) has neither. The controls' render (LX/092D;->A15)
+ *   news up the toggle (LX/05oc;) right there, wraps it with the key and adds it to the column with
+ *   AbstractCollection.add, dropping the answer, and the info chip's block starts after the add.
+ *   The patch asks the extension in front of the toggle's new-instance and jumps past the add on
+ *   false. Facebook's own flag between them (a MobileConfig Z) only picks sizes, so nothing else
+ *   in the column depends on the speaker being there.
  *
  * The footer:
  * - The methods loading exactly "FbShortsViewerFooterComponent" (arm64 LX/AOL;'s constructor, A1C,
@@ -209,24 +222,125 @@ internal fun BytecodePatchContext.hideReelFooterSoundButton(): SpeakerSite {
  * Hands the speaker button the reel controls build to the extension before their null check. On 585
  * the controls have no check in front of the speaker: a builder on a singleton (called virtually)
  * news up the sound toggle under [SOUND_BUTTON_KEY] and answers it wrapped, or null, and render adds
- * what comes back. Refuses unless exactly one method of [SPEAKER_CONTROLS] calls such a builder that way.
+ * what comes back. Refuses unless exactly one method of [SPEAKER_CONTROLS] calls such a builder that
+ * way. With no such call at all (585's Android 9 build), the controls build the speaker inline, and
+ * [hideInlineSpeaker] asks the extension in front of it, answering null like the gate does.
  */
-private fun BytecodePatchContext.hideControlsSpeakerBuild(): SpeakerSite {
+private fun BytecodePatchContext.hideControlsSpeakerBuild(): SpeakerSite? {
     val toggles = classDefByStrings(SOUND_TOGGLE_STRING, StringComparisonType.EQUALS)
         .map { it.type }.filterNot { it.startsWith(EXTENSION_PACKAGE) }.toSet()
     if (toggles.isEmpty()) throw PatchException("$PATCH: no class loads \"$SOUND_TOGGLE_STRING\"")
     val buildsSpeaker = { call: MethodReference ->
         classDefByOrNull(call.definingClass)?.methods?.any { buildsControlsSpeaker(it, call, toggles) } == true
     }
-    val found = classDefByStrings(SPEAKER_CONTROLS, StringComparisonType.EQUALS)
+    val controls = classDefByStrings(SPEAKER_CONTROLS, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
         .flatMap { owner -> methodsHolding(owner, SPEAKER_CONTROLS).map { owner.type to it } }
-        .filter { (_, method) -> controlSpeakerBuilds(method, buildsSpeaker).isNotEmpty() }
+    val found = controls.filter { (_, method) -> controlSpeakerBuilds(method, buildsSpeaker).isNotEmpty() }
+    if (found.isEmpty()) {
+        hideInlineSpeaker(controls, toggles)
+        return null
+    }
     return hookSpeakerBuild(
         found,
         "expected one static check whose false skips \"$SOUND_BUTTON_KEY\", or one method of \"$SPEAKER_CONTROLS\" " +
             "building the speaker button, found ${found.size}",
     ) { controlSpeakerBuilds(it, buildsSpeaker) }
+}
+
+/** An inline build of the speaker: the sound toggle newed up at [start], and the column's add at [add] of what's built from it. */
+internal data class InlineSpeaker(val start: Int, val add: Int)
+
+private val COLUMN_ADDS = setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE, Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE)
+
+/**
+ * The places in [method] that build the speaker with no check or builder in front of it: the last
+ * new-instance of one of the sound [toggles] before a load of [SOUND_BUTTON_KEY], and the first
+ * add(Object)Z after the key whose answer is dropped. Jumping from the one to just past the other
+ * has to leave the rest of the method as it was, so a place counts only when no other toggle or
+ * transition key sits between them, nothing branches to the toggle, every way on from it reaches
+ * the instruction after the add with no return or throw on the way, no other way comes in part
+ * way, and nothing written on those ways is read after the add.
+ */
+internal fun inlineSpeakers(method: Method, toggles: Set<String>): List<InlineSpeaker> {
+    val code = method.implementation?.instructions?.toList() ?: return emptyList()
+    val strings = code.map { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string }
+    val keys = strings.indices.filter { strings[it] == SOUND_BUTTON_KEY }
+    if (keys.isEmpty()) return emptyList()
+    fun isToggle(at: Int) = code[at].opcode == Opcode.NEW_INSTANCE &&
+        ((code[at] as ReferenceInstruction).reference as TypeReference).type in toggles
+    fun isDroppedAdd(at: Int): Boolean {
+        if (code[at].opcode !in COLUMN_ADDS) return false
+        val reference = (code[at] as ReferenceInstruction).reference as MethodReference
+        return reference.name == "add" && reference.returnType == "Z" &&
+            reference.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;") &&
+            code.getOrNull(at + 1)?.opcode != Opcode.MOVE_RESULT
+    }
+    val flow by lazy { ControlFlow.of(method) }
+    val liveness by lazy { RegisterLiveness.of(method) }
+    val targets by lazy { branchTargets(code) }
+    return keys.mapNotNull { key ->
+        val start = (key - 1 downTo 0).firstOrNull(::isToggle) ?: return@mapNotNull null
+        val add = (key + 1 until code.size - 1).firstOrNull(::isDroppedAdd) ?: return@mapNotNull null
+        if ((start + 1 until add).any(::isToggle)) return@mapNotNull null
+        if (strings.subList(start, add + 1).any { it != null && it != SOUND_BUTTON_KEY && it.endsWith(TRANSITION_KEY) }) {
+            return@mapNotNull null
+        }
+        if (start in targets) return@mapNotNull null
+        val after = add + 1
+        // Every instruction some way from the toggle runs before it reaches the one after the add.
+        val skipped = sortedSetOf<Int>()
+        val pending = ArrayDeque(listOf(start))
+        while (pending.isNotEmpty()) {
+            val at = pending.removeFirst()
+            if (at == after || !skipped.add(at)) continue
+            if (flow.normal[at].isEmpty()) return@mapNotNull null
+            pending += flow.normal[at]
+        }
+        val comesInPartWay = code.indices.any { from ->
+            from !in skipped && (flow.normal[from] + flow.exceptional[from]).any { it in skipped && it != start }
+        }
+        if (comesInPartWay) return@mapNotNull null
+        val written = skipped.flatMapTo(mutableSetOf()) { at ->
+            val instruction = code[at]
+            when {
+                !instruction.opcode.setsRegister() || instruction !is OneRegisterInstruction -> emptyList()
+                instruction.opcode.setsWideRegister() -> listOf(instruction.registerA, instruction.registerA + 1)
+                else -> listOf(instruction.registerA)
+            }
+        }
+        if (liveness.liveInto(after).any { it in written }) return@mapNotNull null
+        InlineSpeaker(start, add)
+    }
+}
+
+/**
+ * Asks the extension, with Facebook's yes, whether the speaker the [controls] build inline gets
+ * built, and on no jumps past the column's add of it. Refuses unless exactly one of [controls]
+ * builds it inline, once.
+ */
+private fun BytecodePatchContext.hideInlineSpeaker(controls: List<Pair<String, Method>>, toggles: Set<String>) {
+    val found = controls.filter { (_, method) -> inlineSpeakers(method, toggles).isNotEmpty() }
+    val (owner, holder) = found.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one static check whose false skips \"$SOUND_BUTTON_KEY\", or one method of \"$SPEAKER_CONTROLS\" " +
+            "building the speaker button through a builder or inline, found ${found.size}",
+    )
+    val method = mutableClassDefBy(owner).methods.single {
+        it.name == holder.name && it.parameterTypes.map(CharSequence::toString) == holder.parameterTypes.map(CharSequence::toString)
+    }
+    val speaker = inlineSpeakers(method, toggles).singleOrNull()
+        ?: throw PatchException("$PATCH: $owner->${holder.name} doesn't build the speaker button inline exactly once")
+    val answer = method.freeLocalsAt(PATCH, speaker.start, 1, targets = listOf(speaker.add + 1)).single()
+    method.addInstructionsWithLabels(
+        speaker.start,
+        """
+            const/4 v$answer, 0x1
+            invoke-static/range { v$answer .. v$answer }, $REEL_SOUND_BUTTON
+            move-result v$answer
+            if-eqz v$answer, :speaker_left_out
+        """,
+        ExternalLabel("speaker_left_out", method.getInstruction(speaker.add + 1)),
+    )
 }
 
 /** Whether [method] is the builder [call] names, holds [SOUND_BUTTON_KEY] and news up one of the sound [toggles]. */
