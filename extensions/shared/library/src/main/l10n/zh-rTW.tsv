@@ -1007,6 +1007,10 @@ Left alone: %s	不翻譯：%s
 Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold it back. Reel captions have their own switch under Reels and Watch.	動態中的貼文會顯示全部文字，不用再點「顯示更多」。輕觸文字即可重新收合。連續短片的說明在 Reels 與 Watch 裡有獨立的開關。
 Show full reel captions	顯示完整連續短片說明
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	連續短片的長說明會直接顯示全部文字。輕觸說明即可重新收合。變更從下一部連續短片開始生效。
+# context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles
+Dark box behind open captions	展開的說明加上深色底框
+# context: summary of that switch
+An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	展開的連續短片說明會顯示在深色底框上，像字幕一樣，在明亮的影片上也容易看清楚。變更從下一部連續短片開始生效。
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	查看誰分享了
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	在貼文選單中加入「查看誰分享了」，開啟 Facebook 上分享這則貼文的使用者清單。

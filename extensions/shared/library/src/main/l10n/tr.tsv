@@ -1003,6 +1003,10 @@ Left alone: %s	Çevrilmeyecek: %s
 Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold it back. Reel captions have their own switch under Reels and Watch.	Akıştaki gönderiler metninin tamamını gösterir, Devamını gör'e dokunman gerekmez. Metne dokunarak onu yeniden daraltabilirsin. Reels açıklamalarının Reels ve Watch altında kendi anahtarı var.
 Show full reel captions	Reels açıklamasının tamamını göster
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Reels'teki uzun açıklamalar metnin tamamını hemen gösterir. Açıklamaya dokunarak onu yeniden daraltabilirsin. Değişiklik bir sonraki reel'den itibaren geçerli olur.
+# context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles
+Dark box behind open captions	Açılan açıklamaların arkasına koyu kutu
+# context: summary of that switch
+An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	Açılan bir reel açıklaması, altyazılar gibi koyu bir kutunun üstünde durur, böylece parlak bir videonun üzerinde kolayca okunur. Değişiklik bir sonraki reel'den itibaren geçerli olur.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Kimlerin paylaştığını gör
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Bir gönderinin menüsüne Kimlerin paylaştığını gör ekler. Facebook'un gönderiyi paylaşan kişiler listesini açar.

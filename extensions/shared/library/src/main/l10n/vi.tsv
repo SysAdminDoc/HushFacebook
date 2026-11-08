@@ -1003,6 +1003,10 @@ Left alone: %s	Không dịch: %s
 Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold it back. Reel captions have their own switch under Reels and Watch.	Bài viết trong bảng feed hiện toàn bộ nội dung, nên không cần nhấn Xem thêm. Nhấn vào nội dung để thu gọn lại. Chú thích của thước phim có công tắc riêng trong Reels và Watch.
 Show full reel captions	Hiện toàn bộ chú thích thước phim
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Chú thích dài của thước phim hiện toàn bộ nội dung ngay từ đầu. Nhấn vào chú thích để thu gọn lại. Thay đổi áp dụng từ thước phim tiếp theo.
+# context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles
+Dark box behind open captions	Nền tối sau chú thích đang mở
+# context: summary of that switch
+An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	Chú thích thước phim đang mở nằm trên một khung tối, giống phụ đề, để dễ đọc trên video sáng. Thay đổi áp dụng từ thước phim tiếp theo.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Xem ai đã chia sẻ
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Thêm Xem ai đã chia sẻ vào menu của bài viết. Mục này mở danh sách của Facebook gồm những người đã chia sẻ bài viết.

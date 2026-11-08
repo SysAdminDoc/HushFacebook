@@ -36,6 +36,7 @@ import androidx.annotation.Nullable;
 
 import java.util.Set;
 
+import app.morphe.extension.facebook.feed.CaptionBackdrop;
 import app.morphe.extension.facebook.settings.SettingsRows.Row;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.settings.BooleanSetting;
@@ -48,6 +49,15 @@ import app.morphe.extension.shared.settings.BooleanSetting;
 @SuppressWarnings("deprecation")
 final class VideoPages {
     private VideoPages() {
+    }
+
+    /**
+     * Whether this build carries the dark box behind open reel captions (#419). A test that names the
+     * families in its build counts it in with Show full post text.
+     */
+    static boolean captionBackdropInBuild() {
+        Set<PatchFamily> forced = PatchFamily.inBuildForTests;
+        return forced != null ? forced.contains(PatchFamily.FULL_POST_TEXT) : CaptionBackdrop.inBuild();
     }
 
     /** Reels and Watch, in every build, with the map of the four places Reels show up. */
@@ -247,6 +257,12 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SHOW_FULL_REEL_CAPTIONS,
                     L10n.t("Long captions on reels show all of their text right away. Tap the caption to fold it back. "
                             + "A change shows from the next reel.")));
+            // Asked as each reel caption is built, so a change shows on the next caption (#419).
+            if (captionBackdropInBuild()) {
+                reels.addPreference(toggle(context, Settings.DIM_OPEN_REEL_CAPTIONS,
+                        L10n.t("An open reel caption sits on a dark box, like subtitles, so it's easy to read over a "
+                                + "bright video. A change shows from the next reel.")));
+            }
         }
         if (build.contains(PatchFamily.REEL_WATCH_HISTORY)) {
             reels.addPreference(toggle(context, Settings.DONT_SEND_REEL_WATCH_HISTORY,

@@ -1003,6 +1003,10 @@ Left alone: %s	Tidak diterjemahkan: %s
 Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold it back. Reel captions have their own switch under Reels and Watch.	Postingan di feed menampilkan seluruh teksnya, jadi tidak perlu mengetuk Lihat selengkapnya. Ketuk teksnya untuk melipatnya kembali. Keterangan reels punya tombolnya sendiri di Reels dan Watch.
 Show full reel captions	Tampilkan keterangan reel lengkap
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Keterangan panjang di reels langsung menampilkan seluruh teksnya. Ketuk keterangannya untuk melipatnya kembali. Perubahan berlaku mulai reel berikutnya.
+# context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles
+Dark box behind open captions	Kotak gelap di balik keterangan yang dibuka
+# context: summary of that switch
+An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	Keterangan reel yang dibuka tampil di atas kotak gelap, seperti subtitle, agar mudah dibaca di atas video yang terang. Perubahan berlaku mulai reel berikutnya.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Lihat siapa yang membagikan
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Menambahkan Lihat siapa yang membagikan ke menu postingan. Ini membuka daftar Facebook berisi orang yang membagikannya.

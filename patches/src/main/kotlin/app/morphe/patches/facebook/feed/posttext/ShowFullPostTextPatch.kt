@@ -8,15 +8,20 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.enableStatus
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.containsLiteralInstruction
 import app.morphe.util.findMutableMethodOf
+import app.morphe.util.returnEarly
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Format
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -32,6 +37,8 @@ import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 
 internal const val PATCH = "Show full post text"
 
@@ -86,6 +93,10 @@ private val SWITCHES = setOf(Opcode.PACKED_SWITCH, Opcode.SPARSE_SWITCH)
  * that "more" flips through [CAPTION_TOGGLE]. Its first value is the component's prop (585 `A0G`),
  * unless Facebook remembers that reel's caption from an earlier tap. The prop goes through the
  * extension as it's read, so with the switch on a caption starts whole and a fold is still kept (#268).
+ *
+ * An open reel caption can also sit on a dark box (#419): right before the caption's text is built,
+ * [CAPTION_BACKDROP] gets the builder's line limit and hands back a background for the one built with
+ * no limit. See [findCaptionBackdrop].
  */
 @Suppress("unused")
 val showFullPostTextPatch = bytecodePatch(
@@ -93,7 +104,7 @@ val showFullPostTextPatch = bytecodePatch(
     name = "Show full post text",
     description = "Shows all of a post's text in the feed, and a reel's caption, so you don't have to tap See more. " +
         "A tap on the text folds it back. Starts off. Turn posts on in Hushfacebook settings > News feed, " +
-        "and reel captions under Reels and Watch.",
+        "and reel captions under Reels and Watch, where an open caption can also sit on a dark box like subtitles.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -135,6 +146,12 @@ val showFullPostTextPatch = bytecodePatch(
                 move-result v${caption.register}
             """,
         )
+        // The dark box is its own switch's; a build missing one of its anchors keeps the rest.
+        try {
+            addCaptionBackdrop(findCaptionBackdrop())
+        } catch (missing: PatchException) {
+            patchLog.warning("${missing.message}, so the dark box behind open reel captions isn't in this build")
+        }
         enableStatus("fullPostText")
     }
 }
@@ -220,6 +237,19 @@ private class Flow(private val code: List<Instruction>, private val where: Strin
 
     /** The instructions some branch jumps to. */
     val targets: Set<Int> by lazy { code.indices.flatMap { index -> next(index) - (index + 1) }.toSet() }
+
+    /** The instructions control can reach [index] from: [index] itself only when it's on a loop. */
+    fun leadingTo(index: Int): Set<Int> {
+        val successors = code.indices.map(::next)
+        val leading = mutableSetOf<Int>()
+        do {
+            val grown = code.indices.filter { from ->
+                from !in leading && successors[from].any { it == index || it in leading }
+            }
+            leading += grown
+        } while (grown.isNotEmpty())
+        return leading
+    }
 }
 
 /**
@@ -488,3 +518,209 @@ internal fun BytecodePatchContext.findCaptionStart(): CaptionStart {
 }
 
 private val MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+
+internal const val CAPTION_BACKDROP = "Lapp/morphe/extension/facebook/feed/CaptionBackdrop;"
+
+/** The helper the dark box adds to the class of the method that builds a reel caption's text. */
+internal const val BACKDROP_HELPER = "hushfacebookCaptionBackdrop"
+
+/** What the method building a reel caption's text loads: its component's name, its role and its description key (585). */
+internal const val CAPTION_COMPONENT = "FbShortsViewerDescriptionComponent"
+internal const val CAPTION_ROLE = "android.widget.Button"
+internal const val CAPTION_DESCRIPTION = "description"
+
+internal const val CALLER_CONTEXT = "Lcom/facebook/common/callercontext/CallerContext;"
+internal const val DRAWABLE = "Landroid/graphics/drawable/Drawable;"
+private const val RECT = "Landroid/graphics/Rect;"
+internal const val FOR_CAPTION = "$CAPTION_BACKDROP->forCaption(I)$DRAWABLE"
+
+/**
+ * Where an open reel caption gets its dark box (#419). [builder] makes the caption's Litho text
+ * builder (a [builderType]) in v[register], sets its line limit [maxLines], and builds it at
+ * [buildIndex] by handing it a [CALLER_CONTEXT]. Litho takes a background as a style: [background]
+ * makes one from a drawable on top of [emptyStyle], and [setter] hands a style to the builder.
+ */
+internal class Backdrop(
+    val builder: Method,
+    val buildIndex: Int,
+    val register: Int,
+    val builderType: String,
+    val maxLines: String,
+    val setter: String,
+    val background: String,
+    val emptyStyle: String,
+)
+
+private fun descriptor(method: Method) =
+    "${method.definingClass}->${method.name}(${method.parameterTypes.joinToString("")})${method.returnType}"
+
+private fun isStaticCall(instruction: Instruction) =
+    instruction.opcode == Opcode.INVOKE_STATIC || instruction.opcode == Opcode.INVOKE_STATIC_RANGE
+
+/** Whether [method] asks a static helper for a drawable's padding, as Litho's background style does. */
+private fun readsPadding(method: Method) = method.implementation?.instructions?.any { instruction ->
+    val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+    isStaticCall(instruction) && reference != null && reference.returnType == RECT &&
+        reference.parameterTypes.map { it.toString() } == listOf(DRAWABLE)
+} == true
+
+/** Whether [type] is an app class: one a Litho style or builder could be. */
+private fun appClass(type: String) = type.startsWith("L") && !type.startsWith("Ljava/") && !type.startsWith("Landroid/")
+
+/**
+ * Finds where an open reel caption gets its dark box. The caption's text is built in the one static
+ * method loading [CAPTION_COMPONENT], [CAPTION_ROLE] and [CAPTION_DESCRIPTION] (585 `LX/09Uk;->A01`).
+ * It sets one int field, the line limit, on a text builder it makes there and keeps in that register
+ * up to the build, the one call handing that builder a [CALLER_CONTEXT] (585 `LX/0IoR;->A1y`). The
+ * builder's classes take styles through one-argument setters, and Litho's background style is the one
+ * static method taking a drawable and one of those style types, giving one back, that asks for the
+ * drawable's padding (585 `LX/02Hx;->A03`). The empty style is that style type's one static field of
+ * a subclass of it (585 `LX/01Tv;->A02`).
+ */
+internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
+    val builders = methodsWithString(CAPTION_COMPONENT).filter {
+        AccessFlags.STATIC.isSet(it.accessFlags) && loadsString(it, CAPTION_ROLE) && loadsString(it, CAPTION_DESCRIPTION)
+    }
+    val builder = builders.singleOrNull() ?: refuse(
+        "expected one static method building a reel caption's text (\"$CAPTION_COMPONENT\", \"$CAPTION_ROLE\", " +
+            "\"$CAPTION_DESCRIPTION\"), found ${builders.size}",
+    )
+    val host = builder.definingClass
+    val where = "$host->${builder.name}"
+    val code = builder.implementation!!.instructions.toList()
+
+    val limits = code.indices.filter { index ->
+        code[index].opcode == Opcode.IPUT && ((code[index] as ReferenceInstruction).reference as FieldReference).type == "I"
+    }
+    val limit = limits.singleOrNull() ?: refuse("expected $where to set one int field, its line limit, found ${limits.size}")
+    val maxLines = (code[limit] as ReferenceInstruction).reference as FieldReference
+    val register = (code[limit] as TwoRegisterInstruction).registerB
+    val builderType = maxLines.definingClass
+
+    val builds = code.indices.filter { index ->
+        val instruction = code[index]
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        (instruction.opcode == Opcode.INVOKE_VIRTUAL || instruction.opcode == Opcode.INVOKE_VIRTUAL_RANGE) &&
+            reference != null && reference.returnType != "V" && firstArgument(instruction) == register &&
+            reference.parameterTypes.map { it.toString() } == listOf(CALLER_CONTEXT)
+    }
+    val build = builds.singleOrNull()
+        ?: refuse("expected $where to build its text in v$register once with a caller context, found ${builds.size}")
+    val made = code.indices.filter { it < build && writes(code[it], register) }
+    val creation = made.singleOrNull()
+    if (creation == null || creation > limit || limit > build || code[creation].opcode != Opcode.NEW_INSTANCE ||
+        ((code[creation] as ReferenceInstruction).reference as TypeReference).type != builderType
+    ) {
+        refuse("$where doesn't keep one new $builderType in v$register from its line limit to its build")
+    }
+    val flow = Flow(code, where)
+    if (build in flow.targets) refuse("$where jumps straight to where it builds its caption")
+    // Dex can lay a block out after the build and jump back from it (the Android 9 build's 09VI does), so
+    // go by the flow: the build runs once, and no way to it sets the builder's register again.
+    val leadsToBuild = flow.leadingTo(build)
+    if (build in leadsToBuild) refuse("$where loops back to its caption's build")
+    if (leadsToBuild.any { it > build && writes(code[it], register) }) {
+        refuse("$where sets v$register again on a way back to its caption's build")
+    }
+
+    val chain = generateSequence(classDefByOrNull(builderType)) { it.superclass?.let(::classDefByOrNull) }.toList()
+    if (chain.isEmpty()) refuse("$builderType isn't in this build")
+    val setters = chain.flatMap { owner ->
+        owner.methods.filter { method ->
+            !AccessFlags.STATIC.isSet(method.accessFlags) && !AccessFlags.PRIVATE.isSet(method.accessFlags) &&
+                method.returnType == "V" && method.parameterTypes.size == 1 && appClass(method.parameterTypes[0].toString())
+        }
+    }
+    val styles = setters.map { it.parameterTypes[0].toString() }.toSet()
+    val backgrounds = mutableListOf<Method>()
+    classDefForEachReferencing(types = styles) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
+        classDef.methods.filterTo(backgrounds) { method ->
+            AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType in styles &&
+                method.parameterTypes.map { it.toString() } == listOf(DRAWABLE, method.returnType) && readsPadding(method)
+        }
+    }
+    val background = backgrounds.singleOrNull() ?: refuse(
+        "expected one static method making a background style from a drawable for $builderType, found ${backgrounds.size}",
+    )
+    val style = background.returnType
+    val styleSetters = setters.filter { it.parameterTypes[0].toString() == style }.distinctBy { it.name }
+    val setter = styleSetters.singleOrNull()
+        ?: refuse("expected $builderType to take a $style through one method, found ${styleSetters.size}")
+
+    fun subclassOf(type: String, of: String) =
+        generateSequence(classDefByOrNull(type)?.superclass) { classDefByOrNull(it)?.superclass }.any { it == of }
+    val styleClass = classDefByOrNull(style) ?: refuse("$style isn't in this build")
+    val empties = styleClass.staticFields.filter { subclassOf(it.type, style) }
+    val empty = empties.singleOrNull() ?: refuse("expected $style to keep one empty style, found ${empties.size}")
+
+    // The helper lives on the builder's own class, so all it calls must be reachable from there.
+    fun reachable(owner: String, flags: Int): Boolean {
+        val ownerClass = classDefByOrNull(owner) ?: return false
+        val near = owner.substringBeforeLast('/') == host.substringBeforeLast('/')
+        return (AccessFlags.PUBLIC.isSet(ownerClass.accessFlags) || near) &&
+            (AccessFlags.PUBLIC.isSet(flags) || (near && !AccessFlags.PRIVATE.isSet(flags)))
+    }
+    if (!reachable(setter.definingClass, setter.accessFlags) || !reachable(background.definingClass, background.accessFlags) ||
+        !reachable(style, empty.accessFlags)
+    ) {
+        refuse("$host can't reach $builderType's style setter, the background style or the empty style")
+    }
+    val extension = classDefByOrNull(CAPTION_BACKDROP) ?: refuse("the extension has no $CAPTION_BACKDROP")
+    if (extension.methods.none { it.name == "inBuild" && it.returnType == "Z" && it.parameterTypes.isEmpty() }) {
+        refuse("the extension has no $CAPTION_BACKDROP->inBuild()")
+    }
+    if (classDefByOrNull(host)!!.methods.any { it.name == BACKDROP_HELPER }) refuse("$host already has $BACKDROP_HELPER")
+    return Backdrop(
+        builder, build, register, builderType,
+        "$builderType->${maxLines.name}:I",
+        descriptor(setter),
+        descriptor(background),
+        "$style->${empty.name}:${empty.type}",
+    )
+}
+
+/**
+ * Gives an open reel caption its dark box: right before [Backdrop.builder] builds the caption, a
+ * helper on its class reads the builder's line limit and asks [CAPTION_BACKDROP] for a drawable. An
+ * open caption is the one built with no line limit. A drawable comes back as a background style on
+ * the builder, and null leaves Facebook's caption as it is.
+ */
+internal fun BytecodePatchContext.addCaptionBackdrop(backdrop: Backdrop) {
+    val host = backdrop.builder.definingClass
+    val helper = ImmutableMethod(
+        host,
+        BACKDROP_HELPER,
+        listOf(ImmutableMethodParameter(backdrop.builderType, null, null)),
+        "V",
+        AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+        null,
+        null,
+        MutableMethodImplementation(3),
+    ).toMutable().apply {
+        addInstructions(
+            0,
+            """
+                iget v1, p0, ${backdrop.maxLines}
+                invoke-static { v1 }, $FOR_CAPTION
+                move-result-object v0
+                if-eqz v0, :facebook
+                sget-object v1, ${backdrop.emptyStyle}
+                invoke-static { v0, v1 }, ${backdrop.background}
+                move-result-object v0
+                invoke-virtual { p0, v0 }, ${backdrop.setter}
+                :facebook
+                return-void
+            """,
+        )
+    }
+    val owner = mutableClassDefBy(host)
+    owner.methods.add(helper)
+    owner.findMutableMethodOf(backdrop.builder).addInstructions(
+        backdrop.buildIndex,
+        "invoke-static/range { v${backdrop.register} .. v${backdrop.register} }, $host->$BACKDROP_HELPER(${backdrop.builderType})V",
+    )
+    mutableClassDefBy(CAPTION_BACKDROP).methods.single {
+        it.name == "inBuild" && it.returnType == "Z" && it.parameterTypes.isEmpty()
+    }.returnEarly(true)
+}

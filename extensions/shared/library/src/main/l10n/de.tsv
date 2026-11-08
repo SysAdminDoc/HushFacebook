@@ -1003,6 +1003,10 @@ Left alone: %s	Bleiben unverändert: %s
 Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold it back. Reel captions have their own switch under Reels and Watch.	Beiträge im Feed zeigen ihren ganzen Text, du musst also nicht auf Mehr ansehen tippen. Tippe auf den Text, um ihn wieder einzuklappen. Für Beschreibungen bei Reels gibt es einen eigenen Schalter unter Reels und Watch.
 Show full reel captions	Ganze Reel-Beschreibungen zeigen
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Lange Beschreibungen bei Reels zeigen sofort ihren ganzen Text. Tippe auf die Beschreibung, um sie wieder einzuklappen. Die Änderung gilt ab dem nächsten Reel.
+# context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles
+Dark box behind open captions	Dunkler Kasten hinter offenen Beschreibungen
+# context: summary of that switch
+An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	Eine geöffnete Reel-Beschreibung liegt auf einem dunklen Kasten, wie Untertitel, damit sie sich über einem hellen Video gut lesen lässt. Die Änderung gilt ab dem nächsten Reel.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Wer hat geteilt
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Fügt dem Menü eines Beitrags Wer hat geteilt hinzu. Es öffnet die Facebook-Liste der Personen, die ihn geteilt haben.

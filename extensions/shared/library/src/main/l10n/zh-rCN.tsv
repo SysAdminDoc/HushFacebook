@@ -1000,6 +1000,10 @@ Left alone: %s	不翻译：%s
 Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold it back. Reel captions have their own switch under Reels and Watch.	动态中的帖子会显示全部文字，不用再点“展开”。点按文字即可重新折叠。短视频的说明在 Reels 和 Watch 里有单独的开关。
 Show full reel captions	显示完整短视频说明
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	短视频的长说明会直接显示全部文字。点按说明即可重新折叠。更改从下一个短视频开始生效。
+# context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles
+Dark box behind open captions	展开的说明加深色底框
+# context: summary of that switch
+An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	展开的短视频说明会显示在深色底框上，像字幕一样，在明亮的视频上也容易看清。更改从下一个短视频开始生效。
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	查看谁分享了
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	在帖子菜单中添加“查看谁分享了”，打开 Facebook 上分享该帖子的用户列表。

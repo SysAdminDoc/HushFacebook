@@ -2915,6 +2915,14 @@ public class Settings extends BaseSettings {
             new ReelCaptionSetting("hushfacebook_show_full_reel_captions");
 
     /**
+     * An open reel caption sits on a dark rounded box, like subtitles (#419,
+     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop}). A change shows on the captions
+     * drawn after it.
+     */
+    public static final BooleanSetting DIM_OPEN_REEL_CAPTIONS =
+            new BooleanSetting("hushfacebook_dim_open_reel_captions", FALSE);
+
+    /**
      * A post in another language gets a Translate line under its text, and a tap sends the text to
      * Google Translate ({@link app.morphe.extension.facebook.feed.PostTranslation}). A change shows
      * on the posts drawn after it.

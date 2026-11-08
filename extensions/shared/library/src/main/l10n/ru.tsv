@@ -1029,6 +1029,10 @@ Left alone: %s	Без перевода: %s
 Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold it back. Reel captions have their own switch under Reels and Watch.	Публикации в Ленте отображаются полностью, поэтому нажимать «Еще» не нужно. Нажмите на текст, чтобы снова свернуть его. Для подписей к Reels есть отдельный переключатель в разделе Reels и Watch.
 Show full reel captions	Показывать полные подписи к Reels
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Длинные подписи к Reels сразу отображаются полностью. Нажмите на подпись, чтобы снова свернуть ее. Изменение действует со следующего ролика.
+# context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles
+Dark box behind open captions	Темная подложка под открытыми подписями
+# context: summary of that switch
+An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	Открытая подпись к Reels лежит на темной подложке, как субтитры, и ее легко читать поверх светлого видео. Изменение действует со следующего ролика.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Посмотреть, кто поделился
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Добавляет пункт «Посмотреть, кто поделился» в меню публикации. Он открывает список пользователей Facebook, которые поделились ею.
