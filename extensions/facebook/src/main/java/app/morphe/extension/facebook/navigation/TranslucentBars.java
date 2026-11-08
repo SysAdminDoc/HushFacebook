@@ -207,7 +207,54 @@ public final class TranslucentBars {
 
     /** The alpha a fill gets for [facebooks], Facebook's own alpha on it, with or without frost under it. */
     static int seeThrough(int facebooks, boolean frosted) {
-        return facebooks * (frosted ? FROSTED_ALPHA : PLAIN_ALPHA) / 255;
+        return seeThrough(facebooks, keptAlpha(frosted));
+    }
+
+    /** The alpha a fill gets for [facebooks], Facebook's own alpha on it, keeping [kept] of 255 of it. */
+    static int seeThrough(int facebooks, int kept) {
+        return facebooks * kept / 255;
+    }
+
+    /**
+     * How much of a bar's own alpha stays, of 255: the Bar opacity picked (#425), or with none
+     * picked, {@link #FROSTED_ALPHA} over frost and {@link #PLAIN_ALPHA} without.
+     */
+    static int keptAlpha(boolean frosted) {
+        int picked = Utils.settingsReady() ? opacityPercent(Settings.SEE_THROUGH_OPACITY.get()) : -1;
+        if (picked < 0) return frosted ? FROSTED_ALPHA : PLAIN_ALPHA;
+        return Math.round(picked * 255f / 100f);
+    }
+
+    /** The lowest Bar opacity a person can pick, in percent: nothing of the bars' own color. */
+    public static final int MIN_OPACITY = 0;
+    /** The highest, the bars as solid as Facebook draws them. */
+    public static final int MAX_OPACITY = 100;
+    /** What's kept with no opacity picked, in percent, for the row's summary: {@link #PLAIN_ALPHA}. */
+    public static final int PLAIN_PERCENT = Math.round(PLAIN_ALPHA * 100f / 255f);
+    /** The same over frost: {@link #FROSTED_ALPHA}. */
+    public static final int FROSTED_PERCENT = Math.round(FROSTED_ALPHA * 100f / 255f);
+
+    /**
+     * The Bar opacity [saved] picks, in percent, held to {@link #MIN_OPACITY} to
+     * {@link #MAX_OPACITY}, or -1 for none: blank or not a number.
+     */
+    public static int opacityPercent(@Nullable String saved) {
+        return percent(saved, MIN_OPACITY, MAX_OPACITY, -1);
+    }
+
+    /**
+     * A percent typed in a size or opacity row, [saved], held to [min] to [max]: [blank] when
+     * it's empty or not a number.
+     */
+    public static int percent(@Nullable String saved, int min, int max, int blank) {
+        if (saved == null) return blank;
+        String text = saved.trim();
+        if (text.isEmpty() || text.length() > 4) return blank;
+        try {
+            return Math.max(min, Math.min(max, Integer.parseInt(text)));
+        } catch (NumberFormatException notANumber) {
+            return blank;
+        }
     }
 
     /**
@@ -673,7 +720,8 @@ public final class TranslucentBars {
     static final class Fill {
         int facebooks;
         int left;
-        boolean frosted;
+        /** How much of Facebook's alpha it was left with, of 255, so a new Bar opacity shows (#425). */
+        int kept = -1;
         int frame;
     }
 
@@ -1099,7 +1147,8 @@ public final class TranslucentBars {
         void makeSeeThrough(Drawable drawn, boolean frosted) {
             Fill fill = fills.get(drawn);
             int now = reading(drawn);
-            if (fill != null && fill.left == now && fill.frosted == frosted) {
+            int kept = keptAlpha(frosted);
+            if (fill != null && fill.left == now && fill.kept == kept) {
                 fill.frame = frame;
                 return;
             }
@@ -1114,8 +1163,8 @@ public final class TranslucentBars {
                 // Facebook set it again since: what it shows now is Facebook's.
                 fill.facebooks = drawn.getAlpha();
             }
-            fill.frosted = frosted;
-            drawn.setAlpha(seeThrough(fill.facebooks, frosted));
+            fill.kept = kept;
+            drawn.setAlpha(seeThrough(fill.facebooks, kept));
             fill.left = reading(drawn);
             fill.frame = frame;
         }

@@ -58,6 +58,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the next tab Facebook marks selected. Every tab in the row gets the layers once and keeps them
  * while the bar is a pill, so moving the spot never swaps a background under a tap (#412).
  *
+ * <p>Tab bar width sets the scale, evenly in both directions so the icons keep their shape, and
+ * Tab bar height trims the outline above and below the icons (#425). Both are asked each frame.
+ *
  * <p>Nothing is laid out again: the scale and the clip are drawing properties, so Facebook's pages
  * keep their padding, scroll-away keeps sliding the bar, and a tap goes to the tab drawn under the
  * finger. A tab bar at the top is left as Facebook draws it. Off, paused, before the settings are
@@ -69,10 +72,25 @@ public final class RoundedTabBar {
     /** Counted each time the switch going off or a pause gives a bar its own shape back. */
     static final String GIVEN_BACK = "Tab bar given its shape back";
 
-    /** How much of its size the pill keeps. */
+    /** How much of its size the pill keeps with no Tab bar width picked. */
     static final float SCALE = 0.9f;
-    /** How far above the bottom of the row of tabs the pill's bottom sits, in dp. */
+    /** How far above the bottom of the row of tabs the pill's bottom sits at {@link #SCALE}, in dp. */
     static final float LIFT_DP = 8f;
+
+    /**
+     * Tab bar width (#425): the pill's width as a percent of the row's, the screen's. The whole pill
+     * is scaled to it, icons too, so nothing gets squashed. Blank is {@link #SCALE}.
+     */
+    public static final int DEFAULT_WIDTH = Math.round(SCALE * 100);
+    public static final int MIN_WIDTH = 70;
+    public static final int MAX_WIDTH = 100;
+    /**
+     * Tab bar height (#425): how much of its height the pill keeps, in percent, trimmed evenly
+     * above and below the icons, which keep their size. Blank keeps all of it.
+     */
+    public static final int DEFAULT_HEIGHT = 100;
+    public static final int MIN_HEIGHT = 60;
+    public static final int MAX_HEIGHT = 100;
 
     /** The selected tab's spot: Facebook's blue, faint enough that the tab's own blue icon reads on it. */
     static final int SPOT_COLOR = 0x330866FF;
@@ -142,12 +160,47 @@ public final class RoundedTabBar {
         return out.height() / 2f;
     }
 
+    /** The Tab bar width [saved] picks, in percent, held to its range: {@link #DEFAULT_WIDTH} when blank. */
+    public static int widthPercent(@Nullable String saved) {
+        return TranslucentBars.percent(saved, MIN_WIDTH, MAX_WIDTH, DEFAULT_WIDTH);
+    }
+
+    /** The Tab bar height [saved] picks, in percent, held to its range: {@link #DEFAULT_HEIGHT} when blank. */
+    public static int heightPercent(@Nullable String saved) {
+        return TranslucentBars.percent(saved, MIN_HEIGHT, MAX_HEIGHT, DEFAULT_HEIGHT);
+    }
+
+    /** How much of its size the pill keeps now, from the Tab bar width picked. */
+    static float scale() {
+        return widthPercent(Settings.TAB_BAR_WIDTH.get()) / 100f;
+    }
+
+    /**
+     * How far the pill at [scale] sits above the row's bottom, in pixels at [density]:
+     * {@link #LIFT_DP} up to {@link #SCALE}, then less, to nothing at full width, so a wider pill's
+     * top never rises further over the feed than the stock one's does.
+     */
+    static float lift(float scale, float density) {
+        float share = Math.min(1f, Math.max(0f, (1f - scale) / (1f - SCALE)));
+        return LIFT_DP * density * share;
+    }
+
     /**
      * The point [bar] is scaled about, so the pill around [row], in the bar's coordinates, keeps its
-     * middle and has its bottom [lift] pixels above the row's bottom: y maps to p + SCALE * (y - p).
+     * middle and has its bottom [lift] pixels above the row's bottom: y maps to p + [scale] * (y - p).
+     * At full size nothing is scaled, so the bottom stays where it is.
      */
-    static float pivotY(Rect row, float lift) {
-        return row.bottom - lift / (1f - SCALE);
+    static float pivotY(Rect row, float lift, float scale) {
+        if (scale >= 1f) return row.bottom;
+        return row.bottom - lift / (1f - scale);
+    }
+
+    /** Trims [row] evenly at its top and bottom to [percent] of its height. */
+    static void trim(Rect row, int percent) {
+        if (percent >= 100 || row.isEmpty()) return;
+        int cut = Math.round(row.height() * (100 - percent) / 200f);
+        row.top += cut;
+        row.bottom -= cut;
     }
 
     /** [anchor]'s box in [bar]'s coordinates, into [out]. */
@@ -202,17 +255,21 @@ public final class RoundedTabBar {
         Rect row = shape.scratch;
         rowIn(bar, anchor, row);
         aboveNavigation(bar, row, floor, shape.at);
-        if (!row.equals(shape.pill.row)) {
-            shape.pill.row.set(row);
+        Rect pill = shape.trimmed;
+        pill.set(row);
+        trim(pill, heightPercent(Settings.TAB_BAR_HEIGHT.get()));
+        if (!pill.equals(shape.pill.row)) {
+            shape.pill.row.set(pill);
             bar.invalidateOutline();
         }
-        float lift = LIFT_DP * bar.getResources().getDisplayMetrics().density;
+        float scale = scale();
+        float lift = lift(scale, bar.getResources().getDisplayMetrics().density);
         float pivotX = row.exactCenterX();
-        float pivotY = pivotY(row, lift);
+        float pivotY = pivotY(row, lift, scale);
         if (bar.getPivotX() != pivotX) bar.setPivotX(pivotX);
         if (bar.getPivotY() != pivotY) bar.setPivotY(pivotY);
-        if (bar.getScaleX() != SCALE) bar.setScaleX(SCALE);
-        if (bar.getScaleY() != SCALE) bar.setScaleY(SCALE);
+        if (bar.getScaleX() != scale) bar.setScaleX(scale);
+        if (bar.getScaleY() != scale) bar.setScaleY(scale);
         fadeLine(bar, row, shape);
         return fresh;
     }
@@ -340,7 +397,8 @@ public final class RoundedTabBar {
         int bottom = Math.min(tab.getHeight(), row.bottom - box.top);
         float density = tab.getResources().getDisplayMetrics().density;
         int across = Math.round(SPOT_ACROSS_DP * density);
-        int down = Math.round(SPOT_DOWN_DP * density);
+        // A pill trimmed short by Tab bar height keeps a spot half its height (#425).
+        int down = Math.min(Math.round(SPOT_DOWN_DP * density), Math.max(0, (bottom - top) / 4));
         box.set(across, top + down, tab.getWidth() - across, bottom - down);
         if (!box.equals(spotted.spot.area)) {
             spotted.spot.area.set(box);
@@ -376,6 +434,8 @@ public final class RoundedTabBar {
         final float pivotY;
         final Pill pill = new Pill();
         final Rect scratch = new Rect();
+        /** The row trimmed to the Tab bar height picked, the pill's outline before it's kept. */
+        final Rect trimmed = new Rect();
         final int[] at = new int[2];
         /** Facebook's line over the top of the pill, faded, and the alpha it had. Weak: it's the bar's child. */
         WeakReference<View> line = new WeakReference<>(null);

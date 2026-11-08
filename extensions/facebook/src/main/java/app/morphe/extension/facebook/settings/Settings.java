@@ -2679,12 +2679,36 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_translucent_bars", FALSE);
 
     /**
+     * How much of their own color See-through bars keep, a percent, digits only, blank for the
+     * stock amount (#425, {@link app.morphe.extension.facebook.navigation.TranslucentBars#opacityPercent}).
+     * Not a switch. Asked as each frame of the main screen draws.
+     */
+    public static final StringSetting SEE_THROUGH_OPACITY =
+            new StringSetting("hushfacebook_see_through_opacity", "");
+
+    /**
      * The tab bar at the bottom is drawn as a pill with round ends, a little smaller than the bar and
      * a few dp above the bottom of the screen (#344, {@link app.morphe.extension.facebook.navigation.RoundedTabBar}).
      * Asked as each frame of the main screen draws, so a change shows right away.
      */
     public static final BooleanSetting ROUNDED_TAB_BAR =
             new BooleanSetting("hushfacebook_rounded_tab_bar", FALSE);
+
+    /**
+     * The rounded tab bar's width as a percent of the screen's, digits only, blank for the stock
+     * size (#425, {@link app.morphe.extension.facebook.navigation.RoundedTabBar#widthPercent}). Not
+     * a switch. Asked as each frame of the main screen draws.
+     */
+    public static final StringSetting TAB_BAR_WIDTH =
+            new StringSetting("hushfacebook_tab_bar_width", "");
+
+    /**
+     * How much of its height the rounded tab bar keeps, a percent, digits only, blank for all of it
+     * (#425, {@link app.morphe.extension.facebook.navigation.RoundedTabBar#heightPercent}). Not a
+     * switch. Asked as each frame of the main screen draws.
+     */
+    public static final StringSetting TAB_BAR_HEIGHT =
+            new StringSetting("hushfacebook_tab_bar_height", "");
 
     /**
      * Android's status bar goes from Facebook's main screen, a swipe down from the top edge showing

@@ -2498,3 +2498,13 @@ Open shared reels on their own	Abrir reels compartilhados sozinhos
 A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.	Um reel que você abre por um link em outro app ou em uma conversa toca sozinho, sem outros reels para deslizar depois.
 Light bars on the Reels tab	Barras claras na aba Reels
 In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the other tabs, instead of turning them dark.	No modo claro, a aba Reels mantém a mesma barra de status, barra superior e barra de abas claras das outras abas, em vez de deixá-las escuras.
+Bar opacity	Opacidade das barras
+How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	Quanto da cor as barras transparentes mantêm, em porcentagem, de %1$s a %2$s. Um valor menor deixa aparecer mais do feed e do desfoque. Deixe em branco para usar %3$s, ou %4$s sobre o desfoque.
+The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	As barras mantêm %1$s por cento da cor, ou %2$s por cento sobre o desfoque. Digite um número para mudar.
+The see-through bars keep %1$s percent of their color.	As barras transparentes mantêm %1$s por cento da cor.
+Tab bar width	Largura da barra de abas
+Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Porcentagem da largura da tela, de %1$s a %2$s. Os ícones crescem e encolhem junto. Deixe em branco para usar %3$s.
+The rounded tab bar is %1$s percent of the screen wide.	A barra de abas arredondada ocupa %1$s por cento da largura da tela.
+Tab bar height	Altura da barra de abas
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Porcentagem da altura total que a barra de abas arredondada mantém, de %1$s a %2$s, cortada acima e abaixo dos ícones. Deixe em branco para usar %3$s.
+The rounded tab bar keeps %1$s percent of its height.	A barra de abas arredondada mantém %1$s por cento da altura.

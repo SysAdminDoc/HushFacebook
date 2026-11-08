@@ -65,6 +65,8 @@ public class RoundedTabBarTest {
         PauseForTests.resume();
         Settings.ROUNDED_TAB_BAR.resetToDefault();
         Settings.TAB_COLOR.resetToDefault();
+        Settings.TAB_BAR_WIDTH.resetToDefault();
+        Settings.TAB_BAR_HEIGHT.resetToDefault();
         HookStatus.clear();
     }
 
@@ -139,6 +141,48 @@ public class RoundedTabBarTest {
         Settings.ROUNDED_TAB_BAR.save(true);
         screen.shaper.update();
         assertTrue("on again, it's a pill again", screen.holder.getClipToOutline());
+    }
+
+    /** #425: Tab bar width scales the whole pill evenly, and Tab bar height trims it around the icons. */
+    @Test
+    public void widthScalesThePillEvenlyAndHeightTrimsIt() {
+        RoundedTabBarForTests screen = new RoundedTabBarForTests();
+        Settings.TAB_BAR_WIDTH.save("80");
+        Settings.TAB_BAR_HEIGHT.save("70");
+        screen.shaper.update();
+
+        assertEquals(0.8f, screen.holder.getScaleX(), 0f);
+        assertEquals("both ways, so the icons keep their shape", 0.8f, screen.holder.getScaleY(), 0f);
+        float[] radius = new float[1];
+        // 30% of the row's 112 pixels, 17 off its top and 17 off its bottom.
+        assertEquals(new Rect(0, 19, 720, 97), outlineOf(screen, radius));
+        assertEquals("its ends are still half its height", 39f, radius[0], 0.01f);
+        float rowBottom = screen.holder.getPivotY() + 0.8f * (114 - screen.holder.getPivotY());
+        assertEquals("the row's bottom still lands 8 dp over it", 106f, rowBottom, 0.01f);
+        assertEquals("the row of tabs itself keeps its size", 1f, screen.tabBar.getScaleX(), 0f);
+        Rect pill = new Rect();
+        RoundedTabBar.pillInWindow(screen.holder, pill);
+        Rect expected = new Rect(72, 1454, 648, 1516);
+        expected.offset(0, screen.windowTop());
+        assertEquals("the frost follows the trimmed pill, 576 of 720 pixels wide", expected, pill);
+
+        // Full width: nothing scaled, so nothing lifted, and the whole row.
+        Settings.TAB_BAR_WIDTH.save("100");
+        Settings.TAB_BAR_HEIGHT.save("");
+        screen.shaper.update();
+        assertEquals(1f, screen.holder.getScaleX(), 0f);
+        assertEquals(1f, screen.holder.getScaleY(), 0f);
+        assertEquals(new Rect(0, 2, 720, 114), outlineOf(screen, radius));
+
+        // A number past either end is held to it, and blank is the stock pill again.
+        assertEquals(RoundedTabBar.MIN_WIDTH, RoundedTabBar.widthPercent("20"));
+        assertEquals(RoundedTabBar.MAX_HEIGHT, RoundedTabBar.heightPercent("150"));
+        assertEquals(RoundedTabBar.MIN_HEIGHT, RoundedTabBar.heightPercent("0"));
+        assertEquals(RoundedTabBar.DEFAULT_WIDTH, RoundedTabBar.widthPercent("x"));
+        Settings.TAB_BAR_WIDTH.save("");
+        screen.shaper.update();
+        assertEquals(RoundedTabBar.SCALE, screen.holder.getScaleX(), 0f);
+        assertEquals(34f, screen.holder.getPivotY(), 0.01f);
     }
 
     /** #383: the selected tab gets a spot behind it that follows the selection and goes with the pill. */

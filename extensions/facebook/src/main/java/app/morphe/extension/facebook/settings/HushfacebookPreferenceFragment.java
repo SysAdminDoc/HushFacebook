@@ -87,7 +87,9 @@ import app.morphe.extension.facebook.navigation.HiddenTabs;
 import app.morphe.extension.facebook.navigation.FeedsSubtab;
 import app.morphe.extension.facebook.navigation.StartTab;
 import app.morphe.extension.facebook.navigation.MarketplaceOnly;
+import app.morphe.extension.facebook.navigation.RoundedTabBar;
 import app.morphe.extension.facebook.navigation.TabBarScrollAway;
+import app.morphe.extension.facebook.navigation.TranslucentBars;
 import app.morphe.extension.facebook.notifications.QuietHour;
 import app.morphe.extension.facebook.settings.SettingsRows.Heading;
 import app.morphe.extension.facebook.settings.SettingsRows.Row;
@@ -2385,6 +2387,82 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     /** What the Round picture size row says for [text], the digits typed there. */
     static String sizeSummary(String text) {
         return L10n.f("Round pictures are %1$s dp wide.", StoriesTrayCircles.diameterDp(text));
+    }
+
+    /**
+     * A row taking a percent for [setting] (#425): digits only, at most three, blank for [blank].
+     * What's typed that isn't digits is saved as its digits.
+     */
+    static ValueRows.PercentRow percentRow(Context context, StringSetting setting, String title, String message,
+            int blank, ValueRows.PercentSummary summary) {
+        ValueRows.PercentRow row = new ValueRows.PercentRow(context, summary);
+        row.setKey(setting.key);
+        row.setTitle(title);
+        row.setDialogTitle(title);
+        row.setDialogMessage(message);
+        row.setPositiveButtonText(L10n.t("Save"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        EditText field = row.getEditText();
+        keepEditorInDialog(field, false);
+        field.setInputType(InputType.TYPE_CLASS_NUMBER);
+        field.setFilters(new InputFilter[] {new InputFilter.LengthFilter(3)});
+        field.setHint(String.valueOf(blank));
+        row.setText(setting.savedValue());
+        row.setOnPreferenceChangeListener((preference, typed) -> {
+            String raw = typed == null ? "" : typed.toString().trim();
+            String clean = LocalProfileCounts.clean(raw);
+            if (clean.equals(raw)) return true;
+            ((ValueRows.PercentRow) preference).setText(clean);
+            return false;
+        });
+        return row;
+    }
+
+    /** See-through bars' Bar opacity row (#425). */
+    static ValueRows.PercentRow opacityRow(Context context) {
+        return percentRow(context, Settings.SEE_THROUGH_OPACITY, L10n.t("Bar opacity"),
+                L10n.f("How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower "
+                                + "lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.",
+                        TranslucentBars.MIN_OPACITY, TranslucentBars.MAX_OPACITY,
+                        TranslucentBars.PLAIN_PERCENT, TranslucentBars.FROSTED_PERCENT),
+                TranslucentBars.FROSTED_PERCENT, HushfacebookPreferenceFragment::opacitySummary);
+    }
+
+    /** What the Bar opacity row says for [text], the digits typed there. */
+    static String opacitySummary(String text) {
+        int picked = TranslucentBars.opacityPercent(text);
+        if (picked < 0) {
+            return L10n.f("The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number "
+                    + "to change it.", TranslucentBars.PLAIN_PERCENT, TranslucentBars.FROSTED_PERCENT);
+        }
+        return L10n.f("The see-through bars keep %1$s percent of their color.", picked);
+    }
+
+    /** Rounded tab bar's Tab bar width row (#425). */
+    static ValueRows.PercentRow tabBarWidthRow(Context context) {
+        return percentRow(context, Settings.TAB_BAR_WIDTH, L10n.t("Tab bar width"),
+                L10n.f("Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave "
+                        + "it blank for %3$s.", RoundedTabBar.MIN_WIDTH, RoundedTabBar.MAX_WIDTH, RoundedTabBar.DEFAULT_WIDTH),
+                RoundedTabBar.DEFAULT_WIDTH, HushfacebookPreferenceFragment::tabBarWidthSummary);
+    }
+
+    /** What the Tab bar width row says for [text], the digits typed there. */
+    static String tabBarWidthSummary(String text) {
+        return L10n.f("The rounded tab bar is %1$s percent of the screen wide.", RoundedTabBar.widthPercent(text));
+    }
+
+    /** Rounded tab bar's Tab bar height row (#425). */
+    static ValueRows.PercentRow tabBarHeightRow(Context context) {
+        return percentRow(context, Settings.TAB_BAR_HEIGHT, L10n.t("Tab bar height"),
+                L10n.f("Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and "
+                        + "below the icons. Leave it blank for %3$s.", RoundedTabBar.MIN_HEIGHT, RoundedTabBar.MAX_HEIGHT,
+                        RoundedTabBar.DEFAULT_HEIGHT),
+                RoundedTabBar.DEFAULT_HEIGHT, HushfacebookPreferenceFragment::tabBarHeightSummary);
+    }
+
+    /** What the Tab bar height row says for [text], the digits typed there. */
+    static String tabBarHeightSummary(String text) {
+        return L10n.f("The rounded tab bar keeps %1$s percent of its height.", RoundedTabBar.heightPercent(text));
     }
 
     /** What the Emoji after the logo row says for [text], the emoji typed there. */

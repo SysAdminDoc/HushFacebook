@@ -227,10 +227,14 @@ final class HushfacebookPages {
             appearance.addPreference(toggle(context, Settings.TRANSLUCENT_BARS,
                     L10n.t("The top bar and the tab bar turn see-through, so the feed shows through them as you scroll. "
                             + "On Android 12 and newer the feed behind them is blurred.")));
+            // Asked as each frame draws too, so a new number shows when these settings close (#425).
+            appearance.addPreference(HushfacebookPreferenceFragment.opacityRow(context));
             // Asked as each frame of the main screen draws, so a change shows right away (#344).
             appearance.addPreference(toggle(context, Settings.ROUNDED_TAB_BAR,
                     L10n.t("With the tab bar at the bottom, it gets round ends and sits a little smaller, just above "
                             + "the bottom of the screen, with a soft highlight behind the tab you're on.")));
+            appearance.addPreference(HushfacebookPreferenceFragment.tabBarWidthRow(context));
+            appearance.addPreference(HushfacebookPreferenceFragment.tabBarHeightRow(context));
             // Asked as the main screen gets its focus back, so a change shows when these settings close.
             appearance.addPreference(toggle(context, Settings.HIDE_STATUS_BAR,
                     L10n.t("Takes the phone's status bar, with the time and battery, off Facebook's main screen, so "

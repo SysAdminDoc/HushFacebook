@@ -2612,3 +2612,13 @@ Open shared reels on their own	Paylaşılan reel'leri tek başına aç
 A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.	Başka bir uygulamadaki bir bağlantıdan ya da bir sohbetten açtığın reel tek başına oynar, ardından kaydırılacak başka reel olmaz.
 Light bars on the Reels tab	Reels sekmesinde açık çubuklar
 In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the other tabs, instead of turning them dark.	Açık modda Reels sekmesi, durum çubuğunu, üst çubuğu ve sekme çubuğunu karartmak yerine diğer sekmelerdeki gibi açık tutar.
+Bar opacity	Çubuk opaklığı
+How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	Saydam çubukların rengini yüzde kaç koruduğu, %1$s ile %2$s arası. Daha düşük değer akışın ve bulanıklığın daha çok görünmesini sağlar. %3$s için ya da bulanıklığın üzerinde %4$s için boş bırakın.
+The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	Çubuklar renginin yüzde %1$s kadarını, bulanıklığın üzerinde yüzde %2$s kadarını korur. Değiştirmek için bir sayı yazın.
+The see-through bars keep %1$s percent of their color.	Saydam çubuklar renginin yüzde %1$s kadarını korur.
+Tab bar width	Sekme çubuğu genişliği
+Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Ekran genişliğinin yüzdesi, %1$s ile %2$s arası. Simgeler onunla birlikte büyür ve küçülür. %3$s için boş bırakın.
+The rounded tab bar is %1$s percent of the screen wide.	Yuvarlak sekme çubuğu ekran genişliğinin yüzde %1$s kadarı.
+Tab bar height	Sekme çubuğu yüksekliği
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Yuvarlak sekme çubuğunun tam yüksekliğinin yüzde kaçını koruduğu, %1$s ile %2$s arası, simgelerin üstünden ve altından kırpılır. %3$s için boş bırakın.
+The rounded tab bar keeps %1$s percent of its height.	Yuvarlak sekme çubuğu yüksekliğinin yüzde %1$s kadarını korur.

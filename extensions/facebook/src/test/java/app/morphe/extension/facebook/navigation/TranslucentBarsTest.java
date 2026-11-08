@@ -65,7 +65,7 @@ import app.morphe.extension.shared.settings.PauseForTests;
 public class TranslucentBarsTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
-    private static final int SEE_THROUGH = TranslucentBars.seeThrough(255, false);
+    private static final int SEE_THROUGH = TranslucentBars.seeThrough(255, TranslucentBars.PLAIN_ALPHA);
 
     @Before
     public void start() {
@@ -78,6 +78,7 @@ public class TranslucentBarsTest {
         PauseForTests.resume();
         Settings.TRANSLUCENT_BARS.resetToDefault();
         Settings.ROUNDED_TAB_BAR.resetToDefault();
+        Settings.SEE_THROUGH_OPACITY.resetToDefault();
         HookStatus.clear();
     }
 
@@ -920,5 +921,43 @@ public class TranslucentBarsTest {
         assertEquals(0xA6, TranslucentBars.seeThrough(255, true));
         assertEquals(0, TranslucentBars.seeThrough(0, true));
         assertTrue("frost lets more through", TranslucentBars.seeThrough(255, true) < TranslucentBars.seeThrough(255, false));
+    }
+
+    /** #425: Bar opacity picks how much of the bars' color stays, frost or not, and a new pick shows on the next frame. */
+    @Test
+    public void barOpacityPicksWhatStaysAndANewPickShowsOnTheNextFrame() {
+        assertEquals("blank is the stock amount", 0xC0, TranslucentBars.keptAlpha(false));
+        assertEquals(0xA6, TranslucentBars.keptAlpha(true));
+        assertEquals(75, TranslucentBars.PLAIN_PERCENT);
+        assertEquals(65, TranslucentBars.FROSTED_PERCENT);
+
+        Settings.SEE_THROUGH_OPACITY.save("30");
+        assertEquals(77, TranslucentBars.keptAlpha(false));
+        assertEquals("the same over frost", 77, TranslucentBars.keptAlpha(true));
+        assertEquals(77, TranslucentBars.seeThrough(255, true));
+        Settings.SEE_THROUGH_OPACITY.save("0");
+        assertEquals("nothing of the color", 0, TranslucentBars.keptAlpha(true));
+        Settings.SEE_THROUGH_OPACITY.save("100");
+        assertEquals("as solid as Facebook draws it", 255, TranslucentBars.keptAlpha(true));
+        assertEquals(100, TranslucentBars.opacityPercent("250"));
+        assertEquals(-1, TranslucentBars.opacityPercent("abc"));
+        assertEquals(-1, TranslucentBars.opacityPercent(" "));
+        assertEquals(-1, TranslucentBars.opacityPercent(null));
+
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        GradientDrawable header = new GradientDrawable();
+        header.setColor(0xFF1877F2);
+        screen.topHolder.setBackground(header);
+        Settings.SEE_THROUGH_OPACITY.save("");
+        screen.bars.update();
+        assertEquals(0xC0, header.getAlpha());
+
+        Settings.SEE_THROUGH_OPACITY.save("40");
+        screen.bars.update();
+        assertEquals("a new pick shows on the next frame", 102, header.getAlpha());
+
+        Settings.TRANSLUCENT_BARS.save(false);
+        screen.bars.update();
+        assertEquals("Facebook's own alpha comes back", 255, header.getAlpha());
     }
 }

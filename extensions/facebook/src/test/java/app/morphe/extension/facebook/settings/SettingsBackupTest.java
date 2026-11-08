@@ -161,6 +161,12 @@ public class SettingsBackupTest {
                         + "can't carry the picture itself, and the name alone would point at nothing on another phone.");
         out.put("hushfacebook_stories_tray_size",
                 "it is a width in dp picked for this phone's screen, which reads differently on another phone.");
+        out.put("hushfacebook_see_through_opacity",
+                "it is picked by eye for this phone's screen, and the same number reads darker on an AMOLED one.");
+        out.put("hushfacebook_tab_bar_width",
+                "it is a size picked for this phone's screen, which reads differently on another phone.");
+        out.put("hushfacebook_tab_bar_height",
+                "it is a size picked for this phone's screen, which reads differently on another phone.");
         for (String count : new String[] {"friends", "followers", "following"}) {
             out.put("hushfacebook_local_" + count,
                     "it's a number typed for your own profile on this phone, for fun. It stays here and isn't "

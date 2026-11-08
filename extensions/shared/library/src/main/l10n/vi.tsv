@@ -2612,3 +2612,13 @@ Open shared reels on their own	Mở reel được chia sẻ riêng lẻ
 A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.	Reel bạn mở từ liên kết trong ứng dụng khác hoặc từ cuộc trò chuyện sẽ phát riêng, không có reel nào khác để vuốt sau nó.
 Light bars on the Reels tab	Thanh sáng trên tab Reels
 In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the other tabs, instead of turning them dark.	Ở chế độ sáng, tab Reels giữ thanh trạng thái, thanh trên cùng và thanh tab sáng giống các tab khác, thay vì chuyển chúng sang tối.
+Bar opacity	Độ mờ đục của thanh
+How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	Thanh trong suốt giữ lại bao nhiêu màu của nó, tính theo phần trăm, từ %1$s đến %2$s. Số nhỏ hơn cho thấy rõ hơn bảng tin và lớp làm mờ của nó. Để trống để dùng %3$s, hoặc %4$s trên lớp làm mờ.
+The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	Thanh giữ lại %1$s phần trăm màu của nó, hoặc %2$s phần trăm trên lớp làm mờ. Nhập một số để thay đổi.
+The see-through bars keep %1$s percent of their color.	Thanh trong suốt giữ lại %1$s phần trăm màu của nó.
+Tab bar width	Chiều rộng thanh tab
+Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Phần trăm chiều rộng màn hình, từ %1$s đến %2$s. Các biểu tượng to lên và nhỏ đi theo nó. Để trống để dùng %3$s.
+The rounded tab bar is %1$s percent of the screen wide.	Thanh tab bo tròn rộng %1$s phần trăm màn hình.
+Tab bar height	Chiều cao thanh tab
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Phần trăm chiều cao đầy đủ mà thanh tab bo tròn giữ lại, từ %1$s đến %2$s, được cắt bớt phía trên và phía dưới các biểu tượng. Để trống để dùng %3$s.
+The rounded tab bar keeps %1$s percent of its height.	Thanh tab bo tròn giữ lại %1$s phần trăm chiều cao.

@@ -2612,3 +2612,13 @@ Open shared reels on their own	Buka reel yang dibagikan sendiri
 A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.	Reel yang kamu buka dari tautan di aplikasi lain atau dari obrolan diputar sendiri, tanpa reel lain untuk digeser setelahnya.
 Light bars on the Reels tab	Bilah terang di tab Reels
 In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the other tabs, instead of turning them dark.	Dalam mode terang, tab Reels tetap memakai bilah status, bilah atas, dan bilah tab terang yang sama dengan tab lain, bukan menggelapkannya.
+Bar opacity	Opasitas bilah
+How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	Seberapa banyak warna yang dipertahankan bilah tembus pandang, dalam persen, dari %1$s sampai %2$s. Angka lebih kecil membuat feed dan efek buramnya lebih terlihat. Biarkan kosong untuk %3$s, atau %4$s di atas efek buram.
+The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	Bilah mempertahankan %1$s persen warnanya, atau %2$s persen di atas efek buram. Ketik angka untuk mengubahnya.
+The see-through bars keep %1$s percent of their color.	Bilah tembus pandang mempertahankan %1$s persen warnanya.
+Tab bar width	Lebar bilah tab
+Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Persen dari lebar layar, dari %1$s sampai %2$s. Ikon ikut membesar dan mengecil. Biarkan kosong untuk %3$s.
+The rounded tab bar is %1$s percent of the screen wide.	Bilah tab membulat selebar %1$s persen layar.
+Tab bar height	Tinggi bilah tab
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Persen dari tinggi penuh yang dipertahankan bilah tab membulat, dari %1$s sampai %2$s, dipotong di atas dan di bawah ikon. Biarkan kosong untuk %3$s.
+The rounded tab bar keeps %1$s percent of its height.	Bilah tab membulat mempertahankan %1$s persen tingginya.

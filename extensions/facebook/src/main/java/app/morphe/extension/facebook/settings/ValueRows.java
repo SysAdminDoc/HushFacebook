@@ -1026,6 +1026,45 @@ final class ValueRows {
         }
     }
 
+    /** What a percent row says for the digits typed there. */
+    interface PercentSummary {
+        String of(String text);
+    }
+
+    /**
+     * A row that takes a percent, as Bar opacity, Tab bar width and Tab bar height do (#425). Its
+     * summary follows its text, whoever sets it.
+     */
+    static final class PercentRow extends EditTextPreference {
+        private final PercentSummary summary;
+
+        PercentRow(Context context, PercentSummary summary) {
+            super(context);
+            this.summary = summary;
+        }
+
+        @Override
+        public void setText(String text) {
+            super.setText(text);
+            setSummary(summary.of(text));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+            fitAboveKeyboard(getDialog());
+        }
+    }
+
     /**
      * The start tab's row. Its summary follows its value, whoever sets it: the person, the shared
      * page syncing it from the setting, or an import.

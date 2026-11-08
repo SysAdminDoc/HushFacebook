@@ -2666,3 +2666,13 @@ Open shared reels on their own	Открывать присланные Reels о�
 A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.	Reels, открытый по ссылке из другого приложения или из чата, играет сам по себе, без других Reels для пролистывания после него.
 Light bars on the Reels tab	Светлые панели на вкладке Reels
 In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the other tabs, instead of turning them dark.	В светлой теме вкладка Reels сохраняет такие же светлые строку состояния, верхнюю панель и панель вкладок, как другие вкладки, а не делает их тёмными.
+Bar opacity	Непрозрачность панелей
+How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	Сколько своего цвета сохраняют прозрачные панели, в процентах, от %1$s до %2$s. Чем меньше, тем лучше видны Лента и её размытие. Оставьте поле пустым, чтобы использовать %3$s, или %4$s поверх размытия.
+The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	Панели сохраняют %1$s процентов своего цвета, или %2$s процентов поверх размытия. Введите число, чтобы изменить.
+The see-through bars keep %1$s percent of their color.	Прозрачные панели сохраняют %1$s процентов своего цвета.
+Tab bar width	Ширина панели вкладок
+Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Процент ширины экрана, от %1$s до %2$s. Значки увеличиваются и уменьшаются вместе с ней. Оставьте поле пустым, чтобы использовать %3$s.
+The rounded tab bar is %1$s percent of the screen wide.	Ширина скруглённой панели вкладок: %1$s процентов ширины экрана.
+Tab bar height	Высота панели вкладок
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Сколько процентов полной высоты сохраняет скруглённая панель вкладок, от %1$s до %2$s, с обрезкой сверху и снизу от значков. Оставьте поле пустым, чтобы использовать %3$s.
+The rounded tab bar keeps %1$s percent of its height.	Скруглённая панель вкладок сохраняет %1$s процентов своей высоты.

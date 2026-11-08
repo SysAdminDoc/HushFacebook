@@ -2616,3 +2616,13 @@ Open shared reels on their own	單獨開啟分享的 Reels
 A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.	從其他應用程式的連結或聊天中開啟的 Reels 會單獨播放，之後沒有可以繼續滑動的 Reels.
 Light bars on the Reels tab	Reels 分頁使用淺色列
 In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the other tabs, instead of turning them dark.	在淺色模式下，Reels 分頁保持與其他分頁相同的淺色狀態列、頂端列和分頁列，而不是把它們變暗.
+Bar opacity	列的不透明度
+How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	透明列保留自身顏色的百分比，範圍 %1$s 到 %2$s。數值越低，越能透出動態消息及其模糊效果。留空則使用 %3$s，模糊時使用 %4$s.
+The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	這些列保留百分之 %1$s 的顏色，模糊時保留百分之 %2$s。輸入數字即可變更.
+The see-through bars keep %1$s percent of their color.	透明列保留百分之 %1$s 的顏色.
+Tab bar width	分頁列寬度
+Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	佔螢幕寬度的百分比，範圍 %1$s 到 %2$s。圖示會隨之放大或縮小。留空則使用 %3$s.
+The rounded tab bar is %1$s percent of the screen wide.	圓角分頁列的寬度為螢幕的百分之 %1$s.
+Tab bar height	分頁列高度
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	圓角分頁列保留其完整高度的百分比，範圍 %1$s 到 %2$s，在圖示上方和下方裁切。留空則使用 %3$s.
+The rounded tab bar keeps %1$s percent of its height.	圓角分頁列保留其高度的百分之 %1$s.

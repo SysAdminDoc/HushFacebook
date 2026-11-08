@@ -2607,3 +2607,13 @@ Open shared reels on their own	单独打开分享的 Reels
 A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.	从其他应用的链接或聊天中打开的 Reels 会单独播放，之后没有可以继续滑动的 Reels.
 Light bars on the Reels tab	Reels 标签页使用浅色栏
 In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the other tabs, instead of turning them dark.	在浅色模式下，Reels 标签页保持与其他标签页相同的浅色状态栏、顶部栏和标签栏，而不是把它们变暗.
+Bar opacity	栏的不透明度
+How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	透明栏保留自身颜色的百分比，范围 %1$s 到 %2$s。数值越低，越能透出动态消息及其模糊效果。留空则使用 %3$s，模糊时使用 %4$s.
+The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	这些栏保留百分之 %1$s 的颜色，模糊时保留百分之 %2$s。输入数字即可更改.
+The see-through bars keep %1$s percent of their color.	透明栏保留百分之 %1$s 的颜色.
+Tab bar width	标签栏宽度
+Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	占屏幕宽度的百分比，范围 %1$s 到 %2$s。图标会随之放大或缩小。留空则使用 %3$s.
+The rounded tab bar is %1$s percent of the screen wide.	圆角标签栏的宽度为屏幕的百分之 %1$s.
+Tab bar height	标签栏高度
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	圆角标签栏保留其完整高度的百分比，范围 %1$s 到 %2$s，在图标上方和下方裁剪。留空则使用 %3$s.
+The rounded tab bar keeps %1$s percent of its height.	圆角标签栏保留其高度的百分之 %1$s.

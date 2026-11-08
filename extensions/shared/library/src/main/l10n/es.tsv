@@ -2612,3 +2612,13 @@ Open shared reels on their own	Abrir reels compartidos solos
 A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.	Un reel que abres desde un enlace en otra app o desde un chat se reproduce solo, sin más reels para deslizar después.
 Light bars on the Reels tab	Barras claras en la pestaña Reels
 In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the other tabs, instead of turning them dark.	En el modo claro, la pestaña Reels mantiene la misma barra de estado, barra superior y barra de pestañas claras que las demás pestañas, en lugar de oscurecerlas.
+Bar opacity	Opacidad de las barras
+How much of their color the see-through bars keep, in percent, from %1$s to %2$s. Lower lets more of the feed and its blur show. Leave it blank for %3$s, or %4$s over the blur.	Cuánto de su color conservan las barras transparentes, en porcentaje, de %1$s a %2$s. Un valor menor deja ver más el feed y su difuminado. Déjalo en blanco para usar %3$s, o %4$s sobre el difuminado.
+The bars keep %1$s percent of their color, or %2$s percent over the blur. Type a number to change it.	Las barras conservan el %1$s por ciento de su color, o el %2$s por ciento sobre el difuminado. Escribe un número para cambiarlo.
+The see-through bars keep %1$s percent of their color.	Las barras transparentes conservan el %1$s por ciento de su color.
+Tab bar width	Ancho de la barra de pestañas
+Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Porcentaje del ancho de la pantalla, de %1$s a %2$s. Los iconos crecen y se encogen con ella. Déjalo en blanco para usar %3$s.
+The rounded tab bar is %1$s percent of the screen wide.	La barra de pestañas redondeada ocupa el %1$s por ciento del ancho de la pantalla.
+Tab bar height	Alto de la barra de pestañas
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Porcentaje de su altura completa que conserva la barra de pestañas redondeada, de %1$s a %2$s, recortada por encima y por debajo de los iconos. Déjalo en blanco para usar %3$s.
+The rounded tab bar keeps %1$s percent of its height.	La barra de pestañas redondeada conserva el %1$s por ciento de su altura.
