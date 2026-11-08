@@ -182,7 +182,10 @@ if (-not $PatchedApk -or -not (Test-Path -LiteralPath $PatchedApk -PathType Leaf
     throw 'No patched APK. Pass -PatchedApk, or -FromDevice -Serial <serial>.'
 }
 $patched = Get-ApkManifestFacts -Apk $PatchedApk -Aapt2 $Aapt2
-if ($patched.package -ne 'com.facebook.katana' -or [string]::IsNullOrWhiteSpace($patched.versionName)) {
+# Clone install (#417) renames the package, by default to com.facebook.katana.hush, and verify-all
+# applies every patch, so a patched Facebook is the stock name or one under it.
+$facebookPackage = '^com\.facebook\.katana(\.[A-Za-z][A-Za-z0-9_]*)*$'
+if ($patched.package -notmatch $facebookPackage -or [string]::IsNullOrWhiteSpace($patched.versionName)) {
     throw "$PatchedApk is $($patched.package) $($patched.versionName), not a Facebook build."
 }
 
@@ -210,7 +213,7 @@ $cleanBase = Get-BaseApk -Apk $CleanApk -Destination (Join-Path $work 'clean-bas
 # Meta's signed base.apk.
 $raisedVersionCode = [string][int]::MaxValue
 $clean = Get-ApkManifestFacts -Apk $cleanBase -Aapt2 $Aapt2
-if ($clean.package -ne $patched.package -or $clean.versionName -ne $patched.versionName -or
+if ($clean.package -ne 'com.facebook.katana' -or $clean.versionName -ne $patched.versionName -or
         ($clean.versionCode -ne $patched.versionCode -and [string]$patched.versionCode -ne $raisedVersionCode)) {
     throw ("The clean APK is $($clean.package) $($clean.versionName) ($($clean.versionCode)) and the " +
         "patched one $($patched.package) $($patched.versionName) ($($patched.versionCode)); they have to be the same build.")

@@ -40,3 +40,21 @@ exported-added activity:app.morphe.extension.facebook.misc.OpenInFacebook
 # in place of Google's. Nothing is granted that Google's name didn't grant, to a different sender.
 permission-added app.revanced.android.c2dm.permission.RECEIVE
 permission-removed com.google.android.c2dm.permission.RECEIVE
+
+# Clone install (#417), opt-in, for phones whose preinstalled Facebook refuses a re-signed
+# com.facebook.katana. The copy goes on under its own package (com.facebook.katana.hush by default),
+# and Facebook's own permissions move with it: the patch declares each new name itself at the level
+# Facebook declared the old one, and every guard that named the old one names the new one. Two apps
+# with different keys can't both declare one permission name, so the old names have to go. What
+# the copy asks for is its own permissions under its own name, which grant nobody anything the
+# stock names didn't.
+permission-added com.facebook.katana.hush.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+permission-added com.facebook.katana.hush.permission.CREATE_SHORTCUT
+permission-added com.facebook.katana.hush.permission.CROSS_PROCESS_BROADCAST_MANAGER
+permission-added com.facebook.katana.hush.permission.RECEIVE_ADM_MESSAGE
+permission-added com.facebook.katana.hush.provider.ACCESS
+permission-removed com.facebook.katana.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+permission-removed com.facebook.katana.permission.CREATE_SHORTCUT
+permission-removed com.facebook.katana.permission.CROSS_PROCESS_BROADCAST_MANAGER
+permission-removed com.facebook.katana.permission.RECEIVE_ADM_MESSAGE
+permission-removed com.facebook.katana.provider.ACCESS
