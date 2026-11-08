@@ -373,6 +373,78 @@ public class TranslucentBarsTest {
         assertEquals("the feed stays under the bar", 1600, feed.getBottom());
     }
 
+    /**
+     * #412: Facebook keeps every tab's page in one holder, which stops at the tab bar, so it's
+     * stretched on Home and the Reels viewer inside it grows with it. Its reels keep their height
+     * and the next one showed under the pill. The holder stays stretched for the other tabs, and
+     * the viewer gets black over the part its reel doesn't fill, only while its reels page short.
+     */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void aListThatPagesInsideAStretchedPageGetsBlackUnderItsReel() {
+        Settings.TRANSLUCENT_BARS.save(false);
+        Settings.ROUNDED_TAB_BAR.save(true);
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        FrameLayout tabs = new FrameLayout(screen.activity);
+        FrameLayout reelsPage = new FrameLayout(screen.activity);
+        RecyclerView reels = listOf(screen, 3, 1440, false);
+        reelsPage.addView(reels, new FrameLayout.LayoutParams(720, FrameLayout.LayoutParams.MATCH_PARENT));
+        tabs.addView(reelsPage, new FrameLayout.LayoutParams(720, FrameLayout.LayoutParams.MATCH_PARENT));
+        FrameLayout holder = holding(screen, tabs);
+        screen.layOut();
+
+        screen.bars.update();
+        screen.layOut();
+        assertEquals("the tabs' holder runs under the bar", 0, holder.getPaddingBottom());
+        assertEquals("and the viewer with it", 1600, reels.getBottom());
+        assertTrue(statusLine(), statusLine().contains(TranslucentBars.STRETCHED + " 1"));
+
+        nextLook(screen);
+        TranslucentBars.Backdrop backdrop = screen.bars.backdrops.get(reels);
+        assertNotNull("black under the reel", backdrop);
+        assertNotNull("in the viewer's holder's overlay", backdrop.getCallback());
+        Rect black = new Rect();
+        assertTrue(backdrop.paints(black));
+        assertEquals("over the next reel, the gap the stretch took", new Rect(0, 1440, 720, 1600), black);
+        assertEquals("the holder stays stretched for the other tabs", 0, holder.getPaddingBottom());
+
+        nextLook(screen);
+        assertTrue("given once", statusLine().contains(TranslucentBars.BACKED + " 1"));
+
+        // Reels sized to the taller viewer leave nothing of the next one showing, so no black.
+        for (int i = 0; i < reels.getChildCount(); i++) {
+            reels.getChildAt(i).setLayoutParams(new FrameLayout.LayoutParams(720, 1600));
+        }
+        screen.layOut();
+        assertFalse("reels that fill the viewer", backdrop.paints(black));
+
+        Settings.ROUNDED_TAB_BAR.save(false);
+        screen.bars.update();
+        screen.layOut();
+        assertTrue(screen.bars.backdrops.isEmpty());
+        assertNull("out of the overlay", backdrop.getCallback());
+        assertEquals("the gap back", 160, holder.getPaddingBottom());
+    }
+
+    /** #412: a feed inside a stretched page scrolls rows shorter than itself, so it gets no black. */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void aFeedInsideAStretchedPageGetsNoBlack() {
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        FrameLayout tabs = new FrameLayout(screen.activity);
+        RecyclerView feed = listOf(screen, 4, 300, false);
+        tabs.addView(feed, new FrameLayout.LayoutParams(720, FrameLayout.LayoutParams.MATCH_PARENT));
+        holding(screen, tabs);
+        screen.layOut();
+
+        screen.bars.update();
+        screen.layOut();
+        nextLook(screen);
+        assertEquals("the feed runs under the bar", 1600, feed.getBottom());
+        assertTrue(screen.bars.backdrops.isEmpty());
+        assertFalse(statusLine(), statusLine().contains(TranslucentBars.BACKED));
+    }
+
     @Test
     public void aPageALevelUpIsStillUnderTheBar() {
         TranslucentBarsForTests screen = new TranslucentBarsForTests();

@@ -127,6 +127,8 @@ public final class TranslucentBars {
     static final int MAX_DEPTH = 12;
     /** How far below the view under the tab bar a page that stops at the bar can sit. Marketplace's is a few down. */
     static final int STRETCH_DEPTH = 8;
+    /** How far inside a stretched page a list that pages can sit. The Reels viewer is fourteen down from every tab's holder. */
+    static final int INSIDE_DEPTH = 24;
     /** How soon after a stretch Facebook putting the gap back counts as it wanting the gap. */
     static final long PUT_BACK_MS = 3000;
     /** How many put-backs in a row leave a page as Facebook has it. */
@@ -412,6 +414,28 @@ public final class TranslucentBars {
         }
     }
 
+    /**
+     * Each list in [view] that pages ({@link #pages}) once [taken] pixels are allowed for, into
+     * [found], searched down to {@link #INSIDE_DEPTH} through views whose bottom is [bottom] in the
+     * window: the lists a stretched page took with it. Facebook keeps every tab's page in one holder,
+     * so stretching it on Home stretched the Reels viewer too, and the next reel showed under the
+     * pill (#412). A list's own rows aren't searched. [origin] is scratch space.
+     */
+    static void pagingInside(View view, int bottom, int taken, int[] origin, int depth, List<View> found) {
+        if (view.getVisibility() != View.VISIBLE || view.getHeight() <= 0) return;
+        view.getLocationInWindow(origin);
+        if (Math.abs(origin[1] + view.getHeight() - bottom) > 1) return;
+        if (isList(view)) {
+            if (pages(view, taken)) found.add(view);
+            return;
+        }
+        if (depth >= INSIDE_DEPTH || !(view instanceof ViewGroup)) return;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            pagingInside(group.getChildAt(i), bottom, taken, origin, depth + 1, found);
+        }
+    }
+
     /** Whether [view] is a RecyclerView, the list every feed and the Reels viewer are, by its class name. */
     static boolean isList(View view) {
         for (Class<?> type = view.getClass(); type != null && type != View.class; type = type.getSuperclass()) {
@@ -509,18 +533,22 @@ public final class TranslucentBars {
     }
 
     /**
-     * Black in a paging list's holder, from the list's bottom down, drawn in the holder's overlay
-     * (#412). The list's place is read as it draws, so a gap Facebook changes is followed.
+     * Black in a paging list's holder, from [taken] pixels above the list's bottom down, drawn in the
+     * holder's overlay (#412). A list that keeps its gap takes none; one a stretched page took with
+     * it is blacked over the part its reels no longer fill, while they still page short of it. The
+     * list's place is read as it draws, so a gap Facebook changes is followed.
      */
     static final class Backdrop extends Drawable {
         private final WeakReference<View> list;
         private final WeakReference<ViewGroup> holder;
+        private final int taken;
         private final Paint paint = new Paint();
         private final Rect area = new Rect();
 
-        Backdrop(View list, ViewGroup holder) {
+        Backdrop(View list, ViewGroup holder, int taken) {
             this.list = new WeakReference<>(list);
             this.holder = new WeakReference<>(holder);
+            this.taken = taken;
             paint.setColor(BACKDROP_COLOUR);
         }
 
@@ -541,12 +569,16 @@ public final class TranslucentBars {
             if (holder != null) holder.getOverlay().remove(this);
         }
 
-        /** The part of the holder it paints: under the list, or nothing when the list has gone. */
+        /**
+         * The part of the holder it paints: under the list's reel, or nothing when the list has gone
+         * or its reels fill it again.
+         */
         boolean paints(Rect into) {
             View list = this.list.get();
             ViewGroup holder = this.holder.get();
             if (list == null || holder == null || list.getParent() != holder || list.getVisibility() != View.VISIBLE) return false;
-            into.set(0, list.getBottom(), holder.getWidth(), holder.getHeight());
+            if (taken > 0 && !pages(list, taken)) return false;
+            into.set(0, list.getBottom() - taken, holder.getWidth(), holder.getHeight());
             return !into.isEmpty();
         }
 
@@ -787,6 +819,33 @@ public final class TranslucentBars {
             stopsAt(page, edge, height / 2, rows, origin, 0, found);
             for (int i = 0; i < found.size(); i++) reach(found.get(i), now);
             found.clear();
+            backPagingInside();
+        }
+
+        /**
+         * Black under each list that pages inside a stretched page, over the part its reels don't
+         * fill (#412). A tab opened after the stretch, Reels most of all, is found on the next look.
+         */
+        private void backPagingInside() {
+            for (Map.Entry<View, Stretch> entry : stretched.entrySet()) {
+                View page = entry.getKey();
+                Stretch stretch = entry.getValue();
+                int taken = stretch.padding + stretch.margin;
+                if (stretch.leftAlone || taken <= 0 || isList(page)) continue;
+                page.getLocationInWindow(origin);
+                pagingInside(page, origin[1] + page.getHeight(), taken, origin, 0, found);
+                for (int i = 0; i < found.size(); i++) {
+                    View list = found.get(i);
+                    Backdrop backdrop = backdrops.get(list);
+                    if (backdrop != null) {
+                        backdrop.fit();
+                    } else if (list.getParent() instanceof ViewGroup) {
+                        addBackdrop(list, (ViewGroup) list.getParent(), taken);
+                        Logger.printDebug(() -> "See-through bars: a paging list inside a stretched page, black over its last " + taken + " px");
+                    }
+                }
+                found.clear();
+            }
         }
 
         /** Stretches [content], one page that stops at the tab bar, unless it pages or is left alone. */
@@ -830,14 +889,18 @@ public final class TranslucentBars {
         private void back(View list) {
             ViewParent parent = list.getParent();
             if (!(parent instanceof ViewGroup)) return;
-            ViewGroup holder = (ViewGroup) parent;
-            Backdrop backdrop = new Backdrop(list, holder);
+            addBackdrop(list, (ViewGroup) parent, 0);
+            int gap = gapBelow(list);
+            Logger.printDebug(() -> "See-through bars: a paging list keeps its " + gap + " px gap, black under the tab bar");
+        }
+
+        /** [list]'s black, in [holder]'s overlay, over its last [taken] pixels and down ({@link Backdrop}). */
+        private void addBackdrop(View list, ViewGroup holder, int taken) {
+            Backdrop backdrop = new Backdrop(list, holder, taken);
             backdrops.put(list, backdrop);
             backdrop.fit();
             holder.getOverlay().add(backdrop);
             HookStatus.counted(FAMILY, BACKED);
-            int gap = gapBelow(list);
-            Logger.printDebug(() -> "See-through bars: a paging list keeps its " + gap + " px gap, black under the tab bar");
         }
 
         /**
