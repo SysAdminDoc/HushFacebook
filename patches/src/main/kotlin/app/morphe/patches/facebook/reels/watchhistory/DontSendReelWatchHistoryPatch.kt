@@ -8,6 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patches.facebook.misc.analytics.analyticsEventsPatch
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -41,12 +42,13 @@ private fun BytecodePatchContext.holdSender(literal: String, isSender: (Method) 
 val dontSendReelWatchHistoryPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Don't send reel watch history",
-    description = "Stops sending Facebook the list of reels you've watched, and where you stopped in a video and how " +
-        "long you watched it, so it learns less about what you watch. Videos you've already seen may come back. " +
-        "Starts off. Turn it on in Hushfacebook settings > Reels and Watch.",
+    description = "Stops sending Facebook the reels and videos you've watched, where you stopped in a video and how " +
+        "long you watched it, so they stay out of Videos you've watched in your activity log and Facebook learns less " +
+        "about what you watch. Videos you've already seen may come back. Starts off. Turn it on in Hushfacebook " +
+        "settings > Reels and Watch.",
 ) {
     category("Privacy")
-    dependsOn(settingsPatch)
+    dependsOn(settingsPatch, analyticsEventsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {
@@ -63,7 +65,9 @@ val dontSendReelWatchHistoryPatch = bytecodePatch(
         }.withholdSendAt(index)
 
         // #408: the position mutation and the view-time logger record the videos watched outside
-        // the Reels viewer. See WatchedVideoSends.kt.
+        // the Reels viewer. See WatchedVideoSends.kt. "Videos you've watched" in the activity log is
+        // filled from the players' media_playback_compound analytics events instead, which
+        // analyticsEventsPatch asks the extension about.
         holdSender(POSITION_MUTATION, ::positionSend, HOLD_POSITION)
         holdSender(VIEW_TIME_POSITION, ::viewTimeLog, HOLD_VIEW_TIME)
         enableStatus("reelWatchHistory")

@@ -7,6 +7,11 @@ package app.morphe.patches.facebook.search.history
 import app.morphe.ExtensionDex
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.comments.summaries.descriptor
+import app.morphe.patches.facebook.misc.analytics.ANALYTICS_EVENTS
+import app.morphe.patches.facebook.misc.analytics.KEEP_EVENT_OUT
+import app.morphe.patches.facebook.misc.analytics.PRIVACY_CONTEXT
+import app.morphe.patches.facebook.misc.analytics.keepEventsOut
+import app.morphe.patches.facebook.misc.analytics.notLoggedEvent
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -154,10 +159,10 @@ class DontSaveSearchHistoryShapesTest {
         val method = factory(readPrivacy, loadNotLogged(1), answer())
         assertEquals("$logger->A04:Lfixture/NotLogged;", notLoggedEvent(method).toString())
         val mutable = MutableMethod(method)
-        mutable.keepVisitsOut(notLoggedEvent(method)!!)
+        mutable.keepEventsOut(notLoggedEvent(method)!!)
         val patched = mutable.implementation!!.instructions.toList()
         assertEquals(3 + 6, patched.size)
-        assertEquals(KEEP_VISIT_OUT, (patched[0] as ReferenceInstruction).reference.toString())
+        assertEquals(KEEP_EVENT_OUT, (patched[0] as ReferenceInstruction).reference.toString())
         assertEquals("the event's name, the last register", 4, (patched[0] as RegisterRangeInstruction).startRegister)
         assertEquals("$logger->A04:Lfixture/NotLogged;", (patched[3] as ReferenceInstruction).reference.toString())
         assertEquals("Facebook's code follows as it was", listOf(Opcode.IGET_OBJECT, Opcode.SGET_OBJECT, Opcode.RETURN_OBJECT),
@@ -182,8 +187,11 @@ class DontSaveSearchHistoryShapesTest {
 
     @Test
     fun `the extension takes the event's name`() {
-        val hook = ExtensionDex.classDef(SEARCH_HISTORY).methods.singleOrNull { it.descriptor() == KEEP_VISIT_OUT }
-        assertTrue("$KEEP_VISIT_OUT is not in the extension", hook != null)
-        assertTrue("$KEEP_VISIT_OUT is static", AccessFlags.STATIC.isSet(hook!!.accessFlags))
+        for ((owner, descriptor) in listOf(ANALYTICS_EVENTS to KEEP_EVENT_OUT, SEARCH_HISTORY to KEEP_VISIT_OUT)) {
+            val hook = ExtensionDex.classDef(owner).methods.singleOrNull { it.descriptor() == descriptor }
+            assertTrue("$descriptor is not in the extension", hook != null)
+            assertTrue("$descriptor is static", AccessFlags.STATIC.isSet(hook!!.accessFlags))
+            assertTrue("$descriptor is public", AccessFlags.PUBLIC.isSet(hook.accessFlags))
+        }
     }
 }

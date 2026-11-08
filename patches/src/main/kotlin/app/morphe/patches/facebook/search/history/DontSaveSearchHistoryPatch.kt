@@ -14,6 +14,7 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.methodsHolding
+import app.morphe.patches.facebook.misc.analytics.analyticsEventsPatch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -22,8 +23,6 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
-import app.morphe.util.classDefForEachReferencing
-import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -44,10 +43,9 @@ private const val STRING = "Ljava/lang/String;"
 internal const val SEARCH_HISTORY = "$EXTENSION_PACKAGE/search/SearchHistory;"
 internal const val SKIP_SAVE = "$SEARCH_HISTORY->skipSave(Z)Z"
 internal const val KEEP_RECENT = "$SEARCH_HISTORY->keepRecent(Ljava/util/Map;Ljava/lang/Object;Ljava/lang/Object;)V"
-internal const val KEEP_VISIT_OUT = "$SEARCH_HISTORY->keepVisitOut(Ljava/lang/String;)Z"
 
-/** What an analytics event factory reads off the event's details and hands the event it makes. */
-internal const val PRIVACY_CONTEXT = "Lcom/facebook/logginginfra/falco/PrivacyContext;"
+/** What the extension's analytics event question asks Don't save search history about each event. */
+internal const val KEEP_VISIT_OUT = "$SEARCH_HISTORY->keepVisitOut(Ljava/lang/String;)Z"
 
 /** The analytics event a profile sends as it opens, which Facebook turns into "You visited". */
 internal const val PROFILE_VISIT = "profile_engagement"
@@ -82,11 +80,9 @@ internal const val MAP_LOAD_REACH = 4
  * sends as it opens (#221, 584 on an emulator, 2026-10-23: dropping that one event kept the visit
  * out, dropping every search event didn't). The event carries no sign of where the profile was
  * opened from, so it's kept out wherever it's sent while the switch is on. Every analytics event is
- * made by one private factory of the logger (584 `LX/3tF;->A00(LX/1S4;String)LX/3UE;`), found by
- * its shape: it reads the event's [PRIVACY_CONTEXT] and answers its own class's "not logged" event
- * when the event isn't sampled. First thing there, the extension is handed the event's name, and a
- * true sends that "not logged" event back, which the profile's code already handles. A build
- * without that factory still keeps searches out, and the patch log says a visit may still show.
+ * made by one factory, which [analyticsEventsPatch] asks the extension about first thing, and a
+ * true sends Facebook's own "not logged" event back, which the profile's code already handles. A
+ * build without that factory still keeps searches out, and the patch log says a visit may still show.
  *
  * In the default selection with its switch off, so nothing changes until it's turned on.
  */
@@ -99,7 +95,7 @@ val dontSaveSearchHistoryPatch = bytecodePatch(
         "you delete them. Starts off. Turn it on in Hushfacebook settings > Search.",
 ) {
     category("Privacy")
-    dependsOn(settingsPatch, facebookExtensionPatch)
+    dependsOn(settingsPatch, facebookExtensionPatch, analyticsEventsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {
@@ -110,12 +106,6 @@ val dontSaveSearchHistoryPatch = bytecodePatch(
         val save = recentSearchSave(holders)
         val skip = skipRegister(save)
         val recentPut = recentListPut(save)
-        val factories = mutableListOf<Pair<Method, FieldReference>>()
-        // An event factory reads the privacy context.
-        classDefForEachReferencing(types = listOf(PRIVACY_CONTEXT)) { classDef ->
-            if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
-            for (candidate in classDef.methods) notLoggedEvent(candidate)?.let { factories += candidate to it }
-        }
 
         val method = mutableClassDefBy(save.definingClass).methods.single { it.descriptor() == save.descriptor() }
         // The put first: asking first moves every later instruction down two.
@@ -128,17 +118,6 @@ val dontSaveSearchHistoryPatch = bytecodePatch(
             )
         }
         method.askFirst(skip)
-        if (factories.isEmpty()) {
-            patchLog.warning(
-                "$PATCH: no analytics event factory reads a $PRIVACY_CONTEXT and answers a \"not logged\" event of its " +
-                    "own class, so a page opened from a search can still show in your history as a visit. Searches " +
-                    "are still kept out.",
-            )
-        }
-        for ((factory, notLogged) in factories) {
-            mutableClassDefBy(factory.definingClass).methods.single { it.descriptor() == factory.descriptor() }
-                .keepVisitsOut(notLogged)
-        }
         enableStatus("searchHistory")
     }
 }
@@ -254,54 +233,6 @@ internal fun MutableMethod.askFirst(register: Int) {
         """
             invoke-static/range { v$register .. v$register }, $SKIP_SAVE
             move-result v$register
-        """,
-    )
-}
-
-/**
- * The "not logged" event [method] answers if it's an analytics event factory, else null. A factory
- * is a private instance method taking the event's details and its name, a String, and answering an
- * event. It reads a [PRIVACY_CONTEXT] field and answers one static of its own class, loaded right
- * before the return, when the event isn't sampled. One such answer, or it isn't one.
- */
-internal fun notLoggedEvent(method: Method): FieldReference? {
-    if (AccessFlags.STATIC.isSet(method.accessFlags) || !AccessFlags.PRIVATE.isSet(method.accessFlags)) return null
-    val types = method.parameterTypes.map(CharSequence::toString)
-    if (types.size != 2 || !types[0].startsWith("L") || types[1] != STRING || !method.returnType.startsWith("L")) return null
-    val instructions = method.implementation?.instructions?.toList() ?: return null
-    val readsPrivacy = instructions.any {
-        it.opcode == Opcode.IGET_OBJECT && ((it as ReferenceInstruction).reference as? FieldReference)?.type == PRIVACY_CONTEXT
-    }
-    if (!readsPrivacy) return null
-    val answers = instructions.indices.mapNotNull { index ->
-        val load = instructions[index]
-        val answer = instructions.getOrNull(index + 1)
-        if (load.opcode != Opcode.SGET_OBJECT || answer?.opcode != Opcode.RETURN_OBJECT) return@mapNotNull null
-        if ((load as OneRegisterInstruction).registerA != (answer as OneRegisterInstruction).registerA) return@mapNotNull null
-        ((load as ReferenceInstruction).reference as FieldReference).takeIf { it.definingClass == method.definingClass }
-    }
-    return answers.singleOrNull()
-}
-
-/**
- * First thing in an analytics event factory: hand the extension the event's name, the last
- * register, and on a true answer [notLogged], the factory's own "not logged" event. v0 is free
- * there, below the three registers `this` and the two parameters take.
- */
-internal fun MutableMethod.keepVisitsOut(notLogged: FieldReference) {
-    val registers = implementation?.registerCount ?: refuse("${descriptor()} has no code")
-    if (registers < 4) refuse("${descriptor()} has no register free below its parameters")
-    val name = registers - 1
-    addInstructions(
-        0,
-        """
-            invoke-static/range { v$name .. v$name }, $KEEP_VISIT_OUT
-            move-result v0
-            if-eqz v0, :facebook
-            sget-object v0, $notLogged
-            return-object v0
-            :facebook
-            nop
         """,
     )
 }

@@ -30,7 +30,7 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * that entry comes from somewhere else: Facebook builds it from the {@value #PROFILE_VISIT}
  * analytics event the profile sends as it opens (#221). A profile opened from a story sends
  * {@value #STORY_PROFILE_VISIT} with the story's owner first. Every analytics event is made by one
- * factory, and the patch asks {@link #keepVisitOut} first thing there; while the switch is on, those
+ * factory, and {@code AnalyticsEvents} asks {@link #keepVisitOut} first thing there; while the switch is on, those
  * two events come back as Facebook's own "not logged" event, so they're never sent. The story one
  * is kept out while View stories anonymously is on as well.
  *

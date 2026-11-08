@@ -182,6 +182,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/AnalyticsEvents.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/analytics/**"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook from Facebook 585 (#408): one hook first thing in the analytics event factory asks the extension about each event's name, which keeps reel playback events out of Videos you've watched and search events out of the search history, each only while its own switch is on."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostXButton.kt"
       ],
       "origin": "original",

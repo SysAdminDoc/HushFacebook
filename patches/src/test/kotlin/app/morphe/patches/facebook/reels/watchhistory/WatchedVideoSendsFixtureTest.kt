@@ -103,4 +103,23 @@ class WatchedVideoSendsFixtureTest {
         }
         assertEquals("a declared build has no fixture", versions, checked)
     }
+
+    /**
+     * "Videos you've watched" is filled from the playback events the players log, and the extension
+     * knows them by how their names start. Each declared build still loads both everyday forms.
+     */
+    @Test
+    fun `each declared build logs its playback events under the names the extension holds`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                for (event in listOf("media_playback_compound", "media_playback_compound_fast")) {
+                    assertTrue("${bundle.name}: nothing loads \"$event\"", methods(bundle, event) { holdsString(it, event) }.isNotEmpty())
+                }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
 }

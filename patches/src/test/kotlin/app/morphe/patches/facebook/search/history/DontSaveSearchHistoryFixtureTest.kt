@@ -8,6 +8,10 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.misc.analytics.KEEP_EVENT_OUT
+import app.morphe.patches.facebook.misc.analytics.PRIVACY_CONTEXT
+import app.morphe.patches.facebook.misc.analytics.keepEventsOut
+import app.morphe.patches.facebook.misc.analytics.notLoggedEvent
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
@@ -149,11 +153,11 @@ class DontSaveSearchHistoryFixtureTest {
         val context = PatchContexts.of(listOf(owner))
         val method = context.mutableClassDefBy(owner.type).methods.single { it.descriptor() == factory.descriptor() }
         val original = method.implementation!!.instructions.toList()
-        method.keepVisitsOut(notLogged)
+        method.keepEventsOut(notLogged)
         val patched = method.implementation!!.instructions.toList()
         assertEquals("$where gains six instructions", original.size + 6, patched.size)
         val call = patched[0] as RegisterRangeInstruction
-        assertEquals("$where: the extension is asked first", KEEP_VISIT_OUT, (patched[0] as ReferenceInstruction).reference.toString())
+        assertEquals("$where: the extension is asked first", KEEP_EVENT_OUT, (patched[0] as ReferenceInstruction).reference.toString())
         assertEquals("$where: with the event's name, the last parameter", method.implementation!!.registerCount - 1, call.startRegister)
         assertEquals("$where: and nothing else", 1, call.registerCount)
         assertEquals(Opcode.MOVE_RESULT, patched[1].opcode)
