@@ -24,10 +24,13 @@ import androidx.annotation.Nullable;
 
 import java.lang.reflect.Method;
 import java.text.DateFormat;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -55,7 +58,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * A vehicle gets no such line: Facebook already writes "Listed 3 weeks ago" under its price. Once
  * the date sits under the price, the place line React builds after it goes back to Facebook's own
  * text, so the date shows once. A title two listings dated differently share gets no line under its
- * price, and its place line keeps the date. A struck-through old price drawn beside the price gets an empty line
+ * price, and its place line keeps the date. So does a title built while a listing page's request
+ * waits for its answer, unless that request names the listing the title was seen with: Facebook
+ * draws a page from what it kept before the answer comes, and the title may be another listing's
+ * of the same name. A struck-through old price drawn beside the price gets an empty line
  * of the same height, so the row Facebook centres them in keeps the two prices level.
  *
  * <p>Read from 585's MarketplacePDPSurfaceQuery on the S22, 2026-10-31:
@@ -107,6 +113,11 @@ public final class MarketplaceListingAge {
      */
     private static int struckLeft;
     private static int struckSize;
+    /** The variables of listing pages' requests whose answers aren't read yet, oldest first. Guarded by PRICED. */
+    private static final ArrayDeque<Asked> ASKED = new ArrayDeque<>();
+    static final int MAX_ASKED = 4;
+    /** How long a request waits for its answer here before it's taken as one that never came. */
+    static final long ASKED_MILLIS = 15_000;
     /** Each span class asked about, and whether it draws a line on its text ({@link #drawsLine}). */
     private static final Map<Class<?>, Boolean> DRAWS_LINE = new ConcurrentHashMap<>();
     /** What fills the old price's empty line: a space no layout drops. */
@@ -156,6 +167,8 @@ public final class MarketplaceListingAge {
         private final Map<String, String> titles = new HashMap<>();
         /** The ids of listings that are vehicles, which get no line under their price. */
         private final Set<String> vehicles = new HashSet<>();
+        /** Whether this answer has stopped its request from waiting ({@link #answerCame}). */
+        private boolean answered;
 
         Answer(long now) {
             this.now = now;
@@ -210,6 +223,12 @@ public final class MarketplaceListingAge {
         @Nullable
         String end() {
             reading = false;
+            if (!answered) {
+                answered = true;
+                Set<String> ids = new HashSet<>(times.keySet());
+                ids.addAll(titles.keySet());
+                answerCame(ids);
+            }
             String rest = waiting.toString();
             waiting.setLength(0);
             return rest.isEmpty() ? null : rest;
@@ -241,9 +260,11 @@ public final class MarketplaceListingAge {
                 if (title != null) titles.put(id, title);
                 if (category == null) category = string(text, listing.member(text, CATEGORY));
             }
+            Set<String> told = new HashSet<>();
             for (Map.Entry<String, String> price : prices.entrySet()) {
                 String title = titles.get(price.getKey());
                 if (title == null) continue;
+                told.add(price.getKey());
                 if (vehicles.contains(price.getKey())) {
                     unpriced(title);
                     continue;
@@ -251,6 +272,12 @@ public final class MarketplaceListingAge {
                 Long seconds = times.get(price.getKey());
                 String label = seconds == null ? null : label(seconds, now);
                 if (label != null) priced(title, price.getKey(), price.getValue(), label);
+            }
+            // React draws this payload once it's handed on, so its listing's title is no longer
+            // one built before the answer.
+            if (!answered && !told.isEmpty()) {
+                answered = true;
+                answerCame(told);
             }
             int untimed = 0, unwritten = 0, dated = 0;
             for (MarketplaceSearchAds.Value listing : listings) {
@@ -429,6 +456,81 @@ public final class MarketplaceListingAge {
         }
     }
 
+    /** A listing page's request that waits for its answer: its variables, and when it went out. */
+    private static final class Asked {
+        final String variables;
+        final long at;
+
+        Asked(String variables, long at) {
+            this.variables = variables;
+            this.at = at;
+        }
+    }
+
+    /**
+     * A listing page asked Facebook for its listing at [nowMillis], with [variables], the request's
+     * variables as text (#303). Until its answer is read, a title built may be from a page Facebook
+     * draws from what it kept, and a listing of the same name may have answered lately.
+     */
+    static void asked(String variables, long nowMillis) {
+        synchronized (PRICED) {
+            ASKED.addLast(new Asked(variables, nowMillis));
+            while (ASKED.size() > MAX_ASKED) ASKED.removeFirst();
+        }
+    }
+
+    /**
+     * A listing page's answer naming the listings [ids] was read: the request that names one of them
+     * waits no more, or, when none does, the oldest.
+     */
+    static void answerCame(Collection<String> ids) {
+        synchronized (PRICED) {
+            for (Iterator<Asked> it = ASKED.iterator(); it.hasNext(); ) {
+                Asked asked = it.next();
+                for (String id : ids) {
+                    if (names(asked.variables, id)) {
+                        it.remove();
+                        return;
+                    }
+                }
+            }
+            ASKED.pollFirst();
+        }
+    }
+
+    /**
+     * Whether a title built at [nowMillis] can be the listing [id]'s: no listing page's request
+     * waits for its answer, or one that waits names [id]. A request waiting past {@link #ASKED_MILLIS}
+     * is dropped. Guarded by PRICED.
+     */
+    private static boolean mayBe(String id, long nowMillis) {
+        boolean waiting = false;
+        for (Iterator<Asked> it = ASKED.iterator(); it.hasNext(); ) {
+            Asked asked = it.next();
+            if (nowMillis < asked.at || nowMillis - asked.at >= ASKED_MILLIS) {
+                it.remove();
+            } else if (names(asked.variables, id)) {
+                return true;
+            } else {
+                waiting = true;
+            }
+        }
+        return !waiting;
+    }
+
+    /** Whether [variables] hold [id] as a number of its own, not part of a longer one. */
+    static boolean names(String variables, String id) {
+        if (id.isEmpty()) return false;
+        for (int at = variables.indexOf(id); at >= 0; at = variables.indexOf(id, at + 1)) {
+            int end = at + id.length();
+            if ((at == 0 || !Character.isDigit(variables.charAt(at - 1)))
+                    && (end == variables.length() || !Character.isDigit(variables.charAt(end)))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Each text React builds, from its text builder's returns (#303). Facebook's JavaScript writes a
      * listing's title, then its price right under it. When a listing whose page answered lately had
@@ -450,8 +552,12 @@ public final class MarketplaceListingAge {
             synchronized (PRICED) {
                 Priced named = shown == null ? null : PRICED.get(shown);
                 if (named != null) {
-                    titled = named.label == null ? null : named;
+                    boolean waits = named.label != null && !mayBe(named.id, System.currentTimeMillis());
+                    if (waits) Logger.printDebug(() -> "Listing date: a title came before its page's answer, so its price waits");
+                    titled = named.label == null || waits ? null : named;
                     since = 0;
+                    // No date goes under this page's price, so its place line keeps the one it has.
+                    if (titled == null) PLACED.clear();
                     return text;
                 }
                 if (struckLeft > 0 && shown != null) {
@@ -644,6 +750,7 @@ public final class MarketplaceListingAge {
             PLACED.clear();
             struckLeft = 0;
             struckSize = 0;
+            ASKED.clear();
         }
     }
 

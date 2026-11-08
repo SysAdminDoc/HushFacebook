@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.ads;
 import androidx.annotation.Nullable;
 
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -225,6 +226,9 @@ public final class MarketplaceAdFilter {
                 }
             } else if (listingQuery(query)) {
                 MarketplaceFilterButton.listingSeen();
+                if (MarketplaceListingAge.listingPage(RELAY + query) && listingDate()) {
+                    MarketplaceListingAge.asked(variablesText(body), System.currentTimeMillis());
+                }
             }
             Rewrite rewrite = skipAds(body, on);
             if (rewrite.body != body) FeedFilterCounters.removed(ROUTE, 1, SKIPPED);
@@ -553,6 +557,14 @@ public final class MarketplaceAdFilter {
             edited.replace(decoded.from[member.valueStart], decoded.endOf(member.valueEnd), "true");
         }
         return new Rewrite(edited.toString(), "asked to skip its ads (" + seen + ", now true).");
+    }
+
+    /** [body]'s variables percent-decoded, one char per byte, or "" when it has none that read. */
+    static String variablesText(String body) {
+        if (body.length() > MAX_BODY_CHARS) return "";
+        int[] value = variablesParameter(body);
+        Decoded decoded = value == null ? null : Decoded.of(body, value[0], value[1]);
+        return decoded == null ? "" : new String(decoded.bytes, 0, decoded.length, StandardCharsets.ISO_8859_1);
     }
 
     /**
