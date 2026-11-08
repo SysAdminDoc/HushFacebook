@@ -272,6 +272,7 @@ public final class SettingsBackup {
             Settings.SHARED_REELS_ALONE,
             Settings.WATCH_AGAIN_IN_PLACE,
             Settings.SAVED_VIDEOS_IN_PLAYER,
+            Settings.SKIP_STILL_WATCHING,
             Settings.PLAY_FEED_REELS_WHOLE,
             Settings.DONT_SEND_REEL_WATCH_HISTORY,
             Settings.NEWEST_REELS_FIRST,

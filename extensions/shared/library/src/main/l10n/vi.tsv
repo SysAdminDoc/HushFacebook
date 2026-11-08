@@ -1946,6 +1946,10 @@ Watch again at the end of a feed video plays it again right there, instead of op
 Open saved videos in the video player	Mở video đã lưu trong trình phát video
 # context: summary of that switch; Saved is Facebook's own list of things you saved, so use Facebook's name for it in your language if you know it
 A video you tap in Saved plays in the video player instead of Reels, where the next swipe is a suggested reel.	Video bạn nhấn trong mục Đã lưu sẽ phát trong trình phát video thay vì Reels, nơi lần vuốt tiếp theo là một thước phim được đề xuất.
+# context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
+Skip "Are you still watching?"	Bỏ qua "Bạn vẫn đang xem chứ?"
+# context: summary of that switch; reels and videos go on to the next one by themselves
+Reels and videos keep going to the next one without pausing to ask if you're still watching.	Reels và video tiếp tục chuyển sang cái tiếp theo mà không dừng lại để hỏi bạn có còn đang xem không.
 Hide the new comments pop-up	Ẩn bong bóng bình luận mới
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	Bong bóng "bình luận mới" không còn bật lên khi bạn đọc bình luận. Bình luận mới vẫn hiện trong danh sách.

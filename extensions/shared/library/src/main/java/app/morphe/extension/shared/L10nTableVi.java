@@ -18,7 +18,7 @@ final class L10nTableVi {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(3486);
+        Map<String, String> table = new HashMap<>(3490);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -2410,6 +2410,8 @@ final class L10nTableVi {
                 "Reels v\u00e0 c\u00e1c n\u00fat c\u1ee7a n\u00f3 hi\u1ec7n \u0111en tr\u1eafng, gi\u00fap b\u1ea1n d\u1ec5 d\u1eebng xem h\u01a1n. B\u1ea3ng tin, tin, \u1ea3nh v\u00e0 \u0111o\u1ea1n chat v\u1eabn gi\u1eef m\u00e0u. B\u1eaft \u0111\u1ea7u t\u1eeb reel ti\u1ebfp theo, v\u00e0 Reels t\u1ed1n pin h\u01a1n m\u1ed9t ch\u00fat.");
         table.put("Reels and videos go to the app below as a facebook.com link. Hold the reel Download button to copy the link instead. Stories still save to this phone.",
                 "Reel v\u00e0 video \u0111\u01b0\u1ee3c g\u1eedi \u0111\u1ebfn \u1ee9ng d\u1ee5ng b\u00ean d\u01b0\u1edbi d\u01b0\u1edbi d\u1ea1ng li\u00ean k\u1ebft facebook.com. Nh\u1ea5n gi\u1eef n\u00fat T\u1ea3i xu\u1ed1ng tr\u00ean reel \u0111\u1ec3 sao ch\u00e9p li\u00ean k\u1ebft thay v\u00e0o \u0111\u00f3. Tin v\u1eabn \u0111\u01b0\u1ee3c l\u01b0u v\u00e0o \u0111i\u1ec7n tho\u1ea1i n\u00e0y.");
+        table.put("Reels and videos keep going to the next one without pausing to ask if you're still watching.",
+                "Reels v\u00e0 video ti\u1ebfp t\u1ee5c chuy\u1ec3n sang c\u00e1i ti\u1ebfp theo m\u00e0 kh\u00f4ng d\u1eebng l\u1ea1i \u0111\u1ec3 h\u1ecfi b\u1ea1n c\u00f3 c\u00f2n \u0111ang xem kh\u00f4ng.");
         table.put("Reels and videos play with the sound they were made with, not a version Facebook dubbed into your language with Meta AI. Off by default, since it hasn't been tried on a real account yet.",
                 "Reel v\u00e0 video ph\u00e1t v\u1edbi \u00e2m thanh g\u1ed1c, kh\u00f4ng ph\u1ea3i b\u1ea3n Facebook l\u1ed3ng ti\u1ebfng sang ng\u00f4n ng\u1eef c\u1ee7a b\u1ea1n b\u1eb1ng Meta AI. M\u1eb7c \u0111\u1ecbnh t\u1eaft v\u00ec ch\u01b0a \u0111\u01b0\u1ee3c th\u1eed tr\u00ean t\u00e0i kho\u1ea3n th\u1eadt.");
         table.put("Reels and videos will save to this phone when you tap Download.",
@@ -2508,11 +2510,11 @@ final class L10nTableVi {
                 "Th\u1eed l\u1ea1i");
         table.put("Return to regular Facebook",
                 "Quay l\u1ea1i Facebook th\u00f4ng th\u01b0\u1eddng");
-        table.put("Returning to Facebook within ten minutes, or switching back to Home, keeps your place. Pull to refresh still works.",
-                "Khi quay l\u1ea1i Facebook trong v\u00f2ng m\u01b0\u1eddi ph\u00fat, ho\u1eb7c chuy\u1ec3n v\u1ec1 Trang ch\u1ee7, b\u1ea1n v\u1eabn \u1edf \u0111\u00fang ch\u1ed7 c\u0169. K\u00e9o \u0111\u1ec3 l\u00e0m m\u1edbi v\u1eabn ho\u1ea1t \u0111\u1ed9ng.");
     }
 
     private static void fill20(Map<String, String> table) {
+        table.put("Returning to Facebook within ten minutes, or switching back to Home, keeps your place. Pull to refresh still works.",
+                "Khi quay l\u1ea1i Facebook trong v\u00f2ng m\u01b0\u1eddi ph\u00fat, ho\u1eb7c chuy\u1ec3n v\u1ec1 Trang ch\u1ee7, b\u1ea1n v\u1eabn \u1edf \u0111\u00fang ch\u1ed7 c\u0169. K\u00e9o \u0111\u1ec3 l\u00e0m m\u1edbi v\u1eabn ho\u1ea1t \u0111\u1ed9ng.");
         table.put("Round picture size",
                 "K\u00edch th\u01b0\u1edbc \u1ea3nh tr\u00f2n");
         table.put("Round pictures are %1$s dp wide.",
@@ -2631,11 +2633,11 @@ final class L10nTableVi {
                 "T\u00ecm ki\u1ebfm kh\u00f4ng c\u00f2n hi\u1ec7n c\u00e2u tr\u1ea3 l\u1eddi c\u1ee7a Meta AI hay l\u1eddi nh\u1eafc H\u1ecfi Meta AI, v\u00e0 kh\u00f4ng g\u1eedi n\u1ed9i dung t\u00ecm ki\u1ebfm cho Meta AI. K\u1ebft qu\u1ea3 v\u1ec1 ng\u01b0\u1eddi, nh\u00f3m, trang v\u00e0 b\u00e0i vi\u1ebft v\u1eabn gi\u1eef nguy\u00ean.");
         table.put("Search photo",
                 "T\u00ecm b\u1eb1ng \u1ea3nh");
-        table.put("Search photo in post menus",
-                "T\u00ecm b\u1eb1ng \u1ea3nh trong menu b\u00e0i vi\u1ebft");
     }
 
     private static void fill21(Map<String, String> table) {
+        table.put("Search photo in post menus",
+                "T\u00ecm b\u1eb1ng \u1ea3nh trong menu b\u00e0i vi\u1ebft");
         table.put("Search photo with",
                 "T\u00ecm b\u1eb1ng \u1ea3nh v\u1edbi");
         table.put("Search settings",
@@ -2754,11 +2756,11 @@ final class L10nTableVi {
                 "Hi\u1ec7n b\u1ea3n g\u1ed1c");
         table.put("Show settings by category",
                 "Hi\u1ec7n c\u00e0i \u0111\u1eb7t theo danh m\u1ee5c");
-        table.put("Show the post date as",
-                "Hi\u1ec7n ng\u00e0y \u0111\u0103ng d\u1ea1ng");
     }
 
     private static void fill22(Map<String, String> table) {
+        table.put("Show the post date as",
+                "Hi\u1ec7n ng\u00e0y \u0111\u0103ng d\u1ea1ng");
         table.put("Show the post date on reels",
                 "Hi\u1ec7n ng\u00e0y \u0111\u0103ng tr\u00ean reel");
         table.put("Show translation",
@@ -2797,6 +2799,8 @@ final class L10nTableVi {
                 "Hi\u1ec7n emoji c\u1ee7a \u0111i\u1ec7n tho\u1ea1i thay cho emoji c\u1ee7a Facebook. C\u1ea3m x\u00fac v\u00e0 nh\u00e3n d\u00e1n kh\u00f4ng \u0111\u1ed5i. Kh\u1edfi \u0111\u1ed9ng l\u1ea1i Facebook \u0111\u1ec3 th\u1ea5y thay \u0111\u1ed5i.");
         table.put("Silent parts play in this video",
                 "\u0110o\u1ea1n im l\u1eb7ng \u0111\u01b0\u1ee3c ph\u00e1t trong video n\u00e0y");
+        table.put("Skip \"Are you still watching?\"",
+                "B\u1ecf qua \"B\u1ea1n v\u1eabn \u0111ang xem ch\u1ee9?\"");
         table.put("Skip buttons on feed videos",
                 "N\u00fat tua tr\u00ean video b\u1ea3ng tin");
         table.put("Skip feed preloading",
@@ -2875,13 +2879,13 @@ final class L10nTableVi {
                 "N\u00fat ph\u00e1t tin");
         table.put("Story position",
                 "V\u1ecb tr\u00ed trong tin");
+    }
+
+    private static void fill23(Map<String, String> table) {
         table.put("Support",
                 "H\u1ed7 tr\u1ee3");
         table.put("Support Hushfacebook",
                 "\u1ee6ng h\u1ed9 Hushfacebook");
-    }
-
-    private static void fill23(Map<String, String> table) {
         table.put("Support the project",
                 "\u1ee6ng h\u1ed9 d\u1ef1 \u00e1n");
         table.put("Supported links",
@@ -2998,13 +3002,13 @@ final class L10nTableVi {
                 "Nh\u1ea5n v\u00e0o thanh \u0111\u1ec3 tua");
         table.put("Tap to play",
                 "Nh\u1ea5n \u0111\u1ec3 ph\u00e1t");
+    }
+
+    private static void fill24(Map<String, String> table) {
         table.put("Tap to see which.",
                 "Nh\u1ea5n \u0111\u1ec3 xem l\u00e0 b\u1ea3n v\u00e1 n\u00e0o.");
         table.put("Tap to turn it back on.",
                 "Nh\u1ea5n \u0111\u1ec3 b\u1eadt l\u1ea1i.");
-    }
-
-    private static void fill24(Map<String, String> table) {
         table.put("Tapping Download on a reel or video will send its link to an app.",
                 "Nh\u1ea5n T\u1ea3i xu\u1ed1ng tr\u00ean reel ho\u1eb7c video s\u1ebd g\u1eedi li\u00ean k\u1ebft c\u1ee7a n\u00f3 \u0111\u1ebfn m\u1ed9t \u1ee9ng d\u1ee5ng.");
         table.put("Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without Messenger, Chats opens as before.",
@@ -3121,13 +3125,13 @@ final class L10nTableVi {
                 "Ng\u00e0y c\u1ee5 th\u1ec3");
         table.put("The diagnostic report couldn't be copied. Try again.",
                 "Kh\u00f4ng th\u1ec3 sao ch\u00e9p b\u00e1o c\u00e1o ch\u1ea9n \u0111o\u00e1n. H\u00e3y th\u1eed l\u1ea1i.");
+    }
+
+    private static void fill25(Map<String, String> table) {
         table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
                 "Ch\u01b0a th\u1ec3 l\u01b0u b\u00e1o c\u00e1o ch\u1ea9n \u0111o\u00e1n. H\u00e3y th\u1eed l\u1ea1i sau gi\u00e2y l\u00e1t.");
         table.put("The diagnostic report couldn't be saved. Try again.",
                 "Kh\u00f4ng th\u1ec3 l\u01b0u b\u00e1o c\u00e1o ch\u1ea9n \u0111o\u00e1n. H\u00e3y th\u1eed l\u1ea1i.");
-    }
-
-    private static void fill25(Map<String, String> table) {
         table.put("The download ended before the whole file arrived. Try again.",
                 "Qu\u00e1 tr\u00ecnh t\u1ea3i xu\u1ed1ng k\u1ebft th\u00fac tr\u01b0\u1edbc khi nh\u1eadn \u0111\u1ee7 t\u1ec7p. H\u00e3y th\u1eed l\u1ea1i.");
         table.put("The feed will hide posts with more than %1$s reactions.",
@@ -3244,13 +3248,13 @@ final class L10nTableVi {
                 "Ti\u00eau \u0111\u1ec1 ph\u1ea3i c\u00f3");
         table.put("To day",
                 "\u0110\u1ebfn ng\u00e0y");
+    }
+
+    private static void fill26(Map<String, String> table) {
         table.put("Too many saves at once. Try again when one finishes.",
                 "Qu\u00e1 nhi\u1ec1u l\u01b0\u1ee3t l\u01b0u c\u00f9ng l\u00fac. H\u00e3y th\u1eed l\u1ea1i khi m\u1ed9t l\u01b0\u1ee3t ho\u00e0n t\u1ea5t.");
         table.put("Top bar",
                 "Thanh tr\u00ean c\u00f9ng");
-    }
-
-    private static void fill26(Map<String, String> table) {
         table.put("Translate",
                 "D\u1ecbch");
         table.put("Translate posts by themselves",
@@ -3367,13 +3371,13 @@ final class L10nTableVi {
                 "Th\u01b0 m\u1ee5c con cho video");
         table.put("Videos",
                 "Video");
+    }
+
+    private static void fill27(Map<String, String> table) {
         table.put("Videos and photos are saved on %1$s, in the same folders. Saves you already have stay where they are.",
                 "Video v\u00e0 \u1ea3nh \u0111\u01b0\u1ee3c l\u01b0u v\u00e0o %1$s, trong c\u00f9ng c\u00e1c th\u01b0 m\u1ee5c. Nh\u1eefng g\u00ec \u0111\u00e3 l\u01b0u v\u1eabn \u1edf nguy\u00ean ch\u1ed7 c\u0169.");
         table.put("Videos and photos are saved on the phone's storage.",
                 "Video v\u00e0 \u1ea3nh \u0111\u01b0\u1ee3c l\u01b0u v\u00e0o b\u1ed9 nh\u1edb \u0111i\u1ec7n tho\u1ea1i.");
-    }
-
-    private static void fill27(Map<String, String> table) {
         table.put("Videos and photos are saved on the phone's storage. Put in an SD card to save on it instead.",
                 "Video v\u00e0 \u1ea3nh \u0111\u01b0\u1ee3c l\u01b0u v\u00e0o b\u1ed9 nh\u1edb \u0111i\u1ec7n tho\u1ea1i. L\u1eafp th\u1ebb SD \u0111\u1ec3 l\u01b0u v\u00e0o th\u1ebb.");
         table.put("Videos and photos go to %1$s, next to the camera's. Saves you already have stay where they are.",
@@ -3490,13 +3494,13 @@ final class L10nTableVi {
                 "Khi b\u1eadt T\u1ea1m d\u1eebng khi m\u1edf, Facebook s\u1ebd ch\u1edd %1$s tr\u01b0\u1edbc khi m\u1edf.");
         table.put("With Pinch to zoom on, a video you zoom keeps playing, stories included. To zoom a story on a still frame, hold it first and then pinch. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it.",
                 "Khi b\u1eadt Ch\u1ee5m \u0111\u1ec3 thu ph\u00f3ng, video b\u1ea1n thu ph\u00f3ng v\u1eabn ti\u1ebfp t\u1ee5c ph\u00e1t, k\u1ec3 c\u1ea3 trong tin. \u0110\u1ec3 thu ph\u00f3ng tin \u1edf m\u1ed9t khung h\u00ecnh t\u0129nh, h\u00e3y nh\u1ea5n gi\u1eef tin tr\u01b0\u1edbc r\u1ed3i m\u1edbi ch\u1ee5m. N\u1ebfu b\u1eadt c\u1ea3 Gi\u1eef thu ph\u00f3ng, nh\u1ea5n gi\u1eef v\u00f9ng thu ph\u00f3ng \u0111\u1ec3 t\u1ea1m d\u1eebng video, v\u00e0 nh\u1ea5n gi\u1eef l\u1ea7n n\u1eefa \u0111\u1ec3 ph\u00e1t ti\u1ebfp.");
+    }
+
+    private static void fill28(Map<String, String> table) {
         table.put("With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. A single tap still opens the photo, a moment later.",
                 "Khi b\u1eadt Ch\u1ee5m \u0111\u1ec3 thu ph\u00f3ng, nh\u1ea5n \u0111\u00fap v\u00e0o \u1ea3nh tr\u00ean trang c\u00e1 nh\u00e2n \u0111\u1ec3 ph\u00f3ng to t\u1ea1i ch\u1ed7 b\u1ea1n nh\u1ea5n, nh\u1ea5n \u0111\u00fap l\u1ea7n n\u1eefa \u0111\u1ec3 thu l\u1ea1i. Nh\u1ea5n m\u1ed9t l\u1ea7n v\u1eabn m\u1edf \u1ea3nh, ch\u1ec9 ch\u1eadm h\u01a1n m\u1ed9t ch\u00fat.");
         table.put("With Pinch to zoom on, the photo or story stays zoomed when you let go, and a story stays paused. Drag with one finger or pinch again. Tap or press Back when you're done.",
                 "Khi b\u1eadt Ch\u1ee5m \u0111\u1ec3 thu ph\u00f3ng, \u1ea3nh ho\u1eb7c tin v\u1eabn \u0111\u01b0\u1ee3c ph\u00f3ng to khi b\u1ea1n th\u1ea3 tay, v\u00e0 tin s\u1ebd t\u1ea1m d\u1eebng. K\u00e9o b\u1eb1ng m\u1ed9t ng\u00f3n tay ho\u1eb7c ch\u1ee5m l\u1ea1i l\u1ea7n n\u1eefa. Ch\u1ea1m ho\u1eb7c nh\u1ea5n Quay l\u1ea1i khi xong.");
-    }
-
-    private static void fill28(Map<String, String> table) {
         table.put("With Pinch to zoom on, the screen around a photo or story darkens as you zoom in. Turn it off to keep the rest of the screen as it is.",
                 "Khi b\u1eadt Ch\u1ee5m \u0111\u1ec3 thu ph\u00f3ng, m\u00e0n h\u00ecnh xung quanh \u1ea3nh ho\u1eb7c tin s\u1ebd t\u1ed1i d\u1ea7n khi b\u1ea1n ph\u00f3ng to. T\u1eaft \u0111i \u0111\u1ec3 gi\u1eef nguy\u00ean ph\u1ea7n c\u00f2n l\u1ea1i c\u1ee7a m\u00e0n h\u00ecnh.");
         table.put("With Save any photo on, a post with one photo gets Search photo in its three-dot menu. It hands the photo to the app you pick, such as Google Lens, to look up what's in it or copy its text.",
@@ -3613,13 +3617,13 @@ final class L10nTableVi {
                 "b\u00e0i vi\u1ebft t\u1eeb nh\u00f3m b\u1ea1n ch\u01b0a tham gia");
         table.put("posts you've seen",
                 "b\u00e0i vi\u1ebft b\u1ea1n \u0111\u00e3 xem");
+    }
+
+    private static void fill29(Map<String, String> table) {
         table.put("posts your filters matched",
                 "b\u00e0i vi\u1ebft kh\u1edbp v\u1edbi b\u1ed9 l\u1ecdc c\u1ee7a b\u1ea1n");
         table.put("reels",
                 "Reels");
-    }
-
-    private static void fill29(Map<String, String> table) {
         table.put("rows of Stories",
                 "h\u00e0ng Tin");
         table.put("suggestions",

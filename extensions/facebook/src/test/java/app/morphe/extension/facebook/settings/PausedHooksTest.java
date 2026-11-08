@@ -176,6 +176,7 @@ import app.morphe.extension.facebook.reels.ReelMidCardsForTests;
 import app.morphe.extension.facebook.reels.ReelPrompts;
 import app.morphe.extension.facebook.reels.SavedVideos;
 import app.morphe.extension.facebook.reels.SeenStateSendForTests;
+import app.morphe.extension.facebook.reels.StillWatching;
 import app.morphe.extension.facebook.reels.TapShowsControls;
 import app.morphe.extension.facebook.reels.WatchAgain;
 import app.morphe.extension.facebook.search.MetaAiSearchForTests;
@@ -758,7 +759,9 @@ public class PausedHooksTest {
                 // Watch again at the end of a feed video replays it in place instead of opening Reels (#403).
                 () -> !WatchAgain.opensElsewhere(true),
                 // A video tapped in Saved plays in the video player instead of the Reels viewer (#404).
-                () -> SavedVideos.staysInPlayer("vod_watchfeed_saved")));
+                () -> SavedVideos.staysInPlayer("vod_watchfeed_saved"),
+                // The next video isn't held back to ask "Are you still watching?" (#427).
+                () -> !StillWatching.idle(1)));
         // A reel that would get the interest prompt is answered as one that doesn't.
         probes.put(PatchFamily.REEL_PROMPTS, Collections.singletonList(() -> !ReelPrompts.keep(true)));
         // The Reels batcher's send of the reels you watched never reaches its executor.

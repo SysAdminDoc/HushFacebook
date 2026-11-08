@@ -1832,6 +1832,10 @@ Watch again at the end of a feed video plays it again right there, instead of op
 Open saved videos in the video player	Abrir vídeos salvos no player de vídeo
 # context: summary of that switch; Saved is Facebook's own list of things you saved, so use Facebook's name for it in your language if you know it
 A video you tap in Saved plays in the video player instead of Reels, where the next swipe is a suggested reel.	Um vídeo que você toca em Salvos é reproduzido no player de vídeo em vez do Reels, onde o próximo deslize traz um reel sugerido.
+# context: switch title under Reels and Watch; on, Facebook stops pausing reels and videos to ask "Are you still watching?", which is Facebook's own prompt, so use the wording Facebook shows in this language
+Skip "Are you still watching?"	Pular "Você ainda está assistindo?"
+# context: summary of that switch; reels and videos go on to the next one by themselves
+Reels and videos keep going to the next one without pausing to ask if you're still watching.	Reels e vídeos continuam passando para o próximo sem parar para perguntar se você ainda está assistindo.
 Hide the new comments pop-up	Ocultar o aviso de novos comentários
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	A bolha de “novos comentários” não aparece mais enquanto você lê os comentários. Os novos comentários continuam aparecendo na lista.

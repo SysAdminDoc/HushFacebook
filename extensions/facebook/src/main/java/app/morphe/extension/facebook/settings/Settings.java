@@ -991,6 +991,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_saved_videos_in_player", FALSE);
 
     /**
+     * Reels and videos go on to the next one without Facebook holding it back to ask "Are you still
+     * watching?" ({@link app.morphe.extension.facebook.reels.StillWatching}, #427). Off by default.
+     * Asked before each next video, so a change shows from the next one.
+     */
+    public static final BooleanSetting SKIP_STILL_WATCHING =
+            new BooleanSetting("hushfacebook_skip_still_watching", FALSE);
+
+    /**
      * The batches of watched reels the Reels viewer sends as FbShortsSeenStateMutation: only their
      * ids, the record Facebook ranks the Reels feed with, which nobody else sees. Held back, reels
      * already watched may come back in the feed.
