@@ -9,8 +9,15 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.tableIndexAt
+import app.morphe.patches.facebook.feed.tableIndices
+import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.RegisterLiveness
 import app.morphe.util.namedRegisters
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -29,6 +36,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 /**
  * The Subscribe pill beside a full-screen video's author (#291): in each declared build the viewer's
@@ -49,6 +57,22 @@ class ReelSubscribeButtonFixtureTest {
         it.name == like.name && it.parameterTypes.map(CharSequence::toString) == like.parameterTypes.map(CharSequence::toString)
     }
 
+    /** The methods asking one of [holders]' string tables for [literal], as the Android 9+ build's rows do (#102). */
+    private fun asking(bundle: File, holders: List<ClassDef>, literal: String): List<Method> {
+        val tables = holders.flatMap { owner -> owner.methods.filter { isStringTable(it) && holdsString(it, literal) } }
+        val indices = tables.associate { "${it.definingClass}->${it.name}" to tableIndices(it, literal) }
+        val types = tables.map { it.definingClass }.toSet()
+        if (types.isEmpty()) return emptyList()
+        return FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in types } }) { method ->
+            val code = method.implementation?.instructions?.toList() ?: return@methodsWhere false
+            code.indices.any { at ->
+                val index = tableIndexAt(code, at) ?: return@any false
+                val call = code[at].call!!
+                indices["${call.definingClass}->${call.name}"]?.contains(index) == true
+            }
+        }
+    }
+
     @Test
     fun `each declared build's author pill asks the extension in the row, the builder and every slot`() {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -60,10 +84,14 @@ class ReelSubscribeButtonFixtureTest {
                 val name = bundle.name
                 val holders = FixtureDex.classesHolding(bundle, AUTHOR_PILL_TAG)
                     .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
-                val holderMethods = holders.flatMap { owner -> owner.methods.filter { it.loads(AUTHOR_PILL_TAG) } }
+                val authorAskers = asking(bundle, holders, AUTHOR_PILL_TAG)
+                val holderMethods = holders.flatMap { owner -> owner.methods.filter { it.loads(AUTHOR_PILL_TAG) } } + authorAskers
                 val footerHolders = FixtureDex.classesHolding(bundle, FOOTER_PILL_TAG)
                     .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
-                val footerMethods = footerHolders.flatMap { owner -> owner.methods.filter { it.loads(FOOTER_PILL_TAG) } }
+                val footerAskers = asking(bundle, footerHolders, FOOTER_PILL_TAG)
+                val footerMethods = footerHolders.flatMap { owner -> owner.methods.filter { it.loads(FOOTER_PILL_TAG) } } + footerAskers
+                val tables = (holders + footerHolders).associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
                 val called = FixtureDex.classes(bundle, (holderMethods + footerMethods).flatMap { it.code() }
                     .mapNotNull { it.call?.takeIf { call -> call.returnType == "Z" }?.definingClass }.toSet())
                 val isOwnerCheck = { call: MethodReference ->
@@ -71,7 +99,7 @@ class ReelSubscribeButtonFixtureTest {
                         it.name == call.name && it.parameterTypes.map(CharSequence::toString) == call.parameterTypes.map(CharSequence::toString)
                     }?.let(::isSubscribeOwnerCheck) == true
                 }
-                val pills = holderMethods.mapNotNull { authorPill(it, isOwnerCheck) }
+                val pills = holderMethods.mapNotNull { authorPill(it, isOwnerCheck, resolve) }
                 assertEquals("$name: author rows building the pill", 1, pills.count { !it.returned })
                 assertEquals("$name: builders returning the pill", 1, pills.count { it.returned })
                 val row = pills.single { !it.returned }
@@ -83,7 +111,7 @@ class ReelSubscribeButtonFixtureTest {
                 val callers = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.contains(builder.method.definingClass) }) { method ->
                     method.implementation?.instructions?.any { it.call?.definingClass == builder.method.definingClass } == true
                 }.map { it.definingClass }.toSet()
-                val footers = footerMethods.mapNotNull { footerPill(it, isOwnerCheck) }
+                val footers = footerMethods.mapNotNull { footerPill(it, isOwnerCheck, resolve) }
                 assertEquals("$name: rows building their own pill", 1, footers.size)
                 val footer = footers.single()
                 val fanHolders = FixtureDex.classesHolding(bundle, FAN_PILL_TAG)
@@ -95,25 +123,38 @@ class ReelSubscribeButtonFixtureTest {
                         it.call?.let { call -> call.definingClass == fanBuilder!!.definingClass && call.name == fanBuilder.name } == true
                     } == true
                 }.map { it.definingClass }.toSet()
+                val askers = (authorAskers + footerAskers).map { it.definingClass }.toSet()
                 val classes = (holders + footerHolders + fanHolders + called.values +
-                    FixtureDex.classes(bundle, callers + fanCallers).values).distinctBy { it.type }
+                    FixtureDex.classes(bundle, callers + fanCallers + askers).values).distinctBy { it.type }
                 assertThrows("$name: no owner check must refuse the patch", PatchException::class.java) {
                     PatchContexts.of(classes.filter { it.type != ownerClass.type }).hideSubscribePill()
                 }
                 val context = PatchContexts.of(classes)
                 context.hideSubscribePill()
 
-                val rowCode = context.mutableClassDefBy(row.method.definingClass).method(row.method).code()
+                val patchedRow = context.mutableClassDefBy(row.method.definingClass).method(row.method)
+                val rowCode = patchedRow.code()
                 val shows = rowCode.indices.filter { rowCode[it].call?.toString() == SHOW_AUTHOR_PILL }
                 assertEquals("$name: one pill flag hook in the row", 1, shows.size)
                 val show = shows.single()
                 val flag = (rowCode[show + 1] as OneRegisterInstruction).registerA
                 assertEquals("$name: the extension's answer replaces the flag", Opcode.MOVE_RESULT, rowCode[show + 1].opcode)
-                assertEquals("$name: the hook follows the flag's 1", Opcode.CONST_4, rowCode[show - 1].opcode)
-                assertEquals("$name: into the flag's register", flag, (rowCode[show - 1] as OneRegisterInstruction).registerA)
-                assertEquals("$name: set to 1", 1, (rowCode[show - 1] as NarrowLiteralInstruction).narrowLiteral)
-                assertEquals("$name: the row gains two instructions",
-                    row.method.code().size + 2,
+                // A flag past v15, as on the Android 9+ build (#102), goes over in a low register the row
+                // doesn't read after the hook.
+                val passed = arguments(rowCode[show])[1]
+                val set = if (passed == flag) show - 1 else show - 2
+                if (passed != flag) {
+                    assertTrue("$name: the flag sits past v15", flag > 15)
+                    assertEquals("$name: the flag is copied low", Opcode.MOVE_FROM16, rowCode[show - 1].opcode)
+                    assertEquals("$name: from the flag", listOf(passed, flag), rowCode[show - 1].namedRegisters())
+                    assertTrue("$name: the row doesn't read the low register after the hook",
+                        passed !in RegisterLiveness.of(patchedRow).liveInto(show + 2))
+                }
+                assertTrue("$name: the hook follows the flag's 1", rowCode[set].opcode in setOf(Opcode.CONST_4, Opcode.CONST_16))
+                assertEquals("$name: into the flag's register", flag, (rowCode[set] as OneRegisterInstruction).registerA)
+                assertEquals("$name: set to 1", 1, (rowCode[set] as NarrowLiteralInstruction).narrowLiteral)
+                assertEquals("$name: the row gains its hook",
+                    row.method.code().size + show - set + 1,
                     rowCode.size - rowCode.count { it.call?.toString() == AUTHOR_PILL_SLOT || it.call?.toString() == FAN_PILL_SLOT } * 3)
 
                 val footerCode = context.mutableClassDefBy(footer.method.definingClass).method(footer.method).code()
@@ -133,8 +174,10 @@ class ReelSubscribeButtonFixtureTest {
                 val builderCode = context.mutableClassDefBy(builder.method.definingClass).method(builder.method).code()
                 val notes = builderCode.indices.filter { builderCode[it].call?.toString() == NOTE_AUTHOR_PILL }
                 assertEquals("$name: one owner note in the builder", 1, notes.size)
+                val noted = notes.single() + 1
                 assertEquals("$name: the note comes right before the tag", AUTHOR_PILL_TAG,
-                    ((builderCode[notes.single() + 1] as ReferenceInstruction).reference as StringReference).string)
+                    ((builderCode[noted] as? ReferenceInstruction)?.reference as? StringReference)?.string
+                        ?: tableStringAt(builderCode, noted + 1, resolve))
 
                 var slots = 0
                 for (type in callers + row.method.definingClass) {
@@ -180,7 +223,8 @@ class ReelSubscribeButtonFixtureTest {
                 // 585: the viewer row puts the fan pill in its own slot and, through a getter, in a second one.
                 assertEquals("$name: fan-subscription pill slots hooked", 2, fanSlots)
                 checked += version
-                abis += name.substringAfter("-$version-").substringBefore(".apkm")
+                // 585's Android 9 build ("arm64-v8a-minapi28-storeless") is another arm64-v8a bundle.
+                abis += name.substringAfter("-$version-").substringBefore(".apkm").substringBefore("-minapi")
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
