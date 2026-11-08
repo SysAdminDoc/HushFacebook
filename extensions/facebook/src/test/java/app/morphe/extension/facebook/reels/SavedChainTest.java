@@ -316,17 +316,48 @@ public class SavedChainTest {
     }
 
     @Test
-    public void theLastCardLeavesFacebooksSuggestions() {
+    public void theLastCardEndsBackOnSaved() {
         openSaved(6, true);
+        assertFalse("the test's list scrolls", page.list.canScrollVertically(1));
         press(5);
         ReelsViewer viewer = openViewer(SAVED);
         Object player = new Object();
         SavedChain.bound(player);
         idle(SavedChain.OPEN_GUARD_MS + 100);
         SavedChain.ended(player);
-        idle(SavedChain.RETURN_WINDOW_MS);
-        assertFalse("the last saved reel closed", viewer.isFinishing());
+        idle(0);
+        assertTrue("the last saved reel went on to Facebook's suggestions", viewer.isFinishing());
+
+        backToSaved();
+        idle(SavedChain.SETTLE_MS + SavedChain.SCROLL_SETTLE_MS + SavedChain.PRESS_MS + 50);
         assertNull("the chain went on past the last card", SavedChain.chainForTests());
+        for (int card = 0; card < 6; card++) {
+            assertTrue("card " + card + " was tapped after the last one", touchesOf(card).isEmpty());
+        }
+        assertFalse(statusLine(), statusLine().contains(SavedChain.NEXT + " "));
+    }
+
+    /** The device's case: a card at the end of a list that still scrolls, with nothing below it. */
+    @Test
+    public void aListThatStillScrollsEndsOnSavedToo() {
+        openSaved(10, false);
+        page.list.scrollBy(0, 100);
+        assertTrue("the test's list can't scroll any more", page.list.canScrollVertically(1));
+        press(9);
+        ReelsViewer viewer = openViewer(SAVED);
+        Object player = new Object();
+        SavedChain.bound(player);
+        idle(SavedChain.SWIPE_GUARD_MS + 100);
+        SavedChain.bound(new Object());
+        idle(0);
+        assertTrue("a swipe on the last saved reel stayed in the viewer", viewer.isFinishing());
+
+        backToSaved();
+        idle(SavedChain.SETTLE_MS + 5 * SavedChain.SCROLL_SETTLE_MS + SavedChain.PRESS_MS + 50);
+        assertNull("the chain went on past the last card", SavedChain.chainForTests());
+        for (int card = 0; card < 10; card++) {
+            assertTrue("card " + card + " was tapped after the last one", touchesOf(card).isEmpty());
+        }
     }
 
     @Test

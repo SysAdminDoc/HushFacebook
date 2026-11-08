@@ -49,8 +49,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * ({@link #ended}) or a second reel taking its screen ({@link #bound}, a swipe up) closes it. Once
  * the Saved page is back, the card after the one played (by its label when it has one, else its
  * place in the grid, left to right and then down) is scrolled into view if it has to be and tapped,
- * and the viewer that opens starts the chain again. After the last card, Facebook's suggestions
- * play as they would. Back from the viewer, another viewer opening from anywhere but Saved, the
+ * and the viewer that opens starts the chain again. The last saved video closes as well, and with
+ * no card after it the chain ends on Saved. Back from the viewer, another viewer opening from anywhere but Saved, the
  * Saved page closing, a page that doesn't come back within {@link #RETURN_WINDOW_MS}, the switch
  * going off and Pause each end the chain.
  *
@@ -263,7 +263,11 @@ public final class SavedChain {
         }
     }
 
-    /** Closes the chain's viewer, on the main thread, when there's a card after the one it played. */
+    /**
+     * Closes the chain's viewer, on the main thread, so Saved can open the next card. The last saved
+     * video closes too: a card after it may sit below the fold, so only Saved can tell, and when there's
+     * none the chain ends there rather than in Facebook's suggestions.
+     */
     private static void advance(Chain current, String why) {
         if (!on()) {
             disarm();
@@ -281,9 +285,8 @@ public final class SavedChain {
                     Logger.printDebug(() -> "Saved videos in a row: " + why + " with something over the video, so it stays");
                     return;
                 }
-                if (!hasNext(current)) {
+                if (current.card.list.get() == null) {
                     disarm();
-                    Logger.printDebug(() -> "Saved videos in a row: " + why + " on the last saved video, so Facebook's suggestions follow");
                     return;
                 }
                 synchronized (SavedChain.class) {
@@ -333,7 +336,7 @@ public final class SavedChain {
                     return;
                 }
                 disarm();
-                Logger.printDebug(() -> "Saved videos in a row: no card after the last one played");
+                Logger.printDebug(() -> "Saved videos in a row: no card after the last one played, so it ends on Saved");
                 return;
             }
             float[] point = tapPoint(next);
@@ -371,14 +374,6 @@ public final class SavedChain {
             disarm();
             HookStatus.threw(FAMILY, CHAIN_HOOK, failure);
         }
-    }
-
-    /** Whether the chain's list has a card after its own, or more below to scroll to. On the main thread. */
-    static boolean hasNext(Chain current) {
-        ViewGroup list = current.card.list.get();
-        if (list == null) return false;
-        if (nextTile(list, current.card) != null) return true;
-        return scroller(list, 1) != null;
     }
 
     /** The card after [card] among [list]'s children, or null when none of them is. */
