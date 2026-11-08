@@ -10,6 +10,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Activity;
 import android.os.Looper;
 import android.os.SystemClock;
 
@@ -18,8 +19,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.Shadows;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowToast;
 
@@ -53,6 +57,7 @@ public class HomeBackTest {
     @After public void restore() {
         PauseForTests.resume();
         Settings.BACK_KEEPS_HOME.resetToDefault();
+        Settings.BLOCK_RETURN_REFRESH.resetToDefault();
         Settings.HIDE_BACK_REMINDER.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         LogBufferManager.clearLogBuffer();
@@ -136,6 +141,102 @@ public class HomeBackTest {
         String log = LogBufferManager.buildExportText();
         assertTrue(log, log.contains("Home back: Back on a scrolled Home: kept the feed where it is"));
         assertTrue(log, log.contains("Home back: Back on a scrolled Home: second Back, Facebook goes to the top"));
+    }
+
+    /** A Back within a second of a screen over the feed closing, or while another window has the focus, closed it (#378). */
+    @Test public void aBackRightAfterAScreenOverTheFeedClosedBelongsToClosingIt() {
+        assertFalse("nothing has closed yet", HomeBack.closedOverFeedAt(10_000, true));
+        HomeBack.cameBackAt(10_000);
+        assertTrue("right as it closed", HomeBack.closedOverFeedAt(10_000, true));
+        assertTrue("at the end of the second", HomeBack.closedOverFeedAt(10_000 + HomeBack.CLOSED_OVER_FEED_MS, true));
+        assertFalse("past the second", HomeBack.closedOverFeedAt(10_001 + HomeBack.CLOSED_OVER_FEED_MS, true));
+        assertFalse("a clock that went back", HomeBack.closedOverFeedAt(9_000, true));
+        assertTrue("another window still has the focus", HomeBack.closedOverFeedAt(60_000, false));
+    }
+
+    /**
+     * #378: with Keep feed position on return on, the Back that closes comments over the feed keeps
+     * the feed where it is without a toast, even with Back leaves Home off, and a later Back is Facebook's.
+     */
+    @Test public void keepFeedPositionHoldsTheBackThatClosedCommentsOverTheFeed() {
+        Settings.BACK_KEEPS_HOME.save(false);
+        Settings.BLOCK_RETURN_REFRESH.save(true);
+        BaseSettings.DEBUG.save(true);
+        LogBufferManager.clearLogBuffer();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        ShadowToast.reset();
+        HomeBack.cameBack();
+        SystemClock.sleep(300);
+        assertTrue("the Back that closed the comments scrolled the feed", HomeBack.holdScrollToTop());
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertNull("it showed a toast", ShadowToast.getLatestToast());
+
+        SystemClock.sleep(HomeBack.CLOSED_OVER_FEED_MS + 500);
+        assertFalse("a Back on the feed itself, later, was held too", HomeBack.holdScrollToTop());
+
+        String report = String.join("\n", HookStatus.report());
+        assertTrue(report, report.contains("kept the feed on a Back that closed a screen over it 1"));
+        String log = LogBufferManager.buildExportText();
+        assertTrue(log, log.contains("Home back: Back as a screen over the feed closed: kept the feed where it is"));
+    }
+
+    /** The feed's screen not having the focus, as when a window over it handed the Back on, holds it too; getting it back starts the second. */
+    @Test public void aBackWhileAnotherWindowHasTheFocusIsHeld() {
+        Settings.BACK_KEEPS_HOME.save(false);
+        Settings.BLOCK_RETURN_REFRESH.save(true);
+        HomeBack.watch(RuntimeEnvironment.getApplication());
+        ActivityController<Activity> screen = Robolectric.buildActivity(Activity.class).setup();
+        screen.windowFocusChanged(true);
+        SystemClock.sleep(HomeBack.CLOSED_OVER_FEED_MS + 500);
+        assertFalse("a Back on the feed with its screen focused was held", HomeBack.holdScrollToTop());
+
+        screen.windowFocusChanged(false);
+        SystemClock.sleep(HomeBack.CLOSED_OVER_FEED_MS + 500);
+        assertTrue("a Back handed on by a window over the feed scrolled it", HomeBack.holdScrollToTop());
+
+        screen.windowFocusChanged(true);
+        SystemClock.sleep(300);
+        assertTrue("the Back right as the focus came back scrolled the feed", HomeBack.holdScrollToTop());
+        SystemClock.sleep(HomeBack.CLOSED_OVER_FEED_MS + 500);
+        assertFalse(HomeBack.holdScrollToTop());
+    }
+
+    /** Switched off, or paused, a Back that closed a screen over the feed is Facebook's as before. */
+    @Test public void withKeepFeedPositionOffOrPausedTheClosingBackIsFacebooks() {
+        Settings.BACK_KEEPS_HOME.save(false);
+        HomeBack.cameBack();
+        assertFalse("switched off", HomeBack.holdScrollToTop());
+        Settings.BLOCK_RETURN_REFRESH.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused", HomeBack.holdScrollToTop());
+    }
+
+    /** With both switches on, the closing Back is held quietly and the next Back on the feed still gets the toast first. */
+    @Test public void theClosingBackLeavesBackLeavesHomesCountAlone() {
+        Settings.BLOCK_RETURN_REFRESH.save(true);
+        HomeBack.cameBack();
+        assertTrue(HomeBack.holdScrollToTop());
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertNull("the closing Back showed a toast", ShadowToast.getLatestToast());
+
+        SystemClock.sleep(HomeBack.CLOSED_OVER_FEED_MS + 500);
+        assertTrue("the first Back on the feed", HomeBack.holdScrollToTop());
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(TOAST, ShadowToast.getTextOfLatestToast());
+        SystemClock.sleep(500);
+        assertFalse("its second Back", HomeBack.holdScrollToTop());
+    }
+
+    /** The feed coming back from another screen inside the app counts as that screen closing. */
+    @Test public void theFeedsResumeAndHotStartCountAsAScreenClosing() {
+        assertFalse(HomeBack.closedOverFeedAt(SystemClock.elapsedRealtime(), true));
+        ReturnRefresh.hotStart();
+        // Takes the hot start back, so no warm-start check in a later test counts as the one it asked.
+        ReturnRefresh.askedByHotStartInApp(Long.MAX_VALUE);
+        assertTrue("hot start", HomeBack.closedOverFeedAt(SystemClock.elapsedRealtime(), true));
+        SystemClock.sleep(HomeBack.CLOSED_OVER_FEED_MS + 500);
+        ReturnRefresh.skip();
+        assertTrue("feed resume", HomeBack.closedOverFeedAt(SystemClock.elapsedRealtime(), true));
     }
 
     /** The toast fits two lines of about 28 characters in every language Hushfacebook carries. */

@@ -43,6 +43,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* With `Keep feed position on return` on, the Back that closes a post's comments keeps your place in the feed. On some accounts that Back reached the feed too, so it jumped to the top and reloaded while the comments closed. A Back on the feed itself, a moment later, still does what it always did. (#378)
 * With `Rounded tab bar` on, Marketplace and other pages that stopped at the top of the tab bar now run under it, so the page shows around the pill instead of a black strip. This works with `See-through bars` off too. (#412)
 * With `Rounded tab bar` on, tabs you tapped and then left don't keep a gray square behind them anymore. Facebook's press highlight lost touch with its tab once the spot went in behind it, so it froze halfway through fading out. (#412)
 * `Hide the notes and active now row` leaves Dating's new matches alone. Dating's Matches screen is the same inbox as Chats, and its row of new matches is drawn by the same section as the notes row, so the switch emptied it too. Pausing Hushfacebook was the only way to get them back. (#337)

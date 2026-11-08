@@ -108,6 +108,13 @@ public final class ReturnRefresh {
      * one that ran and let Facebook refresh. A failure lets Facebook refresh, as it would unpatched.
      */
     public static boolean skip() {
+        try {
+            // The feed is back from a screen over it, so a Back right now closed that screen (#378).
+            HomeBack.cameBack();
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.RETURN_REFRESH, FEED_RESUME, failure);
+            return false;
+        }
         return ask(FEED_RESUME, KEPT_ON_RESUME);
     }
 
@@ -168,7 +175,10 @@ public final class ReturnRefresh {
     public static void hotStart() {
         try {
             HookStatus.invoked(FamilyNames.RETURN_REFRESH);
-            hotStartAt(SystemClock.elapsedRealtime());
+            long now = SystemClock.elapsedRealtime();
+            hotStartAt(now);
+            // The feed is back from another screen, so a Back right now closed that screen (#378).
+            HomeBack.cameBackAt(now);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.RETURN_REFRESH, HOT_START, failure);
         }
