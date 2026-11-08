@@ -600,6 +600,47 @@ public class FeedVideoAloneTest {
     }
 
     /**
+     * #421: a live link loads its reel by itself, and Facebook plays it with a player of its own, so
+     * the Reels controller is handed no player as it takes the screen (S22 2026-11-08, a NASA reel:
+     * that empty binding 0.4 s in, no player ever after, and the asks a second later brought pages of
+     * Facebook's next reels only, one of them a swipe away). That empty binding starts the hold too.
+     */
+    @Test
+    public void aLiveLinksReelIsOnScreenWhenTheControllerIsHandedNoPlayer() {
+        Settings.SHARED_REELS_ALONE.save(true);
+        FeedVideoAlone.reelsViewerOpening(origin("unknown::fb_shorts_viewer"));
+        FeedVideoAlone.reelsViewerOpening(origin("external_deeplink::fb_shorts_external_link"));
+        Object handler = new Object();
+        assertFalse("the link handler's data source starts", FeedVideoAlone.seedCheck(handler));
+        clock.addAndGet(35);
+        Object viewer = new Object();
+        FeedVideoAlone.warionOpening(viewer, true);
+        clock.addAndGet(112);
+        Object source = new Object();
+        assertFalse("the viewer's data source starts", FeedVideoAlone.seedCheck(source));
+        clock.addAndGet(134);
+        ReelBinding.bound(new Object(), null);
+        clock.addAndGet(1262);
+        assertTrue("the viewer's ask a second later", FeedVideoAlone.seedCheck(source));
+        assertTrue("the link handler's", FeedVideoAlone.seedCheck(handler));
+        Object late = new Object();
+        assertFalse("a data source starting late keeps its first ask", FeedVideoAlone.seedCheck(late));
+        assertTrue("and is held after", FeedVideoAlone.seedCheck(late));
+        assertTrue("a swipe's fetch", FeedVideoAlone.holdsBack(new Object()));
+        List<String> page = new ArrayList<>(List.of("Up next"));
+        FeedVideoAlone.vending(source, page);
+        assertEquals("a page after the reel is on screen goes by the held seed check", List.of("Up next"), page);
+
+        FeedVideoAlone.warionClosed(viewer);
+        clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
+        FeedVideoAlone.reelsViewerOpening(origin("fb_shorts_tab::reels_tab"));
+        Object tab = new Object();
+        ReelBinding.bound(new Object(), null);
+        assertFalse("an empty binding in the Reels tab holds nothing", FeedVideoAlone.seedCheck(tab));
+        assertFalse(FeedVideoAlone.seedCheck(tab));
+    }
+
+    /**
      * #421: the page the linked reel's fetch brings has Facebook's next reels after the linked one
      * (S22 2026-11-08: "Up next: Gb Flowers" under the reel, and a swipe went on to it). While the
      * shared reel's viewer loads its reel, each page its loader hands over keeps the first reel only.

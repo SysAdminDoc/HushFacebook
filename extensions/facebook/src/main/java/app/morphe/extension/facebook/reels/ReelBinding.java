@@ -77,11 +77,13 @@ public final class ReelBinding {
     }
 
     /**
-     * Injection point, right after the Reels controller's player field is set. A player set is a reel
-     * on screen, which Open shared reels on their own waits for, with Debug logging on or off.
+     * Injection point, right after the Reels controller's player field is set. Any setting, a player
+     * or none, is a reel taking the screen, which Open shared reels on their own waits for, with Debug
+     * logging on or off: none comes for a reel Facebook plays with a player of its own, a live link's
+     * among them (#421).
      */
     public static void bound(@Nullable Object controller, @Nullable Object player) {
-        if (player != null) FeedVideoAlone.reelOnScreen();
+        FeedVideoAlone.reelOnScreen();
         try {
             if (controller == null || !debug()) return;
             log(bind(controller, player));

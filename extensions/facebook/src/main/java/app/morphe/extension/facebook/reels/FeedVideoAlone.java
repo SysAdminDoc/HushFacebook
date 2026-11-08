@@ -61,10 +61,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * failed"): its reels feed's fetch and the burst of seed checks its data source asks as it starts are
  * what bring the linked reel in (S22 2026-11-08, where holding the fetch, and then the seed checks
  * after the first, each left the viewer black). So a shared viewer gets Facebook's answers until a
- * reel takes the screen ({@link #reelOnScreen}, about 150 ms in), and is held from then on, before
- * the ask a second later that brings Facebook's "Up next" reel. The page that fetch brings holds the
- * reels after the linked one too, so while its viewer gets Facebook's answers each page its loader
- * hands the viewer keeps its first reel only ({@link #vending}).
+ * reel takes the screen ({@link #reelOnScreen}, about 150 ms in, with a Reels player or with none
+ * for a live link whose reel loads by itself), and is held from then on, before the ask a second
+ * later that brings Facebook's "Up next" reel. The page that fetch brings holds the reels after the
+ * linked one too, so while its viewer gets Facebook's answers each page its loader hands the viewer
+ * keeps its first reel only ({@link #vending}).
  */
 public final class FeedVideoAlone {
     /** Counted once for each player a feed video opened that this kept to that video. */
@@ -546,9 +547,12 @@ public final class FeedVideoAlone {
     }
 
     /**
-     * Called as Facebook's Reels controller takes a player, a reel coming on screen ({@link
-     * ReelBinding#bound}). The first after a shared reel's opening is that reel: its viewer's asks
-     * are held from here on. Never throws.
+     * Called as Facebook's Reels controller is handed the player of the reel taking the screen, or
+     * none for a reel Facebook plays with a player of its own ({@link ReelBinding#bound}). The first
+     * after a shared reel's opening is that reel: its viewer's asks are held from here on. A link
+     * that loads its reel by itself goes the second way (S22 2026-11-08, a NASA reel: the controller
+     * was handed no player 0.4 s in and never a player after, and the pages a second later held
+     * only Facebook's next reels), so a hold that waited for a player never started. Never throws.
      */
     static void reelOnScreen() {
         try {
