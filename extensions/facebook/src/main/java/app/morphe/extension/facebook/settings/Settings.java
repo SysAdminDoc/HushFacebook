@@ -2696,6 +2696,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_status_bar", FALSE);
 
     /**
+     * In light mode the Reels tab keeps the light status bar, top bar and tab bar the other tabs
+     * have, where Facebook turns them dark (#423,
+     * {@link app.morphe.extension.facebook.navigation.LightReelsTabBars}). Asked each time the tab
+     * is shown, so a change shows on the next visit to the Reels tab.
+     */
+    public static final BooleanSetting LIGHT_REELS_TAB_BARS =
+            new BooleanSetting("hushfacebook_light_reels_tab_bars", FALSE);
+
+    /**
      * The home top bar loses its Messenger button and the buttons beside it close up (#181,
      * {@link app.morphe.extension.facebook.navigation.TopBarButtons}). Facebook builds the bar as
      * the main screen starts, so a change waits for a restart.

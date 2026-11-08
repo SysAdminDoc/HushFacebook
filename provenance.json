@@ -1737,6 +1737,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/navigation/LightReelsTabBars.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/navigation/bottomtabbar/LightReelsTabBars.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #423: Light bars on the Reels tab, a switch of the tab bar patch. In Facebook 585 the Reels tab is the Video tab, id 0x8ea18579, and light mode turns its tab bar, status bar and top bar dark. The tab bar's colour picker, the one static (Context, FbUserSession, Long) method loading that id, hands its id to the extension first, which answers null for the Video tab. The kept FbChromeFragment's getSystemBarsConfig has its TabTag id read, the one a const-wide of that id follows, go through the extension, which answers 0 for the Video tab, so it takes the other tabs' status bar from the no-arg static it already calls. The kept VideoHomeRootFragment's status bar helper, the call its getSystemBarsConfig makes for that config, asks the extension first and hands back the same other-tab status bar, and each read of the tab's reels-in-tab boolean that comes before a StatusBarUtil or WordmarkNavigationBar paint goes through the extension, which answers false. All of it only while the switch is on and Facebook's own dark mode answer says light."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/navigation/RoundedTabBar.java"
       ],
       "origin": "original",

@@ -235,6 +235,10 @@ final class HushfacebookPages {
             appearance.addPreference(toggle(context, Settings.HIDE_STATUS_BAR,
                     L10n.t("Takes the phone's status bar, with the time and battery, off Facebook's main screen, so "
                             + "the app gets the whole screen. Swipe down from the top edge to see it for a moment.")));
+            // Asked each time the Reels tab shows, so a change shows on the next visit to the tab.
+            appearance.addPreference(toggle(context, Settings.LIGHT_REELS_TAB_BARS,
+                    L10n.t("In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the "
+                            + "other tabs, instead of turning them dark.")));
         }
         if (build.contains(PatchFamily.CARRIER_BANNERS)) {
             // Asked each time Facebook shows its carrier banner, which it does as screens open and the mode changes.
