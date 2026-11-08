@@ -57,10 +57,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>Open shared reels on their own (#421) does the same for a reels viewer whose origin says it
  * opened from a link in another app or from a chat ({@link #shared}): its entry starts the window a
  * feed video's tap would. Each switch only covers its own origins, and a feed video tap never counts
- * for the shared switch. A link's viewer opens with no video in it: its reels feed fetches the linked
- * reel itself before the viewer's data source first asks its seed check (S22 2026-11-08, where
- * holding that fetch back left the viewer black), so a shared viewer's fetches go through until its
- * data source has asked, and are held from then on.
+ * for the shared switch. A link's viewer opens with no video in it ("Start new transition for vid[..]
+ * failed"): its reels feed's fetch and the burst of seed checks its data source asks as it starts are
+ * what bring the linked reel in (S22 2026-11-08, where holding the fetch, and then the seed checks
+ * after the first, each left the viewer black). So a shared viewer gets Facebook's answers until a
+ * reel takes the screen ({@link #reelOnScreen}, about 150 ms in), and is held from then on, before
+ * the ask a second later that brings Facebook's "Up next" reel.
  */
 public final class FeedVideoAlone {
     /** Counted once for each player a feed video opened that this kept to that video. */
@@ -147,10 +149,12 @@ public final class FeedVideoAlone {
         }
     }
 
-    /** A video opening its player: whether a link or a chat opened it, and whether its data source asked yet. */
+    /** A video opening its player: whether a link or a chat opened it, and whether a reel took the screen since. */
     private static final class Opening {
         final boolean shared;
-        volatile boolean sourceAsked;
+        volatile boolean reelShown;
+        /** Whether the asks it lets through were logged. */
+        volatile boolean passLogged;
 
         Opening(boolean shared) {
             this.shared = shared;
@@ -422,8 +426,6 @@ public final class FeedVideoAlone {
                     if (seen.feed.get() == source) {
                         first = !seen.asked;
                         seen.asked = true;
-                        // A shared reel's viewer has its video now, so its feed's fetches are held from here.
-                        if (seen.opening != null) seen.opening.sourceAsked = true;
                         break;
                     }
                 }
@@ -499,9 +501,25 @@ public final class FeedVideoAlone {
     static volatile Function<Object, Object> originForTests;
 
     /**
-     * Whether [asker] is a tapped feed video's player, deciding on its first ask. A [fetch] from a
-     * shared reel's player whose data source hasn't asked yet gets Facebook's answer: it's loading
-     * the reel itself.
+     * Called as Facebook's Reels controller takes a player, a reel coming on screen ({@link
+     * ReelBinding#bound}). The first after a shared reel's opening is that reel: its viewer's asks
+     * are held from here on. Never throws.
+     */
+    static void reelOnScreen() {
+        try {
+            Opening opening = lastOpening;
+            if (!opening.shared || opening.reelShown) return;
+            opening.reelShown = true;
+            Logger.printDebug(() -> "Shared reels on their own: the shared reel is on screen, so nothing more comes after it");
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel on screen", failure);
+        }
+    }
+
+    /**
+     * Whether [asker] is a tapped feed video's player, deciding on its first ask. A shared reel's
+     * player gets Facebook's answers, [fetch] or seed check, until that reel is on screen: they're
+     * what load the reel itself.
      */
     private static boolean alone(@Nullable Object asker, String road, String what, boolean fetch) {
         try {
@@ -514,7 +532,9 @@ public final class FeedVideoAlone {
             Viewer open = null;
             Viewer bound = null;
             Opening from;
+            boolean passing;
             synchronized (FEEDS) {
+                Feed record;
                 Feed known = null;
                 for (Iterator<Feed> each = FEEDS.iterator(); each.hasNext(); ) {
                     Feed seen = each.next();
@@ -537,7 +557,8 @@ public final class FeedVideoAlone {
                     bound = open != null && open.fromFeed ? open : null;
                     alone = fromTap || feedPlayerInFront() || bound != null;
                     from = alone ? lastOpening : null;
-                    FEEDS.add(new Feed(asker, alone, alone ? bound : null, from));
+                    record = new Feed(asker, alone, alone ? bound : null, from);
+                    FEEDS.add(record);
                     if (bound != null && !bound.counted) {
                         // A viewer's feed and data source both ask; it's one video opened.
                         bound.counted = true;
@@ -546,9 +567,13 @@ public final class FeedVideoAlone {
                         opened = true;
                     }
                 } else {
+                    record = known;
                     alone = known.player;
                     from = known.opening;
                 }
+                passing = alone && from != null && from.shared && !from.reelShown;
+                // Its seed check's one ask with Facebook's answer is spent on the asks let through.
+                if (passing && !fetch) record.asked = true;
             }
             if (first) {
                 if (opened) HookStatus.counted(FAMILY, OPENED);
@@ -561,8 +586,11 @@ public final class FeedVideoAlone {
                         ? "Feed videos on their own: " + what + " " + id + " is a tapped feed video's player (" + where + "), nothing comes after the video"
                         : "Feed videos on their own: " + what + " " + id + " asked from " + where + " and keeps Facebook's answer");
             }
-            if (alone && fetch && from != null && from.shared && !from.sourceAsked) {
-                Logger.printDebug(() -> "Shared reels on their own: " + what + " fetches before its data source asked, so the shared reel itself loads");
+            if (passing) {
+                if (!from.passLogged) {
+                    from.passLogged = true;
+                    Logger.printDebug(() -> "Shared reels on their own: " + what + " keeps Facebook's answers until the shared reel is on screen, so the reel itself loads");
+                }
                 return false;
             }
             if (alone) HookStatus.counted(FAMILY, HELD_BACK);

@@ -519,6 +519,8 @@ public class FeedVideoAloneTest {
                 "messaging::thread_video_message_media_viewer", "unknown::fb_shorts_viewer"}) {
             FeedVideoAlone.reelsViewerOpening(origin(where));
             Object source = new Object();
+            assertFalse(where + ", before its reel is on screen", FeedVideoAlone.seedOnly(source));
+            ReelBinding.bound(new Object(), new Object());
             assertTrue(where, FeedVideoAlone.seedOnly(source));
             clock.addAndGet(60_000);
             assertTrue(where + ", asked again", FeedVideoAlone.seedOnly(source));
@@ -541,31 +543,37 @@ public class FeedVideoAloneTest {
     }
 
     /**
-     * #421: a reel link from another app opens the reels viewer with no video in it yet, and the
-     * viewer's reels feed fetches the linked reel before its data source first asks (S22 2026-11-08,
-     * where holding that fetch back left the viewer black). Those fetches go through; once the data
-     * source has asked, the feed gets nothing more. A chat's reel whose data source asks first, and a
-     * feed video, are held from their first fetch.
+     * #421: a reel link from another app opens the reels viewer with no video in it yet. Its reels
+     * feed's fetch and the burst of seed checks its data source asks as it starts are what bring the
+     * linked reel in (S22 2026-11-08: holding the fetch, and then every seed check after the first,
+     * each left the viewer black). They keep Facebook's answers until the reel is on screen; the ask a
+     * second later, which brings Facebook's "Up next" reel, and every fetch after are held. A chat's
+     * reel goes the same way, and a feed video is held from its first fetch, reel on screen or not.
      */
     @Test
-    public void aLinksViewerLoadsItsReelBeforeAnythingIsHeldBack() {
+    public void aSharedReelGetsFacebooksAnswersUntilItIsOnScreen() {
         Settings.SHARED_REELS_ALONE.save(true);
         FeedVideoAlone.reelsViewerOpening(origin("external_deeplink::fb_shorts_external_link"));
-        clock.addAndGet(70);
+        clock.addAndGet(126);
         Object viewer = new Object();
         FeedVideoAlone.warionOpening(viewer, true);
-        clock.addAndGet(60);
+        clock.addAndGet(63);
         Object feed = new Object();
-        assertFalse("the fetch that loads the linked reel", FeedVideoAlone.holdsBack(feed));
-        assertFalse("still loading it", FeedVideoAlone.holdsBack(feed));
-        clock.addAndGet(1300);
         Object source = new Object();
-        assertFalse("the data source's first ask starts the video", FeedVideoAlone.seedCheck(source));
-        assertTrue("its next ask keeps the reel alone", FeedVideoAlone.seedCheck(source));
-        assertTrue("the feed gets nothing after the data source asked", FeedVideoAlone.holdsBack(feed));
+        assertFalse("the fetch that loads the linked reel", FeedVideoAlone.holdsBack(feed));
+        for (int ask = 1; ask <= 4; ask++) {
+            assertFalse("the data source's start, ask " + ask, FeedVideoAlone.seedCheck(source));
+        }
+        clock.addAndGet(152);
+        ReelBinding.bound(new Object(), new Object());
+        clock.addAndGet(73);
+        assertTrue("the ask after the reel is on screen keeps it alone", FeedVideoAlone.seedCheck(source));
+        clock.addAndGet(995);
+        assertTrue("the ask a second later, the one that brings Up next", FeedVideoAlone.seedCheck(source));
+        assertTrue("the feed gets nothing more", FeedVideoAlone.holdsBack(feed));
         clock.addAndGet(60_000);
         assertTrue("a swipe's fetch long after", FeedVideoAlone.holdsBack(feed));
-        assertTrue("the two held fetches and both seed checks, never the fetches let through: " + statusLine(),
+        assertTrue("only the asks after the reel was on screen are held: " + statusLine(),
                 statusLine().contains(FeedVideoAlone.HELD_BACK + " 4"));
 
         FeedVideoAlone.warionClosed(viewer);
@@ -573,13 +581,20 @@ public class FeedVideoAloneTest {
         FeedVideoAlone.reelsViewerOpening(origin("messaging::xma_shared_video"));
         FeedVideoAlone.warionOpening(viewer = new Object(), true);
         Object chatSource = new Object();
+        Object chatFeed = new Object();
         assertFalse("a chat reel's data source starts its video", FeedVideoAlone.seedCheck(chatSource));
-        assertTrue("its feed's first fetch comes after, and is held", FeedVideoAlone.holdsBack(new Object()));
+        assertFalse("and its feed's fetch loads it", FeedVideoAlone.holdsBack(chatFeed));
+        ReelBinding.bound(new Object(), new Object());
+        assertTrue("its feed is held once the reel is on screen", FeedVideoAlone.holdsBack(chatFeed));
+        assertTrue("and so is its data source", FeedVideoAlone.seedCheck(chatSource));
 
         FeedVideoAlone.warionClosed(viewer);
         clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
         FeedVideoAlone.feedVideoTapped();
-        assertTrue("a feed video's player is held from its first fetch", FeedVideoAlone.holdsBack(new Object()));
+        Object tapped = new Object();
+        assertTrue("a feed video's player is held from its first fetch", FeedVideoAlone.holdsBack(tapped));
+        ReelBinding.bound(new Object(), new Object());
+        assertTrue("a reel on screen after a feed tap changes nothing", FeedVideoAlone.holdsBack(tapped));
     }
 
     @Test
@@ -594,7 +609,10 @@ public class FeedVideoAloneTest {
 
         Settings.SHARED_REELS_ALONE.save(true);
         FeedVideoAlone.reelsViewerOpening(origin("messaging::xma_shared_video"));
-        assertTrue("both on, a chat's reel", FeedVideoAlone.seedOnly(new Object()));
+        Object chat = new Object();
+        assertFalse("both on, a chat's reel before it's on screen", FeedVideoAlone.seedOnly(chat));
+        ReelBinding.bound(new Object(), new Object());
+        assertTrue("both on, a chat's reel", FeedVideoAlone.seedOnly(chat));
         FeedVideoAlone.feedVideoTapped();
         assertTrue("both on, a feed tap", FeedVideoAlone.holdsBack(new Object()));
         assertFalse(FeedVideoAlone.moreReelsComing(true, link));
