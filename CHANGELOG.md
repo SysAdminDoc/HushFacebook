@@ -49,6 +49,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* With `Keep the progress bar` on, a reel's seek bar and time keep moving after you swipe through a few reels quickly. Facebook hides the bar while a list scrolls and brings it back when the scroll ends, but after a fast swipe that end sometimes never came, so the bar sat frozen on the reels that followed. Now the bar comes back about a second after the reel starts. (#426)
 * With `Show the post date on reels` on and `How long ago` picked, every reel's date reads like "3 weeks ago" now. Facebook wrote "2d" for a newer reel but the day itself, like "Oct 12", for an older one, so the line kept switching style from reel to reel. With the switch off, Facebook's own words stay. (#424)
 * With `Keep feed position on return` on, the Back that closes a post's comments keeps your place in the feed. On some accounts that Back reached the feed too, so it jumped to the top and reloaded while the comments closed. A Back on the feed itself, a moment later, still does what it always did. (#378)
 * With `Rounded tab bar` on, Marketplace and other pages that stopped at the top of the tab bar now run under it, so the page shows around the pill instead of a black strip. That holds after a trip to another tab and back too, and it works with `See-through bars` off. Opening Marketplace right after Facebook starts no longer leaves the strip there for several seconds, until you touched the screen. (#412)

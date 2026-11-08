@@ -31,6 +31,7 @@ import org.robolectric.shadows.ShadowLog;
 import org.robolectric.shadows.ShadowSystemClock;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -68,6 +69,7 @@ public class ProgressBarTest {
         Settings.TAP_TO_PLAY.resetToDefault();
         ProgressBar.footerLiftForTests = null;
         ProgressBar.updateAgainForTests = null;
+        ProgressBar.endScrollForTests = null;
         ProgressBar.handOverAgainForTests = null;
         ProgressBar.forgetWatchesForTests();
         ProgressBar.forgetFootersForTests();
@@ -1068,6 +1070,70 @@ public class ProgressBarTest {
         assertEquals("the update ran again after c drew", 2, runs.size());
         String line = statusLine();
         assertTrue(line, line.contains(ProgressBar.UPDATE_AGAIN + " 2"));
+    }
+
+    /**
+     * #426: a feed reel tapped and swiped away quickly left one list counted as scrolling, and the
+     * next reel's scrubber, loaded meanwhile, stayed marked as hidden for that scroll, so its time
+     * sat at 0:00. From the watch's second check the scroll is ended for a scrubber still marked,
+     * before its update runs.
+     */
+    @Test
+    public void aReelStillMarkedAsScrollingHasTheScrollEndedFromTheSecondCheck() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+        SeekBar bar = new SeekBar(RuntimeEnvironment.getApplication());
+        scrubberViews(label, bar);
+        Object scrubber = new Object();
+        List<String> calls = new ArrayList<>();
+        boolean[] marked = {true};
+        ProgressBar.endScrollForTests = asked -> {
+            assertSame(scrubber, asked);
+            calls.add("end " + marked[0]);
+            boolean was = marked[0];
+            marked[0] = false;
+            return was;
+        };
+        ProgressBar.updateAgainForTests = asked -> calls.add("update");
+        ProgressBar.mounts(label, scrubber);
+        idle(ProgressBar.UPDATE_CHECK_MS);
+        assertEquals("the first check, right after a swipe, asked about the scroll", Collections.singletonList("update"), calls);
+        idle(ProgressBar.UPDATE_CHECK_MS);
+        assertEquals("the scroll wasn't ended before the update ran", Arrays.asList("update", "end true", "update"), calls);
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.SCROLL_ENDED + " 1"));
+        // The update didn't draw yet: later checks ask again and find nothing marked.
+        idle(ProgressBar.UPDATE_CHECK_MS);
+        assertEquals(Arrays.asList("update", "end true", "update", "end false", "update"), calls);
+        line = statusLine();
+        assertTrue("an unmarked scrubber was counted: " + line, line.contains(ProgressBar.SCROLL_ENDED + " 1"));
+        // The reel draws, and the watch ends.
+        ProgressBar.refreshesTime(label, bar);
+        idle(10 * ProgressBar.UPDATE_CHECK_MS);
+        assertEquals(5, calls.size());
+
+        // Off, nothing of Facebook's is touched.
+        calls.clear();
+        marked[0] = true;
+        Settings.KEEP_PROGRESS_BAR.save(false);
+        ProgressBar.mounts(label, scrubber);
+        idle(10 * ProgressBar.UPDATE_CHECK_MS);
+        assertTrue("off, the scroll was ended: " + calls, calls.isEmpty());
+    }
+
+    @Test
+    public void aThrowingScrollEndStaysOutOfFacebook() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+        SeekBar bar = new SeekBar(RuntimeEnvironment.getApplication());
+        scrubberViews(label, bar);
+        ProgressBar.endScrollForTests = asked -> {
+            throw new IllegalStateException("Facebook moved");
+        };
+        ProgressBar.updateAgainForTests = asked -> {
+        };
+        ProgressBar.mounts(label, new Object());
+        idle(4 * ProgressBar.UPDATE_CHECK_MS);
     }
 
     @Test

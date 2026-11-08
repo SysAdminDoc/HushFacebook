@@ -1210,6 +1210,77 @@ class KeepProgressBarReelsFixtureTest {
     }
 
     /**
+     * #426: a scrubber that loads while any list counts as scrolling is marked as hidden for the
+     * scroll, and its progress update returns on that mark until the base's setter clears it, which
+     * Facebook runs only as a scroll ends. After a tap on a feed reel and a quick swipe one list never
+     * reported its end, so the time sat at 0:00. The extension's stub clears a mark it finds with the
+     * same setter, and Facebook's setter schedules the update again.
+     */
+    @Test
+    fun `each declared build lets the extension end a scroll the scrubber is still hidden for`() = bundles { bundle ->
+        val name = bundle.name
+        val progress = scrubber(bundle).progress
+        val base = progress.base
+        val where = "$name: ${base.type}->${progress.body.name}"
+        val scroll = scrollHide(progress)
+        assertEquals("$where: the state field is the base's own", base.type, scroll.state.substringBefore("->"))
+        assertEquals("$where: the flag is the state's", scroll.stateType, scroll.flag.substringBefore("->"))
+        assertTrue("$where: the flag is a boolean", scroll.flag.endsWith(":Z"))
+        // The update returns on the flag: its if-nez skips to a return.
+        val body = progress.body.code()
+        val read = body.indexOfFirst { it.opcode == Opcode.IGET_BOOLEAN && it.reference() == scroll.flag }
+        assertEquals("$where: the flag is tested right after it's read", Opcode.IF_NEZ, body[read + 1].opcode)
+        // The setter writes the flag from its argument: it builds a state and never reads the old flag.
+        val setter = scroll.setter.code()
+        assertTrue("$where: ${scroll.setter.name} doesn't build a new state", setter.any {
+            (it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE) &&
+                (it.reference() ?: "").startsWith("${scroll.stateType}->") &&
+                (it.reference() ?: "").endsWith(")${scroll.stateType}")
+        })
+
+        val named = setOf(base.type, scroll.stateType, scroll.value.substringBefore("->"))
+        val classes = FixtureDex.classes(bundle, named)
+        checkEndScroll(progress, scroll) { classes[it] }
+        val context = PatchContexts.of(classes.values.filterNot { it.type == base.type } + base + ExtensionDex.classDef(PROGRESS_BAR))
+        context.fillEndScroll(progress, scroll)
+        // d8 leaves the stub no local of its own, so it hands the scrubber to a helper on the base and
+        // returns the helper's answer from its parameter's register.
+        val stubMethod = context.mutableClassDefBy(PROGRESS_BAR).methods.single(::isEndScrollStub)
+        val stub = stubMethod.code()
+        val helperName = "${base.type}->$END_SCROLL_HELPER(Ljava/lang/Object;)Z"
+        assertEquals("$where: the stub calls the helper", listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.RETURN),
+            stub.take(3).map { it.opcode })
+        assertEquals("$where: the stub calls the helper", helperName, stub[0].reference())
+        val parameter = stubMethod.implementation!!.registerCount - 1
+        assertEquals("$where: with the scrubber it's handed", listOf(1, parameter),
+            (stub[0] as FiveRegisterInstruction).let { listOf(it.registerCount, it.registerC) })
+        assertEquals("$where: and returns the helper's answer", listOf(parameter, parameter),
+            listOf((stub[1] as OneRegisterInstruction).registerA, (stub[2] as OneRegisterInstruction).registerA))
+
+        val helperMethod = context.mutableClassDefBy(base.type).methods.single { it.name == END_SCROLL_HELPER }
+        assertTrue("$where: the helper is public static",
+            AccessFlags.PUBLIC.isSet(helperMethod.accessFlags) && AccessFlags.STATIC.isSet(helperMethod.accessFlags))
+        val helper = helperMethod.code()
+        assertEquals("$where: the helper's code", listOf(
+            Opcode.CHECK_CAST, Opcode.IGET_OBJECT, Opcode.INVOKE_INTERFACE, Opcode.MOVE_RESULT_OBJECT, Opcode.CHECK_CAST,
+            Opcode.IGET_BOOLEAN, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.INVOKE_VIRTUAL, Opcode.CONST_4, Opcode.RETURN,
+            // False, for a scrubber that isn't marked.
+            Opcode.CONST_4, Opcode.RETURN,
+        ), helper.map { it.opcode })
+        assertEquals("$where: the scrubber is cast to the base", base.type, helper[0].reference())
+        assertEquals("$where: the state is read from the scrubber", scroll.state, helper[1].reference())
+        assertEquals("$where: the state is cast to its class", scroll.stateType, helper[4].reference())
+        assertEquals("$where: the helper tests the scroll's flag", scroll.flag, helper[5].reference())
+        assertEquals("$where: the helper runs the setter", "${base.type}->${scroll.setter.name}(Z)V", helper[8].reference())
+        assertEquals("$where: with false", 0, (helper[7] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals("$where: and answers true", 1, (helper[9] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals("$where: or false", 0, (helper[11] as NarrowLiteralInstruction).narrowLiteral)
+        val call = helper[8] as FiveRegisterInstruction
+        assertEquals("$where: on the scrubber it's handed", (helper[0] as OneRegisterInstruction).registerA, call.registerC)
+        extensionHas(where, "$PROGRESS_BAR->$END_SCROLL_STUB(Ljava/lang/Object;)Z")
+    }
+
+    /**
      * #120: a press stops the scrubber's update, and on a bar that takes a touch anywhere only a seek
      * starts it again, so a tap in the kept look froze the bar and its time. The bar's release tells the
      * extension first thing, with the scrubber and the bar, so it can run the update again.

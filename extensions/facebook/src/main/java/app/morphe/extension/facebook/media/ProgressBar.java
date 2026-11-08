@@ -189,6 +189,15 @@ public final class ProgressBar {
     /** Counted each time a reel's bar update is run again because nothing had drawn the reel since its light mount. */
     static final String UPDATE_AGAIN = "Reel bar update run again after a hand-over";
 
+    /** Counted each time a reel's bar still marked as hidden for a scroll is shown, the scroll having ended long before. */
+    static final String SCROLL_ENDED = "Reel bar shown after a scroll that never reported its end";
+
+    /**
+     * The watch's run from which a bar still marked as hidden for a scroll is shown: the second, about
+     * a second after the light mount, well after any swipe that brought the reel in has settled.
+     */
+    static final int SCROLL_END_RUN = 2;
+
     /** Counted each time a reel's bar update is run again because a press on the bar let go. */
     static final String BAR_RELEASE = "Reel bar update run again after a press";
 
@@ -314,6 +323,14 @@ public final class ProgressBar {
 
     interface UpdateAgain {
         void run(Object scrubber);
+    }
+
+    /** Facebook's end of a scroll in its place, for tests, where the stub has nothing behind it. */
+    @Nullable
+    static volatile EndScroll endScrollForTests;
+
+    interface EndScroll {
+        boolean run(Object scrubber);
     }
 
     /** Facebook's side of a hand-over run again, in its place for tests, where the stubs have nothing behind them. */
@@ -880,6 +897,15 @@ public final class ProgressBar {
                 if (watch.runs == 1) {
                     Logger.printDebug(() -> "Reel bar: nothing drew " + reelName(watch.reel) + " since Facebook handed over the bar, so its update runs again");
                 }
+                // A list that never reported its scroll ended leaves the scrubber marked as hidden for
+                // it, and the update returns at once until that list scrolls again (#426).
+                if (watch.runs >= SCROLL_END_RUN) {
+                    EndScroll ending = endScrollForTests;
+                    if (ending != null ? ending.run(scrubber) : endScroll(scrubber)) {
+                        HookStatus.counted(FAMILY, SCROLL_ENDED);
+                        Logger.printDebug(() -> "Reel bar: " + reelName(watch.reel) + " was still marked as scrolling, so the scroll is ended for it");
+                    }
+                }
                 UpdateAgain forced = updateAgainForTests;
                 if (forced != null) {
                     forced.run(scrubber);
@@ -901,6 +927,17 @@ public final class ProgressBar {
      * position and length, and stops again otherwise. Does nothing until filled.
      */
     public static void updateAgain(Object scrubber) {
+    }
+
+    /**
+     * Filled in by the patch: when [scrubber] is still marked as hidden for a scroll, does what
+     * Facebook does as the scroll ends (shows the bar, applies any look held back meanwhile and
+     * schedules the update) and answers true. Facebook marks every scrubber that loads while any list
+     * counts as scrolling, and a list that never reports its scroll stopped keeps that up to a minute.
+     * Answers false until filled.
+     */
+    public static boolean endScroll(Object scrubber) {
+        return false;
     }
 
     /**

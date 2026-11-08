@@ -167,6 +167,12 @@ internal const val KEEPS_OVERLAY = "$PROGRESS_BAR->keepsOverlayWhileSeeking()Z"
 
 /** The extension's stub the patch fills with a call to the scrubber base's progress update. */
 internal const val UPDATE_AGAIN_STUB = "updateAgain"
+
+/** The extension's stub the patch fills with Facebook's own end of a scroll, run on a scrubber still marked as scrolling. */
+internal const val END_SCROLL_STUB = "endScroll"
+
+/** The helper the patch adds to the scrubber base, which [END_SCROLL_STUB] calls. */
+internal const val END_SCROLL_HELPER = "hushfacebookEndScroll"
 internal const val BAR_RELEASED = "$PROGRESS_BAR->barReleased(Ljava/lang/Object;Landroid/view/View;)V"
 internal const val SEEK_BAR_LISTENER = "Landroid/widget/SeekBar\$OnSeekBarChangeListener;"
 internal const val ON_STOP_TRACKING = "onStopTrackingTouch(Landroid/widget/SeekBar;)V"
@@ -271,6 +277,13 @@ internal const val INVALIDATE = "Landroid/view/View;->invalidate()V"
  * played with its bar at the start and no time (#120). So the mount's hook hands the extension the
  * scrubber too, and the patch fills the extension's [UPDATE_AGAIN_STUB] with a run of the base's
  * progress update, which the extension calls every half second until the update draws the reel.
+ * That update returns at once while the scrubber is marked as hidden for a scroll, a mark Facebook
+ * sets and clears from its list scroll tracker. The tracker counts a view as scrolling until that
+ * view reports it stopped, and after opening a reel from the feed and swiping on within a moment one
+ * view never did, so every scrubber that registered for the next minute was told a scroll was on and
+ * the bar and its time sat at 0:00 until the next swipe (#426). So the patch fills the extension's
+ * [END_SCROLL_STUB] with a call to Facebook's own end of a scroll ([scrollHide], in [endScrollHelper]),
+ * run only on a scrubber that still carries the mark, which shows the bar and starts its update again.
  *
  * The Reels footer lays the caption out from a seek bar status (582 `LX/AGv;` holding a `LX/AGw;`):
  * HIDDEN while a reel plays, VISIBLE while it's paused, DRAGGING during a drag. Only VISIBLE lifts
@@ -474,6 +487,11 @@ val keepProgressBarPatch = bytecodePatch(
             refuse("$PROGRESS_BAR has no static void $UPDATE_AGAIN_STUB(Object)")
         }
         checkUpdateAgain(progress)
+        if (classDefByOrNull(PROGRESS_BAR)?.methods?.any(::isEndScrollStub) != true) {
+            refuse("$PROGRESS_BAR has no static boolean $END_SCROLL_STUB(Object)")
+        }
+        val scroll = scrollHide(progress)
+        checkEndScroll(progress, scroll) { classDefByOrNull(it) }
         checkHandOverAgain(returns, another) { classDefByOrNull(it) }
         val overrides = if (lengthChecks == null) emptyList() else {
             lengthCheckOverrides(checkHolders, checksOwner.type, listOf(lengthChecks.minimum, lengthChecks.short)) {
@@ -553,6 +571,7 @@ val keepProgressBarPatch = bytecodePatch(
         fillFooterLift(footer)
         mutableClassDefBy(footerSeek.type).methods.single { it.sameAs(footerSeek.method) }.keepsOverlayOnPress(footerSeek, visibility)
         fillUpdateAgain(progress)
+        fillEndScroll(progress, scroll)
         fillHandOverAgain(returns, another)
         if (plugin != null && sizes != null) {
             mutableClassDefBy(plugin.type).methods.single { it.sameAs(sizes.shrink) }
@@ -2316,6 +2335,161 @@ internal fun BytecodePatchContext.fillUpdateAgain(progress: ProgressUpdate) {
         """
             check-cast p0, $base
             invoke-static { p0 }, $base->${progress.update.name}($base)V
+        """,
+    )
+}
+
+/**
+ * The mark the scrubber's progress update returns on while a list scrolls, and Facebook's own way
+ * of clearing it (#426), as smali text: the base's [state] field (585 `LX/0AE0;->A0O`), the [value]
+ * method that gives that flow's current state, the state's class ([stateType], `LX/09RG;`) and its
+ * [flag] the update tests (`A04`), and the base's [setter] (`A1I(Z)V`). Facebook's scroll listener
+ * runs the setter with true as a scroll starts, which stops the update, and with false as the scroll
+ * ends, which applies a look held back meanwhile and schedules the update again.
+ */
+internal class ScrollHide(val state: String, val value: String, val stateType: String, val flag: String, val setter: Method)
+
+/**
+ * Finds [ScrollHide] for [progress]: the one `iget-boolean` the update's body tests with `if-nez`
+ * right after casting what its state field's flow gives, and the one non-private instance `(Z)V`
+ * method of the base that builds a new state without reading that flag (the flag being its
+ * argument) and schedules the next update. Refuses unless there's exactly one of each.
+ */
+internal fun scrollHide(progress: ProgressUpdate): ScrollHide {
+    val base = progress.base.type
+    val body = progress.body
+    val code = body.implementation!!.instructions.toList()
+    val where = "$base->${body.name}"
+    val reads = code.indices.mapNotNull { at ->
+        if (at < 3 || code[at].opcode != Opcode.IGET_BOOLEAN) return@mapNotNull null
+        val read = code[at] as TwoRegisterInstruction
+        val skip = code.getOrNull(at + 1)?.takeIf { it.opcode == Opcode.IF_NEZ } as? OneRegisterInstruction
+        val cast = code[at - 1].takeIf { it.opcode == Opcode.CHECK_CAST } as? OneRegisterInstruction
+        val result = code[at - 2].takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT } as? OneRegisterInstruction
+        val ask = code[at - 3].takeIf { it.opcode == Opcode.INVOKE_INTERFACE } as? FiveRegisterInstruction
+        if (skip?.registerA != read.registerA || cast == null || result == null || ask == null || ask.registerCount != 1 ||
+            result.registerA != cast.registerA || read.registerB != cast.registerA
+        ) {
+            return@mapNotNull null
+        }
+        val stateType = code[at - 1].reference() ?: return@mapNotNull null
+        val flag = (read as ReferenceInstruction).reference as FieldReference
+        val value = (ask as ReferenceInstruction).reference as MethodReference
+        if (flag.definingClass != stateType || value.returnType != "Ljava/lang/Object;" || value.parameterTypes.isNotEmpty()) {
+            return@mapNotNull null
+        }
+        // The flow is the one the base's own field holds, read into the register the ask is made on.
+        val load = body.writersReaching(at - 3, ask.registerC).singleOrNull()?.let { code.getOrNull(it) }
+        val field = (load?.takeIf { it.opcode == Opcode.IGET_OBJECT } as? ReferenceInstruction)?.reference as? FieldReference
+        if (field == null || field.definingClass != base || field.type != value.definingClass) return@mapNotNull null
+        ScrollHide(field.toString(), value.toString(), stateType, flag.toString(), body)
+    }.distinctBy { it.flag }
+    val found = reads.singleOrNull()
+        ?: refuse("$where tests ${reads.size} flags of its state before moving the bar, expected one, the scroll's")
+    fun builds(instruction: Instruction): Boolean {
+        val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+        return (instruction.opcode == Opcode.INVOKE_STATIC || instruction.opcode == Opcode.INVOKE_STATIC_RANGE) &&
+            call.definingClass == found.stateType && call.returnType == found.stateType
+    }
+    fun schedules(instruction: Instruction): Boolean {
+        val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+        return instruction.opcode == Opcode.INVOKE_STATIC && call.definingClass == base && call.returnType == "V" &&
+            call.parameterTypes.map(CharSequence::toString) == listOf(base, "J")
+    }
+    val setters = progress.base.methods.filter { method ->
+        val instructions = method.implementation?.instructions?.toList() ?: return@filter false
+        method.returnType == "V" && method.parameterTypes.map(CharSequence::toString) == listOf("Z") &&
+            !AccessFlags.STATIC.isSet(method.accessFlags) && !AccessFlags.PRIVATE.isSet(method.accessFlags) &&
+            instructions.any(::builds) && instructions.any(::schedules) &&
+            instructions.none { it.opcode == Opcode.IGET_BOOLEAN && it.reference() == found.flag }
+    }
+    val setter = setters.singleOrNull()
+        ?: refuse("$base has ${setters.size} methods setting ${found.flag} from their flag and scheduling the update, expected one")
+    return ScrollHide(found.state, found.value, found.stateType, found.flag, setter)
+}
+
+/** Whether [method] is the extension's [END_SCROLL_STUB]: static, boolean, taking one Object. */
+internal fun isEndScrollStub(method: Method) = method.name == END_SCROLL_STUB &&
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Z" &&
+    method.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;")
+
+/**
+ * Refuses unless everything [endScrollHelper] uses is there and public, as redex leaves it: the state
+ * field and its flow's class, the state's class and its flag, and the setter. [checkUpdateAgain] covers
+ * the base the extension's stub calls.
+ */
+internal fun checkEndScroll(progress: ProgressUpdate, scroll: ScrollHide, classOf: (String) -> ClassDef?) {
+    checkUpdateAgain(progress)
+    if (!AccessFlags.PUBLIC.isSet(scroll.setter.accessFlags)) refuse("${progress.base.type}->${scroll.setter.name}, the scroll's setter, isn't public")
+    fun publicField(descriptor: String) {
+        val owner = descriptor.substringBefore("->")
+        val name = descriptor.substringAfter("->").substringBefore(":")
+        val type = classOf(owner) ?: refuse("$owner, holding $descriptor, isn't in this APK")
+        if (!AccessFlags.PUBLIC.isSet(type.accessFlags)) refuse("$owner, holding $descriptor, isn't public")
+        val field = type.fields.singleOrNull { it.name == name } ?: refuse("$descriptor isn't declared on $owner")
+        if (!AccessFlags.PUBLIC.isSet(field.accessFlags)) refuse("$descriptor isn't public")
+    }
+    publicField(scroll.state)
+    publicField(scroll.flag)
+    val flow = scroll.value.substringBefore("->")
+    val flowClass = classOf(flow)
+    // A flow class from outside the APK (the framework's or a library's) is public to everyone.
+    if (flowClass != null && !AccessFlags.PUBLIC.isSet(flowClass.accessFlags)) refuse("$flow, the scrubber's state flow, isn't public")
+}
+
+/**
+ * The helper on the scrubber base: when the scrubber it's handed still carries the scroll mark
+ * ([ScrollHide.flag]), runs the base's setter with false, as Facebook's scroll listener does when a
+ * scroll ends, and answers true, otherwise false. One local for the state, and the scrubber cast in p0.
+ */
+internal fun endScrollHelper(base: String, scroll: ScrollHide): MutableMethod = ImmutableMethod(
+    base,
+    END_SCROLL_HELPER,
+    listOf(ImmutableMethodParameter("Ljava/lang/Object;", null, null)),
+    "Z",
+    AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+    null,
+    null,
+    MutableMethodImplementation(2),
+).toMutable().apply {
+    addInstructionsWithLabels(
+        0,
+        """
+            check-cast p0, $base
+            iget-object v0, p0, ${scroll.state}
+            invoke-interface { v0 }, ${scroll.value}
+            move-result-object v0
+            check-cast v0, ${scroll.stateType}
+            iget-boolean v0, v0, ${scroll.flag}
+            if-eqz v0, :unmarked
+            const/4 v0, 0x0
+            invoke-virtual { p0, v0 }, $base->${scroll.setter.name}(Z)V
+            const/4 v0, 0x1
+            return v0
+            :unmarked
+            const/4 v0, 0x0
+            return v0
+        """,
+    )
+}
+
+/**
+ * Adds [endScrollHelper] to the scrubber base and fills the extension's [END_SCROLL_STUB] with a call
+ * to it. d8 gives the stub no locals of its own, so the answer goes back in p0.
+ */
+internal fun BytecodePatchContext.fillEndScroll(progress: ProgressUpdate, scroll: ScrollHide) {
+    checkEndScroll(progress, scroll) { classDefByOrNull(it) }
+    val base = progress.base.type
+    val owner = mutableClassDefBy(base)
+    if (owner.methods.none { it.name == END_SCROLL_HELPER }) owner.methods.add(endScrollHelper(base, scroll))
+    val stub = mutableClassDefBy(PROGRESS_BAR).methods.singleOrNull(::isEndScrollStub)
+        ?: refuse("$PROGRESS_BAR has no static boolean $END_SCROLL_STUB(Object)")
+    stub.addInstructions(
+        0,
+        """
+            invoke-static { p0 }, $base->$END_SCROLL_HELPER(Ljava/lang/Object;)Z
+            move-result p0
+            return p0
         """,
     )
 }
