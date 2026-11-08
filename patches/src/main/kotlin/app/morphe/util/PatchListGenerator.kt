@@ -37,7 +37,8 @@
  * https://github.com/RookieEnough/De-Vanced/blob/9ac979883a6b6eeab5cefb4fc5d955073f2f2bc2/patches/src/main/kotlin/app/morphe/util/PatchListGenerator.kt
  * (GPL-3.0), by way of
  * https://github.com/icysymmetra/tiktok-patches-for-morphe/blob/ebf6296845cb889608cdc6681348ccb2e550f2bc/patches/src/main/kotlin/app/morphe/util/PatchListGenerator.kt
- * and Hushfeed. The tiktok-patches-for-morphe copy cites a ReVanced path that never held this file.
+ * and Hushfeed. The tiktok-patches-for-morphe copy, Hushfeed's until 7e3f278bd and this file's own
+ * header at c15d4f79 cite a ReVanced path that never held this file; De-Vanced's cites none.
  */
 package app.morphe.util
 
