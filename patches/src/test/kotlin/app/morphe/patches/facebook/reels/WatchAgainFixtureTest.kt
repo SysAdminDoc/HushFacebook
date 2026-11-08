@@ -99,7 +99,7 @@ class WatchAgainFixtureTest {
                     })
                 }
 
-                context.replayWatchAgainInPlace()
+                context.replayWatchAgainInPlace(ask to replay)
                 for ((owner, method, found) in sites) {
                     val where = "$name: ${owner.type}->${method.name}"
                     val hooked = (found + deepDiveAsks(method, found)).sortedBy { it.call }

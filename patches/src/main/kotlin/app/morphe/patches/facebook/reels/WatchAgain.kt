@@ -153,9 +153,34 @@ internal fun watchAgainAnchors(taps: List<Pair<Method, Answer>>): Pair<MethodRef
 private fun askAt(method: Method, answer: Answer) =
     (method.implementation!!.instructions.elementAt(answer.call) as ReferenceInstruction).reference as MethodReference
 
+/**
+ * #403 and #404, which both start from Watch again's ask and replay field ([watchAgainAnchors]). They're
+ * read once, before either hook goes in: #403's sits between each Watch again tap's answer and its
+ * branch, so reading the taps again after it finds none. Returns a warning for each hook that didn't go in.
+ */
+internal fun BytecodePatchContext.hookWatchAgainAsk(): List<String> {
+    val anchors = try {
+        watchAgainAnchors(watchAgainTaps())
+    } catch (exception: PatchException) {
+        return listOf("${exception.message}, so Replay feed videos in place and Open saved videos in the video player leave videos opening Reels.")
+    }
+    val warnings = mutableListOf<String>()
+    try {
+        replayWatchAgainInPlace(anchors)
+    } catch (exception: PatchException) {
+        warnings += "${exception.message}, so Replay feed videos in place leaves Watch again opening Reels."
+    }
+    try {
+        keepSavedVideosInPlayer(anchors.first)
+    } catch (exception: PatchException) {
+        warnings += "${exception.message}, so Open saved videos in the video player leaves them opening Reels."
+    }
+    return warnings
+}
+
 /** Watch again replays the video where it is when the switch is on, instead of opening Reels (#403). */
-internal fun BytecodePatchContext.replayWatchAgainInPlace() {
-    val (ask, replay) = watchAgainAnchors(watchAgainTaps())
+internal fun BytecodePatchContext.replayWatchAgainInPlace(anchors: Pair<MethodReference, String>) {
+    val (ask, replay) = anchors
     val asked = described(ask)
     val owners = mutableListOf<Pair<String, Method>>()
     classDefForEachReferencing(types = listOf(ask.definingClass)) { classDef ->

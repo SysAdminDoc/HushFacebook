@@ -1982,6 +1982,10 @@ A video you tap in the feed opens full screen by itself, with no reels to swipe 
 Replay feed videos in place	Повторять видео из Ленты на месте
 # context: summary of that switch; Watch again is Facebook's own button shown when a feed video ends, so use Facebook's wording in your language if you know it
 Watch again at the end of a feed video plays it again right there, instead of opening it in Reels.	Кнопка «Посмотреть снова» в конце видео из Ленты запускает его заново прямо там, а не открывает в Reels.
+# context: switch title under Reels and Watch; on, a video tapped in Facebook's Saved list plays in the regular video player instead of the Reels viewer
+Open saved videos in the video player	Открывать сохранённые видео в видеоплеере
+# context: summary of that switch; Saved is Facebook's own list of things you saved, so use Facebook's name for it in your language if you know it
+A video you tap in Saved plays in the video player instead of Reels, where the next swipe is a suggested reel.	Видео, которое вы нажимаете в разделе «Сохранённое», воспроизводится в видеоплеере, а не в Reels, где следующий свайп показывает рекомендованный ролик.
 Hide the new comments pop-up	Скрывать всплывающее уведомление о новых комментариях
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	Пузырь «Новые комментарии» больше не появляется во время чтения комментариев. Новые комментарии по-прежнему отображаются в списке.

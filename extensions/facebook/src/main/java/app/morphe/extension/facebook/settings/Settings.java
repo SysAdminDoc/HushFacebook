@@ -974,6 +974,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_watch_again_in_place", FALSE);
 
     /**
+     * A video tapped in Saved plays in the video player instead of the Reels viewer, whose next
+     * swipe is a suggested reel ({@link app.morphe.extension.facebook.reels.SavedVideos}, #404).
+     * Off by default. A change shows on the next tap.
+     */
+    public static final BooleanSetting SAVED_VIDEOS_IN_PLAYER =
+            new BooleanSetting("hushfacebook_saved_videos_in_player", FALSE);
+
+    /**
      * The batches of watched reels the Reels viewer sends as FbShortsSeenStateMutation: only their
      * ids, the record Facebook ranks the Reels feed with, which nobody else sees. Held back, reels
      * already watched may come back in the feed.

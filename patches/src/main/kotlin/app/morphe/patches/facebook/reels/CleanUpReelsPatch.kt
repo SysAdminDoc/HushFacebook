@@ -79,7 +79,9 @@ private const val PATCH = "Clean up Reels"
  * video off the bottom of a video opened from the feed, with the room kept for it (#367, #375, see
  * FeedUpNext.kt). A twenty-third, also off, takes the Fullscreen pill off the space under a wide
  * video (#394, see ReelFullscreenPill.kt). A twenty-fourth, also off, has Watch again at the end of
- * a feed video play it again where it is instead of opening it in Reels (#403, see WatchAgain.kt). With Debug
+ * a feed video play it again where it is instead of opening it in Reels (#403, see WatchAgain.kt). A
+ * twenty-fifth, also off, plays a video tapped in Saved in the video player instead of Reels (#404,
+ * see SavedVideos.kt). With Debug
  * logging on, it also reports whether a reel that ends
  * is on the player the Reels auto-advance controller holds (see ReelBinding.kt), with no switch.
  *
@@ -96,7 +98,7 @@ val cleanUpReelsPatch = bytecodePatch(
     name = "Clean up Reels",
     description = "Hides clutter on reels, such as the Follow button, comment previews, Remix and Use template " +
         "buttons and Threads cards between reels, so more of the video shows, and can play each reel once " +
-        "instead of over and over, keep its original audio instead of a Meta AI dub, drop the search suggestions under the caption, over the comments and at the top of a profile's reels, or hide the like, comment and share counts, the Like, Comment, Share, Save or speaker button, or the line naming the reel's sound. It can also keep the Reels tab to accounts you follow, open a video you tap in the feed on its own, with no reels after it, play a feed video again right there when you tap Watch again instead of opening Reels, take the UP NEXT bar off the bottom of a video you open from the feed, hide the Fullscreen button under a wide video, stop the \"This is taking a while\" message when a video is slow to load, and play whole reels in the feed's Reels row instead of the same second over and over, or keep the Comment button on reels with comments turned off so you can read them, and hide the one-tap Subscribe button some authors get instead of Follow, or Search and the button beside it at the top of a video you open and of the Reels tab, and show when a reel or video was posted. Its Burn-in guard can fade a reel's buttons, caption and bars when you leave them alone, so they don't burn into the screen. With Turn off HDR brightness patched too, it can show Reels in gray, video and all. Starts off. Turn on the parts you want in Hushfacebook settings > Reels and Watch.",
+        "instead of over and over, keep its original audio instead of a Meta AI dub, drop the search suggestions under the caption, over the comments and at the top of a profile's reels, or hide the like, comment and share counts, the Like, Comment, Share, Save or speaker button, or the line naming the reel's sound. It can also keep the Reels tab to accounts you follow, open a video you tap in the feed on its own, with no reels after it, play a feed video again right there when you tap Watch again instead of opening Reels, play a video you tap in Saved in the video player instead of Reels, take the UP NEXT bar off the bottom of a video you open from the feed, hide the Fullscreen button under a wide video, stop the \"This is taking a while\" message when a video is slow to load, and play whole reels in the feed's Reels row instead of the same second over and over, or keep the Comment button on reels with comments turned off so you can read them, and hide the one-tap Subscribe button some authors get instead of Follow, or Search and the button beside it at the top of a video you open and of the Reels tab, and show when a reel or video was posted. Its Burn-in guard can fade a reel's buttons, caption and bars when you leave them alone, so they don't burn into the screen. With Turn off HDR brightness patched too, it can show Reels in gray, video and all. Starts off. Turn on the parts you want in Hushfacebook settings > Reels and Watch.",
 ) {
     category("Reels")
     dependsOn(settingsPatch)
@@ -153,12 +155,9 @@ val cleanUpReelsPatch = bytecodePatch(
         }
         // #161: a feed video's player asks for no more reels after it.
         keepFeedVideosAlone()
-        // #403: Watch again at the end of a feed video, which opens the video in Reels.
-        try {
-            replayWatchAgainInPlace()
-        } catch (exception: PatchException) {
-            patchLog.warning("${exception.message}, so Replay feed videos in place leaves Watch again opening Reels.")
-        }
+        // #403: Watch again at the end of a feed video, which opens the video in Reels, and #404: a video
+        // tapped in Saved, which opens in the Reels viewer through the same ask.
+        hookWatchAgainAsk().forEach { patchLog.warning(it) }
         // #222: the "This is taking a while" message a stalled video posts.
         hideSlowConnectionMessage()
         // #394: the Fullscreen pill under a wide video in the Reels viewer.

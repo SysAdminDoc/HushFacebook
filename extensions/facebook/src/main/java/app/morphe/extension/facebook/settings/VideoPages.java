@@ -233,6 +233,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.WATCH_AGAIN_IN_PLACE,
                     L10n.t("Watch again at the end of a feed video plays it again right there, instead of "
                             + "opening it in Reels.")));
+            // Asked as a video in Saved is tapped, so a change shows on the next tap (#404).
+            reels.addPreference(toggle(context, Settings.SAVED_VIDEOS_IN_PLAYER,
+                    L10n.t("A video you tap in Saved plays in the video player instead of Reels, where the next "
+                            + "swipe is a suggested reel.")));
             // Asked as each tile of the feed's Reels row is drawn, so a change shows on the next tiles.
             reels.addPreference(toggle(context, Settings.PLAY_FEED_REELS_WHOLE,
                     L10n.t("The reels in your feed's Reels row play from the start and keep going, instead of "
