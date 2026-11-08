@@ -1790,8 +1790,8 @@ final class L10nTableEs {
                 "\u00daltimo guardado");
         table.put("Leave calls and chats to Messenger",
                 "Dejar llamadas y chats a Messenger");
-        table.put("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one. That row shows on upright reels, not wide ones.",
-                "Salir de Facebook no abre la ventana. Toca Imagen en imagen en el men\u00fa de un reel (los tres puntos) cuando quieras una. Esa opci\u00f3n aparece en los reels verticales, no en los horizontales.");
+        table.put("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one.",
+                "Salir de Facebook no abre la ventana. Toca Imagen en imagen en el men\u00fa de un reel (los tres puntos) cuando quieras una.");
         table.put("Left alone: %s",
                 "No se traducen: %s");
         table.put("Let each post come back once",

@@ -485,7 +485,7 @@ final class VideoPages {
                 // Asked as each window is armed and on each tap of the row, so a change shows from the next reel.
                 playback.addPreference(toggle(context, Settings.PICTURE_IN_PICTURE_FROM_MENU,
                         L10n.t("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu "
-                                + "(the three dots) when you want one. That row shows on upright reels, not wide ones.")));
+                                + "(the three dots) when you want one.")));
                 // Asked as each screen is armed and as the screen changes, so a change shows within a moment.
                 playback.addPreference(toggle(context, Settings.PICTURE_IN_PICTURE_BUTTON,
                         L10n.t("Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open "

@@ -1790,8 +1790,8 @@ final class L10nTableZh_rCN {
                 "\u4e0a\u6b21\u4fdd\u5b58");
         table.put("Leave calls and chats to Messenger",
                 "\u901a\u8bdd\u548c\u804a\u5929\u4ea4\u7ed9 Messenger");
-        table.put("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one. That row shows on upright reels, not wide ones.",
-                "\u79bb\u5f00 Facebook \u65f6\u4e0d\u4f1a\u6253\u5f00\u5c0f\u7a97\u53e3\u3002\u9700\u8981\u65f6\uff0c\u8bf7\u70b9\u6309 Reels\u201c\u66f4\u591a\u201d\u83dc\u5355\uff08\u4e09\u4e2a\u70b9\uff09\u4e2d\u7684\u201c\u753b\u4e2d\u753b\u201d\u3002\u7ad6\u5c4f Reels \u4f1a\u663e\u793a\u8be5\u884c\uff0c\u6a2a\u5c4f\u7684\u4e0d\u4f1a\u3002");
+        table.put("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one.",
+                "\u79bb\u5f00 Facebook \u65f6\u4e0d\u4f1a\u6253\u5f00\u5c0f\u7a97\u53e3\u3002\u9700\u8981\u65f6\uff0c\u8bf7\u70b9\u6309 Reels\u201c\u66f4\u591a\u201d\u83dc\u5355\uff08\u4e09\u4e2a\u70b9\uff09\u4e2d\u7684\u201c\u753b\u4e2d\u753b\u201d\u3002");
         table.put("Left alone: %s",
                 "\u4e0d\u7ffb\u8bd1\uff1a%s");
         table.put("Let each post come back once",

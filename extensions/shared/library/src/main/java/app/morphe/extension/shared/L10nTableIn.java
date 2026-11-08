@@ -1790,8 +1790,8 @@ final class L10nTableIn {
                 "Penyimpanan terakhir");
         table.put("Leave calls and chats to Messenger",
                 "Serahkan panggilan dan chat ke Messenger");
-        table.put("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one. That row shows on upright reels, not wide ones.",
-                "Keluar dari Facebook tidak membuka jendela. Ketuk Gambar dalam gambar di menu reel (tiga titik) saat kamu menginginkannya. Baris itu ada di reel tegak, bukan di reel lebar.");
+        table.put("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one.",
+                "Keluar dari Facebook tidak membuka jendela. Ketuk Gambar dalam gambar di menu reel (tiga titik) saat kamu menginginkannya.");
         table.put("Left alone: %s",
                 "Tidak diterjemahkan: %s");
         table.put("Let each post come back once",

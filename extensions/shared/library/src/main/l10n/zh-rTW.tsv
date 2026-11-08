@@ -1736,7 +1736,7 @@ On carriers with Facebook Flex, hides the purple Free mode bar. That bar is also
 # context: switch title under Picture-in-picture on the Playback page: the small window opens only from the Picture-in-picture row this adds to a reel's three-dot More menu, not when you leave Facebook
 Only from a reel's More menu	僅從 Reels 的更多選單開啟
 # context: summary of that switch; Picture-in-picture is the name of the row in the reel's menu, translated as the row is; the three dots are the reel's own menu button
-Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one. That row shows on upright reels, not wide ones.	離開 Facebook 不會開啟小視窗。需要時，請點按 Reels 更多選單（三點）中的「子母畫面」。直式 Reels 會顯示該項目，橫式的不會。
+Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one.	離開 Facebook 不會開啟小視窗。需要時，請點按 Reels 更多選單（三點）中的「子母畫面」。
 # context: switch title under Picture-in-picture on the Playback page; the button floats over a reel or video and opens the small window when tapped
 Picture-in-picture button	子母畫面按鈕
 # context: summary of that switch; "the window" is the small picture-in-picture window

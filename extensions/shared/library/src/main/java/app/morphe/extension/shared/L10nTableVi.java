@@ -1790,8 +1790,8 @@ final class L10nTableVi {
                 "L\u1ea7n l\u01b0u g\u1ea7n nh\u1ea5t");
         table.put("Leave calls and chats to Messenger",
                 "\u0110\u1ec3 Messenger lo cu\u1ed9c g\u1ecdi v\u00e0 chat");
-        table.put("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one. That row shows on upright reels, not wide ones.",
-                "R\u1eddi kh\u1ecfi Facebook s\u1ebd kh\u00f4ng m\u1edf c\u1eeda s\u1ed5. Khi mu\u1ed1n, h\u00e3y nh\u1ea5n H\u00ecnh trong h\u00ecnh trong menu Th\u00eam c\u1ee7a reel (d\u1ea5u ba ch\u1ea5m). D\u00f2ng \u0111\u00f3 c\u00f3 \u1edf th\u01b0\u1edbc phim d\u1ecdc, kh\u00f4ng c\u00f3 \u1edf th\u01b0\u1edbc phim ngang.");
+        table.put("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one.",
+                "R\u1eddi kh\u1ecfi Facebook s\u1ebd kh\u00f4ng m\u1edf c\u1eeda s\u1ed5. Khi mu\u1ed1n, h\u00e3y nh\u1ea5n H\u00ecnh trong h\u00ecnh trong menu Th\u00eam c\u1ee7a reel (d\u1ea5u ba ch\u1ea5m).");
         table.put("Left alone: %s",
                 "Kh\u00f4ng d\u1ecbch: %s");
         table.put("Let each post come back once",

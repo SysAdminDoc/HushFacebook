@@ -81,6 +81,11 @@ internal const val REFUSED = "$PICTURE_IN_PICTURE->refused()Z"
 
 internal const val SURFACE_ALLOWED = "$PICTURE_IN_PICTURE->surfaceAllowed()Z"
 
+internal const val WIDE_FITS = "$PICTURE_IN_PICTURE->wideFits(I)Z"
+
+/** The float bits of 1000f, which ReelsPipUtil's shape check divides a reel's thousandths by. */
+internal const val THOUSAND_FLOAT_BITS = 0x447a0000
+
 internal const val ARMED = "$PICTURE_IN_PICTURE->armed(${ACTIVITY}Ljava/lang/Object;[Ljava/lang/Object;)V"
 
 /** The extension's stub the patch fills with a call of [REARM_HELPER]. */
@@ -156,8 +161,11 @@ internal const val SHOWN_AGAIN = "$PICTURE_IN_PICTURE->shownAgain(${VIEW}I)V"
  * again, through a helper the patch adds to ReelsPipUtil, with Facebook's own arguments and that
  * reel's player, so the window plays the reel on screen. Its shape is that reel's own, from the
  * aspect its video params carry (581 `LX/5AT;`, their one double), checked the way the arming step
- * checks the aspect it reads: Facebook arms no window for a reel wider than square, so neither does
- * the helper, and the extension keeps that reel out of the window (#126).
+ * checks the aspect it reads, from 1 by 2.39 up to 2.39 by 1; the extension keeps a reel of another
+ * shape out of the window (#126). Facebook's own check of that shape (585 `LX/09OS;->A0B`, the
+ * util's static (int) -> boolean dividing the thousandths it gets by 1000f) stops at square, so a
+ * landscape reel opened no window at all. The extension goes first in it and says yes up to
+ * Android's widest window, 2.39 to one (#418).
  *
  * In the window, Facebook's viewer (581 `LX/g7h;`) gives its container a new view id, and its
  * fragment finds the container by that id from the top of the screen. A React Native view can
@@ -241,6 +249,12 @@ val pictureInPicturePatch = bytecodePatch(
         val home = findHome(check, gate, disarms)
         applyPipCheck(check)
         applySurfaceGate(gate)
+        // Landscape reels in a wide window (#418); without it they open none, as Facebook has them.
+        try {
+            applyShapeCheck(findShapeCheck(check, step))
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so landscape reels open no window.")
+        }
         applyArming(arming, player.play.definingClass, videoParams)
         disarms.forEach { applyDisarm(it) }
         applyPlayer(player)
@@ -382,6 +396,49 @@ internal fun BytecodePatchContext.applySurfaceGate(gate: Method) {
             invoke-static { }, $SURFACE_ALLOWED
             move-result v0
             if-eqz v0, :facebook
+            return v0
+        """,
+        ExternalLabel("facebook", method.getInstruction(0)),
+    )
+}
+
+/** Whether [method] is ReelsPipUtil's shape check: static (int) -> boolean, dividing by 1000f. */
+internal fun isShapeCheck(method: Method): Boolean =
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Z" &&
+        method.parameterTypes.map(CharSequence::toString) == listOf("I") &&
+        method.implementation?.instructions?.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == THOUSAND_FLOAT_BITS } == true
+
+/**
+ * ReelsPipUtil's shape check, the one [isShapeCheck] of [check]'s class, which the arming [step]
+ * asks with the reel's thousandths before it arms. Changes nothing.
+ */
+internal fun BytecodePatchContext.findShapeCheck(check: Method, step: Method): Method {
+    val util = classDefBy(check.definingClass)
+    val shapes = util.methods.filter(::isShapeCheck)
+    val shape = shapes.singleOrNull()
+        ?: refuse("${util.type} has ${shapes.size} static (int) -> boolean checks dividing by a thousand, expected 1")
+    val asked = step.calls().any {
+        it.definingClass == shape.definingClass && it.name == shape.name && it.parameterList() == listOf("I") && it.returnType == "Z"
+    }
+    if (!asked) refuse("${step.definingClass}->${step.name} doesn't ask ${shape.definingClass}->${shape.name} for the reel's shape")
+    return shape
+}
+
+/**
+ * The extension goes first in the shape check, handed the reel's thousandths. Its yes, for a reel
+ * wider than square that Android's window still takes, returns true from v0, free at the method's
+ * start. Anything else runs Facebook's check as it was (#418).
+ */
+internal fun BytecodePatchContext.applyShapeCheck(shape: Method) {
+    val method = mutableClassDefBy(shape.definingClass).findMutableMethodOf(shape)
+    method.requireLocals(PATCH, 1)
+    method.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p0 .. p0 }, $WIDE_FITS
+            move-result v0
+            if-eqz v0, :facebook
+            const/4 v0, 0x1
             return v0
         """,
         ExternalLabel("facebook", method.getInstruction(0)),

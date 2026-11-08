@@ -58,9 +58,12 @@ import app.morphe.extension.shared.settings.Setting;
  * the next reel's player without arming again, so the window would open on a frozen reel, or not at
  * all once the first one's pause turned auto-enter off. So when another reel starts, the extension
  * arms the window again with Facebook's own arguments for that reel's player, in that reel's own
- * shape, worked out the way Facebook works it out when it arms. A reel of a shape Facebook arms no
- * window for, a landscape one, isn't armed again: it opens no window, as with Facebook's own arming,
- * where before it opened in the last reel's tall shape around the wide video (#126). And while the
+ * shape, worked out the way Facebook works it out when it arms. Facebook's own shape check takes
+ * nothing wider than square, so a landscape reel opened no window; with the switch on, that check
+ * says yes up to Android's widest window, 2.39 to one, and a landscape reel floats in a wide window
+ * ({@link #wideFits}, #418). A reel of a shape the window doesn't take, wider still, isn't armed
+ * again: it opens no window, as with Facebook's own arming, where before it opened in the last
+ * reel's shape around the wide video (#126). And while the
  * window is armed, it sets Facebook's change of auto-enter aside and decides from the reel on screen:
  * while it's paused, or of a shape the window doesn't take, auto-enter is off, set the way
  * Facebook's own disarm sets it, and when a reel plays, it's back on.
@@ -162,12 +165,16 @@ public final class PictureInPicture {
     static final Set<String> REWINDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             "BY_SHORT_FORM_VIDEO_INVISIBLE", "BY_GROOT_TRANSITION", "BY_AUTOPLAY")));
 
+    /** Counted each time Facebook's shape check takes a reel wider than square that it would turn away. */
+    static final String WIDE = "landscape reel let into the window";
+
     /**
-     * The narrowest and widest window Facebook arms for a reel, width to height, as its arming
-     * checks it: 1 by 2.39, Android's own narrowest, up to square.
+     * The narrowest and widest window armed for a reel, width to height: 1 by 2.39 and 2.39 by 1,
+     * Android's own limits. Facebook's arming checks the narrowest itself and stops at square, and
+     * {@link #wideFits} takes it the rest of the way.
      */
     static final float NARROWEST = 1f / 2.39f;
-    static final float WIDEST = 1f;
+    static final float WIDEST = 2.39f;
 
     /** Counted each time the window's viewer gets a view id of its own instead of one a view already holds. */
     static final String VIEWER_ID = "viewer id replaced";
@@ -375,6 +382,26 @@ public final class PictureInPicture {
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "picture-in-picture check", failure);
+            return false;
+        }
+    }
+
+    /**
+     * The hook, first thing in ReelsPipUtil's check of a reel's shape, [thousandths] wide to a
+     * thousand high, which every arming for a reel asks before it arms. Facebook's check takes from
+     * {@link #NARROWEST} up to square and the arming disarms for anything else, so a landscape reel
+     * opened no window (#418). True answers yes for a shape wider than square up to {@link #WIDEST};
+     * false leaves the answer to Facebook's check.
+     */
+    public static boolean wideFits(int thousandths) {
+        try {
+            if (!on() || thousandths <= 1000 || thousandths / 1000f > WIDEST) return false;
+            HookStatus.bound(FAMILY, "reel shape check");
+            HookStatus.counted(FAMILY, WIDE);
+            Logger.printDebug(() -> "Picture-in-picture: a reel " + thousandths + " wide to 1000 high fits");
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel shape check", failure);
             return false;
         }
     }
@@ -1032,8 +1059,8 @@ public final class PictureInPicture {
     /**
      * The window's shape for a reel whose video is [aspect] wide to one high, worked out as Facebook
      * works it out when it arms the window for a reel: in thousandths, from {@link #NARROWEST} up to
-     * {@link #WIDEST}, and 9 by 16 for a video of no known shape. Null for a shape Facebook arms no
-     * window for, such as a landscape reel's.
+     * {@link #WIDEST}, and 9 by 16 for a video of no known shape. Null for a shape no window is
+     * armed for, narrower or wider than Android's window takes.
      */
     @Nullable
     public static Rational shape(double aspect) {

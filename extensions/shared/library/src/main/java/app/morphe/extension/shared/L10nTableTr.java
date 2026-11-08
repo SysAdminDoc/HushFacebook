@@ -1790,8 +1790,8 @@ final class L10nTableTr {
                 "Son kaydetme");
         table.put("Leave calls and chats to Messenger",
                 "Aramalar\u0131 ve sohbetleri Messenger'a b\u0131rak");
-        table.put("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one. That row shows on upright reels, not wide ones.",
-                "Facebook'tan \u00e7\u0131kmak pencereyi a\u00e7maz. \u0130stedi\u011finde bir reel'in men\u00fcs\u00fcnde (\u00fc\u00e7 nokta) Pencere i\u00e7inde pencere'ye dokun. Bu sat\u0131r dikey reel'lerde \u00e7\u0131kar, geni\u015f olanlarda \u00e7\u0131kmaz.");
+        table.put("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one.",
+                "Facebook'tan \u00e7\u0131kmak pencereyi a\u00e7maz. \u0130stedi\u011finde bir reel'in men\u00fcs\u00fcnde (\u00fc\u00e7 nokta) Pencere i\u00e7inde pencere'ye dokun.");
         table.put("Left alone: %s",
                 "\u00c7evrilmeyecek: %s");
         table.put("Let each post come back once",

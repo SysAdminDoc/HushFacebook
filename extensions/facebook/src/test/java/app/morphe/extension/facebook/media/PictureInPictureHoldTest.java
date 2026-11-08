@@ -301,7 +301,7 @@ public class PictureInPictureHoldTest {
     }
 
     /**
-     * #126: a swipe to a reel the window doesn't take, a landscape one, arms nothing. Arming again
+     * #126: a swipe to a reel the window doesn't take, one wider than 2.39 to one, arms nothing. Arming again
      * says no for it (the stub says no until the patch fills it in), so auto-enter goes off and stays
      * off through its pause and play, and its More sheet gets no row. Facebook's next arming ends it.
      */
@@ -412,17 +412,40 @@ public class PictureInPictureHoldTest {
         assertEquals("a resume outside the window changed auto-enter", Collections.emptyList(), screen.autoEnter);
     }
 
-    /** The window's shape for a reel, as Facebook works it out when it arms: tall up to square, nothing wider. */
+    /** The window's shape for a reel, as Facebook works it out when it arms, from 1 by 2.39 up to 2.39 by 1 (#418). */
     @Test
-    public void theShapeFollowsFacebooksOwnBounds() {
+    public void theShapeFollowsAndroidsOwnBounds() {
         assertEquals(new Rational(562, 1000), PictureInPicture.shape(9 / 16.0));
         assertEquals(new Rational(1000, 1000), PictureInPicture.shape(1.0));
         assertEquals(new Rational(419, 1000), PictureInPicture.shape(0.4195));
         assertNull("narrower than 1 by 2.39", PictureInPicture.shape(0.418));
-        assertNull("landscape", PictureInPicture.shape(16 / 9.0));
-        assertNull("a little wider than square", PictureInPicture.shape(1.002));
+        assertEquals("landscape", new Rational(1777, 1000), PictureInPicture.shape(16 / 9.0));
+        assertEquals("a little wider than square", new Rational(1002, 1000), PictureInPicture.shape(1.0025));
+        assertEquals("Android's widest", new Rational(2390, 1000), PictureInPicture.shape(2.39));
+        assertNull("wider than 2.39 by 1", PictureInPicture.shape(2.4));
         assertEquals("no known shape", new Rational(9, 16), PictureInPicture.shape(0));
         assertEquals("no known shape", new Rational(9, 16), PictureInPicture.shape(Double.NaN));
+    }
+
+    /**
+     * #418: Facebook's shape check stops at square, so the extension says yes past it up to
+     * Android's widest, and leaves every other shape, and every shape with the switch off, to it.
+     */
+    @Test
+    public void aLandscapeReelFitsFacebooksShapeCheckWithTheSwitchOn() {
+        assertTrue("16 by 9", PictureInPicture.wideFits(1777));
+        assertTrue("a little wider than square", PictureInPicture.wideFits(1001));
+        assertTrue("Android's widest", PictureInPicture.wideFits(2390));
+        assertFalse("square is Facebook's", PictureInPicture.wideFits(1000));
+        assertFalse("tall is Facebook's", PictureInPicture.wideFits(562));
+        assertFalse("no shape is Facebook's", PictureInPicture.wideFits(0));
+        assertFalse("wider than 2.39 by 1", PictureInPicture.wideFits(2391));
+        String line = statusLine();
+        assertNotNull("no status line", line);
+        assertTrue(line, line.contains(PictureInPicture.WIDE + " 3"));
+
+        Settings.PICTURE_IN_PICTURE.save(false);
+        assertFalse("switch off", PictureInPicture.wideFits(1777));
     }
 
     /** Puts a view holding [id] on the screen, the way Marketplace's React Native root holds 1. */

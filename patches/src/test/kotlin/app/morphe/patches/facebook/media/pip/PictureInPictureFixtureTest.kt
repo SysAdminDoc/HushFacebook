@@ -243,6 +243,26 @@ class PictureInPictureFixtureTest {
                 assertEquals("$name: Facebook's first instruction of the gate moved", originalGate[0].opcode, gated[4].opcode)
                 assertEquals("$name: the rest of Facebook's gate", originalGate.size + 4, gated.size)
 
+                // #418: the extension goes first in the shape check the arming step asks, handed the reel's thousandths.
+                val shapeChecks = util.methods.filter(::isShapeCheck)
+                assertEquals("$name: ${util.type}'s static (int) -> boolean checks dividing by a thousand", 1, shapeChecks.size)
+                val shapeCheck = shapeChecks.single()
+                assertTrue("$name: the arming step doesn't ask ${shapeCheck.name}",
+                    armingCode.any { it.call?.definingClass == util.type && it.call?.name == shapeCheck.name })
+                val originalShapeCheck = shapeCheck.code()
+                val shaped = context.mutableClassDefBy(util.type).methods.single {
+                    it.name == shapeCheck.name && it.shape() == listOf("I") && it.returnType == "Z"
+                }.code()
+                assertEquals("$name: the shape check's first call", WIDE_FITS, shaped[0].call.toString())
+                assertEquals("$name: the thousandths handed over", shapeCheck.localRegisterCount(),
+                    (shaped[0] as RegisterRangeInstruction).startRegister)
+                assertEquals("$name: the shape check's yes branch", Opcode.IF_EQZ, shaped[2].opcode)
+                assertEquals("$name: the shape check's yes answers true", 1, (shaped[3] as NarrowLiteralInstruction).narrowLiteral)
+                assertEquals("$name: the shape check's yes returns", Opcode.RETURN, shaped[4].opcode)
+                assertEquals("$name: a no runs Facebook's shape check", 5, shaped.target(2))
+                assertEquals("$name: Facebook's first instruction of the shape check moved", originalShapeCheck[0].opcode, shaped[5].opcode)
+                assertEquals("$name: the rest of Facebook's shape check", originalShapeCheck.size + 5, shaped.size)
+
                 fun patchedOf(method: Method) = context.mutableClassDefBy(method.definingClass).methods.single {
                     it.name == method.name && it.shape() == method.shape() && it.returnType == method.returnType
                 }
