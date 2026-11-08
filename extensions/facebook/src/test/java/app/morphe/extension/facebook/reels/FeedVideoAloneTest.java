@@ -540,6 +540,48 @@ public class FeedVideoAloneTest {
         assertTrue("a feed's keeps it with the feed switch off", FeedVideoAlone.moreReelsComing(true, home));
     }
 
+    /**
+     * #421: a reel link from another app opens the reels viewer with no video in it yet, and the
+     * viewer's reels feed fetches the linked reel before its data source first asks (S22 2026-11-08,
+     * where holding that fetch back left the viewer black). Those fetches go through; once the data
+     * source has asked, the feed gets nothing more. A chat's reel whose data source asks first, and a
+     * feed video, are held from their first fetch.
+     */
+    @Test
+    public void aLinksViewerLoadsItsReelBeforeAnythingIsHeldBack() {
+        Settings.SHARED_REELS_ALONE.save(true);
+        FeedVideoAlone.reelsViewerOpening(origin("external_deeplink::fb_shorts_external_link"));
+        clock.addAndGet(70);
+        Object viewer = new Object();
+        FeedVideoAlone.warionOpening(viewer, true);
+        clock.addAndGet(60);
+        Object feed = new Object();
+        assertFalse("the fetch that loads the linked reel", FeedVideoAlone.holdsBack(feed));
+        assertFalse("still loading it", FeedVideoAlone.holdsBack(feed));
+        clock.addAndGet(1300);
+        Object source = new Object();
+        assertFalse("the data source's first ask starts the video", FeedVideoAlone.seedCheck(source));
+        assertTrue("its next ask keeps the reel alone", FeedVideoAlone.seedCheck(source));
+        assertTrue("the feed gets nothing after the data source asked", FeedVideoAlone.holdsBack(feed));
+        clock.addAndGet(60_000);
+        assertTrue("a swipe's fetch long after", FeedVideoAlone.holdsBack(feed));
+        assertTrue("the two held fetches and both seed checks, never the fetches let through: " + statusLine(),
+                statusLine().contains(FeedVideoAlone.HELD_BACK + " 4"));
+
+        FeedVideoAlone.warionClosed(viewer);
+        clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
+        FeedVideoAlone.reelsViewerOpening(origin("messaging::xma_shared_video"));
+        FeedVideoAlone.warionOpening(viewer = new Object(), true);
+        Object chatSource = new Object();
+        assertFalse("a chat reel's data source starts its video", FeedVideoAlone.seedCheck(chatSource));
+        assertTrue("its feed's first fetch comes after, and is held", FeedVideoAlone.holdsBack(new Object()));
+
+        FeedVideoAlone.warionClosed(viewer);
+        clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
+        FeedVideoAlone.feedVideoTapped();
+        assertTrue("a feed video's player is held from its first fetch", FeedVideoAlone.holdsBack(new Object()));
+    }
+
     @Test
     public void theFeedSwitchAloneLeavesLinksAndChatsToFacebook() {
         for (String where : new String[]{"external_deeplink::fb_shorts_viewer", "messaging::xma_shared_video"}) {
