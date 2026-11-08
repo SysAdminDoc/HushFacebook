@@ -85,6 +85,11 @@ final class HeaderColumn extends LinearLayout {
         setOffset(range());
     }
 
+    /** How far the list runs past the bottom of the screen: what's left of the top to scroll away. */
+    int hiddenBelow() {
+        return Math.max(0, range() - getScrollY());
+    }
+
     /**
      * Follows [list]: drags on it move the column through nested scrolling, and a scroll that
      * leaves its top or a fling that reaches it moves the top to match.

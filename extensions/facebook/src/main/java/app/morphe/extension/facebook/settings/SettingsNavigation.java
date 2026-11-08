@@ -490,9 +490,26 @@ final class SettingsNavigation extends BaseAdapter {
         showPage();
         if (bound != null) {
             // Keep the tapped header in place, revealing at least one child near the bottom edge.
+            // Until the top has scrolled away the list runs past the bottom of the screen by what's
+            // left of it, so a header down there takes the top up first, as far as the child needs.
+            HeaderColumn column = column();
+            if (open && column != null) {
+                int hidden = column.hiddenBelow();
+                int lift = Math.min(hidden, Math.max(0, top + bound.getHeight() + dp(72) - (list.getHeight() - hidden)));
+                column.setOffset(column.getScrollY() + lift);
+            }
             int reveal = Math.max(0, list.getHeight() - bound.getHeight() - dp(72));
             showAt(visible.indexOf(header), open ? Math.min(top, reveal) : top);
         } else restoreAnchor(anchor, visible.indexOf(header), offset);
+    }
+
+    /** The column the list sits in, whose top scrolls away over it, or null outside the settings screen. */
+    @Nullable
+    private HeaderColumn column() {
+        for (android.view.ViewParent parent = list.getParent(); parent != null; parent = parent.getParent()) {
+            if (parent instanceof HeaderColumn) return (HeaderColumn) parent;
+        }
+        return null;
     }
 
     boolean open(Preference preference) {
