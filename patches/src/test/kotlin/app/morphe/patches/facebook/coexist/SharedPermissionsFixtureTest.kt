@@ -540,7 +540,7 @@ class SharedPermissionsFixtureTest {
                 assertTrue("${bundle.name}: Firebase still sets $FACEBOOK: $stillFacebook",
                     stillFacebook.none { it.startsWith(FIREBASE_MESSAGING) })
                 assertEquals("${bundle.name}: setPackage left with $FACEBOOK: $stillFacebook",
-                    SETS_REAL_FACEBOOK.getValue(version), stillFacebook.size)
+                    SETS_REAL_FACEBOOK.getValue(version).forBundle(bundle.name), stillFacebook.size)
                 checked += version
             }
         }
@@ -646,7 +646,7 @@ class SharedPermissionsFixtureTest {
     /**
      * #16 inventory: in each declared build, every load of Facebook's bare package that a call able
      * to mean this app reads, straight or after a move, is either one the patch hands to the
-     * extension or one of the places where it means Meta's Facebook ([STOCK_OWNER_SITES]). A new
+     * extension or one of the places where it means Meta's Facebook ([STOCK_OWNERS]). A new
      * place of either kind fails here until someone sorts it.
      */
     @Test
@@ -678,9 +678,8 @@ class SharedPermissionsFixtureTest {
                 }
                 assertEquals("${bundle.name}: package loads handed to the extension",
                     OWN_PACKAGE_CALL_LOADS.getValue(version) + REMOTE_VIEWS_LOADS.getValue(version), routed)
-                assertEquals("${bundle.name}: $FACEBOOK left where it could mean this app: $stock",
-                    STOCK_OWNER_SITES.getValue(version), stock.size)
-                val named = STOCK_OWNERS.getValue(version).entries.single { "-${it.key}." in bundle.name }.value
+                val named = STOCK_OWNERS.getValue(version).forBundle(bundle.name)
+                assertEquals("${bundle.name}: $FACEBOOK left where it could mean this app: $stock", named.size, stock.size)
                 for (site in named) {
                     assertEquals("${bundle.name}: $site among $stock", 1, stock.count { site in it })
                 }
@@ -692,6 +691,9 @@ class SharedPermissionsFixtureTest {
 
     private fun Document.authorities(): List<String> =
         elements("provider").flatMap { it.getAttribute("android:authorities").split(';') }
+
+    /** The entry for the fixture bundle [name], keyed by what follows the version in it. */
+    private fun <T> Map<String, T>.forBundle(name: String): T = entries.single { "-${it.key}." in name }.value
 
     private companion object {
         const val FACEBOOK = AppCompatibilities.FACEBOOK_PACKAGE
@@ -788,39 +790,42 @@ class SharedPermissionsFixtureTest {
         val MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
 
         /**
-         * Loads of Facebook's package, per build, that such a call reads but that keep the literal,
-         * because there it means Meta's Facebook app (583, both ABIs, 2026-10-20): Messenger's
-         * warm-start hint (ThreadSettingsActivity), which checks Facebook is installed and then
-         * sends it a broadcast; the forum share link, which checks the same and opens Facebook's
-         * activity; the pick of whichever Facebook build is installed to open a link; Horizon's
-         * launch of Facebook after its install check; and the Meta app picker that hands a link to
-         * the installed Facebook unless that's the running app. Each also reads the load for
-         * something else, an install check at least, so it can't go over whole.
-         */
-        val STOCK_OWNER_SITES = mapOf(AppCompatibilities.FACEBOOK_TARGET_VERSION to 4)
-
-        /**
-         * Those sites by name, per build and ABI, each found once: the link pick, Horizon's launch,
-         * the Meta app picker and the forum share link, then Messenger's warm-start hint. Earlier
-         * builds named these classes differently per ABI, as 585's do; 584's two happened to agree.
-         * 585 drops the warm-start hint, which no longer reads a load of Facebook's package.
+         * Loads of Facebook's package, per build and fixture bundle, that such a call reads but
+         * that keep the literal, because there it means Meta's Facebook app (583, both ABIs,
+         * 2026-10-20), each found once, and nothing else left: the pick of whichever Facebook build
+         * is installed to open a link; Horizon's launch of Facebook after its install check; the
+         * Meta app picker that hands a link to the installed Facebook unless that's the running
+         * app; the forum share link, which checks Facebook is installed and opens its activity; and
+         * Messenger's warm-start hint (ThreadSettingsActivity), which checks the same and then
+         * sends Facebook a broadcast. Each also reads the load for something else, an install check
+         * at least, so it can't go over whole. Earlier builds named these classes differently per
+         * ABI, as 585's do; 584's two happened to agree. 585's phone builds drop the warm-start
+         * hint, which no longer reads a load of Facebook's package there, and the Android 9 build
+         * still has it (2026-11-07).
          */
         val STOCK_OWNERS = mapOf(
             AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
                 "arm64-v8a" to listOf("LX/0gpz;->A00@584:", "LX/0Tav;->A00@42:", "LX/0aLJ;->A00@26:", "LX/0ZoC;->openForumShareLink\$${FORUM_LINK}@60:"),
                 "armeabi-v7a" to listOf("LX/0gpb;->A00@584:", "LX/0TaH;->A00@42:", "LX/0aKz;->A00@26:", "LX/0Znr;->openForumShareLink\$${FORUM_LINK}@60:"),
+                "arm64-v8a-minapi28-storeless" to listOf(
+                    "LX/0UM8;->A00@579:", "LX/0NTh;->A00@42:", "LX/0lB8;->A00@24:", "LX/0NWL;->openForumShareLink\$${FORUM_LINK}@60:",
+                    "Lcom/facebook/messaging/threadsettings2/activity/ThreadSettingsActivity;->onActivityCreate@50:",
+                ),
             ),
         )
 
         const val FORUM_LINK = "fbandroid_java_com_facebook_messaging_linkhandling_linkhandling"
 
         /**
-         * How many setPackage calls still take Facebook's package from a literal, per build, because
-         * there it means Meta's Facebook app: Messenger's warm-start hint (ThreadSettingsActivity),
-         * sent to Facebook's WarmStartBroadcastReceiver once it has checked Facebook is installed.
-         * 582 also had Messenger's deep link launcher, which 583 no longer spells out. 585 no longer
-         * spells out the warm-start hint either, so none is left.
+         * How many setPackage calls still take Facebook's package from a literal, per build and
+         * fixture bundle, because there it means Meta's Facebook app: Messenger's warm-start hint
+         * (ThreadSettingsActivity), sent to Facebook's WarmStartBroadcastReceiver once it has
+         * checked Facebook is installed. 582 also had Messenger's deep link launcher, which 583 no
+         * longer spells out. 585's phone builds no longer spell out the warm-start hint either, so
+         * none is left there, and the Android 9 build keeps it (2026-11-07).
          */
-        val SETS_REAL_FACEBOOK = mapOf(AppCompatibilities.FACEBOOK_TARGET_VERSION to 0)
+        val SETS_REAL_FACEBOOK = mapOf(
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0, "arm64-v8a-minapi28-storeless" to 1),
+        )
     }
 }
