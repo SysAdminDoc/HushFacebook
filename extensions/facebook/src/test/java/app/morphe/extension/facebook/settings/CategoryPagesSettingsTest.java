@@ -31,10 +31,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLooper;
 
+import java.io.File;
 import java.util.EnumSet;
 
 import app.morphe.extension.shared.SettingsContextRule;
@@ -142,6 +144,37 @@ public class CategoryPagesSettingsTest {
                 .getBoolean(SettingsNavigation.LIST_VIEW, true));
         // Every category, Support and the build details: the main page it always had.
         assertEquals(24, list().getCount());
+    }
+
+    @Test public void aDeviceWalkOpensByCategoryAndLeavesTheListChoiceAlone() {
+        toggle().performClick();
+        ShadowLooper.idleMainLooper();
+        Context context = controller.get();
+        File folder = new File(RuntimeEnvironment.getApplication().getExternalFilesDir(null), AuditMode.FOLDER);
+        assertTrue("the walk fixture needs its own audit folder", folder.mkdirs());
+        try {
+            reopen();
+            assertFalse("a walk opened in the list view", page.navigation.listMode());
+            assertEquals("Show all settings as a list", label().getText().toString());
+            assertTrue("a walk lost the section buttons", position("section_News feed") >= 0);
+            assertTrue("a walk forgot the list view", context.getSharedPreferences(SettingsNavigation.VIEW_STORE,
+                    Context.MODE_PRIVATE).getBoolean(SettingsNavigation.LIST_VIEW, false));
+        } finally {
+            File[] files = folder.listFiles();
+            if (files != null) for (File file : files) assertTrue("could not remove " + file, file.delete());
+            assertTrue("could not remove the audit folder", folder.delete());
+        }
+        reopen();
+        assertTrue("the list view didn't come back after the walk", page.navigation.listMode());
+        assertEquals(-1, position("section_News feed"));
+    }
+
+    private void reopen() {
+        dialog.dismissAllowingStateLoss();
+        controller.get().getFragmentManager().executePendingTransactions();
+        ShadowLooper.idleMainLooper();
+        dialog = SettingsL10nTest.show(controller.get());
+        page = SettingsL10nTest.pageOf(dialog);
     }
 
     @Test public void theToggleStaysWhileSearchingAndTheSearchIsTheSameInEitherView() {

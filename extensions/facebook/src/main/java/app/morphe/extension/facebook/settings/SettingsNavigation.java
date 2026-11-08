@@ -138,7 +138,10 @@ final class SettingsNavigation extends BaseAdapter {
         list = page.getView().findViewById(android.R.id.list);
         source = screen.getRootAdapter();
         Context context = screen.getContext();
-        listMode = context.getSharedPreferences(VIEW_STORE, Context.MODE_PRIVATE).getBoolean(LIST_VIEW, false);
+        // A device walk checks every category page on its own, so while its audit folder exists the
+        // screen opens by category without touching the saved list-view choice.
+        listMode = AuditMode.folder(context) == null
+                && context.getSharedPreferences(VIEW_STORE, Context.MODE_PRIVATE).getBoolean(LIST_VIEW, false);
         // Stable English route IDs survive a locale change; the displayed names are localized.
         section("Opening Facebook", L10n.t("Opening Facebook"), L10n.t("Your start tab and launch settings"), SettingsIcons.OPENING);
         section("News feed", L10n.t("News feed"), L10n.t("Ads, suggestions and word filters"), SettingsIcons.FEED);

@@ -102,6 +102,7 @@ Changes in each Hushfacebook version, newest first.
 * **Tooling:** The device walk won't tap a `Comment` button that's scrolled under the top bar, a header row or the tab bar anymore. A tap there lands on whatever covers the button, so on the all-on feed it opened the drawer instead of a comment sheet. The walk now takes the next `Comment` it can actually reach, or scrolls on.
 * **Tooling:** `Keep the reel speed` goes in whole on Facebook's Android 9+ build. Two of its parts found nothing there and were left out with a warning: the gear menu's speed sheet ticking the speed a video really plays at, and `Speed on finished live videos`. That build finds the player in two steps and reads one of the gear menu's labels from a table of strings, and the patch now follows both. (#102)
 * **Tooling:** `Clean up Reels` goes in on Facebook's Android 9+ build too. The patch stopped there because it couldn't find the two rows that put a Subscribe button beside a video's author. On that build they read the button's name from a table of strings instead of holding it, and the button takes one of two paths to its place, so the patch now looks in those tables and follows both paths. (#102)
+* **Tooling:** A device walk can pass on a phone whose Hushfacebook settings were left in list view. While the walk's audit folder is there, the settings open by category, so each page jump lands on its own page. Your list view comes back once the walk's restore removes the folder.
 
 ## 0.21.0 (2026-11-05)
 
