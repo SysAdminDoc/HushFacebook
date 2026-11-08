@@ -1491,6 +1491,25 @@ public class FeedVideoControlsTest {
         assertEquals(1, content.getChildCount());
     }
 
+    @Test public void aWindowGoingAwayWithAVideoOnScreenTakesTheButtonsOffAfterItsDetach() {
+        castOn();
+        barOn();
+        View play = button();
+        View bar = bar();
+        assertNotNull(play);
+        assertNotNull(bar);
+        ViewGroup content = activity.findViewById(android.R.id.content);
+        // Back on a dialog or an activity closing: the content frame detaches its children in one
+        // pass, from a count taken before the loop, and the player's view leaves inside it.
+        ((ViewGroup) content.getParent()).removeView(content);
+        assertNull(button());
+        assertNull(bar());
+        drain();
+        assertTrue(play.getParent() == null);
+        assertTrue(bar.getParent() == null);
+        assertEquals(1, content.getChildCount());
+    }
+
     private FrameLayout card;
 
     /** The story viewer in place of the feed: a card most of the window tall, its video filling it, half a minute long. */

@@ -111,6 +111,8 @@ public final class FeedVideoControls {
     private static final int LANDED_WITHIN_MS = 1000;
     private static final Map<Object, Control> players = new WeakHashMap<>();
     private static Handler main;
+    /** True while a player's view leaves the window, which may be the content frame detaching its children. */
+    private static boolean leaving;
     /** The seek bar last put on a story, which Progress bar at the bottom makes way for while it shows. */
     private static volatile WeakReference<Scrub> storyBar = new WeakReference<>(null);
 
@@ -446,13 +448,14 @@ public final class FeedVideoControls {
     /**
      * Takes [button] off the screen. A feed list recycling a video row in its own layout pass gets
      * here while the content frame is laying out its children, from a count taken before the loop,
-     * so then the button only hides and comes off once that pass is done.
+     * and a window going away (Back on a dialog, an activity closing) while the frame detaches its
+     * children the same way, so then the button only hides and comes off once that pass is done.
      */
     private static void detach(View button) {
         ViewParent parent = button.getParent();
         if (!(parent instanceof ViewGroup)) return;
         ViewGroup group = (ViewGroup) parent;
-        if (!group.isInLayout()) {
+        if (!leaving && !group.isInLayout()) {
             group.removeView(button);
             return;
         }
@@ -1134,7 +1137,15 @@ public final class FeedVideoControls {
         }
         public boolean onPreDraw() { refresh(this); return true; }
         public void onViewAttachedToWindow(View view) { post(this); }
-        public void onViewDetachedFromWindow(View view) { generation++; remove(false); }
+        public void onViewDetachedFromWindow(View view) {
+            generation++;
+            leaving = true;
+            try {
+                remove(false);
+            } finally {
+                leaving = false;
+            }
+        }
     }
 
     /**
