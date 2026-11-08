@@ -53,6 +53,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * where both spun for good). A reels viewer whose params say it opened from a feed also shows no
  * loading page after its video. Off, paused, before the settings are ready, or when anything here
  * fails, everything gets Facebook's own answer.
+ *
+ * <p>Open shared reels on their own (#421) does the same for a reels viewer whose origin says it
+ * opened from a link in another app or from a chat ({@link #shared}): its entry starts the window a
+ * feed video's tap would. Each switch only covers its own origins, and a feed video tap never counts
+ * for the shared switch.
  */
 public final class FeedVideoAlone {
     /** Counted once for each player a feed video opened that this kept to that video. */
@@ -79,6 +84,17 @@ public final class FeedVideoAlone {
      */
     static final Set<String> FEED_SURFACES = Set.of("newsfeed", "group", "user_timeline", "profile",
             "page_timeline", "permalink", "following_np_subtab", "friendly_feed");
+
+    /**
+     * The surfaces of a reel opened from outside the feeds, for Open shared reels on their own
+     * (#421): a link from another app ("external_deeplink", S22 2026-11-07 with a facebook.com/reel
+     * link) and the chats in Facebook ("messaging", the surface 585's PlayerOrigin table files its
+     * thread video and shared video subsurfaces under).
+     */
+    static final Set<String> SHARED_SURFACES = Set.of("external_deeplink", "messaging");
+
+    /** The subsurfaces of an "unknown" origin that are a reel link opened inside the app (#421). */
+    static final Set<String> SHARED_SUBSURFACES = Set.of("fb_shorts_viewer");
 
     /** The screen created or resumed last, or an empty reference. */
     private static volatile WeakReference<Activity> front = new WeakReference<>(null);
@@ -146,10 +162,32 @@ public final class FeedVideoAlone {
     private FeedVideoAlone() {
     }
 
-    /** Whether the switch is on and the patch is running. */
+    /** Whether either switch is on and the patch is running. */
     static boolean on() {
         // Settings mustn't load before the extension has its context.
-        return Utils.settingsReady() && Settings.FEED_VIDEOS_ALONE.get();
+        return Utils.settingsReady() && (Settings.FEED_VIDEOS_ALONE.get() || Settings.SHARED_REELS_ALONE.get());
+    }
+
+    /**
+     * Whether a video opening from [origin], a player origin as text, is kept to itself: a feed's
+     * with Open feed videos on their own, a link's or a chat's with Open shared reels on their own
+     * (#421). Called with {@link #on} true.
+     */
+    static boolean aloneFrom(String origin) {
+        if (fromFeed(origin)) return Settings.FEED_VIDEOS_ALONE.get();
+        return shared(origin) && Settings.SHARED_REELS_ALONE.get();
+    }
+
+    /**
+     * Whether [origin], a player origin as text, is a reel opened from a link or a chat (#421): its
+     * surface is one of {@link #SHARED_SURFACES}, or it's the reels viewer a Facebook link inside the
+     * app opens, "unknown::fb_shorts_viewer" (S22 2026-11-07, a fb://fb_shorts/viewer link).
+     */
+    static boolean shared(String origin) {
+        int cut = origin.indexOf("::");
+        String surface = cut < 0 ? origin : origin.substring(0, cut);
+        if (SHARED_SURFACES.contains(surface)) return true;
+        return cut >= 0 && "unknown".equals(surface) && SHARED_SUBSURFACES.contains(origin.substring(cut + 2));
     }
 
     /**
@@ -228,7 +266,7 @@ public final class FeedVideoAlone {
         try {
             HookStatus.invoked(FAMILY);
             TapToPlay.feedVideoOpening();
-            if (!on()) {
+            if (!on() || !Settings.FEED_VIDEOS_ALONE.get()) {
                 feedOpened(false);
                 return;
             }
@@ -243,9 +281,10 @@ public final class FeedVideoAlone {
     /**
      * Injection point, in Facebook's reels viewer entry as it reads where the video opens from, before
      * the viewer's data source first asks. A feed reel goes this way on some accounts with no Warion
-     * step (S25 2026-10-18), so a video opening from a feed surface counts as a feed video tap. One
-     * opening from anywhere else, a link among them, is left to Facebook along with the viewer and
-     * player screen it opens. Never throws.
+     * step (S25 2026-10-18), so a video opening from a feed surface counts as a feed video tap, and
+     * with Open shared reels on their own so does one opening from a link or a chat (#421). One
+     * opening from anywhere else is left to Facebook along with the viewer and player screen it
+     * opens. Never throws.
      *
      * @param origin Facebook's player origin, "surface::subsurface" as text.
      */
@@ -260,11 +299,11 @@ public final class FeedVideoAlone {
             if (origin == null) return;
             HookStatus.bound(FAMILY, "reels viewer entry");
             String where = origin.toString();
-            boolean feed = fromFeed(where);
-            feedOpened(feed);
-            Logger.printDebug(() -> feed
-                    ? "Feed videos on their own: a feed video is opening the reels viewer from " + where
-                    : "Feed videos on their own: the reels viewer is opening from " + where + ", not a feed");
+            boolean alone = aloneFrom(where);
+            feedOpened(alone);
+            Logger.printDebug(() -> alone
+                    ? "Feed videos on their own: the reels viewer opening from " + where + " shows that video alone"
+                    : "Feed videos on their own: the reels viewer is opening from " + where + " and keeps Facebook's reels");
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reels viewer entry", failure);
         }
@@ -403,7 +442,7 @@ public final class FeedVideoAlone {
             if (origin == null) return more;
             HookStatus.bound(FAMILY, "reels loading page");
             String where = origin.toString();
-            if (!fromFeed(where)) return more;
+            if (!aloneFrom(where)) return more;
             if (loadingPageLogged.get() != params) {
                 loadingPageLogged = new WeakReference<>(params);
                 HookStatus.counted(FAMILY, NO_LOADING_PAGE);

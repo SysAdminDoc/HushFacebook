@@ -966,6 +966,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_feed_videos_alone", FALSE);
 
     /**
+     * A reel opened from a link in another app or from a chat plays on its own, with no reels to
+     * swipe to after it, the way {@link #FEED_VIDEOS_ALONE} keeps a feed video
+     * ({@link app.morphe.extension.facebook.reels.FeedVideoAlone}, #421). Off by default. A change
+     * shows from the next reel opened.
+     */
+    public static final BooleanSetting SHARED_REELS_ALONE =
+            new BooleanSetting("hushfacebook_shared_reels_alone", FALSE);
+
+    /**
      * Watch again at the end of a feed video plays it again where it is instead of opening it in
      * the Reels viewer ({@link app.morphe.extension.facebook.reels.WatchAgain}, #403). Off by
      * default. A change shows on the next tap.

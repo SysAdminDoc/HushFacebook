@@ -239,6 +239,10 @@ final class VideoPages {
                     L10n.t("A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. "
                             + "The Reels tab keeps scrolling. Off by default, since it hasn't been tried on a real "
                             + "account yet.")));
+            // Asked as a shared reel's viewer opens and asks for more, so a change shows from the next one (#421).
+            reels.addPreference(toggle(context, Settings.SHARED_REELS_ALONE,
+                    L10n.t("A reel you open from a link in another app or from a chat plays by itself, with no "
+                            + "reels to swipe to after it.")));
             // Asked as Watch again is tapped, so a change shows on the next tap (#403).
             reels.addPreference(toggle(context, Settings.WATCH_AGAIN_IN_PLACE,
                     L10n.t("Watch again at the end of a feed video plays it again right there, instead of "

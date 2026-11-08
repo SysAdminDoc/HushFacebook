@@ -59,6 +59,7 @@ public class FeedVideoAloneTest {
     public void restore() {
         PauseForTests.resume();
         Settings.FEED_VIDEOS_ALONE.resetToDefault();
+        Settings.SHARED_REELS_ALONE.resetToDefault();
         FeedVideoAlone.forgetForTests();
         HookStatus.clear();
     }
@@ -501,5 +502,59 @@ public class FeedVideoAloneTest {
         assertFalse("a tap while off arms nothing", FeedVideoAlone.holdsBack(new Object()));
         assertTrue("on again, the player is still held", FeedVideoAlone.holdsBack(player));
         assertFalse("nobody asking is left alone", FeedVideoAlone.holdsBack(null));
+    }
+
+    @Test
+    public void theSharedReelsSwitchStartsOffAndBelongsToCleanUpReels() {
+        assertFalse(Settings.SHARED_REELS_ALONE.get());
+        assertFalse("asked as each viewer opens, so no restart", Settings.SHARED_REELS_ALONE.rebootApp);
+        assertTrue(PatchFamily.REEL_DECLUTTER.switches.contains(Settings.SHARED_REELS_ALONE));
+    }
+
+    @Test
+    public void aReelFromALinkOrAChatPlaysAloneWithTheSharedSwitch() {
+        Settings.FEED_VIDEOS_ALONE.save(false);
+        Settings.SHARED_REELS_ALONE.save(true);
+        for (String where : new String[]{"external_deeplink::fb_shorts_viewer", "messaging::xma_shared_video",
+                "messaging::thread_video_message_media_viewer", "unknown::fb_shorts_viewer"}) {
+            FeedVideoAlone.reelsViewerOpening(origin(where));
+            Object source = new Object();
+            assertTrue(where, FeedVideoAlone.seedOnly(source));
+            clock.addAndGet(60_000);
+            assertTrue(where + ", asked again", FeedVideoAlone.seedOnly(source));
+        }
+
+        FeedVideoAlone.feedVideoTapped();
+        assertFalse("a feed tap is the other switch's", FeedVideoAlone.holdsBack(new Object()));
+        for (String where : new String[]{"newsfeed::fb_shorts_native_in_feed_unit", "fb_shorts_tab::reels_tab",
+                "unknown::watch_feed", "messenger_story::fb_shorts_viewer"}) {
+            FeedVideoAlone.reelsViewerOpening(origin(where));
+            assertFalse(where, FeedVideoAlone.seedOnly(new Object()));
+        }
+
+        Object link = new Object();
+        Object home = new Object();
+        FeedVideoAlone.originForTests = params -> params == link ? origin("external_deeplink::fb_shorts_viewer")
+                : params == home ? origin("newsfeed::feed_story") : null;
+        assertFalse("a link's viewer shows no loading page", FeedVideoAlone.moreReelsComing(true, link));
+        assertTrue("a feed's keeps it with the feed switch off", FeedVideoAlone.moreReelsComing(true, home));
+    }
+
+    @Test
+    public void theFeedSwitchAloneLeavesLinksAndChatsToFacebook() {
+        for (String where : new String[]{"external_deeplink::fb_shorts_viewer", "messaging::xma_shared_video"}) {
+            FeedVideoAlone.reelsViewerOpening(origin(where));
+            assertFalse(where, FeedVideoAlone.seedOnly(new Object()));
+        }
+        Object link = new Object();
+        FeedVideoAlone.originForTests = params -> origin("external_deeplink::fb_shorts_viewer");
+        assertTrue(FeedVideoAlone.moreReelsComing(true, link));
+
+        Settings.SHARED_REELS_ALONE.save(true);
+        FeedVideoAlone.reelsViewerOpening(origin("messaging::xma_shared_video"));
+        assertTrue("both on, a chat's reel", FeedVideoAlone.seedOnly(new Object()));
+        FeedVideoAlone.feedVideoTapped();
+        assertTrue("both on, a feed tap", FeedVideoAlone.holdsBack(new Object()));
+        assertFalse(FeedVideoAlone.moreReelsComing(true, link));
     }
 }

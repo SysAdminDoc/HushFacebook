@@ -18,7 +18,7 @@ final class L10nTableTr {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(3458);
+        Map<String, String> table = new HashMap<>(3462);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -253,6 +253,8 @@ final class L10nTableTr {
                 "Bir reel ba\u015ftan ba\u015flamak yerine son karesinde durur. Yeniden izlemek i\u00e7in dokunun ya da sonrakine kayd\u0131r\u0131n. Ak\u0131\u015ftaki videolar ve hikayeler de\u011fi\u015fmez. Varsay\u0131lan olarak kapal\u0131, \u00e7\u00fcnk\u00fc ger\u00e7ek bir hesapta hen\u00fcz denenmedi.");
         table.put("A reel stops while you read its comments and plays on from the same spot when you close them.",
                 "Yorumlar\u0131n\u0131 okurken reel durur, yorumlar\u0131 kapatt\u0131\u011f\u0131n\u0131zda kald\u0131\u011f\u0131 yerden devam eder.");
+        table.put("A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.",
+                "Ba\u015fka bir uygulamadaki bir ba\u011flant\u0131dan ya da bir sohbetten a\u00e7t\u0131\u011f\u0131n reel tek ba\u015f\u0131na oynar, ard\u0131ndan kayd\u0131r\u0131lacak ba\u015fka reel olmaz.");
         table.put("A reel's More menu gets Copy caption, which copies the whole caption, even the part behind See more.",
                 "Bir reel'in Di\u011fer men\u00fcs\u00fcne A\u00e7\u0131klamay\u0131 kopyala eklenir. Devam\u0131n\u0131 g\u00f6r'\u00fcn arkas\u0131ndaki k\u0131s\u0131m dahil t\u00fcm a\u00e7\u0131klamay\u0131 kopyalar.");
         table.put("A reel's progress bar stays full size, ready to drag. A full-screen video's controls stay until you tap.",
@@ -293,11 +295,11 @@ final class L10nTableTr {
                 "Reklam takibi");
         table.put("Add",
                 "Ekle");
-        table.put("Add Download to phone to feed and Watch video menus. Uses the quality below. Off or paused, Facebook's menu returns.",
-                "Ak\u0131\u015f ve Watch video men\u00fclerine Telefona indir ekler. A\u015fa\u011f\u0131daki kaliteyi kullan\u0131r. Kapal\u0131 veya duraklat\u0131lm\u0131\u015fken Facebook men\u00fcs\u00fc geri gelir.");
     }
 
     private static void fill2(Map<String, String> table) {
+        table.put("Add Download to phone to feed and Watch video menus. Uses the quality below. Off or paused, Facebook's menu returns.",
+                "Ak\u0131\u015f ve Watch video men\u00fclerine Telefona indir ekler. A\u015fa\u011f\u0131daki kaliteyi kullan\u0131r. Kapal\u0131 veya duraklat\u0131lm\u0131\u015fken Facebook men\u00fcs\u00fc geri gelir.");
         table.put("Add Save to every story menu, using your download quality. Off or paused, Facebook only saves your own stories.",
                 "Her hikaye men\u00fcs\u00fcne indirme kalitenizle Kaydet ekler. Kapal\u0131 veya duraklat\u0131lm\u0131\u015fken Facebook yaln\u0131zca kendi hikayelerinizi kaydeder.");
         table.put("Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return.",
@@ -416,11 +418,11 @@ final class L10nTableTr {
                 "Her zaman temiz modu kullan");
         table.put("Amber",
                 "Kehribar");
-        table.put("An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.",
-                "Ana sayfan\u0131n \u00fcst\u00fcnde Facebook logosunun hemen yan\u0131na, kendi renkleriyle \u00e7izilen bir emoji. Hi\u00e7 olmas\u0131n istiyorsan bo\u015f b\u0131rak.");
     }
 
     private static void fill3(Map<String, String> table) {
+        table.put("An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.",
+                "Ana sayfan\u0131n \u00fcst\u00fcnde Facebook logosunun hemen yan\u0131na, kendi renkleriyle \u00e7izilen bir emoji. Hi\u00e7 olmas\u0131n istiyorsan bo\u015f b\u0131rak.");
         table.put("An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.",
                 "A\u00e7\u0131lan bir reel a\u00e7\u0131klamas\u0131, altyaz\u0131lar gibi koyu bir kutunun \u00fcst\u00fcnde durur, b\u00f6ylece parlak bir videonun \u00fczerinde kolayca okunur. De\u011fi\u015fiklik bir sonraki reel'den itibaren ge\u00e7erli olur.");
         table.put("An open reply thread gets a Hide replies button, so you can close it again after reading.",
@@ -539,11 +541,11 @@ final class L10nTableTr {
                 "\u0130ki liste birlikte payla\u015ft\u0131klar\u0131 alan\u0131n %%%1$d kadar\u0131n\u0131 dolduracak. Baz\u0131 ifadeleri silip ya da k\u0131salt\u0131p yeniden kaydet.");
         table.put("Break after",
                 "Moladan \u00f6nceki s\u00fcre");
-        table.put("Break length",
-                "Mola s\u00fcresi");
     }
 
     private static void fill4(Map<String, String> table) {
+        table.put("Break length",
+                "Mola s\u00fcresi");
         table.put("Break settings",
                 "Mola ayarlar\u0131");
         table.put("Build %1$s",
@@ -662,11 +664,11 @@ final class L10nTableTr {
                 "Yorumlar en eskiden ba\u015flayarak a\u00e7\u0131lacak.");
         table.put("Comments will open with %1$s picked in their sort menu.",
                 "Yorumlar, s\u0131ralama men\u00fcs\u00fcnde %1$s se\u00e7ili olarak a\u00e7\u0131lacak.");
-        table.put("Content filters",
-                "\u0130\u00e7erik filtreleri");
     }
 
     private static void fill5(Map<String, String> table) {
+        table.put("Content filters",
+                "\u0130\u00e7erik filtreleri");
         table.put("Controls and picture-in-picture",
                 "Kontroller ve pencere i\u00e7inde pencere");
         table.put("Convert to keep the full size",
@@ -785,11 +787,11 @@ final class L10nTableTr {
                 "Karanl\u0131k modun arka planlar\u0131 %1$s kullan\u0131r. De\u011fi\u015fikli\u011fi g\u00f6rmek i\u00e7in Facebook'u yeniden ba\u015flat\u0131n.");
         table.put("Data saver",
                 "Veri tasarrufu");
-        table.put("Dating",
-                "Fl\u00f6rt");
     }
 
     private static void fill6(Map<String, String> table) {
+        table.put("Dating",
+                "Fl\u00f6rt");
         table.put("Debug logging",
                 "Hata ay\u0131klama g\u00fcnl\u00fc\u011f\u00fc");
         table.put("Default comment order",
@@ -908,11 +910,11 @@ final class L10nTableTr {
                 "Ayarlar\u0131 d\u0131\u015fa aktar");
         table.put("Facebook ads in other apps",
                 "Di\u011fer uygulamalardaki Facebook reklamlar\u0131");
-        table.put("Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.",
-                "Facebook, a\u00e7\u0131l\u0131rken ve a\u015fa\u011f\u0131daki s\u00fcreden sonra geri d\u00f6nd\u00fc\u011f\u00fcn\u00fczde parmak izi, y\u00fcz veya ekran kilidi ister. Telefonunuzda ekran kilidi olmal\u0131.");
     }
 
     private static void fill7(Map<String, String> table) {
+        table.put("Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.",
+                "Facebook, a\u00e7\u0131l\u0131rken ve a\u015fa\u011f\u0131daki s\u00fcreden sonra geri d\u00f6nd\u00fc\u011f\u00fcn\u00fczde parmak izi, y\u00fcz veya ekran kilidi ister. Telefonunuzda ekran kilidi olmal\u0131.");
         table.put("Facebook blue",
                 "Facebook mavisi");
         table.put("Facebook can't tell when you take a screenshot or record your screen, so it can't react.",
@@ -1031,11 +1033,11 @@ final class L10nTableTr {
                 "G\u00f6sterilen takip\u00e7i say\u0131s\u0131");
         table.put("Following feed on Home",
                 "Ana Sayfa'da Takip Edilenler ak\u0131\u015f\u0131");
-        table.put("Following shown",
-                "G\u00f6sterilen takip edilen say\u0131s\u0131");
     }
 
     private static void fill8(Map<String, String> table) {
+        table.put("Following shown",
+                "G\u00f6sterilen takip edilen say\u0131s\u0131");
         table.put("Font file",
                 "Yaz\u0131 tipi dosyas\u0131");
         table.put("Font file cleared. Restart Facebook to apply the font change.",
@@ -1154,11 +1156,11 @@ final class L10nTableTr {
                 "Aramada Meta AI'\u0131 gizle");
         table.put("Hide Meta AI in the feed",
                 "Ak\u0131\u015fta Meta AI'\u0131 gizle");
-        table.put("Hide Meta AI questions under posts",
-                "G\u00f6nderilerin alt\u0131ndaki Meta AI sorular\u0131n\u0131 gizle");
     }
 
     private static void fill9(Map<String, String> table) {
+        table.put("Hide Meta AI questions under posts",
+                "G\u00f6nderilerin alt\u0131ndaki Meta AI sorular\u0131n\u0131 gizle");
         table.put("Hide Meta AI's Imagine",
                 "Meta AI'\u0131n Imagine \u00f6zelli\u011fini gizle");
         table.put("Hide Meta Verified offers",
@@ -1277,11 +1279,11 @@ final class L10nTableTr {
                 "Yan\u0131tlar\u0131 gizle");
         table.put("Hide replies button",
                 "Yan\u0131tlar\u0131 gizle d\u00fc\u011fmesi");
-        table.put("Hide reply suggestions",
-                "Yan\u0131t \u00f6nerilerini gizle");
     }
 
     private static void fill10(Map<String, String> table) {
+        table.put("Hide reply suggestions",
+                "Yan\u0131t \u00f6nerilerini gizle");
         table.put("Hide reposts",
                 "Yeniden payla\u015f\u0131lan g\u00f6nderileri gizle");
         table.put("Hide rings in comments",
@@ -1400,11 +1402,11 @@ final class L10nTableTr {
                 "Hikaye \u015feridini gizle");
         table.put("Hide the Subscribe button",
                 "Abone ol d\u00fc\u011fmesini gizle");
-        table.put("Hide the Subscribe button on videos",
-                "Videolardaki Abone Ol d\u00fc\u011fmesini gizle");
     }
 
     private static void fill11(Map<String, String> table) {
+        table.put("Hide the Subscribe button on videos",
+                "Videolardaki Abone Ol d\u00fc\u011fmesini gizle");
         table.put("Hide the X on posts",
                 "G\u00f6nderilerde X'i gizle");
         table.put("Hide the app icon count",
@@ -1523,11 +1525,11 @@ final class L10nTableTr {
                 "Sayfalar\u0131n yazd\u0131\u011f\u0131 g\u00f6nderileri gizler, takip etti\u011fin sayfalar da dahil. Arkada\u015flar\u0131n\u0131n ve gruplar\u0131n g\u00f6nderileri kal\u0131r, bir arkada\u015f\u0131n\u0131n payla\u015ft\u0131\u011f\u0131 sayfa g\u00f6nderisi de kal\u0131r.");
         table.put("Hides product cards from shopping links that creators add to posts, reels and comments.",
                 "\u0130\u00e7erik \u00fcreticilerin g\u00f6nderilere, reellere ve yorumlara ekledi\u011fi al\u0131\u015fveri\u015f ba\u011flant\u0131lar\u0131n\u0131n \u00fcr\u00fcn kartlar\u0131n\u0131 gizler.");
-        table.put("Hides prompts and promos under reels, like Remix, Use template, Add yours, Edits, Stars, games, partner apps and outside links. The song label stays.",
-                "Reellerin alt\u0131ndaki Remix, \u015eablonu kullan, Add yours, Edits, Stars, oyunlar, ortak uygulamalar ve d\u0131\u015f ba\u011flant\u0131lar gibi \u00f6nerileri ve tan\u0131t\u0131mlar\u0131 gizler. \u015eark\u0131 etiketi kal\u0131r.");
     }
 
     private static void fill12(Map<String, String> table) {
+        table.put("Hides prompts and promos under reels, like Remix, Use template, Add yours, Edits, Stars, games, partner apps and outside links. The song label stays.",
+                "Reellerin alt\u0131ndaki Remix, \u015eablonu kullan, Add yours, Edits, Stars, oyunlar, ortak uygulamalar ve d\u0131\u015f ba\u011flant\u0131lar gibi \u00f6nerileri ve tan\u0131t\u0131mlar\u0131 gizler. \u015eark\u0131 etiketi kal\u0131r.");
         table.put("Hides reels and Watch videos that Facebook marks as made with AI. Ones only their creator labeled stay. Off by default, since it hasn't been tried on a real account yet.",
                 "Facebook'un yapay zekayla \u00fcretildi olarak i\u015faretledi\u011fi reelleri ve Watch videolar\u0131n\u0131 gizler. Yaln\u0131zca yarat\u0131c\u0131s\u0131n\u0131n i\u015faretledi\u011fi i\u00e7erikler kal\u0131r. Varsay\u0131lan olarak kapal\u0131, \u00e7\u00fcnk\u00fc ger\u00e7ek bir hesapta hen\u00fcz denenmedi.");
         table.put("Hides rows of reels between posts, and the reels Facebook adds where your feed ends.",
@@ -1646,11 +1648,11 @@ final class L10nTableTr {
                 "Reels nas\u0131l engellenir");
         table.put("Hush hid the suggested posts after this, so Home ends here.",
                 "Hush bundan sonraki \u00f6nerilen g\u00f6nderileri gizledi, bu y\u00fczden Ana Sayfa burada bitiyor.");
-        table.put("Hushfacebook %1$s is out. Update it in Morphe Manager.",
-                "Hushfacebook %1$s \u00e7\u0131kt\u0131. Morphe Manager'da g\u00fcncelle.");
     }
 
     private static void fill13(Map<String, String> table) {
+        table.put("Hushfacebook %1$s is out. Update it in Morphe Manager.",
+                "Hushfacebook %1$s \u00e7\u0131kt\u0131. Morphe Manager'da g\u00fcncelle.");
         table.put("Hushfacebook %1$s on Facebook %2$s",
                 "Facebook %2$s \u00fczerinde Hushfacebook %1$s");
         table.put("Hushfacebook %1$s targets Facebook %2$s.",
@@ -1769,11 +1771,11 @@ final class L10nTableTr {
                 "\u0130lerleme \u00e7ubu\u011funu koru");
         table.put("Keep the reel speed",
                 "Reel h\u0131z\u0131n\u0131 koru");
-        table.put("Keep the tab bar on screen",
-                "Sekme \u00e7ubu\u011funu ekranda tut");
     }
 
     private static void fill14(Map<String, String> table) {
+        table.put("Keep the tab bar on screen",
+                "Sekme \u00e7ubu\u011funu ekranda tut");
         table.put("Keep the top bar on screen",
                 "\u00dcst \u00e7ubu\u011fu ekranda tut");
         table.put("Keep the video speed",
@@ -1892,11 +1894,11 @@ final class L10nTableTr {
                 "Yaln\u0131zca Marketplace");
         table.put("Marketplace only and Events only are off.",
                 "Marketplace ve Etkinlikler modlar\u0131 kapal\u0131.");
-        table.put("Marketplace only and Events only are off. Restart Facebook to restore its normal tabs.",
-                "Marketplace ve Etkinlikler modlar\u0131 kapal\u0131. Normal sekmeleri geri getirmek i\u00e7in Facebook'u yeniden ba\u015flat\u0131n.");
     }
 
     private static void fill15(Map<String, String> table) {
+        table.put("Marketplace only and Events only are off. Restart Facebook to restore its normal tabs.",
+                "Marketplace ve Etkinlikler modlar\u0131 kapal\u0131. Normal sekmeleri geri getirmek i\u00e7in Facebook'u yeniden ba\u015flat\u0131n.");
         table.put("Marketplace only chooses the opening tab. Your previous choice stays saved.",
                 "A\u00e7\u0131l\u0131\u015f sekmesini Marketplace modu belirler. \u00d6nceki se\u00e7iminiz kay\u0131tl\u0131 kal\u0131r.");
         table.put("Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.",
@@ -2015,11 +2017,11 @@ final class L10nTableTr {
                 "Hen\u00fcz a\u00e7\u0131k anahtar yok.");
         table.put("No thanks",
                 "Hay\u0131r, te\u015fekk\u00fcrler");
-        table.put("No time limit",
-                "S\u00fcre s\u0131n\u0131r\u0131 yok");
     }
 
     private static void fill16(Map<String, String> table) {
+        table.put("No time limit",
+                "S\u00fcre s\u0131n\u0131r\u0131 yok");
         table.put("No toast when a save starts, finishes or is canceled. A save that fails still says why.",
                 "Kaydetme ba\u015flad\u0131\u011f\u0131nda, bitti\u011finde veya iptal edildi\u011finde mesaj g\u00f6sterilmez. Kaydetme ba\u015far\u0131s\u0131z olursa nedeni yine g\u00f6sterilir.");
         table.put("No types seen yet. Scroll Home and come back.",
@@ -2138,11 +2140,11 @@ final class L10nTableTr {
                 "Sohbetleri Messenger'da a\u00e7");
         table.put("Open comments at full height",
                 "Yorumlar\u0131 tam y\u00fckseklikte a\u00e7");
-        table.put("Open every reply thread",
-                "T\u00fcm yan\u0131t dizilerini a\u00e7");
     }
 
     private static void fill17(Map<String, String> table) {
+        table.put("Open every reply thread",
+                "T\u00fcm yan\u0131t dizilerini a\u00e7");
         table.put("Open feed videos on their own",
                 "Ak\u0131\u015ftaki videolar\u0131 tek ba\u015f\u0131na a\u00e7");
         table.put("Open full screen videos centered",
@@ -2167,6 +2169,8 @@ final class L10nTableTr {
                 "Kaydedilen videolar\u0131 video oynat\u0131c\u0131da a\u00e7");
         table.put("Open settings from the logo",
                 "Ayarlar\u0131 logodan a\u00e7");
+        table.put("Open shared reels on their own",
+                "Payla\u015f\u0131lan reel'leri tek ba\u015f\u0131na a\u00e7");
         table.put("Open the Messenger app",
                 "Messenger uygulamas\u0131n\u0131 a\u00e7");
         table.put("Open the setting",
@@ -2259,13 +2263,13 @@ final class L10nTableTr {
                 "Uygulama simgesi se\u00e7");
         table.put("Picking a type Home needs can leave it empty.",
                 "Ana Sayfa'n\u0131n ihtiya\u00e7 duydu\u011fu bir t\u00fcr\u00fc se\u00e7mek onu bo\u015f b\u0131rakabilir.");
+    }
+
+    private static void fill18(Map<String, String> table) {
         table.put("Picture-in-picture",
                 "Pencere i\u00e7inde pencere");
         table.put("Picture-in-picture button",
                 "Pencere i\u00e7inde pencere d\u00fc\u011fmesi");
-    }
-
-    private static void fill18(Map<String, String> table) {
         table.put("Pinch a story, a video in your feed, or a photo on someone's profile or in Photo carousel to zoom in. It goes back when you let go.",
                 "Bir hikayeyi, ak\u0131\u015f\u0131ndaki bir videoyu veya birinin profilindeki ya da Kayd\u0131rmal\u0131 foto\u011fraflardaki bir foto\u011fraf\u0131 iki parmakla a\u00e7arak yak\u0131nla\u015ft\u0131r. B\u0131rakt\u0131\u011f\u0131nda eski haline d\u00f6ner.");
         table.put("Pinch to zoom",
@@ -2382,13 +2386,13 @@ final class L10nTableTr {
                 "Reels'in payla\u015f\u0131m tarihi payla\u015f\u0131ld\u0131\u011f\u0131 g\u00fcn\u00fc g\u00f6sterecek.");
         table.put("Reel watch history",
                 "Reels izleme ge\u00e7mi\u015fi");
+    }
+
+    private static void fill19(Map<String, String> table) {
         table.put("Reels",
                 "Reels");
         table.put("Reels and Watch",
                 "Reels ve Watch");
-    }
-
-    private static void fill19(Map<String, String> table) {
         table.put("Reels and their buttons show in black and white, which makes them easier to put down. Your feed, stories, photos and chats keep their colors. It starts from the next reel, and Reels use a little more battery.",
                 "Reels ve d\u00fc\u011fmeleri siyah beyaz g\u00f6r\u00fcn\u00fcr, b\u00f6ylece b\u0131rakmak daha kolay olur. Ak\u0131\u015f\u0131n, hikayelerin, foto\u011fraflar\u0131n ve sohbetlerin renkli kal\u0131r. Bir sonraki reel'den itibaren ba\u015flar ve Reels biraz daha fazla pil kullan\u0131r.");
         table.put("Reels and videos go to the app below as a facebook.com link. Hold the reel Download button to copy the link instead. Stories still save to this phone.",
@@ -2505,13 +2509,13 @@ final class L10nTableTr {
                 "Telefonda olmayan SD kart");
         table.put("Same as default",
                 "Varsay\u0131lanla ayn\u0131");
+    }
+
+    private static void fill20(Map<String, String> table) {
         table.put("Save",
                 "Kaydet");
         table.put("Save Facebook's notification sound",
                 "Facebook'un bildirim sesini kaydet");
-    }
-
-    private static void fill20(Map<String, String> table) {
         table.put("Save GIF",
                 "GIF'i kaydet");
         table.put("Save all photos",
@@ -2628,13 +2632,13 @@ final class L10nTableTr {
                 "Kimlerin payla\u015ft\u0131\u011f\u0131n\u0131 g\u00f6r");
         table.put("See-through bars",
                 "Saydam \u00e7ubuklar");
+    }
+
+    private static void fill21(Map<String, String> table) {
         table.put("Seek bar on feed videos",
                 "Ak\u0131\u015f videolar\u0131nda sarma \u00e7ubu\u011fu");
         table.put("Seek bar on stories",
                 "Hikayelerde sarma \u00e7ubu\u011fu");
-    }
-
-    private static void fill21(Map<String, String> table) {
         table.put("Seen posts forgotten.",
                 "G\u00f6r\u00fclen g\u00f6nderiler unutuldu.");
         table.put("Select part of a post's text",
@@ -2751,13 +2755,13 @@ final class L10nTableTr {
                 "Ak\u0131\u015ftaki bir videonun alt\u0131nda bir \u00e7ubuk g\u00f6sterir. S\u00fcr\u00fckleyip b\u0131rakarak o noktaya atlay\u0131n. Canl\u0131 videolar ve reklamlar kendi denetimlerini korur. \u201cOynatmak i\u00e7in dokun\u201d a\u00e7\u0131ksa \u201cAk\u0131\u015f videosu denetimleri\u201d de a\u00e7\u0131k olmal\u0131d\u0131r.");
         table.put("Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.",
                 "Bir video hikayenin alt\u0131nda, i\u00e7inde ilerlemek i\u00e7in s\u00fcr\u00fckleyebilece\u011finiz bir \u00e7ubuk g\u00f6sterir. Siz s\u00fcr\u00fcklerken hikaye bekler. \u201cAltta ilerleme \u00e7ubu\u011fu\u201d video hikayelerde ona yer a\u00e7ar.");
+    }
+
+    private static void fill22(Map<String, String> table) {
         table.put("Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open the window right away. Works with Picture-in-picture on.",
                 "Penceresi haz\u0131r olan bir reel veya videonun sol kenar\u0131nda k\u00fc\u00e7\u00fck bir d\u00fc\u011fme g\u00f6sterir. Pencereyi hemen a\u00e7mak i\u00e7in dokun. Pencere i\u00e7inde pencere a\u00e7\u0131kken \u00e7al\u0131\u015f\u0131r.");
         table.put("Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.",
                 "Bir hikayenin alt\u0131nda, oynat\u0131ld\u0131k\u00e7a dolan ince bir \u00e7ubuk g\u00f6sterir, Reels'teki gibi.");
-    }
-
-    private static void fill22(Map<String, String> table) {
         table.put("Shows how far into a feed video you are at the left end of its seek bar, and how much is left at the right end. Needs Seek bar on feed videos on.",
                 "Bir ak\u0131\u015f videosunun ne kadar\u0131n\u0131 izledi\u011finizi sarma \u00e7ubu\u011funun sol ucunda, ne kadar kald\u0131\u011f\u0131n\u0131 sa\u011f ucunda g\u00f6sterir. \u201cAk\u0131\u015f videolar\u0131nda sarma \u00e7ubu\u011fu\u201d a\u00e7\u0131k olmal\u0131d\u0131r.");
         table.put("Shows only friends and followed Pages in the Stories tray. Applies when Facebook next loads the tray.",
@@ -2874,13 +2878,13 @@ final class L10nTableTr {
                 "Sekme \u00e7ubu\u011fu altta");
         table.put("Tab bar at the top",
                 "Sekme \u00e7ubu\u011fu \u00fcstte");
+    }
+
+    private static void fill23(Map<String, String> table) {
         table.put("Tab bar position",
                 "Sekme \u00e7ubu\u011funun konumu");
         table.put("Tab bar while scrolling",
                 "Kayd\u0131r\u0131rken sekme \u00e7ubu\u011fu");
-    }
-
-    private static void fill23(Map<String, String> table) {
         table.put("Tab bar, top bar, hidden tabs and dots",
                 "Sekme \u00e7ubu\u011fu, \u00fcst \u00e7ubuk, gizli sekmeler ve noktalar");
         table.put("Tab order",
@@ -2997,13 +3001,13 @@ final class L10nTableTr {
                 "Bir g\u00f6nderinin metni");
         table.put("Text size",
                 "Metin boyutu");
+    }
+
+    private static void fill24(Map<String, String> table) {
         table.put("That file is too large to be a settings file. Nothing was changed.",
                 "Bu dosya bir ayar dosyas\u0131 olamayacak kadar b\u00fcy\u00fck. Hi\u00e7bir \u015fey de\u011fi\u015ftirilmedi.");
         table.put("That file isn't readable text, so it may have been damaged on the way. Nothing was changed.",
                 "Bu dosya okunabilir bir metin de\u011fil, aktar\u0131m s\u0131ras\u0131nda hasar g\u00f6rm\u00fc\u015f olabilir. Hi\u00e7bir \u015fey de\u011fi\u015ftirilmedi.");
-    }
-
-    private static void fill24(Map<String, String> table) {
         table.put("That file lists a setting twice, so Hushfacebook can't tell which value to use. Nothing was changed.",
                 "Bu dosya bir ayar\u0131 iki kez listeliyor, bu y\u00fczden Hushfacebook hangi de\u011ferin kullan\u0131laca\u011f\u0131n\u0131 bilemez. Hi\u00e7bir \u015fey de\u011fi\u015ftirilmedi.");
         table.put("That font file is over %1$d MB. Your font didn't change.",
@@ -3120,13 +3124,13 @@ final class L10nTableTr {
                 "Bu ayarlara giden son yol a\u00e7\u0131k kal\u0131r.");
         table.put("The list holds up to %1$d people, Pages or sites. Remove some, then save again.",
                 "Liste en fazla %1$d ki\u015fi, Sayfa veya site tutar. Baz\u0131lar\u0131n\u0131 kald\u0131r\u0131p tekrar kaydet.");
+    }
+
+    private static void fill25(Map<String, String> table) {
         table.put("The list is full, so nothing was added.",
                 "Liste dolu, bu y\u00fczden hi\u00e7bir \u015fey eklenmedi.");
         table.put("The list is full, so the rest weren't added.",
                 "Liste dolu, bu y\u00fczden kalanlar eklenmedi.");
-    }
-
-    private static void fill25(Map<String, String> table) {
         table.put("The newest Hushfacebook release is %1$s.",
                 "En yeni Hushfacebook s\u00fcr\u00fcm\u00fc %1$s.");
         table.put("The phone's language",
@@ -3243,13 +3247,13 @@ final class L10nTableTr {
                 "Listeleri bir metinde dene");
         table.put("Turn off %1$s to use this.",
                 "Bunu kullanmak i\u00e7in %1$s se\u00e7ene\u011fini kapat\u0131n.");
+    }
+
+    private static void fill26(Map<String, String> table) {
         table.put("Turn off HDR brightness",
                 "HDR parlakl\u0131\u011f\u0131n\u0131 kapat");
         table.put("Turn off auto-translation",
                 "Otomatik \u00e7eviriyi kapat");
-    }
-
-    private static void fill26(Map<String, String> table) {
         table.put("Turn off double tap to like",
                 "Be\u011fenmek i\u00e7in \u00e7ift dokunmay\u0131 kapat");
         table.put("Turn off haptics",
@@ -3366,13 +3370,13 @@ final class L10nTableTr {
                 "Arama sonu\u00e7lar\u0131ndaki videolar kendili\u011finden ba\u015flamaz. Oynatmak i\u00e7in birine dokun. Dokunarak oynat a\u00e7\u0131kken de kapal\u0131yken de \u00e7al\u0131\u015f\u0131r.");
         table.put("Videos in search results wait for a tap",
                 "Arama sonu\u00e7lar\u0131ndaki videolar dokunu\u015fu bekler");
+    }
+
+    private static void fill27(Map<String, String> table) {
         table.put("Videos in your feed start with the sound off every time you open Facebook, and only you turn it on. Tap a video's speaker or press volume up to hear it.",
                 "Ak\u0131\u015f\u0131ndaki videolar Facebook'u her a\u00e7t\u0131\u011f\u0131nda sessiz ba\u015flar ve sesi yaln\u0131zca sen a\u00e7ars\u0131n. Duymak i\u00e7in videonun hoparl\u00f6r simgesine dokun veya ses a\u00e7ma tu\u015funa bas.");
         table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
                 "\u0130ki dakikadan uzun videolar kald\u0131\u011f\u0131n\u0131z yerden devam eder. Ba\u015fka bir yerden ba\u015flamak i\u00e7in \u00e7ubu\u011fu s\u00fcr\u00fckleyin. K\u0131sa reeller, canl\u0131 videolar ve reklamlar her zamanki gibi ba\u015flar.");
-    }
-
-    private static void fill27(Map<String, String> table) {
         table.put("Videos play at the best quality up to %1$s that Facebook offers for each, or the closest above.",
                 "Videolar, Facebook'un her biri i\u00e7in sundu\u011fu en fazla %1$s olan en iyi kalitede ya da hemen \u00fcst\u00fcndekinde oynat\u0131l\u0131r.");
         table.put("Videos play at the highest quality Facebook offers for each.",
@@ -3489,13 +3493,13 @@ final class L10nTableTr {
                 "Yukar\u0131daki anahtar a\u00e7\u0131kken bir reel yaln\u0131zca sa\u011fdaki \u00fc\u00e7te birine bas\u0131l\u0131 tutarsan iki kat h\u0131zda oynar. Ba\u015fka bir yere bas\u0131l\u0131 tutarsan Facebook'un uzun basma men\u00fcs\u00fc a\u00e7\u0131l\u0131r.");
         table.put("With the switch above on, your place stays however long you're away. Pull to refresh and a fresh start still load new posts.",
                 "Yukar\u0131daki anahtar a\u00e7\u0131kken ne kadar uzun s\u00fcre uzakta kal\u0131rsan kal yerin korunur. Yenilemek i\u00e7in \u00e7ekmek ve uygulamay\u0131 yeniden ba\u015flatmak yine yeni g\u00f6nderileri y\u00fckler.");
+    }
+
+    private static void fill28(Map<String, String> table) {
         table.put("With the tab bar at the bottom, it gets round ends and sits a little smaller, just above the bottom of the screen, with a soft highlight behind the tab you're on.",
                 "Sekme \u00e7ubu\u011fu alttayken u\u00e7lar\u0131 yuvarlak olur ve biraz k\u00fc\u00e7\u00fcl\u00fcr, ekran\u0131n alt kenar\u0131n\u0131n hemen \u00fcst\u00fcnde durur ve a\u00e7\u0131k olan sekmenin arkas\u0131nda hafif bir vurgu g\u00f6r\u00fcn\u00fcr.");
         table.put("Words that keep a post",
                 "G\u00f6nderiyi tutan kelimeler");
-    }
-
-    private static void fill28(Map<String, String> table) {
         table.put("Words to hide",
                 "Gizlenecek kelimeler");
         table.put("Writing",
