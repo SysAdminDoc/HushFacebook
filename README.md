@@ -302,6 +302,10 @@ Morphe's own **Clone app** patch, in the Morphe patches source that Manager alre
 
 A patched Facebook can't install Meta's updates, so it stays on the version you patched until you patch a newer one. `Stop update prompts` stops Facebook's own prompts. Meta App Manager, which comes on Samsung and some other phones, posts notices of its own, and you can turn those off in its notification settings. To stop Google Play offering an update, pick `Disable Play Store updates` in Expert mode when you patch. Keep picking it every time after that, because a build without it counts as an older version and won't install over yours.
 
+### Signing in keeps going back to verification
+
+Some people get through the password and then land on a browser or Google verification that keeps coming back, even after they approve it. So far it's been accounts with a passkey. What got them in: sign in to facebook.com in a browser, remove the passkey in Accounts Center under Password and security, then sign in on the patched app again. Facebook then asks you to approve the login from another device, and that goes through. A patched Messenger that loops the same way gets in after the same change.
+
 ### Facebook keeps closing
 
 After three crashes or freezes within a minute of starting, Hushfacebook pauses itself. If you can't reach the settings at all, an empty file named `hushfacebook-safe-mode` in `Android/data/com.facebook.katana/files` pauses it too (a clone uses its own package's folder, like `com.facebook.katana.morphe`). Most file managers can't write there, but on newer Android versions a computer with adb can, with no root (seen working on Android 16):
