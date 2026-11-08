@@ -180,6 +180,53 @@ public class RoundedTabBarTest {
     }
 
     /**
+     * #412: the tab's own background is Facebook's press ripple. Putting the layers on the tab makes
+     * the view let go of the background they replace, which is that same ripple, so it has to be
+     * hooked back into the layers or its fade can't redraw the tab and it freezes as a grey square.
+     */
+    @Test
+    public void theTabsOwnRippleStillRedrawsTheTabUnderTheSpot() {
+        RoundedTabBarForTests screen = new RoundedTabBarForTests();
+        screen.tabBar.removeAllViews();
+        FrameLayout[] tabs = new FrameLayout[5];
+        Drawable[] ripples = new Drawable[tabs.length];
+        for (int i = 0; i < tabs.length; i++) {
+            tabs[i] = new FrameLayout(screen.activity);
+            ripples[i] = new ColorDrawable(0x22000000);
+            tabs[i].setBackground(ripples[i]);
+            screen.tabBar.addView(tabs[i], new LinearLayout.LayoutParams(144, 112));
+        }
+        tabs[1].setSelected(true);
+        screen.layOut();
+        screen.shaper.update();
+
+        LayerDrawable layers = (LayerDrawable) tabs[1].getBackground();
+        assertSame(ripples[1], layers.getDrawable(0));
+        assertSame("the ripple under the spot redraws through the layers", layers, ripples[1].getCallback());
+        assertSame("and the layers through the tab", tabs[1], layers.getCallback());
+        assertEquals("the ripple shows whenever the layers holding it do", layers.isVisible(), ripples[1].isVisible());
+
+        // Going along the row and back, each tab left behind redraws itself again.
+        for (int next : new int[]{2, 3, 4, 0, 1}) {
+            for (FrameLayout tab : tabs) tab.setSelected(false);
+            tabs[next].setSelected(true);
+            screen.shaper.update();
+            Drawable under = ((LayerDrawable) tabs[next].getBackground()).getDrawable(0);
+            assertSame("tab " + next + "'s ripple redraws through the spot", tabs[next].getBackground(), under.getCallback());
+        }
+        for (int i = 0; i < tabs.length; i++) {
+            if (i == 1) continue;
+            assertSame("tab " + i + " has its ripple back", ripples[i], tabs[i].getBackground());
+            assertSame("tab " + i + "'s ripple redraws the tab", tabs[i], ripples[i].getCallback());
+        }
+
+        Settings.ROUNDED_TAB_BAR.save(false);
+        screen.shaper.update();
+        assertSame(ripples[1], tabs[1].getBackground());
+        assertSame("off, the last tab's ripple redraws it too", tabs[1], ripples[1].getCallback());
+    }
+
+    /**
      * #383: 585 draws its 2 pixel line over the top of the row of tabs, inside the pill, as a hard
      * edge. The pill fades it, a frame that puts it back fades it again, and off it's Facebook's.
      */

@@ -272,6 +272,13 @@ public final class RoundedTabBar {
             spotted = new Spotted(tab.getBackground());
             SPOTTED.put(tab, spotted);
             tab.setBackground(spotted.layers);
+            // The view lets go of the background it replaces, which is the one now inside the layers:
+            // it drops its callback and, when attached, hides it. Unhooked, Facebook's press ripple
+            // can't redraw the tab and freezes as a grey square (#412).
+            if (spotted.facebooks != null && spotted.layers instanceof LayerDrawable) {
+                spotted.facebooks.setCallback((LayerDrawable) spotted.layers);
+                spotted.facebooks.setVisible(spotted.layers.isVisible(), false);
+            }
         }
         Rect box = spotted.scratch;
         box.set(0, 0, tab.getWidth(), tab.getHeight());
