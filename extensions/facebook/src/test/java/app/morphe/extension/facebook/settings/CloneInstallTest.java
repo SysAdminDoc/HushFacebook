@@ -116,6 +116,8 @@ public class CloneInstallTest {
             assertNotNull("the screen did not open in the copy",
                     activity.get().getFragmentManager().findFragmentByTag("hushfacebook_settings"));
         } finally {
+            // Closed before its host goes, or the entry asks to open it again over the next test's screen.
+            SettingsEntry.onClosedByUser();
             activity.pause().stop().destroy();
         }
     }
