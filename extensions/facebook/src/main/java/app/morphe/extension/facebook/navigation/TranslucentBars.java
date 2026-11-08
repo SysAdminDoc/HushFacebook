@@ -172,6 +172,14 @@ public final class TranslucentBars {
         return Utils.settingsReady() && Settings.TRANSLUCENT_BARS.get();
     }
 
+    /**
+     * Whether pages run under the tab bar now, as See-through bars and Rounded tab bar both have
+     * them do, so whatever Facebook pins to a page's bottom edge can end up behind the tabs (#412).
+     */
+    public static boolean stretchesPages() {
+        return on() || RoundedTabBar.on();
+    }
+
     /** Says the tab bar patch is in the build, or with null, asks SettingsStatus again. */
     static volatile Boolean inBuildForTests;
 

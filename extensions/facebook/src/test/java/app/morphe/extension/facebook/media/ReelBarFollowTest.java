@@ -284,6 +284,44 @@ public class ReelBarFollowTest {
         assertTrue(HookStatus.report().toString().contains(ReelBarFollow.REHOSTED + " 1"));
     }
 
+    /**
+     * #412: Rounded tab bar or See-through bars stretch the reel under the tabs, so Facebook's own
+     * scrubber, up while a reel is paused, sits behind them. With Keep the progress bar off it still
+     * rises above the tabs, and only rises: a drag leaves it where Facebook has it.
+     */
+    @Test
+    public void aReelStretchedUnderTheTabsLiftsFacebooksOwnScrubberWithTheBarNotKept() {
+        Settings.KEEP_PROGRESS_BAR.save(false);
+        addTabBar(1980);
+        float lift = 2018 + 6 * activity.getResources().getDisplayMetrics().density - 1980;
+        try {
+            ReelBarFollow.updated(label);
+            frame();
+            assertEquals("with no switch that stretches the reel, Facebook's scrubber stays", 0f, host.getTranslationY(), 0f);
+
+            ReelBarFollow.resetForTests();
+            Settings.ROUNDED_TAB_BAR.save(true);
+            ReelBarFollow.updated(label);
+            frame();
+            assertEquals("the line and its time clear the rounded bar", -lift, host.getTranslationY(), 0f);
+            drag(-400);
+            assertEquals("a drag doesn't move it, as the bar isn't kept", -lift, host.getTranslationY(), 0f);
+            drag(400);
+            assertTrue(HookStatus.report().toString().contains(ReelBarFollow.LIFTED + " 1"));
+
+            Settings.ROUNDED_TAB_BAR.save(false);
+            frame();
+            assertEquals("turning the rounded bar off gives Facebook its place back", 0f, host.getTranslationY(), 0f);
+
+            Settings.TRANSLUCENT_BARS.save(true);
+            frame();
+            assertEquals("see-through bars stretch the reel the same way", -lift, host.getTranslationY(), 0f);
+        } finally {
+            Settings.ROUNDED_TAB_BAR.resetToDefault();
+            Settings.TRANSLUCENT_BARS.resetToDefault();
+        }
+    }
+
     @Test
     public void aTabBarFacebookBuildsAgainIsTheOneTheLineClears() {
         addTabBar(1980);

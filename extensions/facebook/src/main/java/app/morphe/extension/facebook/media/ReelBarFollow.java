@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import app.morphe.extension.facebook.navigation.TranslucentBars;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
@@ -51,7 +52,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>The same move lifts the bar when its line would sit behind the tab bar (#282). One reporter's
  * Reels tab runs the whole reel about 60 px lower than ours, so Facebook's own line and the kept
  * bar's thumb both went under the tabs. On the S22 and the emulator the line clears the tab bar by
- * 8 dp or more, so nothing moves there.
+ * 8 dp or more, so nothing moves there. See-through bars and Rounded tab bar stretch the reel under
+ * the tabs, which takes Facebook's own scrubber, shown while a reel is paused, behind them too, so
+ * with either one on the lift runs with Keep the progress bar off as well (#412), without the follow.
  */
 final class ReelBarFollow {
     private static final String FAMILY = FamilyNames.PROGRESS_BAR;
@@ -90,7 +93,7 @@ final class ReelBarFollow {
     static void updated(@Nullable View label) {
         try {
             if (label == null || follows.containsKey(label) || noReels.contains(label)) return;
-            if (!keeps() || !label.isAttachedToWindow()) return;
+            if (!lifts() || !label.isAttachedToWindow()) return;
             start(label);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, HOOK, failure);
@@ -111,6 +114,11 @@ final class ReelBarFollow {
 
     private static boolean keeps() {
         return Utils.settingsReady() && Settings.KEEP_PROGRESS_BAR.get();
+    }
+
+    /** Whether the line is kept clear of the tab bar: with the bar kept, or with pages run under the tabs (#412). */
+    private static boolean lifts() {
+        return keeps() || TranslucentBars.stretchesPages();
     }
 
     /** Walks up from the label to the view with a list of reels beside it, the one to move. */
@@ -252,9 +260,8 @@ final class ReelBarFollow {
                 if (label.isAttachedToWindow()) start(label);
                 return;
             }
-            boolean keeping = keeps();
-            int follow = keeping ? offsetIn(pager) : 0;
-            int lift = keeping ? liftOver() : 0;
+            int follow = keeps() ? offsetIn(pager) : 0;
+            int lift = lifts() ? liftOver() : 0;
             if (follow != 0 && lastFollow == 0) HookStatus.counted(FAMILY, FOLLOWED);
             if (lift != 0 && lastLift == 0) HookStatus.counted(FAMILY, LIFTED);
             lastFollow = follow;
