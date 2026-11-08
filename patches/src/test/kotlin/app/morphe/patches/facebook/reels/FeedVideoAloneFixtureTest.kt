@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
+import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -275,6 +276,38 @@ class FeedVideoAloneFixtureTest {
                     assertEquals("$where: the rest is Facebook's",
                         method.code().map { it.opcode }, asked.drop(6).map { it.opcode })
                 }
+                // #421: the loader's vend hands the extension the data source and the page just ahead of
+                // its branch on the seed check, and the branch still lands where it did.
+                val vends = loaderOwner.methods.filter { it.returnType == "V" && holdsString(it, SEED_VEND) }
+                assertEquals("$name: void methods beside the loader holding $SEED_VEND", 1, vends.size)
+                val vend = vends.single()
+                val vendCode = vend.code()
+                val vendAt = vendAsk(vend, check) ?: throw AssertionError("$name: the vend doesn't branch on $check past a page")
+                val landed = branchTarget(vendCode, vendAt.index)!!
+                val vended = context.mutableClassDefBy(loaderOwner.type).methods.single { it.sameAs(vend) }.code()
+                // Seven code units in front of a switch payload put it off its four-byte boundary, and
+                // dexlib pads it with a nop (the A9 build's vend ends in a sparse-switch payload).
+                assertEquals("$name: three instructions added to the vend, not counting alignment nops",
+                    vendCode.count { it.opcode != Opcode.NOP } + 3, vended.count { it.opcode != Opcode.NOP })
+                val (fromSource, fromPage, told421) = vended.subList(vendAt.index, vendAt.index + 3)
+                assertEquals("$name: the vend's copies and call", listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_FROM16, Opcode.INVOKE_STATIC),
+                    listOf(fromSource.opcode, fromPage.opcode, told421.opcode))
+                fromSource as TwoRegisterInstruction
+                fromPage as TwoRegisterInstruction
+                assertEquals("$name: copied from the data source, then the page", listOf(vendAt.source, vendAt.reels),
+                    listOf(fromSource.registerB, fromPage.registerB))
+                assertEquals("$name: the vend tells the extension", VENDING, called(told421))
+                told421 as FiveRegisterInstruction
+                assertEquals("$name: with both copies", listOf(2, fromSource.registerA, fromPage.registerA),
+                    listOf(told421.registerCount, told421.registerC, told421.registerD))
+                val branch = vended[vendAt.index + 3]
+                assertEquals("$name: Facebook's branch follows", Opcode.IF_EQZ, branch.opcode)
+                assertTrue("$name: the copies leave the answer alone", (branch as OneRegisterInstruction).registerA !in
+                    setOf(fromSource.registerA, fromPage.registerA))
+                assertEquals("$name: the branch lands where it did", landed + 3, branchTarget(vended, vendAt.index + 3))
+                assertEquals("$name: the rest of the vend is Facebook's", vendCode.map { it.opcode }.filter { it != Opcode.NOP },
+                    vended.filterIndexed { at, _ -> at !in vendAt.index until vendAt.index + 3 }.map { it.opcode }.filter { it != Opcode.NOP })
+
                 // Positive control: three separate roads, so no hook stands in for another.
                 assertEquals("$name: the loader, the data controller and the data source share a class",
                     3, setOf(loaderOwner.type, fetchOwner.type, sourceOwner.type).size)
@@ -317,7 +350,8 @@ class FeedVideoAloneFixtureTest {
             "${stub!!.definingClass}->${stub.name}(${stub.parameterTypes.joinToString("")})${stub.returnType}")
         assertTrue("the stub isn't public static",
             AccessFlags.STATIC.isSet(stub.accessFlags) && AccessFlags.PUBLIC.isSet(stub.accessFlags))
-        for (hook in listOf(FEED_VIDEO_TAPPED, VIEWER_OPENING, HOLDS_BACK, WARION_OPENING, WARION_CLOSED, SEED_CHECK, MORE_REELS_COMING)) {
+        for (hook in listOf(FEED_VIDEO_TAPPED, VIEWER_OPENING, HOLDS_BACK, WARION_OPENING, WARION_CLOSED, SEED_CHECK, MORE_REELS_COMING,
+            VENDING)) {
             val type = hook.substringBefore("->")
             val name = hook.substringAfter("->").substringBefore("(")
             val method = ExtensionDex.classDef(type).methods.singleOrNull { it.name == name }

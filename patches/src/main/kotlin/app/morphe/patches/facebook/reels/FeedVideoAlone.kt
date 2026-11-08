@@ -22,7 +22,9 @@ import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireLocals
+import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.util.ControlFlow
+import app.morphe.util.namedRegisters
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -97,6 +99,13 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   to a low register, and inlines the pagination page: a const-string of "pagination_component"
  *   handed straight to a void call that takes the name last. It also inlines the tail load error's
  *   when (585 `LX/08ZJ;->A00`), whose own way onto that page lands on its first instruction.
+ * - The loader's vend, the void method beside its fetch more holding "EmitResult skipped" (585 arm64
+ *   LX/0625;->Iyb, armv7 LX/062B;->IyZ, A9 LX/065j;->IzH), builds the page it hands the viewer, asks
+ *   the same seed check, and on a no reads the page's size and hands it over. A shared reel's first
+ *   page is the linked reel with Facebook's next reels after it, and it comes before the reel is on
+ *   screen, while the seed checks still get Facebook's answer (#421, S22 2026-11-08: "Up next: Gb
+ *   Flowers" under the reel). The extension gets the data source and the page ahead of the branch on
+ *   the answer: code added where the branch lands goes in front of its label, so the branch skips it.
  *
  * The Warion step tells the extension a feed video is opening, the reels viewer's entry tells it
  * where the video opens from, and the fragment tells it when a Warion viewer opens and closes.
@@ -150,6 +159,11 @@ internal const val FETCH_MORE = "VideoHomeDataControllerImpl.fetchMoreDataIntern
 
 /** The line only the client-side ranking loader's fetch more logs, when Facebook keeps a seed video alone. */
 internal const val SEED_TAIL = "onFetchMore skipped: suppressing tail load for seed video"
+
+/** The line the same loader's vend logs, when Facebook keeps a seed video alone and hands its viewer no page. */
+internal const val SEED_VEND = "EmitResult skipped: suppressing CSR vend for seed video"
+
+internal const val VENDING = "$FEED_VIDEO_ALONE->vending(Ljava/lang/Object;Ljava/lang/Object;)V"
 
 private const val PATCH = "Clean up Reels"
 
@@ -486,6 +500,58 @@ internal fun seedCheck(loaderFetchMore: Method): MethodReference? =
         ?.let { (it as ReferenceInstruction).reference as MethodReference }
         ?.takeIf { it.returnType == "Z" && it.parameterTypes.isEmpty() }
 
+/** Where the loader's vend has the seed check's answer: the branch on it, and the data source and reels page registers. */
+internal data class VendAsk(val index: Int, val source: Int, val reels: Int)
+
+/** Whether [instruction] is an interface call of [check]. */
+private fun asks(instruction: Instruction, check: MethodReference): Boolean {
+    if (instruction.opcode != Opcode.INVOKE_INTERFACE && instruction.opcode != Opcode.INVOKE_INTERFACE_RANGE) return false
+    val called = (instruction as ReferenceInstruction).reference as? MethodReference ?: return false
+    return called.definingClass == check.definingClass && called.name == check.name &&
+        called.parameterTypes.isEmpty() && called.returnType == "Z"
+}
+
+/** Whether [instruction] is an interface call of List.size(). */
+private fun isListSize(instruction: Instruction): Boolean {
+    if (instruction.opcode != Opcode.INVOKE_INTERFACE && instruction.opcode != Opcode.INVOKE_INTERFACE_RANGE) return false
+    val called = (instruction as ReferenceInstruction).reference as? MethodReference ?: return false
+    return called.definingClass == "Ljava/util/List;" && called.name == "size" && called.parameterTypes.isEmpty() &&
+        called.returnType == "I"
+}
+
+/** The one register a call names, or null when it names more or none. */
+private fun onlyRegister(instruction: Instruction): Int? = instruction.namedRegisters().singleOrNull()
+
+/** Whether [instruction] writes [register], or a wide pair that covers it. */
+private fun writes(instruction: Instruction, register: Int): Boolean {
+    if (!instruction.opcode.setsRegister()) return false
+    val written = (instruction as? OneRegisterInstruction)?.registerA ?: return false
+    return written == register || (instruction.opcode.setsWideRegister() && written + 1 == register)
+}
+
+/**
+ * Where [method], the loader's vend, branches on the data source's [check]: the index of the if-eqz
+ * on the answer, the register of the data source it asked, and the register of the reels page it
+ * vends past the jump (what its first List.size() there reads, with nothing between the jump's
+ * target and that call writing it). Null unless it asks [check] once, branches on the answer right
+ * after, vends forward of the branch, and neither register is the answer's.
+ */
+internal fun vendAsk(method: Method, check: MethodReference): VendAsk? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val ask = code.indices.filter { asks(code[it], check) }.singleOrNull() ?: return null
+    val source = onlyRegister(code[ask]) ?: return null
+    val result = code.getOrNull(ask + 1) ?: return null
+    if (result.opcode != Opcode.MOVE_RESULT) return null
+    val answer = (result as OneRegisterInstruction).registerA
+    val branch = code.getOrNull(ask + 2) ?: return null
+    if (branch.opcode != Opcode.IF_EQZ || (branch as OneRegisterInstruction).registerA != answer) return null
+    val vend = branchTarget(code, ask + 2)?.takeIf { it > ask + 2 } ?: return null
+    val size = (vend until code.size).firstOrNull { isListSize(code[it]) } ?: return null
+    val reels = onlyRegister(code[size]) ?: return null
+    if (source == answer || reels == answer || (vend until size).any { writes(code[it], reels) }) return null
+    return VendAsk(ask + 2, source, reels)
+}
+
 /** Whether [method] of [classDef] is a concrete [check] of a class implementing its interface. */
 internal fun implementsSeedCheck(classDef: ClassDef, method: Method, check: MethodReference): Boolean =
     check.definingClass in classDef.interfaces && method.name == check.name && method.returnType == "Z" &&
@@ -603,6 +669,21 @@ internal fun BytecodePatchContext.keepFeedVideosAlone() {
     val check = seedCheck(loader)
         ?: throw PatchException("$PATCH: the loader's fetch more asks no boolean interface method first")
     loader.holdBackWhen(HOLDS_BACK)
+    val vends = mutableClassDefBy(loader.definingClass).methods.filter { it.returnType == "V" && holdsString(it, SEED_VEND) }
+    val vend = vends.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one void vend holding \"$SEED_VEND\" beside the loader's fetch more, found ${vends.size}")
+    val ask = vendAsk(vend, check)
+        ?: throw PatchException("$PATCH: the loader's vend doesn't branch on $check right after asking it, past a reels page")
+    // Ahead of the branch, so only the way on from the answer reaches the call; a jump to the branch lands past it.
+    val (asker, page) = vend.freeLocalsAt(PATCH, ask.index, 2)
+    vend.addInstructions(
+        ask.index,
+        """
+            move-object/from16 v$asker, v${ask.source}
+            move-object/from16 v$page, v${ask.reels}
+            invoke-static { v$asker, v$page }, $VENDING
+        """,
+    )
 
     val fragment = mutableClassDefByOrNull(WARION_FRAGMENT)
         ?: throw PatchException("$PATCH: $WARION_FRAGMENT is missing")

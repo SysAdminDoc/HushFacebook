@@ -62,7 +62,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * what bring the linked reel in (S22 2026-11-08, where holding the fetch, and then the seed checks
  * after the first, each left the viewer black). So a shared viewer gets Facebook's answers until a
  * reel takes the screen ({@link #reelOnScreen}, about 150 ms in), and is held from then on, before
- * the ask a second later that brings Facebook's "Up next" reel.
+ * the ask a second later that brings Facebook's "Up next" reel. The page that fetch brings holds the
+ * reels after the linked one too, so while its viewer gets Facebook's answers each page its loader
+ * hands the viewer keeps its first reel only ({@link #vending}).
  */
 public final class FeedVideoAlone {
     /** Counted once for each player a feed video opened that this kept to that video. */
@@ -73,6 +75,9 @@ public final class FeedVideoAlone {
 
     /** Counted once for each reels viewer from a feed whose list was told no more reels are coming. */
     static final String NO_LOADING_PAGE = "Reels loading page left out";
+
+    /** Counted for each reel left out of a page handed to a shared reel's viewer while it loads that reel. */
+    static final String LEFT_OUT = "Reels after a shared reel left out";
 
     /** How long after a feed video tap its player's first ask for more is still taken as that player's. */
     static final long WINDOW_MS = 5000;
@@ -499,6 +504,46 @@ public final class FeedVideoAlone {
     /** Stands in for {@link #viewerOrigin} when a test sets it. */
     @Nullable
     static volatile Function<Object, Object> originForTests;
+
+    /**
+     * Injection point, in the reels loader as it hands its viewer a page of reels, right after its
+     * data source's seed check answered and before the loader goes by that answer. A shared reel's
+     * viewer gets Facebook's answers while it loads its reel, and the page its fetch brings has the
+     * linked reel first and Facebook's next reels after it (S22 2026-11-08: "Up next" under the reel,
+     * and a swipe went on to it). So while that viewer's data source passes, its page keeps the first
+     * reel only. Every other page, and any page held back anyway, is left as it is. Never throws.
+     *
+     * @param source the data source the loader just asked.
+     * @param reels  the reels the loader is about to hand over, a list Facebook made for this page.
+     */
+    public static void vending(@Nullable Object source, @Nullable Object reels) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (source == null || !(reels instanceof List) || !on()) return;
+            Opening from = null;
+            synchronized (FEEDS) {
+                for (Feed seen : FEEDS) {
+                    if (seen.feed.get() == source) {
+                        if (seen.player) from = seen.opening;
+                        break;
+                    }
+                }
+            }
+            if (from == null || !from.shared || from.reelShown) return;
+            HookStatus.bound(FAMILY, "reels page");
+            List<?> page = (List<?>) reels;
+            int size = page.size();
+            if (size <= 1) {
+                Logger.printDebug(() -> "Shared reels on their own: a page of " + size + " reel(s) for the shared reel's viewer, nothing to leave out");
+                return;
+            }
+            page.subList(1, size).clear();
+            for (int left = 1; left < size; left++) HookStatus.counted(FAMILY, LEFT_OUT);
+            Logger.printDebug(() -> "Shared reels on their own: a page of " + size + " reels for the shared reel's viewer keeps its first, the linked reel");
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reels page", failure);
+        }
+    }
 
     /**
      * Called as Facebook's Reels controller takes a player, a reel coming on screen ({@link

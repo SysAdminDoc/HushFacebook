@@ -21,6 +21,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -595,6 +597,66 @@ public class FeedVideoAloneTest {
         assertTrue("a feed video's player is held from its first fetch", FeedVideoAlone.holdsBack(tapped));
         ReelBinding.bound(new Object(), new Object());
         assertTrue("a reel on screen after a feed tap changes nothing", FeedVideoAlone.holdsBack(tapped));
+    }
+
+    /**
+     * #421: the page the linked reel's fetch brings has Facebook's next reels after the linked one
+     * (S22 2026-11-08: "Up next: Gb Flowers" under the reel, and a swipe went on to it). While the
+     * shared reel's viewer loads its reel, each page its loader hands over keeps the first reel only.
+     * Once the reel is on screen, and for a feed video or the Reels tab, pages are Facebook's.
+     */
+    @Test
+    public void aSharedReelsPageKeepsOnlyTheLinkedReel() {
+        Settings.SHARED_REELS_ALONE.save(true);
+        FeedVideoAlone.reelsViewerOpening(origin("external_deeplink::fb_shorts_external_link"));
+        Object viewer = new Object();
+        FeedVideoAlone.warionOpening(viewer, true);
+        Object feed = new Object();
+        Object source = new Object();
+        assertFalse(FeedVideoAlone.holdsBack(feed));
+        assertFalse(FeedVideoAlone.seedCheck(source));
+        List<String> page = new ArrayList<>(List.of("linked reel", "Gb Flowers", "third"));
+        FeedVideoAlone.vending(source, page);
+        assertEquals(List.of("linked reel"), page);
+        assertTrue("two reels counted as left out: " + statusLine(),
+                statusLine().contains(FeedVideoAlone.LEFT_OUT + " 2"));
+        List<String> one = new ArrayList<>(List.of("linked reel"));
+        FeedVideoAlone.vending(source, one);
+        assertEquals("a page of one stays", List.of("linked reel"), one);
+        List<String> other = new ArrayList<>(List.of("a", "b"));
+        FeedVideoAlone.vending(new Object(), other);
+        assertEquals("a data source that never asked is Facebook's", List.of("a", "b"), other);
+
+        ReelBinding.bound(new Object(), new Object());
+        List<String> later = new ArrayList<>(List.of("x", "y"));
+        FeedVideoAlone.vending(source, later);
+        assertEquals("once the reel is on screen the seed check holds pages back itself", List.of("x", "y"), later);
+
+        FeedVideoAlone.warionClosed(viewer);
+        clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
+        FeedVideoAlone.feedVideoTapped();
+        Object tapped = new Object();
+        assertFalse("a feed video's first seed check", FeedVideoAlone.seedCheck(tapped));
+        List<String> feedPage = new ArrayList<>(List.of("tapped", "next"));
+        FeedVideoAlone.vending(tapped, feedPage);
+        assertEquals("a feed video's pages are the feed switch's business", List.of("tapped", "next"), feedPage);
+
+        clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
+        FeedVideoAlone.reelsViewerOpening(origin("fb_shorts_tab::reels_tab"));
+        Object tab = new Object();
+        assertFalse(FeedVideoAlone.seedCheck(tab));
+        List<String> tabPage = new ArrayList<>(List.of("r1", "r2"));
+        FeedVideoAlone.vending(tab, tabPage);
+        assertEquals("the Reels tab keeps its reels", List.of("r1", "r2"), tabPage);
+
+        List<String> fixed = List.of("p", "q");
+        FeedVideoAlone.vending(null, fixed);
+        FeedVideoAlone.vending(source, "not a list");
+        Settings.SHARED_REELS_ALONE.save(false);
+        Settings.FEED_VIDEOS_ALONE.save(false);
+        List<String> off = new ArrayList<>(List.of("m", "n"));
+        FeedVideoAlone.vending(source, off);
+        assertEquals("off, nothing is left out", List.of("m", "n"), off);
     }
 
     @Test
