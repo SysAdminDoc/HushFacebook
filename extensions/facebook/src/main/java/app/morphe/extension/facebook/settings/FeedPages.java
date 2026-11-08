@@ -907,6 +907,9 @@ final class FeedPages {
             comments.addPreference(toggle(context, Settings.TAP_REELS_ABOVE_COMMENTS,
                     L10n.t("Tapping the reel above its comments plays or pauses it, and the comments stay open. "
                             + "Works while comments open part way up, not at full height.")));
+            comments.addPreference(toggle(context, Settings.SEARCH_COMMENTS,
+                    L10n.t("A magnifier at the top of the comments opens a search box that finds the comments with "
+                            + "your words.")));
         }
         // Writing had a section of its own for this one switch.
         if (tags) {

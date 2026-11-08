@@ -1457,6 +1457,16 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_tap_reels_above_comments", FALSE);
 
     /**
+     * A magnifier at the top of a comment sheet's list opens a search box that finds the comments
+     * with your words and steps through them
+     * ({@link app.morphe.extension.facebook.comments.CommentSearch}, #420). Needs Open comments at
+     * full height's sheet hook, and works whatever that switch says. Off by default. A change shows
+     * on the next sheet opened.
+     */
+    public static final BooleanSetting SEARCH_COMMENTS =
+            new BooleanSetting("hushfacebook_search_comments", FALSE);
+
+    /**
      * Facebook's text boxes (posts, comments, captions, a story's text) look people up to tag only
      * for a word that starts with @. Off, they also look them up for a plain word Facebook takes for
      * a name, what its code calls an implicit mention

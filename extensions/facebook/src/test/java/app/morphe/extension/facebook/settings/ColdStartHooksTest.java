@@ -70,6 +70,7 @@ import app.morphe.extension.facebook.feed.ReturnRefresh;
 import app.morphe.extension.facebook.feed.TypedFeedUnit;
 import app.morphe.extension.facebook.font.OwnFont;
 import app.morphe.extension.facebook.comments.DefaultCommentOrderForTests;
+import app.morphe.extension.facebook.comments.CommentSearchForTests;
 import app.morphe.extension.facebook.comments.CommentSheetOptions;
 import app.morphe.extension.facebook.comments.FullHeightComments;
 import app.morphe.extension.facebook.comments.MetaAiSummaries;
@@ -448,6 +449,8 @@ public class ColdStartHooksTest {
         FullHeightComments.watchHeader(earlySheet, 0x7f0a0612, true);
         assertFalse("a comment sheet set up before the context lost the video above its comments",
                 earlyHeader.getVisibility() == android.view.View.GONE);
+        assertFalse("a comment sheet set up before the context got a search",
+                CommentSearchForTests.watching(earlySheet));
         assertFalse("a word typed before the context lost its tag suggestions", TagSuggestionsForTests.skipsAPlainWord());
         assertFalse("a list of people open before the context was closed", TagSuggestionsForTests.closesAListLeftOpen());
         assertFalse("a Chats list built before the context lost the Get Messenger card",

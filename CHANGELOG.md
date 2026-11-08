@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* `Search comments` under Comments and writing puts a magnifier at the top of a comment sheet. Tap it, type a few words, and it scrolls to the first comment that has them and outlines it. The arrows step to the next or previous match, case and accents don't matter, and the count shows which one you're on. It needs `Open comments at full height` installed and is off until you turn it on. (#420)
 * `Dark box behind open captions` under Reels and Watch puts a reel's caption on a dark box once you open it, like subtitles, so it's easy to read over a bright video. A folded caption keeps Facebook's look. It's off until you turn it on. (#419)
 * `Hide the Subscribe button` under Stories takes the Subscribe button off the top of a story. It's off until you turn it on. (#380)
 * When `Stop Story auto-advance` holds a story at its end, `Story play button` turns into a replay button that starts it over. With `Double tap for next story` on and no play button, one tap on the finished story does the same. (#380)

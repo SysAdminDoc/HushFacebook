@@ -2604,3 +2604,11 @@ Hide profile pictures on posts	隱藏貼文上的大頭貼照
 Hide profile pictures in comments	隱藏留言中的大頭貼照
 Takes the profile picture off the top of posts, so the name starts where the picture was. A change shows on the posts drawn after it.	移除貼文頂端的大頭貼照，名字從大頭貼照原本的位置開始。變更對之後顯示的貼文生效。
 Takes the profile picture off comments, so the name and text start where the picture was. A change shows on the comments drawn after it.	移除留言中的大頭貼照，名字和內容從大頭貼照原本的位置開始。變更對之後顯示的留言生效。
+Search comments	搜尋留言
+Previous match	上一個相符項目
+Next match	下一個相符項目
+Close search	關閉搜尋
+No matches	沒有相符項目
+No more matches	沒有更多相符項目
+Not found yet	尚未找到
+A magnifier at the top of the comments opens a search box that finds the comments with your words.	留言頂端的放大鏡會開啟搜尋框，找出包含你輸入的文字的留言。

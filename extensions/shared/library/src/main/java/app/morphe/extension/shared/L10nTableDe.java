@@ -18,7 +18,7 @@ final class L10nTableDe {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(3442);
+        Map<String, String> table = new HashMap<>(3458);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -221,6 +221,8 @@ final class L10nTableDe {
                 "Langes Dr\u00fccken auf \u201eGef\u00e4llt mir\u201c \u00f6ffnet keine Reaktionen mehr. Ein Tippen gibt weiterhin ein \u201eGef\u00e4llt mir\u201c.");
         table.put("A long press on the Facebook logo at the top of the home feed, or on the title at the top of another tab, opens these settings. Off, the long press goes back to Facebook.",
                 "Langes Dr\u00fccken des Facebook-Logos oben im Home-Feed oder des Titels oben auf einem anderen Tab \u00f6ffnet diese Einstellungen. Aus geh\u00f6rt das lange Dr\u00fccken wieder Facebook.");
+        table.put("A magnifier at the top of the comments opens a search box that finds the comments with your words.",
+                "Eine Lupe oben in den Kommentaren \u00f6ffnet ein Suchfeld, das die Kommentare mit deinen W\u00f6rtern findet.");
         table.put("A playback speed you pick in a reel's menu stays for the next reels, after a restart too, until you pick another. Off, every reel starts at normal speed.",
                 "Eine Wiedergabegeschwindigkeit, die du im Men\u00fc eines Reels w\u00e4hlst, bleibt f\u00fcr die n\u00e4chsten Reels, auch nach einem Neustart, bis du eine andere w\u00e4hlst. Aus startet jedes Reel mit normaler Geschwindigkeit.");
         table.put("A playing reel or full-screen video keeps going in a small window when you leave Facebook. Android 12 or later.",
@@ -293,11 +295,11 @@ final class L10nTableDe {
                 "Hinzuf\u00fcgen");
         table.put("Add Download to phone to feed and Watch video menus. Uses the quality below. Off or paused, Facebook's menu returns.",
                 "F\u00fcgt Aufs Telefon herunterladen zu Feed- und Watch-Videomen\u00fcs hinzu. Nutzt die Qualit\u00e4t unten. Ausgeschaltet oder pausiert kehrt Facebooks Men\u00fc zur\u00fcck.");
-        table.put("Add Save to every story menu, using your download quality. Off or paused, Facebook only saves your own stories.",
-                "F\u00fcgt jedem Story-Men\u00fc Speichern mit deiner Downloadqualit\u00e4t hinzu. Ausgeschaltet oder pausiert speichert Facebook nur eigene Storys.");
     }
 
     private static void fill2(Map<String, String> table) {
+        table.put("Add Save to every story menu, using your download quality. Off or paused, Facebook only saves your own stories.",
+                "F\u00fcgt jedem Story-Men\u00fc Speichern mit deiner Downloadqualit\u00e4t hinzu. Ausgeschaltet oder pausiert speichert Facebook nur eigene Storys.");
         table.put("Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return.",
                 "F\u00fcgt Reels einen Download-Button mit deiner Downloadqualit\u00e4t hinzu. Ausgeschaltet oder pausiert erscheinen Facebooks eigene Buttons.");
         table.put("Add a Translate link to posts",
@@ -416,11 +418,11 @@ final class L10nTableDe {
                 "Bernstein");
         table.put("An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.",
                 "Ein Emoji direkt hinter dem Facebook-Logo oben auf der Startseite, in seinen eigenen Farben. Lass das Feld leer, wenn keins erscheinen soll.");
-        table.put("An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.",
-                "Eine ge\u00f6ffnete Reel-Beschreibung liegt auf einem dunklen Kasten, wie Untertitel, damit sie sich \u00fcber einem hellen Video gut lesen l\u00e4sst. Die \u00c4nderung gilt ab dem n\u00e4chsten Reel.");
     }
 
     private static void fill3(Map<String, String> table) {
+        table.put("An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.",
+                "Eine ge\u00f6ffnete Reel-Beschreibung liegt auf einem dunklen Kasten, wie Untertitel, damit sie sich \u00fcber einem hellen Video gut lesen l\u00e4sst. Die \u00c4nderung gilt ab dem n\u00e4chsten Reel.");
         table.put("An open reply thread gets a Hide replies button, so you can close it again after reading.",
                 "Ein ge\u00f6ffneter Antwort-Thread bekommt eine Schaltfl\u00e4che Antworten ausblenden, damit du ihn nach dem Lesen wieder schlie\u00dfen kannst.");
         table.put("An open reply thread keeps loading as you scroll, so there's no View more replies to tap.",
@@ -539,11 +541,11 @@ final class L10nTableDe {
                 "Pause nach");
         table.put("Break length",
                 "Pausenl\u00e4nge");
-        table.put("Break settings",
-                "Pauseneinstellungen");
     }
 
     private static void fill4(Map<String, String> table) {
+        table.put("Break settings",
+                "Pauseneinstellungen");
         table.put("Build %1$s",
                 "Build %1$s");
         table.put("Build %1$s (modified)",
@@ -636,6 +638,8 @@ final class L10nTableDe {
                 "Facebook schlie\u00dfen");
         table.put("Close Facebook when you leave it",
                 "Facebook beim Verlassen schlie\u00dfen");
+        table.put("Close search",
+                "Suche schlie\u00dfen");
         table.put("Collapsed",
                 "Eingeklappt");
         table.put("Colors and theme",
@@ -660,13 +664,13 @@ final class L10nTableDe {
                 "Kommentare \u00f6ffnen sich dann mit %1$s als Auswahl im Sortiermen\u00fc.");
         table.put("Content filters",
                 "Inhaltsfilter");
+    }
+
+    private static void fill5(Map<String, String> table) {
         table.put("Controls and picture-in-picture",
                 "Steuerung und Bild-im-Bild");
         table.put("Convert to keep the full size",
                 "Umwandeln, um die volle Gr\u00f6\u00dfe zu behalten");
-    }
-
-    private static void fill5(Map<String, String> table) {
         table.put("Copied",
                 "Kopiert");
         table.put("Copy a short report to the clipboard.",
@@ -783,13 +787,13 @@ final class L10nTableDe {
                 "Datensparmodus");
         table.put("Dating",
                 "Dating");
+    }
+
+    private static void fill6(Map<String, String> table) {
         table.put("Debug logging",
                 "Debug-Protokollierung");
         table.put("Default comment order",
                 "Standard-Reihenfolge der Kommentare");
-    }
-
-    private static void fill6(Map<String, String> table) {
         table.put("Default playback quality",
                 "Standard-Wiedergabequalit\u00e4t");
         table.put("Default quality",
@@ -906,13 +910,13 @@ final class L10nTableDe {
                 "Facebook-Anzeigen in anderen Apps");
         table.put("Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.",
                 "Facebook fragt beim Start und nach der unten gew\u00e4hlten Zeit nach deinem Fingerabdruck, Gesicht oder deiner Bildschirmsperre. Dein Telefon braucht eine Bildschirmsperre.");
+    }
+
+    private static void fill7(Map<String, String> table) {
         table.put("Facebook blue",
                 "Facebook-Blau");
         table.put("Facebook can't tell when you take a screenshot or record your screen, so it can't react.",
                 "Facebook merkt nicht, wenn du einen Screenshot machst oder den Bildschirm aufnimmst, und kann deshalb nicht reagieren.");
-    }
-
-    private static void fill7(Map<String, String> table) {
         table.put("Facebook closes and reopens on this page.",
                 "Facebook schlie\u00dft sich und \u00f6ffnet sich wieder auf dieser Seite.");
         table.put("Facebook crashed or froze within a minute of starting three times in a row, so Hushfacebook paused itself.",
@@ -1029,13 +1033,13 @@ final class L10nTableDe {
                 "Gefolgt-Feed auf der Startseite");
         table.put("Following shown",
                 "Angezeigte Gefolgte");
+    }
+
+    private static void fill8(Map<String, String> table) {
         table.put("Font file",
                 "Schriftdatei");
         table.put("Font file cleared. Restart Facebook to apply the font change.",
                 "Schriftdatei entfernt. Starte Facebook neu, damit die Schrift\u00e4nderung gilt.");
-    }
-
-    private static void fill8(Map<String, String> table) {
         table.put("For when Marketplace only or Events only is on. Neither is on now.",
                 "F\u00fcr den Fall, dass Nur Marketplace oder Nur Veranstaltungen an ist. Gerade ist keins davon an.");
         table.put("Force dark mode",
@@ -1152,13 +1156,13 @@ final class L10nTableDe {
                 "Meta AI im Feed ausblenden");
         table.put("Hide Meta AI questions under posts",
                 "Meta-AI-Fragen unter Beitr\u00e4gen ausblenden");
+    }
+
+    private static void fill9(Map<String, String> table) {
         table.put("Hide Meta AI's Imagine",
                 "Imagine von Meta AI ausblenden");
         table.put("Hide Meta Verified offers",
                 "Meta-Verified-Angebote ausblenden");
-    }
-
-    private static void fill9(Map<String, String> table) {
         table.put("Hide Muse in the share sheet",
                 "Muse im Teilen-Men\u00fc ausblenden");
         table.put("Hide Reels in the feed",
@@ -1275,13 +1279,13 @@ final class L10nTableDe {
                 "Schaltfl\u00e4che Antworten ausblenden");
         table.put("Hide reply suggestions",
                 "Antwortvorschl\u00e4ge ausblenden");
+    }
+
+    private static void fill10(Map<String, String> table) {
         table.put("Hide reposts",
                 "Geteilte Beitr\u00e4ge ausblenden");
         table.put("Hide rings in comments",
                 "Ringe in Kommentaren ausblenden");
-    }
-
-    private static void fill10(Map<String, String> table) {
         table.put("Hide rings in the feed",
                 "Ringe im Feed ausblenden");
         table.put("Hide rings on profiles",
@@ -1398,13 +1402,13 @@ final class L10nTableDe {
                 "Abonnieren-Button ausblenden");
         table.put("Hide the Subscribe button on videos",
                 "Abonnieren-Button bei Videos ausblenden");
+    }
+
+    private static void fill11(Map<String, String> table) {
         table.put("Hide the X on posts",
                 "X bei Beitr\u00e4gen ausblenden");
         table.put("Hide the app icon count",
                 "Z\u00e4hler am App-Symbol ausblenden");
-    }
-
-    private static void fill11(Map<String, String> table) {
         table.put("Hide the audio line on reels",
                 "Audiozeile bei Reels ausblenden");
         table.put("Hide the composer row",
@@ -1521,13 +1525,13 @@ final class L10nTableDe {
                 "Blendet Produktkarten aus Shopping-Links aus, die Creator zu Beitr\u00e4gen, Reels und Kommentaren hinzuf\u00fcgen.");
         table.put("Hides prompts and promos under reels, like Remix, Use template, Add yours, Edits, Stars, games, partner apps and outside links. The song label stays.",
                 "Blendet Hinweise und Werbung unter Reels aus, etwa Remix, Vorlage nutzen, Add yours, Edits, Stars, Spiele, Partner-Apps und externe Links. Das Song-Label bleibt.");
+    }
+
+    private static void fill12(Map<String, String> table) {
         table.put("Hides reels and Watch videos that Facebook marks as made with AI. Ones only their creator labeled stay. Off by default, since it hasn't been tried on a real account yet.",
                 "Blendet Reels und Watch-Videos aus, die Facebook selbst als mit KI erstellt markiert. Solche, die nur ihr Urheber so gekennzeichnet hat, bleiben. Standardm\u00e4\u00dfig aus, weil es auf einem echten Konto noch nicht ausprobiert wurde.");
         table.put("Hides rows of reels between posts, and the reels Facebook adds where your feed ends.",
                 "Blendet Reihen mit Reels zwischen Beitr\u00e4gen aus, ebenso die Reels, die Facebook am Ende deines Feeds anh\u00e4ngt.");
-    }
-
-    private static void fill12(Map<String, String> table) {
         table.put("Hides short posts shown as big text on a colored background.",
                 "Blendet kurze Beitr\u00e4ge aus, die als gro\u00dfer Text auf farbigem Hintergrund erscheinen.");
         table.put("Hides the \"Commission eligible\" label under the creator's name on reels.",
@@ -1644,13 +1648,13 @@ final class L10nTableDe {
                 "Hush hat die vorgeschlagenen Beitr\u00e4ge danach ausgeblendet, deshalb endet die Startseite hier.");
         table.put("Hushfacebook %1$s is out. Update it in Morphe Manager.",
                 "Hushfacebook %1$s ist erschienen. Aktualisiere es im Morphe Manager.");
+    }
+
+    private static void fill13(Map<String, String> table) {
         table.put("Hushfacebook %1$s on Facebook %2$s",
                 "Hushfacebook %1$s auf Facebook %2$s");
         table.put("Hushfacebook %1$s targets Facebook %2$s.",
                 "Hushfacebook %1$s ist f\u00fcr Facebook %2$s gedacht.");
-    }
-
-    private static void fill13(Map<String, String> table) {
         table.put("Hushfacebook in the Menu",
                 "Hushfacebook im Men\u00fc");
         table.put("Hushfacebook is on",
@@ -1767,13 +1771,13 @@ final class L10nTableDe {
                 "Reel-Geschwindigkeit beibehalten");
         table.put("Keep the tab bar on screen",
                 "Tab-Leiste eingeblendet lassen");
+    }
+
+    private static void fill14(Map<String, String> table) {
         table.put("Keep the top bar on screen",
                 "Obere Leiste eingeblendet lassen");
         table.put("Keep the video speed",
                 "Video-Geschwindigkeit beibehalten");
-    }
-
-    private static void fill14(Map<String, String> table) {
         table.put("Keep videos playing while zoomed",
                 "Videos beim Zoomen weiterlaufen lassen");
         table.put("Keep watched entries for",
@@ -1890,13 +1894,13 @@ final class L10nTableDe {
                 "Nur Marketplace und Nur Veranstaltungen sind aus.");
         table.put("Marketplace only and Events only are off. Restart Facebook to restore its normal tabs.",
                 "Nur Marketplace und Nur Veranstaltungen sind aus. Starte Facebook neu, um die normalen Tabs wiederherzustellen.");
+    }
+
+    private static void fill15(Map<String, String> table) {
         table.put("Marketplace only chooses the opening tab. Your previous choice stays saved.",
                 "Der Marketplace-Modus bestimmt den Start-Tab. Deine bisherige Auswahl bleibt gespeichert.");
         table.put("Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.",
                 "Marketplace nicht verf\u00fcgbar. Facebook hat f\u00fcr dieses Konto keinen Marketplace-Tab bereitgestellt. Deine normalen Tabs bleiben verf\u00fcgbar.");
-    }
-
-    private static void fill15(Map<String, String> table) {
         table.put("Match whole words",
                 "Ganze W\u00f6rter abgleichen");
         table.put("Matches whole words only, in both lists. For example, \"hat\" matches \"hat!\" but not \"what\" or \"hats\".",
@@ -1963,6 +1967,8 @@ final class L10nTableDe {
                 "Neueste Reels zuerst");
         table.put("News feed",
                 "Newsfeed");
+        table.put("Next match",
+                "N\u00e4chster Treffer");
         table.put("No \"Are you interested in this reel?\" prompt on reels, and no survey card between them asking how well a video matches your interests.",
                 "Keine Frage \u201eInteressiert dich dieses Reel?\u201c bei Reels und keine Umfragekarte zwischen ihnen, wie gut ein Video zu deinen Interessen passt.");
         table.put("No Facebook ads in other apps",
@@ -1991,8 +1997,12 @@ final class L10nTableDe {
                 "Kein Emoji nach dem Logo. Gib eins ein, damit es dort erscheint.");
         table.put("No file chosen. Choose a .ttf or .otf font file of up to %1$d MB.",
                 "Keine Datei gew\u00e4hlt. W\u00e4hle eine .ttf- oder .otf-Schriftdatei mit bis zu %1$d MB.");
+        table.put("No matches",
+                "Keine Treffer");
         table.put("No matching settings",
                 "Keine passenden Einstellungen");
+        table.put("No more matches",
+                "Keine weiteren Treffer");
         table.put("No more reminders that it's a friend's birthday.",
                 "Keine Erinnerungen mehr, dass jemand aus deiner Freundesliste Geburtstag hat.");
         table.put("No number on Facebook's app icon. Notifications still arrive. Some launchers add their own count, which this can't remove.",
@@ -2007,6 +2017,9 @@ final class L10nTableDe {
                 "Nein danke");
         table.put("No time limit",
                 "Kein Zeitlimit");
+    }
+
+    private static void fill16(Map<String, String> table) {
         table.put("No toast when a save starts, finishes or is canceled. A save that fails still says why.",
                 "Keine Meldung, wenn ein Speichervorgang beginnt, endet oder abgebrochen wird. Schl\u00e4gt einer fehl, wird der Grund trotzdem angezeigt.");
         table.put("No types seen yet. Scroll Home and come back.",
@@ -2017,9 +2030,6 @@ final class L10nTableDe {
                 "Noch keine W\u00f6rter.");
         table.put("Nobody listed yet, so no post is hidden.",
                 "Noch niemand eingetragen, daher wird kein Beitrag ausgeblendet.");
-    }
-
-    private static void fill16(Map<String, String> table) {
         table.put("None of Facebook's web addresses are selected for this app, so their links open elsewhere. Tap to select them in Android's settings.",
                 "Keine Webadresse von Facebook ist f\u00fcr diese App ausgew\u00e4hlt, deshalb \u00f6ffnen sich ihre Links woanders. Tippe, um sie in den Android-Einstellungen auszuw\u00e4hlen.");
         table.put("None picked yet.",
@@ -2032,6 +2042,8 @@ final class L10nTableDe {
                 "Keine ausgew\u00e4hlt. Beitr\u00e4ge in jeder Sprache k\u00f6nnen \u00fcbersetzt werden.");
         table.put("Not enough free space to save this. Free some up and try again.",
                 "Zu wenig freier Speicher zum Speichern. Gib etwas Platz frei und versuche es erneut.");
+        table.put("Not found yet",
+                "Noch nicht gefunden");
         table.put("Not in this build, so dark mode stays Facebook's dark gray. Morphe Manager doesn't pick it by default. Turn on Expert mode in Manager, choose the %1$s patch and patch again.",
                 "Nicht in diesem Build, deshalb bleibt der Dunkelmodus in Facebooks Dunkelgrau. Morphe Manager w\u00e4hlt ihn nicht von selbst aus. Aktiviere in Manager den Expertenmodus, w\u00e4hle den Patch %1$s und patche erneut.");
         table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
@@ -2128,6 +2140,9 @@ final class L10nTableDe {
                 "Kommentare in voller H\u00f6he \u00f6ffnen");
         table.put("Open every reply thread",
                 "Alle Antwort-Threads \u00f6ffnen");
+    }
+
+    private static void fill17(Map<String, String> table) {
         table.put("Open feed videos on their own",
                 "Feed-Videos einzeln \u00f6ffnen");
         table.put("Open full screen videos centered",
@@ -2140,9 +2155,6 @@ final class L10nTableDe {
                 "Im vollst\u00e4ndigen Player \u00f6ffnen");
         table.put("Open it, or close it and do something else.",
                 "\u00d6ffne es, oder schlie\u00dfe es und mach etwas anderes.");
-    }
-
-    private static void fill17(Map<String, String> table) {
         table.put("Open links in your browser",
                 "Links in deinem Browser \u00f6ffnen");
         table.put("Open now",
@@ -2251,6 +2263,9 @@ final class L10nTableDe {
                 "Bild im Bild");
         table.put("Picture-in-picture button",
                 "Schaltfl\u00e4che f\u00fcr Bild im Bild");
+    }
+
+    private static void fill18(Map<String, String> table) {
         table.put("Pinch a story, a video in your feed, or a photo on someone's profile or in Photo carousel to zoom in. It goes back when you let go.",
                 "Zieh eine Story, ein Video in deinem Feed oder ein Foto auf einem Profil oder im Fotokarussell mit zwei Fingern auseinander, um hineinzuzoomen. Wenn du losl\u00e4sst, springt es zur\u00fcck.");
         table.put("Pinch to zoom",
@@ -2263,9 +2278,6 @@ final class L10nTableDe {
                 "Feed-Video abspielen");
         table.put("Play reels once",
                 "Reels nur einmal abspielen");
-    }
-
-    private static void fill18(Map<String, String> table) {
         table.put("Play story",
                 "Story abspielen");
         table.put("Play videos, reels and stories at the quality below. A quality picked in a video's own menu still wins.",
@@ -2304,6 +2316,8 @@ final class L10nTableDe {
                 "Wenn du den Fortschrittsbalken eines Reels dr\u00fcckst, bleiben Name, Beschreibung und Schaltfl\u00e4chen zu sehen. Ist es aus, blendet Facebook sie aus, bis du losl\u00e4sst.");
         table.put("Preview",
                 "Vorschau");
+        table.put("Previous match",
+                "Vorheriger Treffer");
         table.put("Privacy",
                 "Datenschutz");
         table.put("Professional dashboard",
@@ -2372,6 +2386,9 @@ final class L10nTableDe {
                 "Reels");
         table.put("Reels and Watch",
                 "Reels und Watch");
+    }
+
+    private static void fill19(Map<String, String> table) {
         table.put("Reels and their buttons show in black and white, which makes them easier to put down. Your feed, stories, photos and chats keep their colors. It starts from the next reel, and Reels use a little more battery.",
                 "Reels und ihre Schaltfl\u00e4chen erscheinen in Schwarzwei\u00df, so legst du sie leichter weg. Dein Feed, Storys, Fotos und Chats behalten ihre Farben. Das gilt ab dem n\u00e4chsten Reel, und Reels brauchen etwas mehr Akku.");
         table.put("Reels and videos go to the app below as a facebook.com link. Hold the reel Download button to copy the link instead. Stories still save to this phone.",
@@ -2386,9 +2403,6 @@ final class L10nTableDe {
                 "Reels im Feed");
         table.put("Reels order",
                 "Reihenfolge der Reels");
-    }
-
-    private static void fill19(Map<String, String> table) {
         table.put("Reels order will be set to %1$s.",
                 "Die Reihenfolge der Reels wird auf %1$s gesetzt.");
         table.put("Reels quality",
@@ -2495,6 +2509,9 @@ final class L10nTableDe {
                 "Speichern");
         table.put("Save Facebook's notification sound",
                 "Facebooks Benachrichtigungston speichern");
+    }
+
+    private static void fill20(Map<String, String> table) {
         table.put("Save GIF",
                 "GIF speichern");
         table.put("Save all photos",
@@ -2509,9 +2526,6 @@ final class L10nTableDe {
                 "Speichern abgebrochen");
         table.put("Save crashes to Downloads",
                 "Abst\u00fcrze in Downloads speichern");
-    }
-
-    private static void fill20(Map<String, String> table) {
         table.put("Save folder",
                 "Speicherordner");
         table.put("Save full report",
@@ -2592,6 +2606,8 @@ final class L10nTableDe {
                 "Suche");
         table.put("Search box not found. Type the search again.",
                 "Suchfeld nicht gefunden. Gib die Suche erneut ein.");
+        table.put("Search comments",
+                "Kommentare durchsuchen");
         table.put("Search date range",
                 "Datumsbereich in der Suche");
         table.put("Search no longer shows Meta AI answers or Ask Meta AI prompts, or sends your search to Meta AI. Results for people, groups, pages and posts stay.",
@@ -2616,6 +2632,9 @@ final class L10nTableDe {
                 "Suchleiste bei Feed-Videos");
         table.put("Seek bar on stories",
                 "Suchleiste bei Storys");
+    }
+
+    private static void fill21(Map<String, String> table) {
         table.put("Seen posts forgotten.",
                 "Gesehene Beitr\u00e4ge wurden vergessen.");
         table.put("Select part of a post's text",
@@ -2632,9 +2651,6 @@ final class L10nTableDe {
                 "%1$s ausgew\u00e4hlt. Starte Facebook neu, um es oben auf der Startseite zu sehen.");
         table.put("Selected %1$s. Turn on Use the system font and restart Facebook to use it.",
                 "%1$s ausgew\u00e4hlt. Aktiviere \"Systemschriftart verwenden\" und starte Facebook neu, um sie zu verwenden.");
-    }
-
-    private static void fill21(Map<String, String> table) {
         table.put("Selected %1$s. Use the system font is off. Turn it on and restart Facebook to use this file.",
                 "%1$s ausgew\u00e4hlt. \"Systemschriftart verwenden\" ist aus. Aktiviere sie und starte Facebook neu, um diese Datei zu verwenden.");
         table.put("Selected tab color",
@@ -2739,6 +2755,9 @@ final class L10nTableDe {
                 "Zeigt am linken Rand eines Reels oder Videos, f\u00fcr das das Fenster bereit ist, eine kleine Schaltfl\u00e4che. Tippe darauf, um das Fenster sofort zu \u00f6ffnen. Funktioniert mit eingeschaltetem Bild im Bild.");
         table.put("Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.",
                 "Zeigt unten in einer Story einen d\u00fcnnen Balken, der sich beim Abspielen f\u00fcllt, wie bei Reels.");
+    }
+
+    private static void fill22(Map<String, String> table) {
         table.put("Shows how far into a feed video you are at the left end of its seek bar, and how much is left at the right end. Needs Seek bar on feed videos on.",
                 "Zeigt am linken Ende der Suchleiste eines Feed-Videos, wie weit du bist, und am rechten Ende, wie viel noch \u00fcbrig ist. Daf\u00fcr muss \u201eSuchleiste bei Feed-Videos\u201c an sein.");
         table.put("Shows only friends and followed Pages in the Stories tray. Applies when Facebook next loads the tray.",
@@ -2755,9 +2774,6 @@ final class L10nTableDe {
                 "Zeigt auf deinem eigenen Profil die Zahlen f\u00fcr Freunde, Follower und Gefolgte, die du unten eintr\u00e4gst, nur auf diesem Handy. Andere Profile und Facebooks echte Zahlen bleiben unber\u00fchrt. Gilt beim n\u00e4chsten \u00d6ffnen deines Profils.");
         table.put("Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.",
                 "Zeigt unter dem Namen des Absenders das Datum des Beitrags statt der wechselnden Angaben von Facebook, die auf manchen Telefonen leer bleiben.");
-    }
-
-    private static void fill22(Map<String, String> table) {
         table.put("Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.",
                 "Zeigt unter dem Namen der Person, die es gepostet hat, wann ein Reel oder ein im Vollbild ge\u00f6ffnetes Video ver\u00f6ffentlicht wurde. Die \u00c4nderung gilt ab dem n\u00e4chsten Reel.");
         table.put("Shows your phone's own emoji instead of Facebook's. Reactions and stickers don't change. Restart Facebook to see the change.",
@@ -2862,6 +2878,9 @@ final class L10nTableDe {
                 "Position der Tab-Leiste");
         table.put("Tab bar while scrolling",
                 "Tab-Leiste beim Scrollen");
+    }
+
+    private static void fill23(Map<String, String> table) {
         table.put("Tab bar, top bar, hidden tabs and dots",
                 "Tab-Leiste, obere Leiste, ausgeblendete Tabs und Punkte");
         table.put("Tab order",
@@ -2878,9 +2897,6 @@ final class L10nTableDe {
                 "Markierungsvorschl\u00e4ge nur nach @");
         table.put("Take breaks",
                 "Pausen machen");
-    }
-
-    private static void fill23(Map<String, String> table) {
         table.put("Takes Like off the row under comments. Reply and the reaction count stay.",
                 "Entfernt \u201eGef\u00e4llt mir\u201c aus der Zeile unter Kommentaren. Antworten und die Zahl der Reaktionen bleiben.");
         table.put("Takes Search and the button next to it off the top of a video or reel you open, and off the Reels tab. Back and Menu stay, and so does More at the bottom of the side buttons, where Download is.",
@@ -2985,6 +3001,9 @@ final class L10nTableDe {
                 "Diese Datei ist zu gro\u00df f\u00fcr eine Einstellungsdatei. Es wurde nichts ge\u00e4ndert.");
         table.put("That file isn't readable text, so it may have been damaged on the way. Nothing was changed.",
                 "Diese Datei ist kein lesbarer Text, sie wurde also wom\u00f6glich bei der \u00dcbertragung besch\u00e4digt. Es wurde nichts ge\u00e4ndert.");
+    }
+
+    private static void fill24(Map<String, String> table) {
         table.put("That file lists a setting twice, so Hushfacebook can't tell which value to use. Nothing was changed.",
                 "Diese Datei f\u00fchrt eine Einstellung doppelt auf, daher kann Hushfacebook nicht erkennen, welcher Wert gilt. Es wurde nichts ge\u00e4ndert.");
         table.put("That font file is over %1$d MB. Your font didn't change.",
@@ -3001,9 +3020,6 @@ final class L10nTableDe {
                 "Die gespeicherte Datei ist nicht mehr verf\u00fcgbar.");
         table.put("That settings file holds a value Hushfacebook can't read. Nothing was changed.",
                 "Diese Einstellungsdatei enth\u00e4lt einen Wert, den Hushfacebook nicht lesen kann. Es wurde nichts ge\u00e4ndert.");
-    }
-
-    private static void fill24(Map<String, String> table) {
         table.put("That settings file is damaged or only partly downloaded. Nothing was changed.",
                 "Diese Einstellungsdatei ist besch\u00e4digt oder nur teilweise heruntergeladen. Es wurde nichts ge\u00e4ndert.");
         table.put("That settings file was written by a newer Hushfacebook than this one. Nothing was changed.",
@@ -3108,6 +3124,9 @@ final class L10nTableDe {
                 "Die Liste ist voll, deshalb wurde nichts hinzugef\u00fcgt.");
         table.put("The list is full, so the rest weren't added.",
                 "Die Liste ist voll, der Rest wurde nicht hinzugef\u00fcgt.");
+    }
+
+    private static void fill25(Map<String, String> table) {
         table.put("The newest Hushfacebook release is %1$s.",
                 "Die neueste Version von Hushfacebook ist %1$s.");
         table.put("The phone's language",
@@ -3124,9 +3143,6 @@ final class L10nTableDe {
                 "Der Bericht lie\u00df sich nicht speichern. Versuche es noch einmal.");
         table.put("The row of emoji over the comment box goes away. You can still type emoji from your keyboard.",
                 "Die Emoji-Leiste \u00fcber dem Kommentarfeld verschwindet. Emojis kannst du weiter \u00fcber deine Tastatur eingeben.");
-    }
-
-    private static void fill25(Map<String, String> table) {
         table.put("The saved copy of %1$s is missing. Choose the file again.",
                 "Die gespeicherte Kopie von %1$s fehlt. W\u00e4hle die Datei erneut.");
         table.put("The saved copy of %1$s is missing. Choose the picture again.",
@@ -3231,6 +3247,9 @@ final class L10nTableDe {
                 "HDR-Helligkeit ausschalten");
         table.put("Turn off auto-translation",
                 "Automatische \u00dcbersetzung ausschalten");
+    }
+
+    private static void fill26(Map<String, String> table) {
         table.put("Turn off double tap to like",
                 "Doppeltippen zum Liken ausschalten");
         table.put("Turn off haptics",
@@ -3247,9 +3266,6 @@ final class L10nTableDe {
                 "Gib einen sechsstelligen Farbcode ein, zum Beispiel #2ECC71.");
         table.put("Type a word or a phrase and tap Add. A phrase of more than one word has to be in the title as written. A term matches anywhere in a title, so cat also matches cats. Put it in quotes with a space after it, like \"cat \", to leave out cats. Go puts these into the search box and searches again.",
                 "Tippe ein Wort oder eine Wortgruppe und tippe auf Hinzuf\u00fcgen. Eine Wortgruppe aus mehreren W\u00f6rtern muss so im Titel stehen. Ein Begriff passt \u00fcberall im Titel, also passt cat auch zu cats. Setze ihn mit einem Leerzeichen dahinter in Anf\u00fchrungszeichen, etwa \"cat \", um cats auszulassen. Los setzt diese in das Suchfeld und sucht erneut.");
-    }
-
-    private static void fill26(Map<String, String> table) {
         table.put("Type or paste a post's text to see what these lists would do with it. It isn't saved.",
                 "Tippe oder f\u00fcge den Text eines Beitrags ein, um zu sehen, was diese Listen damit machen w\u00fcrden. Er wird nicht gespeichert.");
         table.put("Undo",
@@ -3354,6 +3370,9 @@ final class L10nTableDe {
                 "Videos in deinem Feed starten jedes Mal ohne Ton, wenn du Facebook \u00f6ffnest, und nur du schaltest ihn ein. Tippe auf den Lautsprecher eines Videos oder dr\u00fccke die Lauter-Taste, um es zu h\u00f6ren.");
         table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
                 "Videos \u00fcber zwei Minuten machen dort weiter, wo du aufgeh\u00f6rt hast. Ziehe die Leiste, um woanders zu beginnen. Kurze Reels, Live-Videos und Werbung starten wie gewohnt.");
+    }
+
+    private static void fill27(Map<String, String> table) {
         table.put("Videos play at the best quality up to %1$s that Facebook offers for each, or the closest above.",
                 "Videos laufen in der besten Qualit\u00e4t bis %1$s, die Facebook f\u00fcr sie anbietet, oder der n\u00e4chsth\u00f6heren.");
         table.put("Videos play at the highest quality Facebook offers for each.",
@@ -3370,9 +3389,6 @@ final class L10nTableDe {
                 "Videos werden dann in %1$s oder der n\u00e4chstniedrigeren Qualit\u00e4t gespeichert. Hat ein Video keine so niedrige Qualit\u00e4t, wird es in der n\u00e4chsth\u00f6heren gespeichert.");
         table.put("Videos will save at the best quality.",
                 "Videos werden dann in der besten Qualit\u00e4t gespeichert.");
-    }
-
-    private static void fill27(Map<String, String> table) {
         table.put("Videos will save at their lowest quality, for the smallest files.",
                 "Videos werden dann in ihrer niedrigsten Qualit\u00e4t gespeichert, damit die Dateien so klein wie m\u00f6glich sind.");
         table.put("Videos you open full screen, from a comment or a link, start with their details and comments folded away, so the video sits in the middle of the screen. The arrow under it still brings them back.",
@@ -3477,6 +3493,9 @@ final class L10nTableDe {
                 "Wenn die Tab-Leiste unten ist, bekommt sie runde Enden und wird etwas kleiner, knapp \u00fcber dem unteren Bildschirmrand, mit einer sanften Hervorhebung hinter dem Tab, auf dem du bist.");
         table.put("Words that keep a post",
                 "W\u00f6rter, bei denen ein Beitrag bleibt");
+    }
+
+    private static void fill28(Map<String, String> table) {
         table.put("Words to hide",
                 "W\u00f6rter zum Ausblenden");
         table.put("Writing",
@@ -3493,9 +3512,6 @@ final class L10nTableDe {
                 "Du hast Hushfacebook pausiert.");
         table.put("Your break is over.",
                 "Deine Pause ist vorbei.");
-    }
-
-    private static void fill28(Map<String, String> table) {
         table.put("Your controls are active.",
                 "Deine Einstellungen sind aktiv.");
         table.put("Your launcher has no room for another shortcut.",

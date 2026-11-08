@@ -2595,3 +2595,11 @@ Hide profile pictures on posts	隐藏帖子上的头像
 Hide profile pictures in comments	隐藏评论中的头像
 Takes the profile picture off the top of posts, so the name starts where the picture was. A change shows on the posts drawn after it.	去掉帖子顶部的头像，名字从头像原来的位置开始。更改对之后显示的帖子生效。
 Takes the profile picture off comments, so the name and text start where the picture was. A change shows on the comments drawn after it.	去掉评论中的头像，名字和内容从头像原来的位置开始。更改对之后显示的评论生效。
+Search comments	搜索评论
+Previous match	上一个匹配项
+Next match	下一个匹配项
+Close search	关闭搜索
+No matches	无匹配项
+No more matches	没有更多匹配项
+Not found yet	暂未找到
+A magnifier at the top of the comments opens a search box that finds the comments with your words.	评论顶部的放大镜会打开搜索框，找出包含你输入的文字的评论。

@@ -2600,3 +2600,11 @@ Hide profile pictures on posts	Gönderilerdeki profil resimlerini gizle
 Hide profile pictures in comments	Yorumlardaki profil resimlerini gizle
 Takes the profile picture off the top of posts, so the name starts where the picture was. A change shows on the posts drawn after it.	Gönderilerin üstündeki profil resmini kaldırır, böylece ad resmin olduğu yerden başlar. Değişiklik, sonrasında gösterilen gönderilerde görünür.
 Takes the profile picture off comments, so the name and text start where the picture was. A change shows on the comments drawn after it.	Yorumlardaki profil resmini kaldırır, böylece ad ve metin resmin olduğu yerden başlar. Değişiklik, sonrasında gösterilen yorumlarda görünür.
+Search comments	Yorumlarda ara
+Previous match	Önceki eşleşme
+Next match	Sonraki eşleşme
+Close search	Aramayı kapat
+No matches	Eşleşme yok
+No more matches	Başka eşleşme yok
+Not found yet	Henüz bulunamadı
+A magnifier at the top of the comments opens a search box that finds the comments with your words.	Yorumların üstündeki büyüteç, kelimelerinizi içeren yorumları bulan bir arama kutusu açar.

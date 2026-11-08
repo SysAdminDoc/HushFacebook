@@ -1039,7 +1039,8 @@ public class PausedHooksTest {
                 FullHeightComments::skipSplitScreen,
                 () -> FullHeightComments.fillsScreen(1f),
                 PausedHooksTest::hidesTheVideoAboveTheComments,
-                PausedHooksTest::letsATapThroughToTheReel));
+                PausedHooksTest::letsATapThroughToTheReel,
+                PausedHooksTest::searchesTheComments));
         // A word without @ in a post or comment box looks nobody up, and a list of people left open
         // by an earlier @ is closed.
         probes.put(PatchFamily.TAG_SUGGESTIONS, Arrays.asList(
@@ -1280,6 +1281,13 @@ public class PausedHooksTest {
     private static boolean letsATapThroughToTheReel() {
         return FullHeightComments.tapThrough(
                 new android.app.Dialog(Robolectric.buildActivity(Activity.class).setup().get()), 20);
+    }
+
+    /** A comment sheet's views, set up by Facebook, which Search comments gives a magnifier. */
+    private static boolean searchesTheComments() {
+        FrameLayout sheet = new FrameLayout(RuntimeEnvironment.getApplication());
+        app.morphe.extension.facebook.comments.CommentSearchForTests.open(sheet);
+        return app.morphe.extension.facebook.comments.CommentSearchForTests.watching(sheet);
     }
 
     /** A press at the far end of a bar whose thumb sits at its start, then a cancel to end it. */

@@ -186,8 +186,9 @@ val fullHeightCommentsPatch = bytecodePatch(
     name = "Open comments at full height",
     description = "Opens the comment sheet at the full height of the screen instead of part way up, on posts, " +
         "videos, reels and stories. On reels and videos, Comment opens that sheet instead of the split view. " +
-        "A second switch pauses a reel while its comments are open, and a third lets a tap on the reel above a " +
-        "half-open sheet play or pause it. All start off. Turn them on in Hushfacebook settings > Comments and writing.",
+        "A second switch pauses a reel while its comments are open, a third lets a tap on the reel above a " +
+        "half-open sheet play or pause it, and a fourth puts a magnifier at the top of the comments that " +
+        "searches them for your words. All start off. Turn them on in Hushfacebook settings > Comments and writing.",
 ) {
     category("Comments")
     dependsOn(settingsPatch, facebookExtensionPatch)
