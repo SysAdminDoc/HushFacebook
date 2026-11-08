@@ -6,7 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
-* `Search comments` under Comments and writing puts a magnifier at the top of a comment sheet. Tap it, type a few words, and it scrolls to the first comment that has them and outlines it. The arrows step to the next or previous match, case and accents don't matter, and the count shows which one you're on. It needs `Open comments at full height` installed and is off until you turn it on. (#420)
+* `Search comments` under Comments and writing puts a magnifier at the top of a comment sheet. Tap it, type a few words and hit search on the keyboard, and it scrolls to the first comment that has them and outlines it. The box stays put even when the keyboard leaves the comments only a sliver of room, as it does under a landscape video. The arrows step to the next or previous match, case and accents don't matter, and the count shows which one you're on. It needs `Open comments at full height` installed and is off until you turn it on. (#420)
 * `Open shared reels on their own` under Reels and Watch plays a reel you open from a link in another app, or from a chat inside Facebook, by itself, with nothing to swipe to after it. It works apart from `Open feed videos on their own` and is off until you turn it on. (#421)
 * `Dark box behind open captions` under Reels and Watch puts a reel's caption on a dark box once you open it, like subtitles, so it's easy to read over a bright video. A folded caption keeps Facebook's look. It's off until you turn it on. (#419)
 * `Hide the Subscribe button` under Stories takes the Subscribe button off the top of a story. It's off until you turn it on. (#380)

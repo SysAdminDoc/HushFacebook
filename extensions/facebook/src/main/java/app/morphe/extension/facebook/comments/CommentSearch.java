@@ -112,6 +112,12 @@ public final class CommentSearch {
     /** How often a sheet with no list in it yet is looked through again. */
     static final long LIST_RETRY_MS = 250;
 
+    /** How often the list is looked at for its room back after the search key closed the keyboard. */
+    static final long ROOM_POLL_MS = 50;
+
+    /** How many times, so a list that never grows back is still searched, a sliver at a time. */
+    static final int ROOM_POLLS = 12;
+
     // Sizes, in dp. The bar fits the All comments row, 48 dp tall, so it doesn't cover a comment.
     private static final int EDGE_DP = 4;
     private static final int BAR_DP = 40;
@@ -131,6 +137,12 @@ public final class CommentSearch {
 
     /** Each view class's getTextContent, or {@link #NO_METHOD} for a class without one. */
     private static final Map<Class<?>, Object> TEXT_CONTENT = new ConcurrentHashMap<>();
+
+    /** Each class's getItems, the kept name of a Litho TextContent's list, or {@link #NO_METHOD}. */
+    private static final Map<Class<?>, Object> ITEMS = new ConcurrentHashMap<>();
+
+    /** Each class's getText returning text, or {@link #NO_METHOD} for a class without one. */
+    private static final Map<Class<?>, Object> GET_TEXT = new ConcurrentHashMap<>();
 
     /** The comment sheets handed over, by their views, weakly. */
     private static final Map<View, Search> SHEETS = Collections.synchronizedMap(new WeakHashMap<>());
@@ -195,7 +207,11 @@ public final class CommentSearch {
         return plain.toLowerCase(Locale.ROOT);
     }
 
-    /** The text [view] draws itself: a TextView's text or a Litho host's text, or null. */
+    /**
+     * The text [view] draws itself, or null: a TextView's text, a rendercore text view's (a ViewGroup
+     * with a kept getText, which 585 draws comments in), or a Litho host's text. On 585 a host lists
+     * TextContent objects rather than the text, each one's getItems holding items with a getText.
+     */
     @Nullable
     static CharSequence ownText(View view) {
         if (view instanceof TextView) {
@@ -203,34 +219,72 @@ public final class CommentSearch {
             return TextUtils.isEmpty(text) ? null : text;
         }
         if (!(view instanceof ViewGroup)) return null;
-        List<?> items = textContent(view);
-        if (items == null || items.isEmpty()) return null;
         StringBuilder all = new StringBuilder();
-        for (Object item : items) {
-            if (item == null) continue;
-            if (all.length() > 0) all.append('\n');
-            all.append(item);
+        add(all, textOf(view));
+        Object items = call(TEXT_CONTENT, view, "getTextContent");
+        if (items instanceof List) {
+            for (Object item : (List<?>) items) addItem(all, item);
         }
         return all.length() == 0 ? null : all.toString();
     }
 
-    /** What a Litho host's getTextContent hands back, the text it draws, or null for any other view. */
+    /** Adds the text of one thing a Litho host lists: text itself, a TextContent's items, or an item's text. */
+    private static void addItem(StringBuilder all, @Nullable Object item) {
+        if (item == null) return;
+        if (item instanceof CharSequence) {
+            add(all, (CharSequence) item);
+            return;
+        }
+        Object parts = call(ITEMS, item, "getItems");
+        if (parts instanceof List) {
+            for (Object part : (List<?>) parts) {
+                if (part instanceof CharSequence) add(all, (CharSequence) part);
+                else if (part != null) add(all, textOf(part));
+            }
+            return;
+        }
+        add(all, textOf(item));
+    }
+
+    private static void add(StringBuilder all, @Nullable CharSequence text) {
+        if (TextUtils.isEmpty(text)) return;
+        if (all.length() > 0) all.append('\n');
+        all.append(text);
+    }
+
+    /** What [target]'s getText hands back when it's text, or null. */
     @Nullable
-    private static List<?> textContent(View view) {
-        Class<?> type = view.getClass();
-        Object method = TEXT_CONTENT.get(type);
+    private static CharSequence textOf(Object target) {
+        Object text = call(GET_TEXT, target, "getText");
+        return text instanceof CharSequence ? (CharSequence) text : null;
+    }
+
+    /**
+     * What [target]'s public no-argument method [name] hands back, or null when its class has none or
+     * it throws. Each class's method is looked up once and kept in [cache].
+     */
+    @Nullable
+    private static Object call(Map<Class<?>, Object> cache, Object target, String name) {
+        Class<?> type = target.getClass();
+        Object method = cache.get(type);
         if (method == null) {
             try {
-                method = type.getMethod("getTextContent");
-            } catch (NoSuchMethodException | SecurityException e) {
+                Method found = type.getMethod(name);
+                try {
+                    // A public method of a class that isn't public can't be called without this.
+                    found.setAccessible(true);
+                } catch (RuntimeException e) {
+                    // Left as it is: a public method of a public class still calls.
+                }
+                method = found;
+            } catch (NoSuchMethodException | RuntimeException e) {
                 method = NO_METHOD;
             }
-            TEXT_CONTENT.put(type, method);
+            cache.put(type, method);
         }
         if (method == NO_METHOD) return null;
         try {
-            Object content = ((Method) method).invoke(view);
-            return content instanceof List ? (List<?>) content : null;
+            return ((Method) method).invoke(target);
         } catch (ReflectiveOperationException | RuntimeException e) {
             return null;
         }
@@ -338,7 +392,13 @@ public final class CommentSearch {
         private int hitTop = Integer.MIN_VALUE;
         private boolean quiet;
 
-        private final Runnable typed = this::start;
+        /**
+         * A pause in typing searches, unless the keyboard has squeezed the list to a sliver: a look
+         * there pages a few pixels at a time, so the search waits for the search key.
+         */
+        private final Runnable typed = () -> {
+            if (roomy(list(false))) start();
+        };
 
         Search(View content) {
             this.content = new WeakReference<>(content);
@@ -357,6 +417,19 @@ public final class CommentSearch {
                 hideKeyboard();
                 if (observer != null && observer.isAlive()) observer.removeOnPreDrawListener(this);
                 observer = null;
+                // Never here: Back detaches the frame holding the sheet and the layer in one pass, and
+                // a child taken out mid-pass leaves a null in that frame's child array.
+                later(this::detach, 0);
+            } catch (Throwable failure) {
+                HookStatus.threw(FAMILY, "comment search closed", failure);
+            }
+        }
+
+        /** Takes the layer off its frame once the detach under way ended, unless the sheet came back. */
+        void detach() {
+            try {
+                View sheet = content.get();
+                if (sheet != null && sheet.isAttachedToWindow()) return;
                 Layer shown = layer;
                 if (shown != null && shown.getParent() instanceof ViewGroup) {
                     ((ViewGroup) shown.getParent()).removeView(shown);
@@ -464,7 +537,7 @@ public final class CommentSearch {
                 boolean enter = event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER;
                 if (action != EditorInfo.IME_ACTION_SEARCH && !enter) return false;
                 if (enter && event.getAction() != KeyEvent.ACTION_DOWN) return true;
-                step(true);
+                searchKey();
                 return true;
             });
             row.addView(box, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
@@ -522,12 +595,23 @@ public final class CommentSearch {
             return found;
         }
 
-        /** Keeps the magnifier or the bar at the top of the list, and the outline on the comment found. */
+        /** Whether [comments] is on screen with room for the bar and a comment or two under it. */
+        private boolean roomy(@Nullable ViewGroup comments) {
+            return comments != null && comments.isShown() && comments.getHeight() >= px(BAR_DP) * 3;
+        }
+
+        /**
+         * Keeps the magnifier or the bar at the top of the list, and the outline on the comment found.
+         * An open bar stays while the keyboard squeezes the list to a sliver, as Facebook's sheet does
+         * with a landscape video over it (S22 2026-11-08, 27 px left): it goes above the list instead,
+         * since hiding it took the focus from its box and the words typed went nowhere.
+         */
         void place() {
             Layer shown = layer;
             if (shown == null || magnifier == null || bar == null) return;
             ViewGroup comments = list(false);
-            if (comments == null || !comments.isShown() || comments.getHeight() < px(BAR_DP) * 3) {
+            boolean room = roomy(comments);
+            if (comments == null || !comments.isShown() || (!room && !open)) {
                 show(magnifier, false);
                 show(bar, false);
                 shown.unmark();
@@ -550,7 +634,8 @@ public final class CommentSearch {
                     params.width = wide;
                     bar.setLayoutParams(params);
                 }
-                move(bar, left + px(GAP_DP), top + px(EDGE_DP));
+                move(bar, left + px(GAP_DP),
+                        room ? top + px(EDGE_DP) : Math.max(0f, top - px(BAR_DP) - px(EDGE_DP)));
             } else {
                 show(bar, false);
                 show(magnifier, true);
@@ -614,6 +699,25 @@ public final class CommentSearch {
                 box.clearFocus();
             }
             place();
+        }
+
+        /**
+         * The keyboard's search key: the keyboard goes, so the list gets its room back and the comment
+         * found shows outlined, and once the list has grown back, on to the next match.
+         */
+        void searchKey() {
+            drop(typed);
+            hideKeyboard();
+            waitForRoom(++walk, 0);
+        }
+
+        private void waitForRoom(int token, int polls) {
+            if (token != walk || !open) return;
+            if (polls < ROOM_POLLS && !roomy(list(false))) {
+                later(() -> waitForRoom(token, polls + 1), ROOM_POLL_MS);
+                return;
+            }
+            step(true);
         }
 
         private void hideKeyboard() {

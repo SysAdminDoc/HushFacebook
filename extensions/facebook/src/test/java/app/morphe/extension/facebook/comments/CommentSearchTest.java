@@ -17,6 +17,8 @@ import android.content.Context;
 import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -47,8 +49,9 @@ import app.morphe.extension.shared.SettingsContextRule;
  * the top of the list, a page at a time, whatever their case or accents, in the text the rows draw,
  * not in what they tell a screen reader. The comment found is brought under the bar, outlined and
  * counted, down and up step through the others even after the list recycled the rows they were in,
- * and the end of the list says there are no more. Closing the bar takes the words and the outline
- * away. Off, a sheet is left alone.
+ * and the end of the list says there are no more. A list the keyboard squeezes to a sliver keeps the
+ * bar, above it, with the focus in its box, and the search key closes the keyboard and searches once
+ * the list is back. Closing the bar takes the words and the outline away. Off, a sheet is left alone.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30, qualifiers = "w400dp-h800dp-mdpi")
@@ -199,6 +202,20 @@ public class CommentSearchTest {
     }
 
     @Test
+    public void backClosingTheSheetsWindowTakesTheLayerOffAfterTheDetach() {
+        CommentSearch.Search search = sheetWith(twenty(new HashMap<>()).toArray(new String[0]));
+        search.openBar();
+        ViewGroup frame = (ViewGroup) sheet.getParent();
+        assertSame("the layer sits beside the sheet", frame, search.layer.getParent());
+        // Back on Facebook's comments dialog: the frame holding the sheet and the layer detaches its
+        // children in one pass, from a count taken before the loop.
+        ((ViewGroup) frame.getParent()).removeView(frame);
+        idle(50);
+        assertNull("taken off once the detach ended", search.layer.getParent());
+        assertEquals(1, frame.getChildCount());
+    }
+
+    @Test
     public void findsACommentPagesDownWhateverItsAccentsAndOutlinesIt() {
         Map<Integer, String> special = new HashMap<>();
         special.put(12, "Best Café in town");
@@ -288,6 +305,130 @@ public class CommentSearchTest {
         assertFalse(search.layer.marking);
         assertEquals(View.VISIBLE, search.magnifier.getVisibility());
         assertEquals(View.GONE, search.bar.getVisibility());
+    }
+
+    /** Lays the list out [height] tall, [top] down the sheet, as the keyboard squeezing it would. */
+    private void listAt(int top, int height) {
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) list.getLayoutParams();
+        params.topMargin = top;
+        params.height = height;
+        list.setLayoutParams(params);
+        idle(50);
+    }
+
+    @Test
+    public void aListTheKeyboardSqueezesKeepsTheBarAndTheSearchKeyFindsTheComment() {
+        Map<Integer, String> special = new HashMap<>();
+        special.put(12, "snow on the hills");
+        CommentSearch.Search search = sheetWith(twenty(special).toArray(new String[0]));
+        search.openBar();
+        idle(50);
+        search.place();
+        assertTrue("the box has the focus", search.field.isFocused());
+        InputMethodManager keyboard = (InputMethodManager)
+                search.field.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        assertTrue("the keyboard came up", shadowOf(keyboard).isSoftInputVisible());
+
+        listAt(150, 27);
+        search.place();
+        assertEquals("the bar stays", View.VISIBLE, search.bar.getVisibility());
+        assertEquals("above the list", 150 - 40 - 4, search.bar.getTranslationY(), 0.5f);
+        assertTrue("the box keeps the focus", search.field.isFocused());
+
+        search.field.setText("snow");
+        idle(CommentSearch.TYPING_PAUSE_MS + 6000);
+        search.place();
+        assertEquals("a sliver of list isn't paged through", "", search.count.getText().toString());
+
+        search.field.onEditorAction(EditorInfo.IME_ACTION_SEARCH);
+        assertFalse("the search key closes the keyboard", shadowOf(keyboard).isSoftInputVisible());
+        listAt(0, HEIGHT);
+        idle(6000);
+        search.place();
+        assertEquals("1/1", outlined(search));
+        assertEquals("back at the top of the list", 4, search.bar.getTranslationY(), 0.5f);
+        assertEquals(12, firstMatchRow(search));
+    }
+
+    /** A Litho host the 585 way: getTextContent lists TextContent objects, not the text. */
+    public static final class LithoHost extends FrameLayout {
+        final List<Object> content;
+
+        public LithoHost(Context context, Object... content) {
+            super(context);
+            this.content = Arrays.asList(content);
+        }
+
+        public List<Object> getTextContent() {
+            return content;
+        }
+    }
+
+    /** Litho's TextContent on 585: getItems is kept by name, the text list's getter isn't. */
+    public static final class TextContent {
+        final List<Object> items;
+
+        TextContent(Object... items) {
+            this.items = Arrays.asList(items);
+        }
+
+        public List<Object> getItems() {
+            return items;
+        }
+
+        @Override
+        public String toString() {
+            return "com.facebook.litho.TextContent@1f2e3d";
+        }
+    }
+
+    /** One of a TextContent's items, whose getText is kept by name. */
+    public static final class TextItem {
+        final CharSequence text;
+
+        TextItem(CharSequence text) {
+            this.text = text;
+        }
+
+        public CharSequence getText() {
+            return text;
+        }
+    }
+
+    /** Rendercore's text view: a ViewGroup, not a TextView, with a kept getText. */
+    public static final class RenderText extends ViewGroup {
+        final CharSequence text;
+
+        public RenderText(Context context, CharSequence text) {
+            super(context);
+            this.text = text;
+        }
+
+        public CharSequence getText() {
+            return text;
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        }
+    }
+
+    @Test
+    public void readsTheTextACommentDrawsThe585Way() {
+        Context context = RuntimeEnvironment.getApplication();
+        FrameLayout drawable = new FrameLayout(context);
+        LithoHost host = new LithoHost(context,
+                new TextContent(new TextItem("Ian Hoare")), new TextContent(new TextItem("Prolonged drought Thats the problem.")));
+        drawable.addView(host);
+        assertEquals("the items' text, not the objects'", "Ian Hoare\nProlonged drought Thats the problem.",
+                CommentSearch.ownText(host).toString());
+        assertSame(host, CommentSearch.hitIn(drawable, "drought"));
+        assertNull(CommentSearch.hitIn(drawable, "textcontent"));
+
+        FrameLayout viewed = new FrameLayout(context);
+        RenderText text = new RenderText(context, "lean up the INDIAN Ocean and the snow will come back.");
+        viewed.addView(text);
+        assertSame(text, CommentSearch.hitIn(viewed, "snow"));
     }
 
     @Test
