@@ -818,16 +818,18 @@ public final class ReelDeclutter {
 
     /**
      * What the post date reads for a reel posted at [seconds], seen at [nowMillis]: the day it was
-     * posted with The date picked, otherwise Facebook's [text], or "3 weeks ago" in [locale] where
-     * Facebook left it blank and [always] (the switch) is on. A time that can't be a post's, none or
-     * one in the future, keeps [text].
+     * posted with The date picked, otherwise "3 weeks ago" in [locale] while [always] (the switch)
+     * is on. Facebook's own [text] is "2d" for a recent reel but the day itself for an older one past
+     * its server switches, so with the switch on one reel read "2d" and the next "Oct 12" (#424).
+     * With the switch off and How long ago picked, the line keeps Facebook's own words, blank
+     * included. A time that can't be a post's, none or one in the future, keeps [text].
      */
     @Nullable
     static String postDate(@Nullable String text, long seconds, long nowMillis, ReelDateStyle style, boolean always,
             Locale locale, TimeZone zone) {
         if (seconds <= 0 || seconds > nowMillis / 1000 + FUTURE_SLACK_SECONDS) return text;
         if (style == ReelDateStyle.DATE) return dayPosted(seconds * 1000, nowMillis, locale, zone);
-        if (text != null || !always) return text;
+        if (!always) return text;
         return MarketplaceListingAge.ago(Math.max(0, nowMillis / 1000 - seconds), locale);
     }
 

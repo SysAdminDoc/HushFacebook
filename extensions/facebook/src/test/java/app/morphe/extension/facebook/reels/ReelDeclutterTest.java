@@ -496,7 +496,11 @@ public class ReelDeclutterTest {
         long threeWeeks = NOW / 1000 - 21L * 24 * 60 * 60;
         assertEquals("3 weeks ago", ReelDeclutter.postDate(null, threeWeeks, NOW, ReelDateStyle.AGO, true, Locale.US, UTC));
         assertNull("the switch off kept Facebook's blank", ReelDeclutter.postDate(null, threeWeeks, NOW, ReelDateStyle.AGO, false, Locale.US, UTC));
-        assertEquals("2d", ReelDeclutter.postDate("2d", threeWeeks, NOW, ReelDateStyle.AGO, true, Locale.US, UTC));
+        // #424: Facebook words an older reel as the day itself, so with the switch on How long ago
+        // words every date. Off, the line is Facebook's own.
+        assertEquals("3 weeks ago", ReelDeclutter.postDate("Oct 12", threeWeeks, NOW, ReelDateStyle.AGO, true, Locale.US, UTC));
+        assertEquals("Oct 12", ReelDeclutter.postDate("Oct 12", threeWeeks, NOW, ReelDateStyle.AGO, false, Locale.US, UTC));
+        assertEquals("2 days ago", ReelDeclutter.postDate("2d", NOW / 1000 - 2L * 24 * 60 * 60, NOW, ReelDateStyle.AGO, true, Locale.US, UTC));
         assertEquals("1 year ago", ReelDeclutter.postDate(null, 1760281200L, NOW, ReelDateStyle.AGO, true, Locale.US, UTC));
 
         assertEquals("Oct 12", ReelDeclutter.postDate("2d", 1791817200L, NOW, ReelDateStyle.DATE, true, Locale.US, UTC));
@@ -526,6 +530,7 @@ public class ReelDeclutterTest {
 
         Settings.SHOW_REEL_POST_DATE.save(true);
         assertEquals("3 weeks ago", ReelDeclutter.postDateText(null, threeWeeks));
+        assertEquals("kept Facebook's day itself next to its 2d (#424)", "3 weeks ago", ReelDeclutter.postDateText("Oct 12", threeWeeks));
         Settings.REEL_POST_DATE_STYLE.save(ReelDateStyle.DATE);
         String day = ReelDeclutter.postDateText("2d", threeWeeks);
         assertNotNull(day);
