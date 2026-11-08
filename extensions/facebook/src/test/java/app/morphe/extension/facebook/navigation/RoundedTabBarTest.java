@@ -165,17 +165,25 @@ public class RoundedTabBarTest {
         RoundedTabBar.Spot spot = (RoundedTabBar.Spot) layers.getDrawable(1);
         assertEquals("4 px in at each side, 7 px in above and below, at mdpi", new Rect(4, 7, 116, 105), spot.area);
         assertNull("the icon keeps its own", tabs[0].getChildAt(0).getBackground());
-        assertNull("the other tabs keep theirs", tabs[1].getBackground());
+        assertTrue("the other tabs wear a spot too", tabs[1].getBackground() instanceof RoundedTabBar.Spot);
+        assertTrue("an empty one", ((RoundedTabBar.Spot) tabs[1].getBackground()).area.isEmpty());
 
         tabs[0].setSelected(false);
         tabs[3].setSelected(true);
         screen.shaper.update();
-        assertSame("the tab left behind gets its background back", ripple, tabs[0].getBackground());
+        assertSame("the tab left behind keeps its layers", layers, tabs[0].getBackground());
+        assertTrue("with its spot emptied", spot.area.isEmpty());
         assertTrue("a tab with none gets the spot alone", tabs[3].getBackground() instanceof RoundedTabBar.Spot);
+        assertFalse(((RoundedTabBar.Spot) tabs[3].getBackground()).area.isEmpty());
+
+        tabs[3].setSelected(false);
+        screen.shaper.update();
+        assertTrue("nothing selected, no spot", ((RoundedTabBar.Spot) tabs[3].getBackground()).area.isEmpty());
 
         Settings.ROUNDED_TAB_BAR.save(false);
         screen.shaper.update();
-        assertNull("off, the tab is Facebook's again", tabs[3].getBackground());
+        assertSame("off, each tab is Facebook's again", ripple, tabs[0].getBackground());
+        assertNull(tabs[3].getBackground());
         assertFalse(screen.holder.getClipToOutline());
     }
 
@@ -206,24 +214,32 @@ public class RoundedTabBarTest {
         assertSame("and the layers through the tab", tabs[1], layers.getCallback());
         assertEquals("the ripple shows whenever the layers holding it do", layers.isVisible(), ripples[1].isVisible());
 
-        // Going along the row and back, each tab left behind redraws itself again.
+        // Every tab got its layers at once. Going along the row and back swaps none of them, since a
+        // swap as a tap selects a tab left its press highlight behind as a grey square.
+        Drawable[] worn = new Drawable[tabs.length];
+        for (int i = 0; i < tabs.length; i++) {
+            worn[i] = tabs[i].getBackground();
+            assertTrue("tab " + i + " wears the layers", worn[i] instanceof LayerDrawable);
+            assertSame("tab " + i + "'s ripple redraws through them", worn[i], ripples[i].getCallback());
+        }
         for (int next : new int[]{2, 3, 4, 0, 1}) {
             for (FrameLayout tab : tabs) tab.setSelected(false);
             tabs[next].setSelected(true);
             screen.shaper.update();
-            Drawable under = ((LayerDrawable) tabs[next].getBackground()).getDrawable(0);
-            assertSame("tab " + next + "'s ripple redraws through the spot", tabs[next].getBackground(), under.getCallback());
-        }
-        for (int i = 0; i < tabs.length; i++) {
-            if (i == 1) continue;
-            assertSame("tab " + i + " has its ripple back", ripples[i], tabs[i].getBackground());
-            assertSame("tab " + i + "'s ripple redraws the tab", tabs[i], ripples[i].getCallback());
+            for (int i = 0; i < tabs.length; i++) {
+                assertSame("after selecting tab " + next + ", tab " + i + " keeps its layers", worn[i], tabs[i].getBackground());
+                assertSame("and its ripple redraws through them", worn[i], ripples[i].getCallback());
+                RoundedTabBar.Spot spot = (RoundedTabBar.Spot) ((LayerDrawable) worn[i]).getDrawable(1);
+                assertEquals("tab " + i + "'s spot shows only while it's selected", i == next, !spot.area.isEmpty());
+            }
         }
 
         Settings.ROUNDED_TAB_BAR.save(false);
         screen.shaper.update();
-        assertSame(ripples[1], tabs[1].getBackground());
-        assertSame("off, the last tab's ripple redraws it too", tabs[1], ripples[1].getCallback());
+        for (int i = 0; i < tabs.length; i++) {
+            assertSame("off, tab " + i + " has its ripple back", ripples[i], tabs[i].getBackground());
+            assertSame("and it redraws the tab", tabs[i], ripples[i].getCallback());
+        }
     }
 
     /**

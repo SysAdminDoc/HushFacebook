@@ -18,12 +18,16 @@ import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 import android.view.WindowInsets;
 
 import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -51,7 +55,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>The selected tab gets a spot behind its icon, a smaller pill in Facebook's blue, or the colour
  * Accent color or the Material You theme gives that blue, or the picked Selected tab color (#383).
  * It's a layer over that tab's own background, so Facebook's press ripple stays, and it moves to
- * the next tab Facebook marks selected.
+ * the next tab Facebook marks selected. Every tab in the row gets the layers once and keeps them
+ * while the bar is a pill, so moving the spot never swaps a background under a tap (#412).
  *
  * <p>Nothing is laid out again: the scale and the clip are drawing properties, so Facebook's pages
  * keep their padding, scroll-away keeps sliding the bar, and a tap goes to the tab drawn under the
@@ -263,23 +268,71 @@ public final class RoundedTabBar {
     }
 
     /**
-     * Gives [tab] the spot, or brings it up to date: inside the part of the tab the pill around
-     * [row], in [bar]'s coordinates, shows. A background Facebook set since is the one kept.
+     * Puts the layers on every tab in [tab]'s row, the views beside it at most half as wide as the
+     * [rowWidth] row, that doesn't wear them yet, and empties the spot of each but [tab]. Every tab
+     * keeps its layers until the pill goes, so a tap never swaps a background: swapped as the tap
+     * selected it, a tab's press highlight was left behind, a grey square on each tab visited
+     * (#412). [wrapped] collects the tabs given layers.
      */
-    static void spot(View bar, View tab, Rect row) {
-        Spotted spotted = SPOTTED.get(tab);
-        if (spotted == null || tab.getBackground() != spotted.layers) {
-            spotted = new Spotted(tab.getBackground());
-            SPOTTED.put(tab, spotted);
-            tab.setBackground(spotted.layers);
-            // The view lets go of the background it replaces, which is the one now inside the layers:
-            // it drops its callback and, when attached, hides it. Unhooked, Facebook's press ripple
-            // can't redraw the tab and freezes as a grey square (#412).
-            if (spotted.facebooks != null && spotted.layers instanceof LayerDrawable) {
-                spotted.facebooks.setCallback((LayerDrawable) spotted.layers);
-                spotted.facebooks.setVisible(spotted.layers.isVisible(), false);
+    static void wrapRow(View tab, int rowWidth, List<WeakReference<View>> wrapped) {
+        ViewParent parent = tab.getParent();
+        if (!(parent instanceof ViewGroup)) {
+            if (wrap(tab)) wrapped.add(new WeakReference<>(tab));
+            return;
+        }
+        ViewGroup row = (ViewGroup) parent;
+        StringBuilder backgrounds = null;
+        for (int i = 0; i < row.getChildCount(); i++) {
+            View each = row.getChildAt(i);
+            if (each != tab && (each.getWidth() <= 0 || each.getWidth() * 2 > rowWidth)) continue;
+            Drawable facebooks = each.getBackground();
+            if (wrap(each)) {
+                wrapped.add(new WeakReference<>(each));
+                if (backgrounds == null) backgrounds = new StringBuilder();
+                backgrounds.append(' ').append(facebooks == null ? "none" : facebooks.getClass().getSimpleName());
+            }
+            if (each == tab) continue;
+            Spotted spotted = SPOTTED.get(each);
+            if (spotted != null && !spotted.spot.area.isEmpty()) {
+                spotted.spot.area.setEmpty();
+                spotted.spot.invalidateSelf();
             }
         }
+        if (backgrounds != null) {
+            String said = backgrounds.toString();
+            Logger.printDebug(() -> "Rounded tab bar: tabs given the spot's layers over" + said);
+        }
+    }
+
+    /**
+     * Puts the layers on [tab] unless it wears them already. A background Facebook set since is
+     * the one kept. True when it got them now.
+     */
+    static boolean wrap(View tab) {
+        Spotted spotted = SPOTTED.get(tab);
+        if (spotted != null && tab.getBackground() == spotted.layers) return false;
+        spotted = new Spotted(tab.getBackground());
+        SPOTTED.put(tab, spotted);
+        tab.setBackground(spotted.layers);
+        // The view lets go of the background it replaces, which is the one now inside the layers:
+        // it drops its callback and, when attached, hides it. Unhooked, Facebook's press ripple
+        // can't redraw the tab and freezes as a grey square (#412).
+        if (spotted.facebooks != null && spotted.layers instanceof LayerDrawable) {
+            spotted.facebooks.setCallback((LayerDrawable) spotted.layers);
+            spotted.facebooks.setVisible(spotted.layers.isVisible(), false);
+        }
+        spotted.layers.jumpToCurrentState();
+        return true;
+    }
+
+    /**
+     * Gives [tab] the spot, or brings it up to date: inside the part of the tab the pill around
+     * [row], in [bar]'s coordinates, shows.
+     */
+    static void spot(View bar, View tab, Rect row) {
+        wrap(tab);
+        Spotted spotted = SPOTTED.get(tab);
+        if (spotted == null) return;
         Rect box = spotted.scratch;
         box.set(0, 0, tab.getWidth(), tab.getHeight());
         if (bar != tab && bar instanceof ViewGroup) ((ViewGroup) bar).offsetDescendantRectToMyCoords(tab, box);
@@ -298,7 +351,9 @@ public final class RoundedTabBar {
     /** Gives [tab] back the background it had before the spot. */
     static void unspot(View tab) {
         Spotted spotted = SPOTTED.remove(tab);
-        if (spotted != null && tab.getBackground() == spotted.layers) tab.setBackground(spotted.facebooks);
+        if (spotted == null || tab.getBackground() != spotted.layers) return;
+        tab.setBackground(spotted.facebooks);
+        if (spotted.facebooks != null) spotted.facebooks.jumpToCurrentState();
     }
 
     /** Gives [bar] back what it had before it was made a pill. True when it was one. */
@@ -445,7 +500,8 @@ public final class RoundedTabBar {
         private final String tabBar;
         private WeakReference<View> anchor = new WeakReference<>(null);
         private WeakReference<View> shaped = new WeakReference<>(null);
-        private WeakReference<View> spotted = new WeakReference<>(null);
+        /** Every tab wearing the spot's layers, kept until the pill goes. */
+        private final List<WeakReference<View>> wrapped = new ArrayList<>();
         private final int[] at = new int[2];
         private long nextLook;
         private boolean stopped;
@@ -516,21 +572,42 @@ public final class RoundedTabBar {
                         + rowWidth + "x" + rowHeight + " row");
             }
             View tab = selectedTab(anchor, anchor.getWidth());
-            View lastTab = spotted.get();
-            if (lastTab != null && lastTab != tab) unspot(lastTab);
-            spotted = new WeakReference<>(tab);
             Shape shape = SHAPED.get(bar);
             if (tab != null && shape != null) {
                 HookStatus.bound(FAMILY, "selected tab");
+                letGoOutside(tab.getParent());
+                wrapRow(tab, anchor.getWidth(), wrapped);
                 spot(bar, tab, shape.pill.row);
+            } else {
+                // No tab selected, no spot: the tabs keep their layers, empty.
+                for (WeakReference<View> each : wrapped) {
+                    View wearing = each.get();
+                    Spotted spotted = wearing == null ? null : SPOTTED.get(wearing);
+                    if (spotted != null && !spotted.spot.area.isEmpty()) {
+                        spotted.spot.area.setEmpty();
+                        spotted.spot.invalidateSelf();
+                    }
+                }
             }
         }
 
-        /** Gives the bar this shaper made a pill its own shape back, and the selected tab its background. */
+        /** Gives back the background of each wrapped tab no longer in [row], a row Facebook replaced. */
+        private void letGoOutside(@Nullable ViewParent row) {
+            for (Iterator<WeakReference<View>> it = wrapped.iterator(); it.hasNext(); ) {
+                View tab = it.next().get();
+                if (tab != null && tab.getParent() == row) continue;
+                it.remove();
+                if (tab != null) unspot(tab);
+            }
+        }
+
+        /** Gives the bar this shaper made a pill its own shape back, and every tab its background. */
         private void letGo() {
-            View tab = spotted.get();
-            spotted = new WeakReference<>(null);
-            if (tab != null) unspot(tab);
+            for (WeakReference<View> each : wrapped) {
+                View tab = each.get();
+                if (tab != null) unspot(tab);
+            }
+            wrapped.clear();
             View bar = shaped.get();
             shaped = new WeakReference<>(null);
             if (bar != null && giveBack(bar)) HookStatus.counted(FAMILY, GIVEN_BACK);
