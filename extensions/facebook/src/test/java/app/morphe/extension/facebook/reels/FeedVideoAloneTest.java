@@ -700,6 +700,44 @@ public class FeedVideoAloneTest {
         assertEquals("off, nothing is left out", List.of("m", "n"), off);
     }
 
+    /**
+     * #421: a reel link opened inside the app gives the viewer's entry the link's origin, but the
+     * viewer's list reads "unknown::unknown" (S22 2026-11-08), and its loading page never filled. The
+     * first such list read soon after a shared opening is that viewer's and shows none, then and
+     * later. Another list, one read only after the window, one after another viewer opened, and any
+     * with Open shared reels on their own off keep Facebook's answer.
+     */
+    @Test
+    public void aSharedReelsListWithNoOriginOfItsOwnShowsNoLoadingPage() {
+        Settings.FEED_VIDEOS_ALONE.save(false);
+        Settings.SHARED_REELS_ALONE.save(true);
+        FeedVideoAlone.originForTests = params -> origin(FeedVideoAlone.NO_ORIGIN);
+        Object list = new Object();
+        assertTrue("before any shared opening", FeedVideoAlone.moreReelsComing(true, list));
+
+        FeedVideoAlone.reelsViewerOpening(origin("unknown::fb_shorts_viewer"));
+        clock.addAndGet(200);
+        assertFalse("the shared reel's list", FeedVideoAlone.moreReelsComing(true, list));
+        assertTrue("another list", FeedVideoAlone.moreReelsComing(true, new Object()));
+        clock.addAndGet(60_000);
+        assertFalse("its list drawn again later", FeedVideoAlone.moreReelsComing(true, list));
+        assertFalse("none coming stays none", FeedVideoAlone.moreReelsComing(false, list));
+        assertTrue(statusLine(), statusLine().contains(FeedVideoAlone.NO_LOADING_PAGE + " 1"));
+
+        FeedVideoAlone.reelsViewerOpening(origin("external_deeplink::fb_shorts_viewer"));
+        clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
+        assertTrue("a list read only after the window", FeedVideoAlone.moreReelsComing(true, new Object()));
+
+        FeedVideoAlone.reelsViewerOpening(origin("fb_shorts_tab::reels_tab"));
+        assertTrue("a list after the Reels tab opened", FeedVideoAlone.moreReelsComing(true, new Object()));
+        assertTrue("the old viewer's list after it", FeedVideoAlone.moreReelsComing(true, list));
+
+        Settings.SHARED_REELS_ALONE.save(false);
+        Settings.FEED_VIDEOS_ALONE.save(true);
+        FeedVideoAlone.reelsViewerOpening(origin("unknown::fb_shorts_viewer"));
+        assertTrue("feed switch only", FeedVideoAlone.moreReelsComing(true, new Object()));
+    }
+
     @Test
     public void theFeedSwitchAloneLeavesLinksAndChatsToFacebook() {
         for (String where : new String[]{"external_deeplink::fb_shorts_viewer", "messaging::xma_shared_video"}) {

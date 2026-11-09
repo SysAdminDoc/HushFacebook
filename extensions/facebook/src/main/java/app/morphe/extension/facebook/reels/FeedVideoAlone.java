@@ -158,17 +158,25 @@ public final class FeedVideoAlone {
     /** A video opening its player: whether a link or a chat opened it, and whether a reel took the screen since. */
     private static final class Opening {
         final boolean shared;
+        /** When it opened on the uptime clock, or NONE. */
+        final long at;
         volatile boolean reelShown;
         /** Whether the asks it lets through were logged. */
         volatile boolean passLogged;
+        /** Its viewer's list params, once {@link #sharedViewerList} has taken them, or an empty reference. */
+        WeakReference<Object> list = new WeakReference<>(null);
 
-        Opening(boolean shared) {
+        Opening(boolean shared, long at) {
             this.shared = shared;
+            this.at = at;
         }
     }
 
     /** The last video opening, a feed video's, a shared reel's, or none (not shared). */
-    private static volatile Opening lastOpening = new Opening(false);
+    private static volatile Opening lastOpening = new Opening(false, NONE);
+
+    /** The origin a shared reel's viewer list reads, which names no surface (#421). */
+    static final String NO_ORIGIN = "unknown::unknown";
 
     /** A Warion viewer, Facebook's fragment showing a feed reel and what comes after it. */
     private static final class Viewer {
@@ -349,7 +357,7 @@ public final class FeedVideoAlone {
         long at = feed ? now() : NONE;
         TAPPED_AT.set(at);
         FEED_OPENED_AT.set(at);
-        lastOpening = new Opening(feed && shared);
+        lastOpening = new Opening(feed && shared, at);
     }
 
     /** Whether [origin], a player origin as text, names a feed's surface. */
@@ -463,8 +471,9 @@ public final class FeedVideoAlone {
      * Injection point, in the reels viewer's list as it reads whether more reels are coming, and
      * again as it reads whether to add its pagination page. Either puts a loading page after the last
      * reel. A viewer opened from a feed gets no more reels with the switch on, so that page would spin
-     * for good after its video (S25 2026-10-18): the list is told no. Every other viewer, the Reels
-     * tab's among them, keeps Facebook's answer. Never throws.
+     * for good after its video (S25 2026-10-18): the list is told no. So is a shared reel's viewer with
+     * Open shared reels on their own, found by its origin or by {@link #sharedViewerList}. Every other
+     * viewer, the Reels tab's among them, keeps Facebook's answer. Never throws.
      *
      * @param more   Facebook's answer.
      * @param params the viewer's params, or null.
@@ -478,7 +487,7 @@ public final class FeedVideoAlone {
             if (origin == null) return more;
             HookStatus.bound(FAMILY, "reels loading page");
             String where = origin.toString();
-            if (!aloneFrom(where)) return more;
+            if (!aloneFrom(where) && !sharedViewerList(where, params)) return more;
             if (loadingPageLogged.get() != params) {
                 loadingPageLogged = new WeakReference<>(params);
                 HookStatus.counted(FAMILY, NO_LOADING_PAGE);
@@ -488,6 +497,28 @@ public final class FeedVideoAlone {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reels loading page", failure);
             return more;
+        }
+    }
+
+    /**
+     * Whether [params], whose origin [where] names no surface, are the list params of the shared reel's
+     * viewer that opened last (#421). That viewer's entry reads the link's origin, but its list reads
+     * none (S22 2026-11-08: "unknown::fb_shorts_viewer" at the entry, "unknown::unknown" on every list
+     * read after it), so it kept Facebook's loading page after the reel, and with the viewer's fetch
+     * held that page never filled. The first such list read within WINDOW_MS of a shared opening is
+     * taken as that viewer's, by identity; any other list, or one read later, keeps Facebook's answer.
+     */
+    private static boolean sharedViewerList(String where, Object params) {
+        if (!NO_ORIGIN.equals(where) || !Settings.SHARED_REELS_ALONE.get()) return false;
+        Opening opening = lastOpening;
+        if (!opening.shared) return false;
+        synchronized (opening) {
+            Object taken = opening.list.get();
+            if (taken == null && opening.at != NONE && now() - opening.at <= WINDOW_MS) {
+                opening.list = new WeakReference<>(params);
+                return true;
+            }
+            return taken == params;
         }
     }
 
@@ -674,7 +705,7 @@ public final class FeedVideoAlone {
         }
         TAPPED_AT.set(NONE);
         FEED_OPENED_AT.set(NONE);
-        lastOpening = new Opening(false);
+        lastOpening = new Opening(false, NONE);
         feedPlayer = new WeakReference<>(null);
         clockForTests = null;
         loadingPageLogged = new WeakReference<>(null);
