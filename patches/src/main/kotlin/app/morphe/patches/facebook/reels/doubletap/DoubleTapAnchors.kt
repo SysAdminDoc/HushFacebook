@@ -61,7 +61,8 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * - The feed's double-tap like helper (585 LX/070z;, 585 armeabi-v7a LX/0711;). Its one kept name
  *   is getAnimationPosition, an instance method answering the PointF where the heart plays; no
  *   other class in either build has a method by that name. It's one of the classes loading
- *   "like_main", the haptic it plays on a double tap. Its like is its one static method taking a
+ *   "like_main", the haptic it plays on a double tap; from 586 (LX/04LZ;) it asks Redex's string
+ *   table for that name instead (LX/07fb;->A00(I) case 0x276). Its like is its one static method taking a
  *   GraphQLFeedback and returning nothing (A02), which sends the like through Facebook's feedback
  *   mutator. Every method calling it calls getAnimationPosition too: it's the double tap's like,
  *   never the Like button's.

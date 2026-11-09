@@ -78,6 +78,9 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * - The hook goes between the move-result-object and the if-eqz: the extension is handed what was
  *   built and answers it or null in the same register, cast back to the builder's return type for
  *   the verifier.
+ * - 586 (read 2026-11-09) made that builder an instance method of a singleton, as 585 did the
+ *   controls' (arm64 LX/0Cii;->A01, called with invoke-virtual/range from LX/0C5I;->render, a piece
+ *   the footer's LX/0C3N;->A1E news up), so the footer takes a virtual call as well as a static one.
  */
 
 internal const val REEL_SOUND_BUTTON = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->showsSoundButton(Z)Z"
@@ -173,7 +176,7 @@ internal fun speakerBuilds(method: Method, buildsSpeaker: (MethodReference) -> B
 
 /**
  * [speakerBuilds] for the video controls, whose builder on 585 is an instance method of a singleton,
- * so a virtual call counts as well as a static one.
+ * so a virtual call counts as well as a static one. The footer's builder is one too from 586.
  */
 internal fun controlSpeakerBuilds(method: Method, buildsSpeaker: (MethodReference) -> Boolean): List<SpeakerBuild> =
     buildsIn(method, STATIC_OR_VIRTUAL_CALLS, buildsSpeaker)
@@ -211,11 +214,12 @@ internal fun BytecodePatchContext.hideReelFooterSoundButton(): SpeakerSite {
     val buildsSpeaker = { call: MethodReference ->
         classDefByOrNull(call.definingClass)?.methods?.any { isCalledBy(it, call) && newInstanceTypes(it).any(toggles::contains) } == true
     }
+    // 586 calls the builder virtually, on a singleton (arm64 LX/0Cii;->A01 from LX/0C5I;->render).
     val found = pieces.filter(::outsideExtension).mapNotNull { classDefByOrNull(it) }
-        .flatMap { piece -> piece.methods.filter { speakerBuilds(it, buildsSpeaker).isNotEmpty() }.map { piece.type to it } }
+        .flatMap { piece -> piece.methods.filter { controlSpeakerBuilds(it, buildsSpeaker).isNotEmpty() }.map { piece.type to it } }
     return hookSpeakerBuild(
         found, "expected one piece of \"$FOOTER_COMPONENT\" to build the speaker button, found ${found.size}",
-    ) { speakerBuilds(it, buildsSpeaker) }
+    ) { controlSpeakerBuilds(it, buildsSpeaker) }
 }
 
 /**

@@ -169,15 +169,35 @@ class SearchPillFixtureTest {
                 val name = bundle.name
                 val headers = FixtureDex.methodsWhere(bundle, { true }, ::isSearchBarHeader)
                     .filter { !it.definingClass.startsWith("L$EXTENSION_PACKAGE") }
-                assertEquals("$name: header builders holding $SEARCH_BAR and $SEARCH_BAR_SEND", 1, headers.size)
-                val header = headers.single()
-                val original = header.code()
-                val adds = listOf(SEARCH_BAR, SEARCH_BAR_SEND).map { literal ->
-                    partAddAfter(header, literal) ?: throw AssertionError("$name: nothing adds the part built after $literal")
+                assertTrue("$name: header builders holding $SEARCH_BAR and $SEARCH_BAR_SEND: ${headers.size}", headers.size <= 1)
+                val jumped = headers.isNotEmpty()
+                val (header, adds) = if (jumped) {
+                    val header = headers.single()
+                    header to listOf(SEARCH_BAR, SEARCH_BAR_SEND).map { literal ->
+                        partAddAfter(header, literal) ?: throw AssertionError("$name: nothing adds the part built after $literal")
+                    }
+                } else {
+                    // 586: each part's wrapper holds its own tag, and one method of their class asks
+                    // both and adds each answer right away.
+                    val wrappers = listOf(SEARCH_BAR, SEARCH_BAR_SEND).map { literal ->
+                        val found = FixtureDex.methodsWhere(bundle, { true }) { isSearchBarPartWrapper(it, literal) }
+                            .filter { !it.definingClass.startsWith("L$EXTENSION_PACKAGE") }
+                        assertEquals("$name: static wrappers holding $literal", 1, found.size)
+                        found.single()
+                    }
+                    val home = wrappers.first().definingClass
+                    val callers = FixtureDex.classes(bundle, setOf(home)).getValue(home).methods
+                        .filter { method -> wrappers.all { callsBuilder(method, it) } }
+                    assertEquals("$name: methods asking both wrappers", 1, callers.size)
+                    val caller = callers.single()
+                    caller to wrappers.map {
+                        partAddAfterCall(caller, it) ?: throw AssertionError("$name: nothing adds what ${it.name} answers")
+                    }
                 }
+                val original = header.code()
 
                 // Positive controls: both parts go in through one call, which skips a null part first
-                // thing, and Facebook jumps straight to each add, so a hook put in front would be passed by.
+                // thing. Up to 585 Facebook jumps straight to each add, so a hook put in front would be passed by.
                 val calls = adds.map { original[it].call }.toSet()
                 assertEquals("$name: the bar and the button go in through different calls", 1, calls.size)
                 val callee = (original[adds.first()] as ReferenceInstruction).reference as MethodReference
@@ -190,7 +210,7 @@ class SearchPillFixtureTest {
                 assertEquals("$name: the add doesn't test its part first", Opcode.IF_EQZ, first.opcode)
                 assertEquals("$name: the add's first test isn't of its part", add.implementation!!.registerCount - 1,
                     (first as OneRegisterInstruction).registerA)
-                assertTrue("$name: no jump lands on the adds", adds.all { it in landings(original) })
+                if (jumped) assertTrue("$name: no jump lands on the adds", adds.all { it in landings(original) })
 
                 val owner = FixtureDex.classes(bundle, setOf(header.definingClass)).getValue(header.definingClass)
                 val context = PatchContexts.of(listOf(owner))
@@ -200,7 +220,7 @@ class SearchPillFixtureTest {
                         it.parameterTypes.map(CharSequence::toString) == header.parameterTypes.map(CharSequence::toString)
                 }.code()
                 assertEquals("$name: three instructions added per part", original.size + 6, patched.size)
-                val hooks = adds.mapIndexed { n, at -> at + 3 * n }
+                val hooks = adds.sorted().mapIndexed { n, at -> at + 3 * n }
                 for (hook in hooks) {
                     assertEquals("$name: shape of the hook at $hook",
                         listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT_OBJECT, Opcode.CHECK_CAST, Opcode.INVOKE_VIRTUAL),
@@ -208,7 +228,7 @@ class SearchPillFixtureTest {
                     assertEquals("$name: the extension is asked", SEARCH_BAR_PART, patched[hook].call)
                     assertEquals("$name: and Facebook's add follows", calls.single(), patched[hook + 3].call)
                 }
-                assertTrue("$name: Facebook's jumps don't reach the hooks", hooks.all { it in landings(patched) })
+                if (jumped) assertTrue("$name: Facebook's jumps don't reach the hooks", hooks.all { it in landings(patched) })
                 val hookParts = hooks.flatMap { listOf(it, it + 1, it + 2) }.toSet()
                 assertEquals("$name: the rest is Facebook's", original.map { it.opcode },
                     patched.filterIndexed { index, _ -> index !in hookParts }.map { it.opcode })

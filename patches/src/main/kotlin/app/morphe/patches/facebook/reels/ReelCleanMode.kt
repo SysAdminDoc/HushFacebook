@@ -257,6 +257,11 @@ private fun MutableMethod.askAfter(moveResult: Int, register: Int, hook: String,
  * with a Boolean through the Kotlin areEqual and keeps its answer in that Boolean's register, a no
  * skips past the button (LX/0grc;) to adding nothing to the column, and the same reference was read
  * once before for another part. So the hook takes the last read before the button is made.
+ *
+ * 586 (2026-11-09) builds the button in the overlay's own render (LX/090C;->A1E on arm64), reading
+ * the references off the overlay's state, and reads the same one again after the no check for the
+ * state it hands the button (LX/0dK1;). The hook takes the last read whose value goes straight into
+ * the check.
  */
 
 /** The point Facebook logs as the Clean mode button is tapped, in the tap's handler. */
@@ -394,38 +399,44 @@ internal fun cleanModeButtonHooks(
     }
     val boxing = boxings.singleOrNull() ?: refuse("expected the overlay's listener to box the Clean mode value once, found ${boxings.size}")
 
-    // The builder: called from the overlay with an AtomicReference, it makes the button.
-    val builders = CLEAN_MODE_PARTS.first().let(holders).flatMap { overlay ->
+    // The builder: called from the overlay with an AtomicReference, it makes the button. 586 makes the
+    // button in the overlay's own render (`LX/090C;->A1E` on arm64), which reads the references off
+    // the overlay's state.
+    fun makesButton(method: Method) = method.code().any { it.opcode == Opcode.NEW_INSTANCE && (it.reference as TypeReference).type == button }
+    val overlays = CLEAN_MODE_PARTS.first().let(holders)
+    val builders = overlays.flatMap { overlay ->
         overlay.methods.flatMap { method ->
             method.code().mapNotNull { (it.reference as? MethodReference)?.takeIf { call -> ATOMIC_REFERENCE in call.parameterTypes.map(CharSequence::toString) } }
         }
     }.distinctBy { it.toString() }.mapNotNull { call ->
         val owner = classOf(call.definingClass) ?: return@mapNotNull null
         val method = owner.methods.firstOrNull { it.sameAs(call) } ?: return@mapNotNull null
-        (owner to method).takeIf {
-            method.code().any { it.opcode == Opcode.NEW_INSTANCE && (it.reference as TypeReference).type == button }
-        }
-    }
+        (owner to method).takeIf { makesButton(method) }
+    }.ifEmpty { overlays.flatMap { overlay -> overlay.methods.filter(::makesButton).map { overlay to it } } }
     val (builderOwner, builder) = builders.singleOrNull()
-        ?: refuse("expected one method the overlay calls with an AtomicReference to make $button, found ${builders.size}")
-    // Its last read of a reference before it makes the button goes straight into a static yes-or-no
-    // check of the value against a no, and nothing reads the value after that check. 585 keeps the
-    // check's answer in the value's own register. The Android 9 build inlines the builder into the
-    // overlay's render, which reads the same reference once before for another part and compares
-    // with a Boolean kept in another register, where its answer goes too.
+        ?: refuse("expected one method the overlay calls with an AtomicReference, or one of its own, to make $button, found ${builders.size}")
+    // Its last read of a reference before it makes the button that goes straight into a static
+    // yes-or-no check of the value against a no, and nothing reads the value after that check. 585
+    // keeps the check's answer in the value's own register. The Android 9 build inlines the builder
+    // into the overlay's render, which reads the same reference once before for another part and
+    // compares with a Boolean kept in another register, where its answer goes too. 586 reads it once
+    // more between the check and the button, for the state the button is made with.
     val builderCode = builder.code()
     val buttonAt = builderCode.indexOfFirst { it.opcode == Opcode.NEW_INSTANCE && (it.reference as TypeReference).type == button }
-    val readAt = (buttonAt - 1 downTo 0).firstOrNull { builderCode[it].calls() == ATOMIC_REFERENCE_GET }
-        ?: refuse("the Clean mode button's builder reads no AtomicReference before it makes $button")
-    val value = kept(builderCode, readAt + 1, Opcode.MOVE_RESULT_OBJECT)
-        ?: refuse("the Clean mode button's builder doesn't keep its AtomicReference's value")
-    val check = builderCode.getOrNull(readAt + 2)
-    val checkCall = check?.reference as? MethodReference
-    if (check?.opcode !in STATIC_CALLS || checkCall?.returnType != "Z" ||
-        checkCall.parameterTypes.map { it.toString() } !in VALUE_CHECKS ||
-        check.registers().first() != value || kept(builderCode, readAt + 3, Opcode.MOVE_RESULT) == null ||
-        builder.readsAfter(readAt + 2, value).isNotEmpty()
-    ) refuse("the Clean mode button's builder doesn't check its AtomicReference's value right away")
+    fun checkedRightAway(at: Int): Boolean {
+        val value = kept(builderCode, at + 1, Opcode.MOVE_RESULT_OBJECT) ?: return false
+        val check = builderCode.getOrNull(at + 2) ?: return false
+        val checkCall = check.reference as? MethodReference ?: return false
+        return check.opcode in STATIC_CALLS && checkCall.returnType == "Z" &&
+            checkCall.parameterTypes.map { it.toString() } in VALUE_CHECKS &&
+            check.registers().first() == value && kept(builderCode, at + 3, Opcode.MOVE_RESULT) != null
+    }
+    val reads = (buttonAt - 1 downTo 0).filter { builderCode[it].calls() == ATOMIC_REFERENCE_GET }
+    if (reads.isEmpty()) refuse("the Clean mode button's builder reads no AtomicReference before it makes $button")
+    val readAt = reads.firstOrNull(::checkedRightAway)
+        ?: refuse("the Clean mode button's builder doesn't check its AtomicReference's value right away")
+    val value = kept(builderCode, readAt + 1, Opcode.MOVE_RESULT_OBJECT)!!
+    if (builder.readsAfter(readAt + 2, value).isNotEmpty()) refuse("the Clean mode button's builder reads its AtomicReference's value after the check")
 
     return listOf(
         ButtonHook(store, setter, gateAt + 1, setterGate, STICKY_CLEAN),

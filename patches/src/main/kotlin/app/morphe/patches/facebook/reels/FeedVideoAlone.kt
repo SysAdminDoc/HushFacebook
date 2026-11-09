@@ -45,9 +45,11 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  * are for reviewers, the code never writes one down.
  *
  * - A video tapped in the feed (arm64 LX/86Q;->A04, the in-feed video click) goes on to Facebook's
- *   "Warion" step (LX/86Q;->A02), the one method holding the onWarionEligibleStoryClick trace. It
- *   seeds the full-screen player with that one video and launches it. Its other callers (LX/8By;
- *   and a posted LX/9hU;) are the same hop from elsewhere in a feed video.
+ *   "Warion" step (LX/86Q;->A02), the instance method answering nothing that takes the tap's Context
+ *   and View first and asks its own class's kept shouldOpenInChannelFeed. Up to 585 it was also the
+ *   one method holding the onWarionEligibleStoryClick trace, which 586 drops (2026-11-09, both
+ *   phone builds: LX/092Y;->A02). It seeds the full-screen player with that one video and launches
+ *   it. Its other callers (LX/8By; and a posted LX/9hU;) are the same hop from elsewhere in a feed video.
  * - The player's reels feed asks for more through the method holding the
  *   VideoHomeDataControllerImpl.fetchMoreDataInternally trace (LX/5Kv;->A00(LX/5cy;String)Z), an
  *   instance method answering whether a fetch went out. Deep links to the viewer
@@ -74,7 +76,9 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   first asks its seed check inside that call, with the main screen in front and no viewer open.
  *   The entry reads the video's PlayerOrigin ("surface::subsurface", a kept class) from its params
  *   near the top, before anything else runs. The Reels tab, a profile's reels and the split screen
- *   launcher use the same entry with their own surfaces.
+ *   launcher use the same entry with their own surfaces. 586 (LX/0Cbi;->A01) answers a boolean and
+ *   first drops a repeat launch of the same video a few seconds after the last ("Dropping duplicate
+ *   Warion launch"), so a dropped repeat never reaches the origin read.
  * - With its more reels held back, that viewer's list still ends in a loading page that spins for
  *   good (S25 2026-10-18). The list's builder (LX/97F;->A2b(LX/1tr;)LX/2rh;, the one method of its
  *   class holding "wearables_consumption_midcard") reads the viewer's params (the entry's LX/96i;)
@@ -151,8 +155,11 @@ internal const val IN_WARION = "is_in_warion"
 /** What WARION_FRAGMENT reads [IN_WARION] with. */
 internal const val GET_BOOLEAN = "Landroid/os/BaseBundle;->getBoolean(Ljava/lang/String;)Z"
 
-/** The trace only Facebook's Warion step, a feed video opening its player, holds. */
-internal const val WARION_CLICK = "onWarionEligibleStoryClick"
+/** The kept name of the Warion step's class's check whether a feed video opens in the channel feed instead. */
+internal const val CHANNEL_FEED_CHECK = "shouldOpenInChannelFeed"
+
+/** What the Warion step, handed the tap, takes first. */
+private val TAP_PARAMS = listOf("Landroid/content/Context;", "Landroid/view/View;")
 
 /** The trace only the reels feed's fetch more holds. */
 internal const val FETCH_MORE = "VideoHomeDataControllerImpl.fetchMoreDataInternally"
@@ -169,11 +176,21 @@ private const val PATCH = "Clean up Reels"
 
 private const val OBJECT = "Ljava/lang/Object;"
 
-/** Whether [method] can be the Warion step: it holds the trace and answers nothing. */
-internal fun isWarionStep(method: Method): Boolean = method.returnType == "V" && holdsString(method, WARION_CLICK)
+/**
+ * Whether [method] can be the Warion step: an instance method answering nothing that takes the tap's
+ * Context and View first and asks its own class's [CHANNEL_FEED_CHECK].
+ */
+internal fun isWarionStep(method: Method): Boolean =
+    method.returnType == "V" && !AccessFlags.STATIC.isSet(method.accessFlags) &&
+        method.parameterTypes.take(2).map(CharSequence::toString) == TAP_PARAMS &&
+        method.implementation?.instructions?.any { instruction ->
+            ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.let {
+                it.definingClass == method.definingClass && it.name == CHANNEL_FEED_CHECK
+            } == true
+        } == true
 
-/** Whether [method] can be the reels viewer's entry: it holds the line and answers nothing. */
-internal fun isViewerEntry(method: Method): Boolean = method.returnType == "V" && holdsString(method, VIEWER_ENTRY)
+/** Whether [method] can be the reels viewer's entry: it holds the line and answers nothing, or (586) a boolean. */
+internal fun isViewerEntry(method: Method): Boolean = method.returnType in setOf("V", "Z") && holdsString(method, VIEWER_ENTRY)
 
 /** Where the viewer's entry has read the video's origin: the index right after, and the register holding it. */
 internal data class OriginRead(val index: Int, val origin: Int)
@@ -440,6 +457,26 @@ private fun BytecodePatchContext.oneMethodHolding(
     }
 }
 
+/** The one method in the app, outside the extension, that [matches] among the classes declaring a method named [name]. */
+private fun BytecodePatchContext.oneMethodBeside(
+    name: String,
+    what: String,
+    matches: (Method) -> Boolean,
+    patch: String,
+): MutableMethod {
+    val found = mutableListOf<Pair<String, Method>>()
+    classDefForEach { classDef ->
+        if (classDef.type.startsWith(EXTENSION_PACKAGE) || classDef.methods.none { it.name == name }) return@classDefForEach
+        classDef.methods.filter(matches).mapTo(found) { classDef.type to it }
+    }
+    val (owner, method) = found.singleOrNull()
+        ?: throw PatchException("$patch: expected one $what beside a $name, found ${found.size}")
+    return mutableClassDefBy(owner).methods.single {
+        it.name == method.name && it.returnType == method.returnType &&
+            it.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
+    }
+}
+
 /**
  * Answers [answer] before the method runs when the extension says so. At the first instruction no
  * local holds anything yet, so v0 is free, and `this` is copied down to it for the call, which names
@@ -511,12 +548,18 @@ private fun asks(instruction: Instruction, check: MethodReference): Boolean {
         called.parameterTypes.isEmpty() && called.returnType == "Z"
 }
 
-/** Whether [instruction] is an interface call of List.size(). */
+private val LIST_SIZES = mapOf(
+    "Ljava/util/List;" to setOf(Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE),
+    // 586 knows the page is an ArrayList and calls it straight (AbstractCollection.size on arm64).
+    "Ljava/util/AbstractCollection;" to setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE),
+    "Ljava/util/ArrayList;" to setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE),
+)
+
+/** Whether [instruction] is a call of List.size(), through the interface or on the list's own class. */
 private fun isListSize(instruction: Instruction): Boolean {
-    if (instruction.opcode != Opcode.INVOKE_INTERFACE && instruction.opcode != Opcode.INVOKE_INTERFACE_RANGE) return false
-    val called = (instruction as ReferenceInstruction).reference as? MethodReference ?: return false
-    return called.definingClass == "Ljava/util/List;" && called.name == "size" && called.parameterTypes.isEmpty() &&
-        called.returnType == "I"
+    val called = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    if (instruction.opcode !in LIST_SIZES[called.definingClass].orEmpty()) return false
+    return called.name == "size" && called.parameterTypes.isEmpty() && called.returnType == "I"
 }
 
 /** The one register a call names, or null when it names more or none. */
@@ -565,8 +608,8 @@ internal data class FeedVideoOpening(val warion: MutableMethod, val entry: Mutab
 
 /** Finds where a feed video opens its player, refusing as [patch] unless each anchor finds one method. */
 private fun BytecodePatchContext.findFeedVideoOpening(patch: String): FeedVideoOpening {
-    val warion = oneMethodHolding(WARION_CLICK, "Warion step answering void", ::isWarionStep, patch)
-    val entry = oneMethodHolding(VIEWER_ENTRY, "reels viewer entry answering void", ::isViewerEntry, patch)
+    val warion = oneMethodBeside(CHANNEL_FEED_CHECK, "Warion step taking the tap and answering void", ::isWarionStep, patch)
+    val entry = oneMethodHolding(VIEWER_ENTRY, "reels viewer entry answering void or a boolean", ::isViewerEntry, patch)
     val origin = originRead(entry)
         ?: throw PatchException("$patch: the reels viewer's entry reads no $PLAYER_ORIGIN field into a low register")
     return FeedVideoOpening(warion, entry, origin)

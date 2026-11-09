@@ -9,6 +9,9 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -98,14 +101,13 @@ class DoubleTapLikeFixtureTest {
      */
     private fun readFeedPhoto(bundle: File): FeedPhoto {
         val name = bundle.name
-        val helpers = FixtureDex.classesHolding(bundle, FEED_LIKE_HAPTIC).filter(::isFeedLikeHelper)
-        assertEquals("$name: classes loading \"$FEED_LIKE_HAPTIC\" with $ANIMATION_POSITION", 1, helpers.size)
+        val found = feedLikeHelpers(bundle)
+        val helpers = found.helpers
+        assertEquals("$name: classes loading \"$FEED_LIKE_HAPTIC\" (or asking a string table for it) with $ANIMATION_POSITION",
+            1, helpers.size)
         val helper = helpers.single()
-        val positions = FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.stringSection.any { it == ANIMATION_POSITION } }) {
-            it.name == ANIMATION_POSITION
-        }
         assertEquals("$name: classes with a method named $ANIMATION_POSITION", listOf(helper.type),
-            positions.map { it.definingClass }.distinct())
+            found.positions.map { it.definingClass }.distinct())
         val likes = feedLikes(helper)
         assertEquals("$name: the feed helper's static likes taking a GraphQLFeedback", 1, likes.size)
         val like = likes.single()
@@ -150,7 +152,7 @@ class DoubleTapLikeFixtureTest {
         assertTrue("$name: no other $DOUBLE_TAP_EVENT listener to tell the feed's from", others.isNotEmpty())
         assertEquals("$name: another $DOUBLE_TAP_EVENT listener is made by a class calling the feed helper", emptyList<String>(),
             others.map { it.type }.filter { it in made })
-        return FeedPhoto(helper, like, listener, (makers + madeListeners + others).distinctBy { it.type })
+        return FeedPhoto(helper, like, listener, (makers + madeListeners + others + found.tables).distinctBy { it.type })
     }
 
     /** Reads what the patch finds in [bundle], checking each anchor is the only one of its kind. */
@@ -370,7 +372,8 @@ class DoubleTapLikeFixtureTest {
  * refuses. [DoubleTapLikeFixtureTest] checks the anchors themselves.
  */
 internal fun feedPhotoFixtureClasses(bundle: File): List<ClassDef> {
-    val helper = FixtureDex.classesHolding(bundle, FEED_LIKE_HAPTIC).single(::isFeedLikeHelper)
+    val found = feedLikeHelpers(bundle)
+    val helper = found.helpers.single()
     val inHelper = { dex: DexBackedDexFile -> dex.methodSection.any { it.definingClass == helper.type } }
     val callers = FixtureDex.methodsWhere(bundle, inHelper) { method ->
         method.definingClass != helper.type && method.implementation?.instructions?.any { instruction ->
@@ -380,5 +383,27 @@ internal fun feedPhotoFixtureClasses(bundle: File): List<ClassDef> {
     val makers = FixtureDex.classes(bundle, callers.map { it.definingClass }.toSet()).values.toList()
     val listeners = FixtureDex.classes(bundle, makers.flatMap(::typesMadeBy).toSet()).values
         .filter { it.superclass == GESTURE_LISTENER }
-    return (listOf(helper) + makers + listeners).distinctBy { it.type }
+    return (listOf(helper) + makers + listeners + found.tables).distinctBy { it.type }
+}
+
+/**
+ * The feed's double-tap like helpers in [bundle]: classes with an instance getAnimationPosition answering a
+ * PointF that load [FEED_LIKE_HAPTIC] or, from 586, ask a string table for it. With them every method named
+ * getAnimationPosition, and the string tables holding the name, which a slice of the build needs for the
+ * patch to read the helper's ask.
+ */
+internal class FeedLikeHelpers(val helpers: List<ClassDef>, val positions: List<Method>, val tables: List<ClassDef>)
+
+internal fun feedLikeHelpers(bundle: File): FeedLikeHelpers {
+    val holders = FixtureDex.classesHolding(bundle, FEED_LIKE_HAPTIC).associateBy { it.type }
+    val resolve: (MethodReference) -> Method? = { call -> holders[call.definingClass]?.let { resolveStatic(it, call) } }
+    val tables = holders.values.filter { owner -> owner.methods.any { isStringTable(it) && holdsString(it, FEED_LIKE_HAPTIC) } }
+    val positions = FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.stringSection.any { it == ANIMATION_POSITION } }) {
+        it.name == ANIMATION_POSITION
+    }
+    val owners = FixtureDex.classes(bundle, positions.map { it.definingClass }.toSet()).values
+    val helpers = owners.filter { owner ->
+        isFeedLikeHelper(owner) && owner.methods.any { namesString(it, FEED_LIKE_HAPTIC, resolve) }
+    }
+    return FeedLikeHelpers(helpers, positions, tables)
 }

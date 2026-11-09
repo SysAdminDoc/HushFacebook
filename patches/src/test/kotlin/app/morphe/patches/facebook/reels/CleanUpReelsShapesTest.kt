@@ -619,6 +619,23 @@ class CleanUpReelsShapesTest {
         assertEquals(Opcode.SGET_OBJECT, body[4].opcode)
     }
 
+    /**
+     * 585's hot comment runnable was Kotlin's `$1`; 586 has `$1` for the MFC query and `$2` for the
+     * plain one, so the name is matched up to its number. The social bubbles name stays exact.
+     */
+    @Test
+    fun `the hot comment runnable is matched with any number, the bubbles one exactly`() {
+        assertTrue(footerRunnableNamed("${HOT_COMMENT_RUNNABLE}1", HOT_COMMENT_RUNNABLE))
+        assertTrue(footerRunnableNamed("${HOT_COMMENT_RUNNABLE}2", HOT_COMMENT_RUNNABLE))
+        assertTrue(footerRunnableNamed("${HOT_COMMENT_RUNNABLE}12", HOT_COMMENT_RUNNABLE))
+        assertTrue("no number", !footerRunnableNamed(HOT_COMMENT_RUNNABLE, HOT_COMMENT_RUNNABLE))
+        assertTrue("a nested lambda", !footerRunnableNamed("${HOT_COMMENT_RUNNABLE}1\$1", HOT_COMMENT_RUNNABLE))
+        assertTrue("another helper", !footerRunnableNamed("FbShortsViewerFooterHotCommentHelper\$other\$1", HOT_COMMENT_RUNNABLE))
+        assertTrue("no name", !footerRunnableNamed(null, HOT_COMMENT_RUNNABLE))
+        assertTrue(footerRunnableNamed(SOCIAL_BUBBLES_RUNNABLE, SOCIAL_BUBBLES_RUNNABLE))
+        assertTrue("the bubbles name is exact", !footerRunnableNamed(SOCIAL_BUBBLES_RUNNABLE.dropLast(1) + "2", SOCIAL_BUBBLES_RUNNABLE))
+    }
+
     private val lambdaType = "Lfixture/Lambda;"
 
     /** A static of the merged lambda that takes the lambda and its key and answers an Object. */

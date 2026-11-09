@@ -43,8 +43,9 @@ import java.io.File
  * the patch on those classes: the extension right after each move-result on the same register,
  * and nothing else in the method moved. And the Clean mode button (#304): the sticky check in the
  * store's setter and in the button's tap, the overlay's listener boxing its new value, and the
- * button builder's last read of the overlay's value before it makes the button, which only its
- * "no button" check uses.
+ * button builder's last read of the overlay's value before it makes the button that only its
+ * "no button" check uses (586 builds the button in the overlay's own render and reads the value
+ * once more, for the button's state).
  * Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class ReelCleanModeFixtureTest {

@@ -13,6 +13,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegister
@@ -205,10 +206,13 @@ private class FeedPhotoAnchors(val like: Method, val listener: Method)
  * feed's double-tap like helper holds its like back. Finds both; changes neither.
  */
 private fun BytecodePatchContext.findFeedPhotoAnchors(): FeedPhotoAnchors {
-    val helpers = classDefByStrings(FEED_LIKE_HAPTIC, StringComparisonType.EQUALS).filter(::isFeedLikeHelper)
+    // From 586 the helper asks a string table for the haptic's name instead of loading it, so the
+    // table's callers count too.
+    val helpers = methodsNaming(FEED_LIKE_HAPTIC) { it.implementation != null }.map { it.definingClass }.distinct()
+        .mapNotNull(::classDefByOrNull).filter(::isFeedLikeHelper)
     val helper = helpers.singleOrNull() ?: refuse(
-        "expected one class loading \"$FEED_LIKE_HAPTIC\" with an instance $ANIMATION_POSITION answering a PointF, " +
-            "found ${helpers.size}",
+        "expected one class loading \"$FEED_LIKE_HAPTIC\" (itself or through a string table) with an instance " +
+            "$ANIMATION_POSITION answering a PointF, found ${helpers.size}",
     )
     val like = feedLikes(helper).singleOrNull()
         ?: refuse("expected the feed's double-tap like helper to have one static like taking a GraphQLFeedback")

@@ -56,8 +56,9 @@ class ReelSoundButtonFixtureTest {
 
     /**
      * The footer's speaker hook (#190) on every Facebook build the bundle declares (arm64 and
-     * armv7): one piece the footer news up calls a static builder of the sound toggle, moves its
-     * answer and null-checks it, and the patch hands that answer to the extension before the check.
+     * armv7): one piece the footer news up calls a builder of the sound toggle (static, or from 586
+     * a singleton's), moves its answer and null-checks it, and the patch hands that answer to the
+     * extension before the check.
      */
     @Test
     fun `each declared build's reel footer hands the extension the speaker it builds`() {
@@ -74,23 +75,25 @@ class ReelSoundButtonFixtureTest {
                 val footers = FixtureDex.classesHolding(bundle, FOOTER_COMPONENT).filter { outsideExtension(it.type) }.distinctBy { it.type }
                 val pieceTypes = footers.flatMap { methodsHolding(it, FOOTER_COMPONENT) }.flatMap(::newInstanceTypes).filter(::outsideExtension).toSet()
                 val pieces = FixtureDex.classes(bundle, pieceTypes).values.toList()
-                val callees = FixtureDex.classes(bundle, pieces.flatMap { it.methods }.flatMap(::staticCalls).map { it.definingClass }.toSet())
+                // 586 calls the builder virtually, on a singleton (arm64 LX/0Cii;->A01).
+                val callees = FixtureDex.classes(bundle, pieces.flatMap { it.methods }.flatMap(::staticOrVirtualCalls).map { it.definingClass }.toSet())
                 val buildsSpeaker = { call: MethodReference ->
                     callees[call.definingClass]?.methods?.any { isCalledBy(it, call) && newInstanceTypes(it).any(toggles::contains) } == true
                 }
-                val found = pieces.flatMap { piece -> piece.methods.flatMap { m -> speakerBuilds(m, buildsSpeaker).map { Triple(piece, m, it) } } }
+                val found = pieces.flatMap { piece -> piece.methods.flatMap { m -> controlSpeakerBuilds(m, buildsSpeaker).map { Triple(piece, m, it) } } }
                 assertEquals("$name: pieces of the footer that build the speaker", 1, found.size)
                 val (owner, method, build) = found.single()
                 val original = method.code()
                 // Negative control: the call-move-check shape alone matches more than the speaker, so
                 // the builder's toggle is what picks it.
-                val shapes = pieces.sumOf { piece -> piece.methods.sumOf { m -> speakerBuilds(m) { true }.size } }
+                val shapes = pieces.sumOf { piece -> piece.methods.sumOf { m -> controlSpeakerBuilds(m) { true }.size } }
                 assertTrue("$name: only the speaker's call has the shape, so the toggle check proves nothing", shapes > 1)
                 // No branch or switch case lands on the null check, so every path to it passes the hook.
                 assertTrue("$name: a branch lands on the null check", build.call + 2 !in branchTargets(original))
                 val builder = (original[build.call] as ReferenceInstruction).reference as MethodReference
-                assertTrue("$name: the builder isn't static", callees.getValue(builder.definingClass).methods.single { isCalledBy(it, builder) }
-                    .let { AccessFlags.STATIC.isSet(it.accessFlags) })
+                val static = original[build.call].opcode == Opcode.INVOKE_STATIC || original[build.call].opcode == Opcode.INVOKE_STATIC_RANGE
+                assertEquals("$name: the builder is static exactly when it's called that way", static,
+                    callees.getValue(builder.definingClass).methods.single { isCalledBy(it, builder) }.let { AccessFlags.STATIC.isSet(it.accessFlags) })
 
                 val context = PatchContexts.of((footers + pieces + callees.values + toggleClasses).distinctBy { it.type })
                 context.hideReelFooterSoundButton()

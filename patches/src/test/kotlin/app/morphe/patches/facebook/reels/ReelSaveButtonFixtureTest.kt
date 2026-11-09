@@ -40,6 +40,9 @@ import org.junit.Test
 class ReelSaveButtonFixtureTest {
     private fun Method.code() = implementation!!.instructions.toList()
 
+    /** Static factory callers by build, where it isn't both list builders. */
+    private val staticListBuilders = mapOf("586.0.0.52.53" to 1)
+
     private fun Method.loads(string: String) = implementation?.instructions?.any {
         ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == string
     } == true
@@ -76,7 +79,8 @@ class ReelSaveButtonFixtureTest {
                 assertEquals("$name: shared sidebar factory callers", 4, callers.size)
                 val owners = FixtureDex.classes(bundle, callers.map { it.definingClass }.toSet())
                 assertEquals("$name: caller owners", 4, owners.size)
-                assertEquals("$name: two renders and two static list builders", 2,
+                // 586 made the VddVerticalUfi list builder (LX/0C7w;->A01) an instance method.
+                assertEquals("$name: two renders and two list builders, static as on that build", staticListBuilders[version] ?: 2,
                     callers.count { AccessFlags.STATIC.isSet(it.accessFlags) })
                 assertThrows("$name: missing an alternate caller must refuse the patch", PatchException::class.java) {
                     PatchContexts.of(owners.values.drop(1) + factoryClass + icons).hideReelSaveButton()

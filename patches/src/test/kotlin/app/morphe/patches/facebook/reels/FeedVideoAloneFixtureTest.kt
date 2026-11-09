@@ -39,7 +39,8 @@ import org.junit.Test
 
 /**
  * Clean up Reels' Open feed videos on their own hooks (#161) on every Facebook build the bundle
- * declares (arm64 and armv7): one void method holds the Warion trace and tells the extension first,
+ * declares (arm64 and armv7): one void method taking the tap beside the Warion class's
+ * shouldOpenInChannelFeed tells the extension first,
  * the reels viewer's one entry tells it the origin it reads before its null check, and the data
  * controller's and the client-side ranking loader's fetch mores, one instance method
  * each holding its line, answer false before fetching when the extension says so. The Warion
@@ -66,10 +67,16 @@ class FeedVideoAloneFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val warionOwners = FixtureDex.classesHolding(bundle, WARION_CLICK)
-                    .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
-                val warions = warionOwners.flatMap { owner -> owner.methods.filter(::isWarionStep).map { owner to it } }
-                assertEquals("$name: void methods holding $WARION_CLICK", 1, warions.size)
+                val warionOwners = mutableListOf<ClassDef>()
+                FixtureDex.forEach(bundle) { dex ->
+                    if (dex.methodSection.none { it.name == CHANNEL_FEED_CHECK }) return@forEach
+                    dex.classes.filter { classDef ->
+                        !classDef.type.startsWith(EXTENSION_PACKAGE) && classDef.methods.any { it.name == CHANNEL_FEED_CHECK }
+                    }.mapTo(warionOwners) { ImmutableClassDef.of(it) }
+                }
+                val warions = warionOwners.distinctBy { it.type }
+                    .flatMap { owner -> owner.methods.filter(::isWarionStep).map { owner to it } }
+                assertEquals("$name: void methods taking the tap beside a $CHANNEL_FEED_CHECK", 1, warions.size)
                 val fetchOwners = FixtureDex.classesHolding(bundle, FETCH_MORE)
                     .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
                 val fetches = fetchOwners.flatMap { owner -> owner.methods.filter(::isFetchMore).map { owner to it } }
@@ -81,7 +88,7 @@ class FeedVideoAloneFixtureTest {
                 val entryOwners = FixtureDex.classesHolding(bundle, VIEWER_ENTRY)
                     .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
                 val entries = entryOwners.flatMap { owner -> owner.methods.filter(::isViewerEntry).map { owner to it } }
-                assertEquals("$name: void methods holding $VIEWER_ENTRY", 1, entries.size)
+                assertEquals("$name: void or boolean methods holding $VIEWER_ENTRY", 1, entries.size)
                 val (warionOwner, warion) = warions.single()
                 val (fetchOwner, fetch) = fetches.single()
                 val (loaderOwner, loader) = loaders.single()

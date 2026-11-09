@@ -24,6 +24,8 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
@@ -71,6 +73,12 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   LX/32h;->A3b), which takes one component and skips a null one: Facebook's own answer for a part
  *   it didn't build. A missing query and a failed wrapper jump straight to that call, so the hook
  *   takes the call's place, keeping those jumps, and the call follows with the extension's answer.
+ *
+ * 586 (2026-11-08, arm64) splits that header (LX/09vG;->A1E, a render now): each part's logging
+ * wrapper is a static method of its own holding the part's view tag (A09 builds and wraps the bar,
+ * A07 wraps the send button it's handed), answering the part wrapped or as it came. The header adds
+ * each answer to its row right after asking, through one call that still skips a null part
+ * (LX/038y;->A3D), so the hook takes that call's place the same way.
  */
 
 internal const val ELEVATED_CTA = "FbShortsSearchElevatedCTAComponent"
@@ -171,14 +179,17 @@ internal fun BytecodePatchContext.hideSearchPill() {
 internal fun isCommentPillBuilder(method: Method): Boolean =
     AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType.startsWith("L") && holdsString(method, COMMENT_PIVOT)
 
+/** Whether [this] instruction calls [target]. */
+internal fun Instruction.isCallTo(target: Method): Boolean {
+    val reference = (this as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    return reference.definingClass == target.definingClass && reference.name == target.name &&
+        reference.returnType == target.returnType &&
+        reference.parameterTypes.map(CharSequence::toString) == target.parameterTypes.map(CharSequence::toString)
+}
+
 /** Whether [method] calls [builder]. */
 internal fun callsBuilder(method: Method, builder: Method): Boolean =
-    method.implementation?.instructions?.any {
-        val reference = (it as? ReferenceInstruction)?.reference as? MethodReference
-        reference != null && reference.definingClass == builder.definingClass && reference.name == builder.name &&
-            reference.returnType == builder.returnType &&
-            reference.parameterTypes.map(CharSequence::toString) == builder.parameterTypes.map(CharSequence::toString)
-    } == true
+    method.implementation?.instructions?.any { it.isCallTo(builder) } == true
 
 /** The indexes of [method]'s iget-object reads of a [SEARCH_PROMPT_PARAM] field. */
 internal fun promptReads(method: Method): List<Int> =
@@ -240,6 +251,26 @@ internal fun partAddAfter(header: Method, literal: String): Int? {
     return index.takeIf { takesAPart }
 }
 
+/** Whether [method] wraps one part of the bar on its own (586): static, holding [literal] and answering an object. */
+internal fun isSearchBarPartWrapper(method: Method, literal: String): Boolean =
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType.startsWith("L") && holdsString(method, literal)
+
+/**
+ * The index of the call that puts what [wrapper] answers into [caller]'s row: the one call to
+ * [wrapper], its move-result-object, then an invoke-virtual taking that register alone, typed as
+ * the wrapper's answer, and returning nothing. Null when [caller] isn't shaped that way.
+ */
+internal fun partAddAfterCall(caller: Method, wrapper: Method): Int? {
+    val code = caller.implementation?.instructions?.toList() ?: return null
+    val at = code.indices.singleOrNull { code[it].isCallTo(wrapper) } ?: return null
+    val result = code.getOrNull(at + 1)?.takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT } as? OneRegisterInstruction ?: return null
+    val add = code.getOrNull(at + 2)?.takeIf { it.opcode == Opcode.INVOKE_VIRTUAL } as? FiveRegisterInstruction ?: return null
+    val call = (add as ReferenceInstruction).reference as MethodReference
+    val takesThePart = call.returnType == "V" && call.parameterTypes.map(CharSequence::toString) == listOf(wrapper.returnType) &&
+        add.registerCount == 2 && add.registerD == result.registerA
+    return (at + 2).takeIf { takesThePart }
+}
+
 /**
  * Has the call at [index] hand its part to the extension and add what comes back. The hook takes the
  * call's own place, so the jumps Facebook aims at the call reach the hook, and the call follows it.
@@ -248,6 +279,7 @@ internal fun MutableMethod.handPartFirst(index: Int) {
     val add = getInstruction<FiveRegisterInstruction>(index)
     val call = (add as ReferenceInstruction).reference as MethodReference
     val (row, part) = add.registerC to add.registerD
+    if (row > 15 || part > 15) throw PatchException("$PATCH: the row or the part sits in v$row or v$part, past what the hook's calls take")
     replaceInstruction(index, "invoke-static { v$part }, $SEARCH_BAR_PART")
     addInstructions(
         index + 1,
@@ -261,12 +293,14 @@ internal fun MutableMethod.handPartFirst(index: Int) {
 
 /**
  * Finds the header builder by the bar's two view tags, then the call that adds each part, and has
- * each part go through the extension on its way in. Refuses unless each step finds exactly one.
+ * each part go through the extension on its way in. Without a method holding both tags, takes
+ * 586's shape ([hideSearchBarParts]). Refuses unless each step finds exactly one.
  */
 internal fun BytecodePatchContext.hideSearchBar() {
     val headers = classDefByStrings(SEARCH_BAR_SEND, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
         .flatMap { classDef -> classDef.methods.filter(::isSearchBarHeader) }
+    if (headers.isEmpty()) return hideSearchBarParts()
     val header = headers.singleOrNull() ?: throw PatchException(
         "$PATCH: expected one header builder holding $SEARCH_BAR and $SEARCH_BAR_SEND, found ${headers.size}",
     )
@@ -279,5 +313,32 @@ internal fun BytecodePatchContext.hideSearchBar() {
             "$PATCH: the header builder adds nothing it built after $literal with one component call",
         )
         method.handPartFirst(index)
+    }
+}
+
+/**
+ * 586's header: finds each part's wrapper by its view tag, then the one method of their class that
+ * asks both, and has each answer go through the extension on its way into the row. Refuses unless
+ * each step finds exactly one.
+ */
+internal fun BytecodePatchContext.hideSearchBarParts() {
+    val wrappers = listOf(SEARCH_BAR, SEARCH_BAR_SEND).map { literal ->
+        val found = classDefByStrings(literal, StringComparisonType.EQUALS)
+            .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+            .flatMap { classDef -> classDef.methods.filter { isSearchBarPartWrapper(it, literal) } }
+        found.singleOrNull() ?: throw PatchException(
+            "$PATCH: no header builder holds $SEARCH_BAR and $SEARCH_BAR_SEND, and $literal is in ${found.size} static wrappers, not one",
+        )
+    }
+    val owner = mutableClassDefBy(wrappers.first().definingClass)
+    val callers = owner.methods.filter { method -> wrappers.all { callsBuilder(method, it) } }
+    val caller = callers.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one method of ${owner.type} asking both of the bar's wrappers, found ${callers.size}",
+    )
+    for (wrapper in wrappers) {
+        val index = partAddAfterCall(caller, wrapper) ?: throw PatchException(
+            "$PATCH: the header doesn't add what ${wrapper.name} answers with one component call right after asking",
+        )
+        caller.handPartFirst(index)
     }
 }

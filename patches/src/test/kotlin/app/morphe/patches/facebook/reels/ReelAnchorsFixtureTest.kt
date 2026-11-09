@@ -42,11 +42,15 @@ class ReelAnchorsFixtureTest {
         var immutableList: ClassDef? = null
         val dumpers = mutableListOf<Method>()
         val hotComments = mutableListOf<Method>()
+        val mfcHotComments = mutableListOf<Method>()
         val bubbles = mutableListOf<Method>()
         var footerHelperClasses = 0
     }
 
-    private val wanted = setOf(CHIP_ANCHOR, WATCH_FEED_DUMP, INLINE_COMMENTS_QUERY, VIDEO_ID)
+    private val wanted = setOf(CHIP_ANCHOR, WATCH_FEED_DUMP, INLINE_COMMENTS_QUERY, MFC_INLINE_COMMENTS_QUERY, VIDEO_ID)
+
+    /** How many MFC hot comment runnables each version has: 586 added the one a flag picks over the plain query's. */
+    private val mfcHotCommentRunnables = mapOf("586.0.0.52.53" to 1)
 
     /** One pass over the bundle for everything but the Follow getter's readers. */
     private fun scan(bundle: File): Found {
@@ -69,6 +73,9 @@ class ReelAnchorsFixtureTest {
                 }
                 if (INLINE_COMMENTS_QUERY in present) {
                     footerRunnable(classDef, HOT_COMMENT_RUNNABLE, INLINE_COMMENTS_QUERY)?.let { found.hotComments += ImmutableMethod.of(it) }
+                }
+                if (MFC_INLINE_COMMENTS_QUERY in present) {
+                    footerRunnable(classDef, HOT_COMMENT_RUNNABLE, MFC_INLINE_COMMENTS_QUERY)?.let { found.mfcHotComments += ImmutableMethod.of(it) }
                 }
                 if (VIDEO_ID in present) {
                     footerRunnable(classDef, SOCIAL_BUBBLES_RUNNABLE, VIDEO_ID)?.let { found.bubbles += ImmutableMethod.of(it) }
@@ -141,7 +148,7 @@ class ReelAnchorsFixtureTest {
                 assertNull("$name: ${follow.problem}", follow.problem)
                 val getter = follow.getter
                 if (getter == null) {
-                    // 583 to 585: two flag reads in merged lambdas (one class each on 585), hooked in each lambda's
+                    // 583 to 586: two flag reads in merged lambdas (one class each on 585), hooked in each lambda's
                     // invoke() by key, which needs two locals there and the field the switch reads the key from.
                     assertEquals("$name: ${follow.flags}", 2, follow.flags.size)
                     val lambdas = FixtureDex.classes(bundle, follow.flags.map { it.lambda }.toSet())
@@ -160,6 +167,8 @@ class ReelAnchorsFixtureTest {
                         "585.0.0.47.54 armeabi-v7a" to "LX/0AD1;:155:A1Z LX/0ACo;:105:A0F",
                         // Android 9: the dump makes the first lambda and the helper the second, each flag read in its first switch.
                         "585.0.0.47.54 arm64-v8a-minapi28-storeless" to "LX/0cLU;:10:invoke LX/0ADL;:157:invoke",
+                        "586.0.0.52.53 arm64-v8a" to "LX/0A3w;:134:A18 LX/0A3h;:198:A0Q",
+                        "586.0.0.52.53 armeabi-v7a" to "LX/0A3w;:134:A18 LX/0A3h;:198:A0Q",
                     )["$version $abi"]
                     assertEquals(name, pinned, follow.flags.joinToString(" ") { "${it.lambda}:${it.key}:${it.reader.name}" })
                 } else {
@@ -172,9 +181,10 @@ class ReelAnchorsFixtureTest {
 
                 // Both footer runnables, among the footer helpers' other kept-name classes.
                 assertEquals("$name: ${found.hotComments}", 1, found.hotComments.size)
+                assertEquals("$name: ${found.mfcHotComments}", mfcHotCommentRunnables[version] ?: 0, found.mfcHotComments.size)
                 assertEquals("$name: ${found.bubbles}", 1, found.bubbles.size)
                 assertTrue("$name: ${found.footerHelperClasses} footer helper classes", found.footerHelperClasses >= 3)
-                for (run in found.hotComments + found.bubbles) {
+                for (run in found.hotComments + found.mfcHotComments + found.bubbles) {
                     assertTrue("$name: $run has no local for the hook", locals(run) >= 1)
                 }
                 checked[version] = "${follow.literals} Follow literal(s), " +

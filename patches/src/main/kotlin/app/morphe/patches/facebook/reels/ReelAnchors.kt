@@ -147,12 +147,22 @@ internal val FOLLOW_CHECK_SURFACES = listOf("friendly_feed", "friends_tab_ifu")
 /** The test key Facebook gives the Follow button it builds for a reel's author. */
 internal const val FOLLOW_BUTTON_KEY = "video_author_follow_button"
 
-internal const val HOT_COMMENT_RUNNABLE = "FbShortsViewerFooterHotCommentHelper\$createHotCommentQueryRunnable\$1"
+/**
+ * The hot comment runnables, Kotlin's numbered lambdas of one method: the name ends in a number,
+ * `$1` up to 585, `$1` and `$2` on 586, so it's matched up to the number ([footerRunnable]).
+ */
+internal const val HOT_COMMENT_RUNNABLE = "FbShortsViewerFooterHotCommentHelper\$createHotCommentQueryRunnable\$"
 internal const val SOCIAL_BUBBLES_RUNNABLE =
     "FbShortsViewerFooterSocialBubblesHelper\$setupSocialBubblesQuery\$socialBubblesQueryRunnable\$1"
 
 /** The query the hot comment runnable starts, the plain one beside its XAR variant. */
 internal const val INLINE_COMMENTS_QUERY = "FBShortsInlineCommentsQuery"
+
+/**
+ * The query 586's other hot comment runnable (`$1`, LX/0CiK;) starts; a MobileConfig flag picks
+ * which of the two the footer builds (LX/0C3N;->A1I), so both are skipped.
+ */
+internal const val MFC_INLINE_COMMENTS_QUERY = "FBShortsMFCInlineCommentsQuery"
 
 /** The one literal the social bubbles runnable loads: the reel it asks about. */
 internal const val VIDEO_ID = "video_id"
@@ -715,14 +725,22 @@ internal fun followCheck(author: Method, resolve: (MethodReference) -> Method?):
 }
 
 /**
- * The `run()` of [classDef] when Redex left it the name [redexName], it's a Runnable, and its run
- * loads [holding]; otherwise null.
+ * The `run()` of [classDef] when Redex left it the name [redexName] (or, for a name ending in `$`,
+ * that name and a number), it's a Runnable, and its run loads [holding]; otherwise null.
  */
 internal fun footerRunnable(classDef: ClassDef, redexName: String, holding: String): Method? {
-    if (redexOriginalName(classDef) != redexName) return null
+    if (!footerRunnableNamed(redexOriginalName(classDef), redexName)) return null
     if (classDef.interfaces.none { it.toString() == RUNNABLE }) return null
     return classDef.methods.singleOrNull {
         it.name == "run" && it.returnType == "V" && it.parameterTypes.isEmpty() && it.implementation != null &&
             holdsString(it, holding)
     }
+}
+
+/** Whether Redex's [name] is [redexName], or, for a [redexName] ending in `$`, that and a number. */
+internal fun footerRunnableNamed(name: String?, redexName: String): Boolean {
+    if (name == null) return false
+    if (!redexName.endsWith('$')) return name == redexName
+    val number = name.removePrefix(redexName)
+    return number != name && number.isNotEmpty() && number.all(Char::isDigit)
 }

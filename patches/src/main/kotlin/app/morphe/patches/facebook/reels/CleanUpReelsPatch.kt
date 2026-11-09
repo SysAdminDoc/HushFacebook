@@ -381,14 +381,20 @@ private fun MutableMethod.answerWhen(hook: String, answer: Boolean) {
     )
 }
 
-/** The two footer runnables return before they query when the switch is on. */
+/**
+ * The footer runnables return before they query when the switch is on. 586 builds one of two hot
+ * comment runnables as a MobileConfig flag says, the plain query's or the MFC one's, so the MFC one
+ * is skipped too wherever a build has it.
+ */
 private fun BytecodePatchContext.skipFooterQueries() {
     listOf(
         Triple(HOT_COMMENT_RUNNABLE, INLINE_COMMENTS_QUERY, SKIP_HOT_COMMENT),
         Triple(SOCIAL_BUBBLES_RUNNABLE, VIDEO_ID, SKIP_SOCIAL_BUBBLES),
+        Triple(HOT_COMMENT_RUNNABLE, MFC_INLINE_COMMENTS_QUERY, SKIP_HOT_COMMENT),
     ).forEach { (redexName, holding, hook) ->
         val runs = classDefByStrings(holding, StringComparisonType.EQUALS)
             .mapNotNull { owner -> footerRunnable(owner, redexName, holding)?.let { owner to it } }
+        if (runs.isEmpty() && holding == MFC_INLINE_COMMENTS_QUERY) return@forEach
         val (owner, run) = runs.singleOrNull() ?: throw PatchException(
             "$PATCH: expected one Runnable named $redexName whose run() holds \"$holding\", found ${runs.size}",
         )

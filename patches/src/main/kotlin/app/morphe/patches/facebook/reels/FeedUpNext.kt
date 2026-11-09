@@ -36,7 +36,9 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  * - ModernFeedUpNextController (LX/0dTg;) holds the next video for each video by its id. Its static,
  *   synchronized lookup (A00) is the one method holding the ModernFeedUpNextFeedUnitFeedQuery
  *   GraphQL query, and the two maybeScheduleFetchRunnable runnables (LX/0cj1;, LX/0cj2;) call it
- *   with the controller and the video's id.
+ *   with the controller and the video's id. 586 (2026-11-09, LX/0lEF;->A01) hands it the video's
+ *   model, the controller and an Integer instead, from the scheduleLegacyFetch runnables and three
+ *   other callers; it's still the one method holding the query.
  * - The bar's components (LX/0Jom;, LX/0JpU;, built in LX/0cah;'s render) read what came back
  *   through the controller's synchronized (String)List getter (A03), which answers Facebook's own
  *   empty list when nothing was stored for that id.
@@ -86,11 +88,13 @@ private const val LIST = "Ljava/util/List;"
 private const val VIEW = "Landroid/view/View;"
 private const val INTEGER = "Ljava/lang/Integer;"
 
-/** The lookups among [methods]: static, answering nothing, taking a [controller] and a String, holding [UP_NEXT_QUERY]. */
+/**
+ * The lookups among [methods]: static, answering nothing, taking a [controller], holding
+ * [UP_NEXT_QUERY]. 585's also takes the video's id; 586's takes the video's model and an Integer.
+ */
 internal fun <M : Method> upNextLookups(controller: String, methods: Iterable<M>): List<M> = methods.filter { method ->
-    val params = method.parameterTypes.map(CharSequence::toString)
     AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" &&
-        controller in params && STRING in params && holdsString(method, UP_NEXT_QUERY)
+        controller in method.parameterTypes.map(CharSequence::toString) && holdsString(method, UP_NEXT_QUERY)
 }
 
 /** The getters among [methods]: instance methods with a body that answer a List for a String. */
