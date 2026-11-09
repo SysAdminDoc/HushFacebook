@@ -10,6 +10,10 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.methodsNaming
+import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
@@ -359,17 +363,33 @@ private fun flipsOf(method: Method, field: FieldReference, propsType: String): L
     return (cast + 1 until code.size).filter { booleanSet(code[it])?.toString() == key }
 }
 
-/** The components named right after each [toggle] in [method]. */
-private fun toggled(method: Method, toggle: String = TOGGLE): List<String> {
+/**
+ * The components named right after each [toggle] in [method]: a const-class straight after the
+ * string's load or, where it asks a string table for it as 586 also does (`LX/040m;->A19` arm64),
+ * straight after the table's answer is moved into its register.
+ */
+internal fun BytecodePatchContext.toggled(method: Method, toggle: String = TOGGLE): List<String> {
     val code = method.implementation!!.instructions.toList()
-    return code.indices.filter { index ->
-        ((code[index] as? ReferenceInstruction)?.reference as? StringReference)?.string == toggle
-    }.map { index ->
-        val named = code.getOrNull(index + 1)
+    val resolve: (MethodReference) -> Method? = { call -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
+    return code.indices.mapNotNull { index ->
+        when {
+            ((code[index] as? ReferenceInstruction)?.reference as? StringReference)?.string == toggle -> index + 1
+            tableStringAt(code, index, resolve) == toggle ->
+                if (code.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT) index + 2 else index + 1
+            else -> null
+        }
+    }.map { at ->
+        val named = code.getOrNull(at)
         if (named?.opcode != Opcode.CONST_CLASS) refuse("${method.definingClass}->${method.name} names no component after \"$toggle\"")
         ((named as ReferenceInstruction).reference as TypeReference).type
     }
 }
+
+/**
+ * The methods sending [toggle]: those loading it and, once Redex moves it into a string table as 586
+ * does with [TOGGLE] (`LX/01AE;->A00` arm64), those asking the table for it, never the table itself.
+ */
+internal fun BytecodePatchContext.sendersOf(toggle: String) = methodsNaming(toggle) { !isStringTable(it) }
 
 /**
  * Whether [method] loads [string]. Facebook 585 loads both of [TOGGLE]'s with const-string/jumbo,
@@ -397,7 +417,7 @@ internal fun BytecodePatchContext.methodsWithString(string: String): List<Method
  * before it, so it still holds the props at the store, and the hook goes after the store.
  */
 internal fun BytecodePatchContext.findFold(storyField: FieldReference): Fold {
-    val components = methodsWithString(TOGGLE).flatMap(::toggled).toSet()
+    val components = sendersOf(TOGGLE).flatMap { toggled(it) }.toSet()
     val component = components.singleOrNull()
         ?: refuse("expected one component named after \"$TOGGLE\", found ${components.size}")
     val firsts = methodsWithString(COMPONENT_SPEC).filter { it.definingClass == component }
@@ -473,7 +493,7 @@ private fun toggles(method: Method, field: String): Boolean {
  * read, so Facebook's own memory of a caption tapped before, which may replace it, still wins.
  */
 internal fun BytecodePatchContext.findCaptionStart(): CaptionStart {
-    val components = methodsWithString(CAPTION_TOGGLE).flatMap { toggled(it, CAPTION_TOGGLE) }.toSet()
+    val components = sendersOf(CAPTION_TOGGLE).flatMap { toggled(it, CAPTION_TOGGLE) }.toSet()
     val component = components.singleOrNull()
         ?: refuse("expected one component named after \"$CAPTION_TOGGLE\", found ${components.size}")
     val owner = classDefByOrNull(component) ?: refuse("$component isn't in this build")

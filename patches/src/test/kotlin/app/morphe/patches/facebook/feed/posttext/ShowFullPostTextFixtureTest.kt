@@ -10,6 +10,9 @@ import app.morphe.PatchContexts
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.tableIndexAt
+import app.morphe.patches.facebook.feed.tableIndices
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
@@ -23,6 +26,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
@@ -57,6 +61,26 @@ internal fun captionComponents(found: List<Method>): Set<String> = found.filter(
         .map { ((code[it + 1] as ReferenceInstruction).reference as TypeReference).type }
 }.toSet()
 
+/**
+ * The methods asking a string table among [found] for one of [literals]. Redex moved [TOGGLE] into a
+ * table on 586 (`LX/01AE;->A00` arm64), and a method asking it for the toggle (`LX/040m;->A19`) holds
+ * no string of its own, so the finder reads it only when its class is there.
+ */
+internal fun tableAskers(bundle: File, found: List<Method>, literals: Set<String>): List<Method> {
+    val tables = found.filter { method -> isStringTable(method) && literals.any { loadsString(method, it) } }
+    if (tables.isEmpty()) return emptyList()
+    val indices = tables.associate { table -> "${table.definingClass}->${table.name}" to literals.flatMap { tableIndices(table, it) }.toSet() }
+    val types = tables.map { it.definingClass }.toSet()
+    return FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in types } }) { method ->
+        val code = method.implementation?.instructions?.toList() ?: return@methodsWhere false
+        code.indices.any { at ->
+            val index = tableIndexAt(code, at) ?: return@any false
+            val call = (code[at] as ReferenceInstruction).reference as MethodReference
+            indices["${call.definingClass}->${call.name}"]?.contains(index) == true
+        }
+    }
+}
+
 /** The classes whose booleans [components] set: their state classes. */
 internal fun captionStates(components: Collection<ClassDef>): Set<String> = components.flatMap { it.methods }.flatMap { method ->
     method.implementation?.instructions?.toList().orEmpty().filter { it.opcode == Opcode.IPUT_BOOLEAN }
@@ -85,17 +109,22 @@ class ShowFullPostTextFixtureTest {
 
     /** Each declared build's places, by ABI. */
     private val expected = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+        "585.0.0.47.54" to mapOf(
             "arm64-v8a" to Place("LX/03Bn;", 5, 2, "LX/02iG;", "LX/039x;"),
             "armeabi-v7a" to Place("LX/03Bn;", 5, 2, "LX/02iG;", "LX/039x;"),
             "arm64-v8a-minapi28-storeless" to Place("LX/03CW;", 5, 2, "LX/02iz;", "LX/03Ag;"),
+        ),
+        "586.0.0.52.53" to mapOf(
+            "arm64-v8a" to Place("LX/041q;", 5, 2, "LX/02za;", "LX/040k;"),
+            "armeabi-v7a" to Place("LX/041q;", 5, 2, "LX/02za;", "LX/040k;"),
         ),
     )
 
     /** Each declared build's reel caption component, by ABI. */
     private val captionComponentOf = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to "LX/09as;", "armeabi-v7a" to "LX/09ax;",
+        "585.0.0.47.54" to mapOf("arm64-v8a" to "LX/09as;", "armeabi-v7a" to "LX/09ax;",
             "arm64-v8a-minapi28-storeless" to "LX/09bQ;"),
+        "586.0.0.52.53" to mapOf("arm64-v8a" to "LX/09Dk;", "armeabi-v7a" to "LX/09Dk;"),
     )
 
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
@@ -125,7 +154,13 @@ class ShowFullPostTextFixtureTest {
                 val components = captionComponents(found)
                 assertEquals("$name: the reel caption's component", setOf(captionComponent), components)
                 val states = captionStates(FixtureDex.classes(bundle, components).values)
-                val classes = FixtureDex.classes(bundle, foldTypes(found) + cut.method.definingClass + captionTypes(bundle, found))
+                // A table holding the toggle is asked for it, and the finder reads the asker beside the toggle's own loaders.
+                val askers = tableAskers(bundle, found, setOf(TOGGLE, CAPTION_TOGGLE))
+                if (found.any { isStringTable(it) && loadsString(it, TOGGLE) }) {
+                    assertTrue("$name: a string table holds the toggle, but nothing asks it for it", askers.isNotEmpty())
+                }
+                val classes = FixtureDex.classes(bundle, foldTypes(found) + cut.method.definingClass + captionTypes(bundle, found) +
+                    askers.map { it.definingClass })
 
                 // Negative control: without the state class that flips it, no caption state is taken.
                 val stateless = PatchContexts.of(classes.filterKeys { it !in states }.values.toList())
