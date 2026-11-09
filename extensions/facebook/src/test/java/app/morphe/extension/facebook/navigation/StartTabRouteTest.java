@@ -27,6 +27,7 @@ import com.facebook.friending.tab.FriendRequestsTab;
 import com.facebook.katana.activity.FbMainTabActivity;
 import com.facebook.katana.activity.FbMainTabActivityDelegate;
 import com.facebook.marketplace.tab.MarketplaceTab;
+import com.facebook.video.videohome.tab.WatchTab;
 
 import org.junit.After;
 import org.junit.Before;
@@ -676,6 +677,83 @@ public class StartTabRouteTest {
                 startedOn(new FeedTab(), StartTabRouteForTests.tabs(new FeedTab(), new FeedsTab()));
         home.create().start().resume().visible();
         assertNull(startedAfterTheLandingCheck(home));
+    }
+
+    /**
+     * A bar that opens on Reels, as Meta tests with Home second (2026), and one that opens on a tab
+     * this build doesn't know. Start tab on Home asks for Home by its id, and Home opening counts as
+     * found. Feeds chosen on such a bar without a Feeds tab: Facebook falls back to the bar's first
+     * tab, and the Feeds page opens over it, or over Home. Over another tab it stays closed.
+     */
+    @Test
+    public void aBarThatDoesNotStartWithHomeStillGetsHomeAndTheFeedsPage() {
+        for (Object first : StartTabRouteForTests.tabs(new WatchTab(), new StartTabRouteForTests.UnknownTab())) {
+            List<Object> bar = StartTabRouteForTests.tabs(first, new FeedTab(), new MarketplaceTab());
+            String which = first.getClass().getSimpleName();
+            HookStatus.clear();
+            Settings.START_TAB.save(StartTab.HOME);
+            ActivityController<FbMainTabActivity> home = startedOn(new FeedTab(), bar);
+            assertEquals(which, FacebookTabs.HOME_ID, home.get().getIntent().getLongExtra(FacebookTabs.TARGET_TAB_ID, -1));
+            home.create().start().resume().visible();
+            assertNull(which, startedAfterTheLandingCheck(home));
+            assertEquals(which, FamilyNames.START_TAB + ": invoked 1, 1 found, 0 missing", statusLine());
+
+            Settings.START_TAB.save(StartTab.FEEDS);
+            BaseSettings.DEBUG.save(true);
+            LogBufferManager.clearLogBuffer();
+            ActivityController<FbMainTabActivity> fellBack = startedOn(first, bar);
+            assertEquals(which, FacebookTabs.FEEDS_ID, fellBack.get().getIntent().getLongExtra(FacebookTabs.TARGET_TAB_ID, -1));
+            fellBack.create().start().resume().visible();
+            Intent page = startedAfterTheLandingCheck(fellBack);
+            assertNotNull("no Feeds page over " + which, page);
+            assertEquals(Uri.parse(StartTabRoute.FEEDS_PAGE_LINK), page.getData());
+            String report = LogBufferManager.buildExportText();
+            assertTrue(report, report.contains("Start tab: the tab bar has no feeds tab, so opened the Feeds page over "
+                    + which));
+
+            ActivityController<FbMainTabActivity> onHome = startedOn(new FeedTab(), bar);
+            onHome.create().start().resume().visible();
+            assertNotNull("no Feeds page over Home on a bar starting with " + which, startedAfterTheLandingCheck(onHome));
+
+            LogBufferManager.clearLogBuffer();
+            ActivityController<FbMainTabActivity> tapped = startedOn(new MarketplaceTab(), bar);
+            tapped.create().start().resume().visible();
+            assertNull("over another tab, " + which, startedAfterTheLandingCheck(tapped));
+            report = LogBufferManager.buildExportText();
+            assertTrue(report, report.contains("Start tab: the tab bar has no feeds tab, but the main screen had already "
+                    + "left Home and the bar's first tab, so the Feeds page stays closed."));
+        }
+    }
+
+    /**
+     * Hide tabs keeps Feeds off a bar that has no Home tab either: the start asks for Home, Facebook
+     * falls back to the bar's first tab, and the Feeds page opens over that one. Over another tab it
+     * stays closed.
+     */
+    @Test
+    public void feedsKeptOffABarWithoutHomeOpensThePageOverTheFirstTab() {
+        HiddenTabs.inBuildForTests = Boolean.TRUE;
+        Settings.HIDE_FEEDS_TAB.save(true);
+        Settings.START_TAB.save(StartTab.FEEDS);
+        BaseSettings.DEBUG.save(true);
+        LogBufferManager.clearLogBuffer();
+        List<Object> noHome = StartTabRouteForTests.tabs(new WatchTab(), new MarketplaceTab());
+        ActivityController<FbMainTabActivity> fellBack = startedOn(new WatchTab(), noHome);
+        assertEquals(FacebookTabs.HOME_ID, fellBack.get().getIntent().getLongExtra(FacebookTabs.TARGET_TAB_ID, -1));
+        fellBack.create().start().resume().visible();
+        Intent page = startedAfterTheLandingCheck(fellBack);
+        assertNotNull("no Feeds page over the bar's first tab", page);
+        assertEquals(Uri.parse(StartTabRoute.FEEDS_PAGE_LINK), page.getData());
+        String report = LogBufferManager.buildExportText();
+        assertTrue(report, report.contains("Start tab: the tab bar has no feeds tab, so opened the Feeds page over WatchTab"));
+
+        LogBufferManager.clearLogBuffer();
+        ActivityController<FbMainTabActivity> tapped = startedOn(new MarketplaceTab(), noHome);
+        tapped.create().start().resume().visible();
+        assertNull("over another tab", startedAfterTheLandingCheck(tapped));
+        report = LogBufferManager.buildExportText();
+        assertTrue(report, report.contains("Start tab: the tab bar has no feeds tab, but the main screen had already "
+                + "left Home and the bar's first tab, so the Feeds page stays closed."));
     }
 
     /**

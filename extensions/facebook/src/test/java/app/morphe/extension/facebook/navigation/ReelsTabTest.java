@@ -251,6 +251,51 @@ public class ReelsTabTest {
         assertEquals(FacebookTabs.FRIENDS_ID, askedFor());
     }
 
+    /**
+     * A bar that opens on Reels, as Meta tests with Home second (2026), one that opens on a tab this
+     * build doesn't know, and one with Reels in Home's place. With this switch and every Hide tabs
+     * switch on, the bar keeps a tab to open, Home where it has one, and the unknown tab stays put.
+     * A start chosen for a tab that went off asks for Home, never the hidden tab.
+     */
+    @Test
+    public void aBarThatOpensOnReelsNeverEndsUpEmptyOrOpensOnAHiddenTab() {
+        HiddenTabs.inBuildForTests = Boolean.TRUE;
+        try {
+            for (HiddenTabs.Tab tab : HiddenTabs.Tab.values()) tab.setting().save(true);
+            Settings.OPEN_ON_CHOSEN_TAB.save(true);
+            List<TabTag> reelsFirst = Arrays.asList(new WatchTab(), new FeedTab(), new FriendRequestsTab(),
+                    new MarketplaceTab(), new NotificationsTab(), new TimelineTab());
+            assertEquals(Arrays.asList("FeedTab", "NotificationsTab", "TimelineTab"),
+                    shown(reelsFirst, Collections.emptySet()));
+            Settings.START_TAB.save(StartTab.VIDEO);
+            assertEquals(FacebookTabs.HOME_ID, askedFor());
+            Settings.START_TAB.save(StartTab.FRIENDS);
+            assertEquals(FacebookTabs.HOME_ID, askedFor());
+            Settings.START_TAB.save(StartTab.HOME);
+            assertEquals(FacebookTabs.HOME_ID, askedFor());
+
+            ReelsTab.forget();
+            HiddenTabs.clearForTests();
+            TabBarFilter.clearForTests();
+            List<TabTag> unknownFirst = Arrays.asList(new StartTabRouteForTests.UnknownTab(), new FeedTab(),
+                    new WatchTab(), new FriendRequestsTab(), new BookmarkTab());
+            assertEquals(Arrays.asList("UnknownTab", "FeedTab", "BookmarkTab"), shown(unknownFirst, Collections.emptySet()));
+
+            ReelsTab.forget();
+            HiddenTabs.clearForTests();
+            TabBarFilter.clearForTests();
+            List<TabTag> noHome = Arrays.asList(new WatchTab(), new FriendRequestsTab(), new NotificationsTab(),
+                    new BookmarkTab());
+            assertEquals(Arrays.asList("NotificationsTab", "BookmarkTab"), shown(noHome, Collections.emptySet()));
+            Settings.START_TAB.save(StartTab.VIDEO);
+            assertEquals(FacebookTabs.HOME_ID, askedFor());
+        } finally {
+            for (HiddenTabs.Tab tab : HiddenTabs.Tab.values()) tab.setting().resetToDefault();
+            HiddenTabs.inBuildForTests = null;
+            HiddenTabs.clearForTests();
+        }
+    }
+
     @Test
     public void pausedTheChosenReelsTabIsNotAskedForAtAll() {
         Settings.OPEN_ON_CHOSEN_TAB.save(true);

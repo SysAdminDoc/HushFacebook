@@ -51,6 +51,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* With `Start tab` on Feeds and no Feeds tab on your bar, the Feeds page now opens when the bar starts with a tab other than Home. That covers a `Tab order` that puts another tab first and the bars Facebook is testing that open on Reels. Before, the page stayed closed on those bars.
 * `GmsCore support` no longer closes Facebook's login screen on a phone without microG-RE, so you can sign in with your email and password there. Without microG-RE, Google shows a notice asking you to get Play services and push notifications stay off, so install microG-RE first.
 * On Android 14 and newer without microG-RE, `GmsCore support` lets Facebook's login screen ask your password manager for a saved login again. The patch used to turn off Android's own Credential Manager for Facebook either way. Now it does that only while microG-RE is installed, where sign-in still goes through microG-RE.
 * A section near the bottom of the Hushfacebook settings screen opens with its first switch in view. While the logo and search box still showed at the top, the list ran past the bottom of the screen, so a section opened down there put all its rows out of sight and looked like the tap hadn't worked.

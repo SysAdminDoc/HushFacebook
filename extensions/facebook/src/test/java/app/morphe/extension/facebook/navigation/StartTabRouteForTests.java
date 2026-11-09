@@ -9,6 +9,7 @@ import android.content.Intent;
 import com.facebook.katana.activity.FbMainTabActivity;
 import com.facebook.katana.activity.FbMainTabActivityDelegate;
 import com.facebook.navigation.tabbar.state.model.NavigationConfig;
+import com.facebook.navigation.tabbar.state.model.TabTag;
 
 import org.robolectric.Robolectric;
 
@@ -105,5 +106,15 @@ public final class StartTabRouteForTests {
 
     public static List<Object> tabs(Object... tabs) {
         return Arrays.asList(tabs);
+    }
+
+    /**
+     * A tab of a class this build doesn't know, the shape a bar that opens on full-screen Reels
+     * could take (Meta tests one with Home second, 2026).
+     */
+    public static final class UnknownTab extends TabTag {
+        public UnknownTab() {
+            super(1234L);
+        }
     }
 }

@@ -36,8 +36,10 @@ import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.BaseSettings;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
+import app.morphe.extension.shared.settings.preference.LogBufferManager;
 
 /**
  * Tab order over the shown tabs Facebook's tab bar builder hands it before it keeps them (#341),
@@ -72,7 +74,9 @@ public class TabOrderTest {
         TabOrder.clearForTests();
         PauseForTests.resume();
         Settings.TAB_ORDER.resetToDefault();
+        BaseSettings.DEBUG.resetToDefault();
         HookStatus.clear();
+        LogBufferManager.clearLogBuffer();
     }
 
     @Test
@@ -85,6 +89,43 @@ public class TabOrderTest {
                 status.contains(FamilyNames.HIDDEN_TABS + ": ") && status.contains(" 1 found"));
         assertEquals("Facebook's list was changed", Arrays.asList(home, video, friends, unknown, marketplace,
                 notifications, menu), bar);
+    }
+
+    /**
+     * A bar that opens on Reels, as Meta tests with Home second (2026), and one that opens on a tab
+     * this build doesn't know: the saved tabs still go first in their order, the unknown tab keeps
+     * its place, and Debug names each first tab that isn't Home once, saved order or not. A bar
+     * built while Debug was off doesn't use that once up.
+     */
+    @Test
+    public void aBarThatDoesNotStartWithHomeKeepsTheSavedOrderAndIsLoggedOnce() {
+        List<Object> reelsFirst = Arrays.asList(video, home, friends, marketplace, notifications, menu);
+        List<Object> unknownFirst = Arrays.asList(unknown, home, video, friends, menu);
+        BaseSettings.DEBUG.save(false);
+        assertSame("no order saved", reelsFirst, TabOrder.order(reelsFirst));
+        BaseSettings.DEBUG.save(true);
+        LogBufferManager.clearLogBuffer();
+        assertSame("no order saved", reelsFirst, TabOrder.order(reelsFirst));
+
+        Settings.TAB_ORDER.save("friends,home");
+        assertEquals(Arrays.asList(friends, home, video, marketplace, notifications, menu), TabOrder.order(reelsFirst));
+        assertEquals(Arrays.asList(unknown, friends, home, video, menu), TabOrder.order(unknownFirst));
+        TabOrder.order(reelsFirst);
+        TabOrder.order(unknownFirst);
+        TabOrder.order(bar);
+
+        String report = LogBufferManager.buildExportText();
+        assertEquals(report, 1, occurrences(report, "Tab order: Facebook built a tab bar whose first tab is "
+                + FacebookTabs.VIDEO_CLASS + ", not Home."));
+        assertEquals(report, 1, occurrences(report, "Tab order: Facebook built a tab bar whose first tab is "
+                + Object.class.getName() + ", not Home, a tab this build doesn't know, so it keeps its place."));
+        assertEquals("a bar starting with Home was logged: " + report, 2, occurrences(report, "whose first tab is"));
+    }
+
+    private static int occurrences(String text, String part) {
+        int count = 0;
+        for (int at = text.indexOf(part); at >= 0; at = text.indexOf(part, at + part.length())) count++;
+        return count;
     }
 
     @Test

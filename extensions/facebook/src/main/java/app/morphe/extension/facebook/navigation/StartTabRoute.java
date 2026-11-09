@@ -39,7 +39,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>Facebook picks the tab its main screen opens on from the intent that started it. A shortcut or
  * a notification meant for a tab carries the tab's id as {@link FacebookTabs#TARGET_TAB_ID}, and
- * Facebook opens that tab when its tab bar has it and its first tab, Home, when it doesn't. A
+ * Facebook opens that tab when its tab bar has it and its first tab, usually Home, when it doesn't.
+ * Tabs are asked for by id, so Home still opens on a bar that starts with Reels or a tab this
+ * build doesn't know. A
  * start from the launcher icon carries nothing, so Facebook opens where it chooses, usually Home.
  * The patch calls {@link #onActivityCreate} first thing in every Facebook activity's
  * {@code onCreate}. When that's the main screen started from the launcher icon, the screen gets a
@@ -52,10 +54,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * is asked for as Home.
  *
  * <p>Feeds has a page of its own, the one the Menu's Feeds row opens when the tab bar has no Feeds
- * tab. So a start that chose Feeds, on a bar without it, opens that page over Home once Facebook
- * has built the main screen, on the screen Facebook keeps for pages that aren't tabs, the way the
- * Menu's Feeds row starts it, and Back comes back to Home. It's skipped when the screen has moved on
- * from Home or isn't in front by then. The chosen filter is asked for there too, through
+ * tab. So a start that chose Feeds, on a bar without it, opens that page over the tab Facebook
+ * opened once it has built the main screen (Home, or the bar's first tab when the bar lacks the tab
+ * Facebook was asked for and starts with another tab), on the screen Facebook keeps for pages that
+ * aren't tabs, the way the Menu's Feeds row starts it, and Back comes back to that tab. It's skipped when
+ * the screen has moved on from that tab or isn't in front by then. The chosen filter is asked for
+ * there too, through
  * {@link FeedsSubtabRoute}. Facebook's own links for the page can't be used for it: on 582 its link
  * map hands both {@code fb://feeds} and {@code fb://recent_feed} Home's launch link, so Facebook
  * switches to Home instead of opening the page.
@@ -489,24 +493,34 @@ public final class StartTabRoute {
 
     /**
      * For a start that chose Feeds, once the main screen is built: when its tab bar has no Feeds tab,
-     * opens Facebook's Feeds page on its own screen over Home, the way the Menu's Feeds row does,
-     * so Back comes back to Home. A bar that has Feeds, or can't be read while Facebook was asked
-     * for Feeds, is left alone, and so is a screen that has moved on from Home or isn't in front,
-     * since the person has gone somewhere already. Never throws.
+     * opens Facebook's Feeds page on its own screen over the tab Facebook opened, the way the Menu's
+     * Feeds row does, so Back comes back to it. That tab is Home, or the bar's first tab, which
+     * Facebook falls back to when the bar lacks the tab it was asked for. A bar that has Feeds, or
+     * can't be read while Facebook was asked for Feeds, is left alone, and so is a screen that has
+     * moved on from that tab or isn't in front, since the person has gone somewhere already. Never
+     * throws.
      */
     static void openFeedsPage(@Nullable Activity activity, StartTab asked, StartTab chosen, boolean inFront) {
         try {
             if (chosen != StartTab.FEEDS || activity == null || activity.isFinishing() || activity.isDestroyed()) return;
             Object current = TabBar.currentTab(activity);
             if (current == null) return;
-            // Asked for Home, a switch keeps Feeds off the bar. Asked for Feeds, the bar has to say it hasn't got it.
-            if (asked == StartTab.FEEDS) {
-                List<Object> tabs = TabBar.tabs(activity);
-                if (tabs == null || TabBar.has(tabs, StartTab.FEEDS)) return;
+            String shown = current.getClass().getName();
+            // Asked for Home, a switch keeps Feeds off the bar, and Facebook opens Home. Asked for
+            // Feeds, the bar has to say it hasn't got it. A bar without the asked tab, Feeds or
+            // Home, makes Facebook fall back to its first tab, which a bar that opens on Reels, or a
+            // Tab order, makes a tab other than Home.
+            List<Object> tabs = TabBar.tabs(activity);
+            if (asked == StartTab.FEEDS && (tabs == null || TabBar.has(tabs, StartTab.FEEDS))) return;
+            String first = null;
+            if (tabs != null && !tabs.isEmpty() && !TabBar.has(tabs, asked)) {
+                String name = tabs.get(0).getClass().getName();
+                if (!StartTab.HOME.isTab(name)) first = name;
             }
-            if (!inFront || !StartTab.HOME.isTab(current.getClass().getName())) {
-                debug(() -> "the tab bar has no feeds tab, but the main screen had already left Home,"
-                        + " so the Feeds page stays closed.");
+            if (!inFront || !(StartTab.HOME.isTab(shown) || shown.equals(first))) {
+                String left = first == null ? "Home" : "Home and the bar's first tab";
+                debug(() -> "the tab bar has no feeds tab, but the main screen had already left " + left
+                        + ", so the Feeds page stays closed.");
                 return;
             }
             // The restart row lands back on the settings screen, which shows over this one.
@@ -524,7 +538,8 @@ public final class StartTabRoute {
                     .putExtra("presentation_type", "BOOKMARK")
                     .putExtra("should_show_nav_bar", true));
             HookStatus.bound(FamilyNames.START_TAB, "feeds page");
-            debug(() -> "the tab bar has no feeds tab, so opened the Feeds page over Home.");
+            String under = StartTab.HOME.isTab(shown) ? "Home" : TabBar.name(current);
+            debug(() -> "the tab bar has no feeds tab, so opened the Feeds page over " + under + ".");
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.START_TAB, "feeds page", failure);
         }

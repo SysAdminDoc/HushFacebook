@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.BaseSettings;
 
 /**
  * The order of the tabs on Facebook's tab bar, as Hide tabs' Tab order row has it (#341).
@@ -102,7 +104,27 @@ public final class TabOrder {
     /** The known tabs of the last bar Facebook built in this process, in Facebook's order. */
     private static volatile List<Tab> lastBar = Collections.emptyList();
 
+    /** The classes other than Home that a bar Facebook built here started with, each logged once. */
+    private static final Set<String> otherFirstTabs = Collections.synchronizedSet(new HashSet<>());
+
     private TabOrder() {
+    }
+
+    /**
+     * Logs, once for each class, a bar Facebook built whose first tab isn't Home, since Meta tests
+     * bars that open on Reels. Start tab asks for its tab by id and an unknown tab keeps its place,
+     * so nothing here changes for it, and the line names the class to look up. A bar built while
+     * Debug is off isn't counted, so one rebuilt after it's turned on is still logged.
+     */
+    private static void noteFirstTab(List<?> shown) {
+        if (shown.isEmpty() || !BaseSettings.DEBUG.get()) return;
+        Object first = shown.get(0);
+        String name = first == null ? "null" : first.getClass().getName();
+        if (FacebookTabs.HOME_CLASS.equals(name) || !otherFirstTabs.add(name)) return;
+        boolean known = Tab.of(name) != null;
+        Logger.diagnosticDebug(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE,
+                () -> "Tab order: Facebook built a tab bar whose first tab is " + name + ", not Home"
+                        + (known ? "." : ", a tab this build doesn't know, so it keeps its place."));
     }
 
     /** The tabs [stored] names, in its order, with keys this build doesn't know and repeats left out. */
@@ -189,6 +211,7 @@ public final class TabOrder {
             lastBar = Collections.unmodifiableList(known);
             // The settings aren't read before they're ready, and a bar built then keeps Facebook's order.
             if (!Utils.settingsReady()) return shown;
+            noteFirstTab(shown);
             List<Tab> saved = parse(Settings.TAB_ORDER.get());
             if (saved.isEmpty()) return shown;
 
@@ -225,5 +248,6 @@ public final class TabOrder {
     /** Forgets the bar this process built, for tests. */
     static void clearForTests() {
         lastBar = Collections.emptyList();
+        otherFirstTabs.clear();
     }
 }
