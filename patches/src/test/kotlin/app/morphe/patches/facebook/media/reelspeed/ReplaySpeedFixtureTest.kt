@@ -10,6 +10,7 @@ import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.feed.tableStringAt
@@ -71,8 +72,16 @@ class ReplaySpeedFixtureTest {
                 val sponsored: FieldReference = reportedValues(dumps.single())["isSponsored"]
                     ?: throw AssertionError("$name: the dump doesn't report isSponsored")
 
+                // 586 moved the tap's name into a string table, which the row asks for it.
                 val rows = FixtureDex.classesHolding(bundle, GEAR_SPEED_TAP).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-                val rowTypes = rows.filter { row -> row.methods.any { holdsString(it, GEAR_SPEED_TAP) } }.map { it.type }.toSet()
+                val tapTables = rows.associateBy { it.type }
+                val tapResolve: (MethodReference) -> Method? = { call -> tapTables[call.definingClass]?.let { resolveStatic(it, call) } }
+                val rowTypes = (rows.filter { row -> row.methods.any { !isStringTable(it) && holdsString(it, GEAR_SPEED_TAP) } }.map { it.type } +
+                    FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in tapTables } }) {
+                        it.implementation != null && !isStringTable(it) && !it.definingClass.startsWith(EXTENSION_CLASSES) &&
+                            namesString(it, GEAR_SPEED_TAP, tapResolve)
+                    }.map { it.definingClass }).toSet()
+                assertTrue("$name: no speed row names \"$GEAR_SPEED_TAP\"", rowTypes.isNotEmpty())
                 val holders = FixtureDex.classesHolding(bundle, ENGAGEMENT_STATE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
                 // The Android 9+ build asks a string table for the state instead of holding it (#102).
                 val tables = holders.associateBy { it.type }
@@ -137,7 +146,8 @@ class ReplaySpeedFixtureTest {
                 assertEquals("$name: offerSpeed's answer", "Z", offer.returnType)
                 assertTrue("$name: offerSpeed isn't public static",
                     AccessFlags.PUBLIC.isSet(offer.accessFlags) && AccessFlags.STATIC.isSet(offer.accessFlags))
-                val context = PatchContexts.of((rows + holders + listOf(builderClass, extension)).distinctBy { it.type })
+                val rowClasses = FixtureDex.classes(bundle, rowTypes).values
+                val context = PatchContexts.of((rows + rowClasses + holders + listOf(builderClass, extension)).distinctBy { it.type })
                 context.offerReplaySpeed(sponsored)
                 val patched = context.mutableClassDefBy(builder.definingClass).methods.single {
                     it.name == builder.name && it.returnType == builder.returnType &&

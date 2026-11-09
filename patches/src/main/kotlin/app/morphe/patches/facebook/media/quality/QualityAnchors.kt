@@ -13,6 +13,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -60,6 +61,11 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   and answering the String itself, with no info class between. The first choice (Bfa) reads the
  *   preselected label (A0M) and compares it with the tracks' labels through String.equals, so the
  *   hook sits right after that read instead of in a setter.
+ * - 586 (read 2026-11-08, arm64 and v7a) calls the setter again (LX/05wF;->A1T calls LX/05gB;->A05),
+ *   so the tracks and the label getter are read in that setter, which again reads the label through
+ *   an info class (LX/08yb;->A00, then A0A). The first choice (Bhh) reads the preselected label (A0M)
+ *   twice, once for its null check and once more right before handing it to the setter, so the hook
+ *   sits after the second read, as on 585, and the setter itself stays as it is.
  */
 
 internal const val QUALITY_CHOICE = "$EXTENSION_PACKAGE/media/QualityChoice;"
@@ -109,6 +115,36 @@ internal fun takesAbrConfiguration(evaluator: ClassDef): Boolean = evaluator.met
 }
 
 /**
+ * The custom-quality setters [method] calls: each (String)V virtual call to a class [lookup] finds
+ * and that is built with an AbrContextAwareConfiguration, as that class's own method. One on 586,
+ * where the method holding the custom-quality trace calls the evaluator's setter; none on 585,
+ * which inlined it there.
+ */
+internal fun customQualitySetters(method: Method, lookup: (String) -> ClassDef?): List<Method> =
+    method.code()
+        .filter { it.opcode == Opcode.INVOKE_VIRTUAL || it.opcode == Opcode.INVOKE_VIRTUAL_RANGE }
+        .mapNotNull { it.call?.takeIf { call -> call.parameters() == listOf(STRING) && call.returnType == "V" } }
+        .distinctBy { it.toString() }
+        .mapNotNull { call ->
+            val owner = lookup(call.definingClass)?.takeIf(::takesAbrConfiguration) ?: return@mapNotNull null
+            owner.methods.singleOrNull {
+                it.name == call.name && it.parameters() == call.parameters() && it.returnType == "V" && it.implementation != null
+            }
+        }
+
+/** The registers a call hands over, its receiver first. */
+private fun Instruction.callRegisters(): List<Int> = when (this) {
+    is RegisterRangeInstruction -> (startRegister until startRegister + registerCount).toList()
+    is FiveRegisterInstruction -> listOf(registerC, registerD, registerE, registerF, registerG).take(registerCount)
+    else -> emptyList()
+}
+
+/** Whether [instruction] calls [target], by class, name and parameters. */
+private fun calls(instruction: Instruction, target: MethodReference): Boolean = instruction.call?.let {
+    it.definingClass == target.definingClass && it.name == target.name && it.parameters() == target.parameters()
+} == true
+
+/**
  * How [method] reads a track's label: a static call taking one [format] that answers the String
  * itself (the field is null, 585), or an object with a String field read right after (580 to 584).
  * One pair per place it does.
@@ -131,28 +167,34 @@ internal class PreselectedRead(val method: Method, val index: Int, val field: Fi
 
 /**
  * The String fields of [evaluator] that its constructor fills in and one of its own methods reads
- * into a register it then compares, with String.equals, to a track's label (a call to [labelOf]):
- * the preselected label its first choice looks for among the tracks. 585 inlined the setter there.
+ * into a register it then compares, with String.equals, to a track's label (a call to [labelOf]),
+ * or hands, on the evaluator it read it from, to [setter], the custom-quality setter that compares
+ * it: the preselected label its first choice looks for among the tracks. 585 inlined the setter
+ * there, 586 calls it.
  */
-internal fun preselectedReads(evaluator: ClassDef, constructor: Method, labelOf: MethodReference): List<PreselectedRead> {
+internal fun preselectedReads(
+    evaluator: ClassDef,
+    constructor: Method,
+    labelOf: MethodReference,
+    setter: MethodReference? = null,
+): List<PreselectedRead> {
     val filled = constructor.code().filter { it.opcode == Opcode.IPUT_OBJECT }.mapNotNull { it.field }
         .filter { it.definingClass == evaluator.type && it.type == STRING }.map { it.name }.toSet()
     return evaluator.methods.filter { it.name != "<init>" && it.implementation != null }.flatMap { method ->
         val code = method.code()
         val readsLabels = code.any { instruction ->
-            instruction.opcode == Opcode.INVOKE_STATIC && instruction.call?.let {
-                it.definingClass == labelOf.definingClass && it.name == labelOf.name && it.parameters() == labelOf.parameters()
-            } == true
+            (instruction.opcode == Opcode.INVOKE_STATIC && calls(instruction, labelOf)) || (setter != null && calls(instruction, setter))
         }
         if (!readsLabels) return@flatMap emptyList()
         code.indices.mapNotNull { index ->
             val field = code[index].takeIf { it.opcode == Opcode.IGET_OBJECT }?.field
                 ?.takeIf { it.definingClass == evaluator.type && it.type == STRING && it.name in filled } ?: return@mapNotNull null
-            val label = (code[index] as TwoRegisterInstruction).registerA
+            val (label, owner) = (code[index] as TwoRegisterInstruction).let { it.registerA to it.registerB }
             val window = code.drop(index + 1).take(14)
             val compare = window.indexOfFirst {
-                it.opcode == Opcode.INVOKE_VIRTUAL && it.call?.let { call -> call.definingClass == STRING && call.name == "equals" } == true &&
-                    (it as FiveRegisterInstruction).registerC == label
+                (it.opcode == Opcode.INVOKE_VIRTUAL && it.call?.let { call -> call.definingClass == STRING && call.name == "equals" } == true &&
+                    (it as FiveRegisterInstruction).registerC == label) ||
+                    (setter != null && calls(it, setter) && it.callRegisters() == listOf(owner, label))
             }
             if (compare < 0 || window.take(compare).any { it.opcode.setsRegister() && (it as? OneRegisterInstruction)?.registerA == label }) {
                 return@mapNotNull null

@@ -213,7 +213,8 @@ internal fun gearMeets(method: Method): List<GearMeet> {
     return code.withIndex().mapNotNull { (index, instruction) ->
         if (instruction.opcode != Opcode.ARRAY_LENGTH) return@mapNotNull null
         val labels = (instruction as TwoRegisterInstruction).registerB
-        val ahead = code.subList(index + 1, minOf(code.size, index + 8))
+        // 586 reads the locale and makes the list between the length and the walk (0aoH.A01 on arm64).
+        val ahead = code.subList(index + 1, minOf(code.size, index + 16))
         val label = ahead.indexOfFirst { it.opcode == Opcode.AGET_OBJECT && (it as ThreeRegisterInstruction).registerB == labels }
         if (label < 0) return@mapNotNull null
         val check = ahead.getOrNull(label + 1)

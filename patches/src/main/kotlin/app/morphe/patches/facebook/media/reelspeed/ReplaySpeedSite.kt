@@ -4,14 +4,13 @@
  */
 package app.morphe.patches.facebook.media.reelspeed
 
-import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
-import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
 import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.util.ControlFlow
@@ -161,10 +160,10 @@ private fun rowCasts(method: Method, rowTypes: Set<String>): List<String> =
  * anything changes.
  */
 internal fun BytecodePatchContext.offerReplaySpeed(sponsoredField: FieldReference) {
-    val rowTypes = classDefByStrings(GEAR_SPEED_TAP, StringComparisonType.EQUALS)
-        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        .filter { classDef -> classDef.methods.any { holdsString(it, GEAR_SPEED_TAP) } }
-        .map { it.type }
+    // 586 moved the tap's name into a string table (01AE.A00 on arm64), so the row asks it for the name.
+    val rowTypes = methodsNaming(GEAR_SPEED_TAP) { !isStringTable(it) }
+        .map { it.definingClass }
+        .filterNot { it.startsWith(EXTENSION_CLASSES) }
         .toSet()
     // 585's Android 9+ build asks a string table (04Uy.A00) for the state instead of holding it (#102).
     val builders = methodsNaming(ENGAGEMENT_STATE) { rowCasts(it, rowTypes).isNotEmpty() }

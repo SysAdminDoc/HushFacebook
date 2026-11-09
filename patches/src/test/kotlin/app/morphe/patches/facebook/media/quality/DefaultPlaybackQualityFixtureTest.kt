@@ -65,6 +65,9 @@ class DefaultPlaybackQualityFixtureTest {
 
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
 
+    /** The builds whose method holding the custom-quality trace calls the evaluator's setter instead of inlining it. */
+    private val callsSetter = setOf("586.0.0.52.53")
+
     private fun declaredBundles(): Map<String, List<File>> {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
         assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
@@ -80,7 +83,12 @@ class DefaultPlaybackQualityFixtureTest {
                 val holders = FixtureDex.classesHolding(bundle, SET_CUSTOM_QUALITY).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
                 val holding = holders.flatMap { it.methods }.filter { holdsString(it, SET_CUSTOM_QUALITY) }
                 assertEquals("$name: methods holding \"$SET_CUSTOM_QUALITY\"", 1, holding.size)
-                val arrays = trackArrayReads(holding.single())
+                // 586 calls the evaluator's custom-quality setter there, 585 inlined it.
+                val setters = customQualitySetters(holding.single()) { type -> FixtureDex.classes(bundle, setOf(type)).values.singleOrNull() }
+                assertEquals("$name: custom-quality setters called there", if (version in callsSetter) 1 else 0, setters.size)
+                val setter = setters.singleOrNull()
+                val reader = setter ?: holding.single()
+                val arrays = trackArrayReads(reader)
                 assertEquals("$name: arrays of tracks read there", 1, arrays.size)
                 val formats = arrays.single()
                 val format = formats.type.removePrefix("[")
@@ -90,11 +98,11 @@ class DefaultPlaybackQualityFixtureTest {
                 assertTrue("$name: ${evaluator.type} isn't built with an $ABR_CONFIGURATION", takesAbrConfiguration(evaluator))
                 val constructor = evaluator.methods.single { it.name == "<init>" }
 
-                val labelReads = labelReads(holding.single(), format)
+                val labelReads = labelReads(reader, format)
                 assertEquals("$name: ways the method reads a track's label", 1, labelReads.size)
                 val (labelOf, label) = labelReads.single()
 
-                val preselects = preselectedReads(evaluator, constructor, labelOf)
+                val preselects = preselectedReads(evaluator, constructor, labelOf, setter)
                 assertEquals("$name: labels the evaluator compares with the tracks' labels", 1, preselects.size)
                 val firstChoice = preselects.single()
                 val preselected = firstChoice.field

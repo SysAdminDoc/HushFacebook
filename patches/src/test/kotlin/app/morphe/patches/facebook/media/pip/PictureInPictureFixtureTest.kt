@@ -65,6 +65,9 @@ class PictureInPictureFixtureTest {
     private val Instruction.call: MethodReference?
         get() = (this as? ReferenceInstruction)?.reference as? MethodReference
 
+    /** Builds whose Reels surface gate reads its answer straight off the settings, with no lambda cases. */
+    private val caselessGate = setOf("586.0.0.52.53")
+
     private fun declaredBundles(): Map<String, List<File>> {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
         assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
@@ -166,10 +169,18 @@ class PictureInPictureFixtureTest {
                 val gateFetch = settingsFetchAt(gate)
                 assertTrue("$name: the gate fetches no settings", gateFetch > 0)
                 val settings = gate.code()[gateFetch].call.toString()
-                val gateCases = gateRead(gate.code(), gateFetch).second
-                assertTrue("$name: the gate loads no lambda cases", gateCases.size >= 2)
+                val (gateAnswer, gateCases) = gateRead(gate.code(), gateFetch)
+                if (version in caselessGate) {
+                    assertTrue("$name: the gate loads lambda cases $gateCases", gateCases.isEmpty())
+                } else {
+                    assertTrue("$name: the gate loads no lambda cases", gateCases.size >= 2)
+                }
                 val copyFetch = (copyAt downTo 0).first { originalHome[it].call?.toString() == settings }
                 assertEquals("$name: the copy loads the gate's lambda cases", copyAt - 1 to gateCases, gateRead(originalHome, copyFetch))
+                if (version in caselessGate) {
+                    assertEquals("$name: the copy asks what the gate asks",
+                        gate.code()[gateAnswer].call.toString(), originalHome[copyAt - 1].call.toString())
+                }
                 assertTrue("$name: the flag read isn't a MobileConfig boolean read", isFlagRead(originalHome[homeFlag - 1]))
                 val homeGateRegister = (originalHome[copyAt] as OneRegisterInstruction).registerA
                 val homeFlagRegister = (originalHome[homeFlag] as OneRegisterInstruction).registerA
@@ -190,7 +201,9 @@ class PictureInPictureFixtureTest {
                 // #126: the viewer hides each view of the screen as it opens, and one method shows them again.
                 val hidden = hideAt(originalOpening)
                 val newViewId = originalOpening.indexOfFirst { it.call?.name == "generateViewId" }
-                assertTrue("$name: the viewer opening hides no view of the screen after its new view id", hidden > newViewId)
+                assertTrue("$name: the viewer opening makes no new view id", newViewId >= 0)
+                // 586 moved the new view id's block behind a goto at the end, so the hide comes first in the code.
+                assertTrue("$name: the viewer opening hides no view of the screen", hidden >= 0)
                 val branchesTo = originalOpening.indices.filter { originalOpening[it] is OffsetInstruction }.map { originalOpening.target(it) }
                 assertTrue("$name: a branch lands on the viewer's hide, past the extension", hidden !in branchesTo)
                 val showers = viewers.flatMap { viewer -> viewer.methods.filter { !isViewerOpening(it) && showAt(it.code()) >= 0 } }
@@ -369,19 +382,21 @@ class PictureInPictureFixtureTest {
                 assertEquals("$name: the rest of Facebook's runnable", originalRun.size + 4, ran.size)
 
                 val opened = patchedOf(opening).code()
-                val newId = newViewId
-                val idRegister = (originalOpening[newId + 1] as OneRegisterInstruction).registerA
+                // The view id's two instructions go in first, then the hide's one at the hide as the code is then.
+                val hideFirst = hidden < newViewId
+                val newId = newViewId + if (hideFirst) 1 else 0
+                val hide = hidden + if (hideFirst) 0 else 2
+                val idRegister = (originalOpening[newViewId + 1] as OneRegisterInstruction).registerA
                 val swap = opened[newId + 2] as FiveRegisterInstruction
                 assertEquals("$name: the call after the new view id", VIEWER_ID, opened[newId + 2].call.toString())
                 assertEquals("$name: the activity and the id handed over", listOf(opening.localRegisterCount(), idRegister),
                     listOf(swap.registerC, swap.registerD))
                 assertEquals("$name: the answer is the id", idRegister, (opened[newId + 3] as OneRegisterInstruction).registerA)
-                // The hide sits two instructions further down, after the view id's.
-                val heard = opened[hidden + 2] as RegisterRangeInstruction
-                assertEquals("$name: the call before the hide", HIDING, opened[hidden + 2].call.toString())
+                val heard = opened[hide] as RegisterRangeInstruction
+                assertEquals("$name: the call before the hide", HIDING, opened[hide].call.toString())
                 assertEquals("$name: the view handed over is the one hidden",
                     listOf((originalOpening[hidden] as FiveRegisterInstruction).registerC, 1), listOf(heard.startRegister, heard.registerCount))
-                assertEquals("$name: Facebook's hide follows", originalOpening[hidden].call.toString(), opened[hidden + 3].call.toString())
+                assertEquals("$name: Facebook's hide follows", originalOpening[hidden].call.toString(), opened[hide + 1].call.toString())
                 assertEquals("$name: the rest of Facebook's opening", originalOpening.size + 3, opened.size)
 
                 val shown = patchedOf(shower).code()

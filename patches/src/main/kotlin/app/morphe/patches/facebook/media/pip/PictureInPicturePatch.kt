@@ -195,7 +195,8 @@ internal const val SHOWN_AGAIN = "$PICTURE_IN_PICTURE->shownAgain(${VIEW}I)V"
  * ReelsPipUtil's check. Its questions before it arms, in order:
  * - its own copy of the Reels viewer's surface gate, inlined: the same fetch of the surface's
  *   settings (581 `LX/Cr0;->CKK()`) and the same two lambda cases (581 39 and 40, 580 165 and 166,
- *   577 178 and 179), reading one server flag in the Video tab's Reels and another elsewhere. A no
+ *   577 178 and 179), reading one server flag in the Video tab's Reels and another elsewhere. From
+ *   586 there are no cases: the gate and its copy call one settings method for the answer. A no
  *   skips the arming. The patch already answers the gate itself, so the extension answers the copy.
  * - Android 12, an activity, ReelsPipUtil's check (answered first by the extension already).
  * - For the deep-dive surface, a flag in the same MobileConfig config as the Reels arming's ad and
@@ -981,8 +982,9 @@ internal fun settingsFetchAt(gate: Method): Int {
 /**
  * Where the Video tab's arming [home] answers its own copy of the surface [gate], inlined: the
  * move-result of the first boolean answer after its last fetch of the gate's settings before it asks
- * [check], when the numbers loaded on the way are the gate's own lambda cases. -1 otherwise.
- * Changes nothing.
+ * [check], when the numbers loaded on the way are the gate's own lambda cases. From 586 the gate
+ * reads its answer straight off the settings (`LX/09vD;->A01` calls `LX/05XG;->A1D()Z`, no cases),
+ * so with no cases the copy's answer must call that same method. -1 otherwise. Changes nothing.
  */
 internal fun homeGateAt(home: Method, gate: Method, check: Method): Int {
     val gateCode = gate.implementation?.instructions?.toList().orEmpty()
@@ -990,7 +992,8 @@ internal fun homeGateAt(home: Method, gate: Method, check: Method): Int {
     if (fetch < 0) return -1
     val settings = ((gateCode[fetch] as ReferenceInstruction).reference as MethodReference).toString()
     val (gateAnswer, cases) = gateRead(gateCode, fetch)
-    if (gateAnswer < 0 || cases.isEmpty()) return -1
+    if (gateAnswer < 0) return -1
+    val gateAsks = called(gateCode[gateAnswer])?.toString() ?: return -1
     val code = home.implementation?.instructions?.toList().orEmpty()
     val asked = code.indexOfFirst { asksCheck(it, check) }
     if (asked < 0) return -1
@@ -1000,6 +1003,7 @@ internal fun homeGateAt(home: Method, gate: Method, check: Method): Int {
     } ?: return -1
     val (answer, homeCases) = gateRead(code, fetched)
     if (answer < 0 || answer >= asked || homeCases != cases) return -1
+    if (cases.isEmpty() && called(code[answer])?.toString() != gateAsks) return -1
     return if (code.getOrNull(answer + 1)?.opcode == Opcode.MOVE_RESULT) answer + 1 else -1
 }
 

@@ -87,22 +87,29 @@ internal fun BytecodePatchContext.findQualityAnchors(): QualityAnchors {
         .flatMap { holder -> holder.methods.filter { holdsString(it, SET_CUSTOM_QUALITY) } }
     val method = holding.singleOrNull()
         ?: refuse("expected one method holding \"$SET_CUSTOM_QUALITY\", found ${holding.size}")
-    val arrays = trackArrayReads(method)
+    // 586 calls the evaluator's custom-quality setter there, 585 inlined it: the tracks and their labels are read in whichever holds them.
+    val setters = customQualitySetters(method) { classDefByOrNull(it) }
+    if (setters.size > 1) {
+        refuse("expected at most one custom-quality setter called in the method holding \"$SET_CUSTOM_QUALITY\", found ${setters.size}")
+    }
+    val setter = setters.singleOrNull()
+    val reader = setter ?: method
+    val arrays = trackArrayReads(reader)
     val evaluators = arrays.mapNotNull { classDefByOrNull(it.definingClass) }.filter(::takesAbrConfiguration).distinctBy { it.type }
     val evaluator = evaluators.singleOrNull()
-        ?: refuse("expected one array of tracks of a class built with $ABR_CONFIGURATION read in the method holding \"$SET_CUSTOM_QUALITY\", found ${evaluators.size}")
+        ?: refuse("expected one array of tracks of a class built with $ABR_CONFIGURATION read in ${reader.definingClass}->${reader.name}, found ${evaluators.size}")
     val constructors = evaluator.methods.filter { it.name == "<init>" }
     val constructor = constructors.singleOrNull() ?: refuse("expected one constructor of ${evaluator.type}, found ${constructors.size}")
 
     val formatsFields = arrays.filter { it.definingClass == evaluator.type }
     val formats = formatsFields.singleOrNull()
-        ?: refuse("expected ${method.definingClass}->${method.name} to read one array of tracks of ${evaluator.type}, found ${formatsFields.size}")
+        ?: refuse("expected ${reader.definingClass}->${reader.name} to read one array of tracks of ${evaluator.type}, found ${formatsFields.size}")
     val format = formats.type.removePrefix("[")
-    val reads = labelReads(method, format).distinctBy { it.toString() }
+    val reads = labelReads(reader, format).distinctBy { it.toString() }
     val (labelOf, label) = reads.singleOrNull()
-        ?: refuse("expected ${method.definingClass}->${method.name} to read a track's label one way, found ${reads.size}")
+        ?: refuse("expected ${reader.definingClass}->${reader.name} to read a track's label one way, found ${reads.size}")
 
-    val preselects = preselectedReads(evaluator, constructor, labelOf)
+    val preselects = preselectedReads(evaluator, constructor, labelOf, setter)
     val firstChoice = preselects.singleOrNull()
         ?: refuse("expected one label ${evaluator.type} fills in and compares with the tracks' labels, found ${preselects.size}")
     val preselected = firstChoice.field

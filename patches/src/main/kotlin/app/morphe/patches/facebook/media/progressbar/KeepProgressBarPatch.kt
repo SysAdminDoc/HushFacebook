@@ -25,6 +25,7 @@ import app.morphe.patches.facebook.misc.extension.liveAcrossInjection
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.classDefForEachReferencing
@@ -1544,6 +1545,11 @@ internal fun progressUpdate(holders: List<ClassDef>): ProgressUpdate {
  * reading the reel's position and length, finding a position other than -1 and a length above 0,
  * and moving the bar. Returns that instruction's index. Refuses unless the writer is called once,
  * right after such a check.
+ *
+ * 586 (`LX/0A4r;->A06`) jumps to the writer on a drag instead, from an `if-eq` right after the
+ * `sget-object` of the drag state (`LX/00Tm;->A01`), and falls through to more checks that can also
+ * end at the writer. The answer is that `sget-object`, the first thing after the state is read, with
+ * the bar already moved. Refuses unless exactly one such jump goes to the writer.
  */
 internal fun dragCheck(update: Method, progress: ProgressUpdate): Int {
     val base = progress.base.type
@@ -1554,12 +1560,17 @@ internal fun dragCheck(update: Method, progress: ProgressUpdate): Int {
     }
     val call = calls.singleOrNull()
         ?: refuse("$base->${update.name} calls its time writer ${calls.size} times, expected once, during a drag")
-    val branch = code.getOrNull(call - 1)?.takeIf { it.opcode == Opcode.IF_NE } as? TwoRegisterInstruction
-    val state = code.getOrNull(call - 2)?.takeIf { it.opcode == Opcode.SGET_OBJECT } as? OneRegisterInstruction
-    if (branch == null || state == null || state.registerA !in setOf(branch.registerA, branch.registerB)) {
-        refuse("$base->${update.name} no longer checks for a drag right before calling its time writer")
-    }
-    return call - 2
+    if (stateCompared(code, call - 2, call - 1, Opcode.IF_NE)) return call - 2
+    val jumps = code.indices.filter { stateCompared(code, it - 1, it, Opcode.IF_EQ) && branchTarget(code, it) == call }
+    return jumps.singleOrNull()?.minus(1)
+        ?: refuse("$base->${update.name} no longer checks for a drag right before calling its time writer")
+}
+
+/** Whether [code] reads a static object at [state] and compares it at [compare], an [opcode] branch. */
+private fun stateCompared(code: List<Instruction>, state: Int, compare: Int, opcode: Opcode): Boolean {
+    val branch = code.getOrNull(compare)?.takeIf { it.opcode == opcode } as? TwoRegisterInstruction ?: return false
+    val read = code.getOrNull(state)?.takeIf { it.opcode == Opcode.SGET_OBJECT } as? OneRegisterInstruction ?: return false
+    return read.registerA in setOf(branch.registerA, branch.registerB)
 }
 
 /**
