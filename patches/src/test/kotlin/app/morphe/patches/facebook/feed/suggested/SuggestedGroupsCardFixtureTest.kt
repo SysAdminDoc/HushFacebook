@@ -18,6 +18,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -32,6 +33,9 @@ import org.junit.Test
  * HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class SuggestedGroupsCardFixtureTest {
+    private val groupsUnitName = "GroupsYouShouldJoinFeedUnit"
+    private val groupsUnit = "Lcom/facebook/graphql/model/$groupsUnitName;"
+
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
 
     private fun Instruction.string() = ((this as? ReferenceInstruction)?.reference as? StringReference)?.string
@@ -44,7 +48,7 @@ class SuggestedGroupsCardFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val classes = FixtureDex.classesHolding(bundle, GROUPS_CARD_CAST)
+                val classes = (FixtureDex.classesHolding(bundle, GROUPS_CARD_CAST) + FixtureDex.classesHolding(bundle, GROUPS_CARD_SPEC))
                     .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
                 val context = PatchContexts.of(classes)
                 val layouts = context.groupsCardLayouts()
@@ -56,6 +60,19 @@ class SuggestedGroupsCardFixtureTest {
                     method.implementation?.instructions?.any { it.string() == "GroupsYouShouldJoinComponentSpec" } == true
                 })
                 val code = layout.code()
+                // And the layout tests its unit for GroupsYouShouldJoinFeedUnit: a cast, or (586) a merged
+                // instance-of helper on the class whose type name is GroupsYouShouldJoinFeedUnit.
+                val references = code.mapNotNull { (it as? ReferenceInstruction)?.reference }
+                val helpers = references.filterIsInstance<MethodReference>().filter { call ->
+                    call.parameterTypes.map(CharSequence::toString) == listOf("I", "Ljava/lang/Object;") && call.returnType == "Z"
+                }
+                val models = FixtureDex.classes(bundle, helpers.map { it.definingClass }.toSet()).values.filter { model ->
+                    model.methods.any { method ->
+                        method.name == "getTypeName" && method.implementation?.instructions?.any { it.string() == groupsUnitName } == true
+                    }
+                }
+                val casts = references.filterIsInstance<TypeReference>().filter { it.type == groupsUnit }
+                assertTrue("$name: ${layout.name} doesn't test its unit for $groupsUnitName", casts.isNotEmpty() || models.isNotEmpty())
                 // And its layout builds a component of its own type for the row of groups.
                 assertTrue("$name: ${layout.name} builds nothing", code.any { it.opcode == Opcode.NEW_INSTANCE })
                 val nullAnswer = groupsCardNullAnswer(layout)

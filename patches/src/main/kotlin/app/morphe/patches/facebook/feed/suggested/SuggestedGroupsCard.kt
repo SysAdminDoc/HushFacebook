@@ -29,7 +29,8 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
  * Home's copy is a GroupsYouShouldJoinFeedUnit edge the feed filter drops. The Groups tab builds its
  * feed without that funnel, and no "Feed edge" line shows up there with Debug logging on, so the card
  * stayed. Both draw it with GroupsYouShouldJoinComponent (LX/0N8B;), whose layout (A17) casts its unit
- * to GroupsYouShouldJoinFeedUnit, and that cast's Kotlin message is in no other method. The layout
+ * to GroupsYouShouldJoinFeedUnit, and that cast's Kotlin message is in no other method (586 drops the
+ * message, so its layout, LX/0TIb;->A1E, is found by the component's GROUPS_CARD_SPEC name). The layout
  * answers null itself when its props say there's nothing to show (const/4 v4 0, then return-object v4
  * after a check), so the hook goes first and gives the same null while the switch is on.
  *
@@ -76,18 +77,30 @@ internal fun groupsCardNullAnswer(method: Method): Int? {
 }
 
 /**
- * The layouts outside the extension holding [GROUPS_CARD_CAST]: instance methods taking one
- * argument and answering an object, with a null answer of their own.
+ * The name the card's component gives its CallerContext in its static initializer. 586 strips the
+ * cast's Kotlin message and tests the unit through a merged instance-of helper
+ * (`LX/04Ah;->A00(ILjava/lang/Object;)Z` on arm64), so the component's own name is what's left.
  */
-internal fun BytecodePatchContext.groupsCardLayouts(): List<Method> =
-    classDefByStrings(GROUPS_CARD_CAST, StringComparisonType.EQUALS)
+internal const val GROUPS_CARD_SPEC = "GroupsYouShouldJoinComponentSpec"
+
+/**
+ * The layouts outside the extension holding [GROUPS_CARD_CAST], or on a class naming itself
+ * [GROUPS_CARD_SPEC]: instance methods taking one argument and answering an object, with a null
+ * answer of their own.
+ */
+internal fun BytecodePatchContext.groupsCardLayouts(): List<Method> {
+    fun layout(method: Method) = !AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.size == 1 &&
+        method.returnType.startsWith("L") && groupsCardNullAnswer(method) != null
+    val casting = classDefByStrings(GROUPS_CARD_CAST, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         .distinctBy { it.type }
         .flatMap { methodsHolding(it, GROUPS_CARD_CAST) }
-        .filter { method ->
-            !AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.size == 1 &&
-                method.returnType.startsWith("L") && groupsCardNullAnswer(method) != null
-        }
+    val named = classDefByStrings(GROUPS_CARD_SPEC, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .distinctBy { it.type }
+        .flatMap { it.methods }
+    return (casting + named).filter(::layout).distinctBy { "${it.definingClass}->${it.name}${it.parameterTypes}${it.returnType}" }
+}
 
 /**
  * First thing in the suggested groups card's layout: a yes from [HIDES_GROUPS_CARD] answers null,
