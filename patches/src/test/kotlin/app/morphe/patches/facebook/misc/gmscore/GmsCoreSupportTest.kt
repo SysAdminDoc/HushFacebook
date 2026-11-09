@@ -9,6 +9,7 @@ import app.morphe.PatchContexts
 import app.morphe.patcher.patch.PatchException
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -75,8 +76,8 @@ class GmsCoreSupportTest {
             ImmutableInstruction11n(Opcode.CONST_4, 0, 1), ImmutableInstruction11x(Opcode.RETURN, 0))))
 
     /** androidx's framework provider, which holds Android's CredentialManager. */
-    private fun provider(owner: String = providerOwner) = classDef(owner,
-        listOf(method(owner, "isAvailableOnDevice", emptyList(), "Z", AccessFlags.PUBLIC.value, 2,
+    private fun provider(owner: String = providerOwner, registers: Int = 2) = classDef(owner,
+        listOf(method(owner, "isAvailableOnDevice", emptyList(), "Z", AccessFlags.PUBLIC.value, registers,
             ImmutableInstruction11n(Opcode.CONST_4, 0, 1), ImmutableInstruction11x(Opcode.RETURN, 0))),
         listOf(ImmutableField(owner, "A00", credentialManager, AccessFlags.PRIVATE.value or AccessFlags.FINAL.value, null, null, null)))
 
@@ -134,12 +135,22 @@ class GmsCoreSupportTest {
         val checked = context.mutableClassDefBy(availabilityOwner).methods.single().instructions()
         // A static check of four registers holds its Context in v2 (p0).
         assertAsksTheExtension(checked, contextRegister = 2)
-        val unavailable = context.mutableClassDefBy(providerOwner).methods.single().instructions()
-        // returnEarly loads a boolean with const/4: a 0 the return hands back.
-        assertTrue(unavailable[0].opcode in setOf(Opcode.CONST_4, Opcode.CONST))
-        assertEquals(0, (unavailable[0] as NarrowLiteralInstruction).narrowLiteral)
-        assertEquals(Opcode.RETURN, unavailable[1].opcode)
-        assertEquals((unavailable[0] as OneRegisterInstruction).registerA, (unavailable[1] as OneRegisterInstruction).registerA)
+        // The provider asks the extension first, in its local v0: with microG-RE it hands back 0, without it
+        // the branch lands on its own first instruction and its own answer stands.
+        val provider = context.mutableClassDefBy(providerOwner).methods.single().instructions()
+        assertEquals(Opcode.INVOKE_STATIC, provider[0].opcode)
+        val asked = (provider[0] as ReferenceInstruction).reference as MethodReference
+        assertEquals(GMS_CORE_SIGNS_IN_THROUGH_MICROG,
+            "${asked.definingClass}->${asked.name}(${asked.parameterTypes.joinToString("")})${asked.returnType}")
+        assertEquals(Opcode.MOVE_RESULT to 0, provider[1].opcode to (provider[1] as OneRegisterInstruction).registerA)
+        assertEquals(Opcode.IF_EQZ to 0, provider[2].opcode to (provider[2] as OneRegisterInstruction).registerA)
+        assertEquals("the branch skips to the provider's own body", 5, (provider[2] as BuilderOffsetInstruction).target.location.index)
+        assertEquals(Opcode.CONST_4 to 0, provider[3].opcode to (provider[3] as OneRegisterInstruction).registerA)
+        assertEquals(0, (provider[3] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals(Opcode.RETURN to 0, provider[4].opcode to (provider[4] as OneRegisterInstruction).registerA)
+        assertEquals("the provider's own answer is still there", 1, (provider[5] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals(Opcode.RETURN, provider[6].opcode)
+        assertEquals(7, provider.size)
         assertEquals("the check's own texts move too", "app.revanced.android.gms", checked[3].text())
     }
 
@@ -153,15 +164,18 @@ class GmsCoreSupportTest {
     }
 
     @Test
-    fun theExtensionCarriesTheMethodTheCheckCalls() {
-        val owner = GMS_CORE_AVAILABILITY.substringBefore("->")
-        val answering = ExtensionDex.classDef(owner).methods.filter { it.name == "availability" }
-        assertEquals("one availability method in $owner", 1, answering.size)
-        val method = answering.single()
-        assertEquals(GMS_CORE_AVAILABILITY,
-            "${method.definingClass}->${method.name}(${method.parameterTypes.joinToString("")})${method.returnType}")
-        assertTrue("public static, so any class can call it", AccessFlags.PUBLIC.isSet(method.accessFlags) &&
-            AccessFlags.STATIC.isSet(method.accessFlags))
+    fun theExtensionCarriesTheMethodsTheChecksCall() {
+        for (reference in listOf(GMS_CORE_AVAILABILITY, GMS_CORE_SIGNS_IN_THROUGH_MICROG)) {
+            val owner = reference.substringBefore("->")
+            val name = reference.substringAfter("->").substringBefore("(")
+            val answering = ExtensionDex.classDef(owner).methods.filter { it.name == name }
+            assertEquals("one $name method in $owner", 1, answering.size)
+            val method = answering.single()
+            assertEquals(reference,
+                "${method.definingClass}->${method.name}(${method.parameterTypes.joinToString("")})${method.returnType}")
+            assertTrue("$name is public static, so any class can call it", AccessFlags.PUBLIC.isSet(method.accessFlags) &&
+                AccessFlags.STATIC.isSet(method.accessFlags))
+        }
     }
 
     /** The check opens by asking the extension about microG-RE with its Context and returning that answer. */
@@ -197,6 +211,9 @@ class GmsCoreSupportTest {
             .contains("availability check has 0 matches"))
         assertTrue(failure(listOf(availability(), registration())).contains("framework provider has 0 matches"))
         assertTrue(failure(supported() + provider("LX/0yJP;")).contains("framework provider has 2 matches"))
+        // A provider whose one register is this has no local to answer in.
+        assertTrue(failure(listOf(availability(), provider(registers = 1), registration()))
+            .contains("framework provider has no local register"))
     }
 
     @Test

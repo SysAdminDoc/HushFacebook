@@ -11,18 +11,20 @@
 package app.morphe.patches.facebook.misc.gmscore
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
+import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patcher.util.proxy.mutableTypes.encodedValue.MutableStringEncodedValue
+import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
-import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction21c
@@ -72,6 +74,9 @@ private const val EXTENSION_ROOT = "Lapp/morphe/"
 
 /** The extension's answer to the availability check: success while microG-RE is installed, missing without it. */
 internal const val GMS_CORE_AVAILABILITY = "Lapp/morphe/extension/facebook/misc/GmsCore;->availability(${CONTEXT})I"
+
+/** The extension's answer for the framework provider: true while microG-RE is installed, so the provider steps aside. */
+internal const val GMS_CORE_SIGNS_IN_THROUGH_MICROG = "Lapp/morphe/extension/facebook/misc/GmsCore;->signsInThroughMicroG()Z"
 
 /** Play services permissions microG-RE defines under its own vendor. Morphe's list. */
 internal val GMS_PERMISSIONS = setOf(
@@ -387,8 +392,9 @@ internal data class GmsCorePlan(
  *   package manager for microG-RE's version.
  * - androidx Credential Manager's framework provider, the one class holding Android's CredentialManager. On Android 14
  *   and later androidx prefers it, and Android hands Google's requests to Google's own Play services whatever the app
- *   asks for, so it answers unavailable and androidx falls back to the Play services provider the reroute points at
- *   microG-RE. It answers unavailable without microG-RE too, so there androidx has no credential provider at all.
+ *   asks for, so while microG-RE is installed it answers unavailable and androidx falls back to the Play services
+ *   provider the reroute points at microG-RE. Without microG-RE it answers for itself: the Play services provider is
+ *   missing there too, and answering unavailable left androidx with no credential provider at all.
  * - Every const-string outside Hushfacebook's own classes that [gmsCoreText] rewrites, and every static String
  *   field value it rewrites.
  */
@@ -423,6 +429,8 @@ internal fun planGmsCore(classes: Iterable<ClassDef>): GmsCorePlan {
     }
     shape(availability.size == 1, "Play services' availability check has ${availability.size} matches")
     shape(providers.size == 1, "Credential Manager's framework provider has ${providers.size} matches")
+    // Its only parameter is this, so any register past it is a local the answer can borrow on entry.
+    shape(providers.single().implementation!!.registerCount > 1, "Credential Manager's framework provider has no local register")
     val rewritten = texts.map { text -> text.method.texts()[text.index] }.toSet()
     GMS_CORE_REQUIRED_TEXTS.firstOrNull { it !in rewritten }?.let { shape(false, "Facebook no longer names $it") }
     return GmsCorePlan(availability.single(), providers.single(), texts, fields)
@@ -450,7 +458,8 @@ internal fun BytecodePatchContext.applyGmsCore(plan: GmsCorePlan) {
         for (field in held) (owner.staticFields.single { it.name == field.name }.initialValue as MutableStringEncodedValue).value = field.text
     }
     // The availability check answers whatever the extension says about microG-RE, in the Context register it's
-    // handed. The framework provider answers false either way, so androidx uses microG-RE's provider or none.
+    // handed. The framework provider answers false while microG-RE is installed, so androidx uses microG-RE's
+    // provider, and otherwise runs its own body. v0 is a local the plan checked for, unread before its first write.
     val availability = mutableClassDefBy(plan.availability.definingClass).methods.single { it.same(plan.availability) }
     val context = if (AccessFlags.STATIC.isSet(availability.accessFlags)) "p0" else "p1"
     availability.addInstructions(0, """
@@ -458,7 +467,14 @@ internal fun BytecodePatchContext.applyGmsCore(plan: GmsCorePlan) {
         move-result $context
         return $context
     """)
-    mutableClassDefBy(plan.frameworkProvider.definingClass).methods.single { it.same(plan.frameworkProvider) }.returnEarly(false)
+    val provider = mutableClassDefBy(plan.frameworkProvider.definingClass).methods.single { it.same(plan.frameworkProvider) }
+    provider.addInstructionsWithLabels(0, """
+        invoke-static {}, $GMS_CORE_SIGNS_IN_THROUGH_MICROG
+        move-result v0
+        if-eqz v0, :framework
+        const/4 v0, 0x0
+        return v0
+    """, ExternalLabel("framework", provider.getInstruction(0)))
 }
 
 /**
