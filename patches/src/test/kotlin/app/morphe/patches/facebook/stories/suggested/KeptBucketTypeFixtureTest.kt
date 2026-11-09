@@ -20,8 +20,8 @@ class KeptBucketTypeFixtureTest {
     // build and then by the bundle's ABI, since Redex can name the enum differently per ABI.
     private val types = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to "LX/026l;",
-            "armeabi-v7a" to "LX/026l;",
+            "arm64-v8a" to "LX/02ay;",
+            "armeabi-v7a" to "LX/02ay;",
         ),
     )
 

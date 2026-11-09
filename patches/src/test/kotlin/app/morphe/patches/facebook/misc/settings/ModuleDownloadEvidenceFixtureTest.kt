@@ -19,6 +19,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
@@ -72,12 +73,23 @@ class ModuleDownloadEvidenceFixtureTest {
                 val stepClass = FixtureDex.classes(bundle, setOf(stepType)).values.single()
                 assertTrue("$name: $stepType reads as a RequestAction", stepClass.methods.any { it.name == "toString" && holdsString(it, "RequestAction{modules=") })
 
-                // The failure path reads the task's exception just before the site, from the callback's own parameter.
-                val read = failure.method.code()[failure.index - 2]
+                // The failure path reads the task's exception just before the site, from the callback's
+                // own parameter. 586 merges the callback with another lambda's, and its big frame
+                // copies the parameter into a low register first, which nothing writes again before the read.
+                val failureCode = failure.method.code()
+                val read = failureCode[failure.index - 2]
                 assertEquals("$name: the task's exception is read", "Ljava/lang/Exception;", ((read as ReferenceInstruction).reference as MethodReference).returnType)
                 assertEquals("$name: on the task", failure.register, read.firstRegister())
                 val parameter = failure.method.implementation!!.registerCount - 1
-                assertEquals("$name: the task is the callback's parameter", parameter, failure.register)
+                val source = if (failure.register == parameter) parameter else {
+                    val copy = failureCode.take(failure.index - 2).lastOrNull {
+                        it.opcode.setsRegister() && (it as? OneRegisterInstruction)?.registerA == failure.register
+                    }
+                    assertTrue("$name: the task's register is written last by $copy",
+                        copy?.opcode == Opcode.MOVE_OBJECT || copy?.opcode == Opcode.MOVE_OBJECT_FROM16)
+                    (copy as TwoRegisterInstruction).registerB
+                }
+                assertEquals("$name: the task is the callback's parameter", parameter, source)
 
                 assertEquals("$name: warned", emptyList<String>(), PatchLogCapture.warnings { moduleDownloadEvidencePatch.execute(context) })
                 for (site in listOf(step, failure)) {

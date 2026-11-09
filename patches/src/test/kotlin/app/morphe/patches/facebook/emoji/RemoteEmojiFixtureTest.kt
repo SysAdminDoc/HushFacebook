@@ -102,28 +102,38 @@ class RemoteEmojiFixtureTest {
         assertEquals("$name: methods loading the picture base", listOf(makerSignature), holding.map(::signature))
         assertTrue("$name: the maker has no local for the hook's answer", maker.localRegisterCount() >= 1)
 
-        // Its callers are the remote emoji class's two methods, and nothing else.
+        // Its callers are the remote emoji drawable and one other, and nothing else. Up to 585 the
+        // other was a static address method in the drawable's class; 586 inlines that method into an
+        // emoji component's render() in a class of its own.
         val askers = callers(bundle, makerSignature)
         assertEquals("$name: callers of the maker: ${askers.map(::signature)}", 2, askers.size)
-        assertEquals("$name: classes calling the maker", 1, askers.map { it.definingClass }.toSet().size)
+        assertEquals("$name: classes calling the maker", 2, askers.map { it.definingClass }.toSet().size)
         val drawables = askers.filter { holdsString(it, REMOTE_EMOJI_KEY) }
         assertEquals("$name: the maker's callers holding \"$REMOTE_EMOJI_KEY\"", 1, drawables.size)
         val drawable = drawables.single()
-        val address = askers.single { it !== drawable }
-        assertTrue("$name: ${signature(address)} isn't the static address method",
-            AccessFlags.STATIC.isSet(address.accessFlags) && address.returnType == STRING)
+        val other = askers.single { it !== drawable }
+        val static = AccessFlags.STATIC.isSet(other.accessFlags) && other.returnType == STRING
 
-        // The address method already answers null for an emoji Meta has no picture of, and hands
-        // the maker's answer straight back. The drawable method tests it before it builds a picture.
-        assertTrue("$name: ${signature(address)} never answers null", answersNull(address))
-        assertEquals("$name: what ${signature(address)} does with the address", listOf("returned"),
-            fates(address, makerSignature))
+        // A static address method already answers null for an emoji Meta has no picture of, and
+        // hands the maker's answer straight back. The render it was inlined into tests the address
+        // before it makes a Uri, and with none draws the emoji from the drawable instead. The drawable
+        // method tests it before it builds a picture.
+        if (static) {
+            assertTrue("$name: ${signature(other)} never answers null", answersNull(other))
+            assertEquals("$name: what ${signature(other)} does with the address", listOf("returned"),
+                fates(other, makerSignature))
+        } else {
+            assertEquals("$name: ${signature(other)} isn't a render", "render", other.name)
+            assertEquals("$name: what ${signature(other)} does with the address", listOf("tested"),
+                fates(other, makerSignature))
+        }
         assertEquals("$name: what ${signature(drawable)} does with the address", listOf("tested"),
             fates(drawable, makerSignature))
 
-        // Everything that asks either of them drops the answer or tests it for null first. For a
-        // chat's big emoji that null means drawing the emoji with the typeface provider's font.
-        for (asked in listOf(address, drawable)) {
+        // Everything that asks either of them for the address drops the answer or tests it for null
+        // first. For a chat's big emoji that null means drawing the emoji with the typeface provider's
+        // font. A render hands back a component, not the address, so only its own test counts.
+        for (asked in listOfNotNull(other.takeIf { static }, drawable)) {
             val theirs = callers(bundle, signature(asked))
             assertTrue("$name: nothing calls ${signature(asked)}", theirs.isNotEmpty())
             theirs.forEach { caller ->

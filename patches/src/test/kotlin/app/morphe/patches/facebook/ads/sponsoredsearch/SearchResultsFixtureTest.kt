@@ -34,10 +34,11 @@ import org.junit.Test
 class SearchResultsFixtureTest {
     /**
      * Registers of the page constructor, the register of its module list, and how many constructors
-     * the page class has (585 adds a short one that hands its page to the full one), per build.
+     * the page class has (585 added a short one that handed its page to the full one, and 586 drops
+     * it again), per build.
      */
     private val expected = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to Triple(12, 3, 2),
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to Triple(12, 3, 1),
     )
 
     private fun locals(method: Method): Int {

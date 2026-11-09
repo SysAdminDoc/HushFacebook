@@ -36,10 +36,10 @@ import org.junit.Test
 class ProfilePostsFixtureTest {
     /**
      * Registers of the render method, and the declared parameter it takes the unit as (null when it
-     * reads a field of its component, as up to 584 did), per build.
+     * reads a field of its component, as up to 584 did and 586 does again), per build.
      */
-    private val expected = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to (34 to 2),
+    private val expected = mapOf<String, Pair<Int, Int?>>(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to (37 to null),
     )
 
     private fun locals(method: Method): Int = method.implementation!!.registerCount - 1 - method.parameterTypes.size

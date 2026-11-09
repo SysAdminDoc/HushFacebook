@@ -120,13 +120,15 @@ class StartTabFixtureTest {
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = fixture.name
 
-                // One picker, shaped (context, intent, session) -> tab id.
+                // One picker, shaped (context, intent, session, callback) -> tab id. 586 added the
+                // callback; the patch only needs the picker to be there.
                 val pickers = FixtureDex.methodsWhere(fixture, { dex -> dex.stringSection.any { it == TARGET_TAB_ID } }, ::picksStartTab)
                 assertEquals("$name: start tab pickers", 1, pickers.size)
                 val picker = pickers.single()
                 assertEquals(
                     "$name: the picker's parameters",
-                    listOf("Landroid/content/Context;", INTENT, "Lcom/facebook/auth/usersession/FbUserSession;"),
+                    listOf("Landroid/content/Context;", INTENT, "Lcom/facebook/auth/usersession/FbUserSession;",
+                        "Lkotlin/jvm/functions/Function1;"),
                     picker.parameterTypes.map { it.toString() },
                 )
                 val pickerCode = code(picker)

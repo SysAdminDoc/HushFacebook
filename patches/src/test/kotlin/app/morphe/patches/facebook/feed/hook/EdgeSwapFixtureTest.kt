@@ -7,6 +7,7 @@ package app.morphe.patches.facebook.feed.hook
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.shared.AddNewEdgeToCollectionFingerprint
 import app.morphe.patches.facebook.shared.FEED_UNIT_EDGE
 import app.morphe.patches.facebook.shared.redexOriginalName
@@ -63,11 +64,15 @@ class EdgeSwapFixtureTest {
                 val guard = guards.single()
                 val owner = owners.single { it.type == guard.method.definingClass }
                 // Through 583 the runnable keeps its Redex name; 584's Function0 has none, but keeps
-                // the names of what it captures.
+                // the names of what it captures. 586 merges it with another lambda into one Function0
+                // switched on $t and renames the captures, so there it's the manager's log tag in the
+                // swap and the old key captured as a String that say which lambda this is.
                 val captures = owner.fields.map { it.name }.toSet()
+                val merged = "\$t" in captures && holdsString(guard.method, "FeedUnitCollectionManager") &&
+                    owner.fields.any { it.type == "Ljava/lang/String;" }
                 assertTrue("$name: the Redex name or the swap's captures, $captures",
                     redexOriginalName(owner) == "FeedUnitCollectionManager\$onEdgeSwapped\$1" ||
-                        captures.containsAll(setOf("\$newEdge", "\$oldPrimaryKey")))
+                        captures.containsAll(setOf("\$newEdge", "\$oldPrimaryKey")) || merged)
 
                 val funnel = FixtureDex.classesHolding(bundle, "Edge not added to FUC")
                 val edge = FixtureDex.classes(bundle, setOf(FEED_UNIT_EDGE)).values
@@ -88,9 +93,12 @@ class EdgeSwapFixtureTest {
                     assertEquals("$name: what it returns", Opcode.RETURN_VOID, added[7].opcode)
                 } else {
                     assertEquals("$name: the way out", Opcode.IF_NEZ, added[6].opcode)
-                    val unit = after[guard.unit!! + size]
+                    // 586's merged invoke() shares the Unit return of the branch before the swap's,
+                    // so the guard's instructions only move it when it comes after them.
+                    val unitAt = guard.unit!!.let { if (it > guard.index) it + size else it }
+                    val unit = after[unitAt]
                     assertEquals("$name: the jump's target", listOf(Opcode.SGET_OBJECT, Opcode.RETURN_OBJECT),
-                        listOf(unit.opcode, after[guard.unit!! + size + 1].opcode))
+                        listOf(unit.opcode, after[unitAt + 1].opcode))
                     assertSame("$name: the jump lands on the Unit load", unit,
                         (added[6] as BuilderOffsetInstruction).target.location.instruction)
                 }
