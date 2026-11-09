@@ -30,6 +30,7 @@ internal const val ACCENT_BLOKS_FILL = "$ACCENT->bloksFill(I)I"
 internal const val ACCENT_BLOKS_TEXT = "$ACCENT->bloksText(I)I"
 private const val CONTEXT = "Landroid/content/Context;"
 private const val COLOUR_SPAN = "Landroid/text/style/ForegroundColorSpan;"
+private const val SPANNABLE = "Landroid/text/Spannable;"
 
 /**
  * An accent colour for Facebook's blue (links, buttons, switches). It rides route one of the
@@ -154,13 +155,19 @@ internal fun themedColourReader(border: Method): MethodReference {
 /**
  * Bloks' text span builder (582 `LX/4MC;->A02`): the static (Context, node, theme, List) method that
  * asks the themed colour [reader] for a span's colour and makes the one ForegroundColorSpan it paints with.
+ * On 586 that builder hands each span's colour to a static (Spannable, node, theme, String, int, int)
+ * helper beside it, which asks the reader and makes the span, so the helper is the builder here.
  */
 internal fun isBloksTextBuilder(method: Method, reader: MethodReference): Boolean {
     if (!AccessFlags.STATIC.isSet(method.accessFlags)) return false
     val parameters = method.parameterTypes.map(CharSequence::toString)
     val node = reader.parameterTypes[0].toString()
     val theme = reader.parameterTypes[1].toString()
-    if (parameters != listOf(CONTEXT, node, theme, "Ljava/util/List;")) return false
+    if (parameters != listOf(CONTEXT, node, theme, "Ljava/util/List;") &&
+        parameters != listOf(SPANNABLE, node, theme, "Ljava/lang/String;", "I", "I")
+    ) {
+        return false
+    }
     val code = method.implementation?.instructions ?: return false
     val asks = code.any { instruction ->
         val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
