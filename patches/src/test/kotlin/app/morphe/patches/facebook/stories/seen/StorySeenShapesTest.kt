@@ -168,6 +168,60 @@ class StorySeenShapesTest {
         assertNull(seenSender(senderClass(builder(creates = "Lfixture/ReplyMutation;"), sender()), mutationType))
     }
 
+    private val query = "Lfixture/Query;"
+    private val queryInit = ImmutableMethodReference(query, "<init>", listOf("Ljava/lang/Class;", "Ljava/lang/String;"), "V")
+
+    /**
+     * 586's builder (`LX/0CRf;->getRequest`): no query class, it creates Facebook's generic query and
+     * hands its constructor the result class and then the name, loaded into [nameRegister].
+     * [overwrite] writes that register between the load and the call, [created] is what it creates.
+     */
+    private fun queryMaker(
+        name: String = SEEN_MUTATION,
+        nameRegister: Int = 3,
+        overwrite: Boolean = false,
+        created: String = query,
+        swapped: Boolean = false,
+    ) = method(
+        "getRequest", builderParameters, request, 7,
+        listOfNotNull(
+            string(1, STORY_IDS),
+            ImmutableInstruction21c(Opcode.CONST_CLASS, 2, ImmutableTypeReference("Lfixture/Result;")),
+            string(nameRegister, name),
+            if (overwrite) string(nameRegister, "fbandroid") else null,
+            ImmutableInstruction21c(Opcode.NEW_INSTANCE, 0, ImmutableTypeReference(created)),
+            if (swapped) {
+                ImmutableInstruction35c(Opcode.INVOKE_DIRECT, 3, 0, nameRegister, 2, 0, 0, queryInit)
+            } else {
+                ImmutableInstruction35c(Opcode.INVOKE_DIRECT, 3, 0, 2, nameRegister, 0, 0, queryInit)
+            },
+            ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),
+        ),
+    )
+
+    @Test
+    fun `586's builder makes the query named DirectSeenMutation itself`() {
+        assertTrue(makesSeenQuery(queryMaker()))
+        assertTrue(isRequestBuilder(queryMaker(), null))
+        val sender = sender()
+        assertSame(sender, seenSender(senderClass(queryMaker(), sender), null))
+        // The query class form and the made form don't stand in for each other.
+        assertFalse(isRequestBuilder(queryMaker(), mutationType))
+        assertFalse(isRequestBuilder(builder(), null))
+        assertNull(seenSender(senderClass(builder(), sender()), null))
+    }
+
+    @Test
+    fun `a query not named DirectSeenMutation in its constructor isn't the seen query`() {
+        // Negative controls: another name, the name written over before the call, the name handed
+        // first, and a constructor called on something the method didn't create.
+        assertFalse(makesSeenQuery(queryMaker(name = "DirectReplyMutation")))
+        assertFalse(makesSeenQuery(queryMaker(overwrite = true)))
+        assertFalse(makesSeenQuery(queryMaker(swapped = true)))
+        assertFalse(makesSeenQuery(queryMaker(created = "Lfixture/Other;")))
+        assertFalse(isRequestBuilder(queryMaker(name = "DirectReplyMutation"), null))
+    }
+
     private fun MutableMethod.at(index: Int) = implementation!!.instructions.elementAt(index)
 
     /** The sender as Facebook has it: a callback, then what the hook hands over. */

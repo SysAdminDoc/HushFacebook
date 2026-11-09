@@ -19,6 +19,7 @@ import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.extension.requireThisIntact
+import app.morphe.patches.facebook.search.history.callRegisters
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -58,6 +59,13 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * builds: the one class whose constructor names the mutation and its root field, the one method
  * that creates that class and fills story_ids_list, and the one other method of that method's
  * class that calls it.
+ *
+ * 586 has no query class for it (read from both 586 builds on 2026-11-08). The builder (586
+ * LX/0CRf;->getRequest) makes Facebook's generic query itself, handing its constructor the result
+ * class and then DirectSeenMutation as the query's name, and the root field goes as null, so that
+ * literal isn't in the APK at all. The persisted query is the same. The builder is then the one
+ * method filling story_ids_list that makes a query named DirectSeenMutation, and the sender is
+ * found from it the same way.
  *
  * Mark as seen (#88, read from 577, 580 and 581 on 2026-10-07). The sender has the same shape on
  * all three (581 LX/AR6;->A00): a callback, the FbUserSession, three strings, the map of bucket
@@ -131,13 +139,49 @@ private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $det
 internal fun isSeenMutation(classDef: ClassDef): Boolean =
     classDef.methods.any { it.name == "<init>" && holdsString(it, SEEN_MUTATION) && holdsString(it, SEEN_ROOT_FIELD) }
 
+private const val JAVA_CLASS = "Ljava/lang/Class;"
+
+/**
+ * Whether [method] makes the seen query itself, the way 586 does with no query class: it creates an
+ * instance and hands its constructor a class and then [SEEN_MUTATION], loaded into a register
+ * nothing writes before that call.
+ */
+internal fun makesSeenQuery(method: Method): Boolean {
+    val code = method.implementation?.instructions?.toList() ?: return false
+    for ((load, instruction) in code.withIndex()) {
+        if (instruction.string() != SEEN_MUTATION) continue
+        val name = (instruction as OneRegisterInstruction).registerA
+        for (at in load + 1 until code.size) {
+            val call = code[at].call(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE)
+            if (call != null && call.name == "<init>") {
+                val registers = callRegisters(code[at])
+                val created = code.subList(0, at).lastOrNull {
+                    it.opcode == Opcode.NEW_INSTANCE && (it as OneRegisterInstruction).registerA == registers.first()
+                }
+                if (registers.getOrNull(2) == name &&
+                    call.parameterTypes.take(2).map(Any::toString) == listOf(JAVA_CLASS, STRING) &&
+                    ((created as? ReferenceInstruction)?.reference as? TypeReference)?.type == call.definingClass
+                ) return true
+            }
+            val written = code[at]
+            if (written.opcode.setsRegister() && (written as? OneRegisterInstruction)?.registerA?.let {
+                    it == name || (written.opcode.setsWideRegister() && it + 1 == name)
+                } == true
+            ) break
+        }
+    }
+    return false
+}
+
 /**
  * Whether [method] builds the seen request: an instance method handing back an object that loads
- * [STORY_IDS] and creates an instance of [mutation], the query class [isSeenMutation] found.
+ * [STORY_IDS] and creates an instance of [mutation], the query class [isSeenMutation] found, or,
+ * with [mutation] null (586, no query class), makes the query itself ([makesSeenQuery]).
  */
-internal fun isRequestBuilder(method: Method, mutation: String): Boolean {
+internal fun isRequestBuilder(method: Method, mutation: String?): Boolean {
     if (AccessFlags.STATIC.isSet(method.accessFlags) || !method.returnType.startsWith("L")) return false
     if (!holdsString(method, STORY_IDS)) return false
+    if (mutation == null) return makesSeenQuery(method)
     return method.implementation?.instructions?.any {
         it.opcode == Opcode.NEW_INSTANCE && ((it as ReferenceInstruction).reference as TypeReference).type == mutation
     } == true
@@ -156,11 +200,11 @@ private fun callsTo(method: Method, target: Method): Int =
 
 /**
  * The method in [owner] that sends the seen request, or null when [owner] isn't the sender's class:
- * [owner] has exactly one request builder for [mutation], exactly one other method of [owner]
- * calls it, and that caller is a void instance method taking the set of card ids and calling the
- * builder once.
+ * [owner] has exactly one request builder for [mutation] (null where the builder makes the query
+ * itself), exactly one other method of [owner] calls it, and that caller is a void instance method
+ * taking the set of card ids and calling the builder once.
  */
-internal fun seenSender(owner: ClassDef, mutation: String): Method? {
+internal fun seenSender(owner: ClassDef, mutation: String?): Method? {
     val builder = owner.methods.filter { isRequestBuilder(it, mutation) }.singleOrNull() ?: return null
     val callers = owner.methods.filter { it.key() != builder.key() && callsTo(it, builder) > 0 }
     val sender = callers.singleOrNull() ?: return null

@@ -62,7 +62,7 @@ class StorySeenMarkingFixtureTest {
     @Test
     fun `each declared build's seen helper hands each queued card to the extension`() = bundles { bundle ->
         val name = bundle.name
-        val mutation = FixtureDex.classesHolding(bundle, SEEN_ROOT_FIELD).single(::isSeenMutation).type
+        val mutation = seenQueryClass(bundle)
         val sender = FixtureDex.classesHolding(bundle, STORY_IDS).mapNotNull { seenSender(it, mutation) }.single()
         val callers = mutableListOf<ClassDef>()
         FixtureDex.forEach(bundle) { dex ->

@@ -8,6 +8,7 @@ import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -22,6 +23,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -36,6 +38,9 @@ import org.junit.Test
  */
 class HideStoryRingsFixtureTest {
     private val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+
+    /** Builds with more than the comment row builder holding the plugin's name: 586 adds a table of plugin names. */
+    private val pluginHolders = mapOf("586.0.0.52.53" to 2)
 
     private fun Method.code() = implementation!!.instructions.toList()
     private fun Instruction.reference() = (this as ReferenceInstruction).reference.toString()
@@ -58,15 +63,20 @@ class HideStoryRingsFixtureTest {
                 val statics = decorators.flatMap { it.methods.filter(::isRingCheck) }.flatMap(::actorChecksCalled)
                     .map { it.definingClass }.toSet()
                 val commentHolder = holding(bundle, STORY_RING_PLUGIN)
-                assertEquals("$name: classes holding the comment story ring plugin", 1, commentHolder.size)
-                val ringStates = commentHolder.single().methods
+                assertEquals("$name: classes holding the comment story ring plugin", pluginHolders[version] ?: 1, commentHolder.size)
+                // 586 moved the ring state helper into a class of merged statics that the builder's
+                // method naming the plugin calls, so those calls' classes and answers are loaded too.
+                val pluginCalls = commentHolder.flatMap { it.methods }.filter { holdsString(it, STORY_RING_PLUGIN) }
+                    .flatMap { it.code() }.filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
+                    .map { (it as ReferenceInstruction).reference as MethodReference }.filter { it.parameterTypes.size == 1 }
+                val ringStates = commentHolder.flatMap { it.methods }
                     .filter { AccessFlags.STATIC.isSet(it.accessFlags) && it.parameterTypes.size == 1 }
-                    .map { it.returnType }.filter { it.startsWith("L") }.toSet()
+                    .map { it.returnType }.plus(pluginCalls.map { it.returnType }).filter { it.startsWith("L") }.toSet()
                 val photo = FixtureDex.classes(bundle, setOf(PROFILE_PHOTO)).values.single()
                 val photoArguments = photo.methods.single { it.name == "<init>" }.parameterTypes.map { it.toString() }
                     .filter { it.startsWith("L") }.toSet()
                 val renders = holding(bundle, PROFILE_RING_TAGS.last())
-                val loaded = FixtureDex.classes(bundle, statics + ringStates + photoArguments).values
+                val loaded = FixtureDex.classes(bundle, statics + ringStates + photoArguments + pluginCalls.map { it.definingClass }).values
                 val all = (decorators + components + commentHolder + loaded + photo + renders).distinctBy { it.type }
 
                 val context = PatchContexts.of(all + ExtensionDex.classDef(SETTINGS_STATUS))

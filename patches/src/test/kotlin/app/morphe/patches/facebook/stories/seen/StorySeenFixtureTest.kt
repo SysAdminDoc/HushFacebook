@@ -18,6 +18,7 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 /**
  * The anchor of View stories anonymously on every Facebook build the bundle declares: one query
@@ -53,9 +54,7 @@ class StorySeenFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val mutations = FixtureDex.classesHolding(bundle, SEEN_ROOT_FIELD).filter(::isSeenMutation)
-                assertEquals("$name: query classes naming $SEEN_MUTATION", 1, mutations.size)
-                val mutation = mutations.single().type
+                val mutation = seenQueryClass(bundle)
 
                 val owners = FixtureDex.classesHolding(bundle, STORY_IDS)
                 val senders = owners.mapNotNull { seenSender(it, mutation) }
@@ -65,15 +64,23 @@ class StorySeenFixtureTest {
                 val owner = owners.single { it.type == sender.definingClass }
                 val builder = owner.methods.single { isRequestBuilder(it, mutation) }
 
-                // Nothing else creates the mutation, and nothing else calls the builder, so the
-                // sender is the one way the report of viewed stories goes out.
-                val creators = FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.typeSection.any { it == mutation } }) {
-                    method -> method.implementation?.instructions?.any { instruction ->
-                        instruction.opcode == Opcode.NEW_INSTANCE &&
-                            ((instruction as ReferenceInstruction).reference as TypeReference).type == mutation
-                    } == true
+                // Nothing else creates the mutation (or, from 586, makes a query named it), and
+                // nothing else calls the builder, so the sender is the one way the report of viewed
+                // stories goes out.
+                val creators = if (mutation == null) {
+                    FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.stringSection.any { it == SEEN_MUTATION } }) {
+                        makesSeenQuery(it)
+                    }
+                } else {
+                    FixtureDex.methodsWhere(bundle, dexFilter = { dex -> dex.typeSection.any { it == mutation } }) {
+                        method -> method.implementation?.instructions?.any { instruction ->
+                            instruction.opcode == Opcode.NEW_INSTANCE &&
+                                ((instruction as ReferenceInstruction).reference as TypeReference).type == mutation
+                        } == true
+                    }
                 }
-                assertEquals("$name: methods creating $mutation", listOf(builder.name), creators.map { it.name })
+                assertEquals("$name: methods creating ${mutation ?: "a query named $SEEN_MUTATION"}", listOf(builder.name),
+                    creators.map { it.name })
                 assertEquals("$name: ${creators.single().definingClass} isn't the builder's class", owner.type,
                     creators.single().definingClass)
                 val builderCallers = FixtureDex.methodsWhere(bundle, dexFilter = { dex ->
@@ -110,4 +117,18 @@ class StorySeenFixtureTest {
         }
         assertEquals("a declared build has no fixture", versions, checked)
     }
+}
+
+/** Builds whose seen request builder makes the query itself, with no query class of its own. */
+internal val SEEN_QUERY_IN_BUILDER = setOf("586.0.0.52.53")
+
+/**
+ * The seen mutation's query class in [bundle], one class whose constructor names it, or null on a
+ * build in [SEEN_QUERY_IN_BUILDER], which has none.
+ */
+internal fun seenQueryClass(bundle: File): String? {
+    val mutations = FixtureDex.classesHolding(bundle, SEEN_ROOT_FIELD).filter(::isSeenMutation)
+    val made = SEEN_QUERY_IN_BUILDER.any { bundle.name.contains("-$it-") }
+    assertEquals("${bundle.name}: query classes naming $SEEN_MUTATION", if (made) 0 else 1, mutations.size)
+    return mutations.singleOrNull()?.type
 }

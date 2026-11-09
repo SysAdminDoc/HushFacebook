@@ -200,16 +200,31 @@ private fun BytecodePatchContext.ringStateConstructor(type: String, ring: String
     return constructor.takeIf { parameters.size == 2 && parameters[0].startsWith("L") && parameters[1] == ring }
 }
 
-/** The comment row builder's ring state helper, with the ring state's constructor. */
+/**
+ * The comment row builder's ring state helper, with the ring state's constructor. 586 also names the
+ * plugin in a table of plugin names (LX/0AZU;->A00), which has no ring state helper, so the holder is
+ * the one class holding the name that has one. 586 also moved the helper out of the builder (arm64
+ * LX/01xJ;->A0L, a class of merged statics, answering LX/0Caa;): the builder's method naming the
+ * plugin (LX/0AfM;->A0B) calls it, so a holder without a helper of its own counts the one it calls.
+ */
 internal fun BytecodePatchContext.commentRingState(ring: String): Pair<Method, Method> {
     val holders = classDefByStrings(STORY_RING_PLUGIN, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
-    val holder = holders.singleOrNull() ?: refuse("expected one class holding the comment story ring plugin, found ${holders.size}")
-    val helpers = holder.methods.filter { method ->
-        AccessFlags.STATIC.isSet(method.accessFlags) && method.implementation != null &&
-            method.parameterTypes.size == 1 && method.returnType.startsWith("L") &&
-            ringStateConstructor(method.returnType, ring) != null
-    }
+    fun isHelper(method: Method) = AccessFlags.STATIC.isSet(method.accessFlags) && method.implementation != null &&
+        method.parameterTypes.size == 1 && method.returnType.startsWith("L") && ringStateConstructor(method.returnType, ring) != null
+    fun calledHelpers(holder: ClassDef) = holder.methods.filter { holdsString(it, STORY_RING_PLUGIN) }
+        .flatMap { it.code() }.filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
+        .map { (it as ReferenceInstruction).reference as MethodReference }.distinctBy { it.toString() }
+        .mapNotNull { call ->
+            classDefByOrNull(call.definingClass)?.methods?.firstOrNull { method ->
+                method.name == call.name && method.returnType == call.returnType &&
+                    method.parameterTypes.map(CharSequence::toString) == call.parameterTypes.map(CharSequence::toString)
+            }?.takeIf(::isHelper)
+        }
+    val withHelpers = holders.map { holder -> holder to holder.methods.filter(::isHelper).ifEmpty { calledHelpers(holder) } }
+        .filter { (_, helpers) -> helpers.isNotEmpty() }
+    val (holder, helpers) = withHelpers.singleOrNull()
+        ?: refuse("expected one class holding the comment story ring plugin with a ring state helper, found ${withHelpers.size} of ${holders.size}")
     val helper = helpers.singleOrNull() ?: refuse("${holder.type} has ${helpers.size} ring state helpers, not one")
     return helper to ringStateConstructor(helper.returnType, ring)!!
 }

@@ -56,7 +56,7 @@ class MarkAsSeenFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val mutation = FixtureDex.classesHolding(bundle, SEEN_ROOT_FIELD).filter(::isSeenMutation).single().type
+                val mutation = seenQueryClass(bundle)
                 val sender = FixtureDex.classesHolding(bundle, STORY_IDS).mapNotNull { seenSender(it, mutation) }.single()
                 assertTrue("$name: the sender's arguments aren't a callback and $SENDER_SHAPE", hasSendShape(sender))
 

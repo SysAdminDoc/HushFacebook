@@ -28,6 +28,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -204,8 +205,18 @@ class StoryViewerCleanupFixtureTest {
                 assertEquals("$name: listeners moving a view of segments", 1, moves.values.count { it!!.drawable == null })
                 assertEquals("$name: listeners moving a holder of the segments drawable", 1,
                     moves.values.count { it!!.drawable != null })
-                assertTrue("$name: a listener writes over its progress",
-                    methods.all { (_, method) -> keeps(method, lastArgument(method)) })
+                assertTrue("$name: a listener writes over its progress before moving its segments",
+                    methods.all { (_, method) -> keeps(method, lastArgument(method), moves.getValue(method)!!.index + 1) })
+                // Negative control: right after any write of the progress register (586's LX/0efg; reuses it
+                // on the trace's branch), the check says the argument is gone.
+                for ((_, method) in methods) {
+                    val progress = lastArgument(method)
+                    method.implementation!!.instructions.forEachIndexed { at, it ->
+                        if (it.opcode.setsRegister() && (it as? OneRegisterInstruction)?.registerA == progress) {
+                            assertFalse("$name: ${method.definingClass} wrote its progress at $at", keeps(method, progress, at + 1))
+                        }
+                    }
+                }
 
                 val context = PatchContexts.of((listeners + looked.values.filterNotNull()).distinctBy { it.type })
                 context.followStoryProgress()

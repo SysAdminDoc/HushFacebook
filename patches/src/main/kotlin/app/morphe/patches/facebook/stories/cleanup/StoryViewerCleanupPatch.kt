@@ -65,7 +65,8 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   links, reads each one's type (an enum, LX/05KM;, whose names are MUSIC, EFFECT, SPOTIFY and so
  *   on) and switches on its ordinal to build that pill, the switch's fall-through being the step to
  *   the next link. The patch asks the extension about the type right before the ordinal and, on a
- *   yes, takes that step, so the pill is never built.
+ *   yes, takes that step, so the pill is never built. 586 (LX/0dVe;) tests a boolean field of the
+ *   column between the type's null check and the ordinal, and skips to the step when it's off.
  * - The Subscribe pill under the name (LX/0b2T;) names nothing itself. Its click handler, a shared
  *   lambda class, casts it back from a field in the case that hands "SubscribeButtonComponent" to
  *   the subscribe call, so the pill is the nearest component cast before that string with the
@@ -271,7 +272,8 @@ private fun Instruction.soleRegister(): Int? = when (this) {
 /**
  * The one place in [render] where a no-argument call answers an object, a null check on it
  * follows, and its `Enum.ordinal()` feeds a switch whose fall-through soon jumps back up, the
- * loop's step to its next item. Null unless there's exactly one.
+ * loop's step to its next item. Null unless there's exactly one. 586 (LX/0dVe;) reads a boolean
+ * field between the null check and the ordinal and, when it's off, jumps back up to the step too.
  */
 internal fun pillSwitch(render: Method): PillSwitch? {
     val code = render.implementation?.instructions?.toList() ?: return null
@@ -282,7 +284,12 @@ internal fun pillSwitch(render: Method): PillSwitch? {
         if (ordinal.opcode != Opcode.INVOKE_VIRTUAL && ordinal.opcode != Opcode.INVOKE_VIRTUAL_RANGE) return@mapNotNull null
         if (ordinalRef.definingClass != "Ljava/lang/Enum;" || ordinalRef.name != "ordinal") return@mapNotNull null
         val type = ordinal.soleRegister() ?: return@mapNotNull null
-        val (read, result, check) = Triple(code[i - 3], code[i - 2], code[i - 1])
+        val (flag, gate) = code[i - 2] to code[i - 1]
+        val gated = i >= 5 && flag.opcode == Opcode.IGET_BOOLEAN && gate.opcode == Opcode.IF_EQZ &&
+            (gate as OneRegisterInstruction).registerA == (flag as TwoRegisterInstruction).registerA &&
+            at[i - 1] + (gate as OffsetInstruction).codeOffset < at[i - 5]
+        val first = if (gated) i - 5 else i - 3
+        val (read, result, check) = Triple(code[first], code[first + 1], code[first + 2])
         val readRef = (read as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
         val (moved, switch) = code[i + 1] to code[i + 2]
         val scratch = (moved as? OneRegisterInstruction)?.registerA ?: return@mapNotNull null
@@ -296,9 +303,9 @@ internal fun pillSwitch(render: Method): PillSwitch? {
         val steps = (i + 3 until minOf(code.size, i + 7)).any { j ->
             val jump = code[j]
             (jump.opcode == Opcode.GOTO || jump.opcode == Opcode.GOTO_16 || jump.opcode == Opcode.GOTO_32) &&
-                at[j] + (jump as OffsetInstruction).codeOffset < at[i - 3]
+                at[j] + (jump as OffsetInstruction).codeOffset < at[first]
         }
-        if (shaped && steps) PillSwitch(i - 3, type, i, scratch, i + 3, readRef.returnType) else null
+        if (shaped && steps) PillSwitch(first, type, i, scratch, i + 3, readRef.returnType) else null
     }
     return found.singleOrNull()
 }

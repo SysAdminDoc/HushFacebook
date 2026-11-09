@@ -10,12 +10,12 @@ import app.morphe.patches.facebook.feed.isStringTable
 import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.requireLocals
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
-import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -34,7 +34,8 @@ import com.android.tools.smali.dexlib2.immutable.reference.ImmutableFieldReferen
  *   whose one field is the segments drawable (LX/0mKV;).
  * - Under a server flag both hand their segments 1000, a full segment, in place of the progress, so
  *   the bar takes the listener's own progress argument rather than what the segments get. Neither
- *   listener writes over that argument.
+ *   listener writes over that argument on the way to its segments (586's LX/0efg; reuses it on the
+ *   trace's branch only).
  * - Each listener's call to its segments is followed by its return-void, which only that call
  *   reaches, so the hook goes in between: it sees the progress only for the card the segments show,
  *   after Facebook's own checks, and no register but the segments holds anything wanted there.
@@ -96,11 +97,12 @@ internal fun segmentsMove(method: Method, classDef: (String) -> ClassDef?): Segm
 /** The register of [method]'s last argument, an int: the top one, since no wide argument follows it. */
 internal fun lastArgument(method: Method): Int = method.implementation!!.registerCount - 1
 
-/** Whether [method] never writes over [register]. */
-internal fun keeps(method: Method, register: Int): Boolean = method.implementation!!.instructions.none {
-    val written = (it as? OneRegisterInstruction)?.registerA ?: return@none false
-    it.opcode.setsRegister() && written == register || it.opcode.setsWideRegister() && written + 1 == register
-}
+/**
+ * Whether [register] still holds what [method] was handed when the instruction at [at] starts, on
+ * every way there. 586's LX/0efg; reuses its progress register for the trace's arguments, but only
+ * on the branch that logs and returns, never on the one that moves the segments.
+ */
+internal fun keeps(method: Method, register: Int, at: Int): Boolean = method.writersReaching(at, register) == listOf(-1)
 
 /**
  * The progress listeners: each method writing [PROGRESS_TRACE] ([methodsNaming]), with the class
@@ -126,7 +128,7 @@ internal fun BytecodePatchContext.followStoryProgress() {
         val move = segmentsMove(method) { classDefByOrNull(it) }
             ?: refuse("$where moves its segments other than once right before it returns, inside a try, or from a field it can't read")
         val progress = lastArgument(method)
-        if (!keeps(method, progress)) refuse("$where writes over its progress argument")
+        if (!keeps(method, progress, move.index + 1)) refuse("$where writes over its progress argument before moving its segments")
         val read = move.drawable?.let { "iget-object v0, v0, ${it.definingClass}->${it.name}:${it.type}" } ?: ""
         val mutable = mutableClassDefBy(listener.type).methods.single {
             it.name == method.name && it.returnType == method.returnType &&

@@ -71,15 +71,21 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
 
     execute {
         // Everything is found before anything changes, so a build missing one part is left as it was.
+        // Up to 585 a query class of its own names the mutation; 586 has none, and the builder makes
+        // the query itself (a null mutation below).
         val mutations = classDefByStrings(SEEN_ROOT_FIELD, StringComparisonType.EQUALS).filter(::isSeenMutation)
-        val mutation = mutations.singleOrNull() ?: throw PatchException(
-            "$PATCH: expected one query class whose constructor loads \"$SEEN_MUTATION\" and \"$SEEN_ROOT_FIELD\", " +
-                "found ${mutations.size}",
-        )
-        val senders = classDefByStrings(STORY_IDS, StringComparisonType.EQUALS).mapNotNull { seenSender(it, mutation.type) }
+        if (mutations.size > 1) {
+            throw PatchException(
+                "$PATCH: expected at most one query class whose constructor loads \"$SEEN_MUTATION\" and " +
+                    "\"$SEEN_ROOT_FIELD\", found ${mutations.size}",
+            )
+        }
+        val mutation = mutations.singleOrNull()?.type
+        val senders = classDefByStrings(STORY_IDS, StringComparisonType.EQUALS).mapNotNull { seenSender(it, mutation) }
         val sender = senders.singleOrNull() ?: throw PatchException(
-            "$PATCH: expected one class that builds $SEEN_MUTATION with \"$STORY_IDS\" and sends it from one void " +
-                "method taking the set of story ids, found ${senders.size}",
+            "$PATCH: expected one class that builds $SEEN_MUTATION with \"$STORY_IDS\" " +
+                (mutation?.let { "through $it" } ?: "making the query itself") +
+                " and sends it from one void method taking the set of story ids, found ${senders.size}",
         )
         if (!hasSendShape(sender)) {
             throw PatchException("$PATCH: the sender doesn't take a callback and ${SENDER_SHAPE.joinToString("")}")
