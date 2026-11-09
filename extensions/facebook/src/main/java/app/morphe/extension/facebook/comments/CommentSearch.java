@@ -14,6 +14,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -35,8 +36,11 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
@@ -74,7 +78,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * Down and the keyboard's search key go on to the next one and up goes back. At the end of what
  * Facebook has loaded, after a short wait for more, the bar says there are no more and the list goes
  * back to the comment found last. The count is
- * the matches seen so far, so it's exact once the search has reached the end.
+ * the matches seen so far, so it's exact once the search has reached the end. Back closes the bar
+ * while it shows, and the next one closes the sheet.
  *
  * <p>Off, nothing is added.
  */
@@ -391,6 +396,9 @@ public final class CommentSearch {
         /** Where the comment found last sat in the list when the step under way began, or MIN_VALUE. */
         private int hitTop = Integer.MIN_VALUE;
         private boolean quiet;
+        /** The back callback a showing bar registered, an OnBackInvokedCallback, and its dispatcher (Android 13 and newer). */
+        @Nullable Object backDispatcher;
+        @Nullable Object backCallback;
 
         /**
          * A pause in typing searches, unless the keyboard has squeezed the list to a sliver: a look
@@ -415,6 +423,7 @@ public final class CommentSearch {
                 walk++;
                 drop(typed);
                 hideKeyboard();
+                holdBack(false);
                 if (observer != null && observer.isAlive()) observer.removeOnPreDrawListener(this);
                 observer = null;
                 // Never here: Back detaches the frame holding the sheet and the layer in one pass, and
@@ -540,6 +549,11 @@ public final class CommentSearch {
                 searchKey();
                 return true;
             });
+            box.setOnKeyListener((v, code, event) -> {
+                if (code != KeyEvent.KEYCODE_BACK || row.getVisibility() != View.VISIBLE) return false;
+                if (event.getAction() == KeyEvent.ACTION_UP) backPressed();
+                return true;
+            });
             row.addView(box, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
 
             TextView number = new TextView(context);
@@ -615,8 +629,10 @@ public final class CommentSearch {
                 show(magnifier, false);
                 show(bar, false);
                 shown.unmark();
+                holdBack(false);
                 return;
             }
+            holdBack(open);
             int[] at = new int[2];
             int[] base = new int[2];
             comments.getLocationInWindow(at);
@@ -699,6 +715,22 @@ public final class CommentSearch {
                 box.clearFocus();
             }
             place();
+        }
+
+        /** Back while the bar shows: the bar closes and the sheet stays. */
+        void backPressed() {
+            try {
+                closeBar();
+            } catch (Throwable failure) {
+                HookStatus.threw(FAMILY, "comment search closed", failure);
+            }
+        }
+
+        /** Takes Back for the bar while it shows, on Android 13 and newer, and gives it back after. */
+        private void holdBack(boolean hold) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || hold == (backCallback != null)) return;
+            if (hold) BackCallbacks.register(this);
+            else BackCallbacks.unregister(this);
         }
 
         /**
@@ -968,6 +1000,33 @@ public final class CommentSearch {
 
         private void sayCount() {
             say(counting && ordinal > 0 ? ordinal + "/" + seen : "");
+        }
+    }
+
+    /**
+     * A showing bar's back callback, on Android 13 and newer. Overlay priority puts it above every
+     * callback of Facebook's, so Back closes the bar and leaves the sheet open. Where the window hands
+     * Back to views as a key instead, the dispatcher doesn't take the callback, and the box's key
+     * listener answers. Its own class, so the callback types load only where they exist.
+     */
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private static final class BackCallbacks {
+        static void register(Search search) {
+            OnBackInvokedDispatcher dispatcher = search.layer == null ? null : search.layer.findOnBackInvokedDispatcher();
+            if (dispatcher == null) return;
+            OnBackInvokedCallback callback = search::backPressed;
+            dispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_OVERLAY, callback);
+            search.backDispatcher = dispatcher;
+            search.backCallback = callback;
+        }
+
+        static void unregister(Search search) {
+            Object dispatcher = search.backDispatcher;
+            Object callback = search.backCallback;
+            search.backDispatcher = null;
+            search.backCallback = null;
+            if (dispatcher == null || callback == null) return;
+            ((OnBackInvokedDispatcher) dispatcher).unregisterOnBackInvokedCallback((OnBackInvokedCallback) callback);
         }
     }
 

@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.comments;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -15,12 +16,14 @@ import static org.robolectric.Shadows.shadowOf;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Looper;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.window.OnBackInvokedCallback;
 
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -41,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.BackCallbacksForTests;
 import app.morphe.extension.shared.SettingsContextRule;
 
 /**
@@ -305,6 +309,43 @@ public class CommentSearchTest {
         assertFalse(search.layer.marking);
         assertEquals(View.VISIBLE, search.magnifier.getVisibility());
         assertEquals(View.GONE, search.bar.getVisibility());
+    }
+
+    @Test
+    @Config(sdk = 36)
+    public void backClosesTheBarBeforeTheSheetWhereTheWindowUsesBackCallbacks() throws ReflectiveOperationException {
+        BackCallbacksForTests.on(true);
+        CommentSearch.Search search = sheetWith(twenty(new HashMap<>()).toArray(new String[0]));
+        OnBackInvokedCallback facebooks = BackCallbacksForTests.top(search.layer);
+
+        search.openBar();
+        assertNotSame("the bar takes Back", facebooks, BackCallbacksForTests.top(search.layer));
+
+        list.setVisibility(View.GONE);
+        search.place();
+        assertSame("a bar that isn't showing leaves Back alone", facebooks, BackCallbacksForTests.top(search.layer));
+        list.setVisibility(View.VISIBLE);
+        search.place();
+
+        BackCallbacksForTests.top(search.layer).onBackInvoked();
+        assertFalse(search.open);
+        assertEquals(View.VISIBLE, search.magnifier.getVisibility());
+        assertNotNull("the sheet stays", search.layer.getParent());
+        assertSame("the next Back is Facebook's", facebooks, BackCallbacksForTests.top(search.layer));
+    }
+
+    @Test
+    public void backAsAKeyClosesTheBarWhereTheWindowUsesKeys() {
+        CommentSearch.Search search = sheetWith(twenty(new HashMap<>()).toArray(new String[0]));
+        search.openBar();
+        search.place();
+
+        assertTrue(search.field.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK)));
+        assertTrue("open until the key comes up", search.open);
+        assertTrue(search.field.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)));
+        assertFalse(search.open);
+        assertFalse("closed, the key is left to the sheet",
+                search.field.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)));
     }
 
     /** Lays the list out [height] tall, [top] down the sheet, as the keyboard squeezing it would. */
