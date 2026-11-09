@@ -61,9 +61,9 @@ param(
     # or on Android's app chooser.
     [string[]]$Visit = @('fb://feed', 'tap:Comment', 'back', 'fb://watch', 'fb://fb_shorts/viewer', 'longpress',
         'fb://notifications', 'fb://marketplace', 'fb://profile', 'fb://search', 'query',
-        'fb://bookmarks', 'tap:Settings and privacy', 'tap:Settings', 'tap:Notifications', 'fb://bookmarks', 'tap:Feeds', 'fb://feed'),
+        'fb://bookmarks', 'tap:Settings and privacy', 'tap:Settings', 'tap:Notifications', 'fb://feed'),
     # Only these explicitly optional steps may be absent without failing the requested scope.
-    [string[]]$OptionalVisit = @('tap:Comment', 'tap:Settings', 'tap:Notifications', 'tap:Feeds'),
+    [string[]]$OptionalVisit = @('tap:Comment', 'tap:Settings', 'tap:Notifications'),
     [int]$Swipes = 4,
     [int]$SettleSeconds = 4,
     # Setting keys to turn on or off on top of the all-on profile, besides the few the walk itself
