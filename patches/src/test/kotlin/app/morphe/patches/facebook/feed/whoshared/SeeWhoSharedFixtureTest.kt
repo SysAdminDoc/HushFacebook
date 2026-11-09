@@ -13,6 +13,8 @@ import app.morphe.patches.facebook.downloads.video.MENU
 import app.morphe.patches.facebook.downloads.video.PLAYER_ORIGIN
 import app.morphe.patches.facebook.downloads.video.VIEW
 import app.morphe.patches.facebook.downloads.video.VideoFeedStoryMenuFingerprint
+import app.morphe.patches.facebook.downloads.video.fillsPostMenu
+import app.morphe.patches.facebook.downloads.video.opensPostMenu
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.isStringTableCall
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
@@ -87,18 +89,18 @@ class SeeWhoSharedFixtureTest {
                 val signature = videoMenu.parameterTypes.map(CharSequence::toString)
                 val base = FixtureDex.classes(bundle, setOf(videoMenu.definingClass)).getValue(videoMenu.definingClass).superclass!!
 
-                fun fills(reference: MethodReference?) = reference != null && reference.definingClass == base &&
-                    reference.name == videoMenu.name && reference.parameterTypes.map(CharSequence::toString) == signature
+                // 586 fills through an interface of the base, from two builders; the post's takes the player origin.
+                val baseClass = FixtureDex.classes(bundle, setOf(base)).getValue(base)
+                val owners = setOf(base) + baseClass.interfaces
+                fun fills(instruction: Instruction) = fillsPostMenu(instruction, baseClass, videoMenu.name, signature)
                 val sites = FixtureDex.methodsWhere(bundle, { dex ->
-                    dex.methodSection.any { it.definingClass == base && it.name == videoMenu.name }
+                    dex.methodSection.any { it.definingClass in owners && it.name == videoMenu.name }
                 }) { method ->
-                    method.implementation?.instructions?.any {
-                        (it.opcode == Opcode.INVOKE_VIRTUAL || it.opcode == Opcode.INVOKE_VIRTUAL_RANGE) && fills(it.methodRef())
-                    } == true
+                    opensPostMenu(method, signature) && method.implementation?.instructions?.any(::fills) == true
                 }
                 assertEquals("$name: one place fills a post menu", 1, sites.size)
                 val site = sites.single()
-                val callIndex = site.code().indexOfFirst { fills(it.methodRef()) }
+                val callIndex = site.code().indexOfFirst(::fills)
                 val call = site.code()[callIndex] as RegisterRangeInstruction
 
                 val props = signature[2]
@@ -130,7 +132,7 @@ class SeeWhoSharedFixtureTest {
                 assertEquals("$name: the helper takes the menu, the view and the props", listOf(MENU, VIEW, props),
                     helper.parameterTypes.map(CharSequence::toString))
                 val patched = creator.methods.single { MethodUtil.methodSignaturesMatch(it, site) }.code()
-                assertTrue("$name: Facebook's fill stays where it was", fills(patched[callIndex].methodRef()))
+                assertTrue("$name: Facebook's fill stays where it was", fills(patched[callIndex]))
                 val hook = patched[callIndex + 1] as RegisterRangeInstruction
                 assertEquals("$name: the hook calls the helper", WHO_SHARED_MENU_HELPER, patched[callIndex + 1].methodRef()!!.name)
                 assertEquals("$name: the hook hands over the menu, the view and the props",

@@ -23,6 +23,7 @@ import app.morphe.util.classDefForEachReferencing
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -148,18 +149,15 @@ internal fun BytecodePatchContext.postMenu(): PostMenu {
     //
     // Every override calls its base with invoke-super. The one invoke-virtual of the base is
     // the builder that fills the menu and shows it (580: a static method of the feed menu
-    // helper that returns the sheet; 577: the same method under another Redex name).
+    // helper that returns the sheet; 577: the same method under another Redex name). 586
+    // fills through an interface the base implements, and a second builder there fills the
+    // menu of promotion and carousel units; only the post's builder takes the player origin.
     val sites = mutableListOf<Triple<String, Method, Int>>()
-    classDefForEachReferencing(types = listOf(baseType)) { classDef ->
+    classDefForEachReferencing(types = listOf(baseType) + base.interfaces) { classDef ->
         classDef.methods.forEach { method ->
+            if (!opensPostMenu(method, signature)) return@forEach
             method.instructionsOrEmpty().forEachIndexed { index, instruction ->
-                if (instruction.opcode != Opcode.INVOKE_VIRTUAL && instruction.opcode != Opcode.INVOKE_VIRTUAL_RANGE) {
-                    return@forEachIndexed
-                }
-                val reference = instruction.methodReference() ?: return@forEachIndexed
-                if (reference.definingClass == baseType && reference.name == videoMenu.name &&
-                    reference.parameterTypes.map(CharSequence::toString) == signature
-                ) {
+                if (fillsPostMenu(instruction, base, videoMenu.name, signature)) {
                     sites += Triple(classDef.type, method, index)
                 }
             }
@@ -167,7 +165,8 @@ internal fun BytecodePatchContext.postMenu(): PostMenu {
     }
 
     check(sites.size == 1) {
-        "Expected 1 place that fills a post menu through $baseType->${videoMenu.name}, found ${sites.size}: " +
+        "Expected 1 place that fills a post menu through $baseType->${videoMenu.name} or an interface of it, " +
+            "found ${sites.size}: " +
             sites.joinToString { "${it.first}->${it.second.name}" }
     }
 
@@ -301,6 +300,25 @@ private fun stockDownloadIcon(instructions: List<Instruction>, where: String, re
     }
     return icon
 }
+
+/**
+ * Whether [instruction] fills a post menu through the menu builders' [base], calling [name] with
+ * [signature]: a virtual call on the base, or (586) an interface call on an interface it implements.
+ */
+internal fun fillsPostMenu(instruction: Instruction, base: ClassDef, name: String, signature: List<String>): Boolean {
+    val virtual = instruction.opcode == Opcode.INVOKE_VIRTUAL || instruction.opcode == Opcode.INVOKE_VIRTUAL_RANGE
+    val throughInterface = instruction.opcode == Opcode.INVOKE_INTERFACE || instruction.opcode == Opcode.INVOKE_INTERFACE_RANGE
+    if (!virtual && !throughInterface) return false
+    val reference = instruction.methodReference() ?: return false
+    val owner = if (virtual) reference.definingClass == base.type else reference.definingClass in base.interfaces
+    return owner && reference.name == name && reference.parameterTypes.map(CharSequence::toString) == signature
+}
+
+/**
+ * Whether [method] can be where a post's menu is filled: it takes the player origin the fill
+ * passes on, the last of [signature]. 586's builder for promotion and carousel units doesn't.
+ */
+internal fun opensPostMenu(method: Method, signature: List<String>): Boolean = signature.last() in method.parameters()
 
 private fun Method.parameters(): List<String> = parameterTypes.map(CharSequence::toString)
 
