@@ -692,7 +692,7 @@ try {
     $script:deviceSwitches = $null
     Get-ChildItem -LiteralPath $OutDir -Directory -Filter 'orphaned-audit-*' | Remove-Item -Recurse -Force
 
-    $version = '585.0.0.47.54'
+    $version = '586.0.0.52.53'
     $installedHash = 'a' * 64
     $installedAbi = 'arm64-v8a'
     $sdk = 36

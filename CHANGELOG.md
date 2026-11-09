@@ -38,6 +38,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* Hushfacebook now patches Facebook 586.0.0.52.53 and no longer takes 585. On a 64-bit phone download the (arm64-v8a) (120-640dpi) (Android 11+) bundle, build 476217123, and on a 32-bit phone the (arm-v7a) (320dpi) (Android 11+) bundle, build 476217122. Update Facebook before you patch.
 * You need Morphe Manager 2.5.0 or newer now. The patches are built on Morphe patcher 2.3.0, the one Manager 2.5.0 ships with, and older Managers refuse a bundle built on it, so update Manager before you patch. On a computer, use morphe-desktop 2.1.1 or newer.
 * `Pinch to zoom` works on videos in your feed and on photos in `Photo carousel`'s row now, as well as stories and profiles. With `Keep videos playing while zoomed` on, a story's video plays on while you zoom, and the zoom springs back when the story moves on. Hold a story first and then pinch if you'd rather zoom a still frame. (#220)
 * In Morphe Manager, `Block background-return feed refresh` sits under Navigation now, next to the other patches about where Facebook opens and returns to. Feed had grown to 16 patches with `Hide profile pictures`.
