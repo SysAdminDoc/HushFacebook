@@ -5,6 +5,7 @@
 package app.morphe.patches.facebook.navigation.bottomtabbar
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
@@ -14,7 +15,6 @@ import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.appicons.logoDressSite
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
-import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.settings.CREATE_WORDMARK_VIEW
 import app.morphe.patches.facebook.misc.settings.WORDMARK_NAVIGATION_BAR
 import app.morphe.patches.facebook.misc.settings.settingsPatch
@@ -422,8 +422,13 @@ internal fun glyphCountMethods(glyph: ClassDef, interfaces: List<ClassDef>): Lis
 internal fun MutableMethod.markSpecButtonAfter(site: SpecButtonSite) {
     val at = site.made + 1
     val name = findFreeRegister(at, site.glyph)
-    if (maxOf(site.glyph, name, implementation!!.registerCount - 1) > 15) {
+    val spec = implementation!!.registerCount - 1
+    if (maxOf(site.glyph, name, spec) > 15) {
         refuse("the glyph (v${site.glyph}), the free v$name or the spec is past v15 in ${site.method.definingClass}->${site.method.name}")
+    }
+    // A Redex-reused p1 would fail verification and take the whole bar class down (586's A0D did that to p0).
+    if (implementation!!.instructions.any { writesRegister(it, spec) }) {
+        refuse("${site.method.definingClass}->${site.method.name} writes p1, so the spec can't be read from it after the glyph")
     }
     addInstructions(
         at,
@@ -462,27 +467,21 @@ internal fun MutableMethod.hideSearchButtonAfter(site: AddedButtonSite) {
 
 /**
  * Puts the search button's hook after the newer bar keeps its search glyph, with the name of the bar's
- * screen. 585's Android 9 build keeps the bar (p0) past v15 in that method (NavigationBar->A0F, p0
- * is v18), out of the iget's reach, so there the bar is first copied into the free register.
+ * screen. The bar comes from the register Facebook's own iput-object just stored the glyph through,
+ * never p0: 586's Redex reuses p0 in that method (NavigationBar->A0D writes v16 and jumps back above
+ * the site), so a read through p0 fails verification and takes the whole bar class down with it.
  */
 internal fun MutableMethod.hideSearchGlyphAfter(site: SearchGlyphSite) {
     val at = site.kept + 1
-    val screen = findFreeRegister(at, site.register)
-    if (maxOf(site.register, screen) > 15) {
-        refuse("the glyph (v${site.register}) or the free v$screen is past v15 in ${site.method.definingClass}->${site.method.name}")
-    }
-    val read = if (localRegisterCount() > 15) {
-        """
-            move-object/from16 v$screen, p0
-            iget-object v$screen, v$screen, ${site.screenField.smali()}
-        """
-    } else {
-        "iget-object v$screen, p0, ${site.screenField.smali()}"
+    val bar = getInstruction<TwoRegisterInstruction>(site.kept).registerB
+    val screen = findFreeRegister(at, site.register, bar)
+    if (maxOf(site.register, screen, bar) > 15) {
+        refuse("the glyph (v${site.register}), the bar (v$bar) or the free v$screen is past v15 in ${site.method.definingClass}->${site.method.name}")
     }
     addInstructions(
         at,
         """
-            $read
+            iget-object v$screen, v$bar, ${site.screenField.smali()}
             invoke-static { v${site.register}, v$screen }, $BAR_SEARCH_BUTTON_HOOK
         """,
     )
