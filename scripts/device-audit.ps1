@@ -945,7 +945,10 @@ function Test-SettingsScreen([string[]]$Text, [object]$Rows) {
 }
 
 # Back until no Hush settings screen is left. Back first takes a page back from its section jump,
-# then closes the screen.
+# then closes the screen. A section page (schema 3) always shows the toolbar's list toggle, and its
+# title can be one of Facebook's own tab labels (Menu, Search, Marketplace, Notifications), so only
+# a schema 2 page counts by its title alone. Matching "Menu" on Facebook's tab bar sent one Back too
+# many on 586 and put Facebook in the background.
 function Close-Settings {
     for ($i = 0; $i -lt 4; $i++) {
         $text = @(Get-ScreenText)
@@ -953,7 +956,7 @@ function Close-Settings {
         $shown = if ($record) { $record | ConvertFrom-Json } else { $null }
         $table = if ($shown) { Get-AuditLocaleTable ([string]$shown.locale) $shown.localeTags } else { $null }
         if (-not ((Test-SettingsScreen $text $(if ($table) { $table.Rows } else { $null })) -or $text -contains 'Search settings' -or
-                ($shown -and $shown.schema -in @(2, 3) -and $text -contains $shown.title))) { return }
+                ($shown -and $shown.schema -eq 2 -and $text -contains $shown.title))) { return }
         Invoke-Adb shell input keyevent KEYCODE_BACK | Out-Null
         Start-Sleep -Milliseconds 900
     }
