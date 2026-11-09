@@ -80,7 +80,7 @@ internal fun main(args: Array<String>) {
  * and options. Requires morphe-patcher 1.3.x and `compatibleWith(Compatibility(...))` in patches.
  */
 @Suppress("DEPRECATION")
-private fun generatePatchList(version: String, patches: Set<Patch<*>>) {
+private fun generatePatchList(version: String, patches: Set<Patch>) {
     val listJson = File("../patches-list.json")
 
     val appNames = patches

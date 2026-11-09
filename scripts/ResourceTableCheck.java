@@ -103,7 +103,9 @@ public final class ResourceTableCheck {
         ZipEntry arsc = zip.getEntry(TableBlock.FILE_NAME);
         if (arsc == null) throw new IOException(zip.getName() + " has no " + TableBlock.FILE_NAME);
         try (InputStream in = new BufferedInputStream(zip.getInputStream(arsc))) {
-            return TableBlock.load(in);
+            // ARSCLib 675bed2de3 (patcher 2.3.0, morphe-desktop 2.1.x) reports read progress through
+            // a callback, and the shrunk desktop jar keeps only that overload. Nothing is reported.
+            return TableBlock.load(in, (read, total) -> { });
         }
     }
 

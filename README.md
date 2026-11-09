@@ -5,7 +5,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License GPL-3.0"></a>
   <img src="https://img.shields.io/badge/platform-Android%2011%2B-3DDC84" alt="Platform Android 11+">
   <img src="https://img.shields.io/badge/Facebook-585.0.0.47.54-0866FF" alt="Facebook 585.0.0.47.54">
-  <img src="https://img.shields.io/badge/for-Morphe%20Manager%202.4.0%2B-8A2BE2" alt="For Morphe Manager 2.4.0 or newer">
+  <img src="https://img.shields.io/badge/for-Morphe%20Manager%202.5.0%2B-8A2BE2" alt="For Morphe Manager 2.5.0 or newer">
 </p>
 
 <p align="center">
@@ -31,7 +31,7 @@ The latest release is [v0.21.0](https://github.com/SysAdminDoc/Hushfacebook/rele
 
 ## Install
 
-1. Install [Morphe Manager](https://github.com/MorpheApp/morphe-manager) 2.4.0 or newer.
+1. Install [Morphe Manager](https://github.com/MorpheApp/morphe-manager) 2.5.0 or newer.
 2. Add Hushfacebook as a patch source: https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook
 3. Download Facebook 585.0.0.47.54 from [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/). Take the bundle labelled (arm64-v8a) (120-640dpi) (Android 11+), build 476015655, or on a phone with only a 32-bit processor the one labelled (arm-v7a) (320dpi) (Android 11+), build 476015543. Both are .apkm files. Take the 64-bit one whenever your phone can run it. The 32-bit one only has images for 320 dpi screens, so on a sharper screen some icons look soft.
 4. In Morphe Manager, tap **Select other apps**, then **Open APK file**, and pick that file. Android may ask for file access the first time.
@@ -41,7 +41,7 @@ The default selection is every patch but five, so you don't need Expert mode. To
 
 ### Keep your signing key
 
-Morphe Manager signs the patched Facebook with a key it makes on your phone, and every update has to carry that same key. Back it up right after your first patch, under **Settings → Backup → Signing key** in Manager, then tap **Export**. The button only shows up once you've patched something. Manager 2.4.0 saves it as `Morphe.p12` (older versions saved `Morphe.keystore`). Keep that file somewhere private, because anyone who has it can sign an APK your phone will take as an update. The file opens with the key's own password. A key Manager made itself uses Manager's usual password, which it tries on its own when you import. If you once imported a key with a password of your own, keep that password with the file.
+Morphe Manager signs the patched Facebook with a key it makes on your phone, and every update has to carry that same key. Back it up right after your first patch, under **Settings → Backup → Signing key** in Manager, then tap **Export**. The button only shows up once you've patched something. Manager 2.4.0 and newer save it as `Morphe.p12` (older versions saved `Morphe.keystore`). Keep that file somewhere private, because anyone who has it can sign an APK your phone will take as an update. The file opens with the key's own password. A key Manager made itself uses Manager's usual password, which it tries on its own when you import. If you once imported a key with a password of your own, keep that password with the file.
 
 On a new phone, import the key in the same place before you patch anything. Reinstalling Manager or clearing its storage makes a new key, and Morphe's settings backup doesn't include it. With a different key, the only way forward is to uninstall the patched Facebook, which deletes its data. A Root Mount install sits over Meta's own Facebook and doesn't have this problem. Morphe's own guide is [Backup and keystore](https://github.com/MorpheApp/morphe-manager/blob/main/docs/backup-and-keystore.md).
 

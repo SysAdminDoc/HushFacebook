@@ -21,18 +21,18 @@ import org.junit.Test
  */
 class ClonedPackageOrderTest {
     /** Every patch this bundle declares at the top level, the way Morphe's loader finds them. */
-    private fun bundlePatches(): List<Patch<*>> {
+    private fun bundlePatches(): List<Patch> {
         val root = File(Class.forName("app.morphe.patches.facebook.coexist.ClonedPackageKt")
             .protectionDomain.codeSource.location.toURI())
         return root.walkTopDown().filter { it.name.endsWith("Kt.class") }.flatMap { file ->
             val name = file.relativeTo(root).path.removeSuffix(".class").replace(File.separatorChar, '.')
             Class.forName(name).methods.filter {
                 Modifier.isStatic(it.modifiers) && it.parameterCount == 0 && Patch::class.java.isAssignableFrom(it.returnType)
-            }.map { it.invoke(null) as Patch<*> }
+            }.map { it.invoke(null) as Patch }
         }.toList()
     }
 
-    private fun Patch<*>.reaches(target: Patch<*>): Boolean = this === target || dependencies.any { it.reaches(target) }
+    private fun Patch.reaches(target: Patch): Boolean = this === target || dependencies.any { it.reaches(target) }
 
     /**
      * The order Morphe's own [selection] loop would actually execute patches in: each visited sorted
@@ -41,9 +41,9 @@ class ClonedPackageOrderTest {
      * which of two patches executed first, which is what decides which finalizes last: finalize runs
      * in the exact reverse of this order.
      */
-    private fun executionOrder(selection: List<Patch<*>>): List<Patch<*>> {
-        val executed = LinkedHashSet<Patch<*>>()
-        fun visit(patch: Patch<*>) {
+    private fun executionOrder(selection: List<Patch>): List<Patch> {
+        val executed = LinkedHashSet<Patch>()
+        fun visit(patch: Patch) {
             if (patch in executed) return
             patch.dependencies.forEach(::visit)
             executed.add(patch)
