@@ -740,9 +740,10 @@ class SharedPermissionsFixtureTest {
          * Loads of Facebook's package that only build RemoteViews, per build. 582 had 14 notification
          * template sites (2026-10-14). 583 builds all but one from the running package itself, and
          * the check after the patch still finds none left spelled out (2026-10-16). 584 spelled all
-         * 14 out again (2026-10-22). 585 is back to 583's one (2026-10-29).
+         * 14 out again (2026-10-22). 585 is back to 583's one (2026-10-29), and 586 spells all 14
+         * out again (2026-11-08).
          */
-        val REMOTE_VIEWS_LOADS = mapOf(AppCompatibilities.FACEBOOK_TARGET_VERSION to 1)
+        val REMOTE_VIEWS_LOADS = mapOf(AppCompatibilities.FACEBOOK_TARGET_VERSION to 14)
 
         /**
          * Loads of Facebook's package that only name this app to Android or look up its resources,
@@ -755,7 +756,7 @@ class SharedPermissionsFixtureTest {
          * three setClassName (login and consent deep links, device login) and Xiaomi's launcher
          * badge call.
          */
-        val OWN_PACKAGE_CALL_LOADS = mapOf(AppCompatibilities.FACEBOOK_TARGET_VERSION to 19)
+        val OWN_PACKAGE_CALL_LOADS = mapOf(AppCompatibilities.FACEBOOK_TARGET_VERSION to 18)
 
         /** Of those, the ones in Firebase's notification code. */
         val FIREBASE_LOADS = mapOf(AppCompatibilities.FACEBOOK_TARGET_VERSION to 9)
@@ -801,16 +802,12 @@ class SharedPermissionsFixtureTest {
          * at least, so it can't go over whole. Earlier builds named these classes differently per
          * ABI, as 585's do; 584's two happened to agree. 585's phone builds drop the warm-start
          * hint, which no longer reads a load of Facebook's package there, and the Android 9 build
-         * still has it (2026-11-07).
+         * still has it (2026-11-07). 586 has phone builds only, and neither has the hint (2026-11-08).
          */
         val STOCK_OWNERS = mapOf(
             AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-                "arm64-v8a" to listOf("LX/0gpz;->A00@584:", "LX/0Tav;->A00@42:", "LX/0aLJ;->A00@26:", "LX/0ZoC;->openForumShareLink\$${FORUM_LINK}@60:"),
-                "armeabi-v7a" to listOf("LX/0gpb;->A00@584:", "LX/0TaH;->A00@42:", "LX/0aKz;->A00@26:", "LX/0Znr;->openForumShareLink\$${FORUM_LINK}@60:"),
-                "arm64-v8a-minapi28-storeless" to listOf(
-                    "LX/0UM8;->A00@579:", "LX/0NTh;->A00@42:", "LX/0lB8;->A00@24:", "LX/0NWL;->openForumShareLink\$${FORUM_LINK}@60:",
-                    "Lcom/facebook/messaging/threadsettings2/activity/ThreadSettingsActivity;->onActivityCreate@50:",
-                ),
+                "arm64-v8a" to listOf("LX/0X1T;->A00@569:", "LX/0X8V;->A00@40:", "LX/0XdF;->A00@22:", "LX/0hi4;->openForumShareLink\$${FORUM_LINK}@58:"),
+                "armeabi-v7a" to listOf("LX/0X1X;->A00@569:", "LX/0X8Z;->A00@40:", "LX/0XdJ;->A00@22:", "LX/0hi6;->openForumShareLink\$${FORUM_LINK}@58:"),
             ),
         )
 
@@ -822,10 +819,10 @@ class SharedPermissionsFixtureTest {
          * (ThreadSettingsActivity), sent to Facebook's WarmStartBroadcastReceiver once it has
          * checked Facebook is installed. 582 also had Messenger's deep link launcher, which 583 no
          * longer spells out. 585's phone builds no longer spell out the warm-start hint either, so
-         * none is left there, and the Android 9 build keeps it (2026-11-07).
+         * none is left there, and the Android 9 build keeps it (2026-11-07). 586's two keep none.
          */
         val SETS_REAL_FACEBOOK = mapOf(
-            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0, "arm64-v8a-minapi28-storeless" to 1),
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0),
         )
     }
 }
