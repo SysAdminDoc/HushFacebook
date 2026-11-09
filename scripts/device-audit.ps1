@@ -452,15 +452,22 @@ function Test-AuditReelViewer([string[]]$Top, [string]$Activity) {
 }
 
 # Proves the reel viewer is in front from the resumed Facebook screen's fragments, which can be
-# read while a video plays.
+# read while a video plays. A proof that fails keeps what it read in the results folder, the windows
+# before and after and the fragment dump, since the S22's all-on walk on 2026-11-08 failed a hold
+# on a reel that was on screen and left nothing to show why.
 function Get-AuditReelProof {
     Assert-AuditForeground
     $windowBefore = $script:auditWindowIdentity
     $activity = $windowBefore.Substring(0, $windowBefore.IndexOf('|'))
     $top = @(Invoke-Adb shell dumpsys activity (Format-Shell $activity))
     Assert-AuditForeground
-    if ($script:auditWindowIdentity -cne $windowBefore) { return $false }
-    return Test-AuditReelViewer $top $activity
+    $proved = $script:auditWindowIdentity -ceq $windowBefore -and (Test-AuditReelViewer $top $activity)
+    if (-not $proved -and -not [string]::IsNullOrEmpty($OutDir) -and (Test-Path -LiteralPath $OutDir -PathType Container)) {
+        $script:auditReelMisses++
+        $evidence = @("window before: $windowBefore", "window after: $($script:auditWindowIdentity)", '') + $top
+        Set-Content -LiteralPath (Join-Path $OutDir ('reel-proof-failed-{0:00}.txt' -f $script:auditReelMisses)) -Value $evidence -Encoding utf8
+    }
+    return [bool]$proved
 }
 
 # What a hold on a reel opened (the comment sheet Open comments with a gesture opens, or the share
@@ -468,13 +475,19 @@ function Get-AuditReelProof {
 # same activity, where a Back pops that page instead of the sheet: the fourth S22 walk, 2026-10-27,
 # failed the notifications step after two Backs that way. So the hold step closes it there and then,
 # a Back at a time, up to three (a focused composer takes one), until the reel's own controls are on
-# screen again. An empty dump is a playing reel, which can't be dumped, with nothing over it.
-function Close-AuditHoldCover {
+# screen again. An empty dump is a playing reel, which can't be dumped, with nothing over it. A screen
+# that reads as it did before the hold ($Before, its texts and descriptions) has nothing over it
+# either: on the S22's all-on walk, 2026-11-08, a reel viewer stopped on a page that never loaded
+# read the same before and after the hold, showed no video controls, and the Back closed the viewer.
+function Close-AuditHoldCover([string[]]$Before = @()) {
+    $unchanged = (@($Before | Sort-Object -Unique) -join "`n")
     $backs = 0
     while ($backs -lt 3) {
         $nodes = @(Get-UiNodes)
         if ($nodes.Count -eq 0 -or @($nodes | Where-Object {
                     $_.'content-desc' -ceq 'Tap to show video controls' -or $_.text -ceq 'Tap to show video controls' }).Count -gt 0) { break }
+        $reads = @(foreach ($node in $nodes) { foreach ($value in @($node.text, $node.'content-desc')) { if ($value) { $value } } })
+        if ($Before.Count -gt 0 -and (@($reads | Sort-Object -Unique) -join "`n") -ceq $unchanged) { break }
         Invoke-Adb shell input keyevent KEYCODE_BACK | Out-Null
         Start-Sleep -Seconds 1
         $backs++
@@ -1175,13 +1188,14 @@ try {
                     if ($OptionalVisit -cnotcontains $step) { $problems.Add("Required step $stepNumber was not reached: $step") }
                 }
             } elseif ($step -eq 'longpress') {
+                $holdBefore = @(Get-ScreenText)
                 $inputReel = $routeReel
                 $inputWindow = if ($routeReel) { $routeWindow }
                 try { Invoke-Adb shell input swipe $swipeX $holdY $swipeX $holdY 2500 | Out-Null }
                 finally { $inputReel = $false; $inputWindow = $null }
                 Start-Sleep -Seconds 1
                 $inputReel = $routeReel
-                try { $holdBacks = Close-AuditHoldCover }
+                try { $holdBacks = Close-AuditHoldCover $holdBefore }
                 finally { $inputReel = $false }
                 if ($holdBacks) { $summary.Add("Walk: the hold at step $stepNumber opened something over the reel, closed with $holdBacks Back(s).") }
             } elseif ($step -eq 'back') {
