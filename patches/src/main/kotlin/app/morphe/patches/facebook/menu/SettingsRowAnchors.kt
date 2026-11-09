@@ -85,6 +85,28 @@ internal fun rowListBuilds(method: Method): List<MethodReference> =
         .distinctBy { "${it.definingClass}->${it.name}" }
 
 /**
+ * The method that makes the [native] section's row list builds: the section itself, or on 586 the
+ * one static method of its own class it calls for an ImmutableList (`LX/0D4P;->A01`), which picks
+ * the Settings and privacy or the Help and support build by the group and hands back what the build
+ * answers. With builds in neither it's the section, which may keep the lists itself (584).
+ * [classDef] finds a class of the app by type.
+ */
+internal fun rowListSite(native: Method, classDef: (String) -> ClassDef?): Method {
+    if (rowListBuilds(native).isNotEmpty()) return native
+    val called = native.implementation?.instructions?.toList().orEmpty()
+        .filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
+        .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
+        .filter { it.definingClass == native.definingClass && it.returnType == IMMUTABLE_LIST }
+        .map { "${it.name}(${it.parameterTypes.joinToString("")})" }
+        .toSet()
+    val helpers = classDef(native.definingClass)?.methods?.toList().orEmpty().filter { method ->
+        method.isStatic() && "${method.name}(${method.parameterTypes.joinToString("")})" in called &&
+            rowListBuilds(method).isNotEmpty()
+    }
+    return helpers.singleOrNull() ?: native
+}
+
+/**
  * The Menu row tap handler: shaped like one ([isRowTapShape]) and naming [ROW_TAP_TRACE], loading
  * it or, as on 582 and 584, asking a string table [resolve] finds for it ([namesString]).
  */

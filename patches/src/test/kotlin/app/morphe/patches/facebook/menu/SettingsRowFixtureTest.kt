@@ -13,6 +13,7 @@ import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.dexbacked.DexBackedDexFile
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -22,6 +23,7 @@ import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -39,10 +41,12 @@ class SettingsRowFixtureTest {
     /**
      * How many row loggers each declared build's tap class has, by ABI. 582's 32-bit build dropped
      * both; 584's 32-bit build keeps them, as its arm64 build does. 585 inlines the tap handler
-     * into a lambda on both, as 583's 32-bit build did, so neither has a tap class to log from.
+     * into a lambda on both, as 583's 32-bit build did, so neither has a tap class to log from. 586
+     * has a tap class again on both, and both its loggers take the row.
      */
     private val loggerCount = mapOf(
         "585.0.0.47.54" to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0, "arm64-v8a-minapi28-storeless" to 0),
+        "586.0.0.52.53" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2),
     )
 
     private fun Method.instructionList() = implementation?.instructions?.toList().orEmpty()
@@ -80,11 +84,15 @@ class SettingsRowFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val natives = mutableListOf<Method>()
+                val sections = mutableListOf<ClassDef>()
                 FixtureDex.forEach(bundle) { dex ->
                     if (NATIVE_SECTION_KEY !in dex.stringSection.toSet()) return@forEach
                     for (classDef in dex.classes) {
                         for (method in classDef.methods) {
-                            if (isNativeSectionChildren(method)) natives += ImmutableMethod.of(method)
+                            if (isNativeSectionChildren(method)) {
+                                natives += ImmutableMethod.of(method)
+                                sections += ImmutableClassDef.of(classDef)
+                            }
                         }
                     }
                 }
@@ -96,7 +104,8 @@ class SettingsRowFixtureTest {
                 }
                 val taps = FixtureDex.methodsWhere(bundle, tracing) { isRowTap(it, table) }
                 assertEquals("${bundle.name}: native Menu group sections", 1, natives.size)
-                val builds = rowListBuilds(natives.single())
+                // 586 asks a static method of the section's class for the list, which makes the builds.
+                val builds = rowListBuilds(rowListSite(natives.single()) { type -> sections.singleOrNull { it.type == type } })
                 // 584 inlined the builder into the section, which keeps the Settings list itself.
                 val kept = if (builds.isEmpty()) keptRowLists(natives.single()) else null
                 assertEquals("${bundle.name}: row lists the native section builds or keeps", 1, builds.size + listOfNotNull(kept).size)

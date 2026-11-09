@@ -119,7 +119,10 @@ val hideMenuPromotionsPatch = bytecodePatch(
             nativeMethod.askAboutFolding(nativeRead, fold, start)
         }
         nativeMethod.buildNothingWhenHidden(nativeRead, children(native), HIDE_SECTION)
-        nativeMethod.passRowListsThrough(rows)
+        // On 586 the lists are kept in the static method beside the section that makes the builds.
+        val site = rowListSite(native) { classDefByOrNull(it) }
+        val siteMethod = if (site === native) nativeMethod else mutableClassDefBy(site.definingClass).findMutableMethodOf(site)
+        siteMethod.passRowListsThrough(rows)
         mutableClassDefBy(server.definingClass).findMutableMethodOf(server)
             .buildNothingWhenHidden(serverRead, children(server), HIDE_SERVER_SECTION)
 
@@ -267,7 +270,9 @@ private fun signature(call: MethodReference) =
  * builds the one row item MenuRows can read. [classDef] finds a class of the app by type.
  */
 internal fun rowListHooks(native: Method, classDef: (String) -> ClassDef?): List<RowListHook> {
-    val builds = rowListBuilds(native)
+    // On 586 a static method beside the section makes the builds ([rowListSite]).
+    val site = rowListSite(native, classDef)
+    val builds = rowListBuilds(site)
     if (builds.isEmpty()) {
         val kept = keptRowLists(native) ?: throw PatchException(
             "$PATCH: expected ${native.definingClass}->${native.name} to build one Settings and privacy row list " +
@@ -283,14 +288,14 @@ internal fun rowListHooks(native: Method, classDef: (String) -> ClassDef?): List
         )
     }
     val settings = builds.singleOrNull() ?: throw PatchException(
-        "$PATCH: expected ${native.definingClass}->${native.name} to build one Settings and privacy row list, found ${builds.size}",
+        "$PATCH: expected ${site.definingClass}->${site.name} to build one Settings and privacy row list, found ${builds.size}",
     )
-    val helps = native.implementation!!.instructions
+    val helps = site.implementation!!.instructions
         .mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
         .filter { isHelpRowListBuild(it, settings.definingClass) }
         .distinctBy(::signature)
     val help = helps.singleOrNull() ?: throw PatchException(
-        "$PATCH: expected ${native.definingClass}->${native.name} to build one Help and support row list, found ${helps.size}",
+        "$PATCH: expected ${site.definingClass}->${site.name} to build one Help and support row list, found ${helps.size}",
     )
     val owner = classDef(settings.definingClass)
         ?: throw PatchException("$PATCH: the row list builder ${settings.definingClass} isn't in this build")

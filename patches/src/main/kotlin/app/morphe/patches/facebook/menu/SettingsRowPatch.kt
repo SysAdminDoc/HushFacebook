@@ -70,7 +70,8 @@ val hushfacebookInTheMenuPatch = bytecodePatch(
             .flatMap { classDef -> classDef.methods.filter(::isNativeSectionChildren) }
         val native = natives.singleOrNull()
             ?: throw PatchException("$ROW_PATCH: expected one native Menu group section, found ${natives.size}")
-        val builds = rowListBuilds(native)
+        // 586 asks a static method beside the section for its group's list, which makes the builds.
+        val builds = rowListBuilds(rowListSite(native) { classDefByOrNull(it) })
         // 584 inlined the builder into the section, which keeps the list itself.
         val kept = if (builds.isEmpty()) keptRowLists(native)?.settings else null
         if (kept == null && builds.size != 1) {

@@ -11,6 +11,7 @@ import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -51,21 +52,26 @@ class MenuRowsFixtureTest {
                 assertEquals("$name: native Menu group sections", 1, natives.size)
                 val (section, native) = natives.single()
 
-                // 584 calls no build: the section keeps both lists itself, and builds their rows.
-                val builds = rowListBuilds(native)
+                // 584 calls no build: the section keeps both lists itself, and builds their rows. 586
+                // asks a static method of its own class, which calls the builds, for its group's list.
+                val ownClass: (String) -> ClassDef? = { if (it == section.type) section else null }
+                val site = rowListSite(native, ownClass)
+                val builds = rowListBuilds(site)
                 val owners = builds.map { it.definingClass }.toSet()
                 val builders = FixtureDex.classes(bundle, owners)
                 val made = builders.values.flatMap { it.methods.flatMap(::constructedTypes) }.toSet() + constructedTypes(native)
                 val classes = FixtureDex.classes(bundle, made + owners)
-                val hooks = rowListHooks(native) { classes[it] }
+                val hooks = rowListHooks(native) { ownClass(it) ?: classes[it] }
                 assertEquals("$name: Settings and privacy's list, then Help and support's",
                     listOf(SETTINGS_ROWS_KEPT, HELP_ROWS_KEPT), hooks.map { it.hook })
                 assertEquals("$name: builds the hooks follow, or kept lists when there are none",
                     builds.isEmpty(), hooks.all { it.kept != null })
 
-                val original = native.code()
+                val original = site.code()
                 val context = PatchContexts.of(listOf(section))
-                val mutable = context.mutableClassDefBy(section.type).methods.single { isNativeSectionChildren(it) }
+                val mutable = context.mutableClassDefBy(section.type).methods.single {
+                    it.name == site.name && it.parameterTypes.map(Any::toString) == site.parameterTypes.map(Any::toString)
+                }
                 mutable.passRowListsThrough(hooks)
                 val patched = mutable.code()
                 // Where the section has its copy of each list: the move-result after the build's call,
