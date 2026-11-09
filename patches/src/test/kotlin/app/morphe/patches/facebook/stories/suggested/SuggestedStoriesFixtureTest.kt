@@ -41,7 +41,7 @@ import java.io.File
 class SuggestedStoriesFixtureTest {
     /**
      * The tray data constructor's registers and the register of its bucket list, per build. Both
-     * of 585's builds lay it out the same way.
+     * of 586's builds lay it out the same way, as 585's did.
      */
     private val expected = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to (7 to 4),
@@ -49,12 +49,13 @@ class SuggestedStoriesFixtureTest {
 
     /**
      * The bucket interface's type accessor and the enum it answers, per build and then by the
-     * bundle's ABI. On 583 and 585 the two builds share the enum but not the accessor's name.
+     * bundle's ABI. On 583 and 585 the two builds share the enum but not the accessor's name; on
+     * 586 they share both.
      */
     private val expectedType = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to ("Flp" to "LX/026l;"),
-            "armeabi-v7a" to ("Fln" to "LX/026l;"),
+            "arm64-v8a" to ("Fuc" to "LX/02ay;"),
+            "armeabi-v7a" to ("Fuc" to "LX/02ay;"),
         ),
     )
 
@@ -64,8 +65,8 @@ class SuggestedStoriesFixtureTest {
      */
     private val expectedOwner = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to Triple("DtG", "Fli", "LX/0eTt;"),
-            "armeabi-v7a" to Triple("DtE", "Flg", "LX/0eTa;"),
+            "arm64-v8a" to Triple("Dyd", "FuV", "LX/03YA;"),
+            "armeabi-v7a" to Triple("Dyd", "FuV", "LX/03YA;"),
         ),
     )
 
@@ -75,8 +76,8 @@ class SuggestedStoriesFixtureTest {
      */
     private val expectedExpires = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to "D3I",
-            "armeabi-v7a" to "D3G",
+            "arm64-v8a" to "D7Z",
+            "armeabi-v7a" to "D7Z",
         ),
     )
 
@@ -88,8 +89,8 @@ class SuggestedStoriesFixtureTest {
     /** The query builders that set skip_srtt_item_list, per build and then by ABI (issue #21). */
     private val expectedSkips = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to setOf("LX/01oE;->A03", "LX/01oE;->A07"),
-            "armeabi-v7a" to setOf("LX/01oE;->A03", "LX/01oE;->A07"),
+            "arm64-v8a" to setOf("LX/01rM;->A03", "LX/01rM;->A07"),
+            "armeabi-v7a" to setOf("LX/01rM;->A03", "LX/01rM;->A07"),
         ),
     )
 

@@ -37,13 +37,13 @@ class TrayPagingFixtureTest {
     /** The tile handler, its tile method and the placeholder tile's leaving method, per build and then by the bundle's ABI. */
     private val expected = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to listOf("LX/02fs;", "I0l", "LX/04p7;->IlM"),
-            "armeabi-v7a" to listOf("LX/02fs;", "I0j", "LX/04pD;->IlK"),
+            "arm64-v8a" to listOf("LX/02g6;", "IBz", "LX/04ck;->Iwx"),
+            "armeabi-v7a" to listOf("LX/02g6;", "IBz", "LX/04ck;->Iwx"),
         ),
     )
 
-    /** The placeholder-load flag the handler reads on 585. */
-    private val flagKey = 0x101029900041f52L
+    /** The placeholder-load flag the handler reads on 586 (585's was 0x101029900041f52). */
+    private val flagKey = 0x101029900041fabL
 
     private fun <T> Map<String, Map<String, T>>.pin(version: String, bundle: File): T =
         getValue(version)[bundle.name.substringAfter("-$version-").substringBefore(".apkm")]

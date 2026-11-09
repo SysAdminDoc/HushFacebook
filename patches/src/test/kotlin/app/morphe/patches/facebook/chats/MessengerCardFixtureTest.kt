@@ -37,11 +37,14 @@ class MessengerCardFixtureTest {
      * plain FRSC) place the ids around it 867 higher, and the dex agrees, as 583's neighbouring
      * ids sit the same distance apart as 582's. 584 packs it the same way again, and its id is
      * 583's 184 higher: in 76 to 88 of the locale packs both builds ship, the ids on either side
-     * of it (0x3a24 below, 0x3a86 to 0x3a9c above) all moved by exactly that. The test below only
-     * passes on the one card class that loads it, and an unpacked table is the check still owed.
+     * of it (0x3a24 below, 0x3a86 to 0x3a9c above) all moved by exactly that. 586 packs it the same
+     * way, and the card's render method (the one tagging its dismiss button) loads 0x7f143d45 where
+     * 585's loaded 0x7f143ba6, with the two ids it loads next (585's 0x3ba3 and 0x3ba4) moved by the
+     * same 0x19f. The test below only passes on the one card class that loads it, and an unpacked
+     * table is the check still owed.
      */
     private val upsellText = mapOf(
-        "585.0.0.47.54" to 0x7f143ba6,
+        "586.0.0.52.53" to 0x7f143d45,
     )
 
     private val packageManager = "Landroid/content/pm/PackageManager;"

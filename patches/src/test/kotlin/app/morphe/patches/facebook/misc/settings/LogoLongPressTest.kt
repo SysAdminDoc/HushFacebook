@@ -303,12 +303,14 @@ class LogoLongPressTest {
      * instruction before). 583's two hide the logo at 157 on the path with no tap, then jump past
      * the description. 584's two builds both have the builder at `A0G`, the touch listener at 123
      * and the logo hidden at 114, on the same registers. 585's two put them one earlier, at 122 and
-     * 113, on new registers. Last, where the title bar's constructor that builds it returns.
+     * 113, on new registers. 586's two build it in `A0I` with the touch listener at 136 and the logo
+     * hidden at 127, on new registers again. Last, where the title bar's constructor that
+     * builds it returns.
      */
     private val pins = mapOf(
-        "585.0.0.47.54" to mapOf(
-            "arm64-v8a" to Pin(122, listOf(4, 6), 113, listOf(4, 8), listOf(116)),
-            "armeabi-v7a" to Pin(122, listOf(4, 6), 113, listOf(4, 8), listOf(116)),
+        "586.0.0.52.53" to mapOf(
+            "arm64-v8a" to Pin(136, listOf(6, 4), 127, listOf(6, 9), listOf(120)),
+            "armeabi-v7a" to Pin(136, listOf(6, 4), 127, listOf(6, 9), listOf(120)),
         ),
     )
 
