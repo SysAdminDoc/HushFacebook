@@ -329,12 +329,12 @@ function Test-AuditKeyboard {
     return $shown -ccontains 'true'
 }
 
-function Get-UiNodes {
+function Get-UiNodes([int]$Tries = 10) {
     Assert-AuditForeground
     $windowBefore = $script:auditWindowIdentity
     # The settings title's gradient moves every frame, and on an emulator uiautomator then loses the
     # window's root ("null root node returned") up to two dumps in five, so a screen gets ten tries.
-    for ($try = 1; $try -le 10; $try++) {
+    for ($try = 1; $try -le $Tries; $try++) {
         $dump = (Invoke-Adb shell 'rm -f /sdcard/hushfacebook-audit.xml; uiautomator dump /sdcard/hushfacebook-audit.xml >/dev/null 2>&1; cat /sdcard/hushfacebook-audit.xml; rm -f /sdcard/hushfacebook-audit.xml') -join "`n"
         $start = $dump.IndexOf('<?xml')
         if ($start -ge 0) {
@@ -350,8 +350,8 @@ function Get-UiNodes {
     return @()
 }
 
-function Get-ScreenText {
-    $lines = foreach ($node in Get-UiNodes) {
+function Get-ScreenText([int]$Tries = 10) {
+    $lines = foreach ($node in Get-UiNodes -Tries $Tries) {
         foreach ($value in @($node.text, $node.'content-desc')) { if ($value) { $value } }
     }
     return @($lines)
@@ -479,15 +479,16 @@ function Get-AuditReelProof {
 # that reads as it did before the hold ($Before, its texts and descriptions) has nothing over it
 # either: on the S22's all-on walk, 2026-11-08, a reel viewer stopped on a page that never loaded
 # read the same before and after the hold, showed no video controls, and the Back closed the viewer.
+# Every read counts, repeats and case included, so a cover holding only a second spinner still differs.
 function Close-AuditHoldCover([string[]]$Before = @()) {
-    $unchanged = (@($Before | Sort-Object -Unique) -join "`n")
+    $unchanged = (@($Before | Sort-Object -CaseSensitive) -join "`n")
     $backs = 0
     while ($backs -lt 3) {
         $nodes = @(Get-UiNodes)
         if ($nodes.Count -eq 0 -or @($nodes | Where-Object {
                     $_.'content-desc' -ceq 'Tap to show video controls' -or $_.text -ceq 'Tap to show video controls' }).Count -gt 0) { break }
         $reads = @(foreach ($node in $nodes) { foreach ($value in @($node.text, $node.'content-desc')) { if ($value) { $value } } })
-        if ($Before.Count -gt 0 -and (@($reads | Sort-Object -Unique) -join "`n") -ceq $unchanged) { break }
+        if ($Before.Count -gt 0 -and (@($reads | Sort-Object -CaseSensitive) -join "`n") -ceq $unchanged) { break }
         Invoke-Adb shell input keyevent KEYCODE_BACK | Out-Null
         Start-Sleep -Seconds 1
         $backs++
@@ -1188,7 +1189,8 @@ try {
                     if ($OptionalVisit -cnotcontains $step) { $problems.Add("Required step $stepNumber was not reached: $step") }
                 }
             } elseif ($step -eq 'longpress') {
-                $holdBefore = @(Get-ScreenText)
+                # One dump only: a playing reel can't be read, and ten tries there cost about two minutes.
+                $holdBefore = @(Get-ScreenText -Tries 1)
                 $inputReel = $routeReel
                 $inputWindow = if ($routeReel) { $routeWindow }
                 try { Invoke-Adb shell input swipe $swipeX $holdY $swipeX $holdY 2500 | Out-Null }
