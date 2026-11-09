@@ -12,11 +12,14 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.patchLog
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.util.MethodUtil
 
 /*
  * Phone layout on big screens (#149). Read from 582, 2026-10-14; the obfuscated names are for
@@ -33,6 +36,10 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * only the tab bar's place would leave the rest laid out for a big screen. The gate is asked by
  * the check and by the class's other writer of the flag, so a no there gives the whole app the
  * phone layout, the way accounts outside the big screen rollout get it.
+ *
+ * 586 (2026-11-09) moved the override's read into a method of its own (LX/02Cc;->A05), which
+ * asks no check; the place's `(Activity)Z` methods in that class ask the big screen check before
+ * they call it (A09 asks LX/01AV;->A09), so [bigScreenChecksInCallers] looks there.
  */
 
 internal const val PHONE_LAYOUT = "$BOTTOM_TAB_BAR->phoneLayout()Z"
@@ -49,8 +56,28 @@ private fun MethodReference.params() = parameterTypes.map(CharSequence::toString
  */
 internal fun bigScreenChecks(read: OverrideRead): List<MethodReference> {
     val code = read.method.implementation?.instructions?.toList() ?: return emptyList()
-    val load = read.resultIndex - 4
-    return (0 until load).mapNotNull { at ->
+    return checksBefore(code, read.resultIndex - 4)
+}
+
+/**
+ * 586's form of [bigScreenChecks]: the read's method (`LX/02Cc;->A05()Z` on arm64) asks no check,
+ * and the `(Activity)Z` methods of [owner], its class, that call it ask one first (`A09` asks
+ * `LX/01AV;->A09`, then `A05`).
+ */
+internal fun bigScreenChecksInCallers(read: OverrideRead, owner: ClassDef): List<MethodReference> =
+    owner.methods.filter { it.returnType == "Z" && it.parameterTypes.map(CharSequence::toString) == listOf(ACTIVITY) }
+        .flatMap { caller ->
+            val code = caller.implementation?.instructions?.toList() ?: return@flatMap emptyList()
+            val at = code.indexOfFirst { instruction ->
+                val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                call != null && call.definingClass == read.method.definingClass && MethodUtil.methodSignaturesMatch(call, read.method)
+            }
+            if (at < 0) emptyList() else checksBefore(code, at)
+        }
+
+/** The static `(Activity)Z` calls in [code] before [end] whose yes jumps away at once. */
+private fun checksBefore(code: List<Instruction>, end: Int): List<MethodReference> =
+    (0 until end).mapNotNull { at ->
         val call = (code[at] as? ReferenceInstruction)?.reference as? MethodReference
         if (code[at].opcode != Opcode.INVOKE_STATIC || call == null || call.returnType != "Z" || call.params() != listOf(ACTIVITY)) {
             return@mapNotNull null
@@ -64,7 +91,6 @@ internal fun bigScreenChecks(read: OverrideRead): List<MethodReference> {
         }
         call
     }
-}
 
 /**
  * The gate [check] asks: the first static `(Context)Z` call on [check]'s own class, when [check]
@@ -92,7 +118,9 @@ internal fun bigScreenGate(check: Method): MethodReference? {
  * the bottom goes on without it.
  */
 internal fun BytecodePatchContext.hookBigScreenLayout(reads: List<OverrideRead>) {
-    val checks = reads.flatMap(::bigScreenChecks).distinctBy { it.toString() }
+    val checks = reads.flatMap(::bigScreenChecks).ifEmpty {
+        reads.flatMap { read -> classDefByOrNull(read.method.definingClass)?.let { bigScreenChecksInCallers(read, it) }.orEmpty() }
+    }.distinctBy { it.toString() }
     val check = checks.singleOrNull() ?: return skip("expected one big screen check before the override, found ${checks.size}")
     val checkMethod = classDefByOrNull(check.definingClass)?.methods?.singleOrNull {
         it.name == check.name && it.returnType == "Z" && it.parameterTypes.map(CharSequence::toString) == listOf(ACTIVITY)

@@ -33,6 +33,7 @@ import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.util.MethodUtil
 
 /**
  * The name Facebook's main screen gives the bottom tab bar's entry in its scroll-away list, the
@@ -201,13 +202,14 @@ internal fun scrollAwayGate(holders: List<ClassDef>): MethodReference {
  * Where the extension goes in [gate]: right after the one call to [gateClass]'s own
  * `(Activity)Z` method that reads a TriState from FbSharedPreferences, the bar's position check,
  * and the branch that leaves when it answers no. Refuses a gate without exactly one such check.
+ * 586's check reads it through one more method of the class ([asksTriState]).
  */
 internal fun barAtBottomCheck(gate: Method, gateClass: ClassDef): Int {
     val code = gate.implementation?.instructions?.toList() ?: refuse("${gate.definingClass}->${gate.name} has no body")
     val checks = code.indices.filter { index ->
         val called = calledMethod(code[index]) ?: return@filter false
         called.definingClass == gate.definingClass && called.takesOnlyActivity() &&
-            gateClass.methods.any { it.name == called.name && it.takesOnlyActivity() && it.readsTriState() }
+            gateClass.methods.any { it.name == called.name && it.takesOnlyActivity() && it.asksTriState(gateClass) }
     }
     val call = checks.singleOrNull()
         ?: refuse("${gate.definingClass}->${gate.name} asks where the tab bar goes ${checks.size} times, expected once")
@@ -219,6 +221,17 @@ internal fun barAtBottomCheck(gate: Method, gateClass: ClassDef): Int {
 private fun Method.readsTriState() = implementation?.instructions?.any { instruction ->
     val called = calledMethod(instruction)
     called != null && called.definingClass == FB_SHARED_PREFERENCES && called.returnType == TRI_STATE
+} == true
+
+/**
+ * Whether [this] reads the TriState itself or through a method of [owner] it calls: 586's position
+ * check (`LX/02Cc;->A09` on arm64) asks the big screen check and then `A05()Z`, which reads it.
+ */
+internal fun Method.asksTriState(owner: ClassDef): Boolean = readsTriState() || implementation?.instructions?.any { instruction ->
+    val called = calledMethod(instruction) ?: return@any false
+    called.definingClass == owner.type && owner.methods.any {
+        it.name == called.name && MethodUtil.methodSignaturesMatch(it, called) && it.readsTriState()
+    }
 } == true
 
 /**

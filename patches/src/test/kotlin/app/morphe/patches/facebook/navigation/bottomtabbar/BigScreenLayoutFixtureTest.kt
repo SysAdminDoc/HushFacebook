@@ -26,7 +26,8 @@ import java.io.File
 
 /**
  * Phone layout on big screens' anchors on every Facebook build the bundle declares (#149): the one
- * big screen check the tab bar's place asks before its override, a check the main screen's
+ * big screen check the tab bar's place asks before its override (586: before calling the method
+ * that reads it), a check the main screen's
  * fragment asks too, which stores the app's big screen flag and asks a gate of MobileConfig flags.
  * Then the patch on those classes: the extension at the top of the gate, whose no-answer goes on
  * to the gate's own first instruction, put there once however often the hook runs. Reads the
@@ -62,7 +63,11 @@ class BigScreenLayoutFixtureTest {
                     } == true
                 }
                 val reads = users.flatMap { overrideReads(it, key) }
-                val checks = reads.flatMap(::bigScreenChecks).distinctBy { it.toString() }
+                // 586 asks the check one call up, in the read's class (`LX/02Cc;->A09` before `A05` on arm64).
+                val owners = FixtureDex.classes(bundle, reads.map { it.method.definingClass }.toSet())
+                val checks = reads.flatMap(::bigScreenChecks).ifEmpty {
+                    reads.flatMap { bigScreenChecksInCallers(it, owners.getValue(it.method.definingClass)) }
+                }.distinctBy { it.toString() }
                 assertEquals("$name: big screen checks before the override", 1, checks.size)
                 val check = checks.single()
 

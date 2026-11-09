@@ -31,7 +31,8 @@ import java.io.File
 /**
  * The bars' scroll-away on every Facebook build the bundle declares. First the one check the main
  * screen's start asks before it builds the bottom bar's scroll-away entry, the bar's position check
- * inside it (the class's own Activity check that reads the TriState override), and room for the
+ * inside it (the class's own Activity check that reads the TriState override, on 586 through one
+ * more method of the class), and room for the
  * hook's one register. Then the patch on that class: a kept bar's no returned right after the
  * position check passes, then a sliding bar's yes, a no going on to Facebook's next instruction, and
  * nothing else in the method moved. Second the top bar: the method that adds it to the scroll-away
@@ -105,8 +106,17 @@ class TabBarScrollAwayFixtureTest {
                 val positionCheck = gateClass.methods.single {
                     it.sameAs((position as ReferenceInstruction).reference as MethodReference)
                 }
-                assertTrue("$name: the position check doesn't read Facebook's override",
-                    positionCheck.code().any { it.calls()?.startsWith(FB_SHARED_PREFERENCES) == true && it.calls()!!.endsWith(TRI_STATE) })
+                // Up to 585 the check reads it; 586's check calls a method of its class that does
+                // (`LX/02Cc;->A09` calls `A05()Z` on arm64).
+                fun readsOverride(method: Method) =
+                    method.code().any { it.calls()?.startsWith(FB_SHARED_PREFERENCES) == true && it.calls()!!.endsWith(TRI_STATE) }
+                val reader = if (readsOverride(positionCheck)) positionCheck else gateClass.methods.singleOrNull { method ->
+                    readsOverride(method) && positionCheck.code().any { it.calls() == "${method.definingClass}->${method.name}" +
+                        method.parameterTypes.joinToString("", "(", ")") + method.returnType }
+                }
+                assertTrue("$name: the position check doesn't read Facebook's override", reader != null)
+                // Negative control: the gate itself asks the position check, not the override.
+                assertTrue("$name: the gate reads the override itself", !readsOverride(gate))
                 assertEquals("$name: the branch that leaves when the bar isn't at the bottom", Opcode.IF_EQZ, original[at - 1].opcode)
                 // The hook borrows one register, a local: this and the Activity are the two parameter registers.
                 assertTrue("$name: ${gate.definingClass}->${gate.name} has no local register for the hook",
@@ -215,7 +225,10 @@ class TabBarScrollAwayFixtureTest {
                     // 582: both sit in the class that adds the top bar, so the patch's context already holds them.
                     assertEquals("$where isn't in the class traced as \"$SET_TOP_VIEWS\"", topScrollAwayViews(pieces.topHolders).definingClass,
                         switch.definingClass)
-                    assertTrue("$where opens its trace first", switch.code().take(3).any { it.loads() == trace })
+                    // 586 checks the session isn't null first (three instructions), still before any branch.
+                    val opens = switch.code().indexOfFirst { it.loads() == trace }
+                    assertTrue("$where opens its trace first", opens in 0..3 &&
+                        switch.code().take(opens).none { it is com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction })
                     val original = switch.code()
                     val patched = context.mutableClassDefBy(switch.definingClass).methods.single { it.sameAs(switch) }.code()
                     assertEquals("$where gains one instruction", original.size + 1, patched.size)

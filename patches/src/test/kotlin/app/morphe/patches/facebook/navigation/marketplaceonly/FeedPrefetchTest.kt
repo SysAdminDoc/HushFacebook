@@ -73,8 +73,8 @@ class FeedPrefetchTest {
         }
     }
 
-    private fun checkInjection(owner: ClassDef) {
-        val guard = feedPrefetchGuard(owner)!!
+    /** Guards a copy of [guard]'s method and checks it; for screen-on, the cancellation branch's and the flag cleanup's indices. */
+    private fun checkInjection(guard: PrefetchGuard, screenOn: Boolean): Pair<Int, Int>? {
         val mutable = MutableMethod(guard.method)
         val before = mutable.implementation!!.instructions.toList()
         mutable.guardFeedPrefetch(guard)
@@ -83,20 +83,28 @@ class FeedPrefetchTest {
         assertEquals(SKIP_FEED_PREFETCH, (after[guard.index] as ReferenceInstruction).reference.toString())
         assertEquals(Opcode.RETURN_VOID, after[guard.index + 3].opcode)
         assertEquals(before[guard.index].opcode, after[guard.index + 5].opcode)
-        if (redexOriginalName(owner) != SCREEN_ON_PREFETCH) return
+        if (!screenOn) return null
         val addresses = after.scan(0) { address, instruction -> address + instruction.codeUnits }
-        val branch = guard.index - 4
-        assertEquals(Opcode.IF_NEZ, after[branch].opcode)
-        val target = addresses[branch] + (after[branch] as OffsetInstruction).codeOffset
-        assertEquals("the cancellation branch must enter the guard", addresses[guard.index], target)
-        val cas = guard.index - 7
-        assertTrue((after[cas] as ReferenceInstruction).reference.toString().contains("compareAndSet(ZZ)Z"))
+        // 586 puts a wide zero next to the tag and a delay check on the cancellation path, so the
+        // branch and the cleanup are found by what they do, not at fixed distances.
+        val branch = (0 until guard.index).lastOrNull {
+            after[it].opcode == Opcode.IF_NEZ && addresses[it] + (after[it] as OffsetInstruction).codeOffset == addresses[guard.index]
+        }
+        assertNotNull("the cancellation branch must enter the guard", branch)
+        val cas = (0 until branch!!).single {
+            (after[it] as? ReferenceInstruction)?.reference?.toString()?.contains("compareAndSet(ZZ)Z") == true
+        }
         assertEquals("the scheduler's flag cleanup must precede the guard", before[cas].opcode, after[cas].opcode)
         assertEquals(Opcode.RETURN_VOID, after[guard.index - 1].opcode)
+        return branch to cas
     }
 
     @Test
-    fun `the screen-on guard follows cleanup and receives the original branch`() = checkInjection(screenTask())
+    fun `the screen-on guard follows cleanup and receives the original branch`() {
+        val guard = feedPrefetchGuard(screenTask())!!
+        assertEquals("the branch and cleanup sit where the task's code puts them", guard.index - 4 to guard.index - 7,
+            checkInjection(guard, screenOn = true))
+    }
 
     @Test
     fun `both supported builds have exactly the two guarded feed warm-ups`() {
@@ -115,14 +123,29 @@ class FeedPrefetchTest {
                 }
                 assertEquals(fixture.name, setOf(STARTUP_PREFETCH, SCREEN_ON_PREFETCH), owners.map(::redexOriginalName).toSet())
                 assertEquals(fixture.name, 2, owners.size)
-                owners.forEach { assertNotNull(fixture.name, feedPrefetchGuard(it)); checkInjection(it) }
-                val context = PatchContexts.of(owners)
+                // 586 moved screen-on's body into a static dispatch on the orchestrator (LX/04je;->A00),
+                // which the task and its delayed twin both call, so the guard goes there.
+                val orchestrators = mutableListOf<ClassDef>()
+                val guards = owners.map { owner ->
+                    val guard = feedPrefetchGuard(owner) ?: screenOnDispatch(owner)?.let { dispatch ->
+                        FixtureDex.classes(fixture, setOf(dispatch.definingClass)).values.singleOrNull()
+                            ?.also { orchestrators += it }?.let { dispatchGuard(it, dispatch) }
+                    }
+                    assertNotNull("${fixture.name}: ${redexOriginalName(owner)} has no guard", guard)
+                    checkInjection(guard!!, redexOriginalName(owner) == SCREEN_ON_PREFETCH)
+                    guard
+                }
+                val context = PatchContexts.of(owners + orchestrators)
                 marketplaceFeedPrefetchPatch.execute(context)
-                owners.forEach { owner ->
-                    val run = context.mutableClassDefBy(owner).methods.single { it.name == "run" }
-                    assertEquals(1, run.implementation!!.instructions.count {
-                        (it as? ReferenceInstruction)?.reference?.toString() == SKIP_FEED_PREFETCH
-                    })
+                guards.forEach { guard ->
+                    val method = context.mutableClassDefBy(guard.method.definingClass).methods.single {
+                        it.name == guard.method.name &&
+                            it.parameterTypes.map(CharSequence::toString) == guard.method.parameterTypes.map(CharSequence::toString)
+                    }
+                    assertEquals("${fixture.name}: ${guard.method.definingClass}->${guard.method.name} guarded once", 1,
+                        method.implementation!!.instructions.count {
+                            (it as? ReferenceInstruction)?.reference?.toString() == SKIP_FEED_PREFETCH
+                        })
                 }
                 checked += version
             }

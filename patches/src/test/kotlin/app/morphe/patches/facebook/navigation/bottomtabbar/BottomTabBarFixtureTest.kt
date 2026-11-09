@@ -43,8 +43,13 @@ class BottomTabBarFixtureTest {
     private fun Method.sameAs(other: Method) = name == other.name && returnType == other.returnType &&
         parameterTypes.map(CharSequence::toString) == other.parameterTypes.map(CharSequence::toString)
 
+    /** How many places read the override, per build: two up to 585, and on 586 one method every place asks (`LX/02Cc;->A05()Z` on arm64). */
+    private val expectedReads = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to 1,
+    )
+
     @Test
-    fun `each declared build reads the override twice, and the extension goes after each ordinal`() {
+    fun `each declared build reads the override where it decides the bar, and the extension goes after each ordinal`() {
         val checked = mutableSetOf<String>()
         for ((version, bundles) in declaredBundles()) {
             for (bundle in bundles) {
@@ -57,8 +62,8 @@ class BottomTabBarFixtureTest {
                     } == true
                 }
                 val reads = users.flatMap { overrideReads(it, key) }
-                assertEquals("$name: reads of the override", 2, reads.size)
-                assertEquals("$name: both reads sit in one class", 1, reads.map { it.method.definingClass }.distinct().size)
+                assertEquals("$name: reads of the override", expectedReads.getValue(version), reads.size)
+                assertEquals("$name: the reads sit in one class", 1, reads.map { it.method.definingClass }.distinct().size)
                 val writes = users.filter { overrideReads(it, key).isEmpty() }
                 assertEquals("$name: loads of the key that read nothing, the tab menu's write", 1, writes.size)
 
