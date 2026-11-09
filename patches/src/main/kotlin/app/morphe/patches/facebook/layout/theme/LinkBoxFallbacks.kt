@@ -18,6 +18,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 /*
@@ -59,9 +60,13 @@ private fun jumpTarget(instructions: List<Instruction>, index: Int): Int? {
  * The indexes of the `move-result`s on [method]'s empty-config fall-through that give the link box its
  * dark colour: after `if-nez` on the config string's length, up to the first instruction anything
  * jumps to or the first `return`, `goto` or `throw`, each int answer moved into the register the
- * config's parse ([PARSE_LINK_BOX]) answers into. Empty for a reader whose empty string jumps away,
- * as most do, to the token's colour route one themes, and for a method [hookLinkBoxColour] hasn't
+ * config's parse ([PARSE_LINK_BOX]) answers into. Empty for a method [hookLinkBoxColour] hasn't
  * hooked. One already handed to [DARK_BRANCH] isn't listed again.
+ *
+ * A reader whose empty string jumps away (`if-lez` or `if-eqz` on the length) mostly lands on the
+ * token's colour route one themes, which stays. 586's attachment footer (arm64 `LX/09Ce;->A00`) jumps
+ * instead to a block of its own, after a `return`, that unboxes the second config's grey, so a block
+ * like that, which only this branch reaches, gives its unboxings ([unboxesColour]) the same way.
  */
 internal fun linkBoxFallbacks(method: Method): List<Int> {
     val code = method.implementation?.instructions?.toList() ?: return emptyList()
@@ -77,7 +82,8 @@ internal fun linkBoxFallbacks(method: Method): List<Int> {
         code[index].referenceText() == STRING_LENGTH && (code[index] as? FiveRegisterInstruction)?.registerC == string
     } ?: return emptyList()
     val branch = length + 2
-    if (code.getOrNull(length + 1)?.opcode != Opcode.MOVE_RESULT || code.getOrNull(branch)?.opcode != Opcode.IF_NEZ ||
+    val branches = setOf(Opcode.IF_NEZ, Opcode.IF_LEZ, Opcode.IF_EQZ)
+    if (code.getOrNull(length + 1)?.opcode != Opcode.MOVE_RESULT || code.getOrNull(branch)?.opcode !in branches ||
         code[branch].register() != code[length + 1].register()
     ) {
         return emptyList()
@@ -85,12 +91,49 @@ internal fun linkBoxFallbacks(method: Method): List<Int> {
 
     val targets = branchTargets(code)
     val leaves = setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32, Opcode.RETURN, Opcode.RETURN_OBJECT, Opcode.THROW)
-    val end = (branch + 1 until code.size).firstOrNull { it in targets || code[it].opcode in leaves } ?: code.size
-    return (branch + 1 until end).filter { index ->
-        val call = (code[index - 1] as? ReferenceInstruction)?.reference as? MethodReference
+    val jumped = code[branch].opcode != Opcode.IF_NEZ
+    val start = if (jumped) {
+        val block = jumpTarget(code, branch) ?: return emptyList()
+        if (code.getOrNull(block - 1)?.opcode !in leaves || jumpsInto(code, block) != 1) return emptyList()
+        block
+    } else {
+        branch + 1
+    }
+    // The jumped-to block's first instruction is the branch's own target.
+    val scan = if (jumped) start + 1 else start
+    val end = (scan until code.size).firstOrNull { it in targets || code[it].opcode in leaves } ?: code.size
+    return (start until end).filter { index ->
+        val before = code.getOrNull(index - 1) ?: return@filter false
+        val call = (before as? ReferenceInstruction)?.reference as? MethodReference
         code[index].opcode == Opcode.MOVE_RESULT && code[index].register() == colour &&
             call != null && call.returnType == "I" && call.toString() != DARK_BRANCH &&
-            code.getOrNull(index + 1)?.referenceText() != DARK_BRANCH
+            code.getOrNull(index + 1)?.referenceText() != DARK_BRANCH &&
+            (!jumped || unboxesColour(before.opcode, call))
+    }
+}
+
+/**
+ * Whether [call] unboxes a colour: an Integer's `intValue`, as the second config's grey is, or a
+ * static (Object) int call, as a parent's colour prop was.
+ */
+private fun unboxesColour(opcode: Opcode, call: MethodReference): Boolean =
+    (call.name == "intValue" && call.definingClass in setOf("Ljava/lang/Number;", "Ljava/lang/Integer;")) ||
+        ((opcode == Opcode.INVOKE_STATIC || opcode == Opcode.INVOKE_STATIC_RANGE) &&
+            call.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;"))
+
+/** How many branches and switch cases in [instructions] land on [index]. */
+private fun jumpsInto(instructions: List<Instruction>, index: Int): Int {
+    val addresses = instructions.runningFold(0) { address, it -> address + it.codeUnits }
+    val target = addresses[index]
+    return instructions.withIndex().sumOf { (at, instruction) ->
+        when {
+            instruction !is OffsetInstruction -> 0
+            instruction.opcode == Opcode.PACKED_SWITCH || instruction.opcode == Opcode.SPARSE_SWITCH -> {
+                val payload = instructions[addresses.indexOf(addresses[at] + instruction.codeOffset)] as SwitchPayload
+                payload.switchElements.count { addresses[at] + it.offset == target }
+            }
+            else -> if (addresses[at] + instruction.codeOffset == target) 1 else 0
+        }
     }
 }
 

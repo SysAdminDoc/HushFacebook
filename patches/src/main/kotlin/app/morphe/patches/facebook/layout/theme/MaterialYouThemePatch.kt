@@ -570,8 +570,11 @@ val materialYouThemePatch = bytecodePatch(
  * which 583 had as `A0C`). 585 has it at the id below on both ABIs, read 2026-10-30 by nine methods
  * that each parse its string: eight renders (arm64 `LX/08d5;->render`, `LX/0Iqd;->render`,
  * `LX/0N8x;->A17` and five more) and the attachment footer's `LX/05X5;->A0B(FbUserSession, LX/01PR, Z)I`.
+ * 586 moved it to the id below, the same on both ABIs, read 2026-11-08 by the same nine methods (arm64
+ * `LX/099J;->render`, `LX/0OCK;->render`, `LX/0TJY;->A1E` and five more renders, and the footer's
+ * `LX/09Ce;->A00`), each reading it through `MobileConfigUnsafeContext.A0H`.
  */
-internal const val LINK_BOX_COLOUR_CONFIG = 0x1030736000203aaL
+internal const val LINK_BOX_COLOUR_CONFIG = 0x1030731000203a8L
 
 /**
  * Every id the declared builds give the link box's colour config. Only declared builds' ids belong
