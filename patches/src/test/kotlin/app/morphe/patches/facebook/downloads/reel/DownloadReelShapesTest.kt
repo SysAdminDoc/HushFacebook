@@ -610,4 +610,33 @@ class DownloadReelShapesTest {
         }
         assertTrue(two.message, two.message.orEmpty().contains("found 2"))
     }
+
+    /**
+     * The button factory's parameters: up to 585 one accessibility action (LX/02xx; on 585), two
+     * labels and the icon; 586 (LX/02mx;->A00) takes a second action of the same type right after
+     * the first, so the labels, the icon and the int each move up one.
+     */
+    @Test
+    fun `the button factory takes one action up to 585 and two on 586`() {
+        val tail = listOf("Ljava/lang/Boolean;", "Ljava/lang/Boolean;", "Ljava/lang/Object;", "Ljava/lang/String;", "Ljava/lang/String;") +
+            List(4) { handler } + "I"
+        fun factory(actions: Int, booleans: Int) = listOf(session, "Lfixture/Mode;") + List(actions) { "Lfixture/Action;" } +
+            listOf("Lfixture/Label;", "Lfixture/Label;", "Lfixture/Icon;") + tail + List(booleans) { "Z" }
+
+        val old = buttonFactoryLayout(factory(1, 4))!!
+        assertEquals("585: the labels, the icon and the int", listOf(1, 3, 5, 15, 4), listOf(old.actions, old.label, old.icon, old.int, old.trailingBooleans))
+        assertEquals("577: three booleans", 3, buttonFactoryLayout(factory(1, 3))!!.trailingBooleans)
+
+        val new = buttonFactoryLayout(factory(2, 4))!!
+        assertEquals("586: everything after the actions moves up one", listOf(2, 4, 6, 16, 4), listOf(new.actions, new.label, new.icon, new.int, new.trailingBooleans))
+
+        assertEquals("no action", null, buttonFactoryLayout(factory(0, 4)))
+        assertEquals("three actions", null, buttonFactoryLayout(factory(3, 4)))
+        assertEquals("five booleans", null, buttonFactoryLayout(factory(2, 5)))
+        assertEquals("two booleans", null, buttonFactoryLayout(factory(1, 2)))
+        val oneLabel = factory(2, 4).toMutableList().apply { set(5, "Lfixture/Other;") }
+        assertEquals("labels of two types", null, buttonFactoryLayout(oneLabel))
+        val noInt = factory(2, 4).toMutableList().apply { set(16, "Z") }
+        assertEquals("no int after the handlers", null, buttonFactoryLayout(noInt))
+    }
 }

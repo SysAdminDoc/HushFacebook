@@ -64,12 +64,10 @@ class DownloadReelFixtureTest {
 
     private val verticalUfi = "Lapp/morphe/extension/facebook/download/ReelDownload;->verticalUfi(Z)Z"
 
-    /** What the block did on each ABI: how far in front of the assembly call it went, its first scratch register, and where it read the helper's six values (session, scoped context, player, story, buttons, markers); then where the render's layout flag is handed to the extension, and its register (#316). Both 585 ABIs lay the render out alike. */
+    /** What the block did on each ABI: how far in front of the assembly call it went, its first scratch register, and where it read the helper's six values (session, scoped context, player, story, buttons, markers); then where the render's layout flag is handed to the extension, and its register (#316). Both 586 ABIs lay the render out alike. */
     private val expected = mapOf(
-        "arm64-v8a" to "before=42 scratch=3 sources=[62, 2, 28, 15, 23, 21] layout=217 v8",
-        "armeabi-v7a" to "before=42 scratch=3 sources=[62, 2, 28, 15, 23, 21] layout=217 v8",
-        // 585's Android 9 build: the builder (LX/09f2;->A03) isn't the render, which hands it the scoped context.
-        "arm64-v8a-minapi28-storeless" to "before=43 scratch=15 sources=[53, 4, 99, 26, 14, 6] layout=192 v7",
+        "arm64-v8a" to "before=36 scratch=1 sources=[31, 10, 28, 15, 23, 21] layout=217 v7",
+        "armeabi-v7a" to "before=36 scratch=1 sources=[31, 10, 28, 15, 23, 21] layout=217 v7",
     )
 
     /** A render of the same Litho method as [render]: its name, its one scoped parameter and its return type. */

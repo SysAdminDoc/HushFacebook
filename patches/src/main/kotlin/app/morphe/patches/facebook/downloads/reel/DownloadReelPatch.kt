@@ -314,17 +314,18 @@ val downloadReelPatch = bytecodePatch(
         val parameters = factory.parameterTypes.map(CharSequence::toString)
 
         // 577 takes 19 parameters, 580 one boolean more (a MobileConfig flag Facebook reads for
-        // its own buttons). Everything up to the int keeps its place, and the booleans after it
-        // are filled in order, so the shape is checked rather than one count.
-        check(parameters.size in 19..20 && parameters[15] == "I" && parameters.drop(16).all { it == "Z" }) {
-            "The button factory takes ${parameters.size} parameters ending ${parameters.drop(15)}, " +
-                "expected the int and three or four booleans"
+        // its own buttons), 586 a second accessibility action after the first. The booleans after
+        // the int are filled in order, so the shape is checked rather than one count.
+        val layout = buttonFactoryLayout(parameters)
+        check(layout != null) {
+            "The button factory takes ${parameters.size} parameters $parameters, expected the session, the mode, " +
+                "one or two actions, two labels, the icon, ten more, the int and three or four booleans"
         }
 
         val modeType = parameters[1]
         val primaryType = parameters[2]
-        val labelType = parameters[3]
-        val iconType = parameters[5]
+        val labelType = parameters[layout.label]
+        val iconType = parameters[layout.icon]
 
         // The mode constant that every one of Facebook's own buttons is built with.
         val modes = factoryCalls.mapNotNull { instruction ->
@@ -435,7 +436,8 @@ val downloadReelPatch = bytecodePatch(
             fun button(icon: String, testId: String, label: String, kind: Int) = buildButton(
                 factory = factory,
                 parameters = parameters,
-                trailingBooleans = parameters.size - 16,
+                actions = layout.actions,
+                trailingBooleans = layout.trailingBooleans,
                 mode = mode,
                 icon = icon,
                 iconWrapperClass = iconWrapper.definingClass,
@@ -697,8 +699,32 @@ internal fun BytecodePatchContext.addMissingSidebarDiagnostic() {
 /** How many values [sidebarButtonBlock] hands the helper: the session, the scoped context, the player, the story and the two lists. */
 internal const val SIDEBAR_BLOCK_ARGUMENTS = 6
 
-/** The locals the helper keeps for the button's factory call, whose 20 arguments sit in v40 and up. */
-private const val HELPER_LOCALS = 60
+/** The locals the helper keeps for the button's factory call, whose 21 arguments (586) sit in v40 up to v60. */
+private const val HELPER_LOCALS = 61
+
+/**
+ * Where the button factory keeps its values: [actions] accessibility actions of one type from
+ * index 2 (one up to 585, two on 586), then two labels of another type, the icon, ten values
+ * ending in four handlers, the int, and [trailingBooleans] booleans.
+ */
+internal class ButtonFactoryLayout(val actions: Int, val trailingBooleans: Int) {
+    val label get() = 2 + actions
+    val icon get() = 4 + actions
+    val int get() = 14 + actions
+}
+
+/** The layout of the button factory taking [parameters], or null when they have another shape. */
+internal fun buttonFactoryLayout(parameters: List<String>): ButtonFactoryLayout? {
+    val action = parameters.getOrNull(2) ?: return null
+    val actions = parameters.drop(2).takeWhile { it == action }.size
+    if (actions !in 1..2) return null
+    val layout = ButtonFactoryLayout(actions, parameters.size - 15 - actions)
+    if (layout.trailingBooleans !in 3..4) return null
+    if (parameters[layout.label + 1] != parameters[layout.label]) return null
+    if (parameters.subList(layout.int - 4, layout.int).any { it != FUNCTION1 }) return null
+    if (parameters[layout.int] != "I" || parameters.drop(layout.int + 1).any { it != "Z" }) return null
+    return layout
+}
 
 /** The instructions that take the answer of the call before them, which nothing may be put in front of. */
 private val ANSWERS = setOf(Opcode.MOVE_RESULT, Opcode.MOVE_RESULT_WIDE, Opcode.MOVE_RESULT_OBJECT, Opcode.MOVE_EXCEPTION)
@@ -1093,8 +1119,9 @@ $it
  *
  * Register use here is dictated by the instruction formats, not by taste. An `invoke-direct` with
  * arguments and an `iget` both take **4-bit** registers, so everything they touch has to sit in
- * `v0` to `v15`. The factory takes nineteen arguments, and thus needs nineteen **consecutive**
- * registers, so its block sits high at `v40` and each value is moved up once it is built.
+ * `v0` to `v15`. The factory takes nineteen to twenty-one arguments, and thus needs as many
+ * **consecutive** registers, so its block sits high at `v40` and each value is moved up once it is
+ * built. 586's second accessibility action gets the same action as the first.
  * `new-instance` and `const-string` take 8-bit registers, so those can write high directly.
  *
  * The six parameters are the session, the scoped context, the player, the reel's story and the
@@ -1105,6 +1132,7 @@ $it
 private fun buildButton(
     factory: MethodReference,
     parameters: List<String>,
+    actions: Int,
     trailingBooleans: Int,
     mode: FieldReference,
     icon: String,
@@ -1124,6 +1152,8 @@ private fun buildButton(
 ): String {
     val signature = "${factory.definingClass}->${factory.name}" +
         parameters.joinToString("", "(", ")") + factory.returnType
+    // Everything after the actions moves up one register for each action past the first (586's second).
+    val shift = actions - 1
 
     return """
         move-object/from16 v0, p1
@@ -1140,35 +1170,35 @@ ${handlers(hdField, sdField, manifestField, kind)}
         new-instance v2, $primaryType
         invoke-direct { v2, v1, v8 }, $primaryType-><init>(Ljava/lang/String;$FUNCTION1)V
         move-object/from16 v42, v2
-
+${(1..shift).joinToString("") { "        move-object/from16 v${42 + it}, v2\n" }}
         new-instance v2, $labelType
         invoke-direct { v2, v1, v9 }, $labelType-><init>(Ljava/lang/String;$FUNCTION1)V
-        move-object/from16 v43, v2
+        move-object/from16 v${43 + shift}, v2
 
         new-instance v2, $labelType
         invoke-direct { v2, v1, v10 }, $labelType-><init>(Ljava/lang/String;$FUNCTION1)V
-        move-object/from16 v44, v2
+        move-object/from16 v${44 + shift}, v2
 
         sget-object v7, $icon
         new-instance v2, $iconWrapperClass
         invoke-direct { v2, v7 }, $iconWrapperClass-><init>($iconEnumType)V
-        move-object/from16 v45, v2
+        move-object/from16 v${45 + shift}, v2
 
         move-object/from16 v40, v6
         sget-object v41, ${mode.definingClass}->${mode.name}:${mode.type}
-        sget-object v46, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;
-        sget-object v47, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
-        const-string v48, "$testId"
-        const-string v49, "$CAPTION"
-        const/16 v50, 0x0
-        move-object/from16 v51, v11
-        move-object/from16 v52, v12
-        move-object/from16 v53, v13
-        move-object/from16 v54, v14
-        const/16 v55, 0x11
-${trailingBooleanArguments(trailingBooleans)}
+        sget-object v${46 + shift}, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;
+        sget-object v${47 + shift}, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
+        const-string v${48 + shift}, "$testId"
+        const-string v${49 + shift}, "$CAPTION"
+        const/16 v${50 + shift}, 0x0
+        move-object/from16 v${51 + shift}, v11
+        move-object/from16 v${52 + shift}, v12
+        move-object/from16 v${53 + shift}, v13
+        move-object/from16 v${54 + shift}, v14
+        const/16 v${55 + shift}, 0x11
+${trailingBooleanArguments(trailingBooleans, 56 + shift)}
 
-        invoke-static/range { v40 .. v${55 + trailingBooleans} }, $signature
+        invoke-static/range { v40 .. v${55 + shift + trailingBooleans} }, $signature
         move-result-object v0
         move-object/from16 v1, p4
         invoke-interface { v1, v0 }, $LIST_ADD
@@ -1182,17 +1212,17 @@ ${trailingBooleanArguments(trailingBooleans)}
 }
 
 /**
- * The booleans after the factory's int, from v56 up. The first three are what Andrew Liang
+ * The booleans after the factory's int, from [first] up. The first three are what Andrew Liang
  * measured on 577 (off, on, off); a flag 580 added in front of the last is passed as off, the
  * value for an experiment Facebook has not turned on for the button.
  */
-private fun trailingBooleanArguments(count: Int): String =
+private fun trailingBooleanArguments(count: Int, first: Int): String =
     (0 until count).joinToString("\n") { index ->
         val value = when {
             index == 1 -> 1
             else -> 0
         }
-        "        const/16 v${56 + index}, 0x$value"
+        "        const/16 v${first + index}, 0x$value"
     }
 
 /**
