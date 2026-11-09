@@ -12,6 +12,7 @@ import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.refresh.enumConstant
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
+import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.reels.prompts.INTEREST_PROMPT
 import app.morphe.patches.facebook.reels.prompts.isOverlayEnum
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -37,7 +38,7 @@ import java.io.File
  * Hide affiliate product links' four anchors on every Facebook build the bundle declares: the reel
  * overlay's one Z predicate in front of adding AFFILIATE_EYEBROW, the one string lookup the feed
  * video plugin's isFooterHidden… makes, the floating card plugin's one static card reader (on 585 its
- * one static Z card check), and the
+ * one static Z card check, on 586 the comment sheet's plugin gate's one case for it), and the
  * reel overlay's one filterCtasForCategorySuppression (on 585, which dropped that name, the one list
  * filter beside the overlay's kind sets, called from the overlay's builder), plus the one store of a
  * profile's shop banner tag, which the reel's author tap calls. Then the patch: every answer each of them
@@ -61,12 +62,59 @@ class HideAffiliateLinksFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to false,
     )
 
-    /** Whether the floating card plugin asks a Z card check instead of reading the model, per build: 585 does. */
-    private val commentCardCheck = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to true,
+    /**
+     * How each build asks whether a comment sheet has its floating card: READER, the plugin's static
+     * model reader (up to 584), CHECK, its static Z check (585), or CASE, the plugin gate's case for
+     * the plugin (586, which keeps no static method on the plugin).
+     */
+    private val commentCardForm = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to "CASE",
     )
 
+    private val PAYLOADS = setOf(Opcode.PACKED_SWITCH_PAYLOAD, Opcode.SPARSE_SWITCH_PAYLOAD, Opcode.ARRAY_PAYLOAD)
+
+    /** The code a stock instruction's opcode stands for, with a goto that an insert widened read as the goto it was. */
+    private fun kind(opcode: Opcode): Opcode = if (opcode == Opcode.GOTO_16 || opcode == Opcode.GOTO_32) Opcode.GOTO else opcode
+
+    /**
+     * Checks that the plugin gate's case for the floating card, at [at] in [gate], starts by asking
+     * [KEEP_COMMENT_CARD_CHECK] with a yes and answers its no, that the switch still lands on that
+     * question, and that the rest of [gate] is what [original] was.
+     */
+    private fun assertCaseHooked(name: String, original: Method, gate: Method, at: Int) {
+        val before = original.code().withoutPadding()
+        val after = gate.code()
+        val padding = after.size - after.withoutPadding().size
+        assertTrue("$name: padding only in front of a payload, at most one", padding <= 1 && after.indexOfFirst { it.opcode in PAYLOADS } > at + 5)
+        assertEquals("$name: 6 instructions at the case", before.size + 6, after.size - padding)
+        val asked = (after[at] as OneRegisterInstruction).registerA
+        assertEquals("$name: the yes handed over", Opcode.CONST_4, after[at].opcode)
+        assertEquals("$name: the yes handed over", 1, (after[at] as NarrowLiteralInstruction).narrowLiteral)
+        assertTrue("$name: v$asked is a parameter", asked < original.localRegisterCount())
+        val call = after[at + 1] as FiveRegisterInstruction
+        assertEquals("$name: the hook", KEEP_COMMENT_CARD_CHECK, ((call as ReferenceInstruction).reference as MethodReference).toString())
+        assertEquals("$name: one register handed over", 1, call.registerCount)
+        assertEquals("$name: the register handed over", asked, call.registerC)
+        assertEquals("$name: the hook's answer", Opcode.MOVE_RESULT, after[at + 2].opcode)
+        assertEquals("$name: the hook's answer", asked, (after[at + 2] as OneRegisterInstruction).registerA)
+        assertEquals("$name: a yes goes on", Opcode.IF_NEZ, after[at + 3].opcode)
+        assertEquals("$name: a yes goes on", asked, (after[at + 3] as OneRegisterInstruction).registerA)
+        assertEquals("$name: a yes goes on to Facebook's check", at + 5, branchTargets(after)[at + 3])
+        assertEquals("$name: a no is the answer", Opcode.RETURN, after[at + 4].opcode)
+        assertEquals("$name: a no is the answer", asked, (after[at + 4] as OneRegisterInstruction).registerA)
+        assertEquals("$name: Facebook's check follows", Opcode.NOP, after[at + 5].opcode)
+        assertEquals("$name: the rest is stock", before.map { kind(it.opcode) },
+            (after.take(at) + after.drop(at + 6)).withoutPadding().map { kind(it.opcode) })
+        assertEquals("$name: the switch lands on the question", lastIntSwitch(original).mapValues { (_, case) ->
+            if (case > at) case + 6 else case
+        }, lastIntSwitch(gate))
+    }
+
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
+
+    /** [this] without the nop the dex writer puts in front of a payload to keep it 4-byte aligned. */
+    private fun List<Instruction>.withoutPadding(): List<Instruction> =
+        filterIndexed { index, instruction -> instruction.opcode != Opcode.NOP || getOrNull(index + 1)?.opcode !in PAYLOADS }
 
     private fun declaredBundles(): Map<String, List<File>> {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -202,7 +250,10 @@ class HideAffiliateLinksFixtureTest {
                         if (dex.typeSection.none { it.toString() == "[${overlay.type}" }) return@forEach
                         for (classDef in dex.classes) {
                             val kindSets = overlayKindSets(classDef, overlay.type)
-                            if (kindSets.isNotEmpty()) classDef.methods.filterTo(found) { isCategoryCtaFilter(it, kindSets) }
+                            if (kindSets.isEmpty()) continue
+                            // 586 sorts each kind through a static helper that reads the sets.
+                            val sorters = overlayKindSorters(classDef, overlay.type, kindSets)
+                            classDef.methods.filterTo(found) { isCategoryCtaFilter(it, kindSets, sorters) }
                         }
                     }
                     found
@@ -250,18 +301,38 @@ class HideAffiliateLinksFixtureTest {
                 }
                 assertTrue("$name: nothing holding $REEL_ENTRY_TAG calls ${entryWriter.definingClass}->${entryWriter.name}", reelTaps.isNotEmpty())
                 val entryOriginal = entryWriter.code()
+                val form = commentCardForm.getValue(version)
+                // 586: the comment sheet's plugin gate checks for the card inline, in its case for the plugin's number.
+                val gateCases = mutableListOf<Pair<Method, Int>>()
+                if (form == "CASE") {
+                    FixtureDex.forEach(bundle) { dex ->
+                        if (dex.typeSection.none { it.toString() == FLOATING_CARD_PLUGIN }) return@forEach
+                        for (classDef in dex.classes) {
+                            if (classDef.type == FLOATING_CARD_PLUGIN || classDef.type.startsWith(EXTENSION_CLASSES)) continue
+                            gateCases += floatingCardCases(classDef)
+                        }
+                    }
+                    assertEquals("$name: plugin gate cases for the floating card", 1, gateCases.size)
+                }
                 val types = (builders + footerChecks).map { it.definingClass }.toSet() + reelCheck.map { it.definingClass } +
                     setOf(footerId.definingClass, FLOATING_CARD_PLUGIN, ctaFilter.definingClass, labelRender.definingClass,
-                        labelGate!!.definingClass, entryWriter.definingClass) + labelTables.keys
+                        labelGate!!.definingClass, entryWriter.definingClass) + labelTables.keys +
+                    gateCases.map { it.first.definingClass }
                 val classes = FixtureDex.classes(bundle, types)
                 assertEquals("$name: classes read", types, classes.keys)
                 val plugin = classes.getValue(FLOATING_CARD_PLUGIN)
                 val readers = plugin.methods.filter(::isCommentCardReader)
                 val cardChecks = plugin.methods.filter(::isCommentCardCheck)
-                val asksCheck = commentCardCheck.getValue(version)
-                assertEquals("$name: static card readers on the floating card plugin", if (asksCheck) 0 else 1, readers.size)
-                if (asksCheck) assertEquals("$name: static Z card checks on the floating card plugin", 1, cardChecks.size)
-                val commentCard = if (asksCheck) cardChecks.single() else readers.single()
+                assertEquals("$name: static card readers on the floating card plugin", if (form == "READER") 1 else 0, readers.size)
+                assertEquals("$name: static Z card checks on the floating card plugin", if (form == "CHECK") 1 else 0, cardChecks.size)
+                val commentCard = when (form) {
+                    "READER" -> readers.single()
+                    "CHECK" -> cardChecks.single()
+                    else -> {
+                        val (gate, _) = gateCases.single()
+                        classes.getValue(gate.definingClass).methods.single { MethodUtil.methodSignaturesMatch(it, gate) }
+                    }
+                }
 
                 fun original(reference: MethodReference) = classes.getValue(reference.definingClass).methods
                     .single { MethodUtil.methodSignaturesMatch(it, reference) }.code()
@@ -277,14 +348,24 @@ class HideAffiliateLinksFixtureTest {
                     assertFiltered("$name reel card check ${check.name}", before, patched(check), KEEP_REEL_CARD, null)
                 }
                 assertFiltered("$name footer id", originals[0], patched(footerId), KEEP_FOOTER, null)
-                if (asksCheck) {
-                    assertFiltered("$name comment card check", originals[1], patched(commentCard), KEEP_COMMENT_CARD_CHECK, null)
-                } else {
-                    assertFiltered("$name comment card", originals[1], patched(commentCard), KEEP_COMMENT_CARD, commentCard.returnType)
+                when (form) {
+                    "READER" -> assertFiltered("$name comment card", originals[1], patched(commentCard), KEEP_COMMENT_CARD, commentCard.returnType)
+                    "CHECK" -> assertFiltered("$name comment card check", originals[1], patched(commentCard), KEEP_COMMENT_CARD_CHECK, null)
+                    else -> assertCaseHooked("$name comment card case", commentCard,
+                        context.mutableClassDefBy(commentCard.definingClass).methods.single { MethodUtil.methodSignaturesMatch(it, commentCard) },
+                        gateCases.single().second)
                 }
                 assertCtaFiltered("$name CTA filter", originals[2], patched(ctaFilter), list)
-                val labelFlag = flagReads(labelRender).single().second
-                for (read in listOf<MethodReference>(labelRender, labelGate)) {
+                // The flag is read in the render and its check up to 585, and on 586 in one static
+                // helper of the check's class that both call.
+                val gateMethod = classes.getValue(labelGate.definingClass).methods.single { MethodUtil.methodSignaturesMatch(it, labelGate) }
+                val labelReaders: List<MethodReference> = if (flagReads(labelRender).isNotEmpty()) listOf(labelRender, gateMethod) else
+                    listOfNotNull(sharedFlagReader(labelRender, gateMethod) { call ->
+                        classes[call.definingClass]?.methods?.firstOrNull { MethodUtil.methodSignaturesMatch(it, call) }
+                    })
+                assertEquals("$name: methods reading the label's flag", if (flagReads(labelRender).isNotEmpty()) 2 else 1, labelReaders.size)
+                val labelFlag = flagReads(labelReaders.first() as Method).single().second
+                for (read in labelReaders) {
                     val hooked = context.mutableClassDefBy(read.definingClass).methods
                         .single { MethodUtil.methodSignaturesMatch(it, read) }
                     assertLabelHooked("$name label ${read.definingClass}", hooked, labelFlag)

@@ -23,6 +23,7 @@ import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.filterBooleanReturns
 import app.morphe.patches.facebook.misc.extension.filterObjectReturns
+import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
@@ -101,6 +102,8 @@ internal const val FB_USER_SESSION = "Lcom/facebook/auth/usersession/FbUserSessi
  *   The render first asks a static check (arm64 `LX/09b5;->A00`, armv7 `LX/09bA;->A00`) whether the
  *   reel has any disclosure at all, and that check reads the same flag. Both answers go through
  *   the extension, so a reel with nothing else to disclose loses the row and not only its text.
+ *   586 moves the read into a static helper both call (arm64 `LX/09Du;->A03`, check
+ *   `LX/09Du;->A00`, render `LX/0BlX;->render`), and its answer goes through the extension there.
  *
  * - On a reel, the card is the overlay item AFFILIATE_EYEBROW of the reel overlay enum (580
  *   `LX/7fq;`, 577 `LX/7ZW;`). The overlay adds it to its list only when a static predicate (580
@@ -119,7 +122,12 @@ internal const val FB_USER_SESSION = "Lcom/facebook/auth/usersession/FbUserSessi
  *   then leaves the plugin out. 585 asks a question instead: the plugin's one static method is a Z
  *   predicate (arm64 `A00(LX/0DkD;LX/0B0Z;)Z`, armv7 `A00(LX/0DkC;LX/0B0c;)Z`) that walks the
  *   model's chain and answers yes only when the card is there, and its one caller (arm64
- *   `LX/0B0e;->A0G`) leaves the plugin out on a no.
+ *   `LX/0B0e;->A0G`) leaves the plugin out on a no. That caller is the sheet's plugin gate, a
+ *   static Z method switching on a plugin's number, and its class hands out each plugin's
+ *   descriptor by the same number (585 `LX/0B0e;->A0B(I)`). 586 keeps no static method on the
+ *   plugin: the check sits inline in the gate's case for the plugin's number (arm64
+ *   `LX/0Ab8;->A0D(LX/0DdG;LX/0AaL;I)Z`, number 5 by `LX/0Ab8;->A07(I)`), so the extension is
+ *   asked at the start of that case and a no answers no for the plugin before Facebook checks.
  * - On a reel again, the "Shop now" card above the creator's name (#89, a creator's own product on
  *   581) is one of the overlay's call-to-action kinds: products tagged on the reel (PRODUCT_TAGGING,
  *   PRODUCT_TAGGING_V2), the creator's storefront, Shop similar, or the affiliate card itself. The
@@ -157,7 +165,7 @@ val hideAffiliateLinksPatch = bytecodePatch(
     execute {
         val anchors = findAffiliateAnchors()
         val label = findCommissionLabel()
-        for (read in listOf(label.render, label.gate)) {
+        for (read in label.readers) {
             mutableClassDefBy(read.definingClass).findMutableMethodOf(read).hookCommissionFlag(label.flag)
         }
         for (check in anchors.reelCardChecks) {
@@ -165,9 +173,12 @@ val hideAffiliateLinksPatch = bytecodePatch(
         }
         mutableClassDefBy(anchors.footerId.definingClass).findMutableMethodOf(anchors.footerId)
             .filterObjectReturns(PATCH, KEEP_FOOTER)
-        val commentCard = mutableClassDefBy(FLOATING_CARD_PLUGIN).findMutableMethodOf(anchors.commentCard)
-        if (isCommentCardCheck(anchors.commentCard)) commentCard.filterBooleanReturns(PATCH, KEEP_COMMENT_CARD_CHECK)
-        else commentCard.filterObjectReturns(PATCH, KEEP_COMMENT_CARD)
+        val commentCard = mutableClassDefBy(anchors.commentCard.definingClass).findMutableMethodOf(anchors.commentCard)
+        when {
+            anchors.commentCase != null -> commentCard.hookCommentCardCase(anchors.commentCase)
+            isCommentCardCheck(anchors.commentCard) -> commentCard.filterBooleanReturns(PATCH, KEEP_COMMENT_CARD_CHECK)
+            else -> commentCard.filterObjectReturns(PATCH, KEEP_COMMENT_CARD)
+        }
         mutableClassDefBy(anchors.ctaFilter.definingClass).findMutableMethodOf(anchors.ctaFilter)
             .filterCtaReturns()
         try {
@@ -182,16 +193,48 @@ val hideAffiliateLinksPatch = bytecodePatch(
 
 private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
 
-/** The methods the patch hooks: every reel card predicate, then one of each other kind. */
+/**
+ * The methods the patch hooks: every reel card predicate, then one of each other kind. With
+ * [commentCase] set, [commentCard] is the comment sheet's plugin gate and [commentCase] the index
+ * its case for the floating card starts at (586); otherwise every answer of [commentCard] goes through.
+ */
 internal class AffiliateAnchors(
     val reelCardChecks: List<MethodReference>,
     val footerId: MethodReference,
     val commentCard: Method,
     val ctaFilter: Method,
+    val commentCase: Int? = null,
 )
 
-/** The reel disclosure row's render, the check in front of it, and the flag both read. */
-internal class CommissionLabelAnchors(val render: Method, val gate: Method, val flag: Int)
+/**
+ * The reel disclosure row's render, the check in front of it, the flag both read, and the methods
+ * holding that read: the render and the check up to 585, and on 586 the one static helper both of
+ * them call for it (arm64 `LX/09Du;->A03`, beside the check `LX/09Du;->A00`).
+ */
+internal class CommissionLabelAnchors(val render: Method, val gate: Method, val flag: Int, val readers: List<Method>)
+
+/** The static calls answering a boolean that [method] makes. */
+private fun staticBooleanCalls(method: Method): List<MethodReference> =
+    method.implementation?.instructions?.mapNotNull { instruction ->
+        ((instruction as? ReferenceInstruction)?.reference as? MethodReference)
+            ?.takeIf { instruction.opcode in setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE) && it.returnType == "Z" }
+    }.orEmpty()
+
+/**
+ * 586's commission flag reader: the one method that both [render] and [gate] call statically, other
+ * than [gate] itself, that reads one reel flag. [resolve] finds a call's method.
+ */
+internal fun sharedFlagReader(render: Method, gate: Method, resolve: (MethodReference) -> Method?): Method? {
+    fun MethodReference.sameAs(other: MethodReference) =
+        definingClass == other.definingClass && MethodUtil.methodSignaturesMatch(this, other)
+    val fromGate = staticBooleanCalls(gate)
+    return staticBooleanCalls(render)
+        .filter { call -> !call.sameAs(gate) && fromGate.any { it.sameAs(call) } }
+        .distinctBy { it.toString() }
+        .mapNotNull(resolve)
+        .filter { flagReads(it).size == 1 }
+        .singleOrNull()
+}
 
 /**
  * Whether [method] is the reel disclosure row's render, which draws the "Commission eligible" label.
@@ -236,18 +279,27 @@ internal fun BytecodePatchContext.findCommissionLabel(): CommissionLabelAnchors 
         .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         .flatMap { classDef -> classDef.methods.filter { isDisclosureRender(it, resolve) } }
     val render = renders.singleOrNull() ?: refuse("expected one render naming $DISCLOSURE_COMPONENT, found ${renders.size}")
-    val flag = flagReads(render).singleOrNull()?.second
-        ?: refuse("expected one flag read in ${render.definingClass}->render")
     val gateCall = disclosureGate(render) ?: refuse("${render.definingClass}->render asks no session check first")
     val gate = classDefBy(gateCall.definingClass).methods.firstOrNull { MethodUtil.methodSignaturesMatch(it, gateCall) }
         ?: refuse("${gateCall.definingClass} has no ${gateCall.name}")
-    for (method in listOf(render, gate)) {
+    val renderReads = flagReads(render)
+    val readers = when (renderReads.size) {
+        1 -> listOf(render, gate)
+        0 -> listOf(
+            sharedFlagReader(render, gate) { call ->
+                classDefByOrNull(call.definingClass)?.methods?.firstOrNull { MethodUtil.methodSignaturesMatch(it, call) }
+            } ?: refuse("${render.definingClass}->render reads no flag and shares no flag reader with ${gate.definingClass}->${gate.name}"),
+        )
+        else -> refuse("expected one flag read in ${render.definingClass}->render, found ${renderReads.size}")
+    }
+    val flag = flagReads(readers.first()).single().second
+    for (method in readers) {
         val read = flagReads(method).singleOrNull { it.second == flag }?.first
             ?: refuse("expected one read of the flag in ${method.definingClass}->${method.name}")
         val answer = method.implementation!!.instructions.elementAt(read + 1)
         if (answer.opcode != Opcode.MOVE_RESULT) refuse("the flag read in ${method.definingClass}->${method.name} keeps no answer")
     }
-    return CommissionLabelAnchors(render, gate, flag)
+    return CommissionLabelAnchors(render, gate, flag, readers)
 }
 
 /**
@@ -336,16 +388,36 @@ internal fun overlayKindSets(classDef: ClassDef, overlay: String): Set<String> {
     return sets
 }
 
+private fun MethodReference.signature() = "$definingClass->$name(${parameterTypes.joinToString("")})$returnType"
+
+/**
+ * The static methods of [classDef] that sort one [overlay] kind into its category by reading one of
+ * [kindSets]. 586's CTA filter asks one of these for each kind (`LX/0C6L;->A01` on arm64) instead of
+ * reading the sets itself.
+ */
+internal fun overlayKindSorters(classDef: ClassDef, overlay: String, kindSets: Set<String>): Set<String> =
+    classDef.methods.filter { method ->
+        AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.map { it.toString() } == listOf(overlay) &&
+            method.implementation?.instructions?.any {
+                it.opcode == Opcode.SGET_OBJECT && (it as ReferenceInstruction).reference.toString() in kindSets
+            } == true
+    }.mapTo(mutableSetOf()) { it.signature() }
+
 /**
  * Whether [method] is 585's CTA filter, which lost [CTA_FILTER]'s kept name and works out the
  * categories to leave out itself: it takes the list of kinds first and answers a list, reads one of
- * [kindSets] and asks `Set.contains`, and answers null straight from a `const/4 0` when there's no
- * category to leave out, which the extension reads as "the list as it came".
+ * [kindSets] (586 asks one of [kindSorters], which reads them) and asks `Set.contains`, and answers
+ * null straight from a `const/4 0` when there's no category to leave out, which the extension reads
+ * as "the list as it came".
  */
-internal fun isCategoryCtaFilter(method: Method, kindSets: Set<String>): Boolean {
+internal fun isCategoryCtaFilter(method: Method, kindSets: Set<String>, kindSorters: Set<String> = emptySet()): Boolean {
     if (method.returnType != LIST || method.parameterTypes.firstOrNull()?.toString() != LIST) return false
     val code = method.implementation?.instructions?.toList() ?: return false
-    val readsKinds = code.any { it.opcode == Opcode.SGET_OBJECT && (it as ReferenceInstruction).reference.toString() in kindSets }
+    val readsKinds = code.any { instruction ->
+        val reference = (instruction as? ReferenceInstruction)?.reference
+        (instruction.opcode == Opcode.SGET_OBJECT && reference.toString() in kindSets) ||
+            (reference is MethodReference && reference.signature() in kindSorters)
+    }
     val asksContains = code.any { instruction ->
         val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
         call != null && call.definingClass == SET && call.name == "contains"
@@ -535,7 +607,10 @@ internal fun BytecodePatchContext.findAffiliateAnchors(): AffiliateAnchors {
         if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
         for (method in classDef.methods) reelCardChecks(method, eyebrow).associateByTo(reelChecks) { it.joinToString(" or ") }
         val kindSets = overlayKindSets(classDef, overlay.type)
-        if (kindSets.isNotEmpty()) categoryFilters += classDef.methods.filter { isCategoryCtaFilter(it, kindSets) }
+        if (kindSets.isNotEmpty()) {
+            val sorters = overlayKindSorters(classDef, overlay.type, kindSets)
+            categoryFilters += classDef.methods.filter { isCategoryCtaFilter(it, kindSets, sorters) }
+        }
     }
     // The kept name up to 584; 585 dropped it, so its filter is found by what it does.
     if (ctaFilters.isEmpty()) ctaFilters += categoryFilters
@@ -545,17 +620,96 @@ internal fun BytecodePatchContext.findAffiliateAnchors(): AffiliateAnchors {
     val footerId = footerIds.values.singleOrNull() ?: refuse(
         "expected one string lookup in $FOOTER_HIDDEN…, found ${footerIds.keys.ifEmpty { setOf("none") }}",
     )
-    // The model reader up to 584; 585 has none and asks its Z check instead.
+    // The model reader up to 584; 585 has none and asks its Z check instead; 586 has neither, and the
+    // plugin gate checks inline in the plugin's case.
     val readers = classDefBy(FLOATING_CARD_PLUGIN).methods.filter(::isCommentCardReader)
         .ifEmpty { classDefBy(FLOATING_CARD_PLUGIN).methods.filter(::isCommentCardCheck) }
-    val commentCard = readers.singleOrNull()
-        ?: refuse("expected one static card reader or Z card check on $FLOATING_CARD_PLUGIN, found ${readers.size}")
+    val cases = if (readers.isEmpty()) commentCardCases() else emptyList()
+    val (commentCard, commentCase) = readers.singleOrNull()?.let { it to null } ?: cases.singleOrNull() ?: refuse(
+        "expected one static card reader or Z card check on $FLOATING_CARD_PLUGIN, or one case for it in a plugin gate, " +
+            "found ${readers.size} and ${cases.map { (gate, at) -> "${gate.definingClass}->${gate.name} at $at" }}",
+    )
     val ctaFilter = ctaFilters.singleOrNull()
         ?: refuse(
             "expected one $CTA_FILTER($LIST$SET)$LIST, or one ($LIST…)$LIST beside the overlay's kind sets, found " +
                 ctaFilters.joinToString { "${it.definingClass}->${it.name}" }.ifEmpty { "none" },
         )
     ctaListRegister(ctaFilter)
-    return AffiliateAnchors(reelCheck, footerId, commentCard, ctaFilter)
+    return AffiliateAnchors(reelCheck, footerId, commentCard, ctaFilter, commentCase)
+}
+
+/**
+ * The keys of [method]'s switch on its last parameter, an int, each to the index its case starts at.
+ * Empty unless that switch is [method]'s first instruction, as it is in the comment sheet's plugin
+ * gate and in the table of plugin descriptors beside it.
+ */
+internal fun lastIntSwitch(method: Method): Map<Int, Int> {
+    if (method.parameterTypes.lastOrNull()?.toString() != "I") return emptyMap()
+    val implementation = method.implementation ?: return emptyMap()
+    val code = implementation.instructions.toList()
+    val switch = code.firstOrNull() ?: return emptyMap()
+    if (switch.opcode != Opcode.PACKED_SWITCH && switch.opcode != Opcode.SPARSE_SWITCH) return emptyMap()
+    if ((switch as OneRegisterInstruction).registerA != implementation.registerCount - 1) return emptyMap()
+    val addresses = code.runningFold(0) { address, instruction -> address + instruction.codeUnits }
+    val payload = code.getOrNull(addresses.indexOf((switch as OffsetInstruction).codeOffset)) as? SwitchPayload
+        ?: return emptyMap()
+    return payload.switchElements.mapNotNull { element ->
+        addresses.indexOf(element.offset).takeIf { it in code.indices }?.let { element.key to it }
+    }.toMap()
+}
+
+/** The numbers [table], a static (I) method switching on its int, answers the floating card plugin's descriptor for. */
+internal fun floatingCardNumbers(table: Method): List<Int> {
+    if (!AccessFlags.STATIC.isSet(table.accessFlags) || table.parameterTypes.size != 1) return emptyList()
+    val code = table.implementation?.instructions?.toList() ?: return emptyList()
+    return lastIntSwitch(table).filterValues { at ->
+        code[at].opcode == Opcode.SGET_OBJECT &&
+            ((code[at] as ReferenceInstruction).reference as FieldReference).definingClass == FLOATING_CARD_PLUGIN
+    }.keys.toList()
+}
+
+/**
+ * [classDef]'s plugin gates, each with the index its case for the floating card starts at: static
+ * boolean methods switching on a plugin's number, when [classDef]'s table of plugin descriptors
+ * answers the floating card's for exactly one number.
+ */
+internal fun floatingCardCases(classDef: ClassDef): List<Pair<Method, Int>> {
+    val number = classDef.methods.flatMap(::floatingCardNumbers).distinct().singleOrNull() ?: return emptyList()
+    return classDef.methods.filter { AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" }
+        .mapNotNull { gate -> lastIntSwitch(gate)[number]?.let { gate to it } }
+}
+
+/** Every app class's [floatingCardCases]: on 586, the one case the comment sheet's plugin gate keeps for the card. */
+internal fun BytecodePatchContext.commentCardCases(): List<Pair<Method, Int>> {
+    val found = mutableListOf<Pair<Method, Int>>()
+    classDefForEachReferencing(types = listOf(FLOATING_CARD_PLUGIN)) { classDef: ClassDef ->
+        if (classDef.type != FLOATING_CARD_PLUGIN && !classDef.type.startsWith(EXTENSION_CLASSES)) {
+            found += floatingCardCases(classDef)
+        }
+    }
+    return found
+}
+
+/**
+ * Asks [KEEP_COMMENT_CARD_CHECK] at the start of the plugin gate's case for the floating card, at
+ * [index], whether to keep a card: on a no the case answers no, as it does for a post without a card,
+ * and the sheet leaves the plugin out; on a yes Facebook's own check runs. The call borrows one free
+ * local and goes in at the case's control flow label, so the switch lands on it.
+ */
+internal fun MutableMethod.hookCommentCardCase(index: Int) {
+    if (returnType != "Z") refuse("$definingClass->$name answers $returnType, not a boolean")
+    val free = freeLocalsAt(PATCH, index, 1).single()
+    addInstructionsAtControlFlowLabel(
+        index,
+        """
+            const/4 v$free, 0x1
+            invoke-static { v$free }, $KEEP_COMMENT_CARD_CHECK
+            move-result v$free
+            if-nez v$free, :facebook
+            return v$free
+            :facebook
+            nop
+        """,
+    )
 }
 
