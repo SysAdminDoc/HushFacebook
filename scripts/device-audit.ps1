@@ -61,9 +61,9 @@ param(
     # or on Android's app chooser.
     [string[]]$Visit = @('fb://feed', 'tap:Comment', 'back', 'fb://watch', 'fb://fb_shorts/viewer', 'longpress',
         'fb://notifications', 'fb://marketplace', 'fb://profile', 'fb://search', 'query',
-        'fb://bookmarks', 'tap:Settings and privacy', 'fb://bookmarks', 'tap:Feeds', 'fb://feed'),
+        'fb://bookmarks', 'tap:Settings and privacy', 'tap:Settings', 'tap:Notifications', 'fb://bookmarks', 'tap:Feeds', 'fb://feed'),
     # Only these explicitly optional steps may be absent without failing the requested scope.
-    [string[]]$OptionalVisit = @('tap:Comment', 'tap:Feeds'),
+    [string[]]$OptionalVisit = @('tap:Comment', 'tap:Settings', 'tap:Notifications', 'tap:Feeds'),
     [int]$Swipes = 4,
     [int]$SettleSeconds = 4,
     # Setting keys to turn on or off on top of the all-on profile, besides the few the walk itself
@@ -195,7 +195,7 @@ function Assert-AuditLease {
 function Assert-AuditSteps {
     $allowed = @('fb://feed', 'fb://watch', 'fb://fb_shorts/viewer', 'fb://notifications',
         'fb://marketplace', 'fb://profile', 'fb://search', 'fb://bookmarks',
-        'tap:Comment', 'tap:Settings and privacy', 'tap:Feeds', 'back', 'longpress', 'query')
+        'tap:Comment', 'tap:Settings and privacy', 'tap:Settings', 'tap:Notifications', 'tap:Feeds', 'back', 'longpress', 'query')
     foreach ($step in $Visit) {
         if ($allowed -cnotcontains $step) { throw "Not a permitted audit navigation step: $step" }
     }
@@ -263,7 +263,7 @@ function Invoke-Adb {
                     throw 'The tap is not inside the one search field holding the query. No tap was sent.'
                 }
             } elseif ($arguments[2] -eq 'tap') {
-                if ($inputNodeLabel -cnotin @('Comment', 'Settings and privacy', 'Feeds')) {
+                if ($inputNodeLabel -cnotin @('Comment', 'Settings and privacy', 'Settings', 'Notifications', 'Feeds')) {
                     throw 'No permitted navigation node was selected. No tap was sent.'
                 }
                 # The label must still name one target on the fresh screen, and the tap must land in it.
@@ -567,6 +567,8 @@ function Select-AuditTapNode([string]$Label, [object[]]$Nodes, [string[]]$Repeat
         return @($reachable | Sort-Object Top)[0].Node
     }
     $rows = @($found | Where-Object { $_.clickable -ceq 'true' })
+    # The Menu's header gear and its expanded group's row both say Settings and open the same page.
+    if ($rows.Count -eq 1 -and $Label -ceq 'Settings') { return $rows[0] }
     if ($found.Count -lt 2 -or $rows.Count -ne 1) { return $null }
     $null = $rows[0].bounds -match $boundsPattern
     $outer = @([int]$Matches[1], [int]$Matches[2], [int]$Matches[3], [int]$Matches[4])
