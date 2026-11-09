@@ -704,8 +704,9 @@ public class FeedVideoAloneTest {
      * #421: a reel link opened inside the app gives the viewer's entry the link's origin, but the
      * viewer's list reads "unknown::unknown" (S22 2026-11-08), and its loading page never filled. The
      * first such list read soon after a shared opening is that viewer's and shows none, then and
-     * later. Another list, one read only after the window, one after another viewer opened, and any
-     * with Open shared reels on their own off keep Facebook's answer.
+     * later, even behind a viewer opened over it. Another list, one read only after the window, one
+     * after another viewer opened, and any with Open shared reels on their own off keep Facebook's
+     * answer.
      */
     @Test
     public void aSharedReelsListWithNoOriginOfItsOwnShowsNoLoadingPage() {
@@ -713,7 +714,7 @@ public class FeedVideoAloneTest {
         Settings.SHARED_REELS_ALONE.save(true);
         FeedVideoAlone.originForTests = params -> origin(FeedVideoAlone.NO_ORIGIN);
         Object list = new Object();
-        assertTrue("before any shared opening", FeedVideoAlone.moreReelsComing(true, list));
+        assertTrue("before any shared opening", FeedVideoAlone.moreReelsComing(true, new Object()));
 
         FeedVideoAlone.reelsViewerOpening(origin("unknown::fb_shorts_viewer"));
         clock.addAndGet(200);
@@ -730,12 +731,45 @@ public class FeedVideoAloneTest {
 
         FeedVideoAlone.reelsViewerOpening(origin("fb_shorts_tab::reels_tab"));
         assertTrue("a list after the Reels tab opened", FeedVideoAlone.moreReelsComing(true, new Object()));
-        assertTrue("the old viewer's list after it", FeedVideoAlone.moreReelsComing(true, list));
+        // Its fetch stays held, so behind the Reels tab or a profile's reel it still has no next page.
+        assertFalse("the shared viewer's list behind another viewer", FeedVideoAlone.moreReelsComing(true, list));
 
         Settings.SHARED_REELS_ALONE.save(false);
+        assertTrue("its list with the switch turned off", FeedVideoAlone.moreReelsComing(true, list));
         Settings.FEED_VIDEOS_ALONE.save(true);
         FeedVideoAlone.reelsViewerOpening(origin("unknown::fb_shorts_viewer"));
         assertTrue("feed switch only", FeedVideoAlone.moreReelsComing(true, new Object()));
+    }
+
+    /**
+     * #421: a list with no origin that was on screen before a shared reel opened, the Reels tab's
+     * say, is never taken as the shared viewer's, even when it's drawn again first inside the
+     * window. The shared viewer's own list, read after it, is. A second shared link over the first
+     * takes its own list and the first keeps its own.
+     */
+    @Test
+    public void aListReadBeforeASharedOpeningIsNeverTakenForIt() {
+        Settings.FEED_VIDEOS_ALONE.save(false);
+        Settings.SHARED_REELS_ALONE.save(true);
+        FeedVideoAlone.originForTests = params -> origin(FeedVideoAlone.NO_ORIGIN);
+        Object reelsTab = new Object();
+        FeedVideoAlone.reelsViewerOpening(origin("fb_shorts_tab::reels_tab"));
+        assertTrue("the Reels tab's list", FeedVideoAlone.moreReelsComing(true, reelsTab));
+
+        FeedVideoAlone.reelsViewerOpening(origin("unknown::fb_shorts_viewer"));
+        clock.addAndGet(100);
+        assertTrue("the Reels tab's list drawn again first", FeedVideoAlone.moreReelsComing(true, reelsTab));
+        Object first = new Object();
+        assertFalse("the shared viewer's list", FeedVideoAlone.moreReelsComing(true, first));
+        assertTrue("the Reels tab's list after it", FeedVideoAlone.moreReelsComing(true, reelsTab));
+
+        FeedVideoAlone.reelsViewerOpening(origin("external_deeplink::fb_shorts_viewer"));
+        clock.addAndGet(100);
+        Object second = new Object();
+        assertFalse("the second shared viewer's list", FeedVideoAlone.moreReelsComing(true, second));
+        assertTrue("one list per opening", FeedVideoAlone.moreReelsComing(true, new Object()));
+        assertFalse("the first shared viewer's list under it", FeedVideoAlone.moreReelsComing(true, first));
+        assertTrue("the Reels tab's list still", FeedVideoAlone.moreReelsComing(true, reelsTab));
     }
 
     @Test
