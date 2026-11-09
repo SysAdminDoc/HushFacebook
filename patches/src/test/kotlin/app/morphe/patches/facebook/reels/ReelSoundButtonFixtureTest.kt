@@ -386,6 +386,23 @@ class ReelSoundButtonFixtureTest {
         val helper = corner.methods.single { it.name == SIDE_SPEAKER }.code().mapNotNull { it.called()?.toString() }
         assertEquals("$name: what the helper calls",
             listOf(REEL_CORNER_FOR_SIDE, builder.toString(), REEL_SIDE_SPEAKER, "Ljava/util/List;->add(Ljava/lang/Object;)Z"), helper)
+        // It calls the builder the way the corner does: statically on 585, on the builder's one instance
+        // from 586 (arm64 LX/0Cii;->A00). A static call to that instance method shifts every argument one
+        // register early, and opening the Reels tab crashed on the reel landing where the 0c7s goes.
+        val sideCode = corner.methods.single { it.name == SIDE_SPEAKER }.code()
+        val builds = sideCode.indexOfFirst { it.called()?.toString() == builder.toString() }
+        val own = footerSite.method.code()[footerSite.build.call]
+        assertEquals("$name: the helper calls the builder another way", own.opcode, sideCode[builds].opcode)
+        assertEquals("$name: the helper passes the builder another number of registers",
+            (own as RegisterRangeInstruction).registerCount, (sideCode[builds] as RegisterRangeInstruction).registerCount)
+        if (own.opcode != Opcode.INVOKE_STATIC_RANGE) {
+            val receiver = sideCode[builds - 1]
+            assertEquals("$name: the builder's instance isn't read right before the call", Opcode.SGET_OBJECT, receiver.opcode)
+            val instance = (receiver as ReferenceInstruction).reference as FieldReference
+            assertEquals("$name: the builder is called on another instance", builder.definingClass, instance.definingClass)
+            assertEquals("$name: the builder is called on something else", builder.definingClass, instance.type)
+            assertEquals("$name: the instance lands elsewhere", sideCode[builds].firstRegister(), (receiver as OneRegisterInstruction).registerA)
+        }
 
         // The offer asks what makes the side column leave early, on a build where it can.
         val builderParameters = builder.parameterTypes.map(CharSequence::toString)

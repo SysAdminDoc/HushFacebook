@@ -648,10 +648,13 @@ function Send-Profile([string]$Json) {
 # Keep the reel speed run on it alone. Hiding the Comment button under posts leaves tap:Comment
 # nothing to open, and the comment sheet is the only way the walk reaches Open comments at full
 # height (585 hides it; 584 never sent the row's type list on this account, so the baseline didn't
-# see it). A key in both -On and -Off ends off, as the extension applies off after on.
+# see it). Hiding the speaker on reels keeps Move the speaker above the three dots from ever building
+# one, so the walk never called the side column's builder, and 586's Reels tab crash in it (the
+# builder became an instance method) passed a walk with 0 crashes. A key in both -On and -Off ends
+# off, as the extension applies off after on.
 function Get-AuditOff([string[]]$OnKeys, [string[]]$OffKeys,
     [string[]]$WalkKeys = @('hushfacebook_hold_reel_right_edge', 'hushfacebook_long_press_opens_comments',
-        'hushfacebook_hide_post_comment_button')) {
+        'hushfacebook_hide_post_comment_button', 'hushfacebook_hide_reel_sound_button')) {
     $keys = [System.Collections.Generic.List[string]]::new()
     foreach ($key in @(@($WalkKeys | Where-Object { $OnKeys -cnotcontains $_ }) + @($OffKeys))) {
         if ($key -and -not $keys.Contains($key)) { $keys.Add($key) }

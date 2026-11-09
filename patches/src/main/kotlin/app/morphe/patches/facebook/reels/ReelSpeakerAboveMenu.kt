@@ -182,6 +182,32 @@ private fun reelSlot(site: SpeakerSite, item: String): Int {
     return slot
 }
 
+/**
+ * The one instance the speaker's [builder] is called on at [site], or null when it's static. From 586
+ * it's an instance method of a stateless singleton (arm64 LX/0Cii;->A01 on LX/0Cii;->A00), and a static
+ * call to it shifts every argument one register early. Refused unless [site] calls it virtually on that
+ * instance and its class keeps no state of its own.
+ */
+internal fun builderInstance(site: SpeakerSite, owner: ClassDef, builder: Method): FieldReference? {
+    val call = site.method.code()[site.build.call]
+    val where = "${owner.type}->${builder.name}"
+    if (AccessFlags.STATIC.isSet(builder.accessFlags)) {
+        if (call.opcode != Opcode.INVOKE_STATIC_RANGE) throw PatchException("$PATCH: $where is static but not called so")
+        return null
+    }
+    if (call.opcode != Opcode.INVOKE_VIRTUAL_RANGE) throw PatchException("$PATCH: $where isn't called virtually")
+    if (owner.fields.any { !AccessFlags.STATIC.isSet(it.accessFlags) }) throw PatchException("$PATCH: $where belongs to an object with state")
+    val instance = owner.fields.singleOrNull { AccessFlags.STATIC.isSet(it.accessFlags) && it.type == owner.type }
+        ?: throw PatchException("$PATCH: $where has no one instance to be called on")
+    val reads = site.method.code().any { instruction ->
+        instruction.opcode == Opcode.SGET_OBJECT && ((instruction as ReferenceInstruction).reference as FieldReference).let {
+            it.definingClass == owner.type && it.name == instance.name && it.type == owner.type
+        }
+    }
+    if (!reads) throw PatchException("$PATCH: ${site.owner}->${site.method.name} doesn't call $where on its instance")
+    return instance
+}
+
 /** [REEL_SPEAKER_STAYS] at [site], before its null check, with the reel from the call's own arguments. */
 private fun hookSpeakerStays(site: SpeakerSite, slot: Int) {
     val built = site.build.register
@@ -206,7 +232,9 @@ internal fun BytecodePatchContext.moveReelSpeakerAboveMenu(footer: SpeakerSite, 
         .map { it.type }.filterNot { it.startsWith(EXTENSION_PACKAGE) }.toSet()
     val builder = footer.method.code()[footer.build.call].calledMethod()!!
     val parameters = builder.parameterTypes.map(CharSequence::toString)
-    val builderMethod = mutableClassDefBy(builder.definingClass).methods.single { isCalledBy(it, builder) }
+    val builderClass = mutableClassDefBy(builder.definingClass)
+    val builderMethod = builderClass.methods.single { isCalledBy(it, builder) }
+    val instance = builderInstance(footer, builderClass, builderMethod)
     val check = footerSpeakerCheck(builderMethod, toggles)
         ?: throw PatchException("$PATCH: ${builder.definingClass}->${builder.name} has no check in front of the sound toggle")
     val answer = (builderMethod.code()[check] as OneRegisterInstruction).registerA
@@ -308,17 +336,26 @@ internal fun BytecodePatchContext.moveReelSpeakerAboveMenu(footer: SpeakerSite, 
     }
     corner.methods.add(offer)
 
-    // v1 up to the builder's last are its arguments. The side column's are past the locals, so they're copied.
-    val locals = parameters.size + 3
-    val builtAt = parameters.size + 1
-    val listCopy = parameters.size + 2
+    // v1 up to the builder's last are its arguments, behind its instance when it has one. The side
+    // column's are past the locals, so they're copied.
+    val shift = if (instance == null) 0 else 1
+    val last = parameters.size + shift
+    val locals = last + 3
+    val builtAt = last + 1
+    val listCopy = last + 2
     val arguments = parameters.indices.joinToString("\n") { index ->
         val field = fields[index]
+        val to = index + 1 + shift
         if (field != null) {
-            "iget-object v${index + 1}, v0, $cornerType->${field.name}:${parameters[index]}"
+            "iget-object v$to, v0, $cornerType->${field.name}:${parameters[index]}"
         } else {
-            "move-object/from16 v${index + 1}, v${locals + contextAt}\ncheck-cast v${index + 1}, ${parameters[index]}"
+            "move-object/from16 v$to, v${locals + contextAt}\ncheck-cast v$to, ${parameters[index]}"
         }
+    }
+    val build = if (instance == null) {
+        "invoke-static/range { v1 .. v$last }, $builder"
+    } else {
+        "sget-object v1, ${builder.definingClass}->${instance.name}:${builder.definingClass}\ninvoke-virtual/range { v1 .. v$last }, $builder"
     }
     val side = ImmutableMethod(
         cornerType,
@@ -339,7 +376,7 @@ internal fun BytecodePatchContext.moveReelSpeakerAboveMenu(footer: SpeakerSite, 
                 if-eqz v0, :none
                 check-cast v0, $cornerType
                 $arguments
-                invoke-static/range { v1 .. v${parameters.size} }, $builder
+                $build
                 move-result-object v$builtAt
                 invoke-static { v$builtAt }, $REEL_SIDE_SPEAKER
                 move-result-object v$builtAt
