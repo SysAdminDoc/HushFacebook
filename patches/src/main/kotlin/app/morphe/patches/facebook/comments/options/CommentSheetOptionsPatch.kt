@@ -1538,10 +1538,20 @@ private fun hideRowInDraw(draw: Method, sender: Method, senderKey: Int, flag: Fi
 
     val senderAt = (start until addAt).singleOrNull { code[it].madeType() == sender.definingClass }
         ?: refuse("$where doesn't make ${sender.definingClass} once in its collapsed block")
-    val senderInit = code[senderAt + 1].methodCall()?.takeIf { it.definingClass == sender.definingClass && it.name == "<init>" }
+    // 586 moves the arm into a low register between making the sender and starting it (`LX/09W9;->A0s`
+    // on arm64), so one such move may sit between them, the way it does before the question.
+    val armMove = code[senderAt + 1].takeIf { it.opcode in INT_MOVES } as TwoRegisterInstruction?
+    val senderStart = if (armMove == null) senderAt + 1 else senderAt + 2
+    val senderInit = code.getOrNull(senderStart)?.methodCall()?.takeIf { it.definingClass == sender.definingClass && it.name == "<init>" }
         ?: refuse("$where doesn't start ${sender.definingClass} right after making it")
-    val senderArgs = code[senderAt + 1].namedRegisters()
-    if (senderArgs.size != 3 || senderArgs[1] != context || literalBefore(code, senderAt + 1, senderArgs[2]) != senderKey) {
+    val senderArgs = code[senderStart].namedRegisters()
+    val arm = when {
+        senderArgs.size != 3 -> null
+        armMove == null -> literalBefore(code, senderStart, senderArgs[2])
+        armMove.registerA == senderArgs[2] -> literalBefore(code, senderAt + 1, armMove.registerB)
+        else -> null
+    }
+    if (senderArgs.size != 3 || senderArgs[1] != context || arm != senderKey) {
         refuse("$where doesn't start ${sender.definingClass} with its context and arm $senderKey")
     }
 

@@ -812,9 +812,23 @@ class CommentSheetOptionsFixtureTest {
         val (toArm, toUpdate) = added(senderWhere, restMethod(sender.method), sender, listOf(3, 4))
         assertEquals("$senderWhere: the switch's shape", listOf(Opcode.CONST_16, Opcode.IF_NE, Opcode.CONST_16), toArm.map { it.opcode })
         assertEquals("$senderWhere: looks for the number", HIDE_REPLIES, toArm[0].literal())
-        // 585's Android 9 build sends from a merged lambda, where expand is case 70 and one low register is free.
-        val merged = "-minapi28" in name
-        assertEquals("$senderWhere: takes the arm that names the update", if (merged) 70 else 7, toArm[2].literal())
+        // The arm taken is the stock switch's arm that reaches "expand replies" before another arm
+        // starts: 7 up to 585, 70 in 585's Android 9 merged lambda, 22 in 586's (`LX/0mfF;->invoke` arm64).
+        val senderCode = sender.method.implementation!!.instructions.toList()
+        val senderAddresses = senderCode.runningFold(0) { address, instruction -> address + instruction.codeUnits }
+        val senderSwitch = senderCode.indexOfFirst { it.opcode == Opcode.PACKED_SWITCH || it.opcode == Opcode.SPARSE_SWITCH }
+        val senderPayload = senderCode[senderAddresses.indexOf(senderAddresses[senderSwitch] +
+            (senderCode[senderSwitch] as com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction).codeOffset)]
+            as com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
+        val senderArms = senderPayload.switchElements.associate { it.key to senderAddresses.indexOf(senderAddresses[senderSwitch] + it.offset) }
+        val expandNamed = senderCode.indexOfFirst { (it.reference() ?: "") == EXPAND_REPLIES }
+        val expandArm = senderArms[toArm[2].literal()] ?: -1
+        assertTrue("$senderWhere: takes an arm of the switch", expandArm > senderSwitch)
+        assertTrue("$senderWhere: takes the arm that names the update",
+            expandArm <= expandNamed && senderArms.values.none { it in expandArm + 1..expandNamed })
+        // With one low register free at the build (585's and 586's merged lambdas), the number is
+        // compared by subtracting it.
+        val merged = toUpdate[1].opcode == Opcode.ADD_INT_LIT16
         if (merged) {
             assertEquals("$senderWhere: the update's shape", listOf(Opcode.IGET, Opcode.ADD_INT_LIT16, Opcode.IF_NEZ, Opcode.CONST_16), toUpdate.map { it.opcode })
             assertEquals("$senderWhere: looks for the number", -HIDE_REPLIES, toUpdate[1].literal())
