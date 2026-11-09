@@ -70,11 +70,18 @@ class BloksColourPairFixtureTest {
                 val accessor = owners.single { it.type == anchor.definingClass }.interfaces.single { type ->
                     owners.any { it.type == type && AccessFlags.INTERFACE.isSet(it.accessFlags) && it.methods.any { m -> m.sameAs(anchor) } }
                 }
-                // 585's models without colours of their own only answer the fallback; those are left alone.
-                val readers = owners.filter { accessor in it.interfaces }
+                // 585's models without colours of their own only answer the fallback, and 586's LX/0va1
+                // hands its pair to the logging model; those are left alone.
+                val models = owners.filter { accessor in it.interfaces }
                     .mapNotNull { model -> model.methods.singleOrNull { it.sameAs(anchor) && it.implementation != null } }
                     .filterNot(::answersFallbackOnly)
+                val (relays, readers) = models.partition { handsColourPairOn(it, anchor) }
                 assertTrue("$name: the logging model and the sparse one, at least (${readers.map { it.descriptor() }})", readers.size >= 2)
+                for (relay in relays) {
+                    val to = relay.body().mapNotNull { it.call() }.filter { it.name == anchor.name }.map { it.definingClass }
+                    assertTrue("$name: ${relay.descriptor()} hands its pair to a model that parses ($to)",
+                        to.isNotEmpty() && to.all { type -> readers.any { it.definingClass == type } })
+                }
                 val parses = readers.associate { reader ->
                     val calls = reader.body().withIndex().filter { it.value.call()?.toString() == PARSE_COLOR }
                     assertEquals("$name: ${reader.descriptor()} parses one colour", 1, calls.size)

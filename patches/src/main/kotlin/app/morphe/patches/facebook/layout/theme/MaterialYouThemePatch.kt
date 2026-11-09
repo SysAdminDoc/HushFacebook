@@ -693,6 +693,22 @@ internal fun answersFallbackOnly(method: Method): Boolean {
 }
 
 /**
+ * Whether a colour pair reader parses nothing and hands its pair to another model's reader, as 586's
+ * arm64 `LX/0va1;->CTK` does: it maps both keys through a SparseIntArray and asks the logging model
+ * (`LX/01IP`) it holds, so that model's own parse is the one changed. Parsing is any (String)I call,
+ * route four's parser and its stand-ins alike.
+ */
+internal fun handsColourPairOn(method: Method, anchor: Method): Boolean {
+    val calls = method.implementation?.instructions
+        ?.mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }.orEmpty()
+    val parses = calls.any { it.returnType == "I" && it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;") }
+    return !parses && calls.any {
+        it.name == anchor.name && it.returnType == anchor.returnType &&
+            it.parameterTypes.map(CharSequence::toString) == anchor.parameterTypes.map(CharSequence::toString)
+    }
+}
+
+/**
  * Bloks' colour pairs (issue #37). A Bloks screen gets each colour from the server as a light and a
  * dark hex string, and the screen's model answers one through an interface method (582
  * `LX/fra;->BAJ`, in the models `LX/1Vp` and `LX/4TS`). Each model asks Bloks' theme whether it's
@@ -707,6 +723,8 @@ internal fun answersFallbackOnly(method: Method): Boolean {
  *
  * 585, read 2026-10-30: the interface is arm64 `LX/062H;->CPv(LX/0i13;III)I`, the logging model
  * `LX/01JW`, the sparse one `LX/05CD`, and two more (`LX/07Dt`, `LX/07Du`) only `return p4`.
+ * 586, read 2026-11-09: the logging model is arm64 `LX/01IP;->CTK`, and `LX/0va1` hands its pair to
+ * it ([handsColourPairOn]), so it's left alone like the ones that only answer their fallback.
  */
 internal fun BytecodePatchContext.hookBloksColourPairs(): Int {
     val parser = standIn(MATERIAL_YOU, PARSE_COLOR)
@@ -731,6 +749,8 @@ internal fun BytecodePatchContext.hookBloksColourPairs(): Int {
         val method = model.methods.singleOrNull { it.sameAs(anchor) && it.implementation != null } ?: return@classDefForEachReferencing
         // Why: 585 adds models with no colours of their own, whose reader only answers the fallback.
         if (answersFallbackOnly(method)) return@classDefForEachReferencing
+        // Why: 586 adds a model that hands its pair to the logging model, which is changed itself.
+        if (handsColourPairOn(method, anchor)) return@classDefForEachReferencing
         check(method.implementation!!.instructions.any { it.asksDark(theme) }) {
             "${method.definingClass}->${method.name} picks a Bloks colour without asking $theme whether it's dark"
         }

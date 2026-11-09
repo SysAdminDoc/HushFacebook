@@ -777,6 +777,12 @@ private const val COLOR_DRAWABLE_INIT = "Landroid/graphics/drawable/ColorDrawabl
  * 585 (arm64, read 2026-10-30) made the builder a static `LX/04d0;->A00(LX/01PR;LX/062H;LX/04e3;I)LX/03G2;`
  * that its instance entry calls with the node's kind as a trailing int. The child builder
  * `LX/04d2;->A00(LX/01PR;LX/062H;LX/04e3;)LX/03G2;` takes the rest, and backgroundColor is `LX/03G2;->A0e(I)V`.
+ *
+ * 586 (arm64, read 2026-11-09) made the builder an instance method again (`LX/04cP;->Him`), and its
+ * child builder `LX/04cS;->A00` sets no background itself: it builds the style's component and hands
+ * it to a static decorator, `LX/05HY;->A01(LX/03Ej;...)LX/03Ej;`, which sets it. So the statics a
+ * child builder hands a component to and gets one back from are hooked too ([decoratorsOf]). The
+ * decorator's other caller is the template's photo component, also a Native Template.
  */
 internal fun BytecodePatchContext.hookNativeTemplateBackgrounds(target: String = AMOLED_BLOKS_FILL) {
     val builder = NativeTemplateBuilderFingerprint.method
@@ -793,15 +799,32 @@ internal fun BytecodePatchContext.hookNativeTemplateBackgrounds(target: String =
                 it.parameterTypes.map(CharSequence::toString) == parameters
         }
         .distinctBy { it.toString() }
-        .map { child ->
-            mutableClassDefBy(child.definingClass).methods.single { method ->
-                method.name == child.name && method.returnType == child.returnType &&
-                    method.parameterTypes.map(CharSequence::toString) == child.parameterTypes.map(CharSequence::toString)
+        .map { child -> mutableMethodOf(child) }
+    val decorators = children.flatMap { decoratorsOf(it, builder.returnType) }.distinctBy { it.toString() }
+        .filterNot { decorator ->
+            children.any {
+                it.definingClass == decorator.definingClass && it.name == decorator.name &&
+                    it.parameterTypes.map(CharSequence::toString) == decorator.parameterTypes.map(CharSequence::toString)
             }
         }
-    val hooked = (listOf(builder) + children).sumOf { hookBackgroundColours(it, target) }
+        .map { mutableMethodOf(it) }
+    val hooked = (listOf(builder) + children + decorators).sumOf { hookBackgroundColours(it, target) }
     if (hooked == 0) throw PatchException("Native Templates' builders set no background colour")
 }
+
+/** The statics [method] hands a [component] to and gets one back from (586 `LX/05HY;->A01`). */
+internal fun decoratorsOf(method: Method, component: String): List<MethodReference> =
+    method.implementation?.instructions?.toList().orEmpty()
+        .filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
+        .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
+        .filter { it.returnType == component && it.parameterTypes.firstOrNull()?.toString() == component }
+        .distinctBy { it.toString() }
+
+private fun BytecodePatchContext.mutableMethodOf(call: MethodReference): MutableMethod =
+    mutableClassDefBy(call.definingClass).methods.single { method ->
+        method.name == call.name && method.returnType == call.returnType &&
+            method.parameterTypes.map(CharSequence::toString) == call.parameterTypes.map(CharSequence::toString)
+    }
 
 /**
  * Sends each colour [method] hands Litho's backgroundColor ([isBackgroundColour]) through [target]
@@ -1161,7 +1184,9 @@ internal fun barColourHelpers(method: Method, painters: Set<String>): Set<String
  * <p>577 had two of them, one for Litho and one from a Context. 580 split the Litho one into a
  * thin wrapper and a second Context resolver, so a fingerprint per resolver matched the wrong one
  * or none. The token type is read off the source's own signature, the one static method answering
- * `Integer` from a Context, the token and a palette.
+ * `Integer` from a Context, the token and a palette. 586 (arm64 `LX/02LL`, read 2026-11-09) merged
+ * the two Context resolvers into one (`A0A`), and the Litho one (`A0B`) only returns that one's
+ * answer, so one resolver is hooked there and every colour still passes it.
  */
 internal fun BytecodePatchContext.hookFdsColorsResolvers(target: String) {
     val type = fdsColors()

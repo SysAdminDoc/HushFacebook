@@ -31,8 +31,8 @@ import java.io.File
 
 /**
  * Route one of the AMOLED and Material You themes as the patch runs it, on each declared build's
- * own colour classes: four resolvers and six returns, each hook reading the colour token from a
- * register that still holds it there. A build whose resolver reused the token's register before a
+ * own colour classes: four resolvers and six returns (three and four on 586, whose FDSColors has one
+ * resolver the others return), each hook reading the colour token from a register that still holds it there. A build whose resolver reused the token's register before a
  * return would stop here, naming it. The status bar hook of the AMOLED theme is checked on the same
  * builds, with the path that paints a tab's bar again after Recent Apps.
  */
@@ -45,6 +45,16 @@ class ColourResolverFixtureTest {
         FdsSchemeResolveFingerprint.clearMatch()
         NavigationBarPainterFingerprint.clearMatch()
     }
+
+    /**
+     * Builds whose route one hooks other than four resolvers and six returns: 586 merged FDSColors'
+     * two Context resolvers into one (arm64 `LX/02LL;->A0A`), and its Litho one (`A0B`) only returns
+     * that one's answer.
+     */
+    private val routeOneCounts = mapOf("586.0.0.52.53" to (3 to 4))
+
+    /** Builds that make the navigation bar's view in more than one method. */
+    private val navigationBarMakers = mapOf("586.0.0.52.53" to 2)
 
     /** The call the FdsColorScheme wrapper hands the context and token to: the view resolver. */
     private fun viewResolver(scheme: ClassDef): MethodReference = scheme.methods.mapNotNull { method ->
@@ -110,8 +120,29 @@ class ColourResolverFixtureTest {
                         } ?: 0)
                     }
                     .filterValues { it > 0 }
-                assertEquals("${bundle.name}: resolvers hooked, $hooked", 4, hooked.size)
-                assertEquals("${bundle.name}: returns hooked, $hooked", 6, hooked.values.sum())
+                val (resolvers, returns) = routeOneCounts[version] ?: (4 to 6)
+                assertEquals("${bundle.name}: resolvers hooked, $hooked", resolvers, hooked.size)
+                assertEquals("${bundle.name}: returns hooked, $hooked", returns, hooked.values.sum())
+
+                // Every FDSColors resolver taking the token is hooked, or returns a hooked one's answer as it is.
+                val colors = fdsColorsOf(bundle)
+                val token = fdsColourSource(colors)!!.parameterTypes[1].toString()
+                val signature = { method: Method -> "${method.definingClass}->${method.name}(${method.parameterTypes.joinToString("")})" }
+                colors.methods.filter { method ->
+                    !AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "I" &&
+                        method.parameterTypes.any { it.toString() == token } && signature(method) !in hooked
+                }.forEach { wrapper ->
+                    val code = wrapper.implementation!!.instructions.toList()
+                    val returned = code.indices.filter { code[it].opcode == Opcode.RETURN }
+                    assertTrue("${bundle.name}: ${signature(wrapper)} returns", returned.isNotEmpty())
+                    for (at in returned) {
+                        val call = (code[at - 2] as? ReferenceInstruction)?.reference as? MethodReference
+                        assertTrue("${bundle.name}: ${signature(wrapper)} returns something other than a hooked resolver's answer",
+                            call != null && "${call.definingClass}->${call.name}(${call.parameterTypes.joinToString("")})" in hooked &&
+                                code[at - 1].opcode == Opcode.MOVE_RESULT &&
+                                (code[at - 1] as OneRegisterInstruction).registerA == (code[at] as OneRegisterInstruction).registerA)
+                    }
+                }
                 checked += version
             }
         }
@@ -309,24 +340,30 @@ class ColourResolverFixtureTest {
                         call != null && body[at].calls(setId) && literalAt(body, call.registerD, at) == id
                     }
                 }
-                assertEquals("$name: methods giving a view the navigation bar's id, ${makers.map { it.descriptor() }}", 1, makers.size)
-                val asked = intCalls(makers.single()).single { it.parameterTypes.firstOrNull()?.toString() == "Landroid/content/Context;" }
+                // 586 makes it in two places (arm64 LX/02Pp;->A03, which takes Boolean overrides, and A04), each with its own colour call.
+                assertEquals("$name: methods giving a view the navigation bar's id, ${makers.map { it.descriptor() }}",
+                    navigationBarMakers[version] ?: 1, makers.size)
+                val askedByMaker = makers.associate { maker ->
+                    maker.descriptor() to intCalls(maker).single { it.parameterTypes.firstOrNull()?.toString() == "Landroid/content/Context;" }
+                }
 
                 val routeOne = routeOneClasses(bundle)
-                val classes = routeOne + FixtureDex.classes(bundle, setOf(asked.definingClass) - routeOne.keys)
+                val classes = routeOne + FixtureDex.classes(bundle, askedByMaker.values.map { it.definingClass }.toSet() - routeOne.keys)
                 val context = PatchContexts.of(classes.values)
                 with(context) { hookColourResolvers(mig = APPLY, fds = APPLY) }
                 val hooked = classes.keys.flatMap { context.mutableClassDefBy(it).methods }
                     .filter { it.calls(APPLY) }.map { it.descriptor() }.toSet()
 
-                // The view's colour comes from a hooked resolver, or from a static in front of one
+                // Each view's colour comes from a hooked resolver, or from a static in front of one
                 // that asks one resolver and returns its answer as it is.
-                val front = classes.getValue(asked.definingClass).methods.single { it.descriptor() == asked.toString() }
-                val passesOn = AccessFlags.STATIC.isSet(front.accessFlags) && intCalls(front).size == 1 &&
-                    front.implementation!!.instructions.toList().takeLast(2).map { it.opcode } == listOf(Opcode.MOVE_RESULT, Opcode.RETURN)
-                val answered = if (asked.toString() !in hooked && passesOn) intCalls(front).single().toString() else asked.toString()
-                assertTrue("$name: the navigation bar's view is made with $answered, which route one doesn't reach ($hooked)",
-                    answered in hooked)
+                for ((maker, asked) in askedByMaker) {
+                    val front = classes.getValue(asked.definingClass).methods.single { it.descriptor() == asked.toString() }
+                    val passesOn = AccessFlags.STATIC.isSet(front.accessFlags) && intCalls(front).size == 1 &&
+                        front.implementation!!.instructions.toList().takeLast(2).map { it.opcode } == listOf(Opcode.MOVE_RESULT, Opcode.RETURN)
+                    val answered = if (asked.toString() !in hooked && passesOn) intCalls(front).single().toString() else asked.toString()
+                    assertTrue("$name: $maker makes the navigation bar's view with $answered, which route one doesn't reach ($hooked)",
+                        answered in hooked)
+                }
                 checked += version
             }
         }

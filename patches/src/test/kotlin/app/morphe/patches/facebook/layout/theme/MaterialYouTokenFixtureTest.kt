@@ -113,7 +113,7 @@ class MaterialYouTokenFixtureTest {
          * pill bar below reads the same array in its constructor, under a name Redex leaves alone
          * on both ABIs, where the Litho component and the array's holder are renamed per build.
          */
-        val LIKES_LINE_ATTRIBUTE = mapOf("585.0.0.47.54" to 0x7f040fcf)
+        val LIKES_LINE_ATTRIBUTE = mapOf("585.0.0.47.54" to 0x7f040fcf, "586.0.0.52.53" to 0x7f040fc6)
         /**
          * The seven tokens 584 dropped from 583's 324 (all of them named in MaterialYouTheme's
          * tables or the AMOLED roles at some point), so a listed name missing from a build's enum is
@@ -194,8 +194,30 @@ class MaterialYouTokenFixtureTest {
             "L?;-><init>(Landroid/content/Context;)V@116",
             "L?;->?()V@35",
         )
+        /**
+         * 586's 18 are 585's, shape for shape, each within seven instructions of where 585 had it
+         * (2026-11-09): the session null checks 586 puts first move them.
+         */
+        private val SHAPES_586 = MAPBOX.toList() + listOf(
+            "L?;->?(Ljava/lang/Integer;)V@16",
+            "L?;->?(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/Integer;@88",
+            "L?;->?(Landroid/content/Context;Lcom/facebook/react/bridge/ReadableMap;)Landroid/graphics/drawable/Drawable;@20",
+            "L?;->?(L?;)V@151",
+            "L?;->?(L?;)V@165",
+            "L?;->?(L?;)V@50",
+            "L?;->?(L?;)V@63",
+            "L?;->?(L?;)V@75",
+            "L?;->?(L?;)V@78",
+            "L?;->?(L?;I)V@171",
+            "L?;->?(L?;I)V@228",
+            "L?;->?(L?;I)V@33",
+            "L?;->?(L?;L?;)V@11",
+            "L?;-><init>(Landroid/content/Context;)V@109",
+            "L?;->?()V@36",
+        )
         val UNRESOLVED = mapOf(
             "585.0.0.47.54" to mapOf("arm64-v8a" to SHAPES_585, "armeabi-v7a" to SHAPES_585),
+            "586.0.0.52.53" to mapOf("arm64-v8a" to SHAPES_586, "armeabi-v7a" to SHAPES_586),
         )
 
         /** A class name Redex made up for one build, or a merged lambda group's. */

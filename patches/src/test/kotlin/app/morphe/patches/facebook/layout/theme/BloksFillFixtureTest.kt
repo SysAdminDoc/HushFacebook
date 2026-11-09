@@ -155,7 +155,8 @@ class BloksFillFixtureTest {
      * builder it hands its own parameters to, give it to Litho's backgroundColor (584 `LX/3T3;->A1H`),
      * which wraps it in a ColorDrawable. Each of those colours has to go through AmoledTheme.bloksFill
      * just before the call, on the call's own register. On 585 the builder is a static taking the
-     * node's kind as a trailing int, and the child builder takes the other parameters.
+     * node's kind as a trailing int, and the child builder takes the other parameters. On 586 the
+     * child builder sets nothing itself and a static decorator it hands its component to does.
      */
     @Test
     fun `each native template box's background goes through the light background before it's set, on each declared build`() {
@@ -179,6 +180,11 @@ class BloksFillFixtureTest {
                 assertTrue("$name: the builder hands its parameters to its child builders", childCalls.isNotEmpty())
                 val childClasses = FixtureDex.classes(bundle, childCalls.map { it.definingClass }.toSet()).values.toList()
                 val children = childCalls.map { call -> childClasses.flatMap { it.methods }.single { it.descriptor() == call.toString() } }
+                // 586's child builder hands the component it built to a static decorator that sets the background.
+                val decoratorCalls = children.flatMap { decoratorsOf(it, builder.returnType) }.distinctBy { it.toString() }
+                    .filterNot { call -> childCalls.any { it.toString() == call.toString() } }
+                val decoratorClasses = FixtureDex.classes(bundle, decoratorCalls.map { it.definingClass }.toSet()).values.toList()
+                val decorators = decoratorCalls.map { call -> decoratorClasses.flatMap { it.methods }.single { it.descriptor() == call.toString() } }
 
                 // Litho's component builder and the classes above it, as far as the bundle has them.
                 val chain = mutableListOf<ClassDef>()
@@ -200,11 +206,11 @@ class BloksFillFixtureTest {
                     }
 
                 NativeTemplateBuilderFingerprint.clearMatch()
-                val context = PatchContexts.of((listOf(owner) + childClasses + chain).distinctBy { it.type })
+                val context = PatchContexts.of((listOf(owner) + childClasses + decoratorClasses + chain).distinctBy { it.type })
                 with(context) { hookNativeTemplateBackgrounds() }
 
                 var sites = 0
-                for (method in listOf(builder) + children) {
+                for (method in listOf(builder) + children + decorators) {
                     val before = method.body()
                     val after = context.mutableClassDefBy(method.definingClass).methods.single { it.descriptor() == method.descriptor() }.body()
                     val calls = before.count { it.setsBackground() }
