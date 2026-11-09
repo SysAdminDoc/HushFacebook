@@ -2717,3 +2717,7 @@ Reels lose their color over %1$s of watching. 15 minutes away starts them in col
 Show Reels in gray will make reels gray from the start.	Reels в оттенках серого сделает Reels серыми с самого начала.
 # context: sentence in the import preview; %1$s is a time such as 10 minutes
 Show Reels in gray will take reels from color to gray over %1$s.	Reels в оттенках серого переведёт Reels из цвета в серый за %1$s.
+Show time in Reels	Показывать время в Reels
+A small label at the top of Reels shows the minutes you've watched. Time on other tabs doesn't count, and 15 minutes away starts it over.	Небольшая метка вверху Reels показывает, сколько минут вы посмотрели. Время на других вкладках не считается, а после 15 минут вне Reels счёт начинается заново.
+# context: a short label on the Reels screen; %1$d is a number of minutes
+%1$d min	%1$d мин

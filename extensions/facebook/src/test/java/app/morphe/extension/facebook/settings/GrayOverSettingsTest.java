@@ -59,6 +59,26 @@ public class GrayOverSettingsTest {
         ScreenColors.shown = null;
         Settings.GRAY_REELS.resetToDefault();
         Settings.GRAY_REELS_OVER.resetToDefault();
+        Settings.REELS_MINUTES.resetToDefault();
+    }
+
+    /** Show time in Reels sits under Turn gray over, off to start, and works without the gray. */
+    @Test
+    public void theTimeSwitchSitsUnderTurnGrayOverAndStartsOff() {
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(page(controller));
+            int over = indexOfKey(rows, Settings.GRAY_REELS_OVER.key);
+            assertTrue("Turn gray over is missing", over >= 0);
+            assertEquals(over + 1, indexOfKey(rows, Settings.REELS_MINUTES.key));
+            TwoStatePreference time = (TwoStatePreference) rows.get(over + 1);
+            assertEquals("Show time in Reels", String.valueOf(time.getTitle()));
+            assertFalse(time.isChecked());
+            assertFalse(Settings.GRAY_REELS.get());
+            assertTrue("Show time in Reels waits on the gray switch", time.isEnabled());
+            time.setChecked(true);
+            ShadowLooper.idleMainLooper();
+            assertTrue("the switch didn't save", Settings.REELS_MINUTES.get());
+        }
     }
 
     @Test
@@ -105,6 +125,7 @@ public class GrayOverSettingsTest {
             List<Preference> rows = rowsOf(page(controller));
             assertEquals(-1, indexOfKey(rows, Settings.GRAY_REELS.key));
             assertEquals(-1, indexOfKey(rows, Settings.GRAY_REELS_OVER.key));
+            assertEquals(-1, indexOfKey(rows, Settings.REELS_MINUTES.key));
         }
     }
 

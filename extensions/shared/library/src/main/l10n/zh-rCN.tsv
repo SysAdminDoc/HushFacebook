@@ -2658,3 +2658,7 @@ Reels lose their color over %1$s of watching. 15 minutes away starts them in col
 Show Reels in gray will make reels gray from the start.	以灰色显示 Reels 将让 Reels 从一开始就是灰色.
 # context: sentence in the import preview; %1$s is a time such as 10 minutes
 Show Reels in gray will take reels from color to gray over %1$s.	以灰色显示 Reels 将在 %1$s 内让 Reels 从彩色变为灰色.
+Show time in Reels	在 Reels 中显示观看时间
+A small label at the top of Reels shows the minutes you've watched. Time on other tabs doesn't count, and 15 minutes away starts it over.	Reels 顶部的小标签显示你已观看的分钟数。在其他标签页的时间不计入，离开 Reels 15 分钟后会从头计算.
+# context: a short label on the Reels screen; %1$d is a number of minutes
+%1$d min	%1$d 分钟

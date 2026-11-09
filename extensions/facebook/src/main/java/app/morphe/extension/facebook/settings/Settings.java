@@ -846,6 +846,14 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushfacebook_gray_reels_over", GrayOver.AT_ONCE, Setting.parent(GRAY_REELS));
 
     /**
+     * Show time in Reels: a small label at the top of the Reels screen with the minutes watched
+     * there, counted the way {@link #GRAY_REELS_OVER} counts them, with or without the gray
+     * ({@link app.morphe.extension.facebook.reels.GrayReels}). Off by default. Read on each look.
+     */
+    public static final BooleanSetting REELS_MINUTES =
+            new BooleanSetting("hushfacebook_reels_minutes", FALSE);
+
+    /**
      * The numbers under a reel's Like, Comment and Share icons go, and the icons stay where they are
      * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#countText}, #180). Off by default.
      * A change shows on the buttons drawn after it.

@@ -256,6 +256,7 @@ public final class SettingsBackup {
             Settings.HIDE_VIEWER_BACK_BUTTON,
             Settings.BURN_IN_STAY_DIM,
             Settings.GRAY_REELS,
+            Settings.REELS_MINUTES,
             Settings.HIDE_REEL_COUNTS,
             Settings.HIDE_REEL_SAVE_BUTTON,
             Settings.HIDE_REEL_WHATSAPP_BUTTON,

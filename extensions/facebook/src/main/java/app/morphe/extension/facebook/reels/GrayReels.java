@@ -62,6 +62,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * screen, mid-swipe or away isn't counted, and {@link #AWAY_MS} away from the Reels screen, Facebook
  * in the background or the phone asleep included, starts the count over. The count lives in the
  * process, so a restart starts it over too.
+ *
+ * <p>Show time in Reels ({@link Settings#REELS_MINUTES}) shows that count in minutes on the Reels
+ * screen ({@link ReelsClock}), with or without the gray. On its own it counts any reel filling the
+ * window, a SurfaceView one too, since nothing needs drawing through a layer, and the looks run while
+ * either switch is on.
  */
 public final class GrayReels {
     private static final String FAMILY = FamilyNames.REEL_DECLUTTER;
@@ -143,9 +148,9 @@ public final class GrayReels {
         return paint;
     }
 
-    /** The switch now: off until the settings are read and while Hushfacebook is paused. */
+    /** Either switch now: off until the settings are read and while Hushfacebook is paused. */
     static boolean on() {
-        return Utils.settingsReady() && Settings.GRAY_REELS.get();
+        return Utils.settingsReady() && (Settings.GRAY_REELS.get() || Settings.REELS_MINUTES.get());
     }
 
     /**
@@ -210,6 +215,7 @@ public final class GrayReels {
 
     private static void leave() {
         color();
+        ReelsClock.hide();
         watchLayouts(false);
         View decor = observed.get();
         if (decor != null && decor.getViewTreeObserver().isAlive()) {
@@ -233,12 +239,13 @@ public final class GrayReels {
             View decor = window == null ? null : window.peekDecorView();
             if (!on || decor == null || frontLeftOut) {
                 color();
+                ReelsClock.hide();
                 doubtSince = -1L;
                 schedule(-1L);
                 return;
             }
             long now = SystemClock.uptimeMillis();
-            boolean gray = grayed.get() != null;
+            boolean held = grayed.get() != null || ReelsClock.shown();
             if (!decor.hasWindowFocus()) {
                 // A sheet or dialog over the screen: it stays as it is until the focus comes back,
                 // and a swipe it interrupted gets the whole settle again after.
@@ -247,9 +254,11 @@ public final class GrayReels {
                 return;
             }
             View reel = BurnInGuard.reelOf(decor);
-            boolean reels = reel != null && !(reel instanceof SurfaceView);
-            if (!reels && gray) {
-                // Mid-swipe: the gray stays, and a second look decides.
+            boolean grayHere = Settings.GRAY_REELS.get() && reel != null && !(reel instanceof SurfaceView);
+            boolean timeHere = Settings.REELS_MINUTES.get() && reel != null;
+            boolean reels = grayHere || timeHere;
+            if (!reels && held) {
+                // Mid-swipe: the gray and the time stay, and a second look decides.
                 if (doubtSince < 0L) doubtSince = now;
                 if (now - doubtSince < BurnInGuard.SETTLE_MS) {
                     schedule(doubtSince + BurnInGuard.SETTLE_MS);
@@ -257,17 +266,20 @@ public final class GrayReels {
                 }
             }
             doubtSince = -1L;
-            if (reels) {
-                onReels(SystemClock.elapsedRealtime());
+            if (reels) onReels(SystemClock.elapsedRealtime());
+            if (grayHere) {
                 gray(decor.findViewById(android.R.id.content), saturation(watchedMs, Settings.GRAY_REELS_OVER.get()));
             } else {
                 color();
             }
-            schedule(grayed.get() != null ? now + KEEP_MS : -1L);
+            if (timeHere) ReelsClock.show(decor, watchedMs);
+            else ReelsClock.hide();
+            schedule(grayed.get() != null || ReelsClock.shown() ? now + KEEP_MS : -1L);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "gray reels", failure);
             try {
                 color();
+                ReelsClock.hide();
             } catch (Throwable again) {
                 HookStatus.threw(FAMILY, "gray reels put back", again);
             }

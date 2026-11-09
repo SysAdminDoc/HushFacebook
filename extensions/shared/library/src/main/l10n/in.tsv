@@ -2663,3 +2663,7 @@ Reels lose their color over %1$s of watching. 15 minutes away starts them in col
 Show Reels in gray will make reels gray from the start.	Tampilkan Reels dalam abu-abu akan membuat Reels abu-abu sejak awal.
 # context: sentence in the import preview; %1$s is a time such as 10 minutes
 Show Reels in gray will take reels from color to gray over %1$s.	Tampilkan Reels dalam abu-abu akan mengubah Reels dari berwarna ke abu-abu selama %1$s.
+Show time in Reels	Tampilkan waktu di Reels
+A small label at the top of Reels shows the minutes you've watched. Time on other tabs doesn't count, and 15 minutes away starts it over.	Label kecil di bagian atas Reels menampilkan berapa menit kamu menonton. Waktu di tab lain tidak dihitung, dan 15 menit di luar Reels memulainya lagi dari nol.
+# context: a short label on the Reels screen; %1$d is a number of minutes
+%1$d min	%1$d mnt

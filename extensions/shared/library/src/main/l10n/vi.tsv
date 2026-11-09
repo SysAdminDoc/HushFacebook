@@ -2663,3 +2663,7 @@ Reels lose their color over %1$s of watching. 15 minutes away starts them in col
 Show Reels in gray will make reels gray from the start.	Hiện Reels màu xám sẽ làm Reels có màu xám ngay từ đầu.
 # context: sentence in the import preview; %1$s is a time such as 10 minutes
 Show Reels in gray will take reels from color to gray over %1$s.	Hiện Reels màu xám sẽ chuyển Reels từ có màu sang xám trong %1$s.
+Show time in Reels	Hiện thời gian xem Reels
+A small label at the top of Reels shows the minutes you've watched. Time on other tabs doesn't count, and 15 minutes away starts it over.	Một nhãn nhỏ ở đầu Reels cho biết bạn đã xem bao nhiêu phút. Thời gian ở các tab khác không được tính, và rời Reels 15 phút sẽ đếm lại từ đầu.
+# context: a short label on the Reels screen; %1$d is a number of minutes
+%1$d min	%1$d phút

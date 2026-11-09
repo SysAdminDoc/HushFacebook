@@ -187,6 +187,9 @@ final class VideoPages {
                                 + "Your feed, stories, photos and chats keep their colors. It starts from the next reel, "
                                 + "and Reels use a little more battery.")));
                 reels.addPreference(grayOverRow(context));
+                reels.addPreference(toggle(context, Settings.REELS_MINUTES,
+                        L10n.t("A small label at the top of Reels shows the minutes you've watched. "
+                                + "Time on other tabs doesn't count, and 15 minutes away starts it over.")));
             }
             // The sidebar buttons are built as each reel is, so a change shows from the next reel.
             reels.addPreference(toggle(context, Settings.HIDE_REEL_COUNTS,
