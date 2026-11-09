@@ -110,6 +110,25 @@ public class NewestReelsTest {
     }
 
     @Test
+    public void theListARerankStartedWithIsSortedWhenItReturnsAndOnlyOnce() {
+        Settings.NEWEST_REELS_FIRST.save(true);
+        Object oldest = signal(REELS_TAB, 100);
+        Object newest = signal(REELS_TAB, 300);
+        List<Object> list = ranked(oldest, newest);
+        NewestReels.reranking(list);
+        // Facebook's own rerank runs here and may reorder the list in place.
+        assertEquals(Arrays.asList(oldest, newest), list);
+        NewestReels.reranked();
+        assertEquals(Arrays.asList(newest, oldest), list);
+        // A return with no rerank started on this thread has nothing to sort.
+        List<Object> other = ranked(oldest, newest);
+        NewestReels.reranked();
+        assertEquals(Arrays.asList(oldest, newest), other);
+        String line = statusLine();
+        assertTrue(line, line.contains(NewestReels.SORTED + " 1"));
+    }
+
+    @Test
     public void itemsWithoutATimeKeepTheirSlots() {
         Settings.NEWEST_REELS_FIRST.save(true);
         Object older = signal(REELS_TAB, 100);

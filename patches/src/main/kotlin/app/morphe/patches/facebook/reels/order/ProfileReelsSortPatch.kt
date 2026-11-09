@@ -149,11 +149,22 @@ internal fun hookProfileReels(sites: ProfileReelsSites, mutable: (String) -> Cla
 /** The kept name of the section that draws a profile's Reels tab as a grid of tiles. */
 internal const val PROFILE_GRID_SECTION = "FbShortsVideoGridContentSection"
 
-private const val PAGINABLE = "Lcom/facebook/graphservice/interfaces/PaginableList;"
+internal const val PAGINABLE = "Lcom/facebook/graphservice/interfaces/PaginableList;"
 private const val LIST_CALL =
     "$SORT_CLASS->list(Ljava/lang/Object;Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Object;"
 
-/** Where the grid hook goes: right after [method] keeps its paginated list in [list], at [after]. */
+/**
+ * The types a paginated list is passed around as, from [paginable] (the app's [PAGINABLE]): that
+ * class, and from 586 the Kotlin base it extends (586 `LX/0mew`), which holds the rows, the paging
+ * and `underlyingList`, and which the grid, the tab's lambda and its builder now take or answer.
+ */
+internal fun paginatedTypes(paginable: ClassDef?): Set<String> =
+    setOfNotNull(PAGINABLE, paginable?.superclass?.takeIf { it != "Ljava/lang/Object;" })
+
+/**
+ * Where the grid hook goes: right after [method] keeps its paginated list in [list], at [after].
+ * [type] is what the call answers, which the extension's answer is cast back to.
+ */
 internal class ProfileGridSite(
     val method: Method,
     val after: Int,
@@ -162,14 +173,16 @@ internal class ProfileGridSite(
     val nameRegister: Int,
     val holder: String,
     val names: String,
+    val type: String,
 )
 
 /**
  * The grid hook's site, from [sections] (the methods loading [PROFILE_GRID_SECTION]) and [count].
  * It is the first no-argument call in the one section method of one parameter that answers a
- * paginated list, with its result kept. Refuses unless each part is found exactly once.
+ * paginated list (one of [paginated]), with its result kept. Refuses unless each part is found
+ * exactly once.
  */
-internal fun profileGridSite(sections: List<Method>, count: PlayCount): ProfileGridSite {
+internal fun profileGridSite(sections: List<Method>, count: PlayCount, paginated: Set<String>): ProfileGridSite {
     val candidates = sections.filter {
         !AccessFlags.STATIC.isSet(it.accessFlags) && it.name != "<init>" && it.parameterTypes.size == 1 &&
             it.implementation != null
@@ -180,13 +193,14 @@ internal fun profileGridSite(sections: List<Method>, count: PlayCount): ProfileG
         val call = code[index]
         if (call.opcode != Opcode.INVOKE_VIRTUAL && call.opcode != Opcode.INVOKE_INTERFACE) return@firstOrNull false
         val ref = (call as ReferenceInstruction).reference as? MethodReference ?: return@firstOrNull false
-        ref.returnType == PAGINABLE && ref.parameterTypes.isEmpty() &&
+        ref.returnType in paginated && ref.parameterTypes.isEmpty() &&
             code.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
     } ?: refuseProfile("${section.name} never keeps a paginated list")
     val list = (code[at + 1] as OneRegisterInstruction).registerA
     if (list > 15) refuseProfile("the grid list is in v$list, past the registers an invoke can name")
     val free = section.freeLocalsAt(PROFILE_SORT, at + 2, 2)
-    return ProfileGridSite(section, at + 2, list, free[0], free[1], count.holder, count.names)
+    val type = ((code[at] as ReferenceInstruction).reference as MethodReference).returnType
+    return ProfileGridSite(section, at + 2, list, free[0], free[1], count.holder, count.names, type)
 }
 
 /** Hands the grid's list to the extension and keeps its answer as the list. */
@@ -199,7 +213,7 @@ internal fun hookProfileGrid(site: ProfileGridSite, mutable: (String) -> ClassDe
             const-string v${site.nameRegister}, "${site.names}"
             invoke-static {v${site.list}, v${site.classRegister}, v${site.nameRegister}}, $LIST_CALL
             move-result-object v${site.list}
-            check-cast v${site.list}, $PAGINABLE
+            check-cast v${site.list}, ${site.type}
         """,
     )
 }
@@ -252,18 +266,18 @@ private fun MethodReference.parameters() = parameterTypes.map { it.toString() }
 
 /**
  * The class the tab hands its paginated list to, from [tabs] (the methods loading
- * [PROFILE_TAB_SECTION]): the one static (FbUserSession, one more) call answering a paginated list,
- * with its result kept, then the first constructor after it that is given that result. Refuses
- * unless each part is found exactly once.
+ * [PROFILE_TAB_SECTION]): the one static (FbUserSession, one more) call answering a paginated list
+ * (one of [paginated]), with its result kept, then the first constructor after it that is given that
+ * result as a paginated list. Refuses unless each part is found exactly once.
  */
-internal fun profileTabLambda(tabs: List<Method>): String {
+internal fun profileTabLambda(tabs: List<Method>, paginated: Set<String>): String {
     val calls = tabs.filter { it.returnType != "V" && it.implementation != null }.flatMap { method ->
         val code = method.implementation!!.instructions.toList()
         code.indices.filter { index ->
             val call = code[index]
             if (call.opcode != Opcode.INVOKE_STATIC && call.opcode != Opcode.INVOKE_STATIC_RANGE) return@filter false
             val ref = (call as ReferenceInstruction).reference as? MethodReference ?: return@filter false
-            ref.returnType == PAGINABLE && ref.parameterTypes.size == 2 && ref.parameterTypes[0].toString() == SESSION &&
+            ref.returnType in paginated && ref.parameterTypes.size == 2 && ref.parameterTypes[0].toString() == SESSION &&
                 code.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
         }.map { index -> method to index }
     }
@@ -273,7 +287,7 @@ internal fun profileTabLambda(tabs: List<Method>): String {
     val init = code.drop(at + 2).firstOrNull { call ->
         if (call.opcode != Opcode.INVOKE_DIRECT && call.opcode != Opcode.INVOKE_DIRECT_RANGE) return@firstOrNull false
         val ref = (call as ReferenceInstruction).reference as? MethodReference ?: return@firstOrNull false
-        ref.name == "<init>" && PAGINABLE in ref.parameters() && list in call.registers()
+        ref.name == "<init>" && ref.parameters().any { it in paginated } && list in call.registers()
     } ?: refuseProfile("${method.name} hands its paginated list to no constructor")
     return ((init as ReferenceInstruction).reference as MethodReference).definingClass
 }
@@ -295,15 +309,16 @@ private fun rowsSite(method: Method, count: PlayCount): TabRowsSite {
 /**
  * The tab's two rows sites, from [lambda] (the class [profileTabLambda] names) and [classBy]: the
  * rows its invoke reads from a state's paginated list, then those read by the one static builder it
- * calls that answers a paginated list from one. Refuses unless each is found exactly once.
+ * calls that answers a paginated list from one (each one of [paginated]). Refuses unless each is
+ * found exactly once.
  */
-internal fun profileTabRowsSites(lambda: ClassDef, classBy: (String) -> ClassDef?, count: PlayCount): List<TabRowsSite> {
+internal fun profileTabRowsSites(lambda: ClassDef, classBy: (String) -> ClassDef?, count: PlayCount, paginated: Set<String>): List<TabRowsSite> {
     val invoke = lambda.methods.singleOrNull { it.name == "invoke" && it.parameterTypes.size == 1 && it.implementation != null }
         ?: refuseProfile("${lambda.type} has no invoke")
     val builders = invoke.implementation!!.instructions.mapNotNull { call ->
         if (call.opcode != Opcode.INVOKE_STATIC && call.opcode != Opcode.INVOKE_STATIC_RANGE) return@mapNotNull null
         val ref = (call as ReferenceInstruction).reference as? MethodReference ?: return@mapNotNull null
-        ref.takeIf { it.definingClass != PAGINABLE && it.returnType == PAGINABLE && PAGINABLE in it.parameters() }
+        ref.takeIf { it.definingClass !in paginated && it.returnType in paginated && it.parameters().any { type -> type in paginated } }
     }.distinctBy { it.toString() }
     val ref = builders.singleOrNull() ?: refuseProfile("expected one static paginated list builder in ${lambda.type}->invoke, found ${builders.size}")
     val builder = classBy(ref.definingClass)?.methods?.singleOrNull {
@@ -351,12 +366,14 @@ internal val profileReelsSortPatch = bytecodePatch {
         val tabs = classDefByStrings(PROFILE_TAB_SECTION, StringComparisonType.EQUALS)
             .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
             .flatMap { owner -> owner.methods.filter { holdsString(it, PROFILE_TAB_SECTION) } }
-        val gridSite = profileGridSite(grids, count)
-        val lambda = profileTabLambda(tabs)
+        val paginated = paginatedTypes(classDefByOrNull(PAGINABLE))
+        val gridSite = profileGridSite(grids, count, paginated)
+        val lambda = profileTabLambda(tabs, paginated)
         val tabSites = profileTabRowsSites(
             classDefByOrNull(lambda) ?: refuseProfile("$lambda isn't in the app"),
             { type -> classDefByOrNull(type) },
             count,
+            paginated,
         )
         val sites = profileReelsSites(sections, count)
         hookProfileReels(sites) { type -> mutableClassDefBy(type) }

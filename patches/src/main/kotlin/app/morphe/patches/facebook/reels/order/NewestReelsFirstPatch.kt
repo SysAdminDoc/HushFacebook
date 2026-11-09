@@ -45,8 +45,8 @@ val newestReelsFirstPatch = bytecodePatch(
             owner.methods.mapNotNull { method -> rerankList(method)?.let { method to it } }
         }
         val (rerank, list) = reranks.singleOrNull() ?: refuse(
-            "expected one void (object, List, int) method loading \"$RANKER_TAG\" that never writes its List parameter " +
-                "and sorts it in place with a (List, Comparator) call, found ${reranks.size}",
+            "expected one void (object, List, int) method loading \"$RANKER_TAG\" that sorts its List parameter " +
+                "in place with a (List, Comparator) call, found ${reranks.size}",
         )
 
         val makers = mutableListOf<Pair<Method, SignalReads>>()
@@ -72,7 +72,7 @@ val newestReelsFirstPatch = bytecodePatch(
             owner.methods.add(edgeHelper(owner.type, reads))
             owner.findMutableMethodOf(maker).recordAtReturns(reads)
         }
-        mutableClassDefBy(rerank.definingClass).findMutableMethodOf(rerank).sortAtReturns(list)
+        mutableClassDefBy(rerank.definingClass).findMutableMethodOf(rerank).sortWhenReranked(list)
         enableStatus("newestReelsFirst")
     }
 }

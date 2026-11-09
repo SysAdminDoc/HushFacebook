@@ -28,10 +28,10 @@ import org.junit.Test
 
 /**
  * Newest reels first's two hooks on every Facebook build the bundle declares: the Reels ranker's
- * one rerank, which never writes its List parameter and sorts it in place, and each
- * createSignalForModel, whose model has one FeedType field and an edge getter. Then the patch
- * itself, run on those classes, with the sort call in front of every return of the rerank (branches
- * into a return included) and the signal hook in front of every return of each signal maker,
+ * one rerank, which sorts its List parameter in place, and each createSignalForModel, whose model
+ * has one FeedType field and an edge getter. Then the patch itself, run on those classes, with the
+ * list handed over as the rerank starts and the done call in front of every return (branches into a
+ * return included), and the signal hook in front of every return of each signal maker,
  * leaving the returned register alone. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and
  * skips without it.
  */
@@ -53,8 +53,9 @@ class NewestReelsFirstFixtureTest {
                 val reranks = rankers.flatMap { owner -> owner.methods.mapNotNull { m -> rerankList(m)?.let { m to it } } }
                 assertEquals("$name: reranks", 1, reranks.size)
                 val (rerank, list) = reranks.single()
-                // The hook reads the List parameter (this, the context, then the list), which no code
-                // writes, and Facebook's own code sorts it somewhere (585 also sorts a copy).
+                // The hook reads the List parameter (this, the context, then the list) as the rerank
+                // starts, and Facebook's own code sorts it somewhere (585 also sorts a copy). 586 writes a
+                // long over the register late on one branch, which the start hook doesn't mind.
                 assertEquals("$name: the list register is the List parameter",
                     rerank.implementation!!.registerCount - 2, list)
                 assertTrue("$name: the rerank has no (List, Comparator) sort", rerank.code().any { it.isListSort() })
@@ -82,21 +83,22 @@ class NewestReelsFirstFixtureTest {
                         it.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
                 }
 
-                // Every return of the rerank is now the sort call, reading the list, then the return,
-                // and no branch skips the call.
+                // The rerank now starts by handing the extension the list, before anything can write its
+                // register, and every return is the done call, then the return, with no branch skipping it.
                 val sorted = patched(rerank).code()
                 val returns = rerank.code().count { it.opcode == Opcode.RETURN_VOID }
+                assertEquals("$name: the first call", RERANKING, sorted.first().call.toString())
+                assertEquals("$name: the first call's register", listOf(list), sorted.first().callRegisters())
+                assertEquals("$name: start calls", 1, sorted.count { it.call.toString() == RERANKING })
                 assertEquals("$name: rerank returns", returns, sorted.count { it.opcode == Opcode.RETURN_VOID })
-                assertEquals("$name: sort calls", returns, sorted.count { it.call.toString() == SORT })
+                assertEquals("$name: done calls", returns, sorted.count { it.call.toString() == RERANKED })
                 for ((index, instruction) in sorted.withIndex()) {
                     if (instruction.opcode != Opcode.RETURN_VOID) continue
-                    val call = sorted[index - 1]
-                    assertEquals("$name: the call before return $index", SORT, call.call.toString())
-                    assertEquals("$name: the call's register", listOf(list), call.callRegisters())
+                    assertEquals("$name: the call before return $index", RERANKED, sorted[index - 1].call.toString())
                 }
                 assertTrue("$name: a branch still lands on a return", sorted.filterIsInstance<BuilderOffsetInstruction>()
                     .none { it.target.location.instruction?.opcode == Opcode.RETURN_VOID })
-                assertEquals("$name: the rerank lost its own code", rerank.code().count { it.opcode != Opcode.NOP } + returns,
+                assertEquals("$name: the rerank lost its own code", rerank.code().count { it.opcode != Opcode.NOP } + returns + 1,
                     sorted.count { it.opcode != Opcode.NOP })
 
                 // Every return of each signal maker gets the hook: the model's FeedType goes to

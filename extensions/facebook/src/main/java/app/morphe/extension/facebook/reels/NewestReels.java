@@ -72,6 +72,9 @@ public final class NewestReels {
     /** Each reel's value for the order picked when its signal was made. A signal dropped by Facebook drops out. */
     private static final Map<Object, Kept> kept = Collections.synchronizedMap(new WeakHashMap<>());
 
+    /** The list the rerank running on this thread was handed, until it returns. */
+    private static final ThreadLocal<List<Object>> started = new ThreadLocal<>();
+
     /** Stands in for {@link #postedSeconds} when a test sets it. */
     @Nullable
     static volatile ToLongFunction<Object> timeForTests;
@@ -161,13 +164,43 @@ public final class NewestReels {
     }
 
     /**
-     * Injection point, as Facebook's Reels ranker returns: puts the reels with a value for the order
-     * picked in their own slots, highest first. Never throws, and leaves the list as it was when it
-     * can't finish.
+     * Injection point, as Facebook's Reels ranker starts a rerank: keeps the list it was handed for
+     * {@link #reranked}. 586's rerank reuses the list's register before some of its returns, so the
+     * list comes here first and the returns need no register. Never throws.
+     *
+     * @param candidates the rerank's list, which it sorts in place and Facebook takes the next reel from.
+     */
+    public static void reranking(@Nullable List<Object> candidates) {
+        try {
+            started.set(candidates);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reels ranker", failure);
+        }
+    }
+
+    /**
+     * Injection point, as Facebook's Reels ranker returns: sorts the list this thread's rerank started
+     * with ({@link #sort}), once. Never throws.
+     */
+    public static void reranked() {
+        List<Object> candidates;
+        try {
+            candidates = started.get();
+            started.remove();
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reels ranker", failure);
+            return;
+        }
+        sort(candidates);
+    }
+
+    /**
+     * Puts the reels in [candidates] with a value for the order picked in their own slots, highest
+     * first. Never throws, and leaves the list as it was when it can't finish.
      *
      * @param candidates the rerank's list, which Facebook takes the next reel from.
      */
-    public static void sort(@Nullable List<Object> candidates) {
+    static void sort(@Nullable List<Object> candidates) {
         try {
             HookStatus.invoked(FAMILY);
             if (candidates == null || !Utils.settingsReady() || !Settings.NEWEST_REELS_FIRST.get()) return;
@@ -243,6 +276,7 @@ public final class NewestReels {
     /** Forgets the kept values, the one-time log line and any stand-in value. Tests only. */
     static void forgetForTests() {
         kept.clear();
+        started.remove();
         logged = false;
         timeForTests = null;
         countForTests = null;

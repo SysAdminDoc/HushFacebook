@@ -50,6 +50,16 @@ class ProfileReelsSortFixtureTest {
 
     private fun Instruction.reference() = (this as? ReferenceInstruction)?.reference?.toString()
 
+    /** Builds whose PaginableList extends a Kotlin base that the grid and the tab pass it around as. */
+    private val paginatedBase = setOf("586.0.0.52.53")
+
+    private fun paginated(bundle: File): Set<String> {
+        val types = paginatedTypes(FixtureDex.classes(bundle, setOf(PAGINABLE))[PAGINABLE])
+        val version = bundle.name.substringAfter("facebook-").substringBefore("-")
+        assertEquals("${bundle.name}: the paginated list types", if (version in paginatedBase) 2 else 1, types.size)
+        return types
+    }
+
     @Test
     fun `each declared build's profile reels list is found and sorted before the tiles are built`() = bundles { bundle ->
         val name = bundle.name
@@ -104,7 +114,9 @@ class ProfileReelsSortFixtureTest {
         val owners = FixtureDex.classesHolding(bundle, PROFILE_GRID_SECTION).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val grids = owners.flatMap { owner -> owner.methods.filter { holdsString(it, PROFILE_GRID_SECTION) } }
         val count = playCount(FixtureDex.methodsWhere(bundle, dexFilter = { true }, wanted = { isPlayCountReader(it) || isPlayCountGetter(it) }))
-        val site = profileGridSite(grids, count)
+        val paginated = paginated(bundle)
+        val site = profileGridSite(grids, count, paginated)
+        assertTrue("$name: the grid's list is a paginated list", site.type in paginated)
 
         val before = site.method.implementation!!.instructions.toList()
         val context = PatchContexts.of(owners)
@@ -128,6 +140,7 @@ class ProfileReelsSortFixtureTest {
             after[at + 2].reference(),
         )
         assertEquals("$name: the list is asked for first", Opcode.MOVE_RESULT_OBJECT, after[at - 1].opcode)
+        assertEquals("$name: the answer is cast back to what the call answers", site.type, after[at + 4].reference())
         assertEquals(
             "$name: Facebook's code stays in order",
             stock.map { it.opcode },
@@ -141,10 +154,11 @@ class ProfileReelsSortFixtureTest {
         val owners = FixtureDex.classesHolding(bundle, PROFILE_TAB_SECTION).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val tabs = owners.flatMap { owner -> owner.methods.filter { holdsString(it, PROFILE_TAB_SECTION) } }
         val count = playCount(FixtureDex.methodsWhere(bundle, dexFilter = { true }, wanted = { isPlayCountReader(it) || isPlayCountGetter(it) }))
-        val lambda = profileTabLambda(tabs)
+        val paginated = paginated(bundle)
+        val lambda = profileTabLambda(tabs, paginated)
         val fetched = mutableMapOf<String, ClassDef>()
         val classBy = { type: String -> fetched.getOrPut(type) { FixtureDex.classes(bundle, setOf(type)).getValue(type) } }
-        val sites = profileTabRowsSites(classBy(lambda), classBy, count)
+        val sites = profileTabRowsSites(classBy(lambda), classBy, count, paginated)
         assertEquals("$name: the lambda's rows and the builder's", 2, sites.size)
         assertEquals("$name: the second site is the builder, outside the lambda", 2, sites.map { it.method.definingClass }.distinct().size)
 

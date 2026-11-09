@@ -43,7 +43,9 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * for the Odin scoring tier, the other sorts a register that is the List parameter itself (through
  * a copy register, 133 on arm64) or a copy of a side list. A recording pass after the sort only
  * reads the list. The callers (064A.A0X and three more) still take get(0) of the list they passed.
- * So the hook anchors on the parameter, which is never written, instead of on a sort's register.
+ * So the hook anchors on the parameter instead of on a sort's register. 586 (05ZB.JNX) reuses the
+ * parameter's register late on one branch, so the parameter goes to the extension at the start and
+ * each return only says the rerank is done.
  *
  * The list holds ranking signals, one per reel, which Facebook makes from each pool item with
  * createSignalForModel(model). The signal carries a key and scores but no posting time. The model
@@ -81,8 +83,11 @@ internal const val POSTED = "$NEWEST_REELS->posted($OBJECT$OBJECT$OBJECT)V"
 internal const val EDGE_HELPER = "hushfacebookReelEdge"
 internal const val EDGE_FAILED = "$NEWEST_REELS->edgeFailed(Ljava/lang/Throwable;)V"
 
-/** Reorders the rerank's list. */
-internal const val SORT = "$NEWEST_REELS->sort($LIST)V"
+/** Keeps the list the rerank was handed, as it starts. */
+internal const val RERANKING = "$NEWEST_REELS->reranking($LIST)V"
+
+/** Reorders the list the rerank started with, as it returns. */
+internal const val RERANKED = "$NEWEST_REELS->reranked()V"
 
 internal fun refuse(message: String): Nothing = throw PatchException("$PATCH: $message")
 
@@ -117,12 +122,13 @@ private fun Method.holdsListParameter(code: List<Instruction>, at: Int, register
 }
 
 /**
- * The register that holds the List parameter at every return, or null when [method] isn't the
- * rerank: a void instance method taking (object, List, int) that loads [RANKER_TAG], never writes
- * the List parameter, and sorts that list in place with a static `(List, Comparator)V` call on some
- * path (straight from the parameter or through a copy register). The hook reads the parameter
- * itself at each return, so it sees the list the callers take the head of whichever sort ran, and
- * the 585 rerank's other sort, which orders a copy, doesn't matter.
+ * The List parameter's register, or null when [method] isn't the rerank: a void instance method
+ * taking (object, List, int) that loads [RANKER_TAG] and sorts that list in place with a static
+ * `(List, Comparator)V` call on some path (straight from the parameter or through a copy register).
+ * The hook hands the parameter over as the rerank starts and tells the extension at each return,
+ * so it sorts the list the callers take the head of whichever sort ran, and the 585 rerank's other
+ * sort, which orders a copy, doesn't matter. 586's rerank (05ZB.JNX) writes a long over the
+ * parameter's register on its recordRankPass branch, so the returns can't read it there.
  */
 internal fun rerankList(method: Method): Int? {
     if (method.returnType != "V" || AccessFlags.STATIC.isSet(method.accessFlags)) return null
@@ -132,22 +138,24 @@ internal fun rerankList(method: Method): Int? {
     val code = method.implementation?.instructions?.toList() ?: return null
     // this, the context, then the list.
     val listParameter = method.localRegisterCount() + 2
-    val returns = code.indices.filter { code[it].opcode == Opcode.RETURN_VOID }
-    if (returns.isEmpty()) return null
-    if (returns.any { method.writersReaching(it, listParameter) != listOf(-1) }) return null
+    if (code.none { it.opcode == Opcode.RETURN_VOID }) return null
     val sortsParameter = code.indices.filter { code[it].isListSort() }.any { index ->
         method.holdsListParameter(code, index, code[index].callRegisters().first(), listParameter, 3)
     }
     return if (sortsParameter) listParameter else null
 }
 
-/** Hands the rerank's list to the extension at each of [method]'s returns, branches into them included. */
-internal fun MutableMethod.sortAtReturns(list: Int) {
+/**
+ * Hands the rerank's [list] to the extension as [method] starts, before anything can write its
+ * register, and tells the extension at each return, branches into them included.
+ */
+internal fun MutableMethod.sortWhenReranked(list: Int) {
     val code = implementation!!.instructions.toList()
     val returns = code.indices.filter { code[it].opcode == Opcode.RETURN_VOID }
     for (index in returns.asReversed()) {
-        addInstructionsAtControlFlowLabel(index, "invoke-static/range { v$list .. v$list }, $SORT")
+        addInstructionsAtControlFlowLabel(index, "invoke-static { }, $RERANKED")
     }
+    addInstructions(0, "invoke-static/range { v$list .. v$list }, $RERANKING")
 }
 
 /** What the signal hook reads from a model, found on its class and the parameter's interface. */
