@@ -59,7 +59,7 @@ internal const val TAB_LABELS_STUB = "tabLabels"
  * `LX/0Dw4;`, drawn by `LX/0Dw3;->A02(FbUserSession, LX/0Dw3;, List, Z)V`). Every row goes through
  * that draw method: the answer's, the one rebuilt after a tap from a stored list or Facebook's
  * fallback row, and the reset. A tap looks the chip's label up in Facebook's table of tab labels
- * (`LX/0Dvk;->A02(Context)ImmutableMap`, label to tab) to open that tab. Posts (BLENDED_STORIES)
+ * (`LX/0Dvk;->A02(Context)ImmutableMap`, label to tab; 586's `LX/0Dvf;->A02`) to open that tab. Posts (BLENDED_STORIES)
  * is still in that table, but answers stopped listing it.
  *
  * The draw method hands its list of chips to the extension first and draws what comes back. The
@@ -155,13 +155,33 @@ internal fun chipRow(method: Method): ChipRow? {
     return ChipRow(chipType, draw)
 }
 
-/** The static `(Context)ImmutableMap` methods [rowClass] calls: Facebook's table of tab labels. */
+/**
+ * The static `(Context)ImmutableMap` methods [rowClass] calls and looks a chip's label up in, casting
+ * the answer to a tab: Facebook's label-to-tab table, the one a tap reads. 586 also calls a
+ * tab-to-label table (`LX/0Dvf;->A01`) to name its default chip, which a tap never reads.
+ */
 internal fun tabLabelTables(rowClass: ClassDef): List<MethodReference> =
-    rowClass.methods.flatMap { it.implementation?.instructions?.toList().orEmpty() }
-        .filter { it.opcode == Opcode.INVOKE_STATIC }
-        .mapNotNull { it.methodRef() }
-        .filter { it.parameters() == listOf(CONTEXT) && it.returnType == IMMUTABLE_MAP }
-        .distinctBy { it.toString() }
+    rowClass.methods.flatMap { method ->
+        val code = method.implementation?.instructions?.toList().orEmpty()
+        code.indices.filter { at ->
+            val table = code[at].methodRef()
+            code[at].opcode == Opcode.INVOKE_STATIC && table != null &&
+                table.parameters() == listOf(CONTEXT) && table.returnType == IMMUTABLE_MAP && castsLookup(code, at)
+        }.map { code[it].methodRef()!! }
+    }.distinctBy { it.toString() }
+
+/** Whether the map the call at [at] returns is asked for a key right away and the answer cast. */
+private fun castsLookup(code: List<Instruction>, at: Int): Boolean {
+    val map = (code.getOrNull(at + 1)?.takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT } as? OneRegisterInstruction)?.registerA
+        ?: return false
+    val get = code.getOrNull(at + 2) ?: return false
+    val lookup = get.methodRef()
+    if (lookup?.name != "get" || (get as? FiveRegisterInstruction)?.registerC != map) return false
+    val answer = (code.getOrNull(at + 3)?.takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT } as? OneRegisterInstruction)?.registerA
+        ?: return false
+    val cast = code.getOrNull(at + 4) ?: return false
+    return cast.opcode == Opcode.CHECK_CAST && (cast as OneRegisterInstruction).registerA == answer
+}
 
 /** The parameter register holding a static method's one List parameter. */
 internal fun Method.listParameter(): Int {

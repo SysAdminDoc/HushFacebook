@@ -58,9 +58,9 @@ class MetaAiSearchFixtureTest {
 
     private val strings = listOf(ANSWER_PAGE, ROLE_PARSE_FAILURE, META_AI_TAB, KEYWORD_TYPE_FAILURE, aiModeStart, metaAiTabModule)
 
-    /** Whether the answer page builder calls the full page constructor itself, per build: 585 goes through its short one. */
+    /** Whether the answer page builder calls the full page constructor itself, per build: 585 went through its short one, 586 calls it. */
     private val directPageCall = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to false,
+        "586.0.0.52.53" to true,
     )
 
     /** Whether the parser reads the route flag through the suggestion model's accessor, per build: 585 does, not TreeJNI itself. */

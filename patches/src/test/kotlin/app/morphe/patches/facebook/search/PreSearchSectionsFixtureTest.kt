@@ -21,6 +21,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
@@ -47,6 +48,13 @@ class PreSearchSectionsFixtureTest {
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
 
     private fun Instruction.call() = (this as? ReferenceInstruction)?.reference as? MethodReference
+
+    /** The registers a call reads, written as a range or not. */
+    private fun Instruction.argumentRegisters(): List<Int> = when (this) {
+        is RegisterRangeInstruction -> (startRegister until startRegister + registerCount).toList()
+        is FiveRegisterInstruction -> listOf(registerC, registerD, registerE, registerF, registerG).take(registerCount)
+        else -> emptyList()
+    }
 
     private fun List<Instruction>.opcodes() = map { it.opcode }.filter { it != Opcode.NOP }
 
@@ -289,10 +297,13 @@ class PreSearchSectionsFixtureTest {
         assertEquals("$name: places the section keeps its paginated list", 1, sites.size)
         val site = sites.single()
         val code = site.method.code()
-        // Positive control: the list is then handed to the section builder.
+        // Positive control: the list is then handed to the section builder. 586 narrowed the
+        // builder's parameter to the concrete list class (LX/09gi;->A06(LX/0mew;)V), so the list's
+        // register going into a call counts as well as a call taking the interface.
         assertEquals("$name: the list read", PRE_SEARCH_PAGINABLE, code[site.read - 1].call()?.returnType)
         assertTrue("$name: the list isn't handed on", code.subList(site.read + 1, minOf(code.size, site.read + 30)).any {
-            it.call()?.parameterTypes?.map(CharSequence::toString)?.contains(PRE_SEARCH_PAGINABLE) == true
+            it.call()?.parameterTypes?.map(CharSequence::toString)?.contains(PRE_SEARCH_PAGINABLE) == true ||
+                it.call() != null && site.list in it.argumentRegisters()
         })
         // The register the hook borrows is written again right after, on every path.
         assertTrue("$name: the borrowed register is written next", code[site.read + 1] is OneRegisterInstruction &&
