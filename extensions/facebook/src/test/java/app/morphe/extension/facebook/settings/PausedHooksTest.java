@@ -318,6 +318,7 @@ public class PausedHooksTest {
         for (BooleanSetting setting : settingsSwitches()) setting.resetToDefault();
         Settings.HIDDEN_WORDS.resetToDefault();
         Settings.HIDE_POSTS_OVER_REACTIONS.resetToDefault();
+        Settings.COMMENTS_HEIGHT.resetToDefault();
         FeedFilterCounters.clear();
         ReleaseCheckForTests.forget();
     }
@@ -1036,7 +1037,9 @@ public class PausedHooksTest {
         // A reel's comment sheet asking for two thirds of the screen gets all of it, a split-screen
         // launcher answers that it didn't open, a full-height sheet fills the screen, the reel
         // drawn above the comments is hidden, and a part-height sheet over the Reels tab lets a tap
-        // above it through to the reel.
+        // above it through to the reel. Full height is a list choice, so it's saved here, as the
+        // word list is above.
+        Settings.COMMENTS_HEIGHT.save(app.morphe.extension.facebook.comments.CommentsHeight.FULL);
         probes.put(PatchFamily.FULL_HEIGHT_COMMENTS, Arrays.asList(
                 () -> FullHeightComments.sheetHeight(0.66f) == 1f,
                 FullHeightComments::skipSplitScreen,

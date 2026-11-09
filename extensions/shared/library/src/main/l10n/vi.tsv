@@ -1926,10 +1926,20 @@ List cleared	Đã xóa danh sách
 Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	Chưa có gì ở đây. Khi bật Ghi nhớ những gì bạn xem, reel, video và tin bạn xem sẽ hiện ở đây.
 # context: shown in the Recently watched list when the picked chip has no entries
 Nothing of this kind yet.	Chưa có mục nào thuộc loại này.
-# context: switch title under Comments; on, the comment sheet opens at the full height of the screen
-Open comments at full height	Mở bình luận ở chiều cao tối đa
-# context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
+# context: summary of the Full height choice; Comment is the button under a reel or video, the split view shows the video above the comments
 Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	Bình luận mở trên một bảng phủ kín màn hình thay vì dừng ở giữa chừng. Trên reels và video, nút Bình luận mở bảng đó thay cho chế độ chia đôi màn hình với video ở trên.
+# context: title of the list that picks how high the comments sheet opens; its choices follow
+Open comments at	Mở bình luận ở
+Facebook's height	Chiều cao của Facebook
+Full height	Chiều cao tối đa
+Half height	Nửa chiều cao
+# context: summary of the Half height choice; Comment is the button under a reel or video
+Comments open on a sheet that covers half the screen, and the reel or video keeps playing above it. On reels and videos, Comment opens that sheet in place of the split view.	Bình luận mở trên một bảng phủ nửa màn hình, còn reel hoặc video vẫn tiếp tục phát ở phía trên. Trên reels và video, nút Bình luận mở bảng đó thay cho chế độ chia đôi màn hình.
+Comments open where Facebook stops them, part way up on reels and videos.	Bình luận mở ở độ cao Facebook dừng lại, giữa chừng trên reels và video.
+# context: sentences in a settings import preview
+Comments will open at full height.	Bình luận sẽ mở ở chiều cao tối đa.
+Comments will open at half height.	Bình luận sẽ mở ở nửa chiều cao.
+Comments will open where Facebook stops them.	Bình luận sẽ mở ở độ cao Facebook dừng lại.
 # context: switch title under Appearance; on, Android's status bar (clock, battery) is hidden on Facebook's main screen
 Hide the status bar	Ẩn thanh trạng thái
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly

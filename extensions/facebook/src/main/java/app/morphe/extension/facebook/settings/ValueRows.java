@@ -10,6 +10,7 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInWaitSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.reelDateStyleSummary;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentsHeightSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentOrderSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.downloadActionSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.feedsSubtabSummary;
@@ -69,6 +70,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import app.morphe.extension.facebook.comments.CommentOrder;
+import app.morphe.extension.facebook.comments.CommentsHeight;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
@@ -1638,6 +1640,42 @@ final class ValueRows {
                 if (candidate.name().equals(getValue())) style = candidate;
             }
             setSummary(reelDateStyleSummary(style));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its list takes the screen's colours, as the other rows' dialogs do. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+        }
+    }
+
+    /** Open comments at (#179). Its summary follows its value, as Show the post date as does. */
+    static final class CommentsHeightRow extends PlainSummaryList {
+        CommentsHeightRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+        }
+
+        void showSummary() {
+            CommentsHeight height = CommentsHeight.FACEBOOK;
+            for (CommentsHeight candidate : CommentsHeight.values()) {
+                if (candidate.name().equals(getValue())) height = candidate;
+            }
+            setSummary(commentsHeightSummary(height));
         }
 
         @Override

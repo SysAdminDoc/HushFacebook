@@ -1921,10 +1921,20 @@ List cleared	列表已清空
 Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	这里还没有内容。开启“记住我看过的内容”后，你看过的 Reels、视频和快拍会显示在这里。
 # context: shown in the Recently watched list when the picked chip has no entries
 Nothing of this kind yet.	此类内容暂无。
-# context: switch title under Comments; on, the comment sheet opens at the full height of the screen
-Open comments at full height	全屏打开评论
-# context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
+# context: summary of the Full height choice; Comment is the button under a reel or video, the split view shows the video above the comments
 Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	评论面板会铺满整个屏幕，而不是只展开一部分。在 Reels 和视频上，“评论”按钮会打开这个面板，而不是视频在上方的分屏视图。
+# context: title of the list that picks how high the comments sheet opens; its choices follow
+Open comments at	评论打开高度
+Facebook's height	Facebook 默认高度
+Full height	全屏高度
+Half height	半屏高度
+# context: summary of the Half height choice; Comment is the button under a reel or video
+Comments open on a sheet that covers half the screen, and the reel or video keeps playing above it. On reels and videos, Comment opens that sheet in place of the split view.	评论面板会覆盖半个屏幕，上方的 Reels 或视频会继续播放。在 Reels 和视频上，“评论”按钮会打开这个面板，而不是分屏视图。
+Comments open where Facebook stops them, part way up on reels and videos.	评论在 Facebook 默认的位置打开，在 Reels 和视频上只展开一部分。
+# context: sentences in a settings import preview
+Comments will open at full height.	评论将以全屏高度打开。
+Comments will open at half height.	评论将以半屏高度打开。
+Comments will open where Facebook stops them.	评论将在 Facebook 默认的位置打开。
 # context: switch title under Appearance; on, Android's status bar (clock, battery) is hidden on Facebook's main screen
 Hide the status bar	隐藏状态栏
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly

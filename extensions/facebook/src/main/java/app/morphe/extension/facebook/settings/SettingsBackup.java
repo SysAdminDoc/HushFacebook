@@ -32,6 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import app.morphe.extension.facebook.comments.CommentOrder;
+import app.morphe.extension.facebook.comments.CommentsHeight;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
@@ -328,7 +329,6 @@ public final class SettingsBackup {
             Settings.HIDE_INCOMING_COMMENT_TYPING,
             Settings.HIDE_NEW_COMMENTS_PILL,
             Settings.HIDE_VIDEO_COMMENT_COMPOSER,
-            Settings.OPEN_COMMENTS_FULL_HEIGHT,
             Settings.PAUSE_REELS_UNDER_COMMENTS,
             Settings.TAP_REELS_ABOVE_COMMENTS,
             Settings.SEARCH_COMMENTS,
@@ -659,6 +659,13 @@ public final class SettingsBackup {
     static final EnumSetting<ReelDateStyle> DATE_STYLE = Settings.REEL_POST_DATE_STYLE;
 
     /**
+     * How high comments open (#179), held in a file as its {@link CommentsHeight#fileValue}.
+     * Anything else refuses the whole file, as a reels order does. A file from before the list
+     * holds the old switch instead, which still reads: true is full height, false Facebook's.
+     */
+    static final EnumSetting<CommentsHeight> COMMENTS_HEIGHT = Settings.COMMENTS_HEIGHT;
+
+    /**
      * The hours notification quiet hours start and end, each held in a file as its
      * {@link QuietHour#fileValue}, a 24-hour time on the hour. Anything else refuses the whole file,
      * as a playback quality does.
@@ -755,7 +762,7 @@ public final class SettingsBackup {
 
     /** The settings a file carries that aren't switches, in the order Settings declares them. */
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
-            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, DATE_STYLE, REELS_ORDER, WATCHED_KEEP, SHARE_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
+            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, DATE_STYLE, REELS_ORDER, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY,
                     QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, NEW_ROW_MARK, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI,
                     BADGE, LOGO, TAB));
@@ -885,6 +892,7 @@ public final class SettingsBackup {
         private static final String BURN_IN_WAIT_NAME = "burn_in_wait";
         private static final String NEW_ROW_MARK_NAME = "new_row_mark";
         private static final String DATE_STYLE_NAME = "reel_post_date_style";
+        private static final String COMMENTS_HEIGHT_NAME = "comments_height";
 
         /** In {@link #ALLOWLIST} order, and only the switches the file named. */
         final Map<BooleanSetting, Boolean> values;
@@ -1029,6 +1037,9 @@ public final class SettingsBackup {
         /** How the file says a reel's post date reads, the same way. */
         @Nullable
         ReelDateStyle dateStyle;
+        /** How high the file says comments open, the same way. */
+        @Nullable
+        CommentsHeight commentsHeight;
         /** Names the file holds that aren't settings this build knows. They're left out. */
         final int unknown;
 
@@ -1279,6 +1290,8 @@ public final class SettingsBackup {
             if (newRowMarkChange != null) changes.put(NEW_ROW_MARK, newRowMarkChange);
             ReelDateStyle dateStyleChange = dateStyleChange();
             if (dateStyleChange != null) changes.put(DATE_STYLE, dateStyleChange);
+            CommentsHeight commentsHeightChange = commentsHeightChange();
+            if (commentsHeightChange != null) changes.put(COMMENTS_HEIGHT, commentsHeightChange);
             SendLink.Action actionChange = actionChange();
             if (actionChange != null) changes.put(ACTION, actionChange);
             String appChange = appChange();
@@ -1585,6 +1598,12 @@ public final class SettingsBackup {
             return dateStyle == null || dateStyle == DATE_STYLE.savedValue() ? null : dateStyle;
         }
 
+        /** How high comments open after this file, the same way. */
+        @Nullable
+        CommentsHeight commentsHeightChange() {
+            return commentsHeight == null || commentsHeight == COMMENTS_HEIGHT.savedValue() ? null : commentsHeight;
+        }
+
         @Nullable
         private static String listChange(@Nullable String list, StringSetting setting) {
             if (list == null) return null;
@@ -1646,6 +1665,7 @@ public final class SettingsBackup {
             if (burnInWait != null) state.putString(BURN_IN_WAIT_NAME, burnInWait.fileValue);
             if (newRowMark != null) state.putString(NEW_ROW_MARK_NAME, newRowMark.fileValue);
             if (dateStyle != null) state.putString(DATE_STYLE_NAME, dateStyle.fileValue);
+            if (commentsHeight != null) state.putString(COMMENTS_HEIGHT_NAME, commentsHeight.fileValue);
             state.putInt(UNKNOWN, unknown);
             return state;
         }
@@ -1721,6 +1741,7 @@ public final class SettingsBackup {
             read.burnInWait = BurnInWait.fromFile(state.get(BURN_IN_WAIT_NAME));
             read.newRowMark = NewRowMark.fromFile(state.get(NEW_ROW_MARK_NAME));
             read.dateStyle = ReelDateStyle.fromFile(state.get(DATE_STYLE_NAME));
+            read.commentsHeight = CommentsHeight.fromFile(state.get(COMMENTS_HEIGHT_NAME));
             Object background = state.get(BACKGROUND_NAME);
             read.background = isBackground(background) ? (String) background : null;
             Object lightBackground = state.get(LIGHT_BACKGROUND_NAME);
@@ -1794,6 +1815,7 @@ public final class SettingsBackup {
             switches.put(BURN_IN.key, of(BURN_IN).fileValue);
             switches.put(BURN_IN_WAIT.key, of(BURN_IN_WAIT).fileValue);
             switches.put(DATE_STYLE.key, of(DATE_STYLE).fileValue);
+            switches.put(COMMENTS_HEIGHT.key, of(COMMENTS_HEIGHT).fileValue);
             switches.put(QUIET_FROM.key, of(QUIET_FROM).fileValue());
             switches.put(QUIET_UNTIL.key, of(QUIET_UNTIL).fileValue());
             switches.put(LOCK_AFTER.key, of(LOCK_AFTER).fileValue);
@@ -1975,6 +1997,8 @@ public final class SettingsBackup {
         BurnInWait burnInWait = null;
         NewRowMark newRowMark = null;
         ReelDateStyle dateStyle = null;
+        CommentsHeight commentsHeight = null;
+        Boolean legacyFullHeight = null;
         JSONObject values = (JSONObject) settings;
         for (Iterator<String> names = values.keys(); names.hasNext(); ) {
             String name = names.next();
@@ -1984,6 +2008,14 @@ public final class SettingsBackup {
                     throw new Rejected(Reason.VALUE, "Not true or false: " + name);
                 }
                 legacyStories = (Boolean) value;
+                continue;
+            }
+            if (CommentsHeightSetting.LEGACY_KEY.equals(name)) {
+                Object value = values.opt(name);
+                if (!(value instanceof Boolean)) {
+                    throw new Rejected(Reason.VALUE, "Not true or false: " + name);
+                }
+                legacyFullHeight = (Boolean) value;
                 continue;
             }
             if (FOLDER.key.equals(name)) {
@@ -2128,6 +2160,11 @@ public final class SettingsBackup {
                 if (dateStyle == null) throw new Rejected(Reason.VALUE, "Not a post date style: " + name);
                 continue;
             }
+            if (COMMENTS_HEIGHT.key.equals(name)) {
+                commentsHeight = CommentsHeight.fromFile(values.opt(name));
+                if (commentsHeight == null) throw new Rejected(Reason.VALUE, "Not a comments height: " + name);
+                continue;
+            }
             if (QUIET_FROM.key.equals(name) || QUIET_UNTIL.key.equals(name)) {
                 QuietHour hour = QuietHour.fromFile(values.opt(name));
                 if (hour == null) throw new Rejected(Reason.VALUE, "Not an hour on the hour: " + name);
@@ -2269,6 +2306,11 @@ public final class SettingsBackup {
             found.putIfAbsent(Settings.HIDE_TOP_STORIES_TRAY, legacyStories);
             found.putIfAbsent(Settings.HIDE_STORIES_BETWEEN_POSTS, legacyStories);
         }
+        if (commentsHeight == null && legacyFullHeight != null) {
+            // A file from before the list: the old switch on is full height, off Facebook's
+            // height. The list's own key wins whatever order the JSON object uses.
+            commentsHeight = CommentsHeightSetting.fromLegacy(legacyFullHeight);
+        }
         // The lists share their room. One the file leaves out stays as it is, so it counts as stored.
         if ((hidden != null || kept != null) && !PostWords.fits(
                 hidden != null ? hidden : PostWords.clean(HIDDEN.savedValue()),
@@ -2306,6 +2348,7 @@ public final class SettingsBackup {
         read.burnInWait = burnInWait;
         read.newRowMark = newRowMark;
         read.dateStyle = dateStyle;
+        read.commentsHeight = commentsHeight;
         return read;
     }
 
@@ -2347,6 +2390,7 @@ public final class SettingsBackup {
                 Map<Setting<?>, Object> changes = snapshot.changes();
                 if (changes.isEmpty()) return 0;
                 StoriesSetting.finishMigration();
+                CommentsHeightSetting.finishMigration();
                 Setting.saveAll(changes);
                 return changes.size();
             } catch (Setting.BatchFailed failed) {

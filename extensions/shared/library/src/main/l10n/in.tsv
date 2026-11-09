@@ -1926,10 +1926,20 @@ List cleared	Daftar dihapus
 Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	Belum ada apa-apa. Saat Ingat yang kamu tonton menyala, reel, video, dan cerita yang kamu tonton muncul di sini.
 # context: shown in the Recently watched list when the picked chip has no entries
 Nothing of this kind yet.	Belum ada yang jenis ini.
-# context: switch title under Comments; on, the comment sheet opens at the full height of the screen
-Open comments at full height	Buka komentar dengan tinggi penuh
-# context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
+# context: summary of the Full height choice; Comment is the button under a reel or video, the split view shows the video above the comments
 Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	Komentar terbuka di lembar yang memenuhi layar, bukan berhenti di tengah. Di reel dan video, Komentari membuka lembar itu, bukan tampilan terbagi dengan video di atas.
+# context: title of the list that picks how high the comments sheet opens; its choices follow
+Open comments at	Buka komentar pada
+Facebook's height	Tinggi Facebook
+Full height	Tinggi penuh
+Half height	Setengah tinggi
+# context: summary of the Half height choice; Comment is the button under a reel or video
+Comments open on a sheet that covers half the screen, and the reel or video keeps playing above it. On reels and videos, Comment opens that sheet in place of the split view.	Komentar terbuka di lembar yang menutupi setengah layar, dan reel atau video tetap diputar di atasnya. Di reel dan video, Komentari membuka lembar itu, bukan tampilan terbagi.
+Comments open where Facebook stops them, part way up on reels and videos.	Komentar terbuka di tempat Facebook menghentikannya, di tengah pada reel dan video.
+# context: sentences in a settings import preview
+Comments will open at full height.	Komentar akan terbuka dengan tinggi penuh.
+Comments will open at half height.	Komentar akan terbuka setengah tinggi.
+Comments will open where Facebook stops them.	Komentar akan terbuka di tempat Facebook menghentikannya.
 # context: switch title under Appearance; on, Android's status bar (clock, battery) is hidden on Facebook's main screen
 Hide the status bar	Sembunyikan bilah status
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly

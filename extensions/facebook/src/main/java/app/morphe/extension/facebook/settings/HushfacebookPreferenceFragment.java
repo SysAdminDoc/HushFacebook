@@ -45,6 +45,7 @@ import java.util.TimeZone;
 
 import app.morphe.extension.facebook.coexist.FamilySignatureTrust;
 import app.morphe.extension.facebook.comments.CommentOrder;
+import app.morphe.extension.facebook.comments.CommentsHeight;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
@@ -107,6 +108,7 @@ import app.morphe.extension.facebook.settings.ValueRows.BurnInGuardRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInWaitRow;
 import app.morphe.extension.facebook.settings.ValueRows.NewRowMarkRow;
 import app.morphe.extension.facebook.settings.ValueRows.ReelDateStyleRow;
+import app.morphe.extension.facebook.settings.ValueRows.CommentsHeightRow;
 import app.morphe.extension.facebook.settings.ValueRows.AccentRow;
 import app.morphe.extension.facebook.settings.ValueRows.BackgroundRow;
 import app.morphe.extension.facebook.settings.ValueRows.CountRow;
@@ -1922,6 +1924,49 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     }
 
     /**
+     * How high comments open (#179): where Facebook stops them, the whole screen, or half of it
+     * with the reel or video still playing above. Its values are the setting's own names.
+     */
+    static CommentsHeightRow commentsHeightRow(Context context) {
+        CommentsHeightRow row = new CommentsHeightRow(context);
+        row.setKey(Settings.COMMENTS_HEIGHT.key);
+        row.setTitle(L10n.t("Open comments at"));
+        row.setDialogTitle(L10n.t("Open comments at"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        CommentsHeight[] choices = CommentsHeight.values();
+        CharSequence[] entries = new CharSequence[choices.length];
+        CharSequence[] values = new CharSequence[choices.length];
+        for (int i = 0; i < choices.length; i++) {
+            entries[i] = commentsHeightLabel(choices[i]);
+            values[i] = choices[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.COMMENTS_HEIGHT.savedValue().name());
+        return row;
+    }
+
+    /** What the list calls [height]. */
+    static String commentsHeightLabel(CommentsHeight height) {
+        if (height == CommentsHeight.FULL) return L10n.t("Full height");
+        if (height == CommentsHeight.HALF) return L10n.t("Half height");
+        return L10n.t("Facebook's height");
+    }
+
+    /** What the choice does, for the row's summary. */
+    static String commentsHeightSummary(CommentsHeight height) {
+        if (height == CommentsHeight.FULL) {
+            return L10n.t("Comments open on a sheet that fills the screen instead of stopping part way up. On reels and "
+                    + "videos, Comment opens that sheet in place of the split view with the video on top.");
+        }
+        if (height == CommentsHeight.HALF) {
+            return L10n.t("Comments open on a sheet that covers half the screen, and the reel or video keeps playing "
+                    + "above it. On reels and videos, Comment opens that sheet in place of the split view.");
+        }
+        return L10n.t("Comments open where Facebook stops them, part way up on reels and videos.");
+    }
+
+    /**
      * How large Facebook's text is. Like the comment order row, its values are the setting's own
      * names and its summary says what the choice does.
      */
@@ -2710,6 +2755,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((BurnInWaitRow) listPreference).showSummary();
         } else if (listPreference instanceof ReelDateStyleRow) {
             ((ReelDateStyleRow) listPreference).showSummary();
+        } else if (listPreference instanceof CommentsHeightRow) {
+            ((CommentsHeightRow) listPreference).showSummary();
         } else if (listPreference instanceof BreakRow) {
             ((BreakRow) listPreference).showSummary();
         } else if (listPreference instanceof TextSizeRow) {

@@ -40,8 +40,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * constructor to the popover fragment: one, Facebook's default, makes a phone's sheet full screen,
  * and anything less sizes the window to that share of the screen's height at the bottom. Reels ask
  * for two thirds, videos and some posts for a share a server value sets. The patch hands
- * {@link #sheetHeight} that fraction first thing in the constructor, and while the switch is on a
- * share below one comes back as one.
+ * {@link #sheetHeight} that fraction first thing in the constructor, and while Open comments at is
+ * set to full height a share below one comes back as one. Set to half height, a share above a half
+ * comes back as a half, so a reel's sheet stops at the middle of the screen with the reel playing
+ * above it, and everything below about the video above the comments being hidden is full height's
+ * alone.
  *
  * <p>A reel's or a feed video's Comment button first tries Facebook's split screen, the video on
  * top and the comments under it, through five launchers that each answer whether they opened it.
@@ -93,6 +96,12 @@ public final class FullHeightComments {
 
     /** What the report counts each time a sheet opens at full height instead of part way. */
     static final String SHEET_RAISED = "Comment sheet opened at full height";
+
+    /** What the report counts each time a sheet opens at half height instead of higher up. */
+    static final String SHEET_HALVED = "Comment sheet opened at half height";
+
+    /** The share of the screen's height a sheet opens to with Open comments at set to half height. */
+    static final float HALF = 0.5f;
 
     /** What the report counts each time the split screen is passed over for the regular sheet. */
     static final String SPLIT_SCREEN_SKIPPED = "Split screen passed over";
@@ -150,17 +159,24 @@ public final class FullHeightComments {
 
     /**
      * The hook, first thing where a comment sheet's parameters are built, handed the share of the
-     * screen's height the sheet opens to. While Open comments at full height is on, a share between
-     * zero and one comes back as one; otherwise, and for a throw, Facebook's own share comes back.
+     * screen's height the sheet opens to. A share between zero and one comes back as one while Open
+     * comments at is set to full height, and as a half while it's set to half height and the share
+     * is more than that. Otherwise, and for a throw, Facebook's own share comes back, so a post's
+     * sheet, which fills the screen, stays as it is at half height.
      */
     public static float sheetHeight(float height) {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, SHEET);
-            if (!(height > 0f && height < 1f) || !Utils.settingsReady()
-                    || !Settings.OPEN_COMMENTS_FULL_HEIGHT.get()) return height;
-            HookStatus.counted(FAMILY, SHEET_RAISED);
-            return 1f;
+            if (!(height > 0f && height < 1f) || !Utils.settingsReady()) return height;
+            CommentsHeight chosen = Settings.COMMENTS_HEIGHT.get();
+            if (chosen == CommentsHeight.FULL) {
+                HookStatus.counted(FAMILY, SHEET_RAISED);
+                return 1f;
+            }
+            if (chosen != CommentsHeight.HALF || !(height > HALF)) return height;
+            HookStatus.counted(FAMILY, SHEET_HALVED);
+            return HALF;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "sheet height", failure);
             return height;
@@ -170,13 +186,13 @@ public final class FullHeightComments {
     /**
      * The hook, first thing in each launcher of Facebook's split-screen comments. True makes the
      * launcher answer that it didn't open, so the button opens the regular sheet, while Open
-     * comments at full height is on; false lets the launcher run.
+     * comments at is set to full or half height; false lets the launcher run.
      */
     public static boolean skipSplitScreen() {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, SPLIT_SCREEN);
-            if (!Utils.settingsReady() || !Settings.OPEN_COMMENTS_FULL_HEIGHT.get()) return false;
+            if (!Utils.settingsReady() || !resized()) return false;
             HookStatus.counted(FAMILY, SPLIT_SCREEN_SKIPPED);
             return true;
         } catch (Throwable failure) {
@@ -189,16 +205,16 @@ public final class FullHeightComments {
      * The hook, where a reel description's tap reads the server gate that sends it to the comments
      * on a feed video's reel, handed that gate's answer (#269). Facebook tries its split screen
      * there, and when a launcher answers no it opens the whole comment sheet instead of growing the
-     * text. While Open comments at full height is on, the launchers always answer no, so a tap on
-     * "more" would land in the comments: the gate comes back closed and the description expands in
-     * place, the way it does wherever the gate is off. Otherwise, and for a throw, Facebook's answer
-     * comes back.
+     * text. While Open comments at is set to full or half height, the launchers always answer no, so
+     * a tap on "more" would land in the comments: the gate comes back closed and the description
+     * expands in place, the way it does wherever the gate is off. Otherwise, and for a throw,
+     * Facebook's answer comes back.
      */
     public static boolean descriptionOpensComments(boolean opens) {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, DESCRIPTION);
-            if (!opens || !Utils.settingsReady() || !Settings.OPEN_COMMENTS_FULL_HEIGHT.get()) return opens;
+            if (!opens || !Utils.settingsReady() || !resized()) return opens;
             HookStatus.counted(FAMILY, DESCRIPTION_EXPANDED);
             return false;
         } catch (Throwable failure) {
@@ -209,15 +225,15 @@ public final class FullHeightComments {
 
     /**
      * The hook, where the comment sheet's "fill the screen?" check starts, handed the share of the
-     * screen's height the sheet opens to. True, while Open comments at full height is on and the
-     * share is one or more, answers that the sheet fills the screen; false lets Facebook's check
+     * screen's height the sheet opens to. True, while Open comments at is set to full height and
+     * the share is one or more, answers that the sheet fills the screen; false lets Facebook's check
      * decide.
      */
     public static boolean fillsScreen(float height) {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, FILLS);
-            if (!(height >= 1f) || !Utils.settingsReady() || !Settings.OPEN_COMMENTS_FULL_HEIGHT.get()) return false;
+            if (!(height >= 1f) || !Utils.settingsReady() || !full()) return false;
             HookStatus.counted(FAMILY, SCREEN_FILLED);
             return true;
         } catch (Throwable failure) {
@@ -229,10 +245,11 @@ public final class FullHeightComments {
     /**
      * The hook, first thing where Facebook sets up a comment sheet's views, handed those views, the
      * id of the sheet's header and whether the sheet is a watch-and-comment one, the reel playing on
-     * behind it. While Open comments at full height is on, the header of a watch-and-comment sheet
-     * is hidden, and any other header once it holds a video, now or after a later layout; a header
-     * without one is left as it is. While Tap a reel above its comments is on, a watch-and-comment
-     * header that stays takes taps on the reel for the reel.
+     * behind it. While Open comments at is set to full height, the header of a watch-and-comment
+     * sheet is hidden, and any other header once it holds a video, now or after a later layout; a
+     * header without one is left as it is. At half height the video is the point, so it stays.
+     * While Tap a reel above its comments is on, a watch-and-comment header that stays takes taps on
+     * the reel for the reel.
      */
     public static void watchHeader(@Nullable View content, int headerId, boolean overVideo) {
         // Pause reels while comments are open has its own switch and reads this sheet either way (#266).
@@ -244,7 +261,7 @@ public final class FullHeightComments {
             HookStatus.bound(FAMILY, HEADER);
             if (content == null || !Utils.settingsReady()) return;
             boolean taps = overVideo && Settings.TAP_REELS_ABOVE_COMMENTS.get();
-            if (!taps && !Settings.OPEN_COMMENTS_FULL_HEIGHT.get()) return;
+            if (!taps && !full()) return;
             View header = content.findViewById(headerId);
             if (header == null || WATCHED.put(header, Boolean.TRUE) != null) return;
             hideVideo(header, overVideo);
@@ -282,12 +299,22 @@ public final class FullHeightComments {
         }
     }
 
+    /** Whether Open comments at is set to full height. */
+    private static boolean full() {
+        return Settings.COMMENTS_HEIGHT.get() == CommentsHeight.FULL;
+    }
+
+    /** Whether Open comments at is set to full or half height, either of which skips the split screen. */
+    private static boolean resized() {
+        return Settings.COMMENTS_HEIGHT.get() != CommentsHeight.FACEBOOK;
+    }
+
     /**
-     * Hides [header] while the switch is on and it shows a video, its own or, on a watch-and-comment
-     * sheet ([overVideo]), the reel behind it; true when it did.
+     * Hides [header] while Open comments at is set to full height and it shows a video, its own or,
+     * on a watch-and-comment sheet ([overVideo]), the reel behind it; true when it did.
      */
     static boolean hideVideo(View header, boolean overVideo) {
-        if (header.getVisibility() == View.GONE || !Utils.settingsReady() || !Settings.OPEN_COMMENTS_FULL_HEIGHT.get()
+        if (header.getVisibility() == View.GONE || !Utils.settingsReady() || !full()
                 || !(overVideo || holdsVideo(header, VIDEO_DEPTH))) {
             return false;
         }

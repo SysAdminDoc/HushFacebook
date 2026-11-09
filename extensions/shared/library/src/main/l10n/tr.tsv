@@ -1926,10 +1926,20 @@ List cleared	Liste temizlendi
 Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	Henüz bir şey yok. İzlediklerini hatırla açıkken izlediğin reeller, videolar ve hikayeler burada görünür.
 # context: shown in the Recently watched list when the picked chip has no entries
 Nothing of this kind yet.	Bu türden henüz bir şey yok.
-# context: switch title under Comments; on, the comment sheet opens at the full height of the screen
-Open comments at full height	Yorumları tam yükseklikte aç
-# context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
+# context: summary of the Full height choice; Comment is the button under a reel or video, the split view shows the video above the comments
 Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	Yorumlar, yarıda durmak yerine tüm ekranı kaplayan bir sayfada açılır. Reels ve videolarda Yorum Yap, videonun üstte olduğu bölünmüş görünüm yerine bu sayfayı açar.
+# context: title of the list that picks how high the comments sheet opens; its choices follow
+Open comments at	Yorumları açma yüksekliği
+Facebook's height	Facebook yüksekliği
+Full height	Tam yükseklik
+Half height	Yarım yükseklik
+# context: summary of the Half height choice; Comment is the button under a reel or video
+Comments open on a sheet that covers half the screen, and the reel or video keeps playing above it. On reels and videos, Comment opens that sheet in place of the split view.	Yorumlar ekranın yarısını kaplayan bir sayfada açılır ve reel ya da video üstünde oynamaya devam eder. Reels ve videolarda Yorum Yap, bölünmüş görünüm yerine bu sayfayı açar.
+Comments open where Facebook stops them, part way up on reels and videos.	Yorumlar, Facebook'un durdurduğu yerde açılır, reels ve videolarda yarı yolda.
+# context: sentences in a settings import preview
+Comments will open at full height.	Yorumlar tam yükseklikte açılacak.
+Comments will open at half height.	Yorumlar yarım yükseklikte açılacak.
+Comments will open where Facebook stops them.	Yorumlar, Facebook'un durdurduğu yerde açılacak.
 # context: switch title under Appearance; on, Android's status bar (clock, battery) is hidden on Facebook's main screen
 Hide the status bar	Durum çubuğunu gizle
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly

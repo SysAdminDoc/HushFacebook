@@ -10,6 +10,7 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.breakLengthRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.category;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentOrderRow;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentsHeightRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.feedsSubtabRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.homeFeedRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.info;
@@ -894,9 +895,7 @@ final class FeedPages {
             comments.addPreference(reactionCountsRow(context));
         }
         if (fullHeight) {
-            comments.addPreference(toggle(context, Settings.OPEN_COMMENTS_FULL_HEIGHT,
-                    L10n.t("Comments open on a sheet that fills the screen instead of stopping part way up. On reels and "
-                            + "videos, Comment opens that sheet in place of the split view with the video on top.")));
+            comments.addPreference(commentsHeightRow(context));
             // The pause goes through Tap to play's player bridge (#266).
             if (build.contains(PatchFamily.TAP_TO_PLAY)) {
                 comments.addPreference(toggle(context, Settings.PAUSE_REELS_UNDER_COMMENTS,

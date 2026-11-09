@@ -132,7 +132,7 @@ public class FullHeightCommentsTest {
     public void restore() {
         FullHeightComments.reelTap = bridge;
         PauseForTests.resume();
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.resetToDefault();
+        Settings.COMMENTS_HEIGHT.resetToDefault();
         Settings.TAP_REELS_ABOVE_COMMENTS.resetToDefault();
         HookStatus.clear();
     }
@@ -146,7 +146,7 @@ public class FullHeightCommentsTest {
 
     @Test
     public void onAPartSheetOpensAtFullHeightAndTheSplitScreenIsPassedOverEachCounted() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         assertEquals("a reel's sheet stayed part way up", 1f, FullHeightComments.sheetHeight(REEL_SHEET), 0f);
         assertEquals("a server share stayed part way up", 1f, FullHeightComments.sheetHeight(0.75f), 0f);
         assertEquals("Facebook's full height changed", 1f, FullHeightComments.sheetHeight(1f), 0f);
@@ -161,9 +161,60 @@ public class FullHeightCommentsTest {
                 statusLine());
     }
 
+    /**
+     * Half height: a sheet asked to open higher than half the screen opens at half, counted, a lower
+     * one and Facebook's full height stay, the split screen is passed over for that sheet and the
+     * description's "more" expands in place, while nothing is told it fills the screen.
+     */
+    @Test
+    public void atHalfHeightATallSheetOpensAtHalfAndTheVideoAboveKeepsPlaying() {
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.HALF);
+        assertEquals("a reel's sheet wasn't halved", 0.5f, FullHeightComments.sheetHeight(REEL_SHEET), 0f);
+        assertEquals("a server share wasn't halved", 0.5f, FullHeightComments.sheetHeight(0.75f), 0f);
+        assertEquals("a sheet already under half was changed", 0.4f, FullHeightComments.sheetHeight(0.4f), 0f);
+        assertEquals("a half sheet was changed", 0.5f, FullHeightComments.sheetHeight(0.5f), 0f);
+        assertEquals("a post's full sheet was halved", 1f, FullHeightComments.sheetHeight(1f), 0f);
+        assertTrue("the split screen opened", FullHeightComments.skipSplitScreen());
+        assertFalse("a reel description's more still opened the comments",
+                FullHeightComments.descriptionOpensComments(true));
+        assertFalse("a full sheet was drawn as a box at half height", FullHeightComments.fillsScreen(1f));
+        assertEquals(FamilyNames.FULL_HEIGHT_COMMENTS + ": invoked 8, 4 found, 0 missing. Counted: "
+                + FullHeightComments.SHEET_HALVED + " 2, " + FullHeightComments.SPLIT_SCREEN_SKIPPED + " 1, "
+                + FullHeightComments.DESCRIPTION_EXPANDED + " 1",
+                statusLine());
+
+        // The reel above the comments is what half height leaves room for, so its header stays.
+        ViewGroup reel = sheet(hostedVideo());
+        FullHeightComments.watchHeader(reel, HEADER, false);
+        layOut(reel);
+        assertEquals("the reel above a half sheet was hidden", View.VISIBLE, header(reel).getVisibility());
+        ViewGroup watch = sheet(new FrameLayout(context()));
+        FullHeightComments.watchHeader(watch, HEADER, true);
+        layOut(watch);
+        assertEquals("the Reels tab's reel behind a half sheet was hidden", View.VISIBLE, header(watch).getVisibility());
+    }
+
+    @Test
+    public void atFacebooksHeightNothingChanges() {
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FACEBOOK);
+        assertEquals(REEL_SHEET, FullHeightComments.sheetHeight(REEL_SHEET), 0f);
+        assertFalse(FullHeightComments.skipSplitScreen());
+        assertTrue(FullHeightComments.descriptionOpensComments(true));
+        assertFalse(FullHeightComments.fillsScreen(1f));
+    }
+
+    @Test
+    public void pausedAtHalfHeightASheetKeepsFacebooksShare() {
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.HALF);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals(REEL_SHEET, FullHeightComments.sheetHeight(REEL_SHEET), 0f);
+        assertFalse(FullHeightComments.skipSplitScreen());
+    }
+
     @Test
     public void onTheVideoAboveASheetsCommentsIsHiddenAndCounted() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         ViewGroup sheet = sheet(hostedVideo());
         FullHeightComments.watchHeader(sheet, HEADER, false);
         assertEquals("the reel above the comments still shows", View.GONE, header(sheet).getVisibility());
@@ -174,7 +225,7 @@ public class FullHeightCommentsTest {
 
     @Test
     public void aVideoThatLandsAfterTheSetupIsHiddenAtTheNextLayout() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         FrameLayout host = new FrameLayout(context());
         ViewGroup sheet = sheet(host);
         FullHeightComments.watchHeader(sheet, HEADER, false);
@@ -186,7 +237,7 @@ public class FullHeightCommentsTest {
 
     @Test
     public void aWatchAndCommentSheetsSeeThroughHeaderIsHiddenAndCounted() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         // The Reels tab's sheet: the header is an empty tap area over the reel playing behind it.
         ViewGroup sheet = sheet(new FrameLayout(context()));
         FullHeightComments.watchHeader(sheet, HEADER, true);
@@ -198,7 +249,7 @@ public class FullHeightCommentsTest {
 
     @Test
     public void aWatchAndCommentHeaderShownAgainIsHiddenAtTheNextLayout() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         ViewGroup sheet = sheet(new FrameLayout(context()));
         FullHeightComments.watchHeader(sheet, HEADER, true);
         header(sheet).setVisibility(View.VISIBLE);
@@ -213,7 +264,7 @@ public class FullHeightCommentsTest {
         layOut(off);
         assertEquals("off, the header over the reel was hidden", View.VISIBLE, header(off).getVisibility());
 
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         ViewGroup paused = sheet(new FrameLayout(context()));
         FullHeightComments.watchHeader(paused, HEADER, true);
@@ -223,7 +274,7 @@ public class FullHeightCommentsTest {
 
     @Test
     public void aPostsHeaderStays() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         TextView reactions = new TextView(context());
         reactions.setText("You and 23 others");
         ViewGroup sheet = sheet(reactions);
@@ -234,7 +285,7 @@ public class FullHeightCommentsTest {
 
     @Test
     public void aSheetSetUpTwiceIsWatchedOnce() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         FrameLayout host = new FrameLayout(context());
         ViewGroup sheet = sheet(host);
         FullHeightComments.watchHeader(sheet, HEADER, false);
@@ -251,7 +302,7 @@ public class FullHeightCommentsTest {
 
     @Test
     public void aSheetWithoutTheHeaderOrViewsIsLeftAlone() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         FullHeightComments.watchHeader(null, HEADER, false);
         ViewGroup sheet = sheet(hostedVideo());
         FullHeightComments.watchHeader(sheet, HEADER + 1, false);
@@ -265,7 +316,7 @@ public class FullHeightCommentsTest {
         layOut(off);
         assertEquals("off, the reel above the comments was hidden", View.VISIBLE, header(off).getVisibility());
 
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         ViewGroup paused = sheet(hostedVideo());
         FullHeightComments.watchHeader(paused, HEADER, false);
@@ -275,7 +326,7 @@ public class FullHeightCommentsTest {
 
     @Test
     public void pausedAfterTheSetupALaterVideoStays() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         FrameLayout host = new FrameLayout(context());
         ViewGroup sheet = sheet(host);
         FullHeightComments.watchHeader(sheet, HEADER, false);
@@ -287,19 +338,19 @@ public class FullHeightCommentsTest {
 
     @Test
     public void notANumberIsNotFullScreen() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         assertFalse("NaN was made full screen", FullHeightComments.fillsScreen(Float.NaN));
     }
 
     @Test
     public void notANumberIsLeftAsItCame() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         assertTrue("NaN was changed", Float.isNaN(FullHeightComments.sheetHeight(Float.NaN)));
     }
 
     @Test
     public void onTappingAReelsDescriptionExpandsItInPlaceInsteadOfOpeningTheCommentsCounted() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         assertFalse("more on a reel's description opened the comments", FullHeightComments.descriptionOpensComments(true));
         assertFalse("a closed gate was opened", FullHeightComments.descriptionOpensComments(false));
         assertEquals(FamilyNames.FULL_HEIGHT_COMMENTS + ": invoked 2, 1 found, 0 missing. Counted: "
@@ -316,7 +367,7 @@ public class FullHeightCommentsTest {
 
     @Test
     public void pausedTheSheetKeepsFacebooksHeightAndTheSplitScreenRuns() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertEquals(REEL_SHEET, FullHeightComments.sheetHeight(REEL_SHEET), 0f);
         assertFalse(FullHeightComments.skipSplitScreen());
@@ -326,7 +377,7 @@ public class FullHeightCommentsTest {
 
     @Test
     public void beforeTheSettingsAreReadyNothingChanges() {
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         ViewGroup sheet = sheet(hostedVideo());
         SettingsContextRule.withoutContext(() -> {
             assertEquals(REEL_SHEET, FullHeightComments.sheetHeight(REEL_SHEET), 0f);
@@ -526,7 +577,7 @@ public class FullHeightCommentsTest {
     @Test
     public void tappingThroughHasItsOwnSwitch() {
         // Open comments at full height on doesn't turn it on; a full-height sheet never reaches it anyway.
-        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        Settings.COMMENTS_HEIGHT.save(CommentsHeight.FULL);
         Dialog dialog = sheetDialog();
         assertFalse(FullHeightComments.tapThrough(dialog, 20));
         assertTrue(leftToFacebook(dialog));

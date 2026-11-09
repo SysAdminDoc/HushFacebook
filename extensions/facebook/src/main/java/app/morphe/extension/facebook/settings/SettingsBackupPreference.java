@@ -47,6 +47,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 import app.morphe.extension.facebook.comments.CommentOrder;
+import app.morphe.extension.facebook.comments.CommentsHeight;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
@@ -417,6 +418,7 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.burnInWaitChange() != null) parts.add(burnInWaitSentence(snapshot.burnInWaitChange()));
             if (snapshot.newRowMarkChange() != null) parts.add(newRowMarkSentence(snapshot.newRowMarkChange()));
             if (snapshot.dateStyleChange() != null) parts.add(dateStyleSentence(snapshot.dateStyleChange()));
+            if (snapshot.commentsHeightChange() != null) parts.add(commentsHeightSentence(snapshot.commentsHeightChange()));
             if (snapshot.backgroundChange() != null) parts.add(backgroundSentence(snapshot.backgroundChange()));
             if (snapshot.lightBackgroundChange() != null) parts.add(lightBackgroundSentence(snapshot.lightBackgroundChange()));
             if (snapshot.badgeChange() != null) parts.add(markColorSentence(Mark.BADGE, snapshot.badgeChange()));
@@ -624,6 +626,13 @@ public class SettingsBackupPreference extends Preference {
     static String dateStyleSentence(ReelDateStyle style) {
         if (style == ReelDateStyle.DATE) return L10n.t("Reel post dates will show the day they were posted.");
         return L10n.t("Reel post dates will show how long ago they were posted.");
+    }
+
+    /** The sentence that says how high comments open after an import (#179). */
+    static String commentsHeightSentence(CommentsHeight height) {
+        if (height == CommentsHeight.FULL) return L10n.t("Comments will open at full height.");
+        if (height == CommentsHeight.HALF) return L10n.t("Comments will open at half height.");
+        return L10n.t("Comments will open where Facebook stops them.");
     }
 
     /** The sentence that says in what order comments open after an import. */
@@ -1079,6 +1088,7 @@ public class SettingsBackupPreference extends Preference {
                     + (snapshot.burnInWaitChange() == null ? "" : " " + burnInWaitSentence(snapshot.burnInWaitChange()))
                     + (snapshot.newRowMarkChange() == null ? "" : " " + newRowMarkSentence(snapshot.newRowMarkChange()))
                     + (snapshot.dateStyleChange() == null ? "" : " " + dateStyleSentence(snapshot.dateStyleChange()))
+                    + (snapshot.commentsHeightChange() == null ? "" : " " + commentsHeightSentence(snapshot.commentsHeightChange()))
                     + (snapshot.backgroundChange() == null ? "" : " " + backgroundSentence(snapshot.backgroundChange()))
                     + (snapshot.lightBackgroundChange() == null ? "" : " " + lightBackgroundSentence(snapshot.lightBackgroundChange()))
                     + (snapshot.badgeChange() == null ? "" : " " + markColorSentence(Mark.BADGE, snapshot.badgeChange()))

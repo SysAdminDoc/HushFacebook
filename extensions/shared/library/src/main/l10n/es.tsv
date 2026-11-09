@@ -1926,10 +1926,20 @@ List cleared	Lista borrada
 Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	Todavía no hay nada. Con Recordar lo que ves activado, los reels, videos e historias que veas aparecen aquí.
 # context: shown in the Recently watched list when the picked chip has no entries
 Nothing of this kind yet.	Todavía no hay nada de este tipo.
-# context: switch title under Comments; on, the comment sheet opens at the full height of the screen
-Open comments at full height	Abrir comentarios a altura completa
-# context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
+# context: summary of the Full height choice; Comment is the button under a reel or video, the split view shows the video above the comments
 Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	Los comentarios se abren en una hoja que ocupa toda la pantalla en lugar de quedarse a media altura. En reels y videos, Comentar abre esa hoja en lugar de la vista dividida con el video arriba.
+# context: title of the list that picks how high the comments sheet opens; its choices follow
+Open comments at	Abrir comentarios a
+Facebook's height	Altura de Facebook
+Full height	Altura completa
+Half height	Media altura
+# context: summary of the Half height choice; Comment is the button under a reel or video
+Comments open on a sheet that covers half the screen, and the reel or video keeps playing above it. On reels and videos, Comment opens that sheet in place of the split view.	Los comentarios se abren en una hoja que cubre la mitad de la pantalla, y el reel o video sigue reproduciéndose arriba. En reels y videos, Comentar abre esa hoja en lugar de la vista dividida.
+Comments open where Facebook stops them, part way up on reels and videos.	Los comentarios se abren donde Facebook los detiene, a media altura en reels y videos.
+# context: sentences in a settings import preview
+Comments will open at full height.	Los comentarios se abrirán a altura completa.
+Comments will open at half height.	Los comentarios se abrirán a media altura.
+Comments will open where Facebook stops them.	Los comentarios se abrirán donde Facebook los detiene.
 # context: switch title under Appearance; on, Android's status bar (clock, battery) is hidden on Facebook's main screen
 Hide the status bar	Ocultar la barra de estado
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly

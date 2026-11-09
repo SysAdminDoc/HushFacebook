@@ -1928,10 +1928,20 @@ List cleared	已清除清單
 Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	目前沒有內容。啟用「記住觀看內容」後，你看過的 Reels、影片與限時動態會顯示在這裡。
 # context: shown in the Recently watched list when the picked chip has no entries
 Nothing of this kind yet.	目前沒有此類內容。
-# context: switch title under Comments; on, the comment sheet opens at the full height of the screen
-Open comments at full height	以全螢幕高度開啟留言
-# context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
+# context: summary of the Full height choice; Comment is the button under a reel or video, the split view shows the video above the comments
 Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	留言會在填滿螢幕的面板中開啟，不再停留於部分高度。在 Reels 與影片中，點按「留言」會開啟此面板，取代上方顯示影片的分割畫面。
+# context: title of the list that picks how high the comments sheet opens; its choices follow
+Open comments at	留言開啟高度
+Facebook's height	Facebook 預設高度
+Full height	全螢幕高度
+Half height	半螢幕高度
+# context: summary of the Half height choice; Comment is the button under a reel or video
+Comments open on a sheet that covers half the screen, and the reel or video keeps playing above it. On reels and videos, Comment opens that sheet in place of the split view.	留言會在覆蓋半個螢幕的面板中開啟，上方的 Reels 或影片會繼續播放。在 Reels 與影片中，點按「留言」會開啟此面板，取代分割畫面。
+Comments open where Facebook stops them, part way up on reels and videos.	留言會在 Facebook 預設的位置開啟，在 Reels 與影片中只展開部分高度。
+# context: sentences in a settings import preview
+Comments will open at full height.	留言將以全螢幕高度開啟。
+Comments will open at half height.	留言將以半螢幕高度開啟。
+Comments will open where Facebook stops them.	留言將在 Facebook 預設的位置開啟。
 # context: switch title under Appearance; on, Android's status bar (clock, battery) is hidden on Facebook's main screen
 Hide the status bar	隱藏狀態列
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly
