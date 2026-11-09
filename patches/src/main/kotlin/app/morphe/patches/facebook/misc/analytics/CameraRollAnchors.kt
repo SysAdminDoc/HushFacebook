@@ -10,8 +10,9 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
-import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.reels.watchhistory.callRegisters
@@ -22,6 +23,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -89,43 +91,56 @@ internal fun isProcessingCheck(method: Method, call: MethodReference): Boolean =
         method.parameterTypes.map(Any::toString) == listOf(USER_SESSION) &&
         AccessFlags.STATIC.isSet(method.accessFlags) && method.implementation != null
 
+private val ENDS = setOf(
+    Opcode.RETURN_VOID, Opcode.RETURN, Opcode.RETURN_WIDE, Opcode.RETURN_OBJECT, Opcode.THROW,
+    Opcode.PACKED_SWITCH, Opcode.SPARSE_SWITCH,
+)
+
+private val RETURNS = setOf(Opcode.RETURN_VOID, Opcode.RETURN, Opcode.RETURN_WIDE, Opcode.RETURN_OBJECT)
+
 /**
  * The index of the move-result that takes the media count job's kill switch in [method], or null
  * when [method] isn't the job's void run. The switch is the method's first boolean config read.
- * After its move-result come only constant loads into other registers, then an if-nez on the
- * answer whose target cancels the unique work named [MEDIA_COUNT_WORK]: a call taking one String
- * that reads a register loaded with that name, before the method returns.
+ * After its move-result, nothing branches or writes the answer before an if-nez on it whose target
+ * cancels the unique work named [MEDIA_COUNT_WORK]: a call taking one String that reads a register
+ * holding that name, before the method returns. 586 asks a string table for the name
+ * (`LX/0AZU;->A00` on arm64) between the read and the test, and its cancel answers the work's
+ * operation (`LX/049i;->A0B(String)LX/05LX;`) instead of nothing.
  */
 internal fun mediaCountSwitch(method: Method, classOf: (String) -> ClassDef?): Int? {
-    if (method.returnType != "V" || method.parameterTypes.isNotEmpty() || !holdsString(method, MEDIA_COUNT_WORK)) return null
+    if (method.returnType != "V" || method.parameterTypes.isNotEmpty()) return null
+    val resolve: (MethodReference) -> Method? = { call -> classOf(call.definingClass)?.let { resolveStatic(it, call) } }
+    if (!namesString(method, MEDIA_COUNT_WORK, resolve)) return null
     val code = method.implementation?.instructions?.toList() ?: return null
     val read = code.indexOfFirst { readsMobileConfig(it, "Z", classOf) }
     if (read < 0 || code.getOrNull(read + 1)?.opcode != Opcode.MOVE_RESULT) return null
     val answer = (code[read + 1] as OneRegisterInstruction).registerA
     val test = (read + 2 until code.size).firstOrNull { index ->
         val instruction = code[index]
-        !instruction.opcode.name.startsWith("const") || (instruction as OneRegisterInstruction).registerA == answer
+        instruction is OffsetInstruction || instruction.opcode in ENDS ||
+            (instruction.opcode.setsRegister() && (instruction as? OneRegisterInstruction)?.registerA == answer)
     } ?: return null
     if (code[test].opcode != Opcode.IF_NEZ || (code[test] as OneRegisterInstruction).registerA != answer) return null
     val cancel = branchTarget(code, test) ?: return null
-    val work = workRegisters(code.subList(0, test))
-    val block = code.drop(cancel).takeWhile { !it.opcode.name.startsWith("return") }
+    val work = workRegisters(code.subList(0, test), resolve)
+    val block = code.drop(cancel).takeWhile { it.opcode !in RETURNS }
     val cancels = block.any { instruction ->
         val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-        call != null && call.returnType == "V" && call.parameterTypes.map(Any::toString) == listOf("Ljava/lang/String;") &&
+        call != null && call.parameterTypes.map(Any::toString) == listOf("Ljava/lang/String;") &&
             instruction.callRegisters().any { it in work }
     }
     return if (cancels) read + 1 else null
 }
 
-/** The registers [code] leaves holding the string [MEDIA_COUNT_WORK]. */
-private fun workRegisters(code: List<Instruction>): Set<Int> {
+/** The registers [code] leaves holding the string [MEDIA_COUNT_WORK], loaded or answered by a string table. */
+private fun workRegisters(code: List<Instruction>, resolve: (MethodReference) -> Method?): Set<Int> {
     val holding = mutableSetOf<Int>()
-    for (instruction in code) {
+    for ((index, instruction) in code.withIndex()) {
         val register = (instruction as? OneRegisterInstruction)?.registerA ?: continue
         if (!instruction.opcode.setsRegister()) continue
         val string = ((instruction as? ReferenceInstruction)?.reference as? StringReference)?.string
-        if (string == MEDIA_COUNT_WORK) holding += register else holding -= register
+        val asked = instruction.opcode == Opcode.MOVE_RESULT_OBJECT && index > 0 && tableStringAt(code, index - 1, resolve) == MEDIA_COUNT_WORK
+        if (string == MEDIA_COUNT_WORK || asked) holding += register else holding -= register
     }
     return holding
 }

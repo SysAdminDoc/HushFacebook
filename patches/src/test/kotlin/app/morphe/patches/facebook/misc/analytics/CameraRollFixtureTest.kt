@@ -13,6 +13,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -92,8 +93,10 @@ class CameraRollFixtureTest {
         assertEquals("$name: the call after the kill switch's read", STOP_MEDIA_COUNT, hook.call())
         assertEquals("$name: the register handed over", answer, (hook as RegisterRangeInstruction).startRegister)
         assertEquals("$name: the answer goes back where it came from", answer, (patched[result + 2] as OneRegisterInstruction).registerA)
-        assertEquals("$name: the kill switch's test still follows", Opcode.IF_NEZ,
-            patched.drop(result + 3).first { !it.opcode.name.startsWith("const") }.opcode)
+        // 586 asks a string table for the work's name in between, so the test is the first branch after.
+        val nextBranch = patched.drop(result + 3).first { it is OffsetInstruction }
+        assertEquals("$name: the kill switch's test still follows", Opcode.IF_NEZ, nextBranch.opcode)
+        assertEquals("$name: the test reads the handed-back answer", answer, (nextBranch as OneRegisterInstruction).registerA)
     }
 
     private fun com.android.tools.smali.dexlib2.iface.instruction.Instruction.call(): String? =
