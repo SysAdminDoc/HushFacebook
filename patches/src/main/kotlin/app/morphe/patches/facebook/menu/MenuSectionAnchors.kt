@@ -136,7 +136,10 @@ internal data class FoldRead(val index: Int, val register: Int)
  * a class [method] casts to there, its own class aside, as long as nothing writes its register and
  * no branch lands between it and [group]. On 584 that's the section's state (`LX/Nt0;`, cast from
  * its component's state field) and its A01, which a tap on the header flips (issue #224). While
- * it's set the section answers its header alone. Null unless there's exactly one.
+ * it's set the section answers its header alone. 586 (`LX/0D4P;->A0s` arm64) reads `LX/0a1g;->A01`
+ * into v0, copies it at once with `move/from16 v23, v0` and reuses v0 before its group, so when the
+ * read's register doesn't last, a single plain move that is its only use is followed to the copy.
+ * Null unless there's exactly one.
  */
 internal fun foldRead(method: Method, group: GroupRead): FoldRead? {
     val instructions = method.instructionList()
@@ -149,11 +152,18 @@ internal fun foldRead(method: Method, group: GroupRead): FoldRead? {
         before[index].opcode == Opcode.IGET_BOOLEAN && field != null && field.definingClass in cast
     }
     val read = reads.singleOrNull() ?: return null
-    val register = (instructions[read] as OneRegisterInstruction).registerA
-    val between = (read + 1)..group.index
-    if (between.any { writesRegister(instructions[it], register) }) return null
-    if (branchTargets(instructions).any { it in between }) return null
-    return FoldRead(read, register)
+    val targets = branchTargets(instructions)
+    fun lasting(at: Int): FoldRead? {
+        val register = (instructions[at] as OneRegisterInstruction).registerA
+        val between = (at + 1)..group.index
+        if (between.any { writesRegister(instructions[it], register) || it in targets }) return null
+        return FoldRead(at, register)
+    }
+    return lasting(read) ?: method.literalReads(read).singleOrNull()?.takeIf { copy ->
+        copy < group.index && instructions[copy].opcode in PLAIN_MOVES &&
+            (instructions[copy] as TwoRegisterInstruction).registerB == (instructions[read] as OneRegisterInstruction).registerA &&
+            (read + 1..copy).none { it in targets }
+    }?.let(::lasting)
 }
 
 /** Where the native section reads whether its group starts open: the instruction and the register it goes to. */

@@ -32,9 +32,13 @@ import org.junit.Test
  * bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class MenuPanelFixtureTest {
-    /** The MobileConfig flag the panel asks per build, read from 583's arm64 and armv7 dex and 584's arm64. */
+    /**
+     * The MobileConfig flag the panel asks per build, read from 583's arm64 and armv7 dex and 584's arm64.
+     * 586's was read from both of its bundles, in the panel setup and the bookmarks fragment factory.
+     */
     private val bloksPanelFlags = mapOf(
         "585.0.0.47.54" to 0x101019f0058167fL,
+        "586.0.0.52.53" to 0x101019f005816c8L,
     )
 
     /** The flag [bundle]'s build asks, by the version in its name. */

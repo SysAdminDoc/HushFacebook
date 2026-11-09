@@ -50,9 +50,13 @@ class MenuSectionsFixtureTest {
      * it. The unpacked 583 table is the check still owed. 584's header component (`LX/Lmm;`) loads
      * the same five ids as 583's (`LX/S3S;`) in the same order, each 9 higher, so its label is 0x7f140460.
      * 585's (`LX/0IqZ;->A17` arm64) loads 584's five in the same order, each 6 higher, so 0x7f140466.
+     * 586's header asks the bookmark UI's kept `getHeadContentDescription` for its words, which formats
+     * 0x7f14046c with the title, 585's two states (each 6 higher) and its two actions (each 8 higher),
+     * since 586 adds a one-argument label behind a MobileConfig flag between them.
      */
     private val headerLabel = mapOf(
         "585.0.0.47.54" to 0x7f140466,
+        "586.0.0.52.53" to 0x7f14046c,
     )
 
     private val testKeys = listOf(UPGRADES_TEST_KEY, ALSO_FROM_META_TEST_KEY)
@@ -62,6 +66,9 @@ class MenuSectionsFixtureTest {
     private fun loadsLiteral(method: Method, value: Int): Boolean = method.instructionList().any {
         it.opcode in setOf(Opcode.CONST, Opcode.CONST_HIGH16) && (it as NarrowLiteralInstruction).narrowLiteral == value
     }
+
+    private fun calledMethods(method: Method): List<MethodReference> = method.instructionList()
+        .mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
 
     private fun created(method: Method): Set<String> = method.instructionList()
         .filter { it.opcode == Opcode.NEW_INSTANCE }
@@ -243,8 +250,20 @@ class MenuSectionsFixtureTest {
 
                 // The native section draws the group's collapsible header, the one TalkBack reads
                 // as "Upgrades, header. Section is expanded." on the phone.
-                val headers = created(native).mapNotNull(classes::get)
-                    .filter { component -> component.methods.any { loadsLiteral(it, label) } }
+                // 586's header asks a method of another class for those words, so the label may
+                // load one call away.
+                val components = created(native).mapNotNull(classes::get)
+                val callees = FixtureDex.classes(bundle,
+                    components.flatMap { component -> component.methods.flatMap(::calledMethods) }.map { it.definingClass }.toSet())
+                val loadsLabel = { call: MethodReference ->
+                    callees[call.definingClass]?.methods?.any {
+                        it.name == call.name && it.parameterTypes.map(Any::toString) == call.parameterTypes.map(Any::toString) &&
+                            loadsLiteral(it, label)
+                    } == true
+                }
+                val headers = components.filter { component ->
+                    component.methods.any { method -> loadsLiteral(method, label) || calledMethods(method).any(loadsLabel) }
+                }
                 assertEquals("${bundle.name}: header components the native section creates", 1, headers.size)
 
                 // Where the root adds the Upgrades and Also from Meta groups, it tags each with its

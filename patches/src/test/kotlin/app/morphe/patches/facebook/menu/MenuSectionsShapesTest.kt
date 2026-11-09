@@ -330,6 +330,22 @@ class MenuSectionsShapesTest {
     }
 
     @Test
+    fun `586's fold copied at once into a high register before its own is reused is the copy`() {
+        val copy = ImmutableInstruction22x(Opcode.MOVE_FROM16, 14, 8)
+        val reuse = ImmutableInstruction11n(Opcode.CONST_4, 8, 0)
+        assertEquals(FoldRead(4, 14), foldOf(foldingSection(between = listOf(copy, reuse))))
+        // A read that lasts to the group stays the fold, even when it's copied.
+        assertEquals(FoldRead(3, 8), foldOf(foldingSection(between = listOf(copy))))
+        // Negative controls: a read used twice, a copy written over before the group, a wide write into v13 taking v14.
+        assertNull(foldOf(foldingSection(between = listOf(copy, ImmutableInstruction22x(Opcode.MOVE_FROM16, 15, 8), reuse))))
+        assertNull(foldOf(foldingSection(between = listOf(copy, reuse, ImmutableInstruction11n(Opcode.CONST_4, 14, 0)))))
+        assertNull(foldOf(foldingSection(between = listOf(copy, reuse, ImmutableInstruction22c(Opcode.IGET_WIDE, 13, 1,
+            ImmutableFieldReference(foldState, "A00", "J"))))))
+        // A copy that isn't a plain move doesn't count.
+        assertNull(foldOf(foldingSection(between = listOf(ImmutableInstruction22b(Opcode.XOR_INT_LIT8, 14, 8, 1), reuse))))
+    }
+
+    @Test
     fun `a branch landing between the fold and the group turns the fold down`() {
         // if-nez v1 right after the fold read, landing past itself and the model read: on the group call.
         val branch = ImmutableInstruction21t(Opcode.IF_NEZ, 1, 2 + 2)
