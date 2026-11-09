@@ -274,7 +274,9 @@ Messenger, Facebook Lite, Meta Business Suite and Workplace declare two permissi
 
 ### Android blocks apps from unverified developers
 
-Google now checks that apps on certified Android phones come from a developer registered with it. Phones running Android 7 or newer in Brazil, Indonesia, Singapore and Thailand have done this since September 30, 2026, and Google plans to bring it to every country in 2027. Manager signs the patched Facebook with your own key, which Google has no record of, so a phone that checks can stop the install. Updates fail the same way. There are two ways through.
+Google has started checking that apps on certified Android phones come from a developer registered with it. Since [September 30, 2026](https://developer.android.com/developer-verification/guides) the check runs in Brazil, Indonesia, Singapore and Thailand on Android 7 or newer, and only for apps installed from the stores Google lists: Google Play and six phone makers' own stores, Samsung's Galaxy Store and Xiaomi's GetApps among them. Manager isn't on that list, so a patched Facebook still installs as before, even in those four countries. Google plans to check every app on certified phones everywhere in 2027.
+
+Once that reaches your phone, expect the patched Facebook to be stopped. Manager signs it with your own key, which Google has no record of. Android Authority [passed on](https://www.androidauthority.com/how-to-bypass-android-developer-verification-sideloading-rules-3718002/) a user's report that Morphe-patched apps already count as unverified for that reason. Google's own pages don't say how it treats an app signed again. Updates would fail the same way. There are two ways through.
 
 The first is Android's advanced flow. Turn on Developer options (tap **Build number** seven times under **Settings → About phone**), open them and turn on the setting that allows apps from unverified developers. Android asks you to confirm nobody is coaching you through it, restarts the phone and makes you wait a day before you confirm with your fingerprint or PIN. You can allow it for 7 days or for good. After that the install shows a warning that the app comes from an unverified developer, and **Install Anyway** goes ahead. If you picked 7 days, updates stop going through again once the week is up.
 
@@ -286,7 +288,7 @@ adb install -r patched-facebook.apk
 
 `-r` installs over the Facebook already on the phone and keeps its data, as long as both carry the same key ([Keep your signing key](#keep-your-signing-key)).
 
-If Android refuses Facebook some other way, please [report it](https://github.com/SysAdminDoc/Hushfacebook/issues/new?template=bug_report.yml) with the exact words it shows. Google hasn't said whether an app its owner signed again counts as unregistered, and that message is what will settle it.
+If Android refuses Facebook some other way, please [report it](https://github.com/SysAdminDoc/Hushfacebook/issues/new?template=bug_report.yml) with the exact words it shows. That message is what will show how Google really handles a patched app.
 
 ### Facebook links from other apps don't open in Facebook
 
