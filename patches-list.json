@@ -16,7 +16,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -31,11 +31,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -65,7 +65,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -80,11 +80,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -103,7 +103,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -118,11 +118,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -141,7 +141,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -156,11 +156,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -179,7 +179,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -194,11 +194,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -217,7 +217,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -232,11 +232,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -255,7 +255,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -270,11 +270,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -292,7 +292,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -307,11 +307,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -329,7 +329,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -344,11 +344,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -367,7 +367,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -382,11 +382,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -404,7 +404,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -419,11 +419,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -442,7 +442,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -457,11 +457,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -480,7 +480,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -495,11 +495,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -520,7 +520,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -535,11 +535,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -577,7 +577,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -592,11 +592,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -614,7 +614,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -629,11 +629,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -651,7 +651,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -666,11 +666,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -690,7 +690,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -705,11 +705,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -729,7 +729,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -744,11 +744,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -767,7 +767,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -782,11 +782,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -805,7 +805,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -820,11 +820,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -842,7 +842,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -857,11 +857,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -881,7 +881,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -896,11 +896,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -919,7 +919,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -934,11 +934,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -957,7 +957,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -972,11 +972,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -995,7 +995,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1010,11 +1010,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1033,7 +1033,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1048,11 +1048,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1071,7 +1071,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1086,11 +1086,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1108,7 +1108,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1123,11 +1123,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1147,7 +1147,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1162,11 +1162,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1185,7 +1185,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1200,11 +1200,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1223,7 +1223,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1238,11 +1238,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1261,7 +1261,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1276,11 +1276,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1298,7 +1298,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1313,11 +1313,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1335,7 +1335,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1350,11 +1350,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1373,7 +1373,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1388,11 +1388,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1411,7 +1411,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1426,11 +1426,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1449,7 +1449,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1464,11 +1464,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1486,7 +1486,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1501,11 +1501,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1524,7 +1524,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1539,11 +1539,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1561,7 +1561,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1576,11 +1576,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1599,7 +1599,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1614,11 +1614,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1637,7 +1637,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1652,11 +1652,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1675,7 +1675,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1690,11 +1690,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1713,7 +1713,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1728,11 +1728,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1751,7 +1751,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1766,11 +1766,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1789,7 +1789,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1804,11 +1804,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1827,7 +1827,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1842,11 +1842,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1865,7 +1865,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1880,11 +1880,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1903,7 +1903,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1918,11 +1918,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1941,7 +1941,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1956,11 +1956,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -1979,7 +1979,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -1994,11 +1994,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2017,7 +2017,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2032,11 +2032,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2055,7 +2055,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2070,11 +2070,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2093,7 +2093,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2108,11 +2108,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2131,7 +2131,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2146,11 +2146,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2169,7 +2169,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2184,11 +2184,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2207,7 +2207,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2222,11 +2222,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2244,7 +2244,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2259,11 +2259,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2281,7 +2281,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2296,11 +2296,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2319,7 +2319,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2334,11 +2334,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2357,7 +2357,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2372,11 +2372,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2395,7 +2395,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2410,11 +2410,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2433,7 +2433,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2448,11 +2448,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2471,7 +2471,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2486,11 +2486,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2509,7 +2509,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2524,11 +2524,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2546,7 +2546,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2561,11 +2561,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2584,7 +2584,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2599,11 +2599,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2646,7 +2646,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2661,11 +2661,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2684,7 +2684,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2699,11 +2699,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2721,7 +2721,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2736,11 +2736,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2759,7 +2759,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2774,11 +2774,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2797,7 +2797,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2812,11 +2812,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2835,7 +2835,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2850,11 +2850,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2872,7 +2872,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2887,11 +2887,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2913,7 +2913,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2928,11 +2928,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2952,7 +2952,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -2967,11 +2967,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -2990,7 +2990,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3005,11 +3005,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3027,7 +3027,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3042,11 +3042,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3065,7 +3065,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3080,11 +3080,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3104,7 +3104,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3119,11 +3119,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3143,7 +3143,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3158,11 +3158,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3181,7 +3181,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3196,11 +3196,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3218,7 +3218,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3233,11 +3233,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3256,7 +3256,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3271,11 +3271,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3293,7 +3293,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3308,11 +3308,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3330,7 +3330,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3345,11 +3345,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3368,7 +3368,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3383,11 +3383,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3406,7 +3406,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3421,11 +3421,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3444,7 +3444,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3459,11 +3459,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3481,7 +3481,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3496,11 +3496,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3519,7 +3519,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3534,11 +3534,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3557,7 +3557,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3572,11 +3572,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3595,7 +3595,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3610,11 +3610,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3633,7 +3633,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3648,11 +3648,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3671,7 +3671,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3686,11 +3686,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3708,7 +3708,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3723,11 +3723,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3746,7 +3746,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3761,11 +3761,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3784,7 +3784,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3799,11 +3799,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3821,7 +3821,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3836,11 +3836,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3859,7 +3859,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3874,11 +3874,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3897,7 +3897,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3912,11 +3912,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3934,7 +3934,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3949,11 +3949,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -3971,7 +3971,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -3986,11 +3986,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4009,7 +4009,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4024,11 +4024,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4047,7 +4047,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4062,11 +4062,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4084,7 +4084,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4099,11 +4099,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4121,7 +4121,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4136,11 +4136,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4159,7 +4159,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4174,11 +4174,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4196,7 +4196,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4211,11 +4211,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4234,7 +4234,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4249,11 +4249,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4271,7 +4271,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4286,11 +4286,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4308,7 +4308,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4323,11 +4323,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4346,7 +4346,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4361,11 +4361,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4384,7 +4384,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4399,11 +4399,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4422,7 +4422,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4437,11 +4437,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4459,7 +4459,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4474,11 +4474,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4496,7 +4496,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4511,11 +4511,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4533,7 +4533,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4548,11 +4548,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
@@ -4571,7 +4571,7 @@
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
-          "585.0.0.47.54"
+          "586.0.0.52.53"
         ]
       },
       "compatibility": [
@@ -4586,11 +4586,11 @@
           ],
           "targets": [
             {
-              "version": "585.0.0.47.54",
+              "version": "586.0.0.52.53",
               "experimental": false,
               "versionCodes": {
-                "ARM64_V8A": 476015655,
-                "ARMEABI_V7A": 476015543
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
               }
             }
           ]
