@@ -36,10 +36,14 @@ class OwnFontFixtureTest {
     private val TEXT_PAINT = "Landroid/text/TextPaint;"
     private val OBJECT_TYPE = "Ljava/lang/Object;"
 
-    /** The families the switch swaps. OwnFontTest holds the extension to the same twelve. */
+    /**
+     * The families the switch swaps. The extension picks them by name (OPTIMISTIC_* and
+     * FACEBOOK_SANS_VARIABLE), so 586 dropping 585's OPTIMISTIC_AI_1_BETA and OPTIMISTIC_AI_3_BETA
+     * leaves these ten, and OwnFontTest's twelve from 580 still cover every one.
+     */
     private val metaFamilies = sortedSetOf(
-        "FACEBOOK_SANS_VARIABLE", "OPTIMISTIC_AI", "OPTIMISTIC_AI_1_BETA", "OPTIMISTIC_AI_2_BETA",
-        "OPTIMISTIC_AI_3_BETA", "OPTIMISTIC_DISPLAY_APP", "OPTIMISTIC_DISPLAY_APP_MEDIUM",
+        "FACEBOOK_SANS_VARIABLE", "OPTIMISTIC_AI", "OPTIMISTIC_AI_2_BETA",
+        "OPTIMISTIC_DISPLAY_APP", "OPTIMISTIC_DISPLAY_APP_MEDIUM",
         "OPTIMISTIC_TEXT_APP_BOLD", "OPTIMISTIC_TEXT_APP_MEDIUM", "OPTIMISTIC_TEXT_APP_REGULAR",
         "OPTIMISTIC_VARIABLE_APP_LITE", "OPTIMISTIC_VF_APP_LITE",
     )
