@@ -800,6 +800,7 @@
       "category": "Privacy",
       "use": true,
       "dependencies": [
+        "BytecodePatch",
         "Hushfacebook settings"
       ],
       "compatiblePackages": {
@@ -1136,7 +1137,7 @@
     },
     {
       "name": "GmsCore support",
-      "description": "For phones that run microG-RE instead of Google Play services. Facebook asks microG-RE for its push notifications, and microG-RE gets the signature of Meta's own Facebook for the Google services that check one. It isn't selected by default because Facebook then stops asking Google Play services, so a phone without microG-RE gets no push notifications. Turn on Expert mode in Manager to pick it. Works as soon as you patch it in, with no switch.",
+      "description": "For phones that run microG-RE instead of Google Play services. Facebook asks microG-RE for its push notifications, and microG-RE gets the signature of Meta's own Facebook for the Google services that check one. Install microG-RE first. It isn't selected by default because Facebook then stops asking Google Play services, so on a phone without microG-RE push notifications stop and Google shows a notice asking you to get Play services. Turn on Expert mode in Manager to pick it. Works as soon as you patch it in, with no switch.",
       "category": "Fixes",
       "use": false,
       "dependencies": [

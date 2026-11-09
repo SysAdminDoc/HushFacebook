@@ -51,6 +51,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* `GmsCore support` no longer closes Facebook's login screen on a phone without microG-RE, so you can sign in with your email and password there. Without microG-RE, Google shows a notice asking you to get Play services and push notifications stay off, so install microG-RE first.
 * A section near the bottom of the Hushfacebook settings screen opens with its first switch in view. While the logo and search box still showed at the top, the list ran past the bottom of the screen, so a section opened down there put all its rows out of sight and looked like the tap hadn't worked.
 * With `Keep the progress bar` on, a reel's seek bar and time keep moving after you swipe through a few reels quickly. Facebook hides the bar while a list scrolls and brings it back when the scroll ends, but after a fast swipe that end sometimes never came, so the bar sat frozen on the reels that followed. Now the bar comes back about a second after the reel starts. (#426)
 * With `Show the post date on reels` on and `How long ago` picked, every reel's date reads like "3 weeks ago" now. Facebook wrote "2d" for a newer reel but the day itself, like "Oct 12", for an older one, so the line kept switching style from reel to reel. With the switch off, Facebook's own words stay. (#424)

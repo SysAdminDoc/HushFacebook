@@ -4,6 +4,7 @@
  */
 package app.morphe.patches.facebook.misc.gmscore
 
+import app.morphe.ExtensionDex
 import app.morphe.PatchContexts
 import app.morphe.patcher.patch.PatchException
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -14,6 +15,8 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.value.StringEncodedValue
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
@@ -65,8 +68,9 @@ class GmsCoreSupportTest {
         ImmutableClassDef(type, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null, fields, methods)
 
     /** 585's availability check cut down to the three texts it's found by. */
-    private fun availability(owner: String = availabilityOwner, version: String = "MetadataValueReader") = classDef(owner, listOf(
-        method(owner, "A04", listOf("Landroid/content/Context;", "I"), "I", AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, 4,
+    private fun availability(owner: String = availabilityOwner, version: String = "MetadataValueReader",
+                             flags: Int = AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, registers: Int = 4) = classDef(owner, listOf(
+        method(owner, "A04", listOf("Landroid/content/Context;", "I"), "I", flags, registers,
             load(0, "com.google.android.gms"), load(0, version), load(0, "This should never happen."),
             ImmutableInstruction11n(Opcode.CONST_4, 0, 1), ImmutableInstruction11x(Opcode.RETURN, 0))))
 
@@ -127,16 +131,49 @@ class GmsCoreSupportTest {
         assertEquals("the jumbo load stays jumbo, in its register", Opcode.CONST_STRING_JUMBO to 17,
             loads[1].opcode to (loads[1] as OneRegisterInstruction).registerA)
         assertEquals("app.revanced.android.gms", (registered.staticFields.single().initialValue as StringEncodedValue).value)
-        for (owner in listOf(availabilityOwner, providerOwner)) {
-            val answered = context.mutableClassDefBy(owner).methods.single().instructions()
-            // returnEarly loads an int with const and a boolean with const/4: either way a 0 the return hands back.
-            assertTrue(owner, answered[0].opcode in setOf(Opcode.CONST_4, Opcode.CONST))
-            assertEquals(owner, 0, (answered[0] as NarrowLiteralInstruction).narrowLiteral)
-            assertEquals(owner, Opcode.RETURN, answered[1].opcode)
-            assertEquals(owner, (answered[0] as OneRegisterInstruction).registerA, (answered[1] as OneRegisterInstruction).registerA)
-        }
-        assertEquals("the check's own texts move too", "app.revanced.android.gms",
-            context.mutableClassDefBy(availabilityOwner).methods.single().instructions()[2].text())
+        val checked = context.mutableClassDefBy(availabilityOwner).methods.single().instructions()
+        // A static check of four registers holds its Context in v2 (p0).
+        assertAsksTheExtension(checked, contextRegister = 2)
+        val unavailable = context.mutableClassDefBy(providerOwner).methods.single().instructions()
+        // returnEarly loads a boolean with const/4: a 0 the return hands back.
+        assertTrue(unavailable[0].opcode in setOf(Opcode.CONST_4, Opcode.CONST))
+        assertEquals(0, (unavailable[0] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals(Opcode.RETURN, unavailable[1].opcode)
+        assertEquals((unavailable[0] as OneRegisterInstruction).registerA, (unavailable[1] as OneRegisterInstruction).registerA)
+        assertEquals("the check's own texts move too", "app.revanced.android.gms", checked[3].text())
+    }
+
+    @Test
+    fun anInstanceCheckHandsTheExtensionItsContextNotItself() {
+        val classes = listOf(availability(flags = AccessFlags.PUBLIC.value, registers = 5), provider(), registration())
+        val context = PatchContexts.of(classes)
+        context.applyGmsCore(planGmsCore(classes))
+        // Five registers with this, a Context and an int as parameters: this is v2 (p0) and the Context v3 (p1).
+        assertAsksTheExtension(context.mutableClassDefBy(availabilityOwner).methods.single().instructions(), contextRegister = 3)
+    }
+
+    @Test
+    fun theExtensionCarriesTheMethodTheCheckCalls() {
+        val owner = GMS_CORE_AVAILABILITY.substringBefore("->")
+        val answering = ExtensionDex.classDef(owner).methods.filter { it.name == "availability" }
+        assertEquals("one availability method in $owner", 1, answering.size)
+        val method = answering.single()
+        assertEquals(GMS_CORE_AVAILABILITY,
+            "${method.definingClass}->${method.name}(${method.parameterTypes.joinToString("")})${method.returnType}")
+        assertTrue("public static, so any class can call it", AccessFlags.PUBLIC.isSet(method.accessFlags) &&
+            AccessFlags.STATIC.isSet(method.accessFlags))
+    }
+
+    /** The check opens by asking the extension about microG-RE with its Context and returning that answer. */
+    private fun assertAsksTheExtension(answered: List<Instruction>, contextRegister: Int) {
+        assertEquals(Opcode.INVOKE_STATIC_RANGE, answered[0].opcode)
+        val call = answered[0] as RegisterRangeInstruction
+        assertEquals("the call takes the Context register alone", contextRegister to 1, call.startRegister to call.registerCount)
+        val called = (answered[0] as ReferenceInstruction).reference as MethodReference
+        assertEquals(GMS_CORE_AVAILABILITY,
+            "${called.definingClass}->${called.name}(${called.parameterTypes.joinToString("")})${called.returnType}")
+        assertEquals(Opcode.MOVE_RESULT to contextRegister, answered[1].opcode to (answered[1] as OneRegisterInstruction).registerA)
+        assertEquals(Opcode.RETURN to contextRegister, answered[2].opcode to (answered[2] as OneRegisterInstruction).registerA)
     }
 
     @Test

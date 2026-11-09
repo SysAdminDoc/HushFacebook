@@ -10,6 +10,7 @@
  */
 package app.morphe.patches.facebook.misc.gmscore
 
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
@@ -68,6 +69,9 @@ private const val CREDENTIAL_MANAGER = "Landroid/credentials/CredentialManager;"
 
 /** Hushfacebook's own classes, which keep Google's names: they ask about the real Play services. */
 private const val EXTENSION_ROOT = "Lapp/morphe/"
+
+/** The extension's answer to the availability check: success while microG-RE is installed, missing without it. */
+internal const val GMS_CORE_AVAILABILITY = "Lapp/morphe/extension/facebook/misc/GmsCore;->availability(${CONTEXT})I"
 
 /** Play services permissions microG-RE defines under its own vendor. Morphe's list. */
 internal val GMS_PERMISSIONS = setOf(
@@ -376,12 +380,15 @@ internal data class GmsCorePlan(
  * Finds the three edits in [classes], refusing when any of them isn't where 585 has it:
  *
  * - Play services' availability check, the one method taking a Context and the minimum version that reads the
- *   version metadata ("MetadataValueReader") and Play services' package. It answers success, so the library stops
- *   asking whether Google's own Play services is installed and signed by Google.
+ *   version metadata ("MetadataValueReader") and Play services' package. It answers through the extension: success
+ *   while microG-RE is installed, so the library stops asking whether Google's own Play services is installed and
+ *   signed by Google, and missing without it, so Facebook skips Google's sign-in services and keeps its signed-out
+ *   login screen up. A fixed success closed that screen on a phone without microG-RE: the library went on to ask the
+ *   package manager for microG-RE's version.
  * - androidx Credential Manager's framework provider, the one class holding Android's CredentialManager. On Android 14
  *   and later androidx prefers it, and Android hands Google's requests to Google's own Play services whatever the app
  *   asks for, so it answers unavailable and androidx falls back to the Play services provider the reroute points at
- *   microG-RE.
+ *   microG-RE. It answers unavailable without microG-RE too, so there androidx has no credential provider at all.
  * - Every const-string outside Hushfacebook's own classes that [gmsCoreText] rewrites, and every static String
  *   field value it rewrites.
  */
@@ -442,8 +449,15 @@ internal fun BytecodePatchContext.applyGmsCore(plan: GmsCorePlan) {
         val owner = mutableClassDefBy(type)
         for (field in held) (owner.staticFields.single { it.name == field.name }.initialValue as MutableStringEncodedValue).value = field.text
     }
-    // 0 is success for the availability check, and false tells androidx the framework provider isn't there.
-    mutableClassDefBy(plan.availability.definingClass).methods.single { it.same(plan.availability) }.returnEarly(0)
+    // The availability check answers whatever the extension says about microG-RE, in the Context register it's
+    // handed. The framework provider answers false either way, so androidx uses microG-RE's provider or none.
+    val availability = mutableClassDefBy(plan.availability.definingClass).methods.single { it.same(plan.availability) }
+    val context = if (AccessFlags.STATIC.isSet(availability.accessFlags)) "p0" else "p1"
+    availability.addInstructions(0, """
+        invoke-static/range { $context .. $context }, $GMS_CORE_AVAILABILITY
+        move-result $context
+        return $context
+    """)
     mutableClassDefBy(plan.frameworkProvider.definingClass).methods.single { it.same(plan.frameworkProvider) }.returnEarly(false)
 }
 
@@ -505,9 +519,10 @@ val gmsCoreSupportPatch = bytecodePatch(
     name = "GmsCore support",
     description = "For phones that run microG-RE instead of Google Play services. Facebook asks microG-RE for its " +
         "push notifications, and microG-RE gets the signature of Meta's own Facebook for the Google services that " +
-        "check one. It isn't selected by default because Facebook then stops asking Google Play services, so a " +
-        "phone without microG-RE gets no push notifications. Turn on Expert mode in Manager to pick it. Works as " +
-        "soon as you patch it in, with no switch.",
+        "check one. Install microG-RE first. It isn't selected by default because Facebook then stops asking Google " +
+        "Play services, so on a phone without microG-RE push notifications stop and Google shows a notice asking you " +
+        "to get Play services. Turn on Expert mode in Manager to pick it. Works as soon as you patch it in, with no " +
+        "switch.",
     default = false,
 ) {
     category("Fixes")

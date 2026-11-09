@@ -1464,6 +1464,13 @@
       "changes": "Written for Hushfacebook from Facebook 582: Facebook Flex's banner method, found by its manual switcher log steps, hands the banner's key to the extension where every banner it shows meets, and a key whose switch is on is hidden with Facebook's own hide call. The Data mode keys and the Free mode keys each have their own switch."
     },
     {
+      "paths": ["extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/GmsCore.java"],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook from Facebook 585: GmsCore support's answer to Play services' availability check, success while microG-RE is installed and missing without it, so a signed-out install with no microG-RE reaches the email and password fields instead of closing."
+    },
+    {
       "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/chats/OriginalChatMedia.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/chats/OriginalPhoto.java",
