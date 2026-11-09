@@ -68,8 +68,14 @@ class GmsCoreSupportFixtureTest {
                             .use { input -> base.outputStream().use { input.copyTo(it) } }
                     }
                     val certificates = signingBlockCertificates(base)
-                    assertTrue("${bundle.name}: ${certificates.size} certificates", certificates.isNotEmpty())
-                    val oldest = certificates.minBy { it.notBefore }
+                    // scripts/superpack-unpack.ps1 rebuilds the Android 9 build's base.apk unsigned, so that
+                    // bundle carries no signing block at all; every bundle Meta signed has to name the pin.
+                    if (bundle.name.contains("-storeless")) {
+                        assertEquals("${bundle.name} is rebuilt unsigned", null, certificates)
+                        continue
+                    }
+                    assertTrue("${bundle.name}: ${certificates?.size} certificates", !certificates.isNullOrEmpty())
+                    val oldest = certificates!!.minBy { it.notBefore }
                     assertEquals("${bundle.name}: ${oldest.subjectX500Principal}", FACEBOOK_CERTIFICATE_SHA1, sha1(oldest))
                 } finally {
                     base.delete()
@@ -83,14 +89,17 @@ class GmsCoreSupportFixtureTest {
     private fun sha1(certificate: X509Certificate) =
         MessageDigest.getInstance("SHA-1").digest(certificate.encoded).joinToString("") { "%02x".format(it) }
 
-    /** Every DER certificate in the APK signing block, the block that sits right before the central directory. */
-    private fun signingBlockCertificates(apk: File): List<X509Certificate> = RandomAccessFile(apk, "r").use { file ->
+    /**
+     * Every DER certificate in the APK signing block, the block that sits right before the central directory,
+     * or null when the APK has no signing block.
+     */
+    private fun signingBlockCertificates(apk: File): List<X509Certificate>? = RandomAccessFile(apk, "r").use { file ->
         val tailSize = minOf(file.length(), 65_557L).toInt()
         val tail = ByteArray(tailSize).also { file.seek(file.length() - tailSize); file.readFully(it) }
         val eocd = (tailSize - 22 downTo 0).first { ByteBuffer.wrap(tail, it, 4).order(ByteOrder.LITTLE_ENDIAN).int == 0x06054b50 }
         val centralDirectory = ByteBuffer.wrap(tail, eocd + 16, 4).order(ByteOrder.LITTLE_ENDIAN).int.toLong() and 0xffffffffL
         val footer = ByteArray(24).also { file.seek(centralDirectory - 24); file.readFully(it) }
-        assertEquals("APK Sig Block 42", String(footer, 8, 16, Charsets.US_ASCII))
+        if (String(footer, 8, 16, Charsets.US_ASCII) != "APK Sig Block 42") return@use null
         val size = ByteBuffer.wrap(footer, 0, 8).order(ByteOrder.LITTLE_ENDIAN).long
         val block = ByteArray(size.toInt()).also { file.seek(centralDirectory - size); file.readFully(it) }
         val factory = CertificateFactory.getInstance("X.509")
