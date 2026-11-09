@@ -29,9 +29,10 @@ private const val PATCH = "Block ad telemetry"
 /** Ad measurement that runs whether or not an ad is shown. All keep their real names. */
 internal val AD_TELEMETRY = listOf(
     // Watches for you taking a screenshot of an ad. The controller's void methods add and remove
-    // the detector's listener, so neutering them means it is never registered.
+    // the detector's listener, so neutering them means it is never registered. 586's detector
+    // (com.facebook.ads.AdsScreenshotDetector) kept no void method to stop, so it left this list;
+    // Block screenshot detection still reaches it through the shared screenshot observer.
     "Lcom/facebook/ads/screenshot/AdsScreenshotController;",
-    "Lcom/facebook/ads/AdsScreenshotDetector;",
     // Ad attribution for apps you install: the tracker's scheduler and the service that does the
     // reporting (doHandleIntent keeps its name).
     "Lcom/facebook/feed/platformads/AppInstallTrackerScheduler;",

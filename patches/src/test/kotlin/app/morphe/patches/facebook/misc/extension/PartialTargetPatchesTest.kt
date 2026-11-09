@@ -100,7 +100,7 @@ class PartialTargetPatchesTest {
 
     @Test
     fun `Block ad telemetry stops the classes a build has and names the rest`() {
-        val kept = AD_TELEMETRY.drop(3)
+        val kept = AD_TELEMETRY.drop(2)
         val context = PatchContexts.of(kept.map { scheduler(it) } + settingsStatus)
 
         val warnings = PatchLogCapture.warnings { blockAdTelemetryPatch.execute(context) }
@@ -108,8 +108,8 @@ class PartialTargetPatchesTest {
         assertEquals(Opcode.RETURN_VOID, context.firstOpcode(kept.single(), "schedule"))
         assertTrue(context.statusOn("adTelemetry"))
         assertEquals(
-            AD_TELEMETRY.take(3).map {
-                missingLine("Block ad telemetry", "${javaName(it)} isn't in this Facebook build", 1, 4, "ad telemetry classes")
+            AD_TELEMETRY.take(2).map {
+                missingLine("Block ad telemetry", "${javaName(it)} isn't in this Facebook build", 1, 3, "ad telemetry classes")
             },
             warnings,
         )

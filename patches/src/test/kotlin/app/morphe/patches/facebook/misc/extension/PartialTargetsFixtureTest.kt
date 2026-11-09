@@ -27,7 +27,8 @@ import org.junit.Test
  * What each declared Facebook build lacks of the four target lists, which is exactly what the patch
  * log says when it's patched: 582 lacks the six suggested feed units of
  * [DROPPED_SUGGESTED_FEED_UNITS], which the patch log counts in one plain line, and has every ad
- * prefetch scheduler, ad telemetry class and Audience Network component. A new fixture that
+ * prefetch scheduler, ad telemetry class and Audience Network component (586 too, since its ad
+ * screenshot detector, which kept no void method to stop, left the telemetry list). A new fixture that
  * changes any of it fails here, naming the target, before a release says something about it that
  * isn't so, and a unit the patch calls dropped that a fixture still carries fails the same way.
  */
