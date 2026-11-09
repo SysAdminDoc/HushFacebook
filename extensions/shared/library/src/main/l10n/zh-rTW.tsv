@@ -2660,3 +2660,10 @@ Settings an update adds won't get a dot.	更新新增的設定將不顯示圓點
 Settings an update adds will get a dot until you leave their page.	更新新增的設定將顯示圓點，直到你離開其頁面.
 # context: sentence in the import preview; %1$s is a time such as 3 days
 Settings an update adds will get a dot for %1$s from the first time you open their page.	更新新增的設定將顯示圓點，從第一次開啟其頁面起保留%1$s.
+Turn gray over	變灰用時
+Reels are gray from the start.	Reels 從一開始就是灰階.
+# context: %1$s is a time such as 10 minutes
+Reels lose their color over %1$s of watching. 15 minutes away starts them in color again.	Reels 會在觀看 %1$s 的過程中逐漸褪色。離開 15 分鐘後會重新恢復彩色.
+Show Reels in gray will make reels gray from the start.	以灰階顯示 Reels 將讓 Reels 從一開始就是灰階.
+# context: sentence in the import preview; %1$s is a time such as 10 minutes
+Show Reels in gray will take reels from color to gray over %1$s.	以灰階顯示 Reels 將在 %1$s 內讓 Reels 從彩色變為灰階.

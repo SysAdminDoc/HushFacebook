@@ -13,6 +13,7 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.downloadActionRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.fileNameRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.folderRow;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.grayOverRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.info;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.photoNameRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.playbackQualityRow;
@@ -185,6 +186,7 @@ final class VideoPages {
                         L10n.t("Reels and their buttons show in black and white, which makes them easier to put down. "
                                 + "Your feed, stories, photos and chats keep their colors. It starts from the next reel, "
                                 + "and Reels use a little more battery.")));
+                reels.addPreference(grayOverRow(context));
             }
             // The sidebar buttons are built as each reel is, so a change shows from the next reel.
             reels.addPreference(toggle(context, Settings.HIDE_REEL_COUNTS,

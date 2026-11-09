@@ -23,6 +23,7 @@ import app.morphe.extension.facebook.media.SurfaceQuality;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
 import app.morphe.extension.facebook.reels.FeedVideoControls;
+import app.morphe.extension.facebook.reels.GrayOver;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
 import app.morphe.extension.facebook.reels.ReelsOrder;
 import app.morphe.extension.facebook.misc.AppLock;
@@ -834,6 +835,15 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting GRAY_REELS =
             new BooleanSetting("hushfacebook_gray_reels", FALSE);
+
+    /**
+     * Turn gray over: how many minutes on the Reels screen {@link #GRAY_REELS} takes to go from full
+     * color to gray ({@link app.morphe.extension.facebook.reels.GrayReels}). Fifteen minutes away
+     * from Reels starts the colors over. At once by default, the gray as it always was. Read on each
+     * look, so a change shows right away. It isn't a switch.
+     */
+    public static final EnumSetting<GrayOver> GRAY_REELS_OVER =
+            new EnumSetting<>("hushfacebook_gray_reels_over", GrayOver.AT_ONCE, Setting.parent(GRAY_REELS));
 
     /**
      * The numbers under a reel's Like, Comment and Share icons go, and the icons stay where they are

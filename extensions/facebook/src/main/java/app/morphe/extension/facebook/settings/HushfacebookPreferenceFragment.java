@@ -48,6 +48,7 @@ import app.morphe.extension.facebook.comments.CommentOrder;
 import app.morphe.extension.facebook.comments.CommentsHeight;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
+import app.morphe.extension.facebook.reels.GrayOver;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
 import app.morphe.extension.facebook.reels.ReelsOrder;
 import app.morphe.extension.facebook.download.DownloadQuality;
@@ -1890,6 +1891,46 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     static String burnInWaitSummary(BurnInWait wait) {
         return L10n.f("%1$s. Tapping the video and double-tapping it to like don't count as a touch, so the buttons "
                 + "stay faded.", burnInWaitLabel(wait));
+    }
+
+    /** How long Show Reels in gray takes to go from full color to gray, right under its switch. */
+    static BreakRow grayOverRow(Context context) {
+        BreakRow row = new BreakRow(context, value -> grayOverSummary(grayOver(value)), Settings.GRAY_REELS);
+        row.setKey(Settings.GRAY_REELS_OVER.key);
+        row.setTitle(L10n.t("Turn gray over"));
+        row.setDialogTitle(L10n.t("Turn gray over"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        GrayOver[] choices = GrayOver.values();
+        CharSequence[] entries = new CharSequence[choices.length];
+        CharSequence[] values = new CharSequence[choices.length];
+        for (int i = 0; i < choices.length; i++) {
+            entries[i] = grayOverLabel(choices[i]);
+            values[i] = choices[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.GRAY_REELS_OVER.savedValue().name());
+        return row;
+    }
+
+    private static GrayOver grayOver(@Nullable String name) {
+        for (GrayOver over : GrayOver.values()) {
+            if (over.name().equals(name)) return over;
+        }
+        return GrayOver.AT_ONCE;
+    }
+
+    /** What the list and the sentences about it call [over]. */
+    static String grayOverLabel(GrayOver over) {
+        if (over == GrayOver.AT_ONCE) return L10n.t("At once");
+        return minutesLabel(over.minutes);
+    }
+
+    /** What the choice does, for the row's summary. */
+    static String grayOverSummary(GrayOver over) {
+        if (over == GrayOver.AT_ONCE) return L10n.t("Reels are gray from the start.");
+        return L10n.f("Reels lose their color over %1$s of watching. 15 minutes away starts them in color again.",
+                grayOverLabel(over));
     }
 
     /** How a reel's post date reads (#357), right under the switch that shows it. */

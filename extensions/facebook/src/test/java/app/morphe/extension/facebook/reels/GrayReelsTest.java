@@ -76,6 +76,7 @@ public class GrayReelsTest {
     @Before
     public void setUp() {
         Settings.GRAY_REELS.resetToDefault();
+        Settings.GRAY_REELS_OVER.resetToDefault();
         PauseForTests.resume();
         GrayReels.resetForTests();
         HookStatus.clear();
@@ -107,6 +108,7 @@ public class GrayReelsTest {
         GrayReels.resetForTests();
         controller.close();
         Settings.GRAY_REELS.resetToDefault();
+        Settings.GRAY_REELS_OVER.resetToDefault();
         PauseForTests.resume();
         HookStatus.clear();
     }
@@ -387,6 +389,71 @@ public class GrayReelsTest {
         assertFalse(GrayReels.grayForTests());
         GrayReels.paused(activity);
         assertEquals("Facebook's layer was taken off", View.LAYER_TYPE_SOFTWARE, content.getLayerType());
+    }
+
+    /** Turn gray over: from full color to gray in even steps over the minutes picked, at once by default. */
+    @Test
+    public void theSaturationFallsInStepsOverTheMinutesPicked() {
+        assertEquals(GrayOver.AT_ONCE, Settings.GRAY_REELS_OVER.get());
+        assertEquals(0f, GrayReels.saturation(0L, GrayOver.AT_ONCE), 0f);
+        long step = 5 * 60_000L / GrayReels.STEPS;
+        assertEquals(1f, GrayReels.saturation(0L, GrayOver.FIVE_MINUTES), 0f);
+        assertEquals("a step came before its time", 1f, GrayReels.saturation(step - 1, GrayOver.FIVE_MINUTES), 0f);
+        assertEquals(0.98f, GrayReels.saturation(step, GrayOver.FIVE_MINUTES), 1e-6f);
+        assertEquals(0.5f, GrayReels.saturation(150_000L, GrayOver.FIVE_MINUTES), 1e-6f);
+        assertEquals(0f, GrayReels.saturation(5 * 60_000L, GrayOver.FIVE_MINUTES), 0f);
+        assertEquals(0f, GrayReels.saturation(Long.MAX_VALUE / 2, GrayOver.FIVE_MINUTES), 0f);
+        assertEquals(0.5f, GrayReels.saturation(15 * 60_000L, GrayOver.THIRTY_MINUTES), 1e-6f);
+    }
+
+    /** Over five minutes: the red button starts red, is half gray at two and a half, and gray at five. */
+    @Test
+    public void overFiveMinutesTheReelsScreenGoesGrayAStepAtATime() {
+        Settings.GRAY_REELS.save(true);
+        Settings.GRAY_REELS_OVER.save(GrayOver.FIVE_MINUTES);
+        GrayReels.resumed(activity);
+        assertEquals(View.LAYER_TYPE_HARDWARE, content.getLayerType());
+        assertSame(GrayReels.PART_GRAY, ReflectionHelpers.getField(content, "mLayerPaint"));
+        assertEquals("the button isn't red at the start", Color.RED, pixelOf(redButton) | 0xFF000000);
+
+        after(150_000L);
+        int half = pixelOf(redButton);
+        assertTrue("half way isn't half gray: " + Integer.toHexString(half),
+                Color.red(half) > Color.green(half) + 60 && Color.green(half) > 10);
+        assertEquals(Color.green(half), Color.blue(half));
+        assertTrue("a step wasn't counted", reported(GrayReels.COUNT_STEP));
+
+        after(151_000L);
+        assertGray("after five minutes");
+        int pixel = pixelOf(redButton);
+        assertEquals(Color.red(pixel), Color.green(pixel));
+    }
+
+    /** A minute away keeps the steps without counting the minute; fifteen starts it over in color. */
+    @Test
+    public void timeAwayIsntCountedAndALongBreakStartsOver() {
+        Settings.GRAY_REELS.save(true);
+        Settings.GRAY_REELS_OVER.save(GrayOver.FIVE_MINUTES);
+        GrayReels.resumed(activity);
+        after(120_000L);
+        long watched = GrayReels.watchedForTests();
+        assertTrue("two minutes weren't counted: " + watched, watched >= 118_000L && watched <= 121_000L);
+
+        GrayReels.paused(activity);
+        assertColor("away");
+        after(60_000L);
+        GrayReels.resumed(activity);
+        assertEquals("the minute away was counted", watched, GrayReels.watchedForTests());
+        assertSame(GrayReels.PART_GRAY, ReflectionHelpers.getField(content, "mLayerPaint"));
+        assertTrue("the steps were lost", Color.green(pixelOf(redButton)) > 10);
+
+        after(200_000L);
+        assertGray("gray again");
+        GrayReels.paused(activity);
+        after(GrayReels.AWAY_MS);
+        GrayReels.resumed(activity);
+        assertEquals("fifteen minutes away didn't start over", 0L, GrayReels.watchedForTests());
+        assertEquals("the colors didn't come back", Color.RED, pixelOf(redButton) | 0xFF000000);
     }
 
     /** Swaps the page's TextureView for a SurfaceView, a reel whose player was built before the switch went on. */

@@ -2656,3 +2656,10 @@ Settings an update adds won't get a dot.	Bir güncellemenin eklediği ayarlara n
 Settings an update adds will get a dot until you leave their page.	Bir güncellemenin eklediği ayarlar, sayfalarından çıkana kadar bir noktayla işaretlenecek.
 # context: sentence in the import preview; %1$s is a time such as 3 days
 Settings an update adds will get a dot for %1$s from the first time you open their page.	Bir güncellemenin eklediği ayarlar, sayfalarını ilk açtığınızdan itibaren %1$s boyunca bir noktayla işaretlenecek.
+Turn gray over	Griye dönme süresi
+Reels are gray from the start.	Reels baştan itibaren gri olur.
+# context: %1$s is a time such as 10 minutes
+Reels lose their color over %1$s of watching. 15 minutes away starts them in color again.	Reels, %1$s izledikçe rengini kaybeder. 15 dakika uzak kalmak onları yeniden renkli başlatır.
+Show Reels in gray will make reels gray from the start.	Reels'i gri göster, Reels'i baştan itibaren gri yapacak.
+# context: sentence in the import preview; %1$s is a time such as 10 minutes
+Show Reels in gray will take reels from color to gray over %1$s.	Reels'i gri göster, Reels'i %1$s içinde renkliden griye geçirecek.

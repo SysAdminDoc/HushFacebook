@@ -2656,3 +2656,10 @@ Settings an update adds won't get a dot.	Cài đặt do bản cập nhật thêm
 Settings an update adds will get a dot until you leave their page.	Cài đặt do bản cập nhật thêm vào sẽ có dấu chấm cho đến khi bạn rời trang của chúng.
 # context: sentence in the import preview; %1$s is a time such as 3 days
 Settings an update adds will get a dot for %1$s from the first time you open their page.	Cài đặt do bản cập nhật thêm vào sẽ có dấu chấm trong %1$s kể từ lần đầu bạn mở trang của chúng.
+Turn gray over	Chuyển sang xám trong
+Reels are gray from the start.	Reels có màu xám ngay từ đầu.
+# context: %1$s is a time such as 10 minutes
+Reels lose their color over %1$s of watching. 15 minutes away starts them in color again.	Reels mất dần màu sau %1$s xem. Rời đi 15 phút sẽ cho chúng có màu trở lại.
+Show Reels in gray will make reels gray from the start.	Hiện Reels màu xám sẽ làm Reels có màu xám ngay từ đầu.
+# context: sentence in the import preview; %1$s is a time such as 10 minutes
+Show Reels in gray will take reels from color to gray over %1$s.	Hiện Reels màu xám sẽ chuyển Reels từ có màu sang xám trong %1$s.

@@ -2542,3 +2542,10 @@ Settings an update adds won't get a dot.	Configurações que uma atualização a
 Settings an update adds will get a dot until you leave their page.	Configurações que uma atualização adicionar vão receber um ponto até você sair da página delas.
 # context: sentence in the import preview; %1$s is a time such as 3 days
 Settings an update adds will get a dot for %1$s from the first time you open their page.	Configurações que uma atualização adicionar vão receber um ponto por %1$s desde a primeira vez que você abrir a página delas.
+Turn gray over	Ficar cinza em
+Reels are gray from the start.	Os Reels ficam cinza desde o início.
+# context: %1$s is a time such as 10 minutes
+Reels lose their color over %1$s of watching. 15 minutes away starts them in color again.	Os Reels perdem a cor ao longo de %1$s assistindo. 15 minutos longe fazem eles voltarem a cores.
+Show Reels in gray will make reels gray from the start.	Mostrar Reels em cinza vai deixar os Reels cinza desde o início.
+# context: sentence in the import preview; %1$s is a time such as 10 minutes
+Show Reels in gray will take reels from color to gray over %1$s.	Mostrar Reels em cinza vai levar os Reels de colorido a cinza ao longo de %1$s.

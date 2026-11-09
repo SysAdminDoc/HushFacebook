@@ -54,6 +54,14 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * layer of Facebook's own is left alone, and so is one Facebook gives a software layer while gray.
  * One whose gray layer was taken off gets it back. Off, paused, or before the settings are ready,
  * nothing is gray.
+ *
+ * <p>Turn gray over ({@link Settings#GRAY_REELS_OVER}) takes the color out a step at a time instead:
+ * each look that finds the Reels screen adds the time since the last one, when that's at most
+ * {@link #STEP_MAX_MS}, and the layer's saturation falls from 1 to 0 over the minutes picked, in
+ * {@link #STEPS} steps so the paint changes only when the step does. Time with a sheet over the
+ * screen, mid-swipe or away isn't counted, and {@link #AWAY_MS} away from the Reels screen, Facebook
+ * in the background or the phone asleep included, starts the count over. The count lives in the
+ * process, so a restart starts it over too.
  */
 public final class GrayReels {
     private static final String FAMILY = FamilyNames.REEL_DECLUTTER;
@@ -61,10 +69,31 @@ public final class GrayReels {
     /** How often a look comes while gray, for leaving the Reels screen without a layout. */
     static final long KEEP_MS = 1_000L;
 
+    /** The longest gap between two looks at the Reels screen that counts as watching. */
+    static final long STEP_MAX_MS = 3_000L;
+
+    /** How long away from the Reels screen starts Turn gray over's count over. */
+    static final long AWAY_MS = 15 * 60_000L;
+
+    /** How many steps Turn gray over takes from full color to gray. */
+    static final int STEPS = 50;
+
     static final String COUNT_GRAYED = "Reels screen shown in gray";
+
+    static final String COUNT_STEP = "Reels screen turned a step grayer";
 
     /** What the content frame's layer draws with: the colors at saturation 0. */
     static final Paint GRAY = grayPaint();
+
+    /** What the layer draws with part way to gray, changed as the steps go. */
+    static final Paint PART_GRAY = new Paint();
+
+    /** The saturation the layer shows now, or -1 while there's none. */
+    private static float shown = -1f;
+    /** The time counted on the Reels screen toward Turn gray over. */
+    private static long watchedMs;
+    /** When a look last found the Reels screen, on the clock that runs while the phone sleeps, or -1. */
+    private static long lastOnReels = -1L;
 
     /** The application this process's callbacks went on, so a second start adds none. */
     private static WeakReference<Application> watching = new WeakReference<>(null);
@@ -117,6 +146,39 @@ public final class GrayReels {
     /** The switch now: off until the settings are read and while Hushfacebook is paused. */
     static boolean on() {
         return Utils.settingsReady() && Settings.GRAY_REELS.get();
+    }
+
+    /**
+     * The saturation the layer shows after [watched] on the Reels screen with [over] picked: 0 at
+     * once, else falling from 1 to 0 over its minutes in {@link #STEPS} even steps.
+     */
+    static float saturation(long watched, GrayOver over) {
+        if (over.minutes <= 0) return 0f;
+        long span = over.minutes * 60_000L;
+        if (watched >= span) return 0f;
+        long left = span - Math.max(0L, watched);
+        // Rounded up, so the first step comes after a whole step's time.
+        int steps = (int) ((left * STEPS + span - 1) / span);
+        return steps / (float) STEPS;
+    }
+
+    /** A look found the Reels screen at [now] on the clock that runs while the phone sleeps. */
+    static void onReels(long now) {
+        if (lastOnReels >= 0L) {
+            long gap = now - lastOnReels;
+            if (gap >= AWAY_MS) watchedMs = 0L;
+            else if (gap > 0L && gap <= STEP_MAX_MS) watchedMs += gap;
+        }
+        lastOnReels = now;
+    }
+
+    /** The paint for [saturation]: {@link #GRAY} at 0, {@link #PART_GRAY} set to it otherwise. */
+    private static Paint paintFor(float saturation) {
+        if (saturation <= 0f) return GRAY;
+        ColorMatrix matrix = new ColorMatrix();
+        matrix.setSaturation(saturation);
+        PART_GRAY.setColorFilter(new ColorMatrixColorFilter(matrix));
+        return PART_GRAY;
     }
 
     /** As [activity] comes to the front: listens to it and looks once. */
@@ -195,8 +257,12 @@ public final class GrayReels {
                 }
             }
             doubtSince = -1L;
-            if (reels) gray(decor.findViewById(android.R.id.content));
-            else color();
+            if (reels) {
+                onReels(SystemClock.elapsedRealtime());
+                gray(decor.findViewById(android.R.id.content), saturation(watchedMs, Settings.GRAY_REELS_OVER.get()));
+            } else {
+                color();
+            }
             schedule(grayed.get() != null ? now + KEEP_MS : -1L);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "gray reels", failure);
@@ -209,22 +275,30 @@ public final class GrayReels {
     }
 
     /**
-     * Draws [content] through the gray layer, unless it already draws through a layer of its own.
-     * Grayed already: a software layer Facebook put on since stays and isn't ours to take off, and a
-     * frame left with no layer gets the gray back.
+     * Draws [content] through the gray layer at [saturation], unless it already draws through a
+     * layer of its own. Grayed already: the layer's paint follows a new step, a software layer
+     * Facebook put on since stays and isn't ours to take off, and a frame left with no layer gets
+     * the gray back.
      */
-    private static void gray(@Nullable View content) {
+    private static void gray(@Nullable View content, float saturation) {
         if (content == null) return;
         if (grayed.get() == content) {
             int type = content.getLayerType();
-            if (type == View.LAYER_TYPE_HARDWARE) return;
+            if (type == View.LAYER_TYPE_HARDWARE) {
+                if (saturation == shown) return;
+                content.setLayerPaint(paintFor(saturation));
+                shown = saturation;
+                HookStatus.counted(FAMILY, COUNT_STEP);
+                return;
+            }
             grayed = new WeakReference<>(null);
             if (type != View.LAYER_TYPE_NONE) return;
         } else {
             color();
         }
         if (content.getLayerType() != View.LAYER_TYPE_NONE) return;
-        content.setLayerType(View.LAYER_TYPE_HARDWARE, GRAY);
+        content.setLayerType(View.LAYER_TYPE_HARDWARE, paintFor(saturation));
+        shown = saturation;
         grayed = new WeakReference<>(content);
         HookStatus.counted(FAMILY, COUNT_GRAYED);
     }
@@ -233,6 +307,7 @@ public final class GrayReels {
     private static void color() {
         View view = grayed.get();
         grayed = new WeakReference<>(null);
+        shown = -1f;
         if (view != null && view.getLayerType() == View.LAYER_TYPE_HARDWARE) {
             view.setLayerType(View.LAYER_TYPE_NONE, null);
         }
@@ -325,10 +400,16 @@ public final class GrayReels {
         return layoutWatched;
     }
 
+    static long watchedForTests() {
+        return watchedMs;
+    }
+
     static void resetForTests() {
         leave();
         if (handler != null) handler.removeCallbacks(TICK);
         tickAt = -1L;
         LAYOUT.lastLook = Long.MIN_VALUE / 2;
+        watchedMs = 0L;
+        lastOnReels = -1L;
     }
 }

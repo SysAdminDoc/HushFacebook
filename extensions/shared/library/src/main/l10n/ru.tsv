@@ -2710,3 +2710,10 @@ Settings an update adds won't get a dot.	Настройки, добавленн�
 Settings an update adds will get a dot until you leave their page.	Настройки, добавленные обновлением, будут отмечаться точкой, пока вы не уйдете с их страницы.
 # context: sentence in the import preview; %1$s is a time such as 3 days
 Settings an update adds will get a dot for %1$s from the first time you open their page.	Настройки, добавленные обновлением, будут отмечаться точкой на %1$s с первого открытия их страницы.
+Turn gray over	Обесцвечивать за
+Reels are gray from the start.	Reels серые с самого начала.
+# context: %1$s is a time such as 10 minutes
+Reels lose their color over %1$s of watching. 15 minutes away starts them in color again.	Reels теряют цвет за %1$s просмотра. 15 минут перерыва возвращают им цвет.
+Show Reels in gray will make reels gray from the start.	Reels в оттенках серого сделает Reels серыми с самого начала.
+# context: sentence in the import preview; %1$s is a time such as 10 minutes
+Show Reels in gray will take reels from color to gray over %1$s.	Reels в оттенках серого переведёт Reels из цвета в серый за %1$s.

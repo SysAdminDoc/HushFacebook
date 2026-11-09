@@ -100,6 +100,7 @@ import app.morphe.extension.facebook.notifications.QuietHour;
 import app.morphe.extension.facebook.settings.SettingsRows.RowSemantics;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Utils;
+import app.morphe.extension.shared.settings.BooleanSetting;
 import app.morphe.extension.shared.settings.preference.AbstractPreferenceFragment;
 
 /**
@@ -1454,15 +1455,22 @@ final class ValueRows {
     }
 
     /**
-     * A Take breaks row, the use time or the break length. Its summary follows its value, whoever
-     * sets it: the person, the shared page syncing it from the setting, or an import.
+     * A list row under a switch: Take breaks' use time or break length, or Show Reels in gray's Turn
+     * gray over. Its summary follows its value, whoever sets it: the person, the shared page
+     * syncing it from the setting, or an import.
      */
     static final class BreakRow extends PlainSummaryList {
         private final Function<String, String> summaryOf;
+        private final BooleanSetting parent;
 
         BreakRow(Context context, Function<String, String> summaryOf) {
+            this(context, summaryOf, Settings.TAKE_BREAKS);
+        }
+
+        BreakRow(Context context, Function<String, String> summaryOf, BooleanSetting parent) {
             super(context);
             this.summaryOf = summaryOf;
+            this.parent = parent;
         }
 
         @Override
@@ -1471,7 +1479,7 @@ final class ValueRows {
             showSummary();
         }
 
-        /** It's greyed out while Take breaks is off, and its summary then says so. */
+        /** It's greyed out while its switch is off, and its summary then says so. */
         @Override
         public void setEnabled(boolean enabled) {
             super.setEnabled(enabled);
@@ -1483,7 +1491,7 @@ final class ValueRows {
             if (summaryOf == null) return;
             String summary = summaryOf.apply(getValue());
             if (!isEnabled()) {
-                summary += " " + L10n.f("Turn on %1$s to use this.", L10n.isolate(SwitchLabels.title(Settings.TAKE_BREAKS)));
+                summary += " " + L10n.f("Turn on %1$s to use this.", L10n.isolate(SwitchLabels.title(parent)));
             }
             setSummary(summary);
         }
