@@ -707,6 +707,12 @@ public final class SettingsBackup {
     static final EnumSetting<TextSize.Scale> TEXT_SIZE = Settings.TEXT_SIZE;
 
     /**
+     * Mark new settings (#16), held in a file as its {@link NewRowMark#fileValue}. Anything else
+     * refuses the whole file, as a text size does. Which rows have been seen stays out.
+     */
+    static final EnumSetting<NewRowMark> NEW_ROW_MARK = Settings.NEW_ROW_MARK;
+
+    /**
      * The accent color, held in a file as its {@link AccentColor.Preset#fileValue}. Anything else
      * refuses the whole file, as a text size does.
      */
@@ -751,8 +757,8 @@ public final class SettingsBackup {
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
             Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, DATE_STYLE, REELS_ORDER, WATCHED_KEEP, SHARE_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY,
-                    QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI, BADGE,
-                    LOGO, TAB));
+                    QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, NEW_ROW_MARK, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI,
+                    BADGE, LOGO, TAB));
 
     /** The longest name or value a file holds that isn't a word list, far past a package name. */
     private static final int MAX_OTHER_CHARS = 1024;
@@ -877,6 +883,7 @@ public final class SettingsBackup {
         private static final String REELS_ORDER_NAME = "reels_order";
         private static final String BURN_IN_NAME = "burn_in_guard";
         private static final String BURN_IN_WAIT_NAME = "burn_in_wait";
+        private static final String NEW_ROW_MARK_NAME = "new_row_mark";
         private static final String DATE_STYLE_NAME = "reel_post_date_style";
 
         /** In {@link #ALLOWLIST} order, and only the switches the file named. */
@@ -1016,6 +1023,9 @@ public final class SettingsBackup {
         /** The Dim after wait the file holds, the same way. */
         @Nullable
         BurnInWait burnInWait;
+        /** The Mark new settings choice the file holds, the same way. */
+        @Nullable
+        NewRowMark newRowMark;
         /** How the file says a reel's post date reads, the same way. */
         @Nullable
         ReelDateStyle dateStyle;
@@ -1265,6 +1275,8 @@ public final class SettingsBackup {
             if (burnInChange != null) changes.put(BURN_IN, burnInChange);
             BurnInWait burnInWaitChange = burnInWaitChange();
             if (burnInWaitChange != null) changes.put(BURN_IN_WAIT, burnInWaitChange);
+            NewRowMark newRowMarkChange = newRowMarkChange();
+            if (newRowMarkChange != null) changes.put(NEW_ROW_MARK, newRowMarkChange);
             ReelDateStyle dateStyleChange = dateStyleChange();
             if (dateStyleChange != null) changes.put(DATE_STYLE, dateStyleChange);
             SendLink.Action actionChange = actionChange();
@@ -1561,6 +1573,12 @@ public final class SettingsBackup {
             return burnInWait == null || burnInWait == BURN_IN_WAIT.savedValue() ? null : burnInWait;
         }
 
+        /** Mark new settings after this file, the same way. */
+        @Nullable
+        NewRowMark newRowMarkChange() {
+            return newRowMark == null || newRowMark == NEW_ROW_MARK.savedValue() ? null : newRowMark;
+        }
+
         /** How a reel's post date reads after this file, the same way. */
         @Nullable
         ReelDateStyle dateStyleChange() {
@@ -1626,6 +1644,7 @@ public final class SettingsBackup {
             if (reelsOrder != null) state.putString(REELS_ORDER_NAME, reelsOrder.fileValue);
             if (burnIn != null) state.putString(BURN_IN_NAME, burnIn.fileValue);
             if (burnInWait != null) state.putString(BURN_IN_WAIT_NAME, burnInWait.fileValue);
+            if (newRowMark != null) state.putString(NEW_ROW_MARK_NAME, newRowMark.fileValue);
             if (dateStyle != null) state.putString(DATE_STYLE_NAME, dateStyle.fileValue);
             state.putInt(UNKNOWN, unknown);
             return state;
@@ -1700,6 +1719,7 @@ public final class SettingsBackup {
             read.reelsOrder = ReelsOrder.fromFile(state.get(REELS_ORDER_NAME));
             read.burnIn = BurnInMode.fromFile(state.get(BURN_IN_NAME));
             read.burnInWait = BurnInWait.fromFile(state.get(BURN_IN_WAIT_NAME));
+            read.newRowMark = NewRowMark.fromFile(state.get(NEW_ROW_MARK_NAME));
             read.dateStyle = ReelDateStyle.fromFile(state.get(DATE_STYLE_NAME));
             Object background = state.get(BACKGROUND_NAME);
             read.background = isBackground(background) ? (String) background : null;
@@ -1783,6 +1803,7 @@ public final class SettingsBackup {
             switches.put(WATCHED_KEEP.key, of(WATCHED_KEEP).fileValue);
             switches.put(SEEN_KEEP.key, of(SEEN_KEEP).fileValue);
             switches.put(TEXT_SIZE.key, of(TEXT_SIZE).fileValue);
+            switches.put(NEW_ROW_MARK.key, of(NEW_ROW_MARK).fileValue);
             switches.put(ACCENT.key, of(ACCENT).fileValue);
             switches.put(CEILING.key, of(CEILING).fileValue);
             switches.put(ACTION.key, of(ACTION).fileValue);
@@ -1952,6 +1973,7 @@ public final class SettingsBackup {
         ReelsOrder reelsOrder = null;
         BurnInMode burnIn = null;
         BurnInWait burnInWait = null;
+        NewRowMark newRowMark = null;
         ReelDateStyle dateStyle = null;
         JSONObject values = (JSONObject) settings;
         for (Iterator<String> names = values.keys(); names.hasNext(); ) {
@@ -2094,6 +2116,11 @@ public final class SettingsBackup {
             if (BURN_IN_WAIT.key.equals(name)) {
                 burnInWait = BurnInWait.fromFile(values.opt(name));
                 if (burnInWait == null) throw new Rejected(Reason.VALUE, "Not a dim after wait: " + name);
+                continue;
+            }
+            if (NEW_ROW_MARK.key.equals(name)) {
+                newRowMark = NewRowMark.fromFile(values.opt(name));
+                if (newRowMark == null) throw new Rejected(Reason.VALUE, "Not a new settings mark: " + name);
                 continue;
             }
             if (DATE_STYLE.key.equals(name)) {
@@ -2277,6 +2304,7 @@ public final class SettingsBackup {
         read.reelsOrder = reelsOrder;
         read.burnIn = burnIn;
         read.burnInWait = burnInWait;
+        read.newRowMark = newRowMark;
         read.dateStyle = dateStyle;
         return read;
     }

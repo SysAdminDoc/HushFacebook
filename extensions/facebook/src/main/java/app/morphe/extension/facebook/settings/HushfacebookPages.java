@@ -420,6 +420,8 @@ final class HushfacebookPages {
         about.addPreference(mark(info(context, L10n.t("Version"), L10n.f("Hushfacebook %1$s on Facebook %2$s",
                 L10n.isolate(Utils.getPatchesReleaseVersion()), L10n.isolate(Utils.getAppVersionName()))
                 + "\n" + L10n.f("Build %1$s", L10n.isolate(Utils.getPatchesBuildIdentity()))), SettingsIcons.ABOUT));
+        // The settings entry's own, beside the version that brings the new settings it marks (#16).
+        about.addPreference(mark(HushfacebookPreferenceFragment.newRowMarkRow(context), SettingsIcons.UPDATES));
 
         Preference source = new Row(context);
         source.setTitle(L10n.t("Source code and issues"));

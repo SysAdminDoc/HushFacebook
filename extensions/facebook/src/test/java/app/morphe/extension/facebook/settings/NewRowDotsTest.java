@@ -53,7 +53,10 @@ import app.morphe.extension.shared.settings.PauseForTests;
 public class NewRowDotsTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
-    private static final String KEY = Settings.TAP_TO_PLAY.key;
+    /** Read once a test has a context: Settings can't load before the rule gives it one. */
+    private static String key() {
+        return Settings.TAP_TO_PLAY.key;
+    }
     private ActivityController<Activity> controller;
     private HushfacebookPreferenceFragment page;
 
@@ -70,6 +73,8 @@ public class NewRowDotsTest {
         PatchFamily.inBuildForTests = null;
         ScreenColors.shown = null;
         RuntimeEnvironment.setFontScale(1f);
+        NewRowDots.nowForTests = 0;
+        Settings.NEW_ROW_MARK.resetToDefault();
     }
 
     /** Opens the settings on a fresh screen, as after the app was closed. */
@@ -88,7 +93,7 @@ public class NewRowDotsTest {
     }
 
     private PreferenceCategory sectionOfKey() {
-        Preference row = page.findPreference(KEY);
+        Preference row = page.findPreference(key());
         assertNotNull(row);
         return (PreferenceCategory) row.getParent();
     }
@@ -123,7 +128,7 @@ public class NewRowDotsTest {
     @Test
     public void aFirstOpenShowsNoDotAnywhere() {
         open();
-        assertTrue(store().getStringSet(NewRowDots.SEEN, null).contains(KEY));
+        assertTrue(store().getStringSet(NewRowDots.SEEN, null).contains(key()));
         assertEquals(new ArrayList<String>(), dottedTitles());
         for (Preference section : page.sections()) {
             assertTrue(page.navigation.open(section));
@@ -136,20 +141,20 @@ public class NewRowDotsTest {
     @Test
     public void aKeyMissingFromTheStoredSetDotsItsRowUntilTheSectionIsCollapsed() {
         open();
-        forget(KEY);
+        forget(key());
         open();
         PreferenceCategory section = sectionOfKey();
         assertEquals("only the section's home row", java.util.Collections.singletonList(String.valueOf(section.getTitle())), dottedTitles());
 
         assertTrue(page.navigation.open(section));
-        Preference row = page.findPreference(KEY);
+        Preference row = page.findPreference(key());
         assertEquals("only the new row", java.util.Collections.singletonList(String.valueOf(row.getTitle())), dottedTitles());
         TextView title = null;
         for (View view : views()) if (dotted(view)) title = view.findViewById(android.R.id.title);
         assertNotNull(title);
         assertTrue(title.getContentDescription().toString().endsWith(", New"));
         // Opening it doesn't clear it: the dot shows for the whole visit.
-        assertFalse(store().getStringSet(NewRowDots.SEEN, null).contains(KEY));
+        assertFalse(store().getStringSet(NewRowDots.SEEN, null).contains(key()));
 
         Preference header = null;
         for (int i = 0; i < page.navigation.getCount(); i++) {
@@ -159,7 +164,7 @@ public class NewRowDotsTest {
         assertNotNull(header);
         assertTrue(header.getOnPreferenceClickListener().onPreferenceClick(header));
         assertFalse(page.navigation.isExpanded(page.navigation.sectionId(section)));
-        assertTrue(store().getStringSet(NewRowDots.SEEN, null).contains(KEY));
+        assertTrue(store().getStringSet(NewRowDots.SEEN, null).contains(key()));
         assertEquals("the home row is clear once the page was seen", new ArrayList<String>(), dottedTitles());
         assertTrue(page.navigation.open(section));
         assertEquals(new ArrayList<String>(), dottedTitles());
@@ -168,7 +173,7 @@ public class NewRowDotsTest {
     @Test
     public void closingTheSettingsOnAPageCountsItAsSeen() {
         open();
-        forget(KEY);
+        forget(key());
         open();
         assertTrue(page.navigation.open(sectionOfKey()));
         open();
@@ -178,19 +183,19 @@ public class NewRowDotsTest {
     @Test
     public void leavingTheHomePageWithoutOpeningTheSectionKeepsItsDot() {
         open();
-        forget(KEY);
+        forget(key());
         open();
         open();
         assertEquals(1, dottedTitles().size());
-        assertFalse(store().getStringSet(NewRowDots.SEEN, null).contains(KEY));
+        assertFalse(store().getStringSet(NewRowDots.SEEN, null).contains(key()));
     }
 
     @Test
     public void searchResultsShowNoDots() {
         open();
-        forget(KEY);
+        forget(key());
         open();
-        page.navigation.search(String.valueOf(page.findPreference(KEY).getTitle()));
+        page.navigation.search(String.valueOf(page.findPreference(key()).getTitle()));
         assertTrue(list().getAdapter().getCount() > 0);
         assertEquals(new ArrayList<String>(), dottedTitles());
         page.navigation.search("");
@@ -203,7 +208,7 @@ public class NewRowDotsTest {
         assertTrue(store().edit().remove(NewRowDots.SEEN).putString(NewRowDots.SEEN, "garbage").commit());
         open();
         assertEquals(new ArrayList<String>(), dottedTitles());
-        assertTrue(store().getStringSet(NewRowDots.SEEN, null).contains(KEY));
+        assertTrue(store().getStringSet(NewRowDots.SEEN, null).contains(key()));
         assertTrue(page.navigation.open(sectionOfKey()));
         assertEquals(new ArrayList<String>(), dottedTitles());
     }
@@ -211,13 +216,76 @@ public class NewRowDotsTest {
     @Test
     public void theSeenSetIsNotInABackupAndNoUnknownEntryIsCounted() throws Exception {
         open();
-        forget(KEY);
+        forget(key());
         String text = SettingsBackup.create();
         assertFalse(text, text.contains(NewRowDots.FILE));
         SettingsBackup.Snapshot snapshot = SettingsBackup.parse(text);
         assertEquals(0, snapshot.unknown);
         SettingsBackup.apply(snapshot);
-        assertFalse("an import wrote the seen set", store().getStringSet(NewRowDots.SEEN, new HashSet<>()).contains(KEY));
+        assertFalse("an import wrote the seen set", store().getStringSet(NewRowDots.SEEN, new HashSet<>()).contains(key()));
+    }
+
+    @Test
+    public void aNumberOfDaysKeepsTheDotAfterThePageIsLeftUntilTheyPass() {
+        long start = 1_800_000_000_000L;
+        Settings.NEW_ROW_MARK.save(NewRowMark.THREE_DAYS);
+        NewRowDots.nowForTests = start;
+        open();
+        forget(key());
+        open();
+        assertTrue(page.navigation.open(sectionOfKey()));
+        open();
+        assertFalse(store().getStringSet(NewRowDots.SEEN, null).contains(key()));
+        assertEquals(start, store().getLong(NewRowDots.FOUND + key(), 0L));
+        assertEquals("the section's home row keeps its dot", 1, dottedTitles().size());
+
+        NewRowDots.nowForTests = start + 2 * NewRowDots.DAY;
+        open();
+        assertEquals(1, dottedTitles().size());
+        assertTrue(page.navigation.open(sectionOfKey()));
+        assertEquals(java.util.Collections.singletonList(String.valueOf(page.findPreference(key()).getTitle())), dottedTitles());
+        open();
+        assertEquals("a later visit doesn't start the days again", start, store().getLong(NewRowDots.FOUND + key(), 0L));
+
+        NewRowDots.nowForTests = start + 3 * NewRowDots.DAY;
+        open();
+        assertEquals(new ArrayList<String>(), dottedTitles());
+        assertTrue(page.navigation.open(sectionOfKey()));
+        assertEquals(new ArrayList<String>(), dottedTitles());
+        open();
+        assertTrue(store().getStringSet(NewRowDots.SEEN, null).contains(key()));
+        assertFalse(store().contains(NewRowDots.FOUND + key()));
+    }
+
+    @Test
+    public void offShowsNoDotAndStillCountsALeftPageAsSeen() {
+        Settings.NEW_ROW_MARK.save(NewRowMark.OFF);
+        open();
+        forget(key());
+        open();
+        assertEquals(new ArrayList<String>(), dottedTitles());
+        assertTrue(page.navigation.open(sectionOfKey()));
+        assertEquals(new ArrayList<String>(), dottedTitles());
+        open();
+        assertTrue(store().getStringSet(NewRowDots.SEEN, null).contains(key()));
+        // Turned back on, it doesn't dot what was passed while it was off.
+        Settings.NEW_ROW_MARK.save(NewRowMark.ONE_VISIT);
+        open();
+        assertEquals(new ArrayList<String>(), dottedTitles());
+    }
+
+    @Test
+    public void theRowUnderAboutSaysHowLongTheDotStays() {
+        open();
+        Preference row = page.findPreference(Settings.NEW_ROW_MARK.key);
+        assertTrue(row instanceof ValueRows.NewRowMarkRow);
+        assertEquals("Mark new settings", String.valueOf(row.getTitle()));
+        assertEquals("A dot marks each setting an update adds, until you leave the page it's on.", String.valueOf(row.getSummary()));
+        ((ValueRows.NewRowMarkRow) row).setValue(NewRowMark.THREE_DAYS.name());
+        assertEquals("A dot marks each setting an update adds, for 3 days from the first time you open its page.",
+                String.valueOf(row.getSummary()));
+        ((ValueRows.NewRowMarkRow) row).setValue(NewRowMark.OFF.name());
+        assertEquals("Settings an update adds get no dot.", String.valueOf(row.getSummary()));
     }
 
     @Test
@@ -235,7 +303,7 @@ public class NewRowDotsTest {
 
     private void assertInside(boolean rightToLeft) {
         open();
-        forget(KEY);
+        forget(key());
         open();
         assertTrue(page.navigation.open(sectionOfKey()));
         assertEquals(rightToLeft, controller.get().getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL);

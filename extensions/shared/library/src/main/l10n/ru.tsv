@@ -2684,3 +2684,19 @@ The rounded tab bar is %1$s percent of the screen wide.	Ширина скруг�
 Tab bar height	Высота панели вкладок
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Сколько процентов полной высоты сохраняет скруглённая панель вкладок, от %1$s до %2$s, с обрезкой сверху и снизу от значков. Оставьте поле пустым, чтобы использовать %3$s.
 The rounded tab bar keeps %1$s percent of its height.	Скруглённая панель вкладок сохраняет %1$s процентов своей высоты.
+# context: title of a row under About that picks how long a dot marks settings an update added
+Mark new settings	Отмечать новые настройки
+# context: choice in that row; the dot goes once the page holding the setting is left
+Until I leave the page	Пока я не уйду со страницы
+# context: summary of that row when Off is picked
+Settings an update adds get no dot.	Настройки, добавленные обновлением, не отмечаются точкой.
+# context: summary of that row for the default choice
+A dot marks each setting an update adds, until you leave the page it's on.	Точка отмечает каждую настройку, добавленную обновлением, пока вы не уйдете со страницы, где она находится.
+# context: summary of that row; %1$s is a time such as 3 days
+A dot marks each setting an update adds, for %1$s from the first time you open its page.	Точка отмечает каждую настройку, добавленную обновлением, на %1$s с первого открытия ее страницы.
+# context: sentence in the import preview when the file turns that row Off
+Settings an update adds won't get a dot.	Настройки, добавленные обновлением, не будут отмечаться точкой.
+# context: sentence in the import preview for the default choice
+Settings an update adds will get a dot until you leave their page.	Настройки, добавленные обновлением, будут отмечаться точкой, пока вы не уйдете с их страницы.
+# context: sentence in the import preview; %1$s is a time such as 3 days
+Settings an update adds will get a dot for %1$s from the first time you open their page.	Настройки, добавленные обновлением, будут отмечаться точкой на %1$s с первого открытия их страницы.

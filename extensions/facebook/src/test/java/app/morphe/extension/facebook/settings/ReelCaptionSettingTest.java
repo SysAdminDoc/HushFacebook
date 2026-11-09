@@ -29,7 +29,10 @@ import app.morphe.extension.shared.settings.Setting;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30, manifest = Config.NONE)
 public class ReelCaptionSettingTest {
-    private static final String REEL_KEY = Settings.SHOW_FULL_REEL_CAPTIONS.key;
+    /** Read once a test has a context: Settings can't load before the rule gives it one. */
+    private static String reelKey() {
+        return Settings.SHOW_FULL_REEL_CAPTIONS.key;
+    }
 
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
@@ -37,7 +40,7 @@ public class ReelCaptionSettingTest {
     public void clear() {
         Settings.SHOW_FULL_REEL_CAPTIONS.resetToDefault();
         Settings.SHOW_FULL_POST_TEXT.resetToDefault();
-        store().edit().remove(ReelCaptionSetting.FEED_KEY).remove(REEL_KEY).commit();
+        store().edit().remove(ReelCaptionSetting.FEED_KEY).remove(reelKey()).commit();
         reload();
     }
 
@@ -49,21 +52,21 @@ public class ReelCaptionSettingTest {
     /** An update from a build where Show full post text was on, before the reel switch existed. */
     private static void updateWithTheOldSwitchOn() {
         assertTrue(Settings.SHOW_FULL_POST_TEXT.save(true));
-        store().edit().remove(REEL_KEY).commit();
+        store().edit().remove(reelKey()).commit();
         reload();
     }
 
     @Test
     public void aFreshInstallStartsOffAndWritesNothing() {
         assertFalse(Settings.SHOW_FULL_REEL_CAPTIONS.savedValue());
-        assertFalse("a fresh install stored the reel switch", store().contains(REEL_KEY));
+        assertFalse("a fresh install stored the reel switch", store().contains(reelKey()));
     }
 
     @Test
     public void theOldSwitchOnCarriesOverOnceAndStaysApart() {
         updateWithTheOldSwitchOn();
         assertTrue("whole reel captions were lost in the split", Settings.SHOW_FULL_REEL_CAPTIONS.savedValue());
-        assertTrue("the carried value wasn't stored as the reel switch's own", store().getBoolean(REEL_KEY, false));
+        assertTrue("the carried value wasn't stored as the reel switch's own", store().getBoolean(reelKey(), false));
 
         // Turning the feed switch off afterwards leaves reel captions as they are.
         assertTrue(Settings.SHOW_FULL_POST_TEXT.save(false));
@@ -76,7 +79,7 @@ public class ReelCaptionSettingTest {
         updateWithTheOldSwitchOn();
         assertTrue(Settings.SHOW_FULL_REEL_CAPTIONS.save(false));
         assertTrue("off wasn't stored, so the next start would carry the feed switch over again",
-                store().contains(REEL_KEY));
+                store().contains(reelKey()));
         reload();
         assertFalse("reel captions came back on after a restart", Settings.SHOW_FULL_REEL_CAPTIONS.savedValue());
         assertTrue(Settings.SHOW_FULL_POST_TEXT.savedValue());
@@ -87,25 +90,25 @@ public class ReelCaptionSettingTest {
         store().edit().putBoolean(ReelCaptionSetting.FEED_KEY, false).commit();
         reload();
         assertFalse(Settings.SHOW_FULL_REEL_CAPTIONS.savedValue());
-        assertFalse(store().contains(REEL_KEY));
+        assertFalse(store().contains(reelKey()));
     }
 
     @Test
     public void aSecondaryProcessReadsTheOldSwitchWithoutWriting() {
         updateWithTheOldSwitchOn();
-        store().edit().remove(REEL_KEY).commit();
+        store().edit().remove(reelKey()).commit();
         var app = RuntimeEnvironment.getApplication().getApplicationInfo();
         String previous = app.processName;
         app.processName = RuntimeEnvironment.getApplication().getPackageName() + ":secondary";
         try {
             reload();
             assertTrue(Settings.SHOW_FULL_REEL_CAPTIONS.savedValue());
-            assertFalse("a secondary process stored the reel switch", store().contains(REEL_KEY));
+            assertFalse("a secondary process stored the reel switch", store().contains(reelKey()));
         } finally {
             app.processName = previous;
         }
         reload();
-        assertEquals(true, store().getBoolean(REEL_KEY, false));
+        assertEquals(true, store().getBoolean(reelKey(), false));
     }
 
     private static SharedPreferences store() {

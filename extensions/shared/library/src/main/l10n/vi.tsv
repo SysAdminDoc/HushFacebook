@@ -2630,3 +2630,19 @@ The rounded tab bar is %1$s percent of the screen wide.	Thanh tab bo tròn rộn
 Tab bar height	Chiều cao thanh tab
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Phần trăm chiều cao đầy đủ mà thanh tab bo tròn giữ lại, từ %1$s đến %2$s, được cắt bớt phía trên và phía dưới các biểu tượng. Để trống để dùng %3$s.
 The rounded tab bar keeps %1$s percent of its height.	Thanh tab bo tròn giữ lại %1$s phần trăm chiều cao.
+# context: title of a row under About that picks how long a dot marks settings an update added
+Mark new settings	Đánh dấu cài đặt mới
+# context: choice in that row; the dot goes once the page holding the setting is left
+Until I leave the page	Đến khi tôi rời trang
+# context: summary of that row when Off is picked
+Settings an update adds get no dot.	Cài đặt do bản cập nhật thêm vào không có dấu chấm.
+# context: summary of that row for the default choice
+A dot marks each setting an update adds, until you leave the page it's on.	Một dấu chấm đánh dấu mỗi cài đặt do bản cập nhật thêm vào, cho đến khi bạn rời trang chứa nó.
+# context: summary of that row; %1$s is a time such as 3 days
+A dot marks each setting an update adds, for %1$s from the first time you open its page.	Một dấu chấm đánh dấu mỗi cài đặt do bản cập nhật thêm vào, trong %1$s kể từ lần đầu bạn mở trang của nó.
+# context: sentence in the import preview when the file turns that row Off
+Settings an update adds won't get a dot.	Cài đặt do bản cập nhật thêm vào sẽ không có dấu chấm.
+# context: sentence in the import preview for the default choice
+Settings an update adds will get a dot until you leave their page.	Cài đặt do bản cập nhật thêm vào sẽ có dấu chấm cho đến khi bạn rời trang của chúng.
+# context: sentence in the import preview; %1$s is a time such as 3 days
+Settings an update adds will get a dot for %1$s from the first time you open their page.	Cài đặt do bản cập nhật thêm vào sẽ có dấu chấm trong %1$s kể từ lần đầu bạn mở trang của chúng.

@@ -2634,3 +2634,19 @@ The rounded tab bar is %1$s percent of the screen wide.	圓角分頁列的寬度
 Tab bar height	分頁列高度
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	圓角分頁列保留其完整高度的百分比，範圍 %1$s 到 %2$s，在圖示上方和下方裁切。留空則使用 %3$s.
 The rounded tab bar keeps %1$s percent of its height.	圓角分頁列保留其高度的百分之 %1$s.
+# context: title of a row under About that picks how long a dot marks settings an update added
+Mark new settings	標記新設定
+# context: choice in that row; the dot goes once the page holding the setting is left
+Until I leave the page	直到離開頁面
+# context: summary of that row when Off is picked
+Settings an update adds get no dot.	更新新增的設定不顯示圓點.
+# context: summary of that row for the default choice
+A dot marks each setting an update adds, until you leave the page it's on.	更新新增的每項設定旁會顯示圓點，直到你離開它所在的頁面.
+# context: summary of that row; %1$s is a time such as 3 days
+A dot marks each setting an update adds, for %1$s from the first time you open its page.	更新新增的每項設定旁會顯示圓點，從第一次開啟其頁面起保留%1$s.
+# context: sentence in the import preview when the file turns that row Off
+Settings an update adds won't get a dot.	更新新增的設定將不顯示圓點.
+# context: sentence in the import preview for the default choice
+Settings an update adds will get a dot until you leave their page.	更新新增的設定將顯示圓點，直到你離開其頁面.
+# context: sentence in the import preview; %1$s is a time such as 3 days
+Settings an update adds will get a dot for %1$s from the first time you open their page.	更新新增的設定將顯示圓點，從第一次開啟其頁面起保留%1$s.

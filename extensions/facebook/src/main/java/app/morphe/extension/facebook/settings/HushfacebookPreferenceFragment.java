@@ -105,6 +105,7 @@ import app.morphe.extension.facebook.settings.ValueRows.PauseLengthRow;
 import app.morphe.extension.facebook.settings.ValueRows.WatchedKeepRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInGuardRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInWaitRow;
+import app.morphe.extension.facebook.settings.ValueRows.NewRowMarkRow;
 import app.morphe.extension.facebook.settings.ValueRows.ReelDateStyleRow;
 import app.morphe.extension.facebook.settings.ValueRows.AccentRow;
 import app.morphe.extension.facebook.settings.ValueRows.BackgroundRow;
@@ -1944,6 +1945,50 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         return row;
     }
 
+    /** Mark new settings (#16): how long the dot beside a setting an update added stays. */
+    static NewRowMarkRow newRowMarkRow(Context context) {
+        NewRowMarkRow row = new NewRowMarkRow(context);
+        row.setKey(Settings.NEW_ROW_MARK.key);
+        row.setTitle(L10n.t("Mark new settings"));
+        row.setDialogTitle(L10n.t("Mark new settings"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        NewRowMark[] choices = NewRowMark.values();
+        CharSequence[] entries = new CharSequence[choices.length];
+        CharSequence[] values = new CharSequence[choices.length];
+        for (int i = 0; i < choices.length; i++) {
+            entries[i] = newRowMarkLabel(choices[i]);
+            values[i] = choices[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.NEW_ROW_MARK.savedValue().name());
+        return row;
+    }
+
+    /** What the list and the sentences about it call [mark]. The day counts are Keep seen posts hidden's. */
+    static String newRowMarkLabel(NewRowMark mark) {
+        switch (mark) {
+            case OFF:
+                return L10n.t("Off");
+            case THREE_DAYS:
+                return L10n.t("3 days");
+            case SEVEN_DAYS:
+                return L10n.t("7 days");
+            default:
+                return L10n.t("Until I leave the page");
+        }
+    }
+
+    /** What a choice does, for the row's summary. */
+    static String newRowMarkSummary(NewRowMark mark) {
+        if (mark == NewRowMark.OFF) return L10n.t("Settings an update adds get no dot.");
+        if (mark == NewRowMark.ONE_VISIT) {
+            return L10n.t("A dot marks each setting an update adds, until you leave the page it's on.");
+        }
+        return L10n.f("A dot marks each setting an update adds, for %1$s from the first time you open its page.",
+                newRowMarkLabel(mark));
+    }
+
     /** What the list and the sentences about it call [scale]. */
     static String textSizeLabel(TextSize.Scale scale) {
         return scale == TextSize.Scale.P100 ? L10n.t("As Facebook has it") : scale.label();
@@ -2669,6 +2714,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((BreakRow) listPreference).showSummary();
         } else if (listPreference instanceof TextSizeRow) {
             ((TextSizeRow) listPreference).showSummary();
+        } else if (listPreference instanceof NewRowMarkRow) {
+            ((NewRowMarkRow) listPreference).showSummary();
         } else if (listPreference instanceof AccentRow) {
             ((AccentRow) listPreference).showSummary();
         } else if (listPreference instanceof ReactionCeilingRow) {

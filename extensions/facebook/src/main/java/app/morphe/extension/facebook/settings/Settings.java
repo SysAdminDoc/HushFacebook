@@ -3268,6 +3268,14 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushfacebook_text_size", TextSize.Scale.P100, true);
 
     /**
+     * Mark new settings ({@link NewRowDots}, #16): how long the dot beside a setting an update added
+     * stays, from none to 7 days after its page was first opened. Until that page is left by
+     * default, as the dot always worked. The settings entry carries it, so every build has it.
+     */
+    public static final EnumSetting<NewRowMark> NEW_ROW_MARK =
+            new EnumSetting<>("hushfacebook_new_row_mark", NewRowMark.ONE_VISIT);
+
+    /**
      * The colour that stands in for Facebook's blue on links, buttons, switches and the selected
      * tab ({@link AccentColor}), with the Accent color patch in the build. Facebook blue is Facebook
      * as it ships, which is also what a paused Facebook reads. Not a switch. Screens pick their

@@ -239,6 +239,7 @@ public class SettingsBackupTest {
         Settings.BREAK_AFTER.resetToDefault();
         Settings.BREAK_LENGTH.resetToDefault();
         Settings.TEXT_SIZE.resetToDefault();
+        Settings.NEW_ROW_MARK.resetToDefault();
         Settings.ACCENT_COLOR.resetToDefault();
         Settings.VIDEO_SUBFOLDER.resetToDefault();
         Settings.PHOTO_SUBFOLDER.resetToDefault();
@@ -309,7 +310,7 @@ public class SettingsBackupTest {
                 Settings.START_TAB, Settings.FEEDS_SUBTAB, Settings.COMMENT_ORDER, Settings.PLAYBACK_QUALITY,
                 Settings.REELS_PLAYBACK_QUALITY, Settings.STORIES_PLAYBACK_QUALITY, Settings.QUIET_HOURS_FROM,
                 Settings.QUIET_HOURS_UNTIL, Settings.APP_LOCK_AFTER, Settings.OPENING_PAUSE_LENGTH, Settings.BREAK_AFTER,
-                Settings.BREAK_LENGTH, Settings.TEXT_SIZE, Settings.ACCENT_COLOR, Settings.ACCENT_CUSTOM, Settings.LOGO_EMOJI, Settings.BADGE_COLOR, Settings.LOGO_COLOR, Settings.TAB_COLOR), SettingsBackup.VALUES);
+                Settings.BREAK_LENGTH, Settings.TEXT_SIZE, Settings.NEW_ROW_MARK, Settings.ACCENT_COLOR, Settings.ACCENT_CUSTOM, Settings.LOGO_EMOJI, Settings.BADGE_COLOR, Settings.LOGO_COLOR, Settings.TAB_COLOR), SettingsBackup.VALUES);
         assertEquals(Settings.SAVE_TO, SettingsBackup.TO);
         assertEquals(Settings.HIDDEN_WORDS, SettingsBackup.HIDDEN);
         assertEquals(Settings.KEPT_WORDS, SettingsBackup.KEPT);
@@ -338,6 +339,7 @@ public class SettingsBackupTest {
         assertEquals(Settings.QUIET_HOURS_FROM, SettingsBackup.QUIET_FROM);
         assertEquals(Settings.QUIET_HOURS_UNTIL, SettingsBackup.QUIET_UNTIL);
         assertEquals(Settings.TEXT_SIZE, SettingsBackup.TEXT_SIZE);
+        assertEquals(Settings.NEW_ROW_MARK, SettingsBackup.NEW_ROW_MARK);
         assertEquals(Settings.ACCENT_COLOR, SettingsBackup.ACCENT);
         assertEquals(Settings.VIDEO_SUBFOLDER, SettingsBackup.VIDEO_SUBFOLDER);
         assertEquals(Settings.PHOTO_SUBFOLDER, SettingsBackup.PHOTO_SUBFOLDER);
@@ -3015,6 +3017,67 @@ public class SettingsBackupTest {
         assertEquals("Settings imported. Facebook's text will be 130% of the size your phone's font size setting gives it.",
                 SettingsBackupPreference.importedMessage(0, null, null, null, null, null, null, null, null, null, null,
                         null, null, null, null, null, null, null, null, null, null, null, TextSize.Scale.P130));
+    }
+
+    /**
+     * Mark new settings goes out as its file value and comes back only as one this build offers,
+     * with a sentence in the preview: anything else, or a value that isn't text, refuses the file.
+     */
+    @Test
+    public void theNewSettingsMarkRoundTripsAndComesBackOnlyAsOneThisBuildOffers() throws Exception {
+        for (NewRowMark choice : NewRowMark.values()) {
+            NewRowMark other = choice == NewRowMark.SEVEN_DAYS ? NewRowMark.OFF : NewRowMark.SEVEN_DAYS;
+            Settings.NEW_ROW_MARK.save(choice);
+            String file = SettingsBackup.create();
+            assertEquals(choice.fileValue, new JSONObject(file).getJSONObject("settings").get(SettingsBackup.NEW_ROW_MARK.key));
+            Settings.NEW_ROW_MARK.save(other);
+
+            SettingsBackup.Snapshot snapshot = SettingsBackup.parse(file);
+            assertEquals(choice, snapshot.newRowMark);
+            assertEquals(choice, snapshot.newRowMarkChange());
+            Map<Setting<?>, Object> expected = new LinkedHashMap<>();
+            expected.put(SettingsBackup.NEW_ROW_MARK, choice);
+            assertEquals(expected, snapshot.changes());
+            assertEquals(1, SettingsBackup.apply(snapshot));
+            assertEquals(choice, Settings.NEW_ROW_MARK.savedValue());
+            assertEquals("a file read back is the file", file, SettingsBackup.create());
+            assertEquals("the same mark again changes nothing", 0, SettingsBackup.parse(file).changes().size());
+        }
+
+        Settings.NEW_ROW_MARK.save(NewRowMark.THREE_DAYS);
+        String file = SettingsBackup.create();
+        Map<String, ?> before = store();
+        for (Object refused : new Object[]{"THREE_DAYS", "3", "3 days", "", 3, true, JSONObject.NULL,
+                new JSONObject(), new org.json.JSONArray()}) {
+            JSONObject hostile = new JSONObject(file);
+            hostile.getJSONObject("settings").put(SettingsBackup.NEW_ROW_MARK.key, refused);
+            try {
+                SettingsBackup.parse(hostile.toString());
+                fail("a file with the new settings mark " + printable(String.valueOf(refused)) + " was read");
+            } catch (SettingsBackup.Rejected rejected) {
+                assertEquals(printable(String.valueOf(refused)), SettingsBackup.Reason.VALUE, rejected.reason);
+            }
+        }
+        assertEquals("a refused file wrote something", before, store());
+
+        // A file from before the mark was carried leaves it alone.
+        SettingsBackup.Snapshot older = SettingsBackup.parse(fileWith(Settings.HIDE_SUGGESTED_POSTS, false));
+        assertNull(older.newRowMark);
+        assertNull(older.newRowMarkChange());
+        SettingsBackup.apply(older);
+        assertEquals(NewRowMark.THREE_DAYS, Settings.NEW_ROW_MARK.savedValue());
+
+        // A preview kept across a rebuild keeps it, and only one this build offers comes back.
+        Bundle state = SettingsBackup.parse(file).toBundle();
+        assertEquals(NewRowMark.THREE_DAYS, SettingsBackup.Snapshot.fromBundle(state).newRowMark);
+        state.putString("new_row_mark", "THREE_DAYS");
+        assertNull(SettingsBackup.Snapshot.fromBundle(state).newRowMark);
+
+        assertEquals("Settings an update adds won't get a dot.", SettingsBackupPreference.newRowMarkSentence(NewRowMark.OFF));
+        assertEquals("Settings an update adds will get a dot until you leave their page.",
+                SettingsBackupPreference.newRowMarkSentence(NewRowMark.ONE_VISIT));
+        assertEquals("Settings an update adds will get a dot for 7 days from the first time you open their page.",
+                SettingsBackupPreference.newRowMarkSentence(NewRowMark.SEVEN_DAYS));
     }
 
     /**

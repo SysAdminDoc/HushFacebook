@@ -2516,3 +2516,19 @@ The rounded tab bar is %1$s percent of the screen wide.	A barra de abas arredond
 Tab bar height	Altura da barra de abas
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Porcentagem da altura total que a barra de abas arredondada mantém, de %1$s a %2$s, cortada acima e abaixo dos ícones. Deixe em branco para usar %3$s.
 The rounded tab bar keeps %1$s percent of its height.	A barra de abas arredondada mantém %1$s por cento da altura.
+# context: title of a row under About that picks how long a dot marks settings an update added
+Mark new settings	Marcar configurações novas
+# context: choice in that row; the dot goes once the page holding the setting is left
+Until I leave the page	Até eu sair da página
+# context: summary of that row when Off is picked
+Settings an update adds get no dot.	Configurações que uma atualização adiciona não recebem ponto.
+# context: summary of that row for the default choice
+A dot marks each setting an update adds, until you leave the page it's on.	Um ponto marca cada configuração que uma atualização adiciona, até você sair da página em que ela está.
+# context: summary of that row; %1$s is a time such as 3 days
+A dot marks each setting an update adds, for %1$s from the first time you open its page.	Um ponto marca cada configuração que uma atualização adiciona, por %1$s desde a primeira vez que você abre a página dela.
+# context: sentence in the import preview when the file turns that row Off
+Settings an update adds won't get a dot.	Configurações que uma atualização adicionar não vão receber ponto.
+# context: sentence in the import preview for the default choice
+Settings an update adds will get a dot until you leave their page.	Configurações que uma atualização adicionar vão receber um ponto até você sair da página delas.
+# context: sentence in the import preview; %1$s is a time such as 3 days
+Settings an update adds will get a dot for %1$s from the first time you open their page.	Configurações que uma atualização adicionar vão receber um ponto por %1$s desde a primeira vez que você abrir a página delas.

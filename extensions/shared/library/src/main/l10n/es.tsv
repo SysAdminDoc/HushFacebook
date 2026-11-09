@@ -2630,3 +2630,19 @@ The rounded tab bar is %1$s percent of the screen wide.	La barra de pestañas re
 Tab bar height	Alto de la barra de pestañas
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Porcentaje de su altura completa que conserva la barra de pestañas redondeada, de %1$s a %2$s, recortada por encima y por debajo de los iconos. Déjalo en blanco para usar %3$s.
 The rounded tab bar keeps %1$s percent of its height.	La barra de pestañas redondeada conserva el %1$s por ciento de su altura.
+# context: title of a row under About that picks how long a dot marks settings an update added
+Mark new settings	Marcar ajustes nuevos
+# context: choice in that row; the dot goes once the page holding the setting is left
+Until I leave the page	Hasta que salga de la página
+# context: summary of that row when Off is picked
+Settings an update adds get no dot.	Los ajustes que añade una actualización no llevan punto.
+# context: summary of that row for the default choice
+A dot marks each setting an update adds, until you leave the page it's on.	Un punto marca cada ajuste que añade una actualización, hasta que salgas de la página donde está.
+# context: summary of that row; %1$s is a time such as 3 days
+A dot marks each setting an update adds, for %1$s from the first time you open its page.	Un punto marca cada ajuste que añade una actualización, durante %1$s desde la primera vez que abras su página.
+# context: sentence in the import preview when the file turns that row Off
+Settings an update adds won't get a dot.	Los ajustes que añada una actualización no llevarán punto.
+# context: sentence in the import preview for the default choice
+Settings an update adds will get a dot until you leave their page.	Los ajustes que añada una actualización llevarán un punto hasta que salgas de su página.
+# context: sentence in the import preview; %1$s is a time such as 3 days
+Settings an update adds will get a dot for %1$s from the first time you open their page.	Los ajustes que añada una actualización llevarán un punto durante %1$s desde la primera vez que abras su página.

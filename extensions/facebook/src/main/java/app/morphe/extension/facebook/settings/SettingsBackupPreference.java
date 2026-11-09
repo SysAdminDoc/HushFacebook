@@ -415,6 +415,7 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.reelsOrderChange() != null) parts.add(reelsOrderSentence(snapshot.reelsOrderChange()));
             if (snapshot.burnInChange() != null) parts.add(burnInSentence(snapshot.burnInChange()));
             if (snapshot.burnInWaitChange() != null) parts.add(burnInWaitSentence(snapshot.burnInWaitChange()));
+            if (snapshot.newRowMarkChange() != null) parts.add(newRowMarkSentence(snapshot.newRowMarkChange()));
             if (snapshot.dateStyleChange() != null) parts.add(dateStyleSentence(snapshot.dateStyleChange()));
             if (snapshot.backgroundChange() != null) parts.add(backgroundSentence(snapshot.backgroundChange()));
             if (snapshot.lightBackgroundChange() != null) parts.add(lightBackgroundSentence(snapshot.lightBackgroundChange()));
@@ -603,6 +604,14 @@ public class SettingsBackupPreference extends Preference {
     /** The sentence that says what Burn-in guard does after an import (#288). */
     static String burnInSentence(BurnInMode mode) {
         return L10n.f("Burn-in guard will be set to %1$s.", HushfacebookPreferenceFragment.burnInLabel(mode));
+    }
+
+    /** The sentence that says how new settings are marked after an import (#16). */
+    static String newRowMarkSentence(NewRowMark mark) {
+        if (mark == NewRowMark.OFF) return L10n.t("Settings an update adds won't get a dot.");
+        if (mark == NewRowMark.ONE_VISIT) return L10n.t("Settings an update adds will get a dot until you leave their page.");
+        return L10n.f("Settings an update adds will get a dot for %1$s from the first time you open their page.",
+                HushfacebookPreferenceFragment.newRowMarkLabel(mark));
     }
 
     /** The sentence that says how long Burn-in guard waits after an import (#288). */
@@ -1068,6 +1077,7 @@ public class SettingsBackupPreference extends Preference {
                     + (snapshot.reelsOrderChange() == null ? "" : " " + reelsOrderSentence(snapshot.reelsOrderChange()))
                     + (snapshot.burnInChange() == null ? "" : " " + burnInSentence(snapshot.burnInChange()))
                     + (snapshot.burnInWaitChange() == null ? "" : " " + burnInWaitSentence(snapshot.burnInWaitChange()))
+                    + (snapshot.newRowMarkChange() == null ? "" : " " + newRowMarkSentence(snapshot.newRowMarkChange()))
                     + (snapshot.dateStyleChange() == null ? "" : " " + dateStyleSentence(snapshot.dateStyleChange()))
                     + (snapshot.backgroundChange() == null ? "" : " " + backgroundSentence(snapshot.backgroundChange()))
                     + (snapshot.lightBackgroundChange() == null ? "" : " " + lightBackgroundSentence(snapshot.lightBackgroundChange()))

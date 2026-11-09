@@ -28,6 +28,7 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.qualitySummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.accentSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.textSizeSummary;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.newRowMarkSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.quietHourLabel;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.saveStorageSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.saveToSummary;
@@ -1637,6 +1638,45 @@ final class ValueRows {
                 if (candidate.name().equals(getValue())) style = candidate;
             }
             setSummary(reelDateStyleSummary(style));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its list takes the screen's colours, as the other rows' dialogs do. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+        }
+    }
+
+    /**
+     * The Mark new settings row (#16). Its summary follows its value, whoever sets it: the person or
+     * an import.
+     */
+    static final class NewRowMarkRow extends PlainSummaryList {
+        NewRowMarkRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+        }
+
+        void showSummary() {
+            NewRowMark mark = NewRowMark.ONE_VISIT;
+            for (NewRowMark candidate : NewRowMark.values()) {
+                if (candidate.name().equals(getValue())) mark = candidate;
+            }
+            setSummary(newRowMarkSummary(mark));
         }
 
         @Override

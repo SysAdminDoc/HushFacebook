@@ -2630,3 +2630,19 @@ The rounded tab bar is %1$s percent of the screen wide.	Die abgerundete Tab-Leis
 Tab bar height	Höhe der Tab-Leiste
 Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Wie viel Prozent ihrer vollen Höhe die abgerundete Tab-Leiste behält, von %1$s bis %2$s, über und unter den Symbolen gekürzt. Leer lassen für %3$s.
 The rounded tab bar keeps %1$s percent of its height.	Die abgerundete Tab-Leiste behält %1$s Prozent ihrer Höhe.
+# context: title of a row under About that picks how long a dot marks settings an update added
+Mark new settings	Neue Einstellungen markieren
+# context: choice in that row; the dot goes once the page holding the setting is left
+Until I leave the page	Bis ich die Seite verlasse
+# context: summary of that row when Off is picked
+Settings an update adds get no dot.	Einstellungen, die ein Update hinzufügt, bekommen keinen Punkt.
+# context: summary of that row for the default choice
+A dot marks each setting an update adds, until you leave the page it's on.	Ein Punkt markiert jede Einstellung, die ein Update hinzufügt, bis du die Seite verlässt, auf der sie steht.
+# context: summary of that row; %1$s is a time such as 3 days
+A dot marks each setting an update adds, for %1$s from the first time you open its page.	Ein Punkt markiert jede Einstellung, die ein Update hinzufügt, für %1$s ab dem ersten Öffnen ihrer Seite.
+# context: sentence in the import preview when the file turns that row Off
+Settings an update adds won't get a dot.	Einstellungen, die ein Update hinzufügt, bekommen dann keinen Punkt.
+# context: sentence in the import preview for the default choice
+Settings an update adds will get a dot until you leave their page.	Einstellungen, die ein Update hinzufügt, bekommen dann einen Punkt, bis du ihre Seite verlässt.
+# context: sentence in the import preview; %1$s is a time such as 3 days
+Settings an update adds will get a dot for %1$s from the first time you open their page.	Einstellungen, die ein Update hinzufügt, bekommen dann für %1$s ab dem ersten Öffnen ihrer Seite einen Punkt.

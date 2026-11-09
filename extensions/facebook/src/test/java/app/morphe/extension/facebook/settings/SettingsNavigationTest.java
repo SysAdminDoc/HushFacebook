@@ -2142,8 +2142,12 @@ public class SettingsNavigationTest {
         page.importPreview.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
         page.navigation.navigate("");
         page.navigation.navigate("About");
-        Preference about = page.sections().get(page.sections().size() - 1);
-        Preference licenses = ((PreferenceCategory) about).getPreference(2);
+        PreferenceCategory about = (PreferenceCategory) page.sections().get(page.sections().size() - 1);
+        Preference licenses = null;
+        for (int i = 0; i < about.getPreferenceCount(); i++) {
+            if ("Licenses".contentEquals(about.getPreference(i).getTitle())) licenses = about.getPreference(i);
+        }
+        assertNotNull("About has no Licenses row", licenses);
         licenses.getOnPreferenceClickListener().onPreferenceClick(licenses);
         AlertDialog notice = (AlertDialog) org.robolectric.shadows.ShadowDialog.getLatestDialog();
         captureDialog(prefix + "dialog-licenses", notice);
