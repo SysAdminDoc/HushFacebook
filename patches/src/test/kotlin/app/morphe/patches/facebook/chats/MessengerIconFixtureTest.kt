@@ -8,7 +8,8 @@ import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
-import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
 import app.morphe.patches.facebook.media.taptoplay.touchDispatches
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
@@ -19,6 +20,7 @@ import app.morphe.patches.facebook.notifications.isPostMethod
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -99,6 +101,15 @@ class MessengerIconFixtureTest {
             dex.methodSection.any { it.definingClass == target.definingClass && it.name == target.name }
         }) { calls(it, target) }
 
+    /** Finds a static call's method in [bundle], reading each class once: how a string table is asked for its literal. */
+    private fun tableResolver(bundle: java.io.File): (MethodReference) -> Method? {
+        val read = HashMap<String, ClassDef?>()
+        return { call ->
+            read.getOrPut(call.definingClass) { FixtureDex.classes(bundle, setOf(call.definingClass))[call.definingClass] }
+                ?.let { resolveStatic(it, call) }
+        }
+    }
+
     /** The registers a call passes, in order. */
     private fun Instruction.registers(): List<Int> = when (this) {
         is RegisterRangeInstruction -> (startRegister until startRegister + registerCount).toList()
@@ -123,8 +134,11 @@ class MessengerIconFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val tapClass = FixtureDex.classesHolding(bundle, REELS_TAB_ENTRY).single { owner -> owner.methods.any(::isIconTap) }
-                val tap = tapClass.methods.single(::isIconTap)
+                // 586 asks a string table for the Reels tab's entry point, so the tap is among the prefix's holders.
+                val resolve = tableResolver(bundle)
+                val tapClass = FixtureDex.classesHolding(bundle, NAVBAR_ENTRY).single { owner -> owner.methods.any { isIconTap(it, resolve) } }
+                val tap = tapClass.methods.single { isIconTap(it, resolve) }
+                val reelsEntryHolders = FixtureDex.classesHolding(bundle, REELS_TAB_ENTRY)
                 val handlerType = buttonHandlerCalls(tap).map { it.definingClass }.distinct().single()
                 val classes = FixtureDex.classes(bundle, setOf(handlerType, FRAGMENT_ACTIVITY, INBOX_ROUTER))
                 val handoffClasses = HandoffFixture.classes(bundle)
@@ -134,7 +148,8 @@ class MessengerIconFixtureTest {
                 val gateClass = FixtureDex.classes(bundle, setOf(gateCall.definingClass)).getValue(gateCall.definingClass)
                 val context = PatchContexts.of(
                     (listOf(tapClass, classes.getValue(handlerType), classes.getValue(FRAGMENT_ACTIVITY), router, gateClass,
-                        ExtensionDex.classDef(SETTINGS_STATUS), ExtensionDex.classDef(HANDOFF)) + handoffClasses).distinctBy { it.type },
+                        ExtensionDex.classDef(SETTINGS_STATUS), ExtensionDex.classDef(HANDOFF)) + handoffClasses + reelsEntryHolders)
+                        .distinctBy { it.type },
                 )
                 openMessengerFromTopBarPatch.execute(context)
 
@@ -218,27 +233,40 @@ class MessengerIconFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val holders = FixtureDex.classesHolding(bundle, REELS_TAB_ENTRY)
-                    .flatMap { it.methods }.filter { holdsString(it, REELS_TAB_ENTRY) && holdsString(it, NAVBAR_ENTRY) }
-                assertEquals("$name: methods holding both entry points", 1, holders.size)
-                val taps = FixtureDex.classesHolding(bundle, REELS_TAB_ENTRY).flatMap { it.methods }.filter(::isIconTap)
+                // Both entry points, held or (586) asked of a string table, name one method among the prefix's holders.
+                val resolve = tableResolver(bundle)
+                val prefixHolders = FixtureDex.classesHolding(bundle, NAVBAR_ENTRY).flatMap { it.methods }
+                val holders = prefixHolders.filter { namesString(it, REELS_TAB_ENTRY, resolve) && namesString(it, NAVBAR_ENTRY, resolve) }
+                assertEquals("$name: methods naming both entry points", 1, holders.size)
+                val taps = prefixHolders.filter { isIconTap(it, resolve) }
                 assertEquals("$name: Messenger icon taps", 1, taps.size)
                 val tap = taps.single()
                 assertTrue("$name: the tap has fewer than two locals", locals(tap) >= 2)
 
                 // The icon's click listener hands the tap 0 in the long-press parameter, and its
-                // long-click listener 1.
-                val flags = callers(bundle, tap).associate { caller ->
+                // long-click listener 1: parameter 8 up to 585, and 9 on 586, whose long-click
+                // listener hands the old place a field and its 1 through a move (`LX/0hm3;->onLongClick`
+                // moves v1 into v14 on arm64). 586's long-click listener can also wrap the
+                // tap in a merged lambda (`LX/0Lfr;->invoke` on arm64) that hands it 0 there.
+                val onClick = "onClick(Landroid/view/View;)V"
+                val onLongClick = "onLongClick(Landroid/view/View;)Z"
+                fun flagsAt(parameter: Int): Map<String, Int?> = callers(bundle, tap).associate { caller ->
                     val code = caller.implementation!!.instructions.toList()
                     val at = code.indexOfFirst { it.call?.let(::key) == key(tap) }
-                    val write = lastWrite(code, at, argument(code[at], TAP_LONG_PRESS))
-                    assertEquals("$name: ${caller.definingClass}->${caller.name} hands the tap a long press it didn't set",
-                        Opcode.CONST_4, write?.opcode)
+                    val write = handedFrom(code, at, argument(code[at], parameter))
                     caller.name + caller.parameterTypes.joinToString("", "(", ")") + caller.returnType to
-                        (write as NarrowLiteralInstruction).narrowLiteral
+                        (write as? NarrowLiteralInstruction)?.takeIf { write.opcode == Opcode.CONST_4 }?.narrowLiteral
                 }
-                assertEquals("$name: the tap's callers and the long press each hands it",
-                    mapOf("onClick(Landroid/view/View;)V" to 0, "onLongClick(Landroid/view/View;)Z" to 1), flags)
+                val longPresses = (7..9).filter { parameter ->
+                    flagsAt(parameter).let { it[onClick] == 0 && it[onLongClick] == 1 }
+                }
+                assertEquals("$name: tap flags the click listener hands 0 and the long-click listener 1", 1, longPresses.size)
+                val longPress = longPresses.single()
+                val flags = flagsAt(longPress)
+                assertEquals("$name: callers handing the tap a long press they didn't set: $flags", emptyMap<String, Int?>(),
+                    flags.filterValues { it == null })
+                assertEquals("$name: callers other than the two listeners handing the tap a long press",
+                    emptyMap<String, Int?>(), flags.filterKeys { it != onClick && it != onLongClick }.filterValues { it != 0 })
 
                 // The long-click listener is built in one place, only when a flag the builder is
                 // handed says so: its new-instance sits right behind an if-eqz on a parameter. With
@@ -253,9 +281,12 @@ class MessengerIconFixtureTest {
                 assertEquals("$name: methods building the long-click listener $longClick", 1, builders.size)
                 val builderCode = builders.single().implementation!!.instructions.toList()
                 val built = builderCode.indexOfFirst(::buildsLongClick)
+                // 586 builds it when the handed flag or a second one of its own is set (`LX/02GY;->A00`
+                // on arm64: if-nez on the parameter jumps to it, then if-eqz on a local skips it).
+                val guards = (built - 1 downTo 0).takeWhile { builderCode[it].opcode == Opcode.IF_EQZ || builderCode[it].opcode == Opcode.IF_NEZ }
                 val guard = builderCode[built - 1]
                 assertTrue("$name: the long-click listener is built without a flag ahead of it ($guard)",
-                    guard.opcode == Opcode.IF_EQZ && (guard as OneRegisterInstruction).registerA >= locals(builders.single()))
+                    guard.opcode == Opcode.IF_EQZ && guards.any { (builderCode[it] as OneRegisterInstruction).registerA >= locals(builders.single()) })
 
                 // The tap calls one button handler (582 and 583 through a wrapper on the handler's
                 // singleton), and hands it its own long-press parameter.
@@ -270,9 +301,12 @@ class MessengerIconFixtureTest {
                 val at = tapCode.indexOfFirst { it.call?.let(::key) == key(handlerCalls.single()) }
                 val receiver = if (tapCode[at].opcode.name.startsWith("invoke-static")) 0 else 1
                 val handed = handedFrom(tapCode, at, argument(tapCode[at], buttonLongPress(handlerCalls.single()) + receiver))
-                val tapFlag = locals(tap) + TAP_LONG_PRESS
+                val tapFlag = locals(tap) + longPress
                 assertTrue("$name: the tap hands the handler $handed, not its long press v$tapFlag",
-                    handed is TwoRegisterInstruction && handed.opcode.name.startsWith("move") && handed.registerB == tapFlag)
+                    handed is TwoRegisterInstruction && handed.opcode in setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16) &&
+                        handed.registerB == tapFlag)
+                // The patch reads the tap's long press the same way, per build.
+                assertEquals("$name: the tap's long press the patch reads", longPress, tapLongPress(tap, handlerCalls.single()))
 
                 // "long_press" is logged only behind a branch on the long press: in the handler up
                 // to 582, and from 583 in a helper the handler hands its long press to.

@@ -4,7 +4,6 @@
  */
 package app.morphe.patches.facebook.chats
 
-import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
@@ -13,6 +12,8 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.facebook.feed.methodsNaming
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
 import app.morphe.patches.facebook.media.taptoplay.MOTION_EVENT
 import app.morphe.patches.facebook.media.taptoplay.touchDispatches
@@ -95,7 +96,9 @@ val openMessengerFromTopBarPatch = bytecodePatch(
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {
-        val taps = classDefByStrings(REELS_TAB_ENTRY, StringComparisonType.EQUALS).flatMap { it.methods.filter(::isIconTap) }
+        // 586 asks a string table for the Reels tab's entry point, so the tap is found by naming it.
+        val resolve: (MethodReference) -> Method? = { call -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
+        val taps = methodsNaming(REELS_TAB_ENTRY) { isIconTapShaped(it) }.filter { isIconTap(it, resolve) }
         val tap = taps.singleOrNull() ?: throw PatchException(
             "$ICON_PATCH: expected one static tap method loading \"$NAVBAR_ENTRY\" and \"$REELS_TAB_ENTRY\", " +
                 "found ${taps.size}",
@@ -109,6 +112,9 @@ val openMessengerFromTopBarPatch = bytecodePatch(
             ?: throw PatchException(
                 "$ICON_PATCH: the tap's call to $call doesn't reach a static Messenger button handler loading \"$LONG_PRESS\"",
             )
+        val tapLongPress = tapLongPress(tap, call) ?: throw PatchException(
+            "$ICON_PATCH: the tap doesn't hand $call one of its own flags as the long press",
+        )
         val activity = classDefByOrNull(FRAGMENT_ACTIVITY) ?: throw PatchException("$ICON_PATCH: this build has no $FRAGMENT_ACTIVITY")
         val dispatches = touchDispatches(activity)
         val dispatch = dispatches.singleOrNull() ?: throw PatchException(
@@ -134,7 +140,7 @@ val openMessengerFromTopBarPatch = bytecodePatch(
             patchLog.warning("${missing.message}, so $CHATS_SWITCH isn't in this build")
             null
         }
-        mutableClassDefBy(tap.definingClass).methods.single { it.isSameAs(tap) }.openMessengerFirst(TAP_LONG_PRESS)
+        mutableClassDefBy(tap.definingClass).methods.single { it.isSameAs(tap) }.openMessengerFirst(tapLongPress)
         mutableClassDefBy(handler.definingClass).methods.single { it.isSameAs(handler) }.openMessengerFirst(buttonLongPress(handler))
         mutableClassDefBy(FRAGMENT_ACTIVITY).methods.single { it.isSameAs(dispatch) }.handTouchesToIcon()
         if (handoff != null) {

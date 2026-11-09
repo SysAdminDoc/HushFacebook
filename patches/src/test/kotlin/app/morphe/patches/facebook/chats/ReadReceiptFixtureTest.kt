@@ -9,6 +9,7 @@ import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -42,7 +43,13 @@ class ReadReceiptFixtureTest {
                 val read = owner.methods.single(::isMailboxMarkRead)
                 val before = read.implementation!!.instructions.toList()
                 val at = read.futureReadyIndex()
-                val future = (before[at - 1] as OneRegisterInstruction).registerA
+                val future = read.futureRegister()
+                // 585 moves the future out of a call, 586 builds it with new-instance and its constructor.
+                val ready = before[at - 1]
+                assertTrue("$name: the future isn't in v$future right before the hook: $ready",
+                    (ready.opcode == Opcode.MOVE_RESULT_OBJECT && (ready as OneRegisterInstruction).registerA == future) ||
+                        (ready.opcode == Opcode.INVOKE_DIRECT && ready.called()?.substringAfter("->")?.startsWith("<init>(") == true &&
+                            (ready as FiveRegisterInstruction).registerC == future))
                 assertTrue("$name: the future is made before anything is posted",
                     before.take(at).none { it.opcode.name.startsWith("invoke") && it.called()?.contains("MailboxCallback") == true })
                 assertTrue("$name: the call is posted after it",

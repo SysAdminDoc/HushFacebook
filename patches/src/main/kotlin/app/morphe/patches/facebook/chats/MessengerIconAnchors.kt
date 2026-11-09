@@ -5,12 +5,19 @@
 package app.morphe.patches.facebook.chats
 
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 /*
@@ -55,7 +62,10 @@ internal const val REELS_TAB_ENTRY = "entry_point_navbar_global_icon_reels_tab"
 /** The key the handler logs a long press under. */
 internal const val LONG_PRESS = "long_press"
 
-/** The tap's long-press parameter: 0 from the click listener, 1 from the long-click listener. */
+/**
+ * The tap's long-press parameter up to 585: 0 from the click listener, 1 from the long-click
+ * listener. 586 swaps the last two flags, so the patch reads it per build with [tapLongPress].
+ */
 internal const val TAP_LONG_PRESS = 8
 
 private const val ANDROID_CONTEXT = "Landroid/content/Context;"
@@ -75,16 +85,22 @@ private fun Method.isStaticVoidWithBody(): Boolean =
     implementation != null && AccessFlags.STATIC.isSet(accessFlags) && returnType == "V"
 
 /**
- * The icon's tap: a static void method over the context, the user session, four helpers, the
- * surface and three flags, loading both entry points.
+ * The icon tap's shape: a static void method over the context, the user session, four helpers, the
+ * surface and three flags.
  */
-internal fun isIconTap(method: Method): Boolean {
+internal fun isIconTapShaped(method: Method): Boolean {
     val parameters = method.parameters()
     return method.isStaticVoidWithBody() && parameters.size == 10 && parameters[0] == ANDROID_CONTEXT &&
         parameters[1] == FB_USER_SESSION && parameters[6] == "Ljava/lang/String;" &&
-        parameters.subList(7, 10).all { it == "Z" } &&
-        holdsString(method, NAVBAR_ENTRY) && holdsString(method, REELS_TAB_ENTRY)
+        parameters.subList(7, 10).all { it == "Z" }
 }
+
+/**
+ * The icon's tap: [isIconTapShaped], naming both entry points. 586 asks a Redex string table for the
+ * Reels tab's (`LX/07fb;->A00` on arm64, tap `LX/02GY;->A01`), which [resolve] finds.
+ */
+internal fun isIconTap(method: Method, resolve: (MethodReference) -> Method? = { null }): Boolean =
+    isIconTapShaped(method) && namesString(method, NAVBAR_ENTRY, resolve) && namesString(method, REELS_TAB_ENTRY, resolve)
 
 /** Whether [method] has a Messenger button handler's shape: static void over one of [HANDLER_SHAPES]. */
 internal fun isButtonHandlerShaped(method: Method): Boolean =
@@ -112,6 +128,44 @@ internal fun isButtonHandler(method: Method, owner: ClassDef): Boolean =
     isButtonHandlerShaped(method) && longPressLog(method, owner) != null
 
 private val STATIC_CALLS = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
+
+private val PLAIN_MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+
+private fun MethodReference.sameAs(other: MethodReference): Boolean =
+    definingClass == other.definingClass && name == other.name && returnType == other.returnType &&
+        parameterTypes.map { it.toString() } == other.parameterTypes.map { it.toString() }
+
+/** The register holding argument [index] of [call], all of whose arguments up to it are narrow. */
+private fun argumentRegister(call: Instruction, index: Int): Int? = when (call) {
+    is RegisterRangeInstruction -> call.startRegister + index
+    is FiveRegisterInstruction -> listOf(call.registerC, call.registerD, call.registerE, call.registerF, call.registerG).getOrNull(index)
+    else -> null
+}
+
+/**
+ * The tap's long-press parameter: the flag it hands [call], its button handler call, as the long
+ * press, followed back through plain moves to the parameter it came from. 580 to 585 take it as
+ * parameter 8 ([TAP_LONG_PRESS]), and 586 as 9 (`LX/02GY;->A01` on arm64 moves v28 down for
+ * `LX/0hea;->A02`). Null when that argument isn't one of the tap's flags.
+ */
+internal fun tapLongPress(tap: Method, call: MethodReference): Int? {
+    val code = tap.implementation?.instructions?.toList() ?: return null
+    val at = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.sameAs(call) == true }
+    if (at < 0) return null
+    val receiver = if (code[at].opcode in STATIC_CALLS) 0 else 1
+    var register = argumentRegister(code[at], buttonLongPress(call) + receiver) ?: return null
+    var before = at
+    while (true) {
+        val write = (before - 1 downTo 0).firstOrNull {
+            code[it].opcode.setsRegister() && (code[it] as? OneRegisterInstruction)?.registerA == register
+        } ?: break
+        if (code[write].opcode !in PLAIN_MOVES) return null
+        register = (code[write] as TwoRegisterInstruction).registerB
+        before = write
+    }
+    return tap.parameterTypes.indices.firstOrNull { tap.parameterRegisterNumber(it) == register }
+        ?.takeIf { tap.parameterTypes[it].toString() == "Z" }
+}
 
 /** The calls in [method] of a method with one of [shapes], answering nothing, among [opcodes]. */
 private fun handlerShapedCalls(method: Method, opcodes: Set<Opcode>, shapes: List<List<String>>): List<MethodReference> =
