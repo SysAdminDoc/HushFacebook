@@ -31,6 +31,7 @@ import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstructio
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11n
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11x
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21c
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction22x
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction35c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction3rc
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
@@ -100,6 +101,20 @@ class MessengerIconShapesTest {
 
     private fun invoke(opcode: Opcode, reference: MethodReference) =
         ImmutableInstruction35c(opcode, reference.parameterTypes.size, 3, 4, 7, 8, 9, reference)
+
+    /**
+     * The tap's call to [reference] the way 586 makes it: the long press is the tap's last flag (p9,
+     * v17 in the 18-register tap) moved down into the argument it hands over. A static call takes it
+     * as argument 3, and a virtual one, six registers with its receiver, through the range form after it.
+     */
+    private fun tapCall(opcode: Opcode, reference: MethodReference): List<Instruction> =
+        if (opcode == Opcode.INVOKE_STATIC) {
+            listOf(ImmutableInstruction22x(Opcode.MOVE_FROM16, 6, 17),
+                ImmutableInstruction35c(opcode, reference.parameterTypes.size, 8, 9, 14, 6, 15, reference))
+        } else {
+            listOf(ImmutableInstruction22x(Opcode.MOVE_FROM16, 4, 17),
+                ImmutableInstruction3rc(Opcode.INVOKE_VIRTUAL_RANGE, 0, reference.parameterTypes.size + 1, reference))
+        }
 
     @Test
     fun `the tap is the static method over the context and session that loads both entry points`() {
@@ -290,7 +305,7 @@ class MessengerIconShapesTest {
      */
     private fun build(vararg screen: Method) = PatchContexts.of(
         listOf(
-            classDef(TAP_CLASS, tap(calls = listOf(invoke(Opcode.INVOKE_STATIC, handlerCall)))),
+            classDef(TAP_CLASS, tap(calls = tapCall(Opcode.INVOKE_STATIC, handlerCall))),
             classDef(handlerCall.definingClass, handler(owner = handlerCall.definingClass)),
             classDef(FRAGMENT_ACTIVITY, *screen),
             ExtensionDex.classDef(SETTINGS_STATUS),
@@ -341,7 +356,7 @@ class MessengerIconShapesTest {
             static = false, owner = owner)
         val context = PatchContexts.of(
             listOf(
-                classDef(TAP_CLASS, tap(calls = listOf(invoke(Opcode.INVOKE_VIRTUAL, wrapperCall)))),
+                classDef(TAP_CLASS, tap(calls = tapCall(Opcode.INVOKE_VIRTUAL, wrapperCall))),
                 classDef(owner, handler(owner = owner), wrapper),
                 classDef(FRAGMENT_ACTIVITY, dispatch()),
                 ExtensionDex.classDef(SETTINGS_STATUS),
@@ -389,7 +404,7 @@ class MessengerIconShapesTest {
          */
         fun iconClasses(): List<ClassDef> = MessengerIconShapesTest().run {
             listOf(
-                classDef(TAP_CLASS, tap(calls = listOf(invoke(Opcode.INVOKE_STATIC, handlerCall)))),
+                classDef(TAP_CLASS, tap(calls = tapCall(Opcode.INVOKE_STATIC, handlerCall))),
                 classDef(handlerCall.definingClass, handler(owner = handlerCall.definingClass)),
                 classDef(FRAGMENT_ACTIVITY, dispatch()),
             )
