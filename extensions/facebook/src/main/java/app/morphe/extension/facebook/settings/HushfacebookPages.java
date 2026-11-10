@@ -104,6 +104,10 @@ final class HushfacebookPages {
                             + "above work on the big screen too. Facebook's wider big screen layout goes away. Off by "
                             + "default, since it hasn't been tried on a big screen yet. Restart Facebook to see the "
                             + "change.")));
+            // Facebook pads the Reels page for the bar as the page is set up, so a change waits for a restart.
+            tabs.addPreference(toggle(context, Settings.HIDE_REELS_TAB_BAR,
+                    L10n.t("The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. "
+                            + "The other tabs keep the bar. Restart Facebook to see the change.")));
             subheading(tabs, L10n.t("Top bar"));
             // Asked each time Facebook moves the top bar, so it takes effect on the next scroll.
             tabs.addPreference(toggle(context, Settings.KEEP_TOP_BAR,

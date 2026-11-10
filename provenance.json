@@ -1764,6 +1764,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/navigation/ReelsTabBarHidden.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/navigation/bottomtabbar/ReelsTabBarHidden.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Hide the tab bar on the Reels tab, a switch of the tab bar patch. In Facebook 586 one static (fragment, tab bar holder, TabTag, Boolean) method restyles the tab bar for each selected tab and ends by storing a flag on the TabBarContainerLayout. Right before that store the extension is handed the container and the TabTag, and hides the bar on the Video tab and shows it again elsewhere. The scroll-away content manager, the class tracing ScrollAwayNavigationContentFragmentManager.maybeSetupScrollableContentPadding, adds the bottom scroll-away entries' height to a page's bottom padding in a no-argument int method; that height goes through the extension, which answers 0 while it has the bar hidden."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/navigation/RoundedTabBar.java"
       ],
       "origin": "original",

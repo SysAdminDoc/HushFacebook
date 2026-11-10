@@ -2553,3 +2553,5 @@ Show time in Reels	Mostrar o tempo nos Reels
 A small label at the top of Reels shows the minutes you've watched. Time on other tabs doesn't count, and 15 minutes away starts it over.	Uma pequena etiqueta no topo dos Reels mostra quantos minutos você assistiu. O tempo em outras abas não conta, e 15 minutos longe recomeçam do zero.
 # context: a short label on the Reels screen; %1$d is a number of minutes
 %1$d min	%1$d min
+Hide the tab bar on the Reels tab	Ocultar a barra de abas na aba Reels
+The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. The other tabs keep the bar. Restart Facebook to see the change.	A barra de abas some enquanto a aba Reels está aberta, e o reel ocupa a tela inteira. As outras abas mantêm a barra. Reinicie o Facebook para ver a mudança.

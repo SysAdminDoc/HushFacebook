@@ -2705,6 +2705,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_phone_layout_big_screens", FALSE, true);
 
     /**
+     * The tab bar goes away while the Reels tab is open, and the reel runs down to the bottom of the
+     * screen ({@link app.morphe.extension.facebook.navigation.ReelsTabBarHidden}). Facebook pads the
+     * Reels page for the bar as the page is set up, so a change waits for a restart.
+     */
+    public static final BooleanSetting HIDE_REELS_TAB_BAR =
+            new BooleanSetting("hushfacebook_hide_reels_tab_bar", FALSE, true);
+
+    /**
      * The top bar and the tab bar let the feed show through, with a blur of it behind them on
      * Android 12 and newer (#124, {@link app.morphe.extension.facebook.navigation.TranslucentBars}).
      * Asked as each frame of the main screen draws, so a change shows right away. A kept tab bar is

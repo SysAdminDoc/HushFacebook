@@ -2671,3 +2671,5 @@ Show time in Reels	在 Reels 中顯示觀看時間
 A small label at the top of Reels shows the minutes you've watched. Time on other tabs doesn't count, and 15 minutes away starts it over.	Reels 頂部的小標籤顯示你已觀看的分鐘數。在其他分頁的時間不計入，離開 Reels 15 分鐘後會從頭計算.
 # context: a short label on the Reels screen; %1$d is a number of minutes
 %1$d min	%1$d 分鐘
+Hide the tab bar on the Reels tab	在 Reels 分頁隱藏分頁列
+The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. The other tabs keep the bar. Restart Facebook to see the change.	開啟 Reels 分頁時分頁列會消失，Reels 佔滿整個螢幕。其他分頁保留分頁列。重新啟動 Facebook 後生效.

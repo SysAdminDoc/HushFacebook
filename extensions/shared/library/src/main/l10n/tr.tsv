@@ -2667,3 +2667,5 @@ Show time in Reels	Reels'te süreyi göster
 A small label at the top of Reels shows the minutes you've watched. Time on other tabs doesn't count, and 15 minutes away starts it over.	Reels'in üstündeki küçük bir etiket kaç dakika izlediğini gösterir. Diğer sekmelerde geçen süre sayılmaz ve 15 dakika uzak kalınca sıfırdan başlar.
 # context: a short label on the Reels screen; %1$d is a number of minutes
 %1$d min	%1$d dk
+Hide the tab bar on the Reels tab	Reels sekmesinde sekme çubuğunu gizle
+The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. The other tabs keep the bar. Restart Facebook to see the change.	Reels sekmesi açıkken sekme çubuğu kaybolur ve reel tüm ekranı kaplar. Diğer sekmeler çubuğu korur. Değişikliği görmek için Facebook'u yeniden başlatın.

@@ -63,6 +63,7 @@ internal const val OVERRIDE = "$BOTTOM_TAB_BAR->override(I)I"
  * puts feed videos on their TextureView (#250, TextureVideo.kt). Hide the status bar works the same way, and
  * one hook closes the strip Facebook draws behind the bar once it's gone (see StatusBarStrip.kt).
  * Light bars on the Reels tab keeps that tab's bars light in light mode (#423, LightReelsTabBars.kt).
+ * Hide the tab bar on the Reels tab takes the bar off that tab alone (ReelsTabBarHidden.kt).
  */
 @Suppress("unused")
 val bottomTabBarPatch = bytecodePatch(
@@ -74,7 +75,8 @@ val bottomTabBarPatch = bytecodePatch(
         "screen, and another switch keeps the top bar on screen. One gives " +
         "tablets and unfolded phones the phone layout so the bar can move there too, and one makes the top bar and " +
         "the tab bar see-through. Another hides the phone's status bar on the main screen until you swipe down " +
-        "from the top, and another keeps the Reels tab's bars light in light mode, like the other tabs. Three more " +
+        "from the top, and another keeps the Reels tab's bars light in light mode, like the other tabs. One hides " +
+        "the tab bar on the Reels tab alone, so the reel gets the whole screen. Three more " +
         "take the Messenger button, its unread count or the Facebook logo out " +
         "of the top bar. Starts off. Pick it in " +
         "Hushfacebook settings > Tabs and navigation, then restart Facebook. The see-through, status bar and " +
@@ -103,6 +105,7 @@ val bottomTabBarPatch = bytecodePatch(
         hookBigScreenLayout(reads)
         hookStatusBarStrip(paddings)
         hookLightReelsTabBars()
+        hookReelsTabBarHidden()
         reads.groupBy { it.method }.forEach { (method, sites) ->
             mutableClassDefBy(method.definingClass).findMutableMethodOf(method).hookOverrideReads(sites)
         }

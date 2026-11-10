@@ -2667,3 +2667,5 @@ Show time in Reels	Hiện thời gian xem Reels
 A small label at the top of Reels shows the minutes you've watched. Time on other tabs doesn't count, and 15 minutes away starts it over.	Một nhãn nhỏ ở đầu Reels cho biết bạn đã xem bao nhiêu phút. Thời gian ở các tab khác không được tính, và rời Reels 15 phút sẽ đếm lại từ đầu.
 # context: a short label on the Reels screen; %1$d is a number of minutes
 %1$d min	%1$d phút
+Hide the tab bar on the Reels tab	Ẩn thanh tab ở tab Reels
+The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. The other tabs keep the bar. Restart Facebook to see the change.	Thanh tab biến mất khi tab Reels đang mở, và reel chiếm toàn bộ màn hình. Các tab khác vẫn giữ thanh tab. Khởi động lại Facebook để thấy thay đổi.
