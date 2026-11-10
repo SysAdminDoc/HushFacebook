@@ -8,9 +8,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
 import android.widget.FrameLayout;
 
 import org.junit.After;
@@ -21,6 +23,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.robolectric.annotation.GraphicsMode;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.PatchFamily;
@@ -38,6 +41,7 @@ import app.morphe.extension.shared.settings.PauseForTests;
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class PhotoCarouselTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
@@ -162,6 +166,75 @@ public class PhotoCarouselTest {
         assertEquals("the one scrolled half out first", 1, (int) order[0]);
         assertEquals(2, (int) order[1]);
         assertEquals("the one peeking last", 0, (int) order[2]);
+    }
+
+    /** A row that scrolls sideways and reports [first] of [total] to accessibility, as the 585 row does. */
+    private static final class Row extends FrameLayout {
+        int first;
+        int total;
+
+        Row() {
+            super(RuntimeEnvironment.getApplication());
+        }
+
+        @Override
+        public boolean canScrollHorizontally(int direction) {
+            return true;
+        }
+
+        @Override
+        public void onInitializeAccessibilityEvent(AccessibilityEvent event) {
+            super.onInitializeAccessibilityEvent(event);
+            event.setItemCount(total);
+            event.setFromIndex(first);
+        }
+    }
+
+    /** A photo of the row, by the text LithoView ends with. */
+    private static View photo(Context context) {
+        return new View(context) {
+            @Override
+            public String toString() {
+                return "com.facebook.litho.LithoView{36d1429 VFED..C..}<cls>X.0cNH</cls>";
+            }
+        };
+    }
+
+    @Test
+    public void theDotsStayUnderTheRowAndOnlyTheBlueOneMoves() {
+        Settings.PHOTO_CAROUSEL.save(true);
+        Row row = new Row();
+        row.total = 4;
+        View one = photo(row.getContext());
+        View two = photo(row.getContext());
+        row.addView(one);
+        row.addView(two);
+        row.layout(0, 0, 1080, 800);
+        float density = row.getResources().getDisplayMetrics().density;
+        float step = 12 * density;
+        float left = 540 - 3 * step / 2;
+        int y = Math.round(800 - 19 * density);
+
+        // The first photo settled, the second peeking in.
+        one.layout(0, 0, 950, 760);
+        two.layout(974, 0, 1924, 760);
+        Bitmap bitmap = Bitmap.createBitmap(1080, 800, Bitmap.Config.ARGB_8888);
+        PhotoCarousel.drawCount(row, new Canvas(bitmap), "X.0cNH");
+        assertEquals("the first dot, under the middle of the row", PhotoCarousel.CURRENT_DOT,
+                bitmap.getPixel(Math.round(left), y));
+        assertTrue(statusLine(), statusLine().contains(PhotoCarousel.COUNT_SHOWN + " 1"));
+
+        // Most of the way to the second: the dots haven't moved, the blue one is the second.
+        one.layout(-600, 0, 350, 760);
+        two.layout(374, 0, 1324, 760);
+        bitmap = Bitmap.createBitmap(1080, 800, Bitmap.Config.ARGB_8888);
+        PhotoCarousel.drawCount(row, new Canvas(bitmap), "X.0cNH");
+        assertEquals("the second dot", PhotoCarousel.CURRENT_DOT, bitmap.getPixel(Math.round(left + step), y));
+        assertTrue("the first dot is white again", bitmap.getPixel(Math.round(left), y) != PhotoCarousel.CURRENT_DOT);
+        assertTrue("no dots under the second photo's own middle",
+                bitmap.getPixel(Math.round(849 - 3 * step / 2 + step), y) != PhotoCarousel.CURRENT_DOT);
+        assertTrue(statusLine(), statusLine().contains(PhotoCarousel.COUNT_SHOWN + " 2"));
+        assertFalse(statusLine(), statusLine().contains("threw"));
     }
 
     @Test

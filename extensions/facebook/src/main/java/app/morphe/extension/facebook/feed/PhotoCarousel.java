@@ -150,16 +150,20 @@ public final class PhotoCarousel {
 
     /**
      * The hook last thing in each RecyclerView's draw, over everything it drew. Each photo shown in a
-     * row of the carousel's photos gets its number out of how many at its own top right, and the dots
-     * at its bottom, so both slide along with it. Every other list draws as Facebook drew it: one
-     * that doesn't scroll sideways costs a settings read and a scroll check, and a row's items are
-     * each looked at once.
+     * row of the carousel's photos gets its number out of how many at its own top right, so the count
+     * slides along with it. The dots stay put at the bottom middle of the row and only the blue one
+     * moves (#442). Every other list draws as Facebook drew it: one that doesn't scroll sideways costs
+     * a settings read and a scroll check, and a row's items are each looked at once.
      */
     public static void drawCount(ViewGroup row, Canvas canvas) {
+        drawCount(row, canvas, photoClass());
+    }
+
+    /** {@link #drawCount(ViewGroup, Canvas)} with the row's photo class handed in, for the tests. */
+    static void drawCount(ViewGroup row, Canvas canvas, @Nullable String photo) {
         try {
             if (!on()) return;
             if (!row.canScrollHorizontally(1) && !row.canScrollHorizontally(-1)) return;
-            String photo = photoClass();
             if (photo == null) return;
 
             int width = row.getWidth();
@@ -199,8 +203,9 @@ public final class PhotoCarousel {
             Integer[] order = byLeft(lefts, shown);
             for (int rank = 0; rank < shown && first + rank < total; rank++) {
                 int item = order[rank];
-                draw(canvas, density, lefts[item], rights[item], row.getHeight(), first + rank, total);
+                drawCount(canvas, density, rights[item], first + rank, total);
             }
+            drawDots(canvas, density, width, row.getHeight(), current, total);
             String label = label(current, total);
             if (!label.equals(lastCount)) {
                 lastCount = label;
@@ -291,12 +296,8 @@ public final class PhotoCarousel {
         return Math.max(0, Math.min(current - shown / 2, total - shown));
     }
 
-    /**
-     * Item [current]'s count in a pill at its top right and the row's dots in theirs at its bottom,
-     * the item spanning [itemLeft] to [itemRight] of a row [rowHeight] high.
-     */
-    private static void draw(Canvas canvas, float density, int itemLeft, int itemRight, int rowHeight,
-            int current, int total) {
+    /** Item [current]'s count in a pill at the top right of the item, which ends at [itemRight]. */
+    private static void drawCount(Canvas canvas, float density, int itemRight, int current, int total) {
         float margin = 12 * density;
         String label = label(current, total);
 
@@ -310,14 +311,24 @@ public final class PhotoCarousel {
         FILL.setColor(0x99000000);
         canvas.drawRoundRect(PILL, height / 2, height / 2, FILL);
         canvas.drawText(label, PILL.left + padX, PILL.top + padY - metrics.ascent, TEXT);
+    }
 
+    /**
+     * The row's dots in their pill at the bottom middle of a row [rowWidth] wide and [rowHeight] high,
+     * item [current]'s blue.
+     */
+    private static void drawDots(Canvas canvas, float density, int rowWidth, int rowHeight, int current,
+            int total) {
+        float margin = 12 * density;
+        float padX = 10 * density;
+        float padY = 4 * density;
         int dots = Math.min(total, MAX_DOTS);
         int start = firstDot(current, total, MAX_DOTS);
         float radius = 3 * density;
         float step = 2 * radius + 6 * density;
         float dotsWidth = (dots - 1) * step;
         float centreY = rowHeight - margin - radius - padY;
-        float left = (itemLeft + itemRight) / 2f - dotsWidth / 2;
+        float left = rowWidth / 2f - dotsWidth / 2;
         PILL.set(left - padX, centreY - radius - padY, left + dotsWidth + padX, centreY + radius + padY);
         FILL.setColor(0x66000000);
         canvas.drawRoundRect(PILL, PILL.height() / 2, PILL.height() / 2, FILL);
