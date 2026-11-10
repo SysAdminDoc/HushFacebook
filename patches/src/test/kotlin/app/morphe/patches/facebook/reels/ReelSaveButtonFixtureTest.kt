@@ -43,6 +43,9 @@ class ReelSaveButtonFixtureTest {
     /** Static factory callers by build, where it isn't both list builders. */
     private val staticListBuilders = mapOf("586.0.0.52.53" to 1)
 
+    /** Classes holding the four callers by bundle, where each isn't in its own. 586's Android 9 build puts two in one. */
+    private val callerOwners = mapOf("facebook-586.0.0.52.53-arm64-v8a-minapi28-storeless.apkm" to 3)
+
     private fun Method.loads(string: String) = implementation?.instructions?.any {
         ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == string
     } == true
@@ -78,7 +81,7 @@ class ReelSaveButtonFixtureTest {
                     { !it.definingClass.startsWith(EXTENSION_PACKAGE) && callsFactory(it) })
                 assertEquals("$name: shared sidebar factory callers", 4, callers.size)
                 val owners = FixtureDex.classes(bundle, callers.map { it.definingClass }.toSet())
-                assertEquals("$name: caller owners", 4, owners.size)
+                assertEquals("$name: caller owners", callerOwners[name] ?: 4, owners.size)
                 // 586 made the VddVerticalUfi list builder (LX/0C7w;->A01) an instance method.
                 assertEquals("$name: two renders and two list builders, static as on that build", staticListBuilders[version] ?: 2,
                     callers.count { AccessFlags.STATIC.isSet(it.accessFlags) })
@@ -122,7 +125,7 @@ class ReelSaveButtonFixtureTest {
         }
         assertEquals("a declared build has no fixture", versions, checked)
         // Redex names the builder's class separately per ABI, so every declared build has to resolve.
-        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), abis)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
     }
 
     /** The actual APP_WHATSAPP constructor ordinal must select the case that names its button. */

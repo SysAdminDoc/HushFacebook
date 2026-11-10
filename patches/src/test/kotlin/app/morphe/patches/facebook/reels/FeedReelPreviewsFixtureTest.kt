@@ -149,7 +149,7 @@ class FeedReelPreviewsFixtureTest {
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
-        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), abis)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
     }
 
     @Test

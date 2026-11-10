@@ -407,8 +407,7 @@ class DownloadReelFixtureTest {
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
-        // 585's Android 9 build ("arm64-v8a-minapi28-storeless") is another arm64-v8a bundle.
-        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), actual.keys.map { it.substringBefore("-minapi") }.toSet())
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(actual.keys))
         assertEquals("where the block went and what it read", expected, actual)
     }
 }

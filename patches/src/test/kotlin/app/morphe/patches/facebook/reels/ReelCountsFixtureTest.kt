@@ -92,7 +92,7 @@ class ReelCountsFixtureTest {
         }
         assertEquals("a declared build has no fixture", versions, checked)
         // Redex names the button's class separately per ABI, so every declared build has to resolve.
-        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), abis)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
     }
 
     @Test

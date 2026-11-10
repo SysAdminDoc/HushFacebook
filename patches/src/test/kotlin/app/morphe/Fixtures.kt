@@ -50,4 +50,10 @@ internal object Fixtures {
     fun declaredAbis(): Set<String> =
         AppCompatibilities.facebook().single().targets.flatMap { it.versionCodes.orEmpty().keys }
             .map { if (it == SupportedAbi.X86_64) "x86_64" else it.name.lowercase().replace('_', '-') }.toSet()
+
+    /**
+     * The ABIs of the bundles a test checked, from their name suffixes, to compare against
+     * [declaredAbis]. An Android 9 build ("arm64-v8a-minapi28-storeless") is another arm64-v8a bundle.
+     */
+    fun abisOf(suffixes: Collection<String>): Set<String> = suffixes.map { it.substringBefore("-minapi") }.toSet()
 }

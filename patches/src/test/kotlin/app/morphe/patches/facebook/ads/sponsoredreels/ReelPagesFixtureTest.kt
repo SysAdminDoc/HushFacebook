@@ -45,12 +45,14 @@ class ReelPagesFixtureTest {
     /**
      * Registers and the page's register of the page insert, the announcement and the controller's
      * page method, by build and ABI. 585's arm64 controller page method has 11 registers (584's 13),
-     * which still keeps its page in range of the filter call.
+     * which still keeps its page in range of the filter call. 586's Android 9 page insert has one
+     * register more than the phone builds', with the page in the last.
      */
     private val expected = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to listOf(6 to 5, 7 to 6, 11 to 10),
             "armeabi-v7a" to listOf(6 to 5, 7 to 6, 11 to 10),
+            "arm64-v8a-minapi28-storeless" to listOf(7 to 6, 7 to 6, 11 to 10),
         ),
     )
 
@@ -169,12 +171,13 @@ class ReelPagesFixtureTest {
     /**
      * Registers and the item's register of the one-item insert, then the static append's, null where
      * a build has none, by build and ABI. 585's arm64 build has no static append: only the
-     * one-item insert (and the page insert) feed the Reels list.
+     * one-item insert (and the page insert) feed the Reels list. 586's three builds have none either.
      */
     private val inserts = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to listOf(6 to 4, null),
             "armeabi-v7a" to listOf(6 to 4, null),
+            "arm64-v8a-minapi28-storeless" to listOf(6 to 4, null),
         ),
     )
 

@@ -43,12 +43,13 @@ class ReelsAdPoolTest {
      * two builds shared the vends' names but not the pool's. 584 keeps the pool's name and moves
      * both vends one letter on. 585 moves the pool again (one per ABI) and the vends one more
      * letter, to A0V and A0X. 586 moves the pool once more, to one name on both ABIs, and keeps
-     * the vends.
+     * the vends. 586's Android 9 build names the pool and both vends its own way.
      */
     private val expected = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to ("LX/06I0;" to listOf("A0V", "A0X")),
             "armeabi-v7a" to ("LX/06I0;" to listOf("A0V", "A0X")),
+            "arm64-v8a-minapi28-storeless" to ("LX/06LL;" to listOf("A0W", "A0Y")),
         ),
     )
 
@@ -123,6 +124,7 @@ class ReelsAdPoolTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Triple("LX/05U4;", "LX/03En;", setOf("A0X")),
             "armeabi-v7a" to Triple("LX/05U4;", "LX/03En;", setOf("A0X")),
+            "arm64-v8a-minapi28-storeless" to Triple("LX/05Xq;", "LX/03FP;", setOf("A0Y")),
         ),
     )
 

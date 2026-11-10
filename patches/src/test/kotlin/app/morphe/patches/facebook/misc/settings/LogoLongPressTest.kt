@@ -304,13 +304,15 @@ class LogoLongPressTest {
      * the description. 584's two builds both have the builder at `A0G`, the touch listener at 123
      * and the logo hidden at 114, on the same registers. 585's two put them one earlier, at 122 and
      * 113, on new registers. 586's two build it in `A0I` with the touch listener at 136 and the logo
-     * hidden at 127, on new registers again. Last, where the title bar's constructor that
-     * builds it returns.
+     * hidden at 127, on new registers again. 586's Android 9 build makes it a static `A0J` taking
+     * the context and the bar, with the touch listener at 159 and the logo hidden at 150. Last,
+     * where the title bar's constructor that builds it returns.
      */
     private val pins = mapOf(
         "586.0.0.52.53" to mapOf(
             "arm64-v8a" to Pin(136, listOf(6, 4), 127, listOf(6, 9), listOf(120)),
             "armeabi-v7a" to Pin(136, listOf(6, 4), 127, listOf(6, 9), listOf(120)),
+            "arm64-v8a-minapi28-storeless" to Pin(159, listOf(4, 2), 150, listOf(4, 5), listOf(120)),
         ),
     )
 

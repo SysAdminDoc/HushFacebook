@@ -125,7 +125,7 @@ class ReelSoundButtonFixtureTest {
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
-        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), abis)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
     }
 
     /** The ABI a fixture named [name] is built for, the Android 9 build counting as its ABI's. */
@@ -302,7 +302,7 @@ class ReelSoundButtonFixtureTest {
         }
         assertEquals("a declared build has no fixture", versions, checked)
         // Redex names the viewer's class separately per ABI, so every declared build has to resolve.
-        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), abis)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
     }
 
     private fun Instruction.called() = (this as? ReferenceInstruction)?.reference as? MethodReference
@@ -473,7 +473,7 @@ class ReelSoundButtonFixtureTest {
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
-        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), abis)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
     }
 
     @Test

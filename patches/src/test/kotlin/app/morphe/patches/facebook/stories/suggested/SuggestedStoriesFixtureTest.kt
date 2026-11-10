@@ -56,6 +56,7 @@ class SuggestedStoriesFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to ("Fuc" to "LX/02ay;"),
             "armeabi-v7a" to ("Fuc" to "LX/02ay;"),
+            "arm64-v8a-minapi28-storeless" to ("Fuy" to "LX/02bk;"),
         ),
     )
 
@@ -67,6 +68,7 @@ class SuggestedStoriesFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Triple("Dyd", "FuV", "LX/03YA;"),
             "armeabi-v7a" to Triple("Dyd", "FuV", "LX/03YA;"),
+            "arm64-v8a-minapi28-storeless" to Triple("Dyt", "Fur", "LX/03Yu;"),
         ),
     )
 
@@ -78,12 +80,20 @@ class SuggestedStoriesFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to "D7Z",
             "armeabi-v7a" to "D7Z",
+            "arm64-v8a-minapi28-storeless" to "D7p",
         ),
     )
 
-    /** The tray parser's registers and the register of its bucket list, per build (issues #313 and #317). */
+    /**
+     * The tray parser's registers and the register of its bucket list, per build and then by ABI
+     * (issues #313 and #317). 586's Android 9 build gives it one register more.
+     */
     private val expectedParser = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to (7 to 5),
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to (7 to 5),
+            "armeabi-v7a" to (7 to 5),
+            "arm64-v8a-minapi28-storeless" to (8 to 6),
+        ),
     )
 
     /** The query builders that set skip_srtt_item_list, per build and then by ABI (issue #21). */
@@ -91,6 +101,7 @@ class SuggestedStoriesFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to setOf("LX/01rM;->A03", "LX/01rM;->A07"),
             "armeabi-v7a" to setOf("LX/01rM;->A03", "LX/01rM;->A07"),
+            "arm64-v8a-minapi28-storeless" to setOf("LX/01s9;->A02", "LX/01s9;->A06"),
         ),
     )
 
@@ -244,7 +255,7 @@ class SuggestedStoriesFixtureTest {
                 assertEquals("${bundle.name}: the bucket list is the parser's second parameter", 1, list)
 
                 val method = with(context) { mutableClassDefBy(parser.definingClass) }.methods.single { it.name == parser.name && isTrayParse(it) }
-                val (registers, register) = expectedParser.getValue(version)
+                val (registers, register) = expectedParser.pin(version, bundle)
                 assertEquals("${bundle.name}: parser registers", registers, method.implementation!!.registerCount)
                 val own = body(method)
                 method.keepOnlyUnsuggestedBuckets(list)

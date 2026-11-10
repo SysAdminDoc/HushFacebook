@@ -36,10 +36,15 @@ import org.junit.Test
 class ProfilePostsFixtureTest {
     /**
      * Registers of the render method, and the declared parameter it takes the unit as (null when it
-     * reads a field of its component, as up to 584 did and 586 does again), per build.
+     * reads a field of its component, as up to 584 did and 586 does again), per build and then by
+     * ABI. 586's Android 9 build gives it two registers more.
      */
-    private val expected = mapOf<String, Pair<Int, Int?>>(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to (37 to null),
+    private val expected = mapOf<String, Map<String, Pair<Int, Int?>>>(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to (37 to null),
+            "armeabi-v7a" to (37 to null),
+            "arm64-v8a-minapi28-storeless" to (39 to null),
+        ),
     )
 
     private fun locals(method: Method): Int = method.implementation!!.registerCount - 1 - method.parameterTypes.size
@@ -63,7 +68,8 @@ class ProfilePostsFixtureTest {
                 val context = PatchContexts.of(listOf(component, story))
                 val found = with(context) { timelineStory() }
                 assertEquals("${bundle.name}: the component", component.type, found.render.definingClass)
-                val (registers, parameter) = expected.getValue(version)
+                val (registers, parameter) = expected.getValue(version)[bundle.name.substringAfter("-$version-").substringBefore(".apkm")]
+                    ?: throw AssertionError("${bundle.name} has no pin")
                 // The unit is typed as the first interface GraphQLStory declares, in a field or (585) a parameter.
                 val unitType = when (val unit = found.unit) {
                     is StoryUnit.InField -> unit.field.type.also { assertEquals("${bundle.name}: a field", null, parameter) }
