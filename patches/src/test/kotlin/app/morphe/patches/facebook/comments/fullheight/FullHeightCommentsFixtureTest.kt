@@ -9,12 +9,17 @@ import app.morphe.PatchContexts
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
@@ -70,6 +75,18 @@ class FullHeightCommentsFixtureTest {
     private fun holders(bundle: File, string: String) =
         FixtureDex.classesHolding(bundle, string).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
 
+    /** [string]'s holders, and the classes asking one of them, a string table, for it, as the patch finds them. */
+    private fun namers(bundle: File, string: String): List<ClassDef> {
+        val held = holders(bundle, string)
+        val tables = held.associateBy { it.type }
+        val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+        val asking = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in tables } }) {
+            !isStringTable(it) && !holdsString(it, string) && namesString(it, string, resolve)
+        }.map { it.definingClass }.toSet()
+        val holding = held.filter { owner -> owner.methods.any { !isStringTable(it) && holdsString(it, string) } }
+        return holding + FixtureDex.classes(bundle, asking).values
+    }
+
     private fun sheet(bundle: File) {
         val params = FixtureDex.classes(bundle, setOf(POPOVER_PARAMS)).values.single()
         val constructor = sheetConstructor(params)
@@ -103,7 +120,7 @@ class FullHeightCommentsFixtureTest {
     private fun launchers(bundle: File) {
         val name = bundle.name
         val launchers = splitScreenLaunchers(
-            (holders(bundle, REEL_FOOTER) + holders(bundle, UNIT_NOT_MEASURED)).distinctBy { it.type },
+            (namers(bundle, REEL_FOOTER) + holders(bundle, UNIT_NOT_MEASURED)).distinctBy { it.type },
             holders(bundle, NOT_ENTERED),
         )
         assertEquals("$name: five split-screen launchers", 5, launchers.size)

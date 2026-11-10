@@ -15,7 +15,9 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.isStringTable
 import app.morphe.patches.facebook.feed.methodsHolding
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.feed.tableStringAt
@@ -129,8 +131,9 @@ private const val INT_VALUE = "Ljava/lang/Number;->intValue()I"
  * and the comments under it, through five launchers that each answer whether they opened it. Each
  * already answers false when its server gate is off, and the button then opens the regular sheet.
  * Three are found as the boolean methods building [SPLIT_SCREEN_FACTORY]'s Intent in the classes
- * holding [REEL_FOOTER] or [UNIT_NOT_MEASURED] (583 `LX/Xv5;->A00`, `LX/XRV;->A00`,
- * `LX/4Uk;->A08`), and two as the boolean methods holding [NOT_ENTERED] (583 `LX/Xv4;->A00`,
+ * naming [REEL_FOOTER] or holding [UNIT_NOT_MEASURED] (583 `LX/Xv5;->A00`, `LX/XRV;->A00`,
+ * `LX/4Uk;->A08`; 586's Android 9 build asks a string table for the footer, `LX/07hI;->A00(I)` from
+ * `LX/0gHt;->A00` and `LX/0grM;->A00`), and two as the boolean methods holding [NOT_ENTERED] (583 `LX/Xv4;->A00`,
  * `LX/Xys;->A01`). First thing in each, the extension is asked, and a yes answers false.
  *
  * A tap on a feed video reel's description (585 `LX/0dPx;->A00`, the click handler of
@@ -202,7 +205,7 @@ val fullHeightCommentsPatch = bytecodePatch(
         val sheet = sheetConstructor(params)
         val height = floatRegister(sheet)
         val launchers = splitScreenLaunchers(
-            (holders(REEL_FOOTER) + holders(UNIT_NOT_MEASURED)).distinctBy { it.type },
+            (footerNamers() + holders(UNIT_NOT_MEASURED)).distinctBy { it.type },
             holders(NOT_ENTERED),
         )
         val popover = classDefByOrNull(SIMPLE_POPOVER) ?: refuse("$SIMPLE_POPOVER isn't in this build")
@@ -240,6 +243,10 @@ private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $det
 private fun BytecodePatchContext.holders(string: String) =
     classDefByStrings(string, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
 
+/** The classes with a method naming [REEL_FOOTER], held or asked of a string table ([methodsNaming]). */
+private fun BytecodePatchContext.footerNamers() =
+    methodsNaming(REEL_FOOTER) { !isStringTable(it) }.map { it.definingClass }.distinct().mapNotNull { classDefByOrNull(it) }
+
 /** The one constructor of [params], the comment sheet's parameters, that takes a float: the sheet's height. */
 internal fun sheetConstructor(params: ClassDef): Method {
     val constructors = params.methods.filter { method ->
@@ -276,7 +283,7 @@ internal fun buildsSplitScreen(method: Method): Boolean =
 
 /**
  * The five split-screen launchers: the three boolean methods among [factoryHolders], the classes
- * holding [REEL_FOOTER] or [UNIT_NOT_MEASURED], that build the factory's Intent, and the two
+ * naming [REEL_FOOTER] or holding [UNIT_NOT_MEASURED], that build the factory's Intent, and the two
  * boolean methods among [notEnteredHolders] that hold [NOT_ENTERED]. Each needs a local register
  * for the hook.
  */
