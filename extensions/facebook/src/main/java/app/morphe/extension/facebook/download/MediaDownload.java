@@ -1066,7 +1066,8 @@ public final class MediaDownload {
      * when the person cancelled it, though: the fallback would start the save over. A fallback
      * below [video]'s picture says so, held to a plain test: [video] already passed the writability
      * check that picked it, so there's no picture-nothing-could-write excuse to make room for here.
-     * The quality setting is read once, when this job is built, so a change while the DASH save
+     * A fallback after a DASH save over the size cap carries its stated quality for the toast, as
+     * {@link #saveVideoFile}'s step-down does. The quality setting is read once, when this job is built, so a change while the DASH save
      * runs can't move what the fallback is judged against.
      */
     static Job dashJob(Context application, DashManifest.Track video, DashManifest.Track audio, String fallback) {
@@ -1093,8 +1094,12 @@ public final class MediaDownload {
                 RenditionPicker.qualityOf(fallback), quality);
             failure(() -> "the DASH save ended with " + result + ", saving " + describe(fallback) + belowNote(better),
                 null);
-            return saveFile(application, fallback, Downloader.Kind.VIDEO, "the DASH save ended with " + result,
-                java.util.Collections.singletonList(video), video, quality, writer, progress);
+            Downloader.Result saved = saveFile(application, fallback, Downloader.Kind.VIDEO,
+                "the DASH save ended with " + result, java.util.Collections.singletonList(video), video, quality,
+                writer, progress);
+            // Over the cap, the fallback is the smaller file saved in its place, and the toast says so.
+            return saved.ok() && result.status == Downloader.Status.TOO_LARGE
+                ? saved.smaller(RenditionPicker.qualityOf(fallback)) : saved;
         };
     }
 

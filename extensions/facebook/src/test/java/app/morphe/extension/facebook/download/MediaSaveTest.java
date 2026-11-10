@@ -817,6 +817,33 @@ public class MediaSaveTest {
     }
 
     /**
+     * A finished live video's 1080p DASH picture was announced at 2.6 GB, so the save fell back to
+     * the single 480p file, but the toast only said it was lower than on Facebook. A DASH save over
+     * the cap that falls back now says what it saved and why, as the single-file step-down does.
+     */
+    @Test
+    public void aDashSaveOverTheCapNamesTheFallbacksQuality() throws InterruptedException {
+        byte[] big = mp4(150_000);
+        serve("/v1080.mp4", "video/mp4", big, big.length);
+        byte[] fits = mp4(20_000);
+        serve("/clip_480p.mp4", "video/mp4", fits, fits.length);
+        DashManifest.Track video = new DashManifest.Track("video/mp4", "avc1.64001f", 1080, 1920, 3_000_000,
+                origin + "/v1080.mp4", 1080);
+        MediaDownload.capForTests = 100_000;
+
+        Thread worker = MediaDownload.start(context, true, MediaDownload.dashJob(context, video, null,
+                origin + "/clip_480p.mp4"));
+        worker.join(30_000);
+        assertFalse("the save never finished", worker.isAlive());
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+
+        assertEquals(1, gallery.inserts.size());
+        assertArrayEquals("the gallery didn't get the 480p file", fits, published.toByteArray());
+        String toast = String.valueOf(ShadowToast.getTextOfLatestToast());
+        assertTrue(toast, toast.startsWith("Saved to ") && toast.endsWith(" at 480p, since the bigger file is over 512 MB"));
+    }
+
+    /**
      * The single-file path used to weigh the report's "below the manifest's" note only against a
      * guess read off the chosen address ({@link RenditionPicker#qualityOf}), before anything was
      * fetched. Here the fallback's address claims 1080p, exactly what the manifest's own track
