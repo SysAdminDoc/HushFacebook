@@ -88,8 +88,9 @@ internal fun rowListBuilds(method: Method): List<MethodReference> =
  * The method that makes the [native] section's row list builds: the section itself, or on 586 the
  * one static method of its own class it calls for an ImmutableList (`LX/0D4P;->A01`), which picks
  * the Settings and privacy or the Help and support build by the group and hands back what the build
- * answers. With builds in neither it's the section, which may keep the lists itself (584).
- * [classDef] finds a class of the app by type.
+ * answers. 586's Android 9 build has both builds inlined into that method (`LX/0p49;->A00`), which
+ * keeps the lists the way 584's section does ([keptRowLists]). With builds or kept lists in neither
+ * it's the section, which may keep the lists itself (584). [classDef] finds a class of the app by type.
  */
 internal fun rowListSite(native: Method, classDef: (String) -> ClassDef?): Method {
     if (rowListBuilds(native).isNotEmpty()) return native
@@ -101,7 +102,7 @@ internal fun rowListSite(native: Method, classDef: (String) -> ClassDef?): Metho
         .toSet()
     val helpers = classDef(native.definingClass)?.methods?.toList().orEmpty().filter { method ->
         method.isStatic() && "${method.name}(${method.parameterTypes.joinToString("")})" in called &&
-            rowListBuilds(method).isNotEmpty()
+            (rowListBuilds(method).isNotEmpty() || keptRowLists(method) != null)
     }
     return helpers.singleOrNull() ?: native
 }

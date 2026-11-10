@@ -53,13 +53,15 @@ class MenuRowsFixtureTest {
                 val (section, native) = natives.single()
 
                 // 584 calls no build: the section keeps both lists itself, and builds their rows. 586
-                // asks a static method of its own class, which calls the builds, for its group's list.
+                // asks a static method of its own class, which calls the builds, for its group's list,
+                // and on its Android 9 build that method keeps both lists the way 584's section does.
                 val ownClass: (String) -> ClassDef? = { if (it == section.type) section else null }
                 val site = rowListSite(native, ownClass)
                 val builds = rowListBuilds(site)
                 val owners = builds.map { it.definingClass }.toSet()
                 val builders = FixtureDex.classes(bundle, owners)
-                val made = builders.values.flatMap { it.methods.flatMap(::constructedTypes) }.toSet() + constructedTypes(native)
+                val made = builders.values.flatMap { it.methods.flatMap(::constructedTypes) }.toSet() +
+                    constructedTypes(native) + constructedTypes(site)
                 val classes = FixtureDex.classes(bundle, made + owners)
                 val hooks = rowListHooks(native) { ownClass(it) ?: classes[it] }
                 assertEquals("$name: Settings and privacy's list, then Help and support's",

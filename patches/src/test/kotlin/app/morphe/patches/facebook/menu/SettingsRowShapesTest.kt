@@ -166,6 +166,11 @@ class SettingsRowShapesTest {
         val virtual = method(section, "A01", pickParameters, IMMUTABLE_LIST, 9, pick.implementation!!.instructions.toList())
         assertEquals("nor one that isn't static", "A0s", rowListSite(native, owner(native, virtual)).name)
         assertEquals("nor a class that isn't in the build", "A0s", rowListSite(native) { null }.name)
+        // 586's Android 9 build inlined the builds into that method, which keeps the lists like 584's section.
+        val keeping = method(section, "A01", pickParameters, IMMUTABLE_LIST, 8,
+            keepingSection().implementation!!.instructions.toList(), flags = publicStatic)
+        assertEquals("a static method that keeps the lists is the site too", "A01",
+            rowListSite(native, owner(native, keeping)).name)
     }
 
     private fun tap(

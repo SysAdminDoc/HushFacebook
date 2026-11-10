@@ -71,12 +71,14 @@ val hushfacebookInTheMenuPatch = bytecodePatch(
         val native = natives.singleOrNull()
             ?: throw PatchException("$ROW_PATCH: expected one native Menu group section, found ${natives.size}")
         // 586 asks a static method beside the section for its group's list, which makes the builds.
-        val builds = rowListBuilds(rowListSite(native) { classDefByOrNull(it) })
-        // 584 inlined the builder into the section, which keeps the list itself.
-        val kept = if (builds.isEmpty()) keptRowLists(native)?.settings else null
+        val site = rowListSite(native) { classDefByOrNull(it) }
+        val builds = rowListBuilds(site)
+        // 584 inlined the builder into the section, which keeps the list itself, and 586's Android 9
+        // build into the static method, which keeps it the same way.
+        val kept = if (builds.isEmpty()) keptRowLists(site)?.settings else null
         if (kept == null && builds.size != 1) {
             throw PatchException(
-                "$ROW_PATCH: expected ${native.definingClass}->${native.name} to build one row list or keep one itself, " +
+                "$ROW_PATCH: expected ${site.definingClass}->${site.name} to build one row list or keep one itself, " +
                     "found ${builds.size} builds",
             )
         }
@@ -108,10 +110,10 @@ val hushfacebookInTheMenuPatch = bytecodePatch(
         }
 
         if (kept != null) {
-            if (!constructs(native, item)) {
-                throw PatchException("$ROW_PATCH: ${native.definingClass}->${native.name} builds no $item, so its list isn't rows")
+            if (!constructs(site, item)) {
+                throw PatchException("$ROW_PATCH: ${site.definingClass}->${site.name} builds no $item, so its list isn't rows")
             }
-            mutableClassDefBy(native.definingClass).findMutableMethodOf(native).passKeptListThroughRow(kept)
+            mutableClassDefBy(site.definingClass).findMutableMethodOf(site).passKeptListThroughRow(kept)
         } else {
             val build = builds.single()
             val builder = mutableClassDefBy(build.definingClass).methods.single {

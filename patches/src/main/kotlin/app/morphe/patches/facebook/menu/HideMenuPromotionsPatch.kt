@@ -267,20 +267,21 @@ private fun signature(call: MethodReference) =
  * The native section's two row list builds, Settings and privacy's then Help and support's, each
  * with its hook, once both are found once on one class and share the one row item MenuRows can
  * read. 584 calls no build: its two kept lists ([keptRowLists]) take the hooks, once the section
- * builds the one row item MenuRows can read. [classDef] finds a class of the app by type.
+ * builds the one row item MenuRows can read. So do those of 586's Android 9 build, kept in the
+ * static method beside the section. [classDef] finds a class of the app by type.
  */
 internal fun rowListHooks(native: Method, classDef: (String) -> ClassDef?): List<RowListHook> {
-    // On 586 a static method beside the section makes the builds ([rowListSite]).
+    // On 586 a static method beside the section makes the builds or keeps the lists ([rowListSite]).
     val site = rowListSite(native, classDef)
     val builds = rowListBuilds(site)
     if (builds.isEmpty()) {
-        val kept = keptRowLists(native) ?: throw PatchException(
-            "$PATCH: expected ${native.definingClass}->${native.name} to build one Settings and privacy row list " +
+        val kept = keptRowLists(site) ?: throw PatchException(
+            "$PATCH: expected ${site.definingClass}->${site.name} to build one Settings and privacy row list " +
                 "or keep it beside the Help and support one, found neither",
         )
-        val items = constructedTypes(native).filter { type -> classDef(type)?.let(::isReadableRowItem) == true }
+        val items = constructedTypes(site).filter { type -> classDef(type)?.let(::isReadableRowItem) == true }
         if (items.size != 1) {
-            throw PatchException("$PATCH: ${native.definingClass}->${native.name} builds ${items.size} readable row items, not one")
+            throw PatchException("$PATCH: ${site.definingClass}->${site.name} builds ${items.size} readable row items, not one")
         }
         return listOf(
             RowListHook(reference(kept.settings), SETTINGS_ROWS_KEPT, kept.settings),

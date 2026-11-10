@@ -42,11 +42,13 @@ class SettingsRowFixtureTest {
      * How many row loggers each declared build's tap class has, by ABI. 582's 32-bit build dropped
      * both; 584's 32-bit build keeps them, as its arm64 build does. 585 inlines the tap handler
      * into a lambda on both, as 583's 32-bit build did, so neither has a tap class to log from. 586
-     * has a tap class again on both, and both its loggers take the row.
+     * has a tap class again on both, and both its loggers take the row. Its Android 9 build folds
+     * both into the tap handler (`LX/0p4C;->A05` logs `tap_bookmark` right after reading the id),
+     * behind the hook that returns first for the patch's row.
      */
     private val loggerCount = mapOf(
         "585.0.0.47.54" to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0, "arm64-v8a-minapi28-storeless" to 0),
-        "586.0.0.52.53" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2),
+        "586.0.0.52.53" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2, "arm64-v8a-minapi28-storeless" to 0),
     )
 
     private fun Method.instructionList() = implementation?.instructions?.toList().orEmpty()
@@ -105,16 +107,18 @@ class SettingsRowFixtureTest {
                 val taps = FixtureDex.methodsWhere(bundle, tracing) { isRowTap(it, table) }
                 assertEquals("${bundle.name}: native Menu group sections", 1, natives.size)
                 // 586 asks a static method of the section's class for the list, which makes the builds.
-                val builds = rowListBuilds(rowListSite(natives.single()) { type -> sections.singleOrNull { it.type == type } })
-                // 584 inlined the builder into the section, which keeps the Settings list itself.
-                val kept = if (builds.isEmpty()) keptRowLists(natives.single()) else null
+                val site = rowListSite(natives.single()) { type -> sections.singleOrNull { it.type == type } }
+                val builds = rowListBuilds(site)
+                // 584 inlined the builder into the section, which keeps the Settings list itself, and
+                // 586's Android 9 build into the static method, which keeps it the same way.
+                val kept = if (builds.isEmpty()) keptRowLists(site) else null
                 assertEquals("${bundle.name}: row lists the native section builds or keeps", 1, builds.size + listOfNotNull(kept).size)
                 val build = builds.singleOrNull()
                 if (kept != null) {
-                    val sites = keptListReads(natives.single(), kept.settings)
+                    val sites = keptListReads(site, kept.settings)
                     assertNotNull("${bundle.name}: another way into the code after a read or write of ${kept.settings}", sites)
                     assertEquals("${bundle.name}: ${kept.settings} read, then written", listOf(Opcode.IGET_OBJECT, Opcode.IPUT_OBJECT),
-                        sites!!.map { natives.single().instructionList()[it.index].opcode })
+                        sites!!.map { site.instructionList()[it.index].opcode })
                 }
                 val abi = bundle.name.substringAfter("-$version-").substringBefore(".apkm")
 
@@ -139,7 +143,7 @@ class SettingsRowFixtureTest {
                     classes.getValue(call.definingClass).methods.single {
                         it.name == call.name && it.parameterTypes.map(Any::toString) == call.parameterTypes.map(Any::toString)
                     }
-                } ?: natives.single()
+                } ?: site
                 assertTrue("${bundle.name}: the row list builder makes no $item", builder.instructionList().any {
                     it.opcode == Opcode.NEW_INSTANCE && ((it as ReferenceInstruction).reference as TypeReference).type == item
                 })
