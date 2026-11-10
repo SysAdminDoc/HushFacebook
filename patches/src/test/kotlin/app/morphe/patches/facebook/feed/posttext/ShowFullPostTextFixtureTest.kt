@@ -117,6 +117,7 @@ class ShowFullPostTextFixtureTest {
         "586.0.0.52.53" to mapOf(
             "arm64-v8a" to Place("LX/041q;", 5, 2, "LX/02za;", "LX/040k;"),
             "armeabi-v7a" to Place("LX/041q;", 5, 2, "LX/02za;", "LX/040k;"),
+            "arm64-v8a-minapi28-storeless" to Place("LX/042d;", 5, 0, "LX/030M;", "LX/041X;"),
         ),
     )
 
@@ -124,7 +125,8 @@ class ShowFullPostTextFixtureTest {
     private val captionComponentOf = mapOf(
         "585.0.0.47.54" to mapOf("arm64-v8a" to "LX/09as;", "armeabi-v7a" to "LX/09ax;",
             "arm64-v8a-minapi28-storeless" to "LX/09bQ;"),
-        "586.0.0.52.53" to mapOf("arm64-v8a" to "LX/09Dk;", "armeabi-v7a" to "LX/09Dk;"),
+        "586.0.0.52.53" to mapOf("arm64-v8a" to "LX/09Dk;", "armeabi-v7a" to "LX/09Dk;",
+            "arm64-v8a-minapi28-storeless" to "LX/09FO;"),
     )
 
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()

@@ -22,6 +22,7 @@ import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.containsLiteralInstruction
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.returnEarly
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Format
 import com.android.tools.smali.dexlib2.Opcode
@@ -278,7 +279,8 @@ private fun requireDeadAfter(code: List<Instruction>, index: Int, register: Int,
  * SpannableString from a CharacterStyle first), the answer lands right after it, and the very next
  * instruction branches on that answer being null: the split between text that fits and cut text.
  * The story is the one register cast to [GRAPHQL_STORY] right after it's read from the post's props,
- * and nothing else in the method writes it, so it still holds the story at the cut.
+ * and every way to the cut gets its value from that cast, so it still holds the story there (586's
+ * Android 9 build reuses the register after the cut, `LX/042d;->A06` v0).
  */
 internal fun textCut(method: Method): TextCut {
     val code = method.implementation!!.instructions.toList()
@@ -308,8 +310,8 @@ internal fun textCut(method: Method): TextCut {
         refuse("the story in $where isn't read from the post's props right before its cast")
     }
     val storyField = (read as ReferenceInstruction).reference as FieldReference
-    val written = code.indices.filter { it != cast && it != cast - 1 && writes(code[it], story) }
-    if (written.isNotEmpty()) refuse("$where writes the story's v$story again at $written")
+    val reaching = method.writersReaching(call + 2, story)
+    if (reaching != listOf(cast)) refuse("$where's v$story reaches its cut written at $reaching, not only by the story's cast at $cast")
     if (story > 15 || register > 15) refuse("the cut's v$register or the story's v$story in $where is past v15")
     return TextCut(method, call + 2, register, story, storyField)
 }
