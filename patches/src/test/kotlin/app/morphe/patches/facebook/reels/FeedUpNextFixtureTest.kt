@@ -9,6 +9,7 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -29,7 +30,8 @@ import org.junit.Test
  * one class holds the Up next query in a static lookup, and after the hook that lookup asks the
  * extension first and returns, and the class's (String)List getter asks first and answers an empty
  * list. One static setter stores the bar's room (#375), and after the hook it asks first and
- * returns before it writes. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * returns before it writes. On the Android 9 build that setter is inlined, and the hook skips its
+ * store the way a room already set does. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class FeedUpNextFixtureTest {
     private fun Method.body(): List<Instruction> = implementation?.instructions?.toList().orEmpty()
@@ -43,7 +45,8 @@ class FeedUpNextFixtureTest {
             val strings = dex.stringSection.map(CharSequence::toString).toSet()
             if (UP_NEXT_QUERY !in strings && OVERLAID_ASPECT_RATIO !in strings) return@forEach
             dex.classes.filterTo(found) { classDef ->
-                classDef.methods.any { holdsString(it, UP_NEXT_QUERY) } || upNextInsetSetters(classDef.methods).isNotEmpty()
+                classDef.methods.any { holdsString(it, UP_NEXT_QUERY) || upNextRoomGuard(it) != null } ||
+                    upNextInsetSetters(classDef.methods).isNotEmpty()
             }
         }
         return found.map(ImmutableClassDef::of)
@@ -68,8 +71,13 @@ class FeedUpNextFixtureTest {
                 // Negative control: a lookup that takes some other class isn't the controller's.
                 assertTrue("$name: a lookup for another class was taken", upNextLookups("LX/other;", controller.methods).isEmpty())
                 val setters = classes.flatMap { classDef -> upNextInsetSetters(classDef.methods).map { classDef to it } }
-                assertEquals("$name: static (…FI)V methods calling $OVERLAID_ASPECT_RATIO", 1, setters.size)
-                val (setterOwner, setter) = setters.single()
+                val inlined = classes.flatMap { classDef -> classDef.methods.filter { upNextRoomGuard(it) != null }.map { classDef to it } }
+                // The phone builds keep the setter on its own. The Android 9 build inlines it into the
+                // feed video attachment's lambda.
+                val inlinedBuild = name.substringAfter("-$version-").contains("-minapi")
+                assertEquals("$name: static (…FI)V methods calling $OVERLAID_ASPECT_RATIO", if (inlinedBuild) 0 else 1, setters.size)
+                assertEquals("$name: methods the setter is inlined into", if (inlinedBuild) 1 else 0, inlined.size)
+                val (setterOwner, setter) = (setters + inlined).single()
                 // Negative control: the aspect ratio method itself takes two Floats and answers one, so it isn't taken.
                 assertTrue("$name: the aspect ratio method was taken",
                     upNextInsetSetters(setterOwner.methods.filter { it.name == OVERLAID_ASPECT_RATIO }).isEmpty())
@@ -84,10 +92,23 @@ class FeedUpNextFixtureTest {
                 fun Method.params() = parameterTypes.map(CharSequence::toString)
                 val hookedSetter = context.mutableClassDefBy(setterOwner.type).methods
                     .single { it.name == setter.name && it.params() == setter.params() }.body()
-                assertEquals("$name: the room setter asks first", SKIP_UP_NEXT_ROOM, hookedSetter[0].called())
-                assertEquals("$name: tests the answer", Opcode.IF_EQZ, hookedSetter[2].opcode)
-                assertEquals("$name: and returns before it writes", Opcode.RETURN_VOID, hookedSetter[3].opcode)
-                assertEquals("$name: the rest of the setter is Facebook's", setter.body().map { it.opcode }, hookedSetter.drop(4).map { it.opcode })
+                val guard = upNextRoomGuard(setter)
+                if (guard == null) {
+                    assertEquals("$name: the room setter asks first", SKIP_UP_NEXT_ROOM, hookedSetter[0].called())
+                    assertEquals("$name: tests the answer", Opcode.IF_EQZ, hookedSetter[2].opcode)
+                    assertEquals("$name: and returns before it writes", Opcode.RETURN_VOID, hookedSetter[3].opcode)
+                    assertEquals("$name: the rest of the setter is Facebook's", setter.body().map { it.opcode }, hookedSetter.drop(4).map { it.opcode })
+                } else {
+                    val at = guard.read
+                    val original = setter.body()
+                    assertEquals("$name: the room's read is the Float it stores", Opcode.IGET_OBJECT, original[at].opcode)
+                    assertEquals("$name: the inlined setter asks before it reads the room", SKIP_UP_NEXT_ROOM, hookedSetter[at].called())
+                    assertEquals("$name: tests the answer", Opcode.IF_NEZ, hookedSetter[at + 2].opcode)
+                    assertEquals("$name: and skips where a room already set skips to",
+                        branchTarget(hookedSetter, at + 4), branchTarget(hookedSetter, at + 2))
+                    assertEquals("$name: the rest is Facebook's", original.map { it.opcode },
+                        hookedSetter.filterIndexed { index, _ -> index !in at until at + 3 }.map { it.opcode })
+                }
                 val hookedLookup = methods.single { it.name == lookup.name && it.params() == lookup.params() }.body()
                 assertEquals("$name: the lookup asks first", SKIP_UP_NEXT_FETCH, hookedLookup[0].called())
                 assertEquals("$name: tests the answer", Opcode.IF_EQZ, hookedLookup[2].opcode)

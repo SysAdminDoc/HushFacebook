@@ -13,8 +13,10 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.addressed
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.requireLocals
+import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -25,6 +27,9 @@ import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
+import com.android.tools.smali.dexlib2.iface.instruction.ThreeRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
@@ -87,6 +92,7 @@ private const val STRING = "Ljava/lang/String;"
 private const val LIST = "Ljava/util/List;"
 private const val VIEW = "Landroid/view/View;"
 private const val INTEGER = "Ljava/lang/Integer;"
+private const val FLOAT = "Ljava/lang/Float;"
 
 /**
  * The lookups among [methods]: static, answering nothing, taking a [controller], holding
@@ -114,6 +120,44 @@ internal fun <M : Method> upNextInsetSetters(methods: Iterable<M>): List<M> = me
         method.implementation?.instructions?.any { instruction ->
             ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.name == OVERLAID_ASPECT_RATIO
         } == true
+}
+
+/**
+ * Where a method that the inset setter is inlined into (586's Android 9 build, the feed video
+ * attachment's lambda LX/03jK;->invoke) skips storing the room: [read] reads the Up next state's
+ * Float into [register], and the `if-nez` after it jumps to [skipTo] when it's already set.
+ */
+internal data class UpNextRoomGuard(val read: Int, val register: Int, val skipTo: Int)
+
+/**
+ * The room guard in [method], when it calls [OVERLAID_ASPECT_RATIO] once without being an inset
+ * setter: the Float field stored right after that call is read once before it and tested with
+ * `if-nez`, the read isn't a branch target, and the skip lands on a write of the read's register
+ * that doesn't read it, so the hook can leave its answer there. Null otherwise.
+ */
+internal fun upNextRoomGuard(method: Method): UpNextRoomGuard? {
+    if (upNextInsetSetters(listOf(method)).isNotEmpty()) return null
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val call = code.indices.singleOrNull {
+        ((code[it] as? ReferenceInstruction)?.reference as? MethodReference)?.name == OVERLAID_ASPECT_RATIO
+    } ?: return null
+    val store = (call + 1 until minOf(code.size, call + 8)).firstOrNull {
+        code[it].opcode == Opcode.IPUT_OBJECT && ((code[it] as ReferenceInstruction).reference as FieldReference).type == FLOAT
+    } ?: return null
+    val room = (code[store] as ReferenceInstruction).reference.toString()
+    val read = (0 until call).singleOrNull {
+        code[it].opcode == Opcode.IGET_OBJECT && (code[it] as ReferenceInstruction).reference.toString() == room
+    } ?: return null
+    val register = (code[read] as OneRegisterInstruction).registerA
+    val test = code[read + 1]
+    if (test.opcode != Opcode.IF_NEZ || (test as OneRegisterInstruction).registerA != register) return null
+    if (read in branchTargets(code)) return null
+    val skipTo = branchTarget(code, read + 1) ?: return null
+    val landing = code[skipTo]
+    if (!landing.opcode.setsRegister() || (landing as? OneRegisterInstruction)?.registerA != register ||
+        (landing as? TwoRegisterInstruction)?.registerB == register || (landing as? ThreeRegisterInstruction)?.registerC == register
+    ) return null
+    return UpNextRoomGuard(read, register, skipTo)
 }
 
 /**
@@ -179,17 +223,36 @@ internal fun BytecodePatchContext.hideUpNext() {
     keepNoUpNextRoom()
 }
 
-/** The setter of the bar's room returns before it writes the height when the switch is on (#375). */
+/**
+ * The setter of the bar's room returns before it writes the height when the switch is on (#375).
+ * Where the setter is inlined, the code that holds it skips the store the way it does when the
+ * room is already set.
+ */
 private fun BytecodePatchContext.keepNoUpNextRoom() {
     val setters = mutableListOf<Pair<String, Method>>()
+    val inlined = mutableListOf<Pair<String, Method>>()
     classDefForEachReferencing(names = listOf(OVERLAID_ASPECT_RATIO)) { classDef ->
         if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
         upNextInsetSetters(classDef.methods).mapTo(setters) { classDef.type to it }
+        classDef.methods.filter { upNextRoomGuard(it) != null }.mapTo(inlined) { classDef.type to it }
     }
-    val (owner, setter) = setters.singleOrNull() ?: throw PatchException(
-        "$PATCH: expected one static (…FI)V method calling $OVERLAID_ASPECT_RATIO, found ${setters.size}",
+    setters.singleOrNull()?.let { (owner, setter) -> return mutableMethod(owner, setter).returnVoidWhen(SKIP_UP_NEXT_ROOM) }
+    val (owner, holder) = inlined.takeIf { setters.isEmpty() }?.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one static (…FI)V method calling $OVERLAID_ASPECT_RATIO or one method it's inlined into, " +
+            "found ${setters.size} and ${inlined.size}",
     )
-    mutableMethod(owner, setter).returnVoidWhen(SKIP_UP_NEXT_ROOM)
+    val method = mutableMethod(owner, holder)
+    val guard = upNextRoomGuard(method)
+        ?: throw PatchException("$PATCH: $owner->${holder.name} lost its Up next room read before it was hooked")
+    method.addInstructionsWithLabels(
+        guard.read,
+        """
+            invoke-static { }, $SKIP_UP_NEXT_ROOM
+            move-result v${guard.register}
+            if-nez v${guard.register}, :hush_no_room
+        """,
+        ExternalLabel("hush_no_room", method.getInstruction(guard.skipTo)),
+    )
 }
 
 /** The Shorts viewer's pill shower hides the container and returns for the two UP NEXT kinds when the switch is on (#375). */

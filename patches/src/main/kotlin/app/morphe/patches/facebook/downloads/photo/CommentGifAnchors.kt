@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.getFreeRegisterProvider
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
@@ -26,8 +27,10 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.util.MethodUtil
 
 /*
  * A comment's long-press sheet, which offers Save photo on a photo comment and nothing on a GIF
@@ -66,7 +69,9 @@ private const val FUNCTION1 = "Lkotlin/jvm/functions/Function1;"
  * Where the sheet's render takes the Save GIF row, and what the row is built from: the hook goes
  * at [insert], [comment], [context] and [list] are the registers holding the comment, the component
  * context and the rows, and [builder], [wrapper], [wrapperInit], [icon] and [add] are Save photo's
- * own row builder, its row-click type and constructor, its icon and the list's add.
+ * own row builder, its row-click type and constructor, its icon and the list's add. When render
+ * reuses the comment's register before the hook point (586's Android 9 build), [comment] holds
+ * `this` instead and [commentFields] are the fields render first read the comment through.
  */
 internal data class CommentGifPoint(
     val insert: Int,
@@ -78,6 +83,7 @@ internal data class CommentGifPoint(
     val wrapperInit: String,
     val icon: Int,
     val add: String,
+    val commentFields: List<String> = emptyList(),
 )
 
 private fun Instruction.methodCalled() = (this as? ReferenceInstruction)?.reference as? MethodReference
@@ -92,6 +98,32 @@ private fun Instruction.firstRegister() = when (this) {
     is RegisterRangeInstruction -> startRegister
     is FiveRegisterInstruction -> registerC
     else -> -1
+}
+
+private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+
+/**
+ * How [method] read what [before]'s [move] copies: the register holding `this` and the fields
+ * read from it, when the copy's source is the end of a run of iget-objects that starts at a
+ * register holding `this` up to the end of [before]. Null otherwise.
+ */
+private fun fieldsFromThis(method: Method, before: List<Instruction>, move: Int): Pair<Int, List<String>>? {
+    if (AccessFlags.STATIC.isSet(method.accessFlags) || before[move].opcode !in OBJECT_MOVES) return null
+    var held = (before[move] as TwoRegisterInstruction).registerB
+    val fields = ArrayDeque<String>()
+    for (at in move - 1 downTo 0) {
+        val read = before[at]
+        if (read.opcode != Opcode.IGET_OBJECT || (read as TwoRegisterInstruction).registerA != held) break
+        fields.addFirst((read as ReferenceInstruction).reference.toString())
+        held = read.registerB
+    }
+    if (fields.isEmpty()) return null
+    val self = method.implementation!!.registerCount - MethodUtil.getParameterRegisterCount(method)
+    if (before.any { it.writes(self) }) return null
+    val writes = before.filter { it.writes(held) }
+    val isThis = held == self ||
+        (writes.size == 1 && writes[0].opcode in OBJECT_MOVES && (writes[0] as TwoRegisterInstruction).registerB == self)
+    return if (isThis) held to fields.toList() else null
 }
 
 /**
@@ -167,17 +199,24 @@ internal fun commentGifPoint(method: Method, attachmentsGetter: String): Comment
     if (context > 15 || list > 15) return null
     // Every way to the hook point must find the context and the comment where Save photo's row
     // found them: each register is written once, by the copy render starts with, or for the
-    // comment by one move and its cast to GraphQLComment, with no write after.
+    // comment by one move and its cast to GraphQLComment, with no write after. When the comment's
+    // register is reused after the getter (586's Android 9 build), the hook reads the comment again
+    // the way that move's source was read, from `this`.
     val before = code.subList(0, insert)
     if (before.count { it.writes(context) } != 1) return null
     val commentWrites = before.indices.filter { before[it].writes(comment) }
-    if (commentWrites.size != 2 || commentWrites[1] != commentWrites[0] + 1 || commentWrites[1] > getter) return null
+    if (commentWrites.size < 2 || commentWrites[1] != commentWrites[0] + 1 || commentWrites[1] > getter) return null
     val cast = before[commentWrites[1]]
     if (cast.opcode != Opcode.CHECK_CAST || ((cast as ReferenceInstruction).reference as TypeReference).type != GRAPHQL_COMMENT) return null
+    val (holder, commentFields) = when {
+        commentWrites.size == 2 -> comment to emptyList()
+        commentWrites[2] > getter -> fieldsFromThis(method, before, commentWrites[0]) ?: return null
+        else -> return null
+    }
 
     return CommentGifPoint(
         insert = insert,
-        comment = comment,
+        comment = holder,
         context = context,
         list = list,
         builder = builder.toString(),
@@ -185,6 +224,7 @@ internal fun commentGifPoint(method: Method, attachmentsGetter: String): Comment
         wrapperInit = wrapperInit.toString(),
         icon = icon,
         add = add.toString(),
+        commentFields = commentFields,
     )
 }
 
@@ -229,6 +269,7 @@ private fun BytecodePatchContext.commentSheetRow(patch: String, click: String, t
             point.insert,
             """
                 move-object/from16 v$action, v${point.comment}
+                ${point.commentFields.joinToString("\n") { "iget-object v$action, v$action, $it" }}
                 invoke-static { v$action }, $click
                 move-result-object v$action
                 if-eqz v$action, :hush_no_row

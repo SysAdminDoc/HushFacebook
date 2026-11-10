@@ -413,9 +413,11 @@ internal data class PreSearchListSite(val method: Method, val read: Int, val lis
  * Each place in [section]'s own methods that asks something with no arguments for the paginated
  * list (an invoke answering [PRE_SEARCH_PAGINABLE]) and keeps the answer, with the asked object's register
  * written again by the very next instruction, so it can carry the hook's string meanwhile (#235).
+ * Static methods count: 586's Android 9 build moves the render into one (LX/0E3L;->A00) that its
+ * instance method calls.
  */
 internal fun preSearchListSites(section: ClassDef): List<PreSearchListSite> =
-    section.methods.filterNot { AccessFlags.STATIC.isSet(it.accessFlags) }.flatMap { method ->
+    section.methods.flatMap { method ->
         val code = method.implementation?.instructions?.toList() ?: return@flatMap emptyList()
         code.indices.mapNotNull { at ->
             val call = code[at].takeIf { it.opcode == Opcode.INVOKE_INTERFACE || it.opcode == Opcode.INVOKE_VIRTUAL }
