@@ -20,6 +20,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ScrollView;
+import android.widget.TextView;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -346,6 +347,48 @@ public class EditDialogKeyboardTest {
             ShadowLooper.idleMainLooper();
             assertEquals("Cancel saved the list", "", Settings.HIDDEN_WORDS.savedValue());
             assertEquals("trailer", Settings.KEPT_WORDS.savedValue());
+        }
+    }
+
+    /**
+     * A pause in typing that leaves the verdict as it was doesn't set the line again. It's a live
+     * region, so TalkBack would read the same verdict out after every pause.
+     */
+    @Test
+    public void aVerdictThatStaysTheSameIsntSetAgain() {
+        PatchFamily.inBuildForTests = EnumSet.allOf(PatchFamily.class);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            ValueRows.WordsRow row = (ValueRows.WordsRow) shown(controller, Settings.HIDDEN_WORDS.key);
+            AlertDialog dialog = (AlertDialog) row.getDialog();
+            try {
+                row.getEditText().setText("spoiler");
+                EditText sample = sampleField(dialog, row.getEditText());
+                sample.setText("Big SPOILER inside");
+                ShadowLooper.idleMainLooper(300, TimeUnit.MILLISECONDS);
+                ArrayList<View> found = new ArrayList<>();
+                dialog.getWindow().getDecorView().findViewsWithText(found,
+                        "A post with this text would be hidden.", View.FIND_VIEWS_WITH_TEXT);
+                assertEquals(1, found.size());
+                TextView verdict = (TextView) found.get(0);
+                assertEquals(View.ACCESSIBILITY_LIVE_REGION_POLITE, verdict.getAccessibilityLiveRegion());
+                int[] sets = {0};
+                verdict.addTextChangedListener(new android.text.TextWatcher() {
+                    @Override public void beforeTextChanged(CharSequence text, int start, int count, int after) { }
+                    @Override public void onTextChanged(CharSequence text, int start, int before, int after) { sets[0]++; }
+                    @Override public void afterTextChanged(android.text.Editable text) { }
+                });
+
+                sample.setText("Big SPOILER inside, again");
+                ShadowLooper.idleMainLooper(300, TimeUnit.MILLISECONDS);
+                assertEquals("the same verdict was set again", 0, sets[0]);
+
+                sample.setText("Nothing here");
+                ShadowLooper.idleMainLooper(300, TimeUnit.MILLISECONDS);
+                assertEquals("a new verdict wasn't shown", 1, sets[0]);
+                assertEquals("A post with this text would stay. Nothing on either list matches it.", verdict.getText().toString());
+            } finally {
+                if (dialog.isShowing()) dialog.dismiss();
+            }
         }
     }
 

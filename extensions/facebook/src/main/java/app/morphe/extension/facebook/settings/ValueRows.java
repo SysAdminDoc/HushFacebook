@@ -266,7 +266,9 @@ final class ValueRows {
             // Saved values, not what a paused Facebook reads, so the preview shows what the lists do once unpaused.
             PostWords.PreviewResult result = PostWords.preview(text, hides ? typed : other, hides ? other : typed,
                     Settings.POST_WORDS_WHOLE_WORDS.savedValue());
-            verdict.setText(wordsPreviewLine(result, text.trim().isEmpty()));
+            String said = wordsPreviewLine(result, text.trim().isEmpty());
+            // The line is a live region, so TalkBack speaks every setText. The same verdict after a pause says nothing.
+            if (!android.text.TextUtils.equals(verdict.getText(), said)) verdict.setText(said);
             // With the keyboard up, the scroll follows the caret and leaves the line under the field out of sight.
             if (sample.hasFocus()) {
                 TextView line = verdict;
