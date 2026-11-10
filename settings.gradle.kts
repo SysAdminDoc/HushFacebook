@@ -132,3 +132,5 @@ if (!allowMavenLocal) {
 }
 
 include(":patches:stub")
+// Hush Unpacker, the app that unpacks Facebook's Android 9+ build on a phone (#102).
+include(":helper")

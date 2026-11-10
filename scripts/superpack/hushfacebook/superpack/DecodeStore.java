@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Decodes Facebook's Superpack dex store on a device, with the libsuperpack-jni.so the APK ships,
@@ -32,35 +33,46 @@ import java.util.Map;
  * listed SHA-1 and a dex header and nothing unlisted did. A damaged store can abort inside the
  * library, which no catch here sees, so callers treat anything without that last line as a
  * refusal.
+ *
+ * <p>The Hush Unpacker app (helper/) calls {@link #decode} in its own process instead.
  */
 public final class DecodeStore {
     private DecodeStore() {
     }
 
     public static void main(String[] args) {
-        try {
-            run(args);
-        } catch (Throwable failure) {
-            refuse(failure.getClass().getName() + ": " + failure.getMessage());
-        }
-    }
-
-    private static void run(String[] args) throws Exception {
         if (args.length != 4) {
             System.out.println("REFUSED usage: <libsuperpack-jni.so> <store.dex.spo> <metadata.txt> <outdir>");
             System.exit(2);
         }
-        Map<String, String> want = readMetadata(new File(args[2]));
+        boolean verified = false;
+        try {
+            verified = decode(new File(args[0]), new File(args[1]), new File(args[2]), new File(args[3]), System.out::println);
+        } catch (Refusal refusal) {
+            System.out.println("REFUSED " + refusal.getMessage());
+        } catch (Throwable failure) {
+            System.out.println("REFUSED " + failure.getClass().getName() + ": " + failure.getMessage());
+        }
+        System.exit(verified ? 0 : 1);
+    }
+
+    /**
+     * Decodes {@code store} with {@code library} into {@code out}, one line per file to
+     * {@code log} and a last line starting VERIFIED or REFUSED, and says whether every DEX
+     * {@code metadata} lists came out right. Throws {@link Refusal} before decoding when the
+     * inputs can't be used.
+     */
+    public static boolean decode(File library, File store, File metadata, File out, Consumer<String> log) throws Exception {
+        Map<String, String> want = readMetadata(metadata);
         if (want.isEmpty()) refuse("metadata lists no dex files");
-        File out = new File(args[3]);
         if (!out.mkdirs() && !out.isDirectory()) refuse("can't make " + out);
 
-        System.load(args[0]);
+        System.load(library.getAbsolutePath());
         long started = System.nanoTime();
         int good = 0;
         int bad = 0;
         byte[] chunk = new byte[1 << 20];
-        try (InputStream in = new BufferedInputStream(new FileInputStream(args[1]), 1 << 20)) {
+        try (InputStream in = new BufferedInputStream(new FileInputStream(store), 1 << 20)) {
             long archive = SuperpackArchive.readNative(in, "spo", 0L);
             if (archive == 0) refuse("the library didn't open the store");
             try {
@@ -86,20 +98,20 @@ public final class DecodeStore {
                         boolean dex = length >= 8 && isDex(target);
                         if (expected == null) {
                             bad++;
-                            delete(target);
-                            System.out.println("UNLISTED " + name + " " + length + " " + actual);
+                            delete(target, log);
+                            log.accept("UNLISTED " + name + " " + length + " " + actual);
                         } else if (!expected.equals(actual) || !dex) {
                             bad++;
-                            delete(target);
-                            System.out.println("MISMATCH " + name + " " + length + " want " + expected + " got " + actual
+                            delete(target, log);
+                            log.accept("MISMATCH " + name + " " + length + " want " + expected + " got " + actual
                                     + (dex ? "" : " (no dex header)"));
                         } else if (!target.renameTo(new File(out, name))) {
                             bad++;
-                            delete(target);
-                            System.out.println("UNWRITTEN " + name);
+                            delete(target, log);
+                            log.accept("UNWRITTEN " + name);
                         } else {
                             good++;
-                            System.out.println("OK " + name + " " + length + " " + actual);
+                            log.accept("OK " + name + " " + length + " " + actual);
                         }
                     } finally {
                         SuperpackFile.closeNative(file);
@@ -111,11 +123,11 @@ public final class DecodeStore {
         }
         for (String missing : want.keySet()) {
             bad++;
-            System.out.println("MISSING " + missing);
+            log.accept("MISSING " + missing);
         }
         long ms = (System.nanoTime() - started) / 1_000_000;
-        System.out.println((bad == 0 ? "VERIFIED " : "REFUSED ") + good + " ok, " + bad + " bad, " + ms + " ms");
-        System.exit(bad == 0 ? 0 : 1);
+        log.accept((bad == 0 ? "VERIFIED " : "REFUSED ") + good + " ok, " + bad + " bad, " + ms + " ms");
+        return bad == 0;
     }
 
     /** Name to SHA-1 for every dex line; the dot-lines say how the store is packed and are skipped. */
@@ -149,8 +161,8 @@ public final class DecodeStore {
         return name;
     }
 
-    private static void delete(File file) {
-        if (!file.delete() && file.exists()) System.out.println("WARN couldn't delete " + file);
+    private static void delete(File file, Consumer<String> log) {
+        if (!file.delete() && file.exists()) log.accept("WARN couldn't delete " + file);
     }
 
     private static String hex(byte[] bytes) {
@@ -160,7 +172,13 @@ public final class DecodeStore {
     }
 
     private static void refuse(String why) {
-        System.out.println("REFUSED " + why);
-        System.exit(1);
+        throw new Refusal(why);
+    }
+
+    /** The store or its metadata can't be decoded; the message says why. */
+    public static final class Refusal extends RuntimeException {
+        Refusal(String message) {
+            super(message);
+        }
     }
 }

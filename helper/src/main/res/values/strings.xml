@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hush Unpacker</string>
+    <string name="intro">Facebook\'s builds for Android 9 and 10 pack most of their code into one store that Morphe Manager can\'t read. Pick the Facebook APK or .apkm you downloaded for this phone. Hush Unpacker opens the store with Facebook\'s own library, checks every file against the build\'s list, and hands the copy to Morphe Manager to patch.</string>
+    <string name="pick">Pick a Facebook APK or bundle</string>
+    <string name="save">Save the unpacked copy</string>
+    <string name="send">Open in Morphe Manager</string>
+    <string name="log_title">Log</string>
+    <string name="status_idle">Nothing picked yet. This phone runs %1$s.</string>
+    <string name="status_reading">Reading %1$s</string>
+    <string name="status_unpacking">Unpacking Facebook\'s code. This takes a minute or two.</string>
+    <string name="status_writing">Writing the unpacked copy</string>
+    <string name="status_ready">Unpacked %1$s. Open it in Morphe Manager, or save a copy and pick it there under Other apps.</string>
+    <string name="status_sent">Sent to Morphe Manager. If it says that needs Expert mode, save a copy here instead and pick it under Other apps.</string>
+    <string name="status_saving">Saving %1$s</string>
+    <string name="status_saved">Saved %1$s. In Morphe Manager, tap Other apps, pick it and patch it.</string>
+    <string name="status_not_saved">Not saved yet. Tap the button to choose a place for it.</string>
+    <string name="status_failed">That didn\'t work. %1$s</string>
+    <string name="failed_title">Couldn\'t unpack it</string>
+    <string name="toast_saved">Saved. Patch it in Morphe Manager.</string>
+    <string name="no_picker">This phone has no file picker to choose the file with.</string>
+    <string name="no_manager">Morphe Manager isn\'t installed. Save the copy and patch it wherever you patch.</string>
+    <string name="stopped_in_library">The last try stopped inside Facebook\'s library while it was unpacking. Try again, and make sure the file is the %1$s build for this phone.</string>
+    <string name="not_facebook">That file isn\'t a Facebook APK or .apkm bundle.</string>
+    <string name="already_unpacked">That build already keeps its code where Morphe Manager reads it, so there\'s nothing to unpack. Patch it as it is.</string>
+    <string name="no_store">That Facebook build has no packed code store to unpack.</string>
+    <string name="no_library">That file has no unpacking library for this phone\'s CPU (%1$s). Download the Facebook build made for %1$s and pick that one.</string>
+    <string name="not_verified">Facebook\'s library didn\'t hand back every file intact, so nothing was written.</string>
+    <string name="no_space">This needs about %1$d MB of free space and the phone has %2$d MB. Free some up and try again.</string>
+</resources>

@@ -34,7 +34,7 @@ function Assert-True {
 }
 
 $Java = Resolve-Java -Explicit $Java
-$tool = Join-Path $PSScriptRoot 'StorelessApk.java'
+$tool = Join-Path $PSScriptRoot 'superpack\hushfacebook\superpack\StorelessApk.java'
 $work = Join-Path ([IO.Path]::GetTempPath()) ('hushfacebook-storeless-test-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 New-Item -ItemType Directory -Path $work -Force | Out-Null
 

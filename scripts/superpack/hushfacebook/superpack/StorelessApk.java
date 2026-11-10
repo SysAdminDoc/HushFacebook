@@ -1,3 +1,5 @@
+package hushfacebook.superpack;
+
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -39,6 +41,9 @@ import java.util.zip.ZipOutputStream;
  * 16 KiB), so the APK installs once signed.
  *
  *   java StorelessApk.java &lt;input .apk or .apkm&gt; &lt;decoded dex directory&gt; &lt;output&gt;
+ *
+ * <p>The Hush Unpacker app (helper/) runs the same code on a phone through {@link #convert}, so
+ * this file sticks to what Java 11 and Android 9 both have.
  */
 public final class StorelessApk {
     private static final String DIR = "assets/secondary-program-dex-jars/";
@@ -57,28 +62,36 @@ public final class StorelessApk {
             System.err.println("usage: StorelessApk <input .apk or .apkm> <decoded dex directory> <output>");
             System.exit(2);
         }
-        File input = new File(args[0]);
-        File decoded = new File(args[1]);
         File output = new File(args[2]);
         try {
-            if (!input.isFile()) fail("no input at " + input.getPath());
-            if (!decoded.isDirectory()) fail("no decoded dex directory at " + decoded.getPath());
-            if (output.getCanonicalFile().equals(input.getCanonicalFile())) fail("the output would overwrite the input");
-            File parent = output.getAbsoluteFile().getParentFile();
-            File partial = new File(parent, output.getName() + ".part");
-            try {
-                String summary = rewrite(input, decoded, partial, parent);
-                Files.move(partial.toPath(), output.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                System.out.println("[storeless] " + summary + " -> " + output.getName() + ", " + output.length() + " bytes");
-            } finally {
-                Files.deleteIfExists(partial.toPath());
-            }
+            String summary = convert(new File(args[0]), new File(args[1]), output);
+            System.out.println("[storeless] " + summary + " -> " + output.getName() + ", " + output.length() + " bytes");
         } catch (Refusal refusal) {
             System.err.println("[storeless] " + refusal.getMessage());
             System.exit(1);
         } catch (IOException failure) {
             System.err.println("[storeless] " + failure);
             System.exit(1);
+        }
+    }
+
+    /**
+     * Writes the store-less copy of {@code input} to {@code output}, from the DEX files in
+     * {@code decoded}, and says what moved. Throws {@link Refusal} when the input or a DEX isn't
+     * what metadata.txt says, and leaves no output behind then.
+     */
+    public static String convert(File input, File decoded, File output) throws IOException {
+        if (!input.isFile()) fail("no input at " + input.getPath());
+        if (!decoded.isDirectory()) fail("no decoded dex directory at " + decoded.getPath());
+        if (output.getCanonicalFile().equals(input.getCanonicalFile())) fail("the output would overwrite the input");
+        File parent = output.getAbsoluteFile().getParentFile();
+        File partial = new File(parent, output.getName() + ".part");
+        try {
+            String summary = rewrite(input, decoded, partial, parent);
+            Files.move(partial.toPath(), output.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            return summary;
+        } finally {
+            Files.deleteIfExists(partial.toPath());
         }
     }
 
@@ -196,7 +209,10 @@ public final class StorelessApk {
 
     private static byte[] read(ZipFile zip, String name) throws IOException {
         try (InputStream in = zip.getInputStream(zip.getEntry(name))) {
-            return in.readAllBytes();
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            for (int n; (n = in.read(buffer)) > 0; ) bytes.write(buffer, 0, n);
+            return bytes.toByteArray();
         }
     }
 
@@ -215,8 +231,10 @@ public final class StorelessApk {
 
     private static boolean hasDexHeader(File file) throws IOException {
         try (InputStream in = new FileInputStream(file)) {
-            byte[] head = in.readNBytes(4);
-            return head.length == 4 && head[0] == 'd' && head[1] == 'e' && head[2] == 'x' && head[3] == '\n';
+            byte[] head = new byte[4];
+            int got = 0;
+            for (int n; got < 4 && (n = in.read(head, got, 4 - got)) > 0; ) got += n;
+            return got == 4 && head[0] == 'd' && head[1] == 'e' && head[2] == 'x' && head[3] == '\n';
         }
     }
 
@@ -224,18 +242,37 @@ public final class StorelessApk {
         throw new Refusal(why);
     }
 
-    private static final class Refusal extends RuntimeException {
+    /** The input or a decoded DEX isn't what this rewrite expects; the message says what. */
+    public static final class Refusal extends RuntimeException {
         Refusal(String message) {
             super(message);
         }
     }
 
-    private record Dex(File file, String rootName, Metadata.Line line) {
+    private static final class Dex {
+        final File file;
+        final String rootName;
+        final Metadata.Line line;
+
+        Dex(File file, String rootName, Metadata.Line line) {
+            this.file = file;
+            this.rootName = rootName;
+            this.line = line;
+        }
     }
 
     /** The Android 9+ metadata.txt: two dot-lines saying how the store is packed, then one line per DEX. */
     private static final class Metadata {
-        record Line(String name, String sha1, String canary) {
+        static final class Line {
+            final String name;
+            final String sha1;
+            final String canary;
+
+            Line(String name, String sha1, String canary) {
+                this.name = name;
+                this.sha1 = sha1;
+                this.canary = canary;
+            }
         }
 
         final List<Line> lines = new ArrayList<>();

@@ -193,7 +193,7 @@ try {
 
     $decoded = Join-Path $work 'decoded'
     Invoke-Adb pull "$remote/out" $decoded | Out-Null
-    $log = & $Java -Xmx2g (Join-Path $PSScriptRoot 'StorelessApk.java') $InputPath $decoded $OutputPath 2>&1
+    $log = & $Java -Xmx2g (Join-Path $PSScriptRoot 'superpack\hushfacebook\superpack\StorelessApk.java') $InputPath $decoded $OutputPath 2>&1
     $log | ForEach-Object { Write-Host "$_" }
     if ($LASTEXITCODE -ne 0) { throw "StorelessApk refused $InputPath." }
 } finally {
