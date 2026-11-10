@@ -258,10 +258,12 @@ internal fun searchGlyphSite(bar: ClassDef, glyphType: String): SearchGlyphSite 
 /**
  * How many of [wordmark]'s calls name the newer bar inside it [HOME_BAR_SCREEN]. Refuses unless
  * there's at least one, each passes that literal, and the method it calls writes the bar's screen
- * field before it runs the method holding the search glyph. Without all of that the extension
- * couldn't tell Home's bar from Marketplace's.
+ * field before it runs the method holding the search glyph, itself or through another of the bar's
+ * methods ([barMethodsRunning]). Without all of that the extension couldn't tell Home's bar from
+ * Marketplace's.
  */
 internal fun homeBarScreenCalls(wordmark: ClassDef, bar: ClassDef, search: SearchGlyphSite): Int {
+    val building = barMethodsRunning(bar, search.method)
     val calls = wordmark.methods.flatMap { method ->
         val code = method.implementation?.instructions?.toList() ?: return@flatMap emptyList()
         code.indices.filter { index ->
@@ -291,14 +293,34 @@ internal fun homeBarScreenCalls(wordmark: ClassDef, bar: ClassDef, search: Searc
         }
         val built = entryCode.indexOfFirst { insn ->
             val target = insn.reference() as? MethodReference
-            target != null && target.definingClass == bar.type && target.name == search.method.name &&
-                target.parameterTypes.map(CharSequence::toString) == search.method.parameterTypes.map(CharSequence::toString)
+            target != null && target.definingClass == bar.type && barMethodKey(target.name, target.parameterTypes) in building
         }
         if (written < 0 || built < 0 || written > built) {
             refuse("${bar.type}->${entry.name} doesn't name the bar before it builds (write at $written, build at $built)")
         }
     }
     return calls.size
+}
+
+private fun barMethodKey(name: String, parameters: List<CharSequence>) = parameters.joinToString("", "$name(", ")")
+
+/**
+ * The name and parameters of each of [bar]'s methods that runs [method]: [method] itself, then each
+ * method of the bar calling one already found. 586's Android 9 build reaches the search glyph's
+ * method only through another (`NavigationBar;->A0L` calls `A0G`, which calls `A08`).
+ */
+private fun barMethodsRunning(bar: ClassDef, method: Method): Set<String> {
+    val found = mutableSetOf(barMethodKey(method.name, method.parameterTypes))
+    do {
+        val more = bar.methods.map { barMethodKey(it.name, it.parameterTypes) to it }.filter { (key, caller) ->
+            key !in found && caller.implementation?.instructions?.any { insn ->
+                val target = insn.reference() as? MethodReference
+                target != null && target.definingClass == bar.type && barMethodKey(target.name, target.parameterTypes) in found
+            } == true
+        }.map { it.first }
+        found += more
+    } while (more.isNotEmpty())
+    return found
 }
 
 /** The register of an instance method's int parameter at [at], counted from the parameters. */
