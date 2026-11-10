@@ -16,9 +16,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+
+import com.facebook.stories.viewer.activity.StoryViewerActivity;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -119,12 +123,14 @@ public class SeenStoriesWatchedHereTest {
         StorySeen.useForTests(PLAYED);
         Settings.VIEW_STORIES_ANONYMOUSLY.save(true);
         Settings.HIDE_SEEN_STORIES.save(true);
+        SuggestedStories.resetViewersForTests();
         FeedFilterCounters.clear();
         HookStatus.clear();
     }
 
     @After
     public void restore() {
+        SuggestedStories.resetViewersForTests();
         StorySeen.useForTests(null);
         PauseForTests.resume();
         Settings.VIEW_STORIES_ANONYMOUSLY.resetToDefault();
@@ -171,6 +177,35 @@ public class SeenStoriesWatchedHereTest {
         assertTrue(status, status.contains(StorySeen.TRAY_WATCHED + " 2"));
         assertTrue(line(FamilyNames.SUGGESTED_STORIES, HookStatus.report()),
                 line(FamilyNames.SUGGESTED_STORIES, HookStatus.report()).endsWith(" 0 missing"));
+    }
+
+    /**
+     * #438: watching the story viewer's bucket marks it seen and its tray answers again. A bucket a
+     * tray kept stays while the viewer is open, whether it's watched here or sent with its flag true,
+     * and leaves the first tray after the viewer closes. One seen before the viewer opened still goes.
+     */
+    @Test
+    public void theBucketOnScreenStaysUntilTheViewerCloses() {
+        watch(new Played("b0", "s1"), "s1");
+        Tree before = postedHoursAgo("b0", 3);
+        Tree first = postedHoursAgo("b1", 3);
+        Tree next = postedHoursAgo("b2", 3);
+        assertEquals(Arrays.asList(first, next), kept(Arrays.asList(before, first, next)));
+
+        ActivityController<StoryViewerActivity> viewer = Robolectric.buildActivity(StoryViewerActivity.class).setup();
+        SuggestedStories.activityCreated(viewer.get());
+        watch(new Played("b1", "s1", "s2"), "s1", "s2");
+        Tree watched = postedHoursAgo("b1", 3);
+        assertEquals("the bucket on screen left", Arrays.asList(watched, next),
+                kept(Arrays.asList(before, watched, next)));
+        Tree flagged = new Tree("b1", first.expires, true);
+        assertEquals("the bucket on screen left with its flag", Arrays.asList(flagged, next),
+                kept(Arrays.asList(before, flagged, next)));
+
+        viewer.pause().stop().destroy();
+        SuggestedStories.activityDestroyed(viewer.get());
+        assertEquals("it stayed after the viewer closed", Collections.singletonList(next),
+                kept(Arrays.asList(before, postedHoursAgo("b1", 3), next)));
     }
 
     /** With Show only watched stories on (#340), a bucket watched to the end here is one it keeps. */

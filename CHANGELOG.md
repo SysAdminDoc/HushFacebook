@@ -60,6 +60,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* With `Hide seen stories` on, the story you're watching stays in the tray until you close the viewer, and it leaves the tray after that. Watching it marked it seen right away, so the tray could drop it while it was still playing, which can send the viewer on to the next person's story after a moment. Stories you'd already seen before opening the viewer still stay out. (#438)
 * With `Keep Settings and privacy expanded` on, tapping the Settings and privacy header in the Menu no longer flips its arrow down. The rows already stayed open, but the header still turned to "Section is collapsed" on the first tap. Now it stays expanded however many times you tap it. (#224)
 * Pulling down the "Saving a video" notification now shows the download's speed and time. The card stopped after the size line ("31 MB of 176 MB…"), so the speed only ever showed in the Downloads list.
 * A video saved with its sound as a separate track counts the sound from the first moment, so its progress bar no longer slips back when the sound starts downloading. On a 78 minute live replay it fell from 83% to 78%, and the size jumped from 137 MB to 174 MB.

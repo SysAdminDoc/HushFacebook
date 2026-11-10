@@ -4,12 +4,18 @@
  */
 package app.morphe.extension.facebook.stories;
 
+import android.app.Activity;
+
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -52,7 +58,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * expiration_time ({@link StorySeen#trayWatchedHere}, #218), or when an earlier tray sent it as
  * watched with the same expiration_time, so no story came since (#340). Show only watched stories turns that
  * round: a story whose flag reads false and that wasn't watched here goes, and Hide seen stories
- * waits while it's on (#340). A bucket whose flag can't be read stays either way.
+ * waits while it's on (#340). A bucket whose flag can't be read stays either way. While a story
+ * viewer is open, a bucket a tray kept doesn't leave as seen, so the viewer keeps the one it's
+ * playing, and it leaves the first tray after the viewer closes (#438).
  *
  * <p>Nothing else counts, so a friend's story, a Page you follow, your own story, a friend
  * request and anything that isn't a bucket or whose type isn't one of those stay.
@@ -133,6 +141,23 @@ public final class SuggestedStories {
      */
     @Nullable
     static volatile Boolean peopleYouMayKnowInBuildForTests;
+
+    /**
+     * How many story viewers are open, from the activity callbacks (#438). While one is, a bucket a
+     * tray kept doesn't leave as seen: watching it marks it seen on this phone, its tray answers
+     * again, and the viewer would lose the bucket it's playing and jump to the next one. Guarded by
+     * {@link #trayIds}.
+     */
+    private static int viewersOpen;
+
+    /** Ids of the buckets the trays kept with Hide seen stories on, oldest first, at most {@link #TRAY_IDS}. */
+    private static final LinkedHashSet<String> trayIds = new LinkedHashSet<>();
+
+    /** Ids kept only because a story viewer was open, which leave the first tray after it closes. Guarded by {@link #trayIds}. */
+    private static final Set<String> heldIds = new HashSet<>();
+
+    /** A tray holds a few dozen buckets, so this covers many trays without growing for the whole session. */
+    private static final int TRAY_IDS = 512;
 
     /** A tray's buckets, read through the stubs the patch filled in or through a test's stand-in. */
     interface Buckets {
@@ -328,6 +353,7 @@ public final class SuggestedStories {
             List<String> kinds = new ArrayList<>(buckets.size());
             List<String> left = new ArrayList<>();
             ArrayList<Object> kept = null;
+            int held = 0;
             for (int index = 0; index < buckets.size(); index++) {
                 Object bucket = buckets.get(index);
                 String kind = kindOf(bucket, access, switches.pageStories);
@@ -336,6 +362,11 @@ public final class SuggestedStories {
                 String leaving = switches.leaves(kind) ? kind
                         : switches.leavesSeen(kind) && watched(bucket, access) ? SEEN
                         : switches.leavesUnwatched(kind) && unwatched(bucket, access) ? UNWATCHED : null;
+                if (switches.seenStories && (leaving == null || SEEN.equals(leaving))
+                        && keptForViewer(bucket, access, leaving != null)) {
+                    leaving = null;
+                    held++;
+                }
                 if (leaving != null) {
                     if (kept == null) {
                         kept = new ArrayList<>(buckets.size());
@@ -363,8 +394,9 @@ public final class SuggestedStories {
             final int shown = buckets.size() - left.size();
             StoriesTrayPaging.sawTray(shown, left.size());
             final String off = switches.offNote();
+            final String playing = held == 0 ? "" : " " + held + " seen kept while a story plays.";
             Logger.printDebug(() -> "Stories tray: " + buckets.size() + " buckets, " + shown + " kept. Kinds: "
-                    + summary(kinds) + off);
+                    + summary(kinds) + off + playing);
             // Observe the actual delivery, including a refused copy. Diagnostics must not undo a filter.
             final Object delivered = answer;
             try {
@@ -377,6 +409,80 @@ public final class SuggestedStories {
             HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "tray bucket filter", failure);
             Logger.printException(() -> "Hide suggested stories: could not read the tray's buckets", failure);
             return buckets;
+        }
+    }
+
+    /**
+     * Notes what a tray did with a bucket for the story viewer (#438) and answers whether a bucket
+     * leaving as seen stays: one a tray kept stays while a viewer is open, and leaves the first tray
+     * after it closes. A bucket already seen when the viewer opened still leaves. Only Hide seen
+     * stories asks, and a bucket whose id can't be read goes by its flags. Never throws.
+     */
+    private static boolean keptForViewer(Object bucket, Buckets access, boolean leavingSeen) {
+        Object id;
+        try {
+            id = access.id(bucket);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "bucket id and expiration", failure);
+            return false;
+        }
+        if (!(id instanceof String)) return false;
+        synchronized (trayIds) {
+            if (leavingSeen) {
+                if (viewersOpen > 0 && trayIds.contains(id)) {
+                    heldIds.add((String) id);
+                    return true;
+                }
+                trayIds.remove(id);
+                return false;
+            }
+            trayIds.remove(id);
+            trayIds.add((String) id);
+            if (trayIds.size() > TRAY_IDS) {
+                Iterator<String> oldest = trayIds.iterator();
+                oldest.next();
+                oldest.remove();
+            }
+            return false;
+        }
+    }
+
+    /** From the activity callbacks: a story viewer opened. Never throws. */
+    public static void activityCreated(Activity activity) {
+        try {
+            if (!StorySeenButton.isViewer(activity)) return;
+            synchronized (trayIds) {
+                viewersOpen++;
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "story viewer opened", failure);
+        }
+    }
+
+    /**
+     * From the activity callbacks: a story viewer closed. Once none is open, the buckets kept only
+     * for one leave the next tray. A viewer rebuilt for a rotation keeps them. Never throws.
+     */
+    public static void activityDestroyed(Activity activity) {
+        try {
+            if (!StorySeenButton.isViewer(activity)) return;
+            synchronized (trayIds) {
+                if (viewersOpen > 0) viewersOpen--;
+                if (viewersOpen > 0 || activity.isChangingConfigurations()) return;
+                trayIds.removeAll(heldIds);
+                heldIds.clear();
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "story viewer closed", failure);
+        }
+    }
+
+    /** Forgets the open viewers and the kept ids, as a fresh start of the app would. */
+    static void resetViewersForTests() {
+        synchronized (trayIds) {
+            viewersOpen = 0;
+            trayIds.clear();
+            heldIds.clear();
         }
     }
 

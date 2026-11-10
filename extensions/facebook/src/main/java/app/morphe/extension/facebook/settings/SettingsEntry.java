@@ -79,6 +79,7 @@ import app.morphe.extension.facebook.reels.SavedChain;
 import app.morphe.extension.facebook.reels.ViewerTopBar;
 import app.morphe.extension.facebook.stories.StorySeenButton;
 import app.morphe.extension.facebook.stories.StoryTaps;
+import app.morphe.extension.facebook.stories.SuggestedStories;
 import app.morphe.extension.facebook.theme.AccentResources;
 import app.morphe.extension.facebook.theme.AmoledResources;
 import app.morphe.extension.facebook.theme.MaterialYouTheme;
@@ -851,6 +852,7 @@ public final class SettingsEntry {
             TapToPlay.activityCreated(activity, state);
             ScreenTransitions.activityCreated(activity);
             if (SettingsStatus.storySeen()) StorySeenButton.activityCreated(activity);
+            if (SettingsStatus.suggestedStories()) SuggestedStories.activityCreated(activity);
         }
 
         @Override public void onActivityStarted(Activity activity) { }
@@ -866,6 +868,7 @@ public final class SettingsEntry {
             TextSize.destroyed(activity);
             SavedFileActions.onPaused(activity);
             if (SettingsStatus.storySeen()) StorySeenButton.activityDestroyed(activity);
+            if (SettingsStatus.suggestedStories()) SuggestedStories.activityDestroyed(activity);
             // The screen can land on an activity just before it clears itself for the next one.
             // If its host goes away before the person closed it, ask again.
             WeakReference<Activity> shownOver = host;
