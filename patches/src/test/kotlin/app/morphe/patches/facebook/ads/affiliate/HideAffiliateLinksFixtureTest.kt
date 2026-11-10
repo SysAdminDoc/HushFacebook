@@ -9,6 +9,7 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.refresh.enumConstant
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
@@ -65,10 +66,14 @@ class HideAffiliateLinksFixtureTest {
     /**
      * How each build asks whether a comment sheet has its floating card: READER, the plugin's static
      * model reader (up to 584), CHECK, its static Z check (585), or CASE, the plugin gate's case for
-     * the plugin (586, which keeps no static method on the plugin).
+     * the plugin (586, which keeps no static method on the plugin). 586's Android 9 build keeps the
+     * plugin's check, so it's CHECK there.
      */
     private val commentCardForm = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to "CASE",
+    )
+    private val android9CommentCardForm = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to "CHECK",
     )
 
     private val PAYLOADS = setOf(Opcode.PACKED_SWITCH_PAYLOAD, Opcode.SPARSE_SWITCH_PAYLOAD, Opcode.ARRAY_PAYLOAD)
@@ -291,17 +296,21 @@ class HideAffiliateLinksFixtureTest {
                     .flatMap { classDef -> classDef.methods.filter { profileEntryWrites(it).isNotEmpty() } }
                 assertEquals("$name: methods storing $PROFILE_ENTRY_POINT", 1, entryWriters.size)
                 val entryWriter = entryWriters.single()
-                // Positive control: the reel's author tap is what hands it the reel's tag.
-                val reelTaps = FixtureDex.classesHolding(bundle, REEL_ENTRY_TAG).flatMap { it.methods }.filter { method ->
+                // Positive control: the reel's author tap is what hands it the reel's tag. 586's Android 9
+                // build asks a name table for the tag (04al.A00), so naming it through that table counts too.
+                val tagHolders = FixtureDex.classesHolding(bundle, REEL_ENTRY_TAG).associateBy { it.type }
+                val tagResolve: (MethodReference) -> Method? = { call -> tagHolders[call.definingClass]?.let { resolveStatic(it, call) } }
+                val reelTaps = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it.toString() in tagHolders } }) { method ->
                     method.implementation?.instructions?.any { instruction ->
                         ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.let {
                             it.definingClass == entryWriter.definingClass && MethodUtil.methodSignaturesMatch(it, entryWriter)
                         } == true
-                    } == true
+                    } == true && namesString(method, REEL_ENTRY_TAG, tagResolve)
                 }
                 assertTrue("$name: nothing holding $REEL_ENTRY_TAG calls ${entryWriter.definingClass}->${entryWriter.name}", reelTaps.isNotEmpty())
                 val entryOriginal = entryWriter.code()
-                val form = commentCardForm.getValue(version)
+                val android9 = name.substringAfter("-$version-").contains("-minapi")
+                val form = (if (android9) android9CommentCardForm else commentCardForm).getValue(version)
                 // 586: the comment sheet's plugin gate checks for the card inline, in its case for the plugin's number.
                 val gateCases = mutableListOf<Pair<Method, Int>>()
                 if (form == "CASE") {

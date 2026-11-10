@@ -38,12 +38,13 @@ class HideFeedsHeaderFixtureTest {
      * Each declared build's container type, the controller's type, and the controller's and the
      * container's registers, by ABI. 585 handed the container over in v0; 586 hands it over in v12,
      * the last of a range call. Both of 586's builds share the container's type and the registers,
-     * not the controller.
+     * not the controller, and its Android 9 build keeps the registers with types of its own.
      */
     private val expected = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Triple("LX/03sX;", "LX/0U1Y;", 7 to 12),
             "armeabi-v7a" to Triple("LX/03sX;", "LX/0U1b;", 7 to 12),
+            "arm64-v8a-minapi28-storeless" to Triple("LX/03tJ;", "LX/0giD;", 7 to 12),
         ),
     )
 
@@ -52,6 +53,7 @@ class HideFeedsHeaderFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to ("LX/0UOm;" to "LX/0UWU;"),
             "armeabi-v7a" to ("LX/0UOq;" to "LX/0UWY;"),
+            "arm64-v8a-minapi28-storeless" to ("LX/0hLt;" to "LX/0hZb;"),
         ),
     )
 

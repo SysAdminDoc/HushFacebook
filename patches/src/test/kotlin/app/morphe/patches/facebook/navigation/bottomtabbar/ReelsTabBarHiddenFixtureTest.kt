@@ -35,7 +35,9 @@ import org.junit.Test
 class ReelsTabBarHiddenFixtureTest {
     private fun Method.body(): List<Instruction> = implementation?.instructions?.toList().orEmpty()
 
-    private fun List<Instruction>.opcodes() = map { it.opcode }.filter { it != Opcode.NOP }
+    // A jump the hook's instructions push out of a goto's reach comes back as goto/16, the same jump.
+    private fun List<Instruction>.opcodes() = map { if (it.opcode == Opcode.GOTO_16 || it.opcode == Opcode.GOTO_32) Opcode.GOTO else it.opcode }
+        .filter { it != Opcode.NOP }
 
     private fun Instruction.call(): String = ((this as ReferenceInstruction).reference as MethodReference).toString()
 

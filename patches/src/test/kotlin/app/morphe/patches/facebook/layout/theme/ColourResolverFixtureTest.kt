@@ -341,8 +341,10 @@ class ColourResolverFixtureTest {
                     }
                 }
                 // 586 makes it in two places (arm64 LX/02Pp;->A03, which takes Boolean overrides, and A04), each with its own colour call.
+                // Its Android 9 build makes it in one (LX/02Qb;->A03).
+                val android9 = name.substringAfter("-$version-").contains("-minapi")
                 assertEquals("$name: methods giving a view the navigation bar's id, ${makers.map { it.descriptor() }}",
-                    navigationBarMakers[version] ?: 1, makers.size)
+                    if (android9) 1 else navigationBarMakers[version] ?: 1, makers.size)
                 val askedByMaker = makers.associate { maker ->
                     maker.descriptor() to intCalls(maker).single { it.parameterTypes.firstOrNull()?.toString() == "Landroid/content/Context;" }
                 }

@@ -83,9 +83,10 @@ class DefaultPlaybackQualityFixtureTest {
                 val holders = FixtureDex.classesHolding(bundle, SET_CUSTOM_QUALITY).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
                 val holding = holders.flatMap { it.methods }.filter { holdsString(it, SET_CUSTOM_QUALITY) }
                 assertEquals("$name: methods holding \"$SET_CUSTOM_QUALITY\"", 1, holding.size)
-                // 586 calls the evaluator's custom-quality setter there, 585 inlined it.
+                // 586 calls the evaluator's custom-quality setter there, 585 inlined it, and so does 586's Android 9 build.
                 val setters = customQualitySetters(holding.single()) { type -> FixtureDex.classes(bundle, setOf(type)).values.singleOrNull() }
-                assertEquals("$name: custom-quality setters called there", if (version in callsSetter) 1 else 0, setters.size)
+                val android9 = name.substringAfter("-$version-").contains("-minapi")
+                assertEquals("$name: custom-quality setters called there", if (version in callsSetter && !android9) 1 else 0, setters.size)
                 val setter = setters.singleOrNull()
                 val reader = setter ?: holding.single()
                 val arrays = trackArrayReads(reader)

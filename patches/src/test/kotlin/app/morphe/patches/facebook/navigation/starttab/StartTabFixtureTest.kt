@@ -236,11 +236,16 @@ class StartTabFixtureTest {
                 val resumeReturns = code(feeds.methods.single { it.name == "onResume" && it.parameterTypes.isEmpty() })
                     .count { it.opcode == Opcode.RETURN_VOID }
 
-                // The router Facebook keeps predicts the main screen's destination by asking the picker.
+                // The router Facebook keeps predicts the main screen's destination by asking the picker,
+                // on the Android 9 build through a method of the picker's own class that asks it.
                 val router = classes.getValue(STARTUP_DESTINATION_ROUTER).methods.single { it.name == "getDestination" }
+                val asksPicker = { method: Method ->
+                    code(method).any { it.call?.let { c -> c.definingClass == picker.definingClass && c.name == picker.name } == true }
+                }
+                val askers = classes.getValue(picker.definingClass).methods.filter { it.name != picker.name && asksPicker(it) }.map { it.name }
                 assertTrue(
                     "$name: getDestination doesn't ask the picker",
-                    code(router).any { it.call?.let { c -> c.definingClass == picker.definingClass && c.name == picker.name } == true },
+                    asksPicker(router) || code(router).any { it.call?.let { c -> c.definingClass == picker.definingClass && c.name in askers } == true },
                 )
 
                 // Every tab the extension offers, by the id it asks for.

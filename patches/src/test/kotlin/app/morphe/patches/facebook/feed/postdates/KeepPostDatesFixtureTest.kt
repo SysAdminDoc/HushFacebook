@@ -39,6 +39,7 @@ class KeepPostDatesFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to ("LX/03gS;" to 13),
             "armeabi-v7a" to ("LX/03gS;" to 13),
+            "arm64-v8a-minapi28-storeless" to ("LX/03hC;" to 13),
         ),
     )
 

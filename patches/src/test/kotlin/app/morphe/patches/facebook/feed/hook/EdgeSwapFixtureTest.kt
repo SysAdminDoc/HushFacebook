@@ -106,8 +106,10 @@ class EdgeSwapFixtureTest {
                 val asked = (added[4] as FiveRegisterInstruction).let { listOf(it.registerC, it.registerD) }
                 val live = RegisterLiveness.of(guard.method).liveInto(guard.index)
                 assertTrue("$name: the guard borrows $asked, which the runnable still reads: $live", asked.none { it in live } && asked.all { it <= 15 })
-                assertEquals("$name: the rest of the runnable", before.map { it.opcode },
-                    after.filterIndexed { index, _ -> index !in guard.index until guard.index + size }.map { it.opcode })
+                // A jump the guard pushes out of a goto's reach comes back as goto/16, the same jump.
+                fun Opcode.jump() = if (this == Opcode.GOTO_16 || this == Opcode.GOTO_32) Opcode.GOTO else this
+                assertEquals("$name: the rest of the runnable", before.map { it.opcode.jump() },
+                    after.filterIndexed { index, _ -> index !in guard.index until guard.index + size }.map { it.opcode.jump() })
                 val swap = after.indexOfFirst {
                     it.opcode in instanceCalls && it.call()?.endsWith("(${FEED_UNIT_EDGE}Ljava/lang/String;)V") == true
                 }

@@ -73,7 +73,13 @@ class TranslatedStartFixtureTest {
                 assertEquals("$name: the delegate setup's shape", "V", delegate.returnType)
                 assertTrue("$name: the delegate setup takes nothing", delegate.parameterTypes.isEmpty())
                 assertTrue("$name: the delegate setup is an instance method", !AccessFlags.STATIC.isSet(delegate.accessFlags))
-                assertTrue("$name: the delegate setup no longer schedules MprotectCode", holdsString(delegate, "MprotectCode"))
+                // The Android 9 build schedules each start-up task from a static helper the setup calls.
+                val schedulers = FixtureDex.classesHolding(bundle, "MprotectCode")
+                    .flatMap { owner -> owner.methods.filter { holdsString(it, "MprotectCode") } }
+                    .map { "${it.definingClass}->${it.name}${it.parameterTypes.joinToString("", "(", ")")}${it.returnType}" }.toSet()
+                val calls = delegate.code().mapNotNull { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.toString() }
+                assertTrue("$name: the delegate setup no longer schedules MprotectCode",
+                    holdsString(delegate, "MprotectCode") || calls.any { it in schedulers })
 
                 val original = delegate.code()
                 val store = original.indexOfFirst(::isSetStore)

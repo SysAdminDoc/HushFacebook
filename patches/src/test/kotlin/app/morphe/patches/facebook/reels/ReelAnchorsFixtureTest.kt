@@ -169,6 +169,7 @@ class ReelAnchorsFixtureTest {
                         "585.0.0.47.54 arm64-v8a-minapi28-storeless" to "LX/0cLU;:10:invoke LX/0ADL;:157:invoke",
                         "586.0.0.52.53 arm64-v8a" to "LX/0A3w;:134:A18 LX/0A3h;:198:A0Q",
                         "586.0.0.52.53 armeabi-v7a" to "LX/0A3w;:134:A18 LX/0A3h;:198:A0Q",
+                        "586.0.0.52.53 arm64-v8a-minapi28-storeless" to "LX/0A5H;:52:A0A LX/0A4q;:118:invoke",
                     )["$version $abi"]
                     assertEquals(name, pinned, follow.flags.joinToString(" ") { "${it.lambda}:${it.key}:${it.reader.name}" })
                 } else {

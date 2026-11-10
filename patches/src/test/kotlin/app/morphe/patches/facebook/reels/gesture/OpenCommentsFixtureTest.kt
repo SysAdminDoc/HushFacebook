@@ -215,12 +215,14 @@ class OpenCommentsFixtureTest {
                 assertNotNull("$name: the builder constructor doesn't store ${keyboard.name} once from a register it drops", store)
                 assertTrue("$name: the store isn't on the object the constructor made",
                     (build.code()[store!!] as TwoRegisterInstruction).registerB == build.localRegisterCount())
-                // The control: the constructor reuses the object's register before it returns, so a hook
-                // reading the flag back at a return verifies on no device, and the guard says so.
+                // The control: the phone builds' constructor reuses the object's register before it returns,
+                // so a hook reading the flag back at a return verifies on no device, and the guard says so.
+                // The Android 9 build's keeps its object to the end, and the guard lets that one through.
                 val returnAt = build.code().withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }.map { it.index }
                 assertTrue("$name: the builder constructor never returns", returnAt.isNotEmpty())
-                assertTrue("$name: the builder constructor keeps its object to the end, so the control proves nothing",
-                    runCatching { build.requireThisIntact("control", returnAt) }.isFailure)
+                val android9 = name.substringAfter("-$version-").contains("-minapi")
+                assertEquals("$name: whether the guard finds the builder constructor's object intact at its returns",
+                    android9, runCatching { build.requireThisIntact("control", returnAt) }.isSuccess)
                 checked += version
             }
         }

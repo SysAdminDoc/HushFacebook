@@ -215,9 +215,28 @@ class MaterialYouTokenFixtureTest {
             "L?;-><init>(Landroid/content/Context;)V@109",
             "L?;->?()V@36",
         )
+        /** 586's Android 9 build has the same 18, the six taking one object and the constructor three or four instructions on (2026-11-10). */
+        private val SHAPES_586_ANDROID_9 = MAPBOX.toList() + listOf(
+            "L?;->?(Ljava/lang/Integer;)V@16",
+            "L?;->?(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/Integer;@88",
+            "L?;->?(Landroid/content/Context;Lcom/facebook/react/bridge/ReadableMap;)Landroid/graphics/drawable/Drawable;@20",
+            "L?;->?(L?;)V@154",
+            "L?;->?(L?;)V@168",
+            "L?;->?(L?;)V@54",
+            "L?;->?(L?;)V@67",
+            "L?;->?(L?;)V@79",
+            "L?;->?(L?;)V@82",
+            "L?;->?(L?;I)V@171",
+            "L?;->?(L?;I)V@228",
+            "L?;->?(L?;I)V@33",
+            "L?;->?(L?;L?;)V@11",
+            "L?;-><init>(Landroid/content/Context;)V@112",
+            "L?;->?()V@36",
+        )
         val UNRESOLVED = mapOf(
             "585.0.0.47.54" to mapOf("arm64-v8a" to SHAPES_585, "armeabi-v7a" to SHAPES_585),
-            "586.0.0.52.53" to mapOf("arm64-v8a" to SHAPES_586, "armeabi-v7a" to SHAPES_586),
+            "586.0.0.52.53" to mapOf("arm64-v8a" to SHAPES_586, "armeabi-v7a" to SHAPES_586,
+                "arm64-v8a-minapi28-storeless" to SHAPES_586_ANDROID_9),
         )
 
         /** A class name Redex made up for one build, or a merged lambda group's. */
@@ -267,15 +286,15 @@ class MaterialYouTokenFixtureTest {
         val listed = listedTokens()
         assertTrue("the table lists almost nothing", listed.size > 50)
         val surfaces = listedSurfaces()
-        var builds = 0
+        val builds = mutableListOf<String>()
         for (target in AppCompatibilities.facebook().single().targets) {
             val version = checkNotNull(target.version)
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 withBaseApk(fixture) { apk -> checkBuild(fixture.name, apk, listed, surfaces) }
-                builds++
+                builds += fixture.name.substringAfter("-$version-").substringBefore(".apkm")
             }
         }
-        assertEquals("one fixture for each declared build", declaredBuilds(), builds)
+        assertEquals("one fixture for each declared build", declaredBuilds(), Fixtures.abisOf(builds).size)
     }
 
     private fun checkBuild(build: String, apk: File, listed: Map<String, Set<Int>>, surfaces: Set<Int>) {
@@ -318,15 +337,15 @@ class MaterialYouTokenFixtureTest {
     @Test
     fun `the main activity's window background is WASH, dark's #101011, in each declared build`() {
         assertTrue("SURFACES lists #101011", WASH_DARK in listedSurfaces())
-        var builds = 0
+        val builds = mutableListOf<String>()
         for (target in AppCompatibilities.facebook().single().targets) {
             val version = checkNotNull(target.version)
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 withBaseApk(fixture) { apk -> checkWindowBackground(fixture.name, apk) }
-                builds++
+                builds += fixture.name.substringAfter("-$version-").substringBefore(".apkm")
             }
         }
-        assertEquals("one fixture for each declared build", declaredBuilds(), builds)
+        assertEquals("one fixture for each declared build", declaredBuilds(), Fixtures.abisOf(builds).size)
     }
 
     private fun checkWindowBackground(build: String, apk: File) {
@@ -395,7 +414,7 @@ class MaterialYouTokenFixtureTest {
             val twice = colours intersect dark[name].orEmpty()
             assertTrue("$name lists ${hex(twice)} in both tables", twice.isEmpty())
         }
-        var builds = 0
+        val builds = mutableListOf<String>()
         for (target in AppCompatibilities.facebook().single().targets) {
             val version = checkNotNull(target.version)
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
@@ -412,10 +431,10 @@ class MaterialYouTokenFixtureTest {
                         }
                     }
                 }
-                builds++
+                builds += fixture.name.substringAfter("-$version-").substringBefore(".apkm")
             }
         }
-        assertEquals("one fixture for each declared build", declaredBuilds(), builds)
+        assertEquals("one fixture for each declared build", declaredBuilds(), Fixtures.abisOf(builds).size)
     }
 
     /**
@@ -435,7 +454,7 @@ class MaterialYouTokenFixtureTest {
             val twice = colours intersect shared[name].orEmpty()
             assertTrue("$name lists ${hex(twice)} in FDS_LIGHT and FDS_SHARED", twice.isEmpty())
         }
-        var builds = 0
+        val builds = mutableListOf<String>()
         for (target in AppCompatibilities.facebook().single().targets) {
             val version = checkNotNull(target.version)
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
@@ -457,10 +476,10 @@ class MaterialYouTokenFixtureTest {
                     }
                     assertEquals("${fixture.name}: FDS_LIGHT should be \"$table\"", built.mapValues { setOf(it.value) }, listed.filterKeys { it !in REMOVED_TOKENS }.toSortedMap())
                 }
-                builds++
+                builds += fixture.name.substringAfter("-$version-").substringBefore(".apkm")
             }
         }
-        assertEquals("one fixture for each declared build", declaredBuilds(), builds)
+        assertEquals("one fixture for each declared build", declaredBuilds(), Fixtures.abisOf(builds).size)
         assertTrue("the light table lists almost nothing", listed.size > 20)
     }
 
@@ -490,7 +509,7 @@ class MaterialYouTokenFixtureTest {
         val blues = Regex("""static final String SERVER_BLUES = "([0-9A-F ]+)";""").find(theme)!!.groupValues[1]
             .split(" ").map { it.toInt(16) }
         assertTrue("SERVER_BLUES lists almost nothing", blues.size >= 5)
-        var builds = 0
+        val builds = mutableListOf<String>()
         for (target in AppCompatibilities.facebook().single().targets) {
             val version = checkNotNull(target.version)
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
@@ -502,10 +521,10 @@ class MaterialYouTokenFixtureTest {
                         assertTrue("${fixture.name}: ${"%06X".format(blue)} is no FDS style's colour", blue in rgb)
                     }
                 }
-                builds++
+                builds += fixture.name.substringAfter("-$version-").substringBefore(".apkm")
             }
         }
-        assertEquals("one fixture for each declared build", declaredBuilds(), builds)
+        assertEquals("one fixture for each declared build", declaredBuilds(), Fixtures.abisOf(builds).size)
     }
 
     /** AmoledTheme's BACKGROUND_TOKENS, the Mig names in it included. */
@@ -532,7 +551,7 @@ class MaterialYouTokenFixtureTest {
         assertTrue("BACKGROUND_TOKENS lists almost nothing", backgrounds.size > 20)
         val black = amoledChannel("MAX_CHANNEL")
         val raised = amoledChannel("MAX_RAISED_CHANNEL")
-        var builds = 0
+        val builds = mutableListOf<String>()
         for (target in AppCompatibilities.facebook().single().targets) {
             val version = checkNotNull(target.version)
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
@@ -558,10 +577,10 @@ class MaterialYouTokenFixtureTest {
                     assertTrue("${fixture.name}: CARD_BACKGROUND is no longer above the black band, found $raisedTokens",
                         "CARD_BACKGROUND" in raisedTokens)
                 }
-                builds++
+                builds += fixture.name.substringAfter("-$version-").substringBefore(".apkm")
             }
         }
-        assertEquals("one fixture for each declared build", declaredBuilds(), builds)
+        assertEquals("one fixture for each declared build", declaredBuilds(), Fixtures.abisOf(builds).size)
     }
 
     /** AmoledTheme's LIGHT_BACKGROUND_TOKENS, the fills only light mode's Light background color moves. */
@@ -594,7 +613,7 @@ class MaterialYouTokenFixtureTest {
             val channels = listOf(colour shr 16 and 0xFF, colour shr 8 and 0xFF, colour and 0xFF)
             return colour ushr 24 == 0xFF && channels.min() >= floor && channels.max() - channels.min() <= 8
         }
-        var builds = 0
+        val builds = mutableListOf<String>()
         for (target in AppCompatibilities.facebook().single().targets) {
             val version = checkNotNull(target.version)
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
@@ -630,10 +649,10 @@ class MaterialYouTokenFixtureTest {
                             (0..16 step 8).all { (colour shr it and 0xFF) >= (textSurface shr it and 0xFF) })
                     }
                 }
-                builds++
+                builds += fixture.name.substringAfter("-$version-").substringBefore(".apkm")
             }
         }
-        assertEquals("one fixture for each declared build", declaredBuilds(), builds)
+        assertEquals("one fixture for each declared build", declaredBuilds(), Fixtures.abisOf(builds).size)
     }
 
     /** AmoledTheme's Java set [constant], from its declaration to the end of it. */
@@ -657,7 +676,7 @@ class MaterialYouTokenFixtureTest {
         assertTrue("LIGHT_TEXT_TOKENS, found $text", "TEXT_INPUT_ACTIVE_TEXT" in text && "ACCENT" !in text)
         assertTrue("MIG_LIGHT_FILLS, found $fills", "FILL" in fills)
         val lightTable = listedTokens("FDS_LIGHT")
-        var builds = 0
+        val builds = mutableListOf<String>()
         for (target in AppCompatibilities.facebook().single().targets) {
             val version = checkNotNull(target.version)
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
@@ -687,10 +706,10 @@ class MaterialYouTokenFixtureTest {
                     assertTrue("${fixture.name}: Mig's enums have no ${fills - names}", names.containsAll(fills))
                     assertTrue("${fixture.name}: FDS tokens named ${fills intersect attributes.keys}", (fills intersect attributes.keys).isEmpty())
                 }
-                builds++
+                builds += fixture.name.substringAfter("-$version-").substringBefore(".apkm")
             }
         }
-        assertEquals("one fixture for each declared build", declaredBuilds(), builds)
+        assertEquals("one fixture for each declared build", declaredBuilds(), Fixtures.abisOf(builds).size)
     }
 
     /**
@@ -703,7 +722,7 @@ class MaterialYouTokenFixtureTest {
      */
     @Test
     fun `the light surfaces the patch repoints are light mode's alone in each declared build`() {
-        var builds = 0
+        val builds = mutableListOf<String>()
         for (target in AppCompatibilities.facebook().single().targets) {
             val version = checkNotNull(target.version)
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
@@ -755,10 +774,10 @@ class MaterialYouTokenFixtureTest {
                     assertTrue("$build: no text or icon reads the surfaces' colours, so they need no resources of their own",
                         shared.isNotEmpty())
                 }
-                builds++
+                builds += fixture.name.substringAfter("-$version-").substringBefore(".apkm")
             }
         }
-        assertEquals("one fixture for each declared build", declaredBuilds(), builds)
+        assertEquals("one fixture for each declared build", declaredBuilds(), Fixtures.abisOf(builds).size)
     }
 
     /** AmoledTheme's TEXT_TOKENS: FDS's names, then Mig's, as its comments mark them. */
@@ -818,7 +837,7 @@ class MaterialYouTokenFixtureTest {
         assertTrue("Mig's text roles", "SECONDARY" in mig && "PLACEHOLDER" in mig)
         val matrix = roleColours()
         assertEquals("the matrix covers every FDS role", fds, matrix.keys)
-        var builds = 0
+        val builds = mutableListOf<String>()
         for (target in AppCompatibilities.facebook().single().targets) {
             val version = checkNotNull(target.version)
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
@@ -844,10 +863,10 @@ class MaterialYouTokenFixtureTest {
                     assertTrue("${fixture.name}: Mig's enums have no ${mig - names}", names.containsAll(mig))
                     assertTrue("${fixture.name}: FDS tokens named ${mig intersect attributes.keys}", (mig intersect attributes.keys).isEmpty())
                 }
-                builds++
+                builds += fixture.name.substringAfter("-$version-").substringBefore(".apkm")
             }
         }
-        assertEquals("one fixture for each declared build", declaredBuilds(), builds)
+        assertEquals("one fixture for each declared build", declaredBuilds(), Fixtures.abisOf(builds).size)
     }
 
     /**
@@ -869,15 +888,15 @@ class MaterialYouTokenFixtureTest {
         val dark = listedTokens()
         val shared = listedTokens("FDS_SHARED")
         val listed = (dark.keys + shared.keys).associateWith { dark[it].orEmpty() + shared[it].orEmpty() }
-        var builds = 0
+        val builds = mutableListOf<String>()
         for (target in AppCompatibilities.facebook().single().targets) {
             val version = checkNotNull(target.version)
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 withBaseApk(fixture) { apk -> checkNightStyles(fixture.name, version, apk, listed) }
-                builds++
+                builds += fixture.name.substringAfter("-$version-").substringBefore(".apkm")
             }
         }
-        assertEquals("one fixture for each declared build", declaredBuilds(), builds)
+        assertEquals("one fixture for each declared build", declaredBuilds(), Fixtures.abisOf(builds).size)
     }
 
     private fun checkNightStyles(build: String, version: String, apk: File, listed: Map<String, Set<Int>>) {

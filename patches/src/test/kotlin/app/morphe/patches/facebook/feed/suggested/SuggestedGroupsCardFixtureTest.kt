@@ -8,6 +8,8 @@ import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -61,15 +63,16 @@ class SuggestedGroupsCardFixtureTest {
                 })
                 val code = layout.code()
                 // And the layout tests its unit for GroupsYouShouldJoinFeedUnit: a cast, or (586) a merged
-                // instance-of helper on the class whose type name is GroupsYouShouldJoinFeedUnit.
+                // instance-of helper on the class whose type name is GroupsYouShouldJoinFeedUnit, which
+                // 586's Android 9 build asks a name table for.
                 val references = code.mapNotNull { (it as? ReferenceInstruction)?.reference }
                 val helpers = references.filterIsInstance<MethodReference>().filter { call ->
                     call.parameterTypes.map(CharSequence::toString) == listOf("I", "Ljava/lang/Object;") && call.returnType == "Z"
                 }
+                val unitNames = FixtureDex.classesHolding(bundle, groupsUnitName).associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> unitNames[call.definingClass]?.let { resolveStatic(it, call) } }
                 val models = FixtureDex.classes(bundle, helpers.map { it.definingClass }.toSet()).values.filter { model ->
-                    model.methods.any { method ->
-                        method.name == "getTypeName" && method.implementation?.instructions?.any { it.string() == groupsUnitName } == true
-                    }
+                    model.methods.any { method -> method.name == "getTypeName" && namesString(method, groupsUnitName, resolve) }
                 }
                 val casts = references.filterIsInstance<TypeReference>().filter { it.type == groupsUnit }
                 assertTrue("$name: ${layout.name} doesn't test its unit for $groupsUnitName", casts.isNotEmpty() || models.isNotEmpty())

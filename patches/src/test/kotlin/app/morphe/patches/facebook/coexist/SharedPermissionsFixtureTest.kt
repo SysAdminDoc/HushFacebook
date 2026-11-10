@@ -462,7 +462,7 @@ class SharedPermissionsFixtureTest {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val holders = FixtureDex.classesHolding(bundle, FACEBOOK)
                 val context = PatchContexts.of(holders)
-                assertEquals("${bundle.name}: RemoteViews package loads routed", REMOTE_VIEWS_LOADS.getValue(version),
+                assertEquals("${bundle.name}: RemoteViews package loads routed", REMOTE_VIEWS_LOADS.getValue(version).forBundle(bundle.name),
                     context.routeRemoteViewsPackage(FACEBOOK))
 
                 var built = 0
@@ -489,7 +489,7 @@ class SharedPermissionsFixtureTest {
                         }
                     }
                 }
-                assertTrue("${bundle.name}: no RemoteViews takes the routed package", built >= REMOTE_VIEWS_LOADS.getValue(version))
+                assertTrue("${bundle.name}: no RemoteViews takes the routed package", built >= REMOTE_VIEWS_LOADS.getValue(version).forBundle(bundle.name))
                 checked += version
             }
         }
@@ -510,7 +510,7 @@ class SharedPermissionsFixtureTest {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val holders = FixtureDex.classesHolding(bundle, FACEBOOK)
                 val context = PatchContexts.of(holders)
-                assertEquals("${bundle.name}: own package calls routed", OWN_PACKAGE_CALL_LOADS.getValue(version),
+                assertEquals("${bundle.name}: own package calls routed", OWN_PACKAGE_CALL_LOADS.getValue(version).forBundle(bundle.name),
                     context.routeOwnPackageCalls(FACEBOOK))
 
                 var inFirebase = 0
@@ -677,7 +677,8 @@ class SharedPermissionsFixtureTest {
                     }
                 }
                 assertEquals("${bundle.name}: package loads handed to the extension",
-                    OWN_PACKAGE_CALL_LOADS.getValue(version) + REMOTE_VIEWS_LOADS.getValue(version), routed)
+                    OWN_PACKAGE_CALL_LOADS.getValue(version).forBundle(bundle.name) +
+                        REMOTE_VIEWS_LOADS.getValue(version).forBundle(bundle.name), routed)
                 val named = STOCK_OWNERS.getValue(version).forBundle(bundle.name)
                 assertEquals("${bundle.name}: $FACEBOOK left where it could mean this app: $stock", named.size, stock.size)
                 for (site in named) {
@@ -741,9 +742,11 @@ class SharedPermissionsFixtureTest {
          * template sites (2026-10-14). 583 builds all but one from the running package itself, and
          * the check after the patch still finds none left spelled out (2026-10-16). 584 spelled all
          * 14 out again (2026-10-22). 585 is back to 583's one (2026-10-29), and 586 spells all 14
-         * out again (2026-11-08).
+         * out again (2026-11-08), while its Android 9 build is back to the one (2026-11-10).
          */
-        val REMOTE_VIEWS_LOADS = mapOf(AppCompatibilities.FACEBOOK_TARGET_VERSION to 14)
+        val REMOTE_VIEWS_LOADS = mapOf(
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 14, "armeabi-v7a" to 14, "arm64-v8a-minapi28-storeless" to 1),
+        )
 
         /**
          * Loads of Facebook's package that only name this app to Android or look up its resources,
@@ -754,9 +757,11 @@ class SharedPermissionsFixtureTest {
          * icon and sound URI), Firebase's own ApplicationInfo and its resource lookup, the manifest
          * meta-data read for the build revision, AppInfoCore's ApplicationInfo and icon, ProxyAuth's
          * three setClassName (login and consent deep links, device login) and Xiaomi's launcher
-         * badge call.
+         * badge call. 586's Android 9 build has one more (2026-11-10).
          */
-        val OWN_PACKAGE_CALL_LOADS = mapOf(AppCompatibilities.FACEBOOK_TARGET_VERSION to 18)
+        val OWN_PACKAGE_CALL_LOADS = mapOf(
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 18, "armeabi-v7a" to 18, "arm64-v8a-minapi28-storeless" to 19),
+        )
 
         /** Of those, the ones in Firebase's notification code. */
         val FIREBASE_LOADS = mapOf(AppCompatibilities.FACEBOOK_TARGET_VERSION to 9)
@@ -802,12 +807,17 @@ class SharedPermissionsFixtureTest {
          * at least, so it can't go over whole. Earlier builds named these classes differently per
          * ABI, as 585's do; 584's two happened to agree. 585's phone builds drop the warm-start
          * hint, which no longer reads a load of Facebook's package there, and the Android 9 build
-         * still has it (2026-11-07). 586 has phone builds only, and neither has the hint (2026-11-08).
+         * still has it (2026-11-07). 586's phone builds don't have the hint (2026-11-08), and its
+         * Android 9 build does, like 585's (2026-11-10).
          */
         val STOCK_OWNERS = mapOf(
             AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
                 "arm64-v8a" to listOf("LX/0X1T;->A00@569:", "LX/0X8V;->A00@40:", "LX/0XdF;->A00@22:", "LX/0hi4;->openForumShareLink\$${FORUM_LINK}@58:"),
                 "armeabi-v7a" to listOf("LX/0X1X;->A00@569:", "LX/0X8Z;->A00@40:", "LX/0XdJ;->A00@22:", "LX/0hi6;->openForumShareLink\$${FORUM_LINK}@58:"),
+                "arm64-v8a-minapi28-storeless" to listOf(
+                    "Lcom/facebook/messaging/threadsettings2/activity/ThreadSettingsActivity;->onActivityCreate@50:",
+                    "LX/0dOt;->A00@567:", "LX/0dX7;->A00@42:", "LX/0dbD;->openForumShareLink\$${FORUM_LINK}@58:", "LX/0e8S;->A00@22:",
+                ),
             ),
         )
 
@@ -819,10 +829,11 @@ class SharedPermissionsFixtureTest {
          * (ThreadSettingsActivity), sent to Facebook's WarmStartBroadcastReceiver once it has
          * checked Facebook is installed. 582 also had Messenger's deep link launcher, which 583 no
          * longer spells out. 585's phone builds no longer spell out the warm-start hint either, so
-         * none is left there, and the Android 9 build keeps it (2026-11-07). 586's two keep none.
+         * none is left there, and the Android 9 build keeps it (2026-11-07). 586's phone builds keep
+         * none, and its Android 9 build keeps the hint (2026-11-10).
          */
         val SETS_REAL_FACEBOOK = mapOf(
-            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0),
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0, "arm64-v8a-minapi28-storeless" to 1),
         )
     }
 }
