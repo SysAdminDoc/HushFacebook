@@ -1259,6 +1259,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_faster_reel_speeds", FALSE);
 
     /**
+     * A feed or Watch video's 3-dot menu gets Playback speed, which offers 0.5x to 3x for that
+     * video, a live one too (#429). It rides on Keep the reel speed's patch for the player and on
+     * Download any video's for the menu ({@link app.morphe.extension.facebook.media.ReelSpeed}).
+     * Starts off. Off or paused, the menu is Facebook's.
+     */
+    public static final BooleanSetting POST_MENU_SPEED =
+            new BooleanSetting("hushfacebook_post_menu_speed", FALSE);
+
+    /**
      * The gear menu offers Playback speed on a full-screen video that isn't live, a finished live
      * video among them, where Facebook's full-screen player leaves it out behind a server flag
      * (#238). It rides on Keep the reel speed's patch

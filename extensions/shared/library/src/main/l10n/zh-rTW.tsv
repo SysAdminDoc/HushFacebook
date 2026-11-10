@@ -2680,3 +2680,5 @@ A small label at the top of Reels shows the minutes you've watched. Time on othe
 %1$d min	%1$d 分鐘
 Hide the tab bar on the Reels tab	在 Reels 分頁隱藏分頁列
 The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. The other tabs keep the bar. Restart Facebook to see the change.	開啟 Reels 分頁時分頁列會消失，Reels 佔滿整個螢幕。其他分頁保留分頁列。重新啟動 Facebook 後生效.
+Playback speed in the post menu	貼文選單中的播放速度
+A feed or Watch video's 3-dot menu gets Playback speed, from 0.5x to 3x, live videos too. Off by default, since it hasn't been tried on a real account yet.	動態消息或 Watch 影片的三點選單會加入播放速度，從 0.5 倍到 3 倍，直播影片也適用。預設停用，因為尚未使用真實帳號測試。

@@ -307,6 +307,7 @@ public final class SettingsBackup {
             Settings.SLOWER_REEL_SPEEDS,
             Settings.FASTER_REEL_SPEEDS,
             Settings.SPEED_ON_REPLAYS,
+            Settings.POST_MENU_SPEED,
             Settings.HOLD_REEL_FOR_2X,
             Settings.HOLD_REEL_RIGHT_EDGE,
             Settings.HOLD_FEED_VIDEO_FOR_2X,

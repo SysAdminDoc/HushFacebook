@@ -103,6 +103,10 @@ internal const val REEL_PARAMS_STUB = "playerParams"
 /** The VideoPlayerParams booleans the extension reads, by the name the params' debug dump reports each under, to the stub reading it. */
 internal val REEL_PARAM_STUBS = linkedMapOf("isFbShorts" to "fbShorts", "isSponsored" to "sponsored", "isLiveNow" to "liveNow")
 
+/** What the params' debug dump reports the video's id under, and the stub reading it for the post menu's speed row (#429). */
+internal const val VIDEO_ID_REPORTED = "videoId"
+internal const val VIDEO_ID_STUB = "videoId"
+
 internal const val SPEED_TOAST = "InlinePlaybackSpeedAttributeSelector"
 
 /** Kept literal. The gear menu's speed sheet logs its pick under it. */

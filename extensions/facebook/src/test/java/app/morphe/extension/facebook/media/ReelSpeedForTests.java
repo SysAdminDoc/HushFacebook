@@ -54,6 +54,11 @@ public final class ReelSpeedForTests {
             }
 
             @Override
+            public String videoId(Object videoParams) {
+                return null;
+            }
+
+            @Override
             public float currentSpeed(Object player) {
                 return ReelSpeed.NORMAL;
             }
@@ -105,6 +110,11 @@ public final class ReelSpeedForTests {
             @Override
             public boolean live(Object videoParams) {
                 return false;
+            }
+
+            @Override
+            public String videoId(Object videoParams) {
+                return null;
             }
 
             @Override

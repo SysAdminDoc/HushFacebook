@@ -119,6 +119,14 @@ class KeepReelSpeedFixtureTest {
                     stub to field.name
                 }
                 assertEquals("$name: the fields reported as ${REEL_PARAM_STUBS.keys}", 3, flagFields.values.toSet().size)
+                // The same dump names the video's id, which the post menu's speed row matches its player by (#429).
+                val videoId = reported[VIDEO_ID_REPORTED]
+                assertTrue("$name: the dump doesn't report $VIDEO_ID_REPORTED", videoId != null)
+                assertTrue("$name: $VIDEO_ID_REPORTED, ${videoId!!.name}, isn't a public String",
+                    paramsClass.fields.any {
+                        it.name == videoId.name && it.type == "Ljava/lang/String;" &&
+                            AccessFlags.PUBLIC.isSet(it.accessFlags) && !AccessFlags.STATIC.isSet(it.accessFlags)
+                    })
 
                 // The only method of the build holding the selector's name, and the Reels pickers' runnables
                 // are all that call it.

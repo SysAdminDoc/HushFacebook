@@ -165,7 +165,7 @@ public enum PatchFamily {
             Settings.DOUBLE_TAP_OPENS_COMMENTS, Settings.LONG_PRESS_OPENS_COMMENTS, Settings.SELECT_POST_TEXT),
     KEEP_REEL_SPEED(FamilyNames.KEEP_REEL_SPEED, "keepReelSpeed", null,
             Settings.KEEP_REEL_SPEED, Settings.KEEP_VIDEO_SPEED, Settings.SLOWER_REEL_SPEEDS,
-            Settings.FASTER_REEL_SPEEDS, Settings.SPEED_ON_REPLAYS),
+            Settings.FASTER_REEL_SPEEDS, Settings.SPEED_ON_REPLAYS, Settings.POST_MENU_SPEED),
     REEL_HOLD(FamilyNames.HOLD_REEL_FOR_2X, "reelHold", null,
             Settings.HOLD_REEL_FOR_2X, Settings.HOLD_REEL_RIGHT_EDGE, Settings.HOLD_FEED_VIDEO_FOR_2X,
             Settings.HIDE_2X_LOCK_HINT, Settings.HIDE_2X_POPUPS),

@@ -345,6 +345,11 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SPEED_ON_REPLAYS,
                     L10n.t("A live video that has ended gets Playback speed in its gear menu, like other videos. "
                             + "Videos that are still live, and ads, keep Facebook's menu.")));
+            if (build.contains(PatchFamily.VIDEO_DOWNLOAD)) {
+                reels.addPreference(toggle(context, Settings.POST_MENU_SPEED,
+                        L10n.t("A feed or Watch video's 3-dot menu gets Playback speed, from 0.5x to 3x, live videos "
+                                + "too. Off by default, since it hasn't been tried on a real account yet.")));
+            }
         }
         if (build.contains(PatchFamily.REEL_HOLD)) {
             reels.addPreference(toggle(context, Settings.HOLD_REEL_FOR_2X,

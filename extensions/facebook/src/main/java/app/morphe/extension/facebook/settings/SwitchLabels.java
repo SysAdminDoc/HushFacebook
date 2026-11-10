@@ -240,6 +240,7 @@ final class SwitchLabels {
         if (setting == Settings.SLOWER_REEL_SPEEDS) return L10n.t("Slower speeds");
         if (setting == Settings.FASTER_REEL_SPEEDS) return L10n.t("Faster speeds");
         if (setting == Settings.SPEED_ON_REPLAYS) return L10n.t("Speed on finished live videos");
+        if (setting == Settings.POST_MENU_SPEED) return L10n.t("Playback speed in the post menu");
         if (setting == Settings.HOLD_REEL_FOR_2X) return L10n.t("Hold a reel for 2x");
         if (setting == Settings.HOLD_REEL_RIGHT_EDGE) return L10n.t("Only on the right edge");
         if (setting == Settings.HOLD_FEED_VIDEO_FOR_2X) return L10n.t("Hold a feed video for 2x");

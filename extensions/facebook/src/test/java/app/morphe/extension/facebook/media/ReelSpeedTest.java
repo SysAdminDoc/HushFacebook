@@ -9,6 +9,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
@@ -18,9 +20,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowDialog;
+import org.robolectric.shadows.ShadowLooper;
+import org.robolectric.shadows.ShadowToast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -101,9 +107,18 @@ public class ReelSpeedTest {
             return player;
         }
 
+        /** The video id each params object reports, by identity; none for params bound without one. */
+        final Map<Object, String> ids = new IdentityHashMap<>();
+
         /** [player] binds a new video: new params, as Facebook builds for every video. */
         void bind(Object player) {
             params.put(player, new Video[] {kinds.get(player)});
+        }
+
+        /** [player] binds the video [id]: new params reporting it. */
+        void bind(Object player, String id) {
+            bind(player);
+            ids.put(params.get(player), id);
         }
 
         @Override
@@ -156,6 +171,11 @@ public class ReelSpeedTest {
         }
 
         @Override
+        public String videoId(Object params) {
+            return ids.get(params);
+        }
+
+        @Override
         public float currentSpeed(Object player) {
             return (float) speed(player);
         }
@@ -181,6 +201,7 @@ public class ReelSpeedTest {
         Settings.KEEP_VIDEO_SPEED.resetToDefault();
         Settings.SLOWER_REEL_SPEEDS.resetToDefault();
         Settings.FASTER_REEL_SPEEDS.resetToDefault();
+        Settings.POST_MENU_SPEED.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         LogBufferManager.clearLogBuffer();
         ReelSpeed.forget();
@@ -923,5 +944,129 @@ public class ReelSpeedTest {
         PauseForTests.resume();
         assertEquals("the control: running, the slower speeds come back", 5, ReelSpeed.gearSpeeds(facebooks).length);
         assertEquals("and their labels", 5, ReelSpeed.gearLabels(labels).length);
+    }
+
+    // ------------------------------------------------------------------ Playback speed in the post menu (#429)
+
+    /**
+     * A speed picked in a feed video's 3-dot menu goes on the player playing that video, not on the
+     * one that started after it, and a live video takes one too.
+     */
+    @Test
+    public void thePostMenuSetsTheSpeedOnThePlayerPlayingItsVideo() {
+        Settings.POST_MENU_SPEED.save(true);
+        assertTrue(PostMenuSpeed.offersRow());
+        Object feed = players.player(FEED, NOT_A_REEL);
+        Object live = players.player(FEED, LIVE_VIDEO);
+        players.bind(feed, "101");
+        players.bind(live, "202");
+        ReelSpeed.started(feed);
+        ReelSpeed.started(live);
+
+        PostMenuSpeed.choose(null, "101", 2.5f);
+        assertEquals(2.5, players.speed(feed), 0.001);
+        assertEquals("the video that started after it keeps its speed", 1, players.speed(live), 0.001);
+        PostMenuSpeed.choose(null, "202", 3f);
+        assertEquals("a live video takes one too", 3, players.speed(live), 0.001);
+        assertTrue(statusLine(), statusLine().contains(PostMenuSpeed.APPLIED + " 2"));
+    }
+
+    /**
+     * A pick for a video no player plays yet, or one its player has moved on from, waits for that
+     * video's start, and Keep the video speed's kept speed doesn't undo it there.
+     */
+    @Test
+    public void aPostMenuPickWaitsForItsVideoToStart() {
+        Settings.POST_MENU_SPEED.save(true);
+        Settings.KEEP_VIDEO_SPEED.save(true);
+        Object feed = players.player(FEED, NOT_A_REEL);
+        players.bind(feed, "101");
+        ReelSpeed.started(feed);
+        gearPick(feed, 1.25f);
+        // The player moves on to the next post's video, so 101 isn't playing anywhere.
+        players.bind(feed, "102");
+        ReelSpeed.started(feed);
+        assertEquals("the control: the kept speed goes on the next video", 1.25, players.speed(feed), 0.001);
+
+        PostMenuSpeed.choose(null, "101", 2f);
+        assertEquals("nothing playing 101, nothing changes", 1.25, players.speed(feed), 0.001);
+        players.bind(feed, "101");
+        ReelSpeed.started(feed);
+        assertEquals("101 starts at the speed picked for it", 2, players.speed(feed), 0.001);
+        resume(feed);
+        assertEquals("and keeps it when it starts again", 2, players.speed(feed), 0.001);
+    }
+
+    /**
+     * A post menu pick counts as a gear menu pick: Keep the video speed keeps it for the next
+     * videos. With no id read from any video, it goes on the player that started last.
+     */
+    @Test
+    public void aPostMenuPickIsKeptLikeAGearPickAndFallsBackToTheVideoPlaying() {
+        Settings.POST_MENU_SPEED.save(true);
+        Settings.KEEP_VIDEO_SPEED.save(true);
+        Object feed = players.player(FEED, NOT_A_REEL);
+        players.bind(feed);
+        ReelSpeed.started(feed);
+
+        PostMenuSpeed.choose(null, "101", 1.5f);
+        assertEquals("no id read, so the video playing takes it", 1.5, players.speed(feed), 0.001);
+        assertEquals("and Keep the video speed keeps it", 1.5, ReelSpeed.videoKept(), 0.001);
+        Object next = players.player(FEED, NOT_A_REEL);
+        players.bind(next);
+        ReelSpeed.started(next);
+        assertEquals(1.5, players.speed(next), 0.001);
+    }
+
+    /** Off or paused, the menu gets no row, a pick sets nothing, and starts aren't remembered. */
+    @Test
+    public void offOrPausedThePostMenuIsFacebooks() {
+        Object feed = players.player(FEED, NOT_A_REEL);
+        players.bind(feed, "101");
+        assertFalse("the switch starts off", Settings.POST_MENU_SPEED.get());
+        assertFalse(PostMenuSpeed.offersRow());
+        ReelSpeed.started(feed);
+        Settings.POST_MENU_SPEED.save(true);
+        PostMenuSpeed.choose(null, "101", 2f);
+        assertEquals("a start while off isn't remembered, so 101 waits", 1, players.speed(feed), 0.001);
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse(PostMenuSpeed.offersRow());
+        ReelSpeed.started(feed);
+        PostMenuSpeed.choose(null, "101", 3f);
+        assertEquals("paused, nothing is set", 1, players.speed(feed), 0.001);
+        PauseForTests.resume();
+        ReelSpeed.started(feed);
+        assertEquals("the control: running, the waiting 2x goes on", 2, players.speed(feed), 0.001);
+    }
+
+    /**
+     * The row opens a list of 0.5x to 3x with the speed the video plays at checked, and a tap on a
+     * speed sets it and closes the list.
+     */
+    @Test
+    public void thePostMenuRowOpensTheSpeedsWithTheCurrentOneChecked() {
+        Settings.POST_MENU_SPEED.save(true);
+        Object feed = players.player(FEED, NOT_A_REEL);
+        players.bind(feed, "101");
+        ReelSpeed.started(feed);
+        PostMenuSpeed.choose(null, "101", 1.5f);
+        Activity screen = Robolectric.buildActivity(Activity.class).setup().get();
+
+        PostMenuSpeed.open(screen, "101");
+        ShadowLooper.idleMainLooper();
+        AlertDialog list = (AlertDialog) ShadowDialog.getLatestDialog();
+        assertTrue(list.isShowing());
+        assertEquals(Arrays.asList("0.5x", "0.75x", "1x", "1.25x", "1.5x", "2x", "2.5x", "3x"),
+                Arrays.asList(PostMenuSpeed.labels()));
+        assertEquals(8, list.getListView().getAdapter().getCount());
+        assertEquals("1.5x", String.valueOf(list.getListView().getAdapter().getItem(4)));
+        assertEquals("1.5x is checked", 4, list.getListView().getCheckedItemPosition());
+
+        list.getListView().performItemClick(null, 7, 0);
+        ShadowLooper.idleMainLooper();
+        assertEquals(3, players.speed(feed), 0.001);
+        assertFalse(list.isShowing());
+        assertEquals("Playback speed: 3x", ShadowToast.getTextOfLatestToast());
     }
 }

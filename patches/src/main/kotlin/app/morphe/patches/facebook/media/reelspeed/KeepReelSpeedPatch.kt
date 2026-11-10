@@ -139,6 +139,8 @@ internal class ReelSpeedAnchors(
     val gearPick: Method,
     val params: Method,
     val flags: Map<String, FieldReference>,
+    /** The params' public String videoId, or null when the dump doesn't report one, which leaves the post menu's speed row on the video playing. */
+    val videoId: FieldReference?,
 )
 
 /**
@@ -191,6 +193,16 @@ internal fun BytecodePatchContext.findReelSpeedAnchors(): ReelSpeedAnchors {
         if (!AccessFlags.PUBLIC.isSet(declared.accessFlags)) refuse("$name, ${field.name}, isn't public, so the extension can't read it")
         stub to field
     }
+    val videoId = reported[VIDEO_ID_REPORTED]?.takeIf { field ->
+        paramsClass.fields.any {
+            it.name == field.name && it.type == "Ljava/lang/String;" && AccessFlags.PUBLIC.isSet(it.accessFlags) &&
+                !AccessFlags.STATIC.isSet(it.accessFlags)
+        }
+    }
+    if (videoId == null) {
+        patchLog.warning("$PATCH: $VIDEO_ID_REPORTED isn't a public String field of $VIDEO_PLAYER_PARAMS. " +
+            "The patch goes on, and the post menu's Playback speed sets the video playing.")
+    }
 
     // The extension's stubs call these from outside Facebook's package.
     listOf(owner, paramsClass).forEach { reachable ->
@@ -201,7 +213,7 @@ internal fun BytecodePatchContext.findReelSpeedAnchors(): ReelSpeedAnchors {
             refuse("${owner.type}->${method.name} isn't public, so the extension can't call it")
         }
     }
-    return ReelSpeedAnchors(owner, setter, origin, start, toast, toastSpeed, gearPick, params, flags)
+    return ReelSpeedAnchors(owner, setter, origin, start, toast, toastSpeed, gearPick, params, flags, videoId)
 }
 
 /**
@@ -446,6 +458,16 @@ private fun BytecodePatchContext.fillStubs(anchors: ReelSpeedAnchors) {
                 check-cast p0, $VIDEO_PLAYER_PARAMS
                 iget-boolean p0, p0, $VIDEO_PLAYER_PARAMS->${field.name}:Z
                 return p0
+            """,
+        )
+    }
+    anchors.videoId?.let { field ->
+        stub(VIDEO_ID_STUB, listOf(objectType), "Ljava/lang/String;").addInstructions(
+            0,
+            """
+                check-cast p0, $VIDEO_PLAYER_PARAMS
+                iget-object p0, p0, $VIDEO_PLAYER_PARAMS->${field.name}:Ljava/lang/String;
+                return-object p0
             """,
         )
     }

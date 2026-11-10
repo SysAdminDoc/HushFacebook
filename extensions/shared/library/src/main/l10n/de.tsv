@@ -2676,3 +2676,5 @@ A small label at the top of Reels shows the minutes you've watched. Time on othe
 %1$d min	%1$d Min
 Hide the tab bar on the Reels tab	Tab-Leiste im Reels-Tab ausblenden
 The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. The other tabs keep the bar. Restart Facebook to see the change.	Die Tab-Leiste verschwindet, solange der Reels-Tab offen ist, und das Reel bekommt den ganzen Bildschirm. Die anderen Tabs behalten die Leiste. Starte Facebook neu, um die Änderung zu sehen.
+Playback speed in the post menu	Wiedergabegeschwindigkeit im Beitragsmenü
+A feed or Watch video's 3-dot menu gets Playback speed, from 0.5x to 3x, live videos too. Off by default, since it hasn't been tried on a real account yet.	Das Drei-Punkte-Menü eines Feed- oder Watch-Videos bekommt Wiedergabegeschwindigkeit, von 0,5x bis 3x, auch bei Live-Videos. Standardmäßig aus, weil es auf einem echten Konto noch nicht ausprobiert wurde.

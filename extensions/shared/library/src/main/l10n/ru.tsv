@@ -2730,3 +2730,5 @@ A small label at the top of Reels shows the minutes you've watched. Time on othe
 %1$d min	%1$d мин
 Hide the tab bar on the Reels tab	Скрывать панель вкладок на вкладке Reels
 The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. The other tabs keep the bar. Restart Facebook to see the change.	Панель вкладок исчезает, пока открыта вкладка Reels, и рилс занимает весь экран. На остальных вкладках панель остаётся. Перезапустите Facebook, чтобы увидеть изменения.
+Playback speed in the post menu	Скорость воспроизведения в меню публикации
+A feed or Watch video's 3-dot menu gets Playback speed, from 0.5x to 3x, live videos too. Off by default, since it hasn't been tried on a real account yet.	В меню с тремя точками у видео в Ленте или Watch появляется пункт «Скорость воспроизведения» от 0,5x до 3x, в том числе для прямых эфиров. По умолчанию выключено, поскольку функция еще не проверялась на реальном аккаунте.

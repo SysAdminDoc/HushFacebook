@@ -65,7 +65,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>Slower speeds, the third switch, adds 0.1x and 0.25x to the speeds the Reels menu's two pickers
  * offer ({@link #speedChoices}) and to the gear menu's speed sheet ({@link #gearValues},
  * {@link #gearSpeeds} and {@link #gearLabels}). Faster speeds adds 2.5x and 3x after the fastest
- * speed the same pickers and sheet offer (#430).
+ * speed the same pickers and sheet offer (#430). Playback speed in the post menu sets a speed from a
+ * feed or Watch video's 3-dot menu through the same setter ({@link PostMenuSpeed}, #429).
  */
 public final class ReelSpeed {
     static final float NORMAL = 1f;
@@ -156,6 +157,10 @@ public final class ReelSpeed {
         /** Whether [params]' video is live now, by its isLiveNow. */
         boolean live(Object params);
 
+        /** [params]' video id, or null when the patch found none to fill in. */
+        @Nullable
+        String videoId(Object params);
+
         /** The speed the player plays at, by the getter the gear menu's speed sheet reads. */
         float currentSpeed(Object player);
     }
@@ -189,6 +194,11 @@ public final class ReelSpeed {
         @Override
         public boolean live(Object params) {
             return liveNow(params);
+        }
+
+        @Override
+        public String videoId(Object params) {
+            return ReelSpeed.videoId(params);
         }
 
         @Override
@@ -263,6 +273,15 @@ public final class ReelSpeed {
         return false;
     }
 
+    /**
+     * Filled in by the patch when the params' debug dump reports a videoId: that field. Null
+     * otherwise. Only params may be passed.
+     */
+    @Nullable
+    public static String videoId(Object params) {
+        return null;
+    }
+
     /** Filled in by the patch: the speed getter the gear menu's speed sheet reads. Only a player may be passed. */
     public static float playerSpeed(Object player) {
         return NORMAL;
@@ -305,6 +324,11 @@ public final class ReelSpeed {
      */
     public static void gearPicked(float speed) {
         pick(speed, true, "gear speed picked");
+    }
+
+    /** A speed picked in a post's 3-dot menu ({@link PostMenuSpeed}), just set on its player: kept like a gear menu pick. */
+    static void menuPicked(float speed) {
+        pick(speed, true, "post menu speed picked");
     }
 
     /**
@@ -461,7 +485,7 @@ public final class ReelSpeed {
     }
 
     /** [count] of [speeds] from [from] written plainly, "0.25" or "3" with no ".0" on a whole speed. */
-    private static String[] names(float[] speeds, int from, int count) {
+    static String[] names(float[] speeds, int from, int count) {
         String[] names = new String[count];
         for (int i = 0; i < count; i++) {
             float speed = speeds[from + i];
@@ -623,6 +647,8 @@ public final class ReelSpeed {
      * The hook, first thing in FbGrootPlayer's maybeTrackVideoStart, which runs once the player has
      * started playing. The first start of each video after a pick gets the kept speed: a reel gets
      * its viewer's, and a feed or Watch video gets the video speed. Neither goes on an ad or a live video.
+     * With Playback speed in the post menu on, {@link PostMenuSpeed} hears of the start first, and a
+     * speed it set for the video stands.
      */
     public static void started(Object player) {
         try {
@@ -630,7 +656,8 @@ public final class ReelSpeed {
             if (player == null) return;
             boolean reels = reelsOn();
             boolean videos = videosOn();
-            if (!reels && !videos) return;
+            boolean menu = PostMenuSpeed.on();
+            if (!reels && !videos && !menu) return;
             String origin = originName(player);
             Float reelKept;
             Float videoSpeed;
@@ -640,6 +667,7 @@ public final class ReelSpeed {
                 reelKept = !reels || origin == null ? null : KEPT.get(origin);
                 videoSpeed = videos ? videoKept : null;
             }
+            if (menu && PostMenuSpeed.started(player)) return;
             // Nothing kept yet: a later start of the same video can still get a pick.
             if (reelKept == null && videoSpeed == null) return;
             Object params = access.params(player);
@@ -822,6 +850,7 @@ public final class ReelSpeed {
             HANDLED.clear();
             loaded = false;
         }
+        PostMenuSpeed.forget();
     }
 
     /** Forgets every kept speed, the saved ones too, the last speed set and every started video. For tests. */

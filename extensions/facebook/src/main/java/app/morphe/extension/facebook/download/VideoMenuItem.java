@@ -12,6 +12,7 @@ import android.view.View;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import app.morphe.extension.facebook.media.PostMenuSpeed;
 import app.morphe.extension.facebook.media.SkipSilence;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -32,6 +33,7 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * ({@link SendLink}), the item is Send to app and hands over the video's facebook.com link.
  * While Skip silent parts is on and a video has started, the same call adds that patch's row below
  * Facebook's ({@link SkipSilence}), so it shows only where Download any video is patched too.
+ * Playback speed in the post menu adds its Playback speed row the same way ({@link PostMenuSpeed}).
  *
  * <p>Nothing here names a class or member that Facebook renames. The post and its attachment are
  * kept GraphQL model classes, and the patch finds their getters by the GraphQL field each one
@@ -79,7 +81,8 @@ public final class VideoMenuItem {
             boolean handOff = Settings.OPEN_IN_ANOTHER_APP.get();
             boolean saving = download || handOff;
             boolean silence = SkipSilence.offersRow();
-            if (!saving && !silence) return;
+            boolean speed = PostMenuSpeed.offersRow();
+            if (!saving && !silence && !speed) return;
             if (menu == null) return;
             if (saving) HookStatus.invoked(FamilyNames.VIDEO_DOWNLOAD);
 
@@ -116,6 +119,15 @@ public final class VideoMenuItem {
                 if (entry != null) {
                     entry.setOnMenuItemClickListener(tapped -> {
                         SkipSilence.flip(context, quiet);
+                        return true;
+                    });
+                }
+            }
+            if (speed) {
+                MenuItem entry = menu.add(PostMenuSpeed.rowTitle());
+                if (entry != null) {
+                    entry.setOnMenuItemClickListener(tapped -> {
+                        PostMenuSpeed.open(context, video.id);
                         return true;
                     });
                 }
