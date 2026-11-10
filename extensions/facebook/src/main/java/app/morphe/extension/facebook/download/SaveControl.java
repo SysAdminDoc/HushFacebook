@@ -715,7 +715,9 @@ public final class SaveControl {
                         L10n.t(application, "Cancel"), cancel).build());
                 }
                 String text = status(phase, done, total, rate.elapsedMillis(now), bytesPerSecond(now));
-                builder.setContentText(text);
+                // The plain expanded card stops after two lines, which hid a download's rate and time.
+                builder.setContentText(text)
+                    .setStyle(new Notification.BigTextStyle().bigText(text));
                 manager.notify(TAG, id, builder.build());
             } catch (Throwable t) {
                 MediaDownload.failure(() -> "could not show the save's progress", t);

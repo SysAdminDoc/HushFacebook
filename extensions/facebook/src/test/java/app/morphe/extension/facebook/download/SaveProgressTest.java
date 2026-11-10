@@ -1128,6 +1128,25 @@ public class SaveProgressTest {
         } finally { save.end(); }
     }
 
+    /** The expanded card shows every line, so the download's rate and time aren't cut after the second. */
+    @Test public void theExpandedNotificationKeepsTheRateAndTimeLine() {
+        SavesForTests.FakeClock clock = SavesForTests.fakeClock();
+        SaveControl.Save save = SaveControl.begin(context, true);
+        try {
+            for (int quarter = 0; quarter <= 8; quarter++) {
+                if (quarter > 0) clock.advanceMillis(250);
+                save.transferred(quarter * MIB / 4, 4 * MIB);
+            }
+            Notification shown = saveNotification();
+            assertEquals(Notification.BigTextStyle.class.getName(), shown.extras.getString(Notification.EXTRA_TEMPLATE));
+            assertEquals("Downloading\n2.0 MB of 4.0 MB\n1.0 MB a second, 0:02 elapsed",
+                    String.valueOf(shown.extras.getCharSequence(Notification.EXTRA_BIG_TEXT)));
+            save.joining();
+            assertEquals("Joining the picture and sound\n0:02 elapsed",
+                    String.valueOf(saveNotification().extras.getCharSequence(Notification.EXTRA_BIG_TEXT)));
+        } finally { save.end(); }
+    }
+
     /** Joining and copying move no bytes over the line, so they give no rate, and the time goes on. */
     @Test public void aJoinOrACopyClaimsNoRateAndTheTickKeepsTheTimeGoing() {
         SavesForTests.FakeClock clock = SavesForTests.fakeClock();
