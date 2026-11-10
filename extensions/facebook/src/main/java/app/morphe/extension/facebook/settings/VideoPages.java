@@ -426,6 +426,10 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.FEED_VIDEO_SEEK_BAR_LOWER,
                         L10n.t("Moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. "
                                 + "Needs Seek bar on feed videos on.")));
+                playback.addPreference(toggle(context, Settings.FEED_VIDEO_SEEK_BAR_EDGE,
+                        L10n.t("Puts a feed video's seek bar right on its bottom edge, so it's out of the way while you scroll. "
+                                + "Facebook's speaker and tagged people buttons move up to sit above it. "
+                                + "Wins over Lower the seek bar and speaker. Needs Seek bar on feed videos on.")));
                 playback.addPreference(toggle(context, Settings.FEED_VIDEO_SEEK_BAR_TIMES,
                         L10n.t("Shows how far into a feed video you are at the left end of its seek bar, and how much is left at the right end. "
                                 + "Needs Seek bar on feed videos on.")));

@@ -2216,6 +2216,8 @@ Fade the seek bar and speaker	Sarma çubuğunu ve hoparlörü soldur
 Lower the seek bar and speaker	Sarma çubuğunu ve hoparlörü aşağı al
 While a feed video plays, its seek bar and Facebook's speaker button fade a few seconds after it starts or you last touch them. Touch the bar or pause the video and they come back. Needs Seek bar on feed videos on.	Akıştaki bir video oynarken sarma çubuğu ve Facebook'un hoparlör düğmesi, video başladıktan ya da onlara son dokunuşunuzdan birkaç saniye sonra solar. Çubuğa dokunun ya da videoyu duraklatın, geri gelirler. “Akış videolarında sarma çubuğu” açık olmalıdır.
 Moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. Needs Seek bar on feed videos on.	Akıştaki bir videonun sarma çubuğunu, Facebook'un hoparlör ve etiketlenen kişiler düğmeleriyle birlikte alt kenara yaklaştırır. “Akış videolarında sarma çubuğu” açık olmalıdır.
+Seek bar on the bottom edge	Sarma çubuğu alt kenarda
+Puts a feed video's seek bar right on its bottom edge, so it's out of the way while you scroll. Facebook's speaker and tagged people buttons move up to sit above it. Wins over Lower the seek bar and speaker. Needs Seek bar on feed videos on.	Akıştaki bir videonun sarma çubuğunu tam alt kenarına koyar, böylece kaydırırken yolunuza çıkmaz. Facebook'un hoparlör ve etiketlenen kişiler düğmeleri onun üstüne çıkar. “Sarma çubuğunu ve hoparlörü aşağı al” ayarından önce gelir. “Akış videolarında sarma çubuğu” açık olmalıdır.
 Feed video position	Akış videosu konumu
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Rozet rengi

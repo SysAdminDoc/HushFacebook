@@ -2220,6 +2220,8 @@ Fade the seek bar and speaker	淡化進度列和喇叭按鈕
 Lower the seek bar and speaker	降低進度列和喇叭按鈕
 While a feed video plays, its seek bar and Facebook's speaker button fade a few seconds after it starts or you last touch them. Touch the bar or pause the video and they come back. Needs Seek bar on feed videos on.	動態影片播放時，它的進度列和 Facebook 的喇叭按鈕會在影片開始或你最後一次觸碰幾秒後變淡。觸碰進度列或暫停影片，它們就會恢復。需要開啟「動態影片上的進度列」。
 Moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. Needs Seek bar on feed videos on.	把動態影片的進度列移得更靠近底邊，Facebook 的喇叭和標註的人按鈕也一起下移。需要開啟「動態影片上的進度列」。
+Seek bar on the bottom edge	進度列貼齊底邊
+Puts a feed video's seek bar right on its bottom edge, so it's out of the way while you scroll. Facebook's speaker and tagged people buttons move up to sit above it. Wins over Lower the seek bar and speaker. Needs Seek bar on feed videos on.	把動態影片的進度列放在底邊上，滑動時比較不會誤觸。Facebook 的喇叭和標註的人按鈕會上移到它上方。優先於「降低進度列和喇叭按鈕」。需要開啟「動態影片上的進度列」。
 Feed video position	動態影片播放位置
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	徽章顏色

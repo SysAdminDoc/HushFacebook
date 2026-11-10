@@ -157,6 +157,7 @@ public class FeedVideoControlsTest {
         Settings.FEED_VIDEO_SEEK_BAR.resetToDefault();
         Settings.FEED_VIDEO_SEEK_BAR_FADE.resetToDefault();
         Settings.FEED_VIDEO_SEEK_BAR_LOWER.resetToDefault();
+        Settings.FEED_VIDEO_SEEK_BAR_EDGE.resetToDefault();
         Settings.STORY_SEEK_BAR.resetToDefault();
         Settings.STORY_SEEK_BAR_FADE.resetToDefault();
         Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.resetToDefault();
@@ -371,6 +372,48 @@ public class FeedVideoControlsTest {
                 0f, tagged.getTranslationY(), 0f);
         save(Settings.FEED_VIDEO_SEEK_BAR, false);
         assertEquals("without the bar nothing stays moved", 13f, speaker.getTranslationY(), 0f);
+    }
+
+    @Test public void edgePutsTheBarOnTheBottomEdgeAndLiftsFacebooksCornerButtonsClearOfIt() {
+        View speaker = cornerButton(1040, 560, "Unmute sound");
+        View tagged = cornerButton(8, 550, "Tagged people");
+        View caption = cornerButton(8, 480, "Above the strip the bar leaves");
+        speaker.setTranslationY(3);
+        layout();
+        barOn();
+        int edge = on(player.view)[1] + 600;
+        assertEquals(edge - FeedVideoControls.BAR_LIFT_DP, on(bar())[1] + bar().getHeight());
+
+        save(Settings.FEED_VIDEO_SEEK_BAR_LOWER, true);
+        save(Settings.FEED_VIDEO_SEEK_BAR_EDGE, true);
+        // The corners are looked for at most once a tick, and Lower's save just looked.
+        tick();
+        refreshAfterLayout();
+        layout();
+        assertEquals("the bar ends on the video's bottom edge, Lower or not", edge, on(bar())[1] + bar().getHeight());
+        assertEquals(FeedVideoControls.BAR_DP, bar().getHeight());
+        // The speaker ends at 595 with Facebook's 3, and the bar starts 20 above 600 with a 4 gap kept under the buttons.
+        int lift = 595 - (600 - FeedVideoControls.BAR_DP - FeedVideoControls.MARGIN_DP);
+        assertEquals("all of them go up by what the lowest needs, Facebook's own offset kept", 3f - lift, speaker.getTranslationY(), 0f);
+        assertEquals((float) -lift, tagged.getTranslationY(), 0f);
+        assertEquals(0f, caption.getTranslationY(), 0f);
+        assertTrue("the speaker ends a gap above the bar",
+                on(speaker)[1] + speaker.getHeight() <= on(bar())[1] - FeedVideoControls.MARGIN_DP);
+
+        save(Settings.FEED_VIDEO_SEEK_BAR_EDGE, false);
+        tick();
+        refreshAfterLayout();
+        layout();
+        // Lower is still on: the speaker leaves 5 under it, 1 past the margin.
+        assertEquals("off, Lower takes over again", 4f, speaker.getTranslationY(), 0f);
+        assertEquals(1f, tagged.getTranslationY(), 0f);
+        assertEquals(edge - FeedVideoControls.BAR_LIFT_DP + 1, on(bar())[1] + bar().getHeight());
+
+        save(Settings.FEED_VIDEO_SEEK_BAR_EDGE, true);
+        refreshAfterLayout();
+        save(Settings.FEED_VIDEO_SEEK_BAR, false);
+        assertEquals("without the bar nothing stays moved", 3f, speaker.getTranslationY(), 0f);
+        assertEquals(0f, tagged.getTranslationY(), 0f);
     }
 
     @Test public void fadeDimsTheBarAndTheSpeakerWhileItPlaysAndATouchOrAPauseBringsThemBack() {

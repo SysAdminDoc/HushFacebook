@@ -1639,6 +1639,19 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * With {@link #FEED_VIDEO_SEEK_BAR} on, the bar runs along the video's bottom edge, and Facebook's
+     * buttons in the video's bottom corners move up to sit above it. Wins over
+     * {@link #FEED_VIDEO_SEEK_BAR_LOWER} (#431). Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_SEEK_BAR_EDGE =
+            new BooleanSetting("hushfacebook_feed_video_seek_bar_edge", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
      * A seek bar along the bottom of a video story, where {@link #STORY_PROGRESS_BAR} draws, which
      * makes way for it. A drag holds the story and the let go moves it there (#386). Starts off.
      */

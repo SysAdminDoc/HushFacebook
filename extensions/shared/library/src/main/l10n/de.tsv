@@ -2216,6 +2216,8 @@ Fade the seek bar and speaker	Suchleiste und Lautsprecher verblassen lassen
 Lower the seek bar and speaker	Suchleiste und Lautsprecher tiefer setzen
 While a feed video plays, its seek bar and Facebook's speaker button fade a few seconds after it starts or you last touch them. Touch the bar or pause the video and they come back. Needs Seek bar on feed videos on.	Während ein Feed-Video läuft, verblassen seine Suchleiste und Facebooks Lautsprecher-Taste ein paar Sekunden nach dem Start oder deiner letzten Berührung. Berühre die Leiste oder pausiere das Video, dann sind sie wieder da. Dafür muss „Suchleiste bei Feed-Videos“ an sein.
 Moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. Needs Seek bar on feed videos on.	Setzt die Suchleiste eines Feed-Videos näher an den unteren Rand, zusammen mit Facebooks Tasten für Lautsprecher und markierte Personen. Dafür muss „Suchleiste bei Feed-Videos“ an sein.
+Seek bar on the bottom edge	Suchleiste am unteren Rand
+Puts a feed video's seek bar right on its bottom edge, so it's out of the way while you scroll. Facebook's speaker and tagged people buttons move up to sit above it. Wins over Lower the seek bar and speaker. Needs Seek bar on feed videos on.	Setzt die Suchleiste eines Feed-Videos direkt an den unteren Rand, damit sie beim Scrollen nicht im Weg ist. Facebooks Tasten für Lautsprecher und markierte Personen rücken nach oben über sie. Hat Vorrang vor „Suchleiste und Lautsprecher tiefer setzen“. Dafür muss „Suchleiste bei Feed-Videos“ an sein.
 Feed video position	Position im Feed-Video
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Badge-Farbe

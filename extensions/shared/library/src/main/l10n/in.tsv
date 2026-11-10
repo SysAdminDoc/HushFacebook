@@ -2216,6 +2216,8 @@ Fade the seek bar and speaker	Redupkan bilah geser dan speaker
 Lower the seek bar and speaker	Turunkan bilah geser dan speaker
 While a feed video plays, its seek bar and Facebook's speaker button fade a few seconds after it starts or you last touch them. Touch the bar or pause the video and they come back. Needs Seek bar on feed videos on.	Saat video feed diputar, bilah gesernya dan tombol speaker Facebook meredup beberapa detik setelah video mulai atau setelah terakhir kali kamu menyentuhnya. Sentuh bilahnya atau jeda videonya, dan keduanya muncul lagi. Perlu “Bilah geser di video feed” aktif.
 Moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. Needs Seek bar on feed videos on.	Memindahkan bilah geser video feed lebih dekat ke tepi bawah, bersama tombol speaker dan orang yang ditandai milik Facebook. Perlu “Bilah geser di video feed” aktif.
+Seek bar on the bottom edge	Bilah geser di tepi bawah
+Puts a feed video's seek bar right on its bottom edge, so it's out of the way while you scroll. Facebook's speaker and tagged people buttons move up to sit above it. Wins over Lower the seek bar and speaker. Needs Seek bar on feed videos on.	Menaruh bilah geser video feed tepat di tepi bawahnya, agar tidak mengganggu saat Anda menggulir. Tombol speaker dan orang yang ditandai milik Facebook naik ke atasnya. Lebih diutamakan daripada “Turunkan bilah geser dan speaker”. Perlu “Bilah geser di video feed” aktif.
 Feed video position	Posisi video feed
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Warna lencana

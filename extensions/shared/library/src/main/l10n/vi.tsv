@@ -2216,6 +2216,8 @@ Fade the seek bar and speaker	Làm mờ thanh tua và nút loa
 Lower the seek bar and speaker	Hạ thấp thanh tua và nút loa
 While a feed video plays, its seek bar and Facebook's speaker button fade a few seconds after it starts or you last touch them. Touch the bar or pause the video and they come back. Needs Seek bar on feed videos on.	Khi video bảng tin đang phát, thanh tua và nút loa của Facebook mờ đi vài giây sau khi video bắt đầu hoặc sau lần chạm cuối của bạn. Chạm vào thanh hoặc tạm dừng video là chúng hiện lại. Cần bật Thanh tua trên video bảng tin.
 Moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. Needs Seek bar on feed videos on.	Đưa thanh tua của video bảng tin xuống gần cạnh dưới hơn, cùng với nút loa và nút người được gắn thẻ của Facebook. Cần bật Thanh tua trên video bảng tin.
+Seek bar on the bottom edge	Thanh tua ở cạnh dưới
+Puts a feed video's seek bar right on its bottom edge, so it's out of the way while you scroll. Facebook's speaker and tagged people buttons move up to sit above it. Wins over Lower the seek bar and speaker. Needs Seek bar on feed videos on.	Đặt thanh tua của video bảng tin ngay trên cạnh dưới, để không vướng khi bạn cuộn. Nút loa và nút người được gắn thẻ của Facebook dời lên nằm phía trên nó. Được ưu tiên hơn Hạ thấp thanh tua và nút loa. Cần bật Thanh tua trên video bảng tin.
 Feed video position	Vị trí video bảng tin
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Màu huy hiệu

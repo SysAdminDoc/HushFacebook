@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* `Seek bar on the bottom edge` under Video and audio puts a feed video's seek bar right on the video's bottom edge, so a scroll is less likely to catch it. Facebook's speaker and tagged people buttons move up to sit above the bar. It wins over `Lower the seek bar and speaker`, needs `Seek bar on feed videos` and starts off. (#431)
 * `Faster speeds` under Reels and Watch adds 2.5x and 3x to the speed menu of reels and of feed and Watch videos. A speed you pick there is kept like any other when `Keep the reel speed` is on. Starts off. (#430)
 * `Hide create story cards` under Stories keeps the "Add to story" card out from between other people's stories, including the ones Facebook builds from photos in your gallery. It's part of `Clean up the story viewer` and starts off. (#439)
 * `Hide suggested groups` now also takes the "Suggested for you" groups card with Join buttons out from between reels, when `Clean up Reels` or `Hide reel interest prompts` is in your build. (#441)

@@ -2260,6 +2260,8 @@ Fade the seek bar and speaker	Приглушать полосу перемотк
 Lower the seek bar and speaker	Опустить полосу перемотки и кнопку звука
 While a feed video plays, its seek bar and Facebook's speaker button fade a few seconds after it starts or you last touch them. Touch the bar or pause the video and they come back. Needs Seek bar on feed videos on.	Пока видео в Ленте воспроизводится, его полоса перемотки и кнопка звука Facebook становятся бледнее через несколько секунд после начала или после последнего касания. Коснитесь полосы или поставьте видео на паузу, и они вернутся. Нужна включённая «Полоса перемотки для видео в Ленте».
 Moves a feed video's seek bar closer to the bottom edge, along with Facebook's speaker and tagged people buttons. Needs Seek bar on feed videos on.	Опускает полосу перемотки видео в Ленте ближе к нижнему краю вместе с кнопками звука и отмеченных людей Facebook. Нужна включённая «Полоса перемотки для видео в Ленте».
+Seek bar on the bottom edge	Полоса перемотки по нижнему краю
+Puts a feed video's seek bar right on its bottom edge, so it's out of the way while you scroll. Facebook's speaker and tagged people buttons move up to sit above it. Wins over Lower the seek bar and speaker. Needs Seek bar on feed videos on.	Ставит полосу перемотки видео в Ленте прямо на нижний край, чтобы она не мешала при прокрутке. Кнопки звука и отмеченных людей Facebook поднимаются над ней. Имеет приоритет над «Опустить полосу перемотки и кнопку звука». Нужна включённая «Полоса перемотки для видео в Ленте».
 Feed video position	Позиция видео в Ленте
 # context: title of the row that holds a color code for the count badges on the tabs
 Badge color	Цвет значков
