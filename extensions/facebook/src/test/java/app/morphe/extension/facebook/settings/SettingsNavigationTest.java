@@ -304,6 +304,12 @@ public class SettingsNavigationTest {
         assertTrue(BaseSettings.PAUSED.savedValue());
         assertTrue(((Preference) list().getItemAtPosition(0)).getSummary().toString()
                 .contains("pauses when Facebook restarts"));
+        // The card showed "Hushfacebook pauses when Facebook restarts." twice, as its title and its line.
+        View card = list().getAdapter().getView(0, null, list());
+        TextView title = card.findViewById(android.R.id.title);
+        TextView line = card.findViewById(android.R.id.summary);
+        assertEquals("Hushfacebook is on", title.getText().toString());
+        assertTrue(line.getText().toString(), line.getText().toString().contains("pauses when Facebook restarts"));
         action = statusAction();
         assertEquals("Undo", action.getText().toString());
         action.performClick();

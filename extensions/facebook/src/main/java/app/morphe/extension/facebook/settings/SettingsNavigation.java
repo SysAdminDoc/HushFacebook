@@ -956,10 +956,7 @@ final class SettingsNavigation extends BaseAdapter {
     private void bindStatus(View row) {
         boolean nextPaused = HushfacebookPause.pausesNextStart(screen.getContext());
         boolean paused = HushfacebookPause.isPaused();
-        if (!paused && nextPaused) {
-            TextView title = row.findViewById(android.R.id.title);
-            if (title != null) title.setText(L10n.t("Hushfacebook pauses when Facebook restarts."));
-        }
+        // A pause waiting on a restart keeps the title "Hushfacebook is on"; its line says the rest.
         TextView summary = row.findViewById(android.R.id.summary);
         String build = "\n" + HushfacebookPreferenceFragment.overviewBuildDetails();
         if (!paused && !nextPaused && ReleaseCheck.statusLine() == null) {
