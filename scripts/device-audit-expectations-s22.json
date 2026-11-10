@@ -2,17 +2,18 @@
   "schema": 2,
   "facebook": "586.0.0.52.53",
   "written": "2026-11-09",
-  "patchBuild": "sha256=537788186fa9e058ae4f11bb17099255bf18d346f5c2bbbf6690b161626bb62b; source=clean:0c8781674d1d253b1701ba7bb8da5f44555751ee; tree=f246763c88576f0673219cfb7d99077619c12707; inputs=03b7a5c77ff3b17e31e43d8e1f1d41e7999bde8cbb6417ad5b8c1fb5f47bf0f3",
-  "installedApkSha256": "7b80247727b08e644d96d6a2c59bcd7c94274f13ef55128520c602463585175d",
+  "patchBuild": "sha256=efabc6ef2e6c75ba0b68e09f25abf511cc5a1ff9d6f31e2dbd17ed5e7dc8e767; source=clean:1d33bacef79fa76776e9417dd9f9e9a6f873d480; tree=010882fbbc9ce776b8ef7ba29479fabadd0565ce; inputs=cd8a621962d6b87b9157e9b64e7d70aa59d132f39bcf009f20b02cf28aeca698",
+  "installedApkSha256": "4322bd643369281e3882605611e9c3f6f00f3b55ec9759ff73a47873f2becbcf",
   "abi": "arm64-v8a",
   "sdk": 36,
   "device": "SM-S908U1",
-  "settingsSha256": "082425bf500de7c5239e6f0d4f87e645329c6be42f7fb27b7fa2e1244d5f3b9c",
+  "settingsSha256": "7617bff7d2bb2c700a10ce212dfbc210a5bf3b92e57d4e17ec9509ecd0dcfb91",
   "profile": {
     "name": "all-on",
     "on": [],
     "off": [
       "hushfacebook_hide_post_comment_button",
+      "hushfacebook_hide_reel_sound_button",
       "hushfacebook_hold_reel_right_edge",
       "hushfacebook_long_press_opens_comments"
     ],
@@ -30,13 +31,14 @@
       "query",
       "fb://bookmarks",
       "tap:Settings and privacy",
-      "fb://bookmarks",
-      "tap:Feeds",
+      "tap:Settings",
+      "tap:Notifications",
       "fb://feed"
     ],
     "optionalVisit": [
       "tap:Comment",
-      "tap:Feeds"
+      "tap:Notifications",
+      "tap:Settings"
     ],
     "swipes": 4,
     "locales": [],
@@ -56,8 +58,8 @@
     "query",
     "fb://bookmarks",
     "tap:Settings and privacy",
-    "fb://bookmarks",
-    "tap:Feeds",
+    "tap:Settings",
+    "tap:Notifications",
     "fb://feed"
   ],
   "ranOnWalk": [
@@ -167,7 +169,6 @@
     "Hide sponsored stories",
     "Hide the Feeds header",
     "Hide the Get Messenger card",
-    "Hide the Reels tab dot",
     "Hide typing indicator",
     "Longer music on photo stories",
     "Open in Facebook from the share menu",
