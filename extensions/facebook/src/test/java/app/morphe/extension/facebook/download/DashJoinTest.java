@@ -39,6 +39,8 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
@@ -220,6 +222,65 @@ public class DashJoinTest {
 
         assertEquals(result.toString(), Downloader.Status.OK, result.status);
         assertEquals("work files while the gallery copied", 1, gallery.workFilesAtOpen);
+    }
+
+    /** Every count a save reports, in order. */
+    private static final class Reports implements Downloader.Progress {
+        final List<long[]> seen = new ArrayList<>();
+
+        @Override public void transferred(long done, long total) {
+            seen.add(new long[] { done, total });
+        }
+
+        @Override public void reading(Runnable close) {
+        }
+
+        @Override public boolean cancelled() {
+            return false;
+        }
+
+        /** Whether any report's share of its total is below the one before it. */
+        boolean fellBack() {
+            for (int i = 1; i < seen.size(); i++) {
+                long[] before = seen.get(i - 1);
+                long[] now = seen.get(i);
+                if (now[0] * before[1] < before[0] * now[1]) return true;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * The picture's total counts the sound it expects, at its announced rate over the manifest's
+     * length and a little more. The sound's size was added only when its fetch began, so the bar
+     * fell back as it did: 83% to 78% on a 78 minute replay.
+     */
+    @Test
+    public void thePairsShareNeverFallsBackWhenTheSoundStarts() {
+        long pictureBytes = 24 + (long) PICTURES * PICTURE_SAMPLE_BYTES;
+        long soundBytes = 24 + (long) SOUNDS * SOUND_SAMPLE_BYTES;
+        // 128 kbps for 60 s is 16,000 bytes a second, and 6% more is 1,017,600 in all.
+        long guessed = 1_017_600;
+        assertEquals(guessed, audio.bytesOver(60_000_000));
+        assertTrue("the guess is under the sound it stands for", guessed > soundBytes);
+
+        Reports reports = new Reports();
+        Downloader.Result result = DashSave.save(context, video, audio, false, false, 60_000_000, new Gallery(),
+                policy, Downloader.MAX_BYTES, reports);
+
+        assertEquals(result.toString(), Downloader.Status.OK, result.status);
+        assertEquals("the first count's total", pictureBytes + guessed, reports.seen.get(0)[1]);
+        assertFalse("the share fell back", reports.fellBack());
+        long[] last = reports.seen.get(reports.seen.size() - 1);
+        assertEquals(pictureBytes + soundBytes, last[0]);
+        assertEquals(pictureBytes + soundBytes, last[1]);
+
+        Reports unknown = new Reports();
+        result = DashSave.save(context, video, audio, false, false, -1, new Gallery(), policy, Downloader.MAX_BYTES,
+                unknown);
+        assertEquals(result.toString(), Downloader.Status.OK, result.status);
+        assertEquals("with no length, the first total is the picture's", pictureBytes, unknown.seen.get(0)[1]);
+        assertTrue("with no length, the share falls back when the sound starts", unknown.fellBack());
     }
 
     /**

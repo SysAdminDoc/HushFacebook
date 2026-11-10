@@ -143,6 +143,27 @@ final class DashSave {
         long maxBytes,
         Downloader.Progress progress
     ) {
+        return save(application, video, audio, transcodeVideo, reencodeSound, -1, sink, policy, maxBytes, progress);
+    }
+
+    /**
+     * As above, with [lengthUs] how long the manifest says the video runs, or -1. The sound's size
+     * comes only with its own fetch, so until then the picture's total counts the sound at a little
+     * over its announced rate for that long ({@link DashManifest.Track#bytesOver}). Added only when
+     * the sound started, the total grew and the bar fell back (83% to 78% on a 78 minute replay).
+     */
+    static Downloader.Result save(
+        Context application,
+        DashManifest.Track video,
+        DashManifest.Track audio,
+        boolean transcodeVideo,
+        boolean reencodeSound,
+        long lengthUs,
+        Downloader.Sink sink,
+        MediaUrlPolicy policy,
+        long maxBytes,
+        Downloader.Progress progress
+    ) {
         File videoFile = null;
         File audioFile = null;
         File picture = null;
@@ -157,7 +178,7 @@ final class DashSave {
 
             videoFile = workFile("video", ".mp4", folder);
             Downloader.Result result = fetchWork(video.url, Downloader.Kind.VIDEO, videoFile, policy, maxBytes,
-                progress);
+                Downloader.between(0, audio == null ? 0 : audio.bytesOver(lengthUs), progress));
             if (!result.ok()) return result;
 
             if (audio != null) {

@@ -1027,8 +1027,8 @@ public final class MediaDownload {
             + qualityNote(quality) + compatibleNote(keptCompatible) + pictureNote(video, transcodeVideo)
             + soundNote(audio, reencodeSound) + belowNote(better));
 
-        Downloader.Result result = dashJob(application, video, audio, transcodeVideo, reencodeSound, fallback, quality)
-            .run(writer, progress);
+        Downloader.Result result = dashJob(application, video, audio, transcodeVideo, reencodeSound, lengthUs, fallback,
+            quality).run(writer, progress);
         boolean lower = better != null && noticeablyLower(picture(video, quality), better.shortSide());
         return result.ok() && lower ? result.lower() : result;
     }
@@ -1082,19 +1082,20 @@ public final class MediaDownload {
      * runs can't move what the fallback is judged against.
      */
     static Job dashJob(Context application, DashManifest.Track video, DashManifest.Track audio, String fallback) {
-        return dashJob(application, video, audio, false, false, fallback, quality());
+        return dashJob(application, video, audio, false, false, -1, fallback, quality());
     }
 
     /**
      * As above, with [quality] already read by {@link #saveDash} rather than read again here,
-     * [transcodeVideo] when [video] is to be made H.264 first, and [reencodeSound] when the
-     * xHE-AAC [audio] is to be made AAC-LC first.
+     * [transcodeVideo] when [video] is to be made H.264 first, [reencodeSound] when the xHE-AAC
+     * [audio] is to be made AAC-LC first, and [lengthUs] the manifest's length of the video or -1,
+     * for the sound's share of the progress before its fetch.
      */
     private static Job dashJob(Context application, DashManifest.Track video, DashManifest.Track audio,
-            boolean transcodeVideo, boolean reencodeSound, String fallback, DownloadQuality quality) {
+            boolean transcodeVideo, boolean reencodeSound, long lengthUs, String fallback, DownloadQuality quality) {
         return (writer, progress) -> {
-            Downloader.Result result = DashSave.save(application, video, audio, transcodeVideo, reencodeSound, writer,
-                policyFor(application), cap(), progress);
+            Downloader.Result result = DashSave.save(application, video, audio, transcodeVideo, reencodeSound,
+                lengthUs, writer, policyFor(application), cap(), progress);
             if (result.ok() || fallback == null || result.status == Downloader.Status.CANCELLED) return result;
             // A failed gallery publication is terminal. A fallback can repair a fetch or join,
             // but mustn't start another fetch after this save's publication state has failed.

@@ -59,6 +59,7 @@ Changes in each Hushfacebook version, newest first.
 ### Fixed
 
 * Pulling down the "Saving a video" notification now shows the download's speed and time. The card stopped after the size line ("31 MB of 176 MB…"), so the speed only ever showed in the Downloads list.
+* A video saved with its sound as a separate track counts the sound from the first moment, so its progress bar no longer slips back when the sound starts downloading. On a 78 minute live replay it fell from 83% to 78%, and the size jumped from 137 MB to 174 MB.
 * A video whose DASH file is over 512 MB, like a long live replay, falls back to Facebook's single file, and the message at the end now says so with the quality you got ("Saved to Movies/Facebook at 360p, since the bigger file is over 512 MB"). It used to say only that the video was saved in lower quality than on Facebook. That quality, here and for any save that steps down to a smaller file, is read from the saved file itself, since Facebook's link to a 360p file can just say "sd". (#238)
 * The verdict under the word lists' test box is only rewritten when it changes. Every pause in typing used to set the same line again, and since TalkBack speaks that line whenever it's set, it could read the same verdict out after each pause.
 * The play button from `Inline feed video controls`, and the buttons next to it, stay on the video when Facebook crops an upright video to fit a shorter spot in the feed. On a post like that they used to sit above the video, over the post's text. (#239)

@@ -174,10 +174,19 @@ final class Downloader {
      * whole save's.
      */
     static Progress after(long before, Progress progress) {
+        return between(before, 0, progress);
+    }
+
+    /**
+     * As {@link #after}, with about [following] bytes of another fetch still to come. A DASH
+     * save's picture counts the sound it expects, so the total doesn't grow and the bar doesn't
+     * fall back when the sound starts.
+     */
+    static Progress between(long before, long following, Progress progress) {
         return new Progress() {
             @Override
             public void transferred(long done, long total) {
-                progress.transferred(before + done, total < 0 ? -1 : before + total);
+                progress.transferred(before + done, total < 0 ? -1 : before + total + following);
             }
 
             @Override

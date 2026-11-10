@@ -332,6 +332,23 @@ public class CompatibleTracksTest {
         assertEquals(-1L, DashManifest.durationUs(null));
     }
 
+    /**
+     * A sound track's size before its fetch, for a DASH save's total: its announced rate over the
+     * manifest's length, 6% over for the boxes around its samples.
+     */
+    @Test
+    public void aSoundTracksSizeIsGuessedFromItsRateAndTheLength() throws IOException {
+        String manifest = resource("meta-public-dash.mpd");
+        DashManifest.Track sound = DashManifest.bestCompatibleAudio(DashManifest.parse(manifest));
+        assertEquals(64_430L, sound.bandwidth);
+        // 64,430 bits a second is 8,053.75 bytes; over 64.814812 s that's 522,002.29, and 6% more
+        // is 553,322.43.
+        assertEquals(553_322L, sound.bytesOver(DashManifest.durationUs(manifest)));
+        assertEquals("no length", 0L, sound.bytesOver(-1));
+        assertEquals("no rate", 0L, new DashManifest.Track("audio/mp4", "mp4a.40.2", 0, 0, 0, "x")
+                .bytesOver(64_814_812L));
+    }
+
     private static String mpd(String length) {
         return "<MPD type=\"static\" mediaPresentationDuration=\"" + length + "\"><Period/></MPD>";
     }

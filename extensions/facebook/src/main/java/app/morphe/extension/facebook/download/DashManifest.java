@@ -30,6 +30,9 @@ final class DashManifest {
 
     private DashManifest() {}
 
+    /** How far over its announced rate {@link Track#bytesOver} takes a track, for its boxes. */
+    static final double FRAGMENT_ALLOWANCE = 1.06;
+
     /** One track of the manifest. */
     static final class Track {
         final String mime;
@@ -76,6 +79,19 @@ final class DashManifest {
         /** The quality a setting below the best is held to: the label, else the short side. */
         int quality() {
             return label > 0 ? label : shortSide();
+        }
+
+        /**
+         * About how many bytes this track takes over [lengthUs], or 0 when its rate or the length
+         * is unknown. Facebook announces a sound track's average rate, which leaves out the boxes
+         * each fragment wraps its samples in, so the file runs a few percent over it (37 MB against
+         * 36 on a 78 minute replay). The guess takes {@link #FRAGMENT_ALLOWANCE} more so it errs
+         * high: a total that turns out smaller moves a bar forward, one that turns out bigger
+         * moves it back.
+         */
+        long bytesOver(long lengthUs) {
+            if (bandwidth <= 0 || lengthUs <= 0) return 0;
+            return Math.round(bandwidth / 8.0 * (lengthUs / 1_000_000.0) * FRAGMENT_ALLOWANCE);
         }
 
         @Override
