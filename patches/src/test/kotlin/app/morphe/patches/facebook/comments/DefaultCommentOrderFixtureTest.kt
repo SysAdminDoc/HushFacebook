@@ -86,10 +86,17 @@ class DefaultCommentOrderFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val builderOwners = FixtureDex.classesHolding(bundle, ORDER_VARIABLE)
-                val builders = builderOwners.flatMap { owner ->
-                    owner.methods.mapNotNull { method -> requestFields(method)?.let { method to it } }
+                // 586's Android 9 build's builder asks a string table for each variable's name, so the
+                // builders are looked for among the classes naming the order's holders, as the patch does.
+                val variableHolders = listOf(ORDER_VARIABLE, FEEDBACK_ID_VARIABLE, FOCUSED_COMMENT_VARIABLE)
+                    .flatMap { FixtureDex.classesHolding(bundle, it) }.distinctBy { it.type }
+                val tables = variableHolders.associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+                val orderHolders = FixtureDex.classesHolding(bundle, ORDER_VARIABLE).map { it.type }.toSet()
+                val requestMethods = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in orderHolders } }) {
+                    requestFields(it, resolve) != null || storyOrderField(it, resolve) != null
                 }
+                val builders = requestMethods.mapNotNull { method -> requestFields(method, resolve)?.let { method to it } }
                 assertEquals("$name: request builders reading the three variables", 1, builders.size)
                 val (builder, fields) = builders.single()
                 assertTrue("$name: the builder takes the session",
@@ -134,11 +141,9 @@ class DefaultCommentOrderFixtureTest {
                     it.name == "<init>" && it.parameters() == headers.single().parameterTypes.map { type -> type.toString() }
                 }
 
-                // #192: the post page's request builder among the same string's holders, its
-                // params' constructor, and the one link-to-page builder calling that constructor.
-                val storyBuilders = builderOwners.flatMap { owner ->
-                    owner.methods.mapNotNull { method -> storyOrderField(method)?.let { method to it } }
-                }
+                // #192: the post page's request builder among the same methods, its params'
+                // constructor, and the one link-to-page builder calling that constructor.
+                val storyBuilders = requestMethods.mapNotNull { method -> storyOrderField(method, resolve)?.let { method to it } }
                 assertEquals("$name: post page request builders reading the order", 1, storyBuilders.size)
                 val (storyBuilder, orderField) = storyBuilders.single()
                 assertTrue("$name: the page's builder takes the session", USER_SESSION in storyBuilder.parameters())
@@ -166,7 +171,8 @@ class DefaultCommentOrderFixtureTest {
                 val owners = mutableMapOf<String, ClassDef>()
                 owners[params.type] = params
                 owners[storyParams.type] = storyParams
-                (builderOwners + handlerOwners + keyOwners + renderers + intent.classes + interranked.classes)
+                val requestOwners = FixtureDex.classes(bundle, requestMethods.map { it.definingClass }.toSet()).values
+                (variableHolders + requestOwners + handlerOwners + keyOwners + renderers + intent.classes + interranked.classes)
                     .forEach { owners[it.type] = it }
                 owners[headerClass.type] = headerClass
                 owners[pageOwner.type] = pageOwner

@@ -10,6 +10,9 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.util.ControlFlow
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
@@ -41,12 +44,13 @@ private const val TAKE_TIME = "Ljava/util/concurrent/atomic/AtomicLong;->getAndS
 internal class ViewerExitSound(val owner: String, val method: Method, val askAt: Int, val time: Int)
 
 /**
- * The close step in [owner]: its one method holding both [RESTORE_STEP] and [SOUND_ON_WHEN_EXIT],
+ * The close step in [owner]: its one method holding [RESTORE_STEP] and naming [SOUND_ON_WHEN_EXIT],
  * with one [TAKE_TIME] call whose result is the first number its next cmp-long weighs, right before
- * it logs [SOUND_ON_WHEN_EXIT]. Throws for any other shape.
+ * it logs [SOUND_ON_WHEN_EXIT]. Throws for any other shape. 586's Android 9 build asks a name table
+ * for the marker point's name, which [resolve] finds ([namesString]).
  */
-internal fun viewerExitSound(owner: ClassDef): ViewerExitSound {
-    val steps = owner.methods.filter { holdsString(it, RESTORE_STEP) && holdsString(it, SOUND_ON_WHEN_EXIT) }
+internal fun viewerExitSound(owner: ClassDef, resolve: (MethodReference) -> Method? = { null }): ViewerExitSound {
+    val steps = owner.methods.filter { holdsString(it, RESTORE_STEP) && namesString(it, SOUND_ON_WHEN_EXIT, resolve) }
     val method = steps.singleOrNull()
         ?: throw PatchException("$VIEWER_PATCH: ${owner.type} has ${steps.size} methods holding $RESTORE_STEP and $SOUND_ON_WHEN_EXIT")
     val where = "${owner.type}->${method.name}"
@@ -66,7 +70,8 @@ internal fun viewerExitSound(owner: ClassDef): ViewerExitSound {
         throw PatchException("$VIEWER_PATCH: $where weighs something other than the time it takes")
     }
     val logs = (compare + 1..minOf(compare + 3, code.lastIndex)).any {
-        ((code[it] as? ReferenceInstruction)?.reference as? StringReference)?.string == SOUND_ON_WHEN_EXIT
+        ((code[it] as? ReferenceInstruction)?.reference as? StringReference)?.string == SOUND_ON_WHEN_EXIT ||
+            tableStringAt(code, it, resolve) == SOUND_ON_WHEN_EXIT
     }
     if (!logs) throw PatchException("$VIEWER_PATCH: $where doesn't log $SOUND_ON_WHEN_EXIT after weighing the time")
 
@@ -82,17 +87,20 @@ internal fun viewerExitSound(owner: ClassDef): ViewerExitSound {
 }
 
 /**
- * The close step, from the one class outside the extension with a method holding both
- * [RESTORE_STEP] and [SOUND_ON_WHEN_EXIT]. 585 has a second class holding the marker point's name,
- * a table of names with no [RESTORE_STEP].
+ * The close step, from the one class outside the extension with a method holding [RESTORE_STEP]
+ * and naming [SOUND_ON_WHEN_EXIT]. 585 has a second class holding the marker point's name, a table
+ * of names with no [RESTORE_STEP], and 586's Android 9 build's step asks such a table for it.
  */
 internal fun BytecodePatchContext.viewerExitSound(): ViewerExitSound {
-    val owners = classDefByStrings(SOUND_ON_WHEN_EXIT, StringComparisonType.EQUALS)
+    val tables = classDefByStrings(SOUND_ON_WHEN_EXIT, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }.associateBy { it.type }
+    val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+    val owners = classDefByStrings(RESTORE_STEP, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        .filter { owner -> owner.methods.any { holdsString(it, RESTORE_STEP) && holdsString(it, SOUND_ON_WHEN_EXIT) } }
+        .filter { owner -> owner.methods.any { holdsString(it, RESTORE_STEP) && namesString(it, SOUND_ON_WHEN_EXIT, resolve) } }
     val owner = owners.singleOrNull()
         ?: throw PatchException("$VIEWER_PATCH: found ${owners.size} classes logging $RESTORE_STEP's $SOUND_ON_WHEN_EXIT, expected one")
-    return viewerExitSound(owner)
+    return viewerExitSound(owner, resolve)
 }
 
 /**

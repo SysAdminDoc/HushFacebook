@@ -10,6 +10,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.util.findMutableMethodOf
@@ -22,6 +23,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.util.MethodUtil
 
 /*
  * Which Menu the side panel shows (#184). Read from 583, 2026-10-20; the obfuscated names are for
@@ -68,12 +70,27 @@ private const val MOBILE_CONFIG = "/MobileConfigUnsafeContext;"
 /** How far past the test, and past the branch's landing, the singleton read and the session build are looked for. */
 private const val NEAR = 6
 
-/** The methods outside the extension loading [PANEL_SETUP] and [PANEL_KEY]. */
-internal fun BytecodePatchContext.menuPanelSetups(): List<Method> =
-    classDefByStrings(PANEL_SETUP, StringComparisonType.EQUALS)
-        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        .distinctBy { it.type }
-        .flatMap { classDef -> classDef.methods.filter { holdsString(it, PANEL_SETUP) && holdsString(it, PANEL_KEY) } }
+/**
+ * The methods outside the extension naming [PANEL_KEY], straight or by asking a string table for it
+ * ([methodsNaming]), that load [PANEL_SETUP] or that a method loading it calls directly in its own
+ * class. 586's Android 9 build does both: its setup (`LX/02Kv;->A03`) only wraps the trace around a
+ * private worker (`A02`), which asks a table for the key and the flag (0x101019f005816c8).
+ */
+internal fun BytecodePatchContext.menuPanelSetups(): List<Method> {
+    val setups = classDefByStrings(PANEL_SETUP, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .flatMap { owner -> owner.methods.filter { holdsString(it, PANEL_SETUP) } }
+    val workers = setups.flatMap { setup ->
+        setup.implementation?.instructions?.toList().orEmpty().mapNotNull { instruction ->
+            if (instruction.opcode != Opcode.INVOKE_DIRECT && instruction.opcode != Opcode.INVOKE_DIRECT_RANGE) return@mapNotNull null
+            ((instruction as ReferenceInstruction).reference as? MethodReference)?.takeIf { it.definingClass == setup.definingClass }
+        }
+    }
+    val owners = setups.map { it.definingClass }.toSet()
+    return methodsNaming(PANEL_KEY) { method ->
+        method.definingClass in owners &&
+            (holdsString(method, PANEL_SETUP) || workers.any { it.definingClass == method.definingClass && MethodUtil.methodSignaturesMatch(it, method) })
+    }
+}
 
 /** The index of the `move-result` holding the panel's Bloks answer in [method], or null unless there's exactly one. */
 internal fun bloksPanelAnswer(method: Method): Int? {

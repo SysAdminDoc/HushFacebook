@@ -148,6 +148,18 @@ internal fun flagsBefore(method: Method, config: String, speedUp: String): Set<S
     }.values.toSet()
 }
 
+/**
+ * The one method [listener] hands its work to, when none of its own methods asks [config] a flag:
+ * 586's Android 9 build passes every captured value to one method elsewhere (LX/0C5r;->A03), which
+ * asks the flags the listener asks on the phone builds. Null when the listener asks them itself.
+ */
+internal fun handedRelease(listener: ClassDef, config: String): MethodReference? {
+    if (listener.methods.any { flagCalls(it, config).isNotEmpty() }) return null
+    return listener.methods.flatMap { it.code }.mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
+        .filter { call -> call.definingClass != listener.type && call.parameterTypes.any { it.toString() == config } }
+        .distinctBy { it.toString() }.singleOrNull()
+}
+
 /** Whether [method] makes an instance of one of [types]. */
 internal fun makesOneOf(method: Method, types: Set<String>): Boolean = method.code.any {
     it.opcode == Opcode.NEW_INSTANCE && ((it as ReferenceInstruction).reference as TypeReference).type in types
@@ -433,6 +445,39 @@ internal fun isHoldNuxCheck(method: Method): Boolean =
             val called = (it as? ReferenceInstruction)?.reference as? MethodReference
             called != null && called.definingClass == "Ljava/lang/System;" && called.name == "currentTimeMillis"
         }
+
+/** The boolean fields of [holder] its constructors set. 586's Android 9 build: the one flag that ends the tip for good. */
+internal fun holdNuxFlags(holder: ClassDef): Set<String> = holder.methods.filter { it.name == "<init>" }
+    .flatMap { it.code }.filter { it.opcode == Opcode.IPUT_BOOLEAN }
+    .mapNotNull { ((it as ReferenceInstruction).reference as FieldReference).takeIf { f -> f.definingClass == holder.type }?.name }
+    .toSet()
+
+private val CONSTANTS = setOf(Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST, Opcode.CONST_HIGH16)
+
+/**
+ * Where 586's Android 9 build inlines the check into the feed video player's setup, the indexes of
+ * [method]'s reads of one of [flags] off [holder] whose next branch is an if-nez on what was read,
+ * past nothing but constants into other registers. The method reads the clock, as the check does.
+ */
+internal fun holdNuxReads(method: Method, holder: ClassDef, flags: Set<String> = holdNuxFlags(holder)): List<Int> {
+    val code = method.code
+    if (flags.isEmpty() || code.none {
+            val called = (it as? ReferenceInstruction)?.reference as? MethodReference
+            called != null && called.definingClass == "Ljava/lang/System;" && called.name == "currentTimeMillis"
+        }
+    ) return emptyList()
+    return code.indices.filter { index ->
+        val read = code[index]
+        val field = (read as? ReferenceInstruction)?.reference as? FieldReference
+        if (read.opcode != Opcode.IGET_BOOLEAN || field == null || field.definingClass != holder.type || field.name !in flags) {
+            return@filter false
+        }
+        val flag = (read as TwoRegisterInstruction).registerA
+        val next = (index + 1 until code.size).firstOrNull { code[it].opcode !in CONSTANTS } ?: return@filter false
+        (index + 1 until next).none { (code[it] as OneRegisterInstruction).registerA == flag } &&
+            code[next].opcode == Opcode.IF_NEZ && (code[next] as OneRegisterInstruction).registerA == flag
+    }
+}
 
 internal fun isLockPopupShower(method: Method): Boolean {
     if (method.returnType != "V" || method.parameters() != listOf("Z")) return false

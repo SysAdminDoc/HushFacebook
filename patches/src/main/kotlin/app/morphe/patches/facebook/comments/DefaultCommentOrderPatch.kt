@@ -41,9 +41,10 @@ val defaultCommentOrderPatch = bytecodePatch(
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {
-        val builders = classDefByStrings(ORDER_VARIABLE, StringComparisonType.EQUALS)
-            .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-            .flatMap { owner -> owner.methods.mapNotNull { method -> requestFields(method)?.let { method to it } } }
+        // 586's Android 9 build's builder asks a string table for each variable's name.
+        val resolve = variableTables()
+        val builders = methodsNaming(ORDER_VARIABLE) { requestFields(it, resolve) != null }
+            .mapNotNull { method -> requestFields(method, resolve)?.let { method to it } }
         val (builder, fields) = builders.singleOrNull() ?: throw PatchException(
             "$PATCH: expected one request builder taking FetchFeedbackParams that reads \"$ORDER_VARIABLE\", " +
                 "\"$FEEDBACK_ID_VARIABLE\" and \"$FOCUSED_COMMENT_VARIABLE\" from its fields, found ${builders.size}",
@@ -99,9 +100,9 @@ val defaultCommentOrderPatch = bytecodePatch(
  * answer takes that parameter's place. See CommentOrderAnchors.kt for the shapes.
  */
 internal fun BytecodePatchContext.hookPostPage() {
-    val storyBuilders = classDefByStrings(ORDER_VARIABLE, StringComparisonType.EQUALS)
-        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        .flatMap { owner -> owner.methods.mapNotNull { method -> storyOrderField(method)?.let { method to it } } }
+    val resolve = variableTables()
+    val storyBuilders = methodsNaming(ORDER_VARIABLE) { storyOrderField(it, resolve) != null }
+        .mapNotNull { method -> storyOrderField(method, resolve)?.let { method to it } }
     val (storyBuilder, orderField) = storyBuilders.singleOrNull() ?: throw PatchException(
         "$PATCH: expected one request builder taking $FETCH_SINGLE_STORY_PARAMS that reads \"$ORDER_VARIABLE\" " +
             "from one of its fields, found ${storyBuilders.size}",

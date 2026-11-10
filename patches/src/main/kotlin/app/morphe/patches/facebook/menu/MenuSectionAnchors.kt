@@ -11,6 +11,7 @@ import app.morphe.util.literalReads
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -249,7 +250,7 @@ internal fun childrenList(method: Method, resolve: (MethodReference) -> Method? 
         .toSet()
     val factoryMade = instructions.filter { it.opcode in STATIC_INVOKES }
         .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
-        .filter { it.parameterTypes.isEmpty() && it.returnType.startsWith("L") }
+        .filter { it.returnType.startsWith("L") }
         .toSet()
         .filter { call -> resolve(call)?.let { makesPlain(it, call.returnType) } == true }
         .map { it.returnType }
@@ -263,9 +264,24 @@ internal fun childrenList(method: Method, resolve: (MethodReference) -> Method? 
     return ChildrenList(field.substringBefore("->"), field)
 }
 
-/** Whether [factory]'s whole body creates a [type], constructs it with no arguments and hands it back. */
+/**
+ * Whether [factory]'s whole body creates a [type], constructs it with no arguments and hands it back,
+ * after at most one static void call on exactly its own parameters (586's Android 9 build's
+ * LX/061n;->A0E checks its two that way before making the list).
+ */
 private fun makesPlain(factory: Method, type: String): Boolean {
-    val code = factory.instructionList()
+    val body = factory.instructionList()
+    val check = body.firstOrNull()?.takeIf {
+        it.opcode == Opcode.INVOKE_STATIC && ((it as ReferenceInstruction).reference as? MethodReference)?.returnType == "V"
+    }
+    if (check != null) {
+        val words = factory.parameterTypes.map { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }.sum()
+        val registers = factory.implementation?.registerCount ?: return false
+        val call = check as FiveRegisterInstruction
+        val handed = listOf(call.registerC, call.registerD, call.registerE, call.registerF, call.registerG).take(call.registerCount)
+        if (words == 0 || handed != (registers - words until registers).toList()) return false
+    }
+    val code = if (check != null) body.drop(1) else body
     if (code.size != 3 || code[0].opcode != Opcode.NEW_INSTANCE || code[1].opcode !in DIRECT_INVOKES ||
         code[2].opcode != Opcode.RETURN_OBJECT
     ) {

@@ -9,6 +9,8 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.addressed
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.feed.tableIndices
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
@@ -50,7 +52,6 @@ class PhotoCarouselFixtureTest {
     @After
     fun forgetTheLastMatch() {
         AlbumLayoutNamesFingerprint.clearMatch()
-        CarouselPhotoFingerprint.clearMatch()
     }
 
     private fun Instruction.methodRef() = (this as? ReferenceInstruction)?.reference as? MethodReference
@@ -99,13 +100,16 @@ class PhotoCarouselFixtureTest {
                     assertEquals("$name: the table names the poster's layout $layout once", 1, strings.count { it.endsWith(layout) })
                 }
 
-                val photos = FixtureDex.methodsWhere(bundle, { dex -> dex.stringSection.any { it == CAROUSEL_PHOTO } }) {
-                    it.name == "render" && holds(it, CAROUSEL_PHOTO) && holds(it, "multi_media_photo")
+                // 586's Android 9 build asks a name table for the photo's name, so its render names it by that call.
+                val photoHolders = FixtureDex.classesHolding(bundle, CAROUSEL_PHOTO).associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> photoHolders[call.definingClass]?.let { resolveStatic(it, call) } }
+                val photos = FixtureDex.methodsWhere(bundle, { dex -> dex.stringSection.any { it == CAROUSEL_PHOTO_KEY } }) {
+                    it.name == "render" && holds(it, CAROUSEL_PHOTO_KEY) && namesString(it, CAROUSEL_PHOTO, resolve)
                 }
                 assertEquals("$name: the row's photo", 1, photos.size)
                 val photo = photos.single().definingClass
 
-                val classes = FixtureDex.classes(bundle, setOf(table.definingClass, photo, RECYCLER_VIEW))
+                val classes = FixtureDex.classes(bundle, setOf(table.definingClass, photo, RECYCLER_VIEW) + photoHolders.keys)
                 val holder = classes.getValue(table.definingClass)
                 val rowDraw = classes.getValue(RECYCLER_VIEW).methods.single(::isRowDraw)
                 val drawBefore = rowDraw.code()

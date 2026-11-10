@@ -8,6 +8,8 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -15,6 +17,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.io.File
@@ -136,10 +139,17 @@ class KeepFeedVideosMutedFixtureTest {
         val owners = FixtureDex.classesHolding(bundle, SOUND_ON_WHEN_EXIT)
         // Probed on 585 (2026-11-02): WarionSoundStateManager's restore step, 0BWo.A0W on arm64 and
         // 0BWr.A0W on v7, and a table of marker point names, 0D5Y.A0W and 0D5b.A0W, that the finder skips.
+        // 586's Android 9 build (2026-11-10) has the table, 07hI.A00, and a lambda, 0A5C.A00, and its
+        // restore step, 0BT9.A0k, asks the table for the name.
         assertEquals("${bundle.name}: classes holding $SOUND_ON_WHEN_EXIT", 2, owners.size)
-        val steps = owners.filter { owner -> owner.methods.any { holdsString(it, RESTORE_STEP) } }
-        assertEquals("${bundle.name}: classes holding $RESTORE_STEP too", 1, steps.size)
-        val context = PatchContexts.of(owners)
+        val tables = owners.associateBy { it.type }
+        val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+        val restoring = FixtureDex.classesHolding(bundle, RESTORE_STEP)
+        val steps = restoring.filter { owner ->
+            owner.methods.any { holdsString(it, RESTORE_STEP) && namesString(it, SOUND_ON_WHEN_EXIT, resolve) }
+        }
+        assertEquals("${bundle.name}: classes holding $RESTORE_STEP and naming $SOUND_ON_WHEN_EXIT", 1, steps.size)
+        val context = PatchContexts.of((owners + restoring).distinctBy { it.type })
         val close = context.viewerExitSound()
         val type = steps.single().type
         assertEquals("${bundle.name}: the close step's class", type, close.owner)

@@ -41,7 +41,8 @@ import java.io.File
  * for each speed-up component (FbShortsVideoControlComponent's only on 583, which dropped
  * UddPlayerControlComponent's) holding "speed_up", which asks the immersive player config one flag
  * and loads the log name once, after it takes the flag's answer; as many release
- * listeners, which ask a second flag straight before that one; the overlay's one check of the
+ * listeners, which ask a second flag straight before that one (the Android 9 build's in the one
+ * method it hands its work to); the overlay's one check of the
  * speed-up flag before it gives a reel its release listener; the one edge check of the build, which
  * a handler calls (583: inlined into a lambda the handler makes); and nothing else in the build
  * asking either flag but three places the patch
@@ -99,10 +100,22 @@ class HoldReelFor2xFixtureTest {
                 }
                 assertEquals("$name: release listeners", SPEED_UP_COMPONENTS.size, listenerTypes.size)
                 val listeners = FixtureDex.classes(bundle, listenerTypes).values.toList()
-                val release = listeners.flatMap { l -> l.methods.flatMap { flagsBefore(it, config, speedUp) } }.toSet().single()
+                // The Android 9 build's listener hands every captured value to one method elsewhere
+                // (LX/0C5r;->A03), which asks the flags. The phone builds' listeners ask them themselves.
+                val handedCalls = listeners.mapNotNull { handedRelease(it, config) }
+                val android9 = name.substringAfter("-$version-").contains("-minapi")
+                assertEquals("$name: release listeners handing their work elsewhere", if (android9) listeners.size else 0, handedCalls.size)
+                val handedClasses = FixtureDex.classes(bundle, handedCalls.map { it.definingClass }.toSet()).values.toList()
+                val bodies = listeners.associate { listener ->
+                    val handed = handedRelease(listener, config)?.let { call ->
+                        handedClasses.single { it.type == call.definingClass }.methods.single { isMethod(it, call) }
+                    }
+                    listener.type to listener.methods.toList() + listOfNotNull(handed)
+                }
+                val release = bodies.values.flatten().flatMap { flagsBefore(it, config, speedUp) }.toSet().single()
                 assertTrue("$name: the release flag is the speed-up flag", release != speedUp)
                 for (listener in listeners) {
-                    val asks = listener.methods.flatMap { flagsBefore(it, config, speedUp) }
+                    val asks = bodies.getValue(listener.type).flatMap { flagsBefore(it, config, speedUp) }
                     assertEquals("$name: ${listener.type} asks the release flag before the speed-up flag", listOf(release), asks)
                 }
 
@@ -122,7 +135,8 @@ class HoldReelFor2xFixtureTest {
                     dex.methodSection.any { it.definingClass == config && (it.name == speedUp || it.name == release) }
                 }) { method -> method.implementation?.instructions?.any { it.call?.toString() in flagKeys } == true }
                 val patched = (handlers + listeners).map { it.type }.toSet()
-                val others = askers.filter { it.definingClass !in patched && checks.none { c -> key(c) == key(it) } }
+                val bodyKeys = bodies.values.flatten().map(::key).toSet()
+                val others = askers.filter { it.definingClass !in patched && key(it) !in bodyKeys && checks.none { c -> key(c) == key(it) } }
                 assertEquals("$name: other methods asking the flags: ${others.map(::key)}", 3, others.size)
                 assertTrue("$name: another method makes a handler or a listener", others.none { makesOneOf(it, lambdas) })
                 assertTrue("$name: the release flag is asked outside the release listeners",
@@ -173,10 +187,10 @@ class HoldReelFor2xFixtureTest {
 
                 // Each release listener reads the player's speed with the same one getter.
                 for (listener in listeners) {
-                    val getters = listener.methods.flatMap { speedGettersCalled(it, player.type) }.map { it.toString() }.toSet()
+                    val getters = bodies.getValue(listener.type).flatMap { speedGettersCalled(it, player.type) }.map { it.toString() }.toSet()
                     assertEquals("$name: ${listener.type}'s reads of ${player.type}'s speed", 1, getters.size)
                 }
-                val getterCall = listeners.flatMap { l -> l.methods.flatMap { speedGettersCalled(it, player.type) } }
+                val getterCall = bodies.values.flatten().flatMap { speedGettersCalled(it, player.type) }
                     .distinctBy { it.toString() }.single()
                 val speedGetter = player.methods.single { isMethod(it, getterCall) }
                 assertTrue("$name: ${key(speedGetter)} isn't public", AccessFlags.PUBLIC.isSet(speedGetter.accessFlags))
@@ -225,15 +239,27 @@ class HoldReelFor2xFixtureTest {
                 assertEquals("$name: seek bar lock popups: ${showers.map(::key)}", 1, showers.size)
                 val popupClass = FixtureDex.classes(bundle, setOf(lockPopupComponent(showers.single())!!)).values.single()
                 // And the feed video "2x speed" tip: one check in the class keeping when it last showed.
-                val nuxChecks = FixtureDex.classesHolding(bundle, HOLD_NUX_SHOWN).flatMap { it.methods.filter(::isHoldNuxCheck) }
-                assertEquals("$name: feed video 2x tip checks: ${nuxChecks.map(::key)}", 1, nuxChecks.size)
-                val nuxCheck = nuxChecks.single()
+                // 586's Android 9 build inlines it into the player's setup, which reads the class's flag.
+                val nuxHolders = FixtureDex.classesHolding(bundle, HOLD_NUX_SHOWN)
+                assertEquals("$name: classes keeping the 2x tip's time: ${nuxHolders.map { it.type }}", 1, nuxHolders.size)
+                val nuxHolder = nuxHolders.single()
+                val nuxChecks = nuxHolder.methods.filter(::isHoldNuxCheck)
+                assertEquals("$name: feed video 2x tip checks: ${nuxChecks.map(::key)}", if (android9) 0 else 1, nuxChecks.size)
+                if (android9) assertEquals("$name: the flags ending the 2x tip: ${holdNuxFlags(nuxHolder)}", 1, holdNuxFlags(nuxHolder).size)
+                val nuxSites = if (android9) {
+                    FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it == nuxHolder.type } }) {
+                        holdNuxReads(it, nuxHolder).isNotEmpty()
+                    }
+                } else nuxChecks
+                assertEquals("$name: feed video 2x tip sites: ${nuxSites.map(::key)}", 1, nuxSites.size)
+                val nuxCheck = nuxSites.single()
+                val nuxRead = if (android9) holdNuxReads(nuxCheck, nuxHolder).single() else -1
                 val nuxClass = FixtureDex.classes(bundle, setOf(nuxCheck.definingClass)).values.single()
 
                 val activity = FixtureDex.classes(bundle, setOf(FRAGMENT_ACTIVITY)).values.single()
                 val componentClasses = components.filter { c -> checks.any { it.definingClass == c.type } }
-                val classes: List<ClassDef> = (handlers + listeners + componentClasses + edgeClass + activity + player + configClass +
-                    speedUpClasses + speedClass + attachHolders + pillStates + pillClass + reelPillStates + reelPillClass + gestureClass + popupClass + nuxClass +
+                val classes: List<ClassDef> = (handlers + listeners + handedClasses + componentClasses + edgeClass + activity + player + configClass +
+                    speedUpClasses + speedClass + attachHolders + pillStates + pillClass + reelPillStates + reelPillClass + gestureClass + popupClass + nuxClass + nuxHolder +
                     FixtureDex.classes(bundle, setOf(showers.single().definingClass)).values.single() + ExtensionDex.classDef(REEL_HOLD) +
                     ExtensionDex.classDef(FEED_VIDEO_HOLD) + ExtensionDex.classDef(SETTINGS_STATUS))
                     .distinctBy { it.type }
@@ -243,8 +269,10 @@ class HoldReelFor2xFixtureTest {
                 reelLiftGuardPatch.execute(guardOnly)
                 fun hooks(method: Method, hook: String) = guardOnly.mutableClassDefBy(method.definingClass).methods
                     .single { key(it) == key(method) }.code().count { it.call?.toString() == hook }
-                assertTrue("$name: the guard leaves a release listener alone",
-                    listeners.flatMap { it.methods }.filter { flagCalls(it, config).isNotEmpty() }.all { hooks(it, RELEASE) > 0 })
+                val asking = bodies.values.flatten().filter { flagCalls(it, config).isNotEmpty() }
+                assertEquals("$name: release listeners asking a flag themselves or through the method they hand to", listeners.size,
+                    listeners.count { l -> bodies.getValue(l.type).any { it in asking } })
+                assertTrue("$name: the guard leaves a release listener alone", asking.all { hooks(it, RELEASE) > 0 })
                 assertEquals("$name: the guard hooks a long-press flag", 0,
                     handlers.flatMap { it.methods }.sumOf { hooks(it, LONG_PRESS) })
                 assertEquals("$name: the guard hooks the overlay's flag", 0, hooks(checks.single(), SPEED_UP))
@@ -301,8 +329,15 @@ class HoldReelFor2xFixtureTest {
                     assertEquals("$name: popup hook $at takes the answer back", flag, (gestureCode[ask + 1] as OneRegisterInstruction).registerA)
                     assertEquals("$name: popup hook $at sits on the gate", Opcode.IF_EQZ, gestureCode[ask + 2].opcode)
                 }
+                // The Android 9 build's listeners hand their work to the gesture itself (LX/0C5r;->A03), so it
+                // also carries their flags' hooks, ahead of the toasts, which assertAnswers checks below.
+                assertEquals("$name: the gesture is where the release listeners hand their work", android9, key(gesture) in bodyKeys)
+                val releaseAsks = gestureCode.indices.filter { gestureCode[it].call?.toString() == RELEASE }
+                if (!android9) assertEquals("$name: the gesture's release hooks", 0, releaseAsks.size)
+                assertTrue("$name: the gesture's release hooks come before its popup hooks", releaseAsks.all { it < popupAsks.first() })
+                val gestureHooks = popupAsks + releaseAsks
                 assertEquals("$name: the gesture's code past its hooks", gesture.code().map { it.opcode },
-                    gestureCode.filterIndexed { at, _ -> popupAsks.none { at == it || at == it + 1 } }.map { it.opcode })
+                    gestureCode.filterIndexed { at, _ -> gestureHooks.none { at == it || at == it + 1 } }.map { it.opcode })
 
                 // First in the pills' renders: a yes from the extension returns no component.
                 listOf(pillClass, reelPillClass, popupClass).forEach { component ->
@@ -320,12 +355,26 @@ class HoldReelFor2xFixtureTest {
                 // First in the tip's check, ahead of the lock it takes: a yes from the extension answers false.
                 val nuxBefore = nuxCheck.code()
                 val nuxAfter = patched(nuxCheck)
-                assertEquals("$name: the 2x tip check asks", HIDES_HOLD_NUX, nuxAfter[0].call.toString())
-                assertEquals("$name: the 2x tip check takes the answer", Opcode.MOVE_RESULT, nuxAfter[1].opcode)
-                assertEquals("$name: the 2x tip check branches", Opcode.IF_EQZ, nuxAfter[2].opcode)
-                assertEquals("$name: the 2x tip check answers no", Opcode.RETURN, nuxAfter[4].opcode)
-                assertEquals("$name: the 2x tip check runs as before past the hook",
-                    nuxBefore.map { it.opcode }, nuxAfter.drop(5).map { it.opcode })
+                if (android9) {
+                    // Right after the flag's read, unless it's set already, the extension's answer takes its place.
+                    val flag = (nuxBefore[nuxRead] as OneRegisterInstruction).registerA
+                    assertEquals("$name: the 2x tip's flag read stays", nuxBefore[nuxRead].opcode, nuxAfter[nuxRead].opcode)
+                    assertEquals("$name: a set flag skips the ask", listOf(Opcode.IF_NEZ, flag),
+                        listOf(nuxAfter[nuxRead + 1].opcode, (nuxAfter[nuxRead + 1] as OneRegisterInstruction).registerA))
+                    assertEquals("$name: the 2x tip asks", HIDES_HOLD_NUX, nuxAfter[nuxRead + 2].call.toString())
+                    assertEquals("$name: the answer takes the flag's place", listOf(Opcode.MOVE_RESULT, flag),
+                        listOf(nuxAfter[nuxRead + 3].opcode, (nuxAfter[nuxRead + 3] as OneRegisterInstruction).registerA))
+                    assertEquals("$name: the player's setup runs as before past the hook", nuxBefore.map { it.opcode },
+                        nuxAfter.filterIndexed { at, _ -> at !in nuxRead + 1..nuxRead + 3 }.map { it.opcode })
+                    assertEquals("$name: one ask", 1, nuxAfter.count { it.call?.toString() == HIDES_HOLD_NUX })
+                } else {
+                    assertEquals("$name: the 2x tip check asks", HIDES_HOLD_NUX, nuxAfter[0].call.toString())
+                    assertEquals("$name: the 2x tip check takes the answer", Opcode.MOVE_RESULT, nuxAfter[1].opcode)
+                    assertEquals("$name: the 2x tip check branches", Opcode.IF_EQZ, nuxAfter[2].opcode)
+                    assertEquals("$name: the 2x tip check answers no", Opcode.RETURN, nuxAfter[4].opcode)
+                    assertEquals("$name: the 2x tip check runs as before past the hook",
+                        nuxBefore.map { it.opcode }, nuxAfter.drop(5).map { it.opcode })
+                }
 
                 fun assertAnswers(method: Method, hook: String, flags: Set<String>) {
                     val before = method.code()
@@ -347,7 +396,7 @@ class HoldReelFor2xFixtureTest {
                 }
                 handlers.flatMap { it.methods }.filter { flagCalls(it, config).isNotEmpty() }
                     .forEach { assertAnswers(it, LONG_PRESS, setOf(speedUp)) }
-                listeners.flatMap { it.methods }.filter { flagCalls(it, config).isNotEmpty() }
+                bodies.values.flatten().filter { flagCalls(it, config).isNotEmpty() }
                     .forEach { assertAnswers(it, RELEASE, setOf(speedUp, release)) }
                 assertAnswers(checks.single(), SPEED_UP, setOf(speedUp, release))
 

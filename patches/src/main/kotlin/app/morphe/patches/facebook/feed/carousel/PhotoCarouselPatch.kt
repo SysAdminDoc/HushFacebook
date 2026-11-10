@@ -14,6 +14,8 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.addressed
+import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.feed.switchTarget
 import app.morphe.patches.facebook.feed.tableIndices
 import app.morphe.patches.facebook.misc.extension.enableStatus
@@ -57,14 +59,17 @@ private const val CANVAS = "Landroid/graphics/Canvas;"
 /** The extension's count over a row, handed each RecyclerView and its canvas once the row has drawn. */
 internal const val DRAW_COUNT = "$PHOTO_CAROUSEL->drawCount(Landroid/view/ViewGroup;$CANVAS)V"
 
+/** The key the row's photo render holds beside its name. */
+internal const val CAROUSEL_PHOTO_KEY = "multi_media_photo"
+
 /**
  * The photo in the swipeable row: the render of the Litho component that names it, `LX/0cNH;` in
- * 585. A lambda and a name table hold the name too, and neither is a render.
+ * 585. A lambda and a name table hold the name too, and neither is a render. 586's Android 9 build
+ * asks that table for the name (`LX/01Ay;`), so a render naming it through a table counts too.
  */
-internal object CarouselPhotoFingerprint : Fingerprint(
-    strings = listOf(CAROUSEL_PHOTO, "multi_media_photo"),
-    custom = { method, _ -> method.name == "render" && method.parameterTypes.size == 1 },
-)
+internal fun BytecodePatchContext.carouselPhotoRenders(): List<Method> = methodsNaming(CAROUSEL_PHOTO) {
+    it.name == "render" && it.parameterTypes.size == 1 && holdsString(it, CAROUSEL_PHOTO_KEY)
+}
 
 /** [type] as Java names the class, `X.0cNH` for `LX/0cNH;`. */
 internal fun javaName(type: String) = type.removePrefix("L").removeSuffix(";").replace('/', '.')
@@ -228,7 +233,10 @@ val photoCarouselPatch = bytecodePatch(
             ExternalLabel("facebook", applies.getInstruction(0)),
         )
 
-        fillPhotoClass(CarouselPhotoFingerprint.method.definingClass)
+        val photos = carouselPhotoRenders()
+        val photo = photos.singleOrNull()
+            ?: throw PatchException("$PATCH: expected one render naming $CAROUSEL_PHOTO, found ${photos.size}")
+        fillPhotoClass(photo.definingClass)
         hookRowDraw()
         enableStatus("photoCarousel")
     }

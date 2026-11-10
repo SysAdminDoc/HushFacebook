@@ -213,9 +213,10 @@ internal fun BytecodePatchContext.applyLockHint() {
  * the lock the check takes, so its timer is neither read nor saved.
  */
 private fun BytecodePatchContext.applyFeedHoldNux() {
-    val checks = classDefByStrings(HOLD_NUX_SHOWN, StringComparisonType.EQUALS)
+    val holders = classDefByStrings(HOLD_NUX_SHOWN, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        .flatMap { holder -> holder.methods.filter(::isHoldNuxCheck) }
+    val checks = holders.flatMap { holder -> holder.methods.filter(::isHoldNuxCheck) }
+    if (checks.isEmpty() && holders.size == 1) return applyInlinedHoldNux(holders.single())
     val check = checks.singleOrNull() ?: return patchLog.warning(
         "$PATCH: expected one feed video 2x tip check, found ${checks.size}. Hide the 2x popups leaves that tip alone in this build",
     )
@@ -233,6 +234,35 @@ private fun BytecodePatchContext.applyFeedHoldNux() {
             return v0
         """,
         ExternalLabel("check", mutable.getInstruction(0)),
+    )
+}
+
+/**
+ * 586's Android 9 build has no check to hook: the player's setup reads the tip's flag under the
+ * class's lock and skips the tip when it's set. Right after that read, a yes from the extension
+ * reads as set too, so the tip is skipped the same way and its timer is neither read nor saved.
+ */
+private fun BytecodePatchContext.applyInlinedHoldNux(holder: ClassDef) {
+    val flags = holdNuxFlags(holder)
+    val sites = mutableListOf<Pair<Method, Int>>()
+    classDefForEachReferencing(types = listOf(holder.type)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
+        classDef.methods.forEach { method -> holdNuxReads(method, holder, flags).forEach { sites += method to it } }
+    }
+    val (method, read) = sites.singleOrNull() ?: return patchLog.warning(
+        "$PATCH: expected one feed video 2x tip check or one read of its flag, found ${sites.size} reads. " +
+            "Hide the 2x popups leaves that tip alone in this build",
+    )
+    val mutable = mutableClassDefBy(method.definingClass).findMutableMethodOf(method)
+    val flag = mutable.getInstruction<OneRegisterInstruction>(read).registerA
+    mutable.addInstructionsWithLabels(
+        read + 1,
+        """
+            if-nez v$flag, :read
+            invoke-static { }, $HIDES_HOLD_NUX
+            move-result v$flag
+        """,
+        ExternalLabel("read", mutable.getInstruction(read + 1)),
     )
 }
 
@@ -393,7 +423,15 @@ internal fun BytecodePatchContext.findReelHoldAnchors(): ReelHoldAnchors {
     val listeners = mutableListOf<ClassDef>()
     classDefForEach { if (isReleaseListener(it) && configType(it) == config) listeners += it }
     if (listeners.isEmpty()) refuseGuard("no release listener keeps $IN_LONG_PRESS_FIELD and $CONFIG_FIELD")
-    val releaseFlags = listeners.flatMap { listener -> listener.methods.flatMap { flagsBefore(it, config, speedUpFlag) } }.toSet()
+    // 586's Android 9 build moves a listener's work into one method it hands every captured value to.
+    val listenerMethods = listeners.associate { listener ->
+        val handed = handedRelease(listener, config)?.let { call ->
+            classDefByOrNull(call.definingClass)?.methods?.singleOrNull { isMethod(it, call) }
+                ?: refuseGuard("the release listener ${listener.type} hands its work to $call, which has no body in this build")
+        }
+        listener.type to listener.methods.toList() + listOfNotNull(handed)
+    }
+    val releaseFlags = listenerMethods.values.flatten().flatMap { flagsBefore(it, config, speedUpFlag) }.toSet()
     val releaseFlag = releaseFlags.singleOrNull()
         ?: refuseGuard("expected the release listeners to ask one flag before $speedUpFlag, found ${releaseFlags.sorted()}")
 
@@ -411,9 +449,9 @@ internal fun BytecodePatchContext.findReelHoldAnchors(): ReelHoldAnchors {
     handlers.firstOrNull { handler -> handlerPlans.none { it.method.definingClass == handler.type } }?.let {
         refuseGuard("the long-press handler ${it.type} takes no answer of $speedUpFlag")
     }
-    val listenerPlans = listeners.flatMap { it.methods.mapNotNull { m -> plan(m, RELEASE, setOf(speedUpFlag, releaseFlag)) } }
-    listeners.firstOrNull { listener -> listenerPlans.none { it.method.definingClass == listener.type } }?.let {
-        refuseGuard("the release listener ${it.type} takes the answer of neither flag")
+    val listenerPlans = listeners.flatMap { listener ->
+        listenerMethods.getValue(listener.type).mapNotNull { plan(it, RELEASE, setOf(speedUpFlag, releaseFlag)) }
+            .ifEmpty { refuseGuard("the release listener ${listener.type} takes the answer of neither flag") }
     }
     val builderPlans = builders.mapNotNull { plan(it, SPEED_UP, setOf(speedUpFlag, releaseFlag)) }
 
@@ -452,7 +490,7 @@ internal fun BytecodePatchContext.findReelHoldAnchors(): ReelHoldAnchors {
     if (holdSpeed.implementation!!.instructions.none { it.opcode == Opcode.RETURN_WIDE }) refuseGuard("the hold speed never returns")
 
     // The player's speed getter, which the release listeners compare with the speed to put back.
-    val getterCalls = listeners.flatMap { listener -> listener.methods.flatMap { speedGettersCalled(it, player.type) } }
+    val getterCalls = listenerMethods.values.flatten().flatMap { speedGettersCalled(it, player.type) }
         .distinctBy { it.toString() }
     val getterCall = getterCalls.singleOrNull()
         ?: refuseGuard("expected the release listeners to read ${player.type}'s speed with one method, found ${getterCalls.map { it.toString() }}")

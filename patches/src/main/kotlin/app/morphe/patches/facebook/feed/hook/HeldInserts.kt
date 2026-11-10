@@ -146,12 +146,23 @@ private fun Method.code(): List<Instruction> = implementation?.instructions?.toL
 /**
  * The held rows site in [owner], or null when it isn't the RecyclerBinder: one static method
  * holding [APPLY_READY_BATCHES], and in it one no-argument boolean call on an app class's holder
- * read off an operation (another class) in the line before, whose answer goes to an if-nez.
+ * read off an operation (another class) in the line before, whose answer goes to an if-nez. 586's
+ * Android 9 build makes that check in a static boolean method of the binder that the first calls.
  */
 internal fun heldInsertSite(owner: ClassDef): HeldInsertSite? {
     val apply = owner.methods.singleOrNull {
         AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" && holdsString(it, APPLY_READY_BATCHES)
     } ?: return null
+    heldInsertSiteIn(apply, owner)?.let { return it }
+    val called = apply.code().mapNotNull { it.reference() as? MethodReference }
+        .filter { it.definingClass == owner.type && it.returnType == "Z" }
+        .map { "${it.name}(${it.parameterTypes.joinToString("")})" }.toSet()
+    return owner.methods.filter {
+        AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" && "${it.name}(${it.parameterTypes.joinToString("")})" in called
+    }.mapNotNull { heldInsertSiteIn(it, owner) }.singleOrNull()
+}
+
+private fun heldInsertSiteIn(apply: Method, owner: ClassDef): HeldInsertSite? {
     val code = apply.code()
     val sites = (1 until code.size - 2).mapNotNull { at ->
         val call = code[at]

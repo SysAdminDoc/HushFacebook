@@ -57,7 +57,8 @@ class MenuPanelFixtureTest {
         val checked = mutableMapOf<String, String>()
         for (bundle in bundles) {
             val name = bundle.name
-            val classes = FixtureDex.classesHolding(bundle, PANEL_SETUP)
+            // The panel key's holders too: 586's Android 9 build asks a string table for it.
+            val classes = (FixtureDex.classesHolding(bundle, PANEL_SETUP) + FixtureDex.classesHolding(bundle, PANEL_KEY))
                 .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
             val context = PatchContexts.of(classes)
             val setups = context.menuPanelSetups()

@@ -4,7 +4,12 @@
  */
 package app.morphe.patches.facebook.comments
 
+import app.morphe.patcher.StringComparisonType
+import app.morphe.patcher.patch.BytecodePatchContext
+import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -86,6 +91,24 @@ internal const val PICKED = "$EXTENSION_PACKAGE/comments/DefaultCommentOrder;->p
 /** How far above a variable's name the builder may read its value. Both builds read it 2 to 5 before. */
 private const val READ_WINDOW = 6
 
+/**
+ * Where [code] loads [variable]'s name: a literal of its own, or the call asking a string table
+ * [resolve] finds for it.
+ */
+private fun variableLoads(code: List<Instruction>, variable: String, resolve: (MethodReference) -> Method?): List<Int> =
+    code.indices.filter { code[it].string == variable || tableStringAt(code, it, resolve) == variable }
+
+/**
+ * The string tables among the classes holding the request variables' names, for [requestFields]
+ * and [storyOrderField]: 586's Android 9 build asks them for the names.
+ */
+internal fun BytecodePatchContext.variableTables(): (MethodReference) -> Method? {
+    val holders = listOf(ORDER_VARIABLE, FEEDBACK_ID_VARIABLE, FOCUSED_COMMENT_VARIABLE)
+        .flatMap { classDefByStrings(it, StringComparisonType.EQUALS) }
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }.associateBy { it.type }
+    return { call -> holders[call.definingClass]?.let { resolveStatic(it, call) } }
+}
+
 /** The params' fields the builder turns into the order, the feedback id and the focused comment id. */
 internal data class RequestFields(val order: String, val feedbackId: String, val focusedComment: String)
 
@@ -131,15 +154,14 @@ private fun fieldReadAbove(code: List<Instruction>, literal: Int, owner: String 
  * the builder of a comment sheet's request. Null for any other method.
  *
  * The builder takes FetchFeedbackParams and loads each variable's name once, right after reading
- * the value from a String field of the params. The three fields differ.
+ * the value from a String field of the params. The three fields differ. 586's Android 9 build asks
+ * a string table for a name instead, which [resolve] finds ([variableLoads]).
  */
-internal fun requestFields(method: Method): RequestFields? {
+internal fun requestFields(method: Method, resolve: (MethodReference) -> Method? = { null }): RequestFields? {
     if (method.parameterTypes.none { it.toString() == FETCH_FEEDBACK_PARAMS }) return null
     val code = method.implementation?.instructions?.toList() ?: return null
-    fun readFor(variable: String): String? {
-        val loads = code.indices.filter { code[it].string == variable }
-        return loads.singleOrNull()?.let { fieldReadAbove(code, it) }
-    }
+    fun readFor(variable: String): String? =
+        variableLoads(code, variable, resolve).singleOrNull()?.let { fieldReadAbove(code, it) }
     val order = readFor(ORDER_VARIABLE) ?: return null
     val feedbackId = readFor(FEEDBACK_ID_VARIABLE) ?: return null
     val focusedComment = readFor(FOCUSED_COMMENT_VARIABLE) ?: return null
@@ -343,12 +365,12 @@ internal data class PageBuild(val method: Method, val index: Int, val order: Int
  * The field of the post page's params that [method] turns into the order, when it's that page's
  * request builder: it takes FetchSingleStoryParams, and each load of the variable's name (583 has
  * four, one per request shape) follows a read of the same String field of the params. Null for any
- * other method.
+ * other method. A load is a literal, or a call asking a table [resolve] finds ([variableLoads]).
  */
-internal fun storyOrderField(method: Method): String? {
+internal fun storyOrderField(method: Method, resolve: (MethodReference) -> Method? = { null }): String? {
     if (method.parameterTypes.none { it.toString() == FETCH_SINGLE_STORY_PARAMS }) return null
     val code = method.implementation?.instructions?.toList() ?: return null
-    val loads = code.indices.filter { code[it].string == ORDER_VARIABLE }
+    val loads = variableLoads(code, ORDER_VARIABLE, resolve)
     if (loads.isEmpty()) return null
     val fields = loads.map { fieldReadAbove(code, it, FETCH_SINGLE_STORY_PARAMS) ?: return null }
     return fields.toSet().singleOrNull()

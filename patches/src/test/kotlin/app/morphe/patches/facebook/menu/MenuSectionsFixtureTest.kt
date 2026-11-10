@@ -83,11 +83,11 @@ class MenuSectionsFixtureTest {
         .filter { it.opcode.name.startsWith("invoke-") }
         .map { ((it as ReferenceInstruction).reference as MethodReference).returnType }
 
-    /** The classes of the no-argument static calls [method] makes. */
-    private fun noArgumentStatics(method: Method): List<String> = method.instructionList()
+    /** The classes of the static calls [method] makes that answer an object, as a list factory does. */
+    private fun objectStatics(method: Method): List<String> = method.instructionList()
         .filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
         .map { (it as ReferenceInstruction).reference as MethodReference }
-        .filter { it.parameterTypes.isEmpty() }
+        .filter { it.returnType.startsWith("L") }
         .map { it.definingClass }
 
     private fun calls(instruction: Any, method: Method): Boolean =
@@ -217,8 +217,9 @@ class MenuSectionsFixtureTest {
                 val enum = classes.getValue(nativeRead.type)
 
                 // Both hand their children back through the same list, which the hooks build empty.
-                // 582 makes it through a static factory, so the sections' no-argument statics come along.
-                val factories = FixtureDex.classes(bundle, (noArgumentStatics(native) + noArgumentStatics(server)).toSet())
+                // 582 makes it through a static factory, and 586's Android 9 build through one taking two
+                // arguments, so the classes of the sections' statics answering an object come along.
+                val factories = FixtureDex.classes(bundle, (objectStatics(native) + objectStatics(server)).toSet())
                 val factory: (MethodReference) -> Method? = { call -> factories[call.definingClass]?.let { resolveStatic(it, call) } }
                 val nativeList = childrenList(native, factory)
                 assertNotNull("${bundle.name}: the native section's children list", nativeList)
