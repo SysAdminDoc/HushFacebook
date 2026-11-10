@@ -44,7 +44,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the native tree is still there, so a released model reads as nothing rather than crashing.
  *
  * <p>The same authors tell Hide posts from Pages whether a Page wrote a post, by the type name each
- * one answers ({@link #authorKind}).
+ * one answers, or by what a Page that Facebook types as a person reads in its person fields
+ * ({@link #authorType}).
  *
  * <p>Nothing here keeps, logs or reports a name, an id or a link. The report counts rules by number.
  */
@@ -484,9 +485,9 @@ public final class PostSources {
 
     /**
      * What kind of author wrote a feed unit, for Hide posts from Pages: {@link #PAGE} when every one
-     * of the story's own authors answers that type, otherwise the first other author's type
-     * ({@link #UNKNOWN_AUTHOR} when it can't be read), {@link #NO_AUTHORS}, or why nothing was read.
-     * The post a share wraps isn't read. Never throws.
+     * of the story's own authors is a Page by {@link #authorType}, otherwise the first other author's
+     * type ({@link #UNKNOWN_AUTHOR} when it can't be read), {@link #NO_AUTHORS}, or why nothing was
+     * read. The post a share wraps isn't read. Never throws.
      */
     static String authorKind(@Nullable Object feedUnit, StoryFlag.Accessor actors) {
         if (feedUnit == null) return Outcome.NO_UNIT.reason;
@@ -509,7 +510,7 @@ public final class PostSources {
         for (Object author : items(authors)) {
             if (!members.treeModel.isInstance(author)) continue;
             any = true;
-            String type = FeedFilter.typeName(author);
+            String type = authorType(author);
             if (!PAGE.equals(type)) return type == null || type.isEmpty() ? UNKNOWN_AUTHOR : type;
         }
         return any ? PAGE : NO_AUTHORS;
@@ -529,14 +530,43 @@ public final class PostSources {
     /** The statuses of a person you aren't friends with: you could send a request, or one is on its way. */
     private static final String[] NOT_FRIENDS = {"CAN_REQUEST", "OUTGOING_REQUEST", "INCOMING_REQUEST"};
 
+    /** The person fields that, read with the friendship status, tell a Page Facebook types as a person. */
+    static final String GENDER_FIELD = "gender";
+    static final int GENDER_KEY = GENDER_FIELD.hashCode();
+    static final String FOLLOW_FIELD = "subscribe_status";
+    static final int FOLLOW_KEY = FOLLOW_FIELD.hashCode();
+    /** The friendship status of someone you can't ask: a Page, your own posts, or a person who takes no requests. */
+    static final String CANNOT_REQUEST = "CANNOT_REQUEST";
+    /** The genders a Page answers, and the follow statuses of an author you can follow. */
+    private static final String[] PAGE_GENDERS = {"NEUTER", "UNKNOWN"};
+    private static final String[] FOLLOWABLE = {"CAN_SUBSCRIBE", "IS_SUBSCRIBED"};
+
+    /**
+     * An author's GraphQL type, as {@code getTypeName()} answers it, but {@link #PAGE} for a Page
+     * that Facebook types as a person. On 586 every author of a Home story answers {@link #PERSON},
+     * the Pages behind sponsored posts included (#262), and the model holds no page field. A Page
+     * reads three person fields its own way: you can't ask it to be a friend ({@code CANNOT_REQUEST}),
+     * its gender is {@code NEUTER} or {@code UNKNOWN}, and you can follow it. A person shows a gender
+     * of their own, or can be asked, or is a friend. Someone with neutral pronouns who takes no
+     * friend requests and can be followed is the one person this takes for a Page. Null when the
+     * type can't be read.
+     */
+    @Nullable
+    static String authorType(Object author) {
+        String type = FeedFilter.typeName(author);
+        if (!PERSON.equals(type) || !oneOf(field(author, GENDER_KEY), PAGE_GENDERS)) return type;
+        if (!CANNOT_REQUEST.equals(field(author, FRIENDSHIP_KEY))) return type;
+        return oneOf(field(author, FOLLOW_KEY), FOLLOWABLE) ? PAGE : type;
+    }
+
     /**
      * What Only friends' posts reads of a feed unit (#406): {@link #FRIEND} and the status of the
      * first of its own authors who is a friend; when none is, {@link #NOT_A_FRIEND} and why, the
-     * first author's type when it isn't a person (a Page's, say) or the status of a person you
-     * aren't friends with. A person whose status reads nothing counts as a friend, and so does
-     * {@code CANNOT_REQUEST}, which is what your own posts answer. An author whose type can't be
-     * read is skipped ({@link #UNKNOWN_AUTHOR} when that's all of them). The post a share wraps isn't
-     * read, so a friend's share stays. Never throws.
+     * first author's type when it isn't a person (a Page's, say, {@link #authorType} finding the ones
+     * typed as people) or the status of a person you aren't friends with. A person whose status reads
+     * nothing counts as a friend, and so does {@code CANNOT_REQUEST}, which is what your own posts
+     * answer. An author whose type can't be read is skipped ({@link #UNKNOWN_AUTHOR} when that's all
+     * of them). The post a share wraps isn't read, so a friend's share stays. Never throws.
      */
     static String friendKind(@Nullable Object feedUnit, StoryFlag.Accessor actors) {
         if (feedUnit == null) return Outcome.NO_UNIT.reason;
@@ -561,14 +591,14 @@ public final class PostSources {
         for (Object author : items(authors)) {
             if (!members.treeModel.isInstance(author)) continue;
             any = true;
-            String type = FeedFilter.typeName(author);
+            String type = authorType(author);
             if (type == null || type.isEmpty()) continue;
             if (!PERSON.equals(type)) {
                 if (notAFriend == null) notAFriend = NOT_A_FRIEND + type;
                 continue;
             }
-            String status = friendship(author);
-            if (notFriends(status)) {
+            String status = field(author, FRIENDSHIP_KEY);
+            if (oneOf(status, NOT_FRIENDS)) {
                 if (notAFriend == null) notAFriend = NOT_A_FRIEND + status;
             } else if (friend == null) {
                 friend = FRIEND + (status == null || status.isEmpty() ? NO_FRIENDSHIP : status);
@@ -584,9 +614,9 @@ public final class PostSources {
         return kind != null && kind.startsWith(NOT_A_FRIEND);
     }
 
-    private static boolean notFriends(@Nullable String status) {
-        for (String state : NOT_FRIENDS) {
-            if (state.equals(status)) return true;
+    private static boolean oneOf(@Nullable String value, String[] values) {
+        for (String one : values) {
+            if (one.equals(value)) return true;
         }
         return false;
     }
@@ -596,15 +626,15 @@ public final class PostSources {
     private static volatile Method treeString;
 
     /**
-     * A person's friendship status as text, or null when the tree doesn't hold it or can't be read.
-     * Facebook reads this field with {@code getCachedEnum}, which keeps its enum in the model's own
-     * cache and casts whatever it finds there, so a String {@code getCachedString} left in that slot
-     * crashed Facebook's next read of it. So it's read straight from the tree with
-     * {@code getString(int)}, the read {@code getCachedEnum} makes itself, which caches nothing. A
-     * person whose tree is gone isn't asked.
+     * One of a person's enum fields (friendship status, gender, follow status) as text, or null when
+     * the tree doesn't hold it or can't be read. Facebook reads these with {@code getCachedEnum},
+     * which keeps its enum in the model's own cache and casts whatever it finds there, so a String
+     * {@code getCachedString} left in that slot crashed Facebook's next read of it (#406). So they're
+     * read straight from the tree with {@code getString(int)}, the read {@code getCachedEnum} makes
+     * itself, which caches nothing. A person whose tree is gone isn't asked.
      */
     @Nullable
-    private static String friendship(Object person) {
+    private static String field(Object person, int key) {
         try {
             Method read = treeString;
             if (read == null) {
@@ -613,10 +643,10 @@ public final class PostSources {
                 treeString = read = found;
             }
             if (FeedFilter.released(person)) return null;
-            Object status = read.invoke(person, FRIENDSHIP_KEY);
-            return status instanceof String ? (String) status : null;
+            Object value = read.invoke(person, key);
+            return value instanceof String ? (String) value : null;
         } catch (ReflectiveOperationException | RuntimeException unreadable) {
-            // A status the tree won't read counts as none, so the post stays.
+            // A field the tree won't read counts as none, so the post stays.
             return null;
         }
     }
