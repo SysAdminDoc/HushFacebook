@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.patches.facebook.misc.extension.parameterRegister
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
@@ -71,6 +72,11 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   lambda class, casts it back from a field in the case that hands "SubscribeButtonComponent" to
  *   the subscribe call, so the pill is the nearest component cast before that string with the
  *   pill's three fields. Its render answers null itself for a card it's been told to skip.
+ * - The "Add to story" card between other people's stories (#439, 586 arm64 LX/0CLR;) is one of the
+ *   viewer's story list sources, each taking the session, flags and the list so far and answering
+ *   the list to show. This one splices in a card it tags "ats_tile", or "camera_roll" for the one
+ *   built from the gallery, and hands the list back unchanged when it has nothing to add. The patch
+ *   gives that same answer first thing on a yes.
  */
 
 internal const val STORY_VIEWER_CLEANUP_PATCH = "Clean up the story viewer"
@@ -91,6 +97,12 @@ internal const val HIDE_CREDITS = "$STORY_VIEWER_CLEANUP->hideCredits()Z"
 internal const val HIDE_REPLY_SUGGESTIONS = "$STORY_VIEWER_CLEANUP->hideReplySuggestions()Z"
 internal const val DROP_CREDIT = "$STORY_VIEWER_CLEANUP->dropCredit(Ljava/lang/Enum;)Z"
 internal const val HIDE_SUBSCRIBE = "$STORY_VIEWER_CLEANUP->hideSubscribe()Z"
+internal const val HIDE_CREATE_STORY_CARD = "$STORY_VIEWER_CLEANUP->hideCreateStoryCard()Z"
+
+private const val IMMUTABLE_LIST = "Lcom/google/common/collect/ImmutableList;"
+
+/** What the "Add to story" card's source tags it with: the plain card or one built from the gallery (#439). */
+internal val CREATE_CARD_SOURCES = listOf("ats_tile", "camera_roll")
 
 /** The column of credit pills under the poster's name, by the name it gives itself. */
 internal const val LINKS_COLUMN = "StoryViewerMultipleAttributionLinksColumnComponent"
@@ -116,9 +128,10 @@ private const val SUBSCRIBE_REACH = 80
 @Suppress("unused")
 val storyViewerCleanupPatch = bytecodePatch(
     name = "Clean up the story viewer",
-    description = "Switches that take the song and effect credits and the Subscribe button off a story, and the " +
-        "suggested replies off the bottom while the reply box stays, plus one that adds a thin progress bar along the " +
-        "bottom like the one on Reels. All start off. Turn them on in Hushfacebook settings > Stories.",
+    description = "Switches that take the song and effect credits and the Subscribe button off a story, the " +
+        "suggested replies off the bottom while the reply box stays, and the cards between stories that ask you to " +
+        "make your own out of the viewer, plus one that adds a thin progress bar along the bottom like the one on " +
+        "Reels. All start off. Turn them on in Hushfacebook settings > Stories.",
 ) {
     category("Stories")
     dependsOn(settingsPatch, facebookExtensionPatch)
@@ -129,6 +142,7 @@ val storyViewerCleanupPatch = bytecodePatch(
         cleanUpStoryViewer()
         dropCreditPills()
         hideSubscribePill()
+        hideCreateStoryCards()
         followStoryProgress()
         enableStatus("storyViewerCleanup")
     }
@@ -368,4 +382,32 @@ internal fun BytecodePatchContext.hideSubscribePill() {
         it.name == render.name && it.returnType == render.returnType &&
             it.parameterTypes.map(CharSequence::toString) == render.parameterTypes.map(CharSequence::toString)
     }.answerWhen(HIDE_SUBSCRIBE, "const/4 v0, 0x0")
+}
+
+/** The one method in [classes] answering a list from a list last, that tags its card with every one of [CREATE_CARD_SOURCES]. */
+internal fun createCardSource(classes: Iterable<ClassDef>): Method? = classes.flatMap { it.methods }.filter {
+    it.returnType == IMMUTABLE_LIST && it.parameterTypes.lastOrNull()?.toString() == IMMUTABLE_LIST &&
+        CREATE_CARD_SOURCES.all { source -> holdsString(it, source) }
+}.singleOrNull()
+
+/** Hooks the "Add to story" card's source to hand back the list it was given, its own answer when it adds nothing. */
+internal fun BytecodePatchContext.hideCreateStoryCards() {
+    val found = classDefByStrings(CREATE_CARD_SOURCES[0], StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+    val source = createCardSource(found) ?: refuse("expected one story list source tagging its card $CREATE_CARD_SOURCES")
+    val method = mutableClassDefBy(source.definingClass).methods.single {
+        it.name == source.name && it.returnType == source.returnType &&
+            it.parameterTypes.map(CharSequence::toString) == source.parameterTypes.map(CharSequence::toString)
+    }
+    method.requireLocals(STORY_VIEWER_CLEANUP_PATCH, 1)
+    method.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { }, $HIDE_CREATE_STORY_CARD
+            move-result v0
+            if-eqz v0, :facebooks_list
+            return-object ${method.parameterRegister(method.parameterTypes.size - 1)}
+        """,
+        ExternalLabel("facebooks_list", method.getInstruction(0)),
+    )
 }

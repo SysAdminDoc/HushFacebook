@@ -510,6 +510,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_story_subscribe", FALSE);
 
     /**
+     * The "Add to story" card Facebook puts between other people's stories, the plain one and the
+     * ones built from photos in the phone's gallery, stays out of the viewer ({@link
+     * app.morphe.extension.facebook.stories.StoryViewerCleanup}, #439). Starts off. Read as the
+     * viewer lays out its stories.
+     */
+    public static final BooleanSetting HIDE_STORY_CREATE_CARDS =
+            new BooleanSetting("hushfacebook_hide_story_create_cards", FALSE);
+
+    /**
      * A thin bar along the bottom of a story fills as it plays ({@link
      * app.morphe.extension.facebook.stories.StoryProgressBar}, #380). Starts off. Read as the story plays.
      */

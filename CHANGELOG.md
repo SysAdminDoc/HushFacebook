@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* `Hide create story cards` under Stories keeps the "Add to story" card out from between other people's stories, including the ones Facebook builds from photos in your gallery. It's part of `Clean up the story viewer` and starts off. (#439)
 * `Hide suggested groups` now also takes the "Suggested for you" groups card with Join buttons out from between reels, when `Clean up Reels` or `Hide reel interest prompts` is in your build. (#441)
 * `Hide the tab bar on the Reels tab` under Tabs and navigation takes the tab bar away while Reels is open, so the reel runs to the bottom of the screen. Every other tab keeps the bar. It starts off.
 * `Open comments at` under Comments and writing replaces the `Open comments at full height` switch with three choices: Facebook's height, full height and half height. Half height opens comments over the bottom half of the screen and the reel or video keeps playing above them. If you had the switch on, you start at full height, and an older settings backup comes back the same way. (#179)

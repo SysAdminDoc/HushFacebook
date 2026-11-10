@@ -111,6 +111,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_STORY_CREDITS) return L10n.t("Hide song and effect credits");
         if (setting == Settings.HIDE_STORY_REPLY_SUGGESTIONS) return L10n.t("Hide reply suggestions");
         if (setting == Settings.HIDE_STORY_SUBSCRIBE) return L10n.t("Hide the Subscribe button");
+        if (setting == Settings.HIDE_STORY_CREATE_CARDS) return L10n.t("Hide create story cards");
         if (setting == Settings.STORY_PROGRESS_BAR) return L10n.t("Progress bar at the bottom");
         if (setting == Settings.HIDE_FEED_STORY_RINGS) return L10n.t("Hide rings in the feed");
         if (setting == Settings.HIDE_COMMENT_STORY_RINGS) return L10n.t("Hide rings in comments");

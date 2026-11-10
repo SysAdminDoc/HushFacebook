@@ -44,6 +44,7 @@ public class StoryViewerCleanupTest {
         Settings.HIDE_STORY_CREDITS.resetToDefault();
         Settings.HIDE_STORY_REPLY_SUGGESTIONS.resetToDefault();
         Settings.HIDE_STORY_SUBSCRIBE.resetToDefault();
+        Settings.HIDE_STORY_CREATE_CARDS.resetToDefault();
         HookStatus.clear();
     }
 
@@ -115,6 +116,24 @@ public class StoryViewerCleanupTest {
         assertFalse("paused, the button went", StoryViewerCleanup.hideSubscribe());
         PauseForTests.resume();
         assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.SUBSCRIBE_HIDDEN + " 1"));
+    }
+
+    /** #439: the "Add to story" cards between stories go only with their own switch. */
+    @Test
+    public void theCreateCardsSwitchStartsOffAndLeavesOnlyTheCreateCardsOut() {
+        assertFalse(Settings.HIDE_STORY_CREATE_CARDS.defaultValue);
+        assertTrue(PatchFamily.STORY_VIEWER_CLEANUP.switches.contains(Settings.HIDE_STORY_CREATE_CARDS));
+        assertFalse("off, the card went", StoryViewerCleanup.hideCreateStoryCard());
+        Settings.HIDE_STORY_CREATE_CARDS.save(true);
+        assertTrue("on, the card stayed", StoryViewerCleanup.hideCreateStoryCard());
+        assertFalse("it hid the Subscribe button", StoryViewerCleanup.hideSubscribe());
+        assertFalse("it hid the credits", StoryViewerCleanup.hideCredits());
+        PauseForTests.pause(HushfacebookPause.Reason.MARKER_FILE);
+        assertFalse("paused, the card went", StoryViewerCleanup.hideCreateStoryCard());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("the card went before the settings were ready", StoryViewerCleanup.hideCreateStoryCard()));
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.CREATE_CARDS_HIDDEN + " 1"));
     }
 
     @Test

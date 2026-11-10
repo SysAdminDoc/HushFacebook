@@ -609,11 +609,12 @@ public class PausedHooksTest {
         // A single tap in a story waits to see whether a second one comes.
         probes.put(PatchFamily.STORY_TAPS,
                 Collections.singletonList(app.morphe.extension.facebook.stories.StoryTapsForTests::holdsATap));
-        // A story's credit line leaves its credits out, its suggested replies draw nothing and its card
-        // gets a progress bar.
+        // A story's credit line leaves its credits out, its suggested replies draw nothing, the "Add to
+        // story" card stays out of the list and its card gets a progress bar.
         probes.put(PatchFamily.STORY_VIEWER_CLEANUP, Arrays.asList(
                 app.morphe.extension.facebook.stories.StoryViewerCleanup::hideCredits,
                 app.morphe.extension.facebook.stories.StoryViewerCleanup::hideReplySuggestions,
+                app.morphe.extension.facebook.stories.StoryViewerCleanup::hideCreateStoryCard,
                 app.morphe.extension.facebook.stories.StoryProgressBarForTests::drawsABar));
         // A profile picture in the feed, beside a comment and on a profile draws without its ring.
         probes.put(PatchFamily.STORY_RINGS, Arrays.asList(

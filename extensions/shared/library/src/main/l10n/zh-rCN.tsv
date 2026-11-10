@@ -2590,6 +2590,8 @@ Takes the song and effect credits off the line under the poster's name on a stor
 Takes the row of suggested replies off the bottom of a story. The reply box stays. Applies from the next story you open.	去掉快拍底部那一排建议回复。回复框会保留。从你打开的下一个快拍开始生效。
 Hide the Subscribe button	隐藏订阅按钮
 Takes the Subscribe button off the top of a story. Applies from the next story you open.	去掉快拍顶部的订阅按钮。从你打开的下一个快拍开始生效。
+Hide create story cards	隐藏创建快拍卡片
+Takes out the card between stories that asks you to make one, including the ones built from photos in your gallery. Applies the next time you open stories.	去掉快拍之间邀请你发快拍的卡片，包括用你图库照片生成的卡片。下次打开快拍时生效。
 Progress bar at the bottom	底部进度条
 Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.	在快拍底部显示一条随播放逐渐填满的细条，和 Reels 上的一样。
 Seek bar on stories	快拍上的进度条

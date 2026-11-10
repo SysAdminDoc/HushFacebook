@@ -108,7 +108,7 @@ public enum PatchFamily {
             Settings.STORY_PLAY_BUTTON, Settings.STORY_DOUBLE_TAP),
     STORY_VIEWER_CLEANUP(FamilyNames.STORY_VIEWER_CLEANUP, "storyViewerCleanup", null,
             Settings.HIDE_STORY_CREDITS, Settings.HIDE_STORY_REPLY_SUGGESTIONS, Settings.HIDE_STORY_SUBSCRIBE,
-            Settings.STORY_PROGRESS_BAR),
+            Settings.HIDE_STORY_CREATE_CARDS, Settings.STORY_PROGRESS_BAR),
     STORY_RINGS(FamilyNames.STORY_RINGS, "storyRings", null,
             Settings.HIDE_FEED_STORY_RINGS, Settings.HIDE_COMMENT_STORY_RINGS, Settings.HIDE_PROFILE_STORY_RINGS),
     PINCH_TO_ZOOM(FamilyNames.PINCH_TO_ZOOM, "pinchToZoom", null,

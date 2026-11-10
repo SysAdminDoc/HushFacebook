@@ -13,6 +13,7 @@ import app.morphe.patches.facebook.feed.isStringTable
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -364,11 +365,49 @@ class StoryViewerCleanupFixtureTest {
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
+    /** #439: the "Add to story" card's source hands back the list it was given on a yes. */
+    @Test
+    fun `each declared build's create story card source passes its list through on a yes`() {
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val classes = FixtureDex.classesHolding(bundle, CREATE_CARD_SOURCES[0])
+                    .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+                val source = createCardSource(classes)
+                assertNotNull("$name: no one story list source tags its card $CREATE_CARD_SOURCES", source)
+                val list = source!!.parameterRegisterNumber(source.parameterTypes.size - 1)
+                val original = source.code()
+                // Positive control: Facebook's own answer when it has no card to add is the list as it came.
+                assertTrue("$name: the source never hands back its list unchanged", original.any {
+                    it.opcode == Opcode.RETURN_OBJECT && (it as OneRegisterInstruction).registerA == list
+                })
+
+                val context = PatchContexts.of(classes)
+                context.hideCreateStoryCards()
+                val code = context.mutableClassDefBy(source.definingClass).methods.single {
+                    it.name == source.name && it.parameterTypes.map(CharSequence::toString) ==
+                        source.parameterTypes.map(CharSequence::toString)
+                }.code()
+                assertEquals("$name: hands back the list on a yes",
+                    listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.RETURN_OBJECT),
+                    code.take(4).map { it.opcode })
+                assertEquals("$name: asks its own switch", HIDE_CREATE_STORY_CARD, code[0].reference())
+                assertEquals("$name: answers the list it was given", list, (code[3] as OneRegisterInstruction).registerA)
+                assertTrue("$name: a no doesn't go to Facebook's code", branchesPast(code, 4))
+                assertEquals("$name: the rest is Facebook's", original.unpadded(), code.drop(4).unpadded())
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
     @Test
     fun `the extension has every hook`() {
         for ((owner, hook) in listOf(STORY_VIEWER_CLEANUP to HIDE_CREDITS, STORY_VIEWER_CLEANUP to HIDE_REPLY_SUGGESTIONS,
             STORY_VIEWER_CLEANUP to DROP_CREDIT, STORY_VIEWER_CLEANUP to HIDE_SUBSCRIBE,
-            STORY_PROGRESS_BAR to SEGMENTS_MOVED)) {
+            STORY_VIEWER_CLEANUP to HIDE_CREATE_STORY_CARD, STORY_PROGRESS_BAR to SEGMENTS_MOVED)) {
             val method = ExtensionDex.classDef(owner).methods.singleOrNull {
                 "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == hook
             }

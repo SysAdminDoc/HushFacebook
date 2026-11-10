@@ -22,7 +22,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * under the name instead, and the same switch leaves out the song and effect pills there while a
  * reshare, an archive or a close friends pill stays. The reply suggestions switch takes the row of
  * suggested replies off the bottom of a story, leaving the reply box, and the Subscribe switch the
- * Subscribe pill under the name.
+ * Subscribe pill under the name. The create cards switch keeps out the "Add to story" card Facebook
+ * puts between other people's stories, the plain one and the ones built from the gallery (#439).
  *
  * <p>Off, paused, settings that aren't ready yet or a failure in here, and Facebook draws its own.
  */
@@ -38,6 +39,9 @@ public final class StoryViewerCleanup {
 
     /** Counted each time a story's Subscribe pill isn't drawn. */
     static final String SUBSCRIBE_HIDDEN = "story Subscribe pill hidden";
+
+    /** Counted each time the viewer's list of stories is built without the "Add to story" card. */
+    static final String CREATE_CARDS_HIDDEN = "story create cards left out";
 
     /**
      * The pill types, by Facebook's own names for them, that credit a song, a sound or the effect,
@@ -110,6 +114,23 @@ public final class StoryViewerCleanup {
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story reply suggestions", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, first thing in the story list source that splices the "Add to story" card in
+     * between other people's stories: whether to hand the list back as it came. Never throws.
+     */
+    public static boolean hideCreateStoryCard() {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, "story create card");
+            if (!Utils.settingsReady() || !Settings.HIDE_STORY_CREATE_CARDS.get()) return false;
+            HookStatus.counted(FamilyNames.STORY_VIEWER_CLEANUP, CREATE_CARDS_HIDDEN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story create card", failure);
             return false;
         }
     }
