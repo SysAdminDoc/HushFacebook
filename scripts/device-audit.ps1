@@ -1211,7 +1211,16 @@ try {
             } elseif ($step -eq 'back') {
                 if ($skipBack) { $skipBack = $false; continue }
                 $inputReel = $routeReel
-                try { Invoke-Adb shell input keyevent KEYCODE_BACK | Out-Null }
+                try {
+                    # A post with no comments opens its sheet with the composer focused and the keyboard
+                    # up, where a Back only drops the keyboard and leaves the sheet over the next links
+                    # (third S22 walk, 2026-11-09, failed the reel hold under it). So that Back goes first.
+                    if (-not $routeReel -and (Test-AuditKeyboard)) {
+                        Invoke-Adb shell input keyevent KEYCODE_BACK | Out-Null
+                        Start-Sleep -Seconds 1
+                    }
+                    Invoke-Adb shell input keyevent KEYCODE_BACK | Out-Null
+                }
                 finally { $inputReel = $false }
                 $routeReel = $false
                 $routeStep = $null
