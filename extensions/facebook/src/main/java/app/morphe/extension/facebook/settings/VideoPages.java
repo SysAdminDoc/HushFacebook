@@ -336,6 +336,9 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.KEEP_VIDEO_SPEED,
                     L10n.t("The speed you pick in a feed or Watch video's menu carries over to the next videos. Reels keep "
                             + "their own speed. Off by default, since it hasn't been tried on a real account yet.")));
+            reels.addPreference(toggle(context, Settings.FASTER_REEL_SPEEDS,
+                    L10n.t("Adds 2.5x and 3x to the speed menu of reels and of feed and Watch videos, for watching "
+                            + "faster.")));
             reels.addPreference(toggle(context, Settings.SLOWER_REEL_SPEEDS,
                     L10n.t("Adds 0.1x and 0.25x to the speed menu of reels and of feed and Watch videos, for slowing down a "
                             + "fast moment.")));

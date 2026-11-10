@@ -180,6 +180,7 @@ public class ReelSpeedTest {
         Settings.KEEP_REEL_SPEED.resetToDefault();
         Settings.KEEP_VIDEO_SPEED.resetToDefault();
         Settings.SLOWER_REEL_SPEEDS.resetToDefault();
+        Settings.FASTER_REEL_SPEEDS.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         LogBufferManager.clearLogBuffer();
         ReelSpeed.forget();
@@ -777,6 +778,33 @@ public class ReelSpeedTest {
                 + ReelSpeed.SLOWER_OFFERED + " 3", statusLine());
     }
 
+    /** #430: with Faster speeds on, both Reels speed pickers offer 2.5x and 3x after Facebook's fastest. */
+    @Test
+    public void theReelsMenuOffersFasterSpeedsLast() {
+        List<Float> facebooks = Arrays.asList(0.5f, 1f, 1.5f, 2f);
+        assertFalse("the switch starts off", Settings.FASTER_REEL_SPEEDS.get());
+        assertSame("off, Facebook's list stands", facebooks, ReelSpeed.speedChoices(facebooks));
+
+        Settings.FASTER_REEL_SPEEDS.save(true);
+        assertEquals(Arrays.asList(0.5f, 1f, 1.5f, 2f, 2.5f, 3f), ReelSpeed.speedChoices(facebooks));
+        List<Float> other = Arrays.asList(0.5f, 1f, 2f, 2.5f, 3f);
+        assertSame("the other list Facebook can offer already has both", other, ReelSpeed.speedChoices(other));
+        assertEquals("only the speeds past Facebook's fastest are added", Arrays.asList(1f, 2.5f, 3f),
+                ReelSpeed.speedChoices(Arrays.asList(1f, 2.5f)));
+
+        Settings.SLOWER_REEL_SPEEDS.save(true);
+        assertEquals("with Slower speeds on too, both ends get theirs",
+                Arrays.asList(0.1f, 0.25f, 0.5f, 1f, 1.5f, 2f, 2.5f, 3f), ReelSpeed.speedChoices(facebooks));
+        assertEquals(FamilyNames.KEEP_REEL_SPEED + ": invoked 5, 1 found, 0 missing. Counted: "
+                + ReelSpeed.FASTER_OFFERED + " 3, " + ReelSpeed.SLOWER_OFFERED + " 1", statusLine());
+
+        Settings.SLOWER_REEL_SPEEDS.save(false);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame("paused, Facebook's list stands", facebooks, ReelSpeed.speedChoices(facebooks));
+        PauseForTests.resume();
+        assertEquals("the control: running, the faster speeds come back", 6, ReelSpeed.speedChoices(facebooks).size());
+    }
+
     @Test
     public void pausedOrUnreadableTheReelsMenuKeepsFacebooksSpeeds() {
         Settings.SLOWER_REEL_SPEEDS.save(true);
@@ -828,6 +856,37 @@ public class ReelSpeedTest {
                 new String[] {"0,5x", "0,75x", "1x (Normal)"})));
         assertEquals(FamilyNames.KEEP_REEL_SPEED + ": invoked 4, 1 found, 0 missing. Counted: "
                 + ReelSpeed.GEAR_SLOWER_OFFERED + " 3", statusLine());
+    }
+
+    /**
+     * #430: the gear sheet gets 2.5x and 3x after its own speeds with Faster speeds on, labelled like
+     * the sheet's own, and Slower speeds still adds its two at the front.
+     */
+    @Test
+    public void theGearSheetOffersFasterSpeedsWithTheirLabels() {
+        float[] facebooks = {0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f};
+        String[] labels = {"0.5", "0.75", "1", "1.25", "1.5", "1.75", "2"};
+        Settings.FASTER_REEL_SPEEDS.save(true);
+        assertTrue("on, the sheet reads its speeds from their floats", ReelSpeed.gearValues(false));
+        assertEquals("[0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0]", Arrays.toString(ReelSpeed.gearSpeeds(facebooks)));
+        assertEquals(Arrays.asList("0.5", "0.75", "1", "1.25", "1.5", "1.75", "2", "2.5", "3"),
+                Arrays.asList(ReelSpeed.gearLabels(labels)));
+
+        // A sheet that already goes to 2.5x gets only 3x, and one that goes to 3x keeps its own.
+        assertEquals("[1.0, 2.5, 3.0]", Arrays.toString(ReelSpeed.gearSpeeds(new float[] {1f, 2.5f})));
+        assertEquals(Arrays.asList("1", "2.5", "3"), Arrays.asList(ReelSpeed.gearLabels(new String[] {"1", "2.5"})));
+        float[] fast = {1f, 2f, 3f};
+        String[] fastLabels = {"1", "2", "3"};
+        assertSame(fast, ReelSpeed.gearSpeeds(fast));
+        assertSame(fastLabels, ReelSpeed.gearLabels(fastLabels));
+
+        // In German, with Slower speeds on too: both ends written like the sheet's "0,5x".
+        Settings.SLOWER_REEL_SPEEDS.save(true);
+        assertEquals("[0.1, 0.25, 0.5, 1.0, 2.0, 2.5, 3.0]", Arrays.toString(ReelSpeed.gearSpeeds(new float[] {0.5f, 1f, 2f})));
+        assertEquals(Arrays.asList("0,1x", "0,25x", "0,5x", "1x (Normal)", "2x", "2,5x", "3x"),
+                Arrays.asList(ReelSpeed.gearLabels(new String[] {"0,5x", "1x (Normal)", "2x"})));
+        assertEquals(FamilyNames.KEEP_REEL_SPEED + ": invoked 4, 1 found, 0 missing. Counted: "
+                + ReelSpeed.GEAR_FASTER_OFFERED + " 3, " + ReelSpeed.GEAR_SLOWER_OFFERED + " 1", statusLine());
     }
 
     @Test

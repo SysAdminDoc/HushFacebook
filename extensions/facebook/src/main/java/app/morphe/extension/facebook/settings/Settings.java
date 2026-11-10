@@ -1251,6 +1251,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_slower_reel_speeds", FALSE);
 
     /**
+     * The Reels menu's two speed pickers and the gear menu's speed sheet also offer 2.5x and 3x,
+     * faster than the 2x Facebook stops at (#430). It rides on Keep the reel speed's patch like
+     * {@link #SLOWER_REEL_SPEEDS}. Starts off. Off or paused, the pickers offer Facebook's speeds.
+     */
+    public static final BooleanSetting FASTER_REEL_SPEEDS =
+            new BooleanSetting("hushfacebook_faster_reel_speeds", FALSE);
+
+    /**
      * The gear menu offers Playback speed on a full-screen video that isn't live, a finished live
      * video among them, where Facebook's full-screen player leaves it out behind a server flag
      * (#238). It rides on Keep the reel speed's patch

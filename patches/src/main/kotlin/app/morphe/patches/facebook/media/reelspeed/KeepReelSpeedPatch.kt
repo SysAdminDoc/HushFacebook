@@ -63,7 +63,9 @@ internal const val PATCH = "Keep the reel speed"
  * toast and setter, so Keep the reel speed keeps it like any other. The gear menu's speed sheet
  * gets them too ([addSlowerGearSpeeds]), and its pick goes through the setter the gear hook follows.
  * Facebook's player keeps every speed at 0.25x or faster, so the patch lowers that floor to 0.1x
- * ([lowerSpeedFloor]). Facebook itself never asks for less than 0.5x.
+ * ([lowerSpeedFloor]). Facebook itself never asks for less than 0.5x. Faster speeds, the fifth
+ * switch, adds 2.5x and 3x through the same hooks and needs nothing more, since HeroManager plays up
+ * to 4x (#430).
  *
  * The gear menu's speed sheet checks Normal when it can't find its player, and its checked row
  * can't be picked, so the sheet asks the extension which speed to check there ([checkGearSheetSpeed]),

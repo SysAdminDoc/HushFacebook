@@ -64,7 +64,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>Slower speeds, the third switch, adds 0.1x and 0.25x to the speeds the Reels menu's two pickers
  * offer ({@link #speedChoices}) and to the gear menu's speed sheet ({@link #gearValues},
- * {@link #gearSpeeds} and {@link #gearLabels}).
+ * {@link #gearSpeeds} and {@link #gearLabels}). Faster speeds adds 2.5x and 3x after the fastest
+ * speed the same pickers and sheet offer (#430).
  */
 public final class ReelSpeed {
     static final float NORMAL = 1f;
@@ -90,8 +91,20 @@ public final class ReelSpeed {
     /** Counted under the patch's name each time the gear menu's speed sheet offers the slower speeds. */
     static final String GEAR_SLOWER_OFFERED = "gear speed sheet offered slower speeds";
 
+    /** The speeds Faster speeds offers, slowest first. HeroManager plays up to 4x. */
+    static final float[] FASTER = {2.5f, 3f};
+
+    /** Counted under the patch's name each time a Reels speed picker offers the faster speeds. */
+    static final String FASTER_OFFERED = "Reels speed menu offered faster speeds";
+
+    /** Counted under the patch's name each time the gear menu's speed sheet offers the faster speeds. */
+    static final String GEAR_FASTER_OFFERED = "gear speed sheet offered faster speeds";
+
     /** The labels of the speeds {@link #gearSpeeds} just put ahead of the sheet's own, for {@link #gearLabels}. */
     private static final ThreadLocal<String[]> GEAR_ADDED = new ThreadLocal<>();
+
+    /** The labels of the speeds {@link #gearSpeeds} just put after the sheet's own, set with {@link #GEAR_ADDED}. */
+    private static final ThreadLocal<String[]> GEAR_APPENDED = new ThreadLocal<>();
 
     /** A speed label with a decimal in it: what comes before the number, the decimal mark, and what comes after. */
     private static final Pattern DECIMAL_LABEL = Pattern.compile("([^0-9]*)[0-9]+([.,])[0-9]+([^0-9]*)");
@@ -328,24 +341,41 @@ public final class ReelSpeed {
      * dropdown, has just made its list of speeds, which it builds its items from (#95). With
      * {@link Settings#SLOWER_REEL_SPEEDS} on, the list that comes back starts with the
      * {@link #SLOWER} speeds slower than any it offers, so 0.1x and 0.25x come before Facebook's
-     * 0.5x. A pick of one goes through the toast and the speed setter like any other, so Keep the
-     * reel speed keeps it. Off, paused, or anything here failing, Facebook's own list comes back.
+     * 0.5x. With {@link Settings#FASTER_REEL_SPEEDS} on, it ends with the {@link #FASTER} speeds
+     * faster than any it offers (#430), so a list that stops at 2x gets 2.5x and 3x. A pick of one
+     * goes through the toast and the speed setter like any other, so Keep the reel speed keeps it.
+     * Off, paused, or anything here failing, Facebook's own list comes back.
      */
     public static List<?> speedChoices(List<?> speeds) {
         try {
             HookStatus.invoked(FAMILY);
-            if (speeds == null || speeds.isEmpty() || !Utils.settingsReady() || !Settings.SLOWER_REEL_SPEEDS.get()) {
-                return speeds;
-            }
+            if (speeds == null || speeds.isEmpty() || !Utils.settingsReady()) return speeds;
+            boolean slower = Settings.SLOWER_REEL_SPEEDS.get();
+            boolean faster = Settings.FASTER_REEL_SPEEDS.get();
+            if (!slower && !faster) return speeds;
             HookStatus.bound(FAMILY, "speed menu");
             float slowest = Float.MAX_VALUE;
-            for (Object speed : speeds) slowest = Math.min(slowest, ((Float) speed));
-            List<Object> choices = new ArrayList<>(speeds.size() + SLOWER.length);
-            for (float speed : SLOWER) {
-                if (speed < slowest - SAME) choices.add(speed);
+            float fastest = 0;
+            for (Object speed : speeds) {
+                slowest = Math.min(slowest, ((Float) speed));
+                fastest = Math.max(fastest, ((Float) speed));
             }
+            List<Object> choices = new ArrayList<>(speeds.size() + SLOWER.length + FASTER.length);
+            if (slower) {
+                for (float speed : SLOWER) {
+                    if (speed < slowest - SAME) choices.add(speed);
+                }
+            }
+            int added = choices.size();
             choices.addAll(speeds);
-            HookStatus.counted(FAMILY, SLOWER_OFFERED);
+            if (faster) {
+                for (float speed : FASTER) {
+                    if (speed > fastest + SAME) choices.add(speed);
+                }
+            }
+            if (choices.size() == speeds.size()) return speeds;
+            if (added > 0) HookStatus.counted(FAMILY, SLOWER_OFFERED);
+            if (choices.size() > added + speeds.size()) HookStatus.counted(FAMILY, FASTER_OFFERED);
             return choices;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "speed menu", failure);
@@ -356,15 +386,15 @@ public final class ReelSpeed {
     /**
      * The hook first in the gear menu's speed sheet builder, on its flag for reading each speed from
      * a float rather than parsing it back out of its label with the locale's NumberFormat (#95). With
-     * {@link Settings#SLOWER_REEL_SPEEDS} on it answers true, so {@link #gearSpeeds} gets the sheet's
-     * real speeds and a pick plays the speed it shows whatever the locale. Facebook's own builders
-     * pass true on some paths, and the pick reads the float whenever the flag is set. Off, paused or
-     * failing, Facebook's flag stands.
+     * {@link Settings#SLOWER_REEL_SPEEDS} or {@link Settings#FASTER_REEL_SPEEDS} on it answers true,
+     * so {@link #gearSpeeds} gets the sheet's real speeds and a pick plays the speed it shows
+     * whatever the locale. Facebook's own builders pass true on some paths, and the pick reads the
+     * float whenever the flag is set. Off, paused or failing, Facebook's flag stands.
      */
     public static boolean gearValues(boolean values) {
         try {
-            if (values || !Utils.settingsReady() || !Settings.SLOWER_REEL_SPEEDS.get()) return values;
-            return true;
+            if (values || !Utils.settingsReady()) return values;
+            return Settings.SLOWER_REEL_SPEEDS.get() || Settings.FASTER_REEL_SPEEDS.get();
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "gear speed sheet", failure);
             return values;
@@ -376,52 +406,83 @@ public final class ReelSpeed {
      * make one item from each pair: the speeds come here first. With the switch on, the array that
      * comes back starts with the {@link #SLOWER} speeds slower than any the sheet offers, and
      * {@link #gearLabels}, called straight after, puts a label in front of the labels for each.
-     * Speeds of zero mean the sheet still reads its labels, so nothing is added. Off, paused or
-     * failing, Facebook's array comes back and so do its labels.
+     * With Faster speeds on, it ends with the {@link #FASTER} speeds faster than any the sheet
+     * offers, labelled after the sheet's own. Speeds of zero mean the sheet still reads its labels,
+     * so nothing is added. Off, paused or failing, Facebook's array comes back and so do its labels.
      */
     public static float[] gearSpeeds(float[] speeds) {
         GEAR_ADDED.remove();
+        GEAR_APPENDED.remove();
         try {
             HookStatus.invoked(FAMILY);
-            if (speeds == null || speeds.length == 0 || !Utils.settingsReady() || !Settings.SLOWER_REEL_SPEEDS.get()) {
-                return speeds;
-            }
+            if (speeds == null || speeds.length == 0 || !Utils.settingsReady()) return speeds;
+            boolean slower = Settings.SLOWER_REEL_SPEEDS.get();
+            boolean faster = Settings.FASTER_REEL_SPEEDS.get();
+            if (!slower && !faster) return speeds;
             float slowest = Float.MAX_VALUE;
-            for (float speed : speeds) slowest = Math.min(slowest, speed);
+            float fastest = 0;
+            for (float speed : speeds) {
+                slowest = Math.min(slowest, speed);
+                fastest = Math.max(fastest, speed);
+            }
             if (slowest <= 0) return speeds;
             HookStatus.bound(FAMILY, "gear speed sheet");
             int added = 0;
             // SLOWER runs slowest first, so the speeds below the sheet's slowest are its first ones.
-            for (float speed : SLOWER) {
-                if (speed < slowest - SAME) added++;
+            if (slower) {
+                for (float speed : SLOWER) {
+                    if (speed < slowest - SAME) added++;
+                }
             }
-            if (added == 0) return speeds;
-            float[] choices = new float[added + speeds.length];
+            // FASTER runs slowest first too, so the speeds above the sheet's fastest are its last ones.
+            int appended = 0;
+            if (faster) {
+                for (float speed : FASTER) {
+                    if (speed > fastest + SAME) appended++;
+                }
+            }
+            if (added == 0 && appended == 0) return speeds;
+            float[] choices = new float[added + speeds.length + appended];
             System.arraycopy(SLOWER, 0, choices, 0, added);
             System.arraycopy(speeds, 0, choices, added, speeds.length);
-            // Labelled here, so all that's left for gearLabels is to join two arrays.
-            String[] names = new String[added];
-            for (int i = 0; i < added; i++) names[i] = String.valueOf(SLOWER[i]);
-            GEAR_ADDED.set(names);
-            HookStatus.counted(FAMILY, GEAR_SLOWER_OFFERED);
+            System.arraycopy(FASTER, FASTER.length - appended, choices, added + speeds.length, appended);
+            // Labelled here, so all that's left for gearLabels is to join the arrays.
+            GEAR_ADDED.set(names(SLOWER, 0, added));
+            GEAR_APPENDED.set(names(FASTER, FASTER.length - appended, appended));
+            if (added > 0) HookStatus.counted(FAMILY, GEAR_SLOWER_OFFERED);
+            if (appended > 0) HookStatus.counted(FAMILY, GEAR_FASTER_OFFERED);
             return choices;
         } catch (Throwable failure) {
             GEAR_ADDED.remove();
+            GEAR_APPENDED.remove();
             HookStatus.threw(FAMILY, "gear speed sheet", failure);
             return speeds;
         }
     }
 
+    /** [count] of [speeds] from [from] written plainly, "0.25" or "3" with no ".0" on a whole speed. */
+    private static String[] names(float[] speeds, int from, int count) {
+        String[] names = new String[count];
+        for (int i = 0; i < count; i++) {
+            float speed = speeds[from + i];
+            names[i] = speed == (int) speed ? String.valueOf((int) speed) : String.valueOf(speed);
+        }
+        return names;
+    }
+
     /**
      * The labels for the speeds {@link #gearSpeeds} just added on this thread, ahead of the sheet's
-     * own labels and written like the first of those with a decimal in it: German's "0,5x" makes
-     * "0,25x", English's "0.5" makes "0.25" ({@link #styled}). Facebook's labels come back unchanged
-     * when nothing was added.
+     * own labels for the slower ones and after them for the faster ones, written like the first of
+     * the sheet's with a decimal in it: German's "0,5x" makes "0,25x" and "3x", English's "0.5"
+     * makes "0.25" and "3" ({@link #styled}). Facebook's labels come back unchanged when nothing was
+     * added.
      */
     public static String[] gearLabels(String[] labels) {
         String[] added = GEAR_ADDED.get();
+        String[] appended = GEAR_APPENDED.get();
         GEAR_ADDED.remove();
-        if (added == null || labels == null) return labels;
+        GEAR_APPENDED.remove();
+        if (added == null || appended == null || labels == null) return labels;
         try {
             String model = null;
             for (String label : labels) {
@@ -430,9 +491,12 @@ public final class ReelSpeed {
                     break;
                 }
             }
-            String[] choices = new String[added.length + labels.length];
+            String[] choices = new String[added.length + labels.length + appended.length];
             for (int i = 0; i < added.length; i++) choices[i] = styled(added[i], model);
             System.arraycopy(labels, 0, choices, added.length, labels.length);
+            for (int i = 0; i < appended.length; i++) {
+                choices[added.length + labels.length + i] = styled(appended[i], model);
+            }
             return choices;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "gear speed sheet", failure);
