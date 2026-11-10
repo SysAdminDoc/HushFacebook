@@ -641,13 +641,18 @@ $unchanged = Get-ManifestDelta -Stock $facts -Patched $facts
 Assert-True (@(ConvertTo-ManifestDeltaEntries -Delta $unchanged).Count -eq 0) `
     'An unchanged manifest produced a delta.'
 
-# The checked-in allowlist approves three reviewed changes and nothing else. Install beside Meta's
+# The checked-in allowlist approves four reviewed changes and nothing else. Install beside Meta's
 # apps renames the two permissions Facebook shares with Messenger, Lite, Business Suite and
 # Workplace, which the receipt reads as the two new names asked for and the two old ones no longer
-# asked for. Open in Facebook exports its share target, and GmsCore support swaps Google's push
-# RECEIVE permission for microG-RE's.
+# asked for. Open in Facebook exports its share target, GmsCore support swaps Google's push
+# RECEIVE permission for microG-RE's, and Clone install (#417) moves Facebook's own five
+# permissions to the copy's package.
 $checkedInAllowlist = @(Read-ManifestDeltaAllowlist -Path (Join-Path $PSScriptRoot 'manifest-delta-allowlist.txt') |
     Where-Object { $_ })
+$clonePermissionNames = @('DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION', 'permission.CREATE_SHORTCUT',
+    'permission.CROSS_PROCESS_BROADCAST_MANAGER', 'permission.RECEIVE_ADM_MESSAGE', 'provider.ACCESS')
+$clonePermissionsAdded = @($clonePermissionNames | ForEach-Object { "com.facebook.katana.hush.$_" })
+$clonePermissionsRemoved = @($clonePermissionNames | ForEach-Object { "com.facebook.katana.$_" })
 $reviewedEntries = @(
     'permission-added app.hushfacebook.permission.prod.FB_APP_COMMUNICATION',
     'permission-added app.hushfacebook.receiver.permission.ACCESS',
@@ -655,10 +660,13 @@ $reviewedEntries = @(
     'permission-removed com.facebook.receiver.permission.ACCESS',
     'exported-added activity:app.morphe.extension.facebook.misc.OpenInFacebook',
     'permission-added app.revanced.android.c2dm.permission.RECEIVE',
-    'permission-removed com.google.android.c2dm.permission.RECEIVE')
+    'permission-removed com.google.android.c2dm.permission.RECEIVE') +
+    @($clonePermissionsAdded | ForEach-Object { "permission-added $_" }) +
+    @($clonePermissionsRemoved | ForEach-Object { "permission-removed $_" })
+Assert-True ($reviewedEntries.Count -eq 17) "The reviewed allowlist entries number $($reviewedEntries.Count), not 17."
 Assert-True ((@($checkedInAllowlist | Sort-Object -CaseSensitive) -join "`n") -ceq
         (@($reviewedEntries | Sort-Object -CaseSensitive) -join "`n")) `
-    ('The checked-in manifest delta allowlist approves something besides the three reviewed changes, or ' +
+    ('The checked-in manifest delta allowlist approves something besides the four reviewed changes, or ' +
      "less than all of them: $($checkedInAllowlist -join ', ')")
 
 $allowlistRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("receipt-" + [guid]::NewGuid().ToString('N'))
@@ -1197,17 +1205,19 @@ try {
     Assert-True ($stale.Reason -like '*any more*') `
         "The stale allowlist entry was refused for the wrong reason: $($stale.Reason)"
 
-    # The checked-in allowlist, against receipts that carry its three reviewed changes on both
-    # builds: the permission rename, the share target export and the microG push permission. They
-    # pass. They plus any other change are refused, naming only the other, and a rename that
-    # stopped halfway is refused for the half no patch makes any more.
+    # The checked-in allowlist, against receipts that carry its four reviewed changes on both
+    # builds: the permission rename, the share target export, the microG push permission and Clone
+    # install's moved permissions. They pass. They plus any other change are refused, naming only
+    # the other, and a rename that stopped halfway is refused for the half no patch makes any more.
     $withRename = {
         param($r)
         foreach ($target in $r.targets) {
             $target.manifestDelta.permissionsAdded = @('app.hushfacebook.permission.prod.FB_APP_COMMUNICATION',
-                'app.hushfacebook.receiver.permission.ACCESS', 'app.revanced.android.c2dm.permission.RECEIVE')
+                'app.hushfacebook.receiver.permission.ACCESS', 'app.revanced.android.c2dm.permission.RECEIVE') +
+                $clonePermissionsAdded
             $target.manifestDelta.permissionsRemoved = @('com.facebook.permission.prod.FB_APP_COMMUNICATION',
-                'com.facebook.receiver.permission.ACCESS', 'com.google.android.c2dm.permission.RECEIVE')
+                'com.facebook.receiver.permission.ACCESS', 'com.google.android.c2dm.permission.RECEIVE') +
+                $clonePermissionsRemoved
             $target.manifestDelta.exportedComponentsAdded = @('activity:app.morphe.extension.facebook.misc.OpenInFacebook')
         }
     }
@@ -1238,14 +1248,15 @@ try {
         & $withRename $r
         foreach ($target in $r.targets) {
             $target.manifestDelta.permissionsAdded = @('app.hushfacebook.permission.prod.FB_APP_COMMUNICATION',
-                'app.revanced.android.c2dm.permission.RECEIVE')
+                'app.revanced.android.c2dm.permission.RECEIVE') + $clonePermissionsAdded
             $target.manifestDelta.permissionsRemoved = @('com.facebook.permission.prod.FB_APP_COMMUNICATION',
-                'com.google.android.c2dm.permission.RECEIVE')
+                'com.google.android.c2dm.permission.RECEIVE') + $clonePermissionsRemoved
         }
     }
     $half = Test-TestReceipt -Receipt $halfway -Approved $checkedInAllowlist
     Assert-True (-not $half.Valid -and $half.Reason -like '*any more*receiver.permission.ACCESS*' -and
-            $half.Reason -notlike '*c2dm*' -and $half.Reason -notlike '*OpenInFacebook*') `
+            $half.Reason -notlike '*c2dm*' -and $half.Reason -notlike '*OpenInFacebook*' -and
+            $half.Reason -notlike '*katana.hush*') `
         "A rename of one permission of the two passed the allowlist of both: $($half.Reason)"
 
     # The SBOM a receipt names. Each refusal has to name the SBOM fact that failed rather than trip
@@ -5765,14 +5776,19 @@ try {
 
     $androidName = 'http://schemas.android.com/apk/res/android:name(0x01010003)='
     $androidExported = '          A: http://schemas.android.com/apk/res/android:exported(0x01010010)=true'
-    # Facebook asks for the two permissions it shares with Meta's other apps and for Google's push,
-    # and the patched build asks for the two under the names Install beside Meta's apps gives them
-    # and for microG-RE's push in place of Google's, and exports Open in Facebook's share target: the
-    # changes the checked-in allowlist approves, and the only ones the patches make here.
+    # Facebook asks for the two permissions it shares with Meta's other apps, for Google's push and
+    # for five of its own, and the patched build asks for the two under the names Install beside
+    # Meta's apps gives them, for microG-RE's push in place of Google's and for its own five under
+    # the copy's package (Clone install), and exports Open in Facebook's share target: the changes
+    # the checked-in allowlist approves, and the only ones the patches make here.
     function Get-FixtureManifest([string]$Build, [string]$Code, [switch]$WithSplit, [switch]$Renamed,
             [string]$Package = $releaseTarget.PackageName) {
         $prefix = if ($Renamed) { 'app.hushfacebook.' } else { 'com.facebook.' }
         $push = if ($Renamed) { 'app.revanced.android.c2dm.' } else { 'com.google.android.c2dm.' }
+        $own = if ($Renamed) { 'com.facebook.katana.hush.' } else { 'com.facebook.katana.' }
+        $ownLines = @($clonePermissionNames | ForEach-Object {
+            '      E: uses-permission (line=14)'
+            "        A: $androidName`"$own$_`" (Raw: `"$own$_`")" })
         $lines = @(
             'N: android=http://schemas.android.com/apk/res/android (line=1)',
             '  E: manifest (line=1)',
@@ -5786,7 +5802,7 @@ try {
             '      E: uses-permission (line=12)',
             "        A: $androidName`"${prefix}receiver.permission.ACCESS`" (Raw: `"${prefix}receiver.permission.ACCESS`")",
             '      E: uses-permission (line=13)',
-            "        A: $androidName`"${push}permission.RECEIVE`" (Raw: `"${push}permission.RECEIVE`")",
+            "        A: $androidName`"${push}permission.RECEIVE`" (Raw: `"${push}permission.RECEIVE`")") + $ownLines + @(
             '      E: application (line=20)',
             '        E: activity (line=21)',
             "          A: $androidName`"com.facebook.katana.LoginActivity`" (Raw: `"com.facebook.katana.LoginActivity`")",
