@@ -5408,16 +5408,26 @@ try {
         New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
         Copy-Item -LiteralPath (Join-Path $Root $relative) -Destination $destination
     }
-    # The ledger, dated today and listed on every index, so the census a release is held to passes
-    # and each published-asset case below is refused for its own fact. The checked-in ledger's date
-    # moves with every audit and its listings wait on submissions, and neither is what those cases
-    # are about. The census cases further down move one fact at a time.
+    # The ledger, dated today, listed on every index and with every adopted source proved on the
+    # copied catalog's declared builds, so the census a release is held to passes and each
+    # published-asset case below is refused for its own fact. The checked-in ledger's date moves with
+    # every audit, its listings wait on submissions and its fixture evidence waits on the release
+    # after a retarget, and none of that is what those cases are about. The census cases further down
+    # move one fact at a time.
     $releaseLedgerPath = Join-Path $releaseRepo 'sources/facebook-sources.json'
     $releaseLedgerSource = [System.IO.File]::ReadAllText($releaseLedgerPath)
+    $ledgerTarget = Get-PatchTarget -PatchList (Get-Content -LiteralPath (Join-Path $releaseRepo 'patches-list.json') -Raw |
+        ConvertFrom-Json)
+    $ledgerFixtures = [string[]]@(foreach ($version in $ledgerTarget.PackageVersions) {
+        foreach ($code in $ledgerTarget.PackageVersionCodes[$version]) { "$version ($code)" } })
     function Save-ReleaseLedger([int]$AgeDays = 0, [switch]$Pending) {
         $document = $releaseLedgerSource | ConvertFrom-Json
         $checked = [datetime]::UtcNow.Date.AddDays(-$AgeDays).ToString('yyyy-MM-dd')
         $document.census.checkedAt = $checked
+        foreach ($entry in @($document.entries)) {
+            $adopted = if ($entry) { $entry.PSObject.Properties['adopted'] }
+            if ($adopted -and $adopted.Value) { $adopted.Value.fixtures.builds = $ledgerFixtures }
+        }
         foreach ($index in $document.indexes) {
             $index.hushfacebook = if ($Pending) { [pscustomobject]@{ status = 'not-listed'; checked = $checked } } else {
                 [pscustomobject]@{ status = 'listed'; url = 'https://example.com/listing'; checked = $checked } }
