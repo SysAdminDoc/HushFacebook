@@ -1042,7 +1042,7 @@ public final class FeedVideoControls {
     }
 
     private static final class Control implements ViewTreeObserver.OnPreDrawListener,
-            View.OnAttachStateChangeListener {
+            ViewTreeObserver.OnWindowFocusChangeListener, View.OnAttachStateChangeListener {
         final WeakReference<Object> player;
         volatile WeakReference<ViewGroup> expected = new WeakReference<>(null);
         volatile long generation;
@@ -1114,6 +1114,7 @@ public final class FeedVideoControls {
             observer = new WeakReference<>(next);
             view.addOnAttachStateChangeListener(this);
             next.addOnPreDrawListener(this);
+            next.addOnWindowFocusChangeListener(this);
         }
         void remove(boolean listeners) {
             restoreCorners();
@@ -1140,11 +1141,16 @@ public final class FeedVideoControls {
             ViewGroup view = observed.get();
             if (view != null) view.removeOnAttachStateChangeListener(this);
             ViewTreeObserver tree = observer.get();
-            if (tree != null && tree.isAlive()) tree.removeOnPreDrawListener(this);
+            if (tree != null && tree.isAlive()) {
+                tree.removeOnPreDrawListener(this);
+                tree.removeOnWindowFocusChangeListener(this);
+            }
             observed.clear();
             observer.clear();
         }
         public boolean onPreDraw() { refresh(this); return true; }
+        /** A sheet over the feed takes the focus, and handing it back draws nothing on a paused video (#239). */
+        public void onWindowFocusChanged(boolean focused) { if (focused) post(this); }
         public void onViewAttachedToWindow(View view) { post(this); }
         public void onViewDetachedFromWindow(View view) {
             generation++;

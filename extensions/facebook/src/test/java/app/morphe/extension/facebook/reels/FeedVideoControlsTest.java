@@ -1397,6 +1397,23 @@ public class FeedVideoControlsTest {
         assertNotNull(button());
     }
 
+    @Test public void controlsComeBackWhenTheWindowGetsFocusBack() {
+        barOn();
+        assertNotNull(button());
+        assertNotNull(bar());
+        // The comment sheet takes the window's focus, and the feed draws once more under it.
+        window.windowFocusChanged(false);
+        FeedVideoControls.changed(player);
+        drain();
+        assertNull(button());
+        assertNull(bar());
+        // Closing it gives the focus back without drawing a paused video again (#239).
+        window.windowFocusChanged(true);
+        drain();
+        assertNotNull(button());
+        assertNotNull(bar());
+    }
+
     private static int occurrences(String text, String part) {
         int count = 0;
         for (int at = text.indexOf(part); at >= 0; at = text.indexOf(part, at + part.length())) count++;
