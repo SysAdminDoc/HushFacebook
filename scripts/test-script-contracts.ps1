@@ -1508,6 +1508,19 @@ try {
     $result = Test-Staged
     Assert-True ($result.Reason -like '*staged receipt names the bundle patches-9.9.8.mpp, not patches-9.9.9.mpp*') `
         "A staged receipt naming another bundle file was not refused for it: $($result.Reason)"
+    # Hush Unpacker's APK, which the bundle stage stages and lists too, is held by its line alone.
+    New-StagedRelease
+    $stagedHelper = Join-Path $stagedRoot 'hush-unpacker-9.9.9.apk'
+    Set-Content -LiteralPath $stagedHelper -Value 'apk' -Encoding ASCII
+    Write-StagedSums (@(Get-StagedSums) + ('{0}  hush-unpacker-9.9.9.apk' -f (Get-Sha256Hex -Path $stagedHelper).ToLowerInvariant()))
+    $result = Test-Staged
+    Assert-True $result.Valid "A staged release listing Hush Unpacker's APK was refused: $($result.Reason)"
+    Add-Content -LiteralPath $stagedHelper -Value 'changed'
+    $result = Test-Staged
+    Assert-True ($result.Reason -like '*lists * for hush-unpacker-9.9.9.apk, but the staged*') "A changed Hush Unpacker APK was not refused: $($result.Reason)"
+    Remove-Item -LiteralPath $stagedHelper -Force
+    $result = Test-Staged
+    Assert-True ($result.Reason -like '*staged release has no hush-unpacker-9.9.9.apk*') "A listed Hush Unpacker APK that isn't staged was not refused: $($result.Reason)"
 } finally {
     Remove-Item -LiteralPath $allowlistRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
@@ -8179,6 +8192,7 @@ try {
         '    $out = Join-Path $ProjectDir ''patches/build/release''',
         '    New-Item -ItemType Directory -Force -Path $out | Out-Null',
         '    foreach ($kind in ''mpp'', ''cdx.json'', ''tooling.json'') { Set-Content -LiteralPath (Join-Path $out "patches-1.2.3.$kind") -Value "built $kind" -Encoding ASCII }',
+        '    Set-Content -LiteralPath (Join-Path $out ''hush-unpacker-1.2.3.apk'') -Value ''built apk'' -Encoding ASCII',
         '}',
         'exit 0')
     # py and gh log their arguments and fail when fail.txt names their subcommand. release_text's
@@ -8210,7 +8224,7 @@ try {
             foreach ($argument in $call) {
                 if (-not (Test-Path -LiteralPath $argument -PathType Leaf)) { continue }
                 $name = Split-Path -Leaf $argument
-                if ($name -notlike 'patches-*' -and $name -notlike 'release-receipt-*' -and $name -cne 'SHA256SUMS.txt') { continue }
+                if ($name -notlike 'patches-*' -and $name -notlike 'release-receipt-*' -and $name -notlike 'hush-unpacker-*' -and $name -cne 'SHA256SUMS.txt') { continue }
                 Copy-Item -LiteralPath $argument -Destination $flowGitHub.PublishedAssets
             }
             $flowGitHub.Release = [pscustomobject]@{
@@ -8360,7 +8374,7 @@ try {
     Set-Content -LiteralPath (Join-Path $flowFixtures 'facebook-580.0.0.51.74-arm64-v8a.apkm') -Value 'undeclared'
 
     # Bundle builds once, hands the receipt every declared build's fixtures and the gate's kept
-    # runs, and lists the five assets' hashes in SHA256SUMS.txt.
+    # runs, and lists the six assets' hashes in SHA256SUMS.txt.
     & $flowScript -Stage bundle -Version 1.2.3 6> $null 3> $null
     $flow = @(Read-FlowLog)
     Assert-True ($flow.Count -eq 2 -and $flow[0] -like 'gradle * tasks= :patches:buildAndroid ' -and
@@ -8369,7 +8383,7 @@ try {
         "The bundle stage did not build and cut the receipt over the declared fixtures: $($flow -join ' | ')"
     $sums = @(Get-Content -LiteralPath (Join-Path $flowAssets 'SHA256SUMS.txt'))
     $listed = @($sums | ForEach-Object { ($_ -split '  ', 2)[1] })
-    Assert-True (($listed -join ',') -eq 'patches-1.2.3.mpp,patches-1.2.3.cdx.json,patches-1.2.3.tooling.json,release-receipt-1.2.3.json') `
+    Assert-True (($listed -join ',') -eq 'patches-1.2.3.mpp,patches-1.2.3.cdx.json,patches-1.2.3.tooling.json,hush-unpacker-1.2.3.apk,release-receipt-1.2.3.json') `
         "SHA256SUMS.txt lists $($listed -join ', ')."
     foreach ($line in $sums) {
         $hash, $name = $line -split '  ', 2
@@ -8379,7 +8393,7 @@ try {
     Assert-True (Test-FlowClean) 'The bundle stage left the tree changed.'
 
     # Publish writes the notes with the checked paragraph, tags and pushes the commit, creates the
-    # release with the five assets and holds each downloaded copy to the local one.
+    # release with the six assets and holds each downloaded copy to the local one.
     Assert-Throws { & $flowScript -Stage publish -Version 1.2.3 6> $null } '*-Checked*' 'Publish ran without a checked paragraph.'
     $flowChecked = Join-Path $releaseFlow 'checked.txt'
     Set-Content -LiteralPath $flowChecked -Value 'Checked.' -Encoding ASCII
@@ -8642,7 +8656,7 @@ try {
     Write-FlowWalk @{ serial = 'emulator-5554'; device = 'Hushfacebook_API36'; emulator = $true }
     & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked -Walk $flowWalk -Verifier $flowVerifier 6> $null 3> $null
     $flow = @(Read-FlowLog | Where-Object { $_ -notlike 'gh release view *' })
-    Assert-True ($flow.Count -eq 4 -and $flow[0] -like ("staged version=1.2.3 commit=$flowHead swap=refused folder=* files=patches-1.2.3.cdx.json," +
+    Assert-True ($flow.Count -eq 4 -and $flow[0] -like ("staged version=1.2.3 commit=$flowHead swap=refused folder=* files=hush-unpacker-1.2.3.apk,patches-1.2.3.cdx.json," +
             'patches-1.2.3.mpp,patches-1.2.3.tooling.json,release-receipt-1.2.3.json,SHA256SUMS.txt') -and
         $flow[1] -like "py * github-notes --version 1.2.3 --checked $flowChecked --out *notes.md" -and
         $flow[2] -like 'gh release create v1.2.3 -R SysAdminDoc/HushFacebook --verify-tag --title v1.2.3 --notes-file *notes.md *' -and
@@ -8652,7 +8666,7 @@ try {
     $checkedCopy = [regex]::Match($flow[0], ' folder=(.+) files=').Groups[1].Value
     Assert-True ((Split-Path -Leaf $checkedCopy) -cmatch '\Ahushfacebook-publishing-1\.2\.3-[0-9a-f]{32}\z') `
         "Publish checked a copy in a folder whose name can be known ahead: $checkedCopy"
-    foreach ($name in 'patches-1.2.3.mpp', 'patches-1.2.3.cdx.json', 'patches-1.2.3.tooling.json', 'release-receipt-1.2.3.json', 'SHA256SUMS.txt') {
+    foreach ($name in 'patches-1.2.3.mpp', 'patches-1.2.3.cdx.json', 'patches-1.2.3.tooling.json', 'hush-unpacker-1.2.3.apk', 'release-receipt-1.2.3.json', 'SHA256SUMS.txt') {
         Assert-True ($flow[2].Contains((Join-Path $checkedCopy $name))) "Publish created the release without the checked $name."
     }
     Assert-True (-not (Test-Path -LiteralPath $checkedCopy)) 'Publish left the copy it checked behind.'

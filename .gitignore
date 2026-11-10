@@ -31,6 +31,7 @@ render.experimental.xml
 # Keystore files
 *.jks
 *.keystore
+keystore.properties
 # The bundle signing key's private half. The patches plugin's generateSigningKey task writes it
 # to the repository root, and it never goes in git.
 morphe-signing.key

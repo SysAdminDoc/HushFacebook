@@ -2373,8 +2373,8 @@ function Test-StagedRelease {
         hosted copies to the same changed files. The index check catches that, once the release
         is public.
 
-        SHA256SUMS.txt has to list the four assets for -Version and nothing else, each once, with
-        the hash of the file staged beside it. The receipt then has to pass Test-ReleaseReceipt
+        SHA256SUMS.txt has to list the four assets for -Version and nothing else but Hush Unpacker's
+        APK, each once, with the hash of the file staged beside it. The receipt then has to pass Test-ReleaseReceipt
         against the staged bundle, SBOM and tooling report, with its advisory audit run, and with
         -Expected giving the rest of Test-ReleaseReceipt's parameters. Answers @{ Valid; Reason }.
     #>
@@ -2391,6 +2391,9 @@ function Test-StagedRelease {
     $toolingName = "patches-$Version.tooling.json"
     $receiptName = "release-receipt-$Version.json"
     $assets = @($bundleName, $sbomName, $toolingName, $receiptName)
+    # The bundle stage stages and lists Hush Unpacker's APK too. No receipt covers it, so its line
+    # here is what holds it.
+    $helperName = "hush-unpacker-$Version.apk"
     foreach ($name in $assets + 'SHA256SUMS.txt') {
         if (-not (Test-Path -LiteralPath (Join-Path $Folder $name) -PathType Leaf)) { return Fail "The staged release has no $name." }
     }
@@ -2402,12 +2405,13 @@ function Test-StagedRelease {
         $entry = [regex]::Match($line, '^([0-9a-f]{64}) [ *](.+)$')
         if (-not $entry.Success) { return Fail "SHA256SUMS.txt has a line that isn't a checksum: $line" }
         $name = $entry.Groups[2].Value
-        if ($assets -cnotcontains $name) { return Fail "SHA256SUMS.txt lists $name, which isn't one of the release's assets." }
+        if ($assets -cnotcontains $name -and $name -cne $helperName) { return Fail "SHA256SUMS.txt lists $name, which isn't one of the release's assets." }
         if ($listed.ContainsKey($name)) { return Fail "SHA256SUMS.txt lists $name twice." }
         $listed[$name] = $entry.Groups[1].Value
     }
-    foreach ($name in $assets) {
+    foreach ($name in $assets + @(@($listed.Keys) -ceq $helperName)) {
         if (-not $listed.ContainsKey($name)) { return Fail "SHA256SUMS.txt has no entry for $name." }
+        if (-not (Test-Path -LiteralPath (Join-Path $Folder $name) -PathType Leaf)) { return Fail "The staged release has no $name." }
         $staged = (Get-Sha256Hex -Path (Join-Path $Folder $name)).ToLowerInvariant()
         if ($listed[$name] -cne $staged) {
             return Fail "SHA256SUMS.txt lists $($listed[$name]) for $name, but the staged $name hashes to $staged."

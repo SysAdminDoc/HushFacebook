@@ -16,18 +16,17 @@
                the extension's translation and release-check tests, both Android lints and the
                release facts with the index still on the previous release. Run it on the clean
                source commit, before the push whose pre-push gate runs everything.
-    bundle     From the pushed, clean source commit: the bundle with its SBOM and tooling list,
-               the receipt over every declared build (reading the runs the gate kept in
-               patches/build/fixture-apply) and SHA256SUMS.txt, into build/release-assets/<version>.
+    bundle     From the pushed, clean source commit: the bundle with its SBOM, tooling list and Hush
+               Unpacker's signed APK, the receipt over every declared build (reading the runs the gate
+               kept in patches/build/fixture-apply) and SHA256SUMS.txt, into build/release-assets/<version>.
     rebuild    The source commit built a second time, in a fresh worktree under the temp folder,
                and that bundle compared with the staged one: every class, DEX, extension payload
                and resource by name and SHA-256, whatever the ZIP order, times or compression. The
                identity each bundle carries is held to its own checkout and doesn't decide, so a
-               checkout with other line endings passes and a changed class doesn't. A pass leaves
-               a note beside the assets naming the commit and the staged bundle's hash, and with
-               that note there the stage builds nothing again: one more build a release. The
-               worktree is removed whatever happens.
-    publish    A copy of the five assets, held to SHA256SUMS.txt and the receipt (the bundle, SBOM
+               checkout with other line endings passes and a changed class doesn't. A pass leaves a
+               note beside the assets naming the commit and the staged bundle's hash, and with that
+               note there the stage builds nothing again. The worktree is removed whatever happens.
+    publish    A copy of the six assets, held to SHA256SUMS.txt and the receipt (the bundle, SBOM
                and tooling report it names, at the source commit) before anything else runs, and
                the bundle in it to the rebuild stage's note by its hash, and -Walk to that bundle:
                the walk-receipt.json scripts/device-audit.ps1 left after walking an APK patched
@@ -87,11 +86,10 @@ $tag = "v$Version"
 $assets = Join-Path $root "build/release-assets/$Version"
 $releaseText = Join-Path $root 'tools/release_text.py'
 $receiptName = "release-receipt-$Version.json"
-# What :patches:buildAndroid leaves in patches/build/release, published beside the receipt.
-$builtNames = @("patches-$Version.mpp", "patches-$Version.cdx.json", "patches-$Version.tooling.json")
+# Published beside the receipt: what :patches:buildAndroid leaves in patches/build/release, Hush Unpacker's APK included.
+$builtNames = @("patches-$Version.mpp", "patches-$Version.cdx.json", "patches-$Version.tooling.json", "hush-unpacker-$Version.apk")
 $assetNames = $builtNames + $receiptName
-# What the rebuild stage leaves beside the assets when the rebuilt bundle matched. It isn't published.
-$rebuildName = "rebuild-$Version.json"
+$rebuildName = "rebuild-$Version.json"  # The rebuild stage's note when the rebuilt bundle matched. Not published.
 
 function Step([string]$Text) { Write-Host "[release] $Text" -ForegroundColor Cyan }
 
@@ -288,9 +286,7 @@ try {
             Invoke-Gradle @(':patches:buildAndroid')
             $built = Split-Path -Parent (Get-ReleaseBundlePath -Root $root -Version $Version)
             foreach ($name in $builtNames) {
-                if (-not (Test-Path -LiteralPath (Join-Path $built $name) -PathType Leaf)) {
-                    throw "No $name in $built. :patches:buildAndroid writes it beside the bundle."
-                }
+                if (-not (Test-Path -LiteralPath (Join-Path $built $name) -PathType Leaf)) { throw "No $name in $built. :patches:buildAndroid writes it beside the bundle (the APK once helper/keystore.properties names its key)." }
             }
 
             # Every declared build's fixtures, picked as the gate picks them, so the receipt can

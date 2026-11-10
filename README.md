@@ -364,7 +364,7 @@ A few rows hand a link to another app instead of going online themselves. **Send
 | Minimum Android version | Android 11 |
 | Download | [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/) |
 
-There are 117 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to that build. Older Facebook versions like 585 and 584 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched as they come, since their code sits in a compressed archive the patcher can't read. Hush Unpacker (`helper/`) unpacks the Android 9 and 10 build on the phone, and patching what it makes is still being tested. The 64-bit build is the 120-640dpi one because 586 has no 480-640dpi bundle for Android 11; it carries every screen density, so it fits any 64-bit phone.
+There are 117 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to that build. Older Facebook versions like 585 and 584 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched as they come, since their code sits in a compressed archive the patcher can't read. Hush Unpacker (`helper/`) unpacks the Android 9 and 10 build on the phone, and patching what it makes is still being tested. Releases after 0.21.0 attach it as `hush-unpacker-<version>.apk`. The 64-bit build is the 120-640dpi one because 586 has no 480-640dpi bundle for Android 11; it carries every screen density, so it fits any 64-bit phone.
 
 SHA-256 of the .apkm files the patches are checked against:
 
@@ -378,6 +378,8 @@ On Windows, compare yours with `Get-FileHash -Algorithm SHA256 .\facebook.apkm`,
 ## Verify a download
 
 Every release ships `SHA256SUMS.txt` beside the bundle, with a line for the `.mpp` and for each file published with it. Hash the `.mpp` you downloaded the same way as above and compare it with that line. The release receipt published beside it names the declared Facebook inputs the patches were applied to, with their hashes.
+
+Hush Unpacker's APK has its own line there too. It's signed with a key whose certificate SHA-256 is `ca3b95a3f00087001c9065a801e6d9a6757f3de605d3b9f74ea2274c8a9d570d`, which `apksigner verify --print-certs hush-unpacker-<version>.apk` prints.
 
 ## Building from source
 
@@ -399,7 +401,7 @@ Where things live:
 - `patches/src/main/kotlin/app/morphe/patches/facebook/` holds the patches, one folder per area (ads, feed, reels, stories, downloads and so on). `patches/src/main/kotlin/app/morphe/patches/shared/compat/AppCompatibilities.kt` names the supported builds.
 - `extensions/facebook/` is the Java that runs inside Facebook, with the settings screen, the feed filter, downloads and the rest. `settings/PatchFamily.java` there lists each patch's switches and what Pause reaches.
 - `extensions/shared/library/` is the extension library that came from Hushfeed. Its translations are the `.tsv` tables in `src/main/l10n/`, which `scripts/gen-l10n.py` turns into Java.
-- `helper/` is Hush Unpacker, a small app that turns Facebook's Android 9+ build into one the patcher can read, right on the phone (`./gradlew :helper:assembleDebug`). It runs the same Java as `scripts/superpack-unpack.ps1`, which lives in `scripts/superpack/`.
+- `helper/` is Hush Unpacker, a small app that turns Facebook's Android 9+ build into one the patcher can read, right on the phone (`./gradlew :helper:assembleDebug`). It runs the same Java as `scripts/superpack-unpack.ps1`, which lives in `scripts/superpack/`. When `helper/keystore.properties` names a release key, `:patches:buildAndroid` also writes the signed app to `patches/build/release/hush-unpacker-<version>.apk`, and the release script publishes it with the bundle.
 - `patches-list.json` is the generated catalog, and a test holds the patch table above to it. `patches-bundle.json` is the Morphe source index and only changes at release time.
 - `scripts/release/release.ps1` runs a release stage by stage, and `scripts/validate-release-facts.ps1` holds this README, the index and the CHANGELOG to the catalog.
 

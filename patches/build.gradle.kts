@@ -1457,6 +1457,23 @@ tasks {
         finalizedBy(verifyBundle)
         finalizedBy(releaseSbom)
     }
+    // Hush Unpacker (helper/), which Android 9 and 10 users run on Facebook's Android 9+ build before
+    // patching it, goes out beside the bundle, signed with the key helper/keystore.properties names.
+    // A checkout without that file (the release's rebuild worktree) builds the bundle alone.
+    if (rootProject.file("helper/keystore.properties").isFile) {
+        val signedHelper = rootProject.layout.projectDirectory.file("helper/build/outputs/apk/release/helper-release.apk")
+        val releaseHelper = layout.buildDirectory.file("release/hush-unpacker-${project.version}.apk")
+        val helperApk = register("releaseHelperApk") {
+            group = "build"
+            description = "Puts the signed Hush Unpacker APK beside the release bundle"
+            dependsOn(":helper:assembleRelease")
+            mustRunAfter("buildAndroid")
+            inputs.file(signedHelper).withPropertyName("signedHelper").withPathSensitivity(PathSensitivity.NONE)
+            outputs.file(releaseHelper)
+            doLast { signedHelper.asFile.copyTo(releaseHelper.get().asFile, overwrite = true) }
+        }
+        named("buildAndroid") { finalizedBy(helperApk) }
+    }
     register<JavaExec>("generatePatchesList") {
         description = "Build patch with patch list"
 

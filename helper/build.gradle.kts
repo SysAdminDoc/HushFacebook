@@ -1,3 +1,4 @@
+import java.util.Properties
 import javax.inject.Inject
 
 /**
@@ -53,6 +54,13 @@ configurations.configureEach {
 val repoVersion = rootProject.version.toString()
 val versionParts = repoVersion.split('.').map { it.toInt() }
 
+// The release key stays out of git: helper/keystore.properties (gitignored) names it. Without that
+// file the release APK comes out unsigned, and release.ps1 won't ship it.
+val keystoreProps = Properties().apply {
+    val propsFile = file("keystore.properties")
+    if (propsFile.isFile) propsFile.inputStream().use { load(it) }
+}
+
 android {
     namespace = "app.hushfacebook.unpacker"
     compileSdk = 36
@@ -71,10 +79,22 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
+    signingConfigs {
+        keystoreProps.getProperty("RELEASE_STORE_FILE")?.let { storePath ->
+            create("release") {
+                storeFile = file(storePath)
+                storePassword = keystoreProps.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias = keystoreProps.getProperty("RELEASE_KEY_ALIAS")
+                keyPassword = keystoreProps.getProperty("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             // The library binds its natives to com.facebook.superpack by name, so nothing is renamed.
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 }
