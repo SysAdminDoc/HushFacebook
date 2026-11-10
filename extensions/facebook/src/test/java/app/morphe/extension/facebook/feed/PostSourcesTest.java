@@ -374,9 +374,9 @@ public class PostSourcesTest {
         GraphQLStory friend = story(null, Arrays.asList(typed("User")), Collections.emptyList());
         GraphQLStory share = story(page, Arrays.asList(typed("User")), Collections.emptyList());
 
-        assertEquals(PostSources.PAGE, FeedFilter.pagesReason(page, actors));
-        assertNull(FeedFilter.pagesReason(friend, actors));
-        assertNull("a friend's share of a Page's post stays", FeedFilter.pagesReason(share, actors));
+        assertEquals(PostSources.PAGE, FeedFilter.pagesReason(page, actors, null));
+        assertNull(FeedFilter.pagesReason(friend, actors, null));
+        assertNull("a friend's share of a Page's post stays", FeedFilter.pagesReason(share, actors, null));
         assertEquals(FeedFilter.PAGES_ROUTE + ": 3 lists, 3 items, 1 removed. Last reason: Page. "
                 + "Removed: Page 1. Kinds: User 2, Page 1", line(FeedFilter.PAGES_ROUTE));
     }
@@ -496,7 +496,7 @@ public class PostSourcesTest {
         assertEquals(PostSources.PAGE, PostSources.authorKind(followed, actors));
         assertEquals(PostSources.NOT_A_FRIEND + "Page", PostSources.friendKind(ad, actors));
         assertEquals(PostSources.NOT_A_FRIEND + "Page", PostSources.friendKind(followed, actors));
-        assertEquals(PostSources.PAGE, FeedFilter.pagesReason(ad, actors));
+        assertEquals(PostSources.PAGE, FeedFilter.pagesReason(ad, actors, null));
         assertEquals(PostSources.NOT_A_FRIEND + "Page", FeedFilter.friendsReason(ad, actors));
 
         assertEquals("User", PostSources.authorKind(withAFriend, actors));
@@ -513,6 +513,31 @@ public class PostSourcesTest {
         assertEquals("a follow status that reads nothing keeps the post", "User",
                 PostSources.authorKind(noFollowStatus, actors));
         assertEquals("a released author isn't asked", PostSources.UNKNOWN_AUTHOR, PostSources.authorKind(released, actors));
+    }
+
+    /** A group's join state, as the group rule reads it. */
+    private enum JoinState { MEMBER }
+
+    @Test
+    public void aPagesPostInAGroupStaysUnderHidePostsFromPages() {
+        // Six group posts on the S22 with 586 had authors that read as Pages (#262).
+        GraphQLStory inAGroup = story(null, Arrays.asList(person("CANNOT_REQUEST", "NEUTER", "CAN_SUBSCRIBE")),
+                Collections.emptyList());
+        GraphQLStory onItsOwn = story(null, Arrays.asList(person("CANNOT_REQUEST", "NEUTER", "CAN_SUBSCRIBE")),
+                Collections.emptyList());
+        GraphQLStory typedPageInAGroup = story(null, Arrays.asList(typed("Page")), Collections.emptyList());
+        BaseModelWithTree group = FeedGuardForTests.group();
+        GroupPosts.Readers groups = new GroupPosts.Readers(
+                story -> story == inAGroup || story == typedPageInAGroup ? group : null, story -> null,
+                target -> target == group ? JoinState.MEMBER : null, story -> null, GroupPosts.SHAPE_PATCHED);
+
+        assertNull(FeedFilter.pagesReason(inAGroup, actors, groups));
+        assertNull(FeedFilter.pagesReason(typedPageInAGroup, actors, groups));
+        assertEquals(PostSources.PAGE, FeedFilter.pagesReason(onItsOwn, actors, groups));
+        assertEquals("a build without the group rule goes by the authors alone", PostSources.PAGE,
+                FeedFilter.pagesReason(inAGroup, actors, null));
+        assertEquals(FeedFilter.PAGES_ROUTE + ": 4 lists, 4 items, 2 removed. Last reason: Page. "
+                + "Removed: Page 2. Kinds: Page 2, Page in a group 2", line(FeedFilter.PAGES_ROUTE));
     }
 
     /** Facebook's gender enum, as GraphQLActor reads it through getCachedEnum. */

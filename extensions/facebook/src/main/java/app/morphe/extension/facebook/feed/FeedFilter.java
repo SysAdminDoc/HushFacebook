@@ -223,10 +223,13 @@ public final class FeedFilter {
     static final String NO_SOURCE_MATCH = "no line matched";
     /**
      * The stories Hide posts from Pages read, counted only while its switch is on, with what kind of
-     * author wrote each as the kind: {@value PostSources#PAGE} when every author is a Page, or the
-     * first other author's type, or why nothing was read. Never a name or an id.
+     * author wrote each as the kind: {@value PostSources#PAGE} when every author is a Page,
+     * {@value #PAGE_IN_A_GROUP} for a Page's post in a group, or the first other author's type, or
+     * why nothing was read. Never a name or an id.
      */
     static final String PAGES_ROUTE = "Posts from Pages";
+    /** What Hide posts from Pages counts a Page's post in a group under. It stays. */
+    static final String PAGE_IN_A_GROUP = "Page in a group";
     /**
      * The stories Only friends' posts read, counted only while its switch is on, with what
      * {@link PostSources#friendKind} found as the kind: a friend's friendship status, why a post isn't
@@ -575,7 +578,7 @@ public final class FeedFilter {
                 reason = sourcesReason(feedUnit, PostSources.ACTORS, PostSources.ATTACHMENTS, attachedAccessor);
             }
             if (reason == null && wordsPatched && withFriendsOnly(Settings.HIDE_PAGE_POSTS)) {
-                reason = pagesReason(feedUnit, PostSources.ACTORS);
+                reason = pagesReason(feedUnit, PostSources.ACTORS, groupReaders);
             }
             if (reason == null && wordsPatched && Settings.ONLY_FRIENDS_POSTS.get()) {
                 reason = friendsReason(feedUnit, PostSources.ACTORS);
@@ -857,13 +860,19 @@ public final class FeedFilter {
 
     /**
      * Hide posts from Pages (#262): {@value PostSources#PAGE} when every author of the post is a
-     * Page, otherwise null. Only the post's own authors count, so a friend's share of a Page's post
-     * stays, and so does a post in a group, which its member wrote. An author whose type can't be
-     * read counts as a person, and a post whose authors can't be read is kept.
+     * Page and the post isn't in a group, otherwise null. Only the post's own authors count, so a
+     * friend's share of a Page's post stays. A post in a group stays whoever wrote it, as the
+     * switch's summary says: on 586 a Page is told apart only by its person fields, and Hide all
+     * group posts is the switch for group posts. [groups] is null in a build without the group
+     * rule, and then the authors alone decide. An author whose type can't be read counts as a
+     * person, and a post whose authors can't be read is kept.
      */
-    static String pagesReason(Object feedUnit, StoryFlag.Accessor actors) {
+    static String pagesReason(Object feedUnit, StoryFlag.Accessor actors, @Nullable GroupPosts.Readers groups) {
         FeedFilterCounters.sawList(PAGES_ROUTE, 1);
         String kind = PostSources.authorKind(feedUnit, actors);
+        if (PostSources.PAGE.equals(kind) && groups != null && GroupPosts.inAGroup(GroupPosts.read(feedUnit, groups))) {
+            kind = PAGE_IN_A_GROUP;
+        }
         FeedFilterCounters.sawKind(PAGES_ROUTE, kind);
         if (!PostSources.PAGE.equals(kind)) return null;
         FeedFilterCounters.removed(PAGES_ROUTE, 1, kind);

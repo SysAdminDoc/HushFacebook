@@ -57,7 +57,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
-* `Hide posts from Pages` and `Only friends' posts` catch Pages again on Facebook 586. That version labels almost every post's author as a person, the Pages behind sponsored posts included, so Pages got past both switches. Hush now spots a Page by what Facebook says about it instead: no gender, no friend requests, and a follow button. (#262)
+* `Hide posts from Pages` and `Only friends' posts` catch Pages again on Facebook 586. That version labels almost every post's author as a person, the Pages behind sponsored posts included, so Pages got past both switches. Hush now spots a Page by what Facebook says about it instead: no gender, no friend requests, and a follow button. Posts in groups still stay with `Hide posts from Pages` on, whoever wrote them. (#262)
 * On Facebook 586, a page with Facebook's newer top bar could close the app. The hook behind the top bar's search button read the bar from a spot 586 reuses for something else, and Android then refused to load the bar at all. It now takes the bar from Facebook's own code right next to it.
 * With `Start tab` on Feeds and no Feeds tab on your bar, the Feeds page now opens when the bar starts with a tab other than Home. That covers a `Tab order` that puts another tab first and the bars Facebook is testing that open on Reels. Before, the page stayed closed on those bars.
 * `GmsCore support` no longer closes Facebook's login screen on a phone without microG-RE, so you can sign in with your email and password there. Without microG-RE, Google shows a notice asking you to get Play services and push notifications stay off, so install microG-RE first.
