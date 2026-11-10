@@ -1384,6 +1384,19 @@ public class FeedVideoControlsTest {
         assertEquals(log, 1, occurrences(log, "Inline feed button: none, origin"));
     }
 
+    @Test public void debugLoggingNamesAReleasedPlayerOnce() {
+        BaseSettings.DEBUG.save(true);
+        LogBufferManager.clearLogBuffer();
+        FeedVideoControls.released(player);
+        drain();
+        FeedVideoControls.changed(player);
+        drain();
+        String log = LogBufferManager.buildExportText();
+        assertEquals(log, 1, occurrences(log, "Inline feed button: none, its player was released"));
+        attach(player);
+        assertNotNull(button());
+    }
+
     private static int occurrences(String text, String part) {
         int count = 0;
         for (int at = text.indexOf(part); at >= 0; at = text.indexOf(part, at + part.length())) count++;

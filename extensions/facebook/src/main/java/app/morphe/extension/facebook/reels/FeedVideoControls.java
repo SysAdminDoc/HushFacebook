@@ -341,8 +341,13 @@ public final class FeedVideoControls {
             boolean open = !story && openOn();
             boolean skip = !story && skipOn();
             boolean speed = !story && speedOn();
-            if ((!play && !cast && !seek && !open && !skip && !speed) || control.released || player == null
+            boolean any = play || cast || seek || open || skip || speed;
+            if (!any || control.released || player == null
                     || container == null || access.view(player) != container) {
+                // The listeners go too, so nothing refreshes this video until Facebook attaches it again (#239).
+                if (any && player != null && container != null) {
+                    miss(control, control.released ? "its player was released" : "its player moved to another view");
+                }
                 control.remove(true);
                 return;
             }
