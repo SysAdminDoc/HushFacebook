@@ -16,15 +16,20 @@ import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ThreeRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11n
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11x
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction12x
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21t
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction22b
@@ -448,6 +453,153 @@ class MenuSectionsShapesTest {
         // The header's seed now negates the turned-back answer.
         assertEquals(Opcode.XOR_INT_LIT8, native.at(18).opcode)
         assertEquals(own + 10, native.implementation!!.instructions.count())
+    }
+
+    private fun seedOf(method: Method): HeaderSeed? {
+        val read = nativeGroupRead(method, isGroup)!!
+        return headerSeed(method, read, startRead(method, read)!!)
+    }
+
+    @Test
+    fun `the header's seed is the store the start's negation goes to, with the group still in its register`() {
+        assertEquals(HeaderSeed(9, 4, "Lfixture/Header;", 3), seedOf(startingSection()))
+        // Negative controls: the group's register written over before the store, and if-nez v1 before
+        // the seed landing past its negation and store, right after the seed.
+        assertNull(seedOf(startingSection(after = listOf(ImmutableInstruction11n(Opcode.CONST_4, 3, 0)) + seed())))
+        assertNull(seedOf(startingSection(after = listOf(ImmutableInstruction21t(Opcode.IF_NEZ, 1, 2 + 2 + 2)) + seed())))
+    }
+
+    @Test
+    fun `the group's answer marks the header right after its seed`() {
+        val native = MutableMethod(startingSection())
+        val own = native.implementation!!.instructions.count()
+        native.seedHeaderFlag(seedOf(native)!!)
+
+        // v0 is borrowed, since the section writes it before reading it, and the group goes in its range form.
+        assertEquals(Opcode.INVOKE_STATIC_RANGE, native.at(10).opcode)
+        assertEquals(listOf(3, 1), (native.at(10) as RegisterRangeInstruction).let { listOf(it.startRegister, it.registerCount) })
+        val call = (native.at(10) as ReferenceInstruction).reference as MethodReference
+        assertEquals("Lapp/morphe/extension/facebook/menu/MenuSections;->keepsHeaderOpen(Ljava/lang/Object;)Z",
+            "${call.definingClass}->${call.name}(${call.parameterTypes.joinToString("")})${call.returnType}")
+        assertEquals(Opcode.MOVE_RESULT, native.at(11).opcode)
+        assertEquals(0, (native.at(11) as OneRegisterInstruction).registerA)
+        assertMark(native.at(12), Opcode.IPUT_BOOLEAN, 0, 4)
+        // The section goes on with its own code.
+        assertEquals(useFold, (native.at(13) as ReferenceInstruction).reference)
+        assertEquals(own + 3, native.implementation!!.instructions.count())
+    }
+
+    private val headerType = "Lfixture/Header;"
+    private val headerState = "Lfixture/HeaderState;"
+    private val collapsedField = ImmutableFieldReference(headerState, "A01", "Z")
+    private val headerStateField = ImmutableFieldReference(headerType, "A02", "Ljava/lang/Object;")
+    private val headerOwnFlag = ImmutableFieldReference(headerType, "A08", "Z")
+    private val drawn = ImmutableMethodReference("Lfixture/Chevron;", "A00", listOf("Z", "Z"), "V")
+    private val toggled = ImmutableMethodReference("Lfixture/Chevron;", "A01", listOf("Z", "Z", "Ljava/lang/String;"), "V")
+
+    /** A method of the header: six locals, `this` in v6, then one object. */
+    private fun headerMethod(name: String, instructions: List<Instruction>): Method = ImmutableMethod(
+        headerType,
+        name,
+        listOf(ImmutableMethodParameter("Ljava/lang/Object;", null, null)),
+        "V",
+        AccessFlags.PUBLIC.value or AccessFlags.FINAL.value,
+        null,
+        null,
+        ImmutableMethodImplementation(8, instructions, null, null),
+    )
+
+    /**
+     * 586's render (`LX/0OC1;->A1E`): its state cast into v1, a flag of its own into v5 at 2, then
+     * whether it's collapsed into v4 at 3, for the chevron. [lead] goes first and [tail] after the read.
+     */
+    private fun headerRender(lead: List<Instruction> = emptyList(), tail: List<Instruction> = emptyList()) = headerMethod(
+        "A1E",
+        lead + listOf(
+            ImmutableInstruction22c(Opcode.IGET_OBJECT, 1, 6, headerStateField),
+            ImmutableInstruction21c(Opcode.CHECK_CAST, 1, ImmutableTypeReference(headerState)),
+            ImmutableInstruction22c(Opcode.IGET_BOOLEAN, 5, 6, headerOwnFlag),
+            ImmutableInstruction22c(Opcode.IGET_BOOLEAN, 4, 1, collapsedField),
+        ) + tail + listOf(
+            invoke(Opcode.INVOKE_STATIC, drawn, 4, 5),
+            ImmutableInstruction10x(Opcode.RETURN_VOID),
+        ),
+    )
+
+    /**
+     * 586's tap handler (`LX/0OC1;->A1H`): the header into v1 and its state cast into v0, then a flag
+     * of its own read into v1 at 3, over the header, and whether it's collapsed into v3 at 4, which
+     * the toggle takes beside the [string] it loads.
+     */
+    private fun headerClick(string: String = HEADER_TOGGLE) = headerMethod(
+        "A1H",
+        listOf(
+            ImmutableInstruction12x(Opcode.MOVE_OBJECT, 1, 6),
+            ImmutableInstruction22c(Opcode.IGET_OBJECT, 0, 6, headerStateField),
+            ImmutableInstruction21c(Opcode.CHECK_CAST, 0, ImmutableTypeReference(headerState)),
+            ImmutableInstruction22c(Opcode.IGET_BOOLEAN, 1, 1, headerOwnFlag),
+            ImmutableInstruction22c(Opcode.IGET_BOOLEAN, 3, 0, collapsedField),
+            constString(2, string),
+            invoke(Opcode.INVOKE_STATIC, toggled, 1, 3, 2),
+            ImmutableInstruction10x(Opcode.RETURN_VOID),
+        ),
+    )
+
+    private fun headerClass(vararg methods: Method) =
+        ImmutableClassDef(headerType, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null, emptyList(), methods.toList())
+
+    /** An [opcode] of the header's mark between [register] and the header in [header]. */
+    private fun assertMark(instruction: Instruction, opcode: Opcode, register: Int, header: Int) {
+        assertEquals(opcode, instruction.opcode)
+        assertEquals(listOf(register, header), (instruction as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) })
+        val field = (instruction as ReferenceInstruction).reference as FieldReference
+        assertEquals("$headerType->$HEADER_FLAG:Z", "${field.definingClass}->${field.name}:${field.type}")
+    }
+
+    @Test
+    fun `the header's state is read once by its render and once by its tap handler, each beside a free local`() {
+        val render = headerRender()
+        val click = headerClick()
+        // The render's v0 is never read. The tap handler reads v0 and v1 after its own flag, but not v2.
+        assertEquals(
+            setOf(HeaderStateRead(render, 2, 6, 3, 4, 0, false), HeaderStateRead(click, 3, 1, 4, 3, 2, true)),
+            headerStateReads(headerClass(render, click))?.toSet(),
+        )
+        // Negative controls: no tap handler loading the toggle's name, a render reading the state twice,
+        // and if-eqz v7 before the render landing on its read.
+        assertNull(headerStateReads(headerClass(render, headerClick("updateState:Other"))))
+        assertNull(headerStateReads(headerClass(headerRender(tail = listOf(
+            ImmutableInstruction22c(Opcode.IGET_BOOLEAN, 4, 1, collapsedField))), click)))
+        assertNull(headerStateReads(headerClass(headerRender(lead = listOf(
+            ImmutableInstruction21t(Opcode.IF_EQZ, 7, 2 + 2 + 2 + 2))), click)))
+    }
+
+    @Test
+    fun `a marked header reads as expanded in its render and its tap handler`() {
+        val reads = headerStateReads(headerClass(headerRender(), headerClick()))!!
+
+        val render = MutableMethod(headerRender())
+        render.keepReadOpen(reads.single { !it.click }, headerType)
+        // The mark goes into v0 before the flag read, and right after the state read it's turned
+        // around and anded in, so a marked header's chevron is never collapsed.
+        assertMark(render.at(2), Opcode.IGET_BOOLEAN, 0, 6)
+        assertEquals(headerOwnFlag, (render.at(3) as ReferenceInstruction).reference)
+        assertEquals(collapsedField, (render.at(4) as ReferenceInstruction).reference)
+        assertEquals(listOf(0, 0, 1), notOf(render.at(5)))
+        assertEquals(Opcode.AND_INT, render.at(6).opcode)
+        assertEquals(listOf(4, 4, 0), (render.at(6) as ThreeRegisterInstruction).let { listOf(it.registerA, it.registerB, it.registerC) })
+        assertEquals(drawn, (render.at(7) as ReferenceInstruction).reference)
+
+        val click = MutableMethod(headerClick())
+        click.keepReadOpen(reads.single { it.click }, headerType)
+        // The flag read writes over the header, so the mark is read from v1 before it. After the state
+        // read it's ored in, so a tap on a marked header flips it from collapsed to expanded.
+        assertMark(click.at(3), Opcode.IGET_BOOLEAN, 2, 1)
+        assertEquals(headerOwnFlag, (click.at(4) as ReferenceInstruction).reference)
+        assertEquals(collapsedField, (click.at(5) as ReferenceInstruction).reference)
+        assertEquals(Opcode.OR_INT, click.at(6).opcode)
+        assertEquals(listOf(3, 3, 2), (click.at(6) as ThreeRegisterInstruction).let { listOf(it.registerA, it.registerB, it.registerC) })
+        assertEquals(HEADER_TOGGLE, ((click.at(7) as ReferenceInstruction).reference as StringReference).string)
     }
 
     /**

@@ -59,6 +59,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* With `Keep Settings and privacy expanded` on, tapping the Settings and privacy header in the Menu no longer flips its arrow down. The rows already stayed open, but the header still turned to "Section is collapsed" on the first tap. Now it stays expanded however many times you tap it. (#224)
 * Pulling down the "Saving a video" notification now shows the download's speed and time. The card stopped after the size line ("31 MB of 176 MB…"), so the speed only ever showed in the Downloads list.
 * A video saved with its sound as a separate track counts the sound from the first moment, so its progress bar no longer slips back when the sound starts downloading. On a 78 minute live replay it fell from 83% to 78%, and the size jumped from 137 MB to 174 MB.
 * A video whose DASH file is over 512 MB, like a long live replay, falls back to Facebook's single file, and the message at the end now says so with the quality you got ("Saved to Movies/Facebook at 360p, since the bigger file is over 512 MB"). It used to say only that the video was saved in lower quality than on Facebook. That quality, here and for any save that steps down to a smaller file, is read from the saved file itself, since Facebook's link to a 360p file can just say "sd". (#238)

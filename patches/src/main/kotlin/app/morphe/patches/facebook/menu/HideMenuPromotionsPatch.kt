@@ -11,6 +11,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.util.proxy.mutableTypes.MutableField.Companion.toMutable
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
@@ -23,11 +24,13 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.findMutableMethodOf
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableField
 
 internal const val HIDE_SECTION = "$EXTENSION_PACKAGE/menu/MenuSections;->hideSection(Ljava/lang/Object;)Z"
 internal const val HIDE_SERVER_SECTION = "$EXTENSION_PACKAGE/menu/MenuSections;->hideServerSection(Ljava/lang/Object;)Z"
@@ -37,6 +40,10 @@ internal const val SHORTCUTS_KEPT = "$EXTENSION_PACKAGE/menu/MenuShortcuts;->kep
 internal const val HELP_ROWS_KEPT = "$EXTENSION_PACKAGE/menu/MenuRows;->help(Ljava/util/List;)Ljava/util/List;"
 internal const val SETTINGS_ROWS_KEPT = "$EXTENSION_PACKAGE/menu/MenuRows;->settings(Ljava/util/List;)Ljava/util/List;"
 internal const val LIST_COPY_OF = "$IMMUTABLE_LIST->copyOf(Ljava/util/Collection;)$IMMUTABLE_LIST"
+internal const val HEADER_KEPT_OPEN = "$EXTENSION_PACKAGE/menu/MenuSections;->keepsHeaderOpen(Ljava/lang/Object;)Z"
+
+/** The boolean the patch adds to the Menu's group header, set on a header whose group is kept open. */
+internal const val HEADER_FLAG = "hushKeptOpen"
 
 /**
  * Both sections of a Menu group ask the extension about the group as soon as they know it, and
@@ -48,8 +55,10 @@ internal const val LIST_COPY_OF = "$IMMUTABLE_LIST->copyOf(Ljava/util/Collection
  * too, which can answer that Settings and privacy is open, so it builds its rows without a tap
  * (issue #224). A tap on its header leaves it open too, since the next build asks again. Whether the
  * group starts open, which seeds its header's chevron and label, gets the same answer, so the header
- * opens with it. If
- * Facebook moved the fold, the rest of the patch goes on without it.
+ * opens with it. After that the header keeps whether it's collapsed in its own state and flips it on
+ * every tap, so the section also marks the header it makes for a group kept open, and the header's
+ * render and tap handler take a marked header as expanded. If Facebook moved the fold or the header,
+ * the rest of the patch goes on without it.
  *
  * The Muse card is a bookmark, not a group: right after its component reads whether the card was
  * dismissed, the answer and the bookmark go to the extension, which can answer yes instead. See
@@ -115,6 +124,9 @@ val hideMenuPromotionsPatch = bytecodePatch(
                     "$PATCH: ${native.definingClass}->${native.name} doesn't hand its header whether its group " +
                         "starts open from one flag of its own. A Settings and privacy kept open shows a folded header.",
                 )
+            } else {
+                // Before askAboutFolding, whose code goes in above the seed and would move it.
+                keepHeaderOpen(native, nativeMethod, nativeRead, start)
             }
             nativeMethod.askAboutFolding(nativeRead, fold, start)
         }
@@ -223,6 +235,75 @@ internal fun MutableMethod.askAboutFolding(read: GroupRead, fold: FoldRead, star
             move/from16 v${fold.register}, v$folded
         """.trimIndent() + "\n" + header,
     )
+}
+
+/**
+ * Marks the header the native section makes for a group the extension keeps open, with a
+ * [HEADER_FLAG] the patch adds to the header's class (false on every header nothing marks), and has
+ * each of the header's reads of whether it's collapsed take a marked header as expanded, so a tap
+ * leaves its arrow up and its label on "Section is expanded" (#224 follow-up). When the seed, the
+ * header or its reads aren't where they were, the header goes as Facebook draws it and the rest of
+ * the patch goes on.
+ */
+private fun BytecodePatchContext.keepHeaderOpen(native: Method, nativeMethod: MutableMethod, group: GroupRead, start: StartRead) {
+    val seed = headerSeed(native, group, start)
+    val headerClass = seed?.takeIf { classDefByOrNull(it.headerClass) != null }?.let { mutableClassDefBy(it.headerClass) }
+    val reads = headerClass?.let(::headerStateReads)
+    if (seed == null || headerClass == null || reads == null || reads.count { it.click } != 1 || reads.all { it.click } ||
+        headerClass.fields.any { it.name == HEADER_FLAG }
+    ) {
+        patchLog.warning(
+            "$PATCH: ${native.definingClass}->${native.name} doesn't seed one header whose render and tap handler each " +
+                "read its collapsed state once. A tap on a Settings and privacy kept open turns its arrow down.",
+        )
+        return
+    }
+    headerClass.instanceFields.add(
+        ImmutableField(headerClass.type, HEADER_FLAG, "Z", AccessFlags.PUBLIC.value, null, null, null).toMutable(),
+    )
+    nativeMethod.seedHeaderFlag(seed)
+    reads.forEach { headerClass.findMutableMethodOf(it.method).keepReadOpen(it, headerClass.type) }
+}
+
+/**
+ * Right after the native section seeds its header, the group goes to [HEADER_KEPT_OPEN] and the
+ * answer into the header's [HEADER_FLAG]. The group goes through the range form, which names any
+ * register. The store's operands are 4-bit, so the one register borrowed is a free local no higher
+ * than v15, and the header's register is already one, the seed's own store naming it.
+ */
+internal fun MutableMethod.seedHeaderFlag(seed: HeaderSeed) {
+    val index = seed.index + 1
+    val flag = freeLocalsAt(PATCH, index, 1).single()
+    addInstructions(
+        index,
+        """
+            invoke-static/range { v${seed.group} .. v${seed.group} }, $HEADER_KEPT_OPEN
+            move-result v$flag
+            iput-boolean v$flag, v${seed.header}, ${seed.headerClass}->$HEADER_FLAG:Z
+        """.trimIndent(),
+    )
+}
+
+/**
+ * Right before [read]'s stash the header's [HEADER_FLAG] goes into the read's free local, and right
+ * after the read a marked header reads as expanded: the render clears the collapsed state it reads,
+ * and the tap handler sets it, so the flip it hands on and the label it sets both say expanded.
+ * Booleans stay booleans through `and-int`, `or-int` and an `xor-int/lit8` with 1, so the method
+ * verifies as before. The code after the read goes in first, so the stash stays where it was found.
+ */
+internal fun MutableMethod.keepReadOpen(read: HeaderStateRead, headerClass: String) {
+    val mark = read.free
+    val state = read.register
+    val force = if (read.click) {
+        "or-int v$state, v$state, v$mark"
+    } else {
+        """
+            xor-int/lit8 v$mark, v$mark, 0x1
+            and-int v$state, v$state, v$mark
+        """.trimIndent()
+    }
+    addInstructions(read.read + 1, force)
+    addInstructions(read.stash, "iget-boolean v$mark, v${read.header}, $headerClass->$HEADER_FLAG:Z")
 }
 
 /**

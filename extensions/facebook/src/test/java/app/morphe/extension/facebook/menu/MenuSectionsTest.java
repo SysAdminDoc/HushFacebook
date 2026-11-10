@@ -144,6 +144,31 @@ public class MenuSectionsTest {
     }
 
     /**
+     * Only the Settings and privacy header is marked to stay open, and only while Keep Settings and
+     * privacy expanded is on (#224 follow-up). Anything but that enum, a pause or settings that
+     * aren't ready leave every header to its own state.
+     */
+    @Test
+    public void onlyTheSettingsAndPrivacyHeaderIsKeptOpenAndOnlyByItsSwitch() {
+        assertFalse("off, the header goes by its state", MenuSections.keepsHeaderOpen(Group.SETTINGS));
+
+        Settings.KEEP_MENU_SETTINGS_EXPANDED.save(true);
+        assertTrue("on, the Settings and privacy header stays open", MenuSections.keepsHeaderOpen(Group.SETTINGS));
+        for (Group group : Group.values()) {
+            if (group == Group.SETTINGS) continue;
+            assertFalse(group + "'s header was kept open", MenuSections.keepsHeaderOpen(group));
+        }
+        assertFalse("a title isn't a group", MenuSections.keepsHeaderOpen("SETTINGS"));
+        assertFalse(MenuSections.keepsHeaderOpen(null));
+
+        boolean[] open = {true};
+        SettingsContextRule.withoutContext(() -> open[0] = MenuSections.keepsHeaderOpen(Group.SETTINGS));
+        assertFalse("until the settings are ready, the header goes by its state", open[0]);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused, the header goes by its state", MenuSections.keepsHeaderOpen(Group.SETTINGS));
+    }
+
+    /**
      * A Menu built before a switch changed keeps its groups on screen even though both sections
      * ask again, so each switch brings up the restart row (#184).
      */

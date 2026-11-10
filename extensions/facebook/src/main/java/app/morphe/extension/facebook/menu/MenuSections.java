@@ -35,7 +35,8 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  * <p>Right after that, the native section asks {@link #collapsed} whether the group is folded up
  * under its header, which Facebook keeps in the section's own state and flips on each tap. Settings
  * and privacy (SETTINGS) can be kept open by a switch (issue #224); every other group, and that one
- * with the switch off, folds up as Facebook has it.
+ * with the switch off, folds up as Facebook has it. It also asks {@link #keepsHeaderOpen} as it
+ * makes the group's header, whose answer keeps that header's arrow up through a tap.
  */
 public final class MenuSections {
     /** The enum name of the Upgrades group. */
@@ -65,10 +66,11 @@ public final class MenuSections {
     /** What a hidden Help and support group is counted under. */
     static final String HELP_HIDDEN = "Help and support";
 
-    /** The Hook status names of the three hooks. */
+    /** The Hook status names of the four hooks. */
     static final String NATIVE_HOOK = "Menu section";
     static final String SERVER_HOOK = "Menu server section";
     static final String STATE_HOOK = "Menu section state";
+    static final String HEADER_HOOK = "Menu section header";
 
     /** Distinct debug lines kept, so a Menu opened again and again doesn't fill the log. */
     private static final int MAX_LOGGED = 64;
@@ -117,6 +119,30 @@ public final class MenuSections {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.MENU_PROMOTIONS, STATE_HOOK, failure);
             return collapsed;
+        }
+    }
+
+    /**
+     * Injection point, in the children builder of the section Facebook draws for a Menu group,
+     * right after it seeds the header it makes. The header keeps whether it's collapsed in a state
+     * of its own after that and flips it on every tap, so true marks the header, and its render and
+     * tap handler then take it as expanded whatever that state says. Settings and privacy is marked
+     * while Keep Settings and privacy expanded is on, so a tap on its header leaves the arrow up
+     * over rows that stay. Never throws.
+     */
+    public static boolean keepsHeaderOpen(@Nullable Object group) {
+        try {
+            HookStatus.invoked(FamilyNames.MENU_PROMOTIONS);
+            if (!(group instanceof Enum)) return false;
+            HookStatus.bound(FamilyNames.MENU_PROMOTIONS, HEADER_HOOK);
+            if (!SETTINGS.equals(((Enum<?>) group).name())) return false;
+            // Ready first: Settings loads every switch, and it can't before the context is set.
+            boolean open = Utils.settingsReady() && Settings.KEEP_MENU_SETTINGS_EXPANDED.get();
+            log(HEADER_HOOK, SETTINGS, open ? "header kept open" : "header left as is");
+            return open;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.MENU_PROMOTIONS, HEADER_HOOK, failure);
+            return false;
         }
     }
 

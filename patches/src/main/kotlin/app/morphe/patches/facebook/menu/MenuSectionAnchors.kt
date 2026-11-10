@@ -7,9 +7,13 @@ package app.morphe.patches.facebook.menu
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.layout.theme.branchTargets
+import app.morphe.patches.facebook.misc.extension.liveAcrossInjection
+import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.util.literalReads
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -221,6 +225,106 @@ private fun seedsAnother(method: Method, instructions: List<Instruction>, index:
     return store.opcode == Opcode.IPUT_BOOLEAN && (store as TwoRegisterInstruction).registerA == negate.registerA &&
         field.definingClass != method.definingClass
 }
+
+/**
+ * Where the native section seeds its new header with whether the group starts collapsed: the
+ * `iput-boolean` at [index] into the header in [header], an instance of [headerClass], with the
+ * section's group still in [group].
+ */
+internal data class HeaderSeed(val index: Int, val header: Int, val headerClass: String, val group: Int)
+
+/**
+ * The store [start]'s one negation goes to, as long as the group [group] read is all [group]'s
+ * register can hold there and no branch lands right after it. The header only takes that seed when
+ * it's first drawn; after that it keeps whether it's collapsed in its own state and flips it on a
+ * tap, so a group kept open (issue #224) also marks the header it makes, and [headerStateReads]
+ * finds where that mark goes in. On 586 (`LX/0D4P;->A0s` arm64) the store is `LX/0OC1;->A07` from
+ * v0, with the group in v2.
+ */
+internal fun headerSeed(method: Method, group: GroupRead, start: StartRead): HeaderSeed? {
+    val instructions = method.instructionList()
+    val negate = method.literalReads(start.index).singleOrNull() ?: return null
+    if (!seedsAnother(method, instructions, negate, start.register)) return null
+    val store = negate + 1
+    if (store + 1 in branchTargets(instructions)) return null
+    if (method.writersReaching(store, group.register) != listOf(group.index)) return null
+    val field = (instructions[store] as ReferenceInstruction).reference as FieldReference
+    return HeaderSeed(store, (instructions[store] as TwoRegisterInstruction).registerB, field.definingClass, group.register)
+}
+
+/** The header's tap handler loads this as it flips whether its group is collapsed. */
+internal const val HEADER_TOGGLE = "updateState:FolderHeaderComponent.toggleCollapsed"
+
+/**
+ * Where a method of the header reads whether its group is collapsed: [method] reads it at [read]
+ * into [register]. [stash] is the last read before it of a field of the header, out of [header],
+ * and [free] a local no higher than v15 that nothing reads from [stash] on or writes up to [read],
+ * to fetch the header's mark into beside it. [click] marks the tap handler, the one holding
+ * [HEADER_TOGGLE], which hands the flipped state on and labels the header with it.
+ */
+internal data class HeaderStateRead(
+    val method: Method,
+    val stash: Int,
+    val header: Int,
+    val read: Int,
+    val register: Int,
+    val free: Int,
+    val click: Boolean,
+)
+
+private val INSTANCE_READS = setOf(
+    Opcode.IGET, Opcode.IGET_WIDE, Opcode.IGET_OBJECT, Opcode.IGET_BOOLEAN, Opcode.IGET_BYTE, Opcode.IGET_CHAR,
+    Opcode.IGET_SHORT,
+)
+
+/**
+ * Every read in [header]'s methods of whether its group is collapsed, or null unless each one fits.
+ * The state is the one boolean the tap handler reads from a class it casts to, the header aside. On
+ * 586 the header is `LX/0OC1;`, its state `LX/0Pf1;->A01`, read by the render (`A1E`, at 15, after
+ * `A08` at 14) for the chevron and the "Section is collapsed" label, and by the tap handler (`A1H`,
+ * at 25), which reads `A08` at 23 into the register that held the header, so the mark is fetched
+ * before that read.
+ */
+internal fun headerStateReads(header: ClassDef): List<HeaderStateRead>? {
+    val click = header.methods.singleOrNull { holdsString(it, HEADER_TOGGLE) } ?: return null
+    val clickCode = click.instructionList()
+    val cast = clickCode.filter { it.opcode == Opcode.CHECK_CAST }
+        .map { ((it as ReferenceInstruction).reference as TypeReference).type }
+        .toSet() - header.type
+    val stateReads = clickCode.mapNotNull { instruction ->
+        val field = (instruction as? ReferenceInstruction)?.reference as? FieldReference
+        field?.takeIf { instruction.opcode == Opcode.IGET_BOOLEAN && it.definingClass in cast }
+    }
+    val state = stateReads.singleOrNull()?.let(::fieldKey) ?: return null
+    fun readsState(instruction: Instruction) = instruction.opcode == Opcode.IGET_BOOLEAN &&
+        ((instruction as ReferenceInstruction).reference as? FieldReference)?.let(::fieldKey) == state
+    val readers = header.methods.filter { method -> method.instructionList().any(::readsState) }
+    return readers.map { method ->
+        val instructions = method.instructionList()
+        val read = instructions.indices.singleOrNull { readsState(instructions[it]) } ?: return null
+        val stash = (read - 1 downTo 0).firstOrNull { index ->
+            val field = (instructions[index] as? ReferenceInstruction)?.reference as? FieldReference
+            instructions[index].opcode in INSTANCE_READS && field?.definingClass == header.type
+        } ?: return null
+        val targets = branchTargets(instructions)
+        if ((stash..read + 1).any { it in targets }) return null
+        val live = method.liveAcrossInjection(stash)
+        val free = (0 until minOf(method.localRegisterCount(), 16)).firstOrNull { register ->
+            register !in live && (stash..read).none { writesRegister(instructions[it], register) }
+        } ?: return null
+        HeaderStateRead(
+            method,
+            stash,
+            (instructions[stash] as TwoRegisterInstruction).registerB,
+            read,
+            (instructions[read] as OneRegisterInstruction).registerA,
+            free,
+            holdsString(method, HEADER_TOGGLE),
+        )
+    }
+}
+
+private fun fieldKey(field: FieldReference) = "${field.definingClass}->${field.name}:${field.type}"
 
 /**
  * The children list builder a section hands its children back through: the class [method] creates
