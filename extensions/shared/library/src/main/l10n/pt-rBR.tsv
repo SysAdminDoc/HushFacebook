@@ -859,9 +859,9 @@ Hide post prompts	Ocultar as perguntas abaixo das publicações
 # context: description of that switch; the quoted texts are Facebook's own prompts, so use Facebook's wording in your language if you know it
 Hides the strip on some posts, like "Are you interested in this post?" or who recently commented, plus follow and chat suggestions there. The post stays.	Oculta a faixa em algumas publicações, como “Você tem interesse nesta publicação?” ou quem comentou recentemente, além de sugestões de seguir e de conversar. A publicação continua.
 # context: switch title under News feed; the Follow link is the small "Follow" text after a poster's name in a post's header
-Hide the Follow link on posts	Ocultar o link Seguir nas publicações
+Hide the Follow and Subscribe links on posts	Ocultar os links Seguir e Inscrever-se nas publicações
 # context: description of that switch; "Follow" is Facebook's own word for the link, so use Facebook's wording in your language if you know it
-Hides the "Follow" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.	Oculta o link «Seguir» ao lado do nome nas publicações de Páginas e de pessoas que você não segue. Tocar no nome continua abrindo o perfil. A mudança aparece nas publicações carregadas depois dela.
+Hides the "Follow" or "Subscribe" link next to the name on posts and videos from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.	Oculta o link «Seguir» ou «Inscrever-se» ao lado do nome nas publicações e vídeos de Páginas e de pessoas que você não segue. Tocar no nome continua abrindo o perfil. A mudança aparece nas publicações carregadas depois dela.
 # context: switch title under News feed; Meta AI is the name of Meta's assistant, and the questions are the row of suggested questions for it that Facebook puts under some posts
 Hide Meta AI questions under posts	Ocultar as perguntas da Meta AI abaixo das publicações
 # context: description of that switch; a link card is the preview of a shared link inside a post

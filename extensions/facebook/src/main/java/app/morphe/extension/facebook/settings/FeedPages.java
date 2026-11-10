@@ -280,8 +280,8 @@ final class FeedPages {
                         L10n.t("Hides the strip on some posts, like \"Are you interested in this post?\" or who recently commented, "
                                 + "plus follow and chat suggestions there. The post stays.")));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_FOLLOW_LINK,
-                        L10n.t("Hides the \"Follow\" link next to the name on posts from Pages and people you don't follow. "
-                                + "Tapping the name still opens the profile. A change shows on the posts drawn after it.")));
+                        L10n.t("Hides the \"Follow\" or \"Subscribe\" link next to the name on posts and videos from Pages and people "
+                                + "you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.")));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_JOIN_BUTTON,
                         L10n.t("Hides the Join button next to the group's name on posts from groups you haven't joined, "
                                 + "and the Join group bar under their videos. A change shows on the posts drawn after it.")));

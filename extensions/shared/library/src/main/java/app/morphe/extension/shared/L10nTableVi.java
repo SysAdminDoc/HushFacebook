@@ -1379,10 +1379,10 @@ final class L10nTableVi {
                 "\u1ea8n tab B\u1ea3ng feed");
         table.put("Hide the Find friends card",
                 "\u1ea8n th\u1ebb T\u00ecm b\u1ea1n b\u00e8");
+        table.put("Hide the Follow and Subscribe links on posts",
+                "\u1ea8n li\u00ean k\u1ebft Theo d\u00f5i v\u00e0 \u0110\u0103ng k\u00fd tr\u00ean b\u00e0i vi\u1ebft");
         table.put("Hide the Follow button on reels",
                 "\u1ea8n n\u00fat Theo d\u00f5i tr\u00ean reel");
-        table.put("Hide the Follow link on posts",
-                "\u1ea8n li\u00ean k\u1ebft Theo d\u00f5i tr\u00ean b\u00e0i vi\u1ebft");
         table.put("Hide the Free mode banner",
                 "\u1ea8n bi\u1ec3u ng\u1eef Ch\u1ebf \u0111\u1ed9 mi\u1ec5n ph\u00ed");
         table.put("Hide the Friends tab",
@@ -1575,8 +1575,8 @@ final class L10nTableVi {
                 "\u1ea8n b\u00e0i vi\u1ebft ng\u1eafn hi\u1ec3n th\u1ecb d\u1ea1ng ch\u1eef l\u1edbn tr\u00ean n\u1ec1n m\u00e0u.");
         table.put("Hides the \"Commission eligible\" label under the creator's name on reels.",
                 "\u1ea8n nh\u00e3n \"\u0110\u1ee7 \u0111i\u1ec1u ki\u1ec7n nh\u1eadn hoa h\u1ed3ng\" d\u01b0\u1edbi t\u00ean nh\u00e0 s\u00e1ng t\u1ea1o tr\u00ean reel.");
-        table.put("Hides the \"Follow\" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
-                "\u1ea8n li\u00ean k\u1ebft \"Theo d\u00f5i\" c\u1ea1nh t\u00ean tr\u00ean b\u00e0i vi\u1ebft t\u1eeb Trang v\u00e0 ng\u01b0\u1eddi b\u1ea1n kh\u00f4ng theo d\u00f5i. Nh\u1ea5n v\u00e0o t\u00ean v\u1eabn m\u1edf trang c\u00e1 nh\u00e2n. Thay \u0111\u1ed5i hi\u1ec7n tr\u00ean c\u00e1c b\u00e0i vi\u1ebft hi\u1ec3n th\u1ecb sau \u0111\u00f3.");
+        table.put("Hides the \"Follow\" or \"Subscribe\" link next to the name on posts and videos from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
+                "\u1ea8n li\u00ean k\u1ebft \"Theo d\u00f5i\" ho\u1eb7c \"\u0110\u0103ng k\u00fd\" c\u1ea1nh t\u00ean tr\u00ean b\u00e0i vi\u1ebft v\u00e0 video t\u1eeb Trang v\u00e0 ng\u01b0\u1eddi b\u1ea1n kh\u00f4ng theo d\u00f5i. Nh\u1ea5n v\u00e0o t\u00ean v\u1eabn m\u1edf trang c\u00e1 nh\u00e2n. Thay \u0111\u1ed5i hi\u1ec7n tr\u00ean c\u00e1c b\u00e0i vi\u1ebft hi\u1ec3n th\u1ecb sau \u0111\u00f3.");
         table.put("Hides the \"Related posts\" list Facebook adds under some posts, with its titles written by Meta AI. The post and its comments stay.",
                 "\u1ea8n danh s\u00e1ch \"B\u00e0i vi\u1ebft li\u00ean quan\" m\u00e0 Facebook th\u00eam b\u00ean d\u01b0\u1edbi m\u1ed9t s\u1ed1 b\u00e0i vi\u1ebft, v\u1edbi ti\u00eau \u0111\u1ec1 do Meta AI vi\u1ebft. B\u00e0i vi\u1ebft v\u00e0 b\u00ecnh lu\u1eadn c\u1ee7a n\u00f3 v\u1eabn c\u00f2n.");
         table.put("Hides the \"Threads you might like\" card between reels. Off by default, since it hasn't been tried on a real account yet.",

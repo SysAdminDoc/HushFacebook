@@ -1379,10 +1379,10 @@ final class L10nTableZh_rTW {
                 "\u96b1\u85cf\u52d5\u614b\u6d88\u606f\u5206\u9801");
         table.put("Hide the Find friends card",
                 "\u96b1\u85cf\u5c0b\u627e\u670b\u53cb\u5361\u7247");
+        table.put("Hide the Follow and Subscribe links on posts",
+                "\u96b1\u85cf\u8cbc\u6587\u4e0a\u7684\u8ffd\u8e64\u548c\u8a02\u95b1\u9023\u7d50");
         table.put("Hide the Follow button on reels",
                 "\u96b1\u85cf Reels \u7684\u8ffd\u8e64\u6309\u9215");
-        table.put("Hide the Follow link on posts",
-                "\u96b1\u85cf\u8cbc\u6587\u4e0a\u7684\u8ffd\u8e64\u9023\u7d50");
         table.put("Hide the Free mode banner",
                 "\u96b1\u85cf\u514d\u8cbb\u6a21\u5f0f\u6a6b\u5e45");
         table.put("Hide the Friends tab",
@@ -1575,8 +1575,8 @@ final class L10nTableZh_rTW {
                 "\u96b1\u85cf\u4ee5\u5f69\u8272\u80cc\u666f\u8207\u5927\u5b57\u986f\u793a\u7684\u77ed\u8cbc\u6587\u3002");
         table.put("Hides the \"Commission eligible\" label under the creator's name on reels.",
                 "\u96b1\u85cf Reels \u5275\u4f5c\u8005\u59d3\u540d\u4e0b\u65b9\u7684\u300c\u53ef\u7372\u5f97\u4f63\u91d1\u300d\u6a19\u7c64\u3002");
-        table.put("Hides the \"Follow\" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
-                "\u96b1\u85cf\u672a\u8ffd\u8e64\u4eba\u7269\u6216\u7c89\u7d72\u5c08\u9801\u8cbc\u6587\u4e2d\uff0c\u540d\u7a31\u65c1\u7684\u300c\u8ffd\u8e64\u300d\u9023\u7d50\u3002\u9ede\u6309\u540d\u7a31\u4ecd\u53ef\u958b\u555f\u500b\u4eba\u6a94\u6848\u3002\u8b8a\u66f4\u5f8c\u7e6a\u88fd\u7684\u8cbc\u6587\u624d\u6703\u751f\u6548\u3002");
+        table.put("Hides the \"Follow\" or \"Subscribe\" link next to the name on posts and videos from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
+                "\u96b1\u85cf\u672a\u8ffd\u8e64\u4eba\u7269\u6216\u7c89\u7d72\u5c08\u9801\u8cbc\u6587\u548c\u5f71\u7247\u4e2d\uff0c\u540d\u7a31\u65c1\u7684\u300c\u8ffd\u8e64\u300d\u6216\u300c\u8a02\u95b1\u300d\u9023\u7d50\u3002\u9ede\u6309\u540d\u7a31\u4ecd\u53ef\u958b\u555f\u500b\u4eba\u6a94\u6848\u3002\u8b8a\u66f4\u5f8c\u7e6a\u88fd\u7684\u8cbc\u6587\u624d\u6703\u751f\u6548\u3002");
         table.put("Hides the \"Related posts\" list Facebook adds under some posts, with its titles written by Meta AI. The post and its comments stay.",
                 "\u96b1\u85cf Facebook \u5728\u90e8\u5206\u8cbc\u6587\u4e0b\u65b9\u52a0\u5165\u7684\u300c\u76f8\u95dc\u8cbc\u6587\u300d\u6e05\u55ae\uff0c\u5176\u4e2d\u7684\u6a19\u984c\u7531 Meta AI \u64b0\u5beb\u3002\u8cbc\u6587\u8207\u7559\u8a00\u4ecd\u6703\u4fdd\u7559\u3002");
         table.put("Hides the \"Threads you might like\" card between reels. Off by default, since it hasn't been tried on a real account yet.",

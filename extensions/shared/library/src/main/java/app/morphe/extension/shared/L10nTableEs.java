@@ -1379,10 +1379,10 @@ final class L10nTableEs {
                 "Ocultar la pesta\u00f1a Feeds");
         table.put("Hide the Find friends card",
                 "Ocultar la tarjeta Buscar amigos");
+        table.put("Hide the Follow and Subscribe links on posts",
+                "Ocultar los enlaces Seguir y Suscribirse en las publicaciones");
         table.put("Hide the Follow button on reels",
                 "Ocultar el bot\u00f3n Seguir en los reels");
-        table.put("Hide the Follow link on posts",
-                "Ocultar el enlace Seguir en las publicaciones");
         table.put("Hide the Free mode banner",
                 "Ocultar el banner del modo gratuito");
         table.put("Hide the Friends tab",
@@ -1575,8 +1575,8 @@ final class L10nTableEs {
                 "Oculta las publicaciones cortas que se muestran como texto grande sobre un fondo de color.");
         table.put("Hides the \"Commission eligible\" label under the creator's name on reels.",
                 "Oculta la etiqueta \u00abApto para comisi\u00f3n\u00bb bajo el nombre del creador en los reels.");
-        table.put("Hides the \"Follow\" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
-                "Oculta el enlace \u00abSeguir\u00bb junto al nombre en las publicaciones de p\u00e1ginas y personas a las que no sigues. Al tocar el nombre se sigue abriendo el perfil. Un cambio se ve en las publicaciones que se carguen despu\u00e9s.");
+        table.put("Hides the \"Follow\" or \"Subscribe\" link next to the name on posts and videos from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
+                "Oculta el enlace \u00abSeguir\u00bb o \u00abSuscribirse\u00bb junto al nombre en las publicaciones y v\u00eddeos de p\u00e1ginas y personas a las que no sigues. Al tocar el nombre se sigue abriendo el perfil. Un cambio se ve en las publicaciones que se carguen despu\u00e9s.");
         table.put("Hides the \"Related posts\" list Facebook adds under some posts, with its titles written by Meta AI. The post and its comments stay.",
                 "Oculta la lista \u00abPublicaciones relacionadas\u00bb que Facebook a\u00f1ade debajo de algunas publicaciones, con t\u00edtulos escritos por Meta AI. La publicaci\u00f3n y sus comentarios se quedan.");
         table.put("Hides the \"Threads you might like\" card between reels. Off by default, since it hasn't been tried on a real account yet.",

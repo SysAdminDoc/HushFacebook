@@ -1379,10 +1379,10 @@ final class L10nTablePt_rBR {
                 "Ocultar a aba Feeds");
         table.put("Hide the Find friends card",
                 "Ocultar o cart\u00e3o Encontrar amigos");
+        table.put("Hide the Follow and Subscribe links on posts",
+                "Ocultar os links Seguir e Inscrever-se nas publica\u00e7\u00f5es");
         table.put("Hide the Follow button on reels",
                 "Ocultar o bot\u00e3o Seguir nos Reels");
-        table.put("Hide the Follow link on posts",
-                "Ocultar o link Seguir nas publica\u00e7\u00f5es");
         table.put("Hide the Free mode banner",
                 "Ocultar o banner do modo gratuito");
         table.put("Hide the Friends tab",
@@ -1575,8 +1575,8 @@ final class L10nTablePt_rBR {
                 "Oculta publica\u00e7\u00f5es curtas exibidas como texto grande sobre um fundo colorido.");
         table.put("Hides the \"Commission eligible\" label under the creator's name on reels.",
                 "Oculta o r\u00f3tulo \u201cEleg\u00edvel para comiss\u00e3o\u201d abaixo do nome do criador nos reels.");
-        table.put("Hides the \"Follow\" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
-                "Oculta o link \u00abSeguir\u00bb ao lado do nome nas publica\u00e7\u00f5es de P\u00e1ginas e de pessoas que voc\u00ea n\u00e3o segue. Tocar no nome continua abrindo o perfil. A mudan\u00e7a aparece nas publica\u00e7\u00f5es carregadas depois dela.");
+        table.put("Hides the \"Follow\" or \"Subscribe\" link next to the name on posts and videos from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
+                "Oculta o link \u00abSeguir\u00bb ou \u00abInscrever-se\u00bb ao lado do nome nas publica\u00e7\u00f5es e v\u00eddeos de P\u00e1ginas e de pessoas que voc\u00ea n\u00e3o segue. Tocar no nome continua abrindo o perfil. A mudan\u00e7a aparece nas publica\u00e7\u00f5es carregadas depois dela.");
         table.put("Hides the \"Related posts\" list Facebook adds under some posts, with its titles written by Meta AI. The post and its comments stay.",
                 "Oculta a lista \"Publica\u00e7\u00f5es relacionadas\" que o Facebook adiciona abaixo de algumas publica\u00e7\u00f5es, com t\u00edtulos escritos pela Meta AI. A publica\u00e7\u00e3o e os coment\u00e1rios continuam.");
         table.put("Hides the \"Threads you might like\" card between reels. Off by default, since it hasn't been tried on a real account yet.",

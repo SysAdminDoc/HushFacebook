@@ -1379,10 +1379,10 @@ final class L10nTableDe {
                 "Feeds-Tab ausblenden");
         table.put("Hide the Find friends card",
                 "Karte \u201eFreunde finden\u201c ausblenden");
+        table.put("Hide the Follow and Subscribe links on posts",
+                "Folgen- und Abonnieren-Links bei Beitr\u00e4gen ausblenden");
         table.put("Hide the Follow button on reels",
                 "Folgen-Button bei Reels ausblenden");
-        table.put("Hide the Follow link on posts",
-                "Folgen-Link bei Beitr\u00e4gen ausblenden");
         table.put("Hide the Free mode banner",
                 "Banner f\u00fcr den kostenlosen Modus ausblenden");
         table.put("Hide the Friends tab",
@@ -1575,8 +1575,8 @@ final class L10nTableDe {
                 "Blendet kurze Beitr\u00e4ge aus, die als gro\u00dfer Text auf farbigem Hintergrund erscheinen.");
         table.put("Hides the \"Commission eligible\" label under the creator's name on reels.",
                 "Blendet das Label \u201eProvisionsberechtigt\u201c unter dem Namen des Creators bei Reels aus.");
-        table.put("Hides the \"Follow\" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
-                "Blendet den Link \u201eFolgen\u201c neben dem Namen bei Beitr\u00e4gen von Seiten und Personen aus, denen du nicht folgst. Ein Tipp auf den Namen \u00f6ffnet weiterhin das Profil. Eine \u00c4nderung gilt f\u00fcr Beitr\u00e4ge, die danach geladen werden.");
+        table.put("Hides the \"Follow\" or \"Subscribe\" link next to the name on posts and videos from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
+                "Blendet den Link \u201eFolgen\u201c oder \u201eAbonnieren\u201c neben dem Namen bei Beitr\u00e4gen und Videos von Seiten und Personen aus, denen du nicht folgst. Ein Tipp auf den Namen \u00f6ffnet weiterhin das Profil. Eine \u00c4nderung gilt f\u00fcr Beitr\u00e4ge, die danach geladen werden.");
         table.put("Hides the \"Related posts\" list Facebook adds under some posts, with its titles written by Meta AI. The post and its comments stay.",
                 "Blendet die Liste \u201e\u00c4hnliche Beitr\u00e4ge\u201c aus, die Facebook unter manchen Beitr\u00e4gen anh\u00e4ngt, samt ihren von Meta AI geschriebenen Titeln. Der Beitrag und seine Kommentare bleiben.");
         table.put("Hides the \"Threads you might like\" card between reels. Off by default, since it hasn't been tried on a real account yet.",

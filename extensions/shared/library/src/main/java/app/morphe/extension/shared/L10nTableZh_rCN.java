@@ -1379,10 +1379,10 @@ final class L10nTableZh_rCN {
                 "\u9690\u85cf\u201c\u52a8\u6001\u201d\u6807\u7b7e\u9875");
         table.put("Hide the Find friends card",
                 "\u9690\u85cf\u201c\u67e5\u627e\u597d\u53cb\u201d\u5361\u7247");
+        table.put("Hide the Follow and Subscribe links on posts",
+                "\u9690\u85cf\u5e16\u5b50\u4e0a\u7684\u201c\u5173\u6ce8\u201d\u548c\u201c\u8ba2\u9605\u201d\u94fe\u63a5");
         table.put("Hide the Follow button on reels",
                 "\u9690\u85cf Reels \u4e0a\u7684\u5173\u6ce8\u6309\u94ae");
-        table.put("Hide the Follow link on posts",
-                "\u9690\u85cf\u5e16\u5b50\u4e0a\u7684\u201c\u5173\u6ce8\u201d\u94fe\u63a5");
         table.put("Hide the Free mode banner",
                 "\u9690\u85cf\u201c\u514d\u8d39\u6a21\u5f0f\u201d\u6a2a\u5e45");
         table.put("Hide the Friends tab",
@@ -1575,8 +1575,8 @@ final class L10nTableZh_rCN {
                 "\u9690\u85cf\u4ee5\u5f69\u8272\u80cc\u666f\u4e0a\u7684\u5927\u5b57\u663e\u793a\u7684\u77ed\u5e16\u5b50\u3002");
         table.put("Hides the \"Commission eligible\" label under the creator's name on reels.",
                 "\u9690\u85cf Reels \u521b\u4f5c\u8005\u59d3\u540d\u4e0b\u65b9\u7684\u201c\u7b26\u5408\u4f63\u91d1\u6761\u4ef6\u201d\u6807\u7b7e\u3002");
-        table.put("Hides the \"Follow\" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
-                "\u9690\u85cf\u6765\u81ea\u4f60\u672a\u5173\u6ce8\u7684\u516c\u5171\u4e3b\u9875\u548c\u7528\u6237\u7684\u5e16\u5b50\u4e2d\uff0c\u540d\u5b57\u65c1\u8fb9\u7684\u201c\u5173\u6ce8\u201d\u94fe\u63a5\u3002\u70b9\u6309\u540d\u5b57\u4ecd\u4f1a\u6253\u5f00\u4e2a\u4eba\u4e3b\u9875\u3002\u66f4\u6539\u4f1a\u5728\u4e4b\u540e\u7ed8\u5236\u7684\u5e16\u5b50\u4e0a\u663e\u793a\u3002");
+        table.put("Hides the \"Follow\" or \"Subscribe\" link next to the name on posts and videos from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
+                "\u9690\u85cf\u6765\u81ea\u4f60\u672a\u5173\u6ce8\u7684\u516c\u5171\u4e3b\u9875\u548c\u7528\u6237\u7684\u5e16\u5b50\u548c\u89c6\u9891\u4e2d\uff0c\u540d\u5b57\u65c1\u8fb9\u7684\u201c\u5173\u6ce8\u201d\u6216\u201c\u8ba2\u9605\u201d\u94fe\u63a5\u3002\u70b9\u6309\u540d\u5b57\u4ecd\u4f1a\u6253\u5f00\u4e2a\u4eba\u4e3b\u9875\u3002\u66f4\u6539\u4f1a\u5728\u4e4b\u540e\u7ed8\u5236\u7684\u5e16\u5b50\u4e0a\u663e\u793a\u3002");
         table.put("Hides the \"Related posts\" list Facebook adds under some posts, with its titles written by Meta AI. The post and its comments stay.",
                 "\u9690\u85cf Facebook \u5728\u90e8\u5206\u5e16\u5b50\u4e0b\u65b9\u6dfb\u52a0\u7684\u201c\u76f8\u5173\u5e16\u5b50\u201d\u5217\u8868\u53ca\u5176\u7531 Meta AI \u64b0\u5199\u7684\u6807\u9898\u3002\u5e16\u5b50\u53ca\u5176\u8bc4\u8bba\u4fdd\u7559\u3002");
         table.put("Hides the \"Threads you might like\" card between reels. Off by default, since it hasn't been tried on a real account yet.",

@@ -973,9 +973,9 @@ Hide post prompts	Ẩn lời nhắc dưới bài viết
 # context: description of that switch; the quoted texts are Facebook's own prompts, so use Facebook's wording in your language if you know it
 Hides the strip on some posts, like "Are you interested in this post?" or who recently commented, plus follow and chat suggestions there. The post stays.	Ẩn dải trên một số bài viết, như "Bạn có quan tâm đến bài viết này không?" hoặc ai vừa bình luận, cùng gợi ý theo dõi và chat ở đó. Bài viết vẫn giữ nguyên.
 # context: switch title under News feed; the Follow link is the small "Follow" text after a poster's name in a post's header
-Hide the Follow link on posts	Ẩn liên kết Theo dõi trên bài viết
+Hide the Follow and Subscribe links on posts	Ẩn liên kết Theo dõi và Đăng ký trên bài viết
 # context: description of that switch; "Follow" is Facebook's own word for the link, so use Facebook's wording in your language if you know it
-Hides the "Follow" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.	Ẩn liên kết "Theo dõi" cạnh tên trên bài viết từ Trang và người bạn không theo dõi. Nhấn vào tên vẫn mở trang cá nhân. Thay đổi hiện trên các bài viết hiển thị sau đó.
+Hides the "Follow" or "Subscribe" link next to the name on posts and videos from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.	Ẩn liên kết "Theo dõi" hoặc "Đăng ký" cạnh tên trên bài viết và video từ Trang và người bạn không theo dõi. Nhấn vào tên vẫn mở trang cá nhân. Thay đổi hiện trên các bài viết hiển thị sau đó.
 # context: switch title under News feed; Meta AI is the name of Meta's assistant, and the questions are the row of suggested questions for it that Facebook puts under some posts
 Hide Meta AI questions under posts	Ẩn câu hỏi Meta AI dưới bài viết
 # context: description of that switch; a link card is the preview of a shared link inside a post

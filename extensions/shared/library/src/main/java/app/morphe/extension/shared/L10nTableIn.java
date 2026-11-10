@@ -1379,10 +1379,10 @@ final class L10nTableIn {
                 "Sembunyikan tab Feed");
         table.put("Hide the Find friends card",
                 "Sembunyikan kartu Cari teman");
+        table.put("Hide the Follow and Subscribe links on posts",
+                "Sembunyikan tautan Ikuti dan Berlangganan di postingan");
         table.put("Hide the Follow button on reels",
                 "Sembunyikan tombol Ikuti di reel");
-        table.put("Hide the Follow link on posts",
-                "Sembunyikan tautan Ikuti di postingan");
         table.put("Hide the Free mode banner",
                 "Sembunyikan banner Mode Gratis");
         table.put("Hide the Friends tab",
@@ -1575,8 +1575,8 @@ final class L10nTableIn {
                 "Menyembunyikan postingan pendek yang tampil sebagai teks besar di atas latar berwarna.");
         table.put("Hides the \"Commission eligible\" label under the creator's name on reels.",
                 "Menyembunyikan label \u201cMemenuhi syarat komisi\u201d di bawah nama kreator pada reel.");
-        table.put("Hides the \"Follow\" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
-                "Menyembunyikan tautan \"Ikuti\" di samping nama pada postingan dari Halaman dan orang yang tidak kamu ikuti. Mengetuk nama tetap membuka profil. Perubahan terlihat pada postingan yang dimuat setelahnya.");
+        table.put("Hides the \"Follow\" or \"Subscribe\" link next to the name on posts and videos from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
+                "Menyembunyikan tautan \"Ikuti\" atau \"Berlangganan\" di samping nama pada postingan dan video dari Halaman dan orang yang tidak kamu ikuti. Mengetuk nama tetap membuka profil. Perubahan terlihat pada postingan yang dimuat setelahnya.");
         table.put("Hides the \"Related posts\" list Facebook adds under some posts, with its titles written by Meta AI. The post and its comments stay.",
                 "Menyembunyikan daftar \"Postingan terkait\" yang ditambahkan Facebook di bawah beberapa postingan, dengan judul yang ditulis oleh Meta AI. Postingan dan komentarnya tetap ada.");
         table.put("Hides the \"Threads you might like\" card between reels. Off by default, since it hasn't been tried on a real account yet.",

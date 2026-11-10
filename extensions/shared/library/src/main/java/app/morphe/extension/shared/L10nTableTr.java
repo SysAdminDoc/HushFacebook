@@ -1379,10 +1379,10 @@ final class L10nTableTr {
                 "Ak\u0131\u015flar sekmesini gizle");
         table.put("Hide the Find friends card",
                 "Arkada\u015flar\u0131 bul kart\u0131n\u0131 gizle");
+        table.put("Hide the Follow and Subscribe links on posts",
+                "G\u00f6nderilerdeki Takip Et ve Abone Ol ba\u011flant\u0131lar\u0131n\u0131 gizle");
         table.put("Hide the Follow button on reels",
                 "Reels videolar\u0131ndaki Takip Et d\u00fc\u011fmesini gizle");
-        table.put("Hide the Follow link on posts",
-                "G\u00f6nderilerdeki Takip Et ba\u011flant\u0131s\u0131n\u0131 gizle");
         table.put("Hide the Free mode banner",
                 "\u00dccretsiz mod banner\u0131n\u0131 gizle");
         table.put("Hide the Friends tab",
@@ -1575,8 +1575,8 @@ final class L10nTableTr {
                 "Renkli bir arka planda b\u00fcy\u00fck yaz\u0131 olarak g\u00f6r\u00fcnen k\u0131sa g\u00f6nderileri gizler.");
         table.put("Hides the \"Commission eligible\" label under the creator's name on reels.",
                 "Reellerde i\u00e7erik \u00fcreticinin ad\u0131n\u0131n alt\u0131ndaki \u201cKomisyona uygun\u201d etiketini gizler.");
-        table.put("Hides the \"Follow\" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
-                "Takip etmedi\u011finiz Sayfalar\u0131n ve ki\u015filerin g\u00f6nderilerinde ad\u0131n yan\u0131ndaki \"Takip Et\" ba\u011flant\u0131s\u0131n\u0131 gizler. Ada dokunmak yine profili a\u00e7ar. De\u011fi\u015fiklik, sonras\u0131nda y\u00fcklenen g\u00f6nderilerde g\u00f6r\u00fcn\u00fcr.");
+        table.put("Hides the \"Follow\" or \"Subscribe\" link next to the name on posts and videos from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.",
+                "Takip etmedi\u011finiz Sayfalar\u0131n ve ki\u015filerin g\u00f6nderilerinde ve videolar\u0131nda ad\u0131n yan\u0131ndaki \"Takip Et\" veya \"Abone Ol\" ba\u011flant\u0131s\u0131n\u0131 gizler. Ada dokunmak yine profili a\u00e7ar. De\u011fi\u015fiklik, sonras\u0131nda y\u00fcklenen g\u00f6nderilerde g\u00f6r\u00fcn\u00fcr.");
         table.put("Hides the \"Related posts\" list Facebook adds under some posts, with its titles written by Meta AI. The post and its comments stay.",
                 "Facebook'un baz\u0131 g\u00f6nderilerin alt\u0131na ekledi\u011fi, ba\u015fl\u0131klar\u0131 Meta AI taraf\u0131ndan yaz\u0131lan \"\u0130lgili g\u00f6nderiler\" listesini gizler. G\u00f6nderi ve yorumlar\u0131 kal\u0131r.");
         table.put("Hides the \"Threads you might like\" card between reels. Off by default, since it hasn't been tried on a real account yet.",

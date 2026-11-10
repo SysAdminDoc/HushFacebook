@@ -973,9 +973,9 @@ Hide post prompts	Ocultar las preguntas bajo las publicaciones
 # context: description of that switch; the quoted texts are Facebook's own prompts, so use Facebook's wording in your language if you know it
 Hides the strip on some posts, like "Are you interested in this post?" or who recently commented, plus follow and chat suggestions there. The post stays.	Oculta la franja de algunas publicaciones, como «¿Te interesa esta publicación?» o quién comentó hace poco, además de las sugerencias de seguir y de chatear. La publicación se queda.
 # context: switch title under News feed; the Follow link is the small "Follow" text after a poster's name in a post's header
-Hide the Follow link on posts	Ocultar el enlace Seguir en las publicaciones
+Hide the Follow and Subscribe links on posts	Ocultar los enlaces Seguir y Suscribirse en las publicaciones
 # context: description of that switch; "Follow" is Facebook's own word for the link, so use Facebook's wording in your language if you know it
-Hides the "Follow" link next to the name on posts from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.	Oculta el enlace «Seguir» junto al nombre en las publicaciones de páginas y personas a las que no sigues. Al tocar el nombre se sigue abriendo el perfil. Un cambio se ve en las publicaciones que se carguen después.
+Hides the "Follow" or "Subscribe" link next to the name on posts and videos from Pages and people you don't follow. Tapping the name still opens the profile. A change shows on the posts drawn after it.	Oculta el enlace «Seguir» o «Suscribirse» junto al nombre en las publicaciones y vídeos de páginas y personas a las que no sigues. Al tocar el nombre se sigue abriendo el perfil. Un cambio se ve en las publicaciones que se carguen después.
 # context: switch title under News feed; Meta AI is the name of Meta's assistant, and the questions are the row of suggested questions for it that Facebook puts under some posts
 Hide Meta AI questions under posts	Ocultar las preguntas de Meta AI bajo las publicaciones
 # context: description of that switch; a link card is the preview of a shared link inside a post
