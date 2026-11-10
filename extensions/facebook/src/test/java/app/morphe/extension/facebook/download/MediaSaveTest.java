@@ -818,7 +818,7 @@ public class MediaSaveTest {
 
     /**
      * A finished live video's 1080p DASH picture was announced at 2.6 GB, so the save fell back to
-     * the single 480p file, but the toast only said it was lower than on Facebook. A DASH save over
+     * Facebook's single file, but the toast only said it was lower than on Facebook. A DASH save over
      * the cap that falls back now says what it saved and why, as the single-file step-down does.
      */
     @Test
@@ -841,6 +841,42 @@ public class MediaSaveTest {
         assertArrayEquals("the gallery didn't get the 480p file", fits, published.toByteArray());
         String toast = String.valueOf(ShadowToast.getTextOfLatestToast());
         assertTrue(toast, toast.startsWith("Saved to ") && toast.endsWith(" at 480p, since the bigger file is over 512 MB"));
+    }
+
+    /**
+     * The #238 replay's single file, saved in place of its DASH picture over the cap, has only "sd"
+     * in its address, which ranks as 480, and the S22 toast said "at 480p" for a file that measures
+     * 640x360. The toast names the picture the saved file measures.
+     */
+    @Test
+    public void aFallbackOverTheCapIsNamedByItsMeasuredPicture() throws Exception {
+        byte[] big = mp4(150_000);
+        serve("/v1080.mp4", "video/mp4", big, big.length);
+        byte[] fits = mp4(20_000);
+        serve("/clip_sd.mp4", "video/mp4", fits, fits.length);
+        DashManifest.Track video = new DashManifest.Track("video/mp4", "avc1.64001f", 1080, 1920, 3_000_000,
+                origin + "/v1080.mp4", 1080);
+        MediaDownload.capForTests = 100_000;
+        int port = server.port();
+        MediaDownload.policyForTests = new MediaUrlPolicy(host -> new InetAddress[] { InetAddress.getByName("10.9.8.7") }) {
+            @Override
+            Refusal refusal(URL url) {
+                if (url.getPath().equals("/clip_sd.mp4")) describeSavedVideoWorkFile(640, 360);
+                if (url.getHost().equals("127.0.0.1") && url.getPort() == port) return null;
+                return super.refusal(url);
+            }
+        };
+
+        Thread worker = MediaDownload.start(context, true, MediaDownload.dashJob(context, video, null,
+                origin + "/clip_sd.mp4"));
+        worker.join(30_000);
+        assertFalse("the save never finished", worker.isAlive());
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+
+        assertEquals(1, gallery.inserts.size());
+        assertArrayEquals("the gallery didn't get the single file", fits, published.toByteArray());
+        String toast = String.valueOf(ShadowToast.getTextOfLatestToast());
+        assertTrue(toast, toast.startsWith("Saved to ") && toast.endsWith(" at 360p, since the bigger file is over 512 MB"));
     }
 
     /**

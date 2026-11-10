@@ -287,13 +287,18 @@ final class Downloader {
          */
         final boolean refused;
         /**
-         * The stated quality of the smaller file saved because the picked one was over the cap,
-         * such as 480, so the person saving is told what they got; 0 when the pick itself was saved.
+         * The quality of the smaller file saved because the picked one was over the cap, such as
+         * 480, so the person saving is told what they got; 0 when the pick itself was saved.
          */
         final int smaller;
+        /**
+         * The short side of the saved video's picture in pixels, read back from the file itself, or
+         * 0 when it isn't a video or the phone couldn't read it.
+         */
+        final int picture;
 
         private Result(Status status, Cause cause, String reason, String mime, boolean lower, boolean refused,
-                int smaller) {
+                int smaller, int picture) {
             this.status = status;
             this.cause = cause;
             this.reason = reason;
@@ -301,10 +306,11 @@ final class Downloader {
             this.lower = lower;
             this.refused = refused;
             this.smaller = smaller;
+            this.picture = picture;
         }
 
         static Result ok(String mime) {
-            return new Result(Status.OK, null, null, mime, false, false, 0);
+            return new Result(Status.OK, null, null, mime, false, false, 0, 0);
         }
 
         /** A failure whose status says all the message needs. */
@@ -314,22 +320,27 @@ final class Downloader {
 
         /** A failure that knows more than its status says. */
         static Result fail(Status status, Cause cause, String reason) {
-            return new Result(status, cause, reason, null, false, false, 0);
+            return new Result(status, cause, reason, null, false, false, 0, 0);
         }
 
         /** This result, told that the saved picture is below the manifest's. */
         Result lower() {
-            return new Result(status, cause, reason, mime, true, refused, smaller);
+            return new Result(status, cause, reason, mime, true, refused, smaller, picture);
         }
 
         /** This result, told that the saved file holds a track other apps refuse. */
         Result refused() {
-            return new Result(status, cause, reason, mime, lower, true, smaller);
+            return new Result(status, cause, reason, mime, lower, true, smaller, picture);
         }
 
         /** This result, told that it's the smaller file of [quality], saved because the pick was over the cap. */
         Result smaller(int quality) {
-            return new Result(status, cause, reason, mime, lower, refused, quality);
+            return new Result(status, cause, reason, mime, lower, refused, quality, picture);
+        }
+
+        /** This result, told the short side of the picture its saved file measures. */
+        Result picture(int shortSide) {
+            return new Result(status, cause, reason, mime, lower, refused, smaller, shortSide);
         }
 
         boolean ok() {

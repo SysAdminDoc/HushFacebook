@@ -721,10 +721,19 @@ public final class MediaDownload {
                 + describe(smaller) + " instead");
             result = saveFile(application, smaller, Downloader.Kind.VIDEO, why, offered, writable, quality, writer,
                 progress);
-            if (result.ok()) result = result.smaller(RenditionPicker.qualityOf(smaller));
+            if (result.ok()) result = savedSmaller(result, smaller);
             tried = smaller;
         }
         return result;
+    }
+
+    /**
+     * [saved], the smaller file of [url] saved in place of a pick over the cap, named by the picture
+     * its file measures. Only a file the phone can't read back is named by what [url] states, since
+     * an address whose only marker is "sd" ranks as 480 and a 1:18:20 replay's measured 360 (#238).
+     */
+    private static Downloader.Result savedSmaller(Downloader.Result saved, String url) {
+        return saved.smaller(saved.picture > 0 ? saved.picture : RenditionPicker.qualityOf(url));
     }
 
     /**
@@ -775,13 +784,15 @@ public final class MediaDownload {
             Downloader.Result published = Downloader.publish(file, mime, writer, progress);
             boolean lower = false;
             boolean refused = false;
+            int picture = 0;
             if (published.ok() && kind == Downloader.Kind.VIDEO) {
                 DashSave.ReadBack holds = DashSave.savedFormat(file);
                 refused = holds.refused;
                 info(() -> "the saved file holds " + holds.text + (why == null ? "" : ". Saved in place of the manifest's "
                     + "tracks because " + bounded(why)));
+                int savedShortSide = DashSave.savedVideoShortSide(file);
+                picture = savedShortSide;
                 if (!offered.isEmpty() || writable != null) {
-                    int savedShortSide = DashSave.savedVideoShortSide(file);
                     DashManifest.Track better = offered.isEmpty() ? null : better(offered, savedShortSide, quality);
                     if (better != null) {
                         final DashManifest.Track shown = better;
@@ -803,7 +814,7 @@ public final class MediaDownload {
                 }
             }
             Downloader.Result saved = published.ok() && lower ? published.lower() : published;
-            return refused ? saved.refused() : saved;
+            return (refused ? saved.refused() : saved).picture(picture);
         } catch (Throwable t) {
             // Only a work file that couldn't be made is known to be the storage's doing.
             return Downloader.Result.fail(Downloader.Status.WRITE_ERROR,
@@ -1066,7 +1077,7 @@ public final class MediaDownload {
      * when the person cancelled it, though: the fallback would start the save over. A fallback
      * below [video]'s picture says so, held to a plain test: [video] already passed the writability
      * check that picked it, so there's no picture-nothing-could-write excuse to make room for here.
-     * A fallback after a DASH save over the size cap carries its stated quality for the toast, as
+     * A fallback after a DASH save over the size cap carries its quality for the toast, as
      * {@link #saveVideoFile}'s step-down does. The quality setting is read once, when this job is built, so a change while the DASH save
      * runs can't move what the fallback is judged against.
      */
@@ -1099,7 +1110,7 @@ public final class MediaDownload {
                 writer, progress);
             // Over the cap, the fallback is the smaller file saved in its place, and the toast says so.
             return saved.ok() && result.status == Downloader.Status.TOO_LARGE
-                ? saved.smaller(RenditionPicker.qualityOf(fallback)) : saved;
+                ? savedSmaller(saved, fallback) : saved;
         };
     }
 
