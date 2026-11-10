@@ -20,21 +20,25 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.BooleanSetting;
 
 /**
- * Takes the "Threads you might like" card out from between reels, for Clean up Reels (#85), and
- * the "To what extent does this video match your interests?" survey card, for Hide reel interest
- * prompts (#405).
+ * Takes the "Threads you might like" card out from between reels, for Clean up Reels (#85), the
+ * "To what extent does this video match your interests?" survey card, for Hide reel interest
+ * prompts (#405), and the "Suggested for you" groups card with its Join buttons, for Hide suggested
+ * groups (#441).
  *
  * <p>The cards Facebook puts between reels, people you may know, groups to join, games, a survey
  * and a Threads post with an Open Threads button among them, are Reels items of one class, the
  * mid-card item. Each keeps a unit whose model answers the card's type as a constant of a GraphQL
- * enum: the Threads card's is {@link #THREADS_MID_CARD} and the survey's {@link #USER_SURVEY}. The
- * item class and the three reads are Redex names, so the patch passes the item's class name in
- * with each page and fills in {@link #midCardType}.
+ * enum: the Threads card's is {@link #THREADS_MID_CARD}, the survey's {@link #USER_SURVEY} and the
+ * groups card's {@link #GROUPS_YOU_SHOULD_JOIN}. The item class and the three reads are Redex
+ * names, so the patch passes the item's class name in with each page and fills in
+ * {@link #midCardType}.
  *
- * <p>The hook is one patch both of those depend on, so each card comes off only while the patch
- * it belongs to is in the build and its switch is on. A card comes off each section's item list
- * through the walk every page filter shares ({@link ReelSections}), the lists the screen reads, so
- * it never reaches the viewer. While either switch is on, every item the walk reads is counted on
+ * <p>The hook is one patch the two Reels patches depend on, so each card comes off only while the
+ * patch it belongs to is in the build and its switch is on. The groups card belongs to Hide
+ * suggested and promoted posts, whose Hide suggested groups switch reaches it only when one of the
+ * two Reels patches put the hook in. A card comes off each section's item list through the walk
+ * every page filter shares ({@link ReelSections}), the lists the screen reads, so it never reaches
+ * the viewer. While any of the three switches is on, every item the walk reads is counted on
  * the report's Kinds line: a mid-card by its type, anything else as {@link #NOT_A_MID_CARD}
  * followed by its class name. So a report names any other card too, and a photo card among the
  * reels (#267) shows up as a class of its own.
@@ -49,16 +53,20 @@ public final class ReelMidCards {
     /** The mid-card type of the interest survey. */
     static final String USER_SURVEY = "USER_SURVEY";
 
+    /** The mid-card type of the "Suggested for you" groups card, groups you should join. */
+    static final String GROUPS_YOU_SHOULD_JOIN = "GYSJ_MIDCARD";
+
     /** The source every event of this filter carries in the diagnostic report. */
     private static final String SOURCE = "ReelMidCards";
 
     /** The diagnostic counter route: each page of sections handed in, and every item read. */
     static final String SECTIONS_ROUTE = "Reel mid-cards";
 
-    /** What an item counts as. Only the Threads card and the survey come off. */
+    /** What an item counts as. Only the Threads card, the survey and the groups card come off. */
     static final String MID_CARD = "mid-card ";
     static final String THREADS_CARD = MID_CARD + THREADS_MID_CARD;
     static final String SURVEY_CARD = MID_CARD + USER_SURVEY;
+    static final String GROUPS_CARD = MID_CARD + GROUPS_YOU_SHOULD_JOIN;
     static final String NOT_A_MID_CARD = "not a mid-card";
     static final String NO_TYPE = "mid-card without a type";
     static final String NOT_PATCHED = "type reader not patched";
@@ -82,13 +90,16 @@ public final class ReelMidCards {
     /** Whether a test says Hide reel interest prompts is in the build, or null to ask SettingsStatus. */
     static volatile Boolean promptsPatchForTests;
 
+    /** Whether a test says Hide suggested and promoted posts is in the build, or null to ask SettingsStatus. */
+    static volatile Boolean groupsPatchForTests;
+
     private ReelMidCards() {
     }
 
     /**
      * Injection point, first thing in the Reels controller's method taking a page of sections. The
-     * same page with no Threads card or survey left in any section, each while its patch is in and
-     * its switch on, or the very same page when neither is or there was none. Never throws.
+     * same page with no Threads card, survey or groups card left in any section, each while its
+     * patch is in and its switch on, or the very same page when none is or there was none. Never throws.
      *
      * @param page         the sections about to be added to the Reels list.
      * @param midCardClass binary name of the mid-card item class, for example {@code X.8bO}.
@@ -101,8 +112,10 @@ public final class ReelMidCards {
     static List<?> withoutThreadsCards(List<?> page, String midCardClass, Types types) {
         Boolean threadsForced = threadsPatchForTests;
         Boolean promptsForced = promptsPatchForTests;
+        Boolean groupsForced = groupsPatchForTests;
         boolean threadsPatch = threadsForced != null ? threadsForced : SettingsStatus.reelDeclutter();
         boolean promptsPatch = promptsForced != null ? promptsForced : SettingsStatus.reelPrompts();
+        boolean groupsPatch = groupsForced != null ? groupsForced : SettingsStatus.suggestedPosts();
         if (threadsPatch) HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
         if (promptsPatch) HookStatus.invoked(FamilyNames.REEL_PROMPTS);
         FeedFilterCounters.sawList(SECTIONS_ROUTE, page == null ? 0 : page.size());
@@ -110,11 +123,13 @@ public final class ReelMidCards {
 
         boolean threads = threadsPatch && switchedOn(() -> Settings.HIDE_REEL_THREADS_CARDS, FamilyNames.REEL_DECLUTTER);
         boolean surveys = promptsPatch && switchedOn(() -> Settings.HIDE_REEL_PROMPTS, FamilyNames.REEL_PROMPTS);
-        if (!threads && !surveys) return page;
-        String family = threads ? FamilyNames.REEL_DECLUTTER : FamilyNames.REEL_PROMPTS;
+        boolean groups = groupsPatch && switchedOn(() -> Settings.HIDE_SUGGESTED_GROUPS, FamilyNames.SUGGESTED_POSTS);
+        if (!threads && !surveys && !groups) return page;
+        // The hook's own patch carries the type read's status, whichever switch asked for the walk.
+        String family = threads || (!surveys && threadsPatch) ? FamilyNames.REEL_DECLUTTER : FamilyNames.REEL_PROMPTS;
 
         try {
-            int[] dropped = new int[2];
+            int[] dropped = new int[3];
             ReelSections.Result result = ReelSections.strip(page, item -> {
                 String kind = kindOf(item, midCardClass, types, family);
                 FeedFilterCounters.sawKind(SECTIONS_ROUTE, kind);
@@ -126,16 +141,21 @@ public final class ReelMidCards {
                     dropped[1]++;
                     return true;
                 }
+                if (groups && GROUPS_CARD.equals(kind)) {
+                    dropped[2]++;
+                    return true;
+                }
                 return false;
             }, family, SOURCE);
             if (result.dropped == 0) return page;
 
             FeedFilterCounters.removed(SECTIONS_ROUTE, dropped[0], THREADS_CARD);
             FeedFilterCounters.removed(SECTIONS_ROUTE, dropped[1], SURVEY_CARD);
+            FeedFilterCounters.removed(SECTIONS_ROUTE, dropped[2], GROUPS_CARD);
             if (dropped[1] > 0) HookStatus.counted(FamilyNames.REEL_PROMPTS, SURVEY_CARD);
             Logger.diagnosticDebug(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE,
-                    () -> "dropped " + dropped[0] + " Threads card(s) and " + dropped[1] + " survey(s) from "
-                            + page.size() + " section(s)");
+                    () -> "dropped " + dropped[0] + " Threads card(s), " + dropped[1] + " survey(s) and "
+                            + dropped[2] + " groups card(s) from " + page.size() + " section(s)");
 
             return result.page;
         } catch (Throwable failure) {

@@ -579,6 +579,7 @@ Hushfacebook settings can't open here. Long-press the Facebook logo instead.	Hus
 Hide suggested groups	Önerilen grupları gizle
 # context: summary of that switch; Discover more groups is the label of Facebook's own button under that row
 Hides the row of groups to join between posts. Posts from groups you're in stay.	Gönderilerin arasındaki katılabileceğiniz gruplar satırını gizler. Üyesi olduğunuz grupların gönderileri kalır.
+Hides the row of groups to join between posts and the groups card between reels. Posts from groups you're in stay.	Gönderilerin arasındaki katılabileceğiniz gruplar satırını ve Reeller arasındaki grup kartını gizler. Üyesi olduğunuz grupların gönderileri kalır.
 # context: switch title under News feed; Facebook's own header of a row of Stories from people you don't know, shown between posts
 Hide "Stories you might like"	“Beğenebileceğin hikayeler” bölümünü gizle
 Hide Memories in the feed	Akıştaki anıları gizle

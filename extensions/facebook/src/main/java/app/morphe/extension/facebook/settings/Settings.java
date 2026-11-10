@@ -90,8 +90,10 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_people_you_may_know", TRUE);
 
     /**
-     * The row of groups to join that Facebook puts between posts, found by its GraphQL type name.
-     * Posts from groups you're in are stories of their own and stay.
+     * The row of groups to join that Facebook puts between posts, found by its GraphQL type name,
+     * and, when Clean up Reels or Hide reel interest prompts is in too, the "Suggested for you"
+     * groups card between reels, found by its mid-card type (GYSJ_MIDCARD, #441). Posts from groups
+     * you're in are stories of their own and stay.
      */
     public static final BooleanSetting HIDE_SUGGESTED_GROUPS =
             new BooleanSetting("hushfacebook_hide_suggested_groups", TRUE);

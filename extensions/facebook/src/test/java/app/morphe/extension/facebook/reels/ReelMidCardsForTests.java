@@ -18,7 +18,7 @@ public final class ReelMidCardsForTests {
     }
 
     /** Stands in for Facebook's mid-card type enum. */
-    public enum MidCardType { THREADS_MIDCARD, PYML_MIDCARD, USER_SURVEY }
+    public enum MidCardType { THREADS_MIDCARD, PYML_MIDCARD, USER_SURVEY, GYSJ_MIDCARD }
 
     /** Stands in for the mid-card item. */
     public static final class MidCard {

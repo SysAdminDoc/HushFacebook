@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* `Hide suggested groups` now also takes the "Suggested for you" groups card with Join buttons out from between reels, when `Clean up Reels` or `Hide reel interest prompts` is in your build. (#441)
 * `Hide the tab bar on the Reels tab` under Tabs and navigation takes the tab bar away while Reels is open, so the reel runs to the bottom of the screen. Every other tab keeps the bar. It starts off.
 * `Open comments at` under Comments and writing replaces the `Open comments at full height` switch with three choices: Facebook's height, full height and half height. Half height opens comments over the bottom half of the screen and the reel or video keeps playing above them. If you had the switch on, you start at full height, and an older settings backup comes back the same way. (#179)
 * `Bar opacity` under `See-through bars` sets how much colour the bars keep, from 0 to 100 percent. Lower shows more of the feed behind them. Blank keeps the old look (75, or 65 over the blur). `Rounded tab bar` gets `Tab bar width` and `Tab bar height` too. Width runs from 70 to 100 percent of the screen and the icons scale with it, and height trims the pill above and below the icons, down to 60 percent. (#425)

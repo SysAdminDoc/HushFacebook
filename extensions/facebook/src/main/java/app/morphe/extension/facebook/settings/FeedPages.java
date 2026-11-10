@@ -220,8 +220,13 @@ final class FeedPages {
                                 ? L10n.t("Hides friend suggestions between posts, on your own profile, and as cards with an Add button in the "
                                         + "Stories tray.")
                                 : L10n.t("Hides friend suggestions between posts and on your own profile.")));
+                // The groups card between reels goes through the Reels mid-card hook, which only
+                // Clean up Reels and Hide reel interest prompts put in.
                 feed.addPreference(toggle(context, Settings.HIDE_SUGGESTED_GROUPS,
-                        L10n.t("Hides the row of groups to join between posts. Posts from groups you're in stay.")));
+                        build.contains(PatchFamily.REEL_DECLUTTER) || build.contains(PatchFamily.REEL_PROMPTS)
+                                ? L10n.t("Hides the row of groups to join between posts and the groups card between reels. "
+                                        + "Posts from groups you're in stay.")
+                                : L10n.t("Hides the row of groups to join between posts. Posts from groups you're in stay.")));
                 feed.addPreference(toggle(context, Settings.HIDE_GROUP_POSTS_NOT_JOINED,
                         L10n.t("Hides posts from groups you haven't joined, like a friend's post in a public group, and a "
                                 + "group post a friend commented on or shared. Posts from your groups stay.")));

@@ -583,6 +583,7 @@ Hushfacebook settings can't open here. Long-press the Facebook logo instead.	無
 Hide suggested groups	隱藏推薦社團
 # context: summary of that switch; Discover more groups is the label of Facebook's own button under that row
 Hides the row of groups to join between posts. Posts from groups you're in stay.	隱藏貼文之間推薦加入社團的橫列。你已加入社團的貼文仍會保留。
+Hides the row of groups to join between posts and the groups card between reels. Posts from groups you're in stay.	隱藏貼文之間推薦加入社團的橫列，以及 Reels 之間的社團卡片。你已加入社團的貼文仍會保留。
 # context: switch title under News feed; Facebook's own header of a row of Stories from people you don't know, shown between posts
 Hide "Stories you might like"	隱藏「你可能喜歡的限時動態」
 Hide Memories in the feed	隱藏動態消息中的回顧

@@ -65,11 +65,12 @@ class ReelMidCardsFixtureTest {
 
                 // The type is a GraphQL enum: Facebook's unknown-value constant beside the Threads card
                 // and another mid-card, so it isn't a lookalike naming THREADS_MIDCARD for some other use,
-                // and the interest survey Hide reel interest prompts takes off (#405).
+                // the interest survey Hide reel interest prompts takes off (#405), and the groups card
+                // Hide suggested groups takes off (#441), whose name the extension matches.
                 val type = classes.getValue(card.type)
                 assertEquals("$name: ${card.type} isn't an enum", "Ljava/lang/Enum;", type.superclass)
                 val constants = type.methods.single { it.name == "<clinit>" }
-                for (constant in listOf(THREADS_MID_CARD, USER_SURVEY, "PYML_MIDCARD", "UNSET_OR_UNRECOGNIZED_ENUM_VALUE")) {
+                for (constant in listOf(THREADS_MID_CARD, USER_SURVEY, "GYSJ_MIDCARD", "PYML_MIDCARD", "UNSET_OR_UNRECOGNIZED_ENUM_VALUE")) {
                     assertTrue("$name: the mid-card type enum doesn't name $constant", holdsString(constants, constant))
                 }
 

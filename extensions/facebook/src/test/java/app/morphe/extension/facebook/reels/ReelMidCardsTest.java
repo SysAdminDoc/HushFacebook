@@ -55,8 +55,10 @@ public class ReelMidCardsTest {
         PauseForTests.resume();
         ReelMidCards.threadsPatchForTests = null;
         ReelMidCards.promptsPatchForTests = null;
+        ReelMidCards.groupsPatchForTests = null;
         Settings.HIDE_REEL_THREADS_CARDS.resetToDefault();
         Settings.HIDE_REEL_PROMPTS.resetToDefault();
+        Settings.HIDE_SUGGESTED_GROUPS.resetToDefault();
         FeedFilterCounters.clear();
         HookStatus.clear();
     }
@@ -181,6 +183,39 @@ public class ReelMidCardsTest {
         ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(noCleanUp));
         assertTrue("no Clean up Reels, the Threads card stays", noCleanUp.items.contains(threads));
         assertFalse(noCleanUp.items.contains(survey));
+    }
+
+    /**
+     * #441: the "Suggested for you" groups card with its Join buttons comes off with Hide suggested
+     * groups, on from the start, while Hide suggested and promoted posts is in the build, even with
+     * both Reels switches off. Without that patch, or with the switch off, it stays.
+     */
+    @Test
+    public void theGroupsCardComesOffWithHideSuggestedGroups() {
+        assertTrue(Settings.HIDE_SUGGESTED_GROUPS.defaultValue);
+        Settings.HIDE_REEL_PROMPTS.save(false);
+        Object reel = new Object();
+        MidCard groups = new MidCard(MidCardType.GYSJ_MIDCARD);
+        MidCard pages = new MidCard(MidCardType.PYML_MIDCARD);
+
+        ReelMidCards.groupsPatchForTests = Boolean.FALSE;
+        Section noPatch = section(reel, groups, pages);
+        ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(noPatch));
+        assertTrue("no Hide suggested and promoted posts, the groups card stays", noPatch.items.contains(groups));
+
+        ReelMidCards.groupsPatchForTests = Boolean.TRUE;
+        Section section = section(reel, groups, pages);
+        List<Section> page = Collections.singletonList(section);
+        assertSame(page, ReelMidCardsForTests.withoutThreadsCards(page));
+        assertEquals(Arrays.asList(reel, pages), section.items);
+        String line = line();
+        assertNotNull(FeedFilterCounters.report().toString(), line);
+        assertTrue(line, line.contains("Removed: mid-card GYSJ_MIDCARD 1"));
+
+        Settings.HIDE_SUGGESTED_GROUPS.save(false);
+        Section off = section(reel, groups);
+        ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(off));
+        assertTrue("switched off, the groups card stays", off.items.contains(groups));
     }
 
     /** Every item that isn't a mid-card is counted by its class, so a report tells two kinds of reel item apart. */
