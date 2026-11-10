@@ -1710,6 +1710,14 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * A double tap on the right or left side of a started feed video jumps it 10 seconds ahead or
+     * back, a live one too while it can be rewound, and a lone tap on a side opens it a moment later
+     * (#432). Asked at each press. Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_DOUBLE_TAP_SKIP =
+            new BooleanSetting("hushfacebook_feed_video_double_tap_skip", FALSE);
+
+    /**
      * A button on a feed video that shows its speed and steps it on a tap: 1x, 1.25x, 1.5x, 2x,
      * then 0.5x (#239). Needs Hold a reel for 2x in the build, whose patch reaches the player's
      * speed. Live videos don't get it. Starts off.

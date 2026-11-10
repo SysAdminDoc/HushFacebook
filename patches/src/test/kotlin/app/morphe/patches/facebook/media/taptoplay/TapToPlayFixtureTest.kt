@@ -343,13 +343,17 @@ class TapToPlayFixtureTest {
                 assertEquals("$name: the handler keeps its original code",
                     disabled.implementation!!.instructions.count() + 9, disabledCode.size)
 
-                // Every touch goes to the tap clock with the screen and the event, and on unchanged.
+                // Every touch goes to the feed video double tap, then the tap clock, with the screen and
+                // the event, and on unchanged (#432).
                 val dispatch = patched(touchDispatches(classes.getValue(FRAGMENT_ACTIVITY)).single())
                 val touch = dispatch.implementation!!.instructions.toList()
-                assertEquals("$name: the tap clock", TOUCH, touch[0].call.toString())
-                assertEquals(listOf(dispatch.localRegisterCount(), dispatch.localRegisterCount() + 1), touch[0].registers())
+                val screenAndEvent = listOf(dispatch.localRegisterCount(), dispatch.localRegisterCount() + 1)
+                assertEquals("$name: the double tap", DOUBLE_TAP_TOUCH, touch[0].call.toString())
+                assertEquals(screenAndEvent, touch[0].registers())
+                assertEquals("$name: the tap clock", TOUCH, touch[1].call.toString())
+                assertEquals(screenAndEvent, touch[1].registers())
                 assertTrue("$name: dispatchTouchEvent still hands the event on",
-                    touch.drop(1).any { it.call?.name == "dispatchTouchEvent" })
+                    touch.drop(2).any { it.call?.name == "dispatchTouchEvent" })
 
                 // The reel check's stubs: the player's params getter, and the field the params report as isFbShorts.
                 val getter = paramsGetters(groot).single()

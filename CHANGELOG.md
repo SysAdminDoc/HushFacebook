@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* `Double tap to skip on feed videos` under Video and audio jumps a playing feed video 10 seconds ahead when you double tap its right side, or 10 back on the left. Keep tapping to go further. Live videos work too when they can be rewound. One tap on a side still opens the video, just a moment later than usual. With Tap to play on, it needs `Inline feed video controls` on too. Starts off. (#432)
 * `Seek bar on the bottom edge` under Video and audio puts a feed video's seek bar right on the video's bottom edge, so a scroll is less likely to catch it. Facebook's speaker and tagged people buttons move up to sit above the bar. It wins over `Lower the seek bar and speaker`, needs `Seek bar on feed videos` and starts off. (#431)
 * `Faster speeds` under Reels and Watch adds 2.5x and 3x to the speed menu of reels and of feed and Watch videos. A speed you pick there is kept like any other when `Keep the reel speed` is on. Starts off. (#430)
 * `Playback speed in the post menu` under Reels and Watch puts Playback speed in the three-dot menu of a feed or Watch video, live ones too. Pick anything from 0.5x to 3x and that video switches over. The keep switches hold on to it the same way they hold a speed picked in the gear menu. It needs the video download patch and starts off. (#429)

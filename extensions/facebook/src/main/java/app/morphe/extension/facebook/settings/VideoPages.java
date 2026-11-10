@@ -416,6 +416,12 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.FEED_VIDEO_SKIP_BUTTONS,
                         L10n.t("Adds buttons to feed videos that jump back or ahead 10 seconds, like Facebook's own player has. "
                                 + "Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.")));
+                // Asked at each press, so it applies to the next tap.
+                playback.addPreference(toggle(context, Settings.FEED_VIDEO_DOUBLE_TAP_SKIP,
+                        L10n.t("Double tap the right side of a playing feed video to jump ahead 10 seconds, or the left side to go back 10. "
+                                + "Keep tapping to go further. Live videos work too when they can be rewound. "
+                                + "One tap on a side still opens the video, a moment later than usual. "
+                                + "With Tap to play on, it needs Inline feed video controls on too.")));
                 // Hold a reel for 2x's patch reaches the player's speed, which the button reads and sets.
                 if (build.contains(PatchFamily.REEL_HOLD)) {
                     playback.addPreference(toggle(context, Settings.FEED_VIDEO_SPEED_BUTTON,

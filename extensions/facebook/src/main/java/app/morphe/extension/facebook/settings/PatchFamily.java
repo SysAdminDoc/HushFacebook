@@ -194,7 +194,7 @@ public enum PatchFamily {
             Settings.FEED_VIDEO_CAST_BUTTON, Settings.FEED_VIDEO_SEEK_BAR, Settings.FEED_VIDEO_SEEK_BAR_FADE,
             Settings.FEED_VIDEO_SEEK_BAR_LOWER, Settings.FEED_VIDEO_SEEK_BAR_EDGE, Settings.FEED_VIDEO_SEEK_BAR_TIMES,
             Settings.FEED_VIDEO_FULL_PLAYER_BUTTON,
-            Settings.FEED_VIDEO_SKIP_BUTTONS, Settings.FEED_VIDEO_SPEED_BUTTON,
+            Settings.FEED_VIDEO_SKIP_BUTTONS, Settings.FEED_VIDEO_DOUBLE_TAP_SKIP, Settings.FEED_VIDEO_SPEED_BUTTON,
             Settings.CENTER_FULL_SCREEN_VIDEOS, Settings.STORY_SEEK_BAR, Settings.STORY_SEEK_BAR_FADE),
     RESUME_LONG_VIDEOS(FamilyNames.RESUME_LONG_VIDEOS, "resumeLongVideos", null,
             Settings.RESUME_LONG_VIDEOS, Settings.RECENTLY_WATCHED, Settings.BREAK_AFTER_REELS),
@@ -582,6 +582,7 @@ public enum PatchFamily {
         if (this == TAP_TO_PLAY) anyOn = Settings.TAP_TO_PLAY.savedValue() || Settings.INLINE_FEED_VIDEO_CONTROLS.savedValue()
                 || Settings.FEED_VIDEO_CAST_BUTTON.savedValue() || Settings.FEED_VIDEO_SEEK_BAR.savedValue()
                 || Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.savedValue() || Settings.FEED_VIDEO_SKIP_BUTTONS.savedValue()
+                || Settings.FEED_VIDEO_DOUBLE_TAP_SKIP.savedValue()
                 || Settings.FEED_VIDEO_SPEED_BUTTON.savedValue() || Settings.CENTER_FULL_SCREEN_VIDEOS.savedValue();
         // The time switch starts on, and does nothing without the bar kept; Tap the bar to seek works alone.
         if (this == PROGRESS_BAR) anyOn = Settings.KEEP_PROGRESS_BAR.savedValue() || Settings.TAP_TO_SEEK.savedValue();

@@ -36,7 +36,8 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  *   LX/3z3;->A08()LX/3zC;). The feed's autoplay manager, search results, Marketplace's own views,
  *   the story tray's tiles, the Reels tray in the feed and the Reels and Watch controls all read it.
  * - Taps: FbFragmentActivity.dispatchTouchEvent, a framework override every Facebook screen
- *   inherits. The story viewer's floating screen overrides it and hands on to it.
+ *   inherits. The story viewer's floating screen overrides it and hands on to it. Double tap to
+ *   skip on feed videos sees each touch there first, then the tap clock (#432).
  * - The Reels controls' check of whether a reel starts with autoplay off: the one method the
  *   classes holding "FbShortsVideoControlComponent" call that takes the session, the viewer's
  *   config and two booleans and answers a boolean (580 LX/88V;->A07, 577 LX/9bD;->A07), and asks
@@ -59,6 +60,8 @@ internal const val PAUSED = "$TAP_TO_PLAY->paused(Ljava/lang/Object;)V"
 internal const val REBOUND = "$TAP_TO_PLAY->rebound(Ljava/lang/Object;)V"
 internal const val AUTOPLAY_SETTING = "$TAP_TO_PLAY->autoplaySetting(Ljava/lang/Object;)Ljava/lang/Object;"
 internal const val TOUCH = "$TAP_CLOCK->touch(Landroid/app/Activity;Landroid/view/MotionEvent;)V"
+internal const val DOUBLE_TAP_TOUCH =
+    "$EXTENSION_PACKAGE/reels/FeedVideoDoubleTap;->touch(Landroid/app/Activity;Landroid/view/MotionEvent;)V"
 internal const val SHOW_REEL_PLAY_BUTTON = "$TAP_TO_PLAY->showReelPlayButton(Z)Z"
 
 /** The extension's reel check stubs the patch fills, and the name the params' dump reports the flag under. */

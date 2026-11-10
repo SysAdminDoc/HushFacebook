@@ -631,11 +631,14 @@ class TapToPlayShapesTest {
         assertEquals(0, (reels[4] as OneRegisterInstruction).registerA)
         assertSame(reels[5], (reels[3] as BuilderOffsetInstruction).target.location.instruction)
 
-        // Every touch goes to the tap clock, the screen and the event in p0 and p1.
+        // Every touch goes to the feed video double tap, then the tap clock, the screen and the event
+        // in p0 and p1 (#432).
         val touch = patched(context, FRAGMENT_ACTIVITY, "dispatchTouchEvent").implementation!!.instructions.toList()
-        assertEquals(TOUCH, touch[0].call.toString())
+        assertEquals(DOUBLE_TAP_TOUCH, touch[0].call.toString())
         assertEquals(listOf(1, 2), touch[0].registers())
-        assertEquals(Opcode.CONST_4, touch[1].opcode)
+        assertEquals(TOUCH, touch[1].call.toString())
+        assertEquals(listOf(1, 2), touch[1].registers())
+        assertEquals(Opcode.CONST_4, touch[2].opcode)
 
         val events = patched(context, playbackListener, "onState").implementation!!.instructions.toList()
         val cleanup = events.indexOfFirst { it.call?.toString() == CLEAR_REEL_PLAY_BUTTON }

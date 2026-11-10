@@ -292,7 +292,11 @@ private fun BytecodePatchContext.hookReelPlayButton(checker: String) {
     )
 }
 
-/** Every touch on a Facebook screen goes to the tap clock before Facebook sees it. */
+/**
+ * Every touch on a Facebook screen goes to the feed video double tap, then to the tap clock, before
+ * Facebook sees it. The double tap turns a held side tap into a cancel first, so the clock sees what
+ * Facebook sees (#432).
+ */
 private fun BytecodePatchContext.hookTouches() {
     val activity = classDefByOrNull(FRAGMENT_ACTIVITY)
         ?: throw PatchException("$PATCH: this build has no $FRAGMENT_ACTIVITY")
@@ -303,7 +307,13 @@ private fun BytecodePatchContext.hookTouches() {
     // The screen and the event are p0 and p1, next to each other, so the range form passes both
     // without borrowing a register.
     mutableClassDefBy(FRAGMENT_ACTIVITY).findMutableMethodOf(dispatch)
-        .addInstruction(0, "invoke-static/range { p0 .. p1 }, $TOUCH")
+        .addInstructions(
+            0,
+            """
+                invoke-static/range { p0 .. p1 }, $DOUBLE_TAP_TOUCH
+                invoke-static/range { p0 .. p1 }, $TOUCH
+            """.trimIndent(),
+        )
 }
 
 private fun BytecodePatchContext.requireTriggerEnum(type: String) {

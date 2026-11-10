@@ -2682,3 +2682,5 @@ Hide the tab bar on the Reels tab	在 Reels 分頁隱藏分頁列
 The tab bar goes away while the Reels tab is open, and the reel gets the whole screen. The other tabs keep the bar. Restart Facebook to see the change.	開啟 Reels 分頁時分頁列會消失，Reels 佔滿整個螢幕。其他分頁保留分頁列。重新啟動 Facebook 後生效.
 Playback speed in the post menu	貼文選單中的播放速度
 A feed or Watch video's 3-dot menu gets Playback speed, from 0.5x to 3x, live videos too. Off by default, since it hasn't been tried on a real account yet.	動態消息或 Watch 影片的三點選單會加入播放速度，從 0.5 倍到 3 倍，直播影片也適用。預設停用，因為尚未使用真實帳號測試。
+Double tap to skip on feed videos	動態影片雙擊跳轉
+Double tap the right side of a playing feed video to jump ahead 10 seconds, or the left side to go back 10. Keep tapping to go further. Live videos work too when they can be rewound. One tap on a side still opens the video, a moment later than usual. With Tap to play on, it needs Inline feed video controls on too.	在播放中的動態影片右側點兩下可快轉 10 秒，左側點兩下可倒轉 10 秒。繼續點按可以跳得更遠。直播影片在可以倒轉時也適用。點一下側邊仍會開啟影片，只是比平常稍晚一點。開啟「點按播放」時，也需要開啟「動態消息影片控制項」。
