@@ -52,7 +52,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * only the clipped width shows), so a Litho host that draws no text counts as the photo when it
  * shows across nine tenths of the row; a host whose text can't be read keeps the edge-to-edge
  * rule. A profile picture, Like or grid tile is narrower still: those, and a long press inside
- * another, stay Facebook's.
+ * another, stay Facebook's. On 586 the profile picture and the menu button take only a tap, so
+ * any view taking a tap and no long press under a fifth of the row wide stays Facebook's too.
  *
  * <p>The row's Comment button is found by the footer's order, since its label is translated and
  * 583 has no resource names: the lowest line of three or more clickable views sharing one top and
@@ -107,6 +108,7 @@ public final class PostLongPress {
     static final String ON_TEXT = "feed hold passed: its own long press, on text";
     static final String SCROLLER = "feed hold passed: in a scroller or pager";
     static final String ON_FOOTER = "feed hold passed: on or under the footer";
+    static final String ON_BUTTON = "feed hold passed: its own tap, on a small button";
     static final String ON_VIDEO = "feed hold passed: on a feed video the hold speeds up";
     static final String ON_BAR = "feed hold passed: on a video's bar";
 
@@ -116,6 +118,8 @@ public final class PostLongPress {
 
     /** How far apart, in pixels, two footer buttons may sit and still count as touching. */
     private static final int TOUCHING = 2;
+    /** How many times a small button fits across the row: a profile picture or a menu button does. */
+    private static final int BUTTON = 5;
     /** The fewest buttons a footer line has: Like, Comment and Share. */
     private static final int FOOTER = 3;
     /** How many more times, and how many milliseconds apart, a scrolled post's footer is looked for. */
@@ -235,6 +239,14 @@ public final class PostLongPress {
             // buttons or on anything under it stays Facebook's.
             if (comment != null && Math.round(downY) >= topOf(comment)) {
                 passed(ON_FOOTER, root);
+                return;
+            }
+            // On 586 the profile picture and the menu button take a tap and no long press, so a hold
+            // on one lifts into its tap. A photo, even an album's tile, is far wider.
+            View pressed = hit(root, Math.round(downX), Math.round(downY));
+            if (pressed != null && pressed.isClickable() && !pressed.isLongClickable()
+                    && pressed.getWidth() * BUTTON < row.getWidth()) {
+                passed(ON_BUTTON, root);
                 return;
             }
             HookStatus.counted(FAMILY, HELD);

@@ -266,6 +266,44 @@ public class PostLongPressTest {
         assertTrue(clicked.isEmpty());
     }
 
+    /**
+     * On 586 the profile picture takes a tap and no long press, so a hold on it lifts into Facebook's
+     * tap and opens the profile. The menu button is the same. The name line and an album tile that
+     * only take a tap are far wider and still open comments.
+     */
+    @Test
+    public void aHoldOnAProfilePictureOrMenuThatOnlyTakesATapIsLeftToFacebook() {
+        avatar.setLongClickable(false);
+        int[] at = middleOf(avatar);
+        assertSame("its row is found", row, PostLongPress.rowAt(root, at[0], at[1]));
+        send(event(MotionEvent.ACTION_DOWN, at));
+        holdLongEnough();
+        assertTrue(clicked.toString(), clicked.isEmpty());
+        assertEquals("the lift is Facebook's", MotionEvent.ACTION_UP, send(event(MotionEvent.ACTION_UP, at)).getActionMasked());
+        assertTrue(statusLine(), statusLine().contains(PostLongPress.ON_BUTTON + " 1"));
+        assertFalse(statusLine(), statusLine().contains(PostLongPress.HELD));
+
+        int[] onMore = {892, at[1]};
+        send(event(MotionEvent.ACTION_DOWN, onMore));
+        holdLongEnough();
+        assertTrue("the menu button: " + clicked, clicked.isEmpty());
+        send(event(MotionEvent.ACTION_UP, onMore));
+        assertTrue(statusLine(), statusLine().contains(PostLongPress.ON_BUTTON + " 2"));
+
+        send(event(MotionEvent.ACTION_DOWN, middleOf(name)));
+        holdLongEnough();
+        assertEquals("the name line", List.of("comment"), clicked);
+        send(event(MotionEvent.ACTION_UP, middleOf(name)));
+
+        View tile = button("album tile");
+        place((ViewGroup) photo, tile, 0, 0, 344, 384);
+        layOut();
+        send(event(MotionEvent.ACTION_DOWN, middleOf(tile)));
+        holdLongEnough();
+        assertEquals("a third of the row wide", List.of("comment", "comment"), clicked);
+        send(event(MotionEvent.ACTION_UP, middleOf(tile)));
+    }
+
     @Test
     public void aCarouselInsideAPostIsNeitherPressedNorSearched() {
         assertNull(PostLongPress.rowAt(root, middleOf(addFriend)[0], middleOf(addFriend)[1]));
