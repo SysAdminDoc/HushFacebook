@@ -520,7 +520,10 @@ public final class FeedVideoControls {
         if (!(content instanceof FrameLayout) || !descendant(container, content)) return miss(control, "outside the screen's content");
         Rect visible = new Rect();
         Rect clip = new Rect();
-        if (!surface.getGlobalVisibleRect(visible) || !list.getGlobalVisibleRect(clip) || !visible.intersect(clip)
+        // The container crops a taller surface, but a row that doesn't clip its children still counts the cropped
+        // part as showing, so an upright video in a shorter slot put the buttons over the post's text (#239).
+        if (!surface.getGlobalVisibleRect(visible) || !container.getGlobalVisibleRect(clip) || !visible.intersect(clip)
+                || !list.getGlobalVisibleRect(clip) || !visible.intersect(clip)
                 || !content.getGlobalVisibleRect(clip) || !visible.intersect(clip)) {
             return miss(control, "scrolled out of view");
         }
@@ -533,10 +536,11 @@ public final class FeedVideoControls {
         int across = size * buttons + margin * (buttons + 1);
         if (visible.width() < across || visible.height() < down + size + margin) return miss(control, "too little of it shows");
         int[] at = new int[2];
-        // A surface can be taller than its container, which crops it, so the video ends at the higher edge of the two.
+        // A surface can be taller than its container, which crops it, so the video runs between the inner edges of the two.
         surface.getLocationInWindow(at);
         Rect video = new Rect(at[0], at[1], at[0] + surface.getWidth(), at[1] + surface.getHeight());
         container.getLocationInWindow(at);
+        video.top = Math.max(video.top, at[1]);
         video.bottom = Math.min(video.bottom, at[1] + container.getHeight());
         corners(control, row, video, density, live);
         Rect bar = !seekOn() ? null : live ? noBar(control, "a live video has no end to seek to", null)

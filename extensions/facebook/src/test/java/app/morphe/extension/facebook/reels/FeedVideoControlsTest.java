@@ -688,6 +688,20 @@ public class FeedVideoControlsTest {
         assertEquals(on(player.view)[1] + 600 - FeedVideoControls.BAR_LIFT_DP, on(bar())[1] + bar().getHeight());
     }
 
+    @Test public void anUprightVideoCroppedToAShorterSlotKeepsItsButtonsInsideTheSlot() {
+        // A row that doesn't clip its children counts the cropped part of the surface as showing.
+        row.setClipChildren(false);
+        player.view.removeAllViews();
+        place(player.view, new TextureView(activity), 0, -233, 1080, 1066);
+        castOn();
+        barOn();
+        refreshAfterLayout();
+        layout();
+        assertEquals("below the slot's top, not the surface's", FeedVideoControls.TOP_DP, on(button())[1] - on(player.view)[1]);
+        assertEquals(FeedVideoControls.TOP_DP, on(cast())[1] - on(player.view)[1]);
+        assertEquals(on(player.view)[1] + 600 - FeedVideoControls.BAR_LIFT_DP, on(bar())[1] + bar().getHeight());
+    }
+
     @Test public void somethingOverTheBottomEdgeTakesTheBarOffUntilItMoves() {
         barOn();
         View tabs = paint(root, on(bar())[1] - on(root)[1], 120);

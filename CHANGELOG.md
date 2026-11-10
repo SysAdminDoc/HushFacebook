@@ -57,6 +57,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* The play button from `Inline feed video controls`, and the buttons next to it, stay on the video when Facebook crops an upright video to fit a shorter spot in the feed. On a post like that they used to sit above the video, over the post's text. (#239)
 * After you tap Pause and before Facebook restarts, the card at the top of the Hush settings says "Hushfacebook is on" over "Hushfacebook pauses when Facebook restarts." It used to show that second sentence twice, as the title and again under it.
 * `Hide posts from Pages` and `Only friends' posts` catch Pages again on Facebook 586. That version labels almost every post's author as a person, the Pages behind sponsored posts included, so Pages got past both switches. Hush now spots a Page by what Facebook says about it instead: no gender, no friend requests, and a follow button. Posts in groups still stay with `Hide posts from Pages` on, whoever wrote them. (#262)
 * On Facebook 586, a page with Facebook's newer top bar could close the app. The hook behind the top bar's search button read the bar from a spot 586 reuses for something else, and Android then refused to load the bar at all. It now takes the bar from Facebook's own code right next to it.
