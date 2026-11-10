@@ -1345,9 +1345,11 @@ internal class SameLookSkip(val branch: Int, val flow: Int, val read: String, va
  * selector's state, which Facebook takes from a flow (an `invoke-interface` of a `()Object` method,
  * `move-result-object`, `check-cast` to the state class, `iget-object` of an Integer field). The
  * state class has two instance Integer fields, the look the bar has and the one parked to apply once
- * a reel's player change ends, which is the one the skip doesn't read. [stateClass] looks the state
- * class up. Refuses unless all that holds, the skip jumps to a `return-void`, only the instruction
- * before it leads onto it and the flow's register still holds the flow there.
+ * a reel's player change ends, which is the one the skip doesn't read. 586's Android 9 build reads
+ * the look through a static helper taking the flow (`LX/09je;->A01`) that does those four steps.
+ * [stateClass] looks the state class up, and the helper's. Refuses unless all that holds, the skip
+ * jumps to a `return-void`, only the instruction before it leads onto it and the flow's register
+ * still holds the flow there.
  */
 internal fun sameLookSkip(selector: Method, stateClass: (String) -> ClassDef?): SameLookSkip {
     val where = "${selector.definingClass}->${selector.name}"
@@ -1356,36 +1358,71 @@ internal fun sameLookSkip(selector: Method, stateClass: (String) -> ClassDef?): 
     val branch = code.indices.firstOrNull { index ->
         code[index].opcode == Opcode.IF_EQ && (code[index] as TwoRegisterInstruction).let { it.registerA == look || it.registerB == look }
     } ?: refuse("$where has no if-eq of the look it's asked for")
-    if (branch < 4) refuse("$where compares the look before reading its state")
-    val read = code[branch - 4] as? FiveRegisterInstruction
-    val readCall = (read as? ReferenceInstruction)?.reference as? MethodReference
-    val result = code[branch - 3] as? OneRegisterInstruction
-    val cast = code[branch - 2]
-    val current = code[branch - 1]
-    val currentField = (current as? ReferenceInstruction)?.reference as? FieldReference
-    val state = cast.reference()
-    val held = (current as? TwoRegisterInstruction)?.registerA
     val compared = (code[branch] as TwoRegisterInstruction).let { if (it.registerA == look) it.registerB else it.registerA }
-    if (read == null || read.opcode != Opcode.INVOKE_INTERFACE || read.registerCount != 1 || readCall == null ||
-        readCall.parameterTypes.isNotEmpty() || readCall.returnType != "Ljava/lang/Object;" ||
-        result == null || code[branch - 3].opcode != Opcode.MOVE_RESULT_OBJECT ||
-        cast.opcode != Opcode.CHECK_CAST || (cast as OneRegisterInstruction).registerA != result.registerA ||
-        current.opcode != Opcode.IGET_OBJECT || (current as TwoRegisterInstruction).registerB != result.registerA ||
-        currentField == null || currentField.definingClass != state || currentField.type != "Ljava/lang/Integer;" ||
-        held != compared || read.registerC == result.registerA || read.registerC == held
-    ) {
-        refuse("$where no longer reads the bar's look off its state right before comparing it with the one asked for")
+    val notRead = "$where no longer reads the bar's look off its state right before comparing it with the one asked for"
+    val helper = (code.getOrNull(branch - 2) as? ReferenceInstruction)?.reference as? MethodReference
+    val read = if (helper != null && code[branch - 2].opcode == Opcode.INVOKE_STATIC && helper.returnType == "Ljava/lang/Integer;") {
+        val call = code[branch - 2] as FiveRegisterInstruction
+        val result = code[branch - 1]
+        if (call.registerCount != 1 || helper.parameterTypes.size != 1 || result.opcode != Opcode.MOVE_RESULT_OBJECT ||
+            (result as OneRegisterInstruction).registerA != compared || call.registerC == compared
+        ) {
+            refuse(notRead)
+        }
+        val body = stateClass(helper.definingClass)?.methods?.singleOrNull {
+            it.name == helper.name && AccessFlags.STATIC.isSet(it.accessFlags) &&
+                it.parameterTypes.map(CharSequence::toString) == helper.parameterTypes.map(CharSequence::toString)
+        }?.implementation ?: refuse("$where reads its look through $helper, which isn't in this APK")
+        val steps = body.instructions.toList()
+        val inner = stateRead(steps, 0) ?: refuse(notRead)
+        val back = steps.getOrNull(4)
+        if (steps.size != 5 || inner.flow != body.registerCount - 1 || back?.opcode != Opcode.RETURN_OBJECT ||
+            (back as OneRegisterInstruction).registerA != inner.held
+        ) {
+            refuse(notRead)
+        }
+        StateRead(call.registerC, inner.call, inner.state, inner.field, compared)
+    } else {
+        stateRead(code, branch - 4)?.takeIf { it.held == compared && it.flow != it.result && it.flow != it.held } ?: refuse(notRead)
     }
     val flow = ControlFlow.of(selector)
     val target = flow.normal[branch].firstOrNull { it != branch + 1 }
     if (target == null || code[target].opcode != Opcode.RETURN_VOID) refuse("$where no longer returns on a look the bar has")
     if (code.indices.any { it != branch - 1 && branch in flow.normal[it] }) refuse("$where has a jump onto its skip of a look the bar has")
-    val integers = stateClass(state!!)?.fields
+    val state = read.state
+    val integers = stateClass(state)?.fields
         ?.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == "Ljava/lang/Integer;" }
         ?: refuse("$where reads its look off $state, which isn't in this APK")
-    val parked = integers.filter { it.name != currentField!!.name }
+    val parked = integers.filter { it.name != read.field.name }
     if (integers.size != 2 || parked.size != 1) refuse("$state has ${integers.size} Integer fields, expected the look and the parked one")
-    return SameLookSkip(branch, read.registerC, readCall.toString(), state, "$state->${parked.single().name}:Ljava/lang/Integer;")
+    return SameLookSkip(branch, read.flow, read.call.toString(), state, "$state->${parked.single().name}:Ljava/lang/Integer;")
+}
+
+/**
+ * A read of the selector's state off its [flow] register: the flow's `()Object` [call], its result
+ * in [result], cast to [state], and the Integer [field] of the state read into [held].
+ */
+private class StateRead(val flow: Int, val call: MethodReference, val state: String, val field: FieldReference, val held: Int, val result: Int = -1)
+
+/** The state read whose `invoke-interface` is at [at] in [code], or null where those four steps aren't there. */
+private fun stateRead(code: List<Instruction>, at: Int): StateRead? {
+    if (at < 0 || at + 3 >= code.size) return null
+    val read = code[at] as? FiveRegisterInstruction ?: return null
+    val call = (read as? ReferenceInstruction)?.reference as? MethodReference ?: return null
+    val result = code[at + 1]
+    val cast = code[at + 2]
+    val current = code[at + 3]
+    val field = (current as? ReferenceInstruction)?.reference as? FieldReference ?: return null
+    val state = cast.reference() ?: return null
+    if (read.opcode != Opcode.INVOKE_INTERFACE || read.registerCount != 1 || call.parameterTypes.isNotEmpty() ||
+        call.returnType != "Ljava/lang/Object;" || result.opcode != Opcode.MOVE_RESULT_OBJECT ||
+        cast.opcode != Opcode.CHECK_CAST || (cast as OneRegisterInstruction).registerA != (result as OneRegisterInstruction).registerA ||
+        current.opcode != Opcode.IGET_OBJECT || (current as TwoRegisterInstruction).registerB != result.registerA ||
+        field.definingClass != state || field.type != "Ljava/lang/Integer;"
+    ) {
+        return null
+    }
+    return StateRead(read.registerC, call, state, field, current.registerA, result.registerA)
 }
 
 /**
