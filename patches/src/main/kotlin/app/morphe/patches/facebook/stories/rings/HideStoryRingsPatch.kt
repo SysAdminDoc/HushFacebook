@@ -206,6 +206,9 @@ private fun BytecodePatchContext.ringStateConstructor(type: String, ring: String
  * the one class holding the name that has one. 586 also moved the helper out of the builder (arm64
  * LX/01xJ;->A0L, a class of merged statics, answering LX/0Caa;): the builder's method naming the
  * plugin (LX/0AfM;->A0B) calls it, so a holder without a helper of its own counts the one it calls.
+ * 586's Android 9 build copies the builder's plugin part into a prefetch lambda as well
+ * (LX/0DXw;->invoke beside LX/0AkR;->A08), and both call the same helper (LX/01y6;->A0M), so several
+ * holders are fine as long as they share one helper.
  */
 internal fun BytecodePatchContext.commentRingState(ring: String): Pair<Method, Method> {
     val holders = classDefByStrings(STORY_RING_PLUGIN, StringComparisonType.EQUALS)
@@ -223,9 +226,14 @@ internal fun BytecodePatchContext.commentRingState(ring: String): Pair<Method, M
         }
     val withHelpers = holders.map { holder -> holder to holder.methods.filter(::isHelper).ifEmpty { calledHelpers(holder) } }
         .filter { (_, helpers) -> helpers.isNotEmpty() }
-    val (holder, helpers) = withHelpers.singleOrNull()
-        ?: refuse("expected one class holding the comment story ring plugin with a ring state helper, found ${withHelpers.size} of ${holders.size}")
-    val helper = helpers.singleOrNull() ?: refuse("${holder.type} has ${helpers.size} ring state helpers, not one")
+    if (withHelpers.isEmpty()) {
+        refuse("expected a class holding the comment story ring plugin with a ring state helper, found none of ${holders.size}")
+    }
+    val helpers = withHelpers.flatMap { (_, helpers) -> helpers }.distinctBy { it.reference() }
+    val helper = helpers.singleOrNull() ?: refuse(
+        "the classes holding the comment story ring plugin (${withHelpers.joinToString { (holder, _) -> holder.type }}) " +
+            "have ${helpers.size} ring state helpers, not one",
+    )
     return helper to ringStateConstructor(helper.returnType, ring)!!
 }
 

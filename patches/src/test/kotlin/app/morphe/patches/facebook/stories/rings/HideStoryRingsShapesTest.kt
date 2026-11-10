@@ -85,6 +85,20 @@ class HideStoryRingsShapesTest {
     }
 
     @Test
+    fun `586's Android 9 prefetch lambda holding the plugin's name too shares the builder's helper`() {
+        val lambda = classDef("Lfixture/Prefetch;", method("Lfixture/Prefetch;", "invoke", emptyList(), "Ljava/lang/Object;", """
+            const-string v0, "$STORY_RING_PLUGIN"
+            const/4 v0, 0x0
+            invoke-static {v0}, Lfixture/Statics;->ringState(Lfixture/Bucket;)$ringState
+            move-result-object v0
+            return-object v0
+        """, registers = 2, static = false))
+        val (helper, constructor) = PatchContexts.of(listOf(movedBuilder(), lambda, statics, ringStateClass)).commentRingState(ring)
+        assertEquals("Lfixture/Statics;" to "ringState", helper.definingClass to helper.name)
+        assertEquals(ringState, constructor.definingClass)
+    }
+
+    @Test
     fun `a builder calling only a static that answers something else is refused`() {
         val context = PatchContexts.of(listOf(table, movedBuilder("label", "Ljava/lang/String;"), statics, ringStateClass))
         assertThrows(PatchException::class.java) { context.commentRingState(ring) }

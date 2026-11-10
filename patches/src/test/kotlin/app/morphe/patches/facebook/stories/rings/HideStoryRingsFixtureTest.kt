@@ -39,7 +39,10 @@ import org.junit.Test
 class HideStoryRingsFixtureTest {
     private val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
 
-    /** Builds with more than the comment row builder holding the plugin's name: 586 adds a table of plugin names. */
+    /**
+     * Builds with more than the comment row builder holding the plugin's name: 586 adds a table of
+     * plugin names, and its Android 9 build has a prefetch lambda in the table's place.
+     */
     private val pluginHolders = mapOf("586.0.0.52.53" to 2)
 
     private fun Method.code() = implementation!!.instructions.toList()
