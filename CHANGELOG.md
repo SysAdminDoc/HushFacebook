@@ -76,6 +76,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* `Pinch to zoom` on a story now zooms the story when your fingers start near its left or right edge. On some screens it zoomed only the narrow strip Facebook keeps there for tapping to the next or previous story. (#220)
 * The theme patches now also recolor what Facebook looks up through a second color path, which some of its newer text boxes use. Those colors went out untouched before, so in light mode `Material You theme` could leave them Facebook's grey. (#141)
 * In light mode, `Material You theme` also reaches the light grays Facebook paints behind fields and boxes without naming a color for them, on sheets that slide up like the comments and on its server-built screens. They stayed Facebook's gray before. White and text keep their colors, and with Debug logging on the log says where a gray it still leaves came from. (#141)
 * `Local profile counts` now shows the numbers you typed on your own profile. It couldn't tell the profile was yours, so Facebook's real numbers stayed put. Other people's profiles still keep theirs. (#280)

@@ -705,6 +705,34 @@ public class PinchZoomTest {
         assertNull("an activity that isn't the story viewer counted", PinchZoom.mediaUnder(activity, decor(), 300, 300));
     }
 
+    /**
+     * Facebook keeps a clear Litho strip at each side of a story, 64dp wide, for taps to the previous
+     * and next story, and the story under them is a Litho host too. Where 64dp is no more than the
+     * smallest media, the reporter's phone among them, a pinch beside the edge zoomed the strip alone
+     * (#220). In the story viewer a host on top yields to the story spanning it.
+     */
+    @Test
+    public void inTheStoryViewerASideStripForTapsYieldsToTheStoryUnderIt() {
+        PinchZoom.resetForTests();
+        Activity viewer = Robolectric.buildActivity(com.facebook.stories.viewer.activity.StoryViewerActivity.class).setup().get();
+        FrameLayout card = new FrameLayout(viewer);
+        FrameLayout wrap = new FrameLayout(viewer);
+        LithoHost story = new LithoHost(viewer);
+        wrap.addView(story, new FrameLayout.LayoutParams(1080, 1920));
+        card.addView(wrap, new FrameLayout.LayoutParams(1080, 1920));
+        LithoHost next = new LithoHost(viewer);
+        FrameLayout.LayoutParams right = new FrameLayout.LayoutParams(162, 1920);
+        right.leftMargin = 918;
+        card.addView(next, right);
+        card.addView(new LithoHost(viewer), new FrameLayout.LayoutParams(162, 1920));
+        viewer.setContentView(card);
+        layOut(viewer);
+        View root = viewer.getWindow().getDecorView();
+        assertSame("the next story's strip won", story, PinchZoom.mediaUnder(viewer, root, 1000, 900));
+        assertSame("the previous story's strip won", story, PinchZoom.mediaUnder(viewer, root, 80, 900));
+        assertSame(story, PinchZoom.mediaUnder(viewer, root, 540, 900));
+    }
+
     /** 584 opens the story viewer as one of its empty subclasses as well, and that one holds Facebook's finger too. */
     @Test
     public void aStoryViewerSubclassIsTheStoryViewer() {

@@ -755,19 +755,20 @@ public final class PinchZoom {
      * {@link #SMALLEST_DP} each way, in the story viewer or inside a profile, a feed video's player or
      * a carousel photo, and the deepest such one where they nest. Inside those, a view on top that
      * holds none, like the story viewer's clear overlay for taps, is looked past to the views under
-     * it, and a Litho host on
-     * top yields to the media right under it only when that's a picture spanning all of the host, like
-     * the band a profile's cover draws over its photo. Above them a view is looked past only when it
-     * draws nothing at the point, like the empty layer Facebook keeps over every screen, so a screen
-     * Facebook opens over a profile, leaving the profile shown under it, never hands a pinch to a photo
-     * it covers. Anywhere else, null.
+     * it, and a Litho host on top yields to the media right under it only when that's a picture
+     * spanning all of the host, like the band a profile's cover draws over its photo. In the story
+     * viewer any media spanning the host wins, like the story under the clear strips Facebook keeps at
+     * each side for taps to the previous and next story, which count as media where 64dp is no wider
+     * than a strip (#220). Above them a view is looked past only when it draws nothing at the point,
+     * like the empty layer Facebook keeps over every screen, so a screen Facebook opens over a profile,
+     * leaving the profile shown under it, never hands a pinch to a photo it covers. Anywhere else, null.
      */
     @Nullable
     static View mediaUnder(Activity activity, View root, float x, float y) {
         int smallest = Math.round(SMALLEST_DP * root.getResources().getDisplayMetrics().density);
         boolean story = storyViewer(activity);
         Map<View, Boolean> feedVideos = story ? new IdentityHashMap<>() : feedVideos(root);
-        return mediaUnder(root, x, y, story, feedVideos, smallest, new int[2], new boolean[1]);
+        return mediaUnder(root, x, y, story, story, feedVideos, smallest, new int[2], new boolean[1]);
     }
 
     /** The views of the feed videos Tap to play knows in [root]'s window, each a place a pinch zooms. */
@@ -780,10 +781,13 @@ public final class PinchZoom {
         return found;
     }
 
-    /** [open] comes back true when the view found is a Litho host the next media under it still decides on. */
+    /**
+     * [open] comes back true when the view found is a Litho host the next media under it still decides
+     * on. [story] is true in the story viewer.
+     */
     @Nullable
-    private static View mediaUnder(View view, float x, float y, boolean zoomable, Map<View, Boolean> feedVideos,
-            int smallest, int[] at, boolean[] open) {
+    private static View mediaUnder(View view, float x, float y, boolean zoomable, boolean story,
+            Map<View, Boolean> feedVideos, int smallest, int[] at, boolean[] open) {
         open[0] = false;
         if (!zoomable && (profiles.containsKey(view) || feedVideos.containsKey(view) || PhotoCarousel.isRowPhoto(view))) {
             zoomable = true;
@@ -796,7 +800,7 @@ public final class PinchZoom {
             for (int i = group.getChildCount() - 1; i >= 0; i--) {
                 View child = group.getChildAt(i);
                 if (!under(child, x, y, at)) continue;
-                View found = mediaUnder(child, x, y, zoomable, feedVideos, smallest, at, open);
+                View found = mediaUnder(child, x, y, zoomable, story, feedVideos, smallest, at, open);
                 if (found == null) {
                     if (!zoomable && covers(child, x, y, at)) return null;
                     continue;
@@ -808,7 +812,7 @@ public final class PinchZoom {
                     continue;
                 }
                 open[0] = false;
-                return isPicture(found) && holds(found, host, at) ? found : host;
+                return (story || isPicture(found)) && holds(found, host, at) ? found : host;
             }
             if (host != null) {
                 open[0] = true;
