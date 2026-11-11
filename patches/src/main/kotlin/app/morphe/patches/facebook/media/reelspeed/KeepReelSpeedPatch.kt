@@ -82,7 +82,8 @@ val keepReelSpeedPatch = bytecodePatch(
     name = "Keep the reel speed",
     description = "A speed you pick in a reel's menu stays for the next reels, even after Facebook restarts, " +
         "so you don't set it every time. Pick normal speed to go back. On by default. A second switch for feed and Watch videos starts off. " +
-        "Live videos that have ended get Playback speed in their gear menu too, also on by default. All of it is " +
+        "Live videos that have ended get Playback speed in their gear menu too, also on by default. Another switch, " +
+        "off to start, puts Playback speed from 0.5x to 3x in a feed or Watch video's three-dot menu. All of it is " +
         "in Hushfacebook settings > Reels and Watch.",
     default = true,
 ) {
