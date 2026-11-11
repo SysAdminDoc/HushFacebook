@@ -357,6 +357,12 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * why. Everything's read from the code: the 32-bit build matches arm64 instruction for instruction
  * with its classes renamed.
  *
+ * Show only comments that match: while the comment search box holds words, Hide comments' hook
+ * above leaves out the comments without them, and the comment list is built again each time the
+ * words change, through a state update of the patch's own and the list's and comment section's
+ * equality methods ([commentFilter] has the detail). A build where they don't fit keeps the rest of
+ * the patch, with that switch doing nothing and a warning saying why.
+ *
  * Hide who is typing in comments (#170) and Hide the new comments pop-up (#185) are nameless patches
  * this one carries, [incomingCommentTypingPatch] and [newCommentsPillPatch].
  *
@@ -368,7 +374,7 @@ val commentSheetOptionsPatch = bytecodePatch(
     name = "Comment sheet options",
     description = "Small fixes for comments. Stop a long press on Like from opening reactions, hide the GIF and " +
         "sticker buttons, show every reply without tapping View replies, load a whole reply thread as you " +
-        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, put Block on reaction lists, hide Like on comments, hide Related groups under group posts, hide comments with shop links or your words, hide who is typing and the new comments pop-up, hide the emoji row over the comment box, hide the line over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
+        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, put Block on reaction lists, hide Like on comments, hide Related groups under group posts, hide comments with shop links or your words, show only the comments a search matches, hide who is typing and the new comments pop-up, hide the emoji row over the comment box, hide the line over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
         "Hushfacebook settings > Comments and writing.",
 ) {
     category("Comments")
@@ -413,6 +419,9 @@ val commentSheetOptionsPatch = bytecodePatch(
         val threadPager = threadPagerTap(holders(COMMENT_LIST), replyRow) { types ->
             types.mapNotNull { classDefByOrNull(it) }.associateBy { it.type }
         }
+        val filter = commentFilter(holders(COMMENT_LIST), drawn) { types ->
+            types.mapNotNull { classDefByOrNull(it) }.associateBy { it.type }
+        }
         // 585's bar no longer names its GIF button, so the bar is found by its sticker and the enum constant.
         val gifAction = classDefByOrNull(COMPOSER_ACTION)?.let { enumConstant(it, VIEWER_GIF_ACTION) }
         val viewer = viewerButtons(holders(VIEWER_STICKER), gifAction)
@@ -426,6 +435,7 @@ val commentSheetOptionsPatch = bytecodePatch(
         val hooked = listOfNotNull(
             buttons.check, bottom.check, post.check, dislike, like, dock, threads.initialState, drawn.render, replyList.build,
             replyRow.render, feedReplyRow.render, threadPager.render, viewer.render, videoBar, inlineBar?.render,
+            filter?.build, filter?.apply, filter?.listEqual, filter?.equal,
         ).map { it.descriptor() }.toSet()
         listOf(band.builder, band.root, band.list).firstOrNull { it.descriptor() in hooked }?.let {
             refuse("${it.descriptor()} holds the video comment band and another hook")
@@ -491,6 +501,7 @@ val commentSheetOptionsPatch = bytecodePatch(
         ) { types -> types.mapNotNull { classDefByOrNull(it) }.associateBy { it.type } }?.forEach { part ->
             mutable(part.method).insertAll(part.insertions)
         }
+        filter?.let { filterComments(it) }
         enableStatus("commentSheetOptions")
     }
 }

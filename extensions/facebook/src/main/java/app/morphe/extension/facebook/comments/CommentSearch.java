@@ -81,6 +81,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the matches seen so far, so it's exact once the search has reached the end. Back closes the bar
  * while it shows, and the next one closes the sheet.
  *
+ * <p>Show only comments that match goes further, with Comment sheet options' hooks. After a pause in
+ * typing, each comment list Facebook built ({@link #listDrawn}) gets a state update of the patch's
+ * own, which builds its rows again, and the list and each comment section drawn under older words
+ * answer that they changed ({@link #redraws}), so {@link CommentSheetOptions#hidesComment} asks about
+ * each comment again and leaves out the ones without the words ({@link #filtersOut}). Nothing new
+ * is fetched.
+ *
  * <p>Off, nothing is added.
  */
 public final class CommentSearch {
@@ -152,6 +159,35 @@ public final class CommentSearch {
     /** The comment sheets handed over, by their views, weakly. */
     private static final Map<View, Search> SHEETS = Collections.synchronizedMap(new WeakHashMap<>());
 
+    /** The member the report names once a comment list has been built with the filter on. */
+    static final String LIST_HOOK = "comment list refresh";
+
+    /** What the report counts each time the filter's words change and the list is built again. */
+    static final String FILTERED = "Comment list filtered by a search";
+
+    /** The static method the patch adds to the comment list's section, queueing the update that builds it again. */
+    static final String REFRESH = "hushfacebookRefreshList";
+
+    private static final String OPTIONS = FamilyNames.COMMENT_SHEET_OPTIONS;
+
+    /** The words the filter leaves comments out by, folded, or empty for none. */
+    private static volatile String filterWords = "";
+
+    /** Goes up each time the filter's words change. */
+    private static volatile int generation;
+
+    /** Each comment and comment list drawn with the filter on, weakly, with the generation it was drawn under. */
+    private static final Map<Object, Integer> DRAWN = Collections.synchronizedMap(new WeakHashMap<>());
+
+    /**
+     * The section contexts of the comment lists built, weakly, each with its section's class. An
+     * open reply thread is a comment list of its own, so there can be several.
+     */
+    private static final Map<Object, Class<?>> LISTS = Collections.synchronizedMap(new WeakHashMap<>());
+
+    /** Each list class's {@link #REFRESH} method. */
+    private static final Map<Class<?>, Method> REFRESHES = new ConcurrentHashMap<>();
+
     @Nullable private static Handler main;
 
     private CommentSearch() {
@@ -192,6 +228,100 @@ public final class CommentSearch {
 
     private static boolean on() {
         return Utils.settingsReady() && Settings.SEARCH_COMMENTS.get();
+    }
+
+    private static boolean filtering() {
+        return on() && Settings.FILTER_COMMENT_SEARCH.get();
+    }
+
+    /**
+     * Called first thing where Facebook builds a comment list's rows, on its own thread, with the
+     * list's section and its section context, kept for the filter to build the list again. The
+     * list is noted as drawn under the words in use, like a comment.
+     */
+    public static void listDrawn(@Nullable Object list, @Nullable Object context) {
+        try {
+            if (list == null || context == null || !filtering()) return;
+            HookStatus.invoked(OPTIONS);
+            HookStatus.bound(OPTIONS, LIST_HOOK);
+            LISTS.put(context, list.getClass());
+            DRAWN.put(list, generation);
+        } catch (Throwable failure) {
+            HookStatus.threw(OPTIONS, LIST_HOOK, failure);
+        }
+    }
+
+    /**
+     * Whether the filter leaves out [comment], whose words are [text]: with the switch on and words
+     * in the box, a comment without them. Text that can't be read keeps its comment. Notes the
+     * comment as drawn under the words in use, so new words draw it again.
+     */
+    static boolean filtersOut(@Nullable Object comment, @Nullable String text) {
+        if (comment == null || !filtering()) return false;
+        DRAWN.put(comment, generation);
+        String words = filterWords;
+        return !words.isEmpty() && text != null && !fold(text).contains(words);
+    }
+
+    /**
+     * Asked where Facebook compares a comment list with the one it would replace, with both lists,
+     * and a comment section, with each one's comment: true, so the section counts as changed and
+     * draws again, when either side was drawn under older words.
+     */
+    public static boolean redraws(@Nullable Object before, @Nullable Object after) {
+        try {
+            if (DRAWN.isEmpty()) return false;
+            int now = generation;
+            return drawnBefore(before, now) || drawnBefore(after, now);
+        } catch (Throwable failure) {
+            HookStatus.threw(OPTIONS, LIST_HOOK, failure);
+            return false;
+        }
+    }
+
+    /** Puts the filter back as it starts: no words, nothing drawn and no lists. For tests. */
+    static void clearFilter() {
+        filterWords = "";
+        DRAWN.clear();
+        LISTS.clear();
+        REFRESHES.clear();
+    }
+
+    private static boolean drawnBefore(@Nullable Object comment, int now) {
+        if (comment == null) return false;
+        Integer drawn = DRAWN.get(comment);
+        return drawn != null && drawn != now;
+    }
+
+    /**
+     * New [words] for the filter, folded: on a change, each comment list still around is built
+     * again, through the update the patch added to its section, which changes nothing in its state.
+     * One that's gone or can't take it is skipped.
+     */
+    static void filterBy(String words) {
+        if (words.equals(filterWords) || (!filtering() && filterWords.isEmpty())) return;
+        filterWords = words;
+        generation++;
+        List<Map.Entry<Object, Class<?>>> lists;
+        synchronized (LISTS) {
+            lists = new ArrayList<>(LISTS.entrySet());
+        }
+        boolean queued = false;
+        for (Map.Entry<Object, Class<?>> list : lists) {
+            try {
+                Object context = list.getKey();
+                if (context == null) continue;
+                Method refresh = REFRESHES.get(list.getValue());
+                if (refresh == null) {
+                    refresh = list.getValue().getMethod(REFRESH, Object.class);
+                    REFRESHES.put(list.getValue(), refresh);
+                }
+                if (Boolean.TRUE.equals(refresh.invoke(null, context))) queued = true;
+            } catch (Throwable failure) {
+                HookStatus.threw(OPTIONS, LIST_HOOK, failure);
+            }
+        }
+        if (queued) HookStatus.counted(OPTIONS, FILTERED);
     }
 
     private static void later(Runnable task, long delay) {
@@ -405,6 +535,7 @@ public final class CommentSearch {
          * there pages a few pixels at a time, so the search waits for the search key.
          */
         private final Runnable typed = () -> {
+            filterBy(typedWords());
             if (roomy(list(false))) start();
         };
 
@@ -439,6 +570,8 @@ public final class CommentSearch {
             try {
                 View sheet = content.get();
                 if (sheet != null && sheet.isAttachedToWindow()) return;
+                // The words go with the sheet, or the next one would open filtered.
+                filterBy("");
                 Layer shown = layer;
                 if (shown != null && shown.getParent() instanceof ViewGroup) {
                     ((ViewGroup) shown.getParent()).removeView(shown);
@@ -704,6 +837,7 @@ public final class CommentSearch {
             walk++;
             drop(typed);
             words = "";
+            filterBy("");
             forget();
             say("");
             hideKeyboard();
@@ -783,6 +917,7 @@ public final class CommentSearch {
                 drop(typed);
                 walk++;
                 words = typedWords();
+                filterBy(words);
                 forget();
                 say("");
                 if (words.isEmpty()) return;

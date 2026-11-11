@@ -1563,6 +1563,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_search_comments", FALSE);
 
     /**
+     * While the comment search box holds words, the comments without them leave the list, and
+     * clearing the box brings them back
+     * ({@link app.morphe.extension.facebook.comments.CommentSearch}). Needs Search comments and
+     * Comment sheet options' comment and list hooks. Off by default.
+     */
+    public static final BooleanSetting FILTER_COMMENT_SEARCH =
+            new BooleanSetting("hushfacebook_filter_comment_search", FALSE);
+
+    /**
      * Facebook's text boxes (posts, comments, captions, a story's text) look people up to tag only
      * for a word that starts with @. Off, they also look them up for a plain word Facebook takes for
      * a name, what its code calls an implicit mention

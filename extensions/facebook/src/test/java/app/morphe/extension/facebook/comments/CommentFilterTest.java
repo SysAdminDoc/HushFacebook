@@ -21,6 +21,9 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -33,12 +36,25 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * Hide comments with shop links and Hide comments with your words (#118): the comment section
  * asks about each comment before drawing it, and a comment whose words link to a shop, or hold a
  * phrase from Words to hide and none from the keep list, is left out while its switch is on. Off,
- * paused, a comment with no words, or anything that isn't a comment, and it's drawn.
+ * paused, a comment with no words, or anything that isn't a comment, and it's drawn. With Show only
+ * comments that match on, a comment without the searched words is left out, and new words build
+ * every comment list again and make the lists and comments drawn under the old ones count as changed.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
 public class CommentFilterTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
+
+    /** A comment list's section as the patch leaves it, with the helper that queues the filter's update. */
+    public static final class ListSection {
+        static final List<Object> QUEUED = new ArrayList<>();
+
+        /** Queues on a context that's a String, as a live one would; anything else has lost its section. */
+        public static boolean hushfacebookRefreshList(Object context) {
+            QUEUED.add(context);
+            return context instanceof String;
+        }
+    }
 
     @Before
     public void start() {
@@ -54,6 +70,10 @@ public class CommentFilterTest {
         Settings.HIDDEN_WORDS.resetToDefault();
         Settings.KEPT_WORDS.resetToDefault();
         Settings.POST_WORDS_WHOLE_WORDS.resetToDefault();
+        Settings.SEARCH_COMMENTS.resetToDefault();
+        Settings.FILTER_COMMENT_SEARCH.resetToDefault();
+        CommentSearch.clearFilter();
+        ListSection.QUEUED.clear();
         CommentText.cachedMembers = null;
         HookStatus.clear();
     }
@@ -140,6 +160,59 @@ public class CommentFilterTest {
 
         Settings.HIDDEN_WORDS.save("");
         assertFalse("an empty list hides nothing", CommentSheetOptions.hidesComment(new GraphQLComment("spoiler")));
+    }
+
+    @Test
+    public void searchedWordsLeaveOutTheCommentsWithoutThemAndBuildEveryListAgain() {
+        Settings.SEARCH_COMMENTS.save(true);
+        Settings.FILTER_COMMENT_SEARCH.save(true);
+        ListSection list = new ListSection();
+        ListSection replies = new ListSection();
+        Object lost = new Object();
+        CommentSearch.listDrawn(list, "context");
+        CommentSearch.listDrawn(replies, lost);
+        GraphQLComment match = new GraphQLComment("Loved the ENDING");
+        GraphQLComment other = new GraphQLComment("So cute!");
+        assertFalse("no words, every comment is drawn", CommentSheetOptions.hidesComment(match));
+        assertFalse(CommentSheetOptions.hidesComment(other));
+        assertFalse("nothing has changed yet", CommentSearch.redraws(match, other));
+        assertFalse(CommentSearch.redraws(list, replies));
+
+        CommentSearch.filterBy("ending");
+        assertEquals("both lists are asked to build again", 2, ListSection.QUEUED.size());
+        assertTrue(ListSection.QUEUED.containsAll(Arrays.asList("context", lost)));
+        assertTrue("a comment drawn under older words draws again", CommentSearch.redraws(match, null));
+        assertTrue("on either side", CommentSearch.redraws(null, other));
+        assertTrue("so does a list", CommentSearch.redraws(new Object(), list));
+        assertFalse("something never drawn doesn't", CommentSearch.redraws(new Object(), null));
+        assertFalse(CommentSheetOptions.hidesComment(match));
+        assertTrue("a comment without the words is left out", CommentSheetOptions.hidesComment(other));
+        assertFalse("text that can't be read is kept", CommentSheetOptions.hidesComment(new GraphQLComment(null)));
+        assertFalse("drawn under the new words, it's the same", CommentSearch.redraws(match, other));
+        CommentSearch.listDrawn(list, "context");
+        assertFalse(CommentSearch.redraws(list, null));
+        String line = statusLine();
+        assertTrue(line, line.contains(CommentSearch.FILTERED + " 1"));
+        assertTrue(line, line.contains(CommentSheetOptions.SEARCH_HIDDEN + " 1"));
+
+        ListSection.QUEUED.clear();
+        CommentSearch.filterBy("ending");
+        assertTrue("the same words build nothing again", ListSection.QUEUED.isEmpty());
+        CommentSearch.filterBy("");
+        assertEquals("clearing the box builds both again", 2, ListSection.QUEUED.size());
+        assertFalse("and every comment is drawn", CommentSheetOptions.hidesComment(other));
+    }
+
+    @Test
+    public void searchFilterOffNothingIsNotedOrBuiltAgain() {
+        Settings.SEARCH_COMMENTS.save(true);
+        ListSection list = new ListSection();
+        CommentSearch.listDrawn(list, "context");
+        CommentSearch.filterBy("ending");
+        assertTrue(ListSection.QUEUED.isEmpty());
+        GraphQLComment other = new GraphQLComment("So cute!");
+        assertFalse(CommentSheetOptions.hidesComment(other));
+        assertFalse(CommentSearch.redraws(list, other));
     }
 
     @Test

@@ -78,7 +78,10 @@ import java.io.File
  * writes the flag false on its own number, the sender takes the arm naming expandReplySection and
  * sends that number instead, the draw builds a second collapsed section when the extension says so,
  * that section gives its row a count of -1, and the row takes the extension's words and the up arrow
- * on that count (#325). Reads the fixture bundles from
+ * on that count (#325). For Show only comments that match, the comment list's build hands the
+ * extension the list first, its state returns on the filter's own update number, and both the list's
+ * and the comment section's equality ask the extension first and answer "not equal" on a yes, with
+ * the two helpers the patch adds beside them. Reads the fixture bundles from
  * HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 /** The plugin that draws Like as a button beside the thumbs-down, as the plugin table names it. */
@@ -406,6 +409,107 @@ class CommentSheetOptionsFixtureTest {
         val flow = ControlFlow.of(method)
         assertEquals("$where: no props go on to Facebook's first instruction", setOf(3, 9), flow.normal[2].toSet())
         assertEquals("$where: a no goes on to Facebook's first instruction", setOf(7, 9), flow.normal[6].toSet())
+    }
+
+    private fun commentFilters(bundle: File) {
+        val name = bundle.name
+        val classes = { types: Set<String> -> FixtureDex.classes(bundle, types) }
+        val drawn = commentDraw(holders(bundle, COMMENT_SECTION))
+        assertNull("$name: a build these places don't fit keeps the rest of the patch", commentFilter(emptyList(), drawn, classes))
+        val filter = commentFilter(holders(bundle, COMMENT_LIST), drawn, classes)
+        assertNotNull("$name: the comment list's update and equality are found", filter)
+        filter!!
+
+        // What's found, against the 586 read: the list names the paging update, and the build takes the section context.
+        val build = filter.build
+        val listClass = classes(setOf(build.definingClass)).values.single()
+        assertTrue("$name: the list names the paging update", methodsHolding(listClass, LIST_STOP_PAGING).isNotEmpty())
+        assertEquals("$name: the build takes the section context", listOf(filter.context), build.parameterTypes.map { it.toString() })
+        assertTrue("$name: and returns its rows", build.returnType.startsWith("L"))
+        assertEquals("$name: the section is asked of the context", filter.context, filter.scope.definingClass)
+        assertTrue("$name: with nothing", filter.scope.parameterTypes.isEmpty())
+        val update = filter.queue.parameterTypes.first().toString()
+        assertEquals("$name: the queue takes the update and its name", listOf(update, "Ljava/lang/String;"),
+            filter.queue.parameterTypes.map { it.toString() })
+        assertEquals("$name: the factory takes a value and a number", listOf("Ljava/lang/Object;", "I"),
+            filter.factory.parameterTypes.map { it.toString() })
+        assertEquals("$name: and builds the update", update, filter.factory.returnType)
+        assertEquals("$name: the state applies the update", listOf(update), filter.apply.parameterTypes.map { it.toString() })
+        assertEquals("$name: by its int", listOf(update, "I"), listOf(filter.number.definingClass, filter.number.type))
+        assertEquals("$name: the list's equality is the list's", build.definingClass, filter.listEqual.definingClass)
+        assertEquals("$name: the comment's is the comment section's", drawn.render.definingClass, filter.equal.definingClass)
+
+        val found = listOf(build, filter.apply, filter.listEqual, filter.equal)
+        val originals = found.associate { it.descriptor() to it.implementation!!.instructions.toList().opcodes() }
+        val context = PatchContexts.of(classes(found.map { it.definingClass }.toSet()).values.toList())
+        fun patched(method: Method) =
+            context.mutableClassDefBy(method.definingClass).methods.single { it.descriptor() == method.descriptor() }
+        context.filterComments(filter)
+
+        // The build hands over the list and its context first.
+        val buildWhere = "$name: ${build.descriptor()}"
+        val buildCode = patched(build).implementation!!.instructions.toList()
+        assertEquals("$buildWhere: the extension is told first", Opcode.INVOKE_STATIC_RANGE, buildCode[0].opcode)
+        assertEquals("$buildWhere: about the list", LIST_DRAWN, buildCode[0].reference())
+        assertEquals("$buildWhere: the list and its context as a range", listOf(patched(build).implementation!!.registerCount - 2, 2),
+            (buildCode[0] as RegisterRangeInstruction).let { listOf(it.startRegister, it.registerCount) })
+        assertEquals("$buildWhere: Facebook's code stays", originals[build.descriptor()], buildCode.drop(1).opcodes())
+
+        // The state's apply returns on the filter's own number before reading anything else.
+        val apply = patched(filter.apply)
+        val applyWhere = "$name: ${filter.apply.descriptor()}"
+        val applyCode = apply.implementation!!.instructions.toList()
+        assertEquals("$applyWhere: the hook's shape", listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.IGET, Opcode.CONST_16, Opcode.IF_NE,
+            Opcode.RETURN_VOID), applyCode.take(5).map { it.opcode })
+        assertEquals("$applyWhere: the update is copied into v0", listOf(0, apply.implementation!!.registerCount - 1),
+            (applyCode[0] as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) })
+        assertEquals("$applyWhere: its number is read",
+            filter.number.let { "${it.definingClass}->${it.name}:${it.type}" }, applyCode[1].reference())
+        assertEquals("$applyWhere: against the filter's own", 1001, (applyCode[2] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals("$applyWhere: any other goes on to Facebook's first instruction", setOf(4, 5), ControlFlow.of(apply).normal[3].toSet())
+        assertTrue("$applyWhere: the hook writes v0 and v1, which are locals", apply.localRegisterCount() >= 2)
+        assertEquals("$applyWhere: Facebook's code stays", originals[filter.apply.descriptor()], applyCode.drop(5).opcodes())
+
+        // Both equality methods ask first, and a yes answers "not equal".
+        fun asks(method: Method, ask: String) {
+            val where = "$name: ${method.descriptor()}"
+            val hooked = patched(method)
+            val code = hooked.implementation!!.instructions.toList()
+            assertEquals("$where: the hook's shape", listOf(Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT, Opcode.IF_EQZ,
+                Opcode.CONST_4, Opcode.RETURN), code.take(5).map { it.opcode })
+            assertEquals("$where: the extension is asked", ask, code[0].reference())
+            assertEquals("$where: about the section and the other one, as a range", listOf(hooked.implementation!!.registerCount - 2, 2),
+                (code[0] as RegisterRangeInstruction).let { listOf(it.startRegister, it.registerCount) })
+            assertEquals("$where: a yes answers not equal", 0, (code[3] as NarrowLiteralInstruction).narrowLiteral)
+            assertEquals("$where: a no goes on to Facebook's first instruction", setOf(3, 5), ControlFlow.of(hooked).normal[2].toSet())
+            assertTrue("$where: the hook writes v0, which is a local", hooked.localRegisterCount() >= 1)
+            assertEquals("$where: Facebook's code stays", originals[method.descriptor()], code.drop(5).opcodes())
+        }
+        asks(filter.listEqual, REDRAWS)
+        asks(filter.equal, "${filter.equal.definingClass}->hushfacebookRedraws(Ljava/lang/Object;Ljava/lang/Object;)Z")
+
+        // The helpers: the list queues the update on a context, the comment section reads both comments.
+        val refresh = context.mutableClassDefBy(build.definingClass).methods.single { it.name == "hushfacebookRefreshList" }
+        assertEquals("$name: the refresh helper takes a context", listOf("Ljava/lang/Object;"), refresh.parameterTypes.map { it.toString() })
+        assertEquals("$name: and answers whether it queued", "Z", refresh.returnType)
+        assertTrue("$name: it's static", AccessFlags.STATIC.isSet(refresh.accessFlags))
+        val refreshCode = refresh.implementation!!.instructions.toList()
+        val refreshRefs = refreshCode.mapNotNull { it.reference() }
+        val method = { it: MethodReference -> "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }
+        listOf(filter.scope, filter.factory, filter.queue).forEach {
+            assertTrue("$name: the refresh helper calls ${method(it)}", method(it) in refreshRefs)
+        }
+        assertTrue("$name: the update is named", "updateState:CommentListSection.hushfacebookRefresh" in refreshRefs)
+        assertTrue("$name: with the filter's own number", refreshCode.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == 1001 })
+
+        val redraws = context.mutableClassDefBy(filter.equal.definingClass).methods.single { it.name == "hushfacebookRedraws" }
+        assertEquals("$name: the redraw helper takes two sections", listOf("Ljava/lang/Object;", "Ljava/lang/Object;"),
+            redraws.parameterTypes.map { it.toString() })
+        assertTrue("$name: it's static", AccessFlags.STATIC.isSet(redraws.accessFlags))
+        val redrawsRefs = redraws.implementation!!.instructions.mapNotNull { it.reference() }
+        assertEquals("$name: each side's props and comment are read, then the extension asked", listOf(
+            drawn.props, drawn.comment, drawn.props, drawn.comment,
+        ).map { "${it.definingClass}->${it.name}:${it.type}" } + REDRAWS, redrawsRefs.filter { "->" in it })
     }
 
     private fun replyLists(bundle: File) {
@@ -996,6 +1100,11 @@ class CommentSheetOptionsFixtureTest {
     @Test
     fun `each declared build asks about each comment before the comment section draws it`() = bundles { bundle ->
         comments(bundle)
+    }
+
+    @Test
+    fun `each declared build can build the comment list again when the search words change`() = bundles { bundle ->
+        commentFilters(bundle)
     }
 
     @Test

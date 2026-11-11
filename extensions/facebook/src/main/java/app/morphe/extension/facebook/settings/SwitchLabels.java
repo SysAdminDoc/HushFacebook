@@ -147,6 +147,7 @@ final class SwitchLabels {
         if (setting == Settings.PAUSE_REELS_UNDER_COMMENTS) return L10n.t("Pause reels while comments are open");
         if (setting == Settings.TAP_REELS_ABOVE_COMMENTS) return L10n.t("Tap a reel above its comments");
         if (setting == Settings.SEARCH_COMMENTS) return L10n.t("Search comments");
+        if (setting == Settings.FILTER_COMMENT_SEARCH) return L10n.t("Show only comments that match");
         if (setting == Settings.TAG_SUGGESTIONS_ONLY_AFTER_AT) return L10n.t("Tag suggestions only after @");
         if (setting == Settings.HIDE_REELS_TAB) return L10n.t("Hide the Reels tab");
         if (setting == Settings.HIDE_REELS_TAB_DOT) return L10n.t("Hide the Reels tab dot");

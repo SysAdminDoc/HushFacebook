@@ -155,6 +155,9 @@ public final class CommentSheetOptions {
     /** Counted each time a comment is left out for a phrase from Words to hide. */
     static final String WORDS_HIDDEN = "Comment with your words left out";
 
+    /** Counted each time a comment is left out for not holding the comment search's words. */
+    static final String SEARCH_HIDDEN = "Comment without the searched words left out";
+
     /** Counted each time a count of people typing is answered as nobody. */
     static final String TYPING_HIDDEN = "Incoming typing kept out";
 
@@ -777,7 +780,8 @@ public final class CommentSheetOptions {
      * The hook, first thing as a comment is drawn, handed the GraphQLComment it draws. True leaves
      * the comment out, with its replies: while Hide comments with shop links is on and its words
      * link to a shop, or while Hide comments with your words is on and they hold a phrase from
-     * Words to hide and none from the keep list. False draws it as Facebook does, and so does
+     * Words to hide and none from the keep list, or while the comment search box holds words they
+     * aren't in (Show only comments that match). False draws it as Facebook does, and so does
      * anything this can't read.
      */
     public static boolean hidesComment(@Nullable Object comment) {
@@ -787,8 +791,14 @@ public final class CommentSheetOptions {
             if (!Utils.settingsReady()) return false;
             boolean links = Settings.HIDE_SHOP_LINK_COMMENTS.get();
             boolean words = Settings.HIDE_COMMENTS_WITH_WORDS.get();
-            if (!links && !words) return false;
+            boolean search = Settings.FILTER_COMMENT_SEARCH.get();
+            if (!links && !words && !search) return false;
             String text = CommentText.body(comment);
+            // First, so every comment drawn is noted under the search words in use.
+            if (search && CommentSearch.filtersOut(comment, text)) {
+                HookStatus.counted(FAMILY, SEARCH_HIDDEN);
+                return true;
+            }
             if (text == null) return false;
             if (links && ShopLinks.holds(text)) {
                 HookStatus.counted(FAMILY, SHOP_LINK_HIDDEN);

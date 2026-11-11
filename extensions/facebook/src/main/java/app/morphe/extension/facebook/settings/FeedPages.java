@@ -929,6 +929,12 @@ final class FeedPages {
             comments.addPreference(toggle(context, Settings.SEARCH_COMMENTS,
                     L10n.t("A magnifier at the top of the comments opens a search box that finds the comments with "
                             + "your words.")));
+            // The comments leave the list through Comment sheet options' hooks on the comment and the list.
+            if (options) {
+                comments.addPreference(toggle(context, Settings.FILTER_COMMENT_SEARCH,
+                        L10n.t("While the search box holds words, comments without them are hidden. Clearing the "
+                                + "box brings them back.")));
+            }
         }
         // Writing had a section of its own for this one switch.
         if (tags) {
