@@ -190,6 +190,14 @@ public final class MaterialYouTheme {
     private static final Map<String, int[]> LIGHT = Collections.unmodifiableMap(parseTokens(FDS_LIGHT));
     private static final int[] SURFACE_VALUES = parseSurfaces(SURFACES);
 
+    /**
+     * The light greys {@link #FDS_LIGHT} lists for a field, sheet or button behind something, so
+     * {@link #noteUnlisted} can name a token left at one in light mode (issue #141): the S22 drew the
+     * comment composer and the Settings search field in stock #F0F2F5. White and the text greys
+     * aren't here.
+     */
+    private static final int[] LIGHT_SURFACE_VALUES = parseSurfaces("E2E5E9 E8EAEE F0F2F5 F2F4F7 F8F9FB");
+
     /** Every grey {@link #FDS_DARK} lists, for any token, sorted. */
     private static final int[] DARK_GREYS = darkGreys(FDS);
     /** {@link #SERVER_BLUES} without alpha, sorted. */
@@ -248,7 +256,11 @@ public final class MaterialYouTheme {
     }
 
     private static int fds(int color, String name) {
-        if (!DarkMode.on()) return lightFds(color, name);
+        if (!DarkMode.on()) {
+            int themed = lightFds(color, name);
+            if (themed == color && Arrays.binarySearch(LIGHT_SURFACE_VALUES, color) >= 0) noteUnlisted(name, color);
+            return themed;
+        }
         if (listed(FDS.get(name), color) || madeByAmoled(FDS.get(name), color, name)
                 || (listed(SHARED.get(name), color) && DarkMode.saidOn())) {
             return AmoledTheme.foreground(recolour(palette(), color), name);
@@ -309,8 +321,9 @@ public final class MaterialYouTheme {
     /**
      * With Debug logging on, writes each token that came with one of the {@link #SURFACES} and was
      * left alone, once per token: a token Facebook gives the same dark grey in both themes isn't in
-     * {@link #FDS_DARK}, so a report names the token behind a gray the theme missed (#37). Only the
-     * token's name and colour are written.
+     * {@link #FDS_DARK}, so a report names the token behind a gray the theme missed (#37). In light
+     * mode the same goes for one of the {@link #LIGHT_SURFACE_VALUES} (#141). Only the token's name
+     * and colour are written.
      */
     private static void noteUnlisted(String token, int color) {
         if (UNLISTED.size() >= MAX_UNLISTED || UNLISTED.contains(token)) return;
