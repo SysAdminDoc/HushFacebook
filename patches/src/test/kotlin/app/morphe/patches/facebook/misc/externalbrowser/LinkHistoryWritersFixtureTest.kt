@@ -225,6 +225,72 @@ class LinkHistoryWritersFixtureTest {
     }
 
     @Test
+    fun `each declared build has one integrity callback, and the hook asks with the event's name before anything else`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        val abis = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                abis += name.substringAfter("-$version-").substringBefore(".apkm")
+                val classes = FixtureDex.classesHolding(bundle, INTEGRITY_CALLBACK_ANCHOR)
+                    .filterNot { it.type.startsWith("Lapp/morphe/") }.distinctBy { it.type }
+                val context = PatchContexts.of(classes)
+                val callback = context.integrityCallback()
+                val code = callback.implementation!!.instructions.toList()
+                println("$name: integrity callback ${callback.definingClass}->${callback.name}")
+                // Positive control, from the 586 dex read: it starts the cloaking check, the signals and
+                // outbound click events each ask isSampled, and it switches on the event name's hash.
+                // (The event names themselves can sit in Redex's string table.)
+                val strings = code.mapNotNull { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string }
+                assertTrue("$name: no cloaking check", "CloakingDetectionService.ACTION_MAYBE_IAB_CLASSIFICATION" in strings)
+                assertTrue("$name: no signals event", "invalid_event_decision_not_provided" in strings)
+                assertTrue("$name: no page hashes", "sim_hash_dom" in strings)
+                val calls = code.mapNotNull { ((it as? ReferenceInstruction)?.reference as? MethodReference) }
+                assertEquals("$name: sampling checks", 2, calls.count { it.name == "isSampled" })
+                assertTrue("$name: no switch on the name",
+                    calls.any { it.definingClass == "Ljava/lang/String;" && it.name == "hashCode" })
+                val locals = callback.implementation!!.registerCount - callback.parameterTypes.size - 1
+                assertTrue("$name: no local to borrow", locals >= 1)
+                assertTrue("$name: a jump lands on the first instruction", 0 !in branchTargets(code))
+                // Negative control: the ad event callback is the other method of its shape on that class.
+                val shaped = context.mutableClassDefBy(callback.definingClass).methods.filter {
+                    it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/os/Bundle;", "Ljava/lang/String;", "Ljava/util/Map;")
+                }
+                assertTrue("$name: only ${shaped.size} methods of its shape", shaped.size >= 2)
+                assertEquals("$name: integrity callbacks among them", 1, shaped.count(::isIntegrityCallback))
+                assertEquals("$name: ad event callbacks among them", 1, shaped.count(::isAdEventCallback))
+                assertTrue("$name: the integrity callback names a call button", !isAdEventCallback(callback))
+
+                val types = callback.parameterTypes.map(CharSequence::toString)
+                context.mutableClassDefBy(callback.definingClass).findMutableMethodOf(callback).holdIntegrityReport()
+                val patchedMethod = context.mutableClassDefBy(callback.definingClass).methods.single {
+                    it.name == callback.name && it.parameterTypes.map(CharSequence::toString) == types
+                }
+                val patched = patchedMethod.implementation!!.instructions.toList()
+                assertEquals("$name: the gate",
+                    listOf(Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.RETURN_VOID),
+                    patched.take(4).map { it.opcode })
+                assertEquals("$name: the gate asks holdIntegrityReport", HOLD_INTEGRITY_REPORT,
+                    ((patched[0] as ReferenceInstruction).reference as MethodReference).toString())
+                // The name: after this and the bundle, before the map, so the last register but one.
+                val ask = patched[0] as RegisterRangeInstruction
+                assertEquals("$name: the gate passes one register", 1, ask.registerCount)
+                assertEquals("$name: the gate passes the event's name", patchedMethod.implementation!!.registerCount - 2, ask.startRegister)
+                assertEquals("$name: the gate tests the answer it kept",
+                    (patched[1] as OneRegisterInstruction).registerA, (patched[2] as OneRegisterInstruction).registerA)
+                assertEquals("$name: where a no goes", patched[2].codeUnits + patched[3].codeUnits,
+                    (patched[2] as OffsetInstruction).codeOffset)
+                assertEquals("$name: the rest is Facebook's",
+                    code.map { it.opcode }.filter { it != Opcode.NOP }, patched.drop(4).map { it.opcode }.filter { it != Opcode.NOP })
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
+    }
+
+    @Test
     fun `each declared build has one browser event logger, and every sampling answer goes through the extension`() {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
         val checked = mutableSetOf<String>()

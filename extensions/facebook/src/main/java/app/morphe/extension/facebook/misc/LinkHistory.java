@@ -45,6 +45,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * callback only logs (nothing in it opens the call or its dialog), and it asks {@link #holdAdEvent}
  * first, so a yes returns before any of it.
  *
+ * <p>The browser also reports pages to Facebook's ad integrity checks, through a callback that
+ * otherwise runs autofill, translation and the login dialog. Three of its events only report: the
+ * page's data handed to the cloaking check, the redirect chain with its tracking codes, and each
+ * hop's domain with the page's images, their sizes and hashes of its text and layout. That callback
+ * asks {@link #holdIntegrityReport} with the event's name first, and a yes for one of those three
+ * returns before it. Every other event runs as before.
+ *
  * <p>It fails open: the switch off, a pause, settings that aren't ready yet, or a failure in here,
  * and the browser builds its writers and sends as it would have.
  */
@@ -66,6 +73,9 @@ public final class LinkHistory {
 
     /** What an ad event that wasn't logged is counted under. */
     static final String AD_EVENTS = "Browser ad events";
+
+    /** What an integrity report that wasn't sent is counted under. */
+    static final String INTEGRITY_REPORTS = "Browser integrity reports";
 
     private LinkHistory() {
     }
@@ -109,6 +119,21 @@ public final class LinkHistory {
      */
     public static boolean holdAdEvent() {
         return held(AD_EVENTS, "ad event", "an ad event");
+    }
+
+    /**
+     * Injection point, first thing in the browser's integrity callback, with the event's name. True
+     * makes it return before an integrity report goes out. Any other event isn't asked about or
+     * counted, and runs as before. Never throws.
+     */
+    public static boolean holdIntegrityReport(String event) {
+        return isIntegrityReport(event) && held(INTEGRITY_REPORTS, "integrity report", "an integrity report");
+    }
+
+    /** The callback's events that only report the page to Facebook's ad integrity checks. */
+    static boolean isIntegrityReport(String event) {
+        return "INTEGRITY_LOGGER".equals(event) || "INTEGRITY_SIGNALS_EVENT".equals(event)
+                || "INTEGRITY_OUTBOUND_CLICK_EVENT".equals(event);
     }
 
     private static boolean held(String counted, String site, String what) {

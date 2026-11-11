@@ -73,6 +73,16 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * codes), and hand the confirm dialog's steps to the click-to-call app state logger (586
  * CTCAppStateLogger.A0D), which logs them only once the tap has started its session. Nothing else
  * happens in it, so LinkHistory.holdAdEvent() goes first and a yes returns before any of it.
+ *
+ * Its sibling of the same shape, read from 586 on 2026-11-11: B6n(Bundle, String, Map), 813
+ * instructions, two switches on the event's name (its String parameter's hashCode). Most branches do
+ * things: autofill's JS bridge answers, the Page name fetch for a call extension, page translation,
+ * Buy with Prime's sheet and the Facebook login dialog. Three only report the page to Facebook's ad
+ * integrity checks. INTEGRITY_LOGGER starts CloakingDetectionService with the page's data,
+ * INTEGRITY_SIGNALS_EVENT logs the redirect chain, tracking codes and comment id, and
+ * INTEGRITY_OUTBOUND_CLICK_EVENT logs each hop's domain and its MD5, the page's images and their
+ * sizes, three sim hashes of its text and layout, and its tracking codes. So
+ * LinkHistory.holdIntegrityReport(name) goes first with the event's name, and returns only for those.
  */
 
 private const val PATCH = "Open links in external browser"
@@ -118,6 +128,15 @@ internal const val HOLD_AD_EVENT = "Lapp/morphe/extension/facebook/misc/LinkHist
 
 /** What the ad event callback names a call button's tap, the string to look it up by. */
 internal const val AD_EVENT_CALLBACK_ANCHOR = "CALL_EXTENSION_CTA_ENTRY"
+
+internal const val HOLD_INTEGRITY_REPORT =
+    "Lapp/morphe/extension/facebook/misc/LinkHistory;->holdIntegrityReport(Ljava/lang/String;)Z"
+
+/**
+ * What the integrity callback names an outbound click's hashed domain, the string to look it up by.
+ * Its event names can sit in Redex's string table instead (586 minapi28 reads them from LX/0R17;->A00(I)).
+ */
+internal const val INTEGRITY_CALLBACK_ANCHOR = "md5Domain"
 
 /**
  * Whether [method] is a factory of [writer]: an instance method outside it that takes one parameter
@@ -333,27 +352,61 @@ internal fun MutableMethod.holdBrowserEvents(answers: List<Int>) {
  * the browser's launch bundle, the event's name and its values, and names [AD_EVENT_CALLBACK_ANCHOR].
  * Its class has another method of that shape (586 B6n), which names no call button.
  */
-internal fun isAdEventCallback(method: Method): Boolean {
+internal fun isAdEventCallback(method: Method) = isBrowserCallback(method, AD_EVENT_CALLBACK_ANCHOR)
+
+/** The one ad event callback, or a refusal. */
+internal fun BytecodePatchContext.adEventCallback() = browserCallback(AD_EVENT_CALLBACK_ANCHOR, "ad event callback")
+
+/** First thing in the ad event callback: ask the extension, and return on a yes. Otherwise it logs as before. */
+internal fun MutableMethod.holdAdEvent() = returnFirstOnYes(HOLD_AD_EVENT)
+
+/** Whether [method] is the browser's integrity callback: the ad event callback's shape, naming [INTEGRITY_CALLBACK_ANCHOR]. */
+internal fun isIntegrityCallback(method: Method) = isBrowserCallback(method, INTEGRITY_CALLBACK_ANCHOR)
+
+/** The one integrity callback, or a refusal. */
+internal fun BytecodePatchContext.integrityCallback() = browserCallback(INTEGRITY_CALLBACK_ANCHOR, "integrity callback")
+
+/**
+ * First thing in the integrity callback: hand the extension the event's name, and return on a yes.
+ * Every other event (autofill, translation, the login dialog) runs as before.
+ */
+internal fun MutableMethod.holdIntegrityReport() {
+    requireLocals(PATCH, 1)
+    // The name is the second of three parameters after this, so the last register but one.
+    val name = implementation!!.registerCount - 2
+    addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { v$name .. v$name }, $HOLD_INTEGRITY_REPORT
+            move-result v0
+            if-eqz v0, :run
+            return-void
+        """,
+        ExternalLabel("run", getInstruction(0)),
+    )
+}
+
+/**
+ * Whether [method] is one of the browser's callbacks that takes its launch bundle, an event's name and
+ * its values, returns void, and names [anchor].
+ */
+private fun isBrowserCallback(method: Method, anchor: String): Boolean {
     if (method.returnType != "V" || AccessFlags.STATIC.isSet(method.accessFlags)) return false
     if (method.parameterTypes.map(CharSequence::toString) != listOf("Landroid/os/Bundle;", "Ljava/lang/String;", "Ljava/util/Map;")) {
         return false
     }
     return method.implementation?.instructions?.any {
-        ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == AD_EVENT_CALLBACK_ANCHOR
+        ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == anchor
     } == true
 }
 
-/** The one ad event callback, or a refusal. */
-internal fun BytecodePatchContext.adEventCallback(): Method {
-    val callbacks = classDefByStrings(AD_EVENT_CALLBACK_ANCHOR, StringComparisonType.EQUALS)
+private fun BytecodePatchContext.browserCallback(anchor: String, what: String): Method {
+    val callbacks = classDefByStrings(anchor, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith("Lapp/morphe/") }.distinctBy { it.type }
-        .flatMap { it.methods }.filter(::isAdEventCallback)
+        .flatMap { it.methods }.filter { isBrowserCallback(it, anchor) }
     return callbacks.singleOrNull()
-        ?: throw PatchException("$PATCH: expected one ad event callback, found ${callbacks.size}")
+        ?: throw PatchException("$PATCH: expected one $what, found ${callbacks.size}")
 }
-
-/** First thing in the ad event callback: ask the extension, and return on a yes. Otherwise it logs as before. */
-internal fun MutableMethod.holdAdEvent() = returnFirstOnYes(HOLD_AD_EVENT)
 
 /** Asks [hook] before this void method's first instruction and returns on a yes. */
 private fun MutableMethod.returnFirstOnYes(hook: String) {
