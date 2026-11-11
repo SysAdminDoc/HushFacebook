@@ -208,6 +208,20 @@ public final class CaptionRoom {
         return below;
     }
 
+    /** The block hanging lowest below [column] when {@link #hangsBelow} says [row] should draw it, or null. */
+    @Nullable
+    static View hangingBlock(ViewGroup row, View column, int most) {
+        if (hangsBelow(row, column, most) <= 0) return null;
+        ViewGroup holder = (ViewGroup) column;
+        View lowest = null;
+        for (int i = 0; i < holder.getChildCount(); i++) {
+            View block = holder.getChildAt(i);
+            if (block.getVisibility() != View.VISIBLE || block.getBottom() <= holder.getHeight()) continue;
+            if (lowest == null || block.getBottom() > lowest.getBottom()) lowest = block;
+        }
+        return lowest;
+    }
+
     /** Whether [view] reaches into the band from [top] to [bottom] of its parent. */
     private static boolean crosses(View view, int top, int bottom) {
         return top < bottom && view.getTop() < bottom && top < view.getBottom();

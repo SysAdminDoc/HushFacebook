@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.reels.CaptionRoom;
+import app.morphe.extension.facebook.reels.SeekPreviewRoom;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
@@ -783,6 +784,7 @@ public final class ProgressBar {
             if (label == null) return;
             CaptionRoom.mounted(label);
             ReelBarFollow.mounted(label);
+            SeekPreviewRoom.updated(label);
             HandOver over = handOvers.remove(label);
             watch(label, scrubber, over == null ? null : over.shown);
             if (over == null) return;
@@ -820,7 +822,8 @@ public final class ProgressBar {
     /**
      * Asked as a press of the bar is about to clear the reel's name, caption and buttons for
      * Facebook's seek look, and to drop its footer out of the lifted layout. Both hooks ask on every
-     * event of the press, so only the first of a run of them logs.
+     * event of the press, so only the first of a run of them logs. A kept press tells {@link
+     * SeekPreviewRoom}, which raises Facebook's preview frame off the footer.
      */
     public static boolean keepsOverlayWhileSeeking() {
         try {
@@ -831,6 +834,7 @@ public final class ProgressBar {
             long now = SystemClock.uptimeMillis();
             if (now - overlayKeptAt > OVERLAY_LOG_GAP_MS) Logger.printDebug(() -> "Reel bar: a press leaves the name and buttons up");
             overlayKeptAt = now;
+            SeekPreviewRoom.pressed();
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "bar press", failure);
@@ -1168,6 +1172,7 @@ public final class ProgressBar {
             if (label == null) return false;
             CaptionRoom.updated(label);
             ReelBarFollow.updated(label);
+            SeekPreviewRoom.updated(label);
             // Facebook found the reel's position and length and moved the bar: the update draws.
             Watch watch = watches.remove(label);
             if (watch != null && watch.runs > 0) {
