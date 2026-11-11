@@ -837,6 +837,26 @@ Saving... To cancel, open Downloads in Hushfacebook settings.	Kaydediliyor… İ
 Turn off double tap to like	Beğenmek için çift dokunmayı kapat
 # context: summary of that switch; Like is the name of Facebook's own button, as Facebook shows it in this language
 A double tap on a reel, a video or a photo in the feed no longer likes it or shows a heart. A single tap and the Like button work as before.	Bir reel'e, videoya veya akıştaki bir fotoğrafa çift dokunmak artık onu beğenmez ve kalp göstermez. Tek dokunuş ve Beğen düğmesi eskisi gibi çalışır.
+# context: switch title on the News feed page; on, a tap on Like under a post asks first
+Ask before liking a post	Gönderiyi beğenmeden önce sor
+# context: summary of that switch; Like is Facebook's own button as Facebook shows it in this language; Continue is the question's button, as translated below
+A tap on Like under a post asks first, and only Continue likes or unlikes it.	Bir gönderinin altındaki Beğen'e dokunmak önce sorar, beğeniyi yalnızca Devam ekler ya da kaldırır.
+# context: switch title under Reels and Watch; on, a tap on Like beside a reel asks first
+Ask before liking a reel	Reel'i beğenmeden önce sor
+# context: summary of that switch
+A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	Bir reel'in yanındaki Beğen'e dokunmak önce sorar, beğeniyi yalnızca Devam ekler ya da kaldırır.
+# context: switch title under Comments and writing; on, a tap on Like under a comment asks first
+Ask before liking a comment	Yorumu beğenmeden önce sor
+# context: summary of that switch
+A tap on Like under a comment asks first, and only Continue likes or unlikes it.	Bir yorumun altındaki Beğen'e dokunmak önce sorar, beğeniyi yalnızca Devam ekler ya da kaldırır.
+# context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
+Like or unlike this post?	Bu gönderi beğenilsin mi, beğeni kaldırılsın mı?
+# context: the same question for a reel
+Like or unlike this reel?	Bu reel beğenilsin mi, beğeni kaldırılsın mı?
+# context: the same question for a comment
+Like or unlike this comment?	Bu yorum beğenilsin mi, beğeni kaldırılsın mı?
+# context: the question's button that goes ahead
+Continue	Devam
 # context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it
 Double tap to skip	Atlamak için çift dokun
 # context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video

@@ -99,6 +99,7 @@ import app.morphe.extension.facebook.feed.MetaAiQuestions;
 import app.morphe.extension.facebook.feed.NotificationFooter;
 import app.morphe.extension.facebook.feed.PostDates;
 import app.morphe.extension.facebook.feed.PostPrompts;
+import app.morphe.extension.facebook.feed.AskBeforeLike;
 import app.morphe.extension.facebook.feed.ProfilePictures;
 import app.morphe.extension.facebook.feed.ProfileSuggestionsForTests;
 import app.morphe.extension.facebook.feed.RelatedPosts;
@@ -781,6 +782,12 @@ public class PausedHooksTest {
                 DoubleTapLike::holdBackTap,
                 () -> DoubleTapLike.holdBackFeedTap(null),
                 DoubleTapLike::holdBackFeedLike));
+        // A tap on Like under a post, beside a reel or under a comment is held while a question goes up.
+        probes.put(PatchFamily.ASK_BEFORE_LIKE, Arrays.asList(
+                () -> asksBeforeALike(AskBeforeLike.POST_FOOTER),
+                () -> asksBeforeALike(AskBeforeLike.REEL),
+                () -> asksBeforeALike(AskBeforeLike.COMMENT),
+                () -> asksBeforeALike(AskBeforeLike.POST_TOUCH)));
         // Facebook's double-tap skip test, read as off, is answered on.
         probes.put(PatchFamily.DOUBLE_TAP_SKIP, Collections.singletonList(() -> DoubleTapSkip.flag(false)));
         // A reel tap gets the controls in place of the pause, they stay up longer, and the unified player hides them.
@@ -1282,6 +1289,16 @@ public class PausedHooksTest {
         sheet.addView(header);
         FullHeightComments.watchHeader(sheet, 0x7f0a0612, true);
         return header.getVisibility() == View.GONE;
+    }
+
+    /** A tap on Like of [kind] from a view on its own screen, with the question it put up taken down again. */
+    private static boolean asksBeforeALike(int kind) {
+        Activity screen = Robolectric.buildActivity(Activity.class).setup().get();
+        boolean held = AskBeforeLike.hold(kind, "Lnone;->like(Landroid/view/View;)V", new Object[] {null, new View(screen)});
+        android.app.Dialog question = org.robolectric.shadows.ShadowDialog.getLatestDialog();
+        if (held && question != null) question.dismiss();
+        shadowOf(android.os.Looper.getMainLooper()).idle();
+        return held;
     }
 
     /** A part-height comment sheet opened from the Reels tab, surface 20, handed over by Facebook. */

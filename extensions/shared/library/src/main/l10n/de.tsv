@@ -837,6 +837,26 @@ Saving... To cancel, open Downloads in Hushfacebook settings.	Wird gespeichert �
 Turn off double tap to like	Doppeltippen zum Liken ausschalten
 # context: summary of that switch; Like is the name of Facebook's own button, as Facebook shows it in this language
 A double tap on a reel, a video or a photo in the feed no longer likes it or shows a heart. A single tap and the Like button work as before.	Doppeltippen auf ein Reel, ein Video oder ein Foto im Feed markiert es nicht mehr mit „Gefällt mir“ und zeigt kein Herz. Einmal tippen und der „Gefällt mir“-Button funktionieren wie bisher.
+# context: switch title on the News feed page; on, a tap on Like under a post asks first
+Ask before liking a post	Vor „Gefällt mir“ bei Beiträgen fragen
+# context: summary of that switch; Like is Facebook's own button as Facebook shows it in this language; Continue is the question's button, as translated below
+A tap on Like under a post asks first, and only Continue likes or unlikes it.	Ein Tippen auf „Gefällt mir“ unter einem Beitrag fragt zuerst nach, und erst Weiter setzt oder entfernt das „Gefällt mir“.
+# context: switch title under Reels and Watch; on, a tap on Like beside a reel asks first
+Ask before liking a reel	Vor „Gefällt mir“ bei Reels fragen
+# context: summary of that switch
+A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	Ein Tippen auf „Gefällt mir“ neben einem Reel fragt zuerst nach, und erst Weiter setzt oder entfernt das „Gefällt mir“.
+# context: switch title under Comments and writing; on, a tap on Like under a comment asks first
+Ask before liking a comment	Vor „Gefällt mir“ bei Kommentaren fragen
+# context: summary of that switch
+A tap on Like under a comment asks first, and only Continue likes or unlikes it.	Ein Tippen auf „Gefällt mir“ unter einem Kommentar fragt zuerst nach, und erst Weiter setzt oder entfernt das „Gefällt mir“.
+# context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
+Like or unlike this post?	„Gefällt mir“ für diesen Beitrag setzen oder entfernen?
+# context: the same question for a reel
+Like or unlike this reel?	„Gefällt mir“ für dieses Reel setzen oder entfernen?
+# context: the same question for a comment
+Like or unlike this comment?	„Gefällt mir“ für diesen Kommentar setzen oder entfernen?
+# context: the question's button that goes ahead
+Continue	Weiter
 # context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it
 Double tap to skip	Doppeltippen zum Springen
 # context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video

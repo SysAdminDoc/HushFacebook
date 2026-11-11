@@ -230,6 +230,9 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_READ_RECEIPTS) return L10n.t("Hide read receipts");
         if (setting == Settings.ORIGINAL_CHAT_MEDIA) return L10n.t("Send photos and videos at original quality");
         if (setting == Settings.TURN_OFF_DOUBLE_TAP_LIKE) return L10n.t("Turn off double tap to like");
+        if (setting == Settings.ASK_BEFORE_LIKING_POSTS) return L10n.t("Ask before liking a post");
+        if (setting == Settings.ASK_BEFORE_LIKING_REELS) return L10n.t("Ask before liking a reel");
+        if (setting == Settings.ASK_BEFORE_LIKING_COMMENTS) return L10n.t("Ask before liking a comment");
         if (setting == Settings.DOUBLE_TAP_SKIP) return L10n.t("Double tap to skip");
         if (setting == Settings.TAP_SHOWS_CONTROLS) return L10n.t("Tap shows the controls");
         if (setting == Settings.DOUBLE_TAP_OPENS_COMMENTS) return L10n.t("Double tap opens comments");

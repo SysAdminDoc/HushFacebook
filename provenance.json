@@ -907,6 +907,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/AskBeforeLike.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/confirm/AskBeforeLikePatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issues #437 and #443: a question before a tap on Like goes through. In Facebook 586 the feed footer built as a litho component likes through the one method holding the BaseReactionsFooterHelper litho trace name, the footer built from UFI plugins through a merged Kotlin lambda whose int field picks the arm holding the LikeButtonFeedUFIFooterItemPlugin trace name, a reel's sidebar Like through the static taking the view, its own type and a boolean that holds the LikeButtonComponent name, and a comment's Like through the lambda holding the LikePluginUtil trace name. The patch puts a call first in each that hands the extension the handler's descriptor, its instance and its arguments, and returns when the extension holds the tap. The extension asks, and Continue calls the same handler again by reflection, which the extension lets through."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostJoinButton.kt"
       ],
       "origin": "original",

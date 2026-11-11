@@ -157,6 +157,8 @@ public enum PatchFamily {
             Settings.NEWEST_REELS_FIRST, Settings.PROFILE_REELS_MOST_VIEWED),
     DOUBLE_TAP_LIKE(FamilyNames.DOUBLE_TAP_LIKE, "doubleTapLike", null,
             Settings.TURN_OFF_DOUBLE_TAP_LIKE),
+    ASK_BEFORE_LIKE(FamilyNames.ASK_BEFORE_LIKE, "askBeforeLike", null,
+            Settings.ASK_BEFORE_LIKING_POSTS, Settings.ASK_BEFORE_LIKING_REELS, Settings.ASK_BEFORE_LIKING_COMMENTS),
     DOUBLE_TAP_SKIP(FamilyNames.DOUBLE_TAP_SKIP, "doubleTapSkip", null,
             Settings.DOUBLE_TAP_SKIP),
     TAP_SHOWS_CONTROLS(FamilyNames.TAP_SHOWS_CONTROLS, "tapShowsControls", null,

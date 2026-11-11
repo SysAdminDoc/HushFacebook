@@ -142,6 +142,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean askBeforeLike() {
+        return false;
+    }
+
     public static boolean doubleTapSkip() {
         return false;
     }

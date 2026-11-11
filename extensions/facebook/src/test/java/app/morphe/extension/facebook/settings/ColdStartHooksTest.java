@@ -60,6 +60,7 @@ import app.morphe.extension.facebook.download.ReelDownload;
 import app.morphe.extension.facebook.download.VideoMenuItemForTests;
 import app.morphe.extension.facebook.emoji.SystemEmoji;
 import app.morphe.extension.facebook.feed.FeedFilter;
+import app.morphe.extension.facebook.feed.AskBeforeLike;
 import app.morphe.extension.facebook.feed.SeenPostsForTests;
 import app.morphe.extension.facebook.feed.FeedGuardForTests;
 import app.morphe.extension.facebook.feed.HomeBack;
@@ -349,6 +350,8 @@ public class ColdStartHooksTest {
         assertFalse("an attachment's double tap before the context was left unhandled", DoubleTapLike.holdBackTap());
         assertFalse("a photo's double tap on Home before the context went unreported", DoubleTapLike.holdBackFeedTap(null));
         assertFalse("the feed's double-tap like before the context was held back", DoubleTapLike.holdBackFeedLike());
+        assertFalse("a tap on Like before the context was held for a question",
+                AskBeforeLike.hold(AskBeforeLike.POST_FOOTER, "Lnone;->like()V", new Object[] {null}));
         // In a build with Hold a reel for 2x, so each answer is the context check's.
         ReelHoldForTests.withHold(() -> {
             assertFalse("a long press on a reel before the context went to the speed-up", ReelHold.longPress(false));

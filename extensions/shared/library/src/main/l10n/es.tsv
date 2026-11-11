@@ -837,6 +837,26 @@ Saving... To cancel, open Downloads in Hushfacebook settings.	Guardando… Para 
 Turn off double tap to like	Desactivar tocar dos veces para dar Me gusta
 # context: summary of that switch; Like is the name of Facebook's own button, as Facebook shows it in this language
 A double tap on a reel, a video or a photo in the feed no longer likes it or shows a heart. A single tap and the Like button work as before.	Tocar dos veces un reel, un vídeo o una foto del feed ya no le da Me gusta ni muestra un corazón. Un toque y el botón Me gusta funcionan como antes.
+# context: switch title on the News feed page; on, a tap on Like under a post asks first
+Ask before liking a post	Preguntar antes de dar Me gusta a una publicación
+# context: summary of that switch; Like is Facebook's own button as Facebook shows it in this language; Continue is the question's button, as translated below
+A tap on Like under a post asks first, and only Continue likes or unlikes it.	Tocar Me gusta bajo una publicación pregunta primero, y solo Continuar da o quita el Me gusta.
+# context: switch title under Reels and Watch; on, a tap on Like beside a reel asks first
+Ask before liking a reel	Preguntar antes de dar Me gusta a un reel
+# context: summary of that switch
+A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	Tocar Me gusta junto a un reel pregunta primero, y solo Continuar da o quita el Me gusta.
+# context: switch title under Comments and writing; on, a tap on Like under a comment asks first
+Ask before liking a comment	Preguntar antes de dar Me gusta a un comentario
+# context: summary of that switch
+A tap on Like under a comment asks first, and only Continue likes or unlikes it.	Tocar Me gusta bajo un comentario pregunta primero, y solo Continuar da o quita el Me gusta.
+# context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
+Like or unlike this post?	¿Dar o quitar Me gusta a esta publicación?
+# context: the same question for a reel
+Like or unlike this reel?	¿Dar o quitar Me gusta a este reel?
+# context: the same question for a comment
+Like or unlike this comment?	¿Dar o quitar Me gusta a este comentario?
+# context: the question's button that goes ahead
+Continue	Continuar
 # context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it
 Double tap to skip	Tocar dos veces para saltar
 # context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video

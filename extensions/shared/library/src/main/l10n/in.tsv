@@ -837,6 +837,26 @@ Saving... To cancel, open Downloads in Hushfacebook settings.	Menyimpan… Untuk
 Turn off double tap to like	Matikan ketuk dua kali untuk menyukai
 # context: summary of that switch; Like is the name of Facebook's own button, as Facebook shows it in this language
 A double tap on a reel, a video or a photo in the feed no longer likes it or shows a heart. A single tap and the Like button work as before.	Mengetuk dua kali reel, video, atau foto di feed tidak lagi menyukainya atau menampilkan hati. Satu ketukan dan tombol Suka tetap berfungsi seperti biasa.
+# context: switch title on the News feed page; on, a tap on Like under a post asks first
+Ask before liking a post	Tanya sebelum menyukai postingan
+# context: summary of that switch; Like is Facebook's own button as Facebook shows it in this language; Continue is the question's button, as translated below
+A tap on Like under a post asks first, and only Continue likes or unlikes it.	Mengetuk Suka di bawah postingan akan bertanya dulu, dan hanya Lanjutkan yang menyukai atau batal menyukainya.
+# context: switch title under Reels and Watch; on, a tap on Like beside a reel asks first
+Ask before liking a reel	Tanya sebelum menyukai reel
+# context: summary of that switch
+A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	Mengetuk Suka di samping reel akan bertanya dulu, dan hanya Lanjutkan yang menyukai atau batal menyukainya.
+# context: switch title under Comments and writing; on, a tap on Like under a comment asks first
+Ask before liking a comment	Tanya sebelum menyukai komentar
+# context: summary of that switch
+A tap on Like under a comment asks first, and only Continue likes or unlikes it.	Mengetuk Suka di bawah komentar akan bertanya dulu, dan hanya Lanjutkan yang menyukai atau batal menyukainya.
+# context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
+Like or unlike this post?	Suka atau batal suka postingan ini?
+# context: the same question for a reel
+Like or unlike this reel?	Suka atau batal suka reel ini?
+# context: the same question for a comment
+Like or unlike this comment?	Suka atau batal suka komentar ini?
+# context: the question's button that goes ahead
+Continue	Lanjutkan
 # context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it
 Double tap to skip	Ketuk dua kali untuk melompat
 # context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video

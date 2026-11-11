@@ -307,6 +307,11 @@ final class VideoPages {
                     L10n.t("A double tap on a reel, a video or a photo in the feed no longer likes it or shows a heart. "
                             + "A single tap and the Like button work as before.")));
         }
+        if (build.contains(PatchFamily.ASK_BEFORE_LIKE)) {
+            // Read on each tap, so a change shows on the next one.
+            reels.addPreference(toggle(context, Settings.ASK_BEFORE_LIKING_REELS,
+                    L10n.t("A tap on Like beside a reel asks first, and only Continue likes or unlikes it.")));
+        }
         if (build.contains(PatchFamily.DOUBLE_TAP_SKIP)) {
             // Read as each player is set up, so a change shows on the next reel or video.
             reels.addPreference(toggle(context, Settings.DOUBLE_TAP_SKIP,

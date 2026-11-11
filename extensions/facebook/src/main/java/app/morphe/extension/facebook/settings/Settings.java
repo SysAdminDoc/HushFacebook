@@ -1180,6 +1180,28 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_turn_off_double_tap_like", FALSE);
 
     /**
+     * A tap on Like under a post on Home asks "Like or unlike this post?" first, and only Continue
+     * likes or unlikes it ({@link app.morphe.extension.facebook.feed.AskBeforeLike}, #437). Starts
+     * off. Read on each tap.
+     */
+    public static final BooleanSetting ASK_BEFORE_LIKING_POSTS =
+            new BooleanSetting("hushfacebook_ask_before_liking_posts", FALSE);
+
+    /**
+     * The same question before the Like beside a reel ({@link
+     * app.morphe.extension.facebook.feed.AskBeforeLike}, #437). Starts off. Read on each tap.
+     */
+    public static final BooleanSetting ASK_BEFORE_LIKING_REELS =
+            new BooleanSetting("hushfacebook_ask_before_liking_reels", FALSE);
+
+    /**
+     * The same question before the Like under a comment ({@link
+     * app.morphe.extension.facebook.feed.AskBeforeLike}, #443). Starts off. Read on each tap.
+     */
+    public static final BooleanSetting ASK_BEFORE_LIKING_COMMENTS =
+            new BooleanSetting("hushfacebook_ask_before_liking_comments", FALSE);
+
+    /**
      * Facebook's own double-tap skip on reels and videos, which a server test keeps off for most
      * accounts: a double tap on the left or right edge skips back or forward 10 seconds, or 5 on a
      * video under 30 seconds ({@link app.morphe.extension.facebook.reels.DoubleTapSkip}, #225).

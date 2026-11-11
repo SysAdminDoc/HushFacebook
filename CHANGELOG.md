@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* `Ask before liking a post`, `Ask before liking a reel` and `Ask before liking a comment` make a tap on Like ask "Like or unlike this post?" first. Continue likes or unlikes it, and Cancel or Back leaves it alone, so a stray tap doesn't. The post switch sits under News feed, the reel one under Reels and Watch and the comment one under Comments and writing. All three start off. (#437, #443)
 * `Double tap to skip on feed videos` under Video and audio jumps a playing feed video 10 seconds ahead when you double tap its right side, or 10 back on the left. Keep tapping to go further. Live videos work too when they can be rewound. One tap on a side still opens the video, just a moment later than usual. With Tap to play on, it needs `Inline feed video controls` on too. Starts off. (#432)
 * `Seek bar on the bottom edge` under Video and audio puts a feed video's seek bar right on the video's bottom edge, so a scroll is less likely to catch it. Facebook's speaker and tagged people buttons move up to sit above the bar. It wins over `Lower the seek bar and speaker`, needs `Seek bar on feed videos` and starts off. (#431)
 * `Faster speeds` under Reels and Watch adds 2.5x and 3x to the speed menu of reels and of feed and Watch videos wherever Facebook's own menu stops at 2x. Some accounts already get both from Facebook, and then the menu stays as it is. A speed you pick there is kept like any other when `Keep the reel speed` is on. Starts off. (#430)

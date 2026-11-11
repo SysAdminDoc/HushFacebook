@@ -178,6 +178,7 @@ final class FeedPages {
                 || build.contains(PatchFamily.META_AI_QUESTIONS)
                 || build.contains(PatchFamily.POST_DATES)
                 || build.contains(PatchFamily.AUTO_TRANSLATION)
+                || build.contains(PatchFamily.ASK_BEFORE_LIKE)
                 || build.contains(PatchFamily.FEEDS_HEADER)) {
             PreferenceCategory feed = category(screen, L10n.t("News feed"));
             // The families whose rules run in the feed guard, which keeps the tally.
@@ -322,6 +323,11 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_POST_COMMENT_BUTTON, hides));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_SHARE_BUTTON, hides));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_SEND_BUTTON, hides));
+            }
+            if (build.contains(PatchFamily.ASK_BEFORE_LIKE)) {
+                // Read on each tap, so a change shows on the next one.
+                feed.addPreference(toggle(context, Settings.ASK_BEFORE_LIKING_POSTS,
+                        L10n.t("A tap on Like under a post asks first, and only Continue likes or unlikes it.")));
             }
             if (build.contains(PatchFamily.POST_DATES)) {
                 feed.addPreference(toggle(context, Settings.KEEP_POST_DATES,
@@ -833,7 +839,8 @@ final class FeedPages {
         boolean fullHeight = build.contains(PatchFamily.FULL_HEIGHT_COMMENTS);
         boolean tags = build.contains(PatchFamily.TAG_SUGGESTIONS);
         boolean pictures = build.contains(PatchFamily.PROFILE_PICTURES);
-        if (!order && !summaries && !options && !reactions && !fullHeight && !tags && !pictures) return;
+        boolean ask = build.contains(PatchFamily.ASK_BEFORE_LIKE);
+        if (!order && !summaries && !options && !reactions && !fullHeight && !tags && !pictures && !ask) return;
         PreferenceCategory comments = category(screen, L10n.t("Comments and writing"));
         if (order) {
             comments.addPreference(toggle(context, Settings.DEFAULT_COMMENT_ORDER,
@@ -855,6 +862,11 @@ final class FeedPages {
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_PROFILE_PICTURES,
                     L10n.t("Takes the profile picture off comments, so the name and text start where the picture "
                             + "was. A change shows on the comments drawn after it.")));
+        }
+        if (ask) {
+            // Read on each tap, so a change shows on the next one.
+            comments.addPreference(toggle(context, Settings.ASK_BEFORE_LIKING_COMMENTS,
+                    L10n.t("A tap on Like under a comment asks first, and only Continue likes or unlikes it.")));
         }
         if (options) {
             comments.addPreference(toggle(context, Settings.LIKE_ONLY,

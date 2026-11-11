@@ -834,6 +834,26 @@ Saving... To cancel, open Downloads in Hushfacebook settings.	正在保存……
 Turn off double tap to like	关闭双击点赞
 # context: summary of that switch; Like is the name of Facebook's own button, as Facebook shows it in this language
 A double tap on a reel, a video or a photo in the feed no longer likes it or shows a heart. A single tap and the Like button work as before.	双击 Reels、视频或动态中的照片不再点赞，也不会显示爱心。单击和“赞”按钮照常使用。
+# context: switch title on the News feed page; on, a tap on Like under a post asks first
+Ask before liking a post	点赞帖子前先询问
+# context: summary of that switch; Like is Facebook's own button as Facebook shows it in this language; Continue is the question's button, as translated below
+A tap on Like under a post asks first, and only Continue likes or unlikes it.	点按帖子下方的“赞”会先询问，只有点“继续”才会点赞或取消点赞。
+# context: switch title under Reels and Watch; on, a tap on Like beside a reel asks first
+Ask before liking a reel	点赞 Reels 前先询问
+# context: summary of that switch
+A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	点按 Reels 旁边的“赞”会先询问，只有点“继续”才会点赞或取消点赞。
+# context: switch title under Comments and writing; on, a tap on Like under a comment asks first
+Ask before liking a comment	点赞评论前先询问
+# context: summary of that switch
+A tap on Like under a comment asks first, and only Continue likes or unlikes it.	点按评论下方的“赞”会先询问，只有点“继续”才会点赞或取消点赞。
+# context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
+Like or unlike this post?	要点赞还是取消点赞这条帖子？
+# context: the same question for a reel
+Like or unlike this reel?	要点赞还是取消点赞这条 Reels？
+# context: the same question for a comment
+Like or unlike this comment?	要点赞还是取消点赞这条评论？
+# context: the question's button that goes ahead
+Continue	继续
 # context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it
 Double tap to skip	双击快进快退
 # context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video

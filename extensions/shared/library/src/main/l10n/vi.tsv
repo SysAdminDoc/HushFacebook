@@ -837,6 +837,26 @@ Saving... To cancel, open Downloads in Hushfacebook settings.	Đang lưu... Đ�
 Turn off double tap to like	Tắt nhấn đúp để thích
 # context: summary of that switch; Like is the name of Facebook's own button, as Facebook shows it in this language
 A double tap on a reel, a video or a photo in the feed no longer likes it or shows a heart. A single tap and the Like button work as before.	Nhấn đúp vào reel, video hoặc ảnh trên bảng tin không còn thích hay hiện trái tim. Nhấn một lần và nút Thích vẫn hoạt động như trước.
+# context: switch title on the News feed page; on, a tap on Like under a post asks first
+Ask before liking a post	Hỏi trước khi thích bài viết
+# context: summary of that switch; Like is Facebook's own button as Facebook shows it in this language; Continue is the question's button, as translated below
+A tap on Like under a post asks first, and only Continue likes or unlikes it.	Nhấn nút Thích dưới bài viết sẽ hỏi trước, và chỉ Tiếp tục mới thích hoặc bỏ thích.
+# context: switch title under Reels and Watch; on, a tap on Like beside a reel asks first
+Ask before liking a reel	Hỏi trước khi thích reel
+# context: summary of that switch
+A tap on Like beside a reel asks first, and only Continue likes or unlikes it.	Nhấn nút Thích cạnh reel sẽ hỏi trước, và chỉ Tiếp tục mới thích hoặc bỏ thích.
+# context: switch title under Comments and writing; on, a tap on Like under a comment asks first
+Ask before liking a comment	Hỏi trước khi thích bình luận
+# context: summary of that switch
+A tap on Like under a comment asks first, and only Continue likes or unlikes it.	Nhấn nút Thích dưới bình luận sẽ hỏi trước, và chỉ Tiếp tục mới thích hoặc bỏ thích.
+# context: the question shown after a tap on Like under a post; Continue goes ahead with the like or unlike, Cancel leaves it
+Like or unlike this post?	Thích hoặc bỏ thích bài viết này?
+# context: the same question for a reel
+Like or unlike this reel?	Thích hoặc bỏ thích reel này?
+# context: the same question for a comment
+Like or unlike this comment?	Thích hoặc bỏ thích bình luận này?
+# context: the question's button that goes ahead
+Continue	Tiếp tục
 # context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it
 Double tap to skip	Nhấn đúp để tua
 # context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video
