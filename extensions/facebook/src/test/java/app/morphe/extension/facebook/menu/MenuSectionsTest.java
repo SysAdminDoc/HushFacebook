@@ -80,40 +80,46 @@ public class MenuSectionsTest {
     @Test
     public void everyOtherGroupBuildsAsFacebookBuiltIt() {
         for (Group group : Group.values()) {
-            if (group == Group.UPSELL || group == Group.PRODUCTS_FROM_FACEBOOK || group == Group.HELP
-                    || group == Group.FEATURED) continue;
+            if (group == Group.UPSELL || group == Group.PRODUCTS_FROM_FACEBOOK || group == Group.HELP) continue;
             assertFalse(group + " was hidden", MenuSections.hideSection(group));
             assertFalse(group + "'s server part was hidden", MenuSections.hideServerSection(group));
             assertNull(group + " has a switch", MenuSections.switchFor(group.name()));
+            if (group == Group.PROFILE) continue;
+            assertNull(group + "'s server part has a switch", MenuSections.serverSwitchFor(group.name()));
         }
         assertSame(Settings.HIDE_MENU_UPGRADES, MenuSections.switchFor("UPSELL"));
         assertSame(Settings.HIDE_MENU_ALSO_FROM_META, MenuSections.switchFor("PRODUCTS_FROM_FACEBOOK"));
         assertSame(Settings.HIDE_MENU_HELP, MenuSections.switchFor("HELP"));
-        assertSame(Settings.HIDE_MENU_SHORTCUTS, MenuSections.switchFor("FEATURED"));
+        assertSame(Settings.HIDE_MENU_HELP, MenuSections.serverSwitchFor("HELP"));
+        assertSame(Settings.HIDE_MENU_SHORTCUTS, MenuSections.serverSwitchFor("PROFILE"));
     }
 
     /**
-     * Your shortcuts, the FEATURED group the server section builds, stays until its own switch is
-     * on (issue #445). Then it builds nothing and is counted under its Menu title, while the
-     * profile card and the Menu tiles' group stay, and it waits for a restart like the others.
+     * Your shortcuts, the folder Facebook builds in the PROFILE group's server section, stays until
+     * its own switch is on (issue #445). Then that server section builds nothing and is counted
+     * under its Menu title, while the PROFILE group's native section, the FEATURED folder after it
+     * and the Menu tiles' group stay, and it waits for a restart like the others.
      */
     @Test
     public void yourShortcutsGoesOnlyByItsOwnSwitch() {
         assertFalse("the Your shortcuts switch starts off", Settings.HIDE_MENU_SHORTCUTS.get());
-        assertFalse(MenuSections.hideServerSection(Group.FEATURED));
+        assertFalse(MenuSections.hideServerSection(Group.PROFILE));
 
         Settings.HIDE_MENU_SHORTCUTS.save(true);
-        assertTrue(MenuSections.hideServerSection(Group.FEATURED));
-        assertFalse("the profile card went with it", MenuSections.hideServerSection(Group.PROFILE));
+        assertTrue(MenuSections.hideServerSection(Group.PROFILE));
+        assertFalse("the PROFILE group's own section went with it", MenuSections.hideSection(Group.PROFILE));
+        assertFalse("the folder after Your shortcuts went with it", MenuSections.hideServerSection(Group.FEATURED));
         assertFalse("the Menu tiles went with it", MenuSections.hideServerSection(Group.PRODUCTS));
         assertTrue("an open Menu keeps Your shortcuts until Facebook restarts", Settings.HIDE_MENU_SHORTCUTS.rebootApp);
         assertEquals(MenuSections.SERVER_ROUTE + ": 4 lists, 4 items, 1 removed. Last reason: "
                         + MenuSections.SHORTCUTS_HIDDEN + ". Removed: " + MenuSections.SHORTCUTS_HIDDEN
-                        + " 1. Kinds: FEATURED 2, PRODUCTS 1, PROFILE 1",
+                        + " 1. Kinds: PROFILE 2, FEATURED 1, PRODUCTS 1",
                 line(FeedFilterCounters.report(), MenuSections.SERVER_ROUTE));
+        assertEquals(MenuSections.ROUTE + ": 1 lists, 1 items, 0 removed. Kinds: PROFILE 1",
+                line(FeedFilterCounters.report(), MenuSections.ROUTE));
 
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
-        assertFalse("paused, Your shortcuts comes back", MenuSections.hideServerSection(Group.FEATURED));
+        assertFalse("paused, Your shortcuts comes back", MenuSections.hideServerSection(Group.PROFILE));
     }
 
     /**

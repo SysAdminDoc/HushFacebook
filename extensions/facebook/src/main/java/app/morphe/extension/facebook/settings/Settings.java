@@ -2140,9 +2140,9 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_menu_help", FALSE, true);
 
     /**
-     * The Your shortcuts row of Facebook's Menu, the group Facebook types FEATURED: the groups and
-     * Pages it pins there, which come back after being hidden one by one (issue #445). Off until
-     * it's turned on. Like Upgrades, it waits for a restart.
+     * The Your shortcuts row of Facebook's Menu, the folder Facebook builds in the server section of
+     * the group it types PROFILE: the groups and Pages it pins there, which come back after being
+     * hidden one by one (issue #445). Off until it's turned on. Like Upgrades, it waits for a restart.
      */
     public static final BooleanSetting HIDE_MENU_SHORTCUTS =
             new BooleanSetting("hushfacebook_hide_menu_shortcuts", FALSE, true);

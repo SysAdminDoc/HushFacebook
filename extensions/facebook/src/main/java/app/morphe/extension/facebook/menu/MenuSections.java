@@ -27,9 +27,11 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  * asks {@link #hideSection} in the first and {@link #hideServerSection} in the second as soon as
  * each knows its group, and a yes has the section build nothing.
  *
- * <p>Only those two groups, Help and support (HELP, issue #224) and Your shortcuts (FEATURED, which
- * only the server section builds, issue #445) can go, each by its own switch, and only by the
- * enum's name, never by a title on screen. It fails open: with a switch off, a
+ * <p>Only those two groups, Help and support (HELP, issue #224) and Your shortcuts can go, each by
+ * its own switch, and only by the enum's name, never by a title on screen. Facebook builds Your
+ * shortcuts as the folder of the PROFILE group, inside that group's server section, so only the
+ * server section hides it (issue #445). FEATURED, the folder Facebook builds after it, stays. It
+ * fails open: with a switch off, a
  * pause, settings that aren't ready, anything but an enum, or any failure in here, the section
  * builds as Facebook built it.
  *
@@ -49,8 +51,8 @@ public final class MenuSections {
     /** The enum name of the Help and support group. */
     static final String HELP = "HELP";
 
-    /** The enum name of the Your shortcuts group. */
-    static final String SHORTCUTS = "FEATURED";
+    /** The enum name of the group whose server section carries Your shortcuts. */
+    static final String SHORTCUTS = "PROFILE";
 
     /** The enum name of the Settings and privacy group. */
     static final String SETTINGS = "SETTINGS";
@@ -102,6 +104,13 @@ public final class MenuSections {
      */
     public static boolean hideServerSection(@Nullable Object group) {
         return decide(group, SERVER_HOOK, SERVER_ROUTE);
+    }
+
+    /** The switch that hides the server section of the group named [name], or null to keep it. */
+    @Nullable
+    static BooleanSetting serverSwitchFor(String name) {
+        if (SHORTCUTS.equals(name)) return Settings.HIDE_MENU_SHORTCUTS;
+        return switchFor(name);
     }
 
     /**
@@ -171,7 +180,7 @@ public final class MenuSections {
             // Ready first: switchFor loads Settings, which loads every switch, and it can't before
             // the context is set.
             if (!Utils.settingsReady()) return false;
-            BooleanSetting toggle = switchFor(name);
+            BooleanSetting toggle = SERVER_HOOK.equals(hook) ? serverSwitchFor(name) : switchFor(name);
             if (toggle == null) return false;
             boolean hide = toggle.get();
             if (hide) FeedFilterCounters.removed(route, 1, hiddenAs(name));
@@ -183,13 +192,15 @@ public final class MenuSections {
         }
     }
 
-    /** The switch that hides the group named [name], or null for every group the Menu keeps. */
+    /**
+     * The switch that hides both sections of the group named [name], or null for every group the
+     * Menu keeps. PROFILE is here only by its server section, which {@link #serverSwitchFor} adds.
+     */
     @Nullable
     static BooleanSetting switchFor(String name) {
         if (UPGRADES.equals(name)) return Settings.HIDE_MENU_UPGRADES;
         if (ALSO_FROM_META.equals(name)) return Settings.HIDE_MENU_ALSO_FROM_META;
         if (HELP.equals(name)) return Settings.HIDE_MENU_HELP;
-        if (SHORTCUTS.equals(name)) return Settings.HIDE_MENU_SHORTCUTS;
         return null;
     }
 
