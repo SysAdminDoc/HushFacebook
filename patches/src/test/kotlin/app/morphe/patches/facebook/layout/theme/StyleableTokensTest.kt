@@ -115,7 +115,7 @@ class StyleableTokensTest {
         ImmutableInstruction10x(Opcode.RETURN_VOID),
     ))
 
-    private fun scan(vararg classes: ClassDef) = integerReadAttributes { visit -> classes.forEach(visit) }
+    private fun scan(vararg classes: ClassDef) = integerReadAttributes({ visit -> classes.forEach(visit) })
 
     @Test
     fun `a static initializer's literal int arrays are read by field`() {

@@ -51,16 +51,22 @@ private val INTEGER_READS = setOf("$TYPED_ARRAY->getInteger(II)I", "$TYPED_ARRAY
  * the array's static field, or a method it hands a TypedArray to, and so on down the calls. An
  * array is one a static initializer fills, by fill-array-data or filled-new-array, and stores in a
  * static int array field ([staticIntArrays]). Which index the integer read takes isn't followed, so
- * every attribute of such an array counts. [forEachClass] walks every class once.
+ * every attribute of such an array counts. [forEachClass] walks every class once. [forEachNaming],
+ * when given, walks only the classes that may name one of the types it gets (the reference index):
+ * an array's initializer and loader name the int array type, and a reader or a caller handing one
+ * on names TypedArray, so that's every class this scan can keep anything from (#236).
  */
-internal fun integerReadAttributes(forEachClass: ((ClassDef) -> Unit) -> Unit): IntegerReadScan {
+internal fun integerReadAttributes(
+    forEachClass: ((ClassDef) -> Unit) -> Unit,
+    forEachNaming: (Collection<String>, (ClassDef) -> Unit) -> Unit = { _, visit -> forEachClass(visit) },
+): IntegerReadScan {
     val arrays = mutableMapOf<String, IntArray>()
     val loaders = mutableMapOf<String, MutableSet<String>>()
     val callees = mutableMapOf<String, MutableSet<String>>()
     val readers = mutableSetOf<String>()
 
-    forEachClass { classDef ->
-        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@forEachClass
+    forEachNaming(listOf(INT_ARRAY, TYPED_ARRAY)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@forEachNaming
         for (method in classDef.methods) {
             val instructions = method.implementation?.instructions?.toList() ?: continue
             if (method.name == "<clinit>") arrays += staticIntArrays(instructions)

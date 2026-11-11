@@ -5,9 +5,11 @@
 package app.morphe.patches.facebook.layout.theme
 
 import app.morphe.Fixtures
+import app.morphe.PatchContexts
 import app.morphe.RepoFiles
 import app.morphe.patches.facebook.layout.theme.tokenAttributes as patchTokenAttributes
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.classDefForEachReferencing
 import com.android.tools.smali.dexlib2.DexFileFactory
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.Opcodes
@@ -964,13 +966,23 @@ class MaterialYouTokenFixtureTest {
     /**
      * The tokens the patch's styleable scan reaches over every class in [apk]: the attributes some
      * styleable array reads as an integer, followed through [styles]' `?attr/` aliases to [tokens].
+     * The patch walks only the classes the reference index hands it, which has to find the same.
      */
     private fun styleableTokens(apk: File, version: String, styles: List<Document>, tokens: Map<String, String>): Set<String> {
         val container = DexFileFactory.loadDexContainer(apk, Opcodes.getDefault())
-        val scan = integerReadAttributes { visit ->
-            for (name in container.dexEntryNames) container.getEntry(name)!!.dexFile.classes.forEach(visit)
-        }
+        val classes = container.dexEntryNames.flatMap { container.getEntry(it)!!.dexFile.classes }
+        val scan = integerReadAttributes({ visit -> classes.forEach(visit) })
         assertTrue("${apk.name}: no styleable array is read as an integer", scan.attributes.isNotEmpty())
+        val context = PatchContexts.of(classes)
+        var visited = 0
+        val indexed = integerReadAttributes({ visit -> classes.forEach(visit) }) { types, visit ->
+            context.classDefForEachReferencing(types = types) { visited++; visit(it) }
+        }
+        assertTrue("${apk.name}: the indexed walk reached $visited of ${classes.size} classes", visited < classes.size / 5)
+        assertEquals("${apk.name}: the indexed walk's attributes", scan.attributes, indexed.attributes)
+        assertEquals("${apk.name}: the indexed walk's readers", scan.readers, indexed.readers)
+        assertEquals("${apk.name}: the indexed walk's arrays",
+            scan.arrays.mapValues { it.value.toList() }, indexed.arrays.mapValues { it.value.toList() })
         val likesLine = LIKES_LINE_ATTRIBUTE.getValue(version)
         assertTrue("${apk.name}: the likes line's text colour attribute isn't read as an integer", likesLine in scan.attributes)
         val readers = scan.readers.filterValues { fields -> fields.any { likesLine in scan.arrays.getValue(it) } }

@@ -166,7 +166,9 @@ internal val fdsTokenAttributesPatch = bytecodePatch {
         plainTokens = dataReadTokens({ visit -> classDefForEach { visit(it) } }, constants, tokenAttributeField(tokenClass)) { names, visit ->
             classDefForEachReferencing(names = names) { visit(it) }
         }.tokens
-        integerReadAttributeIds = integerReadAttributes { visit -> classDefForEach { visit(it) } }.attributes
+        integerReadAttributeIds = integerReadAttributes({ visit -> classDefForEach { visit(it) } }) { types, visit ->
+            classDefForEachReferencing(types = types) { visit(it) }
+        }.attributes
     }
 }
 
