@@ -1226,6 +1226,32 @@ public class MaterialYouThemeTest {
     }
 
     /**
+     * Issue #141's Settings search field: a Bloks box whose #F0F2F5 fill the server sends as one hex
+     * string, which route four leaves, and the box builder paints as its background. In light mode
+     * the fill takes the palette; dark mode, white, colours and a grey AMOLED's Light background
+     * color row moves keep theirs.
+     */
+    @Test
+    public void inLightModeABloksBoxFillTakesThePaletteOnALightSurfaceGrey() {
+        DarkMode.answer(false);
+        int themed = palette.sameLightness(TonePalette.NEUTRAL, 0xFFF0F2F5);
+        assertNotEquals("the palette moves it", 0xFFF0F2F5, themed);
+        assertEquals("the search field", themed, MaterialYouTheme.bloksFill(0xFFF0F2F5, false));
+        assertEquals("white", 0xFFFFFFFF, MaterialYouTheme.bloksFill(0xFFFFFFFF, false));
+        assertEquals("a blue button", 0xFF0866FF, MaterialYouTheme.bloksFill(0xFF0866FF, false));
+        assertEquals("with AMOLED in the build and no Light background color", themed, MaterialYouTheme.bloksFill(0xFFF0F2F5, true));
+        AmoledTheme.useLight(0xFFFFF8E7);
+        try {
+            assertEquals("with AMOLED's Light background color", 0xFFF0F2F5, MaterialYouTheme.bloksFill(0xFFF0F2F5, true));
+        } finally {
+            AmoledTheme.useLight(0);
+        }
+
+        DarkMode.answer(true);
+        assertEquals("dark mode", 0xFFF0F2F5, MaterialYouTheme.bloksFill(0xFFF0F2F5, false));
+    }
+
+    /**
      * Litho reads a token's colour from the theme with TypedArray.getColor (581 LX/1Mx;->A04), and
      * SURFACE_BACKGROUND's night style item keeps #252728, so the comment list's rows drew it (#37).
      * In dark mode a dark surface read that way takes the palette; light mode and other colours keep

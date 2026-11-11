@@ -96,6 +96,9 @@ internal const val STATUS_BAR_YOU = "$MATERIAL_YOU->statusBar(IZ)I"
 /** The same for the navigation bar. */
 internal const val NAVIGATION_BAR_YOU = "$MATERIAL_YOU->navigationBar(IZ)I"
 
+/** A Bloks box's fill, on the builder Accent color and AMOLED hook ([hookBloksFills]). */
+internal const val MATERIAL_YOU_BLOKS_FILL = "$MATERIAL_YOU->bloksFill(I)I"
+
 /**
  * Sends the status bar's colour through the extension, first thing in the method that paints it,
  * with [darkCheck]'s answer for the window, like AMOLED's hook. With AMOLED in the build its call
@@ -503,6 +506,14 @@ val materialYouThemePatch = bytecodePatch(
             hookBloksSheetBackground()
         } catch (moved: PatchException) {
             patchLog.warning("${moved.message}. The theme goes on without Bloks sheets' backgrounds.")
+        }
+
+        // The fill of each Bloks box, like the Settings search field (#141): one hex string the
+        // server sends, which parseColor leaves in light mode as text can be that grey too.
+        try {
+            hookBloksFills(MATERIAL_YOU_BLOKS_FILL)
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The theme goes on without Bloks boxes' light mode fills.")
         }
 
         // The colour resource behind a token, which FDS's token lookup answers and the code then reads

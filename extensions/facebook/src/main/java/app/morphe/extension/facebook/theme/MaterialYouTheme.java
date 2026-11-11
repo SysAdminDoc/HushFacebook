@@ -501,6 +501,25 @@ public final class MaterialYouTheme {
     }
 
     /**
+     * The fill of a Bloks box, such as the Settings search field (issue #141). Bloks parses the
+     * server's hex string through route four, which leaves a light grey since text can be one, then
+     * hands the int to the box builder, which paints the box's background with it. A box's fill is
+     * always a background, so in light mode one of the {@link #LIGHT_SURFACE_VALUES} takes the
+     * palette's neutral at the same lightness ({@link #lightSurface}). Dark mode, where route four
+     * has answered already, and every other colour keep theirs, as does a grey AMOLED's Light
+     * background color row moves (#214): AMOLED's hook on the same builder answers for that one.
+     */
+    public static int bloksFill(int color) {
+        return bloksFill(color, SettingsStatus.amoledTheme());
+    }
+
+    static int bloksFill(int color, boolean amoled) {
+        HookStatus.invoked(FamilyNames.MATERIAL_YOU_THEME);
+        if (amoled && AmoledTheme.bloksFill(color) != color) return color;
+        return lightSurface(color);
+    }
+
+    /**
      * Route two's counterpart: Facebook reading a colour resource with {@code Context.getColor}. The
      * patch sends every such call here, including the ones AMOLED already sent to its own, and
      * AMOLED goes first.
