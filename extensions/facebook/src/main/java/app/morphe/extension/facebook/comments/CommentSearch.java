@@ -138,7 +138,8 @@ public final class CommentSearch {
     private static final int ICON_PAD_DP = 9;
     private static final int GAP_DP = 8;
 
-    private static final int BAR_COLOR = 0xF2303133;
+    // Opaque: the bar sits over the sort button, whose label showed through a 95% fill.
+    private static final int BAR_COLOR = 0xFF303133;
     private static final int TEXT_COLOR = 0xFFE4E6EB;
     private static final int HINT_COLOR = 0xFFB0B3B8;
     private static final int MARK_EDGE = 0xFF0866FF;
