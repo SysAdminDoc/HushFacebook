@@ -44,4 +44,9 @@ public final class SaveRulesForTests {
     public static boolean finishesQuietly() {
         return !MediaDownload.endToast(MediaDownload.quietSaves(), false, false, false);
     }
+
+    /** Whether a reel's or a video's save would ask for the quality first, as Choose quality on each save does. */
+    public static boolean asksForTheQuality() {
+        return QualityChooser.on();
+    }
 }

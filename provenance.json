@@ -1830,6 +1830,15 @@
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
       "changes": "Written for Hushfacebook for issue #404: Play saved videos in a row, a switch of Clean up Reels. Facebook 585 has no route that plays Saved in order (its saved reels link bounces to the main screen, and Saved and Your library both play the tapped reel, then suggestions). The patch puts a static call first in the touch dispatch of FbFragmentActivity and of DelegatingFbFragmentFrameworkActivity, the base of the Saved page and its viewer, whose own dispatch hands touches to its delegate without running FbFragmentActivity's. The extension keeps the card a press landed on (a child of a scrolling list with a same-width sibling), starts a chain when the Reels viewer opens with a saved:: player origin soon after, and when the reel ends or a second player binds after the viewer settles, finishes the viewer, waits for the Saved page to resume, scrolls the next card into view if it has to and taps it with a synthesized finger press through the page's own dispatch."
+    },
+    {
+      "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/QualityChooser.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #448: Choose quality on each save. With the switch on, a reel's Download button and a video's Download to phone show a single-choice list of the Download quality values first, checked at the current one. A pick starts that save with the picked quality held in a thread-local that MediaDownload.quality() reads on the tap, so Download quality itself keeps its value. Cancel saves nothing."
     }
   ]
 }

@@ -401,12 +401,13 @@ public enum PatchFamily {
      * The switches the download patches share and none of them owns: each shapes what every
      * save picks, a story's, a reel's or a feed video's, so it's on the screen under Downloads
      * whenever one of them is in the build. Today that's saves other apps can open, converting to
-     * keep the full size, and quiet saves.
+     * keep the full size, quiet saves, and choosing the quality on each save.
      * Pause turns them off like a family's switches, and a paused Facebook makes no Hushfacebook
      * saves anyway.
      */
     static final List<BooleanSetting> DOWNLOAD_SWITCHES = Collections.unmodifiableList(
-            java.util.Arrays.asList(Settings.DOWNLOAD_COMPATIBLE, Settings.DOWNLOAD_CONVERT, Settings.DOWNLOAD_QUIET));
+            java.util.Arrays.asList(Settings.DOWNLOAD_COMPATIBLE, Settings.DOWNLOAD_CONVERT, Settings.DOWNLOAD_QUIET,
+                    Settings.DOWNLOAD_QUALITY_ASK));
 
     /** The families whose saves read {@link #DOWNLOAD_SWITCHES}. */
     static final Set<PatchFamily> DOWNLOADS = Collections.unmodifiableSet(

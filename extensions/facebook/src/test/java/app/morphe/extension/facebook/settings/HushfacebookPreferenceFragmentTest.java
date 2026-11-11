@@ -1164,7 +1164,7 @@ public class HushfacebookPreferenceFragmentTest {
                 Preference row = rows.get(compatible);
                 assertTrue(row instanceof SwitchPreference);
                 assertFalse(((SwitchPreference) row).isChecked());
-                assertEquals(indexOfKey(rows, Settings.DOWNLOAD_QUALITY.key) - 2, compatible);
+                assertEquals(indexOfKey(rows, Settings.DOWNLOAD_QUALITY.key) - 3, compatible);
                 assertEquals("Save videos other apps can open", String.valueOf(row.getTitle()));
                 assertEquals("Fixes saved videos that play without sound in WhatsApp, video editors such as CapCut and InShot, or "
                         + "some galleries and players. May lower quality.",
@@ -1183,6 +1183,14 @@ public class HushfacebookPreferenceFragmentTest {
                 assertEquals("Quiet saves", String.valueOf(quiet.getTitle()));
                 assertEquals("No toast when a save starts, finishes or is canceled. A save that fails still says why.",
                         String.valueOf(quiet.getSummary()));
+                // Choose quality on each save (issue #448) asks with Download quality's list, right above it
+                // (Save on stays right below the quality), so Convert, the ask and the quality run in that order.
+                Preference ask = rows.get(compatible + 2);
+                assertEquals(indexOfKey(rows, Settings.DOWNLOAD_QUALITY.key) - 1, compatible + 2);
+                assertEquals(download + ": choose quality on each save isn't right above Download quality",
+                        Settings.DOWNLOAD_QUALITY_ASK.key, ask.getKey());
+                assertFalse(((SwitchPreference) ask).isChecked());
+                assertEquals("Choose quality on each save", String.valueOf(ask.getTitle()));
             }
         }
 
@@ -1193,6 +1201,8 @@ public class HushfacebookPreferenceFragmentTest {
                     -1, indexOfKey(rows, Settings.DOWNLOAD_COMPATIBLE.key));
             assertEquals("a quiet-saves row with no download in the build", -1, indexOfKey(rows, Settings.DOWNLOAD_QUIET.key));
             assertEquals("a convert row with no download in the build", -1, indexOfKey(rows, Settings.DOWNLOAD_CONVERT.key));
+            assertEquals("a choose-quality row with no download in the build",
+                    -1, indexOfKey(rows, Settings.DOWNLOAD_QUALITY_ASK.key));
         }
     }
 

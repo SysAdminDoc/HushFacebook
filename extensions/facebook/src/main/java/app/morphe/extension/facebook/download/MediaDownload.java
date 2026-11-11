@@ -573,11 +573,33 @@ public final class MediaDownload {
      */
     static DownloadQuality quality() {
         try {
+            DownloadQuality picked = PICKED.get();
+            if (picked != null) return picked;
             if (!Utils.settingsReady()) return DownloadQuality.BEST;
             DownloadQuality chosen = Settings.DOWNLOAD_QUALITY.get();
             return chosen == null ? DownloadQuality.BEST : chosen;
         } catch (Throwable t) {
             return DownloadQuality.BEST;
+        }
+    }
+
+    /** The quality {@link QualityChooser} picked for the save this thread is starting, or null for Download quality. */
+    private static final ThreadLocal<DownloadQuality> PICKED = new ThreadLocal<>();
+
+    /**
+     * Starts [save] at [quality] in place of Download quality, for that save alone: each read of
+     * {@link #quality} on this thread while it starts answers [quality], and the setting keeps its
+     * value. A save reads its quality as it starts, on the tap, so the one it began with goes with
+     * it to its worker. Answers whether the save started.
+     */
+    static boolean withQuality(DownloadQuality quality, QualityChooser.Save save) {
+        DownloadQuality before = PICKED.get();
+        PICKED.set(quality);
+        try {
+            return save.start();
+        } finally {
+            if (before == null) PICKED.remove();
+            else PICKED.set(before);
         }
     }
 
@@ -909,21 +931,21 @@ public final class MediaDownload {
         Context safe = ready(context);
         if (safe == null) return false;
         List<String> candidates = new ArrayList<>(urls);
+        // Read on the tap, where a quality picked for this save alone (withQuality) is set.
+        DownloadQuality quality = quality();
         return start(safe, true, details,
-                (writer, progress) -> saveDash(safe, label, manifest, candidates, writer, progress)) != null;
+                (writer, progress) -> saveDash(safe, label, manifest, candidates, quality, writer, progress)) != null;
     }
 
     /**
      * {@link #beginDash}'s save, on the worker: the manifest's tracks or the single file. The
-     * quality setting is read once, here at the start, and passed to every helper this calls rather
-     * than read again by each: {@link #saveSingleVideo} and {@link #dashJob} used to read it a
-     * second time on the same save, so a setting changed between those reads, however unlikely on
-     * one thread with no I/O in between, could judge the fallback against a quality other than the
-     * one that picked it.
+     * quality is read once, on the tap, and passed to every helper this calls rather than read
+     * again by each: {@link #saveSingleVideo} and {@link #dashJob} used to read it a second time on
+     * the same save, so a setting changed between those reads, however unlikely on one thread with
+     * no I/O in between, could judge the fallback against a quality other than the one that picked it.
      */
     private static Downloader.Result saveDash(Context application, String label, String manifest, List<String> urls,
-            MediaStoreWriter writer, Downloader.Progress progress) {
-        DownloadQuality quality = quality();
+            DownloadQuality quality, MediaStoreWriter writer, Downloader.Progress progress) {
         if (!DashManifest.withinLimits(manifest)) {
             info(() -> "the manifest of " + label + " is over the limits a save reads (" + manifest.length()
                 + " characters), saving the single file");

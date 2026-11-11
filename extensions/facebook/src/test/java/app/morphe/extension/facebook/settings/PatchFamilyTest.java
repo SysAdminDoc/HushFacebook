@@ -109,17 +109,18 @@ public class PatchFamilyTest {
             assertEquals("Download any story: on (hushfacebook_download_stories=on, hushfacebook_save_story_photos=off)",
                     lines.get(0));
             assertEquals("Every download patch: hushfacebook_download_compatible=off, hushfacebook_download_convert=off, "
-                            + "hushfacebook_download_quiet=off",
+                            + "hushfacebook_download_quiet=off, hushfacebook_download_quality_ask=off",
                     lines.get(1));
             assertTrue(lines.get(2), lines.get(2).startsWith("not in this build: "));
 
             Settings.DOWNLOAD_COMPATIBLE.save(true);
             Settings.DOWNLOAD_QUIET.save(true);
             assertEquals("Every download patch: hushfacebook_download_compatible=on, hushfacebook_download_convert=off, "
-                            + "hushfacebook_download_quiet=on",
+                            + "hushfacebook_download_quiet=on, hushfacebook_download_quality_ask=off",
                     PatchFamily.reportLines(EnumSet.of(PatchFamily.VIDEO_DOWNLOAD), false).get(1));
             assertEquals("Every download patch: off while paused (saved hushfacebook_download_compatible=on, "
-                            + "hushfacebook_download_convert=off, hushfacebook_download_quiet=on)",
+                            + "hushfacebook_download_convert=off, hushfacebook_download_quiet=on, "
+                            + "hushfacebook_download_quality_ask=off)",
                     PatchFamily.reportLines(EnumSet.of(PatchFamily.REEL_DOWNLOAD), true).get(1));
 
             for (String line : PatchFamily.reportLines(EnumSet.of(PatchFamily.SPONSORED_POSTS), false)) {

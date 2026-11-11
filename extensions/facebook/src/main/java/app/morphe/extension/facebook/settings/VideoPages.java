@@ -599,6 +599,9 @@ final class VideoPages {
                     L10n.t("With Save videos other apps can open on, a full size video Facebook only has as VP9 or AV1 is "
                             + "converted to H.264 on your phone instead of saved smaller. Slower, and videos over 10 minutes "
                             + "stay smaller.")));
+            downloads.addPreference(toggle(context, Settings.DOWNLOAD_QUALITY_ASK,
+                    L10n.t("A reel's Download button and a video's Download to phone show the qualities first, and the save "
+                            + "takes the one you pick. Download quality stays as it is.")));
             downloads.addPreference(qualityRow(context));
             downloads.addPreference(saveStorageRow(context));
             downloads.addPreference(saveToRow(context));

@@ -3230,6 +3230,15 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushfacebook_download_quality", DownloadQuality.BEST);
 
     /**
+     * A reel's Download button and a feed or Watch video's Download to phone show the list of
+     * qualities first, {@link #DOWNLOAD_QUALITY} checked, and the save takes the one picked for
+     * itself alone (issue #448). Off by default, so a save starts at once at Download quality.
+     * Every download patch has it ({@link PatchFamily#DOWNLOAD_SWITCHES}).
+     */
+    public static final BooleanSetting DOWNLOAD_QUALITY_ASK =
+            new BooleanSetting("hushfacebook_download_quality_ask", FALSE);
+
+    /**
      * Video saves keep to what other apps open: H.264 video with AAC-LC or HE-AAC sound, within
      * {@link #DOWNLOAD_QUALITY}, or Facebook's single MP4 file when the manifest has no such pair.
      * The sharpest version Facebook streams is often AV1 with xHE-AAC sound, which Gallery and VLC

@@ -166,15 +166,22 @@ public final class VideoMenuItem {
             }
             Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "Download to phone tapped");
             if (MediaDownload.busy(application)) return;
-            if (MediaDownload.saveFeedVideo(application, video.details, video.hd, video.sd)) return;
-
-            Feedback.show(application,
-                L10n.t(application, "Couldn't save this video. Play it for a moment, then try again."), true);
+            // With Choose quality on each save on, the list asks first and its pick starts the save (#448).
+            if (QualityChooser.ask(context, () -> save(application, video))) return;
+            save(application, video);
         } catch (Throwable t) {
             // It runs inside Facebook's click dispatch, on the thread that draws the app.
             HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "video menu tap", t);
             Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "the Download to phone tap failed", t);
         }
+    }
+
+    /** The save of [video], or a message saying it didn't start. Answers whether it started. */
+    private static boolean save(Context application, Video video) {
+        if (MediaDownload.saveFeedVideo(application, video.details, video.hd, video.sd)) return true;
+        Feedback.show(application,
+            L10n.t(application, "Couldn't save this video. Play it for a moment, then try again."), true);
+        return false;
     }
 
     /**

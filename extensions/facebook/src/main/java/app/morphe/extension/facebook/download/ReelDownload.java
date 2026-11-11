@@ -367,8 +367,13 @@ public final class ReelDownload implements Function1<Object, Object> {
             return;
         }
 
-        MediaDownload.saveVideo(context, source, hdField, sdField, manifestField,
-            PostDetails.read(videoIdOf(playerParams), story));
+        PostDetails details = PostDetails.read(videoIdOf(playerParams), story);
+        // With Choose quality on each save on, the list asks first and its pick starts the save (#448).
+        if (QualityChooser.ask(context,
+                () -> MediaDownload.saveVideo(context, source, hdField, sdField, manifestField, details))) {
+            return;
+        }
+        MediaDownload.saveVideo(context, source, hdField, sdField, manifestField, details);
     }
 
     /**

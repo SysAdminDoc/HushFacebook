@@ -373,6 +373,8 @@ public class PausedHooksTest {
         probes.put(Settings.DOWNLOAD_CONVERT, SaveRulesForTests::convertsTheFullSize);
         // A finished save goes without its Saved to toast.
         probes.put(Settings.DOWNLOAD_QUIET, SaveRulesForTests::finishesQuietly);
+        // A reel's or a video's save asks for the quality before it starts.
+        probes.put(Settings.DOWNLOAD_QUALITY_ASK, SaveRulesForTests::asksForTheQuality);
         return probes;
     }
 

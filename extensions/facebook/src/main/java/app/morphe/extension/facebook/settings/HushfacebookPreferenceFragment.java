@@ -1225,8 +1225,11 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         return row;
     }
 
-    /** What the list shows for [quality]: a word for the two ends, the label itself between them. */
-    static String qualityLabel(DownloadQuality quality) {
+    /**
+     * What the list shows for [quality]: a word for the two ends, the label itself between them.
+     * The list a save asks with ({@code QualityChooser}) shows the same.
+     */
+    public static String qualityLabel(DownloadQuality quality) {
         switch (quality) {
             case BEST:
                 return L10n.t("Best");

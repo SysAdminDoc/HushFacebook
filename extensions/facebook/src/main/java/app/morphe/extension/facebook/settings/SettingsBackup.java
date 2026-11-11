@@ -403,6 +403,7 @@ public final class SettingsBackup {
             Settings.DOWNLOAD_COMPATIBLE,
             Settings.DOWNLOAD_CONVERT,
             Settings.DOWNLOAD_QUIET,
+            Settings.DOWNLOAD_QUALITY_ASK,
             Settings.OPEN_ON_CHOSEN_TAB,
             Settings.FOLLOWING_FEED_HOME,
             Settings.SAVED_SHORTCUT,
