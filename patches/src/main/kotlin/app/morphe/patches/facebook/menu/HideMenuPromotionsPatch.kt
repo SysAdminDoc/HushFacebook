@@ -34,6 +34,7 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableField
 
 internal const val HIDE_SECTION = "$EXTENSION_PACKAGE/menu/MenuSections;->hideSection(Ljava/lang/Object;)Z"
 internal const val HIDE_SERVER_SECTION = "$EXTENSION_PACKAGE/menu/MenuSections;->hideServerSection(Ljava/lang/Object;)Z"
+internal const val HIDE_FOLDER = "$EXTENSION_PACKAGE/menu/MenuSections;->hideFolder(Ljava/lang/Object;)Z"
 internal const val SECTION_FOLDED = "$EXTENSION_PACKAGE/menu/MenuSections;->collapsed(ZLjava/lang/Object;)Z"
 internal const val MUSE_DISMISSED ="$EXTENSION_PACKAGE/menu/MuseCard;->dismissed(ZLjava/lang/Object;)Z"
 internal const val SHORTCUTS_KEPT = "$EXTENSION_PACKAGE/menu/MenuShortcuts;->kept(Ljava/util/List;)Ljava/util/List;"
@@ -49,7 +50,9 @@ internal const val HEADER_FLAG = "hushKeptOpen"
  * Both sections of a Menu group ask the extension about the group as soon as they know it, and
  * hand back no children when it says the group goes. See MenuSectionAnchors.kt for how the Menu is
  * built. Help and support goes only by its own switch (issue #224), and every other group, Settings
- * included, builds as Facebook built it.
+ * included, builds as Facebook built it. The server section asks again right before it adds the
+ * bookmarks folder Facebook draws inside it, and a yes leaves only that folder out: the PROFILE
+ * group's, Your shortcuts, goes by its own switch while the profile card around it stays (#445).
  *
  * Right after the native section reads its group, whether the group is folded goes to the extension
  * too, which can answer that Settings and privacy is open, so it builds its rows without a tap
@@ -135,8 +138,18 @@ val hideMenuPromotionsPatch = bytecodePatch(
         val site = rowListSite(native) { classDefByOrNull(it) }
         val siteMethod = if (site === native) nativeMethod else mutableClassDefBy(site.definingClass).findMutableMethodOf(site)
         siteMethod.passRowListsThrough(rows)
-        mutableClassDefBy(server.definingClass).findMutableMethodOf(server)
-            .buildNothingWhenHidden(serverRead, children(server), HIDE_SERVER_SECTION)
+        val serverMethod = mutableClassDefBy(server.definingClass).findMutableMethodOf(server)
+        val folderAdd = nativeFolderAdd(server, serverRead)
+        if (folderAdd == null) {
+            patchLog.warning(
+                "$PATCH: ${server.definingClass}->${server.name} doesn't add one bookmarks folder of its own after " +
+                    "checking it's there. Hide Your shortcuts leaves the row in the Menu.",
+            )
+        } else {
+            // Before buildNothingWhenHidden, whose code goes in above the add and would move it.
+            serverMethod.skipFolderWhenHidden(serverRead, folderAdd)
+        }
+        serverMethod.buildNothingWhenHidden(serverRead, children(server), HIDE_SERVER_SECTION)
 
         val render = single(NT_DISMISSED_UPDATE, "Menu bookmark render", ::isBookmarkRender)
         val component = mutableClassDefBy(render.definingClass)
@@ -199,6 +212,25 @@ internal fun MutableMethod.buildNothingWhenHidden(read: GroupRead, list: Childre
             return-object v$answer
         """.trimIndent(),
         ExternalLabel("facebook", getInstruction(index)),
+    )
+}
+
+/**
+ * Right before the server section checks the bookmarks folder Facebook draws inside it, the group
+ * goes to [HIDE_FOLDER], and a yes skips the folder's add the way a missing folder does, so the
+ * server's own parts around it still build (#445). The group goes through the range form, which
+ * names any register, and the answer into a free local nothing reads where either way lands.
+ */
+internal fun MutableMethod.skipFolderWhenHidden(read: GroupRead, add: NativeFolderAdd) {
+    val answer = freeLocalsAt(PATCH, add.check, 1, targets = listOf(add.skip), highest = 255).single()
+    addInstructionsWithLabels(
+        add.check,
+        """
+            invoke-static/range { v${read.register} .. v${read.register} }, $HIDE_FOLDER
+            move-result v$answer
+            if-nez v$answer, :hidden
+        """.trimIndent(),
+        ExternalLabel("hidden", getInstruction(add.skip)),
     )
 }
 

@@ -28,12 +28,13 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  * each knows its group, and a yes has the section build nothing.
  *
  * <p>Only those two groups, Help and support (HELP, issue #224) and Your shortcuts can go, each by
- * its own switch, and only by the enum's name, never by a title on screen. Facebook builds Your
- * shortcuts as the folder of the PROFILE group, inside that group's server section, so only the
- * server section hides it (issue #445). FEATURED, the folder Facebook builds after it, stays. It
- * fails open: with a switch off, a
- * pause, settings that aren't ready, anything but an enum, or any failure in here, the section
- * builds as Facebook built it.
+ * its own switch, and only by the enum's name, never by a title on screen. Your shortcuts is no
+ * group of its own: Facebook draws it as a bookmarks folder inside the PROFILE group's server
+ * section, between the profile card and Create Facebook Page above and what comes below. That
+ * section asks {@link #hideFolder} right before it adds the folder, and a yes leaves out only the
+ * folder (issue #445). FEATURED, the folder Facebook builds after it, stays. It fails open: with a
+ * switch off, a pause, settings that aren't ready, anything but an enum, or any failure in here,
+ * the section builds as Facebook built it.
  *
  * <p>Right after that, the native section asks {@link #collapsed} whether the group is folded up
  * under its header, which Facebook keeps in the section's own state and flips on each tap. Settings
@@ -51,7 +52,7 @@ public final class MenuSections {
     /** The enum name of the Help and support group. */
     static final String HELP = "HELP";
 
-    /** The enum name of the group whose server section carries Your shortcuts. */
+    /** The enum name of the group whose server section carries the Your shortcuts folder. */
     static final String SHORTCUTS = "PROFILE";
 
     /** The enum name of the Settings and privacy group. */
@@ -63,6 +64,9 @@ public final class MenuSections {
     /** The counter route of the sections carrying what the server sends with a group. */
     static final String SERVER_ROUTE = "Menu server sections";
 
+    /** The counter route of the bookmarks folders Facebook draws inside a group's server section. */
+    static final String FOLDER_ROUTE = "Menu folders";
+
     /** What a hidden Upgrades group is counted under. */
     static final String UPGRADES_HIDDEN = "Upgrades";
 
@@ -72,12 +76,13 @@ public final class MenuSections {
     /** What a hidden Help and support group is counted under. */
     static final String HELP_HIDDEN = "Help and support";
 
-    /** What a hidden Your shortcuts group is counted under. */
+    /** What a hidden Your shortcuts folder is counted under. */
     static final String SHORTCUTS_HIDDEN = "Your shortcuts";
 
-    /** The Hook status names of the four hooks. */
+    /** The Hook status names of the five hooks. */
     static final String NATIVE_HOOK = "Menu section";
     static final String SERVER_HOOK = "Menu server section";
+    static final String FOLDER_HOOK = "Menu folder";
     static final String STATE_HOOK = "Menu section state";
     static final String HEADER_HOOK = "Menu section header";
 
@@ -106,11 +111,19 @@ public final class MenuSections {
         return decide(group, SERVER_HOOK, SERVER_ROUTE);
     }
 
-    /** The switch that hides the server section of the group named [name], or null to keep it. */
+    /**
+     * Injection point, in the children builder of the section that carries what the server sends
+     * with a Menu group, right before it adds the bookmarks folder Facebook draws inside it. True
+     * leaves that folder out, and the rest of the section builds. Never throws.
+     */
+    public static boolean hideFolder(@Nullable Object group) {
+        return decide(group, FOLDER_HOOK, FOLDER_ROUTE);
+    }
+
+    /** The switch that hides the folder in the server section of the group named [name], or null to keep it. */
     @Nullable
-    static BooleanSetting serverSwitchFor(String name) {
-        if (SHORTCUTS.equals(name)) return Settings.HIDE_MENU_SHORTCUTS;
-        return switchFor(name);
+    static BooleanSetting folderSwitchFor(String name) {
+        return SHORTCUTS.equals(name) ? Settings.HIDE_MENU_SHORTCUTS : null;
     }
 
     /**
@@ -180,7 +193,7 @@ public final class MenuSections {
             // Ready first: switchFor loads Settings, which loads every switch, and it can't before
             // the context is set.
             if (!Utils.settingsReady()) return false;
-            BooleanSetting toggle = SERVER_HOOK.equals(hook) ? serverSwitchFor(name) : switchFor(name);
+            BooleanSetting toggle = FOLDER_HOOK.equals(hook) ? folderSwitchFor(name) : switchFor(name);
             if (toggle == null) return false;
             boolean hide = toggle.get();
             if (hide) FeedFilterCounters.removed(route, 1, hiddenAs(name));
@@ -194,7 +207,7 @@ public final class MenuSections {
 
     /**
      * The switch that hides both sections of the group named [name], or null for every group the
-     * Menu keeps. PROFILE is here only by its server section, which {@link #serverSwitchFor} adds.
+     * Menu keeps. PROFILE stays: only its folder goes, by {@link #folderSwitchFor}.
      */
     @Nullable
     static BooleanSetting switchFor(String name) {

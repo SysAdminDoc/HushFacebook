@@ -9,6 +9,7 @@ import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.liveAcrossInjection
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
+import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.util.literalReads
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -131,6 +132,41 @@ internal fun serverGroupRead(method: Method, isGroupEnum: (String) -> Boolean): 
     val read = reads.singleOrNull() ?: return null
     val field = (instructions[read] as ReferenceInstruction).reference as FieldReference
     return GroupRead(read, (instructions[read] as OneRegisterInstruction).registerA, field.type)
+}
+
+/**
+ * Where the server section adds the bookmarks folder Facebook draws itself inside it: the `if-eqz`
+ * at [check] on the folder in [register], which skips the one add right after it when there's none
+ * and lands at [skip]. On 586 the PROFILE group's server section carries one, the Your shortcuts
+ * grid (#445): `LX/0BD4;->A0s` reads it from `A02` (`LX/0BDE;`, a BookmarksFolderSection) into v3,
+ * checks it at 34 and adds it at 35, between the server's REPLACE_NATIVE and BELOW_NATIVE parts.
+ * The profile card and Create Facebook Page come in those parts, so they stay when the folder goes.
+ */
+internal data class NativeFolderAdd(val check: Int, val register: Int, val skip: Int)
+
+/**
+ * [method]'s [NativeFolderAdd]: the one `if-eqz`, no branch landing on it, on a register only a
+ * read of a field of its own class other than [group]'s can hold there, that skips just the
+ * two-register `invoke-virtual` right after it handing that register on. Null unless there's
+ * exactly one and [group]'s register still holds the group there.
+ */
+internal fun nativeFolderAdd(method: Method, group: GroupRead): NativeFolderAdd? {
+    val instructions = method.instructionList()
+    val targets = branchTargets(instructions)
+    val checks = instructions.indices.filter { check ->
+        if (instructions[check].opcode != Opcode.IF_EQZ || check in targets) return@filter false
+        val register = (instructions[check] as OneRegisterInstruction).registerA
+        val add = instructions.getOrNull(check + 1) as? FiveRegisterInstruction ?: return@filter false
+        if (add.opcode != Opcode.INVOKE_VIRTUAL || add.registerCount != 2 || add.registerD != register) return@filter false
+        if (branchTarget(instructions, check) != check + 2) return@filter false
+        val read = method.writersReaching(check, register).singleOrNull() ?: return@filter false
+        val field = (instructions.getOrNull(read) as? ReferenceInstruction)?.reference as? FieldReference
+            ?: return@filter false
+        read != group.index && instructions[read].opcode == Opcode.IGET_OBJECT && field.definingClass == method.definingClass
+    }
+    val check = checks.singleOrNull() ?: return null
+    if (method.writersReaching(check, group.register) != listOf(group.index)) return null
+    return NativeFolderAdd(check, (instructions[check] as OneRegisterInstruction).registerA, check + 2)
 }
 
 /** Where the native section reads whether its group is folded: the instruction and the register it goes to. */

@@ -280,6 +280,87 @@ class MenuSectionsShapesTest {
         assertEquals(8, offsetTarget(server, 3))
     }
 
+    private val folder = "Lfixture/Folder;"
+    private val folderField = ImmutableFieldReference(section, "A02", folder)
+    private val addChild = ImmutableMethodReference(builder, "A01", listOf("Lfixture/Child;"), "V")
+
+    /**
+     * 586's server section (`LX/0BD4;->A0s`): its group into v5 and its native folder into v3 from
+     * fields of its own, its list in v2, and between REPLACE_NATIVE and BELOW_NATIVE an add of the
+     * folder that an `if-eqz` skips when there's none. [extra] goes right before that check.
+     */
+    private fun folderServerSection(
+        folderRead: Instruction = ImmutableInstruction22c(Opcode.IGET_OBJECT, 3, 9, folderField),
+        extra: List<Instruction> = emptyList(),
+        skip: Int = 5,
+    ) = method(
+        listOf(
+            ImmutableInstruction22c(Opcode.IGET_OBJECT, 5, 9, groupField),
+            folderRead,
+            newBuilder(2),
+            invoke(Opcode.INVOKE_DIRECT, builderInit, 2),
+            constString(0, "ABOVE_NATIVE"),
+            constString(0, "REPLACE_NATIVE"),
+        ) + extra + listOf(
+            ImmutableInstruction21t(Opcode.IF_EQZ, 3, skip),
+            invoke(Opcode.INVOKE_VIRTUAL, addChild, 2, 3),
+            constString(0, "BELOW_NATIVE"),
+            childrenOf(0, 2),
+            ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),
+        ),
+        locals = 9,
+    )
+
+    @Test
+    fun `the server section's native folder add is the one add of its own field an if-eqz skips`() {
+        val server = folderServerSection()
+        val read = serverGroupRead(server, isGroup)!!
+        assertEquals(NativeFolderAdd(6, 3, 8), nativeFolderAdd(server, read))
+        // Negative controls: a folder read from another class, a check that skips more than the
+        // add, a group the check reads instead, and a group written again before the check.
+        assertNull(nativeFolderAdd(folderServerSection(
+            ImmutableInstruction22c(Opcode.IGET_OBJECT, 3, 9, ImmutableFieldReference("Lfixture/Other;", "A02", folder))), read))
+        assertNull(nativeFolderAdd(folderServerSection(skip = 7), read))
+        assertNull(nativeFolderAdd(folderServerSection(ImmutableInstruction22c(Opcode.IGET_OBJECT, 3, 9, groupField)),
+            GroupRead(1, 3, group)))
+        assertNull(nativeFolderAdd(folderServerSection(extra = listOf(constString(5, "PROFILE"))), read))
+        // The plain server section has no folder.
+        assertNull(nativeFolderAdd(serverSection(), serverGroupRead(serverSection(), isGroup)!!))
+    }
+
+    @Test
+    fun `a hidden folder skips its add the way a missing one does and the server's parts still build`() {
+        val server = MutableMethod(folderServerSection())
+        val read = serverGroupRead(server, isGroup)!!
+        val add = nativeFolderAdd(server, read)!!
+        val own = server.implementation!!.instructions.count()
+        // In the patch's order: the folder first, so the server hook's code above doesn't move it.
+        server.skipFolderWhenHidden(read, add)
+        server.buildNothingWhenHidden(read, childrenList(server)!!, HIDE_SERVER_SECTION)
+
+        assertEquals("hideServerSection", ((server.at(1) as ReferenceInstruction).reference as MethodReference).name)
+        val at = add.check + 7
+        val call = (server.at(at) as ReferenceInstruction).reference as MethodReference
+        assertEquals(Opcode.INVOKE_STATIC_RANGE, server.at(at).opcode)
+        assertEquals("Lapp/morphe/extension/facebook/menu/MenuSections;", call.definingClass)
+        assertEquals("hideFolder", call.name)
+        assertEquals(listOf("Ljava/lang/Object;"), call.parameterTypes.map { it.toString() })
+        assertEquals("Z", call.returnType)
+        assertEquals(5, (server.at(at) as RegisterRangeInstruction).startRegister)
+        // v0 is borrowed: BELOW_NATIVE's string writes it before anything reads it, either way.
+        assertEquals(Opcode.MOVE_RESULT, server.at(at + 1).opcode)
+        assertEquals(0, (server.at(at + 1) as OneRegisterInstruction).registerA)
+        assertEquals(Opcode.IF_NEZ, server.at(at + 2).opcode)
+        assertEquals(0, (server.at(at + 2) as OneRegisterInstruction).registerA)
+        // A yes lands where a missing folder does, on BELOW_NATIVE, and a no on the section's own check.
+        assertEquals(at + 5, offsetTarget(server, at + 2))
+        assertEquals("BELOW_NATIVE", ((server.at(at + 5) as ReferenceInstruction).reference as StringReference).string)
+        assertEquals(Opcode.IF_EQZ, server.at(at + 3).opcode)
+        assertEquals(at + 5, offsetTarget(server, at + 3))
+        assertEquals(Opcode.INVOKE_VIRTUAL, server.at(at + 4).opcode)
+        assertEquals(own + 3 + 7, server.implementation!!.instructions.count())
+    }
+
     private val baseState = "Lfixture/BaseState;"
     private val foldState = "Lfixture/FoldState;"
     private val stateField = ImmutableFieldReference("Lfixture/Component;", "A03", baseState)

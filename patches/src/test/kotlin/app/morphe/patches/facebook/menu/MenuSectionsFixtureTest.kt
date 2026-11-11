@@ -241,6 +241,13 @@ class MenuSectionsFixtureTest {
                     assertTrue("${bundle.name}: v${free.single()} in ${method.name}", free.single() <= 15)
                 }
 
+                // The server section adds the bookmarks folder Facebook draws inside it, Your shortcuts
+                // in the PROFILE group's, once after checking it's there, with a local free for the
+                // folder hook both there and where the check lands (#445).
+                val folderAdd = nativeFolderAdd(server, serverRead)
+                assertNotNull("${bundle.name}: the server section's one native folder add", folderAdd)
+                server.freeLocalsAt(PATCH, folderAdd!!.check, 1, targets = listOf(folderAdd.skip), highest = 255)
+
                 // The native section reads whether its group is folded once, from the state it casts,
                 // before the group, and two such locals are free for the fold hook (issue #224).
                 assertNotNull("${bundle.name}: the native section's one fold read before its group", foldRead(native, nativeRead))
