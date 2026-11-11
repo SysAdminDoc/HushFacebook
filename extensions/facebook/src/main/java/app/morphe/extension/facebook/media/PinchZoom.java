@@ -19,6 +19,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.view.Display;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -92,8 +93,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * landed, unless Keep videos playing while zoomed is on. In a window Facebook put in HDR color mode,
  * the story viewer's, Android 14 and newer show HDR video above SDR white, so there the copy and the
  * frames a zoom reads from a SurfaceView are half floats in extended sRGB, which keep that light, and
- * the zoom is no dimmer than the story under it (#220). A device whose half float copy fails gets
- * the usual 8 bits from then on.
+ * the zoom is no dimmer than the story under it (#220). A video on a SurfaceView of its own lifts the
+ * screen whatever the window's mode, and Android then dims the window's SDR parts, so a zoom on one
+ * while the screen is lifted ({@link #lifted}) copies in half floats too and puts the window in HDR
+ * color mode until it goes. A device whose half float copy fails gets the usual 8 bits from then on.
  *
  * <p>With Keep videos playing while zoomed on (#220), a zoom on a video surface, a TextureView or a
  * SurfaceView, follows it: about every {@link #FRAME_MILLIS} the copy
@@ -144,6 +147,8 @@ public final class PinchZoom {
     static final String STORY_VIEWER = "com.facebook.stories.viewer.activity.StoryViewerActivity";
     /** How often a zoom that keeps a video playing takes its next frame: about 30 a second. */
     static final long FRAME_MILLIS = 33;
+    /** A screen whose HDR to SDR ratio is past this shows light above SDR white. Android eases the ratio, so a hair over 1 is still SDR. */
+    static final float LIFTED = 1.01f;
 
     /** The root views ProfileFragment made, weakly held. Main thread. */
     private static final Map<View, Boolean> profiles = new WeakHashMap<>();
@@ -165,6 +170,11 @@ public final class PinchZoom {
     /** Reads [source]'s frame on screen now into [zoom]'s copy, then runs [next] on the main thread. */
     interface Frames {
         void read(Zoom zoom, View source, Runnable next);
+    }
+
+    /** How far above SDR white the screen [view] is on shows light now, as its HDR to SDR ratio, 1 for not at all. */
+    interface Headroom {
+        float now(View view);
     }
 
     /** The players Tap to play knows, and pausing or playing one. */
@@ -193,6 +203,7 @@ public final class PinchZoom {
     static volatile Places places = PinchZoom::mediaUnder;
     static volatile Frames frames = PinchZoom::frame;
     static volatile Players players = PATCHED_PLAYERS;
+    static volatile Headroom headroom = PinchZoom::screenHeadroom;
 
     /** A half float copy failed on this device, so copies take the usual 8 bits from then on. Main thread. */
     private static boolean wideFailed;
@@ -326,7 +337,8 @@ public final class PinchZoom {
         started.darkest = darkest();
         started.source = liveSource(target);
         started.story = storyViewer(activity);
-        started.wide = hdr(window);
+        started.window = window;
+        started.wide = wide(window, target);
         // A story held before the pinch, its first finger down past the long-press time, stays the
         // still frame Facebook paused it on, as without Keep videos playing while zoomed.
         if (started.story && started.source != null
@@ -589,7 +601,8 @@ public final class PinchZoom {
         started.scale = DOUBLE_TAP_SCALE;
         started.darkest = darkest();
         started.source = liveSource(target);
-        started.wide = hdr(window);
+        started.window = window;
+        started.wide = wide(window, target);
         zoom = started;
         snapshots.take(activity, target, area, copy -> {
             try {
@@ -906,12 +919,12 @@ public final class PinchZoom {
      */
     static void snapshot(Activity activity, View target, Rect area, Done done) {
         Window window = activity.getWindow();
-        boolean wide = hdr(window) && !wideFailed;
+        boolean wide = wide(window, target) && !wideFailed;
         Bitmap copy = copyBitmap(area.width(), area.height(), wide);
         Handler main = new Handler(Looper.getMainLooper());
         PixelCopy.OnPixelCopyFinishedListener finished = result -> {
             if (result == PixelCopy.SUCCESS) {
-                if (wide && Build.VERSION.SDK_INT >= 34) logBrightest(copy);
+                if (wide && Build.VERSION.SDK_INT >= 34) logBrightest(copy, headroom.now(target));
                 done.accept(copy);
             } else if (wide) {
                 // This device copies no half floats, so it takes the usual 8 bits from here on.
@@ -944,17 +957,39 @@ public final class PinchZoom {
         return Build.VERSION.SDK_INT >= 34 && window != null && window.getColorMode() == ActivityInfo.COLOR_MODE_HDR;
     }
 
+    /** Whether a zoom on [target] copies in half floats: in an HDR window, or on a video SurfaceView while the screen is lifted. */
+    static boolean wide(@Nullable Window window, View target) {
+        return hdr(window) || target instanceof SurfaceView && lifted(target);
+    }
+
+    /**
+     * Whether the screen [view] is on shows light above SDR white now, Android 14 and newer, with Turn
+     * off HDR brightness off. Facebook can draw a story's HDR video on a SurfaceView of its own,
+     * which lifts the screen with the window left at the default color mode (#220).
+     */
+    static boolean lifted(View view) {
+        return Build.VERSION.SDK_INT >= 34 && !Settings.TURN_OFF_HDR_BRIGHTNESS.get() && headroom.now(view) > LIFTED;
+    }
+
+    /** The HDR to SDR ratio of the screen [view] is on, or 1 where Android can't say. */
+    private static float screenHeadroom(View view) {
+        if (Build.VERSION.SDK_INT < 34) return 1f;
+        Display display = view.getDisplay();
+        return display != null && display.isHdrSdrRatioAvailable() ? display.getHdrSdrRatio() : 1f;
+    }
+
     /** A [width] by [height] bitmap to copy into: half floats in extended sRGB where [wide], which keep the light above SDR white, or the usual 8 bits. */
     static Bitmap copyBitmap(int width, int height, boolean wide) {
         if (!wide) return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         return Bitmap.createBitmap(width, height, Bitmap.Config.RGBA_F16, true, ColorSpace.get(ColorSpace.Named.EXTENDED_SRGB));
     }
 
-    /** With Debug logging on, how far past SDR white an HDR window's copy reaches. */
+    /** With Debug logging on, how far past SDR white a wide copy reaches, and the screen's HDR to SDR ratio. */
     @RequiresApi(34)
-    private static void logBrightest(Bitmap copy) {
+    private static void logBrightest(Bitmap copy, float ratio) {
         Logger.printDebug(() -> String.format(Locale.US,
-                "Pinch to zoom: HDR window, the copy's brightest light is %.2fx SDR white", brightest(copy)));
+                "Pinch to zoom: wide copy, its brightest light is %.2fx SDR white, the screen's ratio %.2f",
+                brightest(copy), ratio));
     }
 
     /** The brightest channel over a grid across [copy], 1 being SDR white. */
@@ -1039,6 +1074,7 @@ public final class PinchZoom {
         places = PinchZoom::mediaUnder;
         frames = PinchZoom::frame;
         players = PATCHED_PLAYERS;
+        headroom = PinchZoom::screenHeadroom;
         wideFailed = false;
     }
 
@@ -1067,8 +1103,12 @@ public final class PinchZoom {
         @Nullable View source;
         /** A zoom in the story viewer, which springs back once the story it follows moves on. */
         boolean story;
-        /** The window is in HDR color mode ({@link #hdr}), so frames read from a SurfaceView keep the light above SDR white. */
+        /** The copy and the frames read from a SurfaceView keep the light above SDR white ({@link PinchZoom#wide}). */
         boolean wide;
+        /** The window the zoom lies over. */
+        @Nullable Window window;
+        /** The color mode {@link #raise} took the window from, or -1 while it's Facebook's. */
+        private int raisedFrom = -1;
         /** The finger on the kept zoom stayed still for the long-press time, and paused or played the video. */
         boolean heldDown;
         /** The player a hold paused, which plays again when the zoom springs back. */
@@ -1186,6 +1226,7 @@ public final class PinchZoom {
         void show(@Nullable Bitmap picture) {
             if (picture == null) blank = true;
             if (picture == null || settling) return;
+            if (wide) raise();
             copy.setImageBitmap(picture);
             root.addView(layer, new ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -1462,6 +1503,26 @@ public final class PinchZoom {
             buffers[0] = null;
             buffers[1] = null;
             shownBuffer = -1;
+            lower();
+        }
+
+        /**
+         * Puts a window Facebook left at another color mode in HDR one while the zoom shows, so a wide
+         * copy of a video that lifted the screen shows its light above SDR white as the video does.
+         */
+        private void raise() {
+            Window over = window;
+            if (Build.VERSION.SDK_INT < 34 || over == null || hdr(over)) return;
+            raisedFrom = over.getColorMode();
+            over.setColorMode(ActivityInfo.COLOR_MODE_HDR);
+        }
+
+        /** Hands the window back the color mode {@link #raise} took it from, while it's still the HDR one. */
+        private void lower() {
+            Window over = window;
+            int before = raisedFrom;
+            raisedFrom = -1;
+            if (before >= 0 && over != null && over.getColorMode() == ActivityInfo.COLOR_MODE_HDR) over.setColorMode(before);
         }
 
         boolean shown() {

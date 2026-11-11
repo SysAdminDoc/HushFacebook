@@ -134,6 +134,7 @@ public class PinchZoomTest {
         Settings.PINCH_TO_ZOOM_DIM.resetToDefault();
         Settings.PINCH_TO_ZOOM_LIVE.resetToDefault();
         Settings.LONG_PRESS_OPENS_COMMENTS.resetToDefault();
+        Settings.TURN_OFF_HDR_BRIGHTNESS.resetToDefault();
         HookStatus.clear();
     }
 
@@ -1247,6 +1248,67 @@ public class PinchZoomTest {
         activity.getWindow().setColorMode(ActivityInfo.COLOR_MODE_HDR);
         assertEquals(ActivityInfo.COLOR_MODE_HDR, activity.getWindow().getColorMode());
         assertFalse(pinchOnPhoto().wide);
+    }
+
+    /** A video surface over the profile's photo, the pinch landing on it. */
+    private void surfaceOnScreen() {
+        android.view.SurfaceView surface = new android.view.SurfaceView(activity);
+        ((ViewGroup) photo.getParent()).addView(surface, new FrameLayout.LayoutParams(600, 600));
+        layOut(activity);
+        PinchZoom.places = (screen, root, x, y) -> surface;
+    }
+
+    /**
+     * Facebook can draw a story's HDR video on a SurfaceView of its own, which lifts the screen with
+     * the window left at the default color mode, and Android then dims the window's SDR parts, so an
+     * 8 bit copy over the video looked dimmer than it (#220). A zoom on a video surface while the
+     * screen is lifted copies in half floats and puts the window in HDR color mode until it goes.
+     */
+    @Test
+    @Config(sdk = 34)
+    public void aZoomOnAVideoSurfaceWhileTheScreenIsLiftedCopiesWideInAnHdrWindowUntilItGoes() {
+        surfaceOnScreen();
+        PinchZoom.headroom = view -> 3f;
+        PinchZoom.Zoom zoom = pinchOnPhoto();
+        assertTrue("a zoom on a lifted video surface didn't take wide copies", zoom.wide);
+        assertTrue(zoom.shown());
+        assertEquals("the window stayed out of HDR mode under the wide copy",
+                ActivityInfo.COLOR_MODE_HDR, activity.getWindow().getColorMode());
+        // One finger lifts: the copy springs back, and the window gets its own mode back.
+        touch(event(pointer(MotionEvent.ACTION_POINTER_UP, 1), new float[][] {{250, 300}, {350, 300}}));
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertFalse("the layer stayed after the spring back", zoom.shown());
+        assertEquals("the window stayed in HDR mode after the zoom",
+                ActivityInfo.COLOR_MODE_DEFAULT, activity.getWindow().getColorMode());
+    }
+
+    @Test
+    @Config(sdk = 34)
+    public void aVideoSurfaceOnAScreenShowingNothingAboveSdrWhiteKeepsThe8BitsAndTheWindow() {
+        surfaceOnScreen();
+        PinchZoom.headroom = view -> 1f;
+        assertFalse(pinchOnPhoto().wide);
+        assertEquals(ActivityInfo.COLOR_MODE_DEFAULT, activity.getWindow().getColorMode());
+    }
+
+    /** Turn off HDR brightness asked for no light above SDR white, so a zoom never brings any. */
+    @Test
+    @Config(sdk = 34)
+    public void withTurnOffHdrBrightnessOnALiftedVideoSurfaceKeepsThe8BitsAndTheWindow() {
+        Settings.TURN_OFF_HDR_BRIGHTNESS.save(true);
+        surfaceOnScreen();
+        PinchZoom.headroom = view -> 3f;
+        assertFalse(pinchOnPhoto().wide);
+        assertEquals(ActivityInfo.COLOR_MODE_DEFAULT, activity.getWindow().getColorMode());
+    }
+
+    /** A photo is drawn in the window, which shows it in SDR at the default color mode, so a lifted screen doesn't change its copy. */
+    @Test
+    @Config(sdk = 34)
+    public void aPhotoOnALiftedScreenKeepsThe8BitsAndTheWindow() {
+        PinchZoom.headroom = view -> 3f;
+        assertFalse(pinchOnPhoto().wide);
+        assertEquals(ActivityInfo.COLOR_MODE_DEFAULT, activity.getWindow().getColorMode());
     }
 
     private TextureView video;
