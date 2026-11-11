@@ -2721,3 +2721,16 @@ Double tap to skip on feed videos	動態影片雙擊跳轉
 Double tap the right side of a playing feed video to jump ahead 10 seconds, or the left side to go back 10. Keep tapping to go further. Live videos work too when they can be rewound. One tap on a side still opens the video, a moment later than usual. With Tap to play on, it needs Inline feed video controls on too.	在播放中的動態影片右側點兩下可快轉 10 秒，左側點兩下可倒轉 10 秒。繼續點按可以跳得更遠。直播影片在可以倒轉時也適用。點一下側邊仍會開啟影片，只是比平常稍晚一點。開啟「點按播放」時，也需要開啟「動態消息影片控制項」。
 Show only comments that match	只顯示相符的留言
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	搜尋框中有文字時，不含這些文字的留言會被隱藏。清空搜尋框即可恢復。
+Queue reel saves	排隊儲存 Reels
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	每個你點了「下載」的 Reels 都會加入一個佇列，在背景中一次儲存一個。可以從它的通知或這裡的「下載」暫停或取消。已在佇列中的 Reels 會略過，儲存失敗的會再試一次。佇列會保留到 Facebook 關閉為止。
+Added to the reel queue	已加入 Reels 佇列
+Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	已加入 Reels 佇列。如要暫停或取消，請開啟 Hushfacebook 設定中的「下載」。
+Already in the reel queue	已在 Reels 佇列中
+That reel is already saved	這個 Reels 已經儲存過了
+The reel queue is full. Try again when it's shorter.	Reels 佇列已滿。請等佇列變短後再試。
+Saving queued reels	正在儲存佇列中的 Reels
+Reel queue paused	Reels 佇列已暫停
+Reel queue done	Reels 佇列已完成
+%1$d saved, %2$d waiting, %3$d failed	已儲存 %1$d 個，等待 %2$d 個，失敗 %3$d 個
+Reel queue canceled	Reels 佇列已取消
+Cancel the reel queue	取消 Reels 佇列

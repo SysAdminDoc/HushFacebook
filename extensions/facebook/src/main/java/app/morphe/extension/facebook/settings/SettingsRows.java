@@ -32,6 +32,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
+import app.morphe.extension.facebook.download.ReelQueue;
 import app.morphe.extension.facebook.download.SaveControl;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.settings.BooleanSetting;
@@ -230,6 +231,88 @@ final class SettingsRows {
             frame.addView(cancel, new android.widget.LinearLayout.LayoutParams(
                     android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
             frame.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * The reel queue (#449): what it's doing, its counts, and Pause or Resume with Cancel. Above the
+     * running saves, one of which is its reel. Its text and buttons change in place, as a save's do.
+     */
+    static final class QueueRow extends Preference {
+        static final String KEY = "reel_queue";
+
+        private ReelQueue.Status status;
+        private Button toggleButton;
+        @Nullable
+        private View bound;
+
+        QueueRow(Context context, ReelQueue.Status status) {
+            super(context);
+            this.status = status;
+            setKey(KEY);
+            setPersistent(false);
+            setSelectable(false);
+            setOrder(SaveRow.FIRST - 1);
+            setTitle(ReelQueue.title(status));
+        }
+
+        @Override
+        public CharSequence getSummary() {
+            return ReelQueue.counts(status);
+        }
+
+        void show(ReelQueue.Status now) {
+            status = now;
+            setTitle(ReelQueue.title(now));
+            TextView summary = bound == null ? null : bound.findViewById(android.R.id.summary);
+            if (summary != null) summary.setText(ReelQueue.counts(now));
+            if (toggleButton != null) toggleButton.setText(now.paused ? L10n.t("Resume") : L10n.t("Pause"));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            bound = view;
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setScreenReaderFocusable(true);
+            android.view.ViewGroup frame = view.findViewById(android.R.id.widget_frame);
+            if (frame == null) return;
+            frame.removeAllViews();
+            toggleButton = button(view, status.paused ? L10n.t("Resume") : L10n.t("Pause"), null);
+            toggleButton.setOnClickListener(ignored -> {
+                if (status.paused) ReelQueue.resume();
+                else ReelQueue.pause();
+            });
+            Button cancel = button(view, L10n.t("Cancel"), L10n.t("Cancel the reel queue"));
+            cancel.setOnClickListener(ignored -> {
+                cancel.setEnabled(false);
+                ReelQueue.cancel();
+            });
+            android.widget.LinearLayout.LayoutParams wrap = new android.widget.LinearLayout.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+            frame.addView(toggleButton, wrap);
+            frame.addView(cancel, new android.widget.LinearLayout.LayoutParams(wrap));
+            frame.setVisibility(View.VISIBLE);
+        }
+
+        /** A button styled as a running save's Cancel is, at least 48 dp each way. */
+        private Button button(View row, String text, @Nullable String description) {
+            Button button = new Button(getContext());
+            button.setText(text);
+            if (description != null) button.setContentDescription(description);
+            button.setAllCaps(false);
+            button.setTextSize(14);
+            ScreenColors colors = ScreenColors.current();
+            button.setTextColor(colors.heading);
+            ScreenColors.pressFeedback(button, colors.heading, false);
+            int touch = Math.round(48 * row.getResources().getDisplayMetrics().density);
+            button.setMinWidth(touch);
+            button.setMinimumWidth(touch);
+            button.setMinHeight(touch);
+            button.setMinimumHeight(touch);
+            button.setPadding(touch / 4, 0, touch / 4, 0);
+            return button;
         }
     }
 

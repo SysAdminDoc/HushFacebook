@@ -2603,3 +2603,16 @@ Double tap to skip on feed videos	Toque duplo para pular nos vídeos do feed
 Double tap the right side of a playing feed video to jump ahead 10 seconds, or the left side to go back 10. Keep tapping to go further. Live videos work too when they can be rewound. One tap on a side still opens the video, a moment later than usual. With Tap to play on, it needs Inline feed video controls on too.	Toque duas vezes no lado direito de um vídeo do feed em reprodução para avançar 10 segundos, ou no lado esquerdo para voltar 10. Continue tocando para ir mais longe. Vídeos ao vivo também funcionam quando dá para voltar neles. Um toque só em um lado ainda abre o vídeo, um pouco mais tarde que o normal. Com “Tocar para reproduzir” ligado, “Controles de vídeo no feed” também precisa estar ligado.
 Show only comments that match	Mostrar só os comentários que correspondem
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	Enquanto a caixa de pesquisa tiver palavras, os comentários sem elas ficam ocultos. Limpar a caixa traz todos de volta.
+Queue reel saves	Enfileirar downloads de Reels
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	Cada Reel em que você toca em Download entra em uma fila que salva um Reel por vez em segundo plano. Pause ou cancele a fila pela notificação dela ou por Downloads aqui. Um Reel que já está na fila é ignorado, e um que falha ganha mais uma tentativa. A fila dura até o Facebook fechar.
+Added to the reel queue	Adicionado à fila de Reels
+Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	Adicionado à fila de Reels. Para pausar ou cancelar, abra Downloads nas configurações do Hushfacebook.
+Already in the reel queue	Já está na fila de Reels
+That reel is already saved	Esse Reel já foi salvo
+The reel queue is full. Try again when it's shorter.	A fila de Reels está cheia. Tente de novo quando ela estiver menor.
+Saving queued reels	Salvando Reels da fila
+Reel queue paused	Fila de Reels pausada
+Reel queue done	Fila de Reels concluída
+%1$d saved, %2$d waiting, %3$d failed	%1$d salvos, %2$d aguardando, %3$d com falha
+Reel queue canceled	Fila de Reels cancelada
+Cancel the reel queue	Cancelar a fila de Reels

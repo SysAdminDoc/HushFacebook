@@ -380,6 +380,11 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SHOW_REEL_DOWNLOAD_BUTTON,
                     L10n.t("Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return."))
                     .needs(Settings.DOWNLOAD_REELS));
+            reels.addPreference(toggle(context, Settings.QUEUE_REEL_SAVES,
+                    L10n.t("Each reel you tap Download on joins a queue that saves one reel at a time in the background. "
+                            + "Pause or cancel it from its notification or from Downloads here. A reel already in the queue is "
+                            + "skipped, and one that fails gets one more try. The queue lasts until Facebook closes."))
+                    .needs(Settings.DOWNLOAD_REELS));
             reels.addPreference(toggle(context, Settings.REEL_CAST_BUTTON,
                     L10n.t("Adds a cast button to reels, under Download. It hands the reel to a casting app you have, such as Web Video Caster, which sends it to your TV.")));
             reels.addPreference(toggle(context, Settings.COPY_REEL_CAPTION,

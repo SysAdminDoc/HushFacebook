@@ -2771,3 +2771,16 @@ Double tap to skip on feed videos	Перемотка двойным нажати
 Double tap the right side of a playing feed video to jump ahead 10 seconds, or the left side to go back 10. Keep tapping to go further. Live videos work too when they can be rewound. One tap on a side still opens the video, a moment later than usual. With Tap to play on, it needs Inline feed video controls on too.	Дважды нажмите на правую часть воспроизводимого видео в Ленте, чтобы перемотать на 10 секунд вперед, или на левую, чтобы вернуться на 10 секунд назад. Продолжайте нажимать, чтобы перемотать дальше. Прямые эфиры тоже поддерживаются, если их можно перематывать назад. Одно нажатие на край по-прежнему открывает видео, но чуть позже обычного. Если включено воспроизведение по нажатию, необходимо также включить встроенные элементы управления видео в Ленте.
 Show only comments that match	Показывать только подходящие комментарии
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	Пока в поле поиска есть слова, комментарии без них скрыты. Если очистить поле, они вернутся.
+Queue reel saves	Очередь сохранения Reels
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	Каждое видео Reels, на котором вы нажимаете «Скачать», попадает в очередь, которая сохраняет видео по одному в фоновом режиме. Приостановить или отменить её можно из её уведомления или здесь, в разделе «Загрузки». Видео, которое уже есть в очереди, пропускается, а несохранившееся получает ещё одну попытку. Очередь существует, пока Facebook не закроется.
+Added to the reel queue	Добавлено в очередь Reels
+Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	Добавлено в очередь Reels. Чтобы приостановить или отменить её, откройте раздел «Загрузки» в настройках Hushfacebook.
+Already in the reel queue	Уже в очереди Reels
+That reel is already saved	Это видео уже сохранено
+The reel queue is full. Try again when it's shorter.	Очередь Reels заполнена. Повторите попытку, когда она станет короче.
+Saving queued reels	Сохранение видео из очереди
+Reel queue paused	Очередь Reels приостановлена
+Reel queue done	Очередь Reels завершена
+%1$d saved, %2$d waiting, %3$d failed	Сохранено: %1$d, в очереди: %2$d, с ошибкой: %3$d
+Reel queue canceled	Очередь Reels отменена
+Cancel the reel queue	Отменить очередь Reels

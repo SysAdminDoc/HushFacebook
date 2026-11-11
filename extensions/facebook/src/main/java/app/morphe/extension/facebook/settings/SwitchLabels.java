@@ -254,6 +254,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_2X_POPUPS) return L10n.t("Hide the 2x popups");
         if (setting == Settings.DOWNLOAD_REELS) return L10n.t("Download");
         if (setting == Settings.SHOW_REEL_DOWNLOAD_BUTTON) return L10n.t("Download button on reels");
+        if (setting == Settings.QUEUE_REEL_SAVES) return L10n.t("Queue reel saves");
         if (setting == Settings.REEL_CAST_BUTTON) return L10n.t("Cast button on reels");
         if (setting == Settings.COPY_REEL_CAPTION) return L10n.t("Copy reel captions");
         if (setting == Settings.TAP_TO_PLAY) return L10n.t("Tap to play");

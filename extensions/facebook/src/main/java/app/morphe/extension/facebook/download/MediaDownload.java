@@ -100,9 +100,12 @@ public final class MediaDownload {
         return reservation;
     }
 
-    /** Whether a save holds a slot now, so Close Facebook when you leave it waits for it (#202). */
+    /**
+     * Whether a save holds a slot now, or the reel queue still holds reels (#449), so Close Facebook
+     * when you leave it waits for them (#202).
+     */
     public static boolean saving() {
-        return SAVE_SLOTS.availablePermits() < MAX_IN_FLIGHT;
+        return SAVE_SLOTS.availablePermits() < MAX_IN_FLIGHT || ReelQueue.holdsReels();
     }
 
     /**
@@ -285,6 +288,80 @@ public final class MediaDownload {
             return false;
         }
     }
+
+    /**
+     * A reel's save taken down on the tap, for the reel queue (#449): the addresses and manifest its
+     * source holds, the quality the tap asked for (the one picked from the list, with Choose quality
+     * on each save on) and what's known of the post for the file name. Strings and nothing of
+     * Facebook's, so a reel waiting its turn holds no player, and the save that runs later is the
+     * reel that was tapped, whichever reel Facebook has prepared since.
+     */
+    static final class ReelSave {
+        final List<String> urls;
+        final String manifest;
+        final DownloadQuality quality;
+        final PostDetails details;
+
+        ReelSave(List<String> urls, String manifest, DownloadQuality quality, PostDetails details) {
+            this.urls = Collections.unmodifiableList(urls == null ? new ArrayList<>() : new ArrayList<>(urls));
+            this.manifest = manifest;
+            this.quality = quality == null ? DownloadQuality.BEST : quality;
+            this.details = details == null ? PostDetails.NONE : details;
+        }
+    }
+
+    /**
+     * Takes down [host]'s save as a tap would start it now, for the reel queue. Null when it holds
+     * nothing to save, which the report says. Never throws.
+     */
+    static ReelSave takeReel(Object host, String hdField, String sdField, String manifestField, PostDetails details) {
+        try {
+            List<String> urls = collectVideoUrls(host, hdField, sdField);
+            String manifest = RenditionPicker.fieldValue(host, manifestField);
+            if (manifest == null && (urls == null || metaOnly(urls).isEmpty())) {
+                failure(() -> "nothing to queue: the reel's player held no address on Meta's media servers", null);
+                return null;
+            }
+            return new ReelSave(urls, manifest, quality(), details);
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel queue", t);
+            failure(() -> "the reel could not be queued", t);
+            return null;
+        }
+    }
+
+    /**
+     * One reel queue turn on the queue's own thread (#449): the save [reel] took down, started as a
+     * tap would start it, except that it waits for a free save slot rather than giving up, and the
+     * turn waits for it to end. [turn] carries the save's number for the queue's Cancel. Answers how
+     * it ended, or null when nothing started or the save threw.
+     */
+    static Downloader.Status saveQueued(Context context, ReelSave reel, Turn turn) throws InterruptedException {
+        QUEUED.set(turn);
+        try {
+            withQuality(reel.quality, () -> reel.manifest != null
+                    ? beginDash(context, "the reel", reel.manifest, reel.urls, reel.details)
+                    : begin(context, reel.urls, true, reel.details));
+        } finally {
+            QUEUED.remove();
+        }
+        if (turn.interrupted) throw new InterruptedException();
+        Thread worker = turn.worker;
+        if (worker == null) return null;
+        worker.join();
+        return turn.ended;
+    }
+
+    /** The save a reel queue turn started: its worker, its number for Cancel, and how it ended. */
+    static final class Turn {
+        volatile Thread worker;
+        volatile int saveId = -1;
+        volatile Downloader.Status ended;
+        volatile boolean interrupted;
+    }
+
+    /** The turn the reel queue is starting on this thread, or null for a tap's own save. */
+    private static final ThreadLocal<Turn> QUEUED = new ThreadLocal<>();
 
     /**
      * Save the video of a post in the feed or in Watch: the item the video patch adds to the
@@ -1184,12 +1261,31 @@ public final class MediaDownload {
 
     /** As above, naming the video from whatever of the post [details] holds and the file name asks for. */
     static Thread start(Context application, boolean video, PostDetails details, Job job) {
-        Reservation reservation = reserveNow();
-        return reservation == null ? null : startReserved(application, video, details, job, reservation, null);
+        Turn turn = QUEUED.get();
+        if (turn == null) {
+            Reservation reservation = reserveNow();
+            return reservation == null ? null : startReserved(application, video, details, job, reservation, null, null);
+        }
+        // A reel queue turn waits for a slot: the queue is how a reel gets saved when slots are full.
+        Reservation reservation;
+        try {
+            reservation = awaitReservation();
+        } catch (InterruptedException e) {
+            turn.interrupted = true;
+            return null;
+        }
+        Thread worker = startReserved(application, video, details, job, reservation, null, turn);
+        turn.worker = worker;
+        return worker;
     }
 
     private static Thread startReserved(Context application, boolean video, PostDetails details, Job job,
             Reservation reservation, AtomicBoolean batchCancelled) {
+        return startReserved(application, video, details, job, reservation, batchCancelled, null);
+    }
+
+    private static Thread startReserved(Context application, boolean video, PostDetails details, Job job,
+            Reservation reservation, AtomicBoolean batchCancelled, Turn turn) {
         // Until the worker runs, whatever throws here gives back the slot and the save it began, or
         // enough such failures would block every save.
         SaveControl.Save begun = null;
@@ -1200,10 +1296,17 @@ public final class MediaDownload {
             if (watching != null) watching.accept(known);
             final SaveControl.Save save = SaveControl.begin(application, video);
             begun = save;
+            if (turn != null) turn.saveId = save.id;
             final boolean quiet = quietSaves();
+            // A queue turn ends as a quiet save does, toasting only a failure: the queue's card counts
+            // the rest, and a toast per reel would bury the screen for a long queue.
+            final boolean hushed = quiet || turn != null;
             // With no notification to cancel it from, the list of saves in the settings is the only way
-            // to stop it, so the start says where that is, for long enough to read.
-            if (quiet) {
+            // to stop it, so the start says where that is, for long enough to read. A queue turn's start
+            // says nothing: the reel said "Added to the queue" when it was tapped.
+            if (turn != null) {
+                info(() -> "a queued reel's turn: no toast as it starts");
+            } else if (quiet) {
                 info(() -> "quiet saves: no toast as the save starts or ends, unless it fails");
             } else if (save.manager != null) {
                 Feedback.show(application, L10n.t(application, "Saving..."), false);
@@ -1220,6 +1323,7 @@ public final class MediaDownload {
                     SaveLeftovers.sweepOnce(application);
 
                     Downloader.Result result = job.run(writer, save);
+                    if (turn != null) turn.ended = result.status;
                     boolean cancelled = result.status == Downloader.Status.CANCELLED;
                     if (result.ok() || cancelled) info(() -> "save finished: " + result);
                     else {
@@ -1234,10 +1338,10 @@ public final class MediaDownload {
                     if (refused) {
                         info(() -> "the saved file has a track WhatsApp and some editors refuse, with Save videos "
                             + "other apps can open off");
-                        if (endToast(quiet, failed, true, carded)) {
+                        if (endToast(hushed, failed, true, carded)) {
                             Feedback.show(application, refusedMessage(application, carded), true);
                         }
-                    } else if (endToast(quiet, failed, false, carded)) {
+                    } else if (endToast(hushed, failed, false, carded)) {
                         Feedback.show(application, text, failed);
                     }
                 } catch (Throwable t) {

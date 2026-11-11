@@ -177,7 +177,7 @@ public final class SaveControl {
         WATCHERS.remove(watcher);
     }
 
-    private static void tell() {
+    static void tell() {
         for (Watcher watcher : WATCHERS) {
             try {
                 watcher.savesChanged();
@@ -298,6 +298,13 @@ public final class SaveControl {
             if (manager == null) return 0;
             int removed = 0;
             for (StatusBarNotification shown : manager.getActiveNotifications()) {
+                // The reel queue's card from a process that ended with reels in it (#449): its
+                // buttons reach nothing now, and the queue that counted them is gone.
+                if (ReelQueue.TAG.equals(shown.getTag()) && ReelQueue.status() == null) {
+                    manager.cancel(ReelQueue.TAG, shown.getId());
+                    removed++;
+                    continue;
+                }
                 if (!TAG.equals(shown.getTag()) || RUNNING.containsKey(shown.getId())) continue;
                 manager.cancel(TAG, shown.getId());
                 removed++;
@@ -415,7 +422,7 @@ public final class SaveControl {
     }
 
     /** Facebook's notification service, when this channel may post, else {@code null}. */
-    private static NotificationManager notifications(Context application) {
+    static NotificationManager notifications(Context application) {
         try {
             NotificationManager manager = application.getSystemService(NotificationManager.class);
             if (manager == null || !manager.areNotificationsEnabled()) return null;

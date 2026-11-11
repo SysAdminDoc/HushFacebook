@@ -1594,6 +1594,15 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/ReelQueue.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #449: an optional queue for reel saves. With its switch on, each tap on a reel's Download button takes down that reel's addresses, manifest, picked quality and post details and adds them to an in-memory queue, which saves one reel at a time on its own thread through the ordinary save path, waiting for a free save slot instead of giving up. A notification and a Downloads row count saved, waiting and failed reels with Pause, Resume and Cancel. A reel already waiting or saved in the run is skipped, a failed one gets one retry, and nothing outlives Facebook's process."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/ReelCaption.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/downloads/reel/ReelCaptionRow.kt"
       ],

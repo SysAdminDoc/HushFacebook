@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* `Queue reel saves` under Reels and Watch makes a reel's Download button add the reel to a queue instead of saving it right away. Tap Download on as many reels as you like and they save one at a time in the background, each at the quality picked on its tap. A notification and Downloads in the settings count what's saved, waiting and failed, with Pause and Cancel. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes. It starts off. (#449)
 * `Hide Reply on comments` under Comments and writing takes Reply off the row under each comment. View replies stays, and so do Like and the reaction count. It starts off. (#447)
 * `Choose quality on each save` under Downloads makes a reel's Download button and a video's Download to phone ask which quality to save first. Pick one and that save uses it, while `Download quality` keeps its value for every other save. Cancel saves nothing. It starts off. (#448)
 * `Hide Create story` under Stories takes the Create story tile off the start of the Stories tray on Home. Everyone's stories stay where they were. It applies the next time Facebook loads the tray and starts off. (#445)

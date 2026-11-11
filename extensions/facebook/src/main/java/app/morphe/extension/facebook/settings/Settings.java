@@ -2554,6 +2554,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_show_reel_download_button", TRUE, Setting.parent(DOWNLOAD_REELS));
 
     /**
+     * A reel's Download, from the sidebar or More, adds the reel to a queue that saves one reel at a
+     * time in the background, with Pause and Cancel (#449). Starts off, so a tap saves at once as
+     * before. Every reel in the queue is one that was tapped. See ReelQueue.
+     */
+    public static final BooleanSetting QUEUE_REEL_SAVES =
+            new BooleanSetting("hushfacebook_queue_reel_saves", FALSE, Setting.parent(DOWNLOAD_REELS));
+
+    /**
      * A Cast button on reels, under where Download goes (#182). Its tap hands the reel to a casting
      * app the way {@link #FEED_VIDEO_CAST_BUTTON} does for feed videos. Starts off. It saves nothing,
      * so it stands apart from DOWNLOAD_REELS.

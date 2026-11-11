@@ -45,6 +45,7 @@ public class MediaSaveAdmissionTest {
 
     private static final String FIRST = "https://first.fbcdn.net/photo.jpg";
     private static final String SECOND = "https://second.fbcdn.net/photo.jpg";
+    private static final String REEL = "https://video-iad3-1.xx.fbcdn.net/o1/v/t2/f2/m69/clip_720p.mp4?oh=1&oe=2";
     private final List<Thread> threads = new CopyOnWriteArrayList<>();
     private final List<Throwable> uncaught = new CopyOnWriteArrayList<>();
     private final List<CountDownLatch> releases = new ArrayList<>();
@@ -320,6 +321,66 @@ public class MediaSaveAdmissionTest {
         assertTrue(chain.isInterrupted());
         assertEquals(1, photos.get());
         assertEquals("waiting never owns a fourth slot", 3, MediaDownload.savesInFlight());
+    }
+
+    /** #449: the reel queue's turn waits for a slot where a tap gives up, and holds none while it waits. */
+    @Test
+    public void aQueuedReelWaitsForASlotWhereATapGivesUp() throws Exception {
+        CountDownLatch release = latch();
+        hold(release);
+        hold(release);
+        hold(release);
+        MediaDownload.ReelSave reel = new MediaDownload.ReelSave(Collections.singletonList(REEL), null,
+                DownloadQuality.BEST, PostDetails.NONE);
+        MediaDownload.Turn turn = new MediaDownload.Turn();
+        AtomicReference<Downloader.Status> ended = new AtomicReference<>();
+        Thread queue = thread(() -> {
+            try {
+                ended.set(MediaDownload.saveQueued(context, reel, turn));
+            } catch (InterruptedException stopped) {
+                throw new AssertionError(stopped);
+            }
+        }, "test-reel-queue");
+        queue.start();
+        waitForSemaphore(queue);
+        assertEquals("a waiting turn began a save", -1, turn.saveId);
+        assertEquals(3, MediaDownload.savesInFlight());
+        assertNull("a tap must still give up while every slot is held",
+                MediaDownload.start(context, true, (writer, progress) -> finished()));
+
+        release.countDown();
+        finish(queue);
+        assertTrue("the turn never began its save", turn.saveId >= 0);
+        assertNotNull("the turn didn't say how its save ended", ended.get());
+    }
+
+    /** #449: the queue's Cancel stops a turn still waiting for a slot, and it takes none. */
+    @Test
+    public void aQueuedReelStoppedWhileWaitingTakesNoSlot() throws Exception {
+        CountDownLatch release = latch();
+        hold(release);
+        hold(release);
+        hold(release);
+        MediaDownload.ReelSave reel = new MediaDownload.ReelSave(Collections.singletonList(REEL), null,
+                DownloadQuality.BEST, PostDetails.NONE);
+        MediaDownload.Turn turn = new MediaDownload.Turn();
+        AtomicBoolean stopped = new AtomicBoolean();
+        Thread queue = thread(() -> {
+            try {
+                MediaDownload.saveQueued(context, reel, turn);
+            } catch (InterruptedException expected) {
+                stopped.set(true);
+            }
+        }, "test-reel-queue");
+        queue.start();
+        waitForSemaphore(queue);
+        queue.interrupt();
+        finish(queue);
+        assertTrue("a stopped turn didn't say it was stopped", stopped.get());
+        assertEquals(-1, turn.saveId);
+        assertNull(turn.worker);
+        assertEquals("a stopped turn took a slot", 3, MediaDownload.savesInFlight());
+        assertEquals(3, SaveControl.running().size());
     }
 
     private static void waitForSemaphore(Thread chain) throws InterruptedException {

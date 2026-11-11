@@ -2717,3 +2717,16 @@ Double tap to skip on feed videos	Ketuk dua kali untuk melompat di video feed
 Double tap the right side of a playing feed video to jump ahead 10 seconds, or the left side to go back 10. Keep tapping to go further. Live videos work too when they can be rewound. One tap on a side still opens the video, a moment later than usual. With Tap to play on, it needs Inline feed video controls on too.	Ketuk dua kali sisi kanan video feed yang sedang diputar untuk maju 10 detik, atau sisi kiri untuk mundur 10 detik. Terus ketuk untuk melompat lebih jauh. Video live juga bisa jika dapat diputar mundur. Satu ketukan di sisi tetap membuka video, hanya sedikit lebih lambat dari biasanya. Jika “Ketuk untuk memutar” aktif, “Kontrol video di beranda” juga harus aktif.
 Show only comments that match	Tampilkan hanya komentar yang cocok
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	Selama kotak pencarian berisi kata, komentar tanpa kata itu disembunyikan. Mengosongkan kotak akan menampilkannya lagi.
+Queue reel saves	Antrekan penyimpanan reel
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	Setiap reel yang kamu ketuk Unduh masuk ke antrean yang menyimpan satu reel dalam satu waktu di latar belakang. Jeda atau batalkan dari notifikasinya atau dari Unduhan di sini. Reel yang sudah ada di antrean dilewati, dan reel yang gagal dicoba sekali lagi. Antrean bertahan sampai Facebook ditutup.
+Added to the reel queue	Ditambahkan ke antrean reel
+Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	Ditambahkan ke antrean reel. Untuk menjeda atau membatalkannya, buka Unduhan di pengaturan Hushfacebook.
+Already in the reel queue	Sudah ada di antrean reel
+That reel is already saved	Reel itu sudah disimpan
+The reel queue is full. Try again when it's shorter.	Antrean reel penuh. Coba lagi saat antreannya lebih pendek.
+Saving queued reels	Menyimpan reel dalam antrean
+Reel queue paused	Antrean reel dijeda
+Reel queue done	Antrean reel selesai
+%1$d saved, %2$d waiting, %3$d failed	%1$d tersimpan, %2$d menunggu, %3$d gagal
+Reel queue canceled	Antrean reel dibatalkan
+Cancel the reel queue	Batalkan antrean reel

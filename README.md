@@ -65,6 +65,8 @@ The settings follow the language Facebook shows. German, Spanish, Indonesian, Br
 
 To keep Reel downloads in More without the sidebar button, leave **Download** on under **Reels and Watch** and turn off **Download button on reels** on the same page.
 
+Turn on **Queue reel saves** there too, and Download on a reel adds it to a queue instead of saving it right away. The queue saves one reel at a time in the background, at the quality picked when you tapped. Its notification counts what's saved, waiting and failed and has Pause and Cancel, and Downloads in the Hushfacebook settings shows the same. A reel that fails gets one more try. It starts off, and the queue is gone once Facebook closes.
+
 **Cast button on reels**, on the same page, adds a cast button under Download on a reel's sidebar. Like the feed one below, it hands the reel to a casting app you have, and it works with Download off too. It starts off.
 
 **Clean mode button on reels** puts a Clean mode button on that sidebar as well. Tap it and the buttons down the side go away, and they stay away on the next reels until you tap Facebook's own Clean mode button. It starts off.

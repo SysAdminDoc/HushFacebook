@@ -717,6 +717,33 @@ public class HushfacebookPreferenceFragmentTest {
         }
     }
 
+    /** Queue reel saves (#449): off until chosen, right under the reel's Download button, and only with Download on. */
+    @Test
+    public void theReelQueueSwitchSitsUnderTheDownloadButtonAndNeedsDownload() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.REEL_DOWNLOAD);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(controller);
+            int buttonAt = indexOfKey(rows, Settings.SHOW_REEL_DOWNLOAD_BUTTON.key);
+            int queueAt = indexOfKey(rows, Settings.QUEUE_REEL_SAVES.key);
+            assertTrue("no Queue reel saves switch", queueAt >= 0);
+            assertEquals("the queue switch is not under the Download button", buttonAt + 1, queueAt);
+            SwitchPreference queue = (SwitchPreference) rows.get(queueAt);
+            assertEquals("Queue reel saves", String.valueOf(queue.getTitle()));
+            assertFalse("the queue is on before anyone chose it", queue.isChecked());
+            assertTrue(queue.isEnabled());
+
+            SwitchPreference main = (SwitchPreference) rows.get(indexOfKey(rows, Settings.DOWNLOAD_REELS.key));
+            main.setChecked(false);
+            ShadowLooper.idleMainLooper();
+            assertFalse("the queue is usable without downloads", queue.isEnabled());
+            main.setChecked(true);
+            ShadowLooper.idleMainLooper();
+            assertTrue(queue.isEnabled());
+        } finally {
+            Settings.QUEUE_REEL_SAVES.resetToDefault();
+        }
+    }
+
     /**
      * Send to an app (#41): with a reel or video download in the build, Downloads ends with what a
      * tap on Download does, saving by default, and the app the links go to. The app row keeps a

@@ -288,6 +288,15 @@ public final class ReelDownload implements Function1<Object, Object> {
         }
     }
 
+    /** Whether a tap adds the reel to the reel queue rather than saving it at once (#449). Never throws. */
+    static boolean queueing() {
+        try {
+            return Utils.settingsReady() && Settings.QUEUE_REEL_SAVES.get();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     /** Whether the helper builds the Cast button, asked the same way. Never throws. */
     public static boolean castButton() {
         try {
@@ -367,7 +376,17 @@ public final class ReelDownload implements Function1<Object, Object> {
             return;
         }
 
-        PostDetails details = PostDetails.read(videoIdOf(playerParams), story);
+        String videoId = videoIdOf(playerParams);
+        PostDetails details = PostDetails.read(videoId, story);
+        // With Queue reel saves on, the tap adds the reel to the queue, which saves it in its turn
+        // (#449). The reel is taken down here, inside the quality list's pick when it asks, so the
+        // turn saves this reel at the quality picked for it.
+        if (queueing()) {
+            QualityChooser.Save queue = () -> ReelQueue.add(context, videoId,
+                MediaDownload.takeReel(source, hdField, sdField, manifestField, details));
+            if (!QualityChooser.ask(context, queue)) queue.start();
+            return;
+        }
         // With Choose quality on each save on, the list asks first and its pick starts the save (#448).
         if (QualityChooser.ask(context,
                 () -> MediaDownload.saveVideo(context, source, hdField, sdField, manifestField, details))) {

@@ -2717,3 +2717,16 @@ Double tap to skip on feed videos	Tocar dos veces para saltar en videos del feed
 Double tap the right side of a playing feed video to jump ahead 10 seconds, or the left side to go back 10. Keep tapping to go further. Live videos work too when they can be rewound. One tap on a side still opens the video, a moment later than usual. With Tap to play on, it needs Inline feed video controls on too.	Toca dos veces el lado derecho de un video del feed en reproducción para adelantar 10 segundos, o el lado izquierdo para retroceder 10. Sigue tocando para saltar más. También funciona en videos en vivo cuando se pueden retroceder. Un solo toque en un lado sigue abriendo el video, un momento más tarde de lo habitual. Si “Toca para reproducir” está activado, también necesita “Controles de video en el feed”.
 Show only comments that match	Mostrar solo los comentarios que coinciden
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	Mientras el cuadro de búsqueda tenga palabras, se ocultan los comentarios que no las contienen. Al vaciar el cuadro, vuelven.
+Queue reel saves	Poner en cola las descargas de reels
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	Cada reel en el que tocas Descargar entra en una cola que guarda un reel a la vez en segundo plano. Pausa o cancela la cola desde su notificación o desde Descargas aquí. Un reel que ya está en la cola se omite, y uno que falla tiene un intento más. La cola dura hasta que se cierra Facebook.
+Added to the reel queue	Añadido a la cola de reels
+Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	Añadido a la cola de reels. Para pausarla o cancelarla, abre Descargas en los ajustes de Hushfacebook.
+Already in the reel queue	Ya está en la cola de reels
+That reel is already saved	Ese reel ya está guardado
+The reel queue is full. Try again when it's shorter.	La cola de reels está llena. Inténtalo de nuevo cuando sea más corta.
+Saving queued reels	Guardando reels de la cola
+Reel queue paused	Cola de reels en pausa
+Reel queue done	Cola de reels terminada
+%1$d saved, %2$d waiting, %3$d failed	%1$d guardados, %2$d en espera, %3$d con error
+Reel queue canceled	Cola de reels cancelada
+Cancel the reel queue	Cancelar la cola de reels

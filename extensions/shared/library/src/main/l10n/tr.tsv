@@ -2717,3 +2717,16 @@ Double tap to skip on feed videos	Akış videolarında atlamak için çift dokun
 Double tap the right side of a playing feed video to jump ahead 10 seconds, or the left side to go back 10. Keep tapping to go further. Live videos work too when they can be rewound. One tap on a side still opens the video, a moment later than usual. With Tap to play on, it needs Inline feed video controls on too.	Oynayan bir akış videosunun sağ tarafına iki kez dokunarak 10 saniye ileri, sol tarafına dokunarak 10 saniye geri atlayın. Daha ileri gitmek için dokunmaya devam edin. Geri sarılabildiğinde canlı videolarda da çalışır. Bir kenara tek dokunuş videoyu yine açar, yalnızca her zamankinden biraz geç. “Oynatmak için dokun” açıksa “Akış videosu denetimleri” de açık olmalıdır.
 Show only comments that match	Yalnızca eşleşen yorumları göster
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	Arama kutusunda kelime olduğu sürece, bu kelimeleri içermeyen yorumlar gizlenir. Kutuyu temizlemek onları geri getirir.
+Queue reel saves	Reel kaydetmelerini sıraya al
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	İndir'e dokunduğunuz her reel, arka planda reelleri tek tek kaydeden bir sıraya girer. Sırayı bildiriminden veya buradaki İndirmeler bölümünden duraklatabilir ya da iptal edebilirsiniz. Zaten sırada olan bir reel atlanır, kaydedilemeyen bir reel bir kez daha denenir. Sıra, Facebook kapanana kadar sürer.
+Added to the reel queue	Reel sırasına eklendi
+Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	Reel sırasına eklendi. Duraklatmak veya iptal etmek için Hushfacebook ayarlarında İndirmeler'i açın.
+Already in the reel queue	Zaten reel sırasında
+That reel is already saved	Bu reel zaten kaydedildi
+The reel queue is full. Try again when it's shorter.	Reel sırası dolu. Sıra kısaldığında tekrar deneyin.
+Saving queued reels	Sıradaki reeller kaydediliyor
+Reel queue paused	Reel sırası duraklatıldı
+Reel queue done	Reel sırası tamamlandı
+%1$d saved, %2$d waiting, %3$d failed	%1$d kaydedildi, %2$d bekliyor, %3$d başarısız
+Reel queue canceled	Reel sırası iptal edildi
+Cancel the reel queue	Reel sırasını iptal et
