@@ -93,6 +93,8 @@ public final class ReelQueue {
     @Nullable private static Entry current;
     @Nullable private static MediaDownload.Turn currentTurn;
     @Nullable private static Thread worker;
+    /** The latest run's thread, kept past {@link #endRun} until it has put its last card up. For tests. */
+    @Nullable private static Thread lastWorker;
     private static boolean paused;
     private static boolean cancelled;
     private static int saved;
@@ -254,6 +256,7 @@ public final class ReelQueue {
         thread.setDaemon(true);
         thread.setPriority(Thread.NORM_PRIORITY - 1);
         worker = thread;
+        lastWorker = thread;
         thread.start();
     }
 
@@ -476,11 +479,14 @@ public final class ReelQueue {
         }
     }
 
-    /** The queue's thread while a run lasts, for a test to wait on. */
+    /**
+     * The latest run's thread, for a test to wait on. Not {@link #worker}: that clears before the run's
+     * last card goes up, so a test reading it then would skip the wait and see the card before it.
+     */
     @Nullable
     static Thread workerForTests() {
         synchronized (LOCK) {
-            return worker;
+            return lastWorker;
         }
     }
 
@@ -491,7 +497,7 @@ public final class ReelQueue {
             WAITING.clear();
             paused = false;
             LOCK.notifyAll();
-            running = worker;
+            running = lastWorker;
         }
         if (running != null) {
             running.interrupt();
@@ -501,6 +507,7 @@ public final class ReelQueue {
             current = null;
             currentTurn = null;
             application = null;
+            lastWorker = null;
             endRun();
         }
         saverForTests = null;
