@@ -62,7 +62,9 @@ import java.io.File
  * nothing on a yes, so the row around it stays Facebook's (#241). Like is written through one method
  * the kept Like plugin's builder calls, and the plugin table, which names LikePlugin (the Like
  * button beside the thumbs-down), calls it too; that method asks first and writes nothing on a yes
- * (#241). The comment section is found by its name, its reply flag
+ * (#241). The socket of the buttons under each comment is found by its own name and the two Reply
+ * plugins, its table also names Like and the thumbs-down, and its check is hooked like the button
+ * check with its own extension method (#447). The comment section is found by its name, its reply flag
  * through the expandReplySection update, and the flag goes through the extension, as a range
  * call, just before the initial state returns. The section's draw method asks about its comment
  * first, read off its props, and returns no children on a yes (#118). An open reply thread's section
@@ -272,6 +274,60 @@ class CommentSheetOptionsFixtureTest {
         }
         assertEquals("$name: the plugin table writes LikePlugin's Like through ${text.descriptor()}", 1, folded.size)
         held(writer, method, HOLDS_COMMENT_LIKE, "$name: ${text.descriptor()}")
+    }
+
+    private fun reply(bundle: File) {
+        val name = bundle.name
+        val sockets = holders(bundle, COMMENT_UFI_SOCKET).flatMap { methodsHolding(it, COMMENT_UFI_SOCKET) }
+        assertTrue("$name: nothing names \"$COMMENT_UFI_SOCKET\"", sockets.isNotEmpty())
+        val found = commentUfiSocket(holders(bundle, COMMENT_REPLY), sockets) { types -> FixtureDex.classes(bundle, types) }
+        val others = listOf(
+            buttonSocket(
+                holders(bundle, GIF_BUTTON),
+                holders(bundle, BUTTON_SOCKET).flatMap { methodsHolding(it, BUTTON_SOCKET) },
+            ) { types -> FixtureDex.classes(bundle, types) },
+            bottomSocket(
+                holders(bundle, RELATED_GROUPS),
+                holders(bundle, BOTTOM_SOCKET).flatMap { methodsHolding(it, BOTTOM_SOCKET) },
+            ) { types -> FixtureDex.classes(bundle, types) },
+            postSocket(
+                holders(bundle, INLINE_COMMENTS),
+                holders(bundle, POST_SOCKET).flatMap { methodsHolding(it, POST_SOCKET) },
+            ) { types -> FixtureDex.classes(bundle, types) },
+        )
+        val table = found.table
+        val check = found.check
+        val where = "$name: ${check.descriptor()}"
+        for (other in others) {
+            assertNotEquals("$where is another socket's check", other.check.descriptor(), check.descriptor())
+            assertNotEquals("$where: the name table is another socket's", other.table.descriptor(), table.descriptor())
+        }
+        // The same table names Like and the thumbs-down, which keep their own hooks and get Facebook's answer here.
+        for (plugin in listOf(LIKE_PLUGIN, COMMENT_LIKE, COMMENT_DOWNVOTE)) {
+            val named = plugin.removePrefix("L").removeSuffix(";").replace('/', '.')
+            assertTrue("$where: ${table.descriptor()} doesn't name $named", holdsString(table, named))
+        }
+        assertTrue("$where isn't static", AccessFlags.STATIC.isSet(check.accessFlags))
+        assertEquals("$where: the plugin's number isn't last", "I", check.parameterTypes.last().toString())
+
+        val owner = FixtureDex.classes(bundle, setOf(check.definingClass)).values.single()
+        val context = PatchContexts.of(listOf(owner))
+        val method = context.mutableClassDefBy(owner.type).methods.single { it.descriptor() == check.descriptor() }
+        val original = method.implementation!!.instructions.toList()
+        val number = method.implementation!!.registerCount - 1
+        method.holdButtons(table, HOLDS_COMMENT_REPLY)
+        val patched = method.implementation!!.instructions.toList()
+        assertEquals("$where gains seven instructions", original.size + 7, patched.size)
+        assertEquals("$where: the plugin's name comes from the table", table.descriptor(), patched[0].reference())
+        val range = patched[0] as RegisterRangeInstruction
+        assertEquals("$where: with the check's own number, its last register", listOf(number, 1),
+            listOf(range.startRegister, range.registerCount))
+        val register = (patched[1] as OneRegisterInstruction).registerA
+        assertTrue("$where: the hook writes v$register, which isn't a local", register < method.localRegisterCount())
+        assertEquals("$where: its own extension method is asked", HOLDS_COMMENT_REPLY, patched[2].reference())
+        assertEquals("$where: a yes answers no", listOf(Opcode.CONST_4, Opcode.RETURN), patched.subList(5, 7).map { it.opcode })
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(7).map { it.opcode })
+        assertEquals("$where: a no lands on Facebook's first instruction", setOf(5, 7), ControlFlow.of(method).normal[4].toSet())
     }
 
     /** [builder] of [plugin] asks [call] first and returns nothing on a yes, its own code following. */
@@ -1062,6 +1118,11 @@ class CommentSheetOptionsFixtureTest {
     @Test
     fun `each declared build can keep Like out of the row under a comment`() = bundles { bundle ->
         like(bundle)
+    }
+
+    @Test
+    fun `each declared build can keep Reply out of the row under a comment`() = bundles { bundle ->
+        reply(bundle)
     }
 
     @Test

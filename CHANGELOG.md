@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* `Hide Reply on comments` under Comments and writing takes Reply off the row under each comment. View replies stays, and so do Like and the reaction count. It starts off. (#447)
 * `Choose quality on each save` under Downloads makes a reel's Download button and a video's Download to phone ask which quality to save first. Pick one and that save uses it, while `Download quality` keeps its value for every other save. Cancel saves nothing. It starts off. (#448)
 * `Hide Your shortcuts` under Menu takes the Your shortcuts row out of Facebook's Menu, so the groups and Pages Facebook keeps putting back there are gone in one go. The Menu tiles under it stay. Restart Facebook after turning it on. Starts off. (#445)
 * `Saved button in search` under Search puts a bookmark at the end of the search bar. Tap it and Saved opens, so your saved posts and videos are one tap away. Marketplace's search bar gets one too. Restart Facebook after turning it on. Starts off. (#433)

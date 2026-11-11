@@ -1470,6 +1470,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_comment_like_button", FALSE);
 
     /**
+     * Comments lose Reply from the row under them
+     * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}, #447). View replies, Like,
+     * the reaction icons and their count stay. Off by default. A change shows on comments drawn after it.
+     */
+    public static final BooleanSetting HIDE_COMMENT_REPLY_BUTTON =
+            new BooleanSetting("hushfacebook_hide_comment_reply_button", FALSE);
+
+    /**
      * The thumbs-down under a comment becomes a Block button that opens Facebook's own block
      * sheet for the commenter, confirmation included
      * ({@link app.morphe.extension.facebook.comments.CommentBlock}, #271). Off by default. A

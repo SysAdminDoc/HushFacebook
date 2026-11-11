@@ -455,6 +455,8 @@ Hide dislike on comments	Ocultar o polegar para baixo nos comentários
 Takes the thumbs-down off comments. Like and Reply stay.	Tira o polegar para baixo dos comentários. Curtir e Responder continuam.
 Hide Like on comments	Ocultar Curtir nos comentários
 Takes Like off the row under comments. Reply and the reaction count stay.	Tira o Curtir da linha abaixo dos comentários. Responder e a contagem de reações continuam.
+Hide Reply on comments	Ocultar Responder nos comentários
+Takes Reply off the row under comments. View replies, Like and the reaction count stay.	Tira o Responder da linha abaixo dos comentários. Ver respostas, Curtir e a contagem de reações continuam.
 # context: switch title under Comments; Like is the button under a post or a comment
 Like only	Só Curtir
 # context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens

@@ -494,6 +494,8 @@ Hide dislike on comments	Ẩn nút không thích ở bình luận
 Takes the thumbs-down off comments. Like and Reply stay.	Bỏ nút ngón cái hướng xuống khỏi bình luận. Thích và Trả lời vẫn giữ nguyên.
 Hide Like on comments	Ẩn Thích ở bình luận
 Takes Like off the row under comments. Reply and the reaction count stay.	Bỏ nút Thích khỏi hàng dưới bình luận. Trả lời và số lượt bày tỏ cảm xúc vẫn giữ nguyên.
+Hide Reply on comments	Ẩn Trả lời ở bình luận
+Takes Reply off the row under comments. View replies, Like and the reaction count stay.	Bỏ nút Trả lời khỏi hàng dưới bình luận. Xem phản hồi, Thích và số lượt bày tỏ cảm xúc vẫn giữ nguyên.
 # context: switch title under Comments; Like is the button under a post or a comment
 Like only	Chỉ Thích
 # context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens

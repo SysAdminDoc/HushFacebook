@@ -130,6 +130,15 @@ internal const val COMMENT_DOWNVOTE =
 internal const val COMMENT_LIKE =
     "Lcom/facebook/feedback/comments/plugins/commentufi/like/InlineCommentLikePlugin;"
 
+/** The name the socket of the buttons under each comment gives itself, in the methods that go through its plugins (#447). */
+internal const val COMMENT_UFI_SOCKET = "CommentUfiSocket"
+
+/** The plugin that writes Reply in the row under a comment, a kept class name that socket's name table loads (#447). */
+internal const val COMMENT_REPLY = "com.facebook.feedback.comments.plugins.commentufi.reply.InlineCommentReplyPlugin"
+
+/** The plugin that draws Reply as a button on public Pages' comments, in the same name table (#447). */
+internal const val COMMENT_REPLY_BUTTON = "com.facebook.feedback.comments.plugins.commentufi.reply.ReplyPlugin"
+
 /** The name the reaction picker's popup logs itself under, in the method that opens it. */
 internal const val DOCK_NAME = "reactions_dock"
 
@@ -179,6 +188,7 @@ internal const val HOLDS_BOTTOM_CONTENT = "$COMMENT_SHEET_OPTIONS->holdsBottomCo
 internal const val HOLDS_POST_COMMENTS = "$COMMENT_SHEET_OPTIONS->holdsPostComments(Ljava/lang/String;)Z"
 internal const val HOLDS_COMMENT_DISLIKE = "$COMMENT_SHEET_OPTIONS->holdsCommentDislike()Z"
 internal const val HOLDS_COMMENT_LIKE = "$COMMENT_SHEET_OPTIONS->holdsCommentLike()Z"
+internal const val HOLDS_COMMENT_REPLY = "$COMMENT_SHEET_OPTIONS->holdsCommentReply(Ljava/lang/String;)Z"
 internal const val SKIP_PICKER = "$COMMENT_SHEET_OPTIONS->skipReactionPicker()Z"
 internal const val OPEN_REPLY_THREADS = "$COMMENT_SHEET_OPTIONS->openReplyThreads(Z)Z"
 internal const val HIDES_COMMENT = "$COMMENT_SHEET_OPTIONS->hidesComment(Ljava/lang/Object;)Z"
@@ -287,6 +297,14 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * comment (585 `LX/05Mi;->A03`), and that's what's held, so the row keeps Reply, the reaction icons
  * and their count either way. Holding the kept builder alone left the button beside the thumbs-down.
  *
+ * Hide Reply on comments (#447): Reply has no builder of its own to hold, as its kept plugin only
+ * hands the table a shared one. So it goes through the socket of the buttons under each comment,
+ * which names itself [COMMENT_UFI_SOCKET] (586 `LX/06Tc;->render`). Its name table (586
+ * `LX/01xJ;->A0t`) names [COMMENT_REPLY] and [COMMENT_REPLY_BUTTON], the Pages-style button, and it's
+ * found and hooked the same way as the comment box's button socket: while the switch is on the two
+ * get a no and the socket goes on to its next plugin. View replies is a section of its own under the
+ * comment, so it stays.
+ *
  * Like only: a long press on Like opens the reaction picker through one method that builds
  * [UFI_DOCK] in a popup and logs [DOCK_NAME] (581 `LX/3FO;->A06`, each an instance (View, View)V
  * method). The extension goes first there, and while the switch is on the method returns before
@@ -374,7 +392,7 @@ val commentSheetOptionsPatch = bytecodePatch(
     name = "Comment sheet options",
     description = "Small fixes for comments. Stop a long press on Like from opening reactions, hide the GIF and " +
         "sticker buttons, show every reply without tapping View replies, load a whole reply thread as you " +
-        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, put Block on reaction lists, hide Like on comments, hide Related groups under group posts, hide comments with shop links or your words, show only the comments a search matches, hide who is typing and the new comments pop-up, hide the emoji row over the comment box, hide the line over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
+        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, put Block on reaction lists, hide Like on comments, hide Reply on comments, hide Related groups under group posts, hide comments with shop links or your words, show only the comments a search matches, hide who is typing and the new comments pop-up, hide the emoji row over the comment box, hide the line over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
         "Hushfacebook settings > Comments and writing.",
 ) {
     category("Comments")
@@ -401,6 +419,13 @@ val commentSheetOptionsPatch = bytecodePatch(
         ) { types -> types.mapNotNull { classDefByOrNull(it) }.associateBy { it.type } }
         if (post.check.descriptor() == buttons.check.descriptor() || post.check.descriptor() == bottom.check.descriptor()) {
             refuse("the socket under a post's buttons leads to another socket's check, ${post.check.descriptor()}")
+        }
+        val ufi = commentUfiSocket(
+            holders(COMMENT_REPLY),
+            holders(COMMENT_UFI_SOCKET).flatMap { methodsHolding(it, COMMENT_UFI_SOCKET) },
+        ) { types -> types.mapNotNull { classDefByOrNull(it) }.associateBy { it.type } }
+        if (ufi.check.descriptor() in listOf(buttons, bottom, post).map { it.check.descriptor() }) {
+            refuse("the socket of a comment's buttons leads to another socket's check, ${ufi.check.descriptor()}")
         }
         val dislike = dislikeBuilder(classDefByOrNull(COMMENT_DOWNVOTE))
         val like = likeText(likeBuilder(classDefByOrNull(COMMENT_LIKE)))
@@ -433,7 +458,7 @@ val commentSheetOptionsPatch = bytecodePatch(
         // The band's hooks go in at indices read from untouched code, so none of its methods may take another hook here.
         // The hooks found after dropVideoCommentBand below read their spots from the code as the band left it.
         val hooked = listOfNotNull(
-            buttons.check, bottom.check, post.check, dislike, like, dock, threads.initialState, drawn.render, replyList.build,
+            buttons.check, bottom.check, post.check, ufi.check, dislike, like, dock, threads.initialState, drawn.render, replyList.build,
             replyRow.render, feedReplyRow.render, threadPager.render, viewer.render, videoBar, inlineBar?.render,
             filter?.build, filter?.apply, filter?.listEqual, filter?.equal,
         ).map { it.descriptor() }.toSet()
@@ -447,6 +472,8 @@ val commentSheetOptionsPatch = bytecodePatch(
             .holdButtons(bottom.table, HOLDS_BOTTOM_CONTENT)
         mutableClassDefBy(post.check.definingClass).methods.single { it.descriptor() == post.check.descriptor() }
             .holdButtons(post.table, HOLDS_POST_COMMENTS)
+        mutableClassDefBy(ufi.check.definingClass).methods.single { it.descriptor() == ufi.check.descriptor() }
+            .holdButtons(ufi.table, HOLDS_COMMENT_REPLY)
         mutableClassDefBy(dislike.definingClass).methods.single { it.descriptor() == dislike.descriptor() }
             .holdBuild(HOLDS_COMMENT_DISLIKE)
         mutableClassDefBy(like.definingClass).methods.single { it.descriptor() == like.descriptor() }
@@ -700,6 +727,17 @@ internal fun postSocket(
     sockets: List<Method>,
     classes: (Set<String>) -> Map<String, ClassDef>,
 ): PluginSocket = pluginCheck(holders, sockets, classes, POST_SOCKET, INLINE_COMMENTS, INLINE_COMMENTS_CLIENT_RANKING)
+
+/**
+ * The socket of the buttons under each comment, from [holders], the classes loading [COMMENT_REPLY],
+ * and [sockets], the methods loading [COMMENT_UFI_SOCKET]. The table is the one name table naming
+ * both Reply plugins; the check is found as in [pluginCheck] (#447).
+ */
+internal fun commentUfiSocket(
+    holders: List<ClassDef>,
+    sockets: List<Method>,
+    classes: (Set<String>) -> Map<String, ClassDef>,
+): PluginSocket = pluginCheck(holders, sockets, classes, COMMENT_UFI_SOCKET, COMMENT_REPLY, COMMENT_REPLY_BUTTON)
 
 /**
  * The builder of the thumbs-down under a comment: the one static method of [plugin], the class

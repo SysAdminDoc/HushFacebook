@@ -893,6 +893,8 @@ final class FeedPages {
                     L10n.t("Takes the thumbs-down off comments. Like and Reply stay.")));
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_LIKE_BUTTON,
                     L10n.t("Takes Like off the row under comments. Reply and the reaction count stay.")));
+            comments.addPreference(toggle(context, Settings.HIDE_COMMENT_REPLY_BUTTON,
+                    L10n.t("Takes Reply off the row under comments. View replies, Like and the reaction count stay.")));
             comments.addPreference(toggle(context, Settings.COMMENT_BLOCK_BUTTON,
                     L10n.t("The thumbs-down on a comment becomes Block. One tap opens Facebook's own block screen for that person.")));
             comments.addPreference(toggle(context, Settings.REACTOR_BLOCK_BUTTON,

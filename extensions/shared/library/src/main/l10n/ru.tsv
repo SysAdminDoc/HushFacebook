@@ -500,6 +500,8 @@ Hide dislike on comments	Скрывать дизлайки в комментар
 Takes the thumbs-down off comments. Like and Reply stay.	Удаляет значок дизлайка из комментариев. Кнопки «Нравится» и «Ответить» остаются.
 Hide Like on comments	Скрывать «Нравится» в комментариях
 Takes Like off the row under comments. Reply and the reaction count stay.	Удаляет кнопку «Нравится» из строки под комментариями. Кнопка «Ответить» и счетчик реакций остаются.
+Hide Reply on comments	Скрывать «Ответить» в комментариях
+Takes Reply off the row under comments. View replies, Like and the reaction count stay.	Удаляет кнопку «Ответить» из строки под комментариями. «Посмотреть ответы», кнопка «Нравится» и счетчик реакций остаются.
 # context: switch title under Comments; Like is the button under a post or a comment
 Like only	Только «Нравится»
 # context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens

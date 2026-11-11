@@ -494,6 +494,8 @@ Hide dislike on comments	Ocultar el pulgar abajo en los comentarios
 Takes the thumbs-down off comments. Like and Reply stay.	Quita el pulgar hacia abajo de los comentarios. Me gusta y Responder se quedan.
 Hide Like on comments	Ocultar Me gusta en los comentarios
 Takes Like off the row under comments. Reply and the reaction count stay.	Quita Me gusta de la fila bajo los comentarios. Responder y el número de reacciones se quedan.
+Hide Reply on comments	Ocultar Responder en los comentarios
+Takes Reply off the row under comments. View replies, Like and the reaction count stay.	Quita Responder de la fila bajo los comentarios. Ver respuestas, Me gusta y el número de reacciones se quedan.
 # context: switch title under Comments; Like is the button under a post or a comment
 Like only	Solo Me gusta
 # context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens
