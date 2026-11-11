@@ -142,4 +142,22 @@ public class LinkHistoryTest {
         assertTrue(LinkHistory.sendBrowserEvent(1));
         assertEquals(LinkHistory.ROUTE + ": 2 lists, 2 items, 0 removed", counterLine());
     }
+
+    @Test
+    public void onByDefaultAnAdEventIsHeldAndCountedApart() {
+        assertTrue("the call button's tap was logged", LinkHistory.holdAdEvent());
+        assertFalse(LinkHistory.sendBrowserEvent(1));
+        assertEquals(LinkHistory.ROUTE + ": 2 lists, 2 items, 2 removed. Last reason: " + LinkHistory.BROWSER_EVENTS
+                + ". Removed: " + LinkHistory.AD_EVENTS + " 1, " + LinkHistory.BROWSER_EVENTS + " 1", counterLine());
+    }
+
+    @Test
+    public void offOrPausedAnAdEventIsLogged() {
+        Settings.HOLD_LINK_HISTORY.save(false);
+        assertFalse(LinkHistory.holdAdEvent());
+        Settings.HOLD_LINK_HISTORY.resetToDefault();
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse(LinkHistory.holdAdEvent());
+        assertEquals(LinkHistory.ROUTE + ": 2 lists, 2 items, 0 removed", counterLine());
+    }
 }

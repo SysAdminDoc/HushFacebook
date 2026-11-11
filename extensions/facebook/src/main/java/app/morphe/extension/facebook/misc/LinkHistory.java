@@ -40,6 +40,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * logger does besides sending, handing page data to the link history writers and its on-device
  * signals among it, never asks, so the browser works the same either way.
  *
+ * <p>An ad opened in the browser also reports through an ad event callback: how you took in the ad,
+ * and its call button being shown and tapped, with the ad's and Page's ids and tracking codes. That
+ * callback only logs (nothing in it opens the call or its dialog), and it asks {@link #holdAdEvent}
+ * first, so a yes returns before any of it.
+ *
  * <p>It fails open: the switch off, a pause, settings that aren't ready yet, or a failure in here,
  * and the browser builds its writers and sends as it would have.
  */
@@ -58,6 +63,9 @@ public final class LinkHistory {
 
     /** What a browser analytics event that wasn't sent is counted under. */
     static final String BROWSER_EVENTS = "Browser events";
+
+    /** What an ad event that wasn't logged is counted under. */
+    static final String AD_EVENTS = "Browser ad events";
 
     private LinkHistory() {
     }
@@ -93,6 +101,14 @@ public final class LinkHistory {
      */
     public static boolean sendBrowserEvent(int sampled) {
         return sampled != 0 && !held(BROWSER_EVENTS, "browser event", "a browser event");
+    }
+
+    /**
+     * Injection point, first thing in the browser's ad event callback. True makes it return before
+     * the ad's attention and call button events are logged. Never throws.
+     */
+    public static boolean holdAdEvent() {
+        return held(AD_EVENTS, "ad event", "an ad event");
     }
 
     private static boolean held(String counted, String site, String what) {

@@ -65,6 +65,14 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * (586 LX/0rwT;->A01), feeds an on-device signal store (586 LX/02Gp;->A0F) and more, none of it
  * behind a sampling answer. So LinkHistory.sendBrowserEvent() goes right after each sampling answer
  * (39 on 586) and turns a yes into a no, and nothing else the logger does changes.
+ *
+ * Ads open in the browser report through one more callback, read from 586 on 2026-11-11:
+ * BrowserLiteCallbackImpl.HWf(Bundle, String, Map), a switch on the event's name. Its ATTENTION_FRAMEWORK
+ * branch logs the ad's attention events (ad_id, the browser session, a tracking token). Its call
+ * extension branches log an ad's call button being drawn and tapped (ad_id, page_id, its tracking
+ * codes), and hand the confirm dialog's steps to the click-to-call app state logger (586
+ * CTCAppStateLogger.A0D), which logs them only once the tap has started its session. Nothing else
+ * happens in it, so LinkHistory.holdAdEvent() goes first and a yes returns before any of it.
  */
 
 private const val PATCH = "Open links in external browser"
@@ -105,6 +113,11 @@ internal const val BROWSER_EVENT_LOGGER_ANCHOR = "iab_unified"
 
 /** The kept type of the events the logger is handed. */
 internal const val BROWSER_EVENT = "Lcom/facebook/iabeventlogging/model/IABEvent;"
+
+internal const val HOLD_AD_EVENT = "Lapp/morphe/extension/facebook/misc/LinkHistory;->holdAdEvent()Z"
+
+/** What the ad event callback names a call button's tap, the string to look it up by. */
+internal const val AD_EVENT_CALLBACK_ANCHOR = "CALL_EXTENSION_CTA_ENTRY"
 
 /**
  * Whether [method] is a factory of [writer]: an instance method outside it that takes one parameter
@@ -314,6 +327,33 @@ internal fun MutableMethod.holdBrowserEvents(answers: List<Int>) {
         )
     }
 }
+
+/**
+ * Whether [method] is the browser's ad event callback: an instance method returning void that takes
+ * the browser's launch bundle, the event's name and its values, and names [AD_EVENT_CALLBACK_ANCHOR].
+ * Its class has another method of that shape (586 B6n), which names no call button.
+ */
+internal fun isAdEventCallback(method: Method): Boolean {
+    if (method.returnType != "V" || AccessFlags.STATIC.isSet(method.accessFlags)) return false
+    if (method.parameterTypes.map(CharSequence::toString) != listOf("Landroid/os/Bundle;", "Ljava/lang/String;", "Ljava/util/Map;")) {
+        return false
+    }
+    return method.implementation?.instructions?.any {
+        ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == AD_EVENT_CALLBACK_ANCHOR
+    } == true
+}
+
+/** The one ad event callback, or a refusal. */
+internal fun BytecodePatchContext.adEventCallback(): Method {
+    val callbacks = classDefByStrings(AD_EVENT_CALLBACK_ANCHOR, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith("Lapp/morphe/") }.distinctBy { it.type }
+        .flatMap { it.methods }.filter(::isAdEventCallback)
+    return callbacks.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one ad event callback, found ${callbacks.size}")
+}
+
+/** First thing in the ad event callback: ask the extension, and return on a yes. Otherwise it logs as before. */
+internal fun MutableMethod.holdAdEvent() = returnFirstOnYes(HOLD_AD_EVENT)
 
 /** Asks [hook] before this void method's first instruction and returns on a yes. */
 private fun MutableMethod.returnFirstOnYes(hook: String) {

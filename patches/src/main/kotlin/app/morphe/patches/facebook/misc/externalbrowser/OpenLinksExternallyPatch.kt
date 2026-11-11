@@ -94,11 +94,12 @@ val openLinksExternallyPatch = bytecodePatch(
         // A link that stays in Facebook's browser still feeds its link history. The second switch
         // stops both writers before they exist, the upload of what they recorded, which other
         // parts of the browser reach too, the two autofill reports that name the page a form was
-        // filled on, and every analytics event the browser's event logger sends (see
-        // LinkHistoryWriters.kt).
+        // filled on, every analytics event the browser's event logger sends, and the ad events
+        // its ad callback logs (see LinkHistoryWriters.kt).
         linkHistoryFactories().forEach { mutableFactory(it).holdLinkHistory() }
         mutableFactory(linkHistoryUpload()).holdLinkHistoryUpload()
         autofillReports().forEach { mutableFactory(it).holdAutofillReport() }
+        mutableFactory(adEventCallback()).holdAdEvent()
         // The event logger is one long method that changes from build to build. A build where it has
         // another shape keeps the rest of the patch and sends its browser events.
         try {
