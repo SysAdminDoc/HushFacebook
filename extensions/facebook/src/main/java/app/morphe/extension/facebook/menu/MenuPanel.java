@@ -85,7 +85,7 @@ public final class MenuPanel {
     static boolean anySwitchActs() {
         return Settings.HIDE_MENU_UPGRADES.get() || Settings.HIDE_MENU_ALSO_FROM_META.get()
                 || Settings.HIDE_MENU_HELP.get() || Settings.HIDE_MENU_SHORTCUTS.get()
-                || Settings.KEEP_MENU_SETTINGS_EXPANDED.get()
+                || Settings.HIDE_MENU_CREATE_PAGE.get() || Settings.KEEP_MENU_SETTINGS_EXPANDED.get()
                 || Settings.HIDE_MENU_MUSE.get() || Settings.HIDE_MENU_META_AI.get()
                 || !MenuTiles.hiddenNow().isEmpty();
     }

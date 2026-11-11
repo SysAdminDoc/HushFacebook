@@ -107,13 +107,13 @@ import app.morphe.extension.shared.settings.StringSetting;
  */
 public final class SettingsBackup {
     /**
-     * Far more than a settings file needs: one is a few hundred bytes, or about 88 KB at most with
+     * Far more than a settings file needs: one is a few hundred bytes, or about 96 KB at most with
      * both word lists filling the room they share, the sources list filling its own and every
      * other value at its longest, switches and the 2 KB of share sheet items included. That leaves
      * about 8 KB for switches to come. SettingsBackupTest's longest-file check fails once they've
      * used it; raise this then.
      */
-    public static final int MAX_BYTES = 96 * 1024;
+    public static final int MAX_BYTES = 104 * 1024;
     public static final String FORMAT = "hushfacebook-settings";
     /** The file shape this build writes and the newest it reads. A file declaring more is refused. */
     static final int SCHEMA = 1;
@@ -480,6 +480,7 @@ public final class SettingsBackup {
             Settings.HIDE_MENU_ALSO_FROM_META,
             Settings.HIDE_MENU_HELP,
             Settings.HIDE_MENU_SHORTCUTS,
+            Settings.HIDE_MENU_CREATE_PAGE,
             Settings.KEEP_MENU_SETTINGS_EXPANDED,
             Settings.HIDE_MENU_MUSE,
             Settings.HIDE_MENU_META_AI,

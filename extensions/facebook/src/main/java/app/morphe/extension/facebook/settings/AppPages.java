@@ -192,6 +192,9 @@ final class AppPages {
             menu.addPreference(toggle(context, Settings.HIDE_MENU_SHORTCUTS,
                     L10n.t("The Your shortcuts row leaves Facebook's Menu, with the groups and Pages Facebook keeps "
                             + "putting back in it. The Menu tiles under it stay.")));
+            menu.addPreference(toggle(context, Settings.HIDE_MENU_CREATE_PAGE,
+                    L10n.t("The Create Facebook Page row leaves the top of Facebook's Menu. Your profile above it "
+                            + "stays.")));
             menu.addPreference(toggle(context, Settings.KEEP_MENU_SETTINGS_EXPANDED,
                     L10n.t("Settings and privacy in Facebook's Menu stays open, so its rows show without a tap.")));
             menu.addPreference(toggle(context, Settings.HIDE_MENU_MUSE,

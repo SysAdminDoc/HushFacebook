@@ -467,6 +467,8 @@ Hide Help and support	„Hilfe und Support“ ausblenden
 The Help and support section leaves Facebook's Menu, header and all. Settings and privacy stays.	Der Bereich „Hilfe und Support“ verschwindet samt Überschrift aus dem Facebook-Menü. „Einstellungen und Privatsphäre“ bleibt.
 Hide Your shortcuts	„Deine Verknüpfungen“ ausblenden
 The Your shortcuts row leaves Facebook's Menu, with the groups and Pages Facebook keeps putting back in it. The Menu tiles under it stay.	Die Zeile „Deine Verknüpfungen“ verschwindet aus dem Facebook-Menü, mit den Gruppen und Seiten, die Facebook immer wieder hineinlegt. Die Menükacheln darunter bleiben.
+Hide Create Facebook Page	„Facebook-Seite erstellen“ ausblenden
+The Create Facebook Page row leaves the top of Facebook's Menu. Your profile above it stays.	Die Zeile „Facebook-Seite erstellen“ verschwindet oben aus dem Facebook-Menü. Dein Profil darüber bleibt.
 # context: switch title under Menu; Settings and privacy is a section of Facebook's own Menu that folds and unfolds when its header is tapped
 Keep Settings and privacy expanded	„Einstellungen und Privatsphäre“ aufgeklappt lassen
 # context: summary of that switch

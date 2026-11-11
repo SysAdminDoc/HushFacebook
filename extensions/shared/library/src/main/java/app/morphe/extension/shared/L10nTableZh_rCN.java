@@ -18,7 +18,7 @@ final class L10nTableZh_rCN {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(3614);
+        Map<String, String> table = new HashMap<>(3618);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -1197,6 +1197,8 @@ final class L10nTableZh_rCN {
                 "\u9690\u85cf Reels \u4e0a\u7684\u201c\u8bc4\u8bba\u201d");
         table.put("Hide Comment under posts",
                 "\u9690\u85cf\u5e16\u5b50\u4e0b\u65b9\u7684\u8bc4\u8bba");
+        table.put("Hide Create Facebook Page",
+                "\u9690\u85cf\u201c\u521b\u5efa Facebook \u516c\u5171\u4e3b\u9875\u201d");
         table.put("Hide Create story",
                 "\u9690\u85cf\u201c\u521b\u5efa\u5feb\u62cd\u201d");
         table.put("Hide Edits promotions",
@@ -1279,11 +1281,11 @@ final class L10nTableZh_rCN {
                 "\u9690\u85cf Reels \u4e0a\u7684\u6570\u5b57");
         table.put("Hide create story cards",
                 "\u9690\u85cf\u521b\u5efa\u5feb\u62cd\u5361\u7247");
-        table.put("Hide dislike on comments",
-                "\u9690\u85cf\u8bc4\u8bba\u7684\u8e29\u6309\u94ae");
     }
 
     private static void fill10(Map<String, String> table) {
+        table.put("Hide dislike on comments",
+                "\u9690\u85cf\u8bc4\u8bba\u7684\u8e29\u6309\u94ae");
         table.put("Hide friend requests in the feed",
                 "\u9690\u85cf\u52a8\u6001\u4e2d\u7684\u597d\u53cb\u8bf7\u6c42");
         table.put("Hide friends' locations",
@@ -1402,11 +1404,11 @@ final class L10nTableZh_rCN {
                 "\u9690\u85cf\u201c\u4ea4\u53cb\u201d\u6807\u7b7e\u9875");
         table.put("Hide the Events tab",
                 "\u9690\u85cf\u201c\u6d3b\u52a8\u201d\u6807\u7b7e\u9875");
-        table.put("Hide the Explore tab",
-                "\u9690\u85cf\u201c\u63a2\u7d22\u201d\u6807\u7b7e\u9875");
     }
 
     private static void fill11(Map<String, String> table) {
+        table.put("Hide the Explore tab",
+                "\u9690\u85cf\u201c\u63a2\u7d22\u201d\u6807\u7b7e\u9875");
         table.put("Hide the Facebook logo",
                 "\u9690\u85cf Facebook \u5fbd\u6807");
         table.put("Hide the Feeds header",
@@ -1525,11 +1527,11 @@ final class L10nTableZh_rCN {
                 "\u9690\u85cf\u89c6\u9891\u5e16\u5b50");
         table.put("Hide who is typing in comments",
                 "\u9690\u85cf\u8bc4\u8bba\u4e2d\u8c01\u5728\u8f93\u5165");
-        table.put("Hides \"Pages you may like\" cards, cards promoting Facebook's own features, and surveys in the feed.",
-                "\u9690\u85cf\u52a8\u6001\u6d88\u606f\u4e2d\u7684\u201c\u4f60\u53ef\u80fd\u611f\u5174\u8da3\u7684\u516c\u5171\u4e3b\u9875\u201d\u5361\u7247\u3001\u63a8\u5e7f Facebook \u81ea\u5bb6\u529f\u80fd\u7684\u5361\u7247\u4ee5\u53ca\u8c03\u67e5\u95ee\u5377\u3002");
     }
 
     private static void fill12(Map<String, String> table) {
+        table.put("Hides \"Pages you may like\" cards, cards promoting Facebook's own features, and surveys in the feed.",
+                "\u9690\u85cf\u52a8\u6001\u6d88\u606f\u4e2d\u7684\u201c\u4f60\u53ef\u80fd\u611f\u5174\u8da3\u7684\u516c\u5171\u4e3b\u9875\u201d\u5361\u7247\u3001\u63a8\u5e7f Facebook \u81ea\u5bb6\u529f\u80fd\u7684\u5361\u7247\u4ee5\u53ca\u8c03\u67e5\u95ee\u5377\u3002");
         table.put("Hides Memories between posts, like \"On this day\" and friendship anniversaries. Your Memories page stays.",
                 "\u9690\u85cf\u5e16\u5b50\u4e4b\u95f4\u7684\u56de\u5fc6\uff0c\u4f8b\u5982\u201c\u90a3\u5e74\u4eca\u65e5\u201d\u548c\u597d\u53cb\u7eaa\u5ff5\u65e5\u3002\u4f60\u7684\u201c\u56de\u5fc6\u201d\u9875\u9762\u4fdd\u7559\u3002");
         table.put("Hides Meta AI cards between posts and cards promoting the Vibes app. People's posts stay, whatever they say about AI.",
@@ -1648,11 +1650,11 @@ final class L10nTableZh_rCN {
                 "\u9690\u85cf\u90e8\u5206\u5e16\u5b50\u4e0b\u65b9\u7684 Meta AI \u95ee\u9898\u884c\u3002\u5e16\u5b50\u3001\u5b83\u7684\u94fe\u63a5\u5361\u7247\u548c\u6309\u94ae\u4fdd\u7559\u3002");
         table.put("Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories and the Stories tray stay.",
                 "\u9690\u85cf\u5e16\u5b50\u4e4b\u95f4\u6765\u81ea\u4e0e\u4f60\u6ca1\u6709\u5173\u8054\u7684\u4eba\u7684\u5feb\u62cd\u884c\u3002\u4f60\u597d\u53cb\u7684\u5feb\u62cd\u548c\u5feb\u62cd\u680f\u4fdd\u7559\u3002");
-        table.put("Hides the row of groups to join between posts and the groups card between reels. Posts from groups you're in stay.",
-                "\u9690\u85cf\u5e16\u5b50\u4e4b\u95f4\u7684\u5f85\u52a0\u5165\u5c0f\u7ec4\u884c\uff0c\u4ee5\u53ca Reels \u4e4b\u95f4\u7684\u5c0f\u7ec4\u5361\u7247\u3002\u4f60\u6240\u5728\u5c0f\u7ec4\u7684\u5e16\u5b50\u4fdd\u7559\u3002");
     }
 
     private static void fill13(Map<String, String> table) {
+        table.put("Hides the row of groups to join between posts and the groups card between reels. Posts from groups you're in stay.",
+                "\u9690\u85cf\u5e16\u5b50\u4e4b\u95f4\u7684\u5f85\u52a0\u5165\u5c0f\u7ec4\u884c\uff0c\u4ee5\u53ca Reels \u4e4b\u95f4\u7684\u5c0f\u7ec4\u5361\u7247\u3002\u4f60\u6240\u5728\u5c0f\u7ec4\u7684\u5e16\u5b50\u4fdd\u7559\u3002");
         table.put("Hides the row of groups to join between posts. Posts from groups you're in stay.",
                 "\u9690\u85cf\u5e16\u5b50\u4e4b\u95f4\u7684\u5f85\u52a0\u5165\u5c0f\u7ec4\u884c\u3002\u4f60\u6240\u5728\u5c0f\u7ec4\u7684\u5e16\u5b50\u4fdd\u7559\u3002");
         table.put("Hides the row of stories at the top of the feed, including Create story.",
@@ -1771,11 +1773,11 @@ final class L10nTableZh_rCN {
                 "\u5982\u679c\u4f60\u4fee\u8865\u7684 Facebook \u5305\u542b\u201c\u5fbd\u7ae0\u548c\u6807\u5fd7\u989c\u8272\u201d\uff0c\u9009\u4e2d\u7684\u6807\u7b7e\u9875\u5c06\u4e3a %1$s\u3002");
         table.put("If your patched Facebook includes Badge and logo colors, the selected tab will be Facebook's color.",
                 "\u5982\u679c\u4f60\u4fee\u8865\u7684 Facebook \u5305\u542b\u201c\u5fbd\u7ae0\u548c\u6807\u5fd7\u989c\u8272\u201d\uff0c\u9009\u4e2d\u7684\u6807\u7b7e\u9875\u5c06\u4f7f\u7528 Facebook \u7684\u989c\u8272\u3002");
-        table.put("If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.",
-                "\u5982\u679c\u4f60\u4fee\u8865\u7684 Facebook \u5305\u542b\u201c\u5fbd\u6807\u540e\u7684\u8868\u60c5\u7b26\u53f7\u201d\uff0c\u4e3b\u9875\u9876\u90e8\u7684\u5fbd\u6807\u540e\u5c06\u663e\u793a %1$s\u3002");
     }
 
     private static void fill14(Map<String, String> table) {
+        table.put("If your patched Facebook includes Emoji after the logo, the top of Home will show %1$s after the logo.",
+                "\u5982\u679c\u4f60\u4fee\u8865\u7684 Facebook \u5305\u542b\u201c\u5fbd\u6807\u540e\u7684\u8868\u60c5\u7b26\u53f7\u201d\uff0c\u4e3b\u9875\u9876\u90e8\u7684\u5fbd\u6807\u540e\u5c06\u663e\u793a %1$s\u3002");
         table.put("If your patched Facebook includes Home header text, the top of Home will say %1$s.",
                 "\u5982\u679c\u4f60\u4fee\u8865\u7684 Facebook \u5305\u542b\u201c\u4e3b\u9875\u9876\u90e8\u6587\u5b57\u201d\uff0c\u4e3b\u9875\u9876\u90e8\u5c06\u663e\u793a %1$s\u3002");
         table.put("If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be %1$s.",
@@ -1894,11 +1896,11 @@ final class L10nTableZh_rCN {
                 "\u8bb8\u53ef\u8bc1");
         table.put("Light background color",
                 "\u6d45\u8272\u80cc\u666f\u989c\u8272");
-        table.put("Light bars on the Reels tab",
-                "Reels \u6807\u7b7e\u9875\u4f7f\u7528\u6d45\u8272\u680f");
     }
 
     private static void fill15(Map<String, String> table) {
+        table.put("Light bars on the Reels tab",
+                "Reels \u6807\u7b7e\u9875\u4f7f\u7528\u6d45\u8272\u680f");
         table.put("Light mode's backgrounds use %1$s. Restart Facebook to see the change.",
                 "\u6d45\u8272\u6a21\u5f0f\u80cc\u666f\u4f7f\u7528 %1$s\u3002\u91cd\u542f Facebook \u540e\u53ef\u770b\u5230\u66f4\u6539\u3002");
         table.put("Like \"%1$s\". A change shows from the next reel.",
@@ -2017,11 +2019,11 @@ final class L10nTableZh_rCN {
                 "Messenger \u7684\u8bbe\u7f6e\u6ca1\u6709\u6253\u5f00\u3002\u8bf7\u4ece Messenger \u56fe\u6807\u6253\u5f00\u201c\u5e94\u7528\u4fe1\u606f\u201d\uff0c\u7136\u540e\u8fdb\u5165\u201c\u9ed8\u8ba4\u6253\u5f00\u201d\u3002");
         table.put("Messenger, Facebook Lite, Business Suite and Workplace can install next to this Facebook. Their shared permissions no longer clash.",
                 "Messenger\u3001Facebook Lite\u3001Business Suite \u548c Workplace \u53ef\u4ee5\u4e0e\u8fd9\u4e2a Facebook \u5e76\u5b58\u5b89\u88c5\u3002\u5b83\u4eec\u5171\u7528\u7684\u6743\u9650\u4e0d\u518d\u51b2\u7a81\u3002");
-        table.put("Meta App Manager",
-                "Meta App Manager");
     }
 
     private static void fill16(Map<String, String> table) {
+        table.put("Meta App Manager",
+                "Meta App Manager");
         table.put("Meta App Manager can claim Facebook's web addresses for itself, so their links skip this app. Tap, turn off Open supported links there, then recheck Supported links above.",
                 "Meta App Manager \u53ef\u4ee5\u628a Facebook \u7684\u7f51\u5740\u636e\u4e3a\u5df1\u6709\uff0c\u5bfc\u81f4\u8fd9\u4e9b\u94fe\u63a5\u7ed5\u8fc7\u6b64\u5e94\u7528\u3002\u70b9\u6309\u540e\uff0c\u5728\u90a3\u91cc\u5173\u95ed\u201c\u6253\u5f00\u652f\u6301\u7684\u94fe\u63a5\u201d\uff0c\u7136\u540e\u91cd\u65b0\u68c0\u67e5\u4e0a\u9762\u7684\u201c\u53d7\u652f\u6301\u7684\u94fe\u63a5\u201d\u3002");
         table.put("Meta App Manager's settings didn't open. Find it in Android's app list with system apps shown, then Open by default.",
@@ -2140,11 +2142,11 @@ final class L10nTableZh_rCN {
                 "\u6b64\u7248\u672c\u4e2d\u6ca1\u6709\uff1a%1$s\u3002Morphe Manager \u9ed8\u8ba4\u4f1a\u9009\u4e2d\u5b83\u3002\u8bf7\u5728\u9009\u4e2d\u5b83\u7684\u60c5\u51b5\u4e0b\u91cd\u65b0\u4fee\u8865\uff0c\u4ee5\u83b7\u5f97\u5b83\u7684\u529f\u80fd\u3002");
         table.put("Not in this build: %1$s. Morphe Manager selects them by default. Patch again with them selected to get what they do.",
                 "\u6b64\u7248\u672c\u4e2d\u6ca1\u6709\uff1a%1$s\u3002Morphe Manager \u9ed8\u8ba4\u4f1a\u9009\u4e2d\u5b83\u4eec\u3002\u8bf7\u5728\u9009\u4e2d\u5b83\u4eec\u7684\u60c5\u51b5\u4e0b\u91cd\u65b0\u4fee\u8865\uff0c\u4ee5\u83b7\u5f97\u5b83\u4eec\u7684\u529f\u80fd\u3002");
-        table.put("Not saved: that isn't a Facebook photo or video",
-                "\u672a\u4fdd\u5b58\uff1a\u8fd9\u4e0d\u662f Facebook \u7684\u7167\u7247\u6216\u89c6\u9891");
     }
 
     private static void fill17(Map<String, String> table) {
+        table.put("Not saved: that isn't a Facebook photo or video",
+                "\u672a\u4fdd\u5b58\uff1a\u8fd9\u4e0d\u662f Facebook \u7684\u7167\u7247\u6216\u89c6\u9891");
         table.put("Not saved: the file is over 512 MB",
                 "\u672a\u4fdd\u5b58\uff1a\u6587\u4ef6\u8d85\u8fc7 512 MB");
         table.put("Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.",
@@ -2263,11 +2265,11 @@ final class L10nTableZh_rCN {
                 "\u6253\u5f00\u8bbe\u7f6e");
         table.put("Open the video with",
                 "\u7528\u4ee5\u4e0b\u5e94\u7528\u6253\u5f00\u89c6\u9891");
-        table.put("Open videos in another app",
-                "\u7528\u5176\u4ed6\u5e94\u7528\u6253\u5f00\u89c6\u9891");
     }
 
     private static void fill18(Map<String, String> table) {
+        table.put("Open videos in another app",
+                "\u7528\u5176\u4ed6\u5e94\u7528\u6253\u5f00\u89c6\u9891");
         table.put("Open web links in your browser. Facebook's own pages stay in the app.",
                 "\u5728\u6d4f\u89c8\u5668\u4e2d\u6253\u5f00\u7f51\u9875\u94fe\u63a5\u3002Facebook \u81ea\u5df1\u7684\u9875\u9762\u4ecd\u5728\u5e94\u7528\u5185\u6253\u5f00\u3002");
         table.put("Opening Facebook",
@@ -2386,11 +2388,11 @@ final class L10nTableZh_rCN {
                 "\u64ad\u653e\u753b\u8d28");
         table.put("Playback speed",
                 "\u64ad\u653e\u901f\u5ea6");
-        table.put("Playback speed in the post menu",
-                "\u5e16\u5b50\u83dc\u5355\u4e2d\u7684\u64ad\u653e\u901f\u5ea6");
     }
 
     private static void fill19(Map<String, String> table) {
+        table.put("Playback speed in the post menu",
+                "\u5e16\u5b50\u83dc\u5355\u4e2d\u7684\u64ad\u653e\u901f\u5ea6");
         table.put("Politics",
                 "\u653f\u6cbb");
         table.put("Posts in another language get a Translate link under their text. A tap sends that post's text to Google Translate.",
@@ -2509,11 +2511,11 @@ final class L10nTableZh_rCN {
                 "\u52a8\u6001\u4e2d\u7684 Reels");
         table.put("Reels lose their color over %1$s of watching. 15 minutes away starts them in color again.",
                 "Reels \u4f1a\u5728\u89c2\u770b %1$s \u7684\u8fc7\u7a0b\u4e2d\u9010\u6e10\u892a\u8272\u3002\u79bb\u5f00 15 \u5206\u949f\u540e\u4f1a\u91cd\u65b0\u6062\u590d\u5f69\u8272.");
-        table.put("Reels order",
-                "Reels \u6392\u5e8f");
     }
 
     private static void fill20(Map<String, String> table) {
+        table.put("Reels order",
+                "Reels \u6392\u5e8f");
         table.put("Reels order will be set to %1$s.",
                 "Reels \u6392\u5e8f\u5c06\u8bbe\u4e3a %1$s\u3002");
         table.put("Reels quality",
@@ -2632,11 +2634,11 @@ final class L10nTableZh_rCN {
                 "\u5e16\u5b50\u4e0b\u65b9\u7684\u6536\u85cf\u6309\u94ae");
         table.put("Save canceled",
                 "\u5df2\u53d6\u6d88\u4fdd\u5b58");
-        table.put("Save crashes to Downloads",
-                "\u5c06\u5d29\u6e83\u8bb0\u5f55\u4fdd\u5b58\u5230\u201c\u4e0b\u8f7d\u201d");
     }
 
     private static void fill21(Map<String, String> table) {
+        table.put("Save crashes to Downloads",
+                "\u5c06\u5d29\u6e83\u8bb0\u5f55\u4fdd\u5b58\u5230\u201c\u4e0b\u8f7d\u201d");
         table.put("Save folder",
                 "\u4fdd\u5b58\u6587\u4ef6\u5939");
         table.put("Save full report",
@@ -2755,11 +2757,11 @@ final class L10nTableZh_rCN {
                 "\u9009\u62e9\u6587\u5b57");
         table.put("Selected %1$s. Font changes apply after restarting Facebook.",
                 "\u5df2\u9009\u62e9 %1$s\u3002\u5b57\u4f53\u66f4\u6539\u5728\u91cd\u542f Facebook \u540e\u751f\u6548\u3002");
-        table.put("Selected %1$s. It shows at the top of Home in place of your words and Facebook's logo.",
-                "\u5df2\u9009\u62e9 %1$s\u3002\u5b83\u4f1a\u4ee3\u66ff\u4f60\u7684\u6587\u5b57\u548c Facebook \u6807\u5fd7\u663e\u793a\u5728\u4e3b\u9875\u9876\u90e8\u3002");
     }
 
     private static void fill22(Map<String, String> table) {
+        table.put("Selected %1$s. It shows at the top of Home in place of your words and Facebook's logo.",
+                "\u5df2\u9009\u62e9 %1$s\u3002\u5b83\u4f1a\u4ee3\u66ff\u4f60\u7684\u6587\u5b57\u548c Facebook \u6807\u5fd7\u663e\u793a\u5728\u4e3b\u9875\u9876\u90e8\u3002");
         table.put("Selected %1$s. Restart Facebook to apply the font change.",
                 "\u5df2\u9009\u62e9 %1$s\u3002\u91cd\u542f Facebook \u4ee5\u5e94\u7528\u5b57\u4f53\u66f4\u6539\u3002");
         table.put("Selected %1$s. Restart Facebook to see it at the top of Home.",
@@ -2878,11 +2880,11 @@ final class L10nTableZh_rCN {
                 "\u663e\u793a\u5546\u54c1\u53d1\u5e03\u65f6\u95f4");
         table.put("Shows Save photo on every photo you open, even where saving is turned off, and saves the biggest size. Off or paused, Facebook decides again.",
                 "\u5728\u4f60\u6253\u5f00\u7684\u6bcf\u5f20\u7167\u7247\u4e0a\u663e\u793a\u201c\u4fdd\u5b58\u7167\u7247\u201d\uff0c\u5373\u4f7f\u8be5\u5904\u5df2\u7981\u6b62\u4fdd\u5b58\uff0c\u5e76\u4fdd\u5b58\u6700\u5927\u5c3a\u5bf8\u3002\u5173\u95ed\u6216\u6682\u505c\u540e\uff0c\u7531 Facebook \u91cd\u65b0\u51b3\u5b9a\u3002");
-        table.put("Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.",
-                "\u5728\u52a8\u6001\u89c6\u9891\u5e95\u90e8\u663e\u793a\u4e00\u6761\u8fdb\u5ea6\u6761\u3002\u62d6\u52a8\u540e\u677e\u5f00\u5373\u53ef\u8df3\u5230\u8be5\u4f4d\u7f6e\u3002\u76f4\u64ad\u89c6\u9891\u548c\u5e7f\u544a\u4ecd\u4f7f\u7528\u5b83\u4eec\u81ea\u5df1\u7684\u63a7\u4ef6\u3002\u5f00\u542f\u201c\u70b9\u6309\u64ad\u653e\u201d\u65f6\uff0c\u8fd8\u9700\u8981\u5f00\u542f\u201c\u52a8\u6001\u6d88\u606f\u89c6\u9891\u63a7\u4ef6\u201d\u3002");
     }
 
     private static void fill23(Map<String, String> table) {
+        table.put("Shows a bar along the bottom of a feed video. Drag it and let go to jump to that point. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.",
+                "\u5728\u52a8\u6001\u89c6\u9891\u5e95\u90e8\u663e\u793a\u4e00\u6761\u8fdb\u5ea6\u6761\u3002\u62d6\u52a8\u540e\u677e\u5f00\u5373\u53ef\u8df3\u5230\u8be5\u4f4d\u7f6e\u3002\u76f4\u64ad\u89c6\u9891\u548c\u5e7f\u544a\u4ecd\u4f7f\u7528\u5b83\u4eec\u81ea\u5df1\u7684\u63a7\u4ef6\u3002\u5f00\u542f\u201c\u70b9\u6309\u64ad\u653e\u201d\u65f6\uff0c\u8fd8\u9700\u8981\u5f00\u542f\u201c\u52a8\u6001\u6d88\u606f\u89c6\u9891\u63a7\u4ef6\u201d\u3002");
         table.put("Shows a bar along the bottom of a video story that you drag to move through it. The story waits while you drag. Progress bar at the bottom makes way for it on video stories.",
                 "\u5728\u89c6\u9891\u5feb\u62cd\u5e95\u90e8\u663e\u793a\u4e00\u6761\u53ef\u4ee5\u62d6\u52a8\u7684\u8fdb\u5ea6\u6761\uff0c\u7528\u6765\u5728\u5feb\u62cd\u91cc\u524d\u540e\u79fb\u52a8\u3002\u62d6\u52a8\u65f6\u5feb\u62cd\u4f1a\u7b49\u4f60\u677e\u624b\u3002\u5728\u89c6\u9891\u5feb\u62cd\u4e0a\uff0c\u201c\u5e95\u90e8\u8fdb\u5ea6\u6761\u201d\u4f1a\u7ed9\u5b83\u8ba9\u4f4d\u3002");
         table.put("Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open the window right away. Works with Picture-in-picture on.",
@@ -3001,11 +3003,11 @@ final class L10nTableZh_rCN {
                 "\u53d7\u652f\u6301\u7684\u94fe\u63a5");
         table.put("Switches that are on",
                 "\u5df2\u5f00\u542f\u7684\u5f00\u5173");
-        table.put("Tab bar",
-                "\u6807\u7b7e\u680f");
     }
 
     private static void fill24(Map<String, String> table) {
+        table.put("Tab bar",
+                "\u6807\u7b7e\u680f");
         table.put("Tab bar at the bottom",
                 "\u5e95\u90e8\u6807\u7b7e\u680f");
         table.put("Tab bar at the top",
@@ -3124,11 +3126,11 @@ final class L10nTableZh_rCN {
                 "\u70b9\u6309\u67e5\u770b\u662f\u54ea\u4e9b\u3002");
         table.put("Tap to turn it back on.",
                 "\u70b9\u6309\u53ef\u91cd\u65b0\u5f00\u542f\u3002");
-        table.put("Tapping Download on a reel or video will send its link to an app.",
-                "\u5728 Reels \u6216\u89c6\u9891\u4e0a\u70b9\u6309\u201c\u4e0b\u8f7d\u201d\u4f1a\u628a\u5b83\u7684\u94fe\u63a5\u53d1\u9001\u7ed9\u67d0\u4e2a\u5e94\u7528\u3002");
     }
 
     private static void fill25(Map<String, String> table) {
+        table.put("Tapping Download on a reel or video will send its link to an app.",
+                "\u5728 Reels \u6216\u89c6\u9891\u4e0a\u70b9\u6309\u201c\u4e0b\u8f7d\u201d\u4f1a\u628a\u5b83\u7684\u94fe\u63a5\u53d1\u9001\u7ed9\u67d0\u4e2a\u5e94\u7528\u3002");
         table.put("Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without Messenger, Chats opens as before.",
                 "\u70b9\u6309 Facebook \u9876\u90e8\u7684 Messenger \u56fe\u6807\u65f6\uff0c\u6253\u5f00 Messenger \u5e94\u7528\u800c\u4e0d\u662f\u201c\u804a\u5929\u201d\u3002\u6ca1\u6709 Messenger \u65f6\uff0c\u4ecd\u50cf\u4ee5\u524d\u4e00\u6837\u6253\u5f00\u201c\u804a\u5929\u201d\u3002");
         table.put("Tapping the reel above its comments plays or pauses it, and the comments stay open. Works while comments open part way up, not at full height.",
@@ -3173,6 +3175,8 @@ final class L10nTableZh_rCN {
                 "\u5168\u5c4f\u89c6\u9891\u4e0b\u65b9\u7684\u8bc4\u8bba\u6846\u4f1a\u6d88\u5931\u3002\u5e16\u5b50\u91cc\u7684\u8bc4\u8bba\u6846\u4e0d\u53d7\u5f71\u54cd\u3002");
         table.put("The Also from Meta section leaves Facebook's Menu, with its links to Meta's other apps and its ads for Meta's devices. Your own shortcuts stay.",
                 "\u201cMeta \u65d7\u4e0b\u66f4\u591a\u4ea7\u54c1\u201d\u90e8\u5206\u5c06\u4ece Facebook \u83dc\u5355\u4e2d\u6d88\u5931\uff0c\u5305\u62ec\u6307\u5411 Meta \u5176\u4ed6\u5e94\u7528\u7684\u94fe\u63a5\u548c Meta \u8bbe\u5907\u7684\u5e7f\u544a\u3002\u4f60\u81ea\u5df1\u7684\u5feb\u6377\u65b9\u5f0f\u4fdd\u7559\u3002");
+        table.put("The Create Facebook Page row leaves the top of Facebook's Menu. Your profile above it stays.",
+                "\u201c\u521b\u5efa Facebook \u516c\u5171\u4e3b\u9875\u201d\u4e00\u884c\u4ece Facebook \u83dc\u5355\u9876\u90e8\u79fb\u9664\u3002\u4e0a\u65b9\u7684\u4e2a\u4eba\u4e3b\u9875\u4fdd\u7559\u3002");
         table.put("The Date posted filter in post search asks for a from and to date, in place of a list of years.",
                 "\u5e16\u5b50\u641c\u7d22\u4e2d\u7684\u53d1\u5e03\u65e5\u671f\u7b5b\u9009\u4f1a\u8ba9\u4f60\u9009\u62e9\u8d77\u6b62\u65e5\u671f\uff0c\u800c\u4e0d\u662f\u5e74\u4efd\u5217\u8868\u3002");
         table.put("The Facebook logo at the top of Home is %1$s. Restart Facebook to see the change.",
@@ -3245,13 +3249,13 @@ final class L10nTableZh_rCN {
                 "\u5177\u4f53\u65e5\u671f");
         table.put("The diagnostic report couldn't be copied. Try again.",
                 "\u65e0\u6cd5\u590d\u5236\u8bca\u65ad\u62a5\u544a\u3002\u8bf7\u91cd\u8bd5\u3002");
+    }
+
+    private static void fill26(Map<String, String> table) {
         table.put("The diagnostic report couldn't be saved yet. Try again in a moment.",
                 "\u6682\u65f6\u65e0\u6cd5\u4fdd\u5b58\u8bca\u65ad\u62a5\u544a\u3002\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
         table.put("The diagnostic report couldn't be saved. Try again.",
                 "\u65e0\u6cd5\u4fdd\u5b58\u8bca\u65ad\u62a5\u544a\u3002\u8bf7\u91cd\u8bd5\u3002");
-    }
-
-    private static void fill26(Map<String, String> table) {
         table.put("The download ended before the whole file arrived. Try again.",
                 "\u6574\u4e2a\u6587\u4ef6\u8fd8\u6ca1\u4f20\u5b8c\u4e0b\u8f7d\u5c31\u7ed3\u675f\u4e86\u3002\u8bf7\u91cd\u8bd5\u3002");
         table.put("The feed will hide posts with more than %1$s reactions.",
@@ -3368,13 +3372,13 @@ final class L10nTableZh_rCN {
                 "\u8fdb\u5ea6\u6761\u4e0a\u7684\u65f6\u95f4");
         table.put("Title must include",
                 "\u6807\u9898\u5fc5\u987b\u5305\u542b");
+    }
+
+    private static void fill27(Map<String, String> table) {
         table.put("To day",
                 "\u7ed3\u675f\u65e5");
         table.put("Too many saves at once. Try again when one finishes.",
                 "\u540c\u65f6\u4fdd\u5b58\u7684\u6570\u91cf\u592a\u591a\u3002\u8bf7\u7b49\u5176\u4e2d\u4e00\u4e2a\u5b8c\u6210\u540e\u518d\u8bd5\u3002");
-    }
-
-    private static void fill27(Map<String, String> table) {
         table.put("Top bar",
                 "\u9876\u680f");
         table.put("Translate",
@@ -3491,13 +3495,13 @@ final class L10nTableZh_rCN {
                 "\u89c6\u9891\u5feb\u62cd\u6cbf\u7528\u201c\u9ed8\u8ba4\u753b\u8d28\u201d\u4e00\u884c\u7684\u8bbe\u7f6e\u3002");
         table.put("Video stories wait for a tap",
                 "\u89c6\u9891\u5feb\u62cd\u7b49\u5f85\u70b9\u6309");
+    }
+
+    private static void fill28(Map<String, String> table) {
         table.put("Video stories will play at the same quality as other videos.",
                 "\u89c6\u9891\u5feb\u62cd\u5c06\u4ee5\u4e0e\u5176\u4ed6\u89c6\u9891\u76f8\u540c\u7684\u753b\u8d28\u64ad\u653e\u3002");
         table.put("Video subfolder",
                 "\u89c6\u9891\u5b50\u6587\u4ef6\u5939");
-    }
-
-    private static void fill28(Map<String, String> table) {
         table.put("Videos",
                 "\u89c6\u9891");
         table.put("Videos and photos are saved on %1$s, in the same folders. Saves you already have stay where they are.",
@@ -3614,13 +3618,13 @@ final class L10nTableZh_rCN {
                 "\u5f00\u542f\u201c\u4e0b\u8f7d\u52a8\u6001\u6d88\u606f\u548c Watch \u89c6\u9891\u201d\u540e\uff0c\u5e26\u7740\u5df2\u590d\u5236\u7684 Reels \u6216\u89c6\u9891\u94fe\u63a5\u56de\u5230 Facebook \u65f6\uff0c\u4f1a\u63d0\u793a\u4e0b\u8f7d\u5b83\uff0c\u6bcf\u4e2a\u94fe\u63a5\u53ea\u63d0\u793a\u4e00\u6b21\u3002\u5173\u95ed\u540e\uff0cFacebook \u4e0d\u4f1a\u67e5\u770b\u4f60\u590d\u5236\u4e86\u4ec0\u4e48\u3002");
         table.put("With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.",
                 "\u5f00\u542f\u201c\u4fdd\u6301\u8fdb\u5ea6\u6761\u663e\u793a\u201d\u540e\uff0cReels \u7684\u5df2\u64ad\u653e\u65f6\u95f4\u548c\u603b\u65f6\u957f\u4f1a\u4e00\u76f4\u663e\u793a\u5728\u8fdb\u5ea6\u6761\u4e0a\u65b9\u3002\u5173\u95ed\u540e\uff0c\u53ea\u6709\u5728\u4f60\u62d6\u52a8\u65f6\u624d\u663e\u793a\u3002");
+    }
+
+    private static void fill29(Map<String, String> table) {
         table.put("With Lock Facebook on, it will lock as soon as you leave it.",
                 "\u5f00\u542f\u201c\u9501\u5b9a Facebook\u201d\u540e\uff0c\u79bb\u5f00\u65f6\u4f1a\u7acb\u5373\u9501\u5b9a\u3002");
         table.put("With Lock Facebook on, it will lock once you've been away for %1$s.",
                 "\u5f00\u542f\u201c\u9501\u5b9a Facebook\u201d\u540e\uff0c\u79bb\u5f00 %1$s \u540e\u4f1a\u9501\u5b9a\u3002");
-    }
-
-    private static void fill29(Map<String, String> table) {
         table.put("With Opening pause on, Facebook will wait %1$s before it opens.",
                 "\u5f00\u542f\u201c\u6253\u5f00\u524d\u6682\u505c\u201d\u540e\uff0cFacebook \u4f1a\u7b49\u5f85 %1$s\u518d\u6253\u5f00\u3002");
         table.put("With Pinch to zoom on, a video you zoom keeps playing, stories included. To zoom a story on a still frame, hold it first and then pinch. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it.",
@@ -3737,13 +3741,13 @@ final class L10nTableZh_rCN {
                 "facebook.com \u548c m.me \u94fe\u63a5\u73b0\u5728\u4f1a\u5728\u8fd9\u91cc\u6253\u5f00\u3002");
         table.put("facebook.com links open here now.",
                 "facebook.com \u94fe\u63a5\u73b0\u5728\u4f1a\u5728\u8fd9\u91cc\u6253\u5f00\u3002");
+    }
+
+    private static void fill30(Map<String, String> table) {
         table.put("failed (%1$s)",
                 "\u5931\u8d25\uff08%1$s\uff09");
         table.put("no answer",
                 "\u65e0\u54cd\u5e94");
-    }
-
-    private static void fill30(Map<String, String> table) {
         table.put("posts from groups you're not in",
                 "\u4f60\u672a\u52a0\u5165\u7684\u5c0f\u7ec4\u7684\u5e16\u5b50");
         table.put("posts you've seen",

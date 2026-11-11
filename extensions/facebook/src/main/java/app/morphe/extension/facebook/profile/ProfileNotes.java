@@ -127,7 +127,7 @@ public final class ProfileNotes {
 
     /** [type]'s SparseArray field, its own or a superclass's, or null when it has none. */
     @Nullable
-    static Field attributes(Class<?> type) {
+    public static Field attributes(Class<?> type) {
         Object known = ATTRIBUTES.get(type);
         if (known == null) {
             known = NO_FIELD;

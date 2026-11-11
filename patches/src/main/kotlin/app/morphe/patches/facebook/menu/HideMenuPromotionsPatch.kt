@@ -22,6 +22,10 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.patches.facebook.profile.bloksNodes
+import app.morphe.patches.facebook.profile.childGetters
+import app.morphe.patches.facebook.profile.filterChildren
+import app.morphe.patches.facebook.profile.isChildGetter
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -42,6 +46,7 @@ internal const val HELP_ROWS_KEPT = "$EXTENSION_PACKAGE/menu/MenuRows;->help(Lja
 internal const val SETTINGS_ROWS_KEPT = "$EXTENSION_PACKAGE/menu/MenuRows;->settings(Ljava/util/List;)Ljava/util/List;"
 internal const val LIST_COPY_OF = "$IMMUTABLE_LIST->copyOf(Ljava/util/Collection;)$IMMUTABLE_LIST"
 internal const val HEADER_KEPT_OPEN = "$EXTENSION_PACKAGE/menu/MenuSections;->keepsHeaderOpen(Ljava/lang/Object;)Z"
+internal const val MENU_BLOKS_CHILDREN = "$EXTENSION_PACKAGE/menu/MenuBloks;->children(Ljava/util/List;)Ljava/util/List;"
 
 /** The boolean the patch adds to the Menu's group header, set on a header whose group is kept open. */
 internal const val HEADER_FLAG = "hushKeptOpen"
@@ -79,6 +84,12 @@ internal const val HEADER_FLAG = "hushKeptOpen"
  * Accounts whose Menu slides in from the side can get the server-drawn Bloks Menu there, which none
  * of the hooks above reach (#184). The server's answer to which Menu goes in the panel goes to the
  * extension, which answers the native one while any Menu switch acts. See MenuPanelAnchors.kt.
+ *
+ * On some accounts the top of the Menu, the profile card with Create Facebook Page and Your shortcuts
+ * under it, is a Bloks view inside the native Menu (#445). Every list the Bloks node classes' child
+ * getters return goes to the extension, as Hide profile notes hands them over, and with a switch on
+ * it leaves out Create Facebook Page or Your shortcuts from the list where it sits beside the profile
+ * row. See MenuBloks.java.
  */
 @Suppress("unused")
 val hideMenuPromotionsPatch = bytecodePatch(
@@ -86,7 +97,7 @@ val hideMenuPromotionsPatch = bytecodePatch(
     description = "Hides the Upgrades and Also from Meta sections and the Muse card in Facebook's Menu, so the " +
         "Menu has fewer ads for Meta's products. Settings, Help and your shortcuts stay. On by default. Turn it " +
         "off in Hushfacebook settings > Menu. Switches there, off by default, also hide the Meta AI shortcut, the " +
-        "Your shortcuts row or the whole Help and support section and keep Settings and privacy open, and a list there hides the Menu tiles " +
+        "Your shortcuts row, the Create Facebook Page row or the whole Help and support section and keep Settings and privacy open, and a list there hides the Menu tiles " +
         "and Help and Settings rows you pick, such as Gaming or Orders and payments.",
     default = true,
 ) {
@@ -143,7 +154,7 @@ val hideMenuPromotionsPatch = bytecodePatch(
         if (folderAdd == null) {
             patchLog.warning(
                 "$PATCH: ${server.definingClass}->${server.name} doesn't add one bookmarks folder of its own after " +
-                    "checking it's there. Hide Your shortcuts leaves the row in the Menu.",
+                    "checking it's there. Hide Your shortcuts leaves a natively drawn Your shortcuts row in the Menu.",
             )
         } else {
             // Before buildNothingWhenHidden, whose code goes in above the add and would move it.
@@ -171,6 +182,15 @@ val hideMenuPromotionsPatch = bytecodePatch(
         mutableClassDefBy(folder.definingClass).findMutableMethodOf(folder).passBookmarksThroughShortcuts(listRead)
         askAboutBloksPanel()
         askAboutBloksMenuPage()
+        try {
+            childGetters(bloksNodes()).forEach { getter ->
+                mutableClassDefBy(getter.definingClass).methods.single {
+                    it.name == getter.name && isChildGetter(it)
+                }.filterChildren(MENU_BLOKS_CHILDREN)
+            }
+        } catch (failure: PatchException) {
+            patchLog.warning("$PATCH: ${failure.message}. Create Facebook Page and a Bloks drawn Your shortcuts stay in the Menu.")
+        }
         enableStatus("menuPromotions")
     }
 }

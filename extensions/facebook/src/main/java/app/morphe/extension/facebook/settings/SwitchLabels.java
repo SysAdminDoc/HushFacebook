@@ -327,6 +327,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_MENU_ALSO_FROM_META) return L10n.t("Hide Also from Meta");
         if (setting == Settings.HIDE_MENU_HELP) return L10n.t("Hide Help and support");
         if (setting == Settings.HIDE_MENU_SHORTCUTS) return L10n.t("Hide Your shortcuts");
+        if (setting == Settings.HIDE_MENU_CREATE_PAGE) return L10n.t("Hide Create Facebook Page");
         if (setting == Settings.KEEP_MENU_SETTINGS_EXPANDED) return L10n.t("Keep Settings and privacy expanded");
         if (setting == Settings.HIDE_MENU_MUSE) return L10n.t("Hide the Muse card");
         if (setting == Settings.HIDE_MENU_META_AI) return L10n.t("Hide the Meta AI shortcut");

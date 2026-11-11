@@ -2148,12 +2148,21 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_menu_help", FALSE, true);
 
     /**
-     * The Your shortcuts row of Facebook's Menu, the folder Facebook builds in the server section of
-     * the group it types PROFILE: the groups and Pages it pins there, which come back after being
-     * hidden one by one (issue #445). Off until it's turned on. Like Upgrades, it waits for a restart.
+     * The Your shortcuts row of Facebook's Menu, the groups and Pages Facebook pins under the profile
+     * card, which come back after being hidden one by one (issue #445). Facebook builds it either as
+     * a folder in the server section of the group it types PROFILE or inside that group's Bloks view.
+     * Off until it's turned on. Like Upgrades, it waits for a restart.
      */
     public static final BooleanSetting HIDE_MENU_SHORTCUTS =
             new BooleanSetting("hushfacebook_hide_menu_shortcuts", FALSE, true);
+
+    /**
+     * The Create Facebook Page row under the profile card at the top of Facebook's Menu, drawn inside
+     * the Bloks view of the group Facebook types PROFILE (issue #445). Off until it's turned on. Like
+     * Upgrades, it waits for a restart.
+     */
+    public static final BooleanSetting HIDE_MENU_CREATE_PAGE =
+            new BooleanSetting("hushfacebook_hide_menu_create_page", FALSE, true);
 
     /**
      * Keeps the Settings and privacy section of Facebook's Menu, the group Facebook types SETTINGS,

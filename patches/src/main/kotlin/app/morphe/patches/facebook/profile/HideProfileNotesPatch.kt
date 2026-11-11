@@ -140,10 +140,10 @@ internal fun wrapsALoneChild(method: Method): Boolean =
     }
 
 /**
- * Hands each list the getter returns to the extension and returns what it answers. The call goes in
+ * Hands each list the getter returns to [hook] and returns what it answers. The call goes in
  * at the return's own label, so a branch that jumps straight to the return goes through it too.
  */
-internal fun MutableMethod.filterChildren() {
+internal fun MutableMethod.filterChildren(hook: String = PROFILE_NOTES_CHILDREN) {
     val returns = implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_OBJECT }.map { it.index }
     if (returns.isEmpty()) throw PatchException("$PROFILE_NOTES_PATCH: $definingClass->$name never returns")
     for (index in returns.asReversed()) {
@@ -151,7 +151,7 @@ internal fun MutableMethod.filterChildren() {
         addInstructionsAtControlFlowLabel(
             index,
             """
-                invoke-static/range { v$list .. v$list }, $PROFILE_NOTES_CHILDREN
+                invoke-static/range { v$list .. v$list }, $hook
                 move-result-object v$list
             """,
         )

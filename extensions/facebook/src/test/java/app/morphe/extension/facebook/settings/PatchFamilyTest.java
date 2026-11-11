@@ -556,12 +556,13 @@ public class PatchFamilyTest {
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.VIDEO_DOWNLOAD), false).get(0));
         Settings.DOWNLOAD_VIDEOS.resetToDefault();
         Settings.CLIPBOARD_DOWNLOAD.resetToDefault();
-        // The Menu's four groups, Settings and privacy's fold, its Muse card and its Meta AI shortcut
-        // have a switch each, and the report names all seven.
+        // The Menu's four groups, its Create Facebook Page row, Settings and privacy's fold, its Muse
+        // card and its Meta AI shortcut have a switch each, and the report names all eight.
         Settings.HIDE_MENU_ALSO_FROM_META.save(false);
         assertEquals("Hide Menu promotions: on (hushfacebook_hide_menu_upgrades=on, "
                         + "hushfacebook_hide_menu_also_from_meta=off, hushfacebook_hide_menu_help=off, "
-                        + "hushfacebook_hide_menu_shortcuts=off, hushfacebook_keep_menu_settings_expanded=off, hushfacebook_hide_menu_muse=on, "
+                        + "hushfacebook_hide_menu_shortcuts=off, hushfacebook_hide_menu_create_page=off, "
+                        + "hushfacebook_keep_menu_settings_expanded=off, hushfacebook_hide_menu_muse=on, "
                         + "hushfacebook_hide_menu_meta_ai=off)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.MENU_PROMOTIONS), false).get(0));
         // Every notification switch starts off, so the patch reads off until one of them is turned on.
