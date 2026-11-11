@@ -31,8 +31,9 @@ import java.io.File
 
 /**
  * Route one of the AMOLED and Material You themes as the patch runs it, on each declared build's
- * own colour classes: four resolvers and six returns (three and four on 586, whose FDSColors has one
- * resolver the others return), each hook reading the colour token from a register that still holds it there. A build whose resolver reused the token's register before a
+ * own colour classes: four resolvers and six returns (on 586 Mig's, FDSColors' one resolver the
+ * others return, its static copy outside the class and the theme resolver), each hook reading the
+ * colour token from a register that still holds it there. A build whose resolver reused the token's register before a
  * return would stop here, naming it. The status bar hook of the AMOLED theme is checked on the same
  * builds, with the path that paints a tab's bar again after Recent Apps.
  */
@@ -45,13 +46,6 @@ class ColourResolverFixtureTest {
         FdsSchemeResolveFingerprint.clearMatch()
         NavigationBarPainterFingerprint.clearMatch()
     }
-
-    /**
-     * Builds whose route one hooks other than four resolvers and six returns: 586 merged FDSColors'
-     * two Context resolvers into one (arm64 `LX/02LL;->A0A`), and its Litho one (`A0B`) only returns
-     * that one's answer.
-     */
-    private val routeOneCounts = mapOf("586.0.0.52.53" to (3 to 4))
 
     /** Builds that make the navigation bar's view in more than one method. */
     private val navigationBarMakers = mapOf("586.0.0.52.53" to 2)
@@ -81,15 +75,30 @@ class ColourResolverFixtureTest {
 
     /**
      * Every class route one reads in [bundle]: the Mig dark scheme, FDSColors, the FdsColorScheme
-     * wrapper, the view resolver's class and the class of the resolver the view resolver asks.
+     * wrapper, the view resolver's class, the class of the resolver the view resolver asks and the
+     * classes of the [staticResolvers].
      */
     private fun routeOneClasses(bundle: File): Map<String, ClassDef> {
-        val named = FixtureDex.classes(bundle, setOf(DARK_COLOR_SCHEME, FDS_COLOR_SCHEME)) +
-            fdsColorsOf(bundle).let { mapOf(it.type to it) }
+        val colors = fdsColorsOf(bundle)
+        val named = FixtureDex.classes(bundle, setOf(DARK_COLOR_SCHEME, FDS_COLOR_SCHEME)) + (colors.type to colors)
         val view = viewResolver(named.getValue(FDS_COLOR_SCHEME))
         val viewClass = FixtureDex.classes(bundle, setOf(view.definingClass))
         val asked = intCalls(viewClass.getValue(view.definingClass).methods.single { it.descriptor() == view.toString() }).single()
-        return named + viewClass + FixtureDex.classes(bundle, setOf(asked.definingClass))
+        return named + viewClass + FixtureDex.classes(bundle, setOf(asked.definingClass)) +
+            FixtureDex.classes(bundle, staticResolvers(bundle, colors).map { it.definingClass }.toSet())
+    }
+
+    /**
+     * Every static int method outside FDSColors in [bundle] that asks its colour source itself (586
+     * arm64 `LX/03A3;->A00`, which Compose's text fields call): a copy of its resolver.
+     */
+    private fun staticResolvers(bundle: File, colors: ClassDef): List<Method> {
+        val source = fdsColourSource(colors)!!
+        val descriptor = "${colors.type}->${source.name}(${source.parameterTypes.joinToString("")})${source.returnType}"
+        return FixtureDex.methodsWhere(bundle, { dex -> dex.methodSection.any { it.toString() == descriptor } }) { method ->
+            method.definingClass != colors.type && AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "I" &&
+                method.implementation?.instructions?.any { (it as? ReferenceInstruction)?.reference?.toString() == descriptor } == true
+        }
     }
 
     @Test
@@ -120,14 +129,19 @@ class ColourResolverFixtureTest {
                         } ?: 0)
                     }
                     .filterValues { it > 0 }
-                val (resolvers, returns) = routeOneCounts[version] ?: (4 to 6)
-                assertEquals("${bundle.name}: resolvers hooked, $hooked", resolvers, hooked.size)
-                assertEquals("${bundle.name}: returns hooked, $hooked", returns, hooked.values.sum())
+                assertEquals("${bundle.name}: resolvers hooked, $hooked", 4, hooked.size)
+                assertEquals("${bundle.name}: returns hooked, $hooked", 6, hooked.values.sum())
 
                 // Every FDSColors resolver taking the token is hooked, or returns a hooked one's answer as it is.
                 val colors = fdsColorsOf(bundle)
                 val token = fdsColourSource(colors)!!.parameterTypes[1].toString()
                 val signature = { method: Method -> "${method.definingClass}->${method.name}(${method.parameterTypes.joinToString("")})" }
+                // And so is every static copy of it outside the class, which answers DSP colours route one didn't see (#141).
+                val copies = staticResolvers(bundle, colors)
+                if (version == "586.0.0.52.53") assertEquals("${bundle.name}: static copies of the resolver", 1, copies.size)
+                copies.forEach { copy ->
+                    assertTrue("${bundle.name}: ${signature(copy)} asks FDSColors' colour source and isn't hooked, $hooked", signature(copy) in hooked)
+                }
                 colors.methods.filter { method ->
                     !AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "I" &&
                         method.parameterTypes.any { it.toString() == token } && signature(method) !in hooked
