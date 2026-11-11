@@ -285,7 +285,7 @@ public enum PatchFamily {
             Settings.OPEN_MESSENGER_APP, Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER, Settings.OPEN_CHATS_IN_MESSENGER),
     MENU_PROMOTIONS(FamilyNames.MENU_PROMOTIONS, "menuPromotions", null,
             Settings.HIDE_MENU_UPGRADES, Settings.HIDE_MENU_ALSO_FROM_META, Settings.HIDE_MENU_HELP,
-            Settings.KEEP_MENU_SETTINGS_EXPANDED, Settings.HIDE_MENU_MUSE, Settings.HIDE_MENU_META_AI),
+            Settings.HIDE_MENU_SHORTCUTS, Settings.KEEP_MENU_SETTINGS_EXPANDED, Settings.HIDE_MENU_MUSE, Settings.HIDE_MENU_META_AI),
     META_UPSELLS(FamilyNames.META_UPSELLS, "metaUpsells", null,
             Settings.HIDE_EDITS_UPSELLS, Settings.HIDE_THREADS_CROSS_POSTING, Settings.HIDE_THREADS_SHARE_BUTTON,
             Settings.HIDE_MUSE_SHARE_BUTTON, Settings.HIDE_META_VERIFIED_UPSELLS, Settings.HIDE_AVATAR_UPSELLS, Settings.HIDE_META_AI_IMAGINE,

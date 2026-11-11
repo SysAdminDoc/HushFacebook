@@ -476,6 +476,7 @@ public final class SettingsBackup {
             Settings.HIDE_MENU_UPGRADES,
             Settings.HIDE_MENU_ALSO_FROM_META,
             Settings.HIDE_MENU_HELP,
+            Settings.HIDE_MENU_SHORTCUTS,
             Settings.KEEP_MENU_SETTINGS_EXPANDED,
             Settings.HIDE_MENU_MUSE,
             Settings.HIDE_MENU_META_AI,

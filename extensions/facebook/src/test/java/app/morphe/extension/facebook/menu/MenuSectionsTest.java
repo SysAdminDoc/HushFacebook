@@ -52,6 +52,7 @@ public class MenuSectionsTest {
         Settings.HIDE_MENU_UPGRADES.resetToDefault();
         Settings.HIDE_MENU_ALSO_FROM_META.resetToDefault();
         Settings.HIDE_MENU_HELP.resetToDefault();
+        Settings.HIDE_MENU_SHORTCUTS.resetToDefault();
         Settings.KEEP_MENU_SETTINGS_EXPANDED.resetToDefault();
         MenuSectionsForTests.newProcess();
         FeedFilterCounters.clear();
@@ -79,7 +80,8 @@ public class MenuSectionsTest {
     @Test
     public void everyOtherGroupBuildsAsFacebookBuiltIt() {
         for (Group group : Group.values()) {
-            if (group == Group.UPSELL || group == Group.PRODUCTS_FROM_FACEBOOK || group == Group.HELP) continue;
+            if (group == Group.UPSELL || group == Group.PRODUCTS_FROM_FACEBOOK || group == Group.HELP
+                    || group == Group.FEATURED) continue;
             assertFalse(group + " was hidden", MenuSections.hideSection(group));
             assertFalse(group + "'s server part was hidden", MenuSections.hideServerSection(group));
             assertNull(group + " has a switch", MenuSections.switchFor(group.name()));
@@ -87,6 +89,31 @@ public class MenuSectionsTest {
         assertSame(Settings.HIDE_MENU_UPGRADES, MenuSections.switchFor("UPSELL"));
         assertSame(Settings.HIDE_MENU_ALSO_FROM_META, MenuSections.switchFor("PRODUCTS_FROM_FACEBOOK"));
         assertSame(Settings.HIDE_MENU_HELP, MenuSections.switchFor("HELP"));
+        assertSame(Settings.HIDE_MENU_SHORTCUTS, MenuSections.switchFor("FEATURED"));
+    }
+
+    /**
+     * Your shortcuts, the FEATURED group the server section builds, stays until its own switch is
+     * on (issue #445). Then it builds nothing and is counted under its Menu title, while the
+     * profile card and the Menu tiles' group stay, and it waits for a restart like the others.
+     */
+    @Test
+    public void yourShortcutsGoesOnlyByItsOwnSwitch() {
+        assertFalse("the Your shortcuts switch starts off", Settings.HIDE_MENU_SHORTCUTS.get());
+        assertFalse(MenuSections.hideServerSection(Group.FEATURED));
+
+        Settings.HIDE_MENU_SHORTCUTS.save(true);
+        assertTrue(MenuSections.hideServerSection(Group.FEATURED));
+        assertFalse("the profile card went with it", MenuSections.hideServerSection(Group.PROFILE));
+        assertFalse("the Menu tiles went with it", MenuSections.hideServerSection(Group.PRODUCTS));
+        assertTrue("an open Menu keeps Your shortcuts until Facebook restarts", Settings.HIDE_MENU_SHORTCUTS.rebootApp);
+        assertEquals(MenuSections.SERVER_ROUTE + ": 4 lists, 4 items, 1 removed. Last reason: "
+                        + MenuSections.SHORTCUTS_HIDDEN + ". Removed: " + MenuSections.SHORTCUTS_HIDDEN
+                        + " 1. Kinds: FEATURED 2, PRODUCTS 1, PROFILE 1",
+                line(FeedFilterCounters.report(), MenuSections.SERVER_ROUTE));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused, Your shortcuts comes back", MenuSections.hideServerSection(Group.FEATURED));
     }
 
     /**

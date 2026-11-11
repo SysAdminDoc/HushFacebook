@@ -6,6 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* `Hide Your shortcuts` under Menu takes the Your shortcuts row out of Facebook's Menu, so the groups and Pages Facebook keeps putting back there are gone in one go. The Menu tiles under it stay. Restart Facebook after turning it on. Starts off. (#445)
 * `Saved button in search` under Search puts a bookmark at the end of the search bar. Tap it and Saved opens, so your saved posts and videos are one tap away. Marketplace's search bar gets one too. Restart Facebook after turning it on. Starts off. (#433)
 * `Ask before liking a post`, `Ask before liking a reel` and `Ask before liking a comment` make a tap on Like ask "Like or unlike this post?" first. Continue likes or unlikes it, and Cancel or Back leaves it alone, so a stray tap doesn't. The post switch sits under News feed, the reel one under Reels and Watch and the comment one under Comments and writing. All three start off. (#437, #443)
 * `Double tap to skip on feed videos` under Video and audio jumps a playing feed video 10 seconds ahead when you double tap its right side, or 10 back on the left. Keep tapping to go further. Live videos work too when they can be rewound. One tap on a side still opens the video, just a moment later than usual. With Tap to play on, it needs `Inline feed video controls` on too. Starts off. (#432)

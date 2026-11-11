@@ -82,8 +82,8 @@ val hideMenuPromotionsPatch = bytecodePatch(
     name = "Hide Menu promotions",
     description = "Hides the Upgrades and Also from Meta sections and the Muse card in Facebook's Menu, so the " +
         "Menu has fewer ads for Meta's products. Settings, Help and your shortcuts stay. On by default. Turn it " +
-        "off in Hushfacebook settings > Menu. Switches there, off by default, also hide the Meta AI shortcut or the " +
-        "whole Help and support section and keep Settings and privacy open, and a list there hides the Menu tiles " +
+        "off in Hushfacebook settings > Menu. Switches there, off by default, also hide the Meta AI shortcut, the " +
+        "Your shortcuts row or the whole Help and support section and keep Settings and privacy open, and a list there hides the Menu tiles " +
         "and Help and Settings rows you pick, such as Gaming or Orders and payments.",
     default = true,
 ) {

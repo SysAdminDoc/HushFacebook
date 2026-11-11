@@ -467,6 +467,8 @@ The Also from Meta section leaves Facebook's Menu, with its links to Meta's othe
 Hide Help and support	隱藏使用說明和支援
 # context: summary of that switch; Settings and privacy is Facebook's own Menu section
 The Help and support section leaves Facebook's Menu, header and all. Settings and privacy stays.	從 Facebook 選單移除整個「使用說明和支援」區段，包含標題。「設定和隱私」仍會保留。
+Hide Your shortcuts	隱藏「你的捷徑」
+The Your shortcuts row leaves Facebook's Menu, with the groups and Pages Facebook keeps putting back in it. The Menu tiles under it stay.	從 Facebook 選單移除「你的捷徑」這一列，包含 Facebook 一直放回去的社團和粉絲專頁。下方的選單圖塊仍會保留。
 # context: switch title under Menu; Settings and privacy is a section of Facebook's own Menu that folds and unfolds when its header is tapped
 Keep Settings and privacy expanded	保持展開設定和隱私
 # context: summary of that switch

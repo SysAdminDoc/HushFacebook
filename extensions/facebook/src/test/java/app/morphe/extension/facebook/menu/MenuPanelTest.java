@@ -49,6 +49,7 @@ public class MenuPanelTest {
         Settings.HIDE_MENU_UPGRADES.resetToDefault();
         Settings.HIDE_MENU_ALSO_FROM_META.resetToDefault();
         Settings.HIDE_MENU_HELP.resetToDefault();
+        Settings.HIDE_MENU_SHORTCUTS.resetToDefault();
         Settings.KEEP_MENU_SETTINGS_EXPANDED.resetToDefault();
         Settings.HIDE_MENU_MUSE.resetToDefault();
         Settings.HIDE_MENU_META_AI.resetToDefault();
@@ -68,6 +69,7 @@ public class MenuPanelTest {
         Settings.HIDE_MENU_UPGRADES.save(false);
         Settings.HIDE_MENU_ALSO_FROM_META.save(false);
         Settings.HIDE_MENU_HELP.save(false);
+        Settings.HIDE_MENU_SHORTCUTS.save(false);
         Settings.KEEP_MENU_SETTINGS_EXPANDED.save(false);
         Settings.HIDE_MENU_MUSE.save(false);
         Settings.HIDE_MENU_META_AI.save(false);
@@ -110,6 +112,10 @@ public class MenuPanelTest {
         Settings.HIDE_MENU_HELP.save(true);
         assertFalse(MenuPanel.bloksPanel(true));
         Settings.HIDE_MENU_HELP.save(false);
+
+        Settings.HIDE_MENU_SHORTCUTS.save(true);
+        assertFalse(MenuPanel.bloksPanel(true));
+        Settings.HIDE_MENU_SHORTCUTS.save(false);
 
         Settings.KEEP_MENU_SETTINGS_EXPANDED.save(true);
         assertFalse(MenuPanel.bloksPanel(true));

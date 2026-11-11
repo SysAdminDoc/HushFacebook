@@ -27,8 +27,9 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  * asks {@link #hideSection} in the first and {@link #hideServerSection} in the second as soon as
  * each knows its group, and a yes has the section build nothing.
  *
- * <p>Only those two groups and Help and support (HELP, issue #224) can go, each by its own switch,
- * and only by the enum's name, never by a title on screen. It fails open: with a switch off, a
+ * <p>Only those two groups, Help and support (HELP, issue #224) and Your shortcuts (FEATURED, which
+ * only the server section builds, issue #445) can go, each by its own switch, and only by the
+ * enum's name, never by a title on screen. It fails open: with a switch off, a
  * pause, settings that aren't ready, anything but an enum, or any failure in here, the section
  * builds as Facebook built it.
  *
@@ -48,6 +49,9 @@ public final class MenuSections {
     /** The enum name of the Help and support group. */
     static final String HELP = "HELP";
 
+    /** The enum name of the Your shortcuts group. */
+    static final String SHORTCUTS = "FEATURED";
+
     /** The enum name of the Settings and privacy group. */
     static final String SETTINGS = "SETTINGS";
 
@@ -65,6 +69,9 @@ public final class MenuSections {
 
     /** What a hidden Help and support group is counted under. */
     static final String HELP_HIDDEN = "Help and support";
+
+    /** What a hidden Your shortcuts group is counted under. */
+    static final String SHORTCUTS_HIDDEN = "Your shortcuts";
 
     /** The Hook status names of the four hooks. */
     static final String NATIVE_HOOK = "Menu section";
@@ -182,6 +189,7 @@ public final class MenuSections {
         if (UPGRADES.equals(name)) return Settings.HIDE_MENU_UPGRADES;
         if (ALSO_FROM_META.equals(name)) return Settings.HIDE_MENU_ALSO_FROM_META;
         if (HELP.equals(name)) return Settings.HIDE_MENU_HELP;
+        if (SHORTCUTS.equals(name)) return Settings.HIDE_MENU_SHORTCUTS;
         return null;
     }
 
@@ -189,6 +197,7 @@ public final class MenuSections {
     private static String hiddenAs(String name) {
         if (UPGRADES.equals(name)) return UPGRADES_HIDDEN;
         if (ALSO_FROM_META.equals(name)) return ALSO_FROM_META_HIDDEN;
+        if (SHORTCUTS.equals(name)) return SHORTCUTS_HIDDEN;
         return HELP_HIDDEN;
     }
 

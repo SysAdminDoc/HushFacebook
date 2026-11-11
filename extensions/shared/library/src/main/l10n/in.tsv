@@ -463,6 +463,8 @@ The Also from Meta section leaves Facebook's Menu, with its links to Meta's othe
 Hide Help and support	Sembunyikan “Bantuan & dukungan”
 # context: summary of that switch; Settings and privacy is Facebook's own Menu section
 The Help and support section leaves Facebook's Menu, header and all. Settings and privacy stays.	Bagian “Bantuan & dukungan” hilang dari Menu Facebook, beserta judulnya. “Pengaturan dan privasi” tetap ada.
+Hide Your shortcuts	Sembunyikan “Pintasan Anda”
+The Your shortcuts row leaves Facebook's Menu, with the groups and Pages Facebook keeps putting back in it. The Menu tiles under it stay.	Baris “Pintasan Anda” hilang dari Menu Facebook, beserta grup dan Halaman yang terus dimasukkan kembali oleh Facebook. Ubin Menu di bawahnya tetap ada.
 # context: switch title under Menu; Settings and privacy is a section of Facebook's own Menu that folds and unfolds when its header is tapped
 Keep Settings and privacy expanded	Biarkan “Pengaturan dan privasi” terbuka
 # context: summary of that switch

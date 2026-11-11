@@ -2132,6 +2132,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_menu_help", FALSE, true);
 
     /**
+     * The Your shortcuts row of Facebook's Menu, the group Facebook types FEATURED: the groups and
+     * Pages it pins there, which come back after being hidden one by one (issue #445). Off until
+     * it's turned on. Like Upgrades, it waits for a restart.
+     */
+    public static final BooleanSetting HIDE_MENU_SHORTCUTS =
+            new BooleanSetting("hushfacebook_hide_menu_shortcuts", FALSE, true);
+
+    /**
      * Keeps the Settings and privacy section of Facebook's Menu, the group Facebook types SETTINGS,
      * open under its header instead of folded up, so its rows show without a tap (issue #224). Off
      * until it's turned on. A Menu already built keeps its own state, so it waits for a restart.

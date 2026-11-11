@@ -463,6 +463,8 @@ The Also from Meta section leaves Facebook's Menu, with its links to Meta's othe
 Hide Help and support	Ẩn "Trợ giúp & hỗ trợ"
 # context: summary of that switch; Settings and privacy is Facebook's own Menu section
 The Help and support section leaves Facebook's Menu, header and all. Settings and privacy stays.	Mục Trợ giúp & hỗ trợ biến mất khỏi Menu của Facebook, cả tiêu đề. Cài đặt & quyền riêng tư vẫn giữ nguyên.
+Hide Your shortcuts	Ẩn "Lối tắt của bạn"
+The Your shortcuts row leaves Facebook's Menu, with the groups and Pages Facebook keeps putting back in it. The Menu tiles under it stay.	Hàng Lối tắt của bạn biến mất khỏi Menu của Facebook, cùng các nhóm và Trang mà Facebook cứ đưa lại vào đó. Các ô Menu bên dưới vẫn giữ nguyên.
 # context: switch title under Menu; Settings and privacy is a section of Facebook's own Menu that folds and unfolds when its header is tapped
 Keep Settings and privacy expanded	Luôn mở rộng Cài đặt & quyền riêng tư
 # context: summary of that switch
