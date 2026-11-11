@@ -93,8 +93,8 @@ val downloadPhotoPatch = bytecodePatch(
     // The README table check reads this literal; PHOTO_PATCH carries the same text for the messages.
     name = "Download any photo",
     description = "Shows Save photo on every photo you open, even where the poster turned saving off, and saves " +
-        "the largest size so you get the best copy. A GIF comment gets Save GIF when you long-press it. On by " +
-        "default. Turn it off in Hushfacebook settings > Downloads.",
+        "the largest size so you get the best copy. A long press on a comment with a photo or GIF in it offers Save " +
+        "photo or Save GIF. On by default. Turn it off in Hushfacebook settings > Downloads.",
     default = true,
 ) {
     category("Downloads")
@@ -106,10 +106,12 @@ val downloadPhotoPatch = bytecodePatch(
         // fails whole instead of keeping the photo hooks with no switch in settings.
         val addPostMenuItem = postMenuPhotoItem()
         val addCommentGifRow = commentSheetGifRow()
+        val addCommentPhotoRow = commentSheetPhotoRow()
         unlockPhotoSave()
         fillCdnResize()
         addPostMenuItem()
         addCommentGifRow()
+        addCommentPhotoRow()
         enableStatus("photoDownload")
     }
 }

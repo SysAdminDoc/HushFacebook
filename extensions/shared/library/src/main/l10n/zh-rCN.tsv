@@ -1280,6 +1280,7 @@ Couldn't save this post's photos. Try again in a moment.	无法保存此帖子�
 Save GIF	保存 GIF
 # context: message after a tap on Save GIF when the save didn't start
 Couldn't save this GIF. Try again in a moment.	无法保存此 GIF。请稍后重试。
+Couldn't save this photo. Try again in a moment.	无法保存此照片。请稍后重试。
 # context: sentence added after the summary of the Save any photo switch; Save GIF is the row's name, keep it as translated for that row
 A GIF comment gets Save GIF when you long-press it.	长按 GIF 评论即可看到“保存 GIF”。
 Couldn't save this story's photo. Try again in a moment.	无法保存此快拍的照片。请稍后重试。

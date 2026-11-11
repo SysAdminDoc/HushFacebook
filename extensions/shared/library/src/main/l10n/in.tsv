@@ -1284,6 +1284,7 @@ Couldn't save this post's photos. Try again in a moment.	Foto postingan ini tida
 Save GIF	Simpan GIF
 # context: message after a tap on Save GIF when the save didn't start
 Couldn't save this GIF. Try again in a moment.	GIF ini tidak dapat disimpan. Coba lagi sebentar lagi.
+Couldn't save this photo. Try again in a moment.	Foto ini tidak dapat disimpan. Coba lagi sebentar lagi.
 # context: sentence added after the summary of the Save any photo switch; Save GIF is the row's name, keep it as translated for that row
 A GIF comment gets Save GIF when you long-press it.	Tekan lama komentar GIF untuk memunculkan Simpan GIF.
 Couldn't save this story's photo. Try again in a moment.	Foto cerita ini tidak dapat disimpan. Coba lagi sebentar lagi.

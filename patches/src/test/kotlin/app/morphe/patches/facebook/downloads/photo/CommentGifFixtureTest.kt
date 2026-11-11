@@ -157,10 +157,12 @@ class CommentGifFixtureTest {
                 }
                 val at = point.insert
 
-                // Save GIF alone, then Save video alone (#318), each one row at the hook point.
+                // Save GIF alone, Save video alone (#318) and Save photo alone (#440), each one row
+                // at the hook point.
                 for ((label, step, click, title) in listOf(
                     Row("Save GIF", { commentSheetGifRow() }, GIF_ROW_CLICK, GIF_ROW_TITLE),
                     Row("Save video", { commentSheetVideoRow() }, VIDEO_ROW_CLICK, VIDEO_ROW_TITLE),
+                    Row("Save photo", { commentSheetPhotoRow() }, PHOTO_ROW_CLICK, PHOTO_ROW_TITLE),
                 )) {
                     val code = hooked(step)
                     assertEquals("$name: $label's code and nothing else", original.size + row, code.size)
@@ -172,11 +174,14 @@ class CommentGifFixtureTest {
                 }
 
                 // Both patches in, either order: the second finds the same point and goes in front.
+                // Download any photo adds Save GIF, then Save photo the same way.
                 for ((first, second) in listOf(
                     Row("Save GIF", { commentSheetGifRow() }, GIF_ROW_CLICK, GIF_ROW_TITLE) to
                         Row("Save video", { commentSheetVideoRow() }, VIDEO_ROW_CLICK, VIDEO_ROW_TITLE),
                     Row("Save video", { commentSheetVideoRow() }, VIDEO_ROW_CLICK, VIDEO_ROW_TITLE) to
                         Row("Save GIF", { commentSheetGifRow() }, GIF_ROW_CLICK, GIF_ROW_TITLE),
+                    Row("Save GIF", { commentSheetGifRow() }, GIF_ROW_CLICK, GIF_ROW_TITLE) to
+                        Row("Save photo", { commentSheetPhotoRow() }, PHOTO_ROW_CLICK, PHOTO_ROW_TITLE),
                 )) {
                     val code = hooked(first.step, second.step)
                     val both = "$name: ${first.label} then ${second.label}"
@@ -199,7 +204,7 @@ class CommentGifFixtureTest {
 
     @Test
     fun `the extension has the hooks`() {
-        for (hook in listOf(GIF_ROW_CLICK, GIF_ROW_TITLE, VIDEO_ROW_CLICK, VIDEO_ROW_TITLE)) {
+        for (hook in listOf(GIF_ROW_CLICK, GIF_ROW_TITLE, VIDEO_ROW_CLICK, VIDEO_ROW_TITLE, PHOTO_ROW_CLICK, PHOTO_ROW_TITLE)) {
             val type = hook.substringBefore("->")
             val name = hook.substringAfter("->").substringBefore("(")
             val method = ExtensionDex.classDef(type).methods.singleOrNull { it.name == name }

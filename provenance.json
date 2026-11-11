@@ -1572,6 +1572,15 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/CommentPhoto.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook from Facebook 586 (#440): Save photo in a photo comment's long-press sheet, which Facebook builds only while a screen reader is on, added at Save GIF's point with the sheet's own Save photo row builder. It reads the photo's largest image from the comment's attachments and leaves the sheet alone when Facebook's own row is there."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/ReelMenuDownload.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/ReelSidebarDiagnostics.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/downloads/reel/ReelMoreSheet.kt"

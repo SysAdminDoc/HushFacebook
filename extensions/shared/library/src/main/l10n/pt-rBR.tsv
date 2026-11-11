@@ -1170,6 +1170,7 @@ Couldn't save this post's photos. Try again in a moment.	Não foi possível salv
 Save GIF	Salvar GIF
 # context: message after a tap on Save GIF when the save didn't start
 Couldn't save this GIF. Try again in a moment.	Não foi possível salvar este GIF. Tente de novo em instantes.
+Couldn't save this photo. Try again in a moment.	Não foi possível salvar esta foto. Tente de novo em instantes.
 # context: sentence added after the summary of the Save any photo switch; Save GIF is the row's name, keep it as translated for that row
 A GIF comment gets Save GIF when you long-press it.	Ao tocar e segurar um comentário com GIF, aparece Salvar GIF.
 Couldn't save this story's photo. Try again in a moment.	Não foi possível salvar a foto deste Story. Tente de novo em instantes.

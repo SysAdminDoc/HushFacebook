@@ -57,6 +57,8 @@ import com.android.tools.smali.dexlib2.util.MethodUtil
 internal const val COMMENT_SHEET_SOCKET = "CommentBottomSheetMenuSocket"
 internal const val GIF_ROW_CLICK = "$EXTENSION_PACKAGE/download/CommentGif;->clickFor(Ljava/lang/Object;)Lkotlin/jvm/functions/Function1;"
 internal const val GIF_ROW_TITLE = "$EXTENSION_PACKAGE/download/CommentGif;->title()Ljava/lang/String;"
+internal const val PHOTO_ROW_CLICK = "$EXTENSION_PACKAGE/download/CommentPhoto;->clickFor(Ljava/lang/Object;)Lkotlin/jvm/functions/Function1;"
+internal const val PHOTO_ROW_TITLE = "$EXTENSION_PACKAGE/download/CommentPhoto;->title()Ljava/lang/String;"
 internal const val VIDEO_PATCH = "Download any video"
 internal const val VIDEO_ROW_CLICK = "$EXTENSION_PACKAGE/download/CommentVideo;->clickFor(Ljava/lang/Object;)Lkotlin/jvm/functions/Function1;"
 internal const val VIDEO_ROW_TITLE = "$EXTENSION_PACKAGE/download/CommentVideo;->title()Ljava/lang/String;"
@@ -230,6 +232,13 @@ internal fun commentGifPoint(method: Method, attachmentsGetter: String): Comment
 
 /** Finds the comment sheet's render and returns the step that adds Save GIF to it. */
 internal fun BytecodePatchContext.commentSheetGifRow(): () -> Unit = commentSheetRow(PHOTO_PATCH, GIF_ROW_CLICK, GIF_ROW_TITLE)
+
+/**
+ * Finds the comment sheet's render and returns the step that adds Save photo to it for a photo
+ * comment (#440). Facebook's own row there shows only while a screen reader is on, and the
+ * extension answers no row when it does.
+ */
+internal fun BytecodePatchContext.commentSheetPhotoRow(): () -> Unit = commentSheetRow(PHOTO_PATCH, PHOTO_ROW_CLICK, PHOTO_ROW_TITLE)
 
 /**
  * Finds the comment sheet's render and returns the step that adds Download any video's Save video

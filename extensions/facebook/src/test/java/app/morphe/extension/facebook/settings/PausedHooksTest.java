@@ -68,6 +68,7 @@ import app.morphe.extension.facebook.chats.ReadReceipts;
 import app.morphe.extension.facebook.chats.TypingIndicator;
 import app.morphe.extension.facebook.download.ClipboardLinkForTests;
 import app.morphe.extension.facebook.download.CommentGifForTests;
+import app.morphe.extension.facebook.download.CommentPhotoForTests;
 import app.morphe.extension.facebook.download.CommentVideoForTests;
 import app.morphe.extension.facebook.download.MediaDownload;
 import app.morphe.extension.facebook.download.PhotoMenuItemForTests;
@@ -911,12 +912,13 @@ public class PausedHooksTest {
                 CommentVideoForTests::addsARow,
                 PlayerSourcesForTests::recordsAVideoPlayer,
                 ClipboardLinkForTests::readsTheClipboard));
-        // Every photo the viewer opens offers Save photo, a photo post's menu gets Save photo, and a
-        // GIF comment's sheet gets Save GIF.
+        // Every photo the viewer opens offers Save photo, a photo post's menu gets Save photo, a GIF
+        // comment's sheet gets Save GIF, and a photo comment's sheet gets Save photo.
         probes.put(PatchFamily.PHOTO_DOWNLOAD, Arrays.asList(
                 () -> PhotoSave.offersSave(false),
                 PhotoMenuItemForTests::addsAnItem,
-                CommentGifForTests::addsARow));
+                CommentGifForTests::addsARow,
+                CommentPhotoForTests::addsARow));
         // A start from the launcher icon asks Facebook for the chosen tab.
         probes.put(PatchFamily.START_TAB, Collections.singletonList(StartTabRouteForTests::routes));
         // Home's request for its feed goes out for the most recent feed.

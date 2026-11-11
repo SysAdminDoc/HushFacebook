@@ -1310,6 +1310,7 @@ Couldn't save this post's photos. Try again in a moment.	Не удалось с�
 Save GIF	Сохранить GIF
 # context: message after a tap on Save GIF when the save didn't start
 Couldn't save this GIF. Try again in a moment.	Не удалось сохранить этот GIF. Повторите попытку позже.
+Couldn't save this photo. Try again in a moment.	Не удалось сохранить это фото. Повторите попытку позже.
 # context: sentence added after the summary of the Save any photo switch; Save GIF is the row's name, keep it as translated for that row
 A GIF comment gets Save GIF when you long-press it.	При долгом нажатии на GIF в комментарии появляется пункт «Сохранить GIF».
 Couldn't save this story's photo. Try again in a moment.	Не удалось сохранить фото из этой Истории. Повторите попытку позже.
