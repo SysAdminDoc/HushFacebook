@@ -134,6 +134,9 @@ public final class CommentGif implements Function1<Object, Object> {
             // It runs inside Facebook's click dispatch, on the thread that draws the app.
             HookStatus.threw(FamilyNames.PHOTO_DOWNLOAD, "comment sheet GIF tap", t);
             Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "the Save GIF tap failed", t);
+        } finally {
+            // Facebook's own rows close the sheet once tapped.
+            CommentSheet.close(tapped);
         }
         return null;
     }

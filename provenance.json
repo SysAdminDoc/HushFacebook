@@ -1545,6 +1545,7 @@
     {
       "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/CommentGif.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/CommentSheet.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/PhotoFormat.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/MenuTop.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/PhotoMenuItem.java",

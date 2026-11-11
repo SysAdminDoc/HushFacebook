@@ -4,10 +4,12 @@
  */
 package app.morphe.patches.facebook.downloads.photo
 
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
+import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.comments.options.GRAPHQL_COMMENT
 import app.morphe.patches.facebook.downloads.video.ATTACHMENTS_FIELD
@@ -16,6 +18,7 @@ import app.morphe.patches.facebook.downloads.video.graphQlGetter
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.getFreeRegisterProvider
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -52,6 +55,11 @@ import com.android.tools.smali.dexlib2.util.MethodUtil
  * when it answers one, a row of Facebook's own kind is built the way Save photo's is, with Save
  * photo's icon, and added to the list. Download any video puts Save video (#318) in the same way at
  * the same point, so a video comment's sheet gets it too.
+ *
+ * The rows close the sheet after their tap the way Facebook's own rows do, with the sheet dialog's
+ * dismiss (586: LX/0UUz;->run). CommentBottomSheetFragment's onCreateView news up the sheet's render
+ * component and sets the sheet as a new Dialog's content once, and right after that call the dialog
+ * goes to the extension's CommentSheet, which the rows' tap then closes.
  */
 
 internal const val COMMENT_SHEET_SOCKET = "CommentBottomSheetMenuSocket"
@@ -62,6 +70,9 @@ internal const val PHOTO_ROW_TITLE = "$EXTENSION_PACKAGE/download/CommentPhoto;-
 internal const val VIDEO_PATCH = "Download any video"
 internal const val VIDEO_ROW_CLICK = "$EXTENSION_PACKAGE/download/CommentVideo;->clickFor(Ljava/lang/Object;)Lkotlin/jvm/functions/Function1;"
 internal const val VIDEO_ROW_TITLE = "$EXTENSION_PACKAGE/download/CommentVideo;->title()Ljava/lang/String;"
+internal const val SHEET_OPENED = "$EXTENSION_PACKAGE/download/CommentSheet;->opened(Landroid/app/Dialog;)V"
+internal const val SET_CONTENT_VIEW = "Landroid/app/Dialog;->setContentView(Landroid/view/View;)V"
+private const val SHEET_PATCHES = "Download any photo and Download any video"
 
 private const val STRING = "Ljava/lang/String;"
 private const val FUNCTION0 = "Lkotlin/jvm/functions/Function0;"
@@ -248,11 +259,11 @@ internal fun BytecodePatchContext.commentSheetPhotoRow(): () -> Unit = commentSh
 internal fun BytecodePatchContext.commentSheetVideoRow(): () -> Unit = commentSheetRow(VIDEO_PATCH, VIDEO_ROW_CLICK, VIDEO_ROW_TITLE)
 
 /**
- * Finds the comment sheet's render and returns the step that adds the row the extension's [click]
- * and [title] describe. Refuses, naming [patch], unless exactly one method outside the extension has
- * the shape [commentGifPoint] looks for. Nothing changes until the step runs.
+ * The comment sheet's render, the class and the method, and the attachments getter it was read
+ * through. Refuses, naming [patch], unless exactly one method outside the extension has the shape
+ * [commentGifPoint] looks for.
  */
-private fun BytecodePatchContext.commentSheetRow(patch: String, click: String, title: String): () -> Unit {
+private fun BytecodePatchContext.commentSheetRender(patch: String): Triple<String, Method, String> {
     val attachmentsGetter = graphQlGetter(GRAPHQL_COMMENT, IMMUTABLE_LIST, ATTACHMENTS_FIELD, "a comment's attachments")
     val found = mutableListOf<Pair<String, Method>>()
     classDefForEachReferencing(types = listOf(GRAPHQL_COMMENT), strings = listOf(COMMENT_SHEET_SOCKET)) { classDef ->
@@ -263,6 +274,16 @@ private fun BytecodePatchContext.commentSheetRow(patch: String, click: String, t
         "$patch: expected one comment sheet render ($COMMENT_SHEET_SOCKET) that builds Save photo's row from a " +
             "comment's attachments, found ${found.size}",
     )
+    return Triple(owner, holder, attachmentsGetter)
+}
+
+/**
+ * Finds the comment sheet's render and returns the step that adds the row the extension's [click]
+ * and [title] describe. Refuses, naming [patch], unless exactly one method outside the extension has
+ * the shape [commentGifPoint] looks for. Nothing changes until the step runs.
+ */
+private fun BytecodePatchContext.commentSheetRow(patch: String, click: String, title: String): () -> Unit {
+    val (owner, holder, attachmentsGetter) = commentSheetRender(patch)
     return {
         val method = mutableClassDefBy(owner).methods.single {
             it.name == holder.name && it.parameterTypes.map(CharSequence::toString) == holder.parameterTypes.map(CharSequence::toString)
@@ -296,4 +317,66 @@ private fun BytecodePatchContext.commentSheetRow(patch: String, click: String, t
             ExternalLabel("hush_no_row", method.getInstruction(point.insert)),
         )
     }
+}
+
+/**
+ * Where [method] gives a comment sheet's dialog its content, when it's the fragment's method that
+ * makes the sheet whose render is [render]: it news up [render] and calls a Dialog's
+ * setContentView(View) once. Answers the index right after that call and the register holding the
+ * dialog, or null, also when that index is a branch target.
+ */
+internal fun commentSheetDialogPoint(method: Method, render: String): Pair<Int, Int>? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val makesSheet = code.any {
+        it.opcode == Opcode.NEW_INSTANCE && ((it as ReferenceInstruction).reference as TypeReference).type == render
+    }
+    if (!makesSheet) return null
+    val setAt = code.indices.singleOrNull { at ->
+        (code[at].opcode == Opcode.INVOKE_VIRTUAL || code[at].opcode == Opcode.INVOKE_VIRTUAL_RANGE) &&
+            code[at].methodCalled()?.toString() == SET_CONTENT_VIEW
+    } ?: return null
+    val insert = setAt + 1
+    if (insert >= code.size || insert in branchTargets(code)) return null
+    return insert to code[setAt].firstRegister()
+}
+
+/**
+ * Finds the fragment that makes the comment sheet and returns the step that hands the sheet's
+ * dialog to the extension's CommentSheet as soon as the sheet is its content, so the rows the
+ * download patches add close it after their tap the way Facebook's own rows do: with that dialog's
+ * dismiss. Refuses, naming [patch], unless exactly one method outside the extension has the shape
+ * [commentSheetDialogPoint] looks for. Nothing changes until the step runs.
+ */
+internal fun BytecodePatchContext.commentSheetDialog(patch: String): () -> Unit {
+    val (render) = commentSheetRender(patch)
+    val found = mutableListOf<Pair<String, Method>>()
+    classDefForEachReferencing(types = listOf(render)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
+        classDef.methods.filter { commentSheetDialogPoint(it, render) != null }.mapTo(found) { classDef.type to it }
+    }
+    val (owner, holder) = found.singleOrNull() ?: throw PatchException(
+        "$patch: expected one method that makes the comment sheet ($render) and sets its dialog's content once, " +
+            "found ${found.size}",
+    )
+    return {
+        val method = mutableClassDefBy(owner).methods.single {
+            it.name == holder.name && it.parameterTypes.map(CharSequence::toString) == holder.parameterTypes.map(CharSequence::toString)
+        }
+        val (insert, dialog) = commentSheetDialogPoint(method, render)
+            ?: throw PatchException("$patch: $owner->${holder.name} lost its comment sheet dialog before it was hooked")
+        method.addInstructions(
+            insert,
+            if (dialog <= 15) "invoke-static { v$dialog }, $SHEET_OPENED" else "invoke-static/range { v$dialog .. v$dialog }, $SHEET_OPENED",
+        )
+    }
+}
+
+/**
+ * Hands the extension the comment sheet's dialog, so Save GIF, Save photo and Save video close the
+ * sheet after their tap. Download any photo and Download any video both depend on it, so the hook
+ * goes in once with either or both.
+ */
+internal val commentSheetDialogPatch = bytecodePatch {
+    dependsOn(facebookExtensionPatch)
+    execute { commentSheetDialog(SHEET_PATCHES)() }
 }

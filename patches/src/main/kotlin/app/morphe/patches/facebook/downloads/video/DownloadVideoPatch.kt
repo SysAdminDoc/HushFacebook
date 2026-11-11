@@ -11,6 +11,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
+import app.morphe.patches.facebook.downloads.photo.commentSheetDialogPatch
 import app.morphe.patches.facebook.downloads.photo.commentSheetVideoRow
 import app.morphe.patches.facebook.downloads.story.rememberPlayerSources
 import app.morphe.patches.facebook.feed.resolveStatic
@@ -81,7 +82,7 @@ val downloadVideoPatch = bytecodePatch(
     category("Downloads")
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
-    dependsOn(facebookExtensionPatch)
+    dependsOn(facebookExtensionPatch, commentSheetDialogPatch)
 
     execute {
         val menu = postMenu()

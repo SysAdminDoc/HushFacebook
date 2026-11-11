@@ -24,6 +24,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
@@ -98,17 +99,34 @@ class CommentGifFixtureTest {
         }
     }
 
-    /** GraphQLComment and every class with a method holding the sheet's name, in [bundle]. */
-    private fun classes(bundle: java.io.File): Pair<ClassDef?, List<ClassDef>> {
+    /**
+     * GraphQLComment, every class with a method holding the sheet's name, and every class with a
+     * method setting a Dialog's content, in [bundle].
+     */
+    private fun classes(bundle: java.io.File): Triple<ClassDef?, List<ClassDef>, List<ClassDef>> {
         var comment: ClassDef? = null
         val sheets = mutableListOf<ClassDef>()
+        val dialogs = mutableListOf<ClassDef>()
         FixtureDex.forEach(bundle) { dex ->
             for (classDef in dex.classes) {
                 if (classDef.type == GRAPHQL_COMMENT) comment = ImmutableClassDef.of(classDef)
                 if (classDef.methods.any { holdsString(it, COMMENT_SHEET_SOCKET) }) sheets += ImmutableClassDef.of(classDef)
+                if (classDef.methods.any { method -> method.body().any { it.called() == SET_CONTENT_VIEW } }) {
+                    dialogs += ImmutableClassDef.of(classDef)
+                }
             }
         }
-        return comment to sheets
+        return Triple(comment, sheets, dialogs)
+    }
+
+    /** GraphQLComment's one attachments getter in [comment]. */
+    private fun attachmentsGetter(name: String, comment: ClassDef): String {
+        val getters = comment.methods.filter { method ->
+            method.parameterTypes.isEmpty() && method.returnType == IMMUTABLE_LIST &&
+                method.body().any { (it as? NarrowLiteralInstruction)?.narrowLiteral == ATTACHMENTS_FIELD }
+        }
+        assertEquals("$name: GraphQLComment's attachments getters", 1, getters.size)
+        return getters.single().name
     }
 
     @Test
@@ -122,12 +140,7 @@ class CommentGifFixtureTest {
                 val name = bundle.name
                 val (comment, sheets) = classes(bundle)
                 assertNotNull("$name: no GraphQLComment", comment)
-                val getters = comment!!.methods.filter { method ->
-                    method.parameterTypes.isEmpty() && method.returnType == IMMUTABLE_LIST &&
-                        method.body().any { (it as? NarrowLiteralInstruction)?.narrowLiteral == ATTACHMENTS_FIELD }
-                }
-                assertEquals("$name: GraphQLComment's attachments getters", 1, getters.size)
-                val getter = getters.single().name
+                val getter = attachmentsGetter(name, comment!!)
 
                 val taken = sheets.flatMap { owner -> owner.methods.filter { commentGifPoint(it, getter) != null }.map { owner to it } }
                 assertEquals("$name: methods the patch takes", 1, taken.size)
@@ -203,8 +216,58 @@ class CommentGifFixtureTest {
     }
 
     @Test
+    fun `each declared build's comment sheet hands its dialog to the extension once the sheet is its content`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableSetOf<String>()
+        val abis = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val (comment, sheets, dialogs) = classes(bundle)
+                assertNotNull("$name: no GraphQLComment", comment)
+                val getter = attachmentsGetter(name, comment!!)
+                val owner = sheets.single { sheet -> sheet.methods.any { commentGifPoint(it, getter) != null } }
+
+                val taken = dialogs.flatMap { maker ->
+                    maker.methods.filter { commentSheetDialogPoint(it, owner.type) != null }.map { maker to it }
+                }
+                assertEquals("$name: methods that set the sheet's dialog", 1, taken.size)
+                val (fragment, method) = taken.single()
+                assertEquals("$name: the fragment's onCreateView", "onCreateView", method.name)
+                // Negative control: the same method read for another render isn't taken.
+                assertNull("$name: another render still matched", commentSheetDialogPoint(method, owner.type.dropLast(1) + "x;"))
+                val (insert, dialog) = commentSheetDialogPoint(method, owner.type)!!
+                val original = method.body()
+                assertEquals("$name: right after the sheet goes in", SET_CONTENT_VIEW, original[insert - 1].called())
+                val made = original.subList(0, insert - 1).last {
+                    it.opcode.setsRegister() && (it as? OneRegisterInstruction)?.registerA == dialog
+                }
+                assertEquals("$name: the dialog is the one newed up for the sheet", Opcode.NEW_INSTANCE, made.opcode)
+
+                val context = PatchContexts.of(listOf(owner, comment, fragment))
+                context.commentSheetDialog("test")()
+                val code = context.mutableClassDefBy(fragment.type).methods.single {
+                    it.name == method.name && it.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
+                }.body()
+                assertEquals("$name: one call and nothing else", original.size + 1, code.size)
+                assertEquals("$name: hands the dialog over", SHEET_OPENED, code[insert].called())
+                assertEquals("$name: the dialog's register", dialog, code[insert].let {
+                    (it as? FiveRegisterInstruction)?.registerC ?: (it as RegisterRangeInstruction).startRegister
+                })
+                val rest = code.filterIndexed { index, _ -> index != insert }
+                assertEquals("$name: the rest is Facebook's", original.map { it.opcode }, rest.map { it.opcode })
+                checked += version
+                abis += name.substringAfter("-$version-").substringBefore(".apkm")
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
+    }
+
+    @Test
     fun `the extension has the hooks`() {
-        for (hook in listOf(GIF_ROW_CLICK, GIF_ROW_TITLE, VIDEO_ROW_CLICK, VIDEO_ROW_TITLE, PHOTO_ROW_CLICK, PHOTO_ROW_TITLE)) {
+        for (hook in listOf(GIF_ROW_CLICK, GIF_ROW_TITLE, VIDEO_ROW_CLICK, VIDEO_ROW_TITLE, PHOTO_ROW_CLICK, PHOTO_ROW_TITLE, SHEET_OPENED)) {
             val type = hook.substringBefore("->")
             val name = hook.substringAfter("->").substringBefore("(")
             val method = ExtensionDex.classDef(type).methods.singleOrNull { it.name == name }

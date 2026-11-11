@@ -98,7 +98,7 @@ val downloadPhotoPatch = bytecodePatch(
     default = true,
 ) {
     category("Downloads")
-    dependsOn(settingsPatch, facebookExtensionPatch, photoSearchProviderPatch)
+    dependsOn(settingsPatch, facebookExtensionPatch, photoSearchProviderPatch, commentSheetDialogPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {

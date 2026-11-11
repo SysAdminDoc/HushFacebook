@@ -164,6 +164,9 @@ public final class CommentVideo implements Function1<Object, Object> {
             // It runs inside Facebook's click dispatch, on the thread that draws the app.
             HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "comment sheet video tap", t);
             Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "the Save video tap failed", t);
+        } finally {
+            // Facebook's own rows close the sheet once tapped.
+            CommentSheet.close(tapped);
         }
         return null;
     }
