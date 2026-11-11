@@ -6,9 +6,11 @@ package app.morphe.extension.facebook.media;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorSpace;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
@@ -42,6 +44,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -49,6 +52,7 @@ import app.morphe.extension.facebook.feed.PhotoCarousel;
 import app.morphe.extension.facebook.reels.FeedVideoControls;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
@@ -85,7 +89,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>The copy is read from the window's last frame, which holds a playing video as well as a photo
  * (a SurfaceView's from its own surface), so a video zooms on the frame it showed when the fingers
- * landed, unless Keep videos playing while zoomed is on.
+ * landed, unless Keep videos playing while zoomed is on. In a window Facebook put in HDR color mode,
+ * the story viewer's, Android 14 and newer show HDR video above SDR white, so there the copy and the
+ * frames a zoom reads from a SurfaceView are half floats in extended sRGB, which keep that light, and
+ * the zoom is no dimmer than the story under it (#220). A device whose half float copy fails gets
+ * the usual 8 bits from then on.
  *
  * <p>With Keep videos playing while zoomed on (#220), a zoom on a video surface, a TextureView or a
  * SurfaceView, follows it: about every {@link #FRAME_MILLIS} the copy
@@ -186,6 +194,8 @@ public final class PinchZoom {
     static volatile Frames frames = PinchZoom::frame;
     static volatile Players players = PATCHED_PLAYERS;
 
+    /** A half float copy failed on this device, so copies take the usual 8 bits from then on. Main thread. */
+    private static boolean wideFailed;
     /** The gesture took the second finger, so every later event Facebook gets of it is a cancel. */
     private static boolean swallowing;
     /** A story zoom on a still copy: Facebook gets none of the gesture until the zoom ends, then a cancel. */
@@ -316,6 +326,7 @@ public final class PinchZoom {
         started.darkest = darkest();
         started.source = liveSource(target);
         started.story = storyViewer(activity);
+        started.wide = hdr(window);
         // A story held before the pinch, its first finger down past the long-press time, stays the
         // still frame Facebook paused it on, as without Keep videos playing while zoomed.
         if (started.story && started.source != null
@@ -578,6 +589,7 @@ public final class PinchZoom {
         started.scale = DOUBLE_TAP_SCALE;
         started.darkest = darkest();
         started.source = liveSource(target);
+        started.wide = hdr(window);
         zoom = started;
         snapshots.take(activity, target, area, copy -> {
             try {
@@ -702,7 +714,7 @@ public final class PinchZoom {
             return;
         }
         Rect surface = source instanceof SurfaceView ? surfaceArea((SurfaceView) source, zoom.area) : null;
-        Bitmap buffer = surface == null ? null : zoom.spare(zoom.area.width(), zoom.area.height());
+        Bitmap buffer = surface == null ? null : zoom.spare(zoom.area.width(), zoom.area.height(), zoom.wide);
         if (buffer == null) {
             next.run();
             return;
@@ -710,6 +722,8 @@ public final class PinchZoom {
         PixelCopy.request((SurfaceView) source, surface, buffer, result -> {
             try {
                 if (result == PixelCopy.SUCCESS) zoom.showFrame(buffer, null);
+                // This device copies no half floats, so the next frame takes the usual 8 bits.
+                else if (buffer.getConfig() == Bitmap.Config.RGBA_F16) wideFailed = true;
             } catch (Throwable failure) {
                 HookStatus.threw(FAMILY, "zoom frame", failure);
             } finally {
@@ -891,11 +905,21 @@ public final class PinchZoom {
      * where neither can be read.
      */
     static void snapshot(Activity activity, View target, Rect area, Done done) {
-        Bitmap copy = Bitmap.createBitmap(area.width(), area.height(), Bitmap.Config.ARGB_8888);
+        Window window = activity.getWindow();
+        boolean wide = hdr(window) && !wideFailed;
+        Bitmap copy = copyBitmap(area.width(), area.height(), wide);
         Handler main = new Handler(Looper.getMainLooper());
         PixelCopy.OnPixelCopyFinishedListener finished = result -> {
-            if (result == PixelCopy.SUCCESS) done.accept(copy);
-            else done.accept(drawn(target, area, copy));
+            if (result == PixelCopy.SUCCESS) {
+                if (wide && Build.VERSION.SDK_INT >= 34) logBrightest(copy);
+                done.accept(copy);
+            } else if (wide) {
+                // This device copies no half floats, so it takes the usual 8 bits from here on.
+                wideFailed = true;
+                snapshot(activity, target, area, done);
+            } else {
+                done.accept(drawn(target, area, copy));
+            }
         };
         // A SurfaceView's picture is a surface of its own, which the window's frame shows as a hole.
         Rect surface = target instanceof SurfaceView ? surfaceArea((SurfaceView) target, area) : null;
@@ -903,12 +927,48 @@ public final class PinchZoom {
             PixelCopy.request((SurfaceView) target, surface, copy, finished, main);
             return;
         }
-        Window window = activity.getWindow();
         if (window != null && target.isHardwareAccelerated()) {
             PixelCopy.request(window, area, copy, finished, main);
             return;
         }
         done.accept(drawn(target, area, copy));
+    }
+
+    /**
+     * Whether [window] is in HDR color mode, as Facebook puts the story viewer's (HdrBrightness).
+     * There Android 14 and newer show an HDR story above SDR white, and a copy that stops at SDR
+     * white looked dimmer than the story it covered, on the panel only, since a screen recording
+     * maps both to SDR (#220).
+     */
+    static boolean hdr(@Nullable Window window) {
+        return Build.VERSION.SDK_INT >= 34 && window != null && window.getColorMode() == ActivityInfo.COLOR_MODE_HDR;
+    }
+
+    /** A [width] by [height] bitmap to copy into: half floats in extended sRGB where [wide], which keep the light above SDR white, or the usual 8 bits. */
+    static Bitmap copyBitmap(int width, int height, boolean wide) {
+        if (!wide) return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        return Bitmap.createBitmap(width, height, Bitmap.Config.RGBA_F16, true, ColorSpace.get(ColorSpace.Named.EXTENDED_SRGB));
+    }
+
+    /** With Debug logging on, how far past SDR white an HDR window's copy reaches. */
+    @RequiresApi(34)
+    private static void logBrightest(Bitmap copy) {
+        Logger.printDebug(() -> String.format(Locale.US,
+                "Pinch to zoom: HDR window, the copy's brightest light is %.2fx SDR white", brightest(copy)));
+    }
+
+    /** The brightest channel over a grid across [copy], 1 being SDR white. */
+    @RequiresApi(29)
+    static float brightest(Bitmap copy) {
+        float most = 0f;
+        int step = Math.max(1, Math.max(copy.getWidth(), copy.getHeight()) / 64);
+        for (int y = 0; y < copy.getHeight(); y += step) {
+            for (int x = 0; x < copy.getWidth(); x += step) {
+                Color color = copy.getColor(x, y);
+                most = Math.max(most, Math.max(color.red(), Math.max(color.green(), color.blue())));
+            }
+        }
+        return most;
     }
 
     /** [area], window coordinates, in [view]'s surface, or null when it has no surface to read. */
@@ -979,6 +1039,7 @@ public final class PinchZoom {
         places = PinchZoom::mediaUnder;
         frames = PinchZoom::frame;
         players = PATCHED_PLAYERS;
+        wideFailed = false;
     }
 
     /** One zoom: the layer over the window and where the fingers started. */
@@ -1006,6 +1067,8 @@ public final class PinchZoom {
         @Nullable View source;
         /** A zoom in the story viewer, which springs back once the story it follows moves on. */
         boolean story;
+        /** The window is in HDR color mode ({@link #hdr}), so frames read from a SurfaceView keep the light above SDR white. */
+        boolean wide;
         /** The finger on the kept zoom stayed still for the long-press time, and paused or played the video. */
         boolean heldDown;
         /** The player a hold paused, which plays again when the zoom springs back. */
@@ -1158,11 +1221,19 @@ public final class PinchZoom {
          */
         @Nullable
         Bitmap spare(int width, int height) {
+            return spare(width, height, false);
+        }
+
+        /** {@link #spare(int, int)}, in half floats where [wide] and this device still copies them. */
+        @Nullable
+        Bitmap spare(int width, int height, boolean wide) {
             if (width <= 0 || height <= 0) return null;
             int index = shownBuffer == 0 ? 1 : 0;
             Bitmap buffer = buffers[index];
-            if (buffer == null || buffer.getWidth() != width || buffer.getHeight() != height) {
-                buffer = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            boolean half = wide && !wideFailed;
+            Bitmap.Config config = half ? Bitmap.Config.RGBA_F16 : Bitmap.Config.ARGB_8888;
+            if (buffer == null || buffer.getWidth() != width || buffer.getHeight() != height || buffer.getConfig() != config) {
+                buffer = copyBitmap(width, height, half);
                 // Drawn pixel for pixel, so a placement matrix maps the frame as the video lays it out.
                 buffer.setDensity(Bitmap.DENSITY_NONE);
                 buffers[index] = buffer;

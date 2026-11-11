@@ -13,9 +13,11 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
+import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.ColorSpace;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -41,6 +43,7 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.robolectric.annotation.GraphicsMode;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -1192,6 +1195,58 @@ public class PinchZoomTest {
     private static final class Video {
         boolean playing = true;
         final List<Boolean> told = new ArrayList<>();
+    }
+
+    /** A pinch over the profile's photo, and the zoom it started. */
+    private PinchZoom.Zoom pinchOnPhoto() {
+        touch(event(MotionEvent.ACTION_DOWN, new float[][] {{250, 300}}));
+        touch(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{250, 300}, {350, 300}}));
+        PinchZoom.Zoom zoom = PinchZoom.zoom();
+        assertNotNull("no zoom started", zoom);
+        return zoom;
+    }
+
+    /**
+     * Facebook puts the story viewer's window in HDR color mode, where Android 14 shows an HDR story
+     * above SDR white, and a copy that stopped at SDR white looked dimmer than the story it covered
+     * (#220). There the zoom's copy and its frames are half floats in extended sRGB, which hold that
+     * light where the usual 8 bits stop at 1.
+     */
+    @Test
+    @Config(sdk = 34)
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    public void aZoomInAnHdrWindowCopiesInHalfFloatsThatKeepTheLightAboveSdrWhite() {
+        activity.getWindow().setColorMode(ActivityInfo.COLOR_MODE_HDR);
+        PinchZoom.Zoom zoom = pinchOnPhoto();
+        assertTrue("a zoom in an HDR window didn't take wide copies", zoom.wide);
+        Bitmap frame = zoom.spare(600, 600, zoom.wide);
+        assertNotNull(frame);
+        assertEquals(Bitmap.Config.RGBA_F16, frame.getConfig());
+        assertEquals(ColorSpace.get(ColorSpace.Named.EXTENDED_SRGB), frame.getColorSpace());
+        long bright = Color.pack(2f, 1f, 0.5f, 1f, ColorSpace.get(ColorSpace.Named.EXTENDED_SRGB));
+        frame.eraseColor(bright);
+        assertEquals("the wide copy lost the light above SDR white", 2f, PinchZoom.brightest(frame), 0.01f);
+        Bitmap usual = PinchZoom.copyBitmap(600, 600, false);
+        usual.eraseColor(bright);
+        assertEquals("an 8 bit copy held light above SDR white", 1f, PinchZoom.brightest(usual), 0.01f);
+    }
+
+    @Test
+    @Config(sdk = 34)
+    public void aZoomInAnOrdinaryWindowCopiesInTheUsual8Bits() {
+        PinchZoom.Zoom zoom = pinchOnPhoto();
+        assertFalse(zoom.wide);
+        Bitmap frame = zoom.spare(600, 600, zoom.wide);
+        assertNotNull(frame);
+        assertEquals(Bitmap.Config.ARGB_8888, frame.getConfig());
+    }
+
+    /** Before Android 14 HDR color mode doesn't lift a story above SDR white, so the copy keeps the usual 8 bits. */
+    @Test
+    public void beforeAndroid14AnHdrWindowStillCopiesInTheUsual8Bits() {
+        activity.getWindow().setColorMode(ActivityInfo.COLOR_MODE_HDR);
+        assertEquals(ActivityInfo.COLOR_MODE_HDR, activity.getWindow().getColorMode());
+        assertFalse(pinchOnPhoto().wide);
     }
 
     private TextureView video;
