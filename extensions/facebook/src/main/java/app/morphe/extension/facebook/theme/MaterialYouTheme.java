@@ -656,7 +656,8 @@ public final class MaterialYouTheme {
     private static boolean windowsWatched;
 
     /**
-     * The page under the feed's last unit in dark mode. It's the window's own background, which the
+     * The page under the feed's last unit in dark mode, and in light mode what See-through bars show
+     * over the feed's top (#141). It's the window's own background, which the
      * framework draws from the activity theme's {@code android:windowBackground}: Facebook's main
      * theme points it at {@code ?attr/WASH} (581 attribute 0x7f040633), and the dark FDS style
      * gives WASH its #101011 colour resource, which has no night value. The framework reads it, so
@@ -674,21 +675,27 @@ public final class MaterialYouTheme {
 
     /**
      * Gives a window background of one of the {@link #SURFACES} the palette's neutral at the same
-     * lightness in dark mode, the colour route three gives the rest of the page. Another colour, a
-     * background that is no plain colour, light mode and a window with no view yet keep theirs, and so
-     * does AMOLED's, whose route two made it the background colour already.
+     * lightness in dark mode, the colour route three gives the rest of the page. Once Facebook has
+     * said light mode, the light style's WASH, #C9CCD1, takes it too, as route one gives that token
+     * (#141): See-through bars show the window through the top bar over the feed's top, and on 586 the
+     * S22 drew that strip #ECEDEF under every palette. Another colour, a background that is no plain
+     * colour and a window with no view yet keep theirs, and so does AMOLED's, whose route two made it
+     * the background colour already, in light mode only with its Light background color picked.
      *
      * @return whether it changed the background
      */
     static boolean recolourWindow(@Nullable Window window, boolean amoled) {
-        if (window == null || amoled) return false;
+        if (window == null) return false;
         View decor = window.peekDecorView();
         if (decor == null) return false;
         Drawable background = decor.getBackground();
         if (background instanceof InsetDrawable) background = ((InsetDrawable) background).getDrawable();
         if (!(background instanceof ColorDrawable)) return false;
         int color = ((ColorDrawable) background).getColor();
-        if (!isSurface(color) || !DarkMode.on()) return false;
+        if (DarkMode.on() ? amoled || !isSurface(color)
+                : (amoled && AmoledTheme.lightBackground() != 0) || !listed(LIGHT.get("WASH"), color)) {
+            return false;
+        }
         window.setBackgroundDrawable(new ColorDrawable(palette().sameLightness(TonePalette.NEUTRAL, color)));
         return true;
     }
