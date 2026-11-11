@@ -86,14 +86,17 @@ internal class TrayBuckets(
  * The cards beside Create story, such as "Share music you love", come in a list of their own that
  * the tray's fetch can ask the server to leave out. Each fetch's answer to that goes through the
  * extension first, which asks for it when Hide story prompts is on (issue #21).
+ *
+ * The Create story tile isn't a bucket. It goes into the tray's tile list with the story tiles, and
+ * Hide Create story takes it out there (CreateStoryTiles.kt, issue #445).
  */
 @Suppress("unused")
 val hideSuggestedStoriesPatch = bytecodePatch(
     name = "Hide suggested stories",
     description = "Removes stories Facebook suggests from people and Pages you don't follow, and the \"Find " +
         "friends from contacts\" card, so the Stories tray sticks to people you know. On by default. Turn it off " +
-        "in Hushfacebook settings > Stories, where more switches, all off at first, also hide the Pages you " +
-        "follow and the stories you've already watched, or keep only the ones you've watched.",
+        "in Hushfacebook settings > Stories, where more switches, all off at first, also hide the Create story " +
+        "tile, the Pages you follow and the stories you've already watched, or keep only the ones you've watched.",
     default = true,
 ) {
     category("Stories")
@@ -114,6 +117,7 @@ val hideSuggestedStoriesPatch = bytecodePatch(
             .keepOnlyUnsuggestedBuckets(list)
         pageShortTrays(trayPagingAnchors())
         hookPromptCardSkips()
+        hideCreateStoryTile()
         enableStatus("suggestedStories")
     }
 }

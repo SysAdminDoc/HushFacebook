@@ -1107,6 +1107,10 @@ Hides the Stories tray card that asks to upload your contacts. Applies when Face
 Hide story prompts	隐藏快拍提示
 # context: summary of that switch; Share music you love is the name of one such card
 Hides cards beside Create story that suggest a story to make, like Share music you love. Applies when Facebook next loads the tray.	隐藏“创建快拍”旁边建议你制作某种快拍的卡片，例如“分享你喜爱的音乐”。在 Facebook 下次加载快拍栏时生效。
+# context: switch title under Stories; Create story is the first tile of the Stories tray, the one that starts a new story of your own
+Hide Create story	隐藏“创建快拍”
+# context: summary of that switch
+Takes the Create story tile off the start of the Stories tray. The stories stay. Applies when Facebook next loads the tray.	从快拍栏开头移除“创建快拍”卡片。快拍会保留。在 Facebook 下次加载快拍栏时生效。
 # context: summary of Hide "People you may know" when the build also hides tray cards; Add is the card's button
 Hides friend suggestions between posts, on your own profile, and as cards with an Add button in the Stories tray.	隐藏帖子之间、你个人主页上以及快拍栏中带“添加”按钮的卡片里的好友推荐。
 Feeds opens on	“动态”打开时显示

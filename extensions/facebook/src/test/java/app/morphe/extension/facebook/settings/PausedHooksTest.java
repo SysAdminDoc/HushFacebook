@@ -593,9 +593,10 @@ public class PausedHooksTest {
         // A tray of a friend's bucket, a suggested one and one labelled SUGGESTED keeps only the friend's,
         // a Page's bucket leaves it, and so does a bucket you've watched.
         // With Show only watched stories on, the tray keeps only what you've watched (#340).
+        // The Create story tile leaves the tray's tile list (#445).
         probes.put(PatchFamily.SUGGESTED_STORIES, Arrays.asList(allStories(SuggestedStoriesForTests::hidesSuggestions),
                 allStories(SuggestedStoriesForTests::hidesPageStories), allStories(SuggestedStoriesForTests::hidesSeenStories),
-                SuggestedStoriesForTests::keepsOnlyWatchedStories));
+                SuggestedStoriesForTests::keepsOnlyWatchedStories, SuggestedStoriesForTests::hidesCreateStory));
         // A forward tap on a bucket's last card gets the completion's reason (#380).
         probes.put(PatchFamily.STORY_AUTO_ADVANCE, Arrays.asList(StoryAdvance::waitForTap, StoryAdvance::loop,
                 () -> StoryAdvance.lastCardTap(NavigationReason.TAP_FORWARD)));

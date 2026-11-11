@@ -247,6 +247,8 @@ public class ColdStartHooksTest {
         assertFalse(FeedFilter.hideSponsoredStories());
         assertFalse("a Stories tray fetched before the context lost its suggestions",
                 SuggestedStoriesForTests.hidesSuggestions());
+        assertFalse("a Stories tray built before the context lost its Create story tile",
+                SuggestedStoriesForTests.hidesCreateStory());
         VideoAd reelAd = new VideoAd();
         assertTrue(ReelsAdFilter.withoutAds(Arrays.asList(new Reel(), reelAd), ad).contains(reelAd));
         VideoAd sectionAd = new VideoAd();

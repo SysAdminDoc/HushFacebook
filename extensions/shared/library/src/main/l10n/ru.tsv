@@ -1136,6 +1136,10 @@ Hides the Stories tray card that asks to upload your contacts. Applies when Face
 Hide story prompts	Скрывать подсказки для Историй
 # context: summary of that switch; Share music you love is the name of one such card
 Hides cards beside Create story that suggest a story to make, like Share music you love. Applies when Facebook next loads the tray.	Скрывает карточки рядом с кнопкой «Создать историю» с предложениями для новых Историй, например «Поделитесь любимой музыкой». Применяется при следующей загрузке панели Facebook.
+# context: switch title under Stories; Create story is the first tile of the Stories tray, the one that starts a new story of your own
+Hide Create story	Скрывать «Создать историю»
+# context: summary of that switch
+Takes the Create story tile off the start of the Stories tray. The stories stay. Applies when Facebook next loads the tray.	Убирает плитку «Создать историю» из начала панели Историй. Истории остаются. Применяется при следующей загрузке панели Facebook.
 # context: summary of Hide "People you may know" when the build also hides tray cards; Add is the card's button
 Hides friend suggestions between posts, on your own profile, and as cards with an Add button in the Stories tray.	Скрывает рекомендации друзей между публикациями, в вашем профиле и в виде карточек с кнопкой «Добавить» на панели Историй.
 Feeds opens on	Вкладка «Ленты» открывается на

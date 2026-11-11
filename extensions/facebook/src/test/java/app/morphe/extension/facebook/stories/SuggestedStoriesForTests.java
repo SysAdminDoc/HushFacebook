@@ -206,4 +206,44 @@ public final class SuggestedStoriesForTests {
         Object kept = keptBuckets(tray);
         return kept != tray && Collections.singletonList(watched).equals(kept);
     }
+
+    /** Stands in for a tile of the tray's tile list: the Create story tile, or any other (#445). */
+    public static final class Tile {
+        public final boolean createStory;
+
+        public Tile(boolean createStory) {
+            this.createStory = createStory;
+        }
+
+        @Override
+        public String toString() {
+            return "Tile(" + createStory + ")";
+        }
+    }
+
+    /** The tile stub as the patch fills it, a read of the tile's kind, and ImmutableList.copyOf. */
+    static final CreateStoryTile.Tiles TILES = new CreateStoryTile.Tiles() {
+        @Override
+        public int createStory(Object tile) {
+            return tile instanceof Tile && ((Tile) tile).createStory ? CreateStoryTile.CREATE_STORY_TILE : CreateStoryTile.OTHER_TILE;
+        }
+
+        @Override
+        public Object copy(List<Object> kept) {
+            return new Copy(kept);
+        }
+    };
+
+    /** A tile list through the Create story filter, with the stand-in stub. */
+    public static Object keptTiles(List<?> tiles) {
+        return CreateStoryTile.keptTiles(tiles, TILES);
+    }
+
+    /** A tray of the Create story tile and a friend's story tile. True when the Create story tile came out (#445). */
+    public static boolean hidesCreateStory() {
+        Tile story = new Tile(false);
+        List<Tile> tray = Arrays.asList(new Tile(true), story);
+        Object kept = keptTiles(tray);
+        return kept != tray && Collections.singletonList(story).equals(kept);
+    }
 }

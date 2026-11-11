@@ -96,6 +96,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_SUGGESTED_STORIES) return L10n.t("Hide suggested stories");
         if (setting == Settings.HIDE_CONTACT_IMPORT_CARD) return L10n.t("Hide \"Find friends from contacts\"");
         if (setting == Settings.HIDE_STORY_PROMPTS) return L10n.t("Hide story prompts");
+        if (setting == Settings.HIDE_CREATE_STORY) return L10n.t("Hide Create story");
         if (setting == Settings.HIDE_PAGE_STORIES) return L10n.t("Hide stories from Pages");
         if (setting == Settings.HIDE_SEEN_STORIES) return L10n.t("Hide seen stories");
         if (setting == Settings.SHOW_ONLY_WATCHED_STORIES) return L10n.t("Show only watched stories");

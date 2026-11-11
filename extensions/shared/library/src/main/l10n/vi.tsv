@@ -1110,6 +1110,10 @@ Hides the Stories tray card that asks to upload your contacts. Applies when Face
 Hide story prompts	Ẩn gợi ý tạo tin
 # context: summary of that switch; Share music you love is the name of one such card
 Hides cards beside Create story that suggest a story to make, like Share music you love. Applies when Facebook next loads the tray.	Ẩn các thẻ cạnh Tạo tin gợi ý tin để tạo, như Chia sẻ bản nhạc bạn yêu thích. Áp dụng khi Facebook tải lại khay tin lần sau.
+# context: switch title under Stories; Create story is the first tile of the Stories tray, the one that starts a new story of your own
+Hide Create story	Ẩn Tạo tin
+# context: summary of that switch
+Takes the Create story tile off the start of the Stories tray. The stories stay. Applies when Facebook next loads the tray.	Bỏ ô Tạo tin khỏi đầu khay tin. Các tin vẫn còn. Áp dụng khi Facebook tải lại khay tin lần sau.
 # context: summary of Hide "People you may know" when the build also hides tray cards; Add is the card's button
 Hides friend suggestions between posts, on your own profile, and as cards with an Add button in the Stories tray.	Ẩn gợi ý kết bạn giữa các bài viết, trên trang cá nhân của bạn và dưới dạng thẻ có nút Thêm trong khay tin.
 Feeds opens on	Bảng feed mở ở

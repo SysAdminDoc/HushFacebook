@@ -195,6 +195,7 @@ public final class SettingsBackup {
             Settings.HIDE_SUGGESTED_STORIES,
             Settings.HIDE_CONTACT_IMPORT_CARD,
             Settings.HIDE_STORY_PROMPTS,
+            Settings.HIDE_CREATE_STORY,
             Settings.HIDE_PAGE_STORIES,
             Settings.HIDE_SEEN_STORIES,
             Settings.SHOW_ONLY_WATCHED_STORIES,

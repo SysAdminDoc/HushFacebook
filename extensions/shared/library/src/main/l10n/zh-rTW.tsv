@@ -1114,6 +1114,10 @@ Hides the Stories tray card that asks to upload your contacts. Applies when Face
 Hide story prompts	隱藏限時動態提示
 # context: summary of that switch; Share music you love is the name of one such card
 Hides cards beside Create story that suggest a story to make, like Share music you love. Applies when Facebook next loads the tray.	隱藏「建立限時動態」旁建議製作限時動態的卡片，例如「分享你喜愛的音樂」。從 Facebook 下次載入橫幅起生效。
+# context: switch title under Stories; Create story is the first tile of the Stories tray, the one that starts a new story of your own
+Hide Create story	隱藏「建立限時動態」
+# context: summary of that switch
+Takes the Create story tile off the start of the Stories tray. The stories stay. Applies when Facebook next loads the tray.	從限時動態橫幅開頭移除「建立限時動態」卡片。限時動態會保留。從 Facebook 下次載入橫幅起生效。
 # context: summary of Hide "People you may know" when the build also hides tray cards; Add is the card's button
 Hides friend suggestions between posts, on your own profile, and as cards with an Add button in the Stories tray.	隱藏貼文之間、你個人檔案上，以及限時動態橫幅中附有「加朋友」按鈕的交友推薦。
 Feeds opens on	動態消息預設篩選

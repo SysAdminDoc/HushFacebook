@@ -420,6 +420,14 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_STORY_PROMPTS =
             new BooleanSetting("hushfacebook_hide_story_prompts", FALSE);
 
+    /**
+     * The Create story tile at the start of Home's Stories tray
+     * ({@link app.morphe.extension.facebook.stories.CreateStoryTile}, #445). The stories in the tray
+     * stay. Off until you turn it on. A change shows when Facebook next builds the tray.
+     */
+    public static final BooleanSetting HIDE_CREATE_STORY =
+            new BooleanSetting("hushfacebook_hide_create_story", FALSE);
+
     /** Keep a finished Story visible until the user navigates. */
     public static final BooleanSetting BLOCK_STORY_AUTO_ADVANCE =
             new BooleanSetting("hushfacebook_block_story_auto_advance", FALSE);
