@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.misc;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
@@ -112,6 +113,33 @@ public class LinkHistoryTest {
         Settings.HOLD_LINK_HISTORY.resetToDefault();
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertFalse(LinkHistory.holdAutofillReport());
+        assertEquals(LinkHistory.ROUTE + ": 2 lists, 2 items, 0 removed", counterLine());
+    }
+
+    @Test
+    public void onByDefaultASampledBrowserEventIsntSent() {
+        assertFalse("the landing page event went out", LinkHistory.sendBrowserEvent(1));
+        assertFalse("the pixel event went out", LinkHistory.sendBrowserEvent(1));
+        assertEquals(LinkHistory.ROUTE + ": 2 lists, 2 items, 2 removed. Last reason: " + LinkHistory.BROWSER_EVENTS
+                + ". Removed: " + LinkHistory.BROWSER_EVENTS + " 2", counterLine());
+    }
+
+    /** An event Facebook's own sampling turned away stays unsent, and isn't counted as held. */
+    @Test
+    public void anUnsampledBrowserEventStaysUnsentAndUncounted() {
+        assertFalse(LinkHistory.sendBrowserEvent(0));
+        Settings.HOLD_LINK_HISTORY.save(false);
+        assertFalse(LinkHistory.sendBrowserEvent(0));
+        assertNull(counterLine());
+    }
+
+    @Test
+    public void offOrPausedASampledBrowserEventIsSent() {
+        Settings.HOLD_LINK_HISTORY.save(false);
+        assertTrue(LinkHistory.sendBrowserEvent(1));
+        Settings.HOLD_LINK_HISTORY.resetToDefault();
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue(LinkHistory.sendBrowserEvent(1));
         assertEquals(LinkHistory.ROUTE + ": 2 lists, 2 items, 0 removed", counterLine());
     }
 }

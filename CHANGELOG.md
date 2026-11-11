@@ -58,6 +58,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* `Stop link history in Facebook's browser` also stops the analytics events Facebook's browser sends about the pages you open in it, like where you landed and how far you scrolled, login and payment forms it spots, checkouts, and the ad pixels and product data on a page. Pages load and work the same, and so does the rest of the browser.
 * `Hide the Follow link on posts` is now called `Hide the Follow and Subscribe links on posts`. The same switch takes away the "Subscribe" some feed videos show after the creator's name, and the old name made that easy to miss. (#434)
 * Hushfacebook now patches Facebook 586.0.0.52.53 and no longer takes 585. On a 64-bit phone download the (arm64-v8a) (120-640dpi) (Android 11+) bundle, build 476217123, and on a 32-bit phone the (arm-v7a) (320dpi) (Android 11+) bundle, build 476217122. Update Facebook before you patch.
 * You need Morphe Manager 2.5.0 or newer now. The patches are built on Morphe patcher 2.3.0, the one Manager 2.5.0 ships with, and older Managers refuse a bundle built on it, so update Manager before you patch. On a computer, use morphe-desktop 2.1.1 or newer.

@@ -5,12 +5,14 @@
 package app.morphe.patches.facebook.misc.externalbrowser
 
 import app.morphe.patcher.StringComparisonType
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findMutableMethodOf
@@ -53,6 +55,16 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * LinkHistory.holdAutofillReport() goes first in each. ELZ's ad signal (583 LX/9JZ;->A00, the
  * "client_ad_delivery_on_device_value" event, shared with other ad code) and its DARTS signal
  * (583 LX/2CA;->A0E, an on-device signal store) aren't held here.
+ *
+ * Every other report the browser makes goes through one event logger, read from 586 on 2026-11-11:
+ * BrowserLiteCallbackImpl.IFg(Bundle, IABEvent), "iab_unified", 3,507 instructions behind a switch
+ * on the event's type. It logs landing pages and scroll depth, login and payment forms, checkouts,
+ * ad pixels, structured data and more, each as an analytics event that's built, asked whether it's
+ * sampled (00dZ.isSampled() itself, or a static wrapper that only asks it, 586 LX/04X9;->A1Y) and
+ * filled and logged only on a yes. The same method also hands page data to the link history writers
+ * (586 LX/0rwT;->A01), feeds an on-device signal store (586 LX/02Gp;->A0F) and more, none of it
+ * behind a sampling answer. So LinkHistory.sendBrowserEvent() goes right after each sampling answer
+ * (39 on 586) and turns a yes into a no, and nothing else the logger does changes.
  */
 
 private const val PATCH = "Open links in external browser"
@@ -85,6 +97,14 @@ internal val AUTOFILL_REPORTS = listOf(
     // The first-party data event, the one method naming it.
     listOf("iab_1pd_event"),
 )
+
+internal const val SEND_BROWSER_EVENT = "Lapp/morphe/extension/facebook/misc/LinkHistory;->sendBrowserEvent(I)Z"
+
+/** What the browser's event logger names its unified event, the string to look it up by. */
+internal const val BROWSER_EVENT_LOGGER_ANCHOR = "iab_unified"
+
+/** The kept type of the events the logger is handed. */
+internal const val BROWSER_EVENT = "Lcom/facebook/iabeventlogging/model/IABEvent;"
 
 /**
  * Whether [method] is a factory of [writer]: an instance method outside it that takes one parameter
@@ -201,6 +221,99 @@ internal fun BytecodePatchContext.autofillReports(): List<Method> = AUTOFILL_REP
 
 /** First thing in an autofill report: ask the extension, and return on a yes. Otherwise it logs as before. */
 internal fun MutableMethod.holdAutofillReport() = returnFirstOnYes(HOLD_AUTOFILL_REPORT)
+
+/**
+ * Whether [method] is the browser's event logger: an instance method returning void that takes the
+ * browser's launch bundle and one [BROWSER_EVENT], and names [BROWSER_EVENT_LOGGER_ANCHOR].
+ */
+internal fun isBrowserEventLogger(method: Method): Boolean {
+    if (method.returnType != "V" || AccessFlags.STATIC.isSet(method.accessFlags)) return false
+    if (method.parameterTypes.map(CharSequence::toString) != listOf("Landroid/os/Bundle;", BROWSER_EVENT)) return false
+    return method.implementation?.instructions?.any {
+        ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == BROWSER_EVENT_LOGGER_ANCHOR
+    } == true
+}
+
+/** The one browser event logger, or a refusal. */
+internal fun BytecodePatchContext.browserEventLogger(): Method {
+    val loggers = classDefByStrings(BROWSER_EVENT_LOGGER_ANCHOR, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith("Lapp/morphe/") }.distinctBy { it.type }
+        .flatMap { it.methods }.filter(::isBrowserEventLogger)
+    return loggers.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one browser event logger, found ${loggers.size}")
+}
+
+/** Whether [instruction] asks an analytics event whether it's sampled. */
+private fun asksSampling(instruction: Instruction): Boolean {
+    val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    return reference.name == "isSampled" && reference.parameterTypes.isEmpty() && reference.returnType == "Z"
+}
+
+/**
+ * Whether [method] only answers an event's sampling: a static method taking one object and returning
+ * a boolean that reads the event out of it and answers what isSampled says (586 LX/04X9;->A1Y).
+ */
+internal fun isSamplingWrapper(method: Method): Boolean {
+    if (method.returnType != "Z" || !AccessFlags.STATIC.isSet(method.accessFlags) || method.parameterTypes.size != 1) {
+        return false
+    }
+    val code = method.implementation?.instructions?.toList() ?: return false
+    return code.map { it.opcode } == listOf(Opcode.IGET_OBJECT, Opcode.INVOKE_INTERFACE, Opcode.MOVE_RESULT, Opcode.RETURN) &&
+        asksSampling(code[1])
+}
+
+/**
+ * The index in [code] of each sampling answer's move-result: after a call to isSampled itself, or to
+ * a static method taking one object that [isWrapper] says only asks it.
+ */
+internal fun samplingAnswers(code: List<Instruction>, isWrapper: (MethodReference) -> Boolean): List<Int> =
+    code.indices.filter { at ->
+        if (at + 1 >= code.size || code[at + 1].opcode != Opcode.MOVE_RESULT) return@filter false
+        val instruction = code[at]
+        if (asksSampling(instruction)) return@filter true
+        if (instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) return@filter false
+        val reference = (instruction as ReferenceInstruction).reference as MethodReference
+        reference.returnType == "Z" && reference.parameterTypes.size == 1 && isWrapper(reference)
+    }.map { it + 1 }
+
+/** The sampling answers in [logger]'s code, a wrapper read from the class that defines it. */
+internal fun BytecodePatchContext.browserEventSamplingAnswers(logger: Method): List<Int> {
+    val wrappers = mutableMapOf<String, Boolean>()
+    val code = logger.implementation?.instructions?.toList().orEmpty()
+    val answers = samplingAnswers(code) { reference ->
+        wrappers.getOrPut(reference.toString()) {
+            classDefByOrNull(reference.definingClass)?.methods?.any {
+                it.name == reference.name && it.parameterTypes.map(CharSequence::toString) ==
+                    reference.parameterTypes.map(CharSequence::toString) && isSamplingWrapper(it)
+            } == true
+        }
+    }
+    if (answers.isEmpty()) throw PatchException("$PATCH: the browser event logger asks no sampling")
+    // A jump to the instruction after an answer would arrive with the hook behind it.
+    val targets = branchTargets(code)
+    answers.firstOrNull { it + 1 in targets }?.let {
+        throw PatchException("$PATCH: a jump lands right after the browser event logger's sampling answer at $it")
+    }
+    return answers
+}
+
+/**
+ * After each sampling answer at [answers] (move-result indices in this method's code), ask the
+ * extension with that answer and keep its reply in the same register, so a held event reads as one
+ * the sampling turned away. Works from the last so earlier indices stay put.
+ */
+internal fun MutableMethod.holdBrowserEvents(answers: List<Int>) {
+    for (at in answers.sortedDescending()) {
+        val register = (getInstruction(at) as OneRegisterInstruction).registerA
+        addInstructions(
+            at + 1,
+            """
+                invoke-static/range { v$register .. v$register }, $SEND_BROWSER_EVENT
+                move-result v$register
+            """,
+        )
+    }
+}
 
 /** Asks [hook] before this void method's first instruction and returns on a yes. */
 private fun MutableMethod.returnFirstOnYes(hook: String) {

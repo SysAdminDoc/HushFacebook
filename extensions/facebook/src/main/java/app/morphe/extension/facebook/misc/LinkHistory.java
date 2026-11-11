@@ -33,9 +33,15 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the event is built. Autofill itself keeps what you declined in its own preferences and never reads
  * the reports, so it works the same either way.
  *
+ * <p>Everything else the browser reports to Facebook's analytics goes through one event logger: the
+ * pages you land on and how far you scroll, login and payment forms it finds, checkouts, the ad
+ * pixels and structured data on a page, and more. Each of those events asks Facebook's sampling
+ * whether to send, and then asks {@link #sendBrowserEvent}, whose no skips that one event. What the
+ * logger does besides sending, handing page data to the link history writers and its on-device
+ * signals among it, never asks, so the browser works the same either way.
+ *
  * <p>It fails open: the switch off, a pause, settings that aren't ready yet, or a failure in here,
- * and the browser builds its writers and sends as it would have. Login and checkout are other parts
- * of the browser and don't ask.
+ * and the browser builds its writers and sends as it would have.
  */
 public final class LinkHistory {
     /** The diagnostic counter route: each writer and upload the browser went to make, and the ones held back. */
@@ -49,6 +55,9 @@ public final class LinkHistory {
 
     /** What an autofill report that wasn't logged is counted under. */
     static final String AUTOFILL_REPORTS = "Autofill reports";
+
+    /** What a browser analytics event that wasn't sent is counted under. */
+    static final String BROWSER_EVENTS = "Browser events";
 
     private LinkHistory() {
     }
@@ -75,6 +84,15 @@ public final class LinkHistory {
      */
     public static boolean holdAutofillReport() {
         return held(AUTOFILL_REPORTS, "autofill report", "an autofill report");
+    }
+
+    /**
+     * Injection point, right after each sampling check in the browser's event logger, with what the
+     * check answered. Answers whether the event goes out: never while held, otherwise what Facebook's
+     * sampling said. Only an event sampling let through is asked about or counted. Never throws.
+     */
+    public static boolean sendBrowserEvent(int sampled) {
+        return sampled != 0 && !held(BROWSER_EVENTS, "browser event", "a browser event");
     }
 
     private static boolean held(String counted, String site, String what) {
