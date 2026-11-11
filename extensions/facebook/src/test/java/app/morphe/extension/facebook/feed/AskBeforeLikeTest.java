@@ -53,6 +53,7 @@ public class AskBeforeLikeTest {
     private static final String COMMENT = OWN + "->comment(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
     private static final String KEPT = "Lapp/morphe/extension/facebook/feed/AskBeforeLikeTest$Kept;";
     private static final String TOUCH = OWN + "->touch(Ljava/lang/Object;" + KEPT + ")V";
+    private static final String CLICK = OWN + "->click(Ljava/lang/Object;)Ljava/lang/Object;";
 
     /** A stand-in for the component context the plugin footer's sender takes: it keeps a context, it isn't one. */
     static final class Kept {
@@ -63,9 +64,19 @@ public class AskBeforeLikeTest {
         }
     }
 
+    /** A stand-in for litho's click event, which the footer's click lambda takes: it keeps the tapped view. */
+    static final class Event {
+        final View view;
+
+        Event(View view) {
+            this.view = view;
+        }
+    }
+
     /** A stand-in for Facebook's Like handlers, with the hook first as the patch puts it. */
     static final class Footer {
         int likes;
+        int painted;
         String lastPost;
         boolean lastFlag;
 
@@ -91,6 +102,14 @@ public class AskBeforeLikeTest {
         void touch(Object session, Kept kept) {
             if (AskBeforeLike.hold(AskBeforeLike.POST_TOUCH, TOUCH, new Object[] {this, session, kept})) return;
             likes++;
+        }
+
+        /** The click lambda: runs the hooked footer handler, then paints the button liked. */
+        Object click(Object event) {
+            if (AskBeforeLike.hold(AskBeforeLike.POST_CLICK, CLICK, new Object[] {this, event})) return "held";
+            like(((Event) event).view, "post", true);
+            painted++;
+            return "clicked";
         }
     }
 
@@ -259,6 +278,28 @@ public class AskBeforeLikeTest {
         assertEquals("Like or unlike this post?", shadowOf(question).getMessage().toString());
         press(question, AlertDialog.BUTTON_POSITIVE);
         assertEquals("Continue didn't run the sender", 2, footer.likes);
+    }
+
+    @Test
+    public void aClickAsksBeforeTheButtonChangesAndContinueAsksOnce() {
+        Settings.ASK_BEFORE_LIKING_POSTS.save(true);
+        assertEquals("a held click didn't return at once", "held", footer.click(new Event(button)));
+        assertEquals("the click liked before the answer", 0, footer.likes);
+        assertEquals("the button changed before the answer", 0, footer.painted);
+        AlertDialog question = showing();
+        assertTrue("no question went up over the screen the event's view is on", question != null);
+        assertEquals("Like or unlike this post?", shadowOf(question).getMessage().toString());
+        press(question, AlertDialog.BUTTON_NEGATIVE);
+        assertEquals("Cancel liked it", 0, footer.likes);
+        assertEquals("Cancel changed the button", 0, footer.painted);
+
+        footer.click(new Event(button));
+        AlertDialog again = showing();
+        press(again, AlertDialog.BUTTON_POSITIVE);
+        assertEquals("Continue didn't like it once", 1, footer.likes);
+        assertEquals("Continue didn't change the button once", 1, footer.painted);
+        assertNull("the handler inside the click asked a second time", showing());
+        assertTrue(statusLine(), statusLine().contains(AskBeforeLike.ASKED + " 2"));
     }
 
     @Test

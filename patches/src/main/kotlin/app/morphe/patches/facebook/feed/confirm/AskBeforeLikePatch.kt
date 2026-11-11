@@ -21,6 +21,7 @@ import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -31,6 +32,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 /*
@@ -39,6 +41,11 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *
  * - A feed post's footer built as a litho component likes through the one method holding the
  *   BaseReactionsFooterHelper litho trace name (LX/0Cab;->A0B), an instance method returning void.
+ * - That footer's Like button is clicked through a lambda (LX/03kN;->invoke, taking the click
+ *   event) that calls A0B and then paints the button liked and keeps that in the button's
+ *   controller. Held at A0B alone, the like stayed off but the button showed liked until the post
+ *   loaded again, so the lambda asks first too: the one invoke(Object) returning Object that calls
+ *   A0B.
  * - The footer built from UFI plugins likes through a merged Kotlin lambda (LX/04CD;->invoke). Its
  *   int field picks the arm right at the top, and the LikeButtonFeedUFIFooterItemPlugin trace name
  *   sits in the Like arm, so the hook only asks when the field picks that arm.
@@ -74,6 +81,7 @@ internal const val POST_PLUGIN = 1
 internal const val REEL = 2
 internal const val COMMENT = 3
 internal const val POST_TOUCH = 4
+internal const val POST_CLICK = 5
 
 private const val VIEW = "Landroid/view/View;"
 private const val SESSION = "Lcom/facebook/auth/usersession/FbUserSession;"
@@ -150,6 +158,19 @@ internal fun isLikeSender(method: Method) =
     AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" &&
         method.parameterTypes.firstOrNull()?.toString() == SESSION && method.parameterTypes.any { it.toString() == FEEDBACK }
 
+/** Whether this instruction calls [method]. */
+private fun Instruction.calls(method: Method): Boolean {
+    val reference = (this as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    return reference.definingClass == method.definingClass && reference.name == method.name &&
+        reference.returnType == method.returnType &&
+        reference.parameterTypes.map(Any::toString) == method.parameterTypes.map(Any::toString)
+}
+
+/** The litho footer's click lambda: invoke(Object) returning Object, calling the footer's Like [footer]. */
+internal fun isClickLambda(method: Method, footer: Method) =
+    method.name == "invoke" && method.returnType == OBJECT &&
+        method.parameterTypes.map(Any::toString) == listOf(OBJECT) && method.code().any { it.calls(footer) }
+
 /** The descriptor the extension finds the handler again by, Lowner;->name(params)ret. */
 internal fun descriptorOf(method: Method) =
     "${method.definingClass}->${method.name}(${method.parameterTypes.joinToString("")})${method.returnType}"
@@ -221,9 +242,16 @@ private fun checkHandler(method: Method, what: String) {
     }
 }
 
-/** All five handlers, found and checked before anything changes. */
+/** All six handlers, found and checked before anything changes. */
 internal fun BytecodePatchContext.likeHandlers(): List<LikeHandler> {
     val footer = methodHolding(LITHO_FOOTER_TRACE, "litho footer Like")
+    val clicks = mutableListOf<Method>()
+    classDefForEachReferencing(types = listOf(footer.definingClass)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
+        classDef.methods.filterTo(clicks) { isClickLambda(it, footer) }
+    }
+    val click = clicks.singleOrNull()
+        ?: refuse("expected one click lambda calling ${descriptorOf(footer)}, found ${clicks.size}")
     val plugins = methodsHolding(PLUGIN_FOOTER_TRACE)
     val plugin = plugins.filter(::isMergedLambda).singleOrNull()
     val touch = plugins.filter(::isLikeSender).singleOrNull()
@@ -240,6 +268,7 @@ internal fun BytecodePatchContext.likeHandlers(): List<LikeHandler> {
         LikeHandler(REEL, reel),
         LikeHandler(COMMENT, comment),
         LikeHandler(POST_TOUCH, touch),
+        LikeHandler(POST_CLICK, click),
     )
     handlers.forEach { checkHandler(it.method, "the Like handler of kind ${it.kind}") }
     if (handlers.map { descriptorOf(it.method) }.toSet().size != handlers.size) refuse("two kinds of Like share a handler")
@@ -295,7 +324,7 @@ internal fun likeHook(handler: LikeHandler): String {
     """
 }
 
-/** Finds all five handlers first, so a build missing one refuses before any code changes. */
+/** Finds all six handlers first, so a build missing one refuses before any code changes. */
 internal fun BytecodePatchContext.askBeforeLike() {
     likeHandlers().forEach { handler ->
         mutableClassDefBy(handler.method.definingClass).findMutableMethodOf(handler.method).apply {

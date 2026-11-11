@@ -26,6 +26,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import java.io.File
 import org.junit.Assert.assertEquals
@@ -33,7 +34,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Ask before a like on every declared build and ABI (#437, #443). Each of the five Like handlers
+ * Ask before a like on every declared build and ABI (#437, #443). Each of the six Like handlers
  * now starts by handing the extension its own descriptor, its instance and every argument, and
  * returns right away when the extension holds the tap; otherwise it jumps to Facebook's own first
  * instruction, unmoved. The merged plugin footer lambda only asks on the arm holding its Like.
@@ -78,19 +79,38 @@ class AskBeforeLikeFixtureTest {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
                 val holders = markers.values.toSet().flatMap { holding(bundle, it) }.distinctBy { it.type }
-                val context = PatchContexts.of(holders + ExtensionDex.classDef(SETTINGS_STATUS))
+                val footer = holders.flatMap { it.methods }.single { method ->
+                    method.implementation?.instructions?.any { it.loads(LITHO_FOOTER_TRACE) } == true
+                }
+                val clickOwners = FixtureDex.methodsWhere(bundle, { dex ->
+                    dex.methodSection.any { it.definingClass == footer.definingClass && it.name == footer.name }
+                }) { isClickLambda(it, footer) }.map { it.definingClass }.toSet()
+                val context = PatchContexts.of(
+                    (holders + FixtureDex.classes(bundle, clickOwners).values).distinctBy { it.type } +
+                        ExtensionDex.classDef(SETTINGS_STATUS),
+                )
                 val handlers = context.likeHandlers()
-                assertEquals("$name: not one handler per kind", listOf(POST_FOOTER, POST_PLUGIN, REEL, COMMENT, POST_TOUCH), handlers.map { it.kind })
+                assertEquals("$name: not one handler per kind",
+                    listOf(POST_FOOTER, POST_PLUGIN, REEL, COMMENT, POST_TOUCH, POST_CLICK), handlers.map { it.kind })
                 val before = handlers.associate { it.kind to it.method.code() }
 
                 // Positive controls: each handler loads its own trace name, the reel's is the static
                 // taking the view and its own type, the plugin footer's sender is the static taking
-                // the session and the feedback, and the plugin footer's trace name sits on the arm
+                // the session and the feedback, the click lambda takes the click event and calls the
+                // litho footer's handler, and the plugin footer's trace name sits on the arm
                 // Facebook's own branch on the arm number falls through to, or jumps to.
-                handlers.forEach { handler ->
+                handlers.filter { it.kind != POST_CLICK }.forEach { handler ->
                     assertTrue("$name: kind ${handler.kind} doesn't load its trace name",
                         before.getValue(handler.kind).any { it.loads(markers.getValue(handler.kind)) })
                 }
+                val click = handlers.single { it.kind == POST_CLICK }.method
+                assertEquals("$name: the click lambda isn't invoke(Object)", listOf("Ljava/lang/Object;"),
+                    click.parameterTypes.map { it.toString() })
+                assertTrue("$name: the click lambda doesn't call the litho footer's handler",
+                    before.getValue(POST_CLICK).any {
+                        (it as? ReferenceInstruction)?.reference is MethodReference &&
+                            it.reference() == descriptorOf(handlers.single { handler -> handler.kind == POST_FOOTER }.method)
+                    })
                 val reel = handlers.single { it.kind == REEL }.method
                 assertTrue("$name: the reel Like isn't static", AccessFlags.STATIC.isSet(reel.accessFlags))
                 assertEquals("$name: the reel Like doesn't take the view first", "Landroid/view/View;", reel.parameterTypes[0].toString())

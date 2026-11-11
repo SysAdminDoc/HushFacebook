@@ -34,7 +34,7 @@ import app.morphe.extension.shared.settings.BooleanSetting;
 
 /**
  * Asks "Like or unlike this post?" before a tap on Like goes through (#437, #443). The hook sits
- * first in each of Facebook's Like handlers: the feed footer's three, the Reels sidebar's Like and
+ * first in each of Facebook's Like handlers: the feed footer's four, the Reels sidebar's Like and
  * a comment's Like. It hands over the handler's own descriptor and arguments, and while the
  * switch for that kind is on, the handler returns without liking and a question goes up. Continue
  * runs the same handler again with the same arguments, which this time passes, so the like is
@@ -55,8 +55,13 @@ public final class AskBeforeLike {
     public static final int COMMENT = 3;
     /** The UFI plugin footer's like sender, reached from its touch and click handlers. */
     public static final int POST_TOUCH = 4;
+    /**
+     * The litho feed footer's click lambda, which calls {@link #POST_FOOTER}'s handler and then
+     * paints the button liked, so holding the handler alone left the button showing a like.
+     */
+    public static final int POST_CLICK = 5;
 
-    private static final String[] KINDS = {"post footer", "post plugin footer", "reel", "comment", "post footer touch"};
+    private static final String[] KINDS = {"post footer", "post plugin footer", "reel", "comment", "post footer touch", "post footer click"};
     private static final int CONTEXT_DEPTH = 10;
     static final String ASKED = "asked before a like";
     static final String HELD = "held a tap while asking";
@@ -112,6 +117,7 @@ public final class AskBeforeLike {
             case POST_FOOTER:
             case POST_PLUGIN:
             case POST_TOUCH:
+            case POST_CLICK:
                 return Settings.ASK_BEFORE_LIKING_POSTS;
             case REEL:
                 return Settings.ASK_BEFORE_LIKING_REELS;
@@ -131,7 +137,8 @@ public final class AskBeforeLike {
     /**
      * The screen the tap came from: the context of the first view in [call], else its first
      * context, else the first screen one of its values keeps in a field (the plugin footer's sender
-     * takes no view, only a component context holding one).
+     * takes no view, only a component context holding one, and the click lambda takes a click
+     * event holding the view).
      */
     @Nullable
     static Context screenOf(Object[] call) throws IllegalAccessException {
@@ -148,16 +155,22 @@ public final class AskBeforeLike {
         return null;
     }
 
-    /** A context [value] keeps in an instance field, of its class or one above, that leads to an activity. */
+    /**
+     * A context [value] keeps in an instance field, of its class or one above, that leads to an
+     * activity: the field's own, or the context of a view it keeps.
+     */
     @Nullable
     private static Context screenKeptIn(@Nullable Object value) throws IllegalAccessException {
         if (value == null) return null;
         for (Class<?> type = value.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
             for (Field field : type.getDeclaredFields()) {
-                if (Modifier.isStatic(field.getModifiers()) || !Context.class.isAssignableFrom(field.getType())) continue;
+                if (Modifier.isStatic(field.getModifiers())) continue;
+                Class<?> kind = field.getType();
+                if (!Context.class.isAssignableFrom(kind) && !View.class.isAssignableFrom(kind)) continue;
                 field.setAccessible(true);
                 Object kept = field.get(value);
-                if (kept instanceof Context && activityOf((Context) kept) != null) return (Context) kept;
+                Context context = kept instanceof View ? ((View) kept).getContext() : kept instanceof Context ? (Context) kept : null;
+                if (context != null && activityOf(context) != null) return context;
             }
         }
         return null;
