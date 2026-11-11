@@ -133,7 +133,7 @@
     {
       "name": "Ask before a like",
       "description": "Switches that make a tap on Like under a post, beside a reel or under a comment ask first, and only Continue likes or unlikes it, so a stray tap doesn't. All three start off. Turn them on in Hushfacebook settings > News feed, Reels and Watch, and Comments and writing.",
-      "category": "Feed",
+      "category": "Privacy",
       "use": true,
       "dependencies": [
         "BytecodePatch",

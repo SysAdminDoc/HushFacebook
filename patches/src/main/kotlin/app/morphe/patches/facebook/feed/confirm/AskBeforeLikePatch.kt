@@ -113,7 +113,9 @@ val askBeforeLikePatch = bytecodePatch(
         "only Continue likes or unlikes it, so a stray tap doesn't. All three start off. Turn them on in " +
         "Hushfacebook settings > News feed, Reels and Watch, and Comments and writing.",
 ) {
-    category("Feed")
+    // Feed holds 15 already. A like is public, so the guard sits with the other switches that keep a
+    // stray tap or a glance from showing up for someone else.
+    category("Privacy")
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
