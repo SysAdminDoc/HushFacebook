@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import app.morphe.extension.facebook.misc.WindowsAbove;
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -321,6 +322,10 @@ public final class MaterialYouTheme {
     /** The most tokens written, so a screen full of them can't fill the log. */
     private static final int MAX_UNLISTED = 40;
 
+    /** The stack walks {@link #noteLightRoute} may still take, so a long session with Debug on stays quick. */
+    private static final int MAX_CALLER_WALKS = 400;
+    private static final AtomicInteger CALLER_WALKS = new AtomicInteger();
+
     /**
      * With Debug logging on, writes each token that came with one of the {@link #SURFACES} and was
      * left alone, once per token: a token Facebook gives the same dark grey in both themes isn't in
@@ -337,19 +342,37 @@ public final class MaterialYouTheme {
 
     /**
      * The same for one of the {@link #LIGHT_SURFACE_VALUES} that a route with no token passed on
-     * unchanged in light mode, once per route (#141). Those routes carry text as well as
-     * backgrounds, so they leave the greys, and a report names the route behind one the theme missed.
+     * unchanged in light mode, once per route and calling method (#141). Those routes carry text as
+     * well as backgrounds, so they leave the greys, and a report names the route and the app's method
+     * behind one the theme missed: the S22's Settings search field came by the server colour route,
+     * which every Color.parseColor call shares. Only class and method names are written.
      */
     private static void noteLightRoute(String route, int color) {
         if (DarkMode.on() || !isLightSurface(color)) return;
-        if (UNLISTED.size() >= MAX_UNLISTED || UNLISTED.contains(route)) return;
-        if (!Utils.settingsReady() || !BaseSettings.DEBUG.get() || !UNLISTED.add(route)) return;
+        if (UNLISTED.size() >= MAX_UNLISTED) return;
+        if (!Utils.settingsReady() || !BaseSettings.DEBUG.get()) return;
+        if (CALLER_WALKS.getAndIncrement() >= MAX_CALLER_WALKS) return;
+        String caller = caller();
+        if (!UNLISTED.add(route + " " + caller)) return;
         Logger.diagnosticDebug(DiagnosticCategory.OTHER, "Material You theme",
-                () -> String.format(Locale.ROOT, "Material You left a %s at #%06X", route, color & 0xFFFFFF));
+                () -> String.format(Locale.ROOT, "Material You left a %s at #%06X from %s", route, color & 0xFFFFFF, caller));
+    }
+
+    /** The first method on this thread's stack outside this class, AMOLED's and the runtime, as class.method. */
+    private static String caller() {
+        String self = MaterialYouTheme.class.getName();
+        String amoled = AmoledTheme.class.getName();
+        for (StackTraceElement frame : Thread.currentThread().getStackTrace()) {
+            String name = frame.getClassName();
+            if (name.startsWith("dalvik.") || name.startsWith("java.") || name.startsWith(self) || name.startsWith(amoled)) continue;
+            return name + "." + frame.getMethodName();
+        }
+        return "?";
     }
 
     static void forgetUnlistedForTests() {
         UNLISTED.clear();
+        CALLER_WALKS.set(0);
     }
 
     private static boolean listed(@Nullable int[] colours, int color) {

@@ -120,4 +120,27 @@ public class MaterialYouUnlistedTokensTest {
         assertEquals(log, log.indexOf("left a server colour"), log.lastIndexOf("left a server colour"));
         assertFalse("a background route", log.contains("React"));
     }
+
+    /**
+     * Issue #141: the line names the method that passed the grey on, once per method, so the
+     * Settings search field's server colour can be traced to its call site in Facebook.
+     */
+    @Test
+    public void aLeftLightSurfaceGreyNamesTheMethodThatPassedItOn() {
+        DarkMode.answer(false);
+        MaterialYouTheme.parseColor("#F0F2F5");
+        searchField();
+        searchField();
+
+        String log = LogBufferManager.buildExportText();
+        String from = "left a server colour at #F0F2F5 from " + MaterialYouUnlistedTokensTest.class.getName();
+        assertTrue(log, log.contains(from + ".aLeftLightSurfaceGreyNamesTheMethodThatPassedItOn"));
+        String second = from + ".searchField";
+        assertTrue(log, log.contains(second));
+        assertEquals(log, log.indexOf(second), log.lastIndexOf(second));
+    }
+
+    private static void searchField() {
+        MaterialYouTheme.parseColor("#F0F2F5");
+    }
 }
