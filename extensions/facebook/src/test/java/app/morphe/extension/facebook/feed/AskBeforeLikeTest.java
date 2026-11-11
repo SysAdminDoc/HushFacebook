@@ -54,6 +54,7 @@ public class AskBeforeLikeTest {
     private static final String KEPT = "Lapp/morphe/extension/facebook/feed/AskBeforeLikeTest$Kept;";
     private static final String TOUCH = OWN + "->touch(Ljava/lang/Object;" + KEPT + ")V";
     private static final String CLICK = OWN + "->click(Ljava/lang/Object;)Ljava/lang/Object;";
+    private static final String INLINE = OWN + "->inline(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
 
     /** A stand-in for the component context the plugin footer's sender takes: it keeps a context, it isn't one. */
     static final class Kept {
@@ -110,6 +111,13 @@ public class AskBeforeLikeTest {
             like(((Event) event).view, "post", true);
             painted++;
             return "clicked";
+        }
+
+        /** The inline comment Like's lambda: the span hands it the tapped view and the like it means. */
+        Object inline(Object widget, Object state) {
+            if (AskBeforeLike.hold(AskBeforeLike.COMMENT_INLINE, INLINE, new Object[] {this, widget, state})) return "held";
+            likes++;
+            return "liked";
         }
     }
 
@@ -300,6 +308,26 @@ public class AskBeforeLikeTest {
         assertEquals("Continue didn't change the button once", 1, footer.painted);
         assertNull("the handler inside the click asked a second time", showing());
         assertTrue(statusLine(), statusLine().contains(AskBeforeLike.ASKED + " 2"));
+    }
+
+    @Test
+    public void anInlineCommentLikeUnderAPostAsksWithTheCommentSwitch() {
+        Settings.ASK_BEFORE_LIKING_POSTS.save(true);
+        assertEquals("the posts switch held a comment like", "liked", footer.inline(button, "like"));
+        assertNull(showing());
+
+        Settings.ASK_BEFORE_LIKING_COMMENTS.save(true);
+        assertEquals("a held inline like didn't return at once", "held", footer.inline(button, "like"));
+        AlertDialog question = showing();
+        assertTrue("no question went up over the screen the tapped view is on", question != null);
+        assertEquals("Like or unlike this comment?", shadowOf(question).getMessage().toString());
+        press(question, AlertDialog.BUTTON_NEGATIVE);
+        assertEquals("Cancel liked it", 1, footer.likes);
+
+        footer.inline(button, "like");
+        press(showing(), AlertDialog.BUTTON_POSITIVE);
+        assertEquals("Continue didn't like it once", 2, footer.likes);
+        assertNull(showing());
     }
 
     @Test

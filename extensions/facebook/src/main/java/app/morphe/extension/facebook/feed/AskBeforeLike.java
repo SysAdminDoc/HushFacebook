@@ -35,7 +35,7 @@ import app.morphe.extension.shared.settings.BooleanSetting;
 /**
  * Asks "Like or unlike this post?" before a tap on Like goes through (#437, #443). The hook sits
  * first in each of Facebook's Like handlers: the feed footer's four, the Reels sidebar's Like and
- * a comment's Like. It hands over the handler's own descriptor and arguments, and while the
+ * a comment's two (the comment list's and the one drawn inline under a feed post). It hands over the handler's own descriptor and arguments, and while the
  * switch for that kind is on, the handler returns without liking and a question goes up. Continue
  * runs the same handler again with the same arguments, which this time passes, so the like is
  * Facebook's own. Cancel, Back or a tap outside leaves it untouched.
@@ -60,8 +60,11 @@ public final class AskBeforeLike {
      * paints the button liked, so holding the handler alone left the button showing a like.
      */
     public static final int POST_CLICK = 5;
+    /** The Like in the comment actions drawn inline under a feed post, a span that hands over the tapped view. */
+    public static final int COMMENT_INLINE = 6;
 
-    private static final String[] KINDS = {"post footer", "post plugin footer", "reel", "comment", "post footer touch", "post footer click"};
+    private static final String[] KINDS = {"post footer", "post plugin footer", "reel", "comment", "post footer touch", "post footer click",
+            "inline comment"};
     private static final int CONTEXT_DEPTH = 10;
     static final String ASKED = "asked before a like";
     static final String HELD = "held a tap while asking";
@@ -122,6 +125,7 @@ public final class AskBeforeLike {
             case REEL:
                 return Settings.ASK_BEFORE_LIKING_REELS;
             case COMMENT:
+            case COMMENT_INLINE:
                 return Settings.ASK_BEFORE_LIKING_COMMENTS;
             default:
                 return null;
@@ -130,7 +134,7 @@ public final class AskBeforeLike {
 
     private static String questionOf(Context context, int kind) {
         if (kind == REEL) return L10n.t(context, "Like or unlike this reel?");
-        if (kind == COMMENT) return L10n.t(context, "Like or unlike this comment?");
+        if (kind == COMMENT || kind == COMMENT_INLINE) return L10n.t(context, "Like or unlike this comment?");
         return L10n.t(context, "Like or unlike this post?");
     }
 

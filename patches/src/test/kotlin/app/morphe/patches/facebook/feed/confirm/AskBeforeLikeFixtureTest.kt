@@ -24,6 +24,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -34,10 +35,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Ask before a like on every declared build and ABI (#437, #443). Each of the six Like handlers
+ * Ask before a like on every declared build and ABI (#437, #443). Each of the seven Like handlers
  * now starts by handing the extension its own descriptor, its instance and every argument, and
  * returns right away when the extension holds the tap; otherwise it jumps to Facebook's own first
- * instruction, unmoved. The merged plugin footer lambda only asks on the arm holding its Like.
+ * instruction, unmoved. The merged plugin footer lambda only asks on the arm holding its Like, and
+ * the merged inline comment lambda only on the case of its switch holding its Like.
  * Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class AskBeforeLikeFixtureTest {
@@ -48,9 +50,14 @@ class AskBeforeLikeFixtureTest {
         REEL to REEL_LIKE_NAME,
         COMMENT to COMMENT_LIKE_TRACE,
         POST_TOUCH to PLUGIN_FOOTER_TRACE,
+        COMMENT_INLINE to INLINE_COMMENT_LIKE_TRACE,
     )
 
     private fun Method.code() = implementation!!.instructions.toList()
+
+    /** [this] without the nop the dex writer puts before a payload to align it. */
+    private fun List<Instruction>.unpadded() =
+        filterIndexed { i, it -> it.opcode != Opcode.NOP || getOrNull(i + 1)?.opcode?.format?.isPayloadFormat != true }
     private fun Instruction.reference() = (this as ReferenceInstruction).reference.toString()
     private fun Instruction.loads(string: String) =
         (opcode == Opcode.CONST_STRING || opcode == Opcode.CONST_STRING_JUMBO) &&
@@ -65,10 +72,10 @@ class AskBeforeLikeFixtureTest {
 
     private fun Instruction.target() = (this as BuilderOffsetInstruction).target.location.index
 
-    /** The index [at]'s branch in unpatched [code] lands on. */
-    private fun branchTarget(code: List<Instruction>, at: Int): Int {
+    /** The index [at]'s branch in unpatched [code] lands on, or the one [offset] from it. */
+    private fun branchTarget(code: List<Instruction>, at: Int, offset: Int = (code[at] as OffsetInstruction).codeOffset): Int {
         val addresses = code.runningFold(0) { address, it -> address + it.codeUnits }
-        return addresses.indexOf(addresses[at] + (code[at] as OffsetInstruction).codeOffset)
+        return addresses.indexOf(addresses[at] + offset)
     }
 
     @Test
@@ -91,7 +98,7 @@ class AskBeforeLikeFixtureTest {
                 )
                 val handlers = context.likeHandlers()
                 assertEquals("$name: not one handler per kind",
-                    listOf(POST_FOOTER, POST_PLUGIN, REEL, COMMENT, POST_TOUCH, POST_CLICK), handlers.map { it.kind })
+                    listOf(POST_FOOTER, POST_PLUGIN, REEL, COMMENT, POST_TOUCH, POST_CLICK, COMMENT_INLINE), handlers.map { it.kind })
                 val before = handlers.associate { it.kind to it.method.code() }
 
                 // Positive controls: each handler loads its own trace name, the reel's is the static
@@ -130,14 +137,35 @@ class AskBeforeLikeFixtureTest {
                 val likeOnFallThrough = pluginBefore.indexOfFirst { it.loads(PLUGIN_FOOTER_TRACE) } < branchTarget(pluginBefore, readAt + 1)
                 val expectedSkip = if (likeOnFallThrough) branch.opcode else if (branch.opcode == Opcode.IF_EQZ) Opcode.IF_NEZ else Opcode.IF_EQZ
 
+                // The inline comment lambda switches on its arm number right after reading it, and
+                // exactly one case's arm (up to the next case, or the end) loads the inline trace name.
+                val inline = handlers.single { it.kind == COMMENT_INLINE }
+                val inlineBefore = before.getValue(COMMENT_INLINE)
+                val switchAt = inlineBefore.indexOfFirst {
+                    it.opcode == Opcode.IGET && it.reference() == inline.arm!!.field
+                } + 1
+                assertTrue("$name: the inline comment lambda doesn't read its arm number at the top", switchAt in 1..4)
+                assertEquals("$name: the inline comment lambda doesn't switch on its arm number",
+                    Opcode.PACKED_SWITCH, inlineBefore[switchAt].opcode)
+                val payload = inlineBefore[branchTarget(inlineBefore, switchAt)] as SwitchPayload
+                val starts = payload.switchElements.associate { it.key to branchTarget(inlineBefore, switchAt, it.offset) }
+                val bounds = (starts.values + (switchAt + 1) + inlineBefore.size).toSortedSet()
+                val likeCases = starts.filter { (_, start) ->
+                    val end = bounds.first { it > start }
+                    inlineBefore.subList(start, end).any { it.loads(INLINE_COMMENT_LIKE_TRACE) }
+                }.keys
+                assertEquals("$name: not one case of the inline comment lambda likes", 1, likeCases.size)
+
                 context.askBeforeLike()
                 context.enableStatus("askBeforeLike")
 
                 handlers.forEach { handler ->
                     val method = handler.method
                     val label = "$name: kind ${handler.kind}"
-                    val old = before.getValue(handler.kind)
-                    val after = context.patched(method)
+                    // A hook of an odd length moves a switch payload off its 4-byte boundary, so the
+                    // writer pads it with a nop that isn't part of the hook.
+                    val old = before.getValue(handler.kind).unpadded()
+                    val after = context.patched(method).unpadded()
                     val grown = after.size - old.size
                     assertTrue("$label: no hook went in", grown > 0)
                     assertEquals("$label: Facebook's own first instruction moved or changed",
@@ -153,6 +181,17 @@ class AskBeforeLikeFixtureTest {
                         assertEquals("$label: the guard reads another field", plugin.arm!!.field, hook[1].reference())
                         assertEquals("$label: the guard doesn't skip to Facebook's code", grown, hook[2].target())
                         at = 3
+                    }
+                    if (handler.kind == COMMENT_INLINE) {
+                        assertEquals("$label: no case guard",
+                            listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.IGET, Opcode.CONST_16, Opcode.IF_NE), hook.take(4).map { it.opcode })
+                        assertEquals("$label: the guard doesn't read this",
+                            method.localRegisterCount(), (hook[0] as TwoRegisterInstruction).registerB)
+                        assertEquals("$label: the guard reads another field", inline.arm!!.field, hook[1].reference())
+                        assertEquals("$label: the guard waits for another case",
+                            likeCases.single(), (hook[2] as NarrowLiteralInstruction).narrowLiteral)
+                        assertEquals("$label: the guard doesn't skip to Facebook's code", grown, hook[3].target())
+                        at = 4
                     }
                     val call = hook.indexOfFirst { it.opcode == Opcode.INVOKE_STATIC && it.reference() == HOLD }
                     assertTrue("$label: the hook doesn't call hold", call > at)

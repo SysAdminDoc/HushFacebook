@@ -30,6 +30,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -56,9 +57,10 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   LikeButtonComponent name (LX/0CAK;->A00).
  * - A comment's Like is the lambda holding the LikePluginUtil trace name (LX/04om;->invoke), which
  *   returns Unit.
- *
- * The comment actions drawn inline under a feed post (LX/069v, a lambda merged behind a packed
- * switch) aren't hooked.
+ * - The comment actions drawn inline under a feed post are text spans. Their Like calls a merged
+ *   Kotlin lambda (LX/069v;->invoke) with the tapped view, and the lambda picks its arm with a
+ *   packed switch on its int field. The InlineCommentActionsComponentSpec trace name sits in the
+ *   Like arm, so the hook only asks when the field holds that arm's key.
  *
  * Each hook goes first thing. It hands the extension the handler's own descriptor, the instance and
  * the arguments, and returns at once when the extension holds the tap. Continue calls the same
@@ -74,6 +76,7 @@ internal const val LITHO_FOOTER_TRACE = "BaseReactionsFooterHelper.onLikeButtonC
 internal const val PLUGIN_FOOTER_TRACE = "LikeButtonFeedUFIFooterItemPlugin.onReactionSelected"
 internal const val REEL_LIKE_NAME = "LikeButtonComponent"
 internal const val COMMENT_LIKE_TRACE = "LikePluginUtil.onReactionLikeClicked"
+internal const val INLINE_COMMENT_LIKE_TRACE = "InlineCommentActionsComponentSpec.onReactionLikeClicked"
 
 /** The kinds AskBeforeLike tells apart, its own constants. */
 internal const val POST_FOOTER = 0
@@ -82,6 +85,7 @@ internal const val REEL = 2
 internal const val COMMENT = 3
 internal const val POST_TOUCH = 4
 internal const val POST_CLICK = 5
+internal const val COMMENT_INLINE = 6
 
 private const val VIEW = "Landroid/view/View;"
 private const val SESSION = "Lcom/facebook/auth/usersession/FbUserSession;"
@@ -94,7 +98,13 @@ private const val BORROWED = 5
 
 private val CONST_STRINGS = setOf(Opcode.CONST_STRING, Opcode.CONST_STRING_JUMBO)
 
-/** The int field read at the top of a merged lambda and the branch that skips the hook when it picks the other arm. */
+/** What a merged lambda does with its arm number right after reading it. */
+private val ARM_BRANCHES = setOf(Opcode.IF_EQZ, Opcode.IF_NEZ, Opcode.PACKED_SWITCH)
+
+/**
+ * The int field read at the top of a merged lambda and the guard lines that skip the hook when it
+ * picks another arm. They test the field in v0 and may use v1.
+ */
 internal data class Arm(val field: String, val skip: String)
 
 /** A Like handler of [kind], with the [arm] guard a merged lambda needs. */
@@ -183,8 +193,10 @@ private fun indexOfAddress(code: List<Instruction>): Map<Int, Int> =
 
 /**
  * The guard for a merged lambda: the int field of its own class it reads right at the top, from
- * `this`, and the branch on it that leads away from [marker]. The hook only asks on the arm holding
- * [marker], so a tap on the lambda's other arm stays Facebook's own.
+ * `this`, and what Facebook does with it next. A two-armed lambda branches on it, and the guard
+ * takes the branch that leads away from [marker]. One with more arms runs a packed switch on it,
+ * and the guard skips unless the field holds the key of the case [marker] sits in. The hook only
+ * asks on the arm holding [marker], so a tap on the lambda's other arms stays Facebook's own.
  */
 internal fun armOf(method: Method, marker: String): Arm {
     val code = method.code()
@@ -204,22 +216,32 @@ internal fun armOf(method: Method, marker: String): Arm {
             (it as TwoRegisterInstruction).registerA == read.registerB && it.registerB == self
     }
     if (!fromThis) refuse("the merged Like lambda reads its arm number from something other than itself")
+    val field = (code[readAt] as ReferenceInstruction).reference as FieldReference
+    val name = "${field.definingClass}->${field.name}:${field.type}"
     val branch = code.getOrNull(readAt + 1)
-    if (branch == null || (branch.opcode != Opcode.IF_EQZ && branch.opcode != Opcode.IF_NEZ) ||
-        (branch as OneRegisterInstruction).registerA != read.registerA
-    ) {
+    if (branch == null || branch.opcode !in ARM_BRANCHES || (branch as OneRegisterInstruction).registerA != read.registerA) {
         refuse("the merged Like lambda doesn't branch on its arm number right away")
     }
     val addresses = code.runningFold(0) { address, it -> address + it.codeUnits }
-    val target = indexOfAddress(code)[addresses[readAt + 1] + (branch as OffsetInstruction).codeOffset]
+    val indexAt = indexOfAddress(code)
+    val branchAt = addresses[readAt + 1]
+    if (branch.opcode == Opcode.PACKED_SWITCH) {
+        val payload = indexAt[branchAt + (branch as OffsetInstruction).codeOffset]?.let { code[it] } as? SwitchPayload
+            ?: refuse("the merged Like lambda's switch has no payload")
+        val cases = payload.switchElements.map { case ->
+            case.key to (indexAt[branchAt + case.offset] ?: refuse("a case of the merged Like lambda lands inside an instruction"))
+        }
+        if (cases.any { (_, start) -> start <= readAt + 1 }) refuse("a case of the merged Like lambda jumps back")
+        // The Like arm is the case starting last at or before the marker.
+        val (key, _) = cases.filter { (_, start) -> start <= markerAt }.maxByOrNull { (_, start) -> start }
+            ?: refuse("the merged Like lambda's \"$marker\" sits on no case of its switch")
+        return Arm(name, "const/16 v1, $key\nif-ne v0, v1, :facebook")
+    }
+    val target = indexAt[branchAt + (branch as OffsetInstruction).codeOffset]
         ?: refuse("the merged Like lambda's arm branch lands inside an instruction")
     if (target <= readAt + 1) refuse("the merged Like lambda's arm branch jumps back")
     val onFallThrough = markerAt < target
-    val field = (code[readAt] as ReferenceInstruction).reference as FieldReference
-    return Arm(
-        "${field.definingClass}->${field.name}:${field.type}",
-        if ((branch.opcode == Opcode.IF_EQZ) == onFallThrough) "if-eqz" else "if-nez",
-    )
+    return Arm(name, "${if ((branch.opcode == Opcode.IF_EQZ) == onFallThrough) "if-eqz" else "if-nez"} v0, :facebook")
 }
 
 /** Throws unless the hook can go first thing in [method]. */
@@ -244,7 +266,7 @@ private fun checkHandler(method: Method, what: String) {
     }
 }
 
-/** All six handlers, found and checked before anything changes. */
+/** All seven handlers, found and checked before anything changes. */
 internal fun BytecodePatchContext.likeHandlers(): List<LikeHandler> {
     val footer = methodHolding(LITHO_FOOTER_TRACE, "litho footer Like")
     val clicks = mutableListOf<Method>()
@@ -264,6 +286,9 @@ internal fun BytecodePatchContext.likeHandlers(): List<LikeHandler> {
     val reels = methodsHolding(REEL_LIKE_NAME).filter(::isReelLike)
     val reel = reels.singleOrNull() ?: refuse("expected one reel Like holding \"$REEL_LIKE_NAME\", found ${reels.size}")
     val comment = methodHolding(COMMENT_LIKE_TRACE, "comment Like")
+    val inlines = methodsHolding(INLINE_COMMENT_LIKE_TRACE).filter(::isMergedLambda)
+    val inline = inlines.singleOrNull()
+        ?: refuse("expected one merged lambda holding \"$INLINE_COMMENT_LIKE_TRACE\", found ${inlines.size}")
     val handlers = listOf(
         LikeHandler(POST_FOOTER, footer),
         LikeHandler(POST_PLUGIN, plugin, armOf(plugin, PLUGIN_FOOTER_TRACE)),
@@ -271,6 +296,7 @@ internal fun BytecodePatchContext.likeHandlers(): List<LikeHandler> {
         LikeHandler(COMMENT, comment),
         LikeHandler(POST_TOUCH, touch),
         LikeHandler(POST_CLICK, click),
+        LikeHandler(COMMENT_INLINE, inline, armOf(inline, INLINE_COMMENT_LIKE_TRACE)),
     )
     handlers.forEach { checkHandler(it.method, "the Like handler of kind ${it.kind}") }
     if (handlers.map { descriptorOf(it.method) }.toSet().size != handlers.size) refuse("two kinds of Like share a handler")
@@ -284,7 +310,7 @@ internal fun likeHook(handler: LikeHandler): String {
         """
             move-object/from16 v1, p0
             iget v0, v1, ${it.field}
-            ${it.skip} v0, :facebook
+            ${it.skip}
         """
     }.orEmpty()
     val fill = buildString {
@@ -326,7 +352,7 @@ internal fun likeHook(handler: LikeHandler): String {
     """
 }
 
-/** Finds all six handlers first, so a build missing one refuses before any code changes. */
+/** Finds all seven handlers first, so a build missing one refuses before any code changes. */
 internal fun BytecodePatchContext.askBeforeLike() {
     likeHandlers().forEach { handler ->
         mutableClassDefBy(handler.method.definingClass).findMutableMethodOf(handler.method).apply {
