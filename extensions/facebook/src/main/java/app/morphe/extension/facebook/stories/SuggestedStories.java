@@ -394,7 +394,7 @@ public final class SuggestedStories {
             final int shown = buckets.size() - left.size();
             StoriesTrayPaging.sawTray(shown, left.size());
             final String off = switches.offNote();
-            final String playing = held == 0 ? "" : " " + held + " seen kept while a story plays.";
+            final String playing = held == 0 ? "" : ". " + held + " seen kept while a story plays.";
             Logger.printDebug(() -> "Stories tray: " + buckets.size() + " buckets, " + shown + " kept. Kinds: "
                     + summary(kinds) + off + playing);
             // Observe the actual delivery, including a refused copy. Diagnostics must not undo a filter.
