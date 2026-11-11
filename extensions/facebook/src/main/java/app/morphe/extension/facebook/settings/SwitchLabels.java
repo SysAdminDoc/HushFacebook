@@ -337,6 +337,7 @@ final class SwitchLabels {
         if (setting == Settings.DONT_SAVE_SEARCH_HISTORY) return L10n.t("Don't save search history");
         if (setting == Settings.SEARCH_DATE_RANGE) return L10n.t("Search date range");
         if (setting == Settings.SEARCH_POSTS_TAB) return L10n.t("Show Posts in search");
+        if (setting == Settings.SEARCH_SAVED_BUTTON) return L10n.t("Saved button in search");
         if (setting == Settings.HIDE_SPONSORED_SEARCH_RESULTS) return L10n.t("Hide sponsored search results");
         if (setting == Settings.HIDE_SPONSORED_MARKETPLACE_LISTINGS) return L10n.t("Hide sponsored Marketplace listings");
         if (setting == Settings.MARKETPLACE_ADVANCED_SEARCH) return L10n.t("Advanced Marketplace search");

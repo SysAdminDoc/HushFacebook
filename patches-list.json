@@ -3623,6 +3623,44 @@
       "options": []
     },
     {
+      "name": "Saved button in search",
+      "description": "Adds a Saved button at the end of the search bar, so your saved posts and videos are one tap away. Starts off. Turn it on in Hushfacebook settings > Search.",
+      "category": "Navigation",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "586.0.0.52.53"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "586.0.0.52.53",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 476217123,
+                "ARMEABI_V7A": 476217122
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Search date range",
       "description": "Adds a from and to date picker to the Date posted filter in post search, in place of the list of years, so you can narrow results to a few days or a stretch of months. Starts off. Turn it on in Hushfacebook settings > Search.",
       "category": "Interface",

@@ -490,6 +490,7 @@ public final class SettingsBackup {
             Settings.DONT_SAVE_SEARCH_HISTORY,
             Settings.SEARCH_DATE_RANGE,
             Settings.SEARCH_POSTS_TAB,
+            Settings.SEARCH_SAVED_BUTTON,
             Settings.BLOCK_TRENDING_VIDEO_NOTIFICATIONS,
             Settings.BLOCK_MEMORY_NOTIFICATIONS,
             Settings.BLOCK_BIRTHDAY_NOTIFICATIONS,

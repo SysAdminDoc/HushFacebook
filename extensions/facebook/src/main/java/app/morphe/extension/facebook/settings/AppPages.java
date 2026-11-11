@@ -240,7 +240,8 @@ final class AppPages {
             Set<PatchFamily> build) {
         if (build.contains(PatchFamily.META_AI_SEARCH) || build.contains(PatchFamily.SPONSORED_SEARCH)
                 || build.contains(PatchFamily.SUGGESTED_POSTS) || build.contains(PatchFamily.SEARCH_HISTORY)
-                || build.contains(PatchFamily.SEARCH_DATE_RANGE) || build.contains(PatchFamily.SEARCH_POSTS_TAB)) {
+                || build.contains(PatchFamily.SEARCH_DATE_RANGE) || build.contains(PatchFamily.SEARCH_POSTS_TAB)
+                || build.contains(PatchFamily.SEARCH_SAVED_BUTTON)) {
             PreferenceCategory search = category(screen, L10n.t("Search"));
             if (build.contains(PatchFamily.META_AI_SEARCH)) {
                 search.addPreference(toggle(context, Settings.HIDE_META_AI_IN_SEARCH,
@@ -273,6 +274,11 @@ final class AppPages {
                 search.addPreference(toggle(context, Settings.SEARCH_POSTS_TAB,
                         L10n.t("Puts Posts back in the row over search results, after Reels, so you can see only posts "
                                 + "for what you searched.")));
+            }
+            if (build.contains(PatchFamily.SEARCH_SAVED_BUTTON)) {
+                search.addPreference(toggle(context, Settings.SEARCH_SAVED_BUTTON,
+                        L10n.t("Puts a Saved button at the end of the search bar, so your saved posts and videos are one "
+                                + "tap away. Restart Facebook to see the change.")));
             }
         }
     }

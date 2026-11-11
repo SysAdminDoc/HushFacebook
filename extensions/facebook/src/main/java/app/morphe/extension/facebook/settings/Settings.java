@@ -2273,6 +2273,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_search_posts_tab", TRUE);
 
     /**
+     * A Saved button at the end of the search bar opens Facebook's Saved screen
+     * ({@link app.morphe.extension.facebook.search.SearchSavedButton}, #433). Off by default. The
+     * button goes in as Facebook builds the bar, so turning it on takes a restart.
+     */
+    public static final BooleanSetting SEARCH_SAVED_BUTTON =
+            new BooleanSetting("hushfacebook_search_saved_button", FALSE, true);
+
+    /**
      * The For you section of searches Facebook suggests, on the search screen before anything is
      * typed (#80), found by the module name Facebook gives its entry. Recent searches, the search box
      * and the suggestions while typing stay. Part of Hide suggested and promoted posts, off until picked.

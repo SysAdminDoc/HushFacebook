@@ -2550,6 +2550,8 @@ Show only watched stories	只显示看过的快拍
 The Stories tray keeps only the stories you've already watched, so you can find one again. Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when Facebook next loads the tray.	快拍栏只保留你已经看过的快拍，方便你再找到某一个。关闭后可看到新的快拍。开启时“隐藏已看过的快拍”暂不生效。在 Facebook 下次加载快拍栏时生效。
 Show Posts in search	在搜索中显示帖子
 Puts Posts back in the row over search results, after Reels, so you can see only posts for what you searched.	把“帖子”放回搜索结果上方的那一行，排在 Reels 之后，这样你可以只看与搜索内容相关的帖子。
+Saved button in search	搜索中的收藏按钮
+Puts a Saved button at the end of the search bar, so your saved posts and videos are one tap away. Restart Facebook to see the change.	在搜索栏末尾放一个“收藏”按钮，点一下就能看到你收藏的帖子和视频。重启 Facebook 后可看到更改。
 Restore feed sound after opened videos	打开视频后恢复动态的声音
 A video you open plays with its sound as usual. Back in the feed, the sound is what it was before you opened it, even after a long watch.	你打开的视频照常带声音播放。回到动态后，声音会恢复到打开视频之前的状态，即使看了很久也一样。
 Hide the Join button on posts	隐藏帖子上的加入按钮

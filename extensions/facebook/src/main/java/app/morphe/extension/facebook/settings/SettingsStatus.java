@@ -486,6 +486,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean searchSavedButton() {
+        return false;
+    }
+
     public static boolean menuSettingsRow() {
         return false;
     }

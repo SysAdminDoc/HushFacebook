@@ -300,6 +300,8 @@ public enum PatchFamily {
             Settings.SEARCH_DATE_RANGE),
     SEARCH_POSTS_TAB(FamilyNames.SEARCH_POSTS_TAB, "searchPostsTab", null,
             Settings.SEARCH_POSTS_TAB),
+    SEARCH_SAVED_BUTTON(FamilyNames.SEARCH_SAVED_BUTTON, "searchSavedButton", null,
+            Settings.SEARCH_SAVED_BUTTON),
     ANALYTICS_UPLOADS(FamilyNames.ANALYTICS_UPLOADS, "analyticsUploads", null,
             Settings.HOLD_ANALYTICS_UPLOADS, Settings.HOLD_CAMERA_ROLL_PROCESSING),
     SCREENSHOTS(FamilyNames.SCREENSHOTS, "allowScreenshots", null,
