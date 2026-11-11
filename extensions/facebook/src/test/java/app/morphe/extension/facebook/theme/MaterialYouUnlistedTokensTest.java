@@ -99,4 +99,25 @@ public class MaterialYouUnlistedTokensTest {
         assertFalse("nor white, which cards keep", log.contains("left token SURFACE_BACKGROUND"));
         assertFalse("nor a text grey", log.contains("left token LIGHT_TEXT_TOKEN"));
     }
+
+    /**
+     * Issue #141: a route with no token that carries text too leaves a light surface grey in light
+     * mode, and names itself once, so a report says which route a missed grey came by. A background
+     * route takes the palette instead and isn't named, and dark mode names nothing.
+     */
+    @Test
+    public void inLightModeARouteThatLeftALightSurfaceGreyIsNamedOnce() {
+        MaterialYouTheme.parseColor("#F0F2F5");
+        DarkMode.answer(false);
+        MaterialYouTheme.parseColor("#F0F2F5");
+        MaterialYouTheme.parseColor("#E8EAEE");
+        MaterialYouTheme.reactBackground(0xFFF0F2F5);
+        MaterialYouTheme.parseColor("#65686C");
+
+        String log = LogBufferManager.buildExportText();
+        String line = "Material You left a server colour at #F0F2F5";
+        assertTrue(log, log.contains(line));
+        assertEquals(log, log.indexOf("left a server colour"), log.lastIndexOf("left a server colour"));
+        assertFalse("a background route", log.contains("React"));
+    }
 }

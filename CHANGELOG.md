@@ -73,6 +73,7 @@ Changes in each Hushfacebook version, newest first.
 ### Fixed
 
 * The theme patches now also recolor what Facebook looks up through a second color path, which some of its newer text boxes use. Those colors went out untouched before, so in light mode `Material You theme` could leave them Facebook's grey. (#141)
+* In light mode, `Material You theme` also reaches the light grays Facebook paints behind fields and boxes without naming a color for them, on sheets that slide up like the comments and on its server-built screens. They stayed Facebook's gray before. White and text keep their colors, and with Debug logging on the log says where a gray it still leaves came from. (#141)
 * `Local profile counts` now shows the numbers you typed on your own profile. It couldn't tell the profile was yours, so Facebook's real numbers stayed put. Other people's profiles still keep theirs. (#280)
 * With `Keep the name and buttons while seeking` on, the preview frame and time that pop up while you drag a reel's progress bar now sit above the reel's name and caption instead of on top of them.
 * With `Hide seen stories` on, the story you're watching stays in the tray until you close the viewer, and it leaves the tray after that. Watching it marked it seen right away, so the tray could drop it while it was still playing, which can send the viewer on to the next person's story after a moment. Stories you'd already seen before opening the viewer still stay out. (#438)

@@ -1157,6 +1157,75 @@ public class MaterialYouThemeTest {
     }
 
     /**
+     * Issue #141: in light mode the S22 (586) drew the comment sheet's composer field in stock
+     * #F0F2F5 with no token behind it. A sheet's plain background or shape fill in one of light
+     * mode's surface greys takes the palette's neutral at its lightness then, a drawable loaded in
+     * one too. White, a text grey and a dark surface keep theirs, and in dark mode and before
+     * Facebook answers the light greys stay.
+     */
+    @Test
+    public void inLightModeASheetsLightSurfaceGreysTakeThePalette() {
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        DarkMode.answer(false);
+        GradientDrawable pill = filled(0xFFF0F2F5);
+        pill.setCornerRadius(40f);
+        Dialog sheet = new Dialog(activity);
+        FrameLayout content = new FrameLayout(activity);
+        View composer = shaped(activity, pill);
+        View field = plain(activity, 0xFFF2F4F7);
+        View white = plain(activity, 0xFFFFFFFF);
+        View text = plain(activity, 0xFF65686C);
+        View dark = plain(activity, 0xFF252728);
+        for (View view : new View[] {composer, field, white, text, dark}) content.addView(view);
+        sheet.setContentView(content);
+        sheet.show();
+        View root = sheet.getWindow().getDecorView();
+        root.measure(View.MeasureSpec.makeMeasureSpec(1000, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(2000, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, 1000, 2000);
+
+        MaterialYouTheme.watchWindowsAbove(activity, activity.getWindow().getDecorView());
+        assertEquals("the composer's pill", palette.sameLightness(TonePalette.NEUTRAL, 0xFFF0F2F5), fill(composer.getBackground()));
+        assertEquals("a field's plain grey", palette.sameLightness(TonePalette.NEUTRAL, 0xFFF2F4F7),
+                ((ColorDrawable) field.getBackground()).getColor());
+        assertEquals("white", 0xFFFFFFFF, ((ColorDrawable) white.getBackground()).getColor());
+        assertEquals("a text grey", 0xFF65686C, ((ColorDrawable) text.getBackground()).getColor());
+        assertEquals("a dark surface", 0xFF252728, ((ColorDrawable) dark.getBackground()).getColor());
+        assertEquals("a drawable loaded in one", palette.sameLightness(TonePalette.NEUTRAL, 0xFFE8EAEE),
+                ((ColorDrawable) MaterialYouTheme.recolour(new ColorDrawable(0xFFE8EAEE))).getColor());
+
+        DarkMode.answer(true);
+        View inDarkMode = shaped(activity, filled(0xFFF0F2F5));
+        content.addView(inDarkMode);
+        root.getViewTreeObserver().dispatchOnGlobalLayout();
+        assertEquals("dark mode", 0xFFF0F2F5, fill(inDarkMode.getBackground()));
+        DarkMode.forget();
+        assertEquals("before Facebook answers", 0xFFE8EAEE,
+                ((ColorDrawable) MaterialYouTheme.recolour(new ColorDrawable(0xFFE8EAEE))).getColor());
+        sheet.dismiss();
+    }
+
+    /**
+     * Issue #141: a React or Bloks background in one of light mode's surface greys takes the palette
+     * once Facebook has said light, as a sheet's does. The routes that carry text as well, a server
+     * colour, a React text colour and a theme value, leave it, so the Video tab's light text on its
+     * dark page stays.
+     */
+    @Test
+    public void inLightModeABackgroundRouteTakesThePaletteOnALightSurfaceGrey() {
+        int themed = palette.sameLightness(TonePalette.NEUTRAL, 0xFFF0F2F5);
+        DarkMode.answer(false);
+        assertEquals("a React background", themed, MaterialYouTheme.reactBackground(0xFFF0F2F5));
+        assertEquals("a Bloks colour", themed, MaterialYouTheme.parseBloks("#F0F2F5"));
+        assertEquals("a server colour", 0xFFF0F2F5, MaterialYouTheme.parseColor("#F0F2F5"));
+        assertEquals("a React text colour", 0xFFF0F2F5, MaterialYouTheme.react(0xFFF0F2F5));
+        assertEquals("white", 0xFFFFFFFF, MaterialYouTheme.reactBackground(0xFFFFFFFF));
+
+        DarkMode.answer(true);
+        assertEquals("dark mode", 0xFFF0F2F5, MaterialYouTheme.parseBloks("#F0F2F5"));
+    }
+
+    /**
      * Litho reads a token's colour from the theme with TypedArray.getColor (581 LX/1Mx;->A04), and
      * SURFACE_BACKGROUND's night style item keeps #252728, so the comment list's rows drew it (#37).
      * In dark mode a dark surface read that way takes the palette; light mode and other colours keep
