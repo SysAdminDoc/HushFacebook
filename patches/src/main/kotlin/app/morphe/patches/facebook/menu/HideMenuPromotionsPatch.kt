@@ -29,8 +29,10 @@ import app.morphe.patches.facebook.profile.isChildGetter
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -47,6 +49,34 @@ internal const val SETTINGS_ROWS_KEPT = "$EXTENSION_PACKAGE/menu/MenuRows;->sett
 internal const val LIST_COPY_OF = "$IMMUTABLE_LIST->copyOf(Ljava/util/Collection;)$IMMUTABLE_LIST"
 internal const val HEADER_KEPT_OPEN = "$EXTENSION_PACKAGE/menu/MenuSections;->keepsHeaderOpen(Ljava/lang/Object;)Z"
 internal const val MENU_BLOKS_CHILDREN = "$EXTENSION_PACKAGE/menu/MenuBloks;->children(Ljava/util/List;)Ljava/util/List;"
+internal const val MENU_BLOKS_VISITED = "$EXTENSION_PACKAGE/menu/MenuBloks;->visited(Ljava/lang/Object;)Ljava/lang/Object;"
+private const val SPARSE_VALUE_AT = "Landroid/util/SparseArray;->valueAt(I)Ljava/lang/Object;"
+
+/** A Bloks node's attribute walk: one visitor in, a boolean out, every attribute read by its index. */
+internal fun visitsAttributes(method: Method): Boolean =
+    !AccessFlags.STATIC.isSet(method.accessFlags) && method.implementation != null &&
+        method.returnType == "Z" && method.parameterTypes.size == 1 &&
+        method.implementation!!.instructions.any { (it as? ReferenceInstruction)?.reference?.toString() == SPARSE_VALUE_AT }
+
+/** Hands each attribute the walk reads to [MENU_BLOKS_VISITED] before the visitor sees it. */
+internal fun MutableMethod.passVisitedValues() {
+    val reads = implementation!!.instructions.withIndex()
+        .filter { (it.value as? ReferenceInstruction)?.reference?.toString() == SPARSE_VALUE_AT }.map { it.index }
+    for (index in reads.asReversed()) {
+        val result = getInstruction(index + 1)
+        if (result.opcode != Opcode.MOVE_RESULT_OBJECT) {
+            throw PatchException("$PATCH: $definingClass->$name doesn't keep the value it reads")
+        }
+        val register = (result as OneRegisterInstruction).registerA
+        addInstructions(
+            index + 2,
+            """
+                invoke-static/range { v$register .. v$register }, $MENU_BLOKS_VISITED
+                move-result-object v$register
+            """,
+        )
+    }
+}
 
 /** The boolean the patch adds to the Menu's group header, set on a header whose group is kept open. */
 internal const val HEADER_FLAG = "hushKeptOpen"
@@ -87,9 +117,10 @@ internal const val HEADER_FLAG = "hushKeptOpen"
  *
  * On some accounts the top of the Menu, the profile card with Create Facebook Page and Your shortcuts
  * under it, is a Bloks view inside the native Menu (#445). Every list the Bloks node classes' child
- * getters return goes to the extension, as Hide profile notes hands them over, and with a switch on
- * it leaves out Create Facebook Page or Your shortcuts from the list where it sits beside the profile
- * row. See MenuBloks.java.
+ * getters return goes to the extension, as Hide profile notes hands them over, and so does every
+ * attribute a node's attribute walk hands its visitor, which is how 586's renderer reaches the
+ * profile card's lists. With a switch on the extension leaves out Create Facebook Page or Your
+ * shortcuts from the list where it sits beside the profile row. See MenuBloks.java.
  */
 @Suppress("unused")
 val hideMenuPromotionsPatch = bytecodePatch(
@@ -188,6 +219,9 @@ val hideMenuPromotionsPatch = bytecodePatch(
                     it.name == getter.name && isChildGetter(it)
                 }.filterChildren(MENU_BLOKS_CHILDREN)
             }
+            val walks = bloksNodes().flatMap { node -> mutableClassDefBy(node.type).methods.filter(::visitsAttributes) }
+            if (walks.isEmpty()) throw PatchException("no Bloks node class walks its attributes for a visitor")
+            walks.forEach { it.passVisitedValues() }
         } catch (failure: PatchException) {
             patchLog.warning("$PATCH: ${failure.message}. Create Facebook Page and a Bloks drawn Your shortcuts stay in the Menu.")
         }

@@ -165,6 +165,30 @@ public class MenuBloksTest {
         assertEquals(Collections.singletonList(profileSection), MenuBloks.children(list));
     }
 
+    /** 586's renderer reaches the column and the switcher through a node's attribute walk, never the getters. */
+    @Test
+    public void theAttributeWalkLeavesThePartsOutToo() {
+        Settings.HIDE_MENU_CREATE_PAGE.save(true);
+        Settings.HIDE_MENU_SHORTCUTS.save(true);
+        assertEquals(Collections.singletonList(profileSection), MenuBloks.visited(root.children()));
+        assertEquals(Collections.singletonList(profileContainer), MenuBloks.visited(switcher.children()));
+        assertSame(wrapper.children(), MenuBloks.visited(wrapper.children()));
+    }
+
+    /** The walk reads every attribute, so whatever isn't a list goes to the visitor untouched. */
+    @Test
+    public void theAttributeWalkHandsOnWhatIsntAList() {
+        Settings.HIDE_MENU_CREATE_PAGE.save(true);
+        Settings.HIDE_MENU_SHORTCUTS.save(true);
+        assertNull(MenuBloks.visited(null));
+        Object text = MenuBloks.CREATE_PAGE;
+        assertSame(text, MenuBloks.visited(text));
+        assertSame(shortcutsSection, MenuBloks.visited(shortcutsSection));
+        Object number = 7;
+        assertSame(number, MenuBloks.visited(number));
+        assertNull(counterLine());
+    }
+
     @Test
     public void bothOnLeaveOnlyTheProfile() {
         Settings.HIDE_MENU_CREATE_PAGE.save(true);

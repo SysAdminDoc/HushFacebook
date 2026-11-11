@@ -29,17 +29,19 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>On some accounts Facebook draws the top of its Menu as one Bloks view, its server-sent layout:
  * the profile card, Create Facebook Page under it, then Your shortcuts. Every Bloks node keeps its
  * attributes in a SparseArray, as {@link ProfileNotes} reads them, and the patch hands every list the
- * node class's child getters return to {@link #children}. No title names the parts, but strings
- * inside them do: the test key of the profile row, the test key of the Create Facebook Page row, and
- * the addresses Your shortcuts loads its tiles from and each tile opens.
+ * node class's child getters return to {@link #children}, and every attribute the node's attribute
+ * walk hands a visitor to {@link #visited}. 586's renderer reaches the profile card's lists only
+ * through that walk. No title names the parts, but strings inside them do: the test key of the
+ * profile row, the test key of the Create Facebook Page row, and the addresses Your shortcuts loads
+ * its tiles from and each tile opens.
  *
  * <p>A child leaves a list only when something below it names a hidden part, nothing below it names
  * the profile row, and a child beside it holds the profile row. On 586 that's the Create Facebook Page
  * card next to the profile row in the switcher, and the Your shortcuts section next to the profile
  * section in the Menu's top column. A list higher up holds the profile row and the hidden part in one
  * child and stays whole, and a list lower down has no profile row in it, so the profile card and the
- * rest of the Menu draw as before. A node's answer is kept by the node, since the getters run on every
- * layout pass.
+ * rest of the Menu draw as before. A node's answer is kept by the node, since the getters and the walk
+ * run on every layout pass.
  *
  * <p>It fails open: both switches off, a pause, settings that aren't ready, or any failure in here,
  * and the list goes back as Facebook made it.
@@ -78,6 +80,15 @@ public final class MenuBloks {
     private static final Map<Object, Integer> HOLDS = Collections.synchronizedMap(new WeakHashMap<>());
 
     private MenuBloks() {
+    }
+
+    /**
+     * Injection point, right after a Bloks node's attribute walk reads each attribute, before its
+     * visitor gets it: the attribute, or a list attribute without a hidden part of the Menu. Never
+     * throws.
+     */
+    public static Object visited(@Nullable Object value) {
+        return value instanceof List ? children((List<?>) value) : value;
     }
 
     /**

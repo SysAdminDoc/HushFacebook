@@ -21,7 +21,10 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+
+private const val VALUE_AT = "Landroid/util/SparseArray;->valueAt(I)Ljava/lang/Object;"
 
 /**
  * Hide Menu promotions' Bloks hook on every declared build (#445). The Menu's profile card, Create
@@ -30,10 +33,55 @@ import org.junit.Test
  * does. With both patches on, each return asks both hooks in turn, each answer replacing the list
  * the getter goes on with; here Hide profile notes goes in first.
  *
- * Read from 586 (2026-11-11): `LX/01IP;` and `LX/04cX;`, getters `CQT` and `E5d` on each.
+ * 586's renderer reaches the profile card's lists through a node's attribute walk instead, which
+ * reads each attribute by index and hands it to a visitor, so every value the walk reads goes to the
+ * extension too, before the visitor sees it.
+ *
+ * Read from 586 (2026-11-11): `LX/01IP;` and `LX/04cX;`, getters `CQT` and `E5d` on each, and the walk
+ * `LX/04cX;->K4p(LX/0w2e;)Z` (01IP's walks its keys through a static read instead).
  */
 class MenuBloksFixtureTest {
     private val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+
+    @Test
+    fun `every attribute a Bloks node's walk reads goes through the Menu hook before the visitor, on each declared build`() {
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val found = mutableListOf<ClassDef>()
+                FixtureDex.forEach(bundle) { dex -> dex.classes.filterTo(found, ::isBloksNode) }
+                val nodes = found.map { ImmutableClassDef.of(it) }
+                val walk = nodes.flatMap { it.methods.filter(::visitsAttributes) }.singleOrNull()
+                    ?: throw AssertionError("$name: expected one Bloks node walk reading attributes by index")
+                val key = "${walk.definingClass}->${walk.name}"
+                val before = walk.implementation!!.instructions.toList()
+                val reads = before.indices.filter { (before[it] as? ReferenceInstruction)?.reference?.toString() == VALUE_AT }
+                assertTrue("$name: $key reads an attribute", reads.isNotEmpty())
+
+                val context = PatchContexts.of(nodes)
+                val hooked = with(context) {
+                    mutableClassDefBy(walk.definingClass).methods.single { it.name == walk.name && visitsAttributes(it) }
+                        .apply { passVisitedValues() }
+                }
+
+                val after = hooked.implementation!!.instructions.toList()
+                assertEquals("$name: $key gains a call and its answer per read", before.size + 2 * reads.size, after.size)
+                for ((count, read) in reads.withIndex()) {
+                    val at = read + 2 * count
+                    val value = (after[at + 1] as OneRegisterInstruction).registerA
+                    val call = after[at + 2]
+                    assertEquals("$name: $key asks the hook", MENU_BLOKS_VISITED, (call as ReferenceInstruction).reference.toString())
+                    assertEquals("$name: $key hands the hook the value it read", value, (call as RegisterRangeInstruction).startRegister)
+                    assertEquals("$name: $key keeps the hook's answer", Opcode.MOVE_RESULT_OBJECT, after[at + 3].opcode)
+                    assertEquals("$name: $key into the same register", value, (after[at + 3] as OneRegisterInstruction).registerA)
+                    assertEquals("$name: $key goes on to the visitor as before", before[read + 2].opcode, after[at + 4].opcode)
+                }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
 
     @Test
     fun `every Bloks child list goes through the Menu hook after the profile notes one, on each declared build`() {
