@@ -71,6 +71,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* `Local profile counts` now shows the numbers you typed on your own profile. It couldn't tell the profile was yours, so Facebook's real numbers stayed put. Other people's profiles still keep theirs. (#280)
 * With `Keep the name and buttons while seeking` on, the preview frame and time that pop up while you drag a reel's progress bar now sit above the reel's name and caption instead of on top of them.
 * With `Hide seen stories` on, the story you're watching stays in the tray until you close the viewer, and it leaves the tray after that. Watching it marked it seen right away, so the tray could drop it while it was still playing, which can send the viewer on to the next person's story after a moment. Stories you'd already seen before opening the viewer still stay out. (#438)
 * With `Keep Settings and privacy expanded` on, tapping the Settings and privacy header in the Menu no longer flips its arrow down. The rows already stayed open, but the header still turned to "Section is collapsed" on the first tap. Now it stays expanded however many times you tap it. (#224)

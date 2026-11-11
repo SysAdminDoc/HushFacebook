@@ -5,7 +5,10 @@
 package app.morphe.extension.facebook.profile;
 
 import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
 
+import com.facebook.auth.usersession.FbUserSession;
 import com.facebook.auth.viewercontext.ViewerContext;
 
 import app.morphe.extension.facebook.settings.Settings;
@@ -36,6 +39,48 @@ public final class LocalProfileCountsForTests {
 
         public boolean isResumed() {
             return resumed;
+        }
+    }
+
+    /**
+     * The profile screen as Facebook 586 has it outside View As: its ViewerContext field is null and
+     * the signed-in user's id is in its FbUserSession.
+     */
+    public static final class SessionScreen {
+        private final Bundle arguments = new Bundle();
+        private final ViewerContext viewer = null;
+        private final FbUserSession session;
+
+        public SessionScreen(Long profileId, String userId) {
+            if (profileId != null) arguments.putLong(LocalProfileCounts.PROFILE_ID_ARGUMENT, profileId);
+            this.session = userId == null ? null : new Session(userId);
+        }
+
+        public Bundle getArguments() {
+            return arguments;
+        }
+
+        public boolean isResumed() {
+            return true;
+        }
+    }
+
+    /** A session that writes its user id first, as Facebook's does. */
+    public static final class Session extends FbUserSession implements Parcelable {
+        final String user;
+
+        Session(String user) {
+            this.user = user;
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            out.writeString(user);
         }
     }
 

@@ -20,6 +20,7 @@ import org.robolectric.annotation.Config;
 import java.util.Locale;
 
 import app.morphe.extension.facebook.profile.LocalProfileCountsForTests.Screen;
+import app.morphe.extension.facebook.profile.LocalProfileCountsForTests.SessionScreen;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
@@ -142,6 +143,26 @@ public class LocalProfileCountsTest {
         LocalProfileCounts.opened(new Object());
         assertEquals("812 friends", LocalProfileCounts.text("812 friends"));
         LocalProfileCounts.forgetForTests();
+        assertEquals("812 friends", LocalProfileCounts.text("812 friends"));
+    }
+
+    @Test
+    public void theViewerComesFromTheSessionWhenTheViewerContextIsEmpty() {
+        String viewer = LocalProfileCountsForTests.VIEWER;
+        LocalProfileCounts.opened(new SessionScreen(Long.parseLong(viewer), viewer));
+        assertEquals("1,234 friends", LocalProfileCounts.text("812 friends"));
+        LocalProfileCounts.opened(new SessionScreen(-1L, viewer));
+        assertEquals("1,234 friends", LocalProfileCounts.text("812 friends"));
+    }
+
+    @Test
+    public void aSessionNeverMakesAnotherPersonsProfileYours() {
+        String viewer = LocalProfileCountsForTests.VIEWER;
+        LocalProfileCounts.opened(new SessionScreen(555L, viewer));
+        assertEquals("812 friends", LocalProfileCounts.text("812 friends"));
+        LocalProfileCounts.opened(new SessionScreen(null, null));
+        assertEquals("812 friends", LocalProfileCounts.text("812 friends"));
+        LocalProfileCounts.opened(new SessionScreen(null, ""));
         assertEquals("812 friends", LocalProfileCounts.text("812 friends"));
     }
 

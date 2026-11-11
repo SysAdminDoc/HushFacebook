@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.facebook.stories.StorySeen;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -35,9 +36,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>The shown profile is the newest profile screen that's on top. {@link #opened} keeps the
  * screen, and its {@code com.facebook.katana.profile.id} argument is compared to the signed-in
- * user's id, which the screen holds in its ViewerContext. A screen with no id shows your own
- * profile. A profile that isn't yours, a screen that's gone behind another, a switch that's off or a
- * count left blank leaves Facebook's text alone. Any failure here does the same.
+ * user's id, which the screen holds in its ViewerContext or its FbUserSession. A screen with no id
+ * shows your own profile. A profile that isn't yours, a screen that's gone behind another, a switch
+ * that's off or a count left blank leaves Facebook's text alone. Any failure here does the same.
  */
 public final class LocalProfileCounts {
     /** The argument Facebook's profile screen is given the profile's id in. */
@@ -46,6 +47,9 @@ public final class LocalProfileCounts {
     /** The type of the object holding the signed-in user's id, and the field it's in. */
     static final String VIEWER_CONTEXT = "com.facebook.auth.viewercontext.ViewerContext";
     static final String USER_ID_FIELD = "mUserId";
+
+    /** The session type the profile screen also keeps, which holds the same id. */
+    static final String USER_SESSION = "com.facebook.auth.usersession.FbUserSession";
 
     /** The longest string looked at: a count line is short, and a long text is some other content. */
     static final int LONGEST_TEXT = 80;
@@ -213,26 +217,41 @@ public final class LocalProfileCounts {
         return Long.toString(profileId).equals(viewerId);
     }
 
-    /** The signed-in user's id from the ViewerContext the screen holds, or null. */
+    /**
+     * The signed-in user's id from the ViewerContext the screen holds, or else from its
+     * FbUserSession, or null. Facebook 586 fills the ViewerContext field only for View As, so on a
+     * plain profile the session is where the id is.
+     */
     @Nullable
     static String viewerId(Object current) throws IllegalAccessException {
+        String fromSession = null;
         for (Class<?> owner = current.getClass(); owner != null && owner != Object.class; owner = owner.getSuperclass()) {
             for (Field field : owner.getDeclaredFields()) {
-                if (!VIEWER_CONTEXT.equals(field.getType().getName())) continue;
-                field.setAccessible(true);
-                Object context = field.get(current);
-                if (context == null) return null;
-                try {
-                    Field user = context.getClass().getDeclaredField(USER_ID_FIELD);
-                    user.setAccessible(true);
-                    Object id = user.get(context);
-                    return id instanceof String ? (String) id : null;
-                } catch (NoSuchFieldException missing) {
-                    return null;
+                String type = field.getType().getName();
+                if (VIEWER_CONTEXT.equals(type)) {
+                    field.setAccessible(true);
+                    String id = userId(field.get(current));
+                    if (id != null) return id;
+                } else if (fromSession == null && USER_SESSION.equals(type)) {
+                    field.setAccessible(true);
+                    fromSession = StorySeen.account(field.get(current));
                 }
             }
         }
-        return null;
+        return fromSession;
+    }
+
+    @Nullable
+    private static String userId(@Nullable Object context) throws IllegalAccessException {
+        if (context == null) return null;
+        try {
+            Field user = context.getClass().getDeclaredField(USER_ID_FIELD);
+            user.setAccessible(true);
+            Object id = user.get(context);
+            return id instanceof String && !((String) id).isEmpty() ? (String) id : null;
+        } catch (NoSuchFieldException missing) {
+            return null;
+        }
     }
 
     /** Forgets the screen, for tests. */
