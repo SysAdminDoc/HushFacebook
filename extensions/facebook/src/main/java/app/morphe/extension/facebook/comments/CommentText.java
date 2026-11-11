@@ -38,8 +38,15 @@ final class CommentText {
     }
 
     /**
-     * The words of [comment], or null when it isn't a GraphQLComment, has no body, or a member
-     * this build lacks or a read that failed keeps them out of reach. Never throws.
+     * Whether a comment's words have been read yet. Until then a missing body reads as out of
+     * reach, so a build that moved the body's key keeps every comment.
+     */
+    static volatile boolean wordsRead;
+
+    /**
+     * The words of [comment]: empty when it has no body, as a comment that's only a GIF or a
+     * sticker, and null when it isn't a GraphQLComment, or a member this build lacks or a read that
+     * failed keeps them out of reach. Never throws.
      */
     @Nullable
     static String body(@Nullable Object comment) {
@@ -49,9 +56,12 @@ final class CommentText {
         if (!found.complete() || !found.comment.isInstance(comment)) return null;
         try {
             Object body = found.cachedModel.invoke(comment, BODY_KEY, found.text, TEXT_TYPE_TAG);
+            if (body == null) return wordsRead ? "" : null;
             if (!found.text.isInstance(body)) return null;
             Object value = found.cachedString.invoke(body, TEXT_KEY);
-            return value instanceof String ? (String) value : null;
+            if (!(value instanceof String)) return null;
+            wordsRead = true;
+            return (String) value;
         } catch (InvocationTargetException failure) {
             HookStatus.threw(FAMILY, "comment text reader", failure.getCause());
             return null;

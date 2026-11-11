@@ -453,7 +453,31 @@ class CommentSheetOptionsFixtureTest {
         assertEquals("$buildWhere: about the list", LIST_DRAWN, buildCode[0].reference())
         assertEquals("$buildWhere: the list and its context as a range", listOf(patched(build).implementation!!.registerCount - 2, 2),
             (buildCode[0] as RegisterRangeInstruction).let { listOf(it.startRegister, it.registerCount) })
-        assertEquals("$buildWhere: Facebook's code stays", originals[build.descriptor()], buildCode.drop(1).opcodes())
+
+        // The prop for paging on by itself is the flag an open reply thread writes on its list, found from the thread.
+        val prop = "${filter.autoPaging.definingClass}->${filter.autoPaging.name}:${filter.autoPaging.type}"
+        val flag = replyList(holders(bundle, EXPANDED_REPLIES), holders(bundle, COMMENT_LIST)).flag
+        assertEquals("$buildWhere: the prop is the reply thread's paging flag", "${flag.definingClass}->${flag.name}:${flag.type}", prop)
+        assertEquals("$name: on the list", build.definingClass, filter.autoPaging.definingClass)
+        // Right after the build reads it, a true value asks the extension and reads false while paging is held.
+        val read = buildCode.indexOfFirst { it.opcode == Opcode.IGET_BOOLEAN && it.reference() == prop }
+        assertTrue("$buildWhere: the prop is read", read > 0)
+        val value = (buildCode[read] as TwoRegisterInstruction).registerA
+        val hold = buildCode.subList(read + 1, read + 8)
+        assertEquals("$buildWhere: the paging hook's shape", listOf(Opcode.IF_EQZ, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ,
+            Opcode.CONST_16, Opcode.GOTO, Opcode.CONST_16), hold.opcodes())
+        assertEquals("$buildWhere: the extension is asked", "Lapp/morphe/extension/facebook/comments/CommentSearch;->pagingHeld()Z",
+            hold[1].reference())
+        assertEquals("$buildWhere: everything in the prop's own register", List(5) { value },
+            listOf(hold[0], hold[2], hold[3], hold[4], hold[6]).map { (it as OneRegisterInstruction).registerA })
+        assertEquals("$buildWhere: held reads false, else true", listOf(0, 1),
+            listOf(hold[4], hold[6]).map { (it as NarrowLiteralInstruction).narrowLiteral })
+        val buildFlow = ControlFlow.of(patched(build))
+        assertEquals("$buildWhere: false goes on to Facebook's next instruction", setOf(read + 2, read + 8), buildFlow.normal[read + 1].toSet())
+        assertEquals("$buildWhere: not held keeps it true", setOf(read + 5, read + 7), buildFlow.normal[read + 4].toSet())
+        assertEquals("$buildWhere: held joins Facebook's next instruction", listOf(read + 8), buildFlow.normal[read + 6])
+        assertEquals("$buildWhere: Facebook's code stays", originals[build.descriptor()],
+            (buildCode.subList(1, read + 1) + buildCode.drop(read + 8)).opcodes())
 
         // The state's apply returns on the filter's own number before reading anything else.
         val apply = patched(filter.apply)

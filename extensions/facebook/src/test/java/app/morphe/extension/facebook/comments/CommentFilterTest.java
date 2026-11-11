@@ -37,8 +37,10 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * asks about each comment before drawing it, and a comment whose words link to a shop, or hold a
  * phrase from Words to hide and none from the keep list, is left out while its switch is on. Off,
  * paused, a comment with no words, or anything that isn't a comment, and it's drawn. With Show only
- * comments that match on, a comment without the searched words is left out, and new words build
- * every comment list again and make the lists and comments drawn under the old ones count as changed.
+ * comments that match on, a comment without the searched words is left out, a GIF or sticker with
+ * no words included, new words build every comment list again and make the lists and comments drawn
+ * under the old ones count as changed, and the lists don't page on by themselves while the box
+ * holds words.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -60,6 +62,7 @@ public class CommentFilterTest {
     public void start() {
         HookStatus.clear();
         CommentText.cachedMembers = null;
+        CommentText.wordsRead = false;
     }
 
     @After
@@ -75,6 +78,7 @@ public class CommentFilterTest {
         CommentSearch.clearFilter();
         ListSection.QUEUED.clear();
         CommentText.cachedMembers = null;
+        CommentText.wordsRead = false;
         HookStatus.clear();
     }
 
@@ -187,13 +191,13 @@ public class CommentFilterTest {
         assertFalse("something never drawn doesn't", CommentSearch.redraws(new Object(), null));
         assertFalse(CommentSheetOptions.hidesComment(match));
         assertTrue("a comment without the words is left out", CommentSheetOptions.hidesComment(other));
-        assertFalse("text that can't be read is kept", CommentSheetOptions.hidesComment(new GraphQLComment(null)));
+        assertTrue("so is one with no words, only a GIF or a sticker", CommentSheetOptions.hidesComment(new GraphQLComment(null)));
         assertFalse("drawn under the new words, it's the same", CommentSearch.redraws(match, other));
         CommentSearch.listDrawn(list, "context");
         assertFalse(CommentSearch.redraws(list, null));
         String line = statusLine();
         assertTrue(line, line.contains(CommentSearch.FILTERED + " 1"));
-        assertTrue(line, line.contains(CommentSheetOptions.SEARCH_HIDDEN + " 1"));
+        assertTrue(line, line.contains(CommentSheetOptions.SEARCH_HIDDEN + " 2"));
 
         ListSection.QUEUED.clear();
         CommentSearch.filterBy("ending");
@@ -201,6 +205,51 @@ public class CommentFilterTest {
         CommentSearch.filterBy("");
         assertEquals("clearing the box builds both again", 2, ListSection.QUEUED.size());
         assertFalse("and every comment is drawn", CommentSheetOptions.hidesComment(other));
+    }
+
+    /**
+     * A comment with no body is left out while the box holds words once some comment's words have
+     * been read. Before that the body's key may have moved, and a build missing a reader can't read
+     * any comment, so those keep every comment.
+     */
+    @Test
+    public void aCommentWithNoWordsIsLeftOutOnceWordsHaveBeenRead() {
+        Settings.SEARCH_COMMENTS.save(true);
+        Settings.FILTER_COMMENT_SEARCH.save(true);
+        CommentSearch.filterBy("ending");
+        GraphQLComment gif = new GraphQLComment(null);
+        assertFalse("no comment's words read yet", CommentSheetOptions.hidesComment(gif));
+        assertFalse(CommentSheetOptions.hidesComment(new GraphQLComment("Loved the ending")));
+        assertTrue("then a comment with no body has no words", CommentSheetOptions.hidesComment(gif));
+        assertEquals("", CommentText.body(gif));
+
+        CommentText.Members found = CommentText.members();
+        CommentText.cachedMembers = new CommentText.Members(found.comment, found.text, null, found.cachedString);
+        assertFalse("text that can't be read is kept", CommentSheetOptions.hidesComment(new GraphQLComment("So cute!")));
+        assertFalse(CommentSheetOptions.hidesComment(gif));
+        CommentText.cachedMembers = found;
+        CommentSearch.filterBy("");
+        assertFalse("an empty box draws it", CommentSheetOptions.hidesComment(gif));
+    }
+
+    /** A comment list pages on by itself unless the filter is on and the box holds words. */
+    @Test
+    public void pagingIsHeldOnlyWhileTheBoxHoldsWords() {
+        assertFalse("off", CommentSearch.pagingHeld());
+        Settings.SEARCH_COMMENTS.save(true);
+        assertFalse("search without the filter", CommentSearch.pagingHeld());
+        Settings.FILTER_COMMENT_SEARCH.save(true);
+        assertFalse("an empty box", CommentSearch.pagingHeld());
+        CommentSearch.filterBy("ending");
+        assertTrue("words in the box", CommentSearch.pagingHeld());
+        CommentSearch.filterBy("");
+        assertFalse("the box cleared", CommentSearch.pagingHeld());
+        CommentSearch.filterBy("ending");
+        Settings.FILTER_COMMENT_SEARCH.save(false);
+        assertFalse("the filter switched off with words left", CommentSearch.pagingHeld());
+        String line = statusLine();
+        assertTrue("asked three times while filtering, the hook found: " + line, line.contains("invoked 3, 1 found, 0 missing"));
+        assertTrue(line, line.contains(CommentSearch.PAGING_HELD + " 1"));
     }
 
     @Test

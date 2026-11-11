@@ -86,7 +86,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * own, which builds its rows again, and the list and each comment section drawn under older words
  * answer that they changed ({@link #redraws}), so {@link CommentSheetOptions#hidesComment} asks about
  * each comment again and leaves out the ones without the words ({@link #filtersOut}). Nothing new
- * is fetched.
+ * is fetched: while the box holds words, the list doesn't load more comments on its own
+ * ({@link #pagingHeld}).
  *
  * <p>Off, nothing is added.
  */
@@ -164,6 +165,12 @@ public final class CommentSearch {
 
     /** What the report counts each time the filter's words change and the list is built again. */
     static final String FILTERED = "Comment list filtered by a search";
+
+    /** The member the report names once a comment list's paging has been asked about with the filter on. */
+    static final String PAGING_HOOK = "comment list paging";
+
+    /** What the report counts each time a comment list is built without paging on its own, because the filter has words. */
+    static final String PAGING_HELD = "Comment list paging held by a search";
 
     /** The static method the patch adds to the comment list's section, queueing the update that builds it again. */
     static final String REFRESH = "hushfacebookRefreshList";
@@ -252,9 +259,30 @@ public final class CommentSearch {
     }
 
     /**
+     * Asked where Facebook builds a comment list set to load more comments on its own as its end
+     * comes into view: true holds that off while the filter has words, since a filtered list is
+     * often short enough to show its end at once. New words or a cleared box build the list again
+     * and ask again.
+     */
+    public static boolean pagingHeld() {
+        try {
+            if (!filtering()) return false;
+            HookStatus.invoked(OPTIONS);
+            HookStatus.bound(OPTIONS, PAGING_HOOK);
+            if (filterWords.isEmpty()) return false;
+            HookStatus.counted(OPTIONS, PAGING_HELD);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(OPTIONS, PAGING_HOOK, failure);
+            return false;
+        }
+    }
+
+    /**
      * Whether the filter leaves out [comment], whose words are [text]: with the switch on and words
-     * in the box, a comment without them. Text that can't be read keeps its comment. Notes the
-     * comment as drawn under the words in use, so new words draw it again.
+     * in the box, a comment without them, a GIF or sticker with no words included. Text that can't
+     * be read keeps its comment. Notes the comment as drawn under the words in use, so new words
+     * draw it again.
      */
     static boolean filtersOut(@Nullable Object comment, @Nullable String text) {
         if (comment == null || !filtering()) return false;

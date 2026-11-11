@@ -60,6 +60,12 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * section through a second helper added to it that reads both sides' comments. A list built, or a
  * comment drawn, under older search words answers "changed", so the list's rows, the comment's
  * draw and hidesComment with it run again.
+ *
+ * A filtered list is often short enough to show its end at once, and a list set to page on by
+ * itself (its prop `0Ajv.A0W`, the flag an open reply thread writes) then fetches the next page:
+ * createChildren hands that prop to the GraphQLPaginationSection it builds (`LX/09gg;->A0S`, three
+ * writes, each right after a `hasNextPage` read). So the build's read of the prop asks the extension
+ * whether the filter holds paging, and reads false while it does.
  */
 
 /** The state update the comment list sends itself once it has paged to the end, named where it's sent. */
@@ -80,6 +86,10 @@ internal const val REDRAWS_HELPER = "hushfacebookRedraws"
 private const val COMMENT_SEARCH = "$EXTENSION_PACKAGE/comments/CommentSearch;"
 internal const val LIST_DRAWN = "$COMMENT_SEARCH->listDrawn(Ljava/lang/Object;Ljava/lang/Object;)V"
 internal const val REDRAWS = "$COMMENT_SEARCH->redraws(Ljava/lang/Object;Ljava/lang/Object;)Z"
+internal const val PAGING_HELD = "$COMMENT_SEARCH->pagingHeld()Z"
+
+/** The kept name of the page info's flag for more pages, which each paging write reads first. */
+private const val HAS_NEXT_PAGE = "hasNextPage"
 
 private const val PATCH = "Comment sheet options (comment search filter)"
 private const val OBJECT = "Ljava/lang/Object;"
@@ -90,7 +100,8 @@ private const val STRING = "Ljava/lang/String;"
  * type, [context]; the context's section getter, [scope]; the update factory, [factory], and the
  * context's queue, [queue]; the list state's apply method, [apply], and the int field of the update
  * it reads the number from, [number]; the list's equality method, [listEqual]; and the comment
- * section's, [equal], with the draw the patch already found, [drawn].
+ * section's, [equal], with the draw the patch already found, [drawn]; and the list's prop for
+ * paging on by itself, [autoPaging], which the build reads once.
  */
 internal class CommentFilter(
     val build: Method,
@@ -103,6 +114,7 @@ internal class CommentFilter(
     val listEqual: Method,
     val equal: Method,
     val drawn: CommentDraw,
+    val autoPaging: FieldReference,
 )
 
 private fun Instruction.methodCall() = (this as? ReferenceInstruction)?.reference as? MethodReference
@@ -121,6 +133,48 @@ private fun entersOnce(method: Method): Boolean {
     return flow.normal.indices.none { 0 in flow.normal[it] || 0 in flow.exceptional[it] }
 }
 
+/** Whether only the instruction before [index] of [method] goes on to it, so a hook placed there runs every time. */
+private fun reachedInLine(method: Method, index: Int): Boolean {
+    val flow = ControlFlow.of(method)
+    return flow.normal.indices.none { (index in flow.normal[it] && it != index - 1) || index in flow.exceptional[it] }
+}
+
+/** The last instruction before [index] in [code] that writes [register], or null. */
+private fun lastWrite(code: List<Instruction>, index: Int, register: Int) = (index - 1 downTo 0).firstOrNull {
+    val write = code[it] as? OneRegisterInstruction ?: return@firstOrNull false
+    (code[it].opcode.setsRegister() && write.registerA == register) ||
+        (code[it].opcode.setsWideRegister() && write.registerA + 1 == register)
+}
+
+/**
+ * The boolean props of [list] that the paging writes in [code], its build, test: a paging write is
+ * an iput-boolean within five instructions after a [HAS_NEXT_PAGE] read, and the branches right
+ * before that read (past a move of the page info into place) test what else it needs. Each tested
+ * register is followed back to its last write: a read of a boolean field of the list, or a move
+ * from one.
+ */
+private fun autoPagingProps(list: String, code: List<Instruction>): List<FieldReference> {
+    fun prop(index: Int?): FieldReference? = code.getOrNull(index ?: return null)?.takeIf { it.opcode == Opcode.IGET_BOOLEAN }
+        ?.field()?.takeIf { it.definingClass == list && it.type == "Z" }
+    val props = mutableListOf<FieldReference>()
+    for (read in code.indices) {
+        if (code[read].opcode != Opcode.IGET_BOOLEAN || code[read].field()?.name != HAS_NEXT_PAGE) continue
+        if ((read + 1..minOf(read + 5, code.lastIndex)).none { code[it].opcode == Opcode.IPUT_BOOLEAN }) continue
+        var at = read - 1
+        while (at >= 0 && code[at].opcode in setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)) at--
+        while (at >= 0 && code[at].opcode == Opcode.IF_EQZ) {
+            val tested = (code[at] as OneRegisterInstruction).registerA
+            val write = lastWrite(code, at, tested)
+            val moved = write?.takeIf { code[it].opcode in setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16) }
+            val found = if (moved == null) prop(write)
+            else prop(lastWrite(code, moved, (code[moved] as TwoRegisterInstruction).registerB))
+            found?.let { props += it }
+            at--
+        }
+    }
+    return props.distinctBy { it.smali() }
+}
+
 /**
  * The filter's spots, from [lists], the classes loading [COMMENT_LIST], and [drawn], the comment
  * section's draw. [classes] reads the classes of the types it's given.
@@ -130,7 +184,9 @@ private fun entersOnce(method: Method): Boolean {
  * the last static (Object, I) call before it returning the update's type is the factory; and the
  * last no-argument call before that, on the register the update is queued on and returning the
  * list's superclass, is the section getter, whose class is the section context. The build is the
- * list's one instance method taking that context and returning an object. The state is the one type the build casts a read
+ * list's one instance method taking that context and returning an object, and the prop for paging
+ * on by itself the one boolean of the list its paging writes test, read there once and not jumped
+ * past. The state is the one type the build casts a read
  * of a field of the list's superclass to, and its apply method its one instance (update)V method,
  * with the number read from the update's one int field. The list's and the comment section's
  * equality methods are each one's one instance (superclass)Z method, overriding one of the
@@ -189,6 +245,15 @@ internal fun commentFilter(
     val where = build.descriptor()
     val code = build.implementation!!.instructions.toList()
 
+    val props = autoPagingProps(list.type, code)
+    val autoPaging = props.singleOrNull()
+        ?: return skip("$where tests ${props.size} boolean props of ${list.type} before its paging writes, not one")
+    val propReads = code.indices.filter { code[it].opcode == Opcode.IGET_BOOLEAN && code[it].field()?.smali() == autoPaging.smali() }
+    val propRead = propReads.singleOrNull() ?: return skip("$where reads ${autoPaging.name} ${propReads.size} times, not once")
+    if (propRead + 1 > code.lastIndex || !reachedInLine(build, propRead + 1)) {
+        return skip("$where has a jump to the instruction after its read of ${autoPaging.name}")
+    }
+
     val states = code.indices.mapNotNull { index ->
         val read = code[index]
         val cast = code.getOrNull(index + 1) ?: return@mapNotNull null
@@ -231,7 +296,7 @@ internal fun commentFilter(
     listOf(build, apply, listEqual, equal).firstOrNull { !entersOnce(it) }?.let {
         return skip("${it.descriptor()} jumps back to its start")
     }
-    return CommentFilter(build, context, scope, factory, queue, apply, number, listEqual, equal, drawn)
+    return CommentFilter(build, context, scope, factory, queue, apply, number, listEqual, equal, drawn, autoPaging)
 }
 
 /**
@@ -340,6 +405,31 @@ internal fun MutableMethod.skipRefreshUpdate(filter: CommentFilter) {
     )
 }
 
+/**
+ * Right after the build reads the list's prop for paging on by itself: a true value asks the
+ * extension, and reads false while it holds paging. The value stays a boolean for the verifier, so
+ * it's set from literals rather than flipped.
+ */
+internal fun MutableMethod.holdPaging(filter: CommentFilter) {
+    val field = filter.autoPaging.smali()
+    val read = implementation!!.instructions.indexOfFirst { it.opcode == Opcode.IGET_BOOLEAN && it.field()?.smali() == field }
+    val value = getInstruction<TwoRegisterInstruction>(read).registerA
+    addInstructionsWithLabels(
+        read + 1,
+        """
+            if-eqz v$value, :keep
+            invoke-static {}, $PAGING_HELD
+            move-result v$value
+            if-eqz v$value, :pages
+            const/16 v$value, 0x0
+            goto :keep
+            :pages
+            const/16 v$value, 0x1
+        """,
+        ExternalLabel("keep", getInstruction(read + 1)),
+    )
+}
+
 /** The comment section's helper, as the equality hook calls it. */
 internal fun redrawsHelperCall(filter: CommentFilter) = "${filter.equal.definingClass}->$REDRAWS_HELPER($OBJECT$OBJECT)Z"
 
@@ -364,6 +454,7 @@ internal fun MutableMethod.askRedraws(ask: String) {
 /** Every hook and helper of the filter, each on its method as the patch found it. */
 internal fun BytecodePatchContext.filterComments(filter: CommentFilter) {
     fun mutable(method: Method) = mutableClassDefBy(method.definingClass).methods.single { it.descriptor() == method.descriptor() }
+    mutable(filter.build).holdPaging(filter)
     mutable(filter.build).handOverList()
     mutable(filter.apply).skipRefreshUpdate(filter)
     mutable(filter.listEqual).askRedraws(REDRAWS)
