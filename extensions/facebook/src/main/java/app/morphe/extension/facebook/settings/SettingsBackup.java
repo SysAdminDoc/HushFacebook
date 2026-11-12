@@ -1958,8 +1958,10 @@ public final class SettingsBackup {
             throw new Rejected(Reason.DUPLICATE, "A name appears twice");
         } catch (IOException | JSONException error) {
             // The parser reports a document that simply stops as an IOException, not a
-            // JSONException, and a download cut off halfway is exactly that.
-            throw new Rejected(Reason.DAMAGED, "Not one JSON object");
+            // JSONException, and a download cut off halfway is exactly that. Its message says
+            // where the reading stopped and why, never what the file holds.
+            throw new Rejected(Reason.DAMAGED, error instanceof IOException
+                    ? "Not one JSON object: " + error.getMessage() : "Not one JSON object");
         }
         if (!FORMAT.equals(root.opt(FORMAT_NAME))) {
             throw new Rejected(Reason.FORMAT, "Not a Hushfacebook settings file");

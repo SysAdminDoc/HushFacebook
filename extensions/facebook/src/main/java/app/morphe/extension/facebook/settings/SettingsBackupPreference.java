@@ -298,10 +298,13 @@ public class SettingsBackupPreference extends Preference {
         boolean accepted = Utils.runOnBackgroundThread(() -> {
             Runnable result = null;
             try {
-                SettingsBackup.Snapshot snapshot = SettingsBackup.parse(read(context.getContentResolver(), uri, run));
+                String text = read(context.getContentResolver(), uri, run);
+                Logger.printInfo(() -> "Settings file read: " + text.length() + " chars");
+                SettingsBackup.Snapshot snapshot = SettingsBackup.parse(text);
                 result = () -> offer(snapshot);
             } catch (SettingsBackup.Rejected refused) {
-                Logger.printInfo(() -> "Settings file refused: " + refused.reason);
+                // A refusal's message names a setting at most, never a value from the file.
+                Logger.printInfo(() -> "Settings file refused: " + refused.reason + ", " + refused.getMessage());
                 String said = refusal(refused.reason);
                 result = () -> Utils.showToastLong(said);
             } finally {
@@ -317,7 +320,11 @@ public class SettingsBackupPreference extends Preference {
     private static String read(ContentResolver resolver, Uri uri, Run run) throws SettingsBackup.Rejected {
         InputStream stream;
         try {
-            stream = run.hold(resolver.openAssetFileDescriptor(uri, "r", run.cancel)).createInputStream();
+            AssetFileDescriptor file = run.hold(resolver.openAssetFileDescriptor(uri, "r", run.cancel));
+            long start = file.getStartOffset();
+            long declared = file.getDeclaredLength();
+            Logger.printInfo(() -> "Settings file opened at " + start + ", declared length " + declared);
+            stream = file.createInputStream();
         } catch (IOException | RuntimeException error) {
             closeQuietly(run.open);
             // The class only: an app's message can carry the document's name or address.
