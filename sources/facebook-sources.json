@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "note": "Every public source found for com.facebook.katana, com.facebook.orca and com.facebook.lite, with the branches and commits it was last read at, its licence and what Hushfacebook may take from it. scripts/facebook-sources.ps1 holds it to its rules, scripts/audit-facebook-sources.ps1 refreshes it, and a local release needs a census from the last 14 days. docs/sources.md is the readable version.",
   "census": {
-    "checkedAt": "2026-10-18",
+    "checkedAt": "2026-11-12",
     "skipped": [
       "gitlab-code-search"
     ]
@@ -24,7 +24,7 @@
       "hushfacebook": {
         "status": "listed",
         "url": "https://morphe-patches.software/data/bundles.json",
-        "checked": "2026-10-18"
+        "checked": "2026-11-12"
       }
     },
     {
@@ -34,7 +34,7 @@
       "hushfacebook": {
         "status": "listed",
         "url": "https://github.com/nvbangg/awesome-morphe/blob/main/data/bundles/SysAdminDoc~Hushfacebook~main.json",
-        "checked": "2026-10-18"
+        "checked": "2026-11-12"
       }
     },
     {
@@ -44,7 +44,7 @@
       "hushfacebook": {
         "status": "listed",
         "url": "https://drnx64.github.io/morphe-track-patches/#/bundle/sysadmindoc",
-        "checked": "2026-10-18"
+        "checked": "2026-11-12"
       }
     },
     {
@@ -54,7 +54,7 @@
       "hushfacebook": {
         "status": "listed",
         "url": "https://patch-bundles.api.jmancentral.com/sources?q=hushfacebook",
-        "checked": "2026-10-18"
+        "checked": "2026-11-12"
       }
     },
     {
@@ -64,7 +64,7 @@
       "hushfacebook": {
         "status": "listed",
         "url": "https://github.com/rushiforai/morphe-archive/tree/main/examplepatches/SysAdminDoc/Hushfacebook",
-        "checked": "2026-10-18"
+        "checked": "2026-11-12"
       }
     }
   ],
@@ -107,11 +107,11 @@
       "branches": [
         {
           "name": "main",
-          "commit": "fb2d9b6ba90cc9787f9b3b3932d72f746ac02110"
+          "commit": "ea1cae9fe8e1af0ec63485c511001f36140032f3"
         },
         {
           "name": "dev",
-          "commit": "fb2d9b6ba90cc9787f9b3b3932d72f746ac02110"
+          "commit": "ea1cae9fe8e1af0ec63485c511001f36140032f3"
         }
       ],
       "watchPaths": [
@@ -136,7 +136,7 @@
           ]
         }
       },
-      "reason": "The maintained Facebook source and Hushfacebook's primary upstream. Its anchors hold across Facebook's renames, its patches fail loudly at patch time, and most of the shipped patches were rewritten from its commit 5db2e57e. The bundle also patches LINE, so only its Facebook, shared and extension code is watched.",
+      "reason": "The maintained Facebook source and Hushfacebook's primary upstream. Its anchors hold across Facebook's renames, its patches fail loudly at patch time, and most of the shipped patches were rewritten from its commit 5db2e57e. The bundle also patches LINE, so only its Facebook, shared and extension code is watched. The 2026-11-12 review found main and dev moved to ea1cae9f, which adds an Andrew's Patch Setting screen for its Facebook switches and turns its AMOLED theme, three Stories and Reels patches and Save as H.264 on by default. Nothing new was ported, and the adopted commit stays 5db2e57e.",
       "archived": false,
       "forks": [
         "shunyungwang/morphe-patches-LINE",
@@ -149,8 +149,17 @@
         "274ba79ed6cbd9fd11ac5a35aade72a3e775226a",
         "45c4ac7df021b93577bf0ecb90d2df55f675c320"
       ],
-      "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "mirrors": [
+        {
+          "repository": "https://github.com/Ayufa/ayufa-patches-jp",
+          "reason": "A Japanese X and Twitch bundle (GPL-3.0, not a GitHub fork) that vendors this repository under sources/line. On 2026-11-12 that folder shared 140 blob ids with this repository's main, every Facebook patch file among them, and the two code-search hits, sources/line/patches-list.json and sources/line/docs/facebook-theme-map.md, are this repository's own files byte for byte. No index lists it for a Facebook-family package.",
+          "blobs": [
+            "fe6d64444b2f16fd397f000ce328fd81d9325a06",
+            "be244575f79229c150515ba6b4753748d8514ede"
+          ]
+        }
+      ],
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "froggo",
@@ -212,7 +221,7 @@
         "6ad43cc9a59f0b906b51e0cfbd4dd650f83c22e0"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "froggo-arun",
@@ -293,7 +302,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "froggo-mben",
@@ -352,7 +361,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "froggo-anemia",
@@ -396,7 +405,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18",
+      "lastChecked": "2026-11-12",
       "availability": {
         "status": "unavailable",
         "reason": "The repository answers HTTP 404 on 2026-10-18 and the account no longer lists it. The pinned commit stays recorded as the last known state of its reworked 573 downloader.",
@@ -448,7 +457,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "revanced",
@@ -504,7 +513,7 @@
       },
       "contaminatedBy": null,
       "disposition": "candidate",
-      "reason": "The original GPL-3.0 Facebook pair, still pinned to 490, and the four Messenger patches most Messenger work descends from. Its GitHub home is blocked by a DMCA notice, so GitLab holds it for now. It's ancestry and regression evidence for Facebook, and the likely base for a Messenger sibling. The 2026-10-12 review added ten GitLab fork records without a new lineage. Seven carry only upstream branch heads. The divergent heads in radkawwa/main (ae3d3fe6c680bed3c6719cc1d4663981c6e83898), Bobocato/fix/kleinanzeigen-patches (fa2581a978aa1372807eb3db27240236711a60c6) and yuanleo/dev (767db7f6ebd124856954b46794ade93bbea26bdf) retain the same Facebook, Messenger and extension trees and GPL licence text as upstream.",
+      "reason": "The original GPL-3.0 Facebook pair, still pinned to 490, and the four Messenger patches most Messenger work descends from. Its GitHub home is blocked by a DMCA notice, so GitLab holds it for now. It's ancestry and regression evidence for Facebook, and the likely base for a Messenger sibling. The 2026-10-12 review added ten GitLab fork records without a new lineage. Seven carry only upstream branch heads. The divergent heads in radkawwa/main (ae3d3fe6c680bed3c6719cc1d4663981c6e83898), Bobocato/fix/kleinanzeigen-patches (fa2581a978aa1372807eb3db27240236711a60c6) and yuanleo/dev (767db7f6ebd124856954b46794ade93bbea26bdf) retain the same Facebook, Messenger and extension trees and GPL licence text as upstream. The 2026-11-12 review recorded nine more GitLab forks, none of them a new lineage.",
       "archived": false,
       "forks": [
         "Aiedevsm/revanced-patches-1",
@@ -619,7 +628,16 @@
         "EddSC/revanced-patches",
         "load-test3/ReVanced-revanced-patches-255",
         "rachel.green.r/ecoscan-80488462-deletion_scheduled-87563593",
-        "chandler.bing/ecoscan-80488462-deletion_scheduled-87521398"
+        "chandler.bing/ecoscan-80488462-deletion_scheduled-87521398",
+        "Schlomon/revanced-patches",
+        "umeow0716/revanced-patches",
+        "tombro918/revanced-patches",
+        "dipamala/revanced-patches",
+        "0naught/revanced-patches",
+        "bulatec/revanced-patches",
+        "americanpride2026/revanced-patches",
+        "sujithacrysis/revanced-patches",
+        "Tejs1/revanced-patches"
       ],
       "contentHashes": [
         "002638f8f6f0681dc0903a439ccf7c2cf2234a3f",
@@ -865,7 +883,7 @@
           ]
         }
       ],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "revanced-brskt",
@@ -888,7 +906,7 @@
       "branches": [
         {
           "name": "dev",
-          "commit": "a360778188b06ef30e31e2cc83ee331533559342"
+          "commit": "2dbea5537d89dff05cec0bf2e5099452c6a4cde1"
         },
         {
           "name": "main",
@@ -906,12 +924,12 @@
       },
       "contaminatedBy": null,
       "disposition": "candidate",
-      "reason": "A personal ReVanced copy whose main is ReVanced's main commit for commit. Its dev branch carries unmerged Messenger Meta AI work and the finding that Messenger 564 moved onCreate into an obfuscated superclass.",
+      "reason": "A personal ReVanced copy whose main is ReVanced's main commit for commit. Its dev branch carries unmerged Messenger Meta AI work and the finding that Messenger 564 moved onCreate into an obfuscated superclass. The 2026-11-12 review found dev rebased onto newer ReVanced history, so its Messenger work now sits at 2dbea553. The watched Messenger tree there holds the same eight blobs as the old pin a3607781, so the rebase adds no Messenger behavior.",
       "archived": false,
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "meridian",
@@ -963,7 +981,7 @@
         "941a9697b3629f7374a1f98c5a81c724cf95da6c"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "devanced",
@@ -1011,11 +1029,11 @@
       "branches": [
         {
           "name": "main",
-          "commit": "42978e147695e12a1a02d8c19f01a46e294e6adc"
+          "commit": "17584e2903e907c1d63b408cbf4201fc7b76a8e0"
         },
         {
           "name": "dev",
-          "commit": "42978e147695e12a1a02d8c19f01a46e294e6adc"
+          "commit": "17584e2903e907c1d63b408cbf4201fc7b76a8e0"
         }
       ],
       "watchPaths": [
@@ -1031,7 +1049,7 @@
       },
       "contaminatedBy": null,
       "disposition": "candidate",
-      "reason": "Its dev branch (v1.5.0-dev.4, 2026-09-28) replaced the old ReVanced Facebook pair with 15 named Facebook patches across 17 source files for 580.0.0.51.74, built on runtime method search and hooking rather than fingerprints, plus the same eight GPL-3.0 Messenger patches from main, still pinned to 573.0.0.44.88. A base for the Messenger sibling and for what Hushfacebook doesn't have yet: analytics blocking beyond ads, picture-in-picture and performance trims.",
+      "reason": "Its dev branch (v1.5.0-dev.4, 2026-09-28) replaced the old ReVanced Facebook pair with 15 named Facebook patches across 17 source files for 580.0.0.51.74, built on runtime method search and hooking rather than fingerprints, plus the same eight GPL-3.0 Messenger patches from main, still pinned to 573.0.0.44.88. A base for the Messenger sibling and for what Hushfacebook doesn't have yet: analytics blocking beyond ads, picture-in-picture and performance trims. The 2026-11-12 review found main and dev moved to 17584e29 with Messenger changes only: commit #177, titled as adding support for 586.0.0.55.92, touched the inbox subtabs, link handling and Meta AI removal patches. The watched Facebook tree is unchanged.",
       "archived": false,
       "forks": [
         "aisgbnok/De-Vanced",
@@ -1070,11 +1088,16 @@
         "vancedto/De-ReVanced",
         "Z1xus/De-ReVanced",
         "1soka/De-Vanced",
-        "Hassan0703/De-Vanced"
+        "Hassan0703/De-Vanced",
+        "abegumbo-ui/De-Vanced-USB-backup",
+        "xehpuk/De-Vanced",
+        "dictcp/De-Vanced",
+        "mian196/De-Vanced",
+        "Twee4/Twee4-De-Vanced"
       ],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "rushiranpise",
@@ -1110,11 +1133,11 @@
       "branches": [
         {
           "name": "main",
-          "commit": "94f6e476403c9bb6d36e1458fc0ab624bd4bd70a"
+          "commit": "c7e5a560b9f89cd82a189e8d074d6b57817e45fa"
         },
         {
           "name": "dev",
-          "commit": "94f6e476403c9bb6d36e1458fc0ab624bd4bd70a"
+          "commit": "facc027e882dc7d1f600113dfbcf152646229379"
         },
         {
           "name": "tracker/update-working-versions-20261014170611",
@@ -1127,6 +1150,26 @@
         {
           "name": "tracker/update-working-versions-20261018140430",
           "commit": "96d0197af3fb1083266d73636ec800b71676bfac"
+        },
+        {
+          "name": "tracker/update-working-versions-20261101170405",
+          "commit": "579dd011d561670d79ac9e98d026599ffd11fb71"
+        },
+        {
+          "name": "tracker/update-working-versions-20261108155716",
+          "commit": "29be4e562fb047702abb61b97cad00033168f9ae"
+        },
+        {
+          "name": "dependabot/github_actions/dev/actions/setup-java-6.1.0",
+          "commit": "facc027e882dc7d1f600113dfbcf152646229379"
+        },
+        {
+          "name": "dependabot/github_actions/dev/cycjimmy/semantic-release-action-8",
+          "commit": "facc027e882dc7d1f600113dfbcf152646229379"
+        },
+        {
+          "name": "dependabot/npm_and_yarn/dev/MorpheApp/changelog-f3d88b2",
+          "commit": "facc027e882dc7d1f600113dfbcf152646229379"
         }
       ],
       "watchPaths": [
@@ -1140,7 +1183,7 @@
       },
       "contaminatedBy": null,
       "disposition": "candidate",
-      "reason": "The largest GPL-3.0 Messenger set, inside a 278-patch multi-app bundle. Screen capture in encrypted chats and the screenshot-detection bypass change what other people are told, so they would not ship by default. The watched shared Constants.kt carries the declared Messenger compatibility. The 2026-10-02 review found the Messenger tree unchanged but compatibility constants changed from the old pin; Lenart12 adds BlockBlast work while retaining the same Messenger tree. The 2026-10-18 review found the main and dev commits moved with compatibility-constant changes only. The three automated tracker branches pin the same Messenger tree with updated verified versions, so they add no new Messenger behavior. Jman's registry and the Morphe directory also list its bundle under Facebook because of an August 2026 release that added a Facebook patch set. The current patch list names Messenger only, so no Facebook patch is recorded.",
+      "reason": "The largest GPL-3.0 Messenger set, inside a 278-patch multi-app bundle. Screen capture in encrypted chats and the screenshot-detection bypass change what other people are told, so they would not ship by default. The watched shared Constants.kt carries the declared Messenger compatibility. The 2026-10-02 review found the Messenger tree unchanged but compatibility constants changed from the old pin; Lenart12 adds BlockBlast work while retaining the same Messenger tree. The 2026-10-18 review found the main and dev commits moved with compatibility-constant changes only. The three automated tracker branches pin the same Messenger tree with updated verified versions, so they add no new Messenger behavior. Jman's registry and the Morphe directory also list its bundle under Facebook because of an August 2026 release that added a Facebook patch set. The current patch list names Messenger only, so no Facebook patch is recorded. The 2026-11-12 review found main at c7e5a560 and dev at facc027e, both changing only Constants.kt (verified versions, their sorting and two new app entries), with the Messenger tree unchanged. Two more tracker branches change the same file only, and three dependabot branches carry dev's Messenger tree, so none adds Messenger behavior.",
       "archived": false,
       "forks": [
         "ahmedkhbas/admods-patches",
@@ -1202,7 +1245,26 @@
         "blach-bwp/Rushi-Ranpise",
         "angelmelplayle/morphe-patches2",
         "Beachbtch/morphe-patches",
-        "anhanh998765vn-tech/morphe-patch"
+        "anhanh998765vn-tech/morphe-patch",
+        "iamfromreallife/morphe-patches",
+        "Fexture69/morphe-patches",
+        "andriusasukys-source/morphe-patches",
+        "sschramm1/morphe-patches",
+        "ganeshkatare/morphe-patches",
+        "Lassie111/rushiranpise-morphe-patches",
+        "subarnnnnnnnnnn75-create/morphe-patches",
+        "jhangyu/doom_patches",
+        "SaverioMonaco/morphe-patches",
+        "dheeraj-2095/morphe-patches",
+        "trinoo1979/morphe-patches",
+        "nakoo/morphe-patches",
+        "Salvationdk/morphe-patches",
+        "madushas/morphe-patches",
+        "Level0r0s/morphe-patches",
+        "jyotidwi/morphe-patches",
+        "rahulsinghusa-in/morphe2-patches",
+        "ninjatall12/morphe-patches",
+        "InfoSecJams/morphe-patches-pc"
       ],
       "contentHashes": [
         "188138d4dbcd77fd9877e2e321787a7b5b068660",
@@ -1245,7 +1307,7 @@
           ]
         }
       ],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "chirag127",
@@ -1289,7 +1351,7 @@
         "999a5f925d66e32779b32a7592fd77756fb863f4"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "astronaut10",
@@ -1325,7 +1387,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "facebookgoodies",
@@ -1334,13 +1396,15 @@
       "upstream": null,
       "kind": "xposed-module",
       "packages": [
-        "com.facebook.katana"
+        "com.facebook.katana",
+        "com.facebook.orca"
       ],
       "targetVersions": {
         "com.facebook.katana": [
           "582.0.0.50.54",
           "583.0.0.39.55"
-        ]
+        ],
+        "com.facebook.orca": []
       },
       "features": [
         "Hide feed and CSR ads",
@@ -1354,12 +1418,19 @@
         "Save the current video with DASH audio muxing",
         "Facebook 583 support alongside 582",
         "Download the current video from the native sidebar row",
-        "Threads video filtering"
+        "Threads video filtering",
+        "Facebook 584, 585 and 586 support",
+        "Hide Messenger's Meta AI floating button",
+        "Messenger privacy controls with a local read state and switch",
+        "Messenger message status icons",
+        "Messenger 586 support",
+        "True color range video toggle",
+        "Host restart and Meta AI controls"
       ],
       "branches": [
         {
           "name": "main",
-          "commit": "c51e06cec92043d7fc9fa82f2ac4fdc16b35165d"
+          "commit": "6fe3d6753b21a080648128c1264974515ea79e56"
         }
       ],
       "watchPaths": [
@@ -1372,14 +1443,14 @@
       },
       "contaminatedBy": null,
       "disposition": "candidate",
-      "reason": "An Apache-2.0 LSPosed module for the main Facebook process. Its source requires both Facebook 582.0.0.50.54 and version code 475417129. The watched app/src/main tree at 6a22e0e matches the reviewed repository head f2bc97330ddeea38139379130ebb9c38ea0c4c3d. Its licence permits consideration, but no code has been ported or adopted. On 2026-10-18 main added Facebook 583 hook classes next to the 582 ones, a current-video download row and Threads video filtering.",
+      "reason": "An Apache-2.0 LSPosed module for the main Facebook process. Its source requires both Facebook 582.0.0.50.54 and version code 475417129. The watched app/src/main tree at 6a22e0e matches the reviewed repository head f2bc97330ddeea38139379130ebb9c38ea0c4c3d. Its licence permits consideration, but no code has been ported or adopted. On 2026-10-18 main added Facebook 583 hook classes next to the 582 ones, a current-video download row and Threads video filtering. The 2026-11-12 review found main's watched tree at 6fe3d675 with Facebook 584, 585 and 586 support, a Messenger module (Meta AI button hiding, privacy controls with a local read state, message status icons and Messenger 586 including its rebuild 347215343), separate Facebook and Messenger settings tabs, a true color range video toggle, and host restart and Meta AI controls. Messenger is recorded as a second package with no declared builds, since the commit titles name only major versions. The licence text is unchanged and nothing has been ported.",
       "archived": false,
       "forks": [],
       "contentHashes": [
         "4b02c068a1090db5b179b9eb1d5551da2aa8b224"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "loukious",
@@ -1408,14 +1479,14 @@
       "branches": [
         {
           "name": "main",
-          "commit": "ba545595e7b6b5c03b6831373121a63accc86574"
+          "commit": "d0cd3dd30fbedf1b06089266a0bb68783d3f2111"
         }
       ],
       "watchPaths": [],
       "license": null,
       "contaminatedBy": null,
       "disposition": "behavior-only",
-      "reason": "The widest map of Facebook's ad pipelines, with no licence. Its README is read for ideas and stable strings, and its code never is. Session export and the ad-free session spoof are out anyway.",
+      "reason": "The widest map of Facebook's ad pipelines, with no licence. Its README is read for ideas and stable strings, and its code never is. Session export and the ad-free session spoof are out anyway. The 2026-11-12 review found main at d0cd3dd3 (version 1.24) with a startup ANR fix for repeated DexKit discovery, discovery cache fixes merged from Solomag's fork and an account capture loop fix. It still has no licence, so nothing changes.",
       "archived": false,
       "forks": [
         "congpeka/FacebookAppAdsRemover",
@@ -1425,11 +1496,13 @@
         "peerkaiser8-create/FacebookAppAdsRemover",
         "SadmanFahad/FacebookAppAdsRemover",
         "SapitoSucio/FacebookAppAdsRemover",
-        "sxtufs/FBAdsRemover"
+        "sxtufs/FBAdsRemover",
+        "Solomag/FacebookAppAdsRemover",
+        "raselmiah364849/FacebookAppAdsRemover"
       ],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "loukious-gamer765",
@@ -1458,7 +1531,7 @@
         },
         {
           "name": "experiment/obfuscation-resistant-hooks",
-          "commit": "daa9e295dbc7a2526fb017a5e996b20e442291db"
+          "commit": "1243fd3554bb0098c142a18a78c9f9a460e58ea5"
         },
         {
           "name": "experiment/obfuscation-resistant-hooks-579-fix",
@@ -1477,18 +1550,18 @@
       "license": null,
       "contaminatedBy": null,
       "disposition": "behavior-only",
-      "reason": "A copy of FacebookAppAdsRemover with Facebook 577 Reels and commercial-break paths written down. No licence, so its notes are hypotheses for fixture work and nothing more.",
+      "reason": "A copy of FacebookAppAdsRemover with Facebook 577 Reels and commercial-break paths written down. No licence, so its notes are hypotheses for fixture work and nothing more. The 2026-11-12 review found experiment/obfuscation-resistant-hooks at 1243fd35 with an interface-aware Reels resolver (exp28), scans limited to the main process, a newer DexKit runtime and state repair that fails closed. Still no licence.",
       "archived": false,
       "forks": [],
       "contentHashes": [
         "921478b4426176fafe40da970334ce53d9796824"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "nexalloy",
-      "repository": "https://github.com/gnadgnaoh/NexAlloy-XES",
+      "repository": "https://github.com/gnadgnaoh/SexAlloy",
       "lineage": "loukious",
       "upstream": "https://github.com/NexAlloy/NexAlloy",
       "kind": "xposed-module",
@@ -1511,20 +1584,28 @@
         "Block screen capture detection",
         "Clean links",
         "Download photos, videos, reels and stories",
-        "Open links in the external browser"
+        "Open links in the external browser",
+        "Hide affiliate links",
+        "Hide active status",
+        "Show exact time",
+        "Download comment GIFs"
       ],
       "branches": [
         {
           "name": "root",
-          "commit": "e9a69de081abcb6925c576621e6bb017c08cd8eb"
+          "commit": "b4188d99b67e86551aed31fdee4c017f4acee350"
         },
         {
-          "name": "refactor-ig",
-          "commit": "e9a69de081abcb6925c576621e6bb017c08cd8eb"
+          "name": "jadx-dexkit-harness",
+          "commit": "b4188d99b67e86551aed31fdee4c017f4acee350"
         },
         {
-          "name": "runcatching",
-          "commit": "a68b14393721b79fa921a88ed14afd82aad28042"
+          "name": "nonroot",
+          "commit": "b4188d99b67e86551aed31fdee4c017f4acee350"
+        },
+        {
+          "name": "archive-2026-10-25-zalo-download",
+          "commit": "bdc4c2a7e6dddeed9f1b02ebf7381fd7f4993b1f"
         }
       ],
       "watchPaths": [
@@ -1533,15 +1614,15 @@
       ],
       "license": {
         "spdx": "GPL-3.0",
-        "url": "https://github.com/gnadgnaoh/NexAlloy-XES/blob/7333cd8c93be223a8ec2804938449de4777be685/LICENSE",
+        "url": "https://github.com/gnadgnaoh/SexAlloy/blob/7333cd8c93be223a8ec2804938449de4777be685/LICENSE",
         "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
       },
       "contaminatedBy": {
         "source": "https://github.com/Loukious/FacebookAppAdsRemover",
-        "evidence": "https://github.com/gnadgnaoh/NexAlloy-XES/blob/7333cd8c93be223a8ec2804938449de4777be685/app/src/main/java/io/github/nexalloy/revanced/facebook/ad/HideFacebookAdsPatch.kt"
+        "evidence": "https://github.com/gnadgnaoh/SexAlloy/blob/7333cd8c93be223a8ec2804938449de4777be685/app/src/main/java/io/github/nexalloy/revanced/facebook/ad/HideFacebookAdsPatch.kt"
       },
       "disposition": "behavior-only",
-      "reason": "GPL-3.0 at the repository level, but its Facebook master patch says it ports every FacebookAppAdsRemover hook, and that code has no licence. The Facebook subtree is behavior-only until Loukious licenses it. The feature list retains the reviewed branch union. On 2026-10-02 the fix/tiktok-split-apk branches diverged from the removed sync-and-fix branch and changed FacebookAdHelpers.kt and ad/Fingerprints.kt. Reels shopping hooks remained on root/nonroot but were absent from those other branches. On 2026-10-04 root moved Facebook onto a class-loader dex source behind a multidex gate, with the CSR sponsored slot queue, an ad-free session spoof, unseen story viewing, l.php unwrapping and screenshot allowing. The 2026-10-12 review found only root and a restored nonroot branch. Both new pins retain the same watched Facebook tree and KatanaDexGate blob as the recorded 9a90bbbd010fa5e567ae3e5c0c164964f32eb14d pin, so they establish no new Facebook behavior. The 2026-10-18 review found the nonroot branch deleted. Root moved to e9a69de0 with the Facebook tree split into ad, download and link packages (media download for photos, videos, reels and stories, and an open-links-in-browser patch), and the refactor-ig and runcatching branches are new pins. The unlicensed Loukious ad hooks are still ported inside, so the Facebook subtree stays behavior-only.",
+      "reason": "GPL-3.0 at the repository level, but its Facebook master patch says it ports every FacebookAppAdsRemover hook, and that code has no licence. The Facebook subtree is behavior-only until Loukious licenses it. The feature list retains the reviewed branch union. On 2026-10-02 the fix/tiktok-split-apk branches diverged from the removed sync-and-fix branch and changed FacebookAdHelpers.kt and ad/Fingerprints.kt. Reels shopping hooks remained on root/nonroot but were absent from those other branches. On 2026-10-04 root moved Facebook onto a class-loader dex source behind a multidex gate, with the CSR sponsored slot queue, an ad-free session spoof, unseen story viewing, l.php unwrapping and screenshot allowing. The 2026-10-12 review found only root and a restored nonroot branch. Both new pins retain the same watched Facebook tree and KatanaDexGate blob as the recorded 9a90bbbd010fa5e567ae3e5c0c164964f32eb14d pin, so they establish no new Facebook behavior. The 2026-10-18 review found the nonroot branch deleted. Root moved to e9a69de0 with the Facebook tree split into ad, download and link packages (media download for photos, videos, reels and stories, and an open-links-in-browser patch), and the refactor-ig and runcatching branches are new pins. The unlicensed Loukious ad hooks are still ported inside, so the Facebook subtree stays behavior-only. The 2026-11-12 review found the repository renamed from NexAlloy-XES to SexAlloy, with archive-2026-10-25-zalo-download as its default branch. refactor-ig and runcatching are gone. root, nonroot (back again) and jadx-dexkit-harness share Facebook work at b4188d99, which adds affiliate link hiding, active status hiding, exact post times, comment GIF downloads and a game bridge wrapper beside the ad patches. The archive branch's Facebook work stops at bdc4c2a7, before the exact-time and GIF files. The tree also holds files named after Hushfacebook patches (HoldAnalyticsUploadsPatch, UploadStoriesInHdPatch, SanitizeShareLinksPatch, HideCommentTypingPatch), already there at e9a69de0. HideFacebookAdsPatch.kt is still in the tree, so the contamination and the behavior-only restriction stand.",
       "archived": false,
       "forks": [
         "49ronind/NexAlloy",
@@ -1555,15 +1636,16 @@
         "thinhzero/NexAlloy",
         "trangkyanh17/NexAlloy-XES",
         "wszmx332650748/SexAlloy",
-        "ahtuaan309/NexAlloy-XES"
+        "ahtuaan309/NexAlloy-XES",
+        "TheFloresto/NexAlloy-XES"
       ],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "nexalloynext",
-      "repository": "https://github.com/a092devs/NexAlloyNext-Patches",
+      "repository": "https://github.com/a092devs/Nexfusion-Patches",
       "lineage": "hushfacebook-port",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "kind": "xposed-module",
@@ -1582,30 +1664,40 @@
         "Hide sponsored posts",
         "Hide sponsored reels",
         "Block telemetry and ad tracking",
-        "Open links in external browser"
+        "Open links in external browser",
+        "Download Facebook media with Reel and audio controls",
+        "Hide suggested groups",
+        "Remove Meta AI"
       ],
       "branches": [
         {
           "name": "main",
-          "commit": "10155d98734fe1da88fc41d06ddafa2427dc5fd4"
+          "commit": "621424d8696f7a0131b12fbe68fe84e8a615e6ce"
+        },
+        {
+          "name": "beta",
+          "commit": "621424d8696f7a0131b12fbe68fe84e8a615e6ce"
         }
       ],
       "watchPaths": [
-        "bundles/nexfusion/src/main/java/io/github/nexalloy/nexfusion/facebook"
+        "bundles/nexfusion/src/main/java/io/github/nexfusion/nexfusion/facebook"
       ],
       "license": {
         "spdx": "GPL-3.0",
-        "url": "https://github.com/a092devs/NexAlloyNext-Patches/blob/ed6f28c8825bae24576eb2e28490b83ef44e2bf7/LICENSE",
+        "url": "https://github.com/a092devs/Nexfusion-Patches/blob/ed6f28c8825bae24576eb2e28490b83ef44e2bf7/LICENSE",
         "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
       },
       "contaminatedBy": null,
       "disposition": "rejected",
-      "reason": "A GPL-3.0 runtime bundle whose Facebook patches say they were ported and adapted from Hushfacebook itself. Taking anything back would only return our own code, so there is nothing to adopt. It is recorded so the census stops flagging it.",
+      "reason": "A GPL-3.0 runtime bundle whose Facebook patches say they were ported and adapted from Hushfacebook itself. Taking anything back would only return our own code, so there is nothing to adopt. It is recorded so the census stops flagging it. The 2026-11-12 review found the repository renamed from NexAlloyNext-Patches to Nexfusion-Patches. Its 4.0.0 release (cc960b48, 2026-11-02) moved the package to io.github.nexfusion, so the Facebook code now sits under bundles/nexfusion/src/main/java/io/github/nexfusion/nexfusion/facebook and the watch path follows it. main and beta share Facebook work at 621424d8. Since the old pin it added Facebook media downloads with Reel and audio controls, Facebook 584 and 586 ad work, suggested group hiding and a commit titled as porting Hush Facebook and Instagram features and removing Meta AI. It is still a port of this bundle, so it stays rejected.",
       "archived": false,
-      "forks": [],
+      "forks": [
+        "Enginex0/nexfusion-patches",
+        "Itsfitts/NexAlloyNext-Patches"
+      ],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "byrafael",
@@ -1644,7 +1736,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "messengerex",
@@ -1687,7 +1779,7 @@
         "5a3b82b13b9db90538e5cb8248b9f6aa1a574fcb"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "messenger-cleaner",
@@ -1726,7 +1818,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "messenger-z",
@@ -1774,7 +1866,7 @@
         "f3d80ddc2f77b8b48be055b8db95c4afcf869adf"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "messengerpro",
@@ -1872,7 +1964,7 @@
       ],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "messengerpro-pedguedes",
@@ -1933,7 +2025,7 @@
         "e2935628a7f9a85ee1957c4a0a0487d308523250"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "shuhaib",
@@ -1971,7 +2063,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18",
+      "lastChecked": "2026-11-12",
       "availability": {
         "status": "retired",
         "reason": "The Facebook Lite folder was deleted from dev on 2026-10-17 by the commit message 'fix: removed fb lite'. Commit e44441d556026a876d70fc588c8df594888d770f still resolves with the folder, and dev now holds unrelated app patches.",
@@ -2010,7 +2102,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "onetapvideodownload",
@@ -2070,14 +2162,15 @@
         "truthjunkie/OneTapVideoDownload",
         "umairjabbar555/OneTapVideoDownload",
         "vaginessa/OneTapVideoDownload",
-        "vinayhvaghamshi/OneTapVideoDownload"
+        "vinayhvaghamshi/OneTapVideoDownload",
+        "4kanbir/OneTapVideoDownload"
       ],
       "contentHashes": [
         "6af72c63ca26c655873776d238fc3009d28729e1",
         "e14a8cb96f828fac33b7c9a96f79549dd1bf5c2f"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "metaplusxposed",
@@ -2111,7 +2204,7 @@
         "161acbab4e391eba322f7913bbb9a9434793b175"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "xposedbase",
@@ -2147,7 +2240,7 @@
         "0a296e233b82039b948e3d0f53daac687c545220"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "glitchdraft",
@@ -2169,7 +2262,7 @@
       "branches": [
         {
           "name": "main",
-          "commit": "3af38bfbbdf93babf992aaf5b25f15553c6dddda"
+          "commit": "04ba708c90a14dc4d05b97b8d4cbdf4ecd464dea"
         }
       ],
       "watchPaths": [
@@ -2182,14 +2275,14 @@
       },
       "contaminatedBy": null,
       "disposition": "rejected",
-      "reason": "MIT-licensed, but it syncs chat drafts through a server, which has nothing to do with decluttering Facebook. Only its Android module is watched.",
+      "reason": "MIT-licensed, but it syncs chat drafts through a server, which has nothing to do with decluttering Facebook. Only its Android module is watched. The 2026-11-12 review found main's module at 04ba708c with more draft-sync work: a person strip and link picker, chats resolved from fb-messenger deep links and a per-app module config. Still nothing to take.",
       "archived": false,
       "forks": [],
       "contentHashes": [
         "03ed03d4419127ba57f994dc7f350ba2bebf588e"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "chatheadenabler",
@@ -2231,7 +2324,7 @@
         "8444abcffc0439bd3fc99e692b0d17c712c13d41"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "messengerpeep",
@@ -2269,7 +2362,7 @@
         "1c79a7145de83aeeb074fa5888e7d4eea6d0c8e2"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "id": "tothanggtvt-fb-lite",
@@ -2331,121 +2424,356 @@
         "2bd1cddeb156279910e819840c29cb41a5d5dde5",
         "6750db0c04a60d2a5a3f33a98cca805dbba1afb7"
       ],
-      "mirrors": [
-        {
-          "repository": "https://github.com/BlazeFTL/morphe-fb-lite",
-          "reason": "A copy of ToThangGTVT/morphe-fb-lite at its last commit d69c0d69, created 2026-10-03 under another account and not a GitHub fork. The original answers 404 since 2026-10-06.",
-          "blobs": []
-        }
-      ],
-      "lastChecked": "2026-10-18",
+      "mirrors": [],
+      "lastChecked": "2026-11-12",
       "availability": {
         "status": "unavailable",
-        "reason": "The repository answered HTTP 404 on 2026-10-06 and the account lists no repository of that name. BlazeFTL/morphe-fb-lite, created 2026-10-03 and not a GitHub fork, holds the same main and dev commit d69c0d69, so it is recorded as a mirror rather than a rename.",
+        "reason": "The repository answered HTTP 404 on 2026-10-06 and the account lists no repository of that name. BlazeFTL/morphe-fb-lite, created 2026-10-03 and not a GitHub fork, held the same main and dev commit d69c0d69 and was recorded here as a mirror. The 2026-11-12 review found it renamed to BlazeFTL/FaceBook-Lite-Morphe with its own commits on top of d69c0d69, so it is now its own entry (blazeftl-fb-lite) and no longer a mirror of this one.",
         "evidence": "https://github.com/ToThangGTVT/morphe-fb-lite/commit/d69c0d6904a75f48256c7dede8559390b5e1e606"
       }
+    },
+    {
+      "id": "blazeftl-fb-lite",
+      "repository": "https://github.com/BlazeFTL/FaceBook-Lite-Morphe",
+      "lineage": "tothanggtvt-fb-lite",
+      "upstream": "https://github.com/ToThangGTVT/morphe-fb-lite",
+      "kind": "morphe-patches",
+      "packages": [
+        "com.facebook.lite"
+      ],
+      "targetVersions": {
+        "com.facebook.lite": [
+          "536.0.0.11.107"
+        ]
+      },
+      "features": [
+        "Clone install",
+        "Disable in-app browser",
+        "Double tap to seek",
+        "Hide sponsored posts",
+        "Install beside Meta's apps",
+        "Morphe settings",
+        "Open profile when no reels",
+        "Seek bar for short videos",
+        "Skip creator's Reels page",
+        "Use system font",
+        "Use system font in feed",
+        "Video download and auto next reel"
+      ],
+      "branches": [
+        {
+          "name": "main",
+          "commit": "d7e8154fdc0de41a26fa99a7692f93a377a77f60"
+        },
+        {
+          "name": "dev",
+          "commit": "d7e8154fdc0de41a26fa99a7692f93a377a77f60"
+        }
+      ],
+      "watchPaths": [
+        "patches/src/main/kotlin/app/fblite",
+        "extensions",
+        "gradle/rename-obfuscated-classes.gradle.kts"
+      ],
+      "license": {
+        "spdx": "GPL-3.0",
+        "url": "https://github.com/BlazeFTL/FaceBook-Lite-Morphe/blob/cac4ff141aaa4eedc661afb274f880583799f900/LICENSE",
+        "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+      },
+      "contaminatedBy": null,
+      "disposition": "candidate",
+      "reason": "Recorded on 2026-11-12. This is the copy of ToThangGTVT/morphe-fb-lite that the ledger held as a mirror, renamed from BlazeFTL/morphe-fb-lite (repository id 1403457688, created 2026-10-03, not a GitHub fork). It still carries ToThangGTVT's d69c0d69 but has gone its own way since: font patch updates, Facebook Lite 536.0.0.11.107 support (2026-11-08), CI commits and release v1.6.6, now twelve declared patches. patches-list.json is left out of the watch paths because every CI release commit rewrites it. Its NOTICE (blob ab13e476) is not the original's. It is a GPL-3.0 Lite candidate with the original's caveats: distinct derivative branding, and the origin of its native stubs and its fit with Hushfacebook Lite need independent proof. Later on 2026-11-12 main and dev took the Arabic branch (d7e8154f, release v1.6.6), which then went away. It moves the overlay buttons for right-to-left layouts and adds Arabic words to the name filter in its extension, with the same twelve patches. Nothing is adopted.",
+      "archived": false,
+      "forks": [
+        "rarspace01/FaceBook-Lite-Morphe",
+        "msrofficial/FaceBook-Lite-Morphe",
+        "prpjzz/morphe-fb-lite"
+      ],
+      "contentHashes": [],
+      "mirrors": [],
+      "lastChecked": "2026-11-12"
+    },
+    {
+      "id": "just-a-lurker",
+      "repository": "https://github.com/Just-a-lurker/facebook-morphe-patches",
+      "lineage": "just-a-lurker",
+      "upstream": "https://github.com/MorpheApp/morphe-patches-template",
+      "kind": "morphe-patches",
+      "packages": [
+        "com.facebook.katana"
+      ],
+      "targetVersions": {
+        "com.facebook.katana": []
+      },
+      "features": [
+        "Block Instant Games ads",
+        "Block ad telemetry",
+        "Block background ad prefetch",
+        "Dark mode on tablets",
+        "Disable Audience Network",
+        "Hide affiliate product links",
+        "Hide sponsored Marketplace listings",
+        "Hide sponsored posts",
+        "Hide sponsored profile posts",
+        "Hide sponsored reels",
+        "Hide sponsored search results",
+        "Hide sponsored stories",
+        "Install beside Meta's apps"
+      ],
+      "branches": [
+        {
+          "name": "main",
+          "commit": "861cd66c5f2daeb35e9f42a5e3faf35e4ee645da"
+        },
+        {
+          "name": "dev",
+          "commit": "861cd66c5f2daeb35e9f42a5e3faf35e4ee645da"
+        }
+      ],
+      "watchPaths": [
+        "patches/src/main/kotlin/app/fbpatches/patches/facebook",
+        "extensions/extension/src/main/java/app/fbpatches/extension/facebook"
+      ],
+      "license": {
+        "spdx": "GPL-3.0",
+        "url": "https://github.com/Just-a-lurker/facebook-morphe-patches/blob/861cd66c5f2daeb35e9f42a5e3faf35e4ee645da/LICENSE",
+        "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+      },
+      "contaminatedBy": null,
+      "disposition": "candidate",
+      "reason": "Recorded on 2026-11-12. An independent GPL-3.0 Facebook bundle started 2026-11-07 from the Morphe template (repository id 1449359499, not a fork), with thirteen ad and telemetry patches. Its commits mention Facebook 585 but the patches declare no version. It shares no code blobs with Hushfacebook, andrewliang25, SexAlloy or Froggo, only template boilerplate, and its NOTICE (blob 795ece54) is its own. A source candidate for ad-blocking ideas. Nothing is adopted.",
+      "archived": false,
+      "forks": [],
+      "contentHashes": [],
+      "mirrors": [],
+      "lastChecked": "2026-11-12"
+    },
+    {
+      "id": "megathelegend",
+      "repository": "https://github.com/MegaTheLEGEND/Facebook-Marketplace",
+      "lineage": "megathelegend",
+      "upstream": null,
+      "kind": "morphe-patches",
+      "packages": [
+        "com.facebook.katana"
+      ],
+      "targetVersions": {
+        "com.facebook.katana": []
+      },
+      "features": [
+        "Marketplace only",
+        "Marketplace rename"
+      ],
+      "branches": [
+        {
+          "name": "main",
+          "commit": "0c518119d712764ebba54ae24a75d9141dd39bf6"
+        }
+      ],
+      "watchPaths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook",
+        "extensions/facebook"
+      ],
+      "license": {
+        "spdx": "GPL-3.0",
+        "url": "https://github.com/MegaTheLEGEND/Facebook-Marketplace/blob/0c518119d712764ebba54ae24a75d9141dd39bf6/LICENSE",
+        "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+      },
+      "contaminatedBy": null,
+      "disposition": "rejected",
+      "reason": "Recorded on 2026-11-12. A GPL-3.0 Morphe bundle (repository id 1427683143, not a fork) that turns Facebook into a Marketplace-only app and renames it. Hushfacebook already ships its own Marketplace only patch, so there is nothing to take. It shares only stub files with De-Vanced and has its own NOTICE.",
+      "archived": false,
+      "forks": [],
+      "contentHashes": [],
+      "mirrors": [],
+      "lastChecked": "2026-11-12"
+    },
+    {
+      "id": "quang",
+      "repository": "https://github.com/mnhqngl/quang-patches",
+      "lineage": "quang",
+      "upstream": "https://github.com/MorpheApp/morphe-patches-template",
+      "kind": "morphe-patches",
+      "packages": [
+        "com.facebook.orca"
+      ],
+      "targetVersions": {
+        "com.facebook.orca": []
+      },
+      "features": [
+        "Change Photos picker package",
+        "Fix Photos picker button not opening",
+        "Remove conflicting permission declarations"
+      ],
+      "branches": [
+        {
+          "name": "main",
+          "commit": "6067e059c602c0a00fe4572f34024bdf76e63ce8"
+        },
+        {
+          "name": "dev",
+          "commit": "6067e059c602c0a00fe4572f34024bdf76e63ce8"
+        }
+      ],
+      "watchPaths": [
+        "patches/src/main/kotlin/app/template/patches/messenger"
+      ],
+      "license": {
+        "spdx": "GPL-3.0",
+        "url": "https://github.com/mnhqngl/quang-patches/blob/6067e059c602c0a00fe4572f34024bdf76e63ce8/LICENSE",
+        "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+      },
+      "contaminatedBy": null,
+      "disposition": "rejected",
+      "reason": "Recorded on 2026-11-12. A GPL-3.0 Morphe template bundle (repository id 1443922605, not a fork) whose Messenger patches change the package of the Photos picker Messenger opens, fix that picker's button and remove conflicting permission declarations. None of it is decluttering, so there is nothing for Hushfacebook to take. Its NOTICE is the template's.",
+      "archived": false,
+      "forks": [],
+      "contentHashes": [],
+      "mirrors": [],
+      "lastChecked": "2026-11-12"
+    },
+    {
+      "id": "rj-reseam",
+      "repository": "https://github.com/visionxstream99-mod/RJ-reseam-patches",
+      "lineage": "rj-reseam",
+      "upstream": null,
+      "kind": "revanced-patches",
+      "packages": [
+        "com.facebook.katana"
+      ],
+      "targetVersions": {
+        "com.facebook.katana": []
+      },
+      "features": [
+        "Disable Audience Network",
+        "Feed filter",
+        "Hide affiliate links",
+        "Hide sponsored posts"
+      ],
+      "branches": [
+        {
+          "name": "main",
+          "commit": "ac672585b4afa0b42a3797bd536b67ddf961fd7d"
+        }
+      ],
+      "watchPaths": [
+        "apps/facebook"
+      ],
+      "license": {
+        "spdx": "AGPL-3.0",
+        "url": "https://github.com/visionxstream99-mod/RJ-reseam-patches/blob/ac672585b4afa0b42a3797bd536b67ddf961fd7d/LICENSE",
+        "sha256": "d8a6cc31abc16b6748c7a21f21611f5a1ec33f67d22ca23d7da1c19b95496bee"
+      },
+      "contaminatedBy": null,
+      "disposition": "behavior-only",
+      "reason": "Recorded on 2026-11-12. A Reseam bundle (patcher runtime app.reseam:reseam, repository id 1435154067, not a fork) that the Jman index lists under Facebook with eight patches and no version limit. The ledger has no Reseam kind, so it is filed as revanced-patches, the nearest ReVanced-style patcher layout. Its Facebook patches sit under apps/facebook, duplicated under the app/rj and top/madkarma packages, and share no blobs with any recorded source. AGPL-3.0 can't be combined with GPL-3.0, so only its behavior is evidence.",
+      "archived": false,
+      "forks": [],
+      "contentHashes": [],
+      "mirrors": [],
+      "lastChecked": "2026-11-12"
     }
   ],
   "outOfScope": [
     {
       "repository": "https://github.com/ycngmn/Nobook",
       "reason": "A WebView wrapper around facebook.com, archived. It patches no Facebook package, though it shows demand for a low-data client.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/NoMore201/materialbook",
       "reason": "A WebView wrapper around facebook.com. It patches no Facebook package, and the repository is gone.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/Arc157/Virtualapp",
       "reason": "An app-virtualization project whose sample app list names Facebook's package. No Facebook patch.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/Cross2pro/VirtualApp",
       "reason": "An app-virtualization project whose sample app list names Facebook's package. No Facebook patch.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/D4vRAM369/WhatsMicFix-LSPosed",
       "reason": "An LSPosed microphone fix for WhatsApp voice notes that names Messenger's package. Nothing to do with Messenger's clutter.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/Firefds/FirefdsKit",
       "reason": "A Samsung system tweak module that names Facebook's package in a list.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/LeeHDsniper/APKAnalyserModules",
       "reason": "A captured logcat that mentions Facebook's package. No code for it.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/life2015/OPAmbientMod",
       "reason": "A OnePlus ambient display module that names Facebook and Messenger for their notifications.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/MinaMichita/MiuiEULocalizationToolsBox",
       "reason": "A MIUI localization module that names Facebook's package in a list.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/peter9811/ReVanced-APKs-output",
       "reason": "Build output that lists ReVanced's patches. No patch code.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/rhe91709-netizen/HyperOS3EULocalization",
       "reason": "A HyperOS localization module that names Facebook's package in a list.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/SodaWithoutSparkles/revanced-troubleshooting-guide",
       "reason": "A troubleshooting guide that keeps copies of ReVanced's patch lists.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/townbull/XposedExp",
       "reason": "A 2015 Samsung contacts experiment that names Facebook's package.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/TR-TECH-GUIDE/VirtualApp",
       "reason": "An app-virtualization project whose sample app list names Facebook's package. No Facebook patch.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/user2user1/rvmm-config-gen",
       "reason": "A build configuration generator that keeps a copy of ReVanced's patch list.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/xbyl1234/instagram_lite_bot",
       "reason": "An Instagram Lite account bot whose analysis hook names Facebook's packages.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/NexAlloy/NexAlloy",
       "reason": "The XES fork's upstream. Its own tree has no com.facebook.katana code, and its Morphe submodule (NexAlloy/morphe-patches, branch nexalloy) holds only Litho and Yoga stubs for its YouTube patches, not a Facebook patch.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/anxyis/anxy-patches",
       "reason": "An Alight Motion patch source. Its main/dev catalog names only com.alightcreative.motion; the com.facebook.katana search hit is an Alight Motion ProxyAuth string. Evidence: https://github.com/anxyis/anxy-patches/blob/b498ecc7199f658c8618b99346e5298b628f9605/patches-list.json.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/kveld9/kveld-morphe-patches",
       "reason": "A personal Morphe bundle (GPL-3.0). The com.facebook.katana hit is a string inside a universal telemetry-neutralizer patch, not a Facebook patch. Evidence: https://github.com/kveld9/kveld-morphe-patches/blob/main/patches/src/main/kotlin/app/morphe/patches/universal/UniversalTelemetryNeutralizerPatch.kt.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/mkr-infinity/mkr-morphe-patches",
       "reason": "A personal GPL-3.0 Morphe bundle. Its README lists Facebook 485 and Messenger 480 as experimental, but the tree holds no Facebook or Messenger patch code, so there is nothing to read.",
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/debakarr/morphe-patches",
@@ -2453,7 +2781,7 @@
       "listedFor": [
         "com.facebook.orca"
       ],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/joristdh/platypatch",
@@ -2462,7 +2790,7 @@
         "com.facebook.katana",
         "com.facebook.orca"
       ],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
     },
     {
       "repository": "https://github.com/slenderman00/revanced-patches-grindr",
@@ -2470,7 +2798,35 @@
       "listedFor": [
         "com.facebook.orca"
       ],
-      "lastChecked": "2026-10-18"
+      "lastChecked": "2026-11-12"
+    },
+    {
+      "repository": "https://github.com/ineednotitle/Proteus-Patches",
+      "reason": "A GPL-3.0 Morphe bundle. Jman's registry lists it under Messenger, but its tree has no Facebook or Messenger patch directory, so there is nothing to read.",
+      "listedFor": [
+        "com.facebook.orca"
+      ],
+      "lastChecked": "2026-11-12"
+    },
+    {
+      "repository": "https://github.com/broisnees/phone",
+      "reason": "A Nothing Phone root setup log with no licence. One LSPosed hook file for an unscroll module names the Facebook package, but there is no Facebook patch or module to record.",
+      "lastChecked": "2026-11-12"
+    },
+    {
+      "repository": "https://github.com/FaroqueTech0/AOSPisland",
+      "reason": "A SystemUI notification island Xposed module. Its code names the Facebook and Messenger packages, but it patches neither app.",
+      "lastChecked": "2026-11-12"
+    },
+    {
+      "repository": "https://github.com/lockys/tsl9",
+      "reason": "TSL9 reverse engineering work with no licence. A Morphe feasibility note mentions the Facebook package in passing, and there is no Facebook patch.",
+      "lastChecked": "2026-11-12"
+    },
+    {
+      "repository": "https://github.com/ngocthanhgl/morphe-audit-bot",
+      "reason": "An audit bot whose report about HushThreads mentions the Messenger package. It holds no Facebook-family patch.",
+      "lastChecked": "2026-11-12"
     }
   ]
 }
