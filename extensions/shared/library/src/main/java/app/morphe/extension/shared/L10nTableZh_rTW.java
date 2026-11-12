@@ -1765,8 +1765,8 @@ final class L10nTableZh_rTW {
                 "\u91cd\u65b0\u555f\u52d5 Facebook \u5f8c\uff0cHushfacebook \u6703\u91cd\u65b0\u555f\u7528\u3002");
         table.put("Icons look soft on this screen",
                 "\u6b64\u87a2\u5e55\u4e0a\u7684\u5716\u793a\u770b\u8d77\u4f86\u6a21\u7cca");
-        table.put("Icons look soft on this screen. Repatch with the 120-640dpi bundle.",
-                "\u6b64\u87a2\u5e55\u4e0a\u7684\u5716\u793a\u770b\u8d77\u4f86\u6a21\u7cca\u3002\u8acb\u7528 120-640dpi \u5957\u4ef6\u91cd\u65b0\u4fee\u88dc\u3002");
+        table.put("Icons look soft on this screen. Repatch with the 240-640dpi bundle.",
+                "\u6b64\u87a2\u5e55\u4e0a\u7684\u5716\u793a\u770b\u8d77\u4f86\u6a21\u7cca\u3002\u8acb\u7528 240-640dpi \u5957\u4ef6\u91cd\u65b0\u4fee\u88dc\u3002");
         table.put("If your patched Facebook includes Accent color, Facebook's blue will be %1$s.",
                 "\u82e5\u4fee\u88dc\u5f8c\u7684 Facebook \u5305\u542b\u300c\u5f37\u8abf\u8272\u300d\uff0cFacebook \u7684\u85cd\u8272\u5c07\u6539\u70ba %1$s\u3002");
         table.put("If your patched Facebook includes Accent color, the Custom choice will be %1$s.",
@@ -3207,8 +3207,8 @@ final class L10nTableZh_rTW {
                 "\u9996\u9801\u9802\u7aef\u7684 Facebook \u6a19\u8a8c\u70ba %1$s\u3002\u91cd\u65b0\u555f\u52d5 Facebook \u5373\u53ef\u770b\u5230\u8b8a\u66f4\u3002");
         table.put("The Facebook logo keeps its blue. Type a color code to change it.",
                 "Facebook \u6a19\u8a8c\u7dad\u6301\u85cd\u8272\u3002\u8f38\u5165\u8272\u78bc\u5373\u53ef\u8b8a\u66f4\u3002");
-        table.put("The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has images for every screen.",
-                "\u4f60\u4fee\u88dc\u7684 Facebook \u6c92\u6709\u9069\u5408\u6b64\u87a2\u5e55\u7684\u5716\u7247\uff0c\u56e0\u6b64\u90e8\u5206\u5716\u793a\u88ab\u653e\u5927\u3002\u8acb\u4f7f\u7528 APKMirror \u4e0a\u7684 (arm64-v8a) (120-640dpi) \u5957\u4ef6\u91cd\u65b0\u4fee\u88dc Facebook\uff0c\u5b83\u5305\u542b\u9069\u5408\u6240\u6709\u87a2\u5e55\u7684\u5716\u7247\u3002");
+        table.put("The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (240-640dpi) bundle on APKMirror, which has images for every screen.",
+                "\u4f60\u4fee\u88dc\u7684 Facebook \u6c92\u6709\u9069\u5408\u6b64\u87a2\u5e55\u7684\u5716\u7247\uff0c\u56e0\u6b64\u90e8\u5206\u5716\u793a\u88ab\u653e\u5927\u3002\u8acb\u4f7f\u7528 APKMirror \u4e0a\u7684 (arm64-v8a) (240-640dpi) \u5957\u4ef6\u91cd\u65b0\u4fee\u88dc Facebook\uff0c\u5b83\u5305\u542b\u9069\u5408\u6240\u6709\u87a2\u5e55\u7684\u5716\u7247\u3002");
         table.put("The Feeds tab will open on %1$s.",
                 "\u300c\u52d5\u614b\u6d88\u606f\u300d\u5206\u9801\u5c07\u958b\u555f %1$s\u3002");
         table.put("The Feeds tab will open on the filter Facebook picks.",

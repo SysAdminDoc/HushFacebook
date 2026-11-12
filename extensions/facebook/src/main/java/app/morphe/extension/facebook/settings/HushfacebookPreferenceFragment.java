@@ -657,7 +657,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         if (!IconDensity.patchSharper(context)) return null;
         Preference row = info(context, L10n.t("Icons look soft on this screen"),
                 L10n.t("The Facebook you patched has no images made for this screen, so some icons are enlarged. "
-                        + "Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has "
+                        + "Patch Facebook again from the (arm64-v8a) (240-640dpi) bundle on APKMirror, which has "
                         + "images for every screen."));
         row.setKey(SOFT_ICONS);
         return row;

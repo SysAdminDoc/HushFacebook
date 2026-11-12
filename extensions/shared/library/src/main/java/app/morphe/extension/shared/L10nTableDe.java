@@ -1765,8 +1765,8 @@ final class L10nTableDe {
                 "Hushfacebook ist wieder aktiv, sobald Facebook neu startet.");
         table.put("Icons look soft on this screen",
                 "Symbole wirken auf diesem Bildschirm unscharf");
-        table.put("Icons look soft on this screen. Repatch with the 120-640dpi bundle.",
-                "Symbole wirken auf diesem Bildschirm unscharf. Patche erneut mit dem 120-640dpi-Bundle.");
+        table.put("Icons look soft on this screen. Repatch with the 240-640dpi bundle.",
+                "Symbole wirken auf diesem Bildschirm unscharf. Patche erneut mit dem 240-640dpi-Bundle.");
         table.put("If your patched Facebook includes Accent color, Facebook's blue will be %1$s.",
                 "Wenn dein gepatchtes Facebook Akzentfarbe enth\u00e4lt, wird Facebooks Blau zu %1$s.");
         table.put("If your patched Facebook includes Accent color, the Custom choice will be %1$s.",
@@ -3207,8 +3207,8 @@ final class L10nTableDe {
                 "Das Facebook-Logo oben auf der Startseite ist %1$s. Starte Facebook neu, um die \u00c4nderung zu sehen.");
         table.put("The Facebook logo keeps its blue. Type a color code to change it.",
                 "Das Facebook-Logo bleibt blau. Gib einen Farbcode ein, um das zu \u00e4ndern.");
-        table.put("The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has images for every screen.",
-                "Das Facebook, das du gepatcht hast, hat keine Bilder f\u00fcr diesen Bildschirm, daher werden einige Symbole vergr\u00f6\u00dfert. Patche Facebook erneut aus dem Bundle (arm64-v8a) (120-640dpi) von APKMirror, das Bilder f\u00fcr jeden Bildschirm hat.");
+        table.put("The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (240-640dpi) bundle on APKMirror, which has images for every screen.",
+                "Das Facebook, das du gepatcht hast, hat keine Bilder f\u00fcr diesen Bildschirm, daher werden einige Symbole vergr\u00f6\u00dfert. Patche Facebook erneut aus dem Bundle (arm64-v8a) (240-640dpi) von APKMirror, das Bilder f\u00fcr jeden Bildschirm hat.");
         table.put("The Feeds tab will open on %1$s.",
                 "Der Feeds-Tab zeigt dann %1$s.");
         table.put("The Feeds tab will open on the filter Facebook picks.",

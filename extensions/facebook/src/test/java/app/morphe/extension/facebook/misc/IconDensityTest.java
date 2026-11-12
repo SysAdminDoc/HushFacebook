@@ -88,7 +88,7 @@ public class IconDensityTest {
     public void theNoteShowsOncePerInstall() {
         assertTrue(IconDensity.note(1_000L));
         Shadows.shadowOf(Looper.getMainLooper()).idle();
-        assertEquals("Icons look soft on this screen. Repatch with the 120-640dpi bundle.",
+        assertEquals("Icons look soft on this screen. Repatch with the 240-640dpi bundle.",
                 ShadowToast.getTextOfLatestToast());
         assertEquals(1_000L, (long) IconDensity.Stored.NOTED_FOR.savedValue());
 

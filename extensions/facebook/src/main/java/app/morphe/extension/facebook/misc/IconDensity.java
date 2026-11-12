@@ -125,7 +125,7 @@ public final class IconDensity {
     static boolean note(long installed) {
         if (HushfacebookPause.isPaused() || Stored.NOTED_FOR.savedValue() == installed) return false;
         Stored.NOTED_FOR.save(installed);
-        Utils.showToastLong(L10n.t("Icons look soft on this screen. Repatch with the 120-640dpi bundle."));
+        Utils.showToastLong(L10n.t("Icons look soft on this screen. Repatch with the 240-640dpi bundle."));
         return true;
     }
 

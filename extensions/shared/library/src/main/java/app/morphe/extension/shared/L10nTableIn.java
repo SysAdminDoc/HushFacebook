@@ -1765,8 +1765,8 @@ final class L10nTableIn {
                 "Hushfacebook aktif lagi saat Facebook dimulai ulang.");
         table.put("Icons look soft on this screen",
                 "Ikon terlihat buram di layar ini");
-        table.put("Icons look soft on this screen. Repatch with the 120-640dpi bundle.",
-                "Ikon terlihat buram di layar ini. Patch ulang dengan bundle 120-640dpi.");
+        table.put("Icons look soft on this screen. Repatch with the 240-640dpi bundle.",
+                "Ikon terlihat buram di layar ini. Patch ulang dengan bundle 240-640dpi.");
         table.put("If your patched Facebook includes Accent color, Facebook's blue will be %1$s.",
                 "Jika Facebook yang kamu patch menyertakan Warna aksen, biru Facebook akan menjadi %1$s.");
         table.put("If your patched Facebook includes Accent color, the Custom choice will be %1$s.",
@@ -3207,8 +3207,8 @@ final class L10nTableIn {
                 "Logo Facebook di atas Beranda berwarna %1$s. Mulai ulang Facebook untuk melihat perubahannya.");
         table.put("The Facebook logo keeps its blue. Type a color code to change it.",
                 "Logo Facebook tetap biru. Ketik kode warna untuk mengubahnya.");
-        table.put("The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has images for every screen.",
-                "Facebook yang kamu patch tidak punya gambar untuk layar ini, jadi beberapa ikon diperbesar. Patch ulang Facebook dari bundle (arm64-v8a) (120-640dpi) di APKMirror, yang punya gambar untuk semua layar.");
+        table.put("The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (240-640dpi) bundle on APKMirror, which has images for every screen.",
+                "Facebook yang kamu patch tidak punya gambar untuk layar ini, jadi beberapa ikon diperbesar. Patch ulang Facebook dari bundle (arm64-v8a) (240-640dpi) di APKMirror, yang punya gambar untuk semua layar.");
         table.put("The Feeds tab will open on %1$s.",
                 "Tab Feed akan terbuka di %1$s.");
         table.put("The Feeds tab will open on the filter Facebook picks.",

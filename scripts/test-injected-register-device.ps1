@@ -522,7 +522,7 @@ try {
     # The receipt is a PASS only when both halves passed and no message differs, and it keeps each
     # differing message word for word, through JSON and back.
     $same = [pscustomobject]@{ Valid = $true; CleanTotal = 2; PatchedTotal = 2; Deltas = @() }
-    $passing = New-VerifierReceipt -Serial 'TESTPHONE01' -Device 'SM-S908U1' -Facebook '586.0.0.52.53' -PatchBuild $one `
+    $passing = New-VerifierReceipt -Serial 'TESTPHONE01' -Device 'SM-S908U1' -Facebook '587.0.0.39.55' -PatchBuild $one `
         -PatchedApkSha256 ('0' * 64) -StaticPassed $true -Comparison $same -Finished '2026-10-22T05:00:00Z'
     $passingRead = $passing | ConvertTo-Json -Depth 5 | ConvertFrom-Json
     Assert-True ($passingRead.result -ceq 'PASS' -and $passingRead.static -ceq 'PASS' -and $passingRead.emulator -eq $false -and

@@ -47,16 +47,15 @@ internal object AppCompatibilities {
      * stable release. A newer stable build replaces it in the same release, and the one before
      * goes.
      */
-    const val FACEBOOK_TARGET_VERSION = "586.0.0.52.53"
+    const val FACEBOOK_TARGET_VERSION = "587.0.0.39.55"
 
     /**
      * The version code of the arm64-v8a build of [FACEBOOK_TARGET_VERSION] (APKMirror's
-     * 120-640dpi, Android 11+ bundle, the variant that serves every density; since 585 there is
-     * no 480-640dpi Android 11+ build the way 584 had). Each APKMirror variant of a Facebook
-     * release is its own build with different DEX, not a split of one bundle, so the code of the
-     * tested variant is pinned.
+     * 240-640dpi, Android 11+ bundle, the widest density range 587 has; 585 and 586 had a
+     * 120-640dpi one). Each APKMirror variant of a Facebook release is its own build with
+     * different DEX, not a split of one bundle, so the code of the tested variant is pinned.
      */
-    const val FACEBOOK_TARGET_VERSION_CODE = 476217123
+    const val FACEBOOK_TARGET_VERSION_CODE = 707414333
 
     /**
      * The version code of the armeabi-v7a build of [FACEBOOK_TARGET_VERSION] (APKMirror's 320dpi,
@@ -65,7 +64,7 @@ internal object AppCompatibilities {
      * patch is applied to it in full by verify-all-patches, and its bundle is signed with the same
      * two Meta certificates.
      */
-    const val FACEBOOK_V7A_TARGET_VERSION_CODE = 476217122
+    const val FACEBOOK_V7A_TARGET_VERSION_CODE = 707414338
 
     /** Facebook's own floor on every declared build, Android 11. */
     const val FACEBOOK_TARGET_MIN_SDK = 30

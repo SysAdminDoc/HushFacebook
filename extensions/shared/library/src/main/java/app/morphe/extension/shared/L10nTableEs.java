@@ -1765,8 +1765,8 @@ final class L10nTableEs {
                 "Hushfacebook vuelve a activarse cuando Facebook se reinicie.");
         table.put("Icons look soft on this screen",
                 "Los iconos se ven borrosos en esta pantalla");
-        table.put("Icons look soft on this screen. Repatch with the 120-640dpi bundle.",
-                "Los iconos se ven borrosos en esta pantalla. Vuelve a parchear con el paquete 120-640dpi.");
+        table.put("Icons look soft on this screen. Repatch with the 240-640dpi bundle.",
+                "Los iconos se ven borrosos en esta pantalla. Vuelve a parchear con el paquete 240-640dpi.");
         table.put("If your patched Facebook includes Accent color, Facebook's blue will be %1$s.",
                 "Si tu Facebook parcheado incluye Color de \u00e9nfasis, el azul de Facebook ser\u00e1 %1$s.");
         table.put("If your patched Facebook includes Accent color, the Custom choice will be %1$s.",
@@ -3207,8 +3207,8 @@ final class L10nTableEs {
                 "El logo de Facebook arriba en Inicio es %1$s. Reinicia Facebook para ver el cambio.");
         table.put("The Facebook logo keeps its blue. Type a color code to change it.",
                 "El logo de Facebook conserva su azul. Escribe un c\u00f3digo de color para cambiarlo.");
-        table.put("The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-640dpi) bundle on APKMirror, which has images for every screen.",
-                "El Facebook que parcheaste no tiene im\u00e1genes hechas para esta pantalla, as\u00ed que algunos iconos se ampl\u00edan. Vuelve a parchear Facebook con el paquete (arm64-v8a) (120-640dpi) de APKMirror, que tiene im\u00e1genes para todas las pantallas.");
+        table.put("The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (240-640dpi) bundle on APKMirror, which has images for every screen.",
+                "El Facebook que parcheaste no tiene im\u00e1genes hechas para esta pantalla, as\u00ed que algunos iconos se ampl\u00edan. Vuelve a parchear Facebook con el paquete (arm64-v8a) (240-640dpi) de APKMirror, que tiene im\u00e1genes para todas las pantallas.");
         table.put("The Feeds tab will open on %1$s.",
                 "La pesta\u00f1a Feeds se abrir\u00e1 en %1$s.");
         table.put("The Feeds tab will open on the filter Facebook picks.",

@@ -11,7 +11,7 @@ function Assert-That([bool]$Condition, [string]$Message) {
 }
 
 function New-Report([string[]]$Hooks, [string]$State = 'hushfacebook: running', [string[]]$Crash = @()) {
-    $lines = @('MORPHE DIAGNOSTIC REPORT', 'schema: 1', 'app: com.facebook.katana 586.0.0.52.53 (2147483647)', $State,
+    $lines = @('MORPHE DIAGNOSTIC REPORT', 'schema: 1', 'app: com.facebook.katana 587.0.0.39.55 (2147483647)', $State,
         'debug_logging: off', '', '[APP STATE]', 'locale -> en-US')
     if ($Crash.Count -gt 0) { $lines += @('', '[LATEST JAVA CRASH]') + $Crash }
     if ($Hooks.Count -gt 0) { $lines += @('', '[HOOK STATUS]') + $Hooks }
