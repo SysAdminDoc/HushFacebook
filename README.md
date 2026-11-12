@@ -1,7 +1,7 @@
 ![Hushfacebook. Keep the people. Cut the noise.](assets/readme-hero.png)
 
 <p align="center">
-  <a href="https://github.com/SysAdminDoc/Hushfacebook/releases"><img src="https://img.shields.io/badge/version-0.21.0-0866FF" alt="Version 0.21.0"></a>
+  <a href="https://github.com/SysAdminDoc/Hushfacebook/releases"><img src="https://img.shields.io/badge/version-0.22.0-0866FF" alt="Version 0.22.0"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License GPL-3.0"></a>
   <img src="https://img.shields.io/badge/platform-Android%2011%2B-3DDC84" alt="Platform Android 11+">
   <img src="https://img.shields.io/badge/Facebook-586.0.0.52.53-0866FF" alt="Facebook 586.0.0.52.53">
@@ -370,7 +370,7 @@ A few rows hand a link to another app instead of going online themselves. **Send
 | Minimum Android version | Android 11 |
 | Download | [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/) |
 
-There are 117 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to that build. Older Facebook versions like 585 and 584 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched as they come, since their code sits in a compressed archive the patcher can't read. Hush Unpacker (`helper/`) unpacks the Android 9 and 10 build on the phone. A copy patched from what it makes loads Home and Reels with the patches working on Android 16, though it hasn't been tried on an Android 9 or 10 phone yet. Releases after 0.21.0 attach it as `hush-unpacker-<version>.apk`. The 64-bit build is the 120-640dpi one because 586 has no 480-640dpi bundle for Android 11; it carries every screen density, so it fits any 64-bit phone.
+There are 122 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to that build. Older Facebook versions like 585 and 584 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched as they come, since their code sits in a compressed archive the patcher can't read. Hush Unpacker (`helper/`) unpacks the Android 9 and 10 build on the phone. A copy patched from what it makes loads Home and Reels with the patches working on Android 16, though it hasn't been tried on an Android 9 or 10 phone yet. Releases after 0.21.0 attach it as `hush-unpacker-<version>.apk`. The 64-bit build is the 120-640dpi one because 586 has no 480-640dpi bundle for Android 11; it carries every screen density, so it fits any 64-bit phone.
 
 SHA-256 of the .apkm files the patches are checked against:
 

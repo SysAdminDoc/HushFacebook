@@ -2,7 +2,9 @@
 
 Changes in each Hushfacebook version, newest first.
 
-## Unreleased
+## 0.22.0 (2026-11-12)
+
+* This one moves to Facebook 586.0.0.52.53 and needs Morphe Manager 2.5.0 or newer, so grab the new Facebook APK before you repatch. There's a lot new. Reel saves can go into a queue and ask which quality you want, and a tap on Like can ask first so nothing gets liked by accident. Feed videos get double tap to skip and speeds up to 3x. `Only friends' posts` and `Hide all group posts` trim the feed way down, and `Open chats in Messenger` hands your chats to the Messenger app. There's also a new `Clone install under another package name` patch for phones where Facebook came preinstalled. On the fix side, you can sign in with your email and password again on a phone without microG-RE, and closing a post's comments keeps your place in the feed.
 
 ### Added
 
