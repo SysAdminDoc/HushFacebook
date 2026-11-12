@@ -50,7 +50,8 @@ import java.io.File
  * component, setting FbGrootPlayer's speed from one read of the config; and every release listener
  * reading the player's speed with one public getter. Then the patch itself, run on those
  * classes: every flag call's answer through the extension in the same register before its branch,
- * every answer of the edge check and return of the hold speed through the extension, the edge
+ * every answer of the edge check and return of the hold speed (587 on arm64-v8a: each read inlined
+ * in the speed-up) through the extension, the edge
  * check's press and view handed over once it has them, the hold's start
  * straight after each "speed_up" load, the touch dispatch handing the event over first, the speed
  * setter handing the player and the speed over first and going on with the speed it gets back, and
@@ -74,6 +75,23 @@ class HoldReelFor2xFixtureTest {
         method.definingClass + "->" + method.name + method.parameterTypes.joinToString("", "(", ")") + method.returnType
 
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
+
+    /**
+     * The builds whose speed-up inlines the hold speed's getter, and how many reads of it it makes:
+     * 587's arm64-v8a LX/08kZ;->A0X sets the speed from one and compares the player's with two.
+     */
+    private val inlinedHoldSpeeds = mapOf("587.0.0.39.55-arm64-v8a" to 3)
+
+    /**
+     * The phone builds that inline the feed video 2x tip's check into the player's setup, as 586's
+     * Android 9 build does: 587 dropped LX/05dZ;->A00 and reads the flag in LX/05iD;->A1D.
+     */
+    private val inlinedHoldNux = setOf("587.0.0.39.55-arm64-v8a", "587.0.0.39.55-armeabi-v7a")
+
+    /** The ten instructions before [taken] in [code], as their opcodes with what they reference or load, registers left out. */
+    private fun readShape(code: List<Instruction>, taken: Int): List<String> = code.subList(maxOf(0, taken - 10), taken).map {
+        "${it.opcode} ${(it as? ReferenceInstruction)?.reference ?: (it as? NarrowLiteralInstruction)?.narrowLiteral ?: ""}"
+    }
 
     private fun declaredBundles(): Map<String, List<File>> {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -129,7 +147,8 @@ class HoldReelFor2xFixtureTest {
                     flagCalls(checks.single(), config).values.filter { it in flags })
 
                 // Everything else in the build that asks either flag, left alone: none of it makes a
-                // handler or a listener, and there are three.
+                // handler or a listener, and there are two. 586 had three (LX/09vk;->A06 and the pair
+                // LX/09x9;->A0X and A0Y), and 587 merged the pair into one taking a boolean (LX/09mI;->A02).
                 val flagKeys = setOf("$config->$speedUp()Z", "$config->$release()Z")
                 val askers = FixtureDex.methodsWhere(bundle, dexFilter = { dex ->
                     dex.methodSection.any { it.definingClass == config && (it.name == speedUp || it.name == release) }
@@ -137,7 +156,7 @@ class HoldReelFor2xFixtureTest {
                 val patched = (handlers + listeners).map { it.type }.toSet()
                 val bodyKeys = bodies.values.flatten().map(::key).toSet()
                 val others = askers.filter { it.definingClass !in patched && key(it) !in bodyKeys && checks.none { c -> key(c) == key(it) } }
-                assertEquals("$name: other methods asking the flags: ${others.map(::key)}", 3, others.size)
+                assertEquals("$name: other methods asking the flags: ${others.map(::key)}", 2, others.size)
                 assertTrue("$name: another method makes a handler or a listener", others.none { makesOneOf(it, lambdas) })
                 assertTrue("$name: the release flag is asked outside the release listeners",
                     others.none { m -> m.code().any { it.call?.toString() == "$config->$release()Z" } })
@@ -176,14 +195,28 @@ class HoldReelFor2xFixtureTest {
                 val configAnswers = configClass.methods.filter { it.parameterTypes.isEmpty() }.map { it.returnType }.toSet()
                 val speedUpClasses = SPEED_UP_COMPONENTS.flatMap { FixtureDex.classesHolding(bundle, it) }.distinctBy { it.type }
                 val reads = speedUpClasses.flatMap { c ->
-                    c.methods.flatMap { m -> holdSpeedReads(m, "${player.type}->${setter.name}(F)V", configAnswers).map { m to it } }
+                    c.methods.flatMap { m -> holdSpeedReads(m, "${player.type}->${setter.name}(F)V", configAnswers) }
                 }
-                assertEquals("$name: speed-ups setting the speed from a read of the config: ${reads.map { key(it.first) }}",
+                assertEquals("$name: speed-ups setting the speed from a read of the config: ${reads.map { key(it.method) }}",
                     SPEED_UP_COMPONENTS.size, reads.size)
-                assertEquals("$name: the speed-ups' components", SPEED_UP_COMPONENTS.size, reads.map { it.first.definingClass }.toSet().size)
-                val speedRead = reads.map { it.second.toString() }.toSet().single()
-                val speedClass = FixtureDex.classes(bundle, setOf(reads.first().second.definingClass)).values.single()
-                val holdSpeed = speedClass.methods.single { isMethod(it, reads.first().second) }
+                assertEquals("$name: the speed-ups' components", SPEED_UP_COMPONENTS.size, reads.map { it.method.definingClass }.toSet().size)
+                val speedRead = reads.map { it.key }.toSet().single()
+                val getter = reads.first().getter
+                val inlinedCount = inlinedHoldSpeeds[name.removePrefix("facebook-").removeSuffix(".apkm")] ?: 0
+                assertEquals("$name: whether the speed-ups call a getter of the hold speed", inlinedCount == 0, getter != null)
+                val speedClass = getter?.let { FixtureDex.classes(bundle, setOf(it.definingClass)).values.single() }
+                val holdSpeed = getter?.let { g -> speedClass!!.methods.single { isMethod(it, g) } }
+                // Where the getter is inlined, every read of it: the instructions before the double is
+                // taken match those before the read the setter gets, references and constants alike.
+                val fed = reads.first()
+                val fedShape = readShape(fed.method.code(), fed.taken)
+                val inlinedSites = if (getter != null) emptyList() else speedUpClasses.flatMap { c ->
+                    c.methods.filter { it.implementation != null }.flatMap { m ->
+                        val code = m.code()
+                        code.indices.filter { code[it].opcode == Opcode.MOVE_RESULT_WIDE && readShape(code, it) == fedShape }.map { m to it }
+                    }
+                }
+                assertEquals("$name: the speed-ups' inlined reads of the hold speed", inlinedCount, inlinedSites.size)
 
                 // Each release listener reads the player's speed with the same one getter.
                 for (listener in listeners) {
@@ -239,27 +272,28 @@ class HoldReelFor2xFixtureTest {
                 assertEquals("$name: seek bar lock popups: ${showers.map(::key)}", 1, showers.size)
                 val popupClass = FixtureDex.classes(bundle, setOf(lockPopupComponent(showers.single())!!)).values.single()
                 // And the feed video "2x speed" tip: one check in the class keeping when it last showed.
-                // 586's Android 9 build inlines it into the player's setup, which reads the class's flag.
+                // 586's Android 9 build and both 587 builds inline it into the player's setup, which reads the class's flag.
+                val inlinedNux = android9 || name.removePrefix("facebook-").removeSuffix(".apkm") in inlinedHoldNux
                 val nuxHolders = FixtureDex.classesHolding(bundle, HOLD_NUX_SHOWN)
                 assertEquals("$name: classes keeping the 2x tip's time: ${nuxHolders.map { it.type }}", 1, nuxHolders.size)
                 val nuxHolder = nuxHolders.single()
                 val nuxChecks = nuxHolder.methods.filter(::isHoldNuxCheck)
-                assertEquals("$name: feed video 2x tip checks: ${nuxChecks.map(::key)}", if (android9) 0 else 1, nuxChecks.size)
-                if (android9) assertEquals("$name: the flags ending the 2x tip: ${holdNuxFlags(nuxHolder)}", 1, holdNuxFlags(nuxHolder).size)
-                val nuxSites = if (android9) {
+                assertEquals("$name: feed video 2x tip checks: ${nuxChecks.map(::key)}", if (inlinedNux) 0 else 1, nuxChecks.size)
+                if (inlinedNux) assertEquals("$name: the flags ending the 2x tip: ${holdNuxFlags(nuxHolder)}", 1, holdNuxFlags(nuxHolder).size)
+                val nuxSites = if (inlinedNux) {
                     FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it == nuxHolder.type } }) {
                         holdNuxReads(it, nuxHolder).isNotEmpty()
                     }
                 } else nuxChecks
                 assertEquals("$name: feed video 2x tip sites: ${nuxSites.map(::key)}", 1, nuxSites.size)
                 val nuxCheck = nuxSites.single()
-                val nuxRead = if (android9) holdNuxReads(nuxCheck, nuxHolder).single() else -1
+                val nuxRead = if (inlinedNux) holdNuxReads(nuxCheck, nuxHolder).single() else -1
                 val nuxClass = FixtureDex.classes(bundle, setOf(nuxCheck.definingClass)).values.single()
 
                 val activity = FixtureDex.classes(bundle, setOf(FRAGMENT_ACTIVITY)).values.single()
                 val componentClasses = components.filter { c -> checks.any { it.definingClass == c.type } }
                 val classes: List<ClassDef> = (handlers + listeners + handedClasses + componentClasses + edgeClass + activity + player + configClass +
-                    speedUpClasses + speedClass + attachHolders + pillStates + pillClass + reelPillStates + reelPillClass + gestureClass + popupClass + nuxClass + nuxHolder +
+                    speedUpClasses + listOfNotNull(speedClass) + attachHolders + pillStates + pillClass + reelPillStates + reelPillClass + gestureClass + popupClass + nuxClass + nuxHolder +
                     FixtureDex.classes(bundle, setOf(showers.single().definingClass)).values.single() + ExtensionDex.classDef(REEL_HOLD) +
                     ExtensionDex.classDef(FEED_VIDEO_HOLD) + ExtensionDex.classDef(SETTINGS_STATUS))
                     .distinctBy { it.type }
@@ -278,7 +312,10 @@ class HoldReelFor2xFixtureTest {
                 assertEquals("$name: the guard hooks the overlay's flag", 0, hooks(checks.single(), SPEED_UP))
                 assertEquals("$name: the guard hooks the edge check", 0, hooks(edge, ANYWHERE))
                 assertEquals("$name: the guard measures the edge check's press", 0, hooks(edge, EDGE_TOUCH))
-                assertEquals("$name: the guard hooks the hold speed", 0, hooks(holdSpeed, HOLD_SPEED))
+                if (holdSpeed != null) assertEquals("$name: the guard hooks the hold speed", 0, hooks(holdSpeed, HOLD_SPEED))
+                for (method in inlinedSites.map { it.first }.distinctBy(::key)) {
+                    assertEquals("$name: the guard hooks the hold speed in ${key(method)}", 0, hooks(method, HOLD_SPEED))
+                }
                 assertEquals("$name: the guard's setter hook", 1, hooks(setter, SPEED_SET))
                 assertEquals("$name: the guard's touch hook", 1,
                     hooks(activity.methods.single { it.name == "dispatchTouchEvent" && it.implementation != null }, TOUCH))
@@ -355,7 +392,7 @@ class HoldReelFor2xFixtureTest {
                 // First in the tip's check, ahead of the lock it takes: a yes from the extension answers false.
                 val nuxBefore = nuxCheck.code()
                 val nuxAfter = patched(nuxCheck)
-                if (android9) {
+                if (inlinedNux) {
                     // Right after the flag's read, unless it's set already, the extension's answer takes its place.
                     val flag = (nuxBefore[nuxRead] as OneRegisterInstruction).registerA
                     assertEquals("$name: the 2x tip's flag read stays", nuxBefore[nuxRead].opcode, nuxAfter[nuxRead].opcode)
@@ -449,17 +486,35 @@ class HoldReelFor2xFixtureTest {
                 assertEquals("$name: the edge check's code before the press call moved", edgeBefore.take(entry).map { it.opcode },
                     edgeAfter.take(entry).map { it.opcode })
 
-                val speedBefore = holdSpeed.code()
-                val speedAfter = patched(holdSpeed)
-                val wideReturns = speedAfter.withIndex().filter { it.value.opcode == Opcode.RETURN_WIDE }
-                assertEquals("$name: $speedRead's returns", speedBefore.count { it.opcode == Opcode.RETURN_WIDE }, wideReturns.size)
-                for ((index, instruction) in wideReturns) {
-                    val register = (instruction as OneRegisterInstruction).registerA
-                    assertEquals("$name: before the hold speed's return at $index", HOLD_SPEED, speedAfter[index - 2].call.toString())
-                    assertEquals("$name: the register pair the hold speed hands over", listOf(register, register + 1),
-                        speedAfter[index - 2].registers())
-                    assertEquals("$name: the hold speed takes the answer back", Opcode.MOVE_RESULT_WIDE, speedAfter[index - 1].opcode)
-                    assertEquals("$name: the hold speed's answer register", register, (speedAfter[index - 1] as OneRegisterInstruction).registerA)
+                if (holdSpeed != null) {
+                    val speedBefore = holdSpeed.code()
+                    val speedAfter = patched(holdSpeed)
+                    val wideReturns = speedAfter.withIndex().filter { it.value.opcode == Opcode.RETURN_WIDE }
+                    assertEquals("$name: $speedRead's returns", speedBefore.count { it.opcode == Opcode.RETURN_WIDE }, wideReturns.size)
+                    for ((index, instruction) in wideReturns) {
+                        val register = (instruction as OneRegisterInstruction).registerA
+                        assertEquals("$name: before the hold speed's return at $index", HOLD_SPEED, speedAfter[index - 2].call.toString())
+                        assertEquals("$name: the register pair the hold speed hands over", listOf(register, register + 1),
+                            speedAfter[index - 2].registers())
+                        assertEquals("$name: the hold speed takes the answer back", Opcode.MOVE_RESULT_WIDE, speedAfter[index - 1].opcode)
+                        assertEquals("$name: the hold speed's answer register", register, (speedAfter[index - 1] as OneRegisterInstruction).registerA)
+                    }
+                }
+                // Each inlined read: the pair it takes handed over straight after, and taken back into it.
+                for ((method, sites) in inlinedSites.groupBy { it.first }) {
+                    val before = method.code()
+                    val after = patched(method)
+                    assertEquals("$name: ${key(method)}'s hold speed calls", sites.size, after.count { it.call?.toString() == HOLD_SPEED })
+                    sites.map { it.second }.sorted().forEachIndexed { done, taken ->
+                        val at = taken + 2 * done
+                        val register = (before[taken] as OneRegisterInstruction).registerA
+                        assertEquals("$name: ${key(method)} at $taken", before[taken].opcode, after[at].opcode)
+                        assertEquals("$name: after the read at $taken", HOLD_SPEED, after[at + 1].call.toString())
+                        assertEquals("$name: the register pair the read at $taken hands over", listOf(register, register + 1), after[at + 1].registers())
+                        assertEquals("$name: the read at $taken takes the answer back", Opcode.MOVE_RESULT_WIDE, after[at + 2].opcode)
+                        assertEquals("$name: the read at $taken's answer register", register, (after[at + 2] as OneRegisterInstruction).registerA)
+                        assertEquals("$name: what followed the read at $taken", before[taken + 1].opcode, after[at + 3].opcode)
+                    }
                 }
                 val setterAfter = patched(setter)
                 val self = setter.localRegisterCount()

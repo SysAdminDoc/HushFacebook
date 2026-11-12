@@ -16,6 +16,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -69,7 +70,12 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   same read gives the speed the helper that remembers the pre-hold speed compares with, and a
  *   2x label. Outside the Video tab it answers a fixed 2.0; where an account's Reels live in the
  *   Video tab (the object's surface is FB_SHORTS_IN_WATCH_TAB) it answers MobileConfig double
- *   0x104003303ee0017, whose default no code sets.
+ *   0x104003303ee0017, whose default no code sets. 587 moved the read into a static method taking
+ *   the object (armeabi-v7a LX/0A4x;->A01), and on arm64-v8a inlined that too: the speed-up
+ *   (LX/08kZ;->A0X) makes the same choice inline three times, handing the object's A0h a lambda
+ *   reading the config (LX/0CxW;, case 8) and one answering 2.0 (LX/0A5F;, case 0x74) and reading
+ *   the Number it answers as a double, for the set and for the two compares of the inlined helper.
+ *   No other method of that build reads that config value.
  * - The speed to put back: the speed-up asks a helper (580 LX/B1k;->A00) for it, which answers the
  *   player's speed through its getter (580 Brl, 577 BtK) but normal speed when that already is the
  *   hold speed and MobileConfig 0x101055200213585 says so, and keeps it in the component's state, from
@@ -103,6 +109,8 @@ internal val CONTROL_COMPONENTS = listOf("FbShortsVideoControlComponent", "FbSho
 internal val SPEED_UP_COMPONENTS = listOf("FbShortsVideoControlComponent")
 
 private const val VIEW = "Landroid/view/View;"
+private const val NUMBER = "Ljava/lang/Number;"
+private const val OBJECT = "Ljava/lang/Object;"
 
 private fun Method.parameters() = parameterTypes.map(CharSequence::toString)
 
@@ -280,12 +288,23 @@ private fun Instruction.registers(): List<Int> = when (this) {
 }
 
 /**
- * The hold speed reads in [method]: a no-argument double method of one of [configAnswers], whose
- * answer the next instructions take, make a float and hand to [setter] ("class->name(F)V") as its
- * speed.
+ * One read of the hold speed in [method], whose double the move-result-wide at [taken] takes. Up to
+ * 586 a call of [getter], a no-argument double method of one of the config's answers (587 on
+ * armeabi-v7a: a static double method taking one, LX/0A4x;->A01). 587 on arm64-v8a inlined it: a call of an answer's method handing back an object, made with lambdas it picks between (the
+ * config's double where the surface is the Video tab's, a fixed 2.0 elsewhere), cast to a Number and
+ * read as a double, with [getter] null. [key] names the read: the getter, or the call and each
+ * lambda's type and the case it's made with, so two reads of one config value share it.
  */
-internal fun holdSpeedReads(method: Method, setter: String, configAnswers: Set<String>): List<MethodReference> {
+internal class HoldSpeedRead(val method: Method, val taken: Int, val getter: MethodReference?, val key: String)
+
+/**
+ * The hold speed reads in [method] whose double the next instructions make a float and hand to
+ * [setter] ("class->name(F)V") as its speed: the answer of a no-argument double method of one of
+ * [configAnswers] or a static one taking one, or 587's inlined read of one (see [inlinedConfigReads]).
+ */
+internal fun holdSpeedReads(method: Method, setter: String, configAnswers: Set<String>): List<HoldSpeedRead> {
     val code = method.code
+    val inlined = inlinedConfigReads(method, configAnswers).associateBy { it.taken }
     return code.indices.mapNotNull { index ->
         val call = (code[index] as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
         if ("${call.definingClass}->${call.name}(${call.parameterTypes.joinToString("")})${call.returnType}" != setter) {
@@ -296,9 +315,64 @@ internal fun holdSpeedReads(method: Method, setter: String, configAnswers: Set<S
         if (convert == null || convert.registerA != speed) return@mapNotNull null
         val taken = code.getOrNull(index - 2)?.takeIf { it.opcode == Opcode.MOVE_RESULT_WIDE } as? OneRegisterInstruction
         if (taken == null || taken.registerA != convert.registerB) return@mapNotNull null
-        val read = (code.getOrNull(index - 3) as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
-        read.takeIf { it.returnType == "D" && it.parameterTypes.isEmpty() && it.definingClass in configAnswers }
+        inlined[index - 2]?.let { return@mapNotNull it }
+        val reading = code.getOrNull(index - 3) ?: return@mapNotNull null
+        val read = (reading as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
+        // 587's armeabi-v7a build moved the getter into a static method taking the answer.
+        val answers = if (reading.opcode == Opcode.INVOKE_STATIC || reading.opcode == Opcode.INVOKE_STATIC_RANGE) {
+            read.parameterTypes.singleOrNull()?.toString() in configAnswers
+        } else {
+            read.parameterTypes.isEmpty() && read.definingClass in configAnswers
+        }
+        read.takeIf { answers && it.returnType == "D" }?.let { HoldSpeedRead(method, index - 2, it, it.toString()) }
     }
+}
+
+/**
+ * Every double [method] reads from one of [configAnswers] through a method of its own handing back
+ * an object: the call, a move-result-object, a check-cast of it to Number, its doubleValue() and the
+ * move-result-wide taking that, one after the other, with each argument but the answer a lambda
+ * made in [method] (587 LX/08kZ;->A0X: LX/04vF;->A0h(new LX/0CxW;(state, 8), new LX/0A5F;(0x74))).
+ */
+internal fun inlinedConfigReads(method: Method, configAnswers: Set<String>): List<HoldSpeedRead> {
+    val code = method.code
+    return code.indices.mapNotNull { taken ->
+        if (code[taken].opcode != Opcode.MOVE_RESULT_WIDE) return@mapNotNull null
+        val double = code.getOrNull(taken - 1) ?: return@mapNotNull null
+        val doubleCall = (double as? ReferenceInstruction)?.reference as? MethodReference
+        if (doubleCall?.definingClass != NUMBER || doubleCall.name != "doubleValue" || doubleCall.returnType != "D") return@mapNotNull null
+        val answer = double.registers().singleOrNull() ?: return@mapNotNull null
+        val cast = code.getOrNull(taken - 2)?.takeIf { it.opcode == Opcode.CHECK_CAST } ?: return@mapNotNull null
+        if ((cast as OneRegisterInstruction).registerA != answer || ((cast as ReferenceInstruction).reference as TypeReference).type != NUMBER) {
+            return@mapNotNull null
+        }
+        val moved = code.getOrNull(taken - 3)?.takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT } as? OneRegisterInstruction
+        if (moved?.registerA != answer) return@mapNotNull null
+        val read = code.getOrNull(taken - 4) ?: return@mapNotNull null
+        val call = (read as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
+        if (call.definingClass !in configAnswers || call.returnType != OBJECT || call.parameterTypes.isEmpty()) return@mapNotNull null
+        val lambdas = read.registers().drop(1).map { lambdaMade(code, taken - 4, it) ?: return@mapNotNull null }
+        HoldSpeedRead(method, taken, null, "$call${lambdas.joinToString(",", "(", ")")}")
+    }
+}
+
+/**
+ * The lambda in [register] at [at] in [code]: the type of the one constructor call on it before
+ * there with nothing writing it since, and, when that constructor takes an int last, the case
+ * constant it's handed, as "type#case". Null for anything else.
+ */
+private fun lambdaMade(code: List<Instruction>, at: Int, register: Int): String? {
+    val init = (at - 1 downTo 0).firstOrNull { index ->
+        val call = (code[index] as? ReferenceInstruction)?.reference as? MethodReference
+        code[index].opcode == Opcode.INVOKE_DIRECT && call?.name == "<init>" && code[index].registers().firstOrNull() == register
+    } ?: return null
+    if ((init + 1 until at).any { writes(code[it], register) }) return null
+    val made = (code[init] as ReferenceInstruction).reference as MethodReference
+    if (made.parameterTypes.lastOrNull()?.toString() != "I") return made.definingClass
+    val caseRegister = code[init].registers().last()
+    val loaded = (init - 1 downTo 0).firstOrNull { writes(code[it], caseRegister) } ?: return null
+    val case = (code[loaded] as? NarrowLiteralInstruction)?.narrowLiteral ?: return null
+    return "${made.definingClass}#$case"
 }
 
 /** The no-argument float methods of [player] that [method] calls, as references: in a release listener, the speed getter. */
@@ -446,7 +520,7 @@ internal fun isHoldNuxCheck(method: Method): Boolean =
             called != null && called.definingClass == "Ljava/lang/System;" && called.name == "currentTimeMillis"
         }
 
-/** The boolean fields of [holder] its constructors set. 586's Android 9 build: the one flag that ends the tip for good. */
+/** The boolean fields of [holder] its constructors set. Where the check is inlined: the one flag that ends the tip for good. */
 internal fun holdNuxFlags(holder: ClassDef): Set<String> = holder.methods.filter { it.name == "<init>" }
     .flatMap { it.code }.filter { it.opcode == Opcode.IPUT_BOOLEAN }
     .mapNotNull { ((it as ReferenceInstruction).reference as FieldReference).takeIf { f -> f.definingClass == holder.type }?.name }
@@ -455,7 +529,7 @@ internal fun holdNuxFlags(holder: ClassDef): Set<String> = holder.methods.filter
 private val CONSTANTS = setOf(Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST, Opcode.CONST_HIGH16)
 
 /**
- * Where 586's Android 9 build inlines the check into the feed video player's setup, the indexes of
+ * Where 586's Android 9 build and 587 (LX/05iD;->A1D) inline the check into the feed video player's setup, the indexes of
  * [method]'s reads of one of [flags] off [holder] whose next branch is an if-nez on what was read,
  * past nothing but constants into other registers. The method reads the clock, as the check does.
  */
