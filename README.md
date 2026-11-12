@@ -22,7 +22,7 @@ Each row in the [patch table](#patches) says how its switch starts. The ad filte
 
 This project has no connection to Meta or to the Morphe project. Neither endorses it, and neither wrote it.
 
-The latest release is [v0.21.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.21.0), with 117 patches. It includes all changes since v0.20.0, among them a new look for the Hush settings with a list of the switches that are on, settings in Russian, photo carousels in the feed, gray Reels with a break after 20 of them, and a seek bar on feed videos, as the [changelog](CHANGELOG.md) describes.
+The latest release is [v0.22.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.22.0), with 122 patches. It includes all changes since v0.21.0, among them a queue for reel saves that asks which quality you want, a Like that can ask before it counts, double tap to skip and speeds up to 3x on feed videos, `Only friends' posts` for the feed, and the move to Facebook 586.0.0.52.53, as the [changelog](CHANGELOG.md) describes.
 
 [Add to Morphe](https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook) | [Download a release](https://github.com/SysAdminDoc/Hushfacebook/releases/latest) | [Browse the patches](#patches)
 
