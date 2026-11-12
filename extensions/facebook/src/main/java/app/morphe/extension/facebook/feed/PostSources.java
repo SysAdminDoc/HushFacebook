@@ -364,8 +364,10 @@ public final class PostSources {
 
     /**
      * The site a link goes to, lowercase, in ASCII and without www., or null when it has no host. A
-     * link through Facebook's redirect counts as the one it carries in its u parameter. A backslash
-     * ends the host as a slash does, the way a browser opens the link.
+     * link through Facebook's redirect counts as the one it carries in its u parameter, and an app
+     * link (fbrpc://facebook/nativethirdparty, which a post's link to YouTube or Instagram carries on
+     * 586) as the one in its target_url. A backslash ends the host as a slash does, the way a browser
+     * opens the link.
      */
     @Nullable
     static String host(@Nullable String url) {
@@ -389,17 +391,24 @@ public final class PostSources {
         if (host.isEmpty() || host.indexOf(' ') >= 0) return null;
         String inAscii = ascii(host);
         if (inAscii != null) host = inAscii;
+        String target = null;
         if (host.equals("l.facebook.com") || host.equals("lm.facebook.com")) {
-            String path = rest.substring(end);
-            int query = path.indexOf('?');
-            if (query >= 0 && path.substring(0, query).equals("/l.php")) {
-                int fragment = path.indexOf('#', query);
-                String target = queryParameter(path.substring(query + 1, fragment < 0 ? path.length() : fragment), "u");
-                String inner = host(target);
-                if (inner != null) return inner;
-            }
+            target = carried(rest.substring(end), "/l.php", "u");
+        } else if (host.equals("facebook") && value.substring(0, scheme).equalsIgnoreCase("fbrpc")) {
+            target = carried(rest.substring(end), "/nativethirdparty", "target_url");
         }
+        String inner = host(target);
+        if (inner != null) return inner;
         return host.startsWith("www.") ? host.substring(4) : host;
+    }
+
+    /** The decoded [name] parameter of [path] when the part before its query is [expected], or null. */
+    @Nullable
+    private static String carried(String path, String expected, String name) {
+        int query = path.indexOf('?');
+        if (query < 0 || !path.substring(0, query).equals(expected)) return null;
+        int fragment = path.indexOf('#', query);
+        return queryParameter(path.substring(query + 1, fragment < 0 ? path.length() : fragment), name);
     }
 
     /** The decoded value of [name] in [query], or null when it's missing or can't be decoded. */

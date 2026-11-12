@@ -123,6 +123,19 @@ public class PostSourcesTest {
     }
 
     @Test
+    public void anAppLinkCountsAsTheSiteItOpens() {
+        // The url 586 gave a friend's link to a YouTube short, its values shortened.
+        String appLink = "fbrpc://facebook/nativethirdparty?app_id=350685531728&tap_behavior=app_fallback"
+                + "&target_url=https%3A%2F%2Fyoutube.com%2Fshorts%2Fabc%3Fsi%3Dx%26fbclid%3Dy"
+                + "&extra_applink_key=al_applink_data&has_app_link=1";
+        assertEquals("youtube.com", PostSources.host(appLink));
+        GraphQLStory post = story(null, Arrays.asList(author("560", "A Friend")), Arrays.asList(link(appLink)));
+        assertEquals(2, PostSources.match(PostSources.rules("Daily Bugle\nyoutube.com"), read(post)));
+        assertEquals("instagram.com",
+                PostSources.host("fbrpc://facebook/nativethirdparty?target_url=https%3A%2F%2Fwww.instagram.com%2Fp%2Fx"));
+    }
+
+    @Test
     public void aRuleMatchesAnAuthorsIdOrNameOrALinksSiteAndItsSubdomains() {
         GraphQLStory post = story(null, Arrays.asList(author("100044218155390", "Daily Bugle")),
                 Arrays.asList(link("https://news.example.com/x")));

@@ -82,6 +82,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* A site on the `Hide posts from people, Pages and sites` list now also hides links to it that Facebook opens in the site's own app, like a YouTube video or an Instagram post. Facebook hands those links over in a wrapper of its own, so youtube.com never matched them.
 * `Pinch to zoom` on a story now zooms the story when your fingers start near its left or right edge. On some screens it zoomed only the narrow strip Facebook keeps there for tapping to the next or previous story. (#220)
 * A zoomed story keeps the brightness of the story itself on Android 14 and newer. Facebook shows HDR stories brighter than normal white, and the zoom used to stop at normal white, so it looked dimmer than the story under it. (#220)
 * The theme patches now also recolor what Facebook looks up through a second color path, which some of its newer text boxes use. Those colors went out untouched before, so in light mode `Material You theme` could leave them Facebook's grey. (#141)
