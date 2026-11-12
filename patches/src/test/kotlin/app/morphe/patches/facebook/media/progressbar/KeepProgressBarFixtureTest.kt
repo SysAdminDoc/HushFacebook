@@ -144,7 +144,7 @@ class KeepProgressBarFixtureTest {
         val name = bundle.name
         val holders = FixtureDex.classesHolding(bundle, SCRUBBER_PASSIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         assertTrue("$name: nothing traces \"$SCRUBBER_PASSIVE\"", holders.isNotEmpty())
-        val looks = vddScrubber(holders)
+        val looks = vddScrubber(holders, FixtureDex.classesHolding(bundle, SCRUBBER_ACTIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) })
         assertNotEquals("$name: the active and passive looks are one method", looks.active.name, looks.passive.name)
         assertTrue("$name: the active look doesn't load 255 for the thumb",
             looks.active.code().any { (it as? WideLiteralInstruction)?.wideLiteral == 255L })
@@ -234,7 +234,7 @@ class KeepProgressBarFixtureTest {
     fun `each declared build clears the last reel's graph and chapter marks as the scrubber takes another video`() = bundles { bundle ->
         val name = bundle.name
         val holders = FixtureDex.classesHolding(bundle, SCRUBBER_PASSIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        val looks = vddScrubber(holders)
+        val looks = vddScrubber(holders, FixtureDex.classesHolding(bundle, SCRUBBER_ACTIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) })
         val scrubber = holders.single { it.type == looks.type }
         val graph = graphHide(looks) { type -> FixtureDex.classes(bundle, setOf(type))[type] }
         val (chapters, resets) = chapters(bundle, scrubber, looks)
@@ -309,7 +309,7 @@ class KeepProgressBarFixtureTest {
     fun `each declared build starts the next reel's bar and time over as the scrubber takes another video`() = bundles { bundle ->
         val name = bundle.name
         val holders = FixtureDex.classesHolding(bundle, SCRUBBER_PASSIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        val looks = vddScrubber(holders)
+        val looks = vddScrubber(holders, FixtureDex.classesHolding(bundle, SCRUBBER_ACTIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) })
         val scrubber = holders.single { it.type == looks.type }
         val graph = graphHide(looks) { type -> FixtureDex.classes(bundle, setOf(type))[type] }
         val (chapters, _) = chapters(bundle, scrubber, looks)
@@ -361,7 +361,7 @@ class KeepProgressBarFixtureTest {
     fun `each declared build hides the most replayed graph the way the passive look does`() = bundles { bundle ->
         val name = bundle.name
         val holders = FixtureDex.classesHolding(bundle, SCRUBBER_PASSIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        val looks = vddScrubber(holders)
+        val looks = vddScrubber(holders, FixtureDex.classesHolding(bundle, SCRUBBER_ACTIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) })
         val classOf = { type: String -> FixtureDex.classes(bundle, setOf(type))[type] }
         val graph = graphHide(looks, classOf)
         val owner = graph.hiddenField.substringBefore("->")
@@ -387,7 +387,7 @@ class KeepProgressBarFixtureTest {
     fun `each declared build hides the time label where the passive look does`() = bundles { bundle ->
         val name = bundle.name
         val holders = FixtureDex.classesHolding(bundle, SCRUBBER_PASSIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        val looks = vddScrubber(holders)
+        val looks = vddScrubber(holders, FixtureDex.classesHolding(bundle, SCRUBBER_ACTIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) })
         // The passive look sets the label INVISIBLE (4) through the same fields the hook reads.
         val code = looks.passive.code()
         val read = code.indexOfFirst { it.reference() == looks.labelField }

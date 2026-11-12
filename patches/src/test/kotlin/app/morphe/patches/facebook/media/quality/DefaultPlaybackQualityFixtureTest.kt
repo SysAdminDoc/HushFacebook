@@ -66,7 +66,7 @@ class DefaultPlaybackQualityFixtureTest {
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
 
     /** The builds whose method holding the custom-quality trace calls the evaluator's setter instead of inlining it. */
-    private val callsSetter = setOf("586.0.0.52.53")
+    private val callsSetter = setOf("586.0.0.52.53", "587.0.0.39.55")
 
     private fun declaredBundles(): Map<String, List<File>> {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()

@@ -4,25 +4,30 @@
  */
 package app.morphe.patches.facebook.media.reelspeed
 
+import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.isStringTable
 import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
 import app.morphe.util.findMutableMethodOf
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.writersReaching
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 /*
@@ -153,6 +158,33 @@ private fun rowCasts(method: Method, rowTypes: Set<String>): List<String> =
         .filter { it in rowTypes }
         .distinct()
 
+/** Whether [method] could be the player state's engagement getter: an instance `()Z`. */
+private fun isStateGetter(method: Method) =
+    !AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.isEmpty() && method.returnType == "Z"
+
+/**
+ * The methods casting to one of [rowTypes] that call a getter holding ENGAGEMENT_STATE
+ * ([isStateGetter]). 587 moved the builder's live test and its compare with the state into such a
+ * getter of the player's state (04vF.A1D on arm64), so the builder names the state only by calling it.
+ */
+private fun BytecodePatchContext.methodsAskingState(rowTypes: Set<String>): List<Method> {
+    val getters = classDefByStrings(ENGAGEMENT_STATE, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .flatMap { owner -> owner.methods.filter { isStateGetter(it) && holdsString(it, ENGAGEMENT_STATE) } }
+        .mapTo(HashSet()) { it.definingClass to it.name }
+    if (getters.isEmpty()) return emptyList()
+    fun asksState(method: Method) = method.implementation?.instructions?.any { instruction ->
+        val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        call != null && call.parameterTypes.isEmpty() && call.returnType == "Z" && (call.definingClass to call.name) in getters
+    } == true
+    val found = mutableListOf<Method>()
+    classDefForEachReferencing(types = rowTypes) { owner ->
+        if (owner.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
+        owner.methods.filterTo(found) { rowCasts(it, rowTypes).isNotEmpty() && asksState(it) }
+    }
+    return found
+}
+
 /**
  * Speed on finished live videos, the fourth switch: the gear menu of a full-screen video that isn't
  * live asks the extension before it leaves Playback speed out. [sponsoredField] is
@@ -167,6 +199,7 @@ internal fun BytecodePatchContext.offerReplaySpeed(sponsoredField: FieldReferenc
         .toSet()
     // 585's Android 9+ build asks a string table (04Uy.A00) for the state instead of holding it (#102).
     val builders = methodsNaming(ENGAGEMENT_STATE) { rowCasts(it, rowTypes).isNotEmpty() }
+        .ifEmpty { methodsAskingState(rowTypes) }
         .flatMap { method -> rowCasts(method, rowTypes).map { method to it } }
     val (builder, rowType) = builders.singleOrNull() ?: refuseReplay(
         "expected one method naming \"$ENGAGEMENT_STATE\" that casts to a class holding \"$GEAR_SPEED_TAP\", " +

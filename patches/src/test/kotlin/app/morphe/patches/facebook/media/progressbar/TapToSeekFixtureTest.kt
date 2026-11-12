@@ -54,7 +54,10 @@ class TapToSeekFixtureTest {
     @Test
     fun `each declared build asks the extension first in the bar's touch handler`() = bundles { bundle ->
         val name = bundle.name
-        val looks = vddScrubber(FixtureDex.classesHolding(bundle, SCRUBBER_PASSIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) })
+        val looks = vddScrubber(
+            FixtureDex.classesHolding(bundle, SCRUBBER_PASSIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+            FixtureDex.classesHolding(bundle, SCRUBBER_ACTIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+        )
         val progress = progressUpdate(
             FixtureDex.classesHolding(bundle, SCRUBBER_UPDATE).filterNot { it.type.startsWith(EXTENSION_CLASSES) },
         )

@@ -15,6 +15,8 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -95,8 +97,19 @@ class SkipSilentPartsFixtureTest {
             val registers = handed as FiveRegisterInstruction
             assertEquals("$where: the hand-off's chain", (call as FiveRegisterInstruction).registerC, registers.registerC)
             assertEquals("$where: the hand-off's flag", apply.scratch, registers.registerD)
+            // 587's chain answers the flag it applied (Z), and the sink keeps Facebook's flag instead.
+            val answers = ((call as ReferenceInstruction).reference as MethodReference).returnType == "Z"
+            assertEquals("$where: the chain's answer is taken", answers, apply.result != null)
             for (at in apply.index + 1 until code.size) {
+                if (at == apply.index + 1 && apply.result != null) continue
                 assertEquals("$where: instruction $at", code[at].opcode, body[at + 2].opcode)
+            }
+            apply.result?.let { result ->
+                assertEquals("$where: the chain's answer went to v$result", Opcode.MOVE_RESULT, code[apply.index + 1].opcode)
+                val kept = body[apply.index + 3]
+                assertEquals("$where: the answer's place takes a move", Opcode.MOVE_FROM16, kept.opcode)
+                assertEquals("$where: of Facebook's flag into the answer's register", listOf(result, apply.flag),
+                    (kept as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) })
             }
         }
     }

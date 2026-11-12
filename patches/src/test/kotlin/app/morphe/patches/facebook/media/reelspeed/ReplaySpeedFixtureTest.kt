@@ -22,8 +22,10 @@ import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -39,8 +41,8 @@ import java.io.File
 
 /**
  * Speed on finished live videos on every Facebook build the bundle declares: one gear menu builder,
- * the method holding UNIFIED_PLAYER_VDD_ENGAGEMENT_STATE that casts to the speed row's click
- * handler, and in it one engagement test between a MobileConfig flag's if-nez and a goto onto the
+ * the method holding UNIFIED_PLAYER_VDD_ENGAGEMENT_STATE (from 587, calling a getter that answers
+ * true when the state equals it) that casts to the speed row's click handler, and in it one engagement test between a MobileConfig flag's if-nez and a goto onto the
  * speed row. The flag is a MobileConfig read or its cached copy, the tested register is set to 1
  * right after the engagement state compares equal, and the row's isSponsored register holds
  * VideoPlayerParams' isSponsored, as the params' debug dump reports it. Then the patch's hook, run
@@ -59,6 +61,29 @@ class ReplaySpeedFixtureTest {
     /** A goto keeps its kind unless the patcher had to widen it; the rest compare as they are. */
     private fun shape(code: List<Instruction>) = code.filter { it.opcode != Opcode.NOP }
         .map { if (it.opcode == Opcode.GOTO || it.opcode == Opcode.GOTO_16 || it.opcode == Opcode.GOTO_32) Opcode.GOTO else it.opcode }
+
+    /**
+     * The body compares the engagement state with a string by equals and answers true when they
+     * match: the result is returned, or an if-nez on it jumps to a 1 that's returned.
+     */
+    private fun answersEngaged(body: List<Instruction>): Boolean {
+        val addresses = body.runningFold(0) { address, it -> address + it.codeUnits }
+        fun returnsOne(at: Int) = body.getOrNull(at)?.let { it.opcode == Opcode.CONST_4 && (it as NarrowLiteralInstruction).narrowLiteral == 1 } == true &&
+            body.getOrNull(at + 1)?.let { it.opcode == Opcode.RETURN && (it as OneRegisterInstruction).registerA == (body[at] as OneRegisterInstruction).registerA } == true
+        return body.indices.any { at ->
+            val load = body[at]
+            val call = body.getOrNull(at + 1) as? FiveRegisterInstruction
+            val equals = (call as? ReferenceInstruction)?.reference as? MethodReference
+            val result = body.getOrNull(at + 2)
+            val next = body.getOrNull(at + 3)
+            ((load as? ReferenceInstruction)?.reference as? StringReference)?.string == ENGAGEMENT_STATE &&
+                call != null && equals?.name == "equals" && equals.returnType == "Z" &&
+                (load as OneRegisterInstruction).registerA in listOf(call.registerC, call.registerD).take(call.registerCount) &&
+                result?.opcode == Opcode.MOVE_RESULT && next != null && (next as? OneRegisterInstruction)?.registerA == (result as OneRegisterInstruction).registerA &&
+                (next.opcode == Opcode.RETURN ||
+                    next.opcode == Opcode.IF_NEZ && returnsOne(addresses.indexOf(addresses[at + 3] + (next as OffsetInstruction).codeOffset)))
+        }
+    }
 
     @Test
     fun `each declared build has one gear menu builder, and the hook goes in front of its engagement test`() {
@@ -94,7 +119,22 @@ class ReplaySpeedFixtureTest {
                         it.implementation != null && !holdsString(it, ENGAGEMENT_STATE) && rowCasts(it).isNotEmpty() &&
                             namesString(it, ENGAGEMENT_STATE, resolve)
                     }
-                val builders = naming.flatMap { method -> rowCasts(method).map { method to it } }
+                // 587 moved the state's compare into an instance ()Z of the player's state, which the
+                // builder calls instead of naming the state.
+                val getters = holders.flatMap { it.methods }.filter {
+                    !AccessFlags.STATIC.isSet(it.accessFlags) && it.parameterTypes.isEmpty() && it.returnType == "Z" &&
+                        it.implementation != null && answersEngaged(it.code())
+                }.mapTo(HashSet()) { it.definingClass to it.name }
+                fun asksGetter(instruction: Instruction): Boolean {
+                    val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+                    return call.parameterTypes.isEmpty() && call.returnType == "Z" && (call.definingClass to call.name) in getters
+                }
+                val builders = naming.flatMap { method -> rowCasts(method).map { method to it } }.ifEmpty {
+                    FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in rowTypes } }) {
+                        it.implementation != null && !it.definingClass.startsWith(EXTENSION_CLASSES) &&
+                            rowCasts(it).isNotEmpty() && it.code().any(::asksGetter)
+                    }.flatMap { method -> rowCasts(method).map { method to it } }
+                }
                 assertEquals("$name: builders naming \"$ENGAGEMENT_STATE\" casting to a speed row", 1, builders.size)
                 val (builder, rowType) = builders.single()
                 val builderClass = FixtureDex.classes(bundle, setOf(builder.definingClass)).values.single()
@@ -115,10 +155,11 @@ class ReplaySpeedFixtureTest {
                         mobileConfig || instruction.opcode == Opcode.IGET_BOOLEAN)
                 }
 
-                // The tested register is set to 1 right after the engagement state compares equal.
+                // The tested register is set to 1 right after the engagement state compares equal, or
+                // the getter comparing it answers.
                 val compare = code.indices.firstOrNull { at ->
                     ((code[at] as? ReferenceInstruction)?.reference as? StringReference)?.string == ENGAGEMENT_STATE ||
-                        tableStringAt(code, at, resolve) == ENGAGEMENT_STATE
+                        tableStringAt(code, at, resolve) == ENGAGEMENT_STATE || asksGetter(code[at])
                 } ?: throw AssertionError("$name: the builder doesn't name $ENGAGEMENT_STATE")
                 val engagedSet = (compare until minOf(compare + 8, code.size)).any { at ->
                     val instruction = code[at]

@@ -186,16 +186,20 @@ internal fun unifiedSkipOf(handler: Method, unifiedWait: Site): Site {
 
 /**
  * The controller's show method: the call taking an object and a boolean and returning nothing that
- * the tap handler makes within the four instructions before its first [ANNOUNCE].
+ * the tap handler makes within the four instructions before an [ANNOUNCE], the first that has one.
+ * 587 (`LX/08kZ;->A0T`) moved its first [ANNOUNCE] out of line behind a branch, nine instructions
+ * past the show, and keeps the show right before a later one.
  */
 internal fun controllerShowOf(handler: Method): MethodReference {
     val code = handler.code()
-    val announce = code.indexOfFirst { it.call()?.name == ANNOUNCE }
-    if (announce < 0) refuse("${handler.where()} never calls $ANNOUNCE")
-    return (announce - 1 downTo maxOf(0, announce - 4)).firstNotNullOfOrNull { at ->
-        code[at].call()?.takeIf { show ->
-            code[at].opcode == Opcode.INVOKE_VIRTUAL && show.returnType == "V" &&
-                show.parameters().let { it.size == 2 && it[0].startsWith("L") && it[1] == "Z" }
+    val announces = code.indices.filter { code[it].call()?.name == ANNOUNCE }
+    if (announces.isEmpty()) refuse("${handler.where()} never calls $ANNOUNCE")
+    return announces.firstNotNullOfOrNull { announce ->
+        (announce - 1 downTo maxOf(0, announce - 4)).firstNotNullOfOrNull { at ->
+            code[at].call()?.takeIf { show ->
+                code[at].opcode == Opcode.INVOKE_VIRTUAL && show.returnType == "V" &&
+                    show.parameters().let { it.size == 2 && it[0].startsWith("L") && it[1] == "Z" }
+            }
         }
     } ?: refuse("no controller call before $ANNOUNCE in ${handler.where()}")
 }

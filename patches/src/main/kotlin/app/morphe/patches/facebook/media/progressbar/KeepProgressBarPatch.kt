@@ -377,6 +377,8 @@ val keepProgressBarPatch = bytecodePatch(
         val scrubber = vddScrubber(
             classDefByStrings(SCRUBBER_PASSIVE, StringComparisonType.EQUALS)
                 .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+            classDefByStrings(SCRUBBER_ACTIVE, StringComparisonType.EQUALS)
+                .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
         )
         // The older bottom bar plugin is kept hooked where a build still has it, but needn't exist.
         val pluginHolders = classDefByStrings(REEL_SEEK_BAR_PLUGIN, StringComparisonType.EQUALS)
@@ -632,20 +634,35 @@ internal fun scrubberBase(looks: ScrubberLooks): String = looks.viewsField.subst
 
 /**
  * The scrubber class: the one of [holders] with an instance `()V` method tracing
- * [SCRUBBER_ACTIVE] and another tracing [SCRUBBER_PASSIVE]. Refuses unless there's exactly one
- * such class with exactly one method of each.
+ * [SCRUBBER_ACTIVE] and another tracing [SCRUBBER_PASSIVE]. 587 moved the active look's body to the
+ * scrubber's one subclass (`LX/0A6t;->A1F`), leaving the scrubber (`LX/0A6u;`) an abstract
+ * declaration of it, so a scrubber tracing no active look takes that body when exactly one subclass
+ * among [activeHolders] traces it and the scrubber declares it abstract, which keeps a call of the
+ * look through the scrubber valid. Refuses unless there's exactly one such class with exactly one
+ * method of each.
  */
-internal fun vddScrubber(holders: List<ClassDef>): ScrubberLooks {
+internal fun vddScrubber(holders: List<ClassDef>, activeHolders: List<ClassDef> = holders): ScrubberLooks {
     fun look(holder: ClassDef, string: String) = methodsHolding(holder, string).filter {
         !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" && it.parameterTypes.isEmpty()
     }
-    val scrubbers = holders.distinctBy { it.type }.filter { look(it, SCRUBBER_ACTIVE).size == 1 && look(it, SCRUBBER_PASSIVE).size == 1 }
+    fun active(holder: ClassDef): Method? {
+        val own = look(holder, SCRUBBER_ACTIVE)
+        if (own.isNotEmpty()) return own.singleOrNull()
+        val body = activeHolders.distinctBy { it.type }.filter { it.superclass == holder.type }
+            .flatMap { look(it, SCRUBBER_ACTIVE) }.singleOrNull() ?: return null
+        return body.takeIf {
+            holder.methods.any {
+                AccessFlags.ABSTRACT.isSet(it.accessFlags) && it.name == body.name && it.returnType == "V" && it.parameterTypes.isEmpty()
+            }
+        }
+    }
+    val scrubbers = holders.distinctBy { it.type }.filter { active(it) != null && look(it, SCRUBBER_PASSIVE).size == 1 }
     val scrubber = scrubbers.singleOrNull()
         ?: refuse("expected one class tracing both \"$SCRUBBER_ACTIVE\" and \"$SCRUBBER_PASSIVE\", found ${scrubbers.size}")
     val passive = look(scrubber, SCRUBBER_PASSIVE).single()
     val (viewsField, labelField) = timeLabelFields(scrubber, passive)
     val barField = seekBarField(passive, labelField.substringBefore("->"))
-    return ScrubberLooks(scrubber.type, look(scrubber, SCRUBBER_ACTIVE).single(), passive, viewsField, labelField, barField)
+    return ScrubberLooks(scrubber.type, active(scrubber)!!, passive, viewsField, labelField, barField)
 }
 
 /**
@@ -2016,9 +2033,52 @@ internal fun controlsUpdater(holders: List<ClassDef>, classOf: (String) -> Class
                 }
             }
         }
-    }.distinctBy { it.type }
+    }.distinctBy { it.type }.ifEmpty { foldedFromCase(holders, classOf) }
     return found.singleOrNull()
         ?: refuse("expected one interface or controller for the controls updater tracing \"$PLAYER_CONTROL_UPDATE\", found ${found.size}")
+}
+
+/**
+ * The folded updater a lambda case among [holders] leads to, when no updater traces
+ * [PLAYER_CONTROL_UPDATE] itself. On 587 the folded updater (arm64 `LX/09Uw;->A00`) traces nothing,
+ * and a bridge lambda case (`LX/0A6J;->A1A`) traces the string just after it writes the controller's
+ * control state field. The updater is the controller's one static `V` method taking it last that
+ * writes the same field.
+ */
+private fun foldedFromCase(holders: List<ClassDef>, classOf: (String) -> ClassDef?): List<ControlsUpdater> {
+    fun lambda(method: Method) = AccessFlags.BRIDGE.isSet(method.accessFlags) || AccessFlags.SYNTHETIC.isSet(method.accessFlags)
+    fun FieldReference.key() = Triple(definingClass, name, type)
+    val fields = holders.distinctBy { it.type }.flatMap { holder ->
+        methodsHolding(holder, PLAYER_CONTROL_UPDATE).filter(::lambda).flatMap(::caseWrites)
+    }.distinctBy { it.key() }
+    return fields.mapNotNull { field ->
+        val controller = classOf(field.definingClass) ?: return@mapNotNull null
+        val updates = controller.methods.filter { method ->
+            AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" &&
+                method.parameterTypes.lastOrNull()?.toString() == controller.type &&
+                method.implementation?.instructions?.any { instruction ->
+                    instruction.opcode == Opcode.IPUT_OBJECT &&
+                        ((instruction as ReferenceInstruction).reference as FieldReference).key() == field.key()
+                } == true
+        }
+        val update = updates.singleOrNull() ?: return@mapNotNull null
+        ControlsUpdater(controller.type, true, "${controller.type}->${update.name}(${update.parameterTypes.joinToString("")})V")
+    }.distinctBy { it.type }
+}
+
+/**
+ * The object field [case] writes last before each place it traces [PLAYER_CONTROL_UPDATE], looking
+ * back only through instructions that continue to the next one.
+ */
+private fun caseWrites(case: Method): List<FieldReference> {
+    val code = case.implementation?.instructions?.toList().orEmpty()
+    return code.indices.filter { at ->
+        ((code[at] as? ReferenceInstruction)?.reference as? StringReference)?.string == PLAYER_CONTROL_UPDATE
+    }.mapNotNull { traced ->
+        (traced - 1 downTo 0).takeWhile { code[it].opcode.canContinue() }
+            .firstOrNull { code[it].opcode == Opcode.IPUT_OBJECT }
+            ?.let { (code[it] as ReferenceInstruction).reference as FieldReference }
+    }
 }
 
 /**

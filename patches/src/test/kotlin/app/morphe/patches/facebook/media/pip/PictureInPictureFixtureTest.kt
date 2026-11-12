@@ -66,7 +66,7 @@ class PictureInPictureFixtureTest {
         get() = (this as? ReferenceInstruction)?.reference as? MethodReference
 
     /** Builds whose Reels surface gate reads its answer straight off the settings, with no lambda cases. */
-    private val caselessGate = setOf("586.0.0.52.53")
+    private val caselessGate = setOf("586.0.0.52.53", "587.0.0.39.55")
 
     private fun declaredBundles(): Map<String, List<File>> {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -79,6 +79,26 @@ class PictureInPictureFixtureTest {
         var address = 0
         val addresses = map { instruction -> address.also { address += instruction.codeUnits } }
         return addresses.indexOf(addresses[index] + (this[index] as OffsetInstruction).codeOffset)
+    }
+
+    private val constantLoads = setOf(Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST)
+
+    /**
+     * The branch testing the flag answered at [flagAt] (its move-result) in [code], and the call a no
+     * reaches, both past constant loads: the fall-through of an if-nez, or (587) the jump of an if-eqz.
+     * (-1, -1) when no such branch tests it.
+     */
+    private fun noFromFlag(code: List<Instruction>, flagAt: Int): Pair<Int, Int> {
+        val flag = (code[flagAt] as OneRegisterInstruction).registerA
+        val branchAt = (flagAt + 1 until code.size).firstOrNull { code[it].opcode !in constantLoads } ?: return -1 to -1
+        val branch = code[branchAt]
+        if ((branch as? OneRegisterInstruction)?.registerA != flag) return -1 to -1
+        val no = when (branch.opcode) {
+            Opcode.IF_NEZ -> branchAt + 1
+            Opcode.IF_EQZ -> code.target(branchAt)
+            else -> return -1 to -1
+        }
+        return branchAt to ((no until code.size).firstOrNull { code[it].opcode !in constantLoads } ?: -1)
     }
 
     @Test
@@ -188,7 +208,9 @@ class PictureInPictureFixtureTest {
                     homeGateRegister < home.localRegisterCount())
                 assertTrue("$name: the flag's answer v$homeFlagRegister isn't a local of ${home.localRegisterCount()}",
                     homeFlagRegister < home.localRegisterCount())
-                val fallsInto = originalHome[homeFlag + 2].call
+                val (homeBranch, noAt) = noFromFlag(originalHome, homeFlag)
+                assertTrue("$name: the flag's answer isn't tested by an if-nez or if-eqz", noAt > homeFlag)
+                val fallsInto = originalHome[noAt].call
                 assertTrue("$name: a no from the flag doesn't fall into a disarm",
                     disarms.any { it.definingClass == fallsInto?.definingClass && it.name == fallsInto.name })
 
@@ -433,8 +455,8 @@ class PictureInPictureFixtureTest {
                     assertEquals("$name: in the answer's own register", register, (homed[at + 2] as OneRegisterInstruction).registerA)
                 }
                 assertEquals("$name: Facebook's branch on the copy follows", originalHome[copyAt + 1].opcode, homed[copyAt + 3].opcode)
-                assertEquals("$name: Facebook's branch on the flag follows", Opcode.IF_NEZ, homed[homeFlag + 5].opcode)
-                assertEquals("$name: then its disarm", fallsInto.toString(), homed[homeFlag + 6].call.toString())
+                assertEquals("$name: Facebook's branch on the flag follows", originalHome[homeBranch].opcode, homed[homeBranch + 4].opcode)
+                assertEquals("$name: then its disarm", fallsInto.toString(), homed[noAt + 4].call.toString())
                 assertEquals("$name: the rest of the Video tab's arming", originalHome.size + 4, homed.size)
 
                 val status = context.mutableClassDefBy(SETTINGS_STATUS).methods.single { it.name == "pictureInPicture" }

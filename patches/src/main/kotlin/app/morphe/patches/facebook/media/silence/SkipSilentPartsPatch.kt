@@ -28,6 +28,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -104,9 +105,11 @@ val skipSilentPartsPatch = bytecodePatch(
 
 /**
  * One audio sink's hand-off of the skip-silence flag: the call at [index] of [method] hands the
- * chain object in [chain] the flag in [flag], and [scratch] is a register nothing reads there.
+ * chain object in [chain] the flag in [flag], and [scratch] is a register nothing reads there. From
+ * 587 the chain answers the flag it applied, which the sink moves into [result], keeps and tells its
+ * listener; up to 586 it answers nothing and [result] is null.
  */
-internal class SilenceApply(val method: Method, val index: Int, val chain: Int, val flag: Int, val scratch: Int)
+internal class SilenceApply(val method: Method, val index: Int, val chain: Int, val flag: Int, val scratch: Int, val result: Int? = null)
 
 internal fun same(a: Method, b: Method) = a.name == b.name && a.returnType == b.returnType &&
     a.parameterTypes.map(CharSequence::toString) == b.parameterTypes.map(CharSequence::toString)
@@ -118,6 +121,10 @@ private fun interfaceCall(instruction: Instruction): MethodReference? {
 
 private fun takesOneFlag(called: MethodReference) =
     called.returnType == "V" && called.parameterTypes.map(CharSequence::toString) == listOf("Z")
+
+/** A chain's apply of the flag: one boolean, answering nothing up to 586 and the flag it applied from 587 (`LX/07Xk;->ACx`). */
+private fun handsOneFlag(called: MethodReference) =
+    called.returnType in setOf("V", "Z") && called.parameterTypes.map(CharSequence::toString) == listOf("Z")
 
 /** Whether [instruction] tells an audio sink's listener its skip-silence flag ([SILENCE_CHANGED]). */
 internal fun tellsListener(instruction: Instruction): Boolean {
@@ -138,7 +145,7 @@ internal fun silenceApply(method: Method): SilenceApply? {
     val where = "${method.definingClass}->${method.name}"
     val handed = (0 until told).filter { at ->
         val called = interfaceCall(code[at])
-        called != null && called.name != SILENCE_CHANGED && takesOneFlag(called)
+        called != null && called.name != SILENCE_CHANGED && handsOneFlag(called)
     }
     if (handed.isEmpty()) return null
     if (handed.size != 1) throw PatchException("$PATCH: $where hands ${handed.size} flags on before telling its listener")
@@ -169,7 +176,9 @@ internal fun silenceApply(method: Method): SilenceApply? {
     val live = RegisterLiveness.of(method).liveInto(at)
     val scratch = (0 until minOf(16, method.localRegisterCount())).firstOrNull { it !in live && it != chain && it != flag }
         ?: throw PatchException("$PATCH: $where has no free register at its flag's hand-off")
-    return SilenceApply(method, at, chain, flag, scratch)
+    val result = code.getOrNull(at + 1)?.takeIf { called.returnType == "Z" && it.opcode == Opcode.MOVE_RESULT }
+        ?.let { (it as OneRegisterInstruction).registerA }
+    return SilenceApply(method, at, chain, flag, scratch, result)
 }
 
 /**
@@ -190,10 +199,13 @@ internal fun BytecodePatchContext.silenceApplies(): List<SilenceApply> {
 /**
  * Asks the extension for the flag right before [apply]'s hand-off, into its scratch register,
  * and hands the chain that instead. The call keeps its place and its method, so the flag register
- * Facebook goes on to store and tell its listener is untouched.
+ * Facebook goes on to store and tell its listener is untouched. Where the chain answers the flag it
+ * applied, the sink gets Facebook's flag in place of that answer, which is what the chain answers
+ * unpatched, so the next apply asks again here too.
  */
 internal fun MutableMethod.askBeforeApplying(apply: SilenceApply) {
     val called = (getInstruction(apply.index) as ReferenceInstruction).reference.toString()
+    apply.result?.let { replaceInstruction(apply.index + 1, "move/from16 v$it, v${apply.flag}") }
     replaceInstruction(apply.index, "invoke-interface { v${apply.chain}, v${apply.scratch} }, $called")
     addInstructions(
         apply.index,

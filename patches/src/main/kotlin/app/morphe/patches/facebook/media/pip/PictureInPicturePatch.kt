@@ -40,6 +40,7 @@ import app.morphe.patches.facebook.reels.PlayerRead
 import app.morphe.patches.facebook.reels.VIDEO_COMPLETE_ANCHOR
 import app.morphe.patches.facebook.reels.playerRead
 import app.morphe.patches.facebook.reels.videoCompletes
+import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -313,10 +314,19 @@ private fun Method.calls(): List<MethodReference> = implementation?.instructions
 
 private fun MethodReference.parameterList(): List<String> = parameterTypes.map(CharSequence::toString)
 
-/** Whether [method] is ReelsPipUtil's check: (Activity) -> boolean, asking for the phone's feature. */
+/**
+ * Whether [method] is ReelsPipUtil's check: the activity first, a boolean back, asking for the
+ * phone's feature. Up to 586 it takes the activity alone; 587 (0CrA.A0Q) adds the session and a
+ * Function0, and its (Activity) methods read the arming flag (A0P) or a cached feature answer (A0R).
+ */
 internal fun isPipCheck(method: Method): Boolean =
-    method.returnType == "Z" && method.parameterTypes.map(CharSequence::toString) == listOf(ACTIVITY) &&
+    method.returnType == "Z" && method.parameterTypes.firstOrNull()?.toString() == ACTIVITY &&
         method.calls().any { it.name == "hasSystemFeature" && it.definingClass == "Landroid/content/pm/PackageManager;" }
+
+/** Whether [call] is a call of ReelsPipUtil's [check]. */
+private fun callsCheck(call: MethodReference, check: Method): Boolean =
+    call.definingClass == check.definingClass && call.name == check.name && call.returnType == "Z" &&
+        call.parameterList() == check.parameterTypes.map(CharSequence::toString)
 
 /** ReelsPipUtil, the one class loading [PIP_SURFACE], and its one check. Changes nothing. */
 internal fun BytecodePatchContext.findPipCheck(): Method {
@@ -331,7 +341,7 @@ internal fun BytecodePatchContext.findPipCheck(): Method {
 /** Whether [method] is the Reels viewer's arming step: both origins' names, and a call of [check]. */
 internal fun isArmingStep(method: Method, check: Method): Boolean =
     holdsString(method, AI_STYLES_DRAFTS) && holdsString(method, REELS_VIEWER) &&
-        method.calls().any { it.definingClass == check.definingClass && it.name == check.name && it.parameterList() == listOf(ACTIVITY) }
+        method.calls().any { callsCheck(it, check) }
 
 /**
  * The surface gate: the arming step's first static call of a method of its own class that takes
@@ -512,6 +522,8 @@ internal fun BytecodePatchContext.findPlayer(): Player {
 
 private fun Method.shape() = parameterTypes.map(CharSequence::toString)
 
+private val DISARM_SHAPES = setOf(listOf(ACTIVITY), listOf(ACTIVITY, "Z"))
+
 /**
  * Whether [method] is ReelsPipUtil's arming: it takes an activity, the window's place and its shape
  * first, [player] among the rest, and hands a PictureInPictureParams on. The step that only
@@ -528,9 +540,12 @@ internal fun BytecodePatchContext.findArming(check: Method, player: String): Met
         ?: refuse("${check.definingClass} has ${armings.size} armings handing on a window's parameters, expected 1")
 }
 
-/** Whether [method] is one of ReelsPipUtil's disarms: (Activity) -> void, building auto-enter params of its own. */
+/**
+ * Whether [method] is one of ReelsPipUtil's disarms: (Activity) -> void, building auto-enter params
+ * of its own. 587 gave one of them a boolean after the activity (0CrA.A0O on arm64).
+ */
 internal fun isDisarm(method: Method): Boolean =
-    method.returnType == "V" && method.shape() == listOf(ACTIVITY) &&
+    method.returnType == "V" && method.shape() in DISARM_SHAPES &&
         method.calls().any { it.definingClass == PIP_PARAMS_BUILDER && it.name == "setAutoEnterEnabled" }
 
 /** ReelsPipUtil's disarms, at least one. Changes nothing. */
@@ -884,7 +899,7 @@ internal fun topicFlagAt(onResume: Method, check: Method): Int {
     val asked = code.indexOfFirst { instruction ->
         val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
         call != null && instruction.opcode.name.startsWith("invoke") && call.definingClass == check.definingClass &&
-            call.name == check.name && call.parameterList() == listOf(ACTIVITY) && call.returnType == "Z"
+            callsCheck(call, check)
     }
     if (asked < 0) return -1
     val read = (asked - 1 downTo 0).firstOrNull { isFlagRead(code[it]) } ?: return -1
@@ -930,7 +945,7 @@ internal fun BytecodePatchContext.applyTopicFlag(topic: TopicFlag) {
 private fun asksCheck(instruction: Instruction, check: Method): Boolean {
     val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
     return instruction.opcode.name.startsWith("invoke") && call.definingClass == check.definingClass &&
-        call.name == check.name && call.parameterList() == listOf(ACTIVITY) && call.returnType == "Z"
+        callsCheck(call, check)
 }
 
 /**
@@ -1010,7 +1025,9 @@ internal fun homeGateAt(home: Method, gate: Method, check: Method): Int {
 /**
  * Where the Video tab's arming [home] reads its flag for [VIDEO_TAB_SURFACE]: the move-result of the
  * first MobileConfig boolean read after it loads that name, when an if-nez on it follows and a no
- * falls through into one of ReelsPipUtil's [disarms]. -1 otherwise. Changes nothing.
+ * falls through into one of ReelsPipUtil's [disarms]. 587 (09Ha.A08 on arm64) loads constants into
+ * other registers first and tests with an if-eqz, so its no is the jump, which reaches the disarm
+ * past more constant loads. -1 otherwise. Changes nothing.
  */
 internal fun homeFlagAt(home: Method, disarms: List<Method>): Int {
     val code = home.implementation?.instructions?.toList().orEmpty()
@@ -1018,10 +1035,16 @@ internal fun homeFlagAt(home: Method, disarms: List<Method>): Int {
     if (named < 0) return -1
     val read = (named + 1 until code.size).firstOrNull { isFlagRead(code[it]) } ?: return -1
     val result = code.getOrNull(read + 1)
-    val branch = code.getOrNull(read + 2)
-    if (result?.opcode != Opcode.MOVE_RESULT || branch?.opcode != Opcode.IF_NEZ) return -1
-    if ((branch as OneRegisterInstruction).registerA != (result as OneRegisterInstruction).registerA) return -1
-    val next = code.getOrNull(read + 3) ?: return -1
+    if (result?.opcode != Opcode.MOVE_RESULT) return -1
+    val flag = (result as OneRegisterInstruction).registerA
+    val branchAt = (read + 2 until code.size).firstOrNull { code[it].opcode !in literalLoads } ?: return -1
+    if ((read + 2 until branchAt).any { (code[it] as OneRegisterInstruction).registerA == flag }) return -1
+    val branch = code[branchAt]
+    if (branch.opcode != Opcode.IF_NEZ && branch.opcode != Opcode.IF_EQZ) return -1
+    if ((branch as OneRegisterInstruction).registerA != flag) return -1
+    val no = if (branch.opcode == Opcode.IF_NEZ) branchAt + 1 else branchTarget(code, branchAt) ?: return -1
+    val callAt = (no until code.size).firstOrNull { code[it].opcode !in literalLoads } ?: return -1
+    val next = code[callAt]
     val disarm = (next as? ReferenceInstruction)?.reference as? MethodReference ?: return -1
     if (!next.opcode.name.startsWith("invoke")) return -1
     val disarming = disarms.any {

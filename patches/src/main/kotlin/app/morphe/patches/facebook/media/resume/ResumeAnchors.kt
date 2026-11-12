@@ -116,9 +116,15 @@ internal fun releases(owner: ClassDef, trigger: String): List<Method> = owner.me
     !it.isStatic() && it.returnType == "V" && it.parameters() == listOf(trigger, STRING) && holdsString(it, GROOT_RELEASE)
 }
 
-/** The seek every seek of [owner] goes through: static, holds its trace, takes the trigger, the player, an int and a flag. */
+/**
+ * The seek every seek of [owner] goes through: static, holds its trace, takes the trigger, the player,
+ * an int and its flags. Up to 586 that's one flag; 587 added a second (05MK.A0L), which only tells a
+ * position listener about the seek.
+ */
 internal fun safeSeeks(owner: ClassDef, trigger: String): List<Method> = owner.methods.filter {
-    it.isStatic() && it.returnType == "V" && it.parameters() == listOf(trigger, owner.type, "I", "Z") &&
+    val parameters = it.parameters()
+    it.isStatic() && it.returnType == "V" && parameters.size >= 4 &&
+        parameters.take(3) == listOf(trigger, owner.type, "I") && parameters.drop(3).all { flag -> flag == "Z" } &&
         holdsString(it, GROOT_SAFE_SEEK)
 }
 

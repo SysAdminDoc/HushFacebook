@@ -80,12 +80,13 @@ private fun Method.parameters() = parameterTypes.map(CharSequence::toString)
 private fun Method.code() = implementation?.instructions?.toList().orEmpty()
 
 /**
- * [owner]'s checks that drop a seek too close to where the video is: instance methods with a body
- * answering a boolean for an Integer and an int, which [safeSeek] calls.
+ * [owner]'s checks that drop a seek too close to where the video is: methods with a body answering a
+ * boolean for an Integer and an int, which [safeSeek] calls. Up to 586 the check is an instance
+ * method; 587 made it static (05MK.A0t), taking the player first.
  */
 internal fun smallSeekChecks(owner: ClassDef, safeSeek: Method): List<Method> = owner.methods.filter {
-    !it.isStatic() && it.returnType == "Z" && it.parameters() == listOf(INTEGER, "I") && it.implementation != null &&
-        calls(safeSeek, it)
+    val arguments = if (it.isStatic()) listOf(owner.type, INTEGER, "I") else listOf(INTEGER, "I")
+    it.returnType == "Z" && it.parameters() == arguments && it.implementation != null && calls(safeSeek, it)
 }
 
 /** [owner]'s attaches: static methods holding [GROOT_ATTACH]. */

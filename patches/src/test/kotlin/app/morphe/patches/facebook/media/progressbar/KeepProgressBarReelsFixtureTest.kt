@@ -85,7 +85,7 @@ class KeepProgressBarReelsFixtureTest {
 
     private fun scrubber(bundle: File): Scrubber {
         val holders = FixtureDex.classesHolding(bundle, SCRUBBER_PASSIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        val looks = vddScrubber(holders)
+        val looks = vddScrubber(holders, FixtureDex.classesHolding(bundle, SCRUBBER_ACTIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) })
         val scrubber = holders.single { it.type == looks.type }
         val progress = progressUpdate(
             FixtureDex.classesHolding(bundle, SCRUBBER_UPDATE).filterNot { it.type.startsWith(EXTENSION_CLASSES) },
