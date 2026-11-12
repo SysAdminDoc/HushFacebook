@@ -1332,31 +1332,43 @@ public class MaterialYouThemeTest {
 
     /**
      * Issue #37's place box under a check-in post: a Bloks box whose #333334 reaches the box builder
-     * without passing route four. Once Facebook has said dark, a grey the dark theme lists and a dark
-     * surface take the palette's neutral there. Before that answer, in light mode, and for white,
-     * blue and AMOLED's near black with AMOLED in the build, the fill stays.
+     * unchanged, a grey route four leaves. In dark mode a grey the dark theme lists and a dark
+     * surface take the palette's neutral there, a dark one even before Facebook's first answer, as a
+     * feed unit rendered at a cold start needs. A lighter grey the dark theme lists waits for that
+     * answer. In light mode, for a dark grey the dark theme doesn't list, for white and blue, and with
+     * AMOLED in the build for a grey up to a card's, which AMOLED's rule takes, the fill stays.
      */
     @Test
     public void inDarkModeABloksBoxFillTakesThePaletteOnADarkGrey() {
         int card = palette.sameLightness(TonePalette.NEUTRAL, 0xFF333334);
+        int button = palette.sameLightness(TonePalette.NEUTRAL, 0xFF46484B);
         assertNotEquals("the palette moves it", 0xFF333334, card);
+        assertNotEquals("the palette moves a secondary button", 0xFF46484B, button);
         DarkMode.forget();
-        assertEquals("before Facebook answers", 0xFF333334, MaterialYouTheme.bloksFill(0xFF333334, false));
+        assertEquals("a cold start's place box", card, MaterialYouTheme.bloksFill(0xFF333334, false));
+        assertEquals("a secondary button before Facebook answers", 0xFF46484B, MaterialYouTheme.bloksFill(0xFF46484B, false));
+        assertEquals("an attachment footer's light grey before Facebook answers", 0xFFF2F4F7,
+                MaterialYouTheme.bloksFill(0xFFF2F4F7, false));
 
         DarkMode.answer(true);
         assertEquals("the place box", card, MaterialYouTheme.bloksFill(0xFF333334, false));
+        assertEquals("a secondary button", button, MaterialYouTheme.bloksFill(0xFF46484B, false));
         assertEquals("a dark surface", palette.sameLightness(TonePalette.NEUTRAL, 0xFF242526),
                 MaterialYouTheme.bloksFill(0xFF242526, false));
         assertEquals("a popover's grey", palette.sameLightness(TonePalette.NEUTRAL, 0xFF3B3C3E),
                 MaterialYouTheme.bloksFill(0xFF3B3C3E, false));
+        assertEquals("a sheet's grey the dark theme doesn't list", 0xFF1F1F20, MaterialYouTheme.bloksFill(0xFF1F1F20, false));
+        assertEquals("a grey the dark theme doesn't list", 0xFF3A3B3C, MaterialYouTheme.bloksFill(0xFF3A3B3C, false));
         assertEquals("white", 0xFFFFFFFF, MaterialYouTheme.bloksFill(0xFFFFFFFF, false));
         assertEquals("a blue button", 0xFF0866FF, MaterialYouTheme.bloksFill(0xFF0866FF, false));
-        assertEquals("AMOLED's near black with AMOLED in the build", 0xFF333334, MaterialYouTheme.bloksFill(0xFF333334, true));
+        assertEquals("a card's grey with AMOLED in the build", 0xFF333334, MaterialYouTheme.bloksFill(0xFF333334, true));
+        assertEquals("a dark surface AMOLED's rule takes", 0xFF252728, MaterialYouTheme.bloksFill(0xFF252728, true));
         assertEquals("a grey AMOLED leaves", palette.sameLightness(TonePalette.NEUTRAL, 0xFF3B3C3E),
                 MaterialYouTheme.bloksFill(0xFF3B3C3E, true));
 
         DarkMode.answer(false);
         assertEquals("light mode", 0xFF333334, MaterialYouTheme.bloksFill(0xFF333334, false));
+        assertEquals("light mode's secondary button grey", 0xFF46484B, MaterialYouTheme.bloksFill(0xFF46484B, false));
     }
 
     /**

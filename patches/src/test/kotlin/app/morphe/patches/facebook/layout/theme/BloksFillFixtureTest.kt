@@ -32,7 +32,8 @@ import org.junit.Test
  * reader has to hand its fill to AccentColor.bloksFill before it sets the fill Paint's colour, and
  * the text span builder has to hand its colour to AccentColor.bloksText before it makes the span.
  * AMOLED hooks the same builder for its Light background color (#214), with AmoledTheme.bloksFill,
- * and Material You for light mode's surface greys like the Settings search field (#141).
+ * and Material You for light mode's surface greys like the Settings search field (#141) and dark
+ * mode's greys like the place box under a check-in post (#37).
  *
  * Read from 582 (2026-10-10): the border reader is `LX/4Nl;->A00(LX/4TW;LX/1Vp;)I`, the builder
  * `LX/4Nl;->A01(LX/4TW;LX/1Vp;I)LX/4Nm;`, whose drawable fills with Paint `A05`, the themed colour
@@ -83,7 +84,7 @@ class BloksFillFixtureTest {
                 val fill = builder.parameterRegisterNumber(2)
 
                 // Accent color's route six, AMOLED's light mode surfaces (#214) and Material You's
-                // light mode greys (#141) on the same builder.
+                // light and dark mode greys (#141, #37) on the same builder.
                 for (target in listOf(ACCENT_BLOKS_FILL, AMOLED_BLOKS_FILL, MATERIAL_YOU_BLOKS_FILL)) {
                     BoxDecorationBorderFingerprint.clearMatch()
                     val context = PatchContexts.of(listOf(box))

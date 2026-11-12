@@ -513,13 +513,16 @@ public final class MaterialYouTheme {
      * leaves a light grey since text can be one, then hands the int to the box builder, which paints
      * the box's background with it. A box's fill is always a background, so in light mode one of the
      * {@link #LIGHT_SURFACE_VALUES} takes the palette's neutral at the same lightness
-     * ({@link #lightSurface}). Not every fill comes through route four: on 584 the place box's #333334
-     * reached the builder as Facebook wrote it. So once Facebook has said its dark mode is on, a grey
+     * ({@link #lightSurface}). In dark mode route four only moves the {@link #SURFACES}, and on 584
+     * the place box's #333334 reached the builder unchanged. So in dark mode a grey
      * {@link #FDS_DARK} lists and one of the {@link #SURFACES} take the palette's neutral at the same
-     * lightness too, as a React card's do ({@link #darkBackground}). Before that answer, and for
-     * every other colour, the fill stays. So does a grey AMOLED's Light background color row moves
-     * (#214), since AMOLED's hook on the same builder answers for that one, and with AMOLED in the
-     * build a near black AMOLED takes as its own in dark mode.
+     * lightness here too, as a React card's do ({@link #darkBackground}). Feed units render on a
+     * background thread at a cold start, before Facebook's first answer ({@link #parseLinkBox}), so
+     * a dark grey up to a popover's doesn't wait for it, while a lighter one, which light mode can
+     * fill a box with, waits until Facebook has said dark. Every other colour stays. So does a grey
+     * AMOLED's Light background color row moves (#214), since AMOLED's hook on the same builder
+     * answers for that one, and with AMOLED in the build a grey up to a card's in dark mode, which
+     * AMOLED's rule takes as its own.
      */
     public static int bloksFill(int color) {
         return bloksFill(color, SettingsStatus.amoledTheme());
@@ -528,8 +531,9 @@ public final class MaterialYouTheme {
     static int bloksFill(int color, boolean amoled) {
         HookStatus.invoked(FamilyNames.MATERIAL_YOU_THEME);
         if (amoled && (AmoledTheme.bloksFill(color) != color || AmoledTheme.ownsWithoutToken(color))) return color;
-        if (!DarkMode.saidOn()) return lightSurface(color);
+        if (!DarkMode.on()) return lightSurface(color);
         if (!isSurface(color) && Arrays.binarySearch(DARK_GREYS, color) < 0) return color;
+        if (!DarkMode.saidOn() && !AmoledTheme.isDarkNeutral(color, AmoledTheme.MAX_RAISED_CHANNEL)) return color;
         return palette().sameLightness(TonePalette.NEUTRAL, color);
     }
 

@@ -508,12 +508,13 @@ val materialYouThemePatch = bytecodePatch(
             patchLog.warning("${moved.message}. The theme goes on without Bloks sheets' backgrounds.")
         }
 
-        // The fill of each Bloks box, like the Settings search field (#141): one hex string the
-        // server sends, which parseColor leaves in light mode as text can be that grey too.
+        // The fill of each Bloks box, like the Settings search field (#141) and in dark mode the place
+        // box under a check-in post (#37): one hex string the server sends, which parseColor leaves in
+        // light mode as text can be that grey too, and which in dark mode skips route four.
         try {
             hookBloksFills(MATERIAL_YOU_BLOKS_FILL)
         } catch (moved: PatchException) {
-            patchLog.warning("${moved.message}. The theme goes on without Bloks boxes' light mode fills.")
+            patchLog.warning("${moved.message}. The theme goes on without Bloks boxes' fills.")
         }
 
         // The colour resource behind a token, which FDS's token lookup answers and the code then reads
