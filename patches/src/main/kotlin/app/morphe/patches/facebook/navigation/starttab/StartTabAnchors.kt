@@ -111,6 +111,13 @@ internal const val KEEP_ASKED_START_TAB = "$EXTENSION_PACKAGE/navigation/StartTa
 internal const val SET_SANITIZED_INTENT =
     "$EXTENSION_PACKAGE/navigation/StartTabRoute;->setSanitizedIntent(Landroid/app/Activity;Landroid/content/Intent;)V"
 
+/**
+ * The extension's hook first thing in the Feeds tab's onBackPressed. It answers the tab when
+ * Facebook's own Back should run, and null when it closed the Feeds page a start opened.
+ */
+internal const val FEEDS_PAGE_BACK =
+    "$EXTENSION_PACKAGE/navigation/StartTabRoute;->feedsPageBack(Ljava/lang/Object;)Ljava/lang/Object;"
+
 /** How far past the gate's branch the start tab lookup may sit: the long, the tab bar state, its cast, the lookup. */
 private const val LOOKUP_WINDOW = 8
 

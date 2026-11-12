@@ -17,6 +17,7 @@ import com.android.tools.smali.dexlib2.builder.BuilderInstruction
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
@@ -117,8 +118,9 @@ internal fun feedsHandlerAnchors(method: Method): FeedsHandlerAnchors? {
 
 /**
  * Why [fragment] can't take the Feeds filter hooks, or null when it can: it declares one public
- * handler with one read of the last feed type and a lookup whose answer is kept, and an onResume
- * that returns and leaves its `this` register alone, which the hook reads at the end.
+ * handler with one read of the last feed type and a lookup whose answer is kept, an onResume
+ * that returns and leaves its `this` register alone, which the hook reads at the end, and an
+ * onBackPressed with code nothing jumps back to the start of, where the Back hook goes.
  */
 internal fun feedsFragmentRefusal(fragment: ClassDef): String? {
     val handlers = fragment.methods.filter { it.name == FEEDS_HANDLER }
@@ -134,6 +136,17 @@ internal fun feedsFragmentRefusal(fragment: ClassDef): String? {
     if (code.none { it.opcode == Opcode.RETURN_VOID }) return "$FEED_FILTERS_FRAGMENT->onResume never returns"
     val self = implementation.registerCount - 1
     if (code.any { writes(it, self) }) return "$FEED_FILTERS_FRAGMENT->onResume reuses the register its this is in"
+    val back = fragment.methods.singleOrNull { it.name == "onBackPressed" && it.parameterTypes.isEmpty() && it.returnType == "Z" }
+        ?: return "$FEED_FILTERS_FRAGMENT declares no onBackPressed()Z"
+    val backCode = back.implementation?.instructions?.toList() ?: return "$FEED_FILTERS_FRAGMENT->onBackPressed has no code"
+    // A jump to the start would land past the hook, on Facebook's first instruction.
+    var at = 0
+    val jumpsToStart = backCode.any { instruction ->
+        val target = (instruction as? OffsetInstruction)?.let { at + it.codeOffset }
+        at += instruction.codeUnits
+        target == 0
+    }
+    if (jumpsToStart) return "$FEED_FILTERS_FRAGMENT->onBackPressed jumps back to its start"
     return null
 }
 

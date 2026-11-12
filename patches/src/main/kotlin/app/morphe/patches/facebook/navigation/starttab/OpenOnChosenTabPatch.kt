@@ -7,6 +7,7 @@ package app.morphe.patches.facebook.navigation.starttab
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
@@ -41,7 +42,8 @@ import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstructio
  * it keeps that tab. Each reads and writes only registers Facebook's own code already uses there,
  * except where 585 runs that last check inline: there the hook borrows one register nothing reads.
  * Three more go in the Feeds tab, so a start sent there can open on a chosen filter: see
- * FeedsSubtabAnchors.kt.
+ * FeedsSubtabAnchors.kt. One more goes first in its onBackPressed, so Back leaves the Feeds page a
+ * start opens, which Facebook's feed otherwise keeps Back on.
  *
  * In the default selection with its switch off and the tab as Marketplace: it changes where
  * Facebook opens, which is a choice to make.
@@ -121,6 +123,8 @@ val openOnChosenTabPatch = bytecodePatch(
         handler.askExtensionForFilter(feedsHandlerAnchors(handler)!!)
         fragment.methods.single { it.name == "onResume" && it.parameterTypes.isEmpty() && it.returnType == "V" }
             .tellExtensionAtResumeReturns()
+        fragment.methods.single { it.name == "onBackPressed" && it.parameterTypes.isEmpty() && it.returnType == "Z" }
+            .askExtensionFirstOnBack()
         mutable(handOver.first).handSanitizedIntentToExtension(handOver.second)
         mutable(gate.first).askExtensionAfterGate(gate.second)
         keeps.singleOrNull()?.let { mutable(it).askExtensionAtReturns() }
@@ -198,6 +202,26 @@ internal fun MutableMethod.askExtensionAtReturns() {
         addInstruction(index + 1, "move-result v$register")
         addInstruction(index + 2, "return v$register")
     }
+}
+
+/**
+ * Asks the extension first thing in the Feeds tab's onBackPressed. The method has no register of
+ * its own to spare, so the answer goes in `this`'s: the tab back, cast to it again, and Facebook's
+ * own code runs from its first instruction, or null, and the method answers that it took Back.
+ */
+internal fun MutableMethod.askExtensionFirstOnBack() {
+    addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p0 .. p0 }, $FEEDS_PAGE_BACK
+            move-result-object p0
+            check-cast p0, $FEED_FILTERS_FRAGMENT
+            if-nez p0, :facebook
+            const/4 p0, 0x1
+            return p0
+        """,
+        ExternalLabel("facebook", getInstruction(0)),
+    )
 }
 
 /**

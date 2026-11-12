@@ -26,6 +26,7 @@ import com.facebook.feed.tab.FeedTab;
 import com.facebook.friending.tab.FriendRequestsTab;
 import com.facebook.katana.activity.FbMainTabActivity;
 import com.facebook.katana.activity.FbMainTabActivityDelegate;
+import com.facebook.katana.immersiveactivity.ImmersiveActivity;
 import com.facebook.marketplace.tab.MarketplaceTab;
 import com.facebook.video.videohome.tab.WatchTab;
 
@@ -640,6 +641,58 @@ public class StartTabRouteTest {
         page.onResume();
 
         assertEquals("Favorites wasn't picked on the Feeds page", 1, page.picked);
+    }
+
+    /**
+     * Facebook's feed keeps Back on the Feeds page, so Back on the page a start opened closes it,
+     * showing Home under it. The Menu's own Feeds page, the Feeds tab on a main screen a start
+     * marked, a tab on no screen and one whose screen can't be read all keep Facebook's own Back.
+     */
+    @Test
+    public void backClosesTheFeedsPageAStartOpenedAndLeavesTheRestToFacebook() {
+        HiddenTabs.inBuildForTests = Boolean.TRUE;
+        Settings.HIDE_FEEDS_TAB.save(true);
+        Settings.START_TAB.save(StartTab.FEEDS);
+        ActivityController<FbMainTabActivity> controller =
+                startedOn(new FeedTab(), StartTabRouteForTests.tabs(new FeedTab(), new MarketplaceTab()));
+        controller.create().start().resume().visible();
+        Intent opened = startedAfterTheLandingCheck(controller);
+        assertNotNull("no Feeds page", opened);
+
+        ImmersiveActivity page = Robolectric.buildActivity(ImmersiveActivity.class, opened).setup().get();
+        FeedFiltersFragment feeds = new FeedFiltersFragment();
+        feeds.context = page;
+        assertTrue(feeds.onBackPressed());
+        assertTrue("Back left the Feeds page open", page.isFinishing());
+        assertEquals("Facebook's Back ran as well", 0, feeds.backKept);
+        assertEquals(FamilyNames.START_TAB + ": invoked 1, 3 found, 0 missing", statusLine());
+
+        Intent menuRow = new Intent(opened);
+        menuRow.removeExtra(StartTabRoute.ROUTED);
+        ImmersiveActivity menuPage = Robolectric.buildActivity(ImmersiveActivity.class, menuRow).setup().get();
+        FeedFiltersFragment menuFeeds = new FeedFiltersFragment();
+        menuFeeds.context = menuPage;
+        assertTrue(menuFeeds.onBackPressed());
+        assertFalse("closed the Menu's own Feeds page", menuPage.isFinishing());
+        assertEquals(1, menuFeeds.backKept);
+
+        // A bar with a Feeds tab gets the same mark on the main screen, which isn't the page.
+        FbMainTabActivity main = controller.get();
+        main.setIntent(new Intent(main.getIntent()).putExtra(StartTabRoute.ROUTED, StartTab.FEEDS.fileValue));
+        FeedFiltersFragment tab = new FeedFiltersFragment();
+        tab.context = main;
+        assertTrue(tab.onBackPressed());
+        assertFalse("closed the main screen", main.isFinishing());
+        assertEquals(1, tab.backKept);
+
+        FeedFiltersFragment detached = new FeedFiltersFragment();
+        assertTrue(detached.onBackPressed());
+        assertEquals(1, detached.backKept);
+
+        Object unreadable = new Object();
+        assertSame(unreadable, StartTabRoute.feedsPageBack(unreadable));
+        String line = statusLine();
+        assertTrue(line, line.contains("'feeds page back' hook (it threw java.lang.NoSuchMethodException)"));
     }
 
     /**

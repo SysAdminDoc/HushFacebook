@@ -352,13 +352,37 @@ class StartTabPatchTest {
         """,
     )
 
-    /** The Feeds tab, each of its two methods replaceable or left out. */
+    /**
+     * The Feeds tab's onBackPressed as 586 writes it, one register, `this` reused for the shown
+     * filter's page and its answer. [jumpsToStart] loops back to the first instruction.
+     */
+    private fun feedsBack(jumpsToStart: Boolean = false) = method(
+        FEED_FILTERS_FRAGMENT, "onBackPressed", emptyList(), "Z", 1, static = false,
+        smali = """
+            :start
+            invoke-direct { p0 }, $FEED_FILTERS_FRAGMENT->getFeedFiltersController()Lfixture/Controller;
+            move-result-object p0
+            invoke-virtual { p0 }, Lfixture/Controller;->shown()Lfixture/Page;
+            move-result-object p0
+            if-eqz p0, :none
+            ${if (jumpsToStart) "goto :start" else ""}
+            invoke-virtual { p0 }, Lfixture/Page;->onBackPressed()Z
+            move-result p0
+            return p0
+            :none
+            const/4 p0, 0x0
+            return p0
+        """,
+    )
+
+    /** The Feeds tab, each of its three methods replaceable or left out. */
     private fun feedsFragment(
         handler: Method? = feedsHandler(),
         resume: Method? = feedsResume(),
+        back: Method? = feedsBack(),
     ): ClassDef = ImmutableClassDef(
         FEED_FILTERS_FRAGMENT, AccessFlags.PUBLIC.value, "Landroidx/fragment/app/Fragment;", null, null, null, null,
-        listOfNotNull(handler, resume),
+        listOfNotNull(handler, resume, back),
     )
 
     private fun classOf(vararg methods: Method): ClassDef = ImmutableClassDef(
@@ -596,6 +620,26 @@ class StartTabPatchTest {
         }
         val late = resume.implementation!!.instructions.filterIsInstance<BuilderOffsetInstruction>().single()
         assertEquals("a branch lands past the extension", returns.last() - 1, late.target.location.index)
+
+        // First in onBackPressed: the tab in p0 through the extension, cast back, on to Facebook's
+        // own first instruction when it comes back, and a yes when it doesn't.
+        val back = fragment.methods.single { it.name == "onBackPressed" }
+        val backBody = back.body()
+        assertEquals(1, back.implementation!!.registerCount)
+        assertEquals(Opcode.INVOKE_STATIC_RANGE, backBody[0].opcode)
+        assertEquals(FEEDS_PAGE_BACK, backBody[0].reference)
+        assertEquals(listOf(0), backBody[0].callRegisters())
+        assertEquals(Opcode.MOVE_RESULT_OBJECT, backBody[1].opcode)
+        assertEquals(0, backBody[1].register)
+        assertEquals(Opcode.CHECK_CAST, backBody[2].opcode)
+        assertEquals(FEED_FILTERS_FRAGMENT, backBody[2].reference)
+        assertEquals(Opcode.IF_NEZ, backBody[3].opcode)
+        assertEquals("the tab goes on to Facebook's code", 6, (backBody[3] as BuilderOffsetInstruction).target.location.index)
+        assertEquals(Opcode.CONST_4, backBody[4].opcode)
+        assertEquals(1, (backBody[4] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals(Opcode.RETURN, backBody[5].opcode)
+        assertEquals(Opcode.INVOKE_DIRECT, backBody[6].opcode)
+        assertEquals("$FEED_FILTERS_FRAGMENT->getFeedFiltersController()Lfixture/Controller;", backBody[6].reference)
     }
 
     @Test
@@ -616,6 +660,8 @@ class StartTabPatchTest {
         assertTrue(feedsFragmentRefusal(feedsFragment(handler = feedsHandler(overwritten = true)))!!.contains("reads no last feed type"))
         assertTrue(feedsFragmentRefusal(feedsFragment(resume = null))!!.contains("declares no onResume()V"))
         assertTrue(feedsFragmentRefusal(feedsFragment(resume = feedsResume(reusesThis = true)))!!.contains("reuses the register"))
+        assertTrue(feedsFragmentRefusal(feedsFragment(back = null))!!.contains("declares no onBackPressed()Z"))
+        assertTrue(feedsFragmentRefusal(feedsFragment(back = feedsBack(jumpsToStart = true)))!!.contains("jumps back to its start"))
     }
 
     /** A build whose Feeds tab can't take the filter hooks is refused before anything changes. */
@@ -630,7 +676,8 @@ class StartTabPatchTest {
             assertTrue(
                 "$message, yet the Feeds tab changed",
                 feeds.methods.flatMap { it.body() }.none {
-                    it is ReferenceInstruction && it.reference.toString() in setOf(FEEDS_RESUMED, FEED_TYPE_ASKED, FILTER_FOUND)
+                    it is ReferenceInstruction && it.reference.toString() in
+                        setOf(FEEDS_RESUMED, FEED_TYPE_ASKED, FILTER_FOUND, FEEDS_PAGE_BACK)
                 },
             )
             return message
@@ -648,6 +695,9 @@ class StartTabPatchTest {
 
         val jumpedAnswer = refusal(build(feeds = feedsFragment(handler = feedsHandler(jumpPastAnswer = true))))
         assertTrue(jumpedAnswer, jumpedAnswer.contains("has a jump past its lookup's answer"))
+
+        val backLoops = refusal(build(feeds = feedsFragment(back = feedsBack(jumpsToStart = true))))
+        assertTrue(backLoops, backLoops.contains("onBackPressed jumps back to its start"))
     }
 
     @Test
