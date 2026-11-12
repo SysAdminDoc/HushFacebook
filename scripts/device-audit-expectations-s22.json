@@ -1,13 +1,13 @@
 {
   "schema": 2,
   "facebook": "586.0.0.52.53",
-  "written": "2026-11-09",
-  "patchBuild": "sha256=efabc6ef2e6c75ba0b68e09f25abf511cc5a1ff9d6f31e2dbd17ed5e7dc8e767; source=clean:1d33bacef79fa76776e9417dd9f9e9a6f873d480; tree=010882fbbc9ce776b8ef7ba29479fabadd0565ce; inputs=cd8a621962d6b87b9157e9b64e7d70aa59d132f39bcf009f20b02cf28aeca698",
-  "installedApkSha256": "4322bd643369281e3882605611e9c3f6f00f3b55ec9759ff73a47873f2becbcf",
+  "written": "2026-11-12",
+  "patchBuild": "sha256=bf9534c1c188e09fe49902ba9ca8aeafdf8b30c74a3f8ebd06fa649e5b72c7df; source=clean:117592145e1c6ef36a93fbd6c0d345c5fd843b68; tree=dca980d9cbe879bef6e621c3aa4c776f6e19e8a6; inputs=1066d6c6687906212b7e28cd523b4425cd7a66f3a753ad2c99b4d0b13141f96f",
+  "installedApkSha256": "9bebe1c1e6ead933f74573272323a5323aa176bbdd259a460053b80450bbdc6e",
   "abi": "arm64-v8a",
   "sdk": 36,
   "device": "SM-S908U1",
-  "settingsSha256": "7617bff7d2bb2c700a10ce212dfbc210a5bf3b92e57d4e17ec9509ecd0dcfb91",
+  "settingsSha256": "1991ce53dc5a7c0a5a259f1a318c47df4b8b8cf4ac66535e47c21f10117a1fa7",
   "profile": {
     "name": "all-on",
     "on": [],
@@ -126,14 +126,12 @@
     "Open comments with a gesture",
     "Open Messenger from the top bar",
     "Open on a chosen tab",
-    "Photo carousel",
     "Picture-in-picture",
-    "Pinch to zoom",
     "Post action buttons",
-    "Remove the gap above Marketplace listings",
     "Restore screens on re-signed builds",
     "Resume long videos",
     "Round stories tray",
+    "Saved button in search",
     "Search posts tab",
     "Show full post text",
     "Skip silent parts",
@@ -150,6 +148,7 @@
   ],
   "notOnWalk": [
     "Allow screenshots",
+    "Ask before a like",
     "Block ad telemetry",
     "Block background ad prefetch",
     "Block Instant Games ads",
@@ -191,6 +190,9 @@
   ],
   "mayIdle": [
     "Hide sponsored profile posts",
-    "Hide the Reels tab dot"
+    "Hide the Reels tab dot",
+    "Photo carousel",
+    "Pinch to zoom",
+    "Remove the gap above Marketplace listings"
   ]
 }
