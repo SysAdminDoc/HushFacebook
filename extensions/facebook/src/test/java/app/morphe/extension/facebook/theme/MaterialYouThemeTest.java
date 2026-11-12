@@ -1331,6 +1331,35 @@ public class MaterialYouThemeTest {
     }
 
     /**
+     * Issue #37's place box under a check-in post: a Bloks box whose #333334 reaches the box builder
+     * without passing route four. Once Facebook has said dark, a grey the dark theme lists and a dark
+     * surface take the palette's neutral there. Before that answer, in light mode, and for white,
+     * blue and AMOLED's near black with AMOLED in the build, the fill stays.
+     */
+    @Test
+    public void inDarkModeABloksBoxFillTakesThePaletteOnADarkGrey() {
+        int card = palette.sameLightness(TonePalette.NEUTRAL, 0xFF333334);
+        assertNotEquals("the palette moves it", 0xFF333334, card);
+        DarkMode.forget();
+        assertEquals("before Facebook answers", 0xFF333334, MaterialYouTheme.bloksFill(0xFF333334, false));
+
+        DarkMode.answer(true);
+        assertEquals("the place box", card, MaterialYouTheme.bloksFill(0xFF333334, false));
+        assertEquals("a dark surface", palette.sameLightness(TonePalette.NEUTRAL, 0xFF242526),
+                MaterialYouTheme.bloksFill(0xFF242526, false));
+        assertEquals("a popover's grey", palette.sameLightness(TonePalette.NEUTRAL, 0xFF3B3C3E),
+                MaterialYouTheme.bloksFill(0xFF3B3C3E, false));
+        assertEquals("white", 0xFFFFFFFF, MaterialYouTheme.bloksFill(0xFFFFFFFF, false));
+        assertEquals("a blue button", 0xFF0866FF, MaterialYouTheme.bloksFill(0xFF0866FF, false));
+        assertEquals("AMOLED's near black with AMOLED in the build", 0xFF333334, MaterialYouTheme.bloksFill(0xFF333334, true));
+        assertEquals("a grey AMOLED leaves", palette.sameLightness(TonePalette.NEUTRAL, 0xFF3B3C3E),
+                MaterialYouTheme.bloksFill(0xFF3B3C3E, true));
+
+        DarkMode.answer(false);
+        assertEquals("light mode", 0xFF333334, MaterialYouTheme.bloksFill(0xFF333334, false));
+    }
+
+    /**
      * Litho reads a token's colour from the theme with TypedArray.getColor (581 LX/1Mx;->A04), and
      * SURFACE_BACKGROUND's night style item keeps #252728, so the comment list's rows drew it (#37).
      * In dark mode a dark surface read that way takes the palette; light mode and other colours keep
