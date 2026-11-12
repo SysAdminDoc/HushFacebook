@@ -611,6 +611,45 @@ public class AmoledThemeTest {
     }
 
     /**
+     * Issue #34's Menu profile card: "Create Facebook Page" is a Bloks colour pair's #B0B3B8, with no
+     * token. On a lighter Background colour FDS's two secondary text greys lift like the secondary
+     * text role, to 4.5:1 on every surface, and so does the palette's grey Material You hands over
+     * for one. Black, light mode, the time before Facebook answers, the primary text and a blue
+     * button's fill keep theirs.
+     */
+    @Test
+    public void aLighterBackgroundLiftsABloksPairsSecondaryGrey() {
+        DarkMode.answer(true);
+        assertEquals("black keeps the grey", 0xFFB0B3B8, AmoledTheme.parseBloks("#B0B3B8"));
+
+        AmoledTheme.useBackground(SAND, SAND_STEP);
+        int[] surfaces = surfaces();
+        assertEquals("the Menu card's grey, as the secondary text", 0xFFD6D8DA, AmoledTheme.parseBloks("#B0B3B8"));
+        int tinted = PalettesForTests.palette(PalettesForTests.RED).sameLightness(TonePalette.NEUTRAL, 0xFFB0B3B8);
+        int[] lifted = {
+                AmoledTheme.parseBloks("#B0B3B8"),
+                AmoledTheme.parseBloks("#FFA1A4A9"),
+                AmoledTheme.bloksText(0xFFB0B3B8, tinted)};
+        for (int colour : lifted) {
+            for (int surface : surfaces) {
+                assertTrue(Integer.toHexString(colour) + " on " + Integer.toHexString(surface),
+                        contrast(colour, surface) >= AmoledTheme.TEXT_CONTRAST);
+            }
+        }
+        assertEquals("the primary text", 0xFFF2F4F7, AmoledTheme.parseBloks("#F2F4F7"));
+        assertEquals("a blue button's fill", 0xFF1D85FC, AmoledTheme.parseBloks("#1D85FC"));
+        assertEquals("a card's grey takes route four's rule", AmoledTheme.parseColor("#333334"),
+                AmoledTheme.parseBloks("#333334"));
+        assertEquals("a palette colour from another grey", tinted, AmoledTheme.bloksText(0xFF333334, tinted));
+
+        DarkMode.forget();
+        assertEquals("before Facebook answers, since light mode has the grey too", 0xFFB0B3B8,
+                AmoledTheme.parseBloks("#B0B3B8"));
+        DarkMode.answer(false);
+        assertEquals("light mode", 0xFFB0B3B8, AmoledTheme.parseBloks("#B0B3B8"));
+    }
+
+    /**
      * Black and every colour taken before #34's lighter ones keep exactly what they had: no text
      * lifts, and each surface steps up by Facebook's full step.
      */

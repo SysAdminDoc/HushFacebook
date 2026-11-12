@@ -473,6 +473,43 @@ public class MaterialYouThemeTest {
     }
 
     /**
+     * Issue #34 with both themes: on AMOLED's lighter #5B513F the Menu card's #B0B3B8 and FDS's other
+     * secondary grey take the palette and then AMOLED's lift, to 4.5:1 on every surface AMOLED makes
+     * there. Without AMOLED in the build, over black, before Facebook answers and in light mode they
+     * get what Material You alone gives them.
+     */
+    @Test
+    public void withAmoledABloksSecondaryGreyLiftsOnALighterBackground() {
+        DarkMode.answer(true);
+        int grey = palette.sameLightness(TonePalette.NEUTRAL, 0xFFB0B3B8);
+        assertEquals("over black", grey, MaterialYouTheme.parseBloks("#B0B3B8", true));
+        int sand = 0xFF5B513F;
+        int[] surfaces = {sand, 0xFF5F5543, 0xFF615746, 0xFF625846, 0xFF645A48, 0xFF675D4B,
+                AmoledTheme.over(sand, AmoledTheme.UNREAD_ROW)};
+        try {
+            AmoledTheme.useBackground(sand, 12);
+            assertEquals("without AMOLED in the build", grey, MaterialYouTheme.parseBloks("#B0B3B8", false));
+            for (String text : new String[]{"#B0B3B8", "#FFA1A4A9"}) {
+                int drawn = MaterialYouTheme.parseBloks(text, true);
+                assertNotEquals("kept " + text, MaterialYouTheme.parseBloks(text, false), drawn);
+                for (int surface : surfaces) {
+                    assertTrue(text + " as " + Integer.toHexString(drawn) + " on " + Integer.toHexString(surface),
+                            AmoledThemeTest.contrast(drawn, surface) >= AmoledTheme.TEXT_CONTRAST);
+                }
+            }
+
+            DarkMode.forget();
+            assertEquals("before Facebook answers", MaterialYouTheme.parseBloks("#B0B3B8", false),
+                    MaterialYouTheme.parseBloks("#B0B3B8", true));
+            DarkMode.answer(false);
+            assertEquals("light mode", MaterialYouTheme.parseBloks("#B0B3B8", false),
+                    MaterialYouTheme.parseBloks("#B0B3B8", true));
+        } finally {
+            AmoledTheme.useBackground(AmoledTheme.backgroundColour());
+        }
+    }
+
+    /**
      * Issue #37: the Create story tile at the start of the stories tray is #333334 that Facebook
      * writes into its code right after its own dark check says yes. The patch sends that colour here:
      * a grey the dark theme lists takes the palette's neutral, before Facebook's first answer too, and

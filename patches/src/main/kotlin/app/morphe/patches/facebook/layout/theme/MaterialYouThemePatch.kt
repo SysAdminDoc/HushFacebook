@@ -642,7 +642,7 @@ internal fun BytecodePatchContext.hookLinkBoxColour(darkCheck: String): Int {
             check(asksDarkCheck(method, darkCheck)) {
                 "${method.definingClass}->${method.name} reads the link box's colour without asking $darkCheck"
             }
-            method.sendOneParse(parser, PARSE_LINK_BOX, "the link box's colour")
+            method.sendOneParse(setOf(parser), PARSE_LINK_BOX, "the link box's colour")
             changed++
         }
     }
@@ -650,13 +650,13 @@ internal fun BytecodePatchContext.hookLinkBoxColour(darkCheck: String): Int {
 }
 
 /**
- * Sends this method's one call to route four's [parser] to [target] on the same register. A method
- * with no such call, or more than one, is refused: the parse to change would be a guess. [what] names
- * the colour for the refusal.
+ * Sends this method's one call to any of [parsers] to [target] on the same register. A method with
+ * no such call, or more than one, is refused: the parse to change would be a guess. [what] names the
+ * colour for the refusal.
  */
-private fun MutableMethod.sendOneParse(parser: String, target: String, what: String) {
-    val parses = implementation!!.instructions.withIndex().filter { it.value.referenceText() == parser }
-    check(parses.size == 1) { "$definingClass->$name reads $what with ${parses.size} calls to $parser" }
+private fun MutableMethod.sendOneParse(parsers: Set<String>, target: String, what: String) {
+    val parses = implementation!!.instructions.withIndex().filter { it.value.referenceText() in parsers }
+    check(parses.size == 1) { "$definingClass->$name reads $what with ${parses.size} calls to $parsers" }
     val (index, call) = parses.single()
     val text = when (call) {
         is RegisterRangeInstruction -> call.startRegister
@@ -725,8 +725,10 @@ internal fun handsColourPairOn(method: Method, anchor: Method): Boolean {
  * `LX/fra;->BAJ`, in the models `LX/1Vp` and `LX/4TS`). Each model asks Bloks' theme whether it's
  * dark, takes that key's string, or the light one when there is no dark one, and parses it. The
  * Menu's profile card at the top is #333334 this way, a grey light mode draws too, so route four's
- * parser leaves it. In each model the one call to that parser goes to [PARSE_BLOKS] on the same
- * register. Runs after route four, so the call is already Material You's stand-in, AMOLED's included.
+ * parser leaves it. In each model the one call to one of [parsers] goes to [target] on the same
+ * register. Runs after route four, so the call is already Material You's stand-in, AMOLED's included,
+ * or AMOLED's own Bloks parse ([AMOLED_PARSE_BLOKS]), which AMOLED sends its secondary text greys
+ * through (issue #34). Material You takes either. AMOLED passes its stand-in and its own target.
  * The model that logs a pair it can't parse ([isLoggingBloksColourPair]) names the interface, and the
  * interface names the other models. One that parses more than once or never is refused, and so is
  * one that doesn't ask the theme, unless it only answers its fallback ([answersFallbackOnly]).
@@ -737,8 +739,10 @@ internal fun handsColourPairOn(method: Method, anchor: Method): Boolean {
  * 586, read 2026-11-09: the logging model is arm64 `LX/01IP;->CTK`, and `LX/0va1` hands its pair to
  * it ([handsColourPairOn]), so it's left alone like the ones that only answer their fallback.
  */
-internal fun BytecodePatchContext.hookBloksColourPairs(): Int {
-    val parser = standIn(MATERIAL_YOU, PARSE_COLOR)
+internal fun BytecodePatchContext.hookBloksColourPairs(
+    parsers: Set<String> = setOf(standIn(MATERIAL_YOU, PARSE_COLOR), AMOLED_PARSE_BLOKS),
+    target: String = PARSE_BLOKS,
+): Int {
     val logging = mutableListOf<Method>()
     classDefForEachReferencing(strings = listOf(BLOKS_PAIR_LIGHT_KEY)) { classDef ->
         if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
@@ -765,7 +769,7 @@ internal fun BytecodePatchContext.hookBloksColourPairs(): Int {
         check(method.implementation!!.instructions.any { it.asksDark(theme) }) {
             "${method.definingClass}->${method.name} picks a Bloks colour without asking $theme whether it's dark"
         }
-        method.sendOneParse(parser, PARSE_BLOKS, "a Bloks colour pair")
+        method.sendOneParse(parsers, target, "a Bloks colour pair")
         changed++
     }
     return changed

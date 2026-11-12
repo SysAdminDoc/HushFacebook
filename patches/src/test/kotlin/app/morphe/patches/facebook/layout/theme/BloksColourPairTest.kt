@@ -93,4 +93,29 @@ class BloksColourPairTest {
         val refusedTwice = runCatching { with(app(twice)) { hookBloksColourPairs() } }.exceptionOrNull()
         assertTrue("twice: ${refusedTwice?.message}", refusedTwice?.message.orEmpty().contains("with 2 calls"))
     }
+
+    /** Issue #34: AMOLED sends its route four parse to its own Bloks stand-in, and Material You takes that over. */
+    @Test
+    fun `AMOLED's parse goes to its own stand-in, which Material You takes over`() {
+        val amoledParse = "invoke-static { v1 }, $PARSE_COLOR_DARK"
+        val amoledLogging = type("Lfixture/AmoledLoggingModel;", listOf(model), body(
+            asks, "move-result v0",
+            "const-string v1, \"$BLOKS_PAIR_LIGHT_KEY\"", "const-string v1, \"$BLOKS_PAIR_DARK_KEY\"",
+            "const-string v1, \"#B0B3B8\"", amoledParse,
+        ))
+        val amoledSparse = type("Lfixture/AmoledSparseModel;", listOf(model), body(asks, "move-result v0", "const-string v1, \"#B0B3B8\"", amoledParse))
+        val app = PatchContexts.of(listOf(type(model, emptyList(), null), amoledLogging, amoledSparse))
+        val owners = listOf(amoledLogging.type, amoledSparse.type)
+
+        assertEquals("AMOLED's models changed", 2, with(app) { hookBloksColourPairs(setOf(PARSE_COLOR_DARK), AMOLED_PARSE_BLOKS) })
+        for (owner in owners) {
+            assertTrue("$owner calls AMOLED's stand-in", AMOLED_PARSE_BLOKS in app.calls(owner))
+            assertTrue("$owner keeps no route four parse", PARSE_COLOR_DARK !in app.calls(owner))
+        }
+        assertEquals("Material You's models changed", 2, with(app) { hookBloksColourPairs() })
+        for (owner in owners) {
+            assertTrue("$owner calls Material You's stand-in", PARSE_BLOKS in app.calls(owner))
+            assertTrue("$owner keeps no AMOLED stand-in", AMOLED_PARSE_BLOKS !in app.calls(owner))
+        }
+    }
 }

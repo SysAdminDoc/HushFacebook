@@ -775,6 +775,37 @@ public final class AmoledTheme {
     }
 
     /**
+     * FDS's dark greys for secondary text and icons, sorted: SECONDARY_TEXT's #A1A4A9 and #B0B3B8,
+     * which META_TEXT and PLACEHOLDER_TEXT share.
+     */
+    private static final int[] BLOKS_TEXT_GREYS = {0xFFA1A4A9, 0xFFB0B3B8};
+
+    /**
+     * Route four for a Bloks colour pair, the colour a Bloks screen's model parses from the server's
+     * light and dark strings (issue #34). It takes {@link #parseColor}'s rule, and in dark mode one of
+     * FDS's secondary text greys ({@link #BLOKS_TEXT_GREYS}) gets a text role's lift on a lighter
+     * Background colour ({@link #foreground}). The Menu's profile card draws "Create Facebook Page"
+     * this way, #B0B3B8 at 3.5:1 on #5B513F's card. A pair carries no token, so only those greys are
+     * lifted: none of them is a surface in FDS's dark table, and a blue button's fill keeps its colour.
+     * Light mode's table has both greys too (disabled text, a switch's disabled handle, a feed gap), so
+     * nothing is lifted until Facebook has said dark mode is on.
+     */
+    public static int parseBloks(String text) {
+        int parsed = parseColor(text);
+        return bloksText(parsed, parsed);
+    }
+
+    /**
+     * {@code color}, which a Bloks colour pair parsed as {@code parsed} and Material You may have
+     * recoloured since, lifted as secondary text when {@code parsed} is one of
+     * {@link #BLOKS_TEXT_GREYS} once Facebook has said dark mode is on.
+     */
+    static int bloksText(int parsed, int color) {
+        if (!DarkMode.saidOn() || Arrays.binarySearch(BLOKS_TEXT_GREYS, parsed) < 0) return color;
+        return foreground(color, "SECONDARY_TEXT");
+    }
+
+    /**
      * Whether route four's rule takes [color] as one of AMOLED's, black and the Background colour
      * included, even where it gives the colour back as it came. With a Background colour of
      * #212121 a card's #333334 comes back as #333334, so only this says AMOLED decided it.

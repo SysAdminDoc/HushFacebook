@@ -453,11 +453,18 @@ public final class MaterialYouTheme {
      * the palette's neutral at the same lightness, as a React card's does ({@link #darkBackground}).
      * Before that answer the colour goes the way {@link #parseColor} sends it, and in light mode, where
      * Bloks parses the light string, so does any colour but a light surface grey
-     * ({@link #lightSurface}). With AMOLED in the build its near black stays.
+     * ({@link #lightSurface}). With AMOLED in the build its near black stays, and a secondary text
+     * grey gets AMOLED's lift on a lighter Background colour after the palette's ({@link AmoledTheme#bloksText}).
      */
     public static int parseBloks(String text) {
+        return parseBloks(text, SettingsStatus.amoledTheme());
+    }
+
+    static int parseBloks(String text, boolean amoled) {
         HookStatus.invoked(FamilyNames.MATERIAL_YOU_THEME);
-        return darkBackground(SettingsStatus.amoledTheme() ? AmoledTheme.parseColor(text) : Color.parseColor(text));
+        if (!amoled) return darkBackground(Color.parseColor(text));
+        int parsed = AmoledTheme.parseColor(text);
+        return AmoledTheme.bloksText(parsed, darkBackground(parsed));
     }
 
     /**

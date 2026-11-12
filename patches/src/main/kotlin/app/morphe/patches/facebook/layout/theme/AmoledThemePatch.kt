@@ -720,6 +720,17 @@ val amoledThemePatch = bytecodePatch(
             patchLog.warning("${moved.message}. Light background color leaves native template cards like the Menu's profile card white.")
         }
 
+        // Bloks' colour pairs, whose secondary text greys a lighter Background colour lifts like a
+        // text role's (#34): the Menu's profile card draws its "Create Facebook Page" grey this way.
+        // Material You takes the same parse over and lifts after its palette.
+        try {
+            check(hookBloksColourPairs(setOf(PARSE_COLOR_DARK), AMOLED_PARSE_BLOKS) > 0) { "No parse of a Bloks colour pair found" }
+        } catch (moved: IllegalStateException) {
+            patchLog.warning("${moved.message}. A lighter Background color leaves Bloks screens' secondary text unlifted.")
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. A lighter Background color leaves Bloks screens' secondary text unlifted.")
+        }
+
         // The older comment row's time, whose slot drew blank on a black sheet (#138). Material You
         // calls the same hook and finds it in place.
         try {
@@ -764,6 +775,9 @@ internal const val AMOLED_DARK_BRANCH = "Lapp/morphe/extension/facebook/theme/Am
 
 /** Gets a Bloks box's fill, for the Light background color row (#214). Gives the colour to fill with. */
 internal const val AMOLED_BLOKS_FILL = "Lapp/morphe/extension/facebook/theme/AmoledTheme;->bloksFill(I)I"
+
+/** Parses a Bloks colour pair, lifting its secondary text greys (#34). Gives the colour to draw. */
+internal const val AMOLED_PARSE_BLOKS = "Lapp/morphe/extension/facebook/theme/AmoledTheme;->parseBloks(Ljava/lang/String;)I"
 
 private const val COLOR_DRAWABLE_INIT = "Landroid/graphics/drawable/ColorDrawable;-><init>(I)V"
 
