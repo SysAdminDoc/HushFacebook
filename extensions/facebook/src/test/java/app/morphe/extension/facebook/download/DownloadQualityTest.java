@@ -306,6 +306,49 @@ public class DownloadQualityTest {
         assertEquals("xpv 360 ", RenditionPicker.tagTextOf("{\"vencode_tag\":\"xpv 360\",\"n\":1485,\"other\":\"999\"}"));
     }
 
+    /**
+     * The S22 saved a 400x224 file over a 720p one on 2026-11-12: the smaller file's address read
+     * as "3573p" out of its signed letters and digits. Digits inside a token are never a size.
+     */
+    @Test
+    public void aTokenIsNotASize() {
+        String sdEfg = java.util.Base64.getUrlEncoder().withoutPadding()
+                .encodeToString("{\"vencode_tag\":\"sve_sd\"}".getBytes(StandardCharsets.UTF_8));
+        String noisy = "https://video-iad3-1.xx.fbcdn.net/o1/v/t2/f2/m69/AQNb3573pXq.mp4?efg=" + sdEfg
+                + "&_nc_ohc=Zk1280x720Qa&oh=00_AfB4096pYw&oe=2";
+        assertEquals(480, RenditionPicker.qualityOf(noisy));
+        assertEquals("mp4 (480p)", MediaDownload.describe(noisy));
+        assertEquals(HD, RenditionPicker.bestVideo(Arrays.asList(noisy, HD), DownloadQuality.BEST));
+        // The efg's own base64 isn't read either, only the text it decodes to.
+        String rawEfg = "https://video-iad3-1.xx.fbcdn.net/o1/v/t2/f2/m69/AQN.mp4?efg=AB_3573p-Cd&oh=1&oe=2";
+        assertEquals(0, RenditionPicker.qualityOf(rawEfg));
+        assertEquals(HD, RenditionPicker.bestVideo(Arrays.asList(rawEfg, HD), DownloadQuality.BEST));
+        // Signed values with a size at a token's edge, or between its - and _, say nothing either.
+        String base = "https://video-iad3-1.xx.fbcdn.net/o1/v/t2/f2/m69/";
+        String[] tokens = {
+            "AQN.mp4?efg=" + sdEfg + "&_nc_ohc=Zk3573x1920&oh=1",
+            "AQN.mp4?efg=" + sdEfg + "&_nc_ohc=Zk1280x720&oh=1",
+            "AQNbZk3573x1920.mp4?efg=" + sdEfg,
+            "AQN.mp4?efg=" + sdEfg + "&oh=00_AfB-4096p_Yw",
+            "AQN.mp4?efg=" + sdEfg + "&_nc_gid=Ab3573x1920-Zq&edm=AJf-1080p_Qw",
+            "AQOx8-Lk3573p_Vb2Qw9Zr.mp4?efg=" + sdEfg,
+        };
+        for (String token : tokens) {
+            assertEquals(token, 480, RenditionPicker.qualityOf(base + token));
+            assertEquals(token, HD, RenditionPicker.bestVideo(Arrays.asList(base + token, HD), DownloadQuality.BEST));
+        }
+        // A marker or a size that stands apart still reads.
+        assertEquals(720, RenditionPicker.qualityOf("https://video.xx.fbcdn.net/v/clip_720p.mp4?oh=00_AfB4096pYw"));
+        assertEquals(720, RenditionPicker.qualityOf("https://video.xx.fbcdn.net/v/clip.mp4?vs=1280x720&oh=1"));
+        assertEquals(720, RenditionPicker.qualityOf("https://video.xx.fbcdn.net/v/clip_1280x720p.mp4?oh=1"));
+        assertEquals(720, RenditionPicker.qualityOf("https://video.xx.fbcdn.net/v/clip.mp4?tag=dash_h264-basic-gen2_720p&oh=1"));
+        assertEquals(2048, RenditionPicker.qualityOf("https://scontent.xx.fbcdn.net/v/1_n.jpg?stp=dst-jpg_s2048x2048_tt6"));
+        assertEquals(2048, RenditionPicker.qualityOf("https://scontent.xx.fbcdn.net/v/1_n.jpg?stp=dst-jpg_s2048x2048_tt6%2Cx"));
+        assertEquals(180, RenditionPicker.qualityOf("https://scontent.xx.fbcdn.net/v/t1.0-0/p180x540/1_n.jpg"));
+        assertEquals(1080, RenditionPicker.qualityOf("https://scontent.xx.fbcdn.net/v/1_n.jpg?ctp=s1080x1920&oh=1"));
+        assertEquals(2048, RenditionPicker.qualityOf("https://scontent.xx.fbcdn.net/v/1_n.jpg?cstp=mx2048x3640&oh=1"));
+    }
+
     /** A single file still beats an address that only might be one, whatever quality it states. */
     @Test
     public void aSingleFileBeatsAPlausibleAddressFirst() {

@@ -158,7 +158,8 @@ final class RenditionPicker {
         // disagrees with it. One seen here reads `tag=sd` while its efg states 360. A read of the
         // word first answered 480 for that address and stopped, which let a 360 outrank a 720
         // whose only marker sat inside its efg.
-        int measured = markerIn(url);
+        String address = readablePart(url);
+        int measured = markerIn(address);
         if (measured > 0) return measured;
 
         String efg = decodeEfg(url);
@@ -176,7 +177,7 @@ final class RenditionPicker {
         }
 
         // Only now the word, which says nothing more precise than "big" or "small".
-        int word = wordIn(url);
+        int word = wordIn(address);
         if (word > 0) return word;
 
         return efg == null ? 0 : wordIn(efg);
@@ -563,8 +564,9 @@ final class RenditionPicker {
         for (int i = 0; i < text.length(); i++) {
             if (Character.toLowerCase(text.charAt(i)) != suffix) continue;
 
-            // A digit after the marker means this is part of a longer number, not a marker.
-            if (i + 1 < text.length() && Character.isDigit(text.charAt(i + 1))) continue;
+            // A digit after the marker means this is part of a longer number, not a marker. A
+            // letter means it sits inside a token, like the "3573p" of readablePart's note.
+            if (i + 1 < text.length() && Character.isLetterOrDigit(text.charAt(i + 1))) continue;
 
             int end = i;
             int start = i;
@@ -573,6 +575,8 @@ final class RenditionPicker {
             // Three or four digits is a resolution. Fewer is a version, more is an id.
             int digits = end - start;
             if (digits < 3 || digits > 4) continue;
+            // A letter right before the digits puts it inside a token too.
+            if (start > 0 && Character.isLetter(text.charAt(start - 1))) continue;
 
             try {
                 best = Math.max(best, Integer.parseInt(text.substring(start, end)));
@@ -603,6 +607,7 @@ final class RenditionPicker {
             int leftDigits = leftEnd - leftStart;
             int rightDigits = rightEnd - rightStart;
             if (leftDigits < 2 || leftDigits > 5 || rightDigits < 2 || rightDigits > 5) continue;
+            if (!pairStandsApart(text, leftStart, rightEnd)) continue;
 
             try {
                 int width = Integer.parseInt(text.substring(leftStart, leftEnd));
@@ -631,6 +636,109 @@ final class RenditionPicker {
             if (startsCleanly && endsCleanly) return true;
             from = at + 1;
         }
+    }
+
+    /**
+     * Whether the pair from [start] to [end] is a size rather than digits inside a token.
+     *
+     * <p>Facebook writes a picture's size with a short lowercase prefix, {@code s2048x2048},
+     * {@code p180x540} or {@code mx2048x3640}, and a video's as {@code 1280x720} or
+     * {@code 1280x720p}. Anything else glued on, {@code Zk1280x720} or {@code 1280x720Qa}, is a
+     * signed token's letters and digits.
+     */
+    private static boolean pairStandsApart(String text, int start, int end) {
+        int prefix = start;
+        while (prefix > 0 && Character.isLetter(text.charAt(prefix - 1))) prefix--;
+        if (start - prefix > 2) return false;
+        for (int i = prefix; i < start; i++) {
+            if (!Character.isLowerCase(text.charAt(i))) return false;
+        }
+        if (prefix > 0 && Character.isLetterOrDigit(text.charAt(prefix - 1))) return false;
+
+        int after = end;
+        if (after < text.length() && Character.toLowerCase(text.charAt(after)) == 'p') after++;
+        return after >= text.length() || !Character.isLetterOrDigit(text.charAt(after));
+    }
+
+    /** Query parameters whose values are signatures, ids or base64, never a size. */
+    private static final String[] OPAQUE_PARAMETERS = {"oh", "oe", "ccb", "edm", "efg"};
+
+    /**
+     * This address with the parts that can't state a size left out: the values of its signed
+     * parameters ({@code oh}, every {@code _nc_} one, the raw base64 of {@code efg}, whose
+     * decoded text is read on its own) and any long mixed-case token, such as the file name of
+     * an {@code /o1/} address.
+     *
+     * <p>A run like {@code 3573p} turns up inside those by chance. The S22 saved a 400x224 file
+     * over a 720p one on 2026-11-12 after reading 3573 out of one.
+     */
+    private static String readablePart(String url) {
+        int hash = url.indexOf('#');
+        String address = hash < 0 ? url : url.substring(0, hash);
+        int question = address.indexOf('?');
+        String path = question < 0 ? address : address.substring(0, question);
+
+        StringBuilder readable = new StringBuilder(address.length());
+        String[] segments = path.split("/", -1);
+        for (int i = 0; i < segments.length; i++) {
+            if (i > 0) readable.append('/');
+            if (!isSignedToken(segments[i])) readable.append(segments[i]);
+        }
+        if (question < 0) return readable.toString();
+
+        readable.append('?');
+        String[] parameters = address.substring(question + 1).split("&", -1);
+        for (int i = 0; i < parameters.length; i++) {
+            if (i > 0) readable.append('&');
+            String parameter = parameters[i];
+            int equals = parameter.indexOf('=');
+            String name = equals < 0 ? parameter : parameter.substring(0, equals);
+            String value = equals < 0 ? "" : parameter.substring(equals + 1);
+            if (isOpaqueParameter(name) || isSignedToken(value)) {
+                readable.append(name).append('=');
+            } else {
+                readable.append(parameter);
+            }
+        }
+        return readable.toString();
+    }
+
+    private static boolean isOpaqueParameter(String name) {
+        if (name.startsWith("_nc_")) return true;
+        for (String opaque : OPAQUE_PARAMETERS) {
+            if (opaque.equals(name)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Whether [token] is a signature or other base64: at least 16 characters of letters, digits,
+     * {@code -}, {@code _} and {@code %}, in both cases. A file extension is left out first, and
+     * the hex of a {@code %2C} escape doesn't count as a case. Facebook's own markers
+     * ({@code dash_720p}, {@code dst-jpg_s2048x2048_tt6%2Cx}) are lowercase.
+     */
+    private static boolean isSignedToken(String token) {
+        int dot = token.lastIndexOf('.');
+        String stem = dot < 0 ? token : token.substring(0, dot);
+        if (stem.length() < 16) return false;
+
+        boolean upper = false;
+        boolean lower = false;
+        for (int i = 0; i < stem.length(); i++) {
+            char c = stem.charAt(i);
+            if (c == '%' && i + 2 < stem.length()
+                    && Character.digit(stem.charAt(i + 1), 16) >= 0
+                    && Character.digit(stem.charAt(i + 2), 16) >= 0) {
+                i += 2;
+            } else if (c >= 'A' && c <= 'Z') {
+                upper = true;
+            } else if (c >= 'a' && c <= 'z') {
+                lower = true;
+            } else if (!(c >= '0' && c <= '9') && c != '-' && c != '_' && c != '%') {
+                return false;
+            }
+        }
+        return upper && lower;
     }
 
     /**
