@@ -10,6 +10,7 @@ import app.morphe.PatchContexts
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.postprompts.QUANTITY_STRING
 import app.morphe.patches.facebook.misc.settings.CREATE_WORDMARK_VIEW
 import app.morphe.patches.facebook.misc.settings.LOGO_TOUCH_STAND_IN
 import app.morphe.patches.facebook.misc.settings.WORDMARK_NAVIGATION_BAR
@@ -29,6 +30,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -246,9 +248,12 @@ class TopBarButtonsFixtureTest {
         assertTrue("a declared build has no fixture, got $checked", versions.all { v -> checked.any { "-$v-" in it } })
     }
 
-    /** The newer bar, its button glyph class and the interfaces the glyph implements, out of [bundle]. */
-    private class NewerBar(val bar: ClassDef, val glyph: ClassDef, val faces: List<ClassDef>) {
-        val classes get() = listOf(bar, glyph) + faces
+    /**
+     * The newer bar, its button glyph class, the interfaces the glyph implements and the classes that
+     * word a glyph's label from the count they hand it, out of [bundle].
+     */
+    private class NewerBar(val bar: ClassDef, val glyph: ClassDef, val faces: List<ClassDef>, val labellers: List<ClassDef>) {
+        val classes get() = (listOf(bar, glyph) + faces + labellers).distinctBy { it.type }
     }
 
     private fun newerBar(bundle: File): NewerBar {
@@ -256,7 +261,16 @@ class TopBarButtonsFixtureTest {
             ?: throw AssertionError("${bundle.name}: no $NAVIGATION_BAR")
         val glyphType = specButtonSite(bar).glyphType
         val glyph = FixtureDex.classes(bundle, setOf(glyphType)).getValue(glyphType)
-        return NewerBar(bar, glyph, FixtureDex.classes(bundle, glyph.interfaces.toSet()).values.toList())
+        val faces = FixtureDex.classes(bundle, glyph.interfaces.toSet()).values.toList()
+        val counts = glyphCountMethods(glyph, faces)
+        val labellers = mutableListOf<ClassDef>()
+        FixtureDex.forEach(bundle) { dex ->
+            if (dex.typeSection.none { it.toString() == glyphType }) return@forEach
+            for (classDef in dex.classes) {
+                if (classDef.methods.any { countLabelSites(it, glyphType, counts).isNotEmpty() }) labellers += ImmutableClassDef.of(classDef)
+            }
+        }
+        return NewerBar(bar, glyph, faces, labellers)
     }
 
     @Test
@@ -291,14 +305,63 @@ class TopBarButtonsFixtureTest {
                 val firstCount = code.indexOfFirst { it.call() == "${site.glyphType}->${counts[0].name}(I)V" }
                 assertTrue("$name: the first count follows the glyph's constructor", firstCount > site.made)
 
+                // The bar's count observer words the glyph's TalkBack label from the count it hands the
+                // glyph (#181: "15 unread messages" with the badge gone). Positive control: each such
+                // method reads the plural off the spec, its Integer field.
+                val labelMethods = newer.labellers.flatMap { c -> c.methods.filter { countLabelSites(it, site.glyphType, counts).isNotEmpty() } }
+                assertTrue("$name: nothing words a glyph's label from the count it hands the glyph", labelMethods.isNotEmpty())
+                for (method in labelMethods) {
+                    assertTrue("$name: ${method.definingClass}->${method.name} reads no plural off $spec", method.code().any {
+                        val field = (it as? ReferenceInstruction)?.reference as? FieldReference
+                        it.opcode == Opcode.IGET_OBJECT && field?.definingClass == spec && field.type == "Ljava/lang/Integer;"
+                    })
+                }
+                // The observer (586 arm64 LX/02K4;->A00) is handed the count as its last parameter, an
+                // int, and passes it on untouched, so the matcher has to land on that register there.
+                assertTrue("$name: no label site gets its count as the method's last parameter", labelMethods.any { method ->
+                    method.parameterTypes.lastOrNull()?.toString() == "I" &&
+                        countLabelSites(method, site.glyphType, counts).any { it.count == method.implementation!!.registerCount - 1 }
+                })
+
                 val context = PatchContexts.of(newer.classes)
                 val before = context.mutableClassDefBy(NAVIGATION_BAR).findMutableMethodOf(site.method).code().size
                 val countBefore = counts.map { c -> countMethod(context, site.glyphType, c).code().size }
+                val labelBefore = labelMethods.map { m -> countLabelSites(m, site.glyphType, counts).size to m.code().size }
                 context.run {
                     val bar = mutableClassDefBy(NAVIGATION_BAR)
                     bar.findMutableMethodOf(site.method).markSpecButtonAfter(site)
                     val glyph = mutableClassDefBy(site.glyphType)
                     counts.forEach { c -> glyph.methods.single { it.name == c.name && it.parameterTypes.map(CharSequence::toString) == c.parameters }.gateGlyphCountFirst(c.intRegister) }
+                    labelMethods.forEach { m ->
+                        val method = mutableClassDefBy(m.definingClass).findMutableMethodOf(m)
+                        countLabelSites(method, site.glyphType, counts).sortedByDescending { it.call }.forEach { method.gateCountLabelBefore(it) }
+                    }
+                }
+
+                labelMethods.forEachIndexed { i, m ->
+                    val body = context.mutableClassDefBy(m.definingClass).findMutableMethodOf(m).code()
+                    val (sites, size) = labelBefore[i]
+                    assertEquals("$name: ${m.name} grew by two per label", size + 2 * sites, body.size)
+                    val hooks = body.indices.filter { body[it].call() == BAR_BUTTON_COUNT_HOOK }
+                    assertEquals("$name: ${m.name} asks once per label", sites, hooks.size)
+                    for (at in hooks) {
+                        val ask = body[at] as FiveRegisterInstruction
+                        assertEquals("$name: ${m.name} keeps the answer in the count", Opcode.MOVE_RESULT, body[at + 1].opcode)
+                        assertEquals("$name: ${m.name} keeps it in the register it handed over", ask.registerD, (body[at + 1] as OneRegisterInstruction).registerA)
+                        val c = counts.firstOrNull { "${site.glyphType}->${it.name}(${it.parameters.joinToString("")})V" == body[at + 2].call() }
+                        assertTrue("$name: ${m.name} asks right before a count setter, got ${body[at + 2].call()}", c != null)
+                        val setter = body[at + 2] as FiveRegisterInstruction
+                        val handed = listOf(setter.registerC, setter.registerD, setter.registerE, setter.registerF, setter.registerG).take(setter.registerCount)
+                        assertEquals("$name: ${m.name} hands over the glyph the setter gets", handed[0], ask.registerC)
+                        assertEquals("$name: ${m.name} hands over the count the setter gets", handed[c!!.intRegister], ask.registerD)
+                        // The label after it is worded from the answer and goes on the same glyph.
+                        val worded = (at + 3 until body.size).firstOrNull { body[it].call() == QUANTITY_STRING }
+                        assertTrue("$name: ${m.name} words no label after the hook", worded != null)
+                        assertEquals("$name: ${m.name} words the label from the answer", ask.registerD, (body[worded!!] as FiveRegisterInstruction).registerE)
+                        val described = (worded + 1 until body.size).firstOrNull { body[it].call()?.contains("->setContentDescription(Ljava/lang/CharSequence;)V") == true }
+                        assertTrue("$name: ${m.name} sets no label after wording it", described != null)
+                        assertEquals("$name: ${m.name} labels the glyph it asked about", ask.registerC, (body[described!!] as FiveRegisterInstruction).registerC)
+                    }
                 }
 
                 val after = context.mutableClassDefBy(NAVIGATION_BAR).findMutableMethodOf(site.method).code()

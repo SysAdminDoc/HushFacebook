@@ -44,7 +44,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * named spec. There {@link #barButton} runs as each glyph is made: it hides the one named
  * "trep-composer-button" (Create) and keeps the one named "messenger", and {@link #barButtonCount}
  * runs first in that glyph class's count setters, which every glyph of the bar shares, so only the
- * kept one loses its count.
+ * kept one loses its count. It also runs right before the bar's count observer hands a glyph its
+ * count, because that observer words the glyph's TalkBack label ("Messaging, 15 unread messages")
+ * from the same number.
  *
  * <p>Off, paused, before the settings are ready, or when anything here fails, Facebook's own
  * buttons, count and logo are left alone. The buttons and logo are built as the main screen
@@ -170,7 +172,8 @@ public final class TopBarButtons {
     }
 
     /**
-     * Injection point, first thing in each count setter of the newer bar's glyph class. The count to
+     * Injection point, first thing in each count setter of the newer bar's glyph class, and right
+     * before a call to one that is followed by a label worded from the same count. The count to
      * show: {@link #messengerCount}'s answer for a kept Messenger glyph, the given count for any
      * other glyph. Never throws.
      */

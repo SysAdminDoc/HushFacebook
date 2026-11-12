@@ -12,12 +12,15 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.postprompts.QUANTITY_STRING
 import app.morphe.patches.facebook.misc.appicons.logoDressSite
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.CREATE_WORDMARK_VIEW
 import app.morphe.patches.facebook.misc.settings.WORDMARK_NAVIGATION_BAR
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findFreeRegister
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -69,6 +72,12 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   `(I)V` and `(FbUserSession, I, Z)V` methods of the one interface it implements that declares
  *   both (arm64 LX/DQv;, F32 and F33, the same interface the Messenger button class implements).
  *   Their hooks go first and get the glyph too, so only the Messenger one loses its count.
+ * - The bar's count observer (586 arm64 LX/02K4;->A00, read 2026-11-12) hands a glyph its count
+ *   through the `(I)V` setter, then words the glyph's content description from the same int (the
+ *   spec's plural, "%1$s, %2$d unread messages"), so TalkBack read the count the setter's hook had
+ *   hidden. Every class naming the glyph is read for a setter call whose glyph and int go on
+ *   unchanged into getQuantityString and that glyph's setContentDescription, and the same count
+ *   hook goes right before each such call, so the label is worded from the answer.
  * - Hide the Create (+) button (#257), read from 584 arm64, 2026-10-26. The classic bar's method
  *   holding the kept "WordmarkNavigationBar#setupCreateGlyphView" (A0D) makes the button, keeps it
  *   in a View field of the bar (A0d) and adds it further down with addView(View), the view loaded
@@ -112,6 +121,7 @@ private const val ADD_VIEW = "Landroid/view/ViewGroup;->addView(Landroid/view/Vi
 private const val USER_SESSION = "Lcom/facebook/auth/usersession/FbUserSession;"
 private const val CONTEXT = "Landroid/content/Context;"
 private const val STRING = "Ljava/lang/String;"
+private const val CHAR_SEQUENCE = "Ljava/lang/CharSequence;"
 private val SPEC_BUTTON_CALLS = setOf(
     "Landroid/view/View;->setId(I)V",
     "Landroid/view/View;->setTag(Ljava/lang/Object;)V",
@@ -472,6 +482,57 @@ internal fun MutableMethod.gateGlyphCountFirst(register: Int) {
     )
 }
 
+/** Where a method hands a glyph its count: the index of the setter call, the glyph's register and the count's. */
+internal class CountLabelSite(val call: Int, val glyph: Int, val count: Int)
+
+/**
+ * The calls in [method] that hand a glyph of [glyphType] its count through one of [counts] after
+ * which the same int is the quantity of a getQuantityString call and that glyph gets a
+ * setContentDescription. The run read after each call ends at a way out or a write to either register.
+ */
+internal fun countLabelSites(method: Method, glyphType: String, counts: List<CountMethod>): List<CountLabelSite> {
+    val setters = counts.associateBy { "$glyphType->${it.name}(${it.parameters.joinToString("")})V" }
+    val code = method.implementation?.instructions?.toList() ?: return emptyList()
+    return code.indices.mapNotNull { index ->
+        val call = code[index]
+        val setter = setters[call.signature()] ?: return@mapNotNull null
+        if (call.opcode != Opcode.INVOKE_VIRTUAL) return@mapNotNull null
+        val handed = (call as FiveRegisterInstruction).let {
+            listOf(it.registerC, it.registerD, it.registerE, it.registerF, it.registerG).take(it.registerCount)
+        }
+        val glyph = handed[0]
+        val count = handed[setter.intRegister]
+        var worded = false
+        for (next in code.subList(index + 1, code.size)) {
+            val five = next as? FiveRegisterInstruction
+            if (five != null && next.signature() == QUANTITY_STRING && five.registerE == count) worded = true
+            val described = (next.reference() as? MethodReference)?.let {
+                it.name == "setContentDescription" && it.parameterTypes.map(CharSequence::toString) == listOf(CHAR_SEQUENCE)
+            } == true
+            if (worded && described && five?.registerC == glyph) return@mapNotNull CountLabelSite(index, glyph, count)
+            if (!next.opcode.canContinue() || writesRegister(next, count) || writesRegister(next, glyph)) break
+        }
+        null
+    }
+}
+
+/**
+ * Sends the count and the glyph through the extension right before the setter, so the label worded
+ * after gets the answer too. A branch to the setter lands on the hook.
+ */
+internal fun MutableMethod.gateCountLabelBefore(site: CountLabelSite) {
+    if (maxOf(site.glyph, site.count) > 15) {
+        refuse("the glyph (v${site.glyph}) or the count (v${site.count}) is past v15 in $definingClass->$name")
+    }
+    addInstructionsAtControlFlowLabel(
+        site.call,
+        """
+            invoke-static { v${site.glyph}, v${site.count} }, $BAR_BUTTON_COUNT_HOOK
+            move-result v${site.count}
+        """,
+    )
+}
+
 /** Puts the Messenger button's hook after the addView call. */
 internal fun MutableMethod.hideMessengerButtonAfter(site: MessengerButtonSite) {
     addInstructions(site.addView + 1, "invoke-static/range { v${site.register} .. v${site.register} }, $HIDE_MESSENGER_BUTTON_HOOK")
@@ -583,6 +644,12 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
         val wordmark = classDefByOrNull(WORDMARK_NAVIGATION_BAR)
             ?: refuse("this Facebook has no $WORDMARK_NAVIGATION_BAR, the home feed's top bar")
         homeBarScreenCalls(wordmark, bar, searchGlyphSite(bar, spec.glyphType))
+        val labellers = mutableListOf<String>()
+        classDefForEachReferencing(types = listOf(spec.glyphType)) { classDef ->
+            if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
+            if (classDef.methods.any { countLabelSites(it, spec.glyphType, counts).isNotEmpty() }) labellers += classDef.type
+        }
+        if (labellers.isEmpty()) refuse("nothing words a ${spec.glyphType}'s label from the count it hands the glyph")
 
         bar.findMutableMethodOf(spec.method).markSpecButtonAfter(spec)
         // Found again: the search glyph's method may be the spec method, which now holds more instructions.
@@ -592,6 +659,12 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
             glyph.methods.single {
                 it.name == count.name && it.parameterTypes.map(CharSequence::toString) == count.parameters
             }.gateGlyphCountFirst(count.intRegister)
+        }
+        // Found again: a labelling method may be one the hooks above went into.
+        labellers.forEach { type ->
+            mutableClassDefBy(type).methods.forEach { method ->
+                countLabelSites(method, spec.glyphType, counts).sortedByDescending { it.call }.forEach { method.gateCountLabelBefore(it) }
+            }
         }
     }
 }
