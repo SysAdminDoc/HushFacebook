@@ -48,6 +48,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * count, because that observer words the glyph's TalkBack label ("Messaging, 15 unread messages")
  * from the same number.
  *
+ * <p>Others get the bar drawn as a Litho component. There {@link #barSpecCount} runs where the
+ * render has a button's count, so the Messenger spec's label and dot get 0, and {@link #barSpecKey}
+ * keeps that spec's badge store key. Its numeric badge reads the store by that key on its own, and
+ * each of those reads goes through {@link #barBadgeCount}.
+ *
  * <p>Off, paused, before the settings are ready, or when anything here fails, Facebook's own
  * buttons, count and logo are left alone. The buttons and logo are built as the main screen
  * starts, so those switches show after a restart. The count switch shows with the next count.
@@ -73,6 +78,9 @@ public final class TopBarButtons {
 
     /** The newer bar's Messenger glyphs. Weak, so a rebuilt bar lets the old ones go. */
     private static final Set<View> BAR_MESSENGER_BUTTONS = Collections.newSetFromMap(new WeakHashMap<>());
+
+    /** The Litho bar's badge store keys for its Messenger button. Weak, so a dropped key goes. */
+    private static final Set<Object> BAR_MESSENGER_KEYS = Collections.newSetFromMap(new WeakHashMap<>());
 
     private TopBarButtons() {
     }
@@ -182,6 +190,58 @@ public final class TopBarButtons {
             if (count == 0) return 0;
             synchronized (BAR_MESSENGER_BUTTONS) {
                 if (!BAR_MESSENGER_BUTTONS.contains(button)) return count;
+            }
+            return messengerCount(count);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Messenger count", failure);
+            return count;
+        }
+    }
+
+    /**
+     * Injection point, where the Litho bar has a button's unread count, read off the badge store or
+     * the spec, before it words the label and picks the badge from it. The count to show:
+     * {@link #messengerCount}'s answer for the button spec named {@link #MESSENGER_SPEC}, the given
+     * count for any other. Never throws.
+     */
+    public static int barSpecCount(String name, int count) {
+        try {
+            if (count == 0 || !MESSENGER_SPEC.equals(name)) return count;
+            return messengerCount(count);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Messenger count", failure);
+            return count;
+        }
+    }
+
+    /**
+     * Injection point, right after {@link #barSpecCount}, with the badge store key the Litho bar
+     * hands the numeric badge. Keeps the one of the button spec named {@link #MESSENGER_SPEC}, switch
+     * on or off, for {@link #barBadgeCount}. Never throws.
+     */
+    public static void barSpecKey(String name, Object key) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (key == null || !MESSENGER_SPEC.equals(name)) return;
+            synchronized (BAR_MESSENGER_KEYS) {
+                BAR_MESSENGER_KEYS.add(key);
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Messenger count", failure);
+        }
+    }
+
+    /**
+     * Injection point, wherever the Litho bar's numeric badge takes a count off the badge store by
+     * its key: as it starts, as its key changes, and with each update the store posts. The count to
+     * show: {@link #messengerCount}'s answer for a key {@link #barSpecKey} kept, the given count for
+     * any other. Never throws.
+     */
+    public static int barBadgeCount(Object key, int count) {
+        try {
+            if (count == 0 || key == null) return count;
+            synchronized (BAR_MESSENGER_KEYS) {
+                if (!BAR_MESSENGER_KEYS.contains(key)) return count;
             }
             return messengerCount(count);
         } catch (Throwable failure) {

@@ -221,6 +221,52 @@ public class TopBarButtonsTest {
     }
 
     @Test
+    public void theLithoBarDropsOnlyTheMessengerSpecsCount() {
+        assertEquals("off, Facebook's own count", 7, TopBarButtons.barSpecCount("messenger", 7));
+
+        Settings.HIDE_MESSENGER_COUNT.save(true);
+        assertEquals(0, TopBarButtons.barSpecCount("messenger", 7));
+        assertEquals("another button keeps its count", 7, TopBarButtons.barSpecCount("notifications", 7));
+        assertEquals("a spec with no name keeps its count", 7, TopBarButtons.barSpecCount(null, 7));
+        assertTrue(reported(TopBarButtons.COUNT_HIDDEN));
+
+        Settings.HIDE_MESSENGER_COUNT.save(false);
+        assertEquals("off again, the next count is Facebook's own", 8, TopBarButtons.barSpecCount("messenger", 8));
+
+        Settings.HIDE_MESSENGER_COUNT.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused, Facebook's own count", 7, TopBarButtons.barSpecCount("messenger", 7));
+    }
+
+    @Test
+    public void theLithoBarsBadgeDropsOnlyTheMessengerKeysCountWhicheverWayTheSwitchTurns() {
+        Object messenger = new Object();
+        Object notifications = new Object();
+        Object unnamed = new Object();
+        // Kept with the switch off, as a bar drawn before it was turned on would have.
+        TopBarButtons.barSpecKey("messenger", messenger);
+        TopBarButtons.barSpecKey("notifications", notifications);
+        TopBarButtons.barSpecKey(null, unnamed);
+        TopBarButtons.barSpecKey("messenger", null);
+        assertEquals("off, Facebook's own count", 4, TopBarButtons.barBadgeCount(messenger, 4));
+
+        Settings.HIDE_MESSENGER_COUNT.save(true);
+        assertEquals(0, TopBarButtons.barBadgeCount(messenger, 4));
+        assertEquals("another button's key keeps its count", 4, TopBarButtons.barBadgeCount(notifications, 4));
+        assertEquals("a spec with no name keeps its count", 4, TopBarButtons.barBadgeCount(unnamed, 4));
+        assertEquals("a key the bar never handed keeps its count", 4, TopBarButtons.barBadgeCount(new Object(), 4));
+        assertEquals("no key keeps its count", 4, TopBarButtons.barBadgeCount(null, 4));
+        assertTrue(reported(TopBarButtons.COUNT_HIDDEN));
+
+        Settings.HIDE_MESSENGER_COUNT.save(false);
+        assertEquals("off again, the next count is Facebook's own", 5, TopBarButtons.barBadgeCount(messenger, 5));
+
+        Settings.HIDE_MESSENGER_COUNT.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused, Facebook's own count", 4, TopBarButtons.barBadgeCount(messenger, 4));
+    }
+
+    @Test
     public void theCreateSwitchStartsOffWaitsForARestartAndBelongsToTheTabBarFamily() {
         assertFalse(Settings.HIDE_CREATE_BUTTON.defaultValue);
         assertTrue("the button is built as the screen starts", Settings.HIDE_CREATE_BUTTON.rebootApp);

@@ -13,6 +13,7 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.postprompts.QUANTITY_STRING
+import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.appicons.logoDressSite
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -20,9 +21,13 @@ import app.morphe.patches.facebook.misc.settings.CREATE_WORDMARK_VIEW
 import app.morphe.patches.facebook.misc.settings.WORDMARK_NAVIGATION_BAR
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.argumentRegister
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findFreeRegister
 import app.morphe.util.findMutableMethodOf
+import app.morphe.util.literalReads
+import app.morphe.util.readsAfter
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -38,6 +43,7 @@ import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 
 /*
  * Hide the Messenger button, its count and the Facebook logo in the home top bar (#181). Read from
@@ -78,6 +84,18 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   hidden. Every class naming the glyph is read for a setter call whose glyph and int go on
  *   unchanged into getQuantityString and that glyph's setContentDescription, and the same count
  *   hook goes right before each such call, so the label is worded from the answer.
+ * - Behind a MobileConfig flag and the bar's own state, NavigationBar draws itself with Litho
+ *   instead (586 arm64 NavigationBar->A0G picks it, read 2026-11-12). The component's render, the
+ *   method holding the kept "NavigationBarComponent_icon_action_button" (586 LX/0BQo;->A16), reads
+ *   the spec's name field, then the button's unread count off the badge store (a spec without a
+ *   store key brings its own count and joins right after that read), and words the plural label
+ *   and picks the dot from that int. So the count hook goes at the join, with the name, and a
+ *   second one there keeps the Messenger button's store key. The numeric badge (LX/0BzE;) is handed
+ *   the int and the key, and with a key it takes its count off the store by itself: as it starts
+ *   and as its key changes (0RRm, 0RS4), and from the update listener it subscribes once and keeps
+ *   (0BzH->A00, posting by the key the badge first had, so dropping the key at the join left a
+ *   badge drawn with the switch off counting on). Each of those goes through one more hook with
+ *   the badge's own key, so the switch shows with the next count whichever way it turns.
  * - Hide the Create (+) button (#257), read from 584 arm64, 2026-10-26. The classic bar's method
  *   holding the kept "WordmarkNavigationBar#setupCreateGlyphView" (A0D) makes the button, keeps it
  *   in a View field of the bar (A0d) and adds it further down with addView(View), the view loaded
@@ -106,6 +124,9 @@ internal const val HIDE_MESSENGER_COUNT_HOOK = "$TOP_BAR_BUTTONS->messengerCount
 internal const val HIDE_FACEBOOK_LOGO_HOOK = "$TOP_BAR_BUTTONS->facebookLogo(Landroid/view/View;)V"
 internal const val BAR_BUTTON_HOOK = "$TOP_BAR_BUTTONS->barButton(Landroid/view/View;Ljava/lang/String;)V"
 internal const val BAR_BUTTON_COUNT_HOOK = "$TOP_BAR_BUTTONS->barButtonCount(Landroid/view/View;I)I"
+internal const val BAR_SPEC_COUNT_HOOK = "$TOP_BAR_BUTTONS->barSpecCount(Ljava/lang/String;I)I"
+internal const val BAR_SPEC_KEY_HOOK = "$TOP_BAR_BUTTONS->barSpecKey(Ljava/lang/String;Ljava/lang/Object;)V"
+internal const val BAR_BADGE_COUNT_HOOK = "$TOP_BAR_BUTTONS->barBadgeCount(Ljava/lang/Object;I)I"
 internal const val HIDE_CREATE_BUTTON_HOOK = "$TOP_BAR_BUTTONS->createButton(Landroid/view/View;)V"
 internal const val HIDE_SEARCH_BUTTON_HOOK = "$TOP_BAR_BUTTONS->searchButton(Landroid/view/View;)V"
 internal const val BAR_SEARCH_BUTTON_HOOK = "$TOP_BAR_BUTTONS->barSearchButton(Landroid/view/View;Ljava/lang/String;)V"
@@ -115,6 +136,7 @@ internal const val SETUP_MESSENGER_GLYPH_VIEW = "WordmarkNavigationBar#setupMess
 internal const val SETUP_CREATE_GLYPH_VIEW = "WordmarkNavigationBar#setupCreateGlyphView"
 internal const val ADD_SEARCH_GLYPH_VIEW = "WordmarkNavigationBar#addSearchGlyphView"
 internal const val BADGABLE_GLYPH_VIEW = "badgableGlyphView"
+internal const val LITHO_BAR_ICON_BUTTON = "NavigationBarComponent_icon_action_button"
 internal const val NAVIGATION_BAR = "Lcom/facebook/navigation/navbar/NavigationBar;"
 private const val FRAME_LAYOUT_INIT = "Landroid/widget/FrameLayout;-><init>(Landroid/content/Context;)V"
 private const val ADD_VIEW = "Landroid/view/ViewGroup;->addView(Landroid/view/View;)V"
@@ -122,6 +144,7 @@ private const val USER_SESSION = "Lcom/facebook/auth/usersession/FbUserSession;"
 private const val CONTEXT = "Landroid/content/Context;"
 private const val STRING = "Ljava/lang/String;"
 private const val CHAR_SEQUENCE = "Ljava/lang/CharSequence;"
+private const val INTEGER_VALUE_OF = "Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;"
 private val SPEC_BUTTON_CALLS = setOf(
     "Landroid/view/View;->setId(I)V",
     "Landroid/view/View;->setTag(Ljava/lang/Object;)V",
@@ -533,6 +556,231 @@ internal fun MutableMethod.gateCountLabelBefore(site: CountLabelSite) {
     )
 }
 
+/**
+ * Where the Litho bar reads a button's count off the badge store: the index of the count's
+ * move-result, the registers of the spec's name, the count and the store key, the key's type, and
+ * the badge class whose constructor is handed the key.
+ */
+internal class SpecCountSite(val read: Int, val name: Int, val count: Int, val key: Int, val keyType: String, val badge: String)
+
+/**
+ * The reads in [method] of an int off an interface by one key that become the quantity of a
+ * getQuantityString call while a register holds the spec's [nameField]. The run read after each
+ * ends at a way out or a write to the count. The name has to be the only thing that register can
+ * hold on every way into the instruction after the read, where a spec without a key brings its own
+ * count (586 arm64 LX/0BQo;->A16 at 0x03a4). And the key has to go nowhere from there but into one
+ * constructor taking it: the numeric badge, which reads the store by that key itself. On a copy with
+ * the hooks in, every read of the count's register the count reaches, the quantity's among them, and
+ * every int any of the method's badge constructors is handed have to be the hook's answer on every
+ * way in, the keyless spec's included. A copy of the count isn't followed past the move that makes
+ * it. Once a read reaches a label that way, a site that fails any of that, shares a register between
+ * the name, count and key, or has one past v15, refuses here, before any hook goes in.
+ */
+internal fun specCountSites(method: Method, nameField: FieldReference): List<SpecCountSite> {
+    if (nameField.type != STRING) return emptyList()
+    val code = method.implementation?.instructions?.toList() ?: return emptyList()
+    val field = nameField.smali()
+    return code.indices.mapNotNull { index ->
+        if (index == 0 || code[index].opcode != Opcode.MOVE_RESULT || code[index - 1].opcode != Opcode.INVOKE_INTERFACE) return@mapNotNull null
+        val lookup = code[index - 1].reference() as? MethodReference ?: return@mapNotNull null
+        if (lookup.returnType != "I" || lookup.parameterTypes.size != 1) return@mapNotNull null
+        val keyType = lookup.parameterTypes.single().toString()
+        val key = (code[index - 1] as FiveRegisterInstruction).registerD
+        val count = (code[index] as OneRegisterInstruction).registerA
+        val load = (index - 2 downTo 0).firstOrNull {
+            code[it].opcode == Opcode.IGET_OBJECT && (code[it].reference() as? FieldReference)?.smali() == field
+        } ?: return@mapNotNull null
+        val name = (code[load] as TwoRegisterInstruction).registerA
+        val worded = (index + 1 until code.size).asSequence()
+            .takeWhile { code[it].opcode.canContinue() && !writesRegister(code[it], count) }
+            .any { code[it].signature() == QUANTITY_STRING && (code[it] as? FiveRegisterInstruction)?.registerE == count }
+        if (!worded) return@mapNotNull null
+        val where = "${method.definingClass}->${method.name}"
+        if (name == count || name == key || key == count) {
+            refuse("$where shares one register between the spec's name, the count and the key it reads by at $index")
+        }
+        if (method.writersReaching(index + 1, name) != listOf(load)) {
+            refuse("$where can hold something other than the spec's name where the count read at $index comes back")
+        }
+        val inits = method.readsAfter(index, key)
+        val badges = inits.map { code[it] }.map { use ->
+            val init = use.reference() as? MethodReference
+            val taken = (use.opcode == Opcode.INVOKE_DIRECT || use.opcode == Opcode.INVOKE_DIRECT_RANGE) &&
+                init?.name == "<init>" && init.parameterTypes.any { it.toString() == keyType }
+            init?.definingClass?.takeIf { taken }
+        }.distinct()
+        val badge = badges.singleOrNull()
+            ?: refuse("$where doesn't hand the key it read the count by at $index to one badge's constructor alone")
+        if (maxOf(name, count, key) > 15) {
+            refuse("the name (v$name), the count (v$count) or the key (v$key) is past v15 in $where")
+        }
+        val site = SpecCountSite(index, name, count, key, keyType, badge)
+        // The hooks go in at index + 1 as three instructions, the count's move-result second.
+        val trial = MutableMethod(ImmutableMethod.of(method)).apply { gateSpecCountAfter(site) }
+        fun answered(at: Int) = (if (at > index) at + 3 else at).let { moved ->
+            trial.getInstruction(moved).opcode == code[at].opcode && trial.writersReaching(moved, count) == listOf(index + 2)
+        }
+        val handedOther = { at: Int -> code[at].intArguments().let { ints -> ints.isEmpty() || ints.any { it != count } } }
+        // A badge built from a second copy of the key is still the badge.
+        val badgeInits = code.indices.filter { at ->
+            (code[at].opcode == Opcode.INVOKE_DIRECT || code[at].opcode == Opcode.INVOKE_DIRECT_RANGE) &&
+                (code[at].reference() as? MethodReference)?.let { it.definingClass == badge && it.name == "<init>" } == true
+        }
+        // Every read the count reaches counts, a second label or a dot past a keyless join included.
+        val reads = method.readsAfter(index, count)
+        if (reads.any { !answered(it) } || (inits + badgeInits).distinct().any { handedOther(it) || !answered(it) }) {
+            refuse("the count the label or the badge gets in $where doesn't come from the hook on every way in")
+        }
+        site
+    }
+}
+
+/** The registers an instance call hands its int parameters in, a long or double taking two. */
+private fun Instruction.intArguments(): List<Int> {
+    var slot = 1
+    return (reference() as MethodReference).parameterTypes.map(CharSequence::toString).mapNotNull { type ->
+        val at = slot
+        slot += if (type == "J" || type == "D") 2 else 1
+        argumentRegister(at)?.takeIf { type == "I" }
+    }
+}
+
+/**
+ * Sends the count, then the badge's key, with the spec's name through the extension where the
+ * read's way and the keyless spec's way meet, so a branch to that spot lands on the hooks too.
+ */
+internal fun MutableMethod.gateSpecCountAfter(site: SpecCountSite) {
+    addInstructionsAtControlFlowLabel(
+        site.read + 1,
+        """
+            invoke-static { v${site.name}, v${site.count} }, $BAR_SPEC_COUNT_HOOK
+            move-result v${site.count}
+            invoke-static { v${site.name}, v${site.key} }, $BAR_SPEC_KEY_HOOK
+        """,
+    )
+}
+
+/** The badge's one instance field of [keyType], where it keeps the store key it's handed. */
+internal fun badgeKeyField(badge: ClassDef, keyType: String): FieldReference? =
+    badge.fields.filter { it.type == keyType && !AccessFlags.STATIC.isSet(it.accessFlags) }.singleOrNull()
+
+/**
+ * Where the badge takes a count off the store by its key: the index the hook goes in at, the
+ * registers of the key and the count, and whether the count is an update the store posts.
+ */
+internal class BadgeCountSite(val at: Int, val key: Int, val count: Int, val posted: Boolean)
+
+/** The registers of [method]'s int parameters. */
+private fun intParameters(method: Method): Set<Int> {
+    val registers = method.implementation?.registerCount ?: return emptySet()
+    fun width(type: CharSequence) = if (type.toString() == "J" || type.toString() == "D") 2 else 1
+    var at = registers - method.parameterTypes.sumOf(::width)
+    return method.parameterTypes.mapNotNull { type -> (if (type.toString() == "I") at else null).also { at += width(type) } }.toSet()
+}
+
+private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+
+/**
+ * The spots in [method] where the badge's count comes off the store by the badge's own [keyField].
+ * Everything that can read the key the method takes from that field, followed through
+ * move-objects, has to be a test for none, a memo's dependency array, a compare of two such keys,
+ * or one of two reads, and each read is a spot, the key being that field on every way in. One is
+ * right after the move-result of an int read off an interface by that key alone (586 arm64 LX/0RRm
+ * and LX/0RS4: the badge's first count, and its count again when its key changes). The other is a
+ * store update: right after an if-ne between that key and another lets the update through, where
+ * an int parameter nothing wrote goes straight on into Integer.valueOf with no way in on the way
+ * there (586 LX/0BzH;->A00, which the badge subscribes once and keeps, so it posts by the key the
+ * badge first had). The key used any other way refuses, and so does a key or count past v15, so a
+ * build that moves one of several reads can't leave that one counting or patch the others first.
+ */
+internal fun badgeCountSites(method: Method, keyField: FieldReference): List<BadgeCountSite> {
+    val code = method.implementation?.instructions?.toList() ?: return emptyList()
+    val field = keyField.smali()
+    fun readsField(index: Int) =
+        index >= 0 && code[index].opcode == Opcode.IGET_OBJECT && (code[index].reference() as? FieldReference)?.smali() == field
+    val reads = code.indices.filter(::readsField)
+    if (reads.isEmpty()) return emptyList()
+    val targets by lazy { branchTargets(code) }
+    // What a register can hold as [index] starts, followed back through move-objects to where it was written.
+    fun origins(index: Int, register: Int, seen: MutableSet<Int> = mutableSetOf()): List<Int> =
+        method.writersReaching(index, register).flatMap { writer ->
+            if (writer >= 0 && code[writer].opcode in OBJECT_MOVES && seen.add(writer)) {
+                origins(writer, (code[writer] as TwoRegisterInstruction).registerB, seen)
+            } else {
+                listOf(writer)
+            }
+        }
+    fun holdsKey(index: Int, register: Int) = origins(index, register).let { it.isNotEmpty() && it.all(::readsField) }
+    fun mayHoldKey(index: Int, register: Int) = origins(index, register).any(::readsField)
+    val uses = sortedSetOf<Int>()
+    val moves = mutableSetOf<Int>()
+    fun follow(definition: Int): Unit = method.literalReads(definition).forEach { use ->
+        if (code[use].opcode !in OBJECT_MOVES) uses += use else if (moves.add(use)) follow(use)
+    }
+    reads.forEach(::follow)
+    val where = "${method.definingClass}->${method.name}"
+    fun unfollowed(index: Int): Nothing {
+        val call = code[index].reference() as? MethodReference
+            ?: refuse("$where puts $field through ${code[index].opcode} at $index, a use the hook can't follow")
+        refuse("$where hands $field to ${call.definingClass}->${call.name} at $index, a call the hook can't follow")
+    }
+    return uses.mapNotNull { index ->
+        val instruction = code[index]
+        when (instruction.opcode) {
+            Opcode.IF_EQZ, Opcode.IF_NEZ, Opcode.FILLED_NEW_ARRAY, Opcode.FILLED_NEW_ARRAY_RANGE -> null
+            Opcode.IF_NE, Opcode.IF_EQ -> {
+                val compare = instruction as TwoRegisterInstruction
+                val keys = listOf(compare.registerA, compare.registerB).filter { mayHoldKey(index, it) }
+                // Two badges' keys compared is no store update.
+                if (keys.size == 2 && keys.all { holdsKey(index, it) }) return@mapNotNull null
+                val key = keys.singleOrNull()?.takeIf { instruction.opcode == Opcode.IF_NE && holdsKey(index, it) }
+                    ?: refuse("$where compares $field at $index where the hook can't go")
+                val box = (index + 1 until code.size).asSequence()
+                    .takeWhile { code[it].opcode.canContinue() && code[it] !is OffsetInstruction }
+                    .firstOrNull { code[it].signature() == INTEGER_VALUE_OF }
+                    ?: refuse("$where compares $field at $index and boxes no count after it")
+                if ((index + 1..box).any { it in targets }) refuse("$where has a way into the update between $index and its box")
+                val count = (code[box] as? FiveRegisterInstruction)?.registerC
+                    ?: refuse("$where boxes the update for $field at $box in a range call the hook can't follow")
+                if (count == key || count !in intParameters(method) || method.writersReaching(box, count) != listOf(-1)) {
+                    refuse("$where compares $field at $index but doesn't box an int it was handed")
+                }
+                if (maxOf(key, count) > 15) refuse("the badge's key (v$key) or count (v$count) is past v15 in $where")
+                BadgeCountSite(index + 1, key, count, posted = true)
+            }
+            Opcode.INVOKE_INTERFACE -> {
+                val call = instruction.reference() as MethodReference
+                val lookup = instruction as FiveRegisterInstruction
+                val result = code.getOrNull(index + 1)
+                if (call.returnType != "I" || call.parameterTypes.map(CharSequence::toString) != listOf(keyField.type) ||
+                    lookup.registerCount != 2 || mayHoldKey(index, lookup.registerC) || result?.opcode != Opcode.MOVE_RESULT
+                ) {
+                    unfollowed(index)
+                }
+                val key = lookup.registerD
+                val count = (result as OneRegisterInstruction).registerA
+                if (key == count || !holdsKey(index, key) || index + 2 in targets) {
+                    refuse("$where reads a count off the store by $field at $index where the hook can't go")
+                }
+                if (maxOf(key, count) > 15) refuse("the badge's key (v$key) or count (v$count) is past v15 in $where")
+                BadgeCountSite(index + 2, key, count, posted = false)
+            }
+            else -> unfollowed(index)
+        }
+    }
+}
+
+/** Sends the badge's count with its key through the extension at [site]. */
+internal fun MutableMethod.gateBadgeCountAt(site: BadgeCountSite) {
+    addInstructions(
+        site.at,
+        """
+            invoke-static { v${site.key}, v${site.count} }, $BAR_BADGE_COUNT_HOOK
+            move-result v${site.count}
+        """,
+    )
+}
+
 /** Puts the Messenger button's hook after the addView call. */
 internal fun MutableMethod.hideMessengerButtonAfter(site: MessengerButtonSite) {
     addInstructions(site.addView + 1, "invoke-static/range { v${site.register} .. v${site.register} }, $HIDE_MESSENGER_BUTTON_HOOK")
@@ -650,6 +898,36 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
             if (classDef.methods.any { countLabelSites(it, spec.glyphType, counts).isNotEmpty() }) labellers += classDef.type
         }
         if (labellers.isEmpty()) refuse("nothing words a ${spec.glyphType}'s label from the count it hands the glyph")
+        val lithoBars = mutableListOf<String>()
+        classDefForEachReferencing(strings = listOf(LITHO_BAR_ICON_BUTTON)) { classDef ->
+            if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
+            if (classDef.methods.any { holdsString(it, LITHO_BAR_ICON_BUTTON) && specCountSites(it, spec.nameField).isNotEmpty() }) {
+                lithoBars += classDef.type
+            }
+        }
+        if (lithoBars.isEmpty()) refuse("nothing holding \"$LITHO_BAR_ICON_BUTTON\" reads a button's count after its spec's name")
+        val badgeKeys = lithoBars.flatMap { type ->
+            classDefBy(type).methods.filter { holdsString(it, LITHO_BAR_ICON_BUTTON) }.flatMap { specCountSites(it, spec.nameField) }
+        }.map { it.badge to it.keyType }.distinct().map { (type, keyType) ->
+            val badge = classDefByOrNull(type) ?: refuse("this Facebook has no $type, the Litho bar's numeric badge")
+            badgeKeyField(badge, keyType) ?: refuse("$type keeps no one $keyType, the store key the bar hands it")
+        }
+        val badgeReaders = badgeKeys.associateWith { keyField ->
+            val readers = mutableListOf<String>()
+            var read = false
+            var posted = false
+            classDefForEachReferencing(types = listOf(keyField.definingClass)) { classDef ->
+                if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
+                val sites = classDef.methods.flatMap { badgeCountSites(it, keyField) }
+                if (sites.isEmpty()) return@classDefForEachReferencing
+                readers += classDef.type
+                read = read || sites.any { !it.posted }
+                posted = posted || sites.any { it.posted }
+            }
+            if (!read) refuse("nothing reads ${keyField.definingClass}'s count off the store by its key")
+            if (!posted) refuse("nothing takes the store's updates for ${keyField.definingClass}'s key")
+            readers
+        }
 
         bar.findMutableMethodOf(spec.method).markSpecButtonAfter(spec)
         // Found again: the search glyph's method may be the spec method, which now holds more instructions.
@@ -664,6 +942,18 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
         labellers.forEach { type ->
             mutableClassDefBy(type).methods.forEach { method ->
                 countLabelSites(method, spec.glyphType, counts).sortedByDescending { it.call }.forEach { method.gateCountLabelBefore(it) }
+            }
+        }
+        lithoBars.forEach { type ->
+            mutableClassDefBy(type).methods.filter { holdsString(it, LITHO_BAR_ICON_BUTTON) }.forEach { method ->
+                specCountSites(method, spec.nameField).sortedByDescending { it.read }.forEach { method.gateSpecCountAfter(it) }
+            }
+        }
+        badgeReaders.forEach { (keyField, readers) ->
+            readers.forEach { type ->
+                mutableClassDefBy(type).methods.forEach { method ->
+                    badgeCountSites(method, keyField).sortedByDescending { it.at }.forEach { method.gateBadgeCountAt(it) }
+                }
             }
         }
     }

@@ -971,6 +971,11 @@ public class PausedHooksTest {
                 },
                 () -> TopBarButtons.messengerCount(3) == 0,
                 () -> {
+                    Object key = new Object();
+                    TopBarButtons.barSpecKey("messenger", key);
+                    return TopBarButtons.barBadgeCount(key, 3) == 0;
+                },
+                () -> {
                     View logo = new View(RuntimeEnvironment.getApplication());
                     TopBarButtons.facebookLogo(logo);
                     return logo.getAlpha() == 0f;

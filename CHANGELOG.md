@@ -83,6 +83,7 @@ Changes in each Hushfacebook version, newest first.
 ### Fixed
 
 * With `Hide the Messenger count` on, TalkBack doesn't read the unread count anymore either. Facebook words the Messenger button's spoken label from the same number the badge shows, so a screen reader still said "15 unread messages" after the badge was gone. (#181)
+* `Hide the Messenger count` also covers the top bar Facebook builds a different way on some accounts. That bar reads the count on its own, and its badge looks the count up again by itself, so neither the badge nor the spoken label went through the switch. Checked in tests, not yet on a phone. (#181)
 * A site on the `Hide posts from people, Pages and sites` list now also hides links to it that Facebook opens in the site's own app, like a YouTube video or an Instagram post. Facebook hands those links over in a wrapper of its own, so youtube.com never matched them.
 * `Pinch to zoom` on a story now zooms the story when your fingers start near its left or right edge. On some screens it zoomed only the narrow strip Facebook keeps there for tapping to the next or previous story. (#220)
 * A zoomed story keeps the brightness of the story itself on Android 14 and newer. Facebook shows HDR stories brighter than normal white, and the zoom used to stop at normal white, so it looked dimmer than the story under it. (#220)
