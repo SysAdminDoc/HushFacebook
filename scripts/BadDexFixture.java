@@ -716,18 +716,18 @@ public class BadDexFixture {
     }
 
     /**
-     * Facebook's Follow check for a reel's author row, an instance method of a singleton on 585: v0
-     * free, v1 this, v2 the session, then a string and two flags. [prefix] comes first, then the two
-     * surface names it holds, then Facebook's own yes. Beside it, three of the other methods naming
-     * both surfaces, as nineteen do on 580: an instance method taking the session, a string and three
-     * flags, as 585's video check does, a static method taking the session and answering a boolean,
-     * the check's shape through 584, with [staticPrefix] first, and a static one taking a string.
-     * Only the check's shape tells it from them.
+     * Facebook's Follow check for a reel's author row, static on 586 as through 584 (585 made it an
+     * instance method): v0 and v1 free, v2 the session, then a string and two flags. [prefix] comes
+     * first, then the two surface names it holds, then Facebook's own yes. Beside it, three of the
+     * other methods naming both surfaces, as nineteen do on 580: an instance method taking the
+     * session, a string and three flags, as the video check does, a static method taking the session
+     * and answering a boolean, with [staticPrefix] first, and a static one taking a string. Only the
+     * check's shape tells it from them.
      */
     private static ClassDef followCheck(List<Instruction> prefix, List<Instruction> staticPrefix) {
         return new ImmutableClassDef(FOLLOW_CHECK, AccessFlags.PUBLIC.getValue(), OBJECT, null, null, null, null,
                 Arrays.asList(
-                        define(FOLLOW_CHECK, "offersFollow", "Z", false, surfaceCheck(6, prefix), FB_USER_SESSION,
+                        define(FOLLOW_CHECK, "offersFollow", "Z", true, surfaceCheck(6, prefix), FB_USER_SESSION,
                                 "Ljava/lang/String;", "Z", "Z"),
                         define(FOLLOW_CHECK, "offersFollowOnVideo", "Z", false,
                                 surfaceCheck(7, Collections.<Instruction>emptyList()), FB_USER_SESSION,
@@ -849,7 +849,8 @@ public class BadDexFixture {
     /**
      * The top bar's Messenger icon, static methods taking the context, the session and strings,
      * then the long press and maybe more flags: v0 and v1 free and v2 the context in each, v5 the
-     * long press in the tap's shape and v6 in the handler's. The tap holds both entry points, with
+     * long press in the tap's shape and v6 in the handler's. The tap holds the first entry point and
+     * "diode_messenger_activity", 586's reading the Reels tab's through a string table, with
      * [tapPrefix] first, and the button handler, 583's (Context, FbUserSession, String, String, Z,
      * Z)V, holds "peek_state_requested", with [buttonPrefix] first. Beside them sit a method of the
      * tap's shape holding the first entry point alone, with [entryPrefix] first, and one holding
@@ -862,7 +863,7 @@ public class BadDexFixture {
         return new ImmutableClassDef(MESSENGER_BAR, AccessFlags.PUBLIC.getValue(), OBJECT, null, null, null, null,
                 Arrays.asList(
                         define(MESSENGER_BAR, "tap", "V", true, messengerBody(tapPrefix, 6,
-                                "entry_point_navbar_global_icon_", "entry_point_navbar_global_icon_reels_tab"),
+                                "entry_point_navbar_global_icon_", "diode_messenger_activity"),
                                 CONTEXT, FB_USER_SESSION, surface, "Z"),
                         define(MESSENGER_BAR, "tapEntry", "V", true, messengerBody(entryPrefix, 6,
                                 "entry_point_navbar_global_icon_"), CONTEXT, FB_USER_SESSION, surface, "Z"),
@@ -1160,9 +1161,9 @@ public class BadDexFixture {
      * with no tab in v1: the startActivity lookup, an instance method of a singleton on 582, taking
      * an Intent and a session and returning a TabTag; the Friends link and the target_tab_id check,
      * instance methods taking a context, an Intent and a session and returning the Intent. The
-     * target_tab_id check also holds the key_uri extra and the /menu/bookmarks path its rule names,
-     * since arm64 582 reads "target_tab_id" through a string table. Each asks the extension when its
-     * flag says so, as the tab links patch does.
+     * target_tab_id check also holds the /menu/bookmarks path its rule names, since arm64 582 reads
+     * "target_tab_id" through a string table. Each asks the extension when its flag says so, as the
+     * tab links patch does.
      */
     private static ClassDef tabLinks(boolean launched, boolean friends, boolean configured) {
         return tabLinks(launched, friends, configured, true);
@@ -1200,13 +1201,12 @@ public class BadDexFixture {
     }
 
     /**
-     * "target_tab_id", "key_uri" and "/menu/bookmarks" in v0, then a yes in v0 and no tab in v1, the extension asked about both
+     * "target_tab_id" and "/menu/bookmarks" in v0, then a yes in v0 and no tab in v1, the extension asked about both
      * when [hooked], and the Intent returned.
      */
     private static ImmutableMethodImplementation configuredTabBody(boolean hooked) {
         List<Instruction> instructions = new ArrayList<>();
         instructions.add(new ImmutableInstruction21c(Opcode.CONST_STRING, 0, new ImmutableStringReference("target_tab_id")));
-        instructions.add(new ImmutableInstruction21c(Opcode.CONST_STRING, 0, new ImmutableStringReference("key_uri")));
         instructions.add(new ImmutableInstruction21c(Opcode.CONST_STRING, 0, new ImmutableStringReference("/menu/bookmarks")));
         instructions.add(new ImmutableInstruction11n(Opcode.CONST_4, 0, 1));
         instructions.add(new ImmutableInstruction11n(Opcode.CONST_4, 1, 0));

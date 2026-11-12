@@ -60,9 +60,10 @@ start-call Lapp/morphe/extension/facebook/feed/ReturnRefresh;->skip()Z holding F
 # the button back for a friend. Left out or put later, the Follow button stays on every reel of an
 # author you don't follow, the Reels tab's among them. Nineteen methods name both surfaces; the check
 # takes the session first, ends on a string and two flags, and answers a boolean. It was static
-# through 584; 585 made it an instance method of a singleton, beside a video check of the same kind
-# that ends on a string and three flags.
-start-call Lapp/morphe/extension/facebook/reels/ReelDeclutter;->hideFollowButton()Z in instance (Lcom/facebook/auth/usersession/FbUserSession;*Ljava/lang/String;ZZ)Z holding friendly_feed friends_tab_ifu
+# through 584, an instance method of a singleton on 585 and static again on 586 (LX/0BOH; on both
+# ABIs), so the rule leaves that out. The video check of the same kind, an instance method, ends on
+# a string and three flags.
+start-call Lapp/morphe/extension/facebook/reels/ReelDeclutter;->hideFollowButton()Z in (Lcom/facebook/auth/usersession/FbUserSession;*Ljava/lang/String;ZZ)Z holding friendly_feed friends_tab_ifu
 # Its Threads card filter reads each mid-card's type through a stub the patch fills with the mid-card
 # item's reads, whose classes are Redex names that no type name answers, so the rule asks only that
 # the stub's first call leaves the extension. Left unfilled it answers its marker, and every Threads
@@ -78,12 +79,14 @@ start-call Lapp/morphe/extension/facebook/emoji/SystemEmoji;->typeface()Landroid
 # or put later, a chat's big emoji keeps Meta's picture whatever the switch says.
 start-call Lapp/morphe/extension/facebook/emoji/SystemEmoji;->skipRemoteEmoji()Z in static (Ljava/lang/String;*)Ljava/lang/String; holding https://www.facebook.com/images/mobileemoji
 # Open Messenger from the top bar asks the extension first thing in the tap of the top bar's
-# Messenger icon, the one method holding both of its entry points, and in the Messenger button
-# handler the tap goes on to behind a MobileConfig flag. On 583 the handler takes a second String
+# Messenger icon and in the Messenger button handler the tap goes on to behind a MobileConfig flag.
+# 586 reads the Reels tab's entry point through a string table, so the tap no longer holds both
+# entry points itself; it's the one static method of its shape holding the first entry point and
+# "diode_messenger_activity", on both ABIs (LX/02GY;). On 583 the handler takes a second String
 # after the entry point and hands its "long_press" log to a helper, and it's the one method holding
 # "peek_state_requested", on both ABIs. Left out or put later, the icon opens Facebook's Chats
 # whatever the switch says.
-start-call Lapp/morphe/extension/facebook/chats/MessengerIcon;->open(Landroid/content/Context;Z)Z in static (Landroid/content/Context;Lcom/facebook/auth/usersession/FbUserSession;*)V holding entry_point_navbar_global_icon_ entry_point_navbar_global_icon_reels_tab
+start-call Lapp/morphe/extension/facebook/chats/MessengerIcon;->open(Landroid/content/Context;Z)Z in static (Landroid/content/Context;Lcom/facebook/auth/usersession/FbUserSession;*)V holding entry_point_navbar_global_icon_ diode_messenger_activity
 start-call Lapp/morphe/extension/facebook/chats/MessengerIcon;->open(Landroid/content/Context;Z)Z in static (Landroid/content/Context;Lcom/facebook/auth/usersession/FbUserSession;Ljava/lang/String;Ljava/lang/String;ZZ)V holding peek_state_requested
 # Hide typing indicator hands Mailbox's typing setter flag to the extension first thing, in the one
 # method holding the setter's name (its answer is a Redex class, so no shape). Left out or put later,
@@ -144,10 +147,10 @@ start-call Lapp/morphe/extension/facebook/navigation/ReelsTabDot;->clear(Ljava/l
 # Intent and an FbUserSession, returns a TabTag and loads the launch URI's extra; up to 581 it was
 # static. The Friends link's switch is the one link helper method loading its string. The
 # target_tab_id check is FbMainTabActivityUriHelper's one link method, which arm64 582 has read
-# "target_tab_id" through a string table, so the rule names two strings only that method loads on
-# both builds: the link's key_uri extra and the /menu/bookmarks path it routes. Each asks the
-# extension once, so a hidden tab's page opens on its own screen. Left out, the Menu shortcut or
-# link switches to the missing tab and nothing opens.
+# "target_tab_id" through a string table, and 586 no longer loads the link's key_uri extra there,
+# so the rule names the /menu/bookmarks path it routes, which no other method of either 586 build
+# loads. Each asks the extension once, so a hidden tab's page opens on its own screen. Left out,
+# the Menu shortcut or link switches to the missing tab and nothing opens.
 once-call Lapp/morphe/extension/facebook/navigation/TabBarFilter;->launchedTab(Ljava/lang/Object;)Ljava/lang/Object; in instance (Landroid/content/Intent;Lcom/facebook/auth/usersession/FbUserSession;)Lcom/facebook/navigation/tabbar/state/model/TabTag; holding extra_launch_uri
 once-call Lapp/morphe/extension/facebook/navigation/TabBarFilter;->friendsTab(Ljava/lang/Object;)Ljava/lang/Object; in instance (Landroid/content/Context;Landroid/content/Intent;*)Landroid/content/Intent; holding DEEPLINK
-once-call Lapp/morphe/extension/facebook/navigation/TabBarFilter;->configuresTab(ZLjava/lang/Object;)Z in instance (Landroid/content/Context;Landroid/content/Intent;*)Landroid/content/Intent; holding key_uri /menu/bookmarks
+once-call Lapp/morphe/extension/facebook/navigation/TabBarFilter;->configuresTab(ZLjava/lang/Object;)Z in instance (Landroid/content/Context;Landroid/content/Intent;*)Landroid/content/Intent; holding /menu/bookmarks

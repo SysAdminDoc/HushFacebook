@@ -811,7 +811,7 @@ try {
         'ReturnRefresh;->skip()Z holding FeedRefreshTriggerController onRefresh: first in Lfixture/ReturnController;->resumeAfterBackground(')) `
         "The good build's background-return guard was not first in the resume callback.`n$($good.Output -join "`n")"
     Assert-True (($good.Output -join "`n") -match [regex]::Escape(
-        ('ReelDeclutter;->hideFollowButton()Z in instance (Lcom/facebook/auth/usersession/FbUserSession;*Ljava/lang/String;ZZ)Z holding ' +
+        ('ReelDeclutter;->hideFollowButton()Z in (Lcom/facebook/auth/usersession/FbUserSession;*Ljava/lang/String;ZZ)Z holding ' +
             'friendly_feed friends_tab_ifu: first in Lfixture/FollowCheck;->offersFollow('))) `
         "The good build's Follow hook was not first in Facebook's Follow check.`n$($good.Output -join "`n")"
     Assert-True (($good.Output -join "`n") -match [regex]::Escape(
@@ -824,7 +824,7 @@ try {
         "The good build's emoji picture hook was not first in Facebook's maker of emoji picture addresses.`n$($good.Output -join "`n")"
     Assert-True (($good.Output -join "`n") -match [regex]::Escape(
         ('MessengerIcon;->open(Landroid/content/Context;Z)Z in static (Landroid/content/Context;Lcom/facebook/auth/usersession/FbUserSession;*)V ' +
-            'holding entry_point_navbar_global_icon_ entry_point_navbar_global_icon_reels_tab: first in Lfixture/MessengerBar;->tap('))) `
+            'holding entry_point_navbar_global_icon_ diode_messenger_activity: first in Lfixture/MessengerBar;->tap('))) `
         "The good build's Messenger icon hook was not first in the icon's tap.`n$($good.Output -join "`n")"
     Assert-True (($good.Output -join "`n") -match [regex]::Escape(
         ('MessengerIcon;->open(Landroid/content/Context;Z)Z in static (Landroid/content/Context;Lcom/facebook/auth/usersession/FbUserSession;' +
@@ -946,7 +946,7 @@ try {
             "Lfixture/TabLinks;->launchTab(Landroid/content/Intent;$session)$tabTag"
         "once-call $tabFilter->friendsTab(Ljava/lang/Object;)Ljava/lang/Object; in instance $linkShape holding DEEPLINK" =
             "Lfixture/TabLinks;->friendsLink$linkSite"
-        "once-call $tabFilter->configuresTab(ZLjava/lang/Object;)Z in instance $linkShape holding key_uri /menu/bookmarks" =
+        "once-call $tabFilter->configuresTab(ZLjava/lang/Object;)Z in instance $linkShape holding /menu/bookmarks" =
             "Lfixture/TabLinks;->targetTabLink$linkSite"
     }
     $onceCallRules = @(Get-Content -LiteralPath $contracts | Where-Object { $_ -match '^\s*once-call\s' } |
@@ -1285,7 +1285,7 @@ try {
             '"FeedRefreshTriggerController" and "onRefresh"; the host methods that call it: Lfixture/ReturnController;->onPause()V'))
         'bad-follow-hook-wrong-method' = @(('*contract: Lapp/morphe/extension/facebook/reels/ReelDeclutter;->hideFollowButton()Z is not ' +
             'called in Lfixture/FollowCheck;->offersFollow(Lcom/facebook/auth/usersession/FbUserSession;Ljava/lang/String;ZZ)Z, the one method holding ' +
-            '"friendly_feed" and "friends_tab_ifu" with the shape instance (Lcom/facebook/auth/usersession/FbUserSession;*Ljava/lang/String;ZZ)Z; the host ' +
+            '"friendly_feed" and "friends_tab_ifu" with the shape (Lcom/facebook/auth/usersession/FbUserSession;*Ljava/lang/String;ZZ)Z; the host ' +
             'methods that call it: Lfixture/FollowCheck;->offersFollowHere(Lcom/facebook/auth/usersession/FbUserSession;)Z'))
         'bad-emoji-hook-wrong-method' = @(('*contract: Lapp/morphe/extension/facebook/emoji/SystemEmoji;->typeface()Landroid/graphics/Typeface; ' +
             'is not called in Lfixture/EmojiProvider;->emojiTypeface()Landroid/graphics/Typeface;, the one method holding ' +
@@ -1297,7 +1297,7 @@ try {
             'the host methods that call it: Lfixture/EmojiPictures;->pictureAddress()Ljava/lang/String;'))
         'bad-messenger-tap-hook-wrong-method' = @(('*contract: Lapp/morphe/extension/facebook/chats/MessengerIcon;->open(Landroid/content/Context;Z)Z ' +
             'is not called in Lfixture/MessengerBar;->tap(Landroid/content/Context;Lcom/facebook/auth/usersession/FbUserSession;Ljava/lang/String;Z)V, ' +
-            'the one method holding "entry_point_navbar_global_icon_" and "entry_point_navbar_global_icon_reels_tab" with the shape ' +
+            'the one method holding "entry_point_navbar_global_icon_" and "diode_messenger_activity" with the shape ' +
             'static (Landroid/content/Context;Lcom/facebook/auth/usersession/FbUserSession;*)V; the host methods that call it: ' +
             '*Lfixture/MessengerBar;->tapEntry(Landroid/content/Context;Lcom/facebook/auth/usersession/FbUserSession;Ljava/lang/String;Z)V*'))
         'bad-messenger-button-hook-wrong-method' = @(('*contract: Lapp/morphe/extension/facebook/chats/MessengerIcon;->open(Landroid/content/Context;Z)Z ' +
@@ -1328,7 +1328,7 @@ try {
         'bad-follow-hook-also-elsewhere' = @(('*contract: Lapp/morphe/extension/facebook/reels/ReelDeclutter;->hideFollowButton()Z ' +
             'is called in Lfixture/FollowCheck;->offersFollowHere(Lcom/facebook/auth/usersession/FbUserSession;)Z as well as in ' +
             'Lfixture/FollowCheck;->offersFollow(Lcom/facebook/auth/usersession/FbUserSession;Ljava/lang/String;ZZ)Z, the one method holding ' +
-            '"friendly_feed" and "friends_tab_ifu" with the shape instance (Lcom/facebook/auth/usersession/FbUserSession;*Ljava/lang/String;ZZ)Z'))
+            '"friendly_feed" and "friends_tab_ifu" with the shape (Lcom/facebook/auth/usersession/FbUserSession;*Ljava/lang/String;ZZ)Z'))
         'bad-return-refresh-two-callbacks' = @(('*contract: 2 methods hold "FeedRefreshTriggerController" and "onRefresh", and exactly ' +
             'one must, so the rule can''t say which one calls Lapp/morphe/extension/facebook/feed/ReturnRefresh;->skip()Z: *' +
             'Lfixture/ReturnController;->resume*(Ljava/lang/Object;)V, Lfixture/ReturnController;->resume*(Ljava/lang/Object;)V'))
