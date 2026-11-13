@@ -51,8 +51,10 @@ class TabBarColoursFixtureTest {
             for (bundle in bundles) {
                 val name = bundle.name
                 val layout = FixtureDex.classes(bundle, setOf(TAB_BAR_CONTAINER)).getValue(TAB_BAR_CONTAINER)
+                // Next to last before the tab id, or last since 587 dropped the tab id.
                 val providers = FixtureDex.classes(bundle, layout.methods.mapNotNull { method ->
-                    method.parameterTypes.map(CharSequence::toString).takeIf { it.size >= 2 && it.last() == "J" }?.let { it[it.size - 2] }
+                    method.parameterTypes.map(CharSequence::toString).takeIf { method.returnType == "V" && it.isNotEmpty() }
+                        ?.let { if (it.last() == "J") it.getOrNull(it.size - 2) else it.last() }?.takeIf { it.startsWith("L") }
                 }.toSet())
                 val colour = selectedTabColour(layout) { type ->
                     providers[type]?.let { AccessFlags.ABSTRACT.isSet(it.accessFlags) && !AccessFlags.INTERFACE.isSet(it.accessFlags) } == true

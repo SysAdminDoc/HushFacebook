@@ -85,16 +85,17 @@ private fun MethodReference.sameAs(other: MethodReference) =
 
 /**
  * The selected tab's colour method: in each of [layout]'s setters that take the colour provider,
- * an abstract class [isAbstract] answers for, next to last and the tab id (a long) last, the first
- * call to the provider answering an int whose move-result goes into `Paint.setColor` within
- * [PAINT_WINDOW] instructions. Refuses unless exactly one setter has one.
+ * an abstract class [isAbstract] answers for, next to last with the tab id (a long) last, or last
+ * since 587 dropped the tab id (arm64 `KbY(FbUserSession, LX/03Lr)`), the first call to the
+ * provider answering an int whose move-result goes into `Paint.setColor` within [PAINT_WINDOW]
+ * instructions. Refuses unless exactly one setter has one.
  */
 internal fun selectedTabColour(layout: ClassDef, isAbstract: (String) -> Boolean): MethodReference {
     val found = layout.methods.mapNotNull { setter ->
         val parameters = setter.parameterTypes.map { it.toString() }
-        if (setter.returnType != "V" || parameters.size < 2 || parameters.last() != "J") return@mapNotNull null
-        val provider = parameters[parameters.size - 2]
-        if (!provider.startsWith("L") || !isAbstract(provider)) return@mapNotNull null
+        if (setter.returnType != "V" || parameters.isEmpty()) return@mapNotNull null
+        val provider = if (parameters.last() == "J") parameters.getOrNull(parameters.size - 2) else parameters.last()
+        if (provider == null || !provider.startsWith("L") || !isAbstract(provider)) return@mapNotNull null
         val code = setter.implementation?.instructions?.toList() ?: return@mapNotNull null
         code.indices.firstNotNullOfOrNull { at ->
             val call = code[at].called()?.takeIf { it.definingClass == provider && it.returnType == "I" }
