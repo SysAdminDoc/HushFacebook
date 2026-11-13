@@ -110,6 +110,17 @@ class SharedPermissionsFixtureTest {
     private fun Method.sameSignatureAs(other: Method) = name == other.name && returnType == other.returnType &&
         parameterTypes.map { it.toString() } == other.parameterTypes.map { it.toString() }
 
+    private fun Method.signature() = "$definingClass->$name(${parameterTypes.joinToString("")})$returnType"
+
+    /** How many methods in [bundle] call [helper], each counted once. */
+    private fun callersOf(bundle: File, helper: Method): Int {
+        val signature = helper.signature()
+        return FixtureDex.methodsWhere(bundle, dexFilter = { dex ->
+            dex.methodSection.any { it.definingClass == helper.definingClass && it.name == helper.name }
+        }) { method -> method.instructions().any { (it as? ReferenceInstruction)?.reference?.toString() == signature } }
+            .map { it.signature() }.distinct().size
+    }
+
     @Test
     fun eachDeclaredBuildDeclaresNothingElseAMetaAppCouldAndRenamesEveryMention() {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -154,6 +165,7 @@ class SharedPermissionsFixtureTest {
                 val spellings = sortedSetOf<String>()
                 val fields = mutableListOf<String>()
                 val methods = mutableMapOf<String, Int>()
+                val formatLoaders = mutableListOf<Method>()
                 val callers = mutableListOf<ClassDef>()
                 FixtureDex.forEach(bundle) { dex ->
                     dex.stringSection.filterTo(spellings) {
@@ -168,6 +180,7 @@ class SharedPermissionsFixtureTest {
                         for (method in classDef.methods) {
                             val literals = method.instructions().mapNotNull { it.sharedLiteral() }.toSet()
                             literals.forEach { methods.merge(it, 1, Int::plus) }
+                            if (APP_COMMUNICATION_FORMAT in literals) formatLoaders += method
                             loads = loads || literals.isNotEmpty()
                         }
                         if (loads) callers += ImmutableClassDef.of(classDef)
@@ -180,11 +193,20 @@ class SharedPermissionsFixtureTest {
                 assertEquals("${bundle.name}: fields holding a name", emptyList<String>(), fields)
                 // The cross-app broadcast manager, Profilo's trace control twice, and the login state
                 // broadcast use the format; the MQTT service's receiver and the zero-rating switch the name.
-                assertEquals("${bundle.name}: methods loading each literal",
-                    mapOf(APP_COMMUNICATION to 2, APP_COMMUNICATION_FORMAT to 4), methods)
+                // 587's phone builds outline the format into one static helper those four call, so
+                // routing its one load covers all four: its callers are pinned.
+                val literalLoaders = LITERAL_LOADERS.getValue(version).forBundle(bundle.name)
+                assertEquals("${bundle.name}: methods loading each literal", literalLoaders, methods)
+                if (literalLoaders.getValue(APP_COMMUNICATION_FORMAT) == 1) {
+                    val helper = formatLoaders.single()
+                    assertTrue("${bundle.name}: the format's helper ${helper.signature()} takes nothing and answers a String",
+                        helper.parameterTypes.isEmpty() && helper.returnType == "Ljava/lang/String;")
+                    assertEquals("${bundle.name}: methods calling the format's helper ${helper.signature()}",
+                        FORMAT_HELPER_CALLERS.getValue(version).forBundle(bundle.name), callersOf(bundle, helper))
+                }
 
                 val context = PatchContexts.of(callers)
-                assertEquals("${bundle.name}: loads routed", 6, context.routeSharedLiterals())
+                assertEquals("${bundle.name}: loads routed", literalLoaders.values.sum(), context.routeSharedLiterals())
                 for (before in callers) {
                     val after = context.mutableClassDefBy(before.type).methods
                     for (original in before.methods) {
@@ -462,8 +484,26 @@ class SharedPermissionsFixtureTest {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val holders = FixtureDex.classesHolding(bundle, FACEBOOK)
                 val context = PatchContexts.of(holders)
+                // Read before routing: the helper is found by the load the patch is about to route.
+                val helpers = holders.flatMap { it.methods }.filter {
+                    it.returnType == REMOTE_VIEWS && it.remoteViewsPackageLoads(FACEBOOK).isNotEmpty()
+                }
                 assertEquals("${bundle.name}: RemoteViews package loads routed", REMOTE_VIEWS_LOADS.getValue(version).forBundle(bundle.name),
                     context.routeRemoteViewsPackage(FACEBOOK))
+
+                // 587's phone builds outline the templates' load into one helper that answers a
+                // RemoteViews of Facebook's package for a layout id, so routing its one load covers
+                // every template calling it: those callers are pinned.
+                val helperCallers = REMOTE_VIEWS_HELPER_CALLERS.getValue(version).entries
+                    .singleOrNull { "-${it.key}." in bundle.name }?.value
+                    ?: throw AssertionError("${bundle.name} has no pin for the RemoteViews helper's callers")
+                assertEquals("${bundle.name}: methods answering a RemoteViews built from a routed load: ${helpers.map { it.signature() }}",
+                    1, helpers.size)
+                val helper = helpers.single()
+                assertEquals("${bundle.name}: ${helper.signature()} takes the layout id alone", listOf("I"),
+                    helper.parameterTypes.map { it.toString() })
+                assertEquals("${bundle.name}: methods calling the RemoteViews helper ${helper.signature()}", helperCallers,
+                    callersOf(bundle, helper))
 
                 var built = 0
                 for (before in holders) {
@@ -742,10 +782,44 @@ class SharedPermissionsFixtureTest {
          * template sites (2026-10-14). 583 builds all but one from the running package itself, and
          * the check after the patch still finds none left spelled out (2026-10-16). 584 spelled all
          * 14 out again (2026-10-22). 585 is back to 583's one (2026-10-29), and 586 spells all 14
-         * out again (2026-11-08), while its Android 9 build is back to the one (2026-11-10).
+         * out again (2026-11-08), while its Android 9 build is back to the one (2026-11-10). 587's
+         * phone builds outline them into one helper per ABI, its single load routed: arm64 has no
+         * other, armv7 one more template that still spells the package out (2026-11-13). The
+         * Android 9 value is 586's, never read on 587.
          */
         val REMOTE_VIEWS_LOADS = mapOf(
-            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 14, "armeabi-v7a" to 14, "arm64-v8a-minapi28-storeless" to 1),
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 1, "armeabi-v7a" to 2, "arm64-v8a-minapi28-storeless" to 1),
+        )
+
+        /**
+         * Methods calling the RemoteViews helper those loads were outlined into, per build and phone
+         * ABI, each counted once (587, read 2026-11-13). A build without a pin here fails until its
+         * helper is read.
+         */
+        val REMOTE_VIEWS_HELPER_CALLERS = mapOf(
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 26, "armeabi-v7a" to 21),
+        )
+
+        val REMOTE_VIEWS = REMOTE_VIEWS_INIT.substringBefore("->")
+
+        /**
+         * Methods loading each shared literal, per build and fixture bundle. The MQTT service's
+         * receiver and the zero-rating switch load the name. The format went out from four methods
+         * (the cross-app broadcast manager, Profilo's trace control twice and the login state
+         * broadcast) until 587's phone builds outlined it into one helper they call (2026-11-13).
+         * The Android 9 value is 586's, never read on 587.
+         */
+        val LITERAL_LOADERS = mapOf(
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+                "arm64-v8a" to mapOf(APP_COMMUNICATION to 2, APP_COMMUNICATION_FORMAT to 1),
+                "armeabi-v7a" to mapOf(APP_COMMUNICATION to 2, APP_COMMUNICATION_FORMAT to 1),
+                "arm64-v8a-minapi28-storeless" to mapOf(APP_COMMUNICATION to 2, APP_COMMUNICATION_FORMAT to 4),
+            ),
+        )
+
+        /** Methods calling the format's helper, per build and fixture bundle (587, read 2026-11-13). */
+        val FORMAT_HELPER_CALLERS = mapOf(
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 4, "armeabi-v7a" to 4),
         )
 
         /**
@@ -808,12 +882,19 @@ class SharedPermissionsFixtureTest {
          * ABI, as 585's do; 584's two happened to agree. 585's phone builds drop the warm-start
          * hint, which no longer reads a load of Facebook's package there, and the Android 9 build
          * still has it (2026-11-07). 586's phone builds don't have the hint (2026-11-08), and its
-         * Android 9 build does, like 585's (2026-11-10).
+         * Android 9 build does, like 585's (2026-11-10). 587's phone builds have the hint back, at
+         * their own index per ABI, and name the other four apart per ABI (2026-11-13). The Android 9 list is 586's, never read on 587.
          */
         val STOCK_OWNERS = mapOf(
             AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-                "arm64-v8a" to listOf("LX/0X1T;->A00@569:", "LX/0X8V;->A00@40:", "LX/0XdF;->A00@22:", "LX/0hi4;->openForumShareLink\$${FORUM_LINK}@58:"),
-                "armeabi-v7a" to listOf("LX/0X1X;->A00@569:", "LX/0X8Z;->A00@40:", "LX/0XdJ;->A00@22:", "LX/0hi6;->openForumShareLink\$${FORUM_LINK}@58:"),
+                "arm64-v8a" to listOf(
+                    "Lcom/facebook/messaging/threadsettings2/activity/ThreadSettingsActivity;->onActivityCreate@52:",
+                    "LX/0Kk2;->A00@579:", "LX/0Kp1;->A00@42:", "LX/0vA3;->A00@24:", "LX/0SsM;->openForumShareLink\$${FORUM_LINK}@57:",
+                ),
+                "armeabi-v7a" to listOf(
+                    "Lcom/facebook/messaging/threadsettings2/activity/ThreadSettingsActivity;->onActivityCreate@50:",
+                    "LX/0dp6;->A00@577:", "LX/0R2u;->A00@42:", "LX/0v85;->A00@24:", "LX/0OuI;->openForumShareLink\$${FORUM_LINK}@57:",
+                ),
                 "arm64-v8a-minapi28-storeless" to listOf(
                     "Lcom/facebook/messaging/threadsettings2/activity/ThreadSettingsActivity;->onActivityCreate@50:",
                     "LX/0dOt;->A00@567:", "LX/0dX7;->A00@42:", "LX/0dbD;->openForumShareLink\$${FORUM_LINK}@58:", "LX/0e8S;->A00@22:",
@@ -830,10 +911,11 @@ class SharedPermissionsFixtureTest {
          * checked Facebook is installed. 582 also had Messenger's deep link launcher, which 583 no
          * longer spells out. 585's phone builds no longer spell out the warm-start hint either, so
          * none is left there, and the Android 9 build keeps it (2026-11-07). 586's phone builds keep
-         * none, and its Android 9 build keeps the hint (2026-11-10).
+         * none, and its Android 9 build keeps the hint (2026-11-10). 587's phone builds spell the
+         * hint out again (2026-11-13).
          */
         val SETS_REAL_FACEBOOK = mapOf(
-            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0, "arm64-v8a-minapi28-storeless" to 1),
+            AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 1, "armeabi-v7a" to 1, "arm64-v8a-minapi28-storeless" to 1),
         )
     }
 }
