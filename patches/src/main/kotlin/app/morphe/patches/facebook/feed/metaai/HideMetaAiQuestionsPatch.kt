@@ -111,7 +111,7 @@ private const val STRING_EQUALS = "Ljava/lang/String;->equals(Ljava/lang/Object;
  * caption draws it there through GenAiDeepDiveBelowCaptionPlugin. Hide Meta upsells already hooks
  * both for its "other Meta AI buttons" switch, which starts off: the selector's check (the first
  * thing in it hands the extension the plugin's name from the selector's table and answers no on a
- * yes) and the caption plugin's one static (GraphQLStory) getter (null on a yes). This patch puts
+ * yes) and the caption plugin's one getter of a post's deep dive (null on a yes). This patch puts
  * its own hook of the same shape first in each, so the questions go with this switch alone, with
  * or without Hide Meta upsells in the build. Two guards in front of one method each answer no on
  * their own yes and otherwise run on into the other, so their order doesn't matter.
@@ -162,7 +162,7 @@ private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $det
 
 /**
  * The two other ways Meta AI's questions reach a post: the call-to-action selector's name [table]
- * and its plugin [check], and the caption deep dive plugin's static (GraphQLStory) [captionGetter].
+ * and its plugin [check], and the caption deep dive plugin's getter of a post's deep dive [captionGetter].
  */
 internal class QuestionButtons(val table: Method, val check: Method, val captionGetter: Method)
 

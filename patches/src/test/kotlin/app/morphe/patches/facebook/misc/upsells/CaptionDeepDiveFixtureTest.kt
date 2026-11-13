@@ -15,6 +15,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -60,13 +61,26 @@ class CaptionDeepDiveFixtureTest {
                     code.indices.filter { code[it].called()?.descriptor() == getterCall }.map { code to it }
                 }
                 assertTrue("$name: the table's class never reads the deep dive through $getterCall", reads.isNotEmpty())
+                val getterCode = getter.implementation!!.instructions.toList()
+                // Facebook's own "nothing to show": the getter answers null itself for a post with no deep dive.
+                val answersNull = (1 until getterCode.size).any { at ->
+                    val load = getterCode[at - 1]
+                    getterCode[at].opcode == Opcode.RETURN_OBJECT && load.opcode == Opcode.CONST_4 &&
+                        (load as NarrowLiteralInstruction).narrowLiteral == 0 &&
+                        (load as OneRegisterInstruction).registerA == (getterCode[at] as OneRegisterInstruction).registerA
+                }
                 for ((code, at) in reads) {
                     assertEquals("$name: the getter's answer isn't kept", Opcode.MOVE_RESULT_OBJECT, code[at + 1].opcode)
                     val kept = (code[at + 1] as OneRegisterInstruction).registerA
                     val next = code[at + 2]
-                    assertTrue("$name: the getter's answer isn't checked for null right away",
-                        (next.opcode == Opcode.IF_EQZ || next.opcode == Opcode.IF_NEZ) &&
-                            (next as OneRegisterInstruction).registerA == kept)
+                    val checked = (next.opcode == Opcode.IF_EQZ || next.opcode == Opcode.IF_NEZ) &&
+                        (next as OneRegisterInstruction).registerA == kept
+                    // 587 builds the row in the getter (arm64 `A00(LX/03FD;)LX/0V49;`), and the table's case
+                    // hands its answer straight back to the collector (`LX/02sT;->A0A`, case 7), which takes a
+                    // null the way it takes the getter's own null for a post without a deep dive.
+                    val handedBack = next.opcode == Opcode.RETURN_OBJECT && (next as OneRegisterInstruction).registerA == kept
+                    assertTrue("$name: the getter's answer isn't checked for null right away", checked || handedBack)
+                    if (handedBack) assertTrue("$name: the getter's answer is handed back, but it never answers null itself", answersNull)
                 }
 
                 val original = getter.implementation!!.instructions.toList()

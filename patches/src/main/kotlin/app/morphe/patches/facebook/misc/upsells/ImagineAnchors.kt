@@ -28,6 +28,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstructio
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 /*
  * Where Meta AI's Imagine shows up outside Meta AI itself, read from 577, 580 and 581 on
@@ -53,7 +54,8 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  * GenAiDeepDiveBelowCaptionPlugin. Only 581 gives that socket a check method of its own
  * (LX/2kX;->A0M); 577 and 580 inline the check into the collector (LX/2lC;->A1N, LX/2dL;->A1F).
  * Every build's check, and the plugin's own row builder on 581, read the deep dive through the
- * plugin's one static (GraphQLStory) getter, a kept class, and treat a null as nothing to show. So
+ * plugin's one getter of a post's deep dive (static on a GraphQLStory until 586, an instance method
+ * on the row's props since 587), a kept class, and treat a null as nothing to show. So
  * the extension goes first in that getter and answers null while the switch is on.
  *
  * The post composer's Imagine. The composer asks its capabilities, an enum whose constants include
@@ -156,16 +158,25 @@ internal fun ctaCheck(
 
 /**
  * The getter the caption deep dive's check and row read the deep dive through: [plugin]'s one
- * static method taking a GraphQLStory and answering an object. Refuses, naming [patch], unless
- * there's exactly one.
+ * method answering an object from a post, either static taking a GraphQLStory or, since 587
+ * (arm64 `A00(LX/03FD;)LX/0V49;`), an instance method taking the row's props, whose code casts what
+ * the props carry to a GraphQLStory. Refuses, naming [patch], unless there's exactly one.
  */
 internal fun captionDeepDiveGetter(plugin: ClassDef, patch: String = PATCH): Method {
     val getters = plugin.methods.filter {
-        AccessFlags.STATIC.isSet(it.accessFlags) && it.implementation != null && it.returnType.startsWith("L") &&
-            it.parameterTypes.map(CharSequence::toString) == listOf(GRAPHQL_STORY)
+        val parameters = it.parameterTypes.map(CharSequence::toString)
+        it.implementation != null && it.returnType.startsWith("L") && if (AccessFlags.STATIC.isSet(it.accessFlags)) {
+            parameters == listOf(GRAPHQL_STORY)
+        } else {
+            !it.name.startsWith("<") && parameters.size == 1 && parameters[0].startsWith("L") && castsToStory(it)
+        }
     }
     return getters.singleOrNull()
-        ?: refuse("expected one static (GraphQLStory) getter in ${plugin.type}, found ${getters.size}", patch)
+        ?: refuse("expected one getter of a post's deep dive in ${plugin.type}, found ${getters.size}", patch)
+}
+
+private fun castsToStory(method: Method) = method.code().any {
+    it.opcode == Opcode.CHECK_CAST && ((it as ReferenceInstruction).reference as? TypeReference)?.type == GRAPHQL_STORY
 }
 
 /**

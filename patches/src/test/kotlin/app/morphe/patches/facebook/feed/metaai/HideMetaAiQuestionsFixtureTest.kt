@@ -193,9 +193,13 @@ class HideMetaAiQuestionsFixtureTest {
         assertEquals("a declared build has no fixture", declaredBundles().keys, checked)
     }
 
-    /** Where each declared build's default way keeps the pill's type, and the stars name's register. */
+    /**
+     * Where each declared build's default way keeps the pill's type, and the stars name's register:
+     * 586 loaded the name into v0, 587 into v1 (arm64, as defaultPill reads it).
+     */
     private val expectedPill = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to (2 to 0),
+        "586.0.0.52.53" to (2 to 0),
+        "587.0.0.39.55" to (2 to 1),
     )
 
     /**
