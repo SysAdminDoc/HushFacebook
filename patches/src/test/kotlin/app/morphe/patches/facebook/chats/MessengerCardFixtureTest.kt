@@ -40,11 +40,12 @@ class MessengerCardFixtureTest {
      * of it (0x3a24 below, 0x3a86 to 0x3a9c above) all moved by exactly that. 586 packs it the same
      * way, and the card's render method (the one tagging its dismiss button) loads 0x7f143d45 where
      * 585's loaded 0x7f143ba6, with the two ids it loads next (585's 0x3ba3 and 0x3ba4) moved by the
-     * same 0x19f. The test below only passes on the one card class that loads it, and an unpacked
-     * table is the check still owed.
+     * same 0x19f. 587's render method (arm64 `LX/0HAn;`) loads 0x7f143dfe in the same place, with
+     * the two after it (586's 0x3d42 and 0x3d43) moved by the same 0xb9. The test below only passes
+     * on the one card class that loads it, and an unpacked table is the check still owed.
      */
     private val upsellText = mapOf(
-        "586.0.0.52.53" to 0x7f143d45,
+        "587.0.0.39.55" to 0x7f143dfe,
     )
 
     private val packageManager = "Landroid/content/pm/PackageManager;"
