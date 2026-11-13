@@ -9,6 +9,7 @@ import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.literalReads
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -59,20 +60,36 @@ class EmojiProviderFixtureTest {
         opcode == Opcode.NEW_INSTANCE && (reference as? TypeReference)?.type == type
     }
 
+    /**
+     * The methods besides the provider that read a holder of Meta's emoji font, in each declared
+     * build, then by the bundle's ABI. 587 adds one per phone ABI, which only checks whether a
+     * holder is set; 586's Android 9 build had none.
+     */
+    private val otherReaders = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to listOf("LX/01ef;->A0B(Ljava/lang/Object;)V"),
+            "armeabi-v7a" to listOf("LX/01ek;->A0B(Ljava/lang/Object;)V"),
+            "arm64-v8a-minapi28-storeless" to emptyList(),
+        ),
+    )
+
+    /** The branches a read that only checks for null or compares references ends in. */
+    private val comparisons = setOf(Opcode.IF_EQZ, Opcode.IF_NEZ, Opcode.IF_EQ, Opcode.IF_NE)
+
     @Test
     fun `each declared build has one emoji typeface provider, the only way out of Meta's emoji font`() {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
         val checked = mutableSetOf<String>()
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
-                check(bundle)
+                check(bundle, version)
                 checked += version
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
-    private fun check(bundle: File) {
+    private fun check(bundle: File, version: String) {
         val name = bundle.name
         val holding = FixtureDex.classesHolding(bundle, FORCE_SYSTEM_EMOJI_FONT)
             .flatMap { owner -> owner.methods.filter { holdsString(it, FORCE_SYSTEM_EMOJI_FONT) } }
@@ -89,7 +106,7 @@ class EmojiProviderFixtureTest {
         val holders = typefaceReads(provider)
         assertEquals("$name: holders the provider reads a Typeface from: $holders", 2, holders.size)
 
-        val holderReaders = mutableListOf<String>()
+        val holderReaders = mutableListOf<Method>()
         val spans = mutableListOf<Pair<String, Set<String>>>()
         FixtureDex.forEach(bundle) { dex ->
             val readsHolder = dex.fieldSection.any { field -> field.key() in holders }
@@ -97,8 +114,7 @@ class EmojiProviderFixtureTest {
             if (!readsHolder && !namesFamily) return@forEach
             for (classDef in dex.classes) {
                 if (readsHolder) {
-                    classDef.methods.filter { typefaceReads(it).any { read -> read in holders } }
-                        .forEach { holderReaders += signature(it) }
+                    holderReaders += classDef.methods.filter { typefaceReads(it).any { read -> read in holders } }
                 }
                 // A TypefaceSpan by its constructor, which hands TypefaceSpan the family: its direct
                 // superclass on 577 and 580, the superclass of an abstract span between them on 581.
@@ -110,8 +126,26 @@ class EmojiProviderFixtureTest {
                 }
             }
         }
-        assertEquals("$name: methods reading the holders of Meta's emoji font", listOf(providerSignature),
-            holderReaders.distinct())
+        // Besides the provider, only the pinned readers touch a holder, and each of them only checks
+        // the font it reads against null or another reference: none hands Meta's font on.
+        val abi = name.substringAfter("-$version-").substringBefore(".apkm")
+        val others = otherReaders.getValue(version)[abi] ?: throw AssertionError("$name has no pin for the other holder readers")
+        assertEquals("$name: methods reading the holders of Meta's emoji font", (others + providerSignature).sorted(),
+            holderReaders.map(::signature).distinct().sorted())
+        for (reader in holderReaders.filter { signature(it) != providerSignature }) {
+            val code = reader.implementation!!.instructions.toList()
+            val reads = code.indices.filter { at ->
+                val field = (code[at] as? ReferenceInstruction)?.reference as? FieldReference
+                (code[at].opcode == Opcode.IGET_OBJECT || code[at].opcode == Opcode.SGET_OBJECT) && field != null && field.key() in holders
+            }
+            assertTrue("${signature(reader)}: reads no holder", reads.isNotEmpty())
+            for (read in reads) {
+                val uses = reader.literalReads(read).map { code[it].opcode }
+                assertTrue("${signature(reader)}: the holder read at $read is never used", uses.isNotEmpty())
+                assertEquals("${signature(reader)}: the holder read at $read reaches more than a comparison: $uses",
+                    emptyList<Opcode>(), uses.filterNot { it in comparisons })
+            }
+        }
 
         // The span Facebook puts on a run of emoji is a TypefaceSpan named FacebookEmoji that sets the
         // paint's typeface to the one it was built with, when the text is measured and when it's drawn.
