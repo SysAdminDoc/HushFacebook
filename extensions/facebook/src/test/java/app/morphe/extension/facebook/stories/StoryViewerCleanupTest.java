@@ -103,6 +103,24 @@ public class StoryViewerCleanupTest {
         assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.PILLS_DROPPED + " 4"));
     }
 
+    /** #380: a story whose first credit is a song draws its own pill, with "Try it", which goes with the credits. */
+    @Test
+    public void theCreditsSwitchHidesTheSongPillAndNothingElseDoes() {
+        assertFalse("off, the song pill went", StoryViewerCleanup.hideSongPill());
+        Settings.HIDE_STORY_REPLY_SUGGESTIONS.save(true);
+        Settings.HIDE_STORY_SUBSCRIBE.save(true);
+        Settings.HIDE_STORY_CREATE_CARDS.save(true);
+        assertFalse("another switch hid the song pill", StoryViewerCleanup.hideSongPill());
+        Settings.HIDE_STORY_CREDITS.save(true);
+        assertTrue("on, the song pill stayed", StoryViewerCleanup.hideSongPill());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused, the song pill went", StoryViewerCleanup.hideSongPill());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("the song pill went before the settings were ready", StoryViewerCleanup.hideSongPill()));
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + StoryViewerCleanup.SONG_PILL_HIDDEN + " 1"));
+    }
+
     @Test
     public void theSubscribeSwitchStartsOffAndHidesOnlyTheSubscribeButton() {
         assertFalse(Settings.HIDE_STORY_SUBSCRIBE.defaultValue);

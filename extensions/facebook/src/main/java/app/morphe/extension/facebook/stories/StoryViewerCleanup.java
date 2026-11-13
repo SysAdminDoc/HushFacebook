@@ -18,12 +18,15 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>The line under the poster's name shows a song, effect or other credit in place of its plain
  * subtitle, or turns between the two. With the credits switch on, a lone credit draws nothing and
- * a turning one stays on the plain subtitle. Most stories show their credits as pills in a column
+ * a turning one stays on the plain subtitle. Most stories show their credits as pills in a row
  * under the name instead, and the same switch leaves out the song and effect pills there while a
- * reshare, an archive or a close friends pill stays. The reply suggestions switch takes the row of
- * suggested replies off the bottom of a story, leaving the reply box, and the Subscribe switch the
- * Subscribe pill under the name. The create cards switch keeps out the "Add to story" card Facebook
- * puts between other people's stories, the plain one and the ones built from the gallery (#439).
+ * reshare, an archive or a close friends pill stays. A story whose first credit is a song gets a
+ * pill of its own with a "Try it" button, and the same switch draws nothing in its place.
+ *
+ * <p>The reply suggestions switch takes the row of suggested replies off the bottom of a story,
+ * leaving the reply box, and the Subscribe switch the Subscribe pill under the name. The create
+ * cards switch keeps out the "Add to story" card Facebook puts between other people's stories, the
+ * plain one and the ones built from the gallery (#439).
  *
  * <p>Off, paused, settings that aren't ready yet or a failure in here, and Facebook draws its own.
  */
@@ -33,6 +36,9 @@ public final class StoryViewerCleanup {
 
     /** Counted each time a song or effect pill is left out of the column under the name. */
     static final String PILLS_DROPPED = "story credit pills dropped";
+
+    /** Counted each time a story's song pill, the one with the "Try it" button, isn't drawn. */
+    static final String SONG_PILL_HIDDEN = "story song pill hidden";
 
     /** Counted each time a story's suggested replies aren't drawn. */
     static final String SUGGESTIONS_HIDDEN = "story reply suggestions hidden";
@@ -72,6 +78,20 @@ public final class StoryViewerCleanup {
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story credit pills", failure);
+            return false;
+        }
+    }
+
+    /** Injection point, first thing in the song pill's render: whether to draw nothing. Never throws. */
+    public static boolean hideSongPill() {
+        try {
+            HookStatus.invoked(FamilyNames.STORY_VIEWER_CLEANUP);
+            HookStatus.bound(FamilyNames.STORY_VIEWER_CLEANUP, "story song pill");
+            if (!Utils.settingsReady() || !Settings.HIDE_STORY_CREDITS.get()) return false;
+            HookStatus.counted(FamilyNames.STORY_VIEWER_CLEANUP, SONG_PILL_HIDDEN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_VIEWER_CLEANUP, "story song pill", failure);
             return false;
         }
     }

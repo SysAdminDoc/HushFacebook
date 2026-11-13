@@ -72,6 +72,14 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   and hooked the same way. Until 2026-11-13 only that sheet was hooked, so the pill stayed. 586
  *   (LX/0dVe;) tests a boolean field of the column between the type's null check and the ordinal,
  *   and skips to the step when it's off.
+ * - That row isn't what a story whose first credit is a song gets, though. The factory for the slot
+ *   under the name (587 arm64 LX/0Bni;->A00) builds the chip row only when Facebook says so, and for
+ *   a song first builds a pill of its own (LX/0CDf;, v7 LX/0CD7;): "artist · song" with the "Try it"
+ *   button, whose spoken label "Playing <song> by <artist>" the subtitle builder (LX/0BlI;) writes.
+ *   It names nothing itself. Its render is the only one in the app that keys its button's transition
+ *   "pill_cta_button_transition_key", and it answers null itself for a song with no title, so the
+ *   patch answers null first thing on a yes. Found on que102's "demo" highlight, 2026-11-13, where
+ *   the pill stayed with the row and the sheet both hooked and neither one ever ran.
  * - The Subscribe pill under the name (LX/0b2T;) names nothing itself. Its click handler, a shared
  *   lambda class, casts it back from a field in the case that hands "SubscribeButtonComponent" to
  *   the subscribe call, so the pill is the nearest component cast before that string with the
@@ -102,6 +110,12 @@ internal const val HIDE_REPLY_SUGGESTIONS = "$STORY_VIEWER_CLEANUP->hideReplySug
 internal const val DROP_CREDIT = "$STORY_VIEWER_CLEANUP->dropCredit(Ljava/lang/Enum;)Z"
 internal const val HIDE_SUBSCRIBE = "$STORY_VIEWER_CLEANUP->hideSubscribe()Z"
 internal const val HIDE_CREATE_STORY_CARD = "$STORY_VIEWER_CLEANUP->hideCreateStoryCard()Z"
+internal const val HIDE_SONG_PILL = "$STORY_VIEWER_CLEANUP->hideSongPill()Z"
+
+/** What the song pill under the poster's name keys its "Try it" button's transition with. */
+internal const val SONG_PILL_BUTTON = "pill_cta_button_transition_key"
+
+private const val STORY_CARD = "Lcom/facebook/stories/model/StoryCard;"
 
 private const val IMMUTABLE_LIST = "Lcom/google/common/collect/ImmutableList;"
 
@@ -151,6 +165,7 @@ val storyViewerCleanupPatch = bytecodePatch(
         requireStatusMethod("storyViewerCleanup")
         cleanUpStoryViewer()
         dropCreditPills()
+        hideSongPill()
         hideSubscribePill()
         hideCreateStoryCards()
         followStoryProgress()
@@ -360,6 +375,25 @@ internal fun BytecodePatchContext.dropCredits(name: String) {
         """,
         ExternalLabel("next_pill", render.getInstruction(site.next)),
     )
+}
+
+/** Whether [classDef] is the song pill: a component built for a story card whose render keys its button [SONG_PILL_BUTTON]. */
+internal fun isSongPill(classDef: ClassDef): Boolean {
+    val render = renderOf(classDef) ?: return false
+    return holdsString(render, SONG_PILL_BUTTON) &&
+        classDef.methods.any { it.name == "<init>" && it.parameterTypes.any { type -> type.toString() == STORY_CARD } }
+}
+
+/** Hooks the song pill's render to answer null, as it does itself for a song with no title. */
+internal fun BytecodePatchContext.hideSongPill() {
+    val pills = classDefByStrings(SONG_PILL_BUTTON, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }.filter(::isSongPill)
+    val pill = pills.singleOrNull() ?: refuse("expected one story song pill keying its button $SONG_PILL_BUTTON, found ${pills.size}")
+    val render = renderOf(pill)!!
+    mutableClassDefBy(pill.type).methods.single {
+        it.name == render.name && it.returnType == render.returnType &&
+            it.parameterTypes.map(CharSequence::toString) == render.parameterTypes.map(CharSequence::toString)
+    }.answerWhen(HIDE_SONG_PILL, "const/4 v0, 0x0")
 }
 
 /** Whether [classDef] is a component with the Subscribe pill's three instance fields and a render. */
