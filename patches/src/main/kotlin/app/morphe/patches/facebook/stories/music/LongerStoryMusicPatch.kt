@@ -21,6 +21,7 @@ import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
@@ -92,8 +93,13 @@ internal fun isClipLength(method: Method): Boolean {
 /** The two returns of a photo's clip length: [fifteen] after its 15000, [config] after the MobileConfig value. */
 internal class ClipReturns(val method: Method, val fifteen: Int, val config: Int)
 
-/** Where [this] returns 15000 and where it returns its MobileConfig value, or a refusal naming what moved. */
-internal fun Method.clipReturns(): ClipReturns {
+/**
+ * Where [this] returns 15000 and where it returns its MobileConfig value, or a refusal naming what moved.
+ * [classOf] resolves a static helper the MobileConfig read may go through: 587's 32-bit build reads
+ * the length with a utility class's `(Object, J)D` that casts the config and asks it
+ * (`LX/03gq;->A00` there), which only counts when its body can be read.
+ */
+internal fun Method.clipReturns(classOf: ((String) -> ClassDef?)? = null): ClipReturns {
     val code = code()
     val fifteens = code.indices.filter { at ->
         val load = code[at]
@@ -105,7 +111,7 @@ internal fun Method.clipReturns(): ClipReturns {
 
     val configs = code.indices.mapNotNull { at ->
         if (code[at].opcode != Opcode.DOUBLE_TO_INT || at < 2) return@mapNotNull null
-        if (code[at - 1].opcode != Opcode.MOVE_RESULT_WIDE || !readsMobileConfig(code[at - 2], "D")) return@mapNotNull null
+        if (code[at - 1].opcode != Opcode.MOVE_RESULT_WIDE || !readsMobileConfig(code[at - 2], "D", classOf)) return@mapNotNull null
         val length = (code[at] as TwoRegisterInstruction).registerA
         (at + 1..minOf(at + RETURN_REACH, code.size - 1)).firstOrNull { index ->
             code[index].opcode == Opcode.RETURN && (code[index] as OneRegisterInstruction).registerA == length
@@ -127,7 +133,7 @@ internal fun BytecodePatchContext.findClipReturns(): ClipReturns {
     val method = methods.singleOrNull()
         ?: refuse("expected one static (FbUserSession, state) clip length asking for a FeedAttachmentConfig, found " +
             methods.joinToString { "${it.definingClass}->${it.name}" }.ifEmpty { "none" })
-    return method.clipReturns()
+    return method.clipReturns { type -> classDefByOrNull(type) }
 }
 
 /**

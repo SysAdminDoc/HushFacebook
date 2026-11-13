@@ -18,6 +18,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -48,14 +49,21 @@ class LongerStoryMusicFixtureTest {
                 assertEquals("$name: one music clip length, found ${methods.map { "${it.definingClass}->${it.name}" }}",
                     1, methods.size)
                 val method = methods.single()
-                val returns = method.clipReturns()
                 val code = method.implementation!!.instructions.toList()
+                // 587's 32-bit build reads the MobileConfig length through a static helper on a utility
+                // class, so the classes the method calls statically go into the context with it.
+                val callees = code.filter { it.opcode == Opcode.INVOKE_STATIC }
+                    .mapNotNull { ((it as ReferenceInstruction).reference as? MethodReference)?.definingClass }
+                    .filter { it != method.definingClass }.toSet()
+                val helpers = FixtureDex.classes(bundle, callees)
+                val returns = method.clipReturns { type -> helpers[type] }
                 assertEquals("$name: the 15000 sits right before its return", PHOTO_CLIP_MS,
                     (code[returns.fifteen - 1] as NarrowLiteralInstruction).narrowLiteral)
                 assertEquals("$name: the MobileConfig length is turned into an int before its return", true,
                     (returns.config - 3 until returns.config).any { code[it].opcode == Opcode.DOUBLE_TO_INT })
 
-                val context = PatchContexts.of(owners + ExtensionDex.classDef(SETTINGS_STATUS))
+                val context = PatchContexts.of(owners + helpers.values.filter { helper -> owners.none { it.type == helper.type } } +
+                    ExtensionDex.classDef(SETTINGS_STATUS))
                 longerStoryMusicPatch.execute(context)
 
                 val body = context.mutableClassDefBy(method.definingClass).methods.single { same(it, method) }
