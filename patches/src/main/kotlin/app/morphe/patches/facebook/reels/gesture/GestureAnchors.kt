@@ -37,7 +37,9 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
  *   static (LX/VtZ;->A00), the one call in it taking a FlyoutComposerAction and a SearchPromptParam
  *   (kept names), from the environment's surface (VrH.BSX) and the holder's story merged with the reel
  *   and wrapped (LX/8SK;->A00, LX/2Zf;->A05), then shows it with a static taking a Context and the
- *   sheet (VtZ.A01) unless split screen takes it. The patch adds a helper to the extension making the
+ *   sheet (VtZ.A01) unless split screen takes it. 587 moved the builder's feedback argument from 8 to
+ *   4, ahead of the surface and the props; given null there, the builder takes the feedback from the
+ *   props (read on both ABIs). The patch adds a helper to the extension making the
  *   same calls with the values the click passes, which the extension uses for a reel with no button,
  *   keeping each handler per reel from the end of its constructor. Clean mode has no overlay, and the
  *   controls' handler (LX/7w1;->A1C makes it) always keeps a null story holder, so the helper then

@@ -336,6 +336,12 @@ class OpenCommentsFixtureTest {
                     (it as? OneRegisterInstruction)?.registerA == sheet.numberArgument
                 }
                 assertEquals("$name: the helper's number", sheet.number, (numberWrite as NarrowLiteralInstruction).narrowLiteral)
+                // 587 takes the reel's feedback in v4: the helper hands null, and the builder reads the props' own.
+                val feedbackWrite = helperCode.subList(0, helperCode.indexOf(buildCall as Instruction)).last {
+                    (it as? OneRegisterInstruction)?.registerA == 4
+                }
+                assertEquals("$name: the helper's feedback", listOf(Opcode.CONST_4, 0),
+                    listOf(feedbackWrite.opcode, (feedbackWrite as NarrowLiteralInstruction).narrowLiteral))
                 val calls = helperCode.mapNotNull { it.call?.let(::key) }
                 listOf(sheet.surface, sheet.story, sheet.merge, sheet.wrap, sheet.build, sheet.show).map(::key).forEach {
                     assertTrue("$name: the helper never calls $it", it in calls)
@@ -349,7 +355,8 @@ class OpenCommentsFixtureTest {
                     helperCode.subList(storyAt - 4, storyAt).map { it.opcode })
                 assertEquals("$name: the holder made", sheet.holder, (helperCode[storyAt - 3] as ReferenceInstruction).reference.toString())
                 assertEquals("$name: the holder's constructor called", key(anchors.holderInit), helperCode[storyAt - 1].call?.let(::key))
-                assertEquals("$name: the reel and a null Integer handed to it", listOf(5, 3, 6),
+                // 587's builder takes the props in v6 (the feedback moved ahead of the surface), so v7 holds the null.
+                assertEquals("$name: the reel and a null Integer handed to it", listOf(6, 3, 7),
                     (helperCode[storyAt - 1] as FiveRegisterInstruction).let { listOf(it.registerC, it.registerD, it.registerE) })
                 val sheetStub = context.mutableClassDefBy(REEL_GESTURES).methods.single { it.name == SHEET_STUB }.code()
                 val handOff = sheetStub.single { it.call?.name == SHEET_HELPER } as RegisterRangeInstruction
