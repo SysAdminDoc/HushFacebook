@@ -18,6 +18,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
+import com.android.tools.smali.dexlib2.immutable.ImmutableField
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
@@ -963,5 +964,121 @@ class CleanUpReelsShapesTest {
 
         assertNotNull("the flag above v15", loopHookRefusal(LoopRead(1, 16, 5)))
         assertNotNull("the params above v15", loopHookRefusal(LoopRead(1, 0, 16)))
+    }
+
+    private val idleController = "Lfixture/Controller;"
+    private val idleTimer = "Lfixture/Timer;"
+    private val promptCallback = "Lkotlin/jvm/functions/Function0;"
+
+    private fun instanceField(owner: String, name: String, type: String) =
+        ImmutableField(owner, name, type, AccessFlags.PUBLIC.value, null, null, null)
+
+    /** A Runnable keeping one instance field per entry of [kept], with [run] as its run(). */
+    private fun idleRunnableClass(run: String, kept: List<String> = listOf(idleTimer)): ClassDef = ImmutableClassDef(
+        "Lfixture/IdleRunnable;", AccessFlags.PUBLIC.value, "Ljava/lang/Object;", listOf("Ljava/lang/Runnable;"), null, null,
+        kept.mapIndexed { at, type -> instanceField("Lfixture/IdleRunnable;", "kept$at", type) },
+        listOf(method("run", emptyList(), "V", 3, static = false, run)),
+    )
+
+    /** 585 and 586: the runnable keeps the controller, sets its flag and calls its prompt method. */
+    private fun controllerRun() = """
+        iget-object v1, p0, Lfixture/IdleRunnable;->kept0:$idleController
+        const/4 v0, 0x1
+        iput-boolean v0, v1, $idleController->idle:Z
+        iget-boolean v0, v1, $idleController->held:Z
+        if-eqz v0, :done
+        invoke-virtual { v1 }, $idleController->prompt()V
+        :done
+        return-void
+    """
+
+    /**
+     * 587: the runnable keeps the controller's idle timer, sets the timer's flag and invokes the
+     * Function0 the timer keeps for the prompt (LX/09mK;->run on arm64).
+     */
+    private fun timerRun(
+        set: String = "0x1",
+        load: String = "iget-object v0, v1, $idleTimer->show:$promptCallback",
+        invoke: String = "invoke-interface { v0 }, $promptCallback->invoke()Ljava/lang/Object;",
+        extra: String = "",
+    ) = """
+        iget-object v1, p0, Lfixture/IdleRunnable;->kept0:$idleTimer
+        const/4 v0, $set
+        iput-boolean v0, v1, $idleTimer->idle:Z
+        iget-boolean v0, v1, $idleTimer->held:Z
+        if-eqz v0, :done
+        $load
+        $invoke
+        $extra
+        :done
+        return-void
+    """
+
+    @Test
+    fun `the idle runnable is found on the controller and on the timer it keeps`() {
+        val old = idleRunnable(idleRunnableClass(controllerRun(), listOf(idleController)), setOf(idleController))
+        assertNotNull("586's runnable keeping the controller", old)
+        assertEquals(listOf("$idleController->idle", "held", "$idleController->prompt()V"),
+            listOf("${old!!.flag.definingClass}->${old.flag.name}", old.pending.name, described(old.prompt)))
+        assertNull("586's prompt is the controller's own method", old.callback)
+
+        val owners = setOf(idleController, idleTimer)
+        val new = idleRunnable(idleRunnableClass(timerRun()), owners)
+        assertNotNull("587's runnable keeping the timer", new)
+        assertEquals(listOf("$idleTimer->idle", "held", "$promptCallback->invoke()Ljava/lang/Object;", "$idleTimer->show"),
+            listOf("${new!!.flag.definingClass}->${new.flag.name}", new.pending.name, described(new.prompt),
+                "${new.callback?.definingClass}->${new.callback?.name}"))
+        // Positive control for the negatives below: the old shape still passes with both owners.
+        assertNotNull(idleRunnable(idleRunnableClass(controllerRun(), listOf(idleController)), owners))
+    }
+
+    @Test
+    fun `a runnable that isn't the idle runnable is refused`() {
+        val owners = setOf(idleController, idleTimer)
+        assertNull("a runnable keeping a class that keeps no idle flag",
+            idleRunnable(idleRunnableClass(timerRun()), setOf(idleController)))
+        assertNull("a runnable keeping two fields", idleRunnable(idleRunnableClass(timerRun(), listOf(idleTimer, idleTimer)), owners))
+        assertNull("a runnable clearing the flag", idleRunnable(idleRunnableClass(timerRun(set = "0x0")), owners))
+        assertNull("a prompt kept on another class",
+            idleRunnable(idleRunnableClass(timerRun(load = "iget-object v0, v1, Lfixture/Other;->show:$promptCallback")), owners))
+        assertNull("a prompt invoked from another register than the one loaded",
+            idleRunnable(idleRunnableClass(timerRun(invoke = "invoke-interface { v1 }, $promptCallback->invoke()Ljava/lang/Object;")), owners))
+        assertNull("a runnable with two prompts",
+            idleRunnable(idleRunnableClass(timerRun(extra = "invoke-virtual { v1 }, $idleTimer->prompt()V")), owners))
+    }
+
+    /** A controller keeping the timer in `timer`, with one method taking the controller doing [check]. */
+    private fun idleControllerClass(check: String, static: Boolean = true): ClassDef = ImmutableClassDef(
+        idleController, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null,
+        listOf(instanceField(idleController, "timer", idleTimer)),
+        listOf(method("isIdle", listOf(idleController), "Z", 3, static, check)),
+    )
+
+    private val timerCheck = """
+        iget-object v0, p0, $idleController->timer:$idleTimer
+        iget-boolean v0, v0, $idleTimer->idle:Z
+        return v0
+    """
+
+    @Test
+    fun `the timer is an idle state owner only when the idle check reads its flag off it`() {
+        assertEquals("587's check reading the timer, then its flag", setOf(idleController, idleTimer),
+            idleStateOwners(idleControllerClass(timerCheck)))
+        assertEquals("a check that isn't static", setOf(idleController), idleStateOwners(idleControllerClass(timerCheck, static = false)))
+        assertEquals("a flag read off another register", setOf(idleController), idleStateOwners(idleControllerClass("""
+            iget-object v0, p0, $idleController->timer:$idleTimer
+            iget-boolean v0, v1, $idleTimer->idle:Z
+            return v0
+        """)))
+        assertEquals("a field the controller doesn't keep", setOf(idleController), idleStateOwners(idleControllerClass("""
+            iget-object v0, p0, $idleController->other:$idleTimer
+            iget-boolean v0, v0, $idleTimer->idle:Z
+            return v0
+        """)))
+        assertEquals("a flag of another class", setOf(idleController), idleStateOwners(idleControllerClass("""
+            iget-object v0, p0, $idleController->timer:$idleTimer
+            iget-boolean v0, v0, Lfixture/Other;->idle:Z
+            return v0
+        """)))
     }
 }

@@ -21,6 +21,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -33,8 +34,10 @@ import java.io.File
  * declares: the Reels auto-advance controller has one idle runnable and one idle check reading the
  * flag it sets, the countdown to the next video holds the advance back on the check's yes and the end
  * of a video asks it too (so the check really is what decides), and after the patch every answer the
- * check gives goes through the extension, with no branch reaching a return past it. Reads the fixture
- * bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * check gives goes through the extension, with no branch reaching a return past it. On 587 the flags
+ * and the prompt sit on the idle timer the controller keeps (arm64 LX/09mJ;, armv7 LX/09m6;, read
+ * 2026-11-13), so the runnable is looked for among the classes keeping the controller or the timer.
+ * Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class StillWatchingFixtureTest {
     private fun Method.body(): List<Instruction> = implementation?.instructions?.toList().orEmpty()
@@ -50,13 +53,13 @@ class StillWatchingFixtureTest {
     private fun FieldReference.isField(other: FieldReference) =
         definingClass == other.definingClass && name == other.name && type == other.type
 
-    /** Every class in [bundle] that keeps a [controller] in a field of its own. */
-    private fun holders(bundle: File, controller: String): List<ClassDef> {
+    /** Every class in [bundle] that is one of [owners] or keeps one in a field of its own. */
+    private fun ownersAndHolders(bundle: File, owners: Set<String>): List<ClassDef> {
         val found = mutableListOf<ClassDef>()
         FixtureDex.forEach(bundle) { dex ->
             dex.classes.filterTo(found) { classDef ->
-                !classDef.type.startsWith(EXTENSION_PACKAGE) && classDef.type != controller &&
-                    classDef.fields.any { it.type == controller }
+                !classDef.type.startsWith(EXTENSION_PACKAGE) &&
+                    (classDef.type in owners || classDef.fields.any { it.type in owners })
             }
         }
         return found.map(ImmutableClassDef::of).distinctBy { it.type }
@@ -76,12 +79,35 @@ class StillWatchingFixtureTest {
                 )
                 assertEquals("$name: classes holding \"$AUTO_ADVANCE_IDLE\" and \"$DID_AUTO_ADVANCE\"", 1, controllers.size)
                 val controller = controllers.single()
-                val holders = holders(bundle, controller.type)
-                val runnables = holders.mapNotNull { idleRunnable(it, controller.type) }
-                assertEquals("$name: idle runnables for ${controller.type}", 1, runnables.size)
-                val runnable = runnables.single()
-                assertTrue("$name: the runnable's prompt isn't one of ${controller.type}'s methods",
-                    controller.methods.any { runnable.prompt.isMethod(it) })
+                val owners = idleStateOwners(controller)
+                val found = ownersAndHolders(bundle, owners)
+                val holders = found.filter { it.type !in owners }
+                val runnables = holders.mapNotNull { holder -> idleRunnable(holder, owners)?.let { holder to it } }
+                assertEquals("$name: idle runnables for ${owners.joinToString()}", 1, runnables.size)
+                val (runnableClass, runnable) = runnables.single()
+                val owner = found.single { it.type == runnable.flag.definingClass }
+                val callback = runnable.callback
+                if (callback == null) {
+                    assertTrue("$name: the runnable's prompt isn't one of ${owner.type}'s methods",
+                        owner.methods.any { runnable.prompt.isMethod(it) })
+                } else {
+                    // 587: the flags sit on the timer the controller keeps, which makes the runnable
+                    // and is handed the prompt as a Function0 it keeps in the field the runnable invokes.
+                    assertTrue("$name: ${owner.type} isn't one of ${controller.type}'s own fields",
+                        controller.fields.any { it.type == owner.type && !AccessFlags.STATIC.isSet(it.accessFlags) })
+                    assertEquals("$name: the prompt", "Lkotlin/jvm/functions/Function0;->invoke()Ljava/lang/Object;",
+                        described(runnable.prompt))
+                    assertTrue("$name: ${owner.type} has no ${callback.name} of its own",
+                        owner.fields.any { it.name == callback.name && it.type == callback.type })
+                    val makers = owner.methods.filter { method ->
+                        method.body().any {
+                            it.opcode == Opcode.NEW_INSTANCE && ((it as ReferenceInstruction).reference as? TypeReference)?.type == runnableClass.type
+                        }
+                    }
+                    assertEquals("$name: ${owner.type}'s methods making ${runnableClass.type}", listOf("<init>"), makers.map { it.name })
+                    assertTrue("$name: ${owner.type} never stores ${callback.name}",
+                        makers.single().body().any { it.opcode == Opcode.IPUT_OBJECT && it.field()?.isField(callback) == true })
+                }
                 val checks = idleChecks(controller, runnable.flag)
                 assertEquals("$name: static checks reading ${runnable.flag.name}", 1, checks.size)
                 val check = checks.single()
@@ -109,7 +135,7 @@ class StillWatchingFixtureTest {
                 val original = check.body()
                 val returns = original.count { it.opcode == Opcode.RETURN }
                 assertTrue("$name: ${check.name} never returns", returns > 0)
-                val pool = (listOf(controller, ExtensionDex.classDef(STILL_WATCHING)) + holders).distinctBy { it.type }
+                val pool = (listOf(controller, ExtensionDex.classDef(STILL_WATCHING)) + found).distinctBy { it.type }
                 val context = PatchContexts.of(pool)
                 context.skipStillWatching()
                 val patched = context.mutableClassDefBy(controller.type).methods
