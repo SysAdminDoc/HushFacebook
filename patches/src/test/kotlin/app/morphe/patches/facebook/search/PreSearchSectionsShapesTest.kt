@@ -248,16 +248,38 @@ class PreSearchSectionsShapesTest {
     private val queryRows = "Lfixture/QueryRows;"
     private val builder = "Lcom/google/common/collect/ImmutableList\$Builder;"
 
-    private fun queryBody(owner: String, read: List<Instruction>, parameters: List<String> = listOf(builder, "Ljava/util/Iterator;")): Method {
+    private fun queryBody(
+        owner: String,
+        read: List<Instruction>,
+        parameters: List<String> = listOf(builder, "Ljava/util/Iterator;"),
+        list: String = builder,
+    ): Method {
         // Each read keeps the node in v3, and its null test jumps to the closing return.
         val body = read + listOf(
             ImmutableInstruction21t(Opcode.IF_EQZ, 3, 5),
-            call(Opcode.INVOKE_VIRTUAL, ref(builder, "add", listOf("Ljava/lang/Object;"), builder), 5, 3),
+            call(Opcode.INVOKE_VIRTUAL, ref(list, "add", listOf("Ljava/lang/Object;"), list), 5, 3),
             ImmutableInstruction10x(Opcode.RETURN_VOID),
         )
         return ImmutableMethod(
             owner, "A1C", parameters.map { ImmutableMethodParameter(it, null, null) }, "V",
             AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, null, null, ImmutableMethodImplementation(8, body, null, null),
+        )
+    }
+
+    /**
+     * 587's result callback: an instance method taking the result, with the loop inlined twice, each
+     * asking the node's interface, testing it (jumping back to the loop head) and adding to a builder.
+     */
+    private fun queryCallback(): Method {
+        fun loop() = accessorRead() + listOf(
+            // Back four code units, to this loop's interface call.
+            ImmutableInstruction21t(Opcode.IF_EQZ, 3, -4),
+            call(Opcode.INVOKE_VIRTUAL, ref(builder, "add", listOf("Ljava/lang/Object;"), builder), 5, 3),
+        )
+        val body = loop() + loop() + listOf(ImmutableInstruction10x(Opcode.RETURN_VOID))
+        return ImmutableMethod(
+            query, "HRJ", listOf(ImmutableMethodParameter("Lfixture/Result;", null, null)), "V",
+            AccessFlags.PUBLIC.value or AccessFlags.FINAL.value, null, null, ImmutableMethodImplementation(8, body, null, null),
         )
     }
 
@@ -321,12 +343,25 @@ class PreSearchSectionsShapesTest {
     }
 
     @Test
+    fun `587's callback hands over the node at each inlined loop`() {
+        val context = PatchContexts.of(listOf(queryClass(queryCallback()), accessorClass()))
+        assertEquals("both loops are sites", listOf(2, 6), context.preSearchQuerySites(entry).map { it.test }.sorted())
+        val code = hookedQuery(listOf(queryClass(queryCallback()), accessorClass()))
+        // The second loop's hook went in first, so the first keeps its index and the second moved by three.
+        assertQueryHook(code, 2, queryNode)
+        assertQueryHook(code, 9, queryNode)
+        assertEquals("six instructions added", 15, code.size)
+    }
+
+    @Test
     fun `another key, another body, the entry's own accessor or another method is no query site`() {
-        // Controls: another field's key, a loop body taking other parameters, the accessor being the
-        // entry class's (the section and the head read that one), and another method of its interface.
+        // Controls: another field's key, a loop body adding the node to something other than a list
+        // builder, the accessor being the entry class's (the section and the head read that one), and
+        // another method of its interface.
         fun sites(vararg classes: ClassDef) = PatchContexts.of(classes.toList()).preSearchQuerySites(entry).size
         assertEquals(0, sites(queryClass(queryBody(query, inlineRead(key = "node".hashCode())))))
-        assertEquals(0, sites(queryClass(queryBody(query, inlineRead(), listOf(builder)))))
+        assertEquals(0, sites(queryClass(queryBody(query, inlineRead(), list = "Ljava/util/ArrayList;"))))
+        assertEquals(0, sites(queryClass(queryBody(query, accessorRead(), list = "Ljava/util/ArrayList;")), accessorClass()))
         assertEquals(0, sites(queryClass(queryBody(query, accessorRead())), accessorClass(owner = entry)))
         assertEquals(0, sites(queryClass(queryBody(query, accessorRead(name = "ALd"))), accessorClass()))
         assertEquals(0, sites(queryClass(queryBody(query, accessorRead())), accessorClass(key = "node".hashCode())))

@@ -74,6 +74,12 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * its interface LX/0lzW from LX/0mDW;->A00). Each tests the node for null and returns, so the hook
  * goes right after the node is kept and a null leaves the entry out. That query may not ask for
  * "rendered_modules", in which case its Debug lines say none and its rows stay.
+ *
+ * 587 (2026-11-12) inlines that loop into each callback taking the query's result (arm64
+ * LX/0A6l;->HRJ once and LX/0U4t;->HRJ twice, each an instance method of a switch-on-kind class): the
+ * node is asked of its interface (LX/0AaI;->AMa, the tree LX/08bN), tested, and its module added to a
+ * list builder. So a loop body is any void method adding to a list builder after the node's null test,
+ * and every such place is hooked.
  */
 
 /** The name the pre-search section gives itself. */
@@ -284,10 +290,11 @@ internal fun BytecodePatchContext.hookPreSearchHead() {
 internal data class PreSearchQuerySite(val method: Method, val test: Int, val node: Int, val type: String)
 
 /**
- * Each place in a static (Builder, Iterator) loop body that reads a node of the entries' type, keeps
- * it, maybe casts it, and tests it for null: read inline with [CONCRETE_READER] and the type's key
+ * Each place in a loop body that reads a node of the entries' type, keeps it, maybe casts it, tests it
+ * for null, and then adds to a list builder: read inline with [CONCRETE_READER] and the type's key
  * (584), or through an accessor holding both (585), asked of its class or an interface it declares.
- * The entry class's own accessor isn't one, since the section and the head read that.
+ * The body was a static (Builder, Iterator) method up to 586 and is inlined into the result callbacks
+ * from 587. The entry class's own accessor isn't one, since the section and the head read that.
  */
 internal fun BytecodePatchContext.preSearchQuerySites(entry: String): List<PreSearchQuerySite> {
     val sites = mutableListOf<PreSearchQuerySite>()
@@ -317,9 +324,14 @@ internal fun BytecodePatchContext.preSearchQuerySites(entry: String): List<PreSe
     return sites
 }
 
+/** A void method calling a list builder's add, where a query site's module can go. */
 private fun isQueryBody(method: Method) =
-    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" &&
-        method.parameterTypes.map(CharSequence::toString) == listOf(LIST_BUILDER, "Ljava/util/Iterator;")
+    method.returnType == "V" && method.implementation?.instructions?.any { addsToBuilder(it) } == true
+
+private fun addsToBuilder(instruction: Instruction): Boolean {
+    val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    return call.definingClass == LIST_BUILDER && call.name == "add"
+}
 
 /** An instance method with no parameters answering an object read with [CONCRETE_READER] and the node type's key. */
 private fun isNodeAccessor(method: Method): Boolean {
@@ -341,7 +353,10 @@ private fun readsNodeInline(code: List<Instruction>, at: Int): Boolean {
     }
 }
 
-/** The calls in [method] that [reads] says read the node, kept, maybe cast, then tested for null. */
+/**
+ * The calls in [method] that [reads] says read the node, kept, maybe cast, then tested for null, with a
+ * list builder's add after the test.
+ */
 private fun querySites(method: Method, reads: (List<Instruction>, Int) -> Boolean): List<PreSearchQuerySite> {
     val code = method.implementation?.instructions?.toList() ?: return emptyList()
     return code.indices.mapNotNull { at ->
@@ -353,6 +368,7 @@ private fun querySites(method: Method, reads: (List<Instruction>, Int) -> Boolea
         if (code.getOrNull(test)?.opcode != Opcode.IF_EQZ || (code[test] as OneRegisterInstruction).registerA != node) {
             return@mapNotNull null
         }
+        if (code.subList(test, code.size).none { addsToBuilder(it) }) return@mapNotNull null
         val type = cast?.let { ((it as ReferenceInstruction).reference as TypeReference).type }
             ?: ((code[at] as ReferenceInstruction).reference as MethodReference).returnType
         PreSearchQuerySite(method, test, node, type)
@@ -362,16 +378,17 @@ private fun querySites(method: Method, reads: (List<Instruction>, Int) -> Boolea
 private val QUERY_CALLS = setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_INTERFACE)
 
 /**
- * Right before the query's null test of the node, hand the node to the extension and keep its answer
- * cast back to what was there, so a null leaves the entry out. Refuses unless the entry class and one
- * query site are found.
+ * Right before each of the query's null tests of the node, hand the node to the extension and keep its
+ * answer cast back to what was there, so a null leaves the entry out. Refuses unless the entry class
+ * and a query site are found. Sites in one method go in from the last up, so each index still holds.
  */
 internal fun BytecodePatchContext.hookPreSearchQuery() {
     val entry = preSearchEntryType() ?: throw PatchException("no single entry class for \"$PRE_SEARCH_LIST\"")
     val sites = preSearchQuerySites(entry)
-    val site = sites.singleOrNull()
-        ?: throw PatchException("the null-state query reads an entry's node in ${sites.size} places, expected one")
-    handOver(site.method, site.test, listOf(site.node), site.node, site.type, "invoke-static { v${site.node} }, $PRE_SEARCH_QUERY_NODE")
+    if (sites.isEmpty()) throw PatchException("the null-state query reads an entry's node in 0 places, expected one or more")
+    for (site in sites.sortedByDescending { it.test }) {
+        handOver(site.method, site.test, listOf(site.node), site.node, site.type, "invoke-static { v${site.node} }, $PRE_SEARCH_QUERY_NODE")
+    }
 }
 
 /**

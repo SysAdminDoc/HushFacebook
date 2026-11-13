@@ -269,23 +269,48 @@ class PreSearchSectionsFixtureTest {
         }
         val holderClasses = FixtureDex.classes(bundle, holders.map { it.definingClass }.toSet()).values.toList()
         val owners = holderClasses.filter { it.type != entry }.flatMap { it.interfaces + it.type }.toSet()
+        // Up to 586 the loop body was one static (Builder, Iterator) method; 587 inlines it into each
+        // instance callback taking the query's result (arm64 LX/0A6l;->HRJ once, LX/0U4t;->HRJ twice).
         val callers = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in owners } }) { method ->
-            AccessFlags.STATIC.isSet(method.accessFlags) &&
-                method.implementation?.instructions?.any { it.call()?.definingClass in owners } == true
+            method.implementation?.instructions?.any { it.call()?.definingClass in owners } == true
         }
         val callerClasses = FixtureDex.classes(bundle, callers.map { it.definingClass }.toSet()).values.toList()
         val context = PatchContexts.of((classes + holderClasses + callerClasses).distinctBy { it.type })
         val sites = context.preSearchQuerySites(entry)
-        assertEquals("$name: places the query reads an entry's node", 1, sites.size)
-        val site = sites.single()
-        val code = site.method.code()
-        // Positive control: the loop body adds what it reads off the node to the list it's handed.
-        assertTrue("$name: the query adds nothing to its list", code.subList(site.test, code.size).any {
-            it.call()?.let { call -> call.definingClass == "Lcom/google/common/collect/ImmutableList\$Builder;" && call.name == "add" } == true
-        })
-        assertTrue("$name: a jump lands on the null test", site.test !in branchTargets(code))
+        assertTrue("$name: no place the query reads an entry's node", sites.isNotEmpty())
+        val byMethod = sites.groupBy { it.method }
+        val stock = byMethod.keys.associateWith { it.code() }
+        for (site in sites) {
+            val code = stock.getValue(site.method)
+            // Positive control: the loop body adds what it reads off the node to a list builder.
+            assertTrue("$name: the query adds nothing to its list", code.subList(site.test, code.size).any {
+                it.call()?.let { call -> call.definingClass == "Lcom/google/common/collect/ImmutableList\$Builder;" && call.name == "add" } == true
+            })
+            assertTrue("$name: a jump lands on the null test", site.test !in branchTargets(code))
+        }
         context.hookPreSearchQuery()
-        assertHanded(name, code, patched(context, site.method.definingClass, site.method), site.test, PRE_SEARCH_QUERY_NODE, site.node, site.type)
+        for ((method, inMethod) in byMethod) {
+            val code = stock.getValue(method)
+            val ordered = inMethod.sortedBy { it.test }
+            val patched = patched(context, method.definingClass, method)
+            assertEquals("$name: three instructions added per site", code.opcodes().size + 3 * ordered.size, patched.opcodes().size)
+            // Each earlier site's hook moves a later one down by three.
+            val hooks = ordered.mapIndexed { index, site -> site.test + 3 * index }
+            for ((index, site) in ordered.withIndex()) {
+                val at = hooks[index]
+                val hand = patched[at] as FiveRegisterInstruction
+                assertEquals("$name: the extension handed the node",
+                    listOf(Opcode.INVOKE_STATIC, PRE_SEARCH_QUERY_NODE, 1, site.node),
+                    listOf(hand.opcode, hand.call().toString(), hand.registerCount, hand.registerC))
+                assertEquals("$name: the answer is kept where the node was",
+                    listOf(Opcode.MOVE_RESULT_OBJECT, site.node), listOf(patched[at + 1].opcode, (patched[at + 1] as OneRegisterInstruction).registerA))
+                val cast = patched[at + 2]
+                assertEquals("$name: the answer is cast back", listOf(Opcode.CHECK_CAST, site.node, site.type),
+                    listOf(cast.opcode, (cast as OneRegisterInstruction).registerA, ((cast as ReferenceInstruction).reference as TypeReference).type))
+            }
+            val added = hooks.flatMap { it..it + 2 }.toSet()
+            assertEquals("$name: the rest is Facebook's", code.opcodes(), patched.filterIndexed { index, _ -> index !in added }.opcodes())
+        }
     }
 
     @Test
