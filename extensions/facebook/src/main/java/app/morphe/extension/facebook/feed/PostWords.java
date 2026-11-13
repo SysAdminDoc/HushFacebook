@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import app.morphe.extension.facebook.settings.Settings;
+
 /**
  * The two lists behind "Hide posts with words you choose": the words and phrases that hide a post,
  * and the ones that keep it whatever else it says.
@@ -601,6 +603,35 @@ public final class PostWords {
         if (text == null || text.trim().isEmpty()) return false;
         Rules found = rules(hideStored, keepStored, wholeWords);
         return !found.hidesNothing() && found.judge(Arrays.asList(text)).hides();
+    }
+
+    /**
+     * What the lists make of [story], a reel's caption story on the Reels tab (#458): the verdict's
+     * reason for the words the rule reads of a post, or why none were read. {@link #storyHides} says
+     * whether that takes the reel off.
+     */
+    public static String storyKind(@Nullable Object story) {
+        return storyKind(story, PostText.MESSAGE, PostText.ATTACHED, PostSources.ATTACHMENTS, PostText.ACTION_LINKS);
+    }
+
+    static String storyKind(@Nullable Object story, StoryFlag.Accessor message, StoryFlag.Accessor attached,
+            StoryFlag.Accessor links, StoryFlag.Accessor actionLinks) {
+        Rules found = rules(Settings.HIDDEN_WORDS.get(), Settings.KEPT_WORDS.get(),
+                Settings.POST_WORDS_WHOLE_WORDS.get());
+        if (found.hidesNothing()) return FeedFilter.NO_WORDS;
+        PostText.Read read = PostText.read(story, message, attached, links, actionLinks);
+        if (read.outcome != PostText.Outcome.TEXT) return read.outcome.reason;
+        return found.judge(read.texts).reason;
+    }
+
+    /** Whether a {@link #storyKind} takes the reel off. */
+    public static boolean storyHides(String kind) {
+        return Verdict.HIDE.reason.equals(kind) || Verdict.HIDE_PATTERN.reason.equals(kind);
+    }
+
+    /** Counts a reel the lists took off with the posts they hid, for the settings row. */
+    public static void countHiddenReel() {
+        HIDDEN.incrementAndGet();
     }
 
     /** The most of a sample {@link #preview} reads, in code points. The rest is left out and said so. */

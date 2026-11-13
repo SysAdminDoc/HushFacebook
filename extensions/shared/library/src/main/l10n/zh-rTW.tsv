@@ -688,7 +688,7 @@ Your list of people, Pages and sites to hide will be empty.	要隱藏的人物�
 Your list of people, Pages and sites to hide will hold %1$d entry.	要隱藏的人物、粉絲專頁與網站清單將包含 %1$d 個項目。
 Your list of people, Pages and sites to hide will hold %1$d entries.	要隱藏的人物、粉絲專頁與網站清單將包含 %1$d 個項目。
 # context: summary of that switch; the keep list is the second list under it, and a settings file is the one Export settings writes
-Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them.	隱藏包含下方清單中字詞或片語的貼文。「保留貼文的字詞」優先。除非匯出，否則字詞只儲存在這支手機上。
+Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Reels tab reels go by their captions too.	隱藏包含下方清單中字詞或片語的貼文。「保留貼文的字詞」優先。除非匯出，否則字詞只儲存在這支手機上。「Reels」分頁中的 Reels 也會依說明文字篩選。
 # context: title of the row and dialog holding the list of words and phrases that hide a post
 Words to hide	要隱藏的字詞
 # context: title of the row and dialog holding the list of words and phrases that keep a post even when it has a word to hide
@@ -1406,7 +1406,7 @@ Hides posts with a photo or album, including shares.	隱藏包含相片或相簿
 # context: summary of the Hide video posts switch
 Hides posts with a video, including shares. Reels in the feed have their own switch.	隱藏包含影片的貼文，包含分享的內容。動態消息中的 Reels 有獨立的開關。
 # context: summary of the Hide link posts switch
-Hides posts that share a link to a website, with its preview card.	隱藏分享網站連結並帶有預覽卡片的貼文。
+Hides posts that share a link to a website, with its preview card. Reels tab reels whose caption names a website go too.	隱藏分享網站連結並帶有預覽卡片的貼文。說明文字中含有網站網址的「Reels」分頁 Reels 也會被隱藏。
 # context: summary of the Hide posts on a colored background switch
 Hides short posts shown as big text on a colored background.	隱藏以彩色背景與大字顯示的短貼文。
 # context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language

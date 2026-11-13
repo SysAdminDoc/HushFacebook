@@ -40,8 +40,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * one that can't be followed, an item with no reel model (the cards between reels) and anything
  * that can't be read all stay, each counted under its own kind so a report says why.
  *
- * <p>The same filters run Hide posts in other languages on the tab ({@link ReelLanguages}, #382), so
- * the page routes count what either rule took off, each under its own reason.
+ * <p>The same filters run Hide posts in other languages ({@link ReelLanguages}, #382), and Hide posts
+ * with words you choose and Hide link posts ({@link ReelWords}, #458), on the tab, so the page routes
+ * count what each rule took off under its own reason.
  *
  * <p>Facebook can't show a viewer whose pages keep coming back empty: on an account whose pages held
  * only reels from people it doesn't follow, it fetched page after page, had every one emptied, and
@@ -87,6 +88,10 @@ public final class FollowedReels {
     static final String FIRST_REEL = "first reel of a viewer";
     /** Counted on {@link #SECTIONS_ROUTE} for each viewer that stopped being filtered. */
     static final String SHOWING_ALL = "viewer showing every reel";
+
+    /** What the page routes count a reel the word lists or the link rule took off under. */
+    static final String WORDS_REASON = "your words";
+    static final String LINKS_REASON = "website link";
 
     /**
      * Pages in a row a viewer may have emptied of reels before it stops being filtered. Facebook
@@ -154,17 +159,22 @@ public final class FollowedReels {
     }
 
     static Collection<?> followedOnly(Collection<?> page, String modelClassName, Statuses statuses, String route) {
-        return followedOnly(page, modelClassName, statuses, ReelLanguages.PATCHED, route);
+        return followedOnly(page, modelClassName, statuses, ReelWords.PATCHED, route);
     }
 
     static Collection<?> followedOnly(Collection<?> page, String modelClassName, Statuses statuses,
             ReelLanguages.Captions captions, String route) {
+        return followedOnly(page, modelClassName, statuses, ReelWords.withLanguages(captions), route);
+    }
+
+    static Collection<?> followedOnly(Collection<?> page, String modelClassName, Statuses statuses,
+            ReelWords.Readers readers, String route) {
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
             FeedFilterCounters.sawList(route, page == null ? 0 : page.size());
             if (page == null || page.isEmpty()) return page;
             boolean countItems = PAGES_ROUTE.equals(route);
-            Pass pass = Pass.start(modelClassName, statuses, captions, countItems);
+            Pass pass = Pass.start(modelClassName, statuses, readers, countItems);
             if (pass == null) return page;
 
             ArrayList<Object> kept = new ArrayList<>(page.size());
@@ -200,7 +210,7 @@ public final class FollowedReels {
      * @param modelClassName binary name of the reel model's class, as the patch resolved it.
      */
     public static List<?> followedSections(Object controller, List<?> page, String modelClassName) {
-        return followedSections(controller, page, modelClassName, PATCHED, ReelLanguages.PATCHED);
+        return followedSections(controller, page, modelClassName, PATCHED, ReelWords.PATCHED);
     }
 
     static List<?> followedSections(List<?> page, String modelClassName, Statuses statuses) {
@@ -214,11 +224,16 @@ public final class FollowedReels {
 
     static List<?> followedSections(@Nullable Object controller, List<?> page, String modelClassName,
             Statuses statuses, ReelLanguages.Captions captions) {
+        return followedSections(controller, page, modelClassName, statuses, ReelWords.withLanguages(captions));
+    }
+
+    static List<?> followedSections(@Nullable Object controller, List<?> page, String modelClassName,
+            Statuses statuses, ReelWords.Readers readers) {
         try {
             HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
             FeedFilterCounters.sawList(SECTIONS_ROUTE, page == null ? 0 : page.size());
             if (page == null || page.isEmpty()) return page;
-            Pass pass = Pass.start(modelClassName, statuses, captions, true);
+            Pass pass = Pass.start(modelClassName, statuses, readers, true);
             if (pass == null) return page;
             Viewer viewer = viewer(controller);
             if (viewer != null && keepAllFor(viewer, page, modelClassName)) return page;
@@ -353,44 +368,53 @@ public final class FollowedReels {
     }
 
     /**
-     * One page's run of the rules switched on: this followed-only rule and Hide posts in other
-     * languages ({@link ReelLanguages}), with how many items each took off.
+     * One page's run of the rules switched on: this followed-only rule, Hide posts in other
+     * languages ({@link ReelLanguages}), and Hide posts with words you choose and Hide link posts
+     * ({@link ReelWords}), with how many items each took off.
      */
     private static final class Pass {
         private final boolean followedOnly;
         private final boolean languages;
+        private final boolean words;
+        private final boolean links;
         private final String modelClassName;
         private final Statuses statuses;
-        private final ReelLanguages.Captions captions;
+        private final ReelWords.Readers readers;
         /** Whether each item read is counted on the rules' item routes; the listener walk's copy isn't. */
         private final boolean countItems;
         private int notFollowed;
         private int otherLanguage;
+        private int withWords;
+        private int withLinks;
 
-        private Pass(boolean followedOnly, boolean languages, String modelClassName, Statuses statuses,
-                ReelLanguages.Captions captions, boolean countItems) {
+        private Pass(boolean followedOnly, boolean languages, boolean words, boolean links, String modelClassName,
+                Statuses statuses, ReelWords.Readers readers, boolean countItems) {
             this.followedOnly = followedOnly;
             this.languages = languages;
+            this.words = words;
+            this.links = links;
             this.modelClassName = modelClassName;
             this.statuses = statuses;
-            this.captions = captions;
+            this.readers = readers;
             this.countItems = countItems;
         }
 
-        /** The run for a page, or null when neither rule is on and the page passes as it came. */
+        /** The run for a page, or null when no rule is on and the page passes as it came. */
         @Nullable
-        static Pass start(String modelClassName, Statuses statuses, ReelLanguages.Captions captions,
-                boolean countItems) {
+        static Pass start(String modelClassName, Statuses statuses, ReelWords.Readers readers, boolean countItems) {
             boolean followedOnly = switchedOn();
             boolean languages = ReelLanguages.switchedOn();
-            if (!followedOnly && !languages) return null;
-            return new Pass(followedOnly, languages, modelClassName, statuses, captions, countItems);
+            boolean words = ReelWords.WORDS.switchedOn();
+            boolean links = ReelWords.LINKS.switchedOn();
+            if (!followedOnly && !languages && !words && !links) return null;
+            return new Pass(followedOnly, languages, words, links, modelClassName, statuses, readers, countItems);
         }
 
         /**
-         * Whether [item] comes off. The follow rule reads first, so a reel both rules would take is
-         * counted once, as not followed, and its caption is never guessed at. A reel a viewer keeps
-         * is never read.
+         * Whether [item] comes off. The follow rule reads first, so a reel both it and a caption rule
+         * would take is counted once, as not followed, and its caption is never read. The caption
+         * rules go in the order News feed runs them: words, languages, then links. A reel a viewer
+         * keeps is never read.
          */
         boolean drops(Object item) {
             if (kept(item)) return false;
@@ -399,22 +423,38 @@ public final class FollowedReels {
                 notFollowed++;
                 return true;
             }
-            if (languages && (countItems ? ReelLanguages.drops(item, modelClassName, captions)
-                    : ReelLanguages.hides(ReelLanguages.kindOf(item, modelClassName, captions)))) {
+            if (words && caption(ReelWords.WORDS, item, readers.words)) {
+                withWords++;
+                return true;
+            }
+            if (languages && (countItems ? ReelLanguages.drops(item, modelClassName, readers.languages)
+                    : ReelLanguages.hides(ReelLanguages.kindOf(item, modelClassName, readers.languages)))) {
                 otherLanguage++;
+                return true;
+            }
+            if (links && caption(ReelWords.LINKS, item, readers.links)) {
+                withLinks++;
                 return true;
             }
             return false;
         }
 
+        /** Whether [rule] takes [item] off, counted on its route unless this is the listener walk's copy. */
+        private boolean caption(ReelWords.Rule rule, Object item, ReelLanguages.Captions reader) {
+            return countItems ? rule.drops(item, modelClassName, reader)
+                    : rule.hides(rule.kindOf(item, modelClassName, reader));
+        }
+
         int dropped() {
-            return notFollowed + otherLanguage;
+            return notFollowed + otherLanguage + withWords + withLinks;
         }
 
         /** What came off the page, on [route] under each rule's reason. */
         void countOn(String route) {
             if (notFollowed > 0) FeedFilterCounters.removed(route, notFollowed, NOT_FOLLOWED);
             if (otherLanguage > 0) FeedFilterCounters.removed(route, otherLanguage, PostLanguages.REASON);
+            if (withWords > 0) FeedFilterCounters.removed(route, withWords, WORDS_REASON);
+            if (withLinks > 0) FeedFilterCounters.removed(route, withLinks, LINKS_REASON);
         }
     }
 

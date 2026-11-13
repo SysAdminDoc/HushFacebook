@@ -67,18 +67,26 @@ final class ReelLanguages {
 
     /** What one item counts as, by its caption's language. Never throws. */
     static String kindOf(@Nullable Object item, String modelClassName, Captions captions) {
+        return kindOf(item, modelClassName, captions, "reel caption language");
+    }
+
+    /**
+     * What [captions] makes of the item's reel story, the kinds any caption rule shares when there's
+     * no story or the read fails, which goes in the report as [failure]. Never throws.
+     */
+    static String kindOf(@Nullable Object item, String modelClassName, Captions captions, String failure) {
         Object story;
         try {
             story = GenAiReelFilter.reelStory(item, modelClassName);
-        } catch (Throwable failure) {
-            HookStatus.threw(FamilyNames.REEL_DECLUTTER, "reel story reader", failure);
+        } catch (Throwable thrown) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, "reel story reader", thrown);
             return READ_FAILED;
         }
         if (story == null) return NO_STORY;
         try {
             return captions.kind(story);
-        } catch (Throwable failure) {
-            HookStatus.threw(FamilyNames.REEL_DECLUTTER, "reel caption language", failure);
+        } catch (Throwable thrown) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, failure, thrown);
             return READ_FAILED;
         }
     }

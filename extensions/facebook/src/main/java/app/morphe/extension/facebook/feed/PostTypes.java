@@ -9,7 +9,10 @@ import androidx.annotation.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.shared.Logger;
@@ -69,6 +72,15 @@ public final class PostTypes {
     static final String NOT_A_TREE = "not a tree model";
     static final String NO_URL = "no url";
     static final String FACEBOOK_LINK = "a Facebook link";
+
+    /** What {@link #captionLinkKind} found in a reel's words: a website's address, or none. */
+    static final String CAPTION_LINK = "website in caption";
+    static final String NO_SITE_NAMED = "no website in caption";
+    /** A web address typed into a caption: with its scheme, or starting www. */
+    private static final Pattern WEB_ADDRESS =
+            Pattern.compile("(?i)(?:\\bhttps?://|\\bwww\\.)[^\\s<>\"'()\\[\\]{}]+");
+    /** Only a link attachment counts toward {@link #captionLinkKind}. */
+    private static final Wanted LINKS_ONLY = new Wanted(false, false, true, false);
 
     /** The GraphQL type of a story's text format, and the fields Facebook's check of one reads. */
     static final String TEXT_FORMAT_TYPE = "TextFormatMetadata";
@@ -248,6 +260,44 @@ public final class PostTypes {
             return READ_FAILED;
         }
         return first == null ? NO_ATTACHMENTS : STYLE + first;
+    }
+
+    /**
+     * What a reel's caption story holds for Hide link posts on the Reels tab (#458): {@link #LINK}
+     * when one of its attachments shares a website, {@link #CAPTION_LINK} when its words hold a web
+     * address that leads off Facebook ("Watch more: https://..."), otherwise what the read found.
+     * {@link #captionLinkHides} says whether that takes the reel off. Never throws.
+     */
+    public static String captionLinkKind(@Nullable Object story) {
+        return captionLinkKind(story, READERS, PostText.MESSAGE, PostText.ATTACHED, PostText.ACTION_LINKS);
+    }
+
+    static String captionLinkKind(@Nullable Object story, Readers readers, StoryFlag.Accessor message,
+            StoryFlag.Accessor attached, StoryFlag.Accessor actionLinks) {
+        if (LINK.equals(read(story, readers, attached, LINKS_ONLY))) return LINK;
+        PostText.Read text = PostText.read(story, message, attached, readers.attachments, actionLinks);
+        if (text.outcome != PostText.Outcome.TEXT) return text.outcome.reason;
+        return namesASite(text.texts) ? CAPTION_LINK : NO_SITE_NAMED;
+    }
+
+    /** Whether a {@link #captionLinkKind} takes the reel off. */
+    public static boolean captionLinkHides(String kind) {
+        return LINK.equals(kind) || CAPTION_LINK.equals(kind);
+    }
+
+    /** Whether any of [texts] holds a web address whose site isn't Facebook's. */
+    static boolean namesASite(List<String> texts) {
+        for (String text : texts) {
+            if (text == null) continue;
+            Matcher address = WEB_ADDRESS.matcher(text);
+            while (address.find()) {
+                String found = address.group();
+                String url = found.regionMatches(true, 0, "www.", 0, 4) ? "https://" + found : found;
+                String site = PostSources.host(url);
+                if (site != null && site.indexOf('.') > 0 && !PostSources.isFacebook(site)) return true;
+            }
+        }
+        return false;
     }
 
     /** The name of the style an attachment is drawn in, the first of its list, or null. */

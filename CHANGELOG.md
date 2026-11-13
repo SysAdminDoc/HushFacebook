@@ -15,6 +15,7 @@ Changes in each Hushfacebook version, newest first.
 
 * Hushfacebook now patches Facebook 587.0.0.39.55 and no longer takes 586. On a 64-bit phone download the (arm64-v8a) (240-640dpi) (Android 11+) bundle, build 707414333, and on a 32-bit phone the (arm-v7a) (320dpi) (Android 11+) bundle, build 707414338. Facebook didn't put out a 120-640dpi build of 587, so the 240-640dpi one is the 64-bit download now. Update Facebook before you patch.
 * `Tab bar height` goes up to 130 now. Past 100 the pill gets taller instead of shorter. There's barely any room above the icons, so most of the extra height goes toward the bottom of the screen. (#425)
+* `Hide posts with words you choose` and `Hide link posts` work on the Reels tab too. A reel whose caption has one of your words goes, and so does one whose caption sends you to a website, like the "Watch More: https://..." drama reels. Words that keep a post keep a reel too, and a link to Facebook itself doesn't count. (#458)
 
 ### Fixed
 

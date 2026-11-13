@@ -684,7 +684,7 @@ Your list of people, Pages and sites to hide will be empty.	Deine Liste der Pers
 Your list of people, Pages and sites to hide will hold %1$d entry.	Deine Liste der Personen, Seiten und Websites zum Ausblenden enthält dann %1$d Eintrag.
 Your list of people, Pages and sites to hide will hold %1$d entries.	Deine Liste der Personen, Seiten und Websites zum Ausblenden enthält dann %1$d Einträge.
 # context: summary of that switch; the keep list is the second list under it, and a settings file is the one Export settings writes
-Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them.	Blendet Beiträge aus, die ein Wort oder eine Wendung aus deiner Liste unten enthalten. „Wörter, die einen Beitrag behalten“ haben Vorrang. Deine Wörter bleiben auf diesem Telefon, außer du exportierst sie.
+Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Reels tab reels go by their captions too.	Blendet Beiträge aus, die ein Wort oder eine Wendung aus deiner Liste unten enthalten. „Wörter, die einen Beitrag behalten“ haben Vorrang. Deine Wörter bleiben auf diesem Telefon, außer du exportierst sie. Reels im Reels-Tab werden ebenfalls nach ihrer Beschreibung gefiltert.
 # context: title of the row and dialog holding the list of words and phrases that hide a post
 Words to hide	Wörter zum Ausblenden
 # context: title of the row and dialog holding the list of words and phrases that keep a post even when it has a word to hide
@@ -1404,7 +1404,7 @@ Hides posts with a photo or album, including shares.	Blendet Beiträge mit einem
 # context: summary of the Hide video posts switch
 Hides posts with a video, including shares. Reels in the feed have their own switch.	Blendet Beiträge mit einem Video aus, auch geteilte. Reels im Feed haben einen eigenen Schalter.
 # context: summary of the Hide link posts switch
-Hides posts that share a link to a website, with its preview card.	Blendet Beiträge aus, die einen Link zu einer Website mit Vorschaukarte teilen.
+Hides posts that share a link to a website, with its preview card. Reels tab reels whose caption names a website go too.	Blendet Beiträge aus, die einen Link zu einer Website mit Vorschaukarte teilen. Reels im Reels-Tab, deren Beschreibung eine Website nennt, werden auch ausgeblendet.
 # context: summary of the Hide posts on a colored background switch
 Hides short posts shown as big text on a colored background.	Blendet kurze Beiträge aus, die als großer Text auf farbigem Hintergrund erscheinen.
 # context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language
