@@ -8,6 +8,7 @@ Changes in each Hushfacebook version, newest first.
 
 * `Hide Repost under posts` under News feed and `Hide Repost on reels` under Reels and Watch take Facebook's new Repost button, the two arrows next to Share, off posts and reels. Like, Comment and Share keep their own switches. Both start off. (#450)
 * New patch, `Keep playing in the background`. A video you started with a tap keeps its sound after you leave Facebook, through the background player and notification Facebook already has, and the notification can pause it. Swiping the notification away stops it, and so does a call. A video Facebook started by itself, or one you paused before leaving, stays stopped. Its second switch, `Background play button in the window`, adds a headphones button to the picture-in-picture window. Tap it and the window closes while the sound keeps going, even with the first switch off. Both switches start off, under Video and audio. (#455)
+* `Full player button by the speaker` under Video and audio moves a feed video's full player button down to the video's bottom corner, where Facebook's speaker button was, and slides the speaker over to make room. Live videos and videos without the speaker keep it up top. It needs `Full player button on feed videos` and starts off. (#431)
 
 ### Changed
 

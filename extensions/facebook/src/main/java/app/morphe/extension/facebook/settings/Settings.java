@@ -1750,6 +1750,19 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * With {@link #FEED_VIDEO_FULL_PLAYER_BUTTON} on, the button sits in the video's bottom corner
+     * where Facebook's speaker was, and the speaker moves over to make room (#431). A live video, or
+     * one without the speaker, keeps it in the row at the top. Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_FULL_PLAYER_CORNER =
+            new BooleanSetting("hushfacebook_feed_video_full_player_corner", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
      * Two buttons on a feed video, beside the play/pause one, that jump back or ahead 10 seconds,
      * as in Facebook's own player (#239). Live videos don't get them. Starts off.
      */

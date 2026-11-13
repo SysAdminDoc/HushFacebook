@@ -423,6 +423,10 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.FEED_VIDEO_FULL_PLAYER_BUTTON,
                         L10n.t("Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. "
                                 + "Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.")));
+                playback.addPreference(toggle(context, Settings.FEED_VIDEO_FULL_PLAYER_CORNER,
+                        L10n.t("Puts a feed video's full player button in its bottom corner, next to Facebook's speaker button, which moves over to make room. "
+                                + "Live videos, and videos without Facebook's speaker, keep it up with the other buttons. "
+                                + "Needs Full player button on feed videos on.")));
                 playback.addPreference(toggle(context, Settings.FEED_VIDEO_SKIP_BUTTONS,
                         L10n.t("Adds buttons to feed videos that jump back or ahead 10 seconds, like Facebook's own player has. "
                                 + "Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.")));

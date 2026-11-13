@@ -161,6 +161,7 @@ public class FeedVideoControlsTest {
         Settings.STORY_SEEK_BAR.resetToDefault();
         Settings.STORY_SEEK_BAR_FADE.resetToDefault();
         Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.resetToDefault();
+        Settings.FEED_VIDEO_FULL_PLAYER_CORNER.resetToDefault();
         Settings.FEED_VIDEO_SKIP_BUTTONS.resetToDefault();
         Settings.FEED_VIDEO_SPEED_BUTTON.resetToDefault();
         Settings.FEED_VIDEO_SEEK_BAR_TIMES.resetToDefault();
@@ -983,6 +984,111 @@ public class FeedVideoControlsTest {
         assertNotNull(button());
         assertNotNull(open());
         assertNull(cast());
+    }
+
+    @Test public void fullPlayerByTheSpeakerTakesItsCornerAndTheButtonsThereMoveOverForIt() {
+        View speaker = cornerButton(1040, 540, "Unmute sound");
+        View tagged = cornerButton(8, 540, "Tagged people");
+        speaker.setTranslationX(2);
+        layout();
+        openOn();
+        assertEquals("off, it's in the row at the top", 4 + 40 + 4, at(open()).leftMargin);
+        assertEquals("and nothing of Facebook's moves", 2f, speaker.getTranslationX(), 0f);
+
+        save(Settings.FEED_VIDEO_FULL_PLAYER_CORNER, true);
+        refreshAfterLayout();
+        layout();
+        int[] video = on(player.view);
+        assertEquals("the speaker moves in by a button, keeping the offset Facebook gave it",
+                2f - FeedVideoControls.SIZE_DP, speaker.getTranslationX(), 0f);
+        assertEquals("only across", 0f, speaker.getTranslationY(), 0f);
+        assertEquals("the tagged people across from it stay", 0f, tagged.getTranslationX(), 0f);
+        assertEquals("the button's outer edge is where the speaker's was", video[0] + 1040 + 2 + 32,
+                on(open())[0] + open().getWidth());
+        assertEquals("right beside the speaker", on(speaker)[0] + 32, on(open())[0]);
+        assertEquals("and level with it", on(speaker)[1] + 16, on(open())[1] + open().getHeight() / 2);
+        assertEquals("play stays up top", 4, at(button()).leftMargin);
+        open().performClick();
+        assertEquals(java.util.Arrays.asList("video"), opens);
+
+        save(Settings.FEED_VIDEO_FULL_PLAYER_CORNER, false);
+        tick();
+        refreshAfterLayout();
+        assertEquals("off, the speaker goes back", 2f, speaker.getTranslationX(), 0f);
+        assertEquals("and the button to the row at the top", 4 + 40 + 4, at(open()).leftMargin);
+        assertEquals(at(button()).topMargin, at(open()).topMargin);
+
+        save(Settings.FEED_VIDEO_FULL_PLAYER_CORNER, true);
+        tick();
+        refreshAfterLayout();
+        assertEquals(2f - FeedVideoControls.SIZE_DP, speaker.getTranslationX(), 0f);
+        save(Settings.FEED_VIDEO_FULL_PLAYER_BUTTON, false);
+        assertNull(open());
+        assertEquals("without the button nothing stays moved", 2f, speaker.getTranslationX(), 0f);
+    }
+
+    @Test public void fullPlayerByTheSpeakerStaysUpTopWithoutASpeakerOrOnALiveVideo() {
+        openOn();
+        save(Settings.FEED_VIDEO_FULL_PLAYER_CORNER, true);
+        refreshAfterLayout();
+        assertEquals("no speaker, it stays with the other buttons", 4 + 40 + 4, at(open()).leftMargin);
+        assertEquals(at(button()).topMargin, at(open()).topMargin);
+
+        View speaker = cornerButton(1040, 540, "Unmute sound");
+        tick();
+        refreshAfterLayout();
+        layout();
+        assertEquals("one showing up takes it down there", (float) -FeedVideoControls.SIZE_DP, speaker.getTranslationX(), 0f);
+        assertEquals(on(speaker)[0] + 32, on(open())[0]);
+
+        player.params.live = true;
+        FeedVideoControls.changed(player);
+        drain();
+        assertEquals("a live video leaves the speaker alone", 0f, speaker.getTranslationX(), 0f);
+        assertEquals("and keeps the button up top", 4 + 40 + 4, at(open()).leftMargin);
+        assertEquals(at(button()).topMargin, at(open()).topMargin);
+    }
+
+    @Test public void fullPlayerByTheSpeakerTakesTheLeftCornerRightToLeft() {
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        View speaker = cornerButton(8, 540, "Unmute sound");
+        View tagged = cornerButton(1040, 540, "Tagged people");
+        layout();
+        openOn();
+        save(Settings.FEED_VIDEO_FULL_PLAYER_CORNER, true);
+        refreshAfterLayout();
+        layout();
+        assertEquals("the speaker moves in toward the middle", (float) FeedVideoControls.SIZE_DP, speaker.getTranslationX(), 0f);
+        assertEquals(0f, tagged.getTranslationX(), 0f);
+        assertEquals("the button takes its spot by the left edge", on(player.view)[0] + 8, on(open())[0]);
+        assertEquals(on(open())[0] + open().getWidth(), on(speaker)[0]);
+    }
+
+    @Test public void fullPlayerByTheSpeakerFollowsItDownWithLowerAndFadesWithIt() {
+        View speaker = cornerButton(1040, 540, "Unmute sound");
+        layout();
+        player.playing = true;
+        openOn();
+        barOn();
+        save(Settings.FEED_VIDEO_SEEK_BAR_LOWER, true);
+        save(Settings.FEED_VIDEO_SEEK_BAR_FADE, true);
+        save(Settings.FEED_VIDEO_FULL_PLAYER_CORNER, true);
+        tick();
+        refreshAfterLayout();
+        layout();
+        assertEquals((float) FeedVideoControls.LOWER_DP, speaker.getTranslationY(), 0f);
+        assertEquals((float) -FeedVideoControls.SIZE_DP, speaker.getTranslationX(), 0f);
+        assertEquals("level with the speaker where Lower put it", on(speaker)[1] + 16, on(open())[1] + open().getHeight() / 2);
+        assertEquals(on(speaker)[0] + 32, on(open())[0]);
+
+        play(FeedVideoControls.FADE_AFTER_MS + FeedVideoControls.FADE_ANIMATION_MS + 250);
+        assertEquals(FeedVideoControls.FADED_ALPHA, speaker.getAlpha(), 0.01f);
+        assertEquals("it fades with the speaker", FeedVideoControls.FADED_ALPHA, open().getAlpha(), 0.01f);
+        assertEquals("the buttons up top don't", 1f, button().getAlpha(), 0f);
+        save(Settings.FEED_VIDEO_FULL_PLAYER_CORNER, false);
+        play(FeedVideoControls.FADE_ANIMATION_MS + 250);
+        assertEquals("back up top it's bright again", 1f, open().getAlpha(), 0.01f);
+        assertEquals(4 + 40 + 4, at(open()).leftMargin);
     }
 
     @Test public void theFullPlayerOpensTheVideosWatchLinkInFacebooksLinkHandler() {

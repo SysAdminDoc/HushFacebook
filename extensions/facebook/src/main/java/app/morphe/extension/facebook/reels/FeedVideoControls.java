@@ -304,6 +304,10 @@ public final class FeedVideoControls {
         return inBuild() && Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.get();
     }
 
+    private static boolean besideOn() {
+        return openOn() && Settings.FEED_VIDEO_FULL_PLAYER_CORNER.get();
+    }
+
     private static boolean skipOn() {
         return inBuild() && Settings.FEED_VIDEO_SKIP_BUTTONS.get();
     }
@@ -370,16 +374,20 @@ public final class FeedVideoControls {
             speed &= !target.live;
             // Play first, then the skips round it as in Facebook's player, speed, and the full player last (#239).
             int left = target.left;
-            control.button = place(control, control.button, play ? target : null, PLAY, left);
+            control.button = place(control, control.button, play ? target : null, PLAY, left, target.top);
             if (play) left += target.step;
-            control.back = place(control, control.back, skip ? target : null, BACK, left);
+            control.back = place(control, control.back, skip ? target : null, BACK, left, target.top);
             if (skip) left += target.step;
-            control.ahead = place(control, control.ahead, skip ? target : null, AHEAD, left);
+            control.ahead = place(control, control.ahead, skip ? target : null, AHEAD, left, target.top);
             if (skip) left += target.step;
-            control.speed = place(control, control.speed, speed ? target : null, SPEED, left);
+            control.speed = place(control, control.speed, speed ? target : null, SPEED, left, target.top);
             if (speed) left += target.step;
-            control.open = place(control, control.open, open ? target : null, OPEN, left);
-            control.cast = place(control, control.cast, cast && !target.live ? target : null, CAST, target.right);
+            // By the speaker it waits while that corner is out of sight or covered (#431).
+            Rect beside = target.beside;
+            control.open = place(control, control.open, open && !target.besideHidden ? target : null, OPEN,
+                    beside != null ? beside.left : left, beside != null ? beside.top : target.top);
+            control.besideSpeaker = beside != null;
+            control.cast = place(control, control.cast, cast && !target.live ? target : null, CAST, target.right, target.top);
             if (control.button != null) control.button.state(access.playing(player));
             if (control.speed != null) control.speed.rate(access.speed(player));
             control.bar = placeBar(control, control.bar, seek ? target : null, player);
@@ -392,7 +400,7 @@ public final class FeedVideoControls {
 
     /** Keeps, makes or drops one button for [target]: null takes it off. Answers what's showing. */
     @Nullable
-    private static Button place(Control control, @Nullable Button current, @Nullable Target target, int kind, int left) {
+    private static Button place(Control control, @Nullable Button current, @Nullable Target target, int kind, int left, int top) {
         if (current != null && (target == null || current.generation != control.generation
                 || current.params.get() != target.params || current.surface.get() != target.surface
                 || !current.videoId.equals(target.videoId)
@@ -410,9 +418,9 @@ public final class FeedVideoControls {
                     : kind == SPEED ? "inline speed button" : "inline feed button");
         }
         FrameLayout.LayoutParams layout = (FrameLayout.LayoutParams) current.getLayoutParams();
-        if (layout.leftMargin != left || layout.topMargin != target.top) {
+        if (layout.leftMargin != left || layout.topMargin != top) {
             layout.leftMargin = left;
-            layout.topMargin = target.top;
+            layout.topMargin = top;
             current.setLayoutParams(layout);
         }
         return current;
@@ -554,15 +562,44 @@ public final class FeedVideoControls {
         corners(control, row, video, density, live);
         Rect bar = !seekOn() ? null : live ? noBar(control, "a live video has no end to seek to", null)
                 : barArea(control, video, list, content, visible, down + size + margin, density);
+        Rect beside = besideSpeaker(control, video, size);
+        boolean besideHidden = beside != null && (!visible.contains(beside) || over(list, content, beside) != null);
         content.getLocationInWindow(at);
         // Margins count from inside the padding, which holds the status bar on an edge to edge screen.
         at[0] += content.getPaddingLeft();
         at[1] += content.getPaddingTop();
         if (bar != null) bar.offset(-at[0], -at[1]);
+        if (beside != null) beside.offset(-at[0], -at[1]);
         control.missed = null;
         int left = visible.left - at[0] + margin;
         return new Target(params, id, surface, (FrameLayout) content, size, left, size + margin,
-                visible.right - at[0] - margin - size, visible.top - at[1] + down, bar, live);
+                visible.right - at[0] - margin - size, visible.top - at[1] + down, bar, live, beside, besideHidden);
+    }
+
+    /**
+     * Where Full player button by the speaker puts the full player button in the window: the corner
+     * spot of the outermost of Facebook's buttons on the speaker's side, which moved over to make
+     * room, level with it. Null, so it stays in the row at the top, with the switch off or no such
+     * button found, as on a live video (#431).
+     */
+    @Nullable
+    private static Rect besideSpeaker(Control control, Rect video, int size) {
+        if (!besideOn()) return null;
+        Rect outer = null;
+        int middle = 0;
+        for (Map.Entry<View, Corner> known : new ArrayList<>(control.corners.entrySet())) {
+            Corner corner = known.getValue();
+            if (!corner.speakerSide) continue;
+            Rect base = base(control, known.getKey());
+            if (outer == null || (control.rtl ? base.left < outer.left : base.right > outer.right)) {
+                outer = base;
+                middle = base.centerY() + corner.shifted;
+            }
+        }
+        if (outer == null) return null;
+        int left = control.rtl ? outer.left : outer.right - size;
+        int top = Math.min(middle - size / 2, video.bottom - size);
+        return new Rect(left, top, left + size, top + size);
     }
 
     /** Whether a bar ending at window position [bottom] reaches the strip Android keeps for its home swipe. No app can claim touches there, so the bar would look live and never get a drag. */
@@ -629,7 +666,7 @@ public final class FeedVideoControls {
         at[1] += content.getPaddingTop();
         if (bar != null) bar.offset(-at[0], -at[1]);
         control.missed = null;
-        return new Target(params, id, surface, (FrameLayout) content, 0, 0, 0, 0, 0, bar, live);
+        return new Target(params, id, surface, (FrameLayout) content, 0, 0, 0, 0, 0, bar, live, null, false);
     }
 
     /** The story bar's spot in the window along the bottom of [card], the card's visible part. */
@@ -680,13 +717,16 @@ public final class FeedVideoControls {
      * Finds Facebook's own buttons in [video]'s bottom corners inside [row], the speaker and the
      * tagged people, at most once a tick, and moves them down for Lower the seek bar (#386). They all
      * move by the same amount, which the bar takes too, so it stays just clear of them. Seek bar on
-     * the bottom edge moves them up instead, just clear of the bar along that edge (#431). With the
-     * switches off, or on a live video, they're put back as they were.
+     * the bottom edge moves them up instead, just clear of the bar along that edge (#431). Full player
+     * button by the speaker moves the ones on the speaker's side in by a button's width, and the full
+     * player button takes the spot (#431). With the switches off, or on a live video, they're put back
+     * as they were.
      */
     private static void corners(Control control, View row, Rect video, float density, boolean live) {
         boolean lower = lowerOn();
         boolean edge = edgeOn();
-        if (live || (!lower && !edge && !fadeOn())) {
+        boolean beside = besideOn();
+        if (live || (!lower && !edge && !fadeOn() && !beside)) {
             control.restoreCorners();
             return;
         }
@@ -724,8 +764,15 @@ public final class FeedVideoControls {
                     .append(corner.speakerSide ? " speaker side " : " ").append(view.getContentDescription());
         }
         int shift = edge ? -lift : lower ? room : 0;
-        for (Corner corner : control.corners.values()) corner.shift(shift);
+        boolean speaker = false;
+        for (Corner corner : control.corners.values()) speaker |= corner.speakerSide;
+        int slide = !beside || !speaker ? 0 : (rtl ? 1 : -1) * Math.round(SIZE_DP * density);
+        for (Corner corner : control.corners.values()) {
+            corner.shift(shift);
+            corner.slide(corner.speakerSide ? slide : 0);
+        }
         control.lowered = lower ? shift : 0;
+        control.rtl = rtl;
         String summary = seen.length() == 0 ? "none" : seen.toString();
         if (!summary.equals(control.cornersSaid)) {
             control.cornersSaid = summary;
@@ -762,13 +809,14 @@ public final class FeedVideoControls {
         for (int i = 0; i < group.getChildCount(); i++) findCorners(control, group.getChildAt(i), video, strip, small, side, found);
     }
 
-    /** [view]'s spot in the window as Facebook placed it, before a seek bar switch moved it. */
+    /** [view]'s spot in the window as Facebook placed it, before a switch here moved it. */
     private static Rect base(Control control, View view) {
         int[] at = new int[2];
         view.getLocationInWindow(at);
         Corner moved = control.corners.get(view);
         int shifted = moved == null ? 0 : moved.shifted;
-        return new Rect(at[0], at[1] - shifted, at[0] + view.getWidth(), at[1] - shifted + view.getHeight());
+        int slid = moved == null ? 0 : moved.slid;
+        return new Rect(at[0] - slid, at[1] - shifted, at[0] - slid + view.getWidth(), at[1] - shifted + view.getHeight());
     }
 
     /**
@@ -797,6 +845,8 @@ public final class FeedVideoControls {
                 && SystemClock.uptimeMillis() >= control.wakeUntil;
         if (bar != null) bar.dimmer.to(dim);
         for (Corner corner : new ArrayList<>(control.corners.values())) corner.dimmer.to(dim && corner.speakerSide);
+        // By the speaker, the full player button fades along with it.
+        if (control.open != null) control.open.dimmer.to(dim && control.besideSpeaker);
     }
 
     /** The first thing drawn above [list] that lies across [area], such as the tab bar sliding back. */
@@ -1063,11 +1113,15 @@ public final class FeedVideoControls {
         @Nullable final Rect bar;
         /** A live video, which gets no cast button or seek bar. */
         final boolean live;
+        /** The full player button's spot by the speaker in [content], or null for the row at the top (#431). */
+        @Nullable final Rect beside;
+        /** That spot doesn't show, or something lies over it. */
+        final boolean besideHidden;
         Target(Object params, String videoId, View surface, FrameLayout content, int size, int left, int step, int right,
-                int top, @Nullable Rect bar, boolean live) {
+                int top, @Nullable Rect bar, boolean live, @Nullable Rect beside, boolean besideHidden) {
             this.params = params; this.videoId = videoId; this.surface = surface; this.content = content;
             this.size = size; this.left = left; this.step = step; this.right = right; this.top = top; this.bar = bar;
-            this.live = live;
+            this.live = live; this.beside = beside; this.besideHidden = besideHidden;
         }
     }
 
@@ -1099,6 +1153,10 @@ public final class FeedVideoControls {
         final Map<View, Corner> corners = new WeakHashMap<>();
         /** How far Lower the seek bar moved them down, which the bar moves too. */
         int lowered;
+        /** The row laid out right to left, which puts the speaker in the left corner. */
+        boolean rtl;
+        /** The full player button sits by the speaker, and fades with it. */
+        boolean besideSpeaker;
         /** When they were last looked for, at most once a tick. */
         long scanned;
         /** Until when the bar and the speaker stay bright, the video having started or been touched. */
@@ -1205,6 +1263,7 @@ public final class FeedVideoControls {
         final String videoId;
         final WeakReference<View> surface;
         final Look look = new Look();
+        final Dimmer dimmer = new Dimmer(this);
         boolean playing;
         /** What the speed button shows, set from the player. */
         String speed = speedLabel(1f);
@@ -1413,8 +1472,8 @@ public final class FeedVideoControls {
         final Control control;
         final WeakReference<View> view;
         final Dimmer dimmer;
-        /** What this added to the view's own translation, so Facebook's stays its own. */
-        int shifted;
+        /** What this added to the view's own translation, down and across, so Facebook's stays its own. */
+        int shifted, slid;
         boolean speakerSide;
         Corner(Control control, View view) {
             this.control = control;
@@ -1428,8 +1487,15 @@ public final class FeedVideoControls {
             target.setTranslationY(target.getTranslationY() - shifted + by);
             shifted = by;
         }
+        void slide(int by) {
+            View target = view.get();
+            if (target == null || by == slid) return;
+            target.setTranslationX(target.getTranslationX() - slid + by);
+            slid = by;
+        }
         void restore() {
             shift(0);
+            slide(0);
             dimmer.reset();
             View target = view.get();
             if (target != null) target.removeOnAttachStateChangeListener(this);
