@@ -67,8 +67,8 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * - The hold speed: the speed-ups in FbShortsVideoControlComponent (580 LX/83J;->A0H) and, up to
  *   582, UddPlayerControlComponent (580 LX/T9a;->A05) set FbGrootPlayer's speed to a double they read
  *   from the object the config's no-argument CIr() answers (580 LX/4Xa;->A0R), made a float. The
- *   same read gives the speed the helper that remembers the pre-hold speed compares with, and a
- *   2x label. Outside the Video tab it answers a fixed 2.0; where an account's Reels live in the
+ *   same read gives the speed the helper that remembers the pre-hold speed compares with, and up
+ *   to 586 a 2x label. Outside the Video tab it answers a fixed 2.0; where an account's Reels live in the
  *   Video tab (the object's surface is FB_SHORTS_IN_WATCH_TAB) it answers MobileConfig double
  *   0x104003303ee0017, whose default no code sets. 587 moved the read into a static method taking
  *   the object (armeabi-v7a LX/0A4x;->A01), and on arm64-v8a inlined that too: the speed-up

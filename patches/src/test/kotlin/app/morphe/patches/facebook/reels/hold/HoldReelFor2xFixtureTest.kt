@@ -516,6 +516,14 @@ class HoldReelFor2xFixtureTest {
                         assertEquals("$name: what followed the read at $taken", before[taken + 1].opcode, after[at + 3].opcode)
                     }
                 }
+                // And nowhere else: every hold speed call the patch added is one checked above.
+                val speedHooks = classes.filterNot { it.type.startsWith(EXTENSION_CLASSES) }.sumOf { c ->
+                    context.mutableClassDefBy(c.type).methods.sumOf { m ->
+                        m.implementation?.instructions?.count { it.call?.toString() == HOLD_SPEED } ?: 0
+                    }
+                }
+                assertEquals("$name: hold speed calls in Facebook's code",
+                    inlinedSites.size + (holdSpeed?.code()?.count { it.opcode == Opcode.RETURN_WIDE } ?: 0), speedHooks)
                 val setterAfter = patched(setter)
                 val self = setter.localRegisterCount()
                 assertEquals("$name: the speed setter's first call", SPEED_SET, setterAfter[0].call.toString())
