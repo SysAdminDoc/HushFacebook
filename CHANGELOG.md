@@ -17,6 +17,9 @@ Changes in each Hushfacebook version, newest first.
 ### Fixed
 
 * With `Open feed videos on their own` on, a feed video you open plays by itself again. Every so often one more video slipped in after it, because the first batch Facebook loaded for the viewer came in with the next video already in it. That batch keeps only the video you tapped now. (#457)
+* A reel opened from a chat inside Facebook stays on its own with `Open feed videos on their own` on. One more reel used to play after it before the viewer stopped. (#421)
+* Marketplace's home feed holds back the ad rows Facebook started sending from a new kind of request, so `Hide sponsored Marketplace listings` catches them again. (#459)
+* `Hide For you in search` and `Hide "People you may know" in search` also find those sections when Facebook sends them with nothing Hush could read before. With `Debug logging` on, the report lists the section names each such row carries. (#80)
 
 ## 0.22.0 (2026-11-12)
 
