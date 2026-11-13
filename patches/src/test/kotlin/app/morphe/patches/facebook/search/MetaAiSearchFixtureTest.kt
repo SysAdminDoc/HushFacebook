@@ -58,9 +58,14 @@ class MetaAiSearchFixtureTest {
 
     private val strings = listOf(ANSWER_PAGE, ROLE_PARSE_FAILURE, META_AI_TAB, KEYWORD_TYPE_FAILURE, aiModeStart, metaAiTabModule)
 
-    /** Whether the answer page builder calls the full page constructor itself, per build: 585 went through its short one, 586 calls it. */
+    /**
+     * Whether the answer page builder calls the full page constructor itself, per build: 585 went
+     * through its short one, 586 calls it, and so does 587 (armeabi-v7a `LX/0cfH;->A00` builds
+     * `LX/0E8l;` with its ten-argument constructor in place).
+     */
     private val directPageCall = mapOf(
         "586.0.0.52.53" to true,
+        "587.0.0.39.55" to true,
     )
 
     /** Whether the parser reads the route flag through the suggestion model's accessor, per build: 585 does, not TreeJNI itself. */

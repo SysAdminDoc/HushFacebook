@@ -41,7 +41,7 @@ class ReelSaveButtonFixtureTest {
     private fun Method.code() = implementation!!.instructions.toList()
 
     /** Static factory callers by build, where it isn't both list builders. */
-    private val staticListBuilders = mapOf("586.0.0.52.53" to 1)
+    private val staticListBuilders = mapOf("586.0.0.52.53" to 1, "587.0.0.39.55" to 1)
 
     /** Classes holding the four callers by bundle, where each isn't in its own. 586's Android 9 build puts two in one. */
     private val callerOwners = mapOf("facebook-586.0.0.52.53-arm64-v8a-minapi28-storeless.apkm" to 3)
@@ -82,7 +82,7 @@ class ReelSaveButtonFixtureTest {
                 assertEquals("$name: shared sidebar factory callers", 4, callers.size)
                 val owners = FixtureDex.classes(bundle, callers.map { it.definingClass }.toSet())
                 assertEquals("$name: caller owners", callerOwners[name] ?: 4, owners.size)
-                // 586 made the VddVerticalUfi list builder (LX/0C7w;->A01) an instance method.
+                // 586 made the VddVerticalUfi list builder (LX/0C7w;->A01) an instance method; 587 keeps it so.
                 assertEquals("$name: two renders and two list builders, static as on that build", staticListBuilders[version] ?: 2,
                     callers.count { AccessFlags.STATIC.isSet(it.accessFlags) })
                 assertThrows("$name: missing an alternate caller must refuse the patch", PatchException::class.java) {
