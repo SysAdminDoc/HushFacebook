@@ -28,12 +28,12 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patcher.resource.ResourceType
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
-import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.literalReads
 import app.morphe.util.returnEarly
 import app.morphe.util.superclassChain
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
@@ -946,13 +946,18 @@ internal fun BytecodePatchContext.hookFeedGaps() {
         ?: throw PatchException("Expected $COMPONENT_HOST to declare one dispatchDraw($CANVAS)V, found ${draws.size}")
     val code = draw.implementation!!.instructions.toList()
     // The host and the canvas are p0 and p1, next to each other, so the range form passes both
-    // without borrowing a register, as long as the method never reuses either.
+    // without borrowing a register, as long as no write of either reaches a return. 587 reuses p0
+    // in the handler that names the mounted components, which only throws.
     val self = draw.implementation!!.registerCount - 2
-    code.firstOrNull { writesRegister(it, self) || writesRegister(it, self + 1) }?.let {
-        throw PatchException("$COMPONENT_HOST's dispatchDraw writes its host or canvas register with ${it.opcode.name}") // opcode-name-ok
-    }
     val returns = code.indices.filter { code[it].opcode == Opcode.RETURN_VOID }
     if (returns.isEmpty()) throw PatchException("$COMPONENT_HOST's dispatchDraw never returns")
+    returns.forEach { at ->
+        listOf(self, self + 1).flatMap { draw.writersReaching(at, it) }.firstOrNull { it >= 0 }?.let {
+            throw PatchException(
+                "$COMPONENT_HOST's dispatchDraw writes its host or canvas register with ${code[it].opcode.name} before it returns", // opcode-name-ok
+            )
+        }
+    }
     // At the label, so a branch to the return draws the line too. Last first, as each insert moves
     // the later indices.
     returns.asReversed().forEach { draw.addInstructionsAtControlFlowLabel(it, "invoke-static/range { p0 .. p1 }, $FEED_GAP_ROW") }
