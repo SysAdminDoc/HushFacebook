@@ -205,14 +205,23 @@ internal fun isPageBuilder(method: Method): Boolean {
         method.returnType.startsWith("L") && !method.returnType.startsWith("Ljava/")
 }
 
-/** Whether [constructor] reads the edge's [RESULT_ROLE_FIELD] with `getCachedEnum`, as the module's does. */
+/** The tree readers answering an enum field by its key and a fallback constant. */
+private val ENUM_READERS = setOf("getCachedEnum", "getCachedNullableEnum")
+
+/**
+ * Whether [constructor] reads the edge's [RESULT_ROLE_FIELD] with an enum reader, as the module's
+ * does: `getCachedEnum` up to 586, `getCachedNullableEnum` from 587 (arm64 `LX/0E8U;-><init>`), or
+ * the same (int, Enum) read asked of a tree interface, the form 587's delegating trees read through.
+ */
 internal fun readsResultRole(constructor: Method): Boolean {
     val body = constructor.body()
     return constructor.name == "<init>" &&
         body.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == treeFieldKey(RESULT_ROLE_FIELD) } &&
         body.any { instruction ->
-            val call = instruction.methodReference()
-            call != null && call.name == "getCachedEnum" && call.parameterTypes.map { it.toString() } == listOf("I", ENUM)
+            val call = instruction.methodReference() ?: return@any false
+            call.parameterTypes.map { it.toString() } == listOf("I", ENUM) && (call.name in ENUM_READERS ||
+                (instruction.opcode == Opcode.INVOKE_INTERFACE && call.returnType == ENUM &&
+                    !call.definingClass.startsWith("Ljava/") && !call.definingClass.startsWith("Landroid/")))
         }
 }
 

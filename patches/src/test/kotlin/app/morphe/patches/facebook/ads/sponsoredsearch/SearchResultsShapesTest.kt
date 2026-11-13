@@ -147,10 +147,13 @@ class SearchResultsShapesTest {
         assertFalse(isPageBuilder(builder(parameters.take(2))))
     }
 
-    private fun moduleConstructor(key: Int = treeFieldKey(RESULT_ROLE_FIELD)) = method(module, "<init>", listOf("Lfixture/Tree;"), "V", 4, """
+    private fun moduleConstructor(
+        key: Int = treeFieldKey(RESULT_ROLE_FIELD),
+        read: String = "invoke-virtual { p1, v0, v1 }, Lfixture/Tree;->getCachedEnum(ILjava/lang/Enum;)Ljava/lang/Enum;",
+    ) = method(module, "<init>", listOf("Lfixture/Tree;"), "V", 4, """
         const v0, $key
         sget-object v1, $role->A0T:$role
-        invoke-virtual { p1, v0, v1 }, Lfixture/Tree;->getCachedEnum(ILjava/lang/Enum;)Ljava/lang/Enum;
+        $read
         move-result-object v0
         check-cast v0, $role
         iput-object v0, p0, $module->A00:$role
@@ -180,6 +183,19 @@ class SearchResultsShapesTest {
             moduleConstructor(treeFieldKey("module_role")), converter()), role))
         assertFalse(isModuleClass(classDef(module, "Ljava/lang/Object;", listOf(field(module, "A00", role, static = true)),
             moduleConstructor(), converter()), role))
+    }
+
+    @Test
+    fun `587's module reads result_role through a nullable or delegated enum read`() {
+        val roleField = field(module, "A00", role)
+        fun reads(read: String) = isModuleClass(classDef(module, "Ljava/lang/Object;", listOf(roleField),
+            moduleConstructor(read = read), converter()), role)
+        assertTrue(reads("invoke-virtual { p1, v0, v1 }, Lfixture/Tree;->getCachedNullableEnum(ILjava/lang/Enum;)Ljava/lang/Enum;"))
+        assertTrue(reads("invoke-interface { p1, v0, v1 }, Lfixture/TreeReads;->Ey4(ILjava/lang/Enum;)Ljava/lang/Enum;"))
+        // Negative controls: a virtual call of that shape with another name, and an interface read on a
+        // JDK type, read no tree field.
+        assertFalse(reads("invoke-virtual { p1, v0, v1 }, Lfixture/Tree;->Ey4(ILjava/lang/Enum;)Ljava/lang/Enum;"))
+        assertFalse(reads("invoke-interface { p1, v0, v1 }, Ljava/util/function/Lookup;->get(ILjava/lang/Enum;)Ljava/lang/Enum;"))
     }
 
     @Test
