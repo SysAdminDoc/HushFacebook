@@ -642,11 +642,26 @@ internal fun BytecodePatchContext.toggleReelCleanMode() {
  *   edge enum, LX/0371;, which keeps names like "POSITION_END" and "POSITION_BOTTOM").
  *
  * Hooked: right after the margin helper answers, a kept button's style is also positioned
- * absolutely, 0 from the end and 0 from the bottom. Its margins still apply, so the button sits
- * where it sits over a clean reel, and the details keep the whole column.
+ * absolutely, 0 from the end and [CLEAN_BUTTON_LIFT_DP] from the bottom. Its margins still apply,
+ * and the details keep the whole column.
+ *
+ * The button over a clean reel (#391) is positioned the same way while Clean up Reels' switches
+ * are on. Facebook's spot for it is right over the seek bar, so a tap meant for the button moved
+ * the video. Both sit lifted off the bottom, clear of the bar, in the same spot.
+ *
+ * Litho's dimension (587 LX/01PH;, read 2026-11-13) keeps its value in one long: a dp value is a
+ * double's raw bits, while px and sp ride in NaN patterns under 0x7ff9 and 0x7ffa, which its
+ * string method (587 LX/01PH;->A07) tells apart from dp by the 0x7ff8 mask, so a lift in dp is the
+ * raw bits of a double.
  */
 
 internal const val FLOAT_CLEAN_BUTTON = "$CLEAN_MODE->floatCleanButton()Z"
+
+/**
+ * How far the Clean mode button sits above the overlay's bottom, in dp (#391): a finger's height,
+ * which puts it where the reporter marked, clear of the seek bar's touch area.
+ */
+internal const val CLEAN_BUTTON_LIFT_DP = 48.0
 
 /** Yoga's position types, the names its enum keeps. */
 internal val POSITION_TYPES = listOf("STATIC", "RELATIVE", "ABSOLUTE")
@@ -844,12 +859,18 @@ internal fun cleanButtonFloat(
 }
 
 /**
- * The block itself: asks the extension, and for a kept button sets the absolute position type, then
- * a 0 inset from the end and from the bottom, in the borrowed registers, before the row gets its
- * style. Otherwise it jumps over all of it, to Facebook's next instruction.
+ * The block itself: asks the extension, and for a button it wants laid over the column sets the
+ * absolute position type, then a 0 inset from the end and a [CLEAN_BUTTON_LIFT_DP] one from the
+ * bottom, in the borrowed registers, before the row gets its style. Otherwise it jumps over all of
+ * it, to Facebook's next instruction.
+ *
+ * The two dimensions are made in the first slots, moved to two spare slots, then to the end and
+ * bottom ones, so no slot the helper reads them from is written while the other still waits there.
  */
 internal fun floatSmali(hook: FloatHook): String {
     fun v(slot: Int) = "v${hook.range + slot}"
+    // Past the three slots each dimension is made in.
+    val (endSpare, bottomSpare) = (4..EDGES).filter { it != hook.end && it != hook.bottom }.take(2)
     return buildString {
         appendLine("invoke-static { }, $FLOAT_CLEAN_BUTTON")
         appendLine("move-result ${v(0)}")
@@ -861,7 +882,13 @@ internal fun floatSmali(hook: FloatHook): String {
         appendLine("new-instance ${v(1)}, ${hook.dimension}")
         appendLine("const-wide/16 ${v(2)}, 0x0")
         appendLine("invoke-direct/range { ${v(1)} .. ${v(3)} }, ${hook.dimension}-><init>(J)V")
-        listOf(hook.end, hook.bottom).filter { it != 1 }.forEach { appendLine("move-object/16 ${v(it)}, ${v(1)}") }
+        appendLine("move-object/16 ${v(endSpare)}, ${v(1)}")
+        appendLine("new-instance ${v(1)}, ${hook.dimension}")
+        appendLine("const-wide ${v(2)}, 0x${CLEAN_BUTTON_LIFT_DP.toRawBits().toString(16)}L")
+        appendLine("invoke-direct/range { ${v(1)} .. ${v(3)} }, ${hook.dimension}-><init>(J)V")
+        appendLine("move-object/16 ${v(bottomSpare)}, ${v(1)}")
+        appendLine("move-object/16 ${v(hook.end)}, ${v(endSpare)}")
+        appendLine("move-object/16 ${v(hook.bottom)}, ${v(bottomSpare)}")
         (1..EDGES).filter { it != hook.end && it != hook.bottom }.forEach { appendLine("const/16 ${v(it)}, 0x0") }
         appendLine("invoke-static/range { ${v(0)} .. ${v(EDGES)} }, ${hook.position}")
         appendLine("move-result-object v${hook.style}")

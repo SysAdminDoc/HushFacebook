@@ -23,8 +23,10 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
@@ -333,6 +335,9 @@ class ReelCleanModeFixtureTest {
 
     private fun floatSmaliSize(hook: FloatHook) = floatSmali(hook).lines().count { it.isNotBlank() }
 
+    /** Litho's Dimension keeps px and sp in NaN payloads under these bits, and dp as a plain double. */
+    private val DIMENSION_NAN_BITS = 0x7ff8000000000000L
+
     @Test
     fun `each declared build's kept Clean mode button is laid over the details, not under them`() {
         val checked = mutableSetOf<String>()
@@ -377,7 +382,17 @@ class ReelCleanModeFixtureTest {
                     patched.target(jumpAt, patched[jumpAt] as OffsetInstruction))
                 val calls = block.mapNotNull { it.called()?.toString() }
                 assertEquals("$where: the block's calls", listOf(FLOAT_CLEAN_BUTTON, float.positionType,
-                    "${float.dimension}-><init>(J)V", float.position), calls)
+                    "${float.dimension}-><init>(J)V", "${float.dimension}-><init>(J)V", float.position), calls)
+                // The end inset is 0 and the bottom one the lift, in dp, which the dimension holds as a double's bits.
+                val wides = block.filter { it.opcode == Opcode.CONST_WIDE_16 || it.opcode == Opcode.CONST_WIDE }
+                    .map { (it as WideLiteralInstruction).wideLiteral }
+                assertEquals("$where: the insets' values", listOf(0L, CLEAN_BUTTON_LIFT_DP.toRawBits()), wides)
+                val dimension = FixtureDex.classes(bundle, setOf(float.dimension)).getValue(float.dimension)
+                assertTrue("$name: ${float.dimension} still tells dp from px and sp by the NaN bits", dimension.methods.any { method ->
+                    val code = method.code()
+                    code.any { (it as? WideLiteralInstruction)?.wideLiteral == DIMENSION_NAN_BITS } &&
+                        code.any { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == " dp" }
+                })
                 val last = block.last()
                 assertEquals("$where: the style goes back to the row", Opcode.MOVE_RESULT_OBJECT, last.opcode)
                 assertEquals("$where: the style goes back to the row", float.style, (last as OneRegisterInstruction).registerA)

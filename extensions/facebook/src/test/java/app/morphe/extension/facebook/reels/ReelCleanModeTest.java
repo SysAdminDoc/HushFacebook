@@ -146,40 +146,52 @@ public class ReelCleanModeTest {
     }
 
     @Test
-    public void aKeptButtonIsLaidOverTheDetailsAndNoOtherIs() throws InterruptedException {
+    public void aKeptButtonIsLaidOverTheDetailsAndAClearOneLiftedOffTheSeekBar() throws InterruptedException {
         Settings.REEL_CLEAN_MODE.save(true);
         Object[] left = {Boolean.FALSE};
         ReelCleanMode.markLeftClean(left);
         ReelCleanMode.cleanButtonState(left[0]);
         assertTrue("a kept button stayed in the column under the details (#329)", ReelCleanMode.floatCleanButton());
-        assertFalse("the answer carried over to the next button", ReelCleanMode.floatCleanButton());
 
-        // A clean reel's button is Facebook's own, in the column, even right after a kept one's read.
+        // The button over a clean reel sat right on the seek bar, so taps moved the video (#391).
         ReelCleanMode.cleanButtonState(Boolean.TRUE);
-        assertFalse("a clean reel's button moved", ReelCleanMode.floatCleanButton());
-        ReelCleanMode.cleanButtonState(left[0]);
-        ReelCleanMode.cleanButtonState(Boolean.TRUE);
-        assertFalse("an earlier build's kept button moved a clean reel's", ReelCleanMode.floatCleanButton());
+        assertTrue("a clean reel's button stayed on the seek bar", ReelCleanMode.floatCleanButton());
+        String line = statusLine();
+        assertTrue("the kept and the lifted button weren't told apart: " + line, line != null
+                && line.contains(ReelCleanMode.FLOATED_BUTTON + " 1") && line.contains(ReelCleanMode.LIFTED_BUTTON + " 1"));
 
-        // Another thread making another reel's button doesn't see this one's.
+        // A kept button's read doesn't carry over to the next button, on this thread or another.
         ReelCleanMode.cleanButtonState(left[0]);
-        boolean[] elsewhere = {true};
+        boolean[] elsewhere = {false};
         Thread other = new Thread(() -> elsewhere[0] = ReelCleanMode.floatCleanButton());
         other.start();
         other.join();
-        assertFalse("a button on another thread was moved", elsewhere[0]);
+        assertTrue("a clean reel's button on another thread stayed on the seek bar", elsewhere[0]);
         assertTrue("this thread's kept button was lost", ReelCleanMode.floatCleanButton());
-        String line = statusLine();
-        assertTrue("the kept buttons weren't counted: " + line, line != null && line.contains(ReelCleanMode.FLOATED_BUTTON + " 2"));
+        assertTrue("the next button wasn't lifted", ReelCleanMode.floatCleanButton());
+        line = statusLine();
+        assertTrue("each button wasn't counted once, as what it is: " + line, line != null
+                && line.contains(ReelCleanMode.FLOATED_BUTTON + " 2") && line.contains(ReelCleanMode.LIFTED_BUTTON + " 3"));
 
-        // Off, or paused, the button is Facebook's again and nothing moves.
+        // The sidebar's Clean mode button alone lifts it too, since that's its way in.
         Settings.REEL_CLEAN_MODE.save(false);
+        Settings.REEL_CLEAN_BUTTON.save(true);
+        ReelCleanMode.cleanButtonState(Boolean.TRUE);
+        assertTrue("with the sidebar button on, the button stayed on the seek bar", ReelCleanMode.floatCleanButton());
+
+        // Both off, or paused, the button is Facebook's again and nothing moves.
+        Settings.REEL_CLEAN_BUTTON.save(false);
         ReelCleanMode.cleanButtonState(left[0]);
-        assertFalse("off, a button moved", ReelCleanMode.floatCleanButton());
+        assertFalse("off, a kept button moved", ReelCleanMode.floatCleanButton());
+        ReelCleanMode.cleanButtonState(Boolean.TRUE);
+        assertFalse("off, a clean reel's button moved", ReelCleanMode.floatCleanButton());
         Settings.REEL_CLEAN_MODE.save(true);
+        Settings.REEL_CLEAN_BUTTON.save(true);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         ReelCleanMode.cleanButtonState(left[0]);
-        assertFalse("paused, a button moved", ReelCleanMode.floatCleanButton());
+        assertFalse("paused, a kept button moved", ReelCleanMode.floatCleanButton());
+        ReelCleanMode.cleanButtonState(Boolean.TRUE);
+        assertFalse("paused, a clean reel's button moved", ReelCleanMode.floatCleanButton());
     }
 
     @Test

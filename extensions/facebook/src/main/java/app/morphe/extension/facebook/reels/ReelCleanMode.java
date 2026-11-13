@@ -242,6 +242,9 @@ public final class ReelCleanMode {
     /** Counted each time a kept button is laid over the reel's details instead of below them. */
     static final String FLOATED_BUTTON = "Kept Clean mode button laid over the details";
 
+    /** Counted each time the button over a clean reel is lifted off the seek bar (#391). */
+    static final String LIFTED_BUTTON = "Clean mode button lifted off the seek bar";
+
     /**
      * Whether the button the builder is making right now is one {@link #cleanButtonState} kept for a
      * reel taken out of Clean mode. The builder reads its value and makes its button in one call, on
@@ -251,18 +254,29 @@ public final class ReelCleanMode {
 
     /**
      * Injection point, in the Clean mode button's builder once it has the style of the button's row
-     * (#329). True for a button kept for a reel taken out of Clean mode, and the patch then sets the
-     * row to an absolute position at the overlay's bottom end. Facebook's design makes no row there,
-     * so in the column it took the room of its own height from the reel's details, which all moved up
-     * and left a gap over the seek bar. Laid over the column, the button stays where it sits over a
-     * clean reel and the details sit where Facebook puts them. Never throws.
+     * (#329). True and the patch sets the row to an absolute position at the overlay's bottom end,
+     * lifted off the bottom by the patch's lift, with the row's own margins kept. Never throws.
+     *
+     * <p>True for a button kept for a reel taken out of Clean mode. Facebook's design makes no row
+     * there, so in the column it took the room of its own height from the reel's details, which all
+     * moved up and left a gap over the seek bar. Laid over the column, the details sit where Facebook
+     * puts them.
+     *
+     * <p>True as well for the button over a clean reel while either of Clean up Reels' switches is on
+     * (#391). Facebook puts that one right over the seek bar, so a tap meant for the button kept
+     * landing on the bar and moved the video instead. Lifted, it sits clear of the bar, and a kept
+     * button sits in the same spot.
      */
     public static boolean floatCleanButton() {
         try {
             boolean kept = KEPT_BUTTON.get() == Boolean.TRUE;
             KEPT_BUTTON.remove();
-            if (!kept) return false;
-            HookStatus.counted(FAMILY, FLOATED_BUTTON);
+            if (kept) {
+                HookStatus.counted(FAMILY, FLOATED_BUTTON);
+                return true;
+            }
+            if (!(on() || buttonOn())) return false;
+            HookStatus.counted(FAMILY, LIFTED_BUTTON);
             return true;
         } catch (Throwable failure) {
             Logger.printException(() -> "Reel Clean mode: could not place the kept button", failure);
