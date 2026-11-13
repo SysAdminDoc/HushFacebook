@@ -48,7 +48,7 @@ class ColourResolverFixtureTest {
     }
 
     /** Builds that make the navigation bar's view in more than one method. */
-    private val navigationBarMakers = mapOf("586.0.0.52.53" to 2)
+    private val navigationBarMakers = mapOf("586.0.0.52.53" to 2, "587.0.0.39.55" to 2)
 
     /** The call the FdsColorScheme wrapper hands the context and token to: the view resolver. */
     private fun viewResolver(scheme: ClassDef): MethodReference = scheme.methods.mapNotNull { method ->
@@ -355,6 +355,7 @@ class ColourResolverFixtureTest {
                     }
                 }
                 // 586 makes it in two places (arm64 LX/02Pp;->A03, which takes Boolean overrides, and A04), each with its own colour call.
+                // 587 too (arm64 LX/02Rz;->A03 and A04).
                 // Its Android 9 build makes it in one (LX/02Qb;->A03).
                 val android9 = name.substringAfter("-$version-").contains("-minapi")
                 assertEquals("$name: methods giving a view the navigation bar's id, ${makers.map { it.descriptor() }}",
@@ -470,7 +471,16 @@ class ColourResolverFixtureTest {
                 assertTrue("$name: FbChromeFragment's bar config isn't in $barNames",
                     bars.any { it.definingClass == "Lcom/facebook/katana/fragment/FbChromeFragment;" && it.name == "getSystemBarsConfig" })
                 val videoTab = "Lcom/facebook/video/videohome/fragment/VideoHomeRootFragment;"
-                val tabHelpers = helperCalls.filterKeys { it.definingClass == videoTab }.values.flatten().toSet()
+                // 587 builds the Video tab's status bar outside the fragment (arm64 `LX/09jn;->A02`, asked
+                // through a lambda), and the grey's helper there (`LX/09jn;->A00`) is one the fragment
+                // calls itself for its top bar (`A0A(Z)V`): a bar helper the Video tab calls is the tab's.
+                val videoTabCalls = FixtureDex.classes(bundle, setOf(videoTab)).getValue(videoTab).methods.flatMap { method ->
+                    method.implementation?.instructions?.mapNotNull {
+                        ((it as? ReferenceInstruction)?.reference as? MethodReference)?.toString()
+                    }.orEmpty()
+                }.toSet()
+                val tabHelpers = helperCalls.filterKeys { it.definingClass == videoTab }.values.flatten().toSet() +
+                    (helpers intersect videoTabCalls)
                 assertTrue("$name: no Video tab painter in $barNames",
                     bars.any { it.definingClass == videoTab || it.descriptor() in tabHelpers })
                 // A helper is left out of the sweep for every caller it has, so one holding a dark grey
