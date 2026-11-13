@@ -25,6 +25,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.readsAfter
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.Method
@@ -63,7 +64,7 @@ val postActionButtonsPatch = bytecodePatch(
 
 /**
  * Save and the hide switches: the list of the row's button types goes through the extension on its
- * way out, which drops the types of hidden buttons and adds SAVE when its switch is on. The item builder already has a Save case (the one under a post's
+ * way out, which drops the types of hidden buttons and adds SAVE when its switch is on. The row builder already has a Save case (the one under a post's
  * menu), so the button looks and acts exactly like Facebook's, filled bookmark included.
  */
 internal fun BytecodePatchContext.hookTypes(row: ActionRow) {
@@ -104,7 +105,8 @@ internal fun BytecodePatchContext.hookTypes(row: ActionRow) {
 /**
  * Download: right before the row seals each list of items, the extension is asked whether this
  * post holds a video or photos, and when it does, an item built like Save's (Facebook's Download
- * icon, the label as text and description, the extension as the click) joins the list.
+ * icon, the label as text and description, the extension as the click) joins the list. A list held
+ * above v15 (587's v18) is copied first into a low register nothing reads past the seal.
  */
 internal fun BytecodePatchContext.hookDownload(row: ActionRow) {
     val getters = listOf(
@@ -115,16 +117,20 @@ internal fun BytecodePatchContext.hookDownload(row: ActionRow) {
     )
     mutableClassDefBy(row.owner).methods.add(downloadHelper(row, getters))
 
-    val items = mutableMethodOf(row.items)
-    row.seals().sortedByDescending { it.index }.forEach { seal ->
-        if (seal.list > 15 || seal.state > 15) {
-            refuse("${row.items.name} holds its items in v${seal.list} and its state in v${seal.state}")
-        }
-        items.addInstructionsAtControlFlowLabel(
-            seal.index,
-            "invoke-static { v${seal.list}, v${seal.state} }, ${row.owner}->$DOWNLOAD_HELPER($LIST${row.state})V",
-        )
+    // Every seal's code is chosen on Facebook's own method, before anything goes in.
+    val hooks = row.seals().map { seal ->
+        if (seal.state > 15) refuse("${row.items.name} holds its state in v${seal.state}")
+        val call = "${row.owner}->$DOWNLOAD_HELPER($LIST${row.state})V"
+        if (seal.list <= 15) return@map seal.index to "invoke-static { v${seal.list}, v${seal.state} }, $call"
+        val scratch = (0..15).firstOrNull { it != seal.state && row.items.readsAfter(seal.index, it).isEmpty() }
+            ?: refuse("${row.items.name} holds its items in v${seal.list} with no free low register to copy them to")
+        seal.index to """
+            move-object/from16 v$scratch, v${seal.list}
+            invoke-static { v$scratch, v${seal.state} }, $call
+        """
     }
+    val items = mutableMethodOf(row.items)
+    hooks.sortedByDescending { it.first }.forEach { (index, smali) -> items.addInstructionsAtControlFlowLabel(index, smali) }
 }
 
 /** `static void hushfacebookDownloadButton(List items, <state> state)`, adding the item when it applies. */

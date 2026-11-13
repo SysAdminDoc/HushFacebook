@@ -11,6 +11,7 @@ import app.morphe.patches.facebook.downloads.video.GRAPHQL_STORY
 import app.morphe.patches.facebook.downloads.video.GRAPHQL_STORY_ATTACHMENT
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.namedRegisters
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -18,8 +19,10 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -33,10 +36,20 @@ import org.junit.Test
  * Read from 584 (2026-10-27): the row is `LX/36P;`, its type list `A06`, the item builder `A01`
  * (type `LX/36Q;`, state `LX/36S;`), the row `A05`, sealing two lists (the Share group and the
  * whole row). 585 arm64 (2026-10-29) is `LX/03E8;` with the same method names; its type list loads no
- * string, so the row is found from the item builder. None of those names is used here.
+ * string, so the row is found from the item builder. 587 arm64 (2026-11-12) has no item builder: the
+ * row `LX/03jE;->A04` switches over the types itself and seals one list, with the range form, from
+ * v18. None of those names is used here.
  */
 class PostActionButtonsFixtureTest {
     private val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+
+    /** How many lists each build's row seals: the Share group and the whole row, or since 587 the row alone. */
+    private val sealed = mapOf("586.0.0.52.53" to 2, "587.0.0.39.55" to 1)
+
+    private fun holds(method: com.android.tools.smali.dexlib2.iface.Method, string: String) =
+        method.implementation?.instructions?.any {
+            ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == string
+        } == true
 
     @Test
     fun `Save joins the type list and Download joins each sealed list, on each declared build`() {
@@ -44,12 +57,10 @@ class PostActionButtonsFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                // The holders of "Save" with a static (type, state, Map) method, the item builder's shape.
+                // The holders of "Save" in a static method that also has a static List method, the row's shape.
                 val owners = FixtureDex.classesHolding(bundle, SAVE_TAG).filter { owner ->
-                    owner.methods.any {
-                        AccessFlags.STATIC.isSet(it.accessFlags) && it.parameterTypes.size == 3 &&
-                            it.parameterTypes[2].toString() == MAP
-                    }
+                    owner.methods.any { AccessFlags.STATIC.isSet(it.accessFlags) && holds(it, SAVE_TAG) } &&
+                        owner.methods.any { AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == LIST }
                 }
                 val classes = FixtureDex.classes(bundle, owners.flatMap(::typesNamed).toSet() +
                     setOf(GRAPHQL_STORY, GRAPHQL_STORY_ATTACHMENT, GRAPHQL_MEDIA))
@@ -58,9 +69,10 @@ class PostActionButtonsFixtureTest {
                 val row = with(context) { actionRow() }
                 val returns = row.typeReturns().size
                 val seals = row.seals()
-                assertEquals("$name: the row seals the Share group and the whole row", 2, seals.size)
-                val typesBefore = row.types.implementation!!.instructions.count()
-                val itemsBefore = row.items.implementation!!.instructions.count()
+                assertEquals("$name: the lists the row seals", sealed.getValue(version), seals.size)
+                // Counted without NOPs: a payload's alignment NOP comes and goes as code moves (587's row).
+                val typesBefore = row.types.implementation!!.instructions.count { it.opcode != Opcode.NOP }
+                val itemsBefore = row.items.implementation!!.instructions.count { it.opcode != Opcode.NOP }
 
                 with(context) {
                     hookTypes(row)
@@ -70,7 +82,7 @@ class PostActionButtonsFixtureTest {
 
                 val types = owner.methods.single { it.name == row.types.name && it.parameterTypes.map(CharSequence::toString) == row.types.parameterTypes.map(CharSequence::toString) }
                 val typesAfter = types.implementation!!.instructions.toList()
-                assertEquals("$name: two instructions per return", typesBefore + 2 * returns, typesAfter.size)
+                assertEquals("$name: two instructions per return", typesBefore + 2 * returns, typesAfter.count { it.opcode != Opcode.NOP })
                 typesAfter.indices.filter { typesAfter[it].opcode == Opcode.RETURN_OBJECT }.forEach { index ->
                     val list = (typesAfter[index] as OneRegisterInstruction).registerA
                     val call = typesAfter[index - 2]
@@ -82,7 +94,9 @@ class PostActionButtonsFixtureTest {
 
                 val items = owner.methods.single { it.name == row.items.name && it.parameterTypes.map(CharSequence::toString) == row.items.parameterTypes.map(CharSequence::toString) }
                 val itemsAfter = items.implementation!!.instructions.toList()
-                assertEquals("$name: one call per sealed list", itemsBefore + seals.size, itemsAfter.size)
+                // One call per sealed list, plus a copy of a list held above v15 into a low register.
+                val copies = seals.count { it.list > 15 }
+                assertEquals("$name: one call per sealed list", itemsBefore + seals.size + copies, itemsAfter.count { it.opcode != Opcode.NOP })
                 val hooks = itemsAfter.indices.filter {
                     (itemsAfter[it] as? ReferenceInstruction)?.reference?.toString() ==
                         "${row.owner}->$DOWNLOAD_HELPER($LIST${row.state})V"
@@ -90,9 +104,15 @@ class PostActionButtonsFixtureTest {
                 assertEquals("$name: each sealed list meets the Download helper", seals.size, hooks.size)
                 for (hook in hooks) {
                     val wrap = itemsAfter[hook + 1]
-                    assertEquals("$name: right before the list is sealed", Opcode.INVOKE_STATIC, wrap.opcode)
-                    assertEquals("$name: the list it seals", (wrap as FiveRegisterInstruction).registerC,
-                        (itemsAfter[hook] as FiveRegisterInstruction).registerC)
+                    assertTrue("$name: right before the list is sealed",
+                        wrap.opcode == Opcode.INVOKE_STATIC || wrap.opcode == Opcode.INVOKE_STATIC_RANGE)
+                    val sealedList = wrap.namedRegisters().first()
+                    val handed = (itemsAfter[hook] as FiveRegisterInstruction).registerC
+                    if (sealedList == handed) continue
+                    val copy = itemsAfter[hook - 1]
+                    assertEquals("$name: the list it seals, copied low", Opcode.MOVE_OBJECT_FROM16, copy.opcode)
+                    assertEquals("$name: the list it seals, copied low", listOf(handed, sealedList),
+                        listOf((copy as TwoRegisterInstruction).registerA, copy.registerB))
                 }
 
                 val helper = owner.methods.single { it.name == DOWNLOAD_HELPER }
