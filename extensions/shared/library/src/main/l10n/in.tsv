@@ -2698,7 +2698,7 @@ Tab bar width	Lebar bilah tab
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Persen dari lebar layar, dari %1$s sampai %2$s. Ikon ikut membesar dan mengecil. Biarkan kosong untuk %3$s.
 The rounded tab bar is %1$s percent of the screen wide.	Bilah tab membulat selebar %1$s persen layar.
 Tab bar height	Tinggi bilah tab
-Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Persen dari tinggi penuh yang dipertahankan bilah tab membulat, dari %1$s sampai %2$s, dipotong di atas dan di bawah ikon. Biarkan kosong untuk %3$s.
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	Persen dari tinggi penuh yang dipertahankan bilah tab membulat, dari %1$s sampai %2$s, dipotong di atas dan di bawah ikon. Di atas 100 membuatnya lebih tinggi, terutama ke arah bawah layar. Biarkan kosong untuk %3$s.
 The rounded tab bar keeps %1$s percent of its height.	Bilah tab membulat mempertahankan %1$s persen tingginya.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	Tandai pengaturan baru

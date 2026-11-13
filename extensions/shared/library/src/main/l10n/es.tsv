@@ -2698,7 +2698,7 @@ Tab bar width	Ancho de la barra de pestañas
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Porcentaje del ancho de la pantalla, de %1$s a %2$s. Los iconos crecen y se encogen con ella. Déjalo en blanco para usar %3$s.
 The rounded tab bar is %1$s percent of the screen wide.	La barra de pestañas redondeada ocupa el %1$s por ciento del ancho de la pantalla.
 Tab bar height	Alto de la barra de pestañas
-Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Porcentaje de su altura completa que conserva la barra de pestañas redondeada, de %1$s a %2$s, recortada por encima y por debajo de los iconos. Déjalo en blanco para usar %3$s.
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	Porcentaje de su altura completa que conserva la barra de pestañas redondeada, de %1$s a %2$s, recortada por encima y por debajo de los iconos. Más de 100 la hace más alta, sobre todo hacia la parte de abajo de la pantalla. Déjalo en blanco para usar %3$s.
 The rounded tab bar keeps %1$s percent of its height.	La barra de pestañas redondeada conserva el %1$s por ciento de su altura.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	Marcar ajustes nuevos

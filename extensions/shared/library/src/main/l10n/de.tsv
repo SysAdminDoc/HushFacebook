@@ -2698,7 +2698,7 @@ Tab bar width	Breite der Tab-Leiste
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Prozent der Bildschirmbreite, von %1$s bis %2$s. Die Symbole werden mit ihr größer und kleiner. Leer lassen für %3$s.
 The rounded tab bar is %1$s percent of the screen wide.	Die abgerundete Tab-Leiste ist %1$s Prozent der Bildschirmbreite breit.
 Tab bar height	Höhe der Tab-Leiste
-Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Wie viel Prozent ihrer vollen Höhe die abgerundete Tab-Leiste behält, von %1$s bis %2$s, über und unter den Symbolen gekürzt. Leer lassen für %3$s.
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	Wie viel Prozent ihrer vollen Höhe die abgerundete Tab-Leiste behält, von %1$s bis %2$s, über und unter den Symbolen gekürzt. Über 100 macht sie höher, vor allem zum unteren Bildschirmrand hin. Leer lassen für %3$s.
 The rounded tab bar keeps %1$s percent of its height.	Die abgerundete Tab-Leiste behält %1$s Prozent ihrer Höhe.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	Neue Einstellungen markieren

@@ -2604,7 +2604,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     static ValueRows.PercentRow tabBarHeightRow(Context context) {
         return percentRow(context, Settings.TAB_BAR_HEIGHT, L10n.t("Tab bar height"),
                 L10n.f("Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and "
-                        + "below the icons. Leave it blank for %3$s.", RoundedTabBar.MIN_HEIGHT, RoundedTabBar.MAX_HEIGHT,
+                        + "below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it "
+                        + "blank for %3$s.", RoundedTabBar.MIN_HEIGHT, RoundedTabBar.MAX_HEIGHT,
                         RoundedTabBar.DEFAULT_HEIGHT),
                 RoundedTabBar.DEFAULT_HEIGHT, HushfacebookPreferenceFragment::tabBarHeightSummary);
     }

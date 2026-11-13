@@ -2356,8 +2356,8 @@ final class L10nTableZh_rCN {
                 "\u4f60\u5c4f\u853d\u7684\u4eba\u5728 Facebook \u8bbe\u7f6e\u7684\u5c4f\u853d\u9875\u9762\u4e0a\u4e0d\u663e\u793a\u5934\u50cf\u3002\u5982\u679c\u8be5\u9875\u9762\u5df2\u6253\u5f00\uff0c\u8bf7\u91cd\u65b0\u6253\u5f00\u3002");
         table.put("People, Pages and sites to hide",
                 "\u8981\u9690\u85cf\u7684\u7528\u6237\u3001\u516c\u5171\u4e3b\u9875\u548c\u7f51\u7ad9");
-        table.put("Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.",
-                "\u5706\u89d2\u6807\u7b7e\u680f\u4fdd\u7559\u5176\u5b8c\u6574\u9ad8\u5ea6\u7684\u767e\u5206\u6bd4\uff0c\u8303\u56f4 %1$s \u5230 %2$s\uff0c\u5728\u56fe\u6807\u4e0a\u65b9\u548c\u4e0b\u65b9\u88c1\u526a\u3002\u7559\u7a7a\u5219\u4f7f\u7528 %3$s.");
+        table.put("Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.",
+                "\u5706\u89d2\u6807\u7b7e\u680f\u4fdd\u7559\u5176\u5b8c\u6574\u9ad8\u5ea6\u7684\u767e\u5206\u6bd4\uff0c\u8303\u56f4 %1$s \u5230 %2$s\uff0c\u5728\u56fe\u6807\u4e0a\u65b9\u548c\u4e0b\u65b9\u88c1\u526a\u3002\u8d85\u8fc7 100 \u4f1a\u8ba9\u5b83\u53d8\u9ad8\uff0c\u4e3b\u8981\u5411\u5c4f\u5e55\u5e95\u90e8\u5ef6\u4f38\u3002\u7559\u7a7a\u5219\u4f7f\u7528 %3$s.");
         table.put("Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.",
                 "\u5360\u5c4f\u5e55\u5bbd\u5ea6\u7684\u767e\u5206\u6bd4\uff0c\u8303\u56f4 %1$s \u5230 %2$s\u3002\u56fe\u6807\u4f1a\u968f\u4e4b\u653e\u5927\u6216\u7f29\u5c0f\u3002\u7559\u7a7a\u5219\u4f7f\u7528 %3$s.");
         table.put("Phone layout on big screens",

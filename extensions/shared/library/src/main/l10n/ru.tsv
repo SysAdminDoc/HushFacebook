@@ -2752,7 +2752,7 @@ Tab bar width	Ширина панели вкладок
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Процент ширины экрана, от %1$s до %2$s. Значки увеличиваются и уменьшаются вместе с ней. Оставьте поле пустым, чтобы использовать %3$s.
 The rounded tab bar is %1$s percent of the screen wide.	Ширина скруглённой панели вкладок: %1$s процентов ширины экрана.
 Tab bar height	Высота панели вкладок
-Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Сколько процентов полной высоты сохраняет скруглённая панель вкладок, от %1$s до %2$s, с обрезкой сверху и снизу от значков. Оставьте поле пустым, чтобы использовать %3$s.
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	Сколько процентов полной высоты сохраняет скруглённая панель вкладок, от %1$s до %2$s, с обрезкой сверху и снизу от значков. Больше 100 делает её выше, в основном к нижнему краю экрана. Оставьте поле пустым, чтобы использовать %3$s.
 The rounded tab bar keeps %1$s percent of its height.	Скруглённая панель вкладок сохраняет %1$s процентов своей высоты.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	Отмечать новые настройки

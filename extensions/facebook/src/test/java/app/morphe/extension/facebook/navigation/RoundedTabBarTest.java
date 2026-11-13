@@ -176,6 +176,7 @@ public class RoundedTabBarTest {
 
         // A number past either end is held to it, and blank is the stock pill again.
         assertEquals(RoundedTabBar.MIN_WIDTH, RoundedTabBar.widthPercent("20"));
+        assertEquals(130, RoundedTabBar.MAX_HEIGHT);
         assertEquals(RoundedTabBar.MAX_HEIGHT, RoundedTabBar.heightPercent("150"));
         assertEquals(RoundedTabBar.MIN_HEIGHT, RoundedTabBar.heightPercent("0"));
         assertEquals(RoundedTabBar.DEFAULT_WIDTH, RoundedTabBar.widthPercent("x"));
@@ -183,6 +184,48 @@ public class RoundedTabBarTest {
         screen.shaper.update();
         assertEquals(RoundedTabBar.SCALE, screen.holder.getScaleX(), 0f);
         assertEquals(34f, screen.holder.getPivotY(), 0.01f);
+    }
+
+    /**
+     * #425: a Tab bar height past 100 grows the pill. The row has 2 pixels over it, the line, and
+     * the 62 pixel strip under it, so it takes those 2 above, fades the line it now covers, and
+     * puts the rest below. The icons stay where they were.
+     */
+    @Test
+    public void heightPastAHundredGrowsThePillIntoTheBarsRoom() {
+        RoundedTabBarForTests screen = new RoundedTabBarForTests();
+        screen.shaper.update();
+        float pivot = screen.holder.getPivotY();
+        float[] radius = new float[1];
+
+        Settings.TAB_BAR_HEIGHT.save("120");
+        screen.shaper.update();
+        // 20% of 112 is 22: 2 above, where the line was, and 20 into the strip.
+        assertEquals(new Rect(0, 0, 720, 134), outlineOf(screen, radius));
+        assertEquals("its ends are half its new height", 67f, radius[0], 0.01f);
+        assertEquals("the line the pill now covers is faded", 0f, screen.line.getAlpha(), 0f);
+        assertEquals("scaled about the same point, so the icons don't move", pivot, screen.holder.getPivotY(), 0f);
+        assertEquals("the row of tabs itself keeps its size", 1f, screen.tabBar.getScaleX(), 0f);
+        Rect pill = new Rect();
+        RoundedTabBar.pillInWindow(screen.holder, pill);
+        assertEquals("the frost follows the taller pill, 120.6 pixels tall", 121, pill.height());
+
+        Settings.TAB_BAR_HEIGHT.save("130");
+        screen.shaper.update();
+        assertEquals(new Rect(0, 0, 720, 146), outlineOf(screen, radius));
+
+        // Room on both sides: half each.
+        Rect row = new Rect(0, 40, 100, 140);
+        RoundedTabBar.grow(row, 120, 0, 200);
+        assertEquals(new Rect(0, 30, 100, 150), row);
+        // No room under it: all above, as far as there's room.
+        row.set(0, 10, 100, 110);
+        RoundedTabBar.grow(row, 130, 0, 110);
+        assertEquals(new Rect(0, 0, 100, 110), row);
+        // 100 and under leave it to the trim.
+        row.set(0, 10, 100, 110);
+        RoundedTabBar.grow(row, 100, 0, 200);
+        assertEquals(new Rect(0, 10, 100, 110), row);
     }
 
     /** #383: the selected tab gets a spot behind it that follows the selection and goes with the pill. */

@@ -2698,7 +2698,7 @@ Tab bar width	Chiều rộng thanh tab
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	Phần trăm chiều rộng màn hình, từ %1$s đến %2$s. Các biểu tượng to lên và nhỏ đi theo nó. Để trống để dùng %3$s.
 The rounded tab bar is %1$s percent of the screen wide.	Thanh tab bo tròn rộng %1$s phần trăm màn hình.
 Tab bar height	Chiều cao thanh tab
-Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	Phần trăm chiều cao đầy đủ mà thanh tab bo tròn giữ lại, từ %1$s đến %2$s, được cắt bớt phía trên và phía dưới các biểu tượng. Để trống để dùng %3$s.
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	Phần trăm chiều cao đầy đủ mà thanh tab bo tròn giữ lại, từ %1$s đến %2$s, được cắt bớt phía trên và phía dưới các biểu tượng. Trên 100 làm thanh cao hơn, chủ yếu về phía cuối màn hình. Để trống để dùng %3$s.
 The rounded tab bar keeps %1$s percent of its height.	Thanh tab bo tròn giữ lại %1$s phần trăm chiều cao.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	Đánh dấu cài đặt mới

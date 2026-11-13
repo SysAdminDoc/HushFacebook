@@ -86,11 +86,14 @@ public final class RoundedTabBar {
     public static final int MAX_WIDTH = 100;
     /**
      * Tab bar height (#425): how much of its height the pill keeps, in percent, trimmed evenly
-     * above and below the icons, which keep their size. Blank keeps all of it.
+     * above and below the icons, which keep their size. Blank keeps all of it. Past 100 the pill
+     * grows instead, into the bar's own room around the row: evenly while there's room above the
+     * icons, the rest into the strip the bar keeps over the navigation bar. A bar's drawing can't
+     * reach past its own top, so a bar with no room under the row stops growing at what it has.
      */
     public static final int DEFAULT_HEIGHT = 100;
     public static final int MIN_HEIGHT = 60;
-    public static final int MAX_HEIGHT = 100;
+    public static final int MAX_HEIGHT = 130;
 
     /** The selected tab's spot: Facebook's blue, faint enough that the tab's own blue icon reads on it. */
     static final int SPOT_COLOR = 0x330866FF;
@@ -203,6 +206,22 @@ public final class RoundedTabBar {
         row.bottom -= cut;
     }
 
+    /**
+     * Grows [row] to [percent] of its height inside [ceiling] to [floor], the bar's own top and
+     * bottom: half above and half below where both have room, the rest on the side that has it.
+     */
+    static void grow(Rect row, int percent, int ceiling, int floor) {
+        if (percent <= 100 || row.isEmpty()) return;
+        int extra = Math.round(row.height() * (percent - 100) / 100f);
+        int above = Math.max(0, row.top - ceiling);
+        int below = Math.max(0, floor - row.bottom);
+        int up = Math.min(extra / 2, above);
+        int down = Math.min(extra - up, below);
+        up = Math.min(extra - down, above);
+        row.top -= up;
+        row.bottom += down;
+    }
+
     /** [anchor]'s box in [bar]'s coordinates, into [out]. */
     static void rowIn(View bar, View anchor, Rect out) {
         out.set(0, 0, anchor.getWidth(), anchor.getHeight());
@@ -257,7 +276,9 @@ public final class RoundedTabBar {
         aboveNavigation(bar, row, floor, shape.at);
         Rect pill = shape.trimmed;
         pill.set(row);
-        trim(pill, heightPercent(Settings.TAB_BAR_HEIGHT.get()));
+        int height = heightPercent(Settings.TAB_BAR_HEIGHT.get());
+        trim(pill, height);
+        grow(pill, height, 0, bar.getHeight());
         if (!pill.equals(shape.pill.row)) {
             shape.pill.row.set(pill);
             bar.invalidateOutline();
@@ -270,7 +291,8 @@ public final class RoundedTabBar {
         if (bar.getPivotY() != pivotY) bar.setPivotY(pivotY);
         if (bar.getScaleX() != scale) bar.setScaleX(scale);
         if (bar.getScaleY() != scale) bar.setScaleY(scale);
-        fadeLine(bar, row, shape);
+        // A pill grown up over Facebook's line along the bar's top fades it like one over the row.
+        fadeLine(bar, pill.top < row.top ? pill : row, shape);
         return fresh;
     }
 

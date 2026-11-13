@@ -2693,7 +2693,7 @@ Tab bar width	标签栏宽度
 Percent of the screen's width, from %1$s to %2$s. The icons grow and shrink with it. Leave it blank for %3$s.	占屏幕宽度的百分比，范围 %1$s 到 %2$s。图标会随之放大或缩小。留空则使用 %3$s.
 The rounded tab bar is %1$s percent of the screen wide.	圆角标签栏的宽度为屏幕的百分之 %1$s.
 Tab bar height	标签栏高度
-Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Leave it blank for %3$s.	圆角标签栏保留其完整高度的百分比，范围 %1$s 到 %2$s，在图标上方和下方裁剪。留空则使用 %3$s.
+Percent of its full height the rounded tab bar keeps, from %1$s to %2$s, trimmed above and below the icons. Over 100 makes it taller, mostly toward the bottom of the screen. Leave it blank for %3$s.	圆角标签栏保留其完整高度的百分比，范围 %1$s 到 %2$s，在图标上方和下方裁剪。超过 100 会让它变高，主要向屏幕底部延伸。留空则使用 %3$s.
 The rounded tab bar keeps %1$s percent of its height.	圆角标签栏保留其高度的百分之 %1$s.
 # context: title of a row under About that picks how long a dot marks settings an update added
 Mark new settings	标记新设置
