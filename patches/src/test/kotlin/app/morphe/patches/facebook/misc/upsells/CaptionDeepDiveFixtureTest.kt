@@ -12,6 +12,7 @@ import app.morphe.patches.facebook.comments.summaries.isNameTable
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.shared.compat.AppCompatibilities
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -33,6 +34,18 @@ import org.junit.Test
  */
 class CaptionDeepDiveFixtureTest {
     private val pluginName = CAPTION_DEEP_DIVE_PLUGIN.removePrefix("L").removeSuffix(";").replace('/', '.')
+
+    private val CHECKED = "checked for null"
+    private val HANDED_BACK = "handed back"
+
+    /**
+     * Per build, what the table's class does with each answer it reads from the getter. Up to 586 it
+     * branched on a null right away. 587 builds the row in the getter (arm64 `A00(LX/03FD;)LX/0V49;`),
+     * and the table's case hands the answer straight back to the collector (`LX/02sT;->A0A`, case 7).
+     */
+    private val answerUses = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to listOf(HANDED_BACK), "armeabi-v7a" to listOf(HANDED_BACK)),
+    )
 
     private fun Instruction.called() = (this as? ReferenceInstruction)?.reference as? MethodReference
 
@@ -69,23 +82,29 @@ class CaptionDeepDiveFixtureTest {
                         (load as NarrowLiteralInstruction).narrowLiteral == 0 &&
                         (load as OneRegisterInstruction).registerA == (getterCode[at] as OneRegisterInstruction).registerA
                 }
-                for ((code, at) in reads) {
+                val uses = reads.map { (code, at) ->
                     assertEquals("$name: the getter's answer isn't kept", Opcode.MOVE_RESULT_OBJECT, code[at + 1].opcode)
                     val kept = (code[at + 1] as OneRegisterInstruction).registerA
                     val next = code[at + 2]
-                    val checked = (next.opcode == Opcode.IF_EQZ || next.opcode == Opcode.IF_NEZ) &&
-                        (next as OneRegisterInstruction).registerA == kept
-                    // 587 builds the row in the getter (arm64 `A00(LX/03FD;)LX/0V49;`), and the table's case
-                    // hands its answer straight back to the collector (`LX/02sT;->A0A`, case 7), which takes a
-                    // null the way it takes the getter's own null for a post without a deep dive.
-                    val handedBack = next.opcode == Opcode.RETURN_OBJECT && (next as OneRegisterInstruction).registerA == kept
-                    assertTrue("$name: the getter's answer isn't checked for null right away", checked || handedBack)
-                    if (handedBack) assertTrue("$name: the getter's answer is handed back, but it never answers null itself", answersNull)
+                    when {
+                        (next.opcode == Opcode.IF_EQZ || next.opcode == Opcode.IF_NEZ) && (next as OneRegisterInstruction).registerA == kept -> CHECKED
+                        next.opcode == Opcode.RETURN_OBJECT && (next as OneRegisterInstruction).registerA == kept -> HANDED_BACK
+                        else -> "neither, ${next.opcode}"
+                    }
+                }.sorted()
+                val pinned = answerUses.getValue(version)[name.substringAfter("-$version-").substringBefore(".apkm")]
+                    ?: throw AssertionError("$name has no pin")
+                assertEquals("$name: what the table's class does with the getter's answer", pinned, uses)
+                // A null handed back is the getter's own answer for a post without a deep dive.
+                if (HANDED_BACK in pinned) {
+                    assertTrue("$name: the getter's answer is handed back, but it never answers null itself", answersNull)
                 }
 
                 val original = getter.implementation!!.instructions.toList()
+                // Every parameter is an object, and an instance getter's `this` is no local either.
+                val self = if (AccessFlags.STATIC.isSet(getter.accessFlags)) 0 else 1
                 assertTrue("$name: $getterCall has no local register for the hook",
-                    getter.implementation!!.registerCount - getter.parameterTypes.size >= 1)
+                    getter.implementation!!.registerCount - getter.parameterTypes.size - self >= 1)
                 val patched = MutableMethod(getter).apply { dropCaptionDeepDive() }
                 val after = patched.implementation!!.instructions.toList()
                 assertEquals("$name: instructions added", original.size + 5, after.size)

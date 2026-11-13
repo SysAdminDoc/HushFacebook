@@ -53,6 +53,14 @@ class ReturnRefreshFixtureTest {
     /** What the dex files holding the in-app checks' callers load: two kept method names and the pause worker's event. */
     private val callerTexts = setOf("onSetUserVisibleHint", "refreshForRevisit", "refresh_stale_post_on_pause")
 
+    /**
+     * Per build, the methods of the executor's class that ask the hot-start check and hand the executor
+     * its decision, by their parameters and answer. Up to 586 there was none; 587 has one.
+     */
+    private val relayShapes = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to listOf("(ZZ)V"), "armeabi-v7a" to listOf("(ZZ)V")),
+    )
+
     private fun Method.body(): List<Instruction> = implementation!!.instructions.toList()
 
     private fun Instruction.call(): String? = ((this as? ReferenceInstruction)?.reference)?.toString()
@@ -198,6 +206,11 @@ class ReturnRefreshFixtureTest {
                 val calls = method.implementation?.instructions?.map { it.call() }.orEmpty()
                 signature(executor) in calls && signature(hotStart) in calls
             }.map(::signature).toSet()
+        val relayVersion = relayShapes.keys.firstOrNull { name.contains("-$it-") } ?: throw AssertionError("$name has no pin")
+        assertEquals("$name: methods of the executor's class asking the hot-start check and handing the executor its decision: $relays",
+            relayShapes.getValue(relayVersion)[name.substringAfter("-$relayVersion-").substringBefore(".apkm")]
+                ?: throw AssertionError("$name has no pin"),
+            relays.map { "(" + it.substringAfter("(") }.sorted())
         val callers = FixtureDex.methodsWhere(bundle, { dex -> dex.stringSection.any { it in callerTexts } }) { method ->
             method.implementation?.instructions?.any { it.call() in targets || it.call() in relays } == true
         }

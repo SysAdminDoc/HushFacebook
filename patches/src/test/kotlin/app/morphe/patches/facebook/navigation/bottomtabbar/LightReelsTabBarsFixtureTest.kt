@@ -44,6 +44,18 @@ class LightReelsTabBarsFixtureTest {
 
     private val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
 
+    /**
+     * Per build, what the Video tab's reads of its reels-in-tab answer paint, and whether its status bar
+     * helper reads that answer itself. Up to 586 the fragment painted both bars; 587 leaves the status
+     * bar to the helper.
+     */
+    private val darkPaints = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to (setOf(DarkPaint.TOP_BAR) to true),
+            "armeabi-v7a" to (setOf(DarkPaint.TOP_BAR) to true),
+        ),
+    )
+
     private fun bundles(version: String) = Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }
 
     private fun Method.body(): List<Instruction> = implementation?.instructions?.toList().orEmpty()
@@ -97,13 +109,14 @@ class LightReelsTabBarsFixtureTest {
                 assertEquals("$name: the Video tab's helper answers the status bar", sites.statusBarType, sites.reelsBars.returnType)
                 assertEquals("$name: one reels-in-tab answer", 1, sites.darkReads.map { it.name }.distinct().size)
                 val paints = sites.darkReads.map { it.paints }.toSet()
-                assertTrue("$name: its reads paint the top bar", DarkPaint.TOP_BAR in paints)
                 // 587 paints no status bar in the fragment: the helper reads the same answer itself
                 // (arm64 `LX/09jn;->A02` reads it at 55) to build the dark one, and the helper's
                 // first-thing answer covers that.
-                assertTrue("$name: its reads paint the status bar, or the helper reads the answer itself",
-                    DarkPaint.STATUS_BAR in paints ||
-                        readsTabAnswer(sites.reelsBars, sites.reelsBars.parameterTypes.first().toString(), sites.darkReads.first().name))
+                val helperReads = readsTabAnswer(sites.reelsBars, sites.reelsBars.parameterTypes.first().toString(), sites.darkReads.first().name)
+                assertEquals("$name: what its reads paint, and whether the helper reads the answer itself",
+                    darkPaints.getValue(version)[name.substringAfter("-$version-").substringBefore(".apkm")]
+                        ?: throw AssertionError("$name has no pin"),
+                    paints to helperReads)
                 assertTrue("$name: every read sits in the Video tab",
                     sites.darkReads.all { it.method.definingClass == VIDEO_HOME_ROOT_FRAGMENT })
 

@@ -225,6 +225,16 @@ class PreSearchSectionsFixtureTest {
             it.name == method.name && it.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
         }.code()
 
+    /**
+     * Per build, the places the null-state query reads an entry's node, counted per method. Up to 586
+     * that was one static loop body. 587's arm64 inlines the loop into the callbacks taking the query's
+     * result, and one reads the node once and another twice (LX/0A6l;->HRJ and LX/0U4t;->HRJ). 587's
+     * v7 keeps the one static body (LX/0fHm;->A00).
+     */
+    private val querySites = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to listOf(1, 2), "armeabi-v7a" to listOf(1)),
+    )
+
     /** Asserts [patched] is [code] with [hook]'s three instructions at [at], keeping [kept] cast back to [type]. */
     private fun assertHanded(name: String, code: List<Instruction>, patched: List<Instruction>, at: Int, hook: String, kept: Int, type: String) {
         assertEquals("$name: three instructions added", code.opcodes().size + 3, patched.opcodes().size)
@@ -277,8 +287,12 @@ class PreSearchSectionsFixtureTest {
         val callerClasses = FixtureDex.classes(bundle, callers.map { it.definingClass }.toSet()).values.toList()
         val context = PatchContexts.of((classes + holderClasses + callerClasses).distinctBy { it.type })
         val sites = context.preSearchQuerySites(entry)
-        assertTrue("$name: no place the query reads an entry's node", sites.isNotEmpty())
         val byMethod = sites.groupBy { it.method }
+        val version = querySites.keys.firstOrNull { name.contains("-$it-") } ?: throw AssertionError("$name has no pin")
+        val pinned = querySites.getValue(version)[name.substringAfter("-$version-").substringBefore(".apkm")]
+            ?: throw AssertionError("$name has no pin")
+        assertEquals("$name: places the query reads an entry's node, per method ${byMethod.map { "${it.key}=${it.value.size}" }}",
+            pinned, byMethod.values.map { it.size }.sorted())
         val stock = byMethod.keys.associateWith { it.code() }
         for (site in sites) {
             val code = stock.getValue(site.method)

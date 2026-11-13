@@ -43,8 +43,13 @@ import org.junit.Test
 class PostActionButtonsFixtureTest {
     private val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
 
-    /** How many lists each build's row seals: the Share group and the whole row, or since 587 the row alone. */
-    private val sealed = mapOf("586.0.0.52.53" to 2, "587.0.0.39.55" to 1)
+    /**
+     * Per build, the register of each list the row seals. Up to 586 it sealed the Share group and the
+     * whole row from low registers; 587 seals the row alone, from a register past v15.
+     */
+    private val sealed = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to listOf(18), "armeabi-v7a" to listOf(18)),
+    )
 
     private fun holds(method: com.android.tools.smali.dexlib2.iface.Method, string: String) =
         method.implementation?.instructions?.any {
@@ -69,7 +74,10 @@ class PostActionButtonsFixtureTest {
                 val row = with(context) { actionRow() }
                 val returns = row.typeReturns().size
                 val seals = row.seals()
-                assertEquals("$name: the lists the row seals", sealed.getValue(version), seals.size)
+                assertEquals("$name: the registers of the lists the row seals",
+                    sealed.getValue(version)[name.substringAfter("-$version-").substringBefore(".apkm")]
+                        ?: throw AssertionError("$name has no pin"),
+                    seals.map { it.list }.sorted())
                 // Counted without NOPs: a payload's alignment NOP comes and goes as code moves (587's row).
                 val typesBefore = row.types.implementation!!.instructions.count { it.opcode != Opcode.NOP }
                 val itemsBefore = row.items.implementation!!.instructions.count { it.opcode != Opcode.NOP }
@@ -104,11 +112,15 @@ class PostActionButtonsFixtureTest {
                 assertEquals("$name: each sealed list meets the Download helper", seals.size, hooks.size)
                 for (hook in hooks) {
                     val wrap = itemsAfter[hook + 1]
-                    assertTrue("$name: right before the list is sealed",
-                        wrap.opcode == Opcode.INVOKE_STATIC || wrap.opcode == Opcode.INVOKE_STATIC_RANGE)
                     val sealedList = wrap.namedRegisters().first()
+                    // A list past v15 is sealed with the range form and reaches the helper through a low copy.
+                    assertEquals("$name: right before the list is sealed",
+                        if (sealedList > 15) Opcode.INVOKE_STATIC_RANGE else Opcode.INVOKE_STATIC, wrap.opcode)
                     val handed = (itemsAfter[hook] as FiveRegisterInstruction).registerC
-                    if (sealedList == handed) continue
+                    if (sealedList <= 15) {
+                        assertEquals("$name: the list it seals", sealedList, handed)
+                        continue
+                    }
                     val copy = itemsAfter[hook - 1]
                     assertEquals("$name: the list it seals, copied low", Opcode.MOVE_OBJECT_FROM16, copy.opcode)
                     assertEquals("$name: the list it seals, copied low", listOf(handed, sealedList),

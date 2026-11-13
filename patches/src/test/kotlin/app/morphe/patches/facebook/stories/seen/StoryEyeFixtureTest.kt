@@ -54,6 +54,14 @@ class StoryEyeFixtureTest {
         return versions
     }
 
+    /**
+     * Per build, whether the helper's (StoryBucket, StoryCard) method lays the listener's block out
+     * before the count it makes at once. Up to 586 the count came first in the code.
+     */
+    private val listenerLaidOutFirst = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to true, "armeabi-v7a" to true),
+    )
+
     @Test
     fun `each declared build's seen helper makes one listener to count a card later, which takes the early card hook`() {
         val versions = versions()
@@ -93,6 +101,10 @@ class StoryEyeFixtureTest {
                 val made = code.indexOfFirst { it.opcode == Opcode.NEW_INSTANCE && (it as ReferenceInstruction).reference.toString() == later.listener.type }
                 assertTrue("$name: the helper doesn't count the card at once", countNow >= 0)
                 assertTrue("$name: the helper doesn't make the listener", made >= 0)
+                val listenerFirst = listenerLaidOutFirst.getValue(version)[name.substringAfter("-$version-").substringBefore(".apkm")]
+                    ?: throw AssertionError("$name has no pin")
+                assertEquals("$name: the listener's block comes before the count (the count at $countNow, the listener at $made)",
+                    listenerFirst, made < countNow)
 
                 // The bucket, the card and the helper are the constructor's first three
                 // parameters (p1 to p3) whatever primitives follow them.

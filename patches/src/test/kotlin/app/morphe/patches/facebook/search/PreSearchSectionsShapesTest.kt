@@ -253,6 +253,7 @@ class PreSearchSectionsShapesTest {
         read: List<Instruction>,
         parameters: List<String> = listOf(builder, "Ljava/util/Iterator;"),
         list: String = builder,
+        returns: String = "V",
     ): Method {
         // Each read keeps the node in v3, and its null test jumps to the closing return.
         val body = read + listOf(
@@ -261,7 +262,7 @@ class PreSearchSectionsShapesTest {
             ImmutableInstruction10x(Opcode.RETURN_VOID),
         )
         return ImmutableMethod(
-            owner, "A1C", parameters.map { ImmutableMethodParameter(it, null, null) }, "V",
+            owner, "A1C", parameters.map { ImmutableMethodParameter(it, null, null) }, returns,
             AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, null, null, ImmutableMethodImplementation(8, body, null, null),
         )
     }
@@ -356,11 +357,14 @@ class PreSearchSectionsShapesTest {
     @Test
     fun `another key, another body, the entry's own accessor or another method is no query site`() {
         // Controls: another field's key, a loop body adding the node to something other than a list
-        // builder, the accessor being the entry class's (the section and the head read that one), and
-        // another method of its interface.
+        // builder, a body that answers something (a loop body and a result callback answer nothing),
+        // the accessor being the entry class's (the section and the head read that one), and another
+        // method of its interface.
         fun sites(vararg classes: ClassDef) = PatchContexts.of(classes.toList()).preSearchQuerySites(entry).size
         assertEquals(0, sites(queryClass(queryBody(query, inlineRead(key = "node".hashCode())))))
         assertEquals(0, sites(queryClass(queryBody(query, inlineRead(), list = "Ljava/util/ArrayList;"))))
+        assertEquals(0, sites(queryClass(queryBody(query, inlineRead(), returns = "Ljava/lang/Object;"))))
+        assertEquals(0, sites(queryClass(queryBody(query, accessorRead(), returns = "Ljava/lang/Object;")), accessorClass()))
         assertEquals(0, sites(queryClass(queryBody(query, accessorRead(), list = "Ljava/util/ArrayList;")), accessorClass()))
         assertEquals(0, sites(queryClass(queryBody(query, accessorRead())), accessorClass(owner = entry)))
         assertEquals(0, sites(queryClass(queryBody(query, accessorRead(name = "ALd"))), accessorClass()))
