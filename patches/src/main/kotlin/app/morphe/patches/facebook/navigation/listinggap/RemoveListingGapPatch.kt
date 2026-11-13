@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -23,6 +24,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
@@ -82,11 +84,34 @@ private fun writes(code: List<Instruction>, from: Int, until: Int, register: Int
         (written == register || (code[it].opcode.setsWideRegister() && written + 1 == register))
 }
 
+private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+
+/**
+ * Whether [register] can hold nothing but [method]'s [parameter] as the instruction at [index]
+ * starts, on every way there: each write that can reach it copies the parameter or check-casts it,
+ * which keeps the same object.
+ */
+private fun holdsParameter(method: Method, index: Int, register: Int, parameter: Int, seen: MutableSet<Pair<Int, Int>> = mutableSetOf()): Boolean {
+    if (!seen.add(index to register)) return true
+    val code = method.implementation!!.instructions.toList()
+    return method.writersReaching(index, register).all { writer ->
+        when {
+            writer == -1 -> register == parameter
+            code[writer].opcode == Opcode.CHECK_CAST -> holdsParameter(method, writer, register, parameter, seen)
+            code[writer].opcode in OBJECT_MOVES ->
+                holdsParameter(method, writer, (code[writer] as TwoRegisterInstruction).registerB, parameter, seen)
+            else -> false
+        }
+    }
+}
+
 /**
  * The register holding the decor view at the call to the insets map at [index] in [method]. In the
  * listener, a lambda's invoke(Object, Object), that's its first parameter, the view the listener was
- * set on, as long as nothing in the method writes it. Anywhere else it's the view whose
- * getRootWindowInsets the method read last, as long as nothing wrote it since.
+ * set on, or a copy of it in v0 to v15 when the parameter sits past v15, as long as nothing on the
+ * way to the call writes it. 587's 32-bit listener is a merged lambda that copies its view to v5 first
+ * and writes the parameter only in a branch of its own (`LX/0Cx1;->invoke`). Anywhere else it's the
+ * view whose getRootWindowInsets the method read last, as long as nothing wrote it since.
  */
 internal fun decorRegister(method: Method, index: Int): Int {
     val code = method.implementation!!.instructions.toList()
@@ -94,8 +119,9 @@ internal fun decorRegister(method: Method, index: Int): Int {
     if (method.name == "invoke" && method.parameterTypes.size == 2 && !AccessFlags.STATIC.isSet(method.accessFlags)) {
         // p0 is this, p1 the view, p2 the insets.
         val view = method.implementation!!.registerCount - 2
-        if (writes(code, 0, index, view)) throw PatchException("$PATCH: $where writes over its view before the insets map")
-        return view
+        val holding = (listOf(view) + (0..15)).distinct().filter { holdsParameter(method, index, it, view) }
+        if (holding.isEmpty()) throw PatchException("$PATCH: $where writes over its view before the insets map")
+        return holding.firstOrNull { it <= 15 } ?: view
     }
     val read = (index - 1 downTo 0).firstOrNull {
         code[it].opcode == Opcode.INVOKE_VIRTUAL &&

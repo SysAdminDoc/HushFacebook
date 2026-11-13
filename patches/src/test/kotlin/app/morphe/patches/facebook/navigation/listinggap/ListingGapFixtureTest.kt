@@ -15,6 +15,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.util.MethodUtil
@@ -52,8 +53,17 @@ class ListingGapFixtureTest {
                 for (listener in listeners) {
                     assertEquals("${bundle.name}: ${listener.definingClass}->${listener.name}", "invoke", listener.name)
                     val view = listener.implementation!!.registerCount - 2
+                    // 587's 32-bit listener keeps its view past v15 and copies it to a low register first.
+                    val copies = listener.implementation!!.instructions.take(4)
+                        .filter { it.opcode == Opcode.MOVE_OBJECT_FROM16 && (it as TwoRegisterInstruction).registerB == view }
+                        .map { (it as TwoRegisterInstruction).registerA }
                     for ((_, _, decor) in insetsMapCalls(listener, map)) {
-                        assertEquals("${bundle.name}: the listener's view is its first parameter", view, decor)
+                        if (view <= 15) {
+                            assertEquals("${bundle.name}: the listener's view is its first parameter", view, decor)
+                        } else {
+                            assertTrue("${bundle.name}: the listener's view, past v15, is the copy it makes first ($copies), not v$decor",
+                                decor in copies)
+                        }
                     }
                 }
 
