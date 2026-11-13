@@ -28,6 +28,7 @@ final class SwitchLabels {
         if (setting == Settings.POST_DOWNLOAD_BUTTON) return L10n.t("Download button under posts");
         if (setting == Settings.HIDE_POST_LIKE_BUTTON) return L10n.t("Hide Like under posts");
         if (setting == Settings.HIDE_POST_COMMENT_BUTTON) return L10n.t("Hide Comment under posts");
+        if (setting == Settings.HIDE_POST_REPOST_BUTTON) return L10n.t("Hide Repost under posts");
         if (setting == Settings.HIDE_POST_SHARE_BUTTON) return L10n.t("Hide Share under posts");
         if (setting == Settings.HIDE_POST_SEND_BUTTON) return L10n.t("Hide Send under posts");
         if (setting == Settings.HIDE_AFFILIATE_LINKS) return L10n.t("Hide affiliate product links");
@@ -199,6 +200,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_REEL_WHATSAPP_BUTTON) return L10n.t("Hide WhatsApp on reels");
         if (setting == Settings.HIDE_REEL_LIKE_BUTTON) return L10n.t("Hide Like on reels");
         if (setting == Settings.HIDE_REEL_COMMENT_BUTTON) return L10n.t("Hide Comment on reels");
+        if (setting == Settings.HIDE_REEL_REPOST_BUTTON) return L10n.t("Hide Repost on reels");
         if (setting == Settings.HIDE_REEL_SHARE_BUTTON) return L10n.t("Hide Share on reels");
         if (setting == Settings.SHOW_REEL_COMMENT_BUTTON) return L10n.t("Show Comment when comments are off");
         if (setting == Settings.SHOW_REEL_POST_DATE) return L10n.t("Show the post date on reels");

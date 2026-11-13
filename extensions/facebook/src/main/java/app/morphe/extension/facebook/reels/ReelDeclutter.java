@@ -219,6 +219,7 @@ public final class ReelDeclutter {
     static final String WHATSAPP_BUTTON = "WhatsApp button";
     static final String LIKE_BUTTON = "Like button";
     static final String COMMENT_BUTTON = "Comment button";
+    static final String REPOST_BUTTON = "Repost button";
     static final String SHARE_BUTTON = "Share button";
     static final String SOUND_BUTTON = "speaker button";
     /** Counted under the family's name each time the side column builds a reel's speaker (#331). */
@@ -249,6 +250,8 @@ public final class ReelDeclutter {
     static final String WHATSAPP_TYPE = "APP_WHATSAPP";
     static final String LIKE_TYPE = "LIKE";
     static final String COMMENT_TYPE = "COMMENT";
+    /** Repost, the two arrows the sidebar's list builder puts in ahead of Share (#450, 587). */
+    static final String REPOST_TYPE = "RESHARE";
     static final String SHARE_TYPE = "SHARE";
 
     /**
@@ -945,8 +948,8 @@ public final class ReelDeclutter {
     /**
      * Injection point, in the reel sidebar builders, handed each button type before anything is
      * built for it (#190, #243). True skips that type, so the button isn't built, marked or named,
-     * and the others close the gap. Like, Comment, Share, Save and direct WhatsApp each have their
-     * own switch (#265). Never throws: off, paused, before the settings are ready, for any other
+     * and the others close the gap. Like, Comment, Repost, Share, Save and direct WhatsApp each have
+     * their own switch (#265, #450). Never throws: off, paused, before the settings are ready, for any other
      * type or on a failure the button is built as before.
      *
      * @param type the constant of Facebook's icon enum the sidebar is about to build a button for.
@@ -962,6 +965,7 @@ public final class ReelDeclutter {
                 case WHATSAPP_TYPE: button = WHATSAPP_BUTTON; setting = Settings.HIDE_REEL_WHATSAPP_BUTTON; break;
                 case LIKE_TYPE: button = LIKE_BUTTON; setting = Settings.HIDE_REEL_LIKE_BUTTON; break;
                 case COMMENT_TYPE: button = COMMENT_BUTTON; setting = Settings.HIDE_REEL_COMMENT_BUTTON; break;
+                case REPOST_TYPE: button = REPOST_BUTTON; setting = Settings.HIDE_REEL_REPOST_BUTTON; break;
                 case SHARE_TYPE: button = SHARE_BUTTON; setting = Settings.HIDE_REEL_SHARE_BUTTON; break;
                 default: return false;
             }

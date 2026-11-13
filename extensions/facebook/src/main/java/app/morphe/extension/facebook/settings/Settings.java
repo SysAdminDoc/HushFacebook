@@ -610,12 +610,15 @@ public class Settings extends BaseSettings {
 
     /**
      * Each takes one button out of the row under a post (issue #265, {@link
-     * app.morphe.extension.facebook.feed.PostSaveButton}): Like, Comment, Share or Send. Start off.
+     * app.morphe.extension.facebook.feed.PostSaveButton}): Like, Comment, Repost (#450), Share or
+     * Send. Start off.
      */
     public static final BooleanSetting HIDE_POST_LIKE_BUTTON =
             new BooleanSetting("hushfacebook_hide_post_like_button", FALSE);
     public static final BooleanSetting HIDE_POST_COMMENT_BUTTON =
             new BooleanSetting("hushfacebook_hide_post_comment_button", FALSE);
+    public static final BooleanSetting HIDE_POST_REPOST_BUTTON =
+            new BooleanSetting("hushfacebook_hide_post_repost_button", FALSE);
     public static final BooleanSetting HIDE_POST_SHARE_BUTTON =
             new BooleanSetting("hushfacebook_hide_post_share_button", FALSE);
     public static final BooleanSetting HIDE_POST_SEND_BUTTON =
@@ -893,14 +896,16 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_whatsapp_button", FALSE);
 
     /**
-     * Like, Comment or Share down a reel's right side isn't built, and the buttons above it move
-     * down ({@link app.morphe.extension.facebook.reels.ReelDeclutter#hideSidebarButton}, #265). Each
-     * off by default. A change shows from the next reel.
+     * Like, Comment, Repost (#450) or Share down a reel's right side isn't built, and the buttons
+     * above it move down ({@link app.morphe.extension.facebook.reels.ReelDeclutter#hideSidebarButton},
+     * #265). Each off by default. A change shows from the next reel.
      */
     public static final BooleanSetting HIDE_REEL_LIKE_BUTTON =
             new BooleanSetting("hushfacebook_hide_reel_like_button", FALSE);
     public static final BooleanSetting HIDE_REEL_COMMENT_BUTTON =
             new BooleanSetting("hushfacebook_hide_reel_comment_button", FALSE);
+    public static final BooleanSetting HIDE_REEL_REPOST_BUTTON =
+            new BooleanSetting("hushfacebook_hide_reel_repost_button", FALSE);
     public static final BooleanSetting HIDE_REEL_SHARE_BUTTON =
             new BooleanSetting("hushfacebook_hide_reel_share_button", FALSE);
 

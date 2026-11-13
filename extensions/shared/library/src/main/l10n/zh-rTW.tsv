@@ -578,11 +578,13 @@ Adds a Download button under posts with a video or photos. It saves the video, t
 Hide Like under posts	隱藏貼文下方的讚
 # context: switch title under News feed; Comment is Facebook's own button under a post
 Hide Comment under posts	隱藏貼文下方的留言
+# context: switch title under News feed; Repost is Facebook's own button under a post, the two arrows between Comment and Share
+Hide Repost under posts	隱藏貼文下方的轉發
 # context: switch title under News feed; Share is Facebook's own button under a post
 Hide Share under posts	隱藏貼文下方的分享
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	隱藏貼文下方的傳送
-# context: summary shared by those four switches
+# context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	從動態消息中貼文下方的按鈕列移除這個按鈕。其他按鈕保留，所有按鈕都隱藏的貼文不顯示按鈕列。
 # context: what stays in while Hushfacebook is paused, followed by the patch name in brackets; the row in Facebook's own Menu that opens Hushfacebook settings
 # context: a short message when the Hushfacebook row in Facebook's Menu couldn't open the settings
@@ -1864,9 +1866,11 @@ Hides the WhatsApp button beside reels and videos. WhatsApp stays in the Share m
 Hide Like on reels	隱藏 Reels 讚按鈕
 # context: switch title under Reels and Watch; Comment is Facebook's own label for that button down a reel's right side, so use Facebook's wording in your language
 Hide Comment on reels	隱藏 Reels 留言按鈕
+# context: switch title under Reels and Watch; Repost is Facebook's own label for the two-arrows button down a reel's right side, so use Facebook's wording in your language
+Hide Repost on reels	隱藏 Reels 轉發按鈕
 # context: switch title under Reels and Watch; Share is Facebook's own label for that button down a reel's right side, so use Facebook's wording in your language
 Hide Share on reels	隱藏 Reels 分享按鈕
-# context: summary shared by the Like, Comment and Share switches on reels
+# context: summary shared by the Like, Comment, Repost and Share switches on reels
 Takes this button off the side of reels. The buttons above it move down. A change shows from the next reel.	從 Reels 側邊移除這個按鈕。上方的按鈕會往下移。從下一個 Reel 開始生效。
 # context: switch title under Reels and Watch; Save is Facebook's own label for the bookmark button down a reel's right side, so use Facebook's wording in your language
 Hide Save on reels	隱藏 Reels 儲存按鈕

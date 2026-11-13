@@ -77,6 +77,7 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_WHATSAPP_BUTTON.resetToDefault();
         Settings.HIDE_REEL_LIKE_BUTTON.resetToDefault();
         Settings.HIDE_REEL_COMMENT_BUTTON.resetToDefault();
+        Settings.HIDE_REEL_REPOST_BUTTON.resetToDefault();
         Settings.HIDE_REEL_SHARE_BUTTON.resetToDefault();
         Settings.SHOW_REEL_COMMENT_BUTTON.resetToDefault();
         Settings.SHOW_REEL_POST_DATE.resetToDefault();
@@ -953,7 +954,7 @@ public class ReelDeclutterTest {
     }
 
     /** Stands in for Facebook's icon enum: the sidebar walks one constant per button. */
-    private enum SidebarIcon { LIKE, COMMENT, SHARE, BOOKMARK, APP_WHATSAPP, APP_WHATSAPP_BUSINESS,
+    private enum SidebarIcon { LIKE, COMMENT, RESHARE, SHARE, BOOKMARK, APP_WHATSAPP, APP_WHATSAPP_BUSINESS,
         APP_WHATSAPP_STATUS, DOWNLOAD, MORE }
 
     /** Not an enum, though its text is Save's name. */
@@ -1032,11 +1033,13 @@ public class ReelDeclutterTest {
     }
 
     @Test
-    public void likeCommentAndShareEachHaveTheirOwnSwitch() {
+    public void likeCommentRepostAndShareEachHaveTheirOwnSwitch() {
+        // Repost is the icon enum's RESHARE, the constant 587's list builder puts in ahead of Share (#450).
         BooleanSetting[] switches = {Settings.HIDE_REEL_LIKE_BUTTON, Settings.HIDE_REEL_COMMENT_BUTTON,
-                Settings.HIDE_REEL_SHARE_BUTTON};
-        SidebarIcon[] icons = {SidebarIcon.LIKE, SidebarIcon.COMMENT, SidebarIcon.SHARE};
-        String[] buttons = {ReelDeclutter.LIKE_BUTTON, ReelDeclutter.COMMENT_BUTTON, ReelDeclutter.SHARE_BUTTON};
+                Settings.HIDE_REEL_REPOST_BUTTON, Settings.HIDE_REEL_SHARE_BUTTON};
+        SidebarIcon[] icons = {SidebarIcon.LIKE, SidebarIcon.COMMENT, SidebarIcon.RESHARE, SidebarIcon.SHARE};
+        String[] buttons = {ReelDeclutter.LIKE_BUTTON, ReelDeclutter.COMMENT_BUTTON, ReelDeclutter.REPOST_BUTTON,
+                ReelDeclutter.SHARE_BUTTON};
         for (int i = 0; i < switches.length; i++) {
             assertFalse(switches[i].key, switches[i].defaultValue);
             assertFalse(switches[i].key, ReelDeclutter.hideSidebarButton(icons[i]));

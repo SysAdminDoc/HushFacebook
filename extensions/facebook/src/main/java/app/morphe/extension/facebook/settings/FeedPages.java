@@ -321,6 +321,7 @@ final class FeedPages {
                         + "a post with all of its buttons hidden shows no row.");
                 feed.addPreference(toggle(context, Settings.HIDE_POST_LIKE_BUTTON, hides));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_COMMENT_BUTTON, hides));
+                feed.addPreference(toggle(context, Settings.HIDE_POST_REPOST_BUTTON, hides));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_SHARE_BUTTON, hides));
                 feed.addPreference(toggle(context, Settings.HIDE_POST_SEND_BUTTON, hides));
             }

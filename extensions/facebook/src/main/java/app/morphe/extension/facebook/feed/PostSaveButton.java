@@ -15,8 +15,8 @@ import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
- * The row under a post, as Post action buttons changes it (issue #265): Like, Comment, Share or
- * Send taken out, and Save added.
+ * The row under a post, as Post action buttons changes it (issue #265): Like, Comment, Repost
+ * (#450), Share or Send taken out, and Save added.
  *
  * <p>Facebook decides which buttons a post's row shows from a list of button types its server
  * sends, and Save is one of the types its row already knows how to draw: a bookmark that saves the
@@ -35,6 +35,8 @@ public final class PostSaveButton {
     /** The type names of the buttons a switch can hide: Like is Facebook's REACT. */
     static final String LIKE = "REACT";
     static final String COMMENT = "COMMENT";
+    /** The two arrows between Comment and Share, the type Facebook names REPOST (587). */
+    static final String REPOST = "REPOST";
     static final String SHARE = "SHARE";
     static final String SEND = "SEND";
 
@@ -47,7 +49,8 @@ public final class PostSaveButton {
         try {
             if (types == null || types.isEmpty() || !Utils.settingsReady()) return types;
             boolean hides = Settings.HIDE_POST_LIKE_BUTTON.get() || Settings.HIDE_POST_COMMENT_BUTTON.get()
-                    || Settings.HIDE_POST_SHARE_BUTTON.get() || Settings.HIDE_POST_SEND_BUTTON.get();
+                    || Settings.HIDE_POST_REPOST_BUTTON.get() || Settings.HIDE_POST_SHARE_BUTTON.get()
+                    || Settings.HIDE_POST_SEND_BUTTON.get();
             boolean adds = save != null && Settings.POST_SAVE_BUTTON.get();
             if (!hides && !adds) return types;
             HookStatus.invoked(FamilyNames.POST_ACTION_BUTTONS);
@@ -74,6 +77,7 @@ public final class PostSaveButton {
         switch (name) {
             case LIKE: return Settings.HIDE_POST_LIKE_BUTTON.get();
             case COMMENT: return Settings.HIDE_POST_COMMENT_BUTTON.get();
+            case REPOST: return Settings.HIDE_POST_REPOST_BUTTON.get();
             case SHARE: return Settings.HIDE_POST_SHARE_BUTTON.get();
             case SEND: return Settings.HIDE_POST_SEND_BUTTON.get();
             default: return false;

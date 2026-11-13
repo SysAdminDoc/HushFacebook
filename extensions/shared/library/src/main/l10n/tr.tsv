@@ -574,11 +574,13 @@ Adds a Download button under posts with a video or photos. It saves the video, t
 Hide Like under posts	Gönderilerin altında Beğen'i gizle
 # context: switch title under News feed; Comment is Facebook's own button under a post
 Hide Comment under posts	Gönderilerin altında Yorum Yap'ı gizle
+# context: switch title under News feed; Repost is Facebook's own button under a post, the two arrows between Comment and Share
+Hide Repost under posts	Gönderilerin altında Yeniden Paylaş'ı gizle
 # context: switch title under News feed; Share is Facebook's own button under a post
 Hide Share under posts	Gönderilerin altında Paylaş'ı gizle
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	Gönderilerin altında Gönder'i gizle
-# context: summary shared by those four switches
+# context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	Bu düğmeyi akıştaki gönderilerin altındaki satırdan kaldırır. Diğer düğmeler kalır ve tüm düğmeleri gizlenen bir gönderi satır göstermez.
 # context: what stays in while Hushfacebook is paused, followed by the patch name in brackets; the row in Facebook's own Menu that opens Hushfacebook settings
 # context: a short message when the Hushfacebook row in Facebook's Menu couldn't open the settings
@@ -1862,9 +1864,11 @@ Hides the WhatsApp button beside reels and videos. WhatsApp stays in the Share m
 Hide Like on reels	Reels'te Beğen'i gizle
 # context: switch title under Reels and Watch; Comment is Facebook's own label for that button down a reel's right side, so use Facebook's wording in your language
 Hide Comment on reels	Reels'te Yorum Yap'ı gizle
+# context: switch title under Reels and Watch; Repost is Facebook's own label for the two-arrows button down a reel's right side, so use Facebook's wording in your language
+Hide Repost on reels	Reels'te Yeniden Paylaş'ı gizle
 # context: switch title under Reels and Watch; Share is Facebook's own label for that button down a reel's right side, so use Facebook's wording in your language
 Hide Share on reels	Reels'te Paylaş'ı gizle
-# context: summary shared by the Like, Comment and Share switches on reels
+# context: summary shared by the Like, Comment, Repost and Share switches on reels
 Takes this button off the side of reels. The buttons above it move down. A change shows from the next reel.	Bu düğmeyi reels'in yanından kaldırır. Üstündeki düğmeler aşağı kayar. Değişiklik bir sonraki reel'den itibaren görünür.
 # context: switch title under Reels and Watch; Save is Facebook's own label for the bookmark button down a reel's right side, so use Facebook's wording in your language
 Hide Save on reels	Reels'te Kaydet'i gizle

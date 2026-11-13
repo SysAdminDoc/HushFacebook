@@ -4,6 +4,10 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+### Added
+
+* `Hide Repost under posts` under News feed and `Hide Repost on reels` under Reels and Watch take Facebook's new Repost button, the two arrows next to Share, off posts and reels. Like, Comment and Share keep their own switches. Both start off. (#450)
+
 ### Changed
 
 * Hushfacebook now patches Facebook 587.0.0.39.55 and no longer takes 586. On a 64-bit phone download the (arm64-v8a) (240-640dpi) (Android 11+) bundle, build 707414333, and on a 32-bit phone the (arm-v7a) (320dpi) (Android 11+) bundle, build 707414338. Facebook didn't put out a 120-640dpi build of 587, so the 240-640dpi one is the 64-bit download now. Update Facebook before you patch.

@@ -202,7 +202,7 @@ final class VideoPages {
                     L10n.t("Hides the WhatsApp button beside reels and videos. WhatsApp stays in the Share menu. "
                             + "A change shows from the next video.")));
             for (BooleanSetting hide : new BooleanSetting[] {Settings.HIDE_REEL_LIKE_BUTTON,
-                    Settings.HIDE_REEL_COMMENT_BUTTON, Settings.HIDE_REEL_SHARE_BUTTON}) {
+                    Settings.HIDE_REEL_COMMENT_BUTTON, Settings.HIDE_REEL_REPOST_BUTTON, Settings.HIDE_REEL_SHARE_BUTTON}) {
                 reels.addPreference(toggle(context, hide,
                         L10n.t("Takes this button off the side of reels. The buttons above it move down. "
                                 + "A change shows from the next reel.")));

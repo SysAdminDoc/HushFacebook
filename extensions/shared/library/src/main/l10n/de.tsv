@@ -574,11 +574,13 @@ Adds a Download button under posts with a video or photos. It saves the video, t
 Hide Like under posts	Gefällt mir unter Beiträgen ausblenden
 # context: switch title under News feed; Comment is Facebook's own button under a post
 Hide Comment under posts	Kommentieren unter Beiträgen ausblenden
+# context: switch title under News feed; Repost is Facebook's own button under a post, the two arrows between Comment and Share
+Hide Repost under posts	Reposten unter Beiträgen ausblenden
 # context: switch title under News feed; Share is Facebook's own button under a post
 Hide Share under posts	Teilen unter Beiträgen ausblenden
 # context: switch title under News feed; Send is Facebook's own button under a post that sends it in a chat
 Hide Send under posts	Senden unter Beiträgen ausblenden
-# context: summary shared by those four switches
+# context: summary shared by those five switches
 Takes this button out of the row under posts in the feed. The other buttons stay, and a post with all of its buttons hidden shows no row.	Entfernt diesen Button aus der Leiste unter Beiträgen im Feed. Die anderen Buttons bleiben, und ein Beitrag, dessen Buttons alle ausgeblendet sind, zeigt keine Leiste.
 # context: what stays in while Hushfacebook is paused, followed by the patch name in brackets; the row in Facebook's own Menu that opens Hushfacebook settings
 # context: a short message when the Hushfacebook row in Facebook's Menu couldn't open the settings
@@ -1862,9 +1864,11 @@ Hides the WhatsApp button beside reels and videos. WhatsApp stays in the Share m
 Hide Like on reels	„Gefällt mir“ bei Reels ausblenden
 # context: switch title under Reels and Watch; Comment is Facebook's own label for that button down a reel's right side, so use Facebook's wording in your language
 Hide Comment on reels	„Kommentieren“ bei Reels ausblenden
+# context: switch title under Reels and Watch; Repost is Facebook's own label for the two-arrows button down a reel's right side, so use Facebook's wording in your language
+Hide Repost on reels	„Reposten“ bei Reels ausblenden
 # context: switch title under Reels and Watch; Share is Facebook's own label for that button down a reel's right side, so use Facebook's wording in your language
 Hide Share on reels	„Teilen“ bei Reels ausblenden
-# context: summary shared by the Like, Comment and Share switches on reels
+# context: summary shared by the Like, Comment, Repost and Share switches on reels
 Takes this button off the side of reels. The buttons above it move down. A change shows from the next reel.	Entfernt diesen Button von der Seite von Reels. Die Buttons darüber rücken nach unten. Die Änderung gilt ab dem nächsten Reel.
 # context: switch title under Reels and Watch; Save is Facebook's own label for the bookmark button down a reel's right side, so use Facebook's wording in your language
 Hide Save on reels	„Speichern“ bei Reels ausblenden
