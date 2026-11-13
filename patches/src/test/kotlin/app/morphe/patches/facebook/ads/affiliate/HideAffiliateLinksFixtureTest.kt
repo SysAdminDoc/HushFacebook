@@ -85,6 +85,35 @@ class HideAffiliateLinksFixtureTest {
         AppCompatibilities.FACEBOOK_TARGET_VERSION to true,
     )
 
+    /** Per build and ABI, how many times the profile's reader reads the banner tag (arm64 587: `LX/0Bb0;->A01` twice). */
+    private val profileEntryReadCount = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2),
+    )
+
+    private val INSTANCE_CALLS = setOf(
+        Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE, Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE,
+        Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE, Opcode.INVOKE_SUPER, Opcode.INVOKE_SUPER_RANGE,
+    )
+    private val ENDS = setOf(Opcode.RETURN_VOID, Opcode.RETURN, Opcode.RETURN_WIDE, Opcode.RETURN_OBJECT, Opcode.THROW)
+
+    /**
+     * Whether a call in [code] takes the value read at [after] into [value] as its receiver before the
+     * register is written again or the method ends. The extension answers null for a reel's tag, so
+     * the reader must only hand it on (`"REELS_VDD".equals(value)`), never call on it.
+     */
+    private fun callsOnRead(code: List<Instruction>, after: Int, value: Int): Boolean {
+        for (instruction in code.subList(after, code.size)) {
+            val receiver = when (instruction) {
+                is FiveRegisterInstruction -> instruction.registerC.takeIf { instruction.registerCount > 0 }
+                is RegisterRangeInstruction -> instruction.startRegister.takeIf { instruction.registerCount > 0 }
+                else -> null
+            }
+            if (instruction.opcode in INSTANCE_CALLS && receiver == value) return true
+            if (writesRegister(instruction, value) || instruction.opcode in ENDS) return false
+        }
+        return false
+    }
+
     private val PAYLOADS = setOf(Opcode.PACKED_SWITCH_PAYLOAD, Opcode.SPARSE_SWITCH_PAYLOAD, Opcode.ARRAY_PAYLOAD)
 
     /** The code a stock instruction's opcode stands for, with a goto that an insert widened read as the goto it was. */
@@ -405,7 +434,13 @@ class HideAffiliateLinksFixtureTest {
                 if (readsEntry) {
                     // Each value read under the key goes through the extension right after the read, and nothing jumps in between.
                     val reads = profileEntryReads(entryWriter)
-                    assertTrue("$name: ${entryWriter.definingClass}->${entryWriter.name} reads no $PROFILE_ENTRY_POINT", reads.isNotEmpty())
+                    val abi = name.substringAfter("-$version-").substringBefore(".apkm").substringBefore("-minapi")
+                    assertEquals("$name: ${entryWriter.definingClass}->${entryWriter.name} reads of $PROFILE_ENTRY_POINT",
+                        profileEntryReadCount.getValue(version)[abi] ?: throw AssertionError("$name has no pin"), reads.size)
+                    for ((after, value) in reads) {
+                        assertTrue("$name: ${entryWriter.definingClass}->${entryWriter.name} calls a method on the tag it read at $after",
+                            !callsOnRead(entryOriginal, after, value))
+                    }
                     assertEquals("$name: 2 instructions after each read", entryOriginal.size + 2 * reads.size, entryPatched.size)
                     val hooks = reads.mapIndexed { order, (after, value) ->
                         val at = after + 2 * order
