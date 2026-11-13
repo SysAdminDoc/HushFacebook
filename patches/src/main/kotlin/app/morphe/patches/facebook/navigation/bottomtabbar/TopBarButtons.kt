@@ -83,7 +83,9 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
  *   spec's plural, "%1$s, %2$d unread messages"), so TalkBack read the count the setter's hook had
  *   hidden. Every class naming the glyph is read for a setter call whose glyph and int go on
  *   unchanged into getQuantityString and that glyph's setContentDescription, and the same count
- *   hook goes right before each such call, so the label is worded from the answer.
+ *   hook goes right before each such call, so the label is worded from the answer. Only a method
+ *   that also reads the spec's plural counts: 587's profile top bar words its For You glyph the
+ *   same way from a plural of its own (read 2026-11-13), and that one stays as Facebook wrote it.
  * - Behind a MobileConfig flag and the bar's own state, NavigationBar draws itself with Litho
  *   instead (586 arm64 NavigationBar->A0G picks it, read 2026-11-12). The component's render, the
  *   method holding the kept "NavigationBarComponent_icon_action_button" (586 LX/0BQo;->A16), reads
@@ -540,6 +542,18 @@ internal fun countLabelSites(method: Method, glyphType: String, counts: List<Cou
 }
 
 /**
+ * Whether [method] reads a plural off the button spec of type [spec], one of its Integer fields: the
+ * bar's count observer words a button's label from its spec's plural. 587's profile top bar words its
+ * For You glyph's label from a plural of its own (arm64 LX/0BXC;->A05, armv7 LX/0BWe;->A05), which
+ * [countLabelSites] takes too, so only a method that also reads the spec's plural gets the count hook.
+ */
+internal fun readsSpecPlural(method: Method, spec: String): Boolean =
+    method.implementation?.instructions?.any { instruction ->
+        val field = instruction.reference() as? FieldReference
+        instruction.opcode == Opcode.IGET_OBJECT && field?.definingClass == spec && field.type == "Ljava/lang/Integer;"
+    } == true
+
+/**
  * Sends the count and the glyph through the extension right before the setter, so the label worded
  * after gets the answer too. A branch to the setter lands on the hook.
  */
@@ -892,10 +906,13 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
         val wordmark = classDefByOrNull(WORDMARK_NAVIGATION_BAR)
             ?: refuse("this Facebook has no $WORDMARK_NAVIGATION_BAR, the home feed's top bar")
         homeBarScreenCalls(wordmark, bar, searchGlyphSite(bar, spec.glyphType))
+        val specType = spec.nameField.definingClass
+        fun labelSites(method: Method) =
+            if (readsSpecPlural(method, specType)) countLabelSites(method, spec.glyphType, counts) else emptyList()
         val labellers = mutableListOf<String>()
         classDefForEachReferencing(types = listOf(spec.glyphType)) { classDef ->
             if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
-            if (classDef.methods.any { countLabelSites(it, spec.glyphType, counts).isNotEmpty() }) labellers += classDef.type
+            if (classDef.methods.any { labelSites(it).isNotEmpty() }) labellers += classDef.type
         }
         if (labellers.isEmpty()) refuse("nothing words a ${spec.glyphType}'s label from the count it hands the glyph")
         val lithoBars = mutableListOf<String>()
@@ -941,7 +958,7 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
         // Found again: a labelling method may be one the hooks above went into.
         labellers.forEach { type ->
             mutableClassDefBy(type).methods.forEach { method ->
-                countLabelSites(method, spec.glyphType, counts).sortedByDescending { it.call }.forEach { method.gateCountLabelBefore(it) }
+                labelSites(method).sortedByDescending { it.call }.forEach { method.gateCountLabelBefore(it) }
             }
         }
         lithoBars.forEach { type ->

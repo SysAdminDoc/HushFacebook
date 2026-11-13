@@ -19,7 +19,8 @@ import org.junit.Test
 
 /**
  * Where the Litho bar and its badge take a count off the store, in the shapes 586 has and the ones
- * Hide the Messenger count refuses rather than leave a read counting.
+ * Hide the Messenger count refuses rather than leave a read counting, and which label worders read
+ * the button spec's plural (587 has one that doesn't).
  */
 class TopBarButtonsShapesTest {
     private val badge = "Lfixture/Badge;"
@@ -365,6 +366,34 @@ class TopBarButtonsShapesTest {
             )
             val refused = reason { specCountSites(shared, name) }
             assertTrue(refused, "shares one register" in refused)
+        }
+    }
+
+    /** A label worder as the bar's count observer has it, reading [plural] for the label's wording. */
+    private fun worder(plural: String) = method(
+        """
+            $plural
+            invoke-virtual { v0 }, Ljava/lang/Integer;->intValue()I
+            move-result v1
+            return-void
+        """,
+        parameters = listOf("Lfixture/Spec;"),
+    )
+
+    @Test
+    fun `a label worder reading the spec's plural counts`() {
+        assertTrue(readsSpecPlural(worder("iget-object v0, p1, Lfixture/Spec;->A0B:Ljava/lang/Integer;"), "Lfixture/Spec;"))
+    }
+
+    @Test
+    fun `a label worder reading a plural that isn't the spec's is refused`() {
+        listOf(
+            // 587's profile top bar: its own class's plural.
+            "iget-object v0, p0, Lfixture/BadgeListener;->A0B:Ljava/lang/Integer;",
+            "iget-object v0, p1, Lfixture/Spec;->A0F:Ljava/lang/String;",
+            "sget-object v0, Lfixture/Spec;->A0B:Ljava/lang/Integer;",
+        ).forEach { plural ->
+            assertTrue(plural, !readsSpecPlural(worder(plural), "Lfixture/Spec;"))
         }
     }
 }

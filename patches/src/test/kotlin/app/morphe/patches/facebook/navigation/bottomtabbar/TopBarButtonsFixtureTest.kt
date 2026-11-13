@@ -59,6 +59,22 @@ class TopBarButtonsFixtureTest {
         "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}"
     }
 
+    // Methods that word a glyph's label from the count they hand it but read no plural off the button
+    // spec, per declared build and ABI (each its own Redex output), read from the fixtures 2026-11-13:
+    // the profile top bar's For You entry point.
+    private val refusedWorders = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to setOf("LX/0BXC;->A05"),
+            "armeabi-v7a" to setOf("LX/0BWe;->A05"),
+        ),
+    )
+
+    private fun refusedWorders(version: String, bundle: String): Set<String> {
+        val byAbi = refusedWorders[version] ?: throw AssertionError("no refused label worders pinned for $version")
+        return byAbi[bundle.substringAfter("-$version-").substringBefore(".apkm")]
+            ?: throw AssertionError("$bundle has no refused label worders pinned")
+    }
+
     @Test
     fun `each declared build resolves the button, its count and the logo and takes the hooks`() {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -365,16 +381,15 @@ class TopBarButtonsFixtureTest {
                 assertTrue("$name: the first count follows the glyph's constructor", firstCount > site.made)
 
                 // The bar's count observer words the glyph's TalkBack label from the count it hands the
-                // glyph (#181: "15 unread messages" with the badge gone). Positive control: each such
-                // method reads the plural off the spec, its Integer field.
-                val labelMethods = newer.labellers.flatMap { c -> c.methods.filter { countLabelSites(it, site.glyphType, counts).isNotEmpty() } }
-                assertTrue("$name: nothing words a glyph's label from the count it hands the glyph", labelMethods.isNotEmpty())
-                for (method in labelMethods) {
-                    assertTrue("$name: ${method.definingClass}->${method.name} reads no plural off $spec", method.code().any {
-                        val field = (it as? ReferenceInstruction)?.reference as? FieldReference
-                        it.opcode == Opcode.IGET_OBJECT && field?.definingClass == spec && field.type == "Ljava/lang/Integer;"
-                    })
-                }
+                // glyph (#181: "15 unread messages" with the badge gone). Positive control: such a
+                // method reads the plural off the spec, its Integer field, and only those get the hook.
+                val worders = newer.labellers.flatMap { c -> c.methods.filter { countLabelSites(it, site.glyphType, counts).isNotEmpty() } }
+                val labelMethods = worders.filter { readsSpecPlural(it, spec) }
+                assertTrue("$name: nothing words a glyph's label from the spec's plural", labelMethods.isNotEmpty())
+                // Negative control: 587's profile top bar words its For You glyph's label from a plural of
+                // its own, never the spec's, so it stays unhooked. Exact per build, so a new worder shows.
+                val refused = worders.filter { it !in labelMethods }.map { "${it.definingClass}->${it.name}" }.toSet()
+                assertEquals("$name: the label worders that read no plural off $spec", refusedWorders(version, name), refused)
                 // The observer (586 arm64 LX/02K4;->A00) is handed the count as its last parameter, an
                 // int, and passes it on untouched, so the matcher has to land on that register there.
                 assertTrue("$name: no label site gets its count as the method's last parameter", labelMethods.any { method ->
