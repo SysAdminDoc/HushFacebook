@@ -41,9 +41,10 @@ class HideStoryRingsFixtureTest {
 
     /**
      * Builds with more than the comment row builder holding the plugin's name: 586 adds a table of
-     * plugin names, and its Android 9 build has a prefetch lambda in the table's place.
+     * plugin names, and its Android 9 build has a prefetch lambda in the table's place. 587's two are
+     * the default profile picture plugin's lookup static and the table.
      */
-    private val pluginHolders = mapOf("586.0.0.52.53" to 2)
+    private val pluginHolders = mapOf("587.0.0.39.55" to 2)
 
     private fun Method.code() = implementation!!.instructions.toList()
     private fun Instruction.reference() = (this as ReferenceInstruction).reference.toString()
@@ -98,9 +99,11 @@ class HideStoryRingsFixtureTest {
                     storyDecorator.methods.filter(::isRingCheck).flatMap(::actorChecksCalled)
                         .any { it.toString() == feedChecks[1].toString() })
                 val noStory = helper.code().filter { it.opcode == Opcode.INVOKE_DIRECT && it.reference() == ringState.signature() }
-                assertTrue("$name: the comment ring helper never builds a ring state from one value twice", noStory.any {
+                // One value for every argument: twice through 586, three times on 587.
+                assertTrue("$name: the comment ring helper never builds a ring state from one value for each argument", noStory.any {
                     val call = it as FiveRegisterInstruction
-                    call.registerCount == 3 && call.registerD == call.registerE
+                    val arguments = listOf(call.registerD, call.registerE, call.registerF, call.registerG).take(call.registerCount - 1)
+                    call.registerCount == ringState.parameterTypes.size + 1 && arguments.size >= 2 && arguments.distinct().size == 1
                 })
                 assertEquals("$name: renders testing for a profile ring", 2, profileRenders.size)
 

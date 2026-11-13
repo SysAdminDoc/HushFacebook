@@ -123,6 +123,45 @@ class HideStoryRingsShapesTest {
         assertThrows(PatchException::class.java) { context.commentRingState(ring) }
     }
 
+    /** 587's ring state (`LX/0Cvl;`): a third argument after the ring kind, of [third] type. */
+    private fun ringState3(third: String) = classDef(ringState, method(ringState, "<init>", listOf("Ljava/lang/Object;", ring, third), "V", """
+        invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+        return-void
+    """, registers = 4, static = false))
+
+    /** 587's helper (`LX/02MD;->A0M`), building the no-ring state from null three times. */
+    private fun statics3(third: String) = classDef("Lfixture/Statics;", method("Lfixture/Statics;", "ringState", listOf("Lfixture/Bucket;"), ringState, """
+        new-instance v0, $ringState
+        const/4 v1, 0x0
+        invoke-direct {v0, v1, v1, v1}, $ringState-><init>(Ljava/lang/Object;$ring$third)V
+        return-object v0
+    """, registers = 3, static = true))
+
+    /**
+     * 587's plugin static (`DefaultProfilePicturePlugin;->A00`): it holds the plugin's name and answers
+     * a ring state, but only by calling the helper.
+     */
+    private val pluginLookup = classDef("Lfixture/Plugin;", method("Lfixture/Plugin;", "lookup", listOf("Lfixture/Bucket;"), ringState, """
+        const-string v0, "$STORY_RING_PLUGIN"
+        invoke-static {p0}, Lfixture/Statics;->ringState(Lfixture/Bucket;)$ringState
+        move-result-object v0
+        return-object v0
+    """, registers = 2, static = true))
+
+    @Test
+    fun `587's plugin static that only calls the helper counts the helper, whose state takes three arguments`() {
+        val function = "Lkotlin/jvm/functions/Function0;"
+        val (helper, constructor) = PatchContexts.of(listOf(table, pluginLookup, statics3(function), ringState3(function))).commentRingState(ring)
+        assertEquals("Lfixture/Statics;" to "ringState", helper.definingClass to helper.name)
+        assertEquals(listOf("Ljava/lang/Object;", ring, function), constructor.parameterTypes.map { it.toString() })
+    }
+
+    @Test
+    fun `a ring state whose argument after the ring kind is a number isn't one null can build`() {
+        val context = PatchContexts.of(listOf(table, pluginLookup, statics3("I"), ringState3("I")))
+        assertThrows(PatchException::class.java) { context.commentRingState(ring) }
+    }
+
     @Test
     fun `a table alone is refused`() {
         val context = PatchContexts.of(listOf(table, ringStateClass))

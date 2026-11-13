@@ -192,12 +192,24 @@ internal fun BytecodePatchContext.ringEnum(): String {
         ?: refuse("$PROFILE_PHOTO's constructor takes ${found.size} ring kinds, not one: ${found.distinct().joinToString()}")
 }
 
-/** The one constructor of [type] taking something and then a ring kind, or null. */
+/**
+ * The one constructor of [type] taking something and then a ring kind, or null. 587 adds a third
+ * argument after the ring kind (LX/0Cvl;-><init>(LX/02lb;LX/054y;Function0)), and Facebook itself
+ * builds the no-ring state with every argument null, so any further arguments must be objects too.
+ */
 private fun BytecodePatchContext.ringStateConstructor(type: String, ring: String): Method? {
     val classDef = classDefByOrNull(type) ?: return null
     val constructor = classDef.methods.singleOrNull { it.name == "<init>" } ?: return null
     val parameters = constructor.parameterNames()
-    return constructor.takeIf { parameters.size == 2 && parameters[0].startsWith("L") && parameters[1] == ring }
+    return constructor.takeIf {
+        parameters.size >= 2 && parameters[0].startsWith("L") && parameters[1] == ring &&
+            parameters.drop(2).all { type -> type.startsWith("L") || type.startsWith("[") }
+    }
+}
+
+/** Whether [method] news up its own return type, as the ring state helper does and a plugin's lookup of it doesn't. */
+private fun buildsReturnType(method: Method): Boolean = method.code().any { instruction ->
+    instruction.opcode == Opcode.NEW_INSTANCE && (instruction as ReferenceInstruction).reference.toString() == method.returnType
 }
 
 /**
@@ -208,13 +220,17 @@ private fun BytecodePatchContext.ringStateConstructor(type: String, ring: String
  * plugin (LX/0AfM;->A0B) calls it, so a holder without a helper of its own counts the one it calls.
  * 586's Android 9 build copies the builder's plugin part into a prefetch lambda as well
  * (LX/0DXw;->invoke beside LX/0AkR;->A08), and both call the same helper (LX/01y6;->A0M), so several
- * holders are fine as long as they share one helper.
+ * holders are fine as long as they share one helper. 587's holder is the default profile picture
+ * plugin's own static (DefaultProfilePicturePlugin;->A00, beside the string table LX/0Af0;->A00): it
+ * answers a ring state too but only looks one up, calling the helper (LX/02MD;->A0M) or reading a
+ * static, so a helper must build the state it answers.
  */
 internal fun BytecodePatchContext.commentRingState(ring: String): Pair<Method, Method> {
     val holders = classDefByStrings(STORY_RING_PLUGIN, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
     fun isHelper(method: Method) = AccessFlags.STATIC.isSet(method.accessFlags) && method.implementation != null &&
-        method.parameterTypes.size == 1 && method.returnType.startsWith("L") && ringStateConstructor(method.returnType, ring) != null
+        method.parameterTypes.size == 1 && method.returnType.startsWith("L") &&
+        ringStateConstructor(method.returnType, ring) != null && buildsReturnType(method)
     fun calledHelpers(holder: ClassDef) = holder.methods.filter { holdsString(it, STORY_RING_PLUGIN) }
         .flatMap { it.code() }.filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
         .map { (it as ReferenceInstruction).reference as MethodReference }.distinctBy { it.toString() }
@@ -280,6 +296,8 @@ internal fun BytecodePatchContext.hideStoryRings() {
 
     val mutableHelper = mutableClassDefBy(helper.definingClass).findMutableMethodOf(helper)
     mutableHelper.requireLocals(STORY_RINGS_PATCH, 2)
+    // The state with no ring: null for every argument, as Facebook builds it (one per argument, 3 on 587).
+    val nulls = List(ringState.parameterTypes.size) { "v0" }.joinToString(", ")
     mutableHelper.addInstructionsWithLabels(
         0,
         """
@@ -288,7 +306,7 @@ internal fun BytecodePatchContext.hideStoryRings() {
             if-eqz v0, :facebooks_ring
             new-instance v1, ${helper.returnType}
             const/4 v0, 0x0
-            invoke-direct { v1, v0, v0 }, ${ringState.reference()}
+            invoke-direct { v1, $nulls }, ${ringState.reference()}
             return-object v1
         """,
         ExternalLabel("facebooks_ring", mutableHelper.getInstruction(0)),
