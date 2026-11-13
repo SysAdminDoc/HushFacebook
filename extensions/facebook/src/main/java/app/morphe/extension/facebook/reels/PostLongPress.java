@@ -78,6 +78,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * arms {@link PostTextSelect}, which opens the text Facebook's own long press copies. With only
  * that switch on, the hold itself is always left to Facebook.
  *
+ * <p>The same hold serves Hold a post to react (#454): with that switch on, the post's Like, the
+ * first button of the footer line, gets the long press instead of Comment getting a click
+ * ({@link ReactionHold}), and it wins over Long press opens comments on a feed post.
+ *
  * <p>A held press left to Facebook counts why, and with Debug logging on logs the view under the
  * finger, so a phone's report says which check passed the hold over.
  */
@@ -171,10 +175,11 @@ public final class PostLongPress {
         if (action == MotionEvent.ACTION_DOWN) {
             presses++;
             swallowing = false;
+            ReactionHold.pressed();
             stop();
             if (root == null || !Utils.settingsReady()) return;
             boolean select = Settings.SELECT_POST_TEXT.get();
-            if (!select && !Settings.LONG_PRESS_OPENS_COMMENTS.get()) return;
+            if (!select && !Settings.LONG_PRESS_OPENS_COMMENTS.get() && !ReactionHold.on()) return;
             if (PinchZoom.covers(root)) return;
             HookStatus.invoked(FAMILY);
             if (select) PostTextSelect.listen(root.getContext());
@@ -188,6 +193,8 @@ public final class PostLongPress {
             return;
         }
         if (swallowing) {
+            // A hold that opened the reaction tray to pick from hands Like the rest of the gesture.
+            ReactionHold.forward(event);
             if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) swallowing = false;
             event.setAction(MotionEvent.ACTION_CANCEL);
             return;
@@ -212,7 +219,7 @@ public final class PostLongPress {
         pressedRoot = new WeakReference<>(null);
         try {
             if (root == null) return;
-            boolean comments = Settings.LONG_PRESS_OPENS_COMMENTS.get();
+            boolean comments = Settings.LONG_PRESS_OPENS_COMMENTS.get() || ReactionHold.on();
             boolean select = Settings.SELECT_POST_TEXT.get();
             if (!comments && !select) return;
             HookStatus.counted(FAMILY, TIMED);
@@ -234,7 +241,8 @@ public final class PostLongPress {
                 passed(passedOver, root);
                 return;
             }
-            View comment = commentButton(row);
+            List<View> footer = footerLine(row);
+            View comment = footer == null ? null : footer.get(1);
             // The photo and the name line sit above the footer, so a hold on the footer's own
             // buttons or on anything under it stays Facebook's.
             if (comment != null && Math.round(downY) >= topOf(comment)) {
@@ -250,7 +258,7 @@ public final class PostLongPress {
                 return;
             }
             HookStatus.counted(FAMILY, HELD);
-            if (comment == null) {
+            if (footer == null) {
                 // Litho mounts only what's on screen, so a post running past the bottom of the feed
                 // has no footer yet. Scrolling it up by what's under brings the footer in.
                 View list = (View) row.getParent();
@@ -268,10 +276,18 @@ public final class PostLongPress {
                 return;
             }
             cancelLongPresses(root, row);
-            if (open(comment)) swallowing = true;
+            if (act(row, footer)) swallowing = true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "feed long press", failure);
         }
+    }
+
+    /**
+     * Does what the hold on [row] is for, given its [footer] line in reading order: opens the post's
+     * reaction tray with Hold a post to react on, its comments otherwise. Says whether it happened.
+     */
+    private static boolean act(View row, List<View> footer) {
+        return ReactionHold.on() ? ReactionHold.start(footer.get(0), row) : open(footer.get(1));
     }
 
     /** The photo's own long press was timed from the same touch, so it would run next: cancels it. */
@@ -317,15 +333,15 @@ public final class PostLongPress {
     }
 
     /**
-     * Clicks the Comment button of [row], just scrolled up, once its footer is mounted, looking again
+     * Does what the hold on [row], just scrolled up, is for once its footer is mounted, looking again
      * [tries] more times on later frames. A new press or a row taken off the screen stops it.
      */
     private static void openOnceShown(View row, int press, int tries) {
         try {
             if (press != presses || !row.isAttachedToWindow()) return;
-            View comment = commentButton(row);
-            if (comment != null) {
-                open(comment);
+            List<View> footer = footerLine(row);
+            if (footer != null) {
+                act(row, footer);
             } else if (tries > 0) {
                 main().postDelayed(() -> openOnceShown(row, press, tries - 1), SHOW_WAIT);
             } else {
@@ -543,6 +559,23 @@ public final class PostLongPress {
     /** [row]'s Comment button: the second in reading order of its lowest footer line, or null. */
     @Nullable
     static View commentButton(View row) {
+        List<View> footer = footerLine(row);
+        return footer == null ? null : footer.get(1);
+    }
+
+    /** [row]'s Like button: the first in reading order of its lowest footer line, or null. */
+    @Nullable
+    static View likeButton(View row) {
+        List<View> footer = footerLine(row);
+        return footer == null ? null : footer.get(0);
+    }
+
+    /**
+     * [row]'s lowest footer line in reading order: three or more clickable views sharing one top and
+     * bottom, the first three touching. Null when it has none.
+     */
+    @Nullable
+    static List<View> footerLine(View row) {
         List<View> clickables = new ArrayList<>();
         collect(row, clickables);
         Map<Long, List<View>> lines = new LinkedHashMap<>();
@@ -555,7 +588,7 @@ public final class PostLongPress {
             line.add(view);
         }
         boolean rtl = row.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
-        View found = null;
+        List<View> found = null;
         int lowest = Integer.MIN_VALUE;
         for (List<View> line : lines.values()) {
             if (line.size() < FOOTER) continue;
@@ -574,7 +607,8 @@ public final class PostLongPress {
             int bottom = spans.get(0)[2];
             if (touching && bottom > lowest) {
                 lowest = bottom;
-                found = line.get(spans.get(1)[3]);
+                found = new ArrayList<>();
+                for (int[] span : spans) found.add(line.get(span[3]));
             }
         }
         return found;
@@ -628,5 +662,6 @@ public final class PostLongPress {
         swallowing = false;
         passedOver = null;
         sheetDue = 0L;
+        ReactionHold.reset();
     }
 }

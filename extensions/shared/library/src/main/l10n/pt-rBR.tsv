@@ -2206,6 +2206,21 @@ Shows when a reel or a video you open full screen was posted, under the name of 
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	Mantém o botão Comentar nos reels com comentários desativados, para você ainda ler os que já estão lá. A mudança aparece a partir do próximo reel.
 Select part of a post's text	Selecionar parte do texto de uma publicação
 Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	Segurar o texto de uma publicação abre o texto em uma caixa onde você pode selecionar só a parte que quiser e copiá-la, ou copiar tudo. Segurar sozinho não copia nada.
+Hold a post to react	Segurar uma publicação para reagir
+Holding a post's photo or video opens its reactions, as holding Like does. On a feed post it comes before Long press opens comments.	Segurar a foto ou o vídeo de uma publicação abre as reações dela, como segurar Curtir. Em uma publicação do feed, isso vem antes de Pressionar e segurar abre os comentários.
+Reaction	Reação
+Pick one each time	Escolher toda vez
+Like	Curtir
+Love	Amei
+Care	Força
+Haha	Haha
+Wow	Uau
+Sad	Triste
+Angry	Grr
+Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	Escolher toda vez. As reações abrem sobre a publicação, então deslize até uma e solte, ou solte e toque em uma.
+%1$s. Holding a post gives it straight away.	%1$s. Segurar uma publicação já dá essa reação na hora.
+Hold a post to react will open the reactions to pick from.	Segurar uma publicação para reagir vai abrir as reações para escolher.
+Hold a post to react will give %1$s.	Segurar uma publicação para reagir vai dar %1$s.
 Select text	Selecionar texto
 Done	Concluído
 Copy all	Copiar tudo

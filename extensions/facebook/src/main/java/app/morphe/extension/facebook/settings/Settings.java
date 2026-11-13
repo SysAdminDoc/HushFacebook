@@ -24,6 +24,7 @@ import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
 import app.morphe.extension.facebook.reels.FeedVideoControls;
 import app.morphe.extension.facebook.reels.GrayOver;
+import app.morphe.extension.facebook.reels.HoldReaction;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
 import app.morphe.extension.facebook.reels.ReelsOrder;
 import app.morphe.extension.facebook.misc.AppLock;
@@ -1256,6 +1257,22 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting SELECT_POST_TEXT =
             new BooleanSetting("hushfacebook_select_post_text", FALSE);
+
+    /**
+     * A hold on a feed post's photo or video does what a hold on its Like button does: opens the
+     * reaction tray, or gives {@link #HOLD_REACTION} straight away
+     * ({@link app.morphe.extension.facebook.reels.ReactionHold}, #454). Wins over
+     * {@link #LONG_PRESS_OPENS_COMMENTS} on a feed post. Starts off.
+     */
+    public static final BooleanSetting HOLD_POST_TO_REACT =
+            new BooleanSetting("hushfacebook_hold_post_to_react", FALSE);
+
+    /**
+     * What {@link #HOLD_POST_TO_REACT} gives: the reaction tray to pick from, by default, or one
+     * reaction (#454).
+     */
+    public static final EnumSetting<HoldReaction> HOLD_REACTION =
+            new EnumSetting<>("hushfacebook_hold_reaction", HoldReaction.PICK);
 
     /**
      * A speed picked in a reel's menu stays for the next reels where it was picked, ads and live

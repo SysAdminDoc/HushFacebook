@@ -243,6 +243,7 @@ final class SwitchLabels {
         if (setting == Settings.DOUBLE_TAP_OPENS_COMMENTS) return L10n.t("Double tap opens comments");
         if (setting == Settings.LONG_PRESS_OPENS_COMMENTS) return L10n.t("Long press opens comments");
         if (setting == Settings.SELECT_POST_TEXT) return L10n.t("Select part of a post's text");
+        if (setting == Settings.HOLD_POST_TO_REACT) return L10n.t("Hold a post to react");
         if (setting == Settings.KEEP_REEL_SPEED) return L10n.t("Keep the reel speed");
         if (setting == Settings.KEEP_VIDEO_SPEED) return L10n.t("Keep the video speed");
         if (setting == Settings.SLOWER_REEL_SPEEDS) return L10n.t("Slower speeds");

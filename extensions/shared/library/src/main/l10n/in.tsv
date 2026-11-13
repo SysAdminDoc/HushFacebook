@@ -2320,6 +2320,21 @@ Shows when a reel or a video you open full screen was posted, under the name of 
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	Tetap menampilkan tombol Komentari di reel yang komentarnya dimatikan, jadi kamu masih bisa membaca komentar yang sudah ada. Perubahan terlihat mulai reel berikutnya.
 Select part of a post's text	Pilih sebagian teks postingan
 Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	Menahan teks postingan membukanya di kotak tempat kamu bisa memilih bagian yang kamu mau lalu menyalinnya, atau menyalin semuanya. Menahan saja tidak menyalin apa pun.
+Hold a post to react	Tahan postingan untuk bereaksi
+Holding a post's photo or video opens its reactions, as holding Like does. On a feed post it comes before Long press opens comments.	Menahan foto atau video postingan membuka reaksinya, seperti menahan Suka. Di postingan feed, ini didahulukan sebelum Tekan lama membuka komentar.
+Reaction	Reaksi
+Pick one each time	Pilih setiap kali
+Like	Suka
+Love	Super
+Care	Peduli
+Haha	Haha
+Wow	Wow
+Sad	Sedih
+Angry	Marah
+Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	Pilih setiap kali. Reaksi terbuka di atas postingan, jadi geser ke salah satunya lalu lepaskan, atau lepaskan lalu ketuk salah satunya.
+%1$s. Holding a post gives it straight away.	%1$s. Menahan postingan langsung memberikannya.
+Hold a post to react will open the reactions to pick from.	Tahan postingan untuk bereaksi akan membuka reaksi untuk dipilih.
+Hold a post to react will give %1$s.	Tahan postingan untuk bereaksi akan memberikan %1$s.
 Select text	Pilih teks
 Done	Selesai
 Copy all	Salin semua

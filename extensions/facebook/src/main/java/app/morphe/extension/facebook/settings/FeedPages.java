@@ -12,6 +12,7 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentOrderRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentsHeightRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.feedsSubtabRow;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.holdReactionRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.homeFeedRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.info;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.pauseLengthRow;
@@ -360,6 +361,10 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.SELECT_POST_TEXT,
                         L10n.t("Holding a post's text opens it in a box where you can select just the part you want "
                                 + "and copy that, or copy all of it. The hold itself copies nothing.")));
+                feed.addPreference(toggle(context, Settings.HOLD_POST_TO_REACT,
+                        L10n.t("Holding a post's photo or video opens its reactions, as holding Like does. On a feed "
+                                + "post it comes before Long press opens comments.")));
+                feed.addPreference(holdReactionRow(context));
             }
             if (build.contains(PatchFamily.WHO_SHARED)) {
                 feed.addPreference(toggle(context, Settings.SEE_WHO_SHARED,

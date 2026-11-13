@@ -2320,6 +2320,21 @@ Shows when a reel or a video you open full screen was posted, under the name of 
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	Behält den Button „Kommentieren“ bei Reels, deren Kommentare ausgeschaltet sind, damit du die vorhandenen Kommentare weiter lesen kannst. Die Änderung gilt ab dem nächsten Reel.
 Select part of a post's text	Teil eines Beitragstexts auswählen
 Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	Wenn du den Text eines Beitrags gedrückt hältst, öffnet er sich in einem Feld, in dem du nur den gewünschten Teil auswählen und kopieren oder alles kopieren kannst. Das Gedrückthalten selbst kopiert nichts.
+Hold a post to react	Beitrag halten zum Reagieren
+Holding a post's photo or video opens its reactions, as holding Like does. On a feed post it comes before Long press opens comments.	Wenn du ein Foto oder Video eines Beitrags gedrückt hältst, öffnen sich seine Reaktionen, wie beim Gedrückthalten von „Gefällt mir“. Bei einem Feed-Beitrag hat das Vorrang vor „Gedrückthalten öffnet Kommentare“.
+Reaction	Reaktion
+Pick one each time	Jedes Mal auswählen
+Like	Gefällt mir
+Love	Love
+Care	Umarmung
+Haha	Haha
+Wow	Wow
+Sad	Traurig
+Angry	Wütend
+Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	Jedes Mal auswählen. Die Reaktionen öffnen sich über dem Beitrag. Wisch zu einer und lass los, oder lass los und tippe auf eine.
+%1$s. Holding a post gives it straight away.	%1$s. Wenn du einen Beitrag gedrückt hältst, wird sie sofort vergeben.
+Hold a post to react will open the reactions to pick from.	Beitrag halten zum Reagieren öffnet die Reaktionen zum Auswählen.
+Hold a post to react will give %1$s.	Beitrag halten zum Reagieren vergibt %1$s.
 Select text	Text auswählen
 Done	Fertig
 Copy all	Alles kopieren

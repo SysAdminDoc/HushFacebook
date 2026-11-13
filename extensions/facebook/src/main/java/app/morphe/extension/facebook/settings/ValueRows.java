@@ -9,6 +9,7 @@ package app.morphe.extension.facebook.settings;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.backgroundSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInWaitSummary;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.holdReactionSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.reelDateStyleSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentsHeightSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentOrderSummary;
@@ -73,6 +74,7 @@ import app.morphe.extension.facebook.comments.CommentOrder;
 import app.morphe.extension.facebook.comments.CommentsHeight;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
+import app.morphe.extension.facebook.reels.HoldReaction;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
 import app.morphe.extension.facebook.reels.ReelsOrder;
 import app.morphe.extension.facebook.download.DownloadQuality;
@@ -1614,6 +1616,42 @@ final class ValueRows {
                 if (candidate.name().equals(getValue())) wait = candidate;
             }
             setSummary(burnInWaitSummary(wait));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its list takes the screen's colours, as the other rows' dialogs do. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+        }
+    }
+
+    /** Hold a post to react's Reaction (#454). Its summary follows its value, as Dim after's does. */
+    static final class HoldReactionRow extends PlainSummaryList {
+        HoldReactionRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+        }
+
+        void showSummary() {
+            HoldReaction reaction = HoldReaction.PICK;
+            for (HoldReaction candidate : HoldReaction.values()) {
+                if (candidate.name().equals(getValue())) reaction = candidate;
+            }
+            setSummary(holdReactionSummary(reaction));
         }
 
         @Override

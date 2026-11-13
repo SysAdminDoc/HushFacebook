@@ -36,6 +36,7 @@ import app.morphe.extension.facebook.comments.CommentsHeight;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
 import app.morphe.extension.facebook.reels.GrayOver;
+import app.morphe.extension.facebook.reels.HoldReaction;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
 import app.morphe.extension.facebook.reels.ReelsOrder;
 import app.morphe.extension.facebook.download.DownloadQuality;
@@ -308,6 +309,7 @@ public final class SettingsBackup {
             Settings.DOUBLE_TAP_OPENS_COMMENTS,
             Settings.LONG_PRESS_OPENS_COMMENTS,
             Settings.SELECT_POST_TEXT,
+            Settings.HOLD_POST_TO_REACT,
             Settings.KEEP_REEL_SPEED,
             Settings.KEEP_VIDEO_SPEED,
             Settings.SLOWER_REEL_SPEEDS,
@@ -677,6 +679,12 @@ public final class SettingsBackup {
     static final EnumSetting<BurnInWait> BURN_IN_WAIT = Settings.BURN_IN_WAIT;
 
     /**
+     * Hold a post to react's Reaction (#454), held in a file as its {@link HoldReaction#fileValue}.
+     * Anything else refuses the whole file, as a Dim after wait does.
+     */
+    static final EnumSetting<HoldReaction> HOLD_REACTION = Settings.HOLD_REACTION;
+
+    /**
      * Show Reels in gray's Turn gray over, held in a file as its {@link GrayOver#fileValue}.
      * Anything else refuses the whole file, as a reels order does.
      */
@@ -792,7 +800,7 @@ public final class SettingsBackup {
 
     /** The settings a file carries that aren't switches, in the order Settings declares them. */
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
-            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, GRAY_OVER, DATE_STYLE, REELS_ORDER, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
+            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY,
                     QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, NEW_ROW_MARK, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI,
                     BADGE, LOGO, TAB));
@@ -920,6 +928,7 @@ public final class SettingsBackup {
         private static final String REELS_ORDER_NAME = "reels_order";
         private static final String BURN_IN_NAME = "burn_in_guard";
         private static final String BURN_IN_WAIT_NAME = "burn_in_wait";
+        private static final String HOLD_REACTION_NAME = "hold_reaction";
         private static final String GRAY_OVER_NAME = "gray_reels_over";
         private static final String NEW_ROW_MARK_NAME = "new_row_mark";
         private static final String DATE_STYLE_NAME = "reel_post_date_style";
@@ -1062,6 +1071,9 @@ public final class SettingsBackup {
         /** The Dim after wait the file holds, the same way. */
         @Nullable
         BurnInWait burnInWait;
+        /** The Hold a post to react choice the file holds, the same way. */
+        @Nullable
+        HoldReaction holdReaction;
         /** The Turn gray over choice the file holds, the same way. */
         @Nullable
         GrayOver grayOver;
@@ -1320,6 +1332,8 @@ public final class SettingsBackup {
             if (burnInChange != null) changes.put(BURN_IN, burnInChange);
             BurnInWait burnInWaitChange = burnInWaitChange();
             if (burnInWaitChange != null) changes.put(BURN_IN_WAIT, burnInWaitChange);
+            HoldReaction holdReactionChange = holdReactionChange();
+            if (holdReactionChange != null) changes.put(HOLD_REACTION, holdReactionChange);
             GrayOver grayOverChange = grayOverChange();
             if (grayOverChange != null) changes.put(GRAY_OVER, grayOverChange);
             NewRowMark newRowMarkChange = newRowMarkChange();
@@ -1622,6 +1636,12 @@ public final class SettingsBackup {
             return burnInWait == null || burnInWait == BURN_IN_WAIT.savedValue() ? null : burnInWait;
         }
 
+        /** The Hold a post to react choice after this file, the same way. */
+        @Nullable
+        HoldReaction holdReactionChange() {
+            return holdReaction == null || holdReaction == HOLD_REACTION.savedValue() ? null : holdReaction;
+        }
+
         /** The Turn gray over choice after this file, the same way. */
         @Nullable
         GrayOver grayOverChange() {
@@ -1705,6 +1725,7 @@ public final class SettingsBackup {
             if (reelsOrder != null) state.putString(REELS_ORDER_NAME, reelsOrder.fileValue);
             if (burnIn != null) state.putString(BURN_IN_NAME, burnIn.fileValue);
             if (burnInWait != null) state.putString(BURN_IN_WAIT_NAME, burnInWait.fileValue);
+            if (holdReaction != null) state.putString(HOLD_REACTION_NAME, holdReaction.fileValue);
             if (grayOver != null) state.putString(GRAY_OVER_NAME, grayOver.fileValue);
             if (newRowMark != null) state.putString(NEW_ROW_MARK_NAME, newRowMark.fileValue);
             if (dateStyle != null) state.putString(DATE_STYLE_NAME, dateStyle.fileValue);
@@ -1782,6 +1803,7 @@ public final class SettingsBackup {
             read.reelsOrder = ReelsOrder.fromFile(state.get(REELS_ORDER_NAME));
             read.burnIn = BurnInMode.fromFile(state.get(BURN_IN_NAME));
             read.burnInWait = BurnInWait.fromFile(state.get(BURN_IN_WAIT_NAME));
+            read.holdReaction = HoldReaction.fromFile(state.get(HOLD_REACTION_NAME));
             read.grayOver = GrayOver.fromFile(state.get(GRAY_OVER_NAME));
             read.newRowMark = NewRowMark.fromFile(state.get(NEW_ROW_MARK_NAME));
             read.dateStyle = ReelDateStyle.fromFile(state.get(DATE_STYLE_NAME));
@@ -1858,6 +1880,7 @@ public final class SettingsBackup {
             switches.put(REELS_ORDER.key, of(REELS_ORDER).fileValue);
             switches.put(BURN_IN.key, of(BURN_IN).fileValue);
             switches.put(BURN_IN_WAIT.key, of(BURN_IN_WAIT).fileValue);
+            switches.put(HOLD_REACTION.key, of(HOLD_REACTION).fileValue);
             switches.put(GRAY_OVER.key, of(GRAY_OVER).fileValue);
             switches.put(DATE_STYLE.key, of(DATE_STYLE).fileValue);
             switches.put(COMMENTS_HEIGHT.key, of(COMMENTS_HEIGHT).fileValue);
@@ -2042,6 +2065,7 @@ public final class SettingsBackup {
         ReelsOrder reelsOrder = null;
         BurnInMode burnIn = null;
         BurnInWait burnInWait = null;
+        HoldReaction holdReaction = null;
         GrayOver grayOver = null;
         NewRowMark newRowMark = null;
         ReelDateStyle dateStyle = null;
@@ -2196,6 +2220,11 @@ public final class SettingsBackup {
             if (BURN_IN_WAIT.key.equals(name)) {
                 burnInWait = BurnInWait.fromFile(values.opt(name));
                 if (burnInWait == null) throw new Rejected(Reason.VALUE, "Not a dim after wait: " + name);
+                continue;
+            }
+            if (HOLD_REACTION.key.equals(name)) {
+                holdReaction = HoldReaction.fromFile(values.opt(name));
+                if (holdReaction == null) throw new Rejected(Reason.VALUE, "Not a hold reaction: " + name);
                 continue;
             }
             if (GRAY_OVER.key.equals(name)) {
@@ -2399,6 +2428,7 @@ public final class SettingsBackup {
         read.reelsOrder = reelsOrder;
         read.burnIn = burnIn;
         read.burnInWait = burnInWait;
+        read.holdReaction = holdReaction;
         read.grayOver = grayOver;
         read.newRowMark = newRowMark;
         read.dateStyle = dateStyle;

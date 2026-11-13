@@ -49,6 +49,7 @@ import app.morphe.extension.facebook.comments.CommentsHeight;
 import app.morphe.extension.facebook.reels.BurnInMode;
 import app.morphe.extension.facebook.reels.BurnInWait;
 import app.morphe.extension.facebook.reels.GrayOver;
+import app.morphe.extension.facebook.reels.HoldReaction;
 import app.morphe.extension.facebook.reels.ReelDateStyle;
 import app.morphe.extension.facebook.reels.ReelsOrder;
 import app.morphe.extension.facebook.download.DownloadQuality;
@@ -108,6 +109,7 @@ import app.morphe.extension.facebook.settings.ValueRows.PauseLengthRow;
 import app.morphe.extension.facebook.settings.ValueRows.WatchedKeepRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInGuardRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInWaitRow;
+import app.morphe.extension.facebook.settings.ValueRows.HoldReactionRow;
 import app.morphe.extension.facebook.settings.ValueRows.NewRowMarkRow;
 import app.morphe.extension.facebook.settings.ValueRows.ReelDateStyleRow;
 import app.morphe.extension.facebook.settings.ValueRows.CommentsHeightRow;
@@ -1911,6 +1913,57 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
                 + "stay faded.", burnInWaitLabel(wait));
     }
 
+    /** What Hold a post to react gives, right under its switch (#454). */
+    static HoldReactionRow holdReactionRow(Context context) {
+        HoldReactionRow row = new HoldReactionRow(context);
+        row.setKey(Settings.HOLD_REACTION.key);
+        row.setTitle(L10n.t("Reaction"));
+        row.setDialogTitle(L10n.t("Reaction"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        HoldReaction[] choices = HoldReaction.values();
+        CharSequence[] entries = new CharSequence[choices.length];
+        CharSequence[] values = new CharSequence[choices.length];
+        for (int i = 0; i < choices.length; i++) {
+            entries[i] = holdReactionLabel(choices[i]);
+            values[i] = choices[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.HOLD_REACTION.savedValue().name());
+        return row;
+    }
+
+    /** What the list and the sentences about it call [reaction]. */
+    static String holdReactionLabel(HoldReaction reaction) {
+        switch (reaction) {
+            case LIKE:
+                return L10n.t("Like");
+            case LOVE:
+                return L10n.t("Love");
+            case CARE:
+                return L10n.t("Care");
+            case HAHA:
+                return L10n.t("Haha");
+            case WOW:
+                return L10n.t("Wow");
+            case SAD:
+                return L10n.t("Sad");
+            case ANGRY:
+                return L10n.t("Angry");
+            default:
+                return L10n.t("Pick one each time");
+        }
+    }
+
+    /** What the choice does, for the row's summary. */
+    static String holdReactionSummary(HoldReaction reaction) {
+        if (reaction == HoldReaction.PICK) {
+            return L10n.t("Pick one each time. The reactions open over the post, so slide to one and let go, or let go "
+                    + "and tap one.");
+        }
+        return L10n.f("%1$s. Holding a post gives it straight away.", holdReactionLabel(reaction));
+    }
+
     /** How long Show Reels in gray takes to go from full color to gray, right under its switch. */
     static BreakRow grayOverRow(Context context) {
         BreakRow row = new BreakRow(context, value -> grayOverSummary(grayOver(value)), Settings.GRAY_REELS);
@@ -2813,6 +2866,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((BurnInGuardRow) listPreference).showSummary();
         } else if (listPreference instanceof BurnInWaitRow) {
             ((BurnInWaitRow) listPreference).showSummary();
+        } else if (listPreference instanceof HoldReactionRow) {
+            ((HoldReactionRow) listPreference).showSummary();
         } else if (listPreference instanceof ReelDateStyleRow) {
             ((ReelDateStyleRow) listPreference).showSummary();
         } else if (listPreference instanceof CommentsHeightRow) {

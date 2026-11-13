@@ -15,6 +15,7 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.facebook.comments.options.UFI_DOCK
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegister
@@ -74,7 +75,8 @@ val openCommentsWithGesturePatch = bytecodePatch(
     description = "Open a reel's comments with a double tap or a long press, on the sheet the Comment button opens, " +
         "instead of liking or holding, and a feed post's with a long press on its photo or name line. Starts off. " +
         "Turn it on in Hushfacebook settings > Reels and Watch. It also lets a long press on a post's text open " +
-        "that text to select part of it, a switch in Hushfacebook settings > News feed.",
+        "that text to select part of it, a switch in Hushfacebook settings > News feed. Another switch there makes " +
+        "holding a post's photo or video open its reactions, or give one reaction you pick.",
 ) {
     category("Reels")
     dependsOn(settingsPatch, turnOffDoubleTapLikePatch, holdReelFor2xPatch)
@@ -118,6 +120,8 @@ internal class GestureAnchors(
     val sheet: SheetCalls,
     /** The story holder's constructor taking the reel and an Integer, for a handler that keeps no holder. */
     val holderInit: Method,
+    /** The reaction tray's constructors, which hand each tray to Hold a post to react. */
+    val docks: List<Method>,
 )
 
 /**
@@ -359,8 +363,24 @@ internal fun BytecodePatchContext.findGestureAnchors(): GestureAnchors {
         ?: refuse("expected $FEEDBACK_PARAMS to have one constructor besides the Parcel one, found ${builds.size}")
     keyboardStore(params, keyboard)
         ?: refuse("expected $FEEDBACK_PARAMS's constructor to store ${keyboard.name} once, from a register nothing reads after the store")
-    return GestureAnchors(button, click, constructor, itemParameter, doubleTapLike, heart, handlers, dispatch, params, keyboard, sheet, holderInit)
+    val docks = dockConstructors(classDefByOrNull(UFI_DOCK) ?: refuse("this build has no $UFI_DOCK"))
+    return GestureAnchors(button, click, constructor, itemParameter, doubleTapLike, heart, handlers, dispatch, params, keyboard, sheet, holderInit, docks)
 }
+
+/** Every constructor of the reaction tray, each still holding the tray in this at every return. */
+internal fun dockConstructors(dock: ClassDef): List<Method> {
+    val inits = dock.methods.filter { it.name == "<init>" }
+    if (inits.isEmpty()) refuse("${dock.type} has no constructor")
+    inits.forEach { init ->
+        val ends = returnsOf(init)
+        if (ends.isEmpty()) refuse("${dock.type}'s constructor never returns")
+        init.requireThisIntact(GESTURE_PATCH, ends)
+    }
+    return inits
+}
+
+private fun returnsOf(method: Method): List<Int> =
+    method.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }.map { it.index }
 
 /**
  * [holder]'s one public constructor taking the reel ([itemType]) and an Integer, which leaves the story
@@ -485,6 +505,14 @@ internal fun BytecodePatchContext.applyGestureAnchors(anchors: GestureAnchors) {
             """,
             ExternalLabel("stock", handler.getInstruction(0)),
         )
+    }
+
+    // Each reaction tray, as its constructor returns, for Hold a post to react to click a chosen reaction in.
+    anchors.docks.forEach { init ->
+        val made = mutableClassDefBy(init.definingClass).findMutableMethodOf(init)
+        returnsOf(made).asReversed().forEach { index ->
+            made.addInstructionsAtControlFlowLabel(index, "invoke-static/range { p0 .. p0 }, $DOCK_MADE")
+        }
     }
 
     // Every touch on a Facebook screen, with the activity, for a press held on a feed post. The

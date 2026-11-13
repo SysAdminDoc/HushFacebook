@@ -2324,6 +2324,21 @@ Shows when a reel or a video you open full screen was posted, under the name of 
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	在關閉留言的 Reels 上保留留言按鈕，讓你仍能閱讀已有的留言。從下一個 Reel 開始生效。
 Select part of a post's text	選取貼文文字的一部分
 Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	長按貼文文字會在一個方塊中開啟，你可以只選取想要的部分並複製，或全部複製。長按本身不會複製任何內容。
+Hold a post to react	長按貼文來傳達心情
+Holding a post's photo or video opens its reactions, as holding Like does. On a feed post it comes before Long press opens comments.	長按貼文的相片或影片會開啟它的心情選項，就像長按「讚」一樣。在動態貼文上，它優先於「長按開啟留言」。
+Reaction	心情
+Pick one each time	每次都選擇
+Like	讚
+Love	大心
+Care	加油
+Haha	哈
+Wow	哇
+Sad	嗚
+Angry	怒
+Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	每次都選擇。心情選項會在貼文上方開啟，滑到其中一個後放開，或放開後點一個。
+%1$s. Holding a post gives it straight away.	%1$s。長按貼文會立即傳達這個心情。
+Hold a post to react will open the reactions to pick from.	長按貼文來傳達心情將開啟心情選項讓你選擇。
+Hold a post to react will give %1$s.	長按貼文來傳達心情將傳達%1$s。
 Select text	選取文字
 Done	完成
 Copy all	全部複製

@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import app.morphe.extension.facebook.feed.PostWords;
+import app.morphe.extension.facebook.reels.ReactionHold;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.L10n;
@@ -704,13 +705,16 @@ public final class CommentSheetOptions {
 
     /**
      * The hook, first thing where a long press on Like opens the reaction picker. True returns
-     * before the picker opens while Like only is on; false lets it open.
+     * before the picker opens while Like only is on; false lets it open, as it does for the tray
+     * Hold a post to react opens.
      */
     public static boolean skipReactionPicker() {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, PICKER);
             if (!Utils.settingsReady() || !Settings.LIKE_ONLY.get()) return false;
+            // Hold a post to react asks for the tray, so the one it opens shows all the same.
+            if (ReactionHold.opening()) return false;
             HookStatus.counted(FAMILY, PICKER_SKIPPED);
             return true;
         } catch (Throwable failure) {

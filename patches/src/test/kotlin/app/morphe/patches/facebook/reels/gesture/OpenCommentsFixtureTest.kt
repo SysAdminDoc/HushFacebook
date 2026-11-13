@@ -7,6 +7,9 @@ package app.morphe.patches.facebook.reels.gesture
 import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
+import app.morphe.patches.facebook.comments.options.DOCK_NAME
+import app.morphe.patches.facebook.comments.options.UFI_DOCK
+import app.morphe.patches.facebook.comments.options.isReactionPicker
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
 import app.morphe.patches.facebook.media.taptoplay.MOTION_EVENT
@@ -94,6 +97,7 @@ class OpenCommentsFixtureTest {
         val activity: ClassDef,
         val feedbackParams: ClassDef,
         val holder: ClassDef,
+        val dock: ClassDef,
     )
 
     /** The classes the patch reads in [bundle], each the only one of its kind. */
@@ -131,7 +135,8 @@ class OpenCommentsFixtureTest {
         val feedbackParams = FixtureDex.classes(bundle, setOf(FEEDBACK_PARAMS)).getValue(FEEDBACK_PARAMS)
         val holderType = sheetCalls(click, doubleTapLike.parameterTypes[0].toString()).holder
         val holder = FixtureDex.classes(bundle, setOf(holderType)).getValue(holderType)
-        return Found(helper, doubleTapLike, component, view, heart, button, click, handlers, attachmentClass, owners, activity, feedbackParams, holder)
+        val dock = FixtureDex.classes(bundle, setOf(UFI_DOCK))[UFI_DOCK] ?: throw AssertionError("$name: no $UFI_DOCK")
+        return Found(helper, doubleTapLike, component, view, heart, button, click, handlers, attachmentClass, owners, activity, feedbackParams, holder, dock)
     }
 
     @Test
@@ -223,6 +228,17 @@ class OpenCommentsFixtureTest {
                 val android9 = name.substringAfter("-$version-").contains("-minapi")
                 assertEquals("$name: whether the guard finds the builder constructor's object intact at its returns",
                     android9, runCatching { build.requireThisIntact("control", returnAt) }.isSuccess)
+
+                // Hold a post to react (#454): the reaction tray has the one constructor read from 587,
+                // taking a Context and the session, and holds the tray in this at each return.
+                val docks = dockConstructors(found.dock)
+                assertEquals("$name: the tray's constructors", listOf(listOf(CONTEXT, FB_USER_SESSION)),
+                    docks.map { init -> init.parameterTypes.map(CharSequence::toString) })
+                // The control: the reaction picker Like's long press runs news up this same tray.
+                val pickers = FixtureDex.classesHolding(bundle, DOCK_NAME).flatMap { it.methods }.filter(::isReactionPicker)
+                assertTrue("$name: no reaction picker news up the tray", pickers.isNotEmpty() && pickers.all { picker ->
+                    picker.code().any { it.opcode == Opcode.NEW_INSTANCE && (it as ReferenceInstruction).reference.toString() == UFI_DOCK }
+                })
                 checked += version
             }
         }
@@ -236,7 +252,7 @@ class OpenCommentsFixtureTest {
             for (bundle in bundles) {
                 val name = bundle.name
                 val found = read(bundle)
-                val classes = (listOf(found.helper, found.component, found.view, found.attachmentClass, found.button, found.activity, found.feedbackParams, found.holder) +
+                val classes = (listOf(found.helper, found.component, found.view, found.attachmentClass, found.button, found.activity, found.feedbackParams, found.holder, found.dock) +
                     found.owners + found.handlers + feedPhotoFixtureClasses(bundle)).distinctBy { it.type } +
                     ExtensionDex.classDef(SETTINGS_STATUS) + ExtensionDex.classDef(REEL_GESTURES)
                 val context = PatchContexts.of(classes)
@@ -256,6 +272,7 @@ class OpenCommentsFixtureTest {
                 val dispatchBefore = anchors.dispatch.code()
                 val paramsBefore = anchors.params.code()
                 val storeBefore = keyboardStore(anchors.params, anchors.keyboard)!!
+                val docksBefore = anchors.docks.associate { key(it) to it.code() }
                 context.applyGestureAnchors(anchors)
 
                 fun patched(method: Method): Method =
@@ -391,6 +408,24 @@ class OpenCommentsFixtureTest {
                 assertEquals("$name: the rest of the constructor is Facebook's", paramsBefore.map { it.opcode },
                     (params.take(hook) + params.drop(hook + 2)).map { it.opcode })
 
+                // Each reaction tray: handed over (this, in one range) right before every return, the rest Facebook's.
+                assertEquals("$name: the tray's constructors hooked", 1, anchors.docks.size)
+                for (init in anchors.docks) {
+                    val original = docksBefore.getValue(key(init))
+                    val made = patched(init).code()
+                    val ends = original.count { it.opcode == Opcode.RETURN_VOID }
+                    assertEquals("$name: tray hooks", ends, made.count { it.call.toString() == DOCK_MADE })
+                    assertEquals("$name: tray instructions added", original.size + ends, made.size)
+                    made.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }.forEach { (index, _) ->
+                        val handOver = made[index - 1] as RegisterRangeInstruction
+                        assertEquals("$name: the tray handed over before the return", DOCK_MADE, made[index - 1].call.toString())
+                        assertEquals("$name: the tray handed over is this", listOf(init.localRegisterCount(), 1),
+                            listOf(handOver.startRegister, handOver.registerCount))
+                    }
+                    assertEquals("$name: the rest of the tray's constructor is Facebook's", original.map { it.opcode },
+                        made.filter { it.call.toString() != DOCK_MADE }.map { it.opcode })
+                }
+
                 // The stub in the extension presses the button's click handler.
                 val stub = context.mutableClassDefBy(REEL_GESTURES).methods.single { it.name == OPEN_STUB }.code()
                 assertEquals("$name: the stub's press", "${found.button.type}->${found.click.name}", stub.first { it.opcode == Opcode.INVOKE_STATIC }.call!!.let { it.definingClass + "->" + it.name })
@@ -434,6 +469,13 @@ class OpenCommentsFixtureTest {
         assertTrue("keyboardOnFirstLoad isn't public static",
             AccessFlags.PUBLIC.isSet(keyboard!!.accessFlags) && AccessFlags.STATIC.isSet(keyboard.accessFlags))
         assertEquals(KEYBOARD, "${keyboard.definingClass}->${keyboard.name}(${keyboard.parameterTypes.joinToString("")})${keyboard.returnType}")
+
+        val reactions = ExtensionDex.classDef("$EXTENSION_PACKAGE/reels/ReactionHold;")
+        val dockMade = reactions.methods.singleOrNull { it.name == "dockMade" }
+        assertNotNull("ReactionHold has no dockMade", dockMade)
+        assertTrue("dockMade isn't public static",
+            AccessFlags.PUBLIC.isSet(dockMade!!.accessFlags) && AccessFlags.STATIC.isSet(dockMade.accessFlags))
+        assertEquals(DOCK_MADE, "${dockMade.definingClass}->${dockMade.name}(${dockMade.parameterTypes.joinToString("")})${dockMade.returnType}")
     }
 
     private companion object {
