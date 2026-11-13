@@ -68,8 +68,8 @@ val hidePostsByWordsPatch = bytecodePatch(
     name = "Hide posts by words",
     description = "Hides feed posts with words you list, or from people, Pages or sites you list, so you skip " +
         "topics you're tired of. Photo, video, link and colored background posts, every post a Page wrote, or " +
-        "posts in languages you don't read can go too. Starts off. Turn it " +
-        "on in Hushfacebook settings > News feed.",
+        "posts in languages you don't read can go too. Your words, link posts and other languages also work on " +
+        "the Reels tab, going by each reel's caption. Starts off. Turn it on in Hushfacebook settings > News feed.",
     default = true,
 ) {
     category("Feed")
