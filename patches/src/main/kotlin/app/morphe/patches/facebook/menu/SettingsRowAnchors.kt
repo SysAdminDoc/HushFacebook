@@ -21,7 +21,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 /**
- * Where a row in Facebook's Menu comes from, for the Hushfacebook row, on the 577 to 584 builds.
+ * Where a row in Facebook's Menu comes from, for the Hushfacebook row, on the 577 to 587 builds.
  *
  * The Menu's Settings and privacy group (see MenuSectionAnchors.kt for the groups) is drawn by the
  * native group section from a list of plain row items: a title, the address a tap opens, the
@@ -39,7 +39,8 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  * and the row item, which loads the `bookmarks_menu` trace (582 and 584 ask a string table for it) and
  * picks what to open by the row's id. Two more static methods of the same class take the row item:
  * they log the row being seen, by its id (582's 32-bit build had dropped both). 583's 32-bit build
- * has no such handler: its body is inlined into a lambda ([inlinedRowTap]). The item
+ * has no such handler: its body is inlined into a lambda ([inlinedRowTap]). 587's handler names no
+ * trace and hands the logout row to a method that does ([rowHandOvers]). The item
  * class and every member are Redex names (`Lmp` on 584, `9iZ` on 583, `cTt` on 582, `9KG` on 580, `8oK` on 577,
  * which has one icon resource where 580 has two), so they're found by these shapes and by the trace.
  */
@@ -120,6 +121,24 @@ internal fun isRowTapShape(method: Method): Boolean {
     return method.implementation != null && method.isStatic() && method.returnType == "V" &&
         parameters.size == 6 && parameters[0] == VIEW && parameters[1] == USER_SESSION &&
         parameters[3].startsWith("L")
+}
+
+/** Whether [method] takes the view and the user session and returns nothing, the way 587's row handlers do. */
+internal fun isRowHandOverShape(method: MethodReference): Boolean =
+    method.returnType == "V" && method.parameterTypes.map { it.toString() } == listOf(VIEW, USER_SESSION)
+
+/**
+ * The calls [method], shaped like a tap handler ([isRowTapShape]), hands a row over with. 587's
+ * handler names no trace itself: it passes the view and the session on to one method per kind of row
+ * on a controller it takes (`LX/0OvF;` on arm64, `LX/0Kwj;` on 32-bit), and the logout row's (`A06`)
+ * asks the string table for [ROW_TAP_TRACE]. These are the calls ([isRowHandOverShape]) on a class
+ * the handler takes.
+ */
+internal fun rowHandOvers(method: Method): List<MethodReference> {
+    if (!isRowTapShape(method)) return emptyList()
+    val parameters = method.parameters()
+    return method.implementation!!.instructions.mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
+        .filter { it.definingClass in parameters && isRowHandOverShape(it) }
 }
 
 /** The row item type [tap] takes. */

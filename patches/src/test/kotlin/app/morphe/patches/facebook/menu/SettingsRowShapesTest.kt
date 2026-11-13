@@ -193,6 +193,27 @@ class SettingsRowShapesTest {
     }
 
     @Test
+    fun `587's tap handler hands the view and the session to a class it takes`() {
+        val events = "Lfixture/Events;"
+        val handOver = ImmutableMethodReference(events, "A06", listOf(VIEW, USER_SESSION), "V")
+        val elsewhere = ImmutableMethodReference("Lfixture/Other;", "A06", listOf(VIEW, USER_SESSION), "V")
+        val sessionOnly = ImmutableMethodReference(events, "A09", listOf(USER_SESSION), "V")
+        fun handler(flags: Int = publicStatic) = method(owner, "A08",
+            listOf(VIEW, USER_SESSION, helper, item, events, "Lfixture/Host;"), "V", 9, listOf(
+                ImmutableInstruction35c(Opcode.INVOKE_VIRTUAL, 1, 7, 0, 0, 0, 0, sessionOnly),
+                ImmutableInstruction35c(Opcode.INVOKE_STATIC, 2, 3, 4, 0, 0, 0, elsewhere),
+                ImmutableInstruction35c(Opcode.INVOKE_VIRTUAL, 3, 7, 3, 4, 0, 0, handOver),
+                ImmutableInstruction10x(Opcode.RETURN_VOID),
+            ), flags)
+        assertFalse("it names no trace itself", isRowTap(handler()))
+        assertEquals(listOf("$events->A06"), rowHandOvers(handler()).map { "${it.definingClass}->${it.name}" })
+        assertTrue("only a handler's shape hands over", rowHandOvers(handler(flags = publicFinal)).isEmpty())
+        assertTrue(isRowHandOverShape(handOver))
+        assertFalse(isRowHandOverShape(sessionOnly))
+        assertFalse(isRowHandOverShape(ImmutableMethodReference(events, "A06", listOf(VIEW, USER_SESSION), "Z")))
+    }
+
+    @Test
     fun `the loggers are the tap handler's static siblings that take the row`() {
         val tap = tap()
         val logger = method(owner, "A06", listOf(helper, item, "Lfixture/Host;"), "V", 7, emptyList(), publicStatic)

@@ -44,11 +44,13 @@ class SettingsRowFixtureTest {
      * into a lambda on both, as 583's 32-bit build did, so neither has a tap class to log from. 586
      * has a tap class again on both, and both its loggers take the row. Its Android 9 build folds
      * both into the tap handler (`LX/0p4C;->A05` logs `tap_bookmark` right after reading the id),
-     * behind the hook that returns first for the patch's row.
+     * behind the hook that returns first for the patch's row. 587 keeps the tap class and both
+     * loggers on both ABIs (`LX/0D1G;->A09` and `A0A` on arm64).
      */
     private val loggerCount = mapOf(
         "585.0.0.47.54" to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0, "arm64-v8a-minapi28-storeless" to 0),
         "586.0.0.52.53" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2, "arm64-v8a-minapi28-storeless" to 0),
+        "587.0.0.39.55" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2),
     )
 
     private fun Method.instructionList() = implementation?.instructions?.toList().orEmpty()
@@ -104,7 +106,19 @@ class SettingsRowFixtureTest {
                 val tracing = { dex: DexBackedDexFile ->
                     ROW_TAP_TRACE in dex.stringSection || dex.methodSection.any { it.definingClass in tables }
                 }
-                val taps = FixtureDex.methodsWhere(bundle, tracing) { isRowTap(it, table) }
+                val named = FixtureDex.methodsWhere(bundle, tracing) { isRowTap(it, table) }
+                // 587's handler names no trace: it hands the logout row to a method of a class it takes, which does.
+                val handing = if (named.isNotEmpty()) emptyList() else {
+                    val shaped = FixtureDex.methodsWhere(bundle, tracing) { rowHandOvers(it).isNotEmpty() }
+                    val receivers = FixtureDex.classes(bundle, shaped.flatMap(::rowHandOvers).map { it.definingClass }.toSet())
+                    val names = { call: MethodReference ->
+                        receivers[call.definingClass]?.methods?.singleOrNull {
+                            it.name == call.name && it.parameterTypes.map(Any::toString) == call.parameterTypes.map(Any::toString)
+                        }?.let { namesString(it, ROW_TAP_TRACE, table) } == true
+                    }
+                    shaped.filter { rowHandOvers(it).any(names) }
+                }
+                val taps = named + handing
                 assertEquals("${bundle.name}: native Menu group sections", 1, natives.size)
                 // 586 asks a static method of the section's class for the list, which makes the builds.
                 val site = rowListSite(natives.single()) { type -> sections.singleOrNull { it.type == type } }
@@ -212,7 +226,8 @@ class SettingsRowFixtureTest {
                         it.opcode == Opcode.IGET_WIDE && ((it as ReferenceInstruction).reference as FieldReference).name == id.name
                     }
                 })
-                assertTrue(namesString(tap, ROW_TAP_TRACE, table))
+                assertTrue("${bundle.name}: the tap handler names no \"$ROW_TAP_TRACE\" and hands no row to a method that does",
+                    namesString(tap, ROW_TAP_TRACE, table) || tap in handing)
                 checked += version
             }
         }
