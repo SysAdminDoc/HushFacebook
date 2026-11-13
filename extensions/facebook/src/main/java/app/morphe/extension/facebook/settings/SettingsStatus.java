@@ -202,6 +202,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean backgroundPlay() {
+        return false;
+    }
+
     public static boolean turnOffHdrBrightness() {
         return false;
     }

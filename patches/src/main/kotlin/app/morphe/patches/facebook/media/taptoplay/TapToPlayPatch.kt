@@ -89,7 +89,7 @@ val tapToPlayPatch = bytecodePatch(
         } catch (moved: PatchException) {
             patchLog.warning("${moved.message}. The patch goes on, and a reel's play button can come back while it plays.")
         }
-        hookTouches()
+        hookTouches(PATCH, doubleTap = true)
         enableStatus("tapToPlay")
     }
 }
@@ -295,25 +295,27 @@ private fun BytecodePatchContext.hookReelPlayButton(checker: String) {
 /**
  * Every touch on a Facebook screen goes to the feed video double tap, then to the tap clock, before
  * Facebook sees it. The double tap turns a held side tap into a cancel first, so the clock sees what
- * Facebook sees (#432).
+ * Facebook sees (#432). Tap to play and Keep playing in the background both read the clock, so each
+ * asks for this hook and the clock's call goes in once; [doubleTap] is Tap to play's, which adds the
+ * double tap in front of it. [patch] names the patch asking.
  */
-private fun BytecodePatchContext.hookTouches() {
+internal fun BytecodePatchContext.hookTouches(patch: String, doubleTap: Boolean) {
     val activity = classDefByOrNull(FRAGMENT_ACTIVITY)
-        ?: throw PatchException("$PATCH: this build has no $FRAGMENT_ACTIVITY")
+        ?: throw PatchException("$patch: this build has no $FRAGMENT_ACTIVITY")
     val dispatches = touchDispatches(activity)
     val dispatch = dispatches.singleOrNull() ?: throw PatchException(
-        "$PATCH: expected $FRAGMENT_ACTIVITY to declare one dispatchTouchEvent($MOTION_EVENT)Z, found ${dispatches.size}",
+        "$patch: expected $FRAGMENT_ACTIVITY to declare one dispatchTouchEvent($MOTION_EVENT)Z, found ${dispatches.size}",
     )
+    val mutable = mutableClassDefBy(FRAGMENT_ACTIVITY).findMutableMethodOf(dispatch)
+    val hooked = touchHooksAtStart(mutable)
     // The screen and the event are p0 and p1, next to each other, so the range form passes both
     // without borrowing a register.
-    mutableClassDefBy(FRAGMENT_ACTIVITY).findMutableMethodOf(dispatch)
-        .addInstructions(
-            0,
-            """
-                invoke-static/range { p0 .. p1 }, $DOUBLE_TAP_TOUCH
-                invoke-static/range { p0 .. p1 }, $TOUCH
-            """.trimIndent(),
-        )
+    val calls = listOfNotNull(
+        DOUBLE_TAP_TOUCH.takeIf { doubleTap && it !in hooked },
+        TOUCH.takeIf { it !in hooked },
+    )
+    if (calls.isEmpty()) return
+    mutable.addInstructions(0, calls.joinToString("\n") { "invoke-static/range { p0 .. p1 }, $it" })
 }
 
 private fun BytecodePatchContext.requireTriggerEnum(type: String) {

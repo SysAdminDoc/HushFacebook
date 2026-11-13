@@ -371,6 +371,8 @@ public final class SettingsBackup {
             Settings.PICTURE_IN_PICTURE,
             Settings.PICTURE_IN_PICTURE_FROM_MENU,
             Settings.PICTURE_IN_PICTURE_BUTTON,
+            Settings.KEEP_PLAYING_IN_BACKGROUND,
+            Settings.BACKGROUND_PLAY_BUTTON,
             Settings.TURN_OFF_HDR_BRIGHTNESS,
             Settings.PREFER_SDR_RENDITIONS,
             Settings.DRAW_VIDEOS_WITH_THE_SCREEN,

@@ -1776,6 +1776,16 @@ Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's Mor
 Picture-in-picture button	画中画按钮
 # context: summary of that switch; "the window" is the small picture-in-picture window
 Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open the window right away. Works with Picture-in-picture on.	在已准备好小窗口的 Reels 或视频左侧边缘显示一个小按钮。点按它可立即打开小窗口。需开启“画中画”。
+# context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
+Keep playing in the background	在后台继续播放
+# context: summary of that switch; the notification is the one Facebook shows with the video's play and pause buttons
+A video you started with a tap keeps its sound after you leave Facebook, and its notification can pause it. Swiping the notification away or taking a call stops it.	你点按开始播放的视频在离开 Facebook 后仍会继续播放声音，可通过其通知暂停。滑走通知或接听电话会停止播放。
+# context: title of that notification when the video has none of its own
+Facebook video	Facebook 视频
+# context: switch title under Playback; on, the small picture-in-picture window gets a headphones button that keeps the sound playing after the window closes
+Background play button in the window	小窗口中的后台播放按钮
+# context: summary of that switch; "the window" is the small picture-in-picture window
+Adds a headphones button to the picture-in-picture window. Tap it to close the window and keep the sound playing, with a notification to pause it.	在画中画小窗口中添加一个耳机按钮。点按它可关闭小窗口并继续播放声音，同时显示用于暂停的通知。
 # context: switch title under Stories; it makes videos you post to your own Story ask for high quality when they upload
 Upload Stories in HD	以高清上传快拍
 # context: summary of that switch; standard is the normal upload quality, high the better one

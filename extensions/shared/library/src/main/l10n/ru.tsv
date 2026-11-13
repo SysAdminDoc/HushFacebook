@@ -1821,6 +1821,16 @@ Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's Mor
 Picture-in-picture button	Кнопка «Картинка в картинке»
 # context: summary of that switch; "the window" is the small picture-in-picture window
 Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open the window right away. Works with Picture-in-picture on.	Показывает небольшую кнопку у левого края Reels или видео, чтобы быстро открыть плавающее окно. Нажмите ее, чтобы сразу открыть окно. Работает при включенной функции «Картинка в картинке».
+# context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
+Keep playing in the background	Продолжать воспроизведение в фоне
+# context: summary of that switch; the notification is the one Facebook shows with the video's play and pause buttons
+A video you started with a tap keeps its sound after you leave Facebook, and its notification can pause it. Swiping the notification away or taking a call stops it.	Видео, которое вы запустили нажатием, продолжает звучать после выхода из Facebook, а его уведомление позволяет поставить его на паузу. Если смахнуть уведомление или ответить на звонок, воспроизведение остановится.
+# context: title of that notification when the video has none of its own
+Facebook video	Видео Facebook
+# context: switch title under Playback; on, the small picture-in-picture window gets a headphones button that keeps the sound playing after the window closes
+Background play button in the window	Кнопка фонового воспроизведения в окне
+# context: summary of that switch; "the window" is the small picture-in-picture window
+Adds a headphones button to the picture-in-picture window. Tap it to close the window and keep the sound playing, with a notification to pause it.	Добавляет кнопку с наушниками в окно «Картинка в картинке». Нажмите ее, чтобы закрыть окно и продолжить слушать звук, а уведомление позволит поставить его на паузу.
 # context: switch title under Stories; it makes videos you post to your own Story ask for high quality when they upload
 Upload Stories in HD	Загружать Истории в HD
 # context: summary of that switch; standard is the normal upload quality, high the better one

@@ -47,6 +47,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *       given a new video since. That keeps what a tap started going through Facebook's own
  *       restarts, such as a play it replays once the video is bound.</li>
  *   <li>The trigger is one only something you did sends: {@link #CONTROLS}.</li>
+ *   <li>Keep playing in the background is carrying on a video you started, and this is Facebook's
+ *       background player or its notification starting it ({@link BackgroundPlay#allowsStart}).</li>
  *   <li>A tap ended no more than {@link #TAP_WINDOW_MS} ago ({@link TapClock}) and the trigger isn't
  *       one Facebook sends because something came into view or came back ({@link #visibilityDriven}).
  *       BY_AUTOPLAY is let through here, since the Story you tap starts with it, unless a reel's
@@ -683,12 +685,14 @@ public final class TapToPlay {
      * The rule, with the clock passed in. Arms the player when it lets the start through.
      * [autoplayedReel] says the start is BY_AUTOPLAY on a player that plays a reel ({@link #playsReel}).
      * Facebook 581's Reels tab starts each reel it lands on that way, so it counts as the reel coming
-     * into view: a tap on the tab doesn't let it through, and a run of reels does (#91).
+     * into view: a tap on the tab doesn't let it through, and a run of reels does (#91). A start Keep
+     * playing in the background asked for counts as a control: Facebook's background player carrying
+     * on a video you started, or its notification's play ({@link BackgroundPlay#allowsStart}).
      */
     static boolean decide(Object player, @Nullable String trigger, boolean autoplayedReel, long now, String path) {
         boolean armed = ARMED.armed(player);
         long sinceTap = TapClock.msSinceTap(now);
-        boolean control = trigger != null && CONTROLS.contains(trigger);
+        boolean control = trigger != null && CONTROLS.contains(trigger) || BackgroundPlay.allowsStart(trigger);
         boolean recentTap = sinceTap >= 0 && sinceTap <= TAP_WINDOW_MS;
         boolean tapped = recentTap && !visibilityDriven(trigger) && !autoplayedReel;
         // A tap or a control is the person at work, so a link waiting is no longer what started

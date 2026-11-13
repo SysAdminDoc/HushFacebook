@@ -1930,6 +1930,24 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_pip_button", FALSE);
 
     /**
+     * A video you started keeps its sound after you leave Facebook, in Facebook's own background
+     * player with its notification ({@link app.morphe.extension.facebook.media.BackgroundPlay}). Off
+     * by default: it keeps a player going once Facebook is out of sight, which not everyone wants.
+     */
+    public static final BooleanSetting KEEP_PLAYING_IN_BACKGROUND =
+            new BooleanSetting("hushfacebook_keep_playing_in_background", FALSE);
+
+    /**
+     * The picture-in-picture window gets a headphones button that closes the window and keeps the
+     * sound going in Facebook's background player, with its notification (#455,
+     * {@link app.morphe.extension.facebook.media.BackgroundPlay}). Works with {@link
+     * #KEEP_PLAYING_IN_BACKGROUND} on or off. Starts off. Off or paused, the window has Facebook's
+     * buttons alone.
+     */
+    public static final BooleanSetting BACKGROUND_PLAY_BUTTON =
+            new BooleanSetting("hushfacebook_background_play_button", FALSE);
+
+    /**
      * HDR videos and photos stay in the screen's usual range instead of turning it up to full
      * brightness ({@link app.morphe.extension.facebook.media.HdrBrightness}). Starts off. Off
      * or paused, Facebook asks for its HDR window again.

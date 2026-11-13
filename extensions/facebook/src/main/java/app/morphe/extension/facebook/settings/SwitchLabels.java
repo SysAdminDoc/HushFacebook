@@ -284,6 +284,8 @@ final class SwitchLabels {
         if (setting == Settings.PICTURE_IN_PICTURE) return L10n.t("Picture-in-picture");
         if (setting == Settings.PICTURE_IN_PICTURE_FROM_MENU) return L10n.t("Only from a reel's More menu");
         if (setting == Settings.PICTURE_IN_PICTURE_BUTTON) return L10n.t("Picture-in-picture button");
+        if (setting == Settings.KEEP_PLAYING_IN_BACKGROUND) return L10n.t("Keep playing in the background");
+        if (setting == Settings.BACKGROUND_PLAY_BUTTON) return L10n.t("Background play button in the window");
         if (setting == Settings.TURN_OFF_HDR_BRIGHTNESS) return L10n.t("Turn off HDR brightness");
         if (setting == Settings.PREFER_SDR_RENDITIONS) return L10n.t("Play SDR versions of HDR videos");
         if (setting == Settings.DRAW_VIDEOS_WITH_THE_SCREEN) return L10n.t("Fix washed-out video colors");

@@ -162,6 +162,14 @@ internal fun touchDispatches(activity: ClassDef): List<Method> = activity.method
         !it.isStatic() && it.implementation != null
 }
 
+/** The touch hooks already first in [method]: the calls it opens with that go to a touch hook. */
+internal fun touchHooksAtStart(method: Method): Set<String> =
+    method.implementation?.instructions?.take(2).orEmpty().mapNotNull { instruction ->
+        val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
+        "${call.definingClass}->${call.name}(${call.parameterTypes.joinToString("")})${call.returnType}"
+            .takeIf { it == TOUCH || it == DOUBLE_TAP_TOUCH }
+    }.toSet()
+
 /** Whether [caller] invokes [callee]. */
 internal fun calls(caller: Method, callee: Method): Boolean =
     caller.implementation?.instructions?.any { instruction ->

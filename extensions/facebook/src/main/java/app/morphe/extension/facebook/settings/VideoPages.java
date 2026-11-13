@@ -398,7 +398,7 @@ final class VideoPages {
         if (build.contains(PatchFamily.TAP_TO_PLAY) || build.contains(PatchFamily.RESUME_LONG_VIDEOS)
                 || build.contains(PatchFamily.FRAME_STEP)
                 || build.contains(PatchFamily.PLAYBACK_QUALITY) || build.contains(PatchFamily.PICTURE_IN_PICTURE)
-                || build.contains(PatchFamily.HDR_BRIGHTNESS) || build.contains(PatchFamily.SKIP_SILENCE)
+                || build.contains(PatchFamily.BACKGROUND_PLAY) || build.contains(PatchFamily.HDR_BRIGHTNESS) || build.contains(PatchFamily.SKIP_SILENCE)
                 || build.contains(PatchFamily.KEEP_FEED_VIDEOS_MUTED) || build.contains(PatchFamily.PROGRESS_BAR)) {
             PreferenceCategory playback = category(screen, L10n.t("Video and audio"));
             subheading(playback, L10n.t("Autoplay and resume"));
@@ -555,6 +555,18 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.PICTURE_IN_PICTURE_BUTTON,
                         L10n.t("Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open "
                                 + "the window right away. Works with Picture-in-picture on.")));
+            }
+            if (build.contains(PatchFamily.BACKGROUND_PLAY)) {
+                // Asked on each stop of a Facebook screen, so a change counts from the next time you leave.
+                playback.addPreference(toggle(context, Settings.KEEP_PLAYING_IN_BACKGROUND,
+                        L10n.t("A video you started with a tap keeps its sound after you leave Facebook, and its "
+                                + "notification can pause it. Swiping the notification away or taking a call stops it.")));
+                if (build.contains(PatchFamily.PICTURE_IN_PICTURE)) {
+                    // Asked as each window's buttons are made, so a change shows from the next window.
+                    playback.addPreference(toggle(context, Settings.BACKGROUND_PLAY_BUTTON,
+                            L10n.t("Adds a headphones button to the picture-in-picture window. Tap it to close the window "
+                                    + "and keep the sound playing, with a notification to pause it.")));
+                }
             }
         }
     }

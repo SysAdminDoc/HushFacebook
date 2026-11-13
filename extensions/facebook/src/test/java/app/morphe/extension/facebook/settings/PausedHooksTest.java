@@ -116,6 +116,7 @@ import app.morphe.extension.facebook.comments.MetaAiSummaries;
 import app.morphe.extension.facebook.comments.ReactorBlock;
 import app.morphe.extension.facebook.composer.TagSuggestionsForTests;
 import app.morphe.extension.facebook.media.HdrBrightnessForTests;
+import app.morphe.extension.facebook.media.BackgroundPlayForTests;
 import app.morphe.extension.facebook.media.PictureInPictureForTests;
 import app.morphe.extension.facebook.media.CenteredFullscreenForTests;
 import app.morphe.extension.facebook.media.FeedSound;
@@ -1185,6 +1186,8 @@ public class PausedHooksTest {
                 PictureInPictureForTests::immersiveAllows, PictureInPictureForTests::homeGateAllows,
                 PictureInPictureForTests::homeFlagAllows, PictureInPictureForTests::offersTheMenuRow,
                 PictureInPictureForTests::offersTheButton));
+        // A video you started keeps going when its manager asks about the pause as you leave.
+        probes.put(PatchFamily.BACKGROUND_PLAY, Collections.singletonList(BackgroundPlayForTests::continuesAVideoYouStarted));
         // An HDR window comes out in the default colour mode, a headroom as none, the screen
         // answers as one that shows no HDR, a manifest loses the HDR twin of an SDR rendition, and
         // a player goes from its SurfaceView to its TextureView.

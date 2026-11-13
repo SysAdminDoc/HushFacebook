@@ -208,6 +208,8 @@ public enum PatchFamily {
             Settings.DEFAULT_PLAYBACK_QUALITY),
     PICTURE_IN_PICTURE(FamilyNames.PICTURE_IN_PICTURE, "pictureInPicture", null,
             Settings.PICTURE_IN_PICTURE, Settings.PICTURE_IN_PICTURE_FROM_MENU, Settings.PICTURE_IN_PICTURE_BUTTON),
+    BACKGROUND_PLAY(FamilyNames.BACKGROUND_PLAY, "backgroundPlay", null,
+            Settings.KEEP_PLAYING_IN_BACKGROUND, Settings.BACKGROUND_PLAY_BUTTON),
     HDR_BRIGHTNESS(FamilyNames.HDR_BRIGHTNESS, "turnOffHdrBrightness", null,
             Settings.TURN_OFF_HDR_BRIGHTNESS, Settings.PREFER_SDR_RENDITIONS, Settings.DRAW_VIDEOS_WITH_THE_SCREEN),
     SKIP_SILENCE(FamilyNames.SKIP_SILENCE, "skipSilentParts", null,

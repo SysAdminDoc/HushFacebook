@@ -1781,6 +1781,16 @@ Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's Mor
 Picture-in-picture button	Botón de imagen en imagen
 # context: summary of that switch; "the window" is the small picture-in-picture window
 Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open the window right away. Works with Picture-in-picture on.	Muestra un botón pequeño en el borde izquierdo de un reel o vídeo que tiene la ventana lista. Tócalo para abrir la ventana al instante. Funciona con Imagen en imagen activado.
+# context: switch title under Playback; on, a video you started keeps its sound after you leave Facebook; also the label of a headphones button in the picture-in-picture window
+Keep playing in the background	Seguir reproduciendo en segundo plano
+# context: summary of that switch; the notification is the one Facebook shows with the video's play and pause buttons
+A video you started with a tap keeps its sound after you leave Facebook, and its notification can pause it. Swiping the notification away or taking a call stops it.	Un video que iniciaste con un toque sigue sonando cuando sales de Facebook, y su notificación permite pausarlo. Deslizar la notificación o atender una llamada lo detiene.
+# context: title of that notification when the video has none of its own
+Facebook video	Video de Facebook
+# context: switch title under Playback; on, the small picture-in-picture window gets a headphones button that keeps the sound playing after the window closes
+Background play button in the window	Botón de reproducción en segundo plano en la ventana
+# context: summary of that switch; "the window" is the small picture-in-picture window
+Adds a headphones button to the picture-in-picture window. Tap it to close the window and keep the sound playing, with a notification to pause it.	Añade un botón de auriculares a la ventana de imagen en imagen. Tócalo para cerrar la ventana y seguir escuchando el sonido, con una notificación para pausarlo.
 # context: switch title under Stories; it makes videos you post to your own Story ask for high quality when they upload
 Upload Stories in HD	Subir historias en HD
 # context: summary of that switch; standard is the normal upload quality, high the better one

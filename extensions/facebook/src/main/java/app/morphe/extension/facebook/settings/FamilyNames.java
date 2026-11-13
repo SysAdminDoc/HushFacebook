@@ -82,6 +82,7 @@ public final class FamilyNames {
     public static final String PINCH_TO_ZOOM = "Pinch to zoom";
     public static final String PLAYBACK_QUALITY = "Default playback quality";
     public static final String PICTURE_IN_PICTURE = "Picture-in-picture";
+    public static final String BACKGROUND_PLAY = "Keep playing in the background";
     public static final String HDR_BRIGHTNESS = "Turn off HDR brightness";
     public static final String SKIP_SILENCE = "Skip silent parts";
     public static final String KEEP_FEED_VIDEOS_MUTED = "Keep feed videos muted";

@@ -709,8 +709,14 @@ public final class PictureInPicture {
         return true;
     }
 
-    private static synchronized Activity armedScreen() {
+    static synchronized Activity armedScreen() {
         return armedScreen.get();
+    }
+
+    /** The player the window was last armed for. */
+    @Nullable
+    static synchronized Object currentPlayer() {
+        return current.get();
     }
 
     /** A start while a reel floats got a task of its own at [now]. */

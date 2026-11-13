@@ -77,6 +77,7 @@ import app.morphe.extension.facebook.comments.CommentSheetOptions;
 import app.morphe.extension.facebook.comments.FullHeightComments;
 import app.morphe.extension.facebook.comments.MetaAiSummaries;
 import app.morphe.extension.facebook.media.HdrBrightnessForTests;
+import app.morphe.extension.facebook.media.BackgroundPlayForTests;
 import app.morphe.extension.facebook.media.PictureInPictureForTests;
 import app.morphe.extension.facebook.media.ProgressBar;
 import app.morphe.extension.facebook.media.FeedSound;
@@ -326,6 +327,8 @@ public class ColdStartHooksTest {
         assertFalse("the Watch viewer's flag before the context said yes", PictureInPictureForTests.immersiveAllows());
         assertFalse("the Video tab's gate before the context said yes", PictureInPictureForTests.homeGateAllows());
         assertFalse("the Video tab's flag before the context said yes", PictureInPictureForTests.homeFlagAllows());
+        assertFalse("a background handler took a video on before the context said yes",
+                BackgroundPlayForTests.continuesAVideoYouStarted());
         assertFalse("an HDR window kept in the usual range before the context said yes",
                 HdrBrightnessForTests.keepsAnHdrWindowInTheUsualRange());
         assertFalse("a headroom held before the context said yes", HdrBrightnessForTests.holdsTheHeadroom());
