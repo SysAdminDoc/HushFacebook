@@ -5,6 +5,7 @@
 package app.morphe.patches.facebook.feed.carousel
 
 import app.morphe.patcher.Fingerprint
+import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
@@ -14,9 +15,12 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.addressed
+import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.methodsNaming
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.feed.switchTarget
+import app.morphe.patches.facebook.feed.tableIndexAt
 import app.morphe.patches.facebook.feed.tableIndices
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -65,10 +69,37 @@ internal const val CAROUSEL_PHOTO_KEY = "multi_media_photo"
 /**
  * The photo in the swipeable row: the render of the Litho component that names it, `LX/0cNH;` in
  * 585. A lambda and a name table hold the name too, and neither is a render. 586's Android 9 build
- * asks that table for the name (`LX/01Ay;`), so a render naming it through a table counts too.
+ * asks that table for the name (`LX/01Ay;`), so a render naming it through a table counts too, and
+ * since 587 the render asks a table for its key as well, so the key counts the same way.
  */
-internal fun BytecodePatchContext.carouselPhotoRenders(): List<Method> = methodsNaming(CAROUSEL_PHOTO) {
-    it.name == "render" && it.parameterTypes.size == 1 && holdsString(it, CAROUSEL_PHOTO_KEY)
+internal fun BytecodePatchContext.carouselPhotoRenders(): List<Method> {
+    val key = TableAsker(
+        CAROUSEL_PHOTO_KEY,
+        classDefByStrings(CAROUSEL_PHOTO_KEY, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+    )
+    return methodsNaming(CAROUSEL_PHOTO) { it.name == "render" && it.parameterTypes.size == 1 }.filter(key::names)
+}
+
+/**
+ * Whether a method names [literal]: holds it, or asks a string table among [holders] for it
+ * ([tableIndexAt]). Each table's indices for the literal are read once, since a table is thousands
+ * of instructions and many methods ask the same one.
+ */
+internal class TableAsker(private val literal: String, holders: Collection<ClassDef>) {
+    private val owners = holders.associateBy { it.type }
+    private val indices = HashMap<String, Set<Int>>()
+
+    fun names(method: Method): Boolean {
+        if (holdsString(method, literal)) return true
+        val code = method.implementation?.instructions?.toList() ?: return false
+        return code.indices.any { at ->
+            val index = tableIndexAt(code, at) ?: return@any false
+            val call = (code[at] as ReferenceInstruction).reference as MethodReference
+            index in indices.getOrPut(call.toString()) {
+                owners[call.definingClass]?.let { resolveStatic(it, call) }?.let { tableIndices(it, literal) }.orEmpty()
+            }
+        }
+    }
 }
 
 /** [type] as Java names the class, `X.0cNH` for `LX/0cNH;`. */

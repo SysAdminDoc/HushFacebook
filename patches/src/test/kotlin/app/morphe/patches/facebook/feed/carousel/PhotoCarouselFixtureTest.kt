@@ -101,15 +101,18 @@ class PhotoCarouselFixtureTest {
                 }
 
                 // 586's Android 9 build asks a name table for the photo's name, so its render names it by that call.
+                // 587 asks a table for the key too, so the render's dex may hold neither string.
                 val photoHolders = FixtureDex.classesHolding(bundle, CAROUSEL_PHOTO).associateBy { it.type }
+                val keyHolders = FixtureDex.classesHolding(bundle, CAROUSEL_PHOTO_KEY).associateBy { it.type }
                 val resolve: (MethodReference) -> Method? = { call -> photoHolders[call.definingClass]?.let { resolveStatic(it, call) } }
-                val photos = FixtureDex.methodsWhere(bundle, { dex -> dex.stringSection.any { it == CAROUSEL_PHOTO_KEY } }) {
-                    it.name == "render" && holds(it, CAROUSEL_PHOTO_KEY) && namesString(it, CAROUSEL_PHOTO, resolve)
+                val keyAsker = TableAsker(CAROUSEL_PHOTO_KEY, keyHolders.values)
+                val photos = FixtureDex.methodsWhere(bundle, { true }) {
+                    it.name == "render" && keyAsker.names(it) && namesString(it, CAROUSEL_PHOTO, resolve)
                 }
-                assertEquals("$name: the row's photo", 1, photos.size)
+                assertEquals("$name: the row's photo, among renders naming its key: ${photos.map { it.definingClass }}", 1, photos.size)
                 val photo = photos.single().definingClass
 
-                val classes = FixtureDex.classes(bundle, setOf(table.definingClass, photo, RECYCLER_VIEW) + photoHolders.keys)
+                val classes = FixtureDex.classes(bundle, setOf(table.definingClass, photo, RECYCLER_VIEW) + photoHolders.keys + keyHolders.keys)
                 val holder = classes.getValue(table.definingClass)
                 val rowDraw = classes.getValue(RECYCLER_VIEW).methods.single(::isRowDraw)
                 val drawBefore = rowDraw.code()
