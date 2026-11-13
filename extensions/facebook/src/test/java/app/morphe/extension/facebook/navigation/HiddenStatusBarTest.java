@@ -12,6 +12,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.view.View;
 import android.view.Window;
 
@@ -38,8 +39,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * Hide the status bar (#124 leftover): on, the main screen's bar is asked away and asked away again
  * whenever it shows; off or paused, a bar this hid comes back once, and a bar Facebook hid itself
  * is left alone; a failure stops that screen's checks. Facebook's strip behind the bar closes only
- * on the main screen with its bar gone. A real window's insets are run once to show they're
- * reachable without failing.
+ * on the main screen with its bar gone, or brought back by a window over it while this has it asked
+ * away. A real window's insets are run once to show they're reachable without failing.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -205,13 +206,45 @@ public class HiddenStatusBarTest {
         Activity main = Robolectric.buildActivity(FbMainTabActivity.class).get();
         Activity other = Robolectric.buildActivity(Activity.class).get();
 
-        assertEquals(0, HiddenStatusBar.topInset(75, main, false));
-        assertTrue(statusLine(), statusLine().contains(HiddenStatusBar.STRIP_CLOSED + " 1"));
-        assertEquals("a bar showing keeps its strip", 75, HiddenStatusBar.topInset(75, main, true));
-        assertEquals("no insets yet", 75, HiddenStatusBar.topInset(75, main, null));
-        assertEquals("another screen", 75, HiddenStatusBar.topInset(75, other, false));
-        assertEquals("no screen", 75, HiddenStatusBar.topInset(75, null, false));
-        assertTrue(statusLine(), statusLine().contains(HiddenStatusBar.STRIP_CLOSED + " 1"));
+        assertEquals(0, HiddenStatusBar.topInset(75, main, false, true));
+        assertEquals("a bar Facebook hid itself", 0, HiddenStatusBar.topInset(75, main, false, false));
+        assertTrue(statusLine(), statusLine().contains(HiddenStatusBar.STRIP_CLOSED + " 2"));
+        assertEquals("a bar this never asked away keeps its strip", 75, HiddenStatusBar.topInset(75, main, true, false));
+        assertEquals("no insets yet", 75, HiddenStatusBar.topInset(75, main, null, true));
+        assertEquals("another screen", 75, HiddenStatusBar.topInset(75, other, false, true));
+        assertEquals("no screen", 75, HiddenStatusBar.topInset(75, null, false, true));
+        assertTrue(statusLine(), statusLine().contains(HiddenStatusBar.STRIP_CLOSED + " 2"));
+    }
+
+    /**
+     * #456: the comment sheet over a reel is a window of its own with the bar back, which makes the
+     * main screen's insets report the bar too. Opening the strip then re-padded the reel as the
+     * sheet slid up and left a black band above the top bar as it closed.
+     */
+    @Test
+    public void aBarAWindowOverTheMainScreenBringsBackKeepsItsStripClosed() {
+        Activity main = Robolectric.buildActivity(FbMainTabActivity.class).setup().get();
+        View content = main.findViewById(android.R.id.content);
+        assertFalse("not asked away yet", HiddenStatusBar.askedAway(content, main));
+
+        HiddenStatusBar.Checks checks = HiddenStatusBar.attach(main.getWindow());
+        checks.check();
+        assertTrue(checks.hid);
+        assertTrue(HiddenStatusBar.askedAway(content, main));
+        assertEquals(0, HiddenStatusBar.topInset(75, main, true, HiddenStatusBar.askedAway(content, main)));
+
+        Dialog sheet = new Dialog(main);
+        sheet.setContentView(new View(main));
+        sheet.show();
+        View sheetContent = sheet.findViewById(android.R.id.content);
+        assertFalse("the sheet's own window pads for its own bar", HiddenStatusBar.askedAway(sheetContent, main));
+        assertEquals(75, HiddenStatusBar.topInset(75, main, true, HiddenStatusBar.askedAway(sheetContent, main)));
+        sheet.dismiss();
+
+        Settings.HIDE_STATUS_BAR.save(false);
+        checks.check();
+        assertFalse("given back", HiddenStatusBar.askedAway(content, main));
+        assertEquals(75, HiddenStatusBar.topInset(content, 75));
     }
 
     @Test

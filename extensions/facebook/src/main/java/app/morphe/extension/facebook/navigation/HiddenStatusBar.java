@@ -46,7 +46,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>On Android 15 and up Facebook draws a strip of its own behind the bar and pads the screen below
  * it, both sized from the window's system insets, which keep the bar's height after it's asked
- * away. {@link #topInset} closes that strip while the bar is gone.
+ * away. {@link #topInset} closes that strip while the bar is gone, and keeps it closed while a
+ * window over the main screen has the bar back: the comment sheet over a reel is one, and opening
+ * the strip under it re-padded the reel as the sheet slid up and left a black band above the top
+ * bar as it closed (#456).
  *
  * <p>Any failure leaves that screen's bar as it is and stops the checks there.
  */
@@ -97,8 +100,10 @@ public final class HiddenStatusBar {
      * window's system insets, which keep the bar's height after it's asked away, so a bar this hid
      * left a strip of background above the top bar (S22, 2026-10-18: 75 px). On the main screen,
      * with the switch on and the bar gone, the answer is 0, so the strip closes and the top bar
-     * moves up to the edge. Anything else keeps Facebook's inset, and so does a failure. A bar
-     * swiped in for a moment doesn't change the insets, so it shows over the top bar.
+     * moves up to the edge. A window opened over the main screen with a bar of its own, the comment
+     * sheet over a reel, makes the main screen's insets report the bar again, and the answer stays
+     * 0 while this asked the main screen's bar away: the sheet's window pads for its own bar, and
+     * the reel under it keeps its place. Anything else keeps Facebook's inset, and so does a failure.
      */
     public static int topInset(View content, int top) {
         try {
@@ -109,21 +114,39 @@ public final class HiddenStatusBar {
             if (insets != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 showing = insets.isVisible(WindowInsets.Type.statusBars());
             }
-            return topInset(top, screenOf(content.getContext()), showing);
+            Activity screen = screenOf(content.getContext());
+            return topInset(top, screen, showing, askedAway(content, screen));
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "hidden status bar strip", failure);
             return top;
         }
     }
 
-    /** [top], or 0 when [screen] is the main screen and its bar is known to be gone. */
-    static int topInset(int top, @Nullable Activity screen, @Nullable Boolean showing) {
-        if (screen == null || !MAIN_SCREEN.equals(screen.getClass().getName()) || !Boolean.FALSE.equals(showing)) {
+    /**
+     * [top], or 0 when [screen] is the main screen and its bar is gone, or showing only because
+     * another window brought it back while this has it [askedAway].
+     */
+    static int topInset(int top, @Nullable Activity screen, @Nullable Boolean showing, boolean askedAway) {
+        if (screen == null || !MAIN_SCREEN.equals(screen.getClass().getName()) || showing == null
+                || (showing && !askedAway)) {
             return top;
         }
         HookStatus.invoked(FAMILY);
         HookStatus.counted(FAMILY, STRIP_CLOSED);
         return 0;
+    }
+
+    /**
+     * Whether [content] sits in [screen]'s own window, not a sheet or dialog opened over it, and
+     * this asked that window's bar away and hasn't given it back.
+     */
+    static boolean askedAway(View content, @Nullable Activity screen) {
+        Window window = screen == null ? null : screen.getWindow();
+        if (window == null || content.getRootView() != window.peekDecorView()) return false;
+        synchronized (WINDOWS) {
+            Checks checks = WINDOWS.get(window);
+            return checks != null && checks.asking();
+        }
     }
 
     @Nullable
@@ -312,6 +335,11 @@ public final class HiddenStatusBar {
 
         Checks(Bar bar) {
             this.bar = bar;
+        }
+
+        /** Whether this has the bar asked away now: a failure stopped the checks, so it doesn't. */
+        boolean asking() {
+            return hid && !stopped;
         }
 
         @Override
