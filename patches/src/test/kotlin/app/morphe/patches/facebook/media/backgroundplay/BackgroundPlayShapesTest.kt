@@ -149,6 +149,27 @@ class BackgroundPlayShapesTest {
         assertFalse("no String video id", isRecorder(noId, trigger))
     }
 
+    private fun outerPause(name: String = "pause", flags: Int = AccessFlags.PUBLIC.value, handsOn: Boolean = true) = method(
+        player, name, listOf(trigger), "V",
+        (if (handsOn) "const/4 v0, 0x0\ninvoke-virtual {p0, p1, v0}, $player->pauseFor($trigger${"Ljava/lang/Object;"})V\n" else "") +
+            "return-void",
+    )
+
+    @Test
+    fun `the window button's pause is the public one taking only the trigger that hands on to the inner one`() {
+        val inner = innerPause()
+        val found = triggerPause(listOf(inner, outerPause()), inner, trigger)
+        assertEquals("pause", found?.name)
+        assertNull("only the inner pause", triggerPause(listOf(inner), inner, trigger))
+        assertNull("a private one", triggerPause(listOf(inner, outerPause(flags = AccessFlags.PRIVATE.value)), inner, trigger))
+        assertNull("one that doesn't hand on", triggerPause(listOf(inner, outerPause(handsOn = false)), inner, trigger))
+        assertNull("two of them", triggerPause(listOf(inner, outerPause(), outerPause("pauseToo")), inner, trigger))
+        val wider = method(player, "pauseWith", listOf(trigger, "Z"), "V",
+            "const/4 v0, 0x0\ninvoke-virtual {p0, p1, v0}, $player->pauseFor($trigger${"Ljava/lang/Object;"})V\nreturn-void")
+        assertEquals("one that takes more than the trigger is passed over", "pause",
+            triggerPause(listOf(inner, wider, outerPause()), inner, trigger)?.name)
+    }
+
     // The manager and its handler.
 
     private fun stops(trace: String = MANAGER_ON_BACKGROUND, asks: Int = 1) = method(

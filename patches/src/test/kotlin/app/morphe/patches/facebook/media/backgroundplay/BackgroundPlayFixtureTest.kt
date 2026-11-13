@@ -98,6 +98,8 @@ class BackgroundPlayFixtureTest {
                     FixtureDex.classes(fixture, setOf(type))[type]?.also { helperClasses += it }
                 }
                 assertNotNull("$name: the inner pause's static helper", helper)
+                val windowPause = triggerPause(grootPauses(groot, trigger), pause, trigger)
+                assertNotNull("$name: the window button's pause, public and taking only the trigger", windowPause)
                 val recorded = recorderCalls(helper!!, trigger)
                 assertEquals("$name: the helper's recordings of the pause", 1, recorded.size)
                 val accessor = videoIdAccessor(helper, recorded.single(), groot.type)

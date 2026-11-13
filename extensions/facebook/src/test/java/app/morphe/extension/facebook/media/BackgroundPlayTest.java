@@ -274,6 +274,11 @@ public class BackgroundPlayTest {
             public String videoId(Object player) {
                 return "1001";
             }
+
+            @Override
+            public void pause(Object player, String trigger) {
+                throw new IllegalStateException("unpausable");
+            }
         };
         Player player = playThenLeave(Trigger.BY_USER, 3000);
         assertTrue(asked(player));
@@ -288,6 +293,12 @@ public class BackgroundPlayTest {
         // Unpatched, the accessor's name is missing and the reader says so.
         assertNull(BackgroundPlay.PATCHED.videoId(player));
         assertTrue(HookStatus.report().toString(), HookStatus.report().toString().contains("video id"));
+        // And so is the pause's: the reader leaves the player as it was.
+        player.playing = true;
+        BackgroundPlay.PATCHED.pause(player, BackgroundPlay.WINDOW_PAUSE_TRIGGER);
+        assertTrue(player.playing);
+        List<String> missing = HookStatus.missing(FamilyNames.BACKGROUND_PLAY);
+        assertTrue(missing.toString(), missing.toString().contains("pause"));
     }
 
     @Test

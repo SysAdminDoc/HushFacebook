@@ -182,18 +182,24 @@ public class BackgroundPlayButtonTest {
     @Test
     public void aTapSendsTheWindowAwayAndCarriesItsVideoOn() throws Exception {
         assertFalse("the tap works with Keep playing in the background off", Settings.KEEP_PLAYING_IN_BACKGROUND.get());
+        // A reel Facebook started on its own, looping in the window: nothing of yours recorded.
         Player player = new Player();
+        BackgroundPlay.started(player, Trigger.BY_AUTOPLAY);
         PictureInPicture.armed(screen, player, null);
         tap(headphones(built(facebooks())));
         assertEquals("the window's screen went to the back", 1, screen.sentBack);
         assertTrue(report(), report().contains(BackgroundPlayButton.LEFT));
+        assertFalse("the tap paused the window's video before its screen went", player.playing);
 
-        // Facebook pauses the video as its screen stops, and its manager asks about that pause.
-        BackgroundPlay.pausing(player, Trigger.BY_PLAYER);
-        assertFalse("the handler stopped the window's video", BackgroundPlay.deciding(handler, player.video, Trigger.BY_PLAYER));
+        // The window's screen stops without a pause of its own first, so Facebook's manager asks
+        // at once about the pause the tap made.
+        Trigger paused = Trigger.valueOf(BackgroundPlay.WINDOW_PAUSE_TRIGGER);
+        assertFalse("the handler stopped the window's video", BackgroundPlay.deciding(handler, player.video, paused));
         assertTrue(BackgroundPlay.skipCheck());
         assertTrue("the notification's flag", BackgroundPlay.notificationAllowed());
         BackgroundPlay.answered(true);
+        // Facebook's own pause as the screen stops comes after, on a video already paused.
+        player.pause(Trigger.BY_PLAYER);
         BackgroundPlay.returning(handler);
         BackgroundPlay.returned();
         assertFalse(BackgroundPlay.notificationAllowed());
@@ -201,24 +207,26 @@ public class BackgroundPlayButtonTest {
 
     @Test
     public void theTapCarriesOnlyTheLeaveThatFollowsIt() throws Exception {
+        Trigger paused = Trigger.valueOf(BackgroundPlay.WINDOW_PAUSE_TRIGGER);
         Player player = new Player();
         PictureInPicture.armed(screen, player, null);
         tap(headphones(built(facebooks())));
         SystemClock.sleep(BackgroundPlay.WINDOW_BUTTON_MS + 1000);
-        BackgroundPlay.pausing(player, Trigger.BY_PLAYER);
-        assertTrue("a pause long after the tap", BackgroundPlay.deciding(handler, player.video, Trigger.BY_PLAYER));
+        assertTrue("an ask long after the tap", BackgroundPlay.deciding(handler, player.video, paused));
         BackgroundPlay.answered(false);
 
+        player.playing = true;
         tap(headphones(built(facebooks())));
         Settings.BACKGROUND_PLAY_BUTTON.save(false);
-        BackgroundPlay.pausing(player, Trigger.BY_PLAYER);
-        assertTrue("the button's switch turned off since", BackgroundPlay.deciding(handler, player.video, Trigger.BY_PLAYER));
+        assertTrue("the button's switch turned off since", BackgroundPlay.deciding(handler, player.video, paused));
         BackgroundPlay.answered(false);
         Settings.BACKGROUND_PLAY_BUTTON.save(true);
 
+        // A later tap, on the video that tap paused.
+        SystemClock.sleep(100);
         tap(headphones(built(facebooks())));
-        player.playing = false;
-        BackgroundPlay.pausing(player, Trigger.BY_PLAYER);
+        assertFalse("a video already paused in the window stays as it was", player.playing);
+        player.pause(Trigger.BY_PLAYER);
         assertTrue("a video already paused in the window", BackgroundPlay.deciding(handler, player.video, Trigger.BY_PLAYER));
     }
 
@@ -243,6 +251,7 @@ public class BackgroundPlayButtonTest {
 
         PictureInPicture.forget();
         assertFalse("nothing armed", BackgroundPlayButton.tapped());
+        assertTrue("no tap went through, so the video plays on", player.playing);
         BackgroundPlay.pausing(player, Trigger.BY_PLAYER);
         assertTrue("no tap went through, so nothing is carried on",
                 BackgroundPlay.deciding(handler, player.video, Trigger.BY_PLAYER));

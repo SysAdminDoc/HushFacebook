@@ -39,10 +39,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>Facebook builds the window's buttons in one place, a rewind, play or pause, and a forward, and
  * Android takes no more than three. With the button's switch on, the forward gives way to headphones
  * ({@link #windowActions}). Their tap comes back here through a broadcast only this app can send,
- * which takes the window's video on as one you started ({@link BackgroundPlay#leaveWindow}) and
- * sends the window's screen to the back. Facebook pauses the video as its screen stops, and its
- * background manager asks the extension's handler about that pause, which carries it on even with
- * Keep playing in the background's own switch off.
+ * which takes the window's video on as one you started and pauses it
+ * ({@link BackgroundPlay#leaveWindow}), then sends the window's screen to the back. As the screen
+ * stops, Facebook's background manager asks the extension's handler about that pause, which carries
+ * the video on even with Keep playing in the background's own switch off.
  *
  * <p>Off, paused, before the settings are ready, or when anything here throws, the window keeps
  * Facebook's own buttons.

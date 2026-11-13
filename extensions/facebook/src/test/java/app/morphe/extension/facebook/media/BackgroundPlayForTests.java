@@ -28,6 +28,12 @@ public final class BackgroundPlayForTests {
         public String videoId() {
             return video;
         }
+
+        /** FbGrootPlayer's pause: the patched inner pause tells the extension first, then it stops. */
+        public void pause(Trigger trigger) {
+            BackgroundPlay.pausing(this, trigger);
+            playing = false;
+        }
     }
 
     /** Reads a {@link Player} as the patched reader reads FbGrootPlayer. */
@@ -40,6 +46,11 @@ public final class BackgroundPlayForTests {
         @Override
         public String videoId(Object player) {
             return ((Player) player).videoId();
+        }
+
+        @Override
+        public void pause(Object player, String trigger) {
+            ((Player) player).pause(Trigger.valueOf(trigger));
         }
     };
 

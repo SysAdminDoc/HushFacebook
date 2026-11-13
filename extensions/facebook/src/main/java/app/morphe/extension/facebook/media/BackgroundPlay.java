@@ -94,6 +94,9 @@ public final class BackgroundPlay {
     /** The trigger Facebook's background player starts, and its notification resumes, with. */
     static final String BACKGROUND_TRIGGER = "BY_BACKGROUND_PLAY";
 
+    /** The trigger the window's headphones button pauses the window's video with, Android's own. */
+    static final String WINDOW_PAUSE_TRIGGER = "BY_ANDROID";
+
     /** Facebook's manager, a kept name. */
     static final String MANAGER_CLASS = "com.facebook.video.bgplayback.manager.BackgroundPlaybackManager";
 
@@ -110,12 +113,18 @@ public final class BackgroundPlay {
 
     private static final String SOURCE = "BackgroundPlay";
 
-    /** Reads what the rule needs of a player. The patched one reflects; a test stands in. */
+    /**
+     * Reads what the rule needs of a player, and pauses one for the window's button. The patched one
+     * reflects; a test stands in.
+     */
     interface PlayerReader {
         boolean playing(Object player) throws Exception;
 
         @Nullable
         String videoId(Object player) throws Exception;
+
+        /** Pauses [player] through its own pause with the trigger named [trigger]. */
+        void pause(Object player, String trigger) throws Exception;
     }
 
     static final PlayerReader PATCHED = new Reflected();
@@ -158,6 +167,12 @@ public final class BackgroundPlay {
     /** The name of the player's no-argument video id accessor. The patch replaces this body. */
     @Nullable
     public static String videoIdMethod() {
+        return null;
+    }
+
+    /** The name of the player's pause that takes only a trigger. The patch replaces this body. */
+    @Nullable
+    public static String pauseMethod() {
         return null;
     }
 
@@ -331,7 +346,13 @@ public final class BackgroundPlay {
     /**
      * The window's headphones button: takes [player], the window's video, as one you started, so the
      * leave that follows carries it on, whether or not Keep playing in the background is on. Makes
-     * the manager now, on the main thread, ahead of the stop it has to see.
+     * the manager now, on the main thread, ahead of the stop it has to see, then pauses the video.
+     *
+     * <p>That pause is what the manager asks about. Leaving the window, Android stops the screen
+     * without pausing it first, as it does when you leave a screen that's open, and the manager asks
+     * as the screen stops, before Facebook's own pause of the video. Without one here it asked about
+     * whatever Facebook recorded last, a play or another video's pause, and the window's video didn't
+     * carry on.
      */
     static void leaveWindow(@Nullable Object player, Context context) throws Exception {
         long now = SystemClock.uptimeMillis();
@@ -345,6 +366,18 @@ public final class BackgroundPlay {
             }
         }
         if (manager == null && MANAGER_ASKED.compareAndSet(false, true)) makeManager(context);
+        if (player != null) pauseForLeave(player);
+    }
+
+    /** Pauses the window's video while it plays, so Facebook records the pause its manager reads. */
+    private static void pauseForLeave(Object player) {
+        try {
+            if (!reader.playing(player)) return;
+            reader.pause(player, WINDOW_PAUSE_TRIGGER);
+            HookStatus.bound(FamilyNames.BACKGROUND_PLAY, "window pause");
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.BACKGROUND_PLAY, "window pause", failure);
+        }
     }
 
     /** Records a start. Answers whether it was yours. */
@@ -565,6 +598,7 @@ public final class BackgroundPlay {
     static final class Reflected implements PlayerReader {
         private final Map<Class<?>, Method> playing = new ConcurrentHashMap<>();
         private final Map<Class<?>, Method> videoIds = new ConcurrentHashMap<>();
+        private final Map<Class<?>, Method> pauses = new ConcurrentHashMap<>();
 
         @Override
         public boolean playing(Object player) throws Exception {
@@ -591,6 +625,30 @@ public final class BackgroundPlay {
             }
             Object id = method.invoke(player);
             return id instanceof String ? (String) id : null;
+        }
+
+        @Override
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        public void pause(Object player, String trigger) throws Exception {
+            Method method = pauses.get(player.getClass());
+            if (method == null) {
+                String name = pauseMethod();
+                if (name == null) {
+                    HookStatus.missingMember(FamilyNames.BACKGROUND_PLAY, "method", "FbGrootPlayer", "pause");
+                    return;
+                }
+                for (Method each : player.getClass().getMethods()) {
+                    Class<?>[] types = each.getParameterTypes();
+                    if (each.getName().equals(name) && types.length == 1 && types[0].isEnum()) {
+                        method = each;
+                        break;
+                    }
+                }
+                if (method == null) throw new NoSuchMethodException(name + "(trigger)");
+                pauses.put(player.getClass(), method);
+            }
+            Class type = method.getParameterTypes()[0];
+            method.invoke(player, Enum.valueOf(type, trigger));
         }
     }
 

@@ -79,8 +79,12 @@ internal const val WINDOW_ACTIONS =
 internal const val WINDOW_SKIP_BACK = "com.facebook.video.reels.pip.ACTION_SKIP_BACK"
 internal const val REMOTE_ACTION = "Landroid/app/RemoteAction;"
 
-/** The extension's stubs the patch fills in: the video id accessor's name and the handler's class. */
+/**
+ * The extension's stubs the patch fills in: the video id accessor's name, the name of the pause the
+ * window's button calls and the handler's class.
+ */
 internal const val VIDEO_ID_METHOD = "videoIdMethod"
+internal const val PAUSE_METHOD = "pauseMethod"
 internal const val HANDLER_CLASS = "handlerClass"
 
 internal const val MANAGER = "Lcom/facebook/video/bgplayback/manager/BackgroundPlaybackManager;"
@@ -97,8 +101,25 @@ internal const val CONTEXT = "Landroid/content/Context;"
 internal const val LIST = "Ljava/util/List;"
 internal const val STRING = "Ljava/lang/String;"
 
-/** The trigger names the extension and Facebook's background player need the trigger enum to keep. */
-internal val BACKGROUND_TRIGGERS = listOf("BY_BACKGROUND_PLAY", "BY_USER")
+/**
+ * The trigger names the extension and Facebook's background player need the trigger enum to keep:
+ * BY_ANDROID is the one the window's headphones button pauses the window's video with.
+ */
+internal val BACKGROUND_TRIGGERS = listOf("BY_BACKGROUND_PLAY", "BY_USER", "BY_ANDROID")
+
+/**
+ * The pause the window's headphones button calls (587 LX/05MK;->JTz(LX/02xv;)V): the one public pause
+ * of [pauses] that takes only [trigger] and hands on to [inner]. Null unless there's exactly one.
+ */
+internal fun triggerPause(pauses: List<Method>, inner: Method, trigger: String): Method? =
+    pauses.singleOrNull {
+        it !== inner && AccessFlags.PUBLIC.isSet(it.accessFlags) && it.parameters() == listOf(trigger) &&
+            it.code().any { instruction ->
+                val call = instruction.call
+                call != null && call.definingClass == inner.definingClass && call.name == inner.name &&
+                    call.parameters() == inner.parameters()
+            }
+    }
 
 private fun Method.isStatic() = AccessFlags.STATIC.isSet(accessFlags)
 private fun Method.parameters() = parameterTypes.map(CharSequence::toString)

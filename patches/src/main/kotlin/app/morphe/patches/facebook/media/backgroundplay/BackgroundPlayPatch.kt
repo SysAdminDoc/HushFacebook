@@ -59,7 +59,7 @@ val backgroundPlayPatch = bytecodePatch(
     execute {
         val player = findPlayer()
         val handler = findHandler(player.trigger)
-        fillStubs(player.videoIdAccessor, handler.classDef.type)
+        fillStubs(player.videoIdAccessor, player.triggerPause.name, handler.classDef.type)
         hookPlayer(player)
         hookHandler(handler)
         hookWindowButtons()
@@ -68,11 +68,15 @@ val backgroundPlayPatch = bytecodePatch(
     }
 }
 
-/** FbGrootPlayer's play, its inner pause, its trigger type and its video id accessor. */
+/**
+ * FbGrootPlayer's play, its inner pause, the pause taking only a trigger, its trigger type and its
+ * video id accessor.
+ */
 internal class Player(
     val owner: ClassDef,
     val play: Method,
     val pause: Method,
+    val triggerPause: Method,
     val trigger: String,
     val videoIdAccessor: String,
 )
@@ -102,8 +106,11 @@ private fun BytecodePatchContext.findPlayer(): Player {
         throw PatchException("$PATCH: the play's trigger type $trigger isn't an enum naming ${BACKGROUND_TRIGGERS.joinToString()}")
     }
     val owner = classDefBy(play.definingClass)
-    val pause = innerPause(grootPauses(owner, trigger))
+    val pauses = grootPauses(owner, trigger)
+    val pause = innerPause(pauses)
         ?: throw PatchException("$PATCH: expected one inner pause in ${owner.type} that the other hands on to")
+    val triggerPause = triggerPause(pauses, pause, trigger)
+        ?: throw PatchException("$PATCH: expected one public pause in ${owner.type} taking only $trigger")
     val helper = pauseHelper(owner, pause, trigger) { classDefByOrNull(it) }
         ?: throw PatchException("$PATCH: the inner pause of ${owner.type} hands on to no one static helper")
     val calls = recorderCalls(helper, trigger)
@@ -113,7 +120,7 @@ private fun BytecodePatchContext.findPlayer(): Player {
     val accessor = videoIdAccessor(helper, call, owner.type) ?: throw PatchException(
         "$PATCH: the video id ${helper.definingClass}->${helper.name} records doesn't come from one accessor of the player",
     )
-    return Player(owner, play, pause, trigger, accessor)
+    return Player(owner, play, pause, triggerPause, trigger, accessor)
 }
 
 private fun BytecodePatchContext.findHandler(trigger: String): Handler {
@@ -161,10 +168,14 @@ private fun BytecodePatchContext.findHandler(trigger: String): Handler {
     return Handler(handler, check, back, read, videoField.name, triggerField.name, record, trigger, gate)
 }
 
-/** Fills in the extension's stubs: the player's video id accessor and the handler's class. */
-private fun BytecodePatchContext.fillStubs(videoIdAccessor: String, handlerType: String) {
+/** Fills in the extension's stubs: the player's video id accessor and trigger pause, and the handler's class. */
+private fun BytecodePatchContext.fillStubs(videoIdAccessor: String, triggerPause: String, handlerType: String) {
     val extension = mutableClassDefBy(BACKGROUND_PLAY)
-    listOf(VIDEO_ID_METHOD to videoIdAccessor, HANDLER_CLASS to binaryName(handlerType)).forEach { (stub, value) ->
+    listOf(
+        VIDEO_ID_METHOD to videoIdAccessor,
+        PAUSE_METHOD to triggerPause,
+        HANDLER_CLASS to binaryName(handlerType),
+    ).forEach { (stub, value) ->
         extension.methods.singleOrNull { it.name == stub && it.parameterTypes.isEmpty() && it.returnType == STRING }
             ?.returnEarly(value)
             ?: throw PatchException("$PATCH: the extension has no $stub() to fill in")
