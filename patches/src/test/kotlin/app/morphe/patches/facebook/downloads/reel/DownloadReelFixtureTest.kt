@@ -64,10 +64,10 @@ class DownloadReelFixtureTest {
 
     private val verticalUfi = "Lapp/morphe/extension/facebook/download/ReelDownload;->verticalUfi(Z)Z"
 
-    /** What the block did on each ABI: how far in front of the assembly call it went, its first scratch register, and where it read the helper's six values (session, scoped context, player, story, buttons, markers); then where the render's layout flag is handed to the extension, and its register (#316). Both 586 phone ABIs lay the render out alike, and its Android 9 build its own way. */
+    /** What the block did on each ABI: how far in front of the assembly call it went, its first scratch register, and where it read the helper's six values (session, scoped context, player, story, buttons, markers); then where the render's layout flag is handed to the extension, and its register (#316). Both 587 phone ABIs lay the render out alike (read 2026-11-13): the builder is the render, the block goes in where the straight run to the assembly call starts, and v1 to v6 are each written there before anything reads them (v6 at the call's own argument moves). 586's Android 9 build lays it out its own way. */
     private val expected = mapOf(
-        "arm64-v8a" to "before=36 scratch=1 sources=[31, 10, 28, 15, 23, 21] layout=217 v7",
-        "armeabi-v7a" to "before=36 scratch=1 sources=[31, 10, 28, 15, 23, 21] layout=217 v7",
+        "arm64-v8a" to "before=37 scratch=1 sources=[69, 9, 31, 38, 22, 15] layout=234 v7",
+        "armeabi-v7a" to "before=37 scratch=1 sources=[69, 9, 31, 38, 22, 15] layout=234 v7",
         "arm64-v8a-minapi28-storeless" to "before=43 scratch=15 sources=[53, 4, 99, 26, 14, 6] layout=194 v7",
     )
 
