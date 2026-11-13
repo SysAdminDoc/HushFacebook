@@ -43,12 +43,12 @@ class ReelItemStoryFixtureTest {
 
     /**
      * The item interface and its story getter in each declared build, then by the bundle's ABI.
-     * Redex can name them differently per ABI, as on 582 and 583.
+     * Redex can name them differently per ABI, as on 582, 583 and 587.
      */
     private val expected = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to ("LX/0DVK;" to "DTB"),
-            "armeabi-v7a" to ("LX/0DVK;" to "DTB"),
+            "arm64-v8a" to ("LX/0DR4;" to "DdY"),
+            "armeabi-v7a" to ("LX/0WV1;" to "DdW"),
             "arm64-v8a-minapi28-storeless" to ("LX/0Dao;" to "DTQ"),
         ),
     )
