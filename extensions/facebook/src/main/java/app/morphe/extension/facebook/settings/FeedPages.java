@@ -179,7 +179,12 @@ final class FeedPages {
                 || build.contains(PatchFamily.POST_DATES)
                 || build.contains(PatchFamily.AUTO_TRANSLATION)
                 || build.contains(PatchFamily.ASK_BEFORE_LIKE)
-                || build.contains(PatchFamily.FEEDS_HEADER)) {
+                || build.contains(PatchFamily.FEEDS_HEADER)
+                || build.contains(PatchFamily.FULL_POST_TEXT)
+                || build.contains(PatchFamily.TRANSLATE_POSTS)
+                || build.contains(PatchFamily.REEL_GESTURES)
+                || build.contains(PatchFamily.WHO_SHARED)
+                || build.contains(PatchFamily.PHOTO_CAROUSEL)) {
             PreferenceCategory feed = category(screen, L10n.t("News feed"));
             // The families whose rules run in the feed guard, which keeps the tally.
             if (build.contains(PatchFamily.SPONSORED_POSTS) || build.contains(PatchFamily.SUGGESTED_POSTS)
