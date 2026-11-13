@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.RegisterLiveness
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
@@ -92,6 +93,15 @@ class CleanUpChatListFixtureTest {
             if (it.toString() == "J" || it.toString() == "D") 2 else 1
         }
     }
+
+    /** How often the picker row writes its Meta AI flag's register before the button's test, by build and ABI. */
+    private val flagWrites = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to 3,
+            "armeabi-v7a" to 3,
+            "arm64-v8a-minapi28-storeless" to 2,
+        ),
+    )
 
     private fun patched(context: BytecodePatchContext, method: Method): Method =
         context.mutableClassDefBy(method.definingClass).methods.single {
@@ -204,15 +214,21 @@ class CleanUpChatListFixtureTest {
                 }
                 assertEquals("$name: the flag gives the search box its end margin, then builds the button", 2, tests.size)
                 assertEquals("$name: the gate is the button's test", gate.test, tests.last())
-                // Up to the button's test, the flag is written twice: 0 at the start and Facebook's 1. So the
-                // hook before that test only ever sees a 0 or a 1. Inside the button block Facebook reuses the
-                // register for other values, which the hook never touches.
+                // Up to the button's test, the flag's register is written twice on 586 (0 at the start and
+                // Facebook's 1) and three times on 587's phone builds, whose extra write is a move in the
+                // search branch, which returns before the test. Only the 0 and Facebook's 1 reach the
+                // test, so the hook before it only ever sees a 0 or a 1. Inside the button block Facebook
+                // reuses the register for other values, which the hook never touches.
                 val writes = (0 until tests.last()).filter {
                     pickerStock[it].opcode.setsRegister() && (pickerStock[it] as? OneRegisterInstruction)?.registerA == flag
                 }
-                assertEquals("$name: writes to the flag before the button's test", 2, writes.size)
+                val abi = name.substringAfter("-$version-").substringBefore(".apkm")
+                assertEquals("$name: writes to the flag before the button's test",
+                    flagWrites.getValue(version)[abi] ?: throw AssertionError("$name has no pin for the flag's writes"), writes.size)
                 assertEquals("$name: the first puts 0", 0, (pickerStock[writes[0]] as NarrowLiteralInstruction).narrowLiteral)
-                assertEquals("$name: the second is Facebook's 1", gate.set, writes[1])
+                assertTrue("$name: Facebook's 1 is among them", gate.set in writes)
+                assertEquals("$name: the writes reaching the button's test", listOf(writes[0], gate.set).sorted(),
+                    gate.method.writersReaching(tests.last(), flag).sorted())
 
                 // The patch on those classes.
                 val context = PatchContexts.of(
