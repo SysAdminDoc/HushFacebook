@@ -52,7 +52,7 @@ val backgroundPlayPatch = bytecodePatch(
         "notification to pause it. A headphones button in the picture-in-picture window does the same for the video " +
         "in it. Both start off. Turn them on in Hushfacebook settings > Video and audio.",
 ) {
-    category("Interface")
+    category("Playback")
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
