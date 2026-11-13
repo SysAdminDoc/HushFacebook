@@ -140,7 +140,7 @@ class TranslatePostsFixtureTest {
                     !it.definingClass.startsWith(EXTENSION_CLASSES) && cutShaped(it)
                 }.single()
                 val step = wholeTextStep(builder)
-                assertTrue("$name: the builder runs its text through no static step of its class", step != null)
+                assertTrue("$name: the builder runs its text through no step of its class", step != null)
                 val callsStep = { instruction: Instruction -> instruction.names(step.toString()) }
                 // The builder is an ImmutableMethod, its parameters not Strings, so signatures compare and lists don't.
                 val callers = FixtureDex.methodsWhere(bundle, { true }) { method ->
@@ -172,8 +172,10 @@ class TranslatePostsFixtureTest {
                     val where = "$name: ${caller.definingClass}->${caller.name}"
                     assertEquals("$where: four instructions per call", original.size + 4 * calls, patched.size)
                     for ((at, call) in patched.withIndex().filter { callsStep(it.value) }) {
-                        val text = (call as? RegisterRangeInstruction)?.startRegister
-                            ?: (call as FiveRegisterInstruction).registerC
+                        // 587's step is a virtual method of the builder's class, so its text comes after `this`.
+                        val skip = if (call.opcode == Opcode.INVOKE_VIRTUAL || call.opcode == Opcode.INVOKE_VIRTUAL_RANGE) 1 else 0
+                        val text = (call as? RegisterRangeInstruction)?.let { it.startRegister + skip }
+                            ?: (call as FiveRegisterInstruction).let { if (skip == 1) it.registerD else it.registerC }
                         assertTrue("$where: the text going in at $at isn't hooked", patched[at - 2].names(TRANSLATION_TEXT))
                         assertEquals("$where: the text is handed over", text, (patched[at - 2] as RegisterRangeInstruction).startRegister)
                         assertEquals("$where: the answer replaces the text", text, (patched[at - 1] as OneRegisterInstruction).registerA)
