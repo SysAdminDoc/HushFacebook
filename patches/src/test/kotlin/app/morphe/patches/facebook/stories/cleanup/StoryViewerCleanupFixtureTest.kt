@@ -276,21 +276,23 @@ class StoryViewerCleanupFixtureTest {
     }
 
     /**
-     * #380: the song and effect pills under the poster's name come from a column that walks the
-     * story's links and switches on each one's type. The extension hears the type right before
-     * the ordinal and, on a yes, the loop steps to the next link.
+     * #380: the song and effect pills under the poster's name come from a chip row that walks the
+     * story's links and switches on each one's type, and the sheet a tap on one opens lists them
+     * with a column that does the same. In each, the extension hears the type right before the
+     * ordinal and, on a yes, the loop steps to the next link.
      */
     @Test
-    fun `each declared build's links column asks the extension about each pill's type`() {
+    fun `each declared build's pill row and links column ask the extension about each pill's type`() {
         assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        assertEquals("the pill row comes first", listOf(CHIP_GROUP, LINKS_COLUMN), CREDIT_WALKERS)
         val checked = mutableSetOf<String>()
         for (version in versions) {
-            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
-                val name = bundle.name
-                val column = component(bundle, LINKS_COLUMN)
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) for (walker in CREDIT_WALKERS) {
+                val name = "${bundle.name} $walker"
+                val column = component(bundle, walker)
                 val original = renderOf(column)!!.code()
                 val site = pillSwitch(renderOf(column)!!)
-                assertNotNull("$name: $LINKS_COLUMN switches on no pill type inside its loop", site)
+                assertNotNull("$name: switches on no pill type inside its loop", site)
                 site!!
                 val enum = FixtureDex.classes(bundle, setOf(site.typeClass))[site.typeClass]
                 assertNotNull("$name: the pill type ${site.typeClass} isn't in the app", enum)
@@ -301,7 +303,7 @@ class StoryViewerCleanupFixtureTest {
                 }
 
                 val context = PatchContexts.of(listOf(column, enum))
-                context.dropCreditPills()
+                context.dropCredits(walker)
                 val code = context.mutableClassDefBy(column.type).methods.single {
                     it.name == "render" && it.parameterTypes.size == 1
                 }.code()
