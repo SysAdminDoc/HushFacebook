@@ -644,7 +644,8 @@ public class FeedVideoAloneTest {
      * #421: the page the linked reel's fetch brings has Facebook's next reels after the linked one
      * (S22 2026-11-08: "Up next: Gb Flowers" under the reel, and a swipe went on to it). While the
      * shared reel's viewer loads its reel, each page its loader hands over keeps the first reel only.
-     * Once the reel is on screen, and for a feed video or the Reels tab, pages are Facebook's.
+     * Once the reel is on screen, and for the Reels tab, pages are Facebook's. A tapped feed video's
+     * first page keeps its first video as well (#457, {@link #aTappedFeedVideosFirstPageKeepsOnlyThatVideo}).
      */
     @Test
     public void aSharedReelsPageKeepsOnlyTheLinkedReel() {
@@ -680,7 +681,7 @@ public class FeedVideoAloneTest {
         assertFalse("a feed video's first seed check", FeedVideoAlone.seedCheck(tapped));
         List<String> feedPage = new ArrayList<>(List.of("tapped", "next"));
         FeedVideoAlone.vending(tapped, feedPage);
-        assertEquals("a feed video's pages are the feed switch's business", List.of("tapped", "next"), feedPage);
+        assertEquals("a feed video's first page keeps that video alone too (#457)", List.of("tapped"), feedPage);
 
         clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
         FeedVideoAlone.reelsViewerOpening(origin("fb_shorts_tab::reels_tab"));
@@ -698,6 +699,58 @@ public class FeedVideoAloneTest {
         List<String> off = new ArrayList<>(List.of("m", "n"));
         FeedVideoAlone.vending(source, off);
         assertEquals("off, nothing is left out", List.of("m", "n"), off);
+    }
+
+    /**
+     * #457: with Open feed videos on their own, a tapped feed video's data source keeps Facebook's
+     * answer on its first ask so the video loads, and the page that ask lets through could hold the
+     * next video too: a swipe up went on to one more video, then nothing (586, a feed reel and a
+     * feed video post alike). That page keeps the tapped video only. Pages its held asks skip, a
+     * Warion viewer's own, the Reels tab's, and any with the switch off are Facebook's.
+     */
+    @Test
+    public void aTappedFeedVideosFirstPageKeepsOnlyThatVideo() {
+        FeedVideoAlone.feedVideoTapped();
+        Object source = new Object();
+        assertFalse("its first seed check loads the video", FeedVideoAlone.seedCheck(source));
+        List<String> page = new ArrayList<>(List.of("tapped", "next", "after"));
+        FeedVideoAlone.vending(source, page);
+        assertEquals(List.of("tapped"), page);
+        assertTrue("two videos counted as left out: " + statusLine(),
+                statusLine().contains(FeedVideoAlone.NEXT_LEFT_OUT + " 2"));
+        assertTrue("its next ask is held", FeedVideoAlone.seedCheck(source));
+        List<String> held = new ArrayList<>(List.of("x", "y"));
+        FeedVideoAlone.vending(source, held);
+        assertEquals("a page the held ask skips is left as it is", List.of("x", "y"), held);
+        assertFalse("and not counted: " + statusLine(), statusLine().contains(FeedVideoAlone.NEXT_LEFT_OUT + " 3"));
+        List<String> one = new ArrayList<>(List.of("v"));
+        FeedVideoAlone.vending(new Object(), one);
+        assertEquals("a data source that never asked is Facebook's", List.of("v"), one);
+
+        Object viewer = new Object();
+        warionFromFeed(viewer);
+        Object reel = new Object();
+        assertFalse("a feed reel's viewer loads its reel", FeedVideoAlone.seedCheck(reel));
+        List<String> reelPage = new ArrayList<>(List.of("feed reel", "Up next"));
+        FeedVideoAlone.vending(reel, reelPage);
+        assertEquals("a feed reel's first page keeps that reel", List.of("feed reel"), reelPage);
+        FeedVideoAlone.warionClosed(viewer);
+
+        clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);
+        FeedVideoAlone.reelsViewerOpening(origin("fb_shorts_tab::reels_tab"));
+        Object tab = new Object();
+        assertFalse(FeedVideoAlone.seedCheck(tab));
+        List<String> tabPage = new ArrayList<>(List.of("r1", "r2"));
+        FeedVideoAlone.vending(tab, tabPage);
+        assertEquals("the Reels tab keeps its reels", List.of("r1", "r2"), tabPage);
+
+        Settings.FEED_VIDEOS_ALONE.save(false);
+        FeedVideoAlone.feedVideoTapped();
+        Object offSource = new Object();
+        assertFalse(FeedVideoAlone.seedCheck(offSource));
+        List<String> off = new ArrayList<>(List.of("tapped", "next"));
+        FeedVideoAlone.vending(offSource, off);
+        assertEquals("off, the next video stays", List.of("tapped", "next"), off);
     }
 
     /**

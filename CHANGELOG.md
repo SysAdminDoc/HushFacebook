@@ -13,6 +13,10 @@ Changes in each Hushfacebook version, newest first.
 
 * Hushfacebook now patches Facebook 587.0.0.39.55 and no longer takes 586. On a 64-bit phone download the (arm64-v8a) (240-640dpi) (Android 11+) bundle, build 707414333, and on a 32-bit phone the (arm-v7a) (320dpi) (Android 11+) bundle, build 707414338. Facebook didn't put out a 120-640dpi build of 587, so the 240-640dpi one is the 64-bit download now. Update Facebook before you patch.
 
+### Fixed
+
+* With `Open feed videos on their own` on, a feed video you open plays by itself again. Every so often one more video slipped in after it, because the first batch Facebook loaded for the viewer came in with the next video already in it. That batch keeps only the video you tapped now. (#457)
+
 ## 0.22.0 (2026-11-12)
 
 * This one moves to Facebook 586.0.0.52.53 and needs Morphe Manager 2.5.0 or newer, so grab the new Facebook APK before you repatch. There's a lot new. Reel saves can go into a queue and ask which quality you want, and a tap on Like can ask first so nothing gets liked by accident. Feed videos get double tap to skip and speeds up to 3x. `Only friends' posts` and `Hide all group posts` trim the feed way down, and `Open chats in Messenger` hands your chats to the Messenger app. There's also a new `Clone install under another package name` patch for phones where Facebook came preinstalled. On the fix side, you can sign in with your email and password again on a phone without microG-RE, and closing a post's comments keeps your place in the feed.

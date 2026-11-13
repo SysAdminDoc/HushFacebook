@@ -45,7 +45,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * full-screen player screen created within that time of one is in front. It gets no more reels (its
  * seed video alone, in the data source's case, a reel or a feed's ordinary video alike) then and on
  * every later ask, except the data source's first seed check, which starts the video loading and
- * keeps Facebook's answer ({@link #seedCheck}). One held for a Warion
+ * keeps Facebook's answer ({@link #seedCheck}), while the page it lets through keeps the tapped
+ * video only ({@link #vending}, #457). One held for a Warion
  * viewer is decided again on its first ask after that viewer closes. One that first asked from the
  * main screen with no viewer open, the Reels and Video tabs' among them, keeps Facebook's answer, and
  * so does one asking in a viewer or player screen no feed video opened: the Watch page on a screen of
@@ -79,6 +80,9 @@ public final class FeedVideoAlone {
 
     /** Counted for each reel left out of a page handed to a shared reel's viewer while it loads that reel. */
     static final String LEFT_OUT = "Reels after a shared reel left out";
+
+    /** Counted for each video left out of the page that brings a tapped feed video into its player (#457). */
+    static final String NEXT_LEFT_OUT = "Videos after a feed video left out";
 
     /** How long after a feed video tap its player's first ask for more is still taken as that player's. */
     static final long WINDOW_MS = 5000;
@@ -146,6 +150,8 @@ public final class FeedVideoAlone {
         @Nullable final Opening opening;
         /** Whether it already asked {@link #seedCheck} once. Guarded by FEEDS. */
         boolean asked;
+        /** Whether its last {@link #seedCheck} kept Facebook's answer, so the page vended next goes through. Guarded by FEEDS. */
+        boolean passed;
 
         Feed(Object feed, boolean player, @Nullable Viewer viewer, @Nullable Opening opening) {
             this.feed = new WeakReference<>(feed);
@@ -450,6 +456,7 @@ public final class FeedVideoAlone {
                     if (seen.feed.get() == source) {
                         first = !seen.asked;
                         seen.asked = true;
+                        seen.passed = first;
                         break;
                     }
                 }
@@ -571,7 +578,11 @@ public final class FeedVideoAlone {
      * viewer gets Facebook's answers while it loads its reel, and the page its fetch brings has the
      * linked reel first and Facebook's next reels after it (S22 2026-11-08: "Up next" under the reel,
      * and a swipe went on to it). So while that viewer's data source passes, its page keeps the first
-     * reel only. Every other page, and any page held back anyway, is left as it is. Never throws.
+     * reel only. A tapped feed video's data source passes once, on its first ask, and the page that
+     * brings the video in can hold the next video after it too, a swipe away (#457, 586 with Open
+     * feed videos on their own: now and then one more video, then nothing). That page keeps its first
+     * video only as well. Every other page, and any page held back anyway, is left as it is. Never
+     * throws.
      *
      * @param source the data source the loader just asked.
      * @param reels  the reels the loader is about to hand over, a list Facebook made for this page.
@@ -581,25 +592,34 @@ public final class FeedVideoAlone {
             HookStatus.invoked(FAMILY);
             if (source == null || !(reels instanceof List) || !on()) return;
             Opening from = null;
+            boolean passed = false;
             synchronized (FEEDS) {
                 for (Feed seen : FEEDS) {
                     if (seen.feed.get() == source) {
-                        if (seen.player) from = seen.opening;
+                        if (seen.player) {
+                            from = seen.opening;
+                            passed = seen.passed;
+                        }
                         break;
                     }
                 }
             }
-            if (from == null || !from.shared || from.reelShown) return;
+            if (from == null || (from.shared ? from.reelShown : !passed)) return;
+            boolean shared = from.shared;
             HookStatus.bound(FAMILY, "reels page");
             List<?> page = (List<?>) reels;
             int size = page.size();
             if (size <= 1) {
-                Logger.printDebug(() -> "Shared reels on their own: a page of " + size + " reel(s) for the shared reel's viewer, nothing to leave out");
+                Logger.printDebug(() -> shared
+                        ? "Shared reels on their own: a page of " + size + " reel(s) for the shared reel's viewer, nothing to leave out"
+                        : "Feed videos on their own: a page of " + size + " video(s) brings the tapped feed video in, nothing to leave out");
                 return;
             }
             page.subList(1, size).clear();
-            for (int left = 1; left < size; left++) HookStatus.counted(FAMILY, LEFT_OUT);
-            Logger.printDebug(() -> "Shared reels on their own: a page of " + size + " reels for the shared reel's viewer keeps its first, the linked reel");
+            for (int left = 1; left < size; left++) HookStatus.counted(FAMILY, shared ? LEFT_OUT : NEXT_LEFT_OUT);
+            Logger.printDebug(() -> shared
+                    ? "Shared reels on their own: a page of " + size + " reels for the shared reel's viewer keeps its first, the linked reel"
+                    : "Feed videos on their own: a page of " + size + " videos bringing the tapped feed video in keeps its first, that video");
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reels page", failure);
         }
