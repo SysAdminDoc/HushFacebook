@@ -29,6 +29,7 @@ Changes in each Hushfacebook version, newest first.
 * With `Hide the status bar` on, opening a reel's comments no longer pushes the reel down, and closing them no longer leaves a black band above the Reels header for a moment. The comments bring the status bar back while they're open, and Facebook used to make room for it under them too. (#456)
 * Marketplace's home feed holds back the ad rows Facebook started sending from a new kind of request, so `Hide sponsored Marketplace listings` catches them again. (#459)
 * `Hide For you in search` and `Hide "People you may know" in search` also find those sections when Facebook sends them with nothing Hush could read before. With `Debug logging` on, the report lists the section names each such row carries. (#80)
+* With `See-through bars` and `Hold a feed video for 2x` both on, holding a button on the Reels tab works again. Download, Like and More used to speed the reel up instead of doing their own hold, because the Reels tab looked like a feed once its pages ran under the tab bar. (#449)
 * The News feed switches of `Show full post text`, `Translate posts`, `Open comments with a gesture`, `See who shared` and `Photo carousel` show up even when that's the only feed patch you picked. The page used to open only for a set list of patches, and those five weren't on it.
 
 ## 0.22.0 (2026-11-12)

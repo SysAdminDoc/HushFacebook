@@ -50,7 +50,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * When the timer runs out, the press must sit inside a shown container of a player whose nearest
  * list scrolls up and down, as a feed does, on a row smaller than that list: a reel's full-size page
  * has Hold a reel for 2x, and a video in a carousel, a pager or the feed's sideways Reels row is left
- * alone. Then the player's speed is read, the player goes to 2x, the phone gives the long-press
+ * alone. A player the Reels viewer plays is left alone by its origin too, since See-through bars
+ * stretch that viewer's list past its pages, and a page shorter than its list looks like a feed row.
+ * Then the player's speed is read, the player goes to 2x, the phone gives the long-press
  * buzz, and the rest of the gesture goes to Facebook as a cancel, so the lift doesn't also open the
  * video. The lift or a cancel puts back the speed it had. A video already at 2x or faster, and a
  * press anywhere else, are Facebook's.
@@ -96,6 +98,12 @@ public final class FeedVideoHold {
     /** The kept name of the list every feed is drawn in; Facebook's own lists extend it. */
     private static final String LIST = PostLongPress.LIST;
 
+    /**
+     * What a player's origin holds when the Reels viewer plays it, before or after the "::", as in
+     * "video_home::fb_shorts_viewer" on the Reels tab or "fb_shorts_viewer::search_results_page".
+     */
+    static final String REELS_VIEWER = "fb_shorts_viewer";
+
     /** Every player Facebook attached a view container to, weakly, so a released one goes. */
     private static final Set<Object> players = Collections.newSetFromMap(new WeakHashMap<>());
 
@@ -103,6 +111,10 @@ public final class FeedVideoHold {
     interface Players {
         @Nullable
         ViewGroup view(Object player);
+
+        /** The player's PlayerOrigin, or null when the build can't read it. */
+        @Nullable
+        Object origin(Object player);
 
         float speed(Object player);
 
@@ -114,6 +126,12 @@ public final class FeedVideoHold {
         @Override
         public ViewGroup view(Object player) {
             return playerView(player);
+        }
+
+        @Nullable
+        @Override
+        public Object origin(Object player) {
+            return playerOrigin(player);
         }
 
         @Override
@@ -180,6 +198,12 @@ public final class FeedVideoHold {
     /** Filled in by the patch: FbGrootPlayer's player view container. Only a player may be passed. */
     @Nullable
     public static ViewGroup playerView(Object player) {
+        return null;
+    }
+
+    /** Filled in by the patch: FbGrootPlayer's PlayerOrigin getter. Only a player may be passed. */
+    @Nullable
+    public static Object playerOrigin(Object player) {
         return null;
     }
 
@@ -448,7 +472,8 @@ public final class FeedVideoHold {
      * The player whose feed video shows at the screen point ([x], [y]) inside [root], or null: its
      * container is shown in [root]'s window with the point inside it and inside its list, and the
      * list scrolls up and down with the container's row smaller than it, with no scroller or pager
-     * between. The smallest such container wins, should two overlap.
+     * between, and the Reels viewer doesn't play it. The smallest such container wins, should two
+     * overlap.
      */
     @Nullable
     static Object videoAt(View root, int x, int y) {
@@ -466,6 +491,10 @@ public final class FeedVideoHold {
             if (!contains(view, x, y)) continue;
             View list = feedListOf(view);
             if (list == null || !contains(list, x, y)) continue;
+            // On the Reels tab a hold on the video is Hold a reel for 2x's, and one on a button
+            // beside it, such as Download, is that button's own.
+            Object origin = read.origin(player);
+            if (origin != null && String.valueOf(origin).contains(REELS_VIEWER)) continue;
             long area = (long) view.getWidth() * view.getHeight();
             if (area < smallest) {
                 smallest = area;

@@ -14,6 +14,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.media.reelspeed.originGetters
 import app.morphe.patches.facebook.media.reelspeed.speedSetters
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
 import app.morphe.patches.facebook.media.taptoplay.GROOT_PLAY
@@ -119,12 +120,13 @@ val holdReelFor2xPatch = bytecodePatch(
 }
 
 /** What [findFeedVideoAnchors] found, for [applyFeedVideoHold]. */
-internal class FeedVideoAnchors(val attach: Method, val playerParameter: Int, val container: FieldReference)
+internal class FeedVideoAnchors(val attach: Method, val playerParameter: Int, val container: FieldReference, val origin: Method)
 
 /**
  * Hold a feed video for 2x's anchors: FbGrootPlayer's attach of its view, the one ViewGroup field of
- * the player it writes, and the speed setter. The extension's stubs reach the field and the setter
- * from outside Facebook's package, so both must be public.
+ * the player it writes, its PlayerOrigin getter, which tells a Reels viewer's player from a feed's,
+ * and the speed setter. The extension's stubs reach the field, the getter and the setter from
+ * outside Facebook's package, so all three must be public.
  */
 internal fun BytecodePatchContext.findFeedVideoAnchors(anchors: ReelHoldAnchors): FeedVideoAnchors {
     val player = anchors.setter.definingClass
@@ -145,15 +147,21 @@ internal fun BytecodePatchContext.findFeedVideoAnchors(anchors: ReelHoldAnchors)
     if (!AccessFlags.PUBLIC.isSet(anchors.setter.accessFlags) || AccessFlags.STATIC.isSet(anchors.setter.accessFlags)) {
         refuse("the speed setter ${anchors.setter.name} isn't a public instance method, so the extension can't call it")
     }
-    return FeedVideoAnchors(attach, playerParameter, container)
+    val origins = originGetters(classDefBy(player))
+    val origin = origins.singleOrNull() ?: refuse("expected one PlayerOrigin getter on $player, found ${origins.size}")
+    if (!AccessFlags.PUBLIC.isSet(origin.accessFlags)) {
+        refuse("the PlayerOrigin getter ${origin.name} isn't public, so the extension can't call it")
+    }
+    return FeedVideoAnchors(attach, playerParameter, container, origin)
 }
 
 /**
  * First in the attach, the container and the player, read into its first two locals, which nothing
  * has written at the method's start; first in the touch dispatch, the activity and the event, ahead
  * of the guard's hook, so a hold that sped a video up turns the rest of its gesture into a cancel
- * before Facebook sees it. The extension's playerView stub reads the container field and its
- * setPlayerSpeed stub calls the setter, which the guard hooked, so a reel's hold still hears it.
+ * before Facebook sees it. The extension's playerView stub reads the container field, its
+ * playerOrigin stub calls the getter, and its setPlayerSpeed stub calls the setter, which the guard
+ * hooked, so a reel's hold still hears it.
  */
 internal fun BytecodePatchContext.applyFeedVideoHold(anchors: ReelHoldAnchors, feed: FeedVideoAnchors) {
     val player = anchors.setter.definingClass
@@ -163,6 +171,7 @@ internal fun BytecodePatchContext.applyFeedVideoHold(anchors: ReelHoldAnchors, f
             it.parameterTypes.map(CharSequence::toString) == parameters
     } ?: refuse("$FEED_VIDEO_HOLD has no static $returnType $name(${parameters.joinToString("")})")
     val view = stub(PLAYER_VIEW_STUB, VIEW_GROUP, listOf("Ljava/lang/Object;"))
+    val origin = stub(PLAYER_ORIGIN_STUB, "Ljava/lang/Object;", listOf("Ljava/lang/Object;"))
     val speed = stub(SET_PLAYER_SPEED_STUB, "V", listOf("Ljava/lang/Object;", "F"))
 
     val attach = mutableClassDefBy(feed.attach.definingClass).findMutableMethodOf(feed.attach)
@@ -181,6 +190,15 @@ internal fun BytecodePatchContext.applyFeedVideoHold(anchors: ReelHoldAnchors, f
         """
             check-cast p0, $player
             iget-object p0, p0, $player->${feed.container.name}:$VIEW_GROUP
+            return-object p0
+        """,
+    )
+    origin.addInstructions(
+        0,
+        """
+            check-cast p0, $player
+            invoke-virtual/range { p0 .. p0 }, $player->${feed.origin.name}()${feed.origin.returnType}
+            move-result-object p0
             return-object p0
         """,
     )

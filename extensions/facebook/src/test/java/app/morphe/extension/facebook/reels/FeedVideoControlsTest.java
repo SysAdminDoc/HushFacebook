@@ -793,6 +793,7 @@ public class FeedVideoControlsTest {
             FeedVideoHold.inBuildForTests = true;
             FeedVideoHold.access = new FeedVideoHold.Players() {
                 @Override public ViewGroup view(Object of) { return player.view; }
+                @Override public Object origin(Object of) { return null; }
                 @Override public float speed(Object of) { return 1f; }
                 @Override public void speed(Object of, float speed) { }
             };

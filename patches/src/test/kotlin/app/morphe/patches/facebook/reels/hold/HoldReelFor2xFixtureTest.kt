@@ -9,6 +9,7 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.media.reelspeed.originGetters
 import app.morphe.patches.facebook.media.reelspeed.speedSetters
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
 import app.morphe.patches.facebook.media.taptoplay.GROOT_PLAY
@@ -242,6 +243,9 @@ class HoldReelFor2xFixtureTest {
                     AccessFlags.PUBLIC.isSet(containerField.accessFlags) && !AccessFlags.STATIC.isSet(containerField.accessFlags))
                 assertTrue("$name: ${key(setter)} isn't public", AccessFlags.PUBLIC.isSet(setter.accessFlags))
                 assertTrue("$name: the attach has fewer than two locals", attach.localRegisterCount() >= 2)
+                // Its PlayerOrigin getter, public too, tells a Reels viewer's player from a feed's.
+                val originGetter = originGetters(player).single()
+                assertTrue("$name: ${key(originGetter)} isn't public", AccessFlags.PUBLIC.isSet(originGetter.accessFlags))
 
                 // Hide the pull down to lock hint: one enum naming the 2x pill's seven states, and one
                 // constructor taking it, a float and a boolean, the state first.
@@ -569,6 +573,11 @@ class HoldReelFor2xFixtureTest {
                 assertEquals("$name: the field the view stub reads", container.toString(),
                     ((viewStub[1] as ReferenceInstruction).reference as FieldReference).toString())
                 assertEquals("$name: the view stub's answer", Opcode.RETURN_OBJECT, viewStub[2].opcode)
+                val originStub = context.mutableClassDefBy(FEED_VIDEO_HOLD).methods.single { it.name == PLAYER_ORIGIN_STUB }.code()
+                assertEquals("$name: the origin stub's cast", player.type, ((originStub[0] as ReferenceInstruction).reference as TypeReference).type)
+                assertEquals("$name: the origin stub's call", key(originGetter), originStub[1].call.toString())
+                assertEquals("$name: the origin stub's result", Opcode.MOVE_RESULT_OBJECT, originStub[2].opcode)
+                assertEquals("$name: the origin stub's answer", Opcode.RETURN_OBJECT, originStub[3].opcode)
                 val speedStubMethod = context.mutableClassDefBy(FEED_VIDEO_HOLD).methods.single { it.name == SET_PLAYER_SPEED_STUB }
                 val speedStub = speedStubMethod.code()
                 assertEquals("$name: the speed setter stub's cast", player.type,

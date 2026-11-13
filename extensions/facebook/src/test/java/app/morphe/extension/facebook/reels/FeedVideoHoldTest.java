@@ -62,6 +62,8 @@ public class FeedVideoHoldTest {
     /** Each player's container and speed, as the patch's stubs would read them. */
     private final Map<Object, ViewGroup> views = new IdentityHashMap<>();
     private final Map<Object, Float> speeds = new IdentityHashMap<>();
+    /** Each player's origin, as PlayerOrigin.toString() writes it; none read as null. */
+    private final Map<Object, String> origins = new IdentityHashMap<>();
     /** Every speed set, in order. */
     private final List<Float> sets = new ArrayList<>();
     private final List<String> clicked = new ArrayList<>();
@@ -84,6 +86,11 @@ public class FeedVideoHoldTest {
             @Override
             public ViewGroup view(Object of) {
                 return views.get(of);
+            }
+
+            @Override
+            public Object origin(Object of) {
+                return origins.get(of);
             }
 
             @Override
@@ -519,6 +526,45 @@ public class FeedVideoHoldTest {
         send(event(MotionEvent.ACTION_DOWN, at));
         holdLongEnough();
         assertTrue(sets.isEmpty());
+    }
+
+    @Test
+    public void aHoldOnTheReelsTabIsLeftAloneWhenSeeThroughBarsMakeItsListTallerThanAPage() {
+        // See-through bars take the gap under the Reels tab's pages away, so its list runs on under the
+        // tab bar and a page is shorter than the list, the way a feed row is (S22, #449: 2041 of 2316).
+        Settings.LONG_PRESS_OPENS_COMMENTS.save(true);
+        FrameLayout tab = new FrameLayout(activity);
+        RecyclerView pages = new RecyclerView(activity, true);
+        place(tab, pages, 0, 0, 1080, 2316);
+        FrameLayout page = new FrameLayout(activity);
+        place(pages, page, 0, 0, 1080, 2041);
+        Object reel = new Object();
+        FrameLayout reelView = video(page, 0, 0, 1080, 2041, reel);
+        View download = new View(activity);
+        download.setOnLongClickListener(v -> facebook.add("download long"));
+        place(page, download, 945, 1520, 1080, 1692);
+        activity.setContentView(tab);
+        layOut();
+        View decor = activity.getWindow().getDecorView();
+        int[] onReel = middleOf(reelView);
+        int[] onDownload = middleOf(download);
+
+        // A feed's player in that place is this hold's, so it's the origin that tells them apart.
+        origins.put(reel, "newsfeed");
+        assertSame(reel, FeedVideoHold.videoAt(decor, onDownload[0], onDownload[1]));
+
+        for (String viewer : new String[] {"video_home::fb_shorts_viewer", "fb_shorts_viewer::search_results_page"}) {
+            origins.put(reel, viewer);
+            assertNull(viewer + ", on the reel", FeedVideoHold.videoAt(decor, onReel[0], onReel[1]));
+            assertNull(viewer + ", on Download", FeedVideoHold.videoAt(decor, onDownload[0], onDownload[1]));
+        }
+
+        // Holding Download runs its own long press, which asks how many reels to save, and speeds nothing up.
+        deliver(event(MotionEvent.ACTION_DOWN, onDownload));
+        holdLongEnough();
+        deliver(event(MotionEvent.ACTION_UP, onDownload));
+        assertEquals(List.of("download long"), facebook);
+        assertTrue("a speed was set: " + sets, sets.isEmpty());
     }
 
     @Test
