@@ -2736,7 +2736,7 @@ Double tap the right side of a playing feed video to jump ahead 10 seconds, or t
 Show only comments that match	Tampilkan hanya komentar yang cocok
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	Selama kotak pencarian berisi kata, komentar tanpa kata itu disembunyikan. Mengosongkan kotak akan menampilkannya lagi.
 Queue reel saves	Antrekan penyimpanan reel
-Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	Setiap reel yang kamu ketuk Unduh masuk ke antrean yang menyimpan satu reel dalam satu waktu di latar belakang. Jeda atau batalkan dari notifikasinya atau dari Unduhan di sini. Reel yang sudah ada di antrean dilewati, dan reel yang gagal dicoba sekali lagi. Antrean bertahan sampai Facebook ditutup.
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes. Hold Download to save that reel and the ones after it, 10 to 150 at a time.	Setiap reel yang kamu ketuk Unduh masuk ke antrean yang menyimpan satu reel dalam satu waktu di latar belakang. Jeda atau batalkan dari notifikasinya atau dari Unduhan di sini. Reel yang sudah ada di antrean dilewati, dan reel yang gagal dicoba sekali lagi. Antrean bertahan sampai Facebook ditutup. Tahan Unduh untuk menyimpan reel itu dan reel sesudahnya, 10 sampai 150 sekaligus.
 Added to the reel queue	Ditambahkan ke antrean reel
 Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	Ditambahkan ke antrean reel. Untuk menjeda atau membatalkannya, buka Unduhan di pengaturan Hushfacebook.
 Already in the reel queue	Sudah ada di antrean reel
@@ -2748,3 +2748,9 @@ Reel queue done	Antrean reel selesai
 %1$d saved, %2$d waiting, %3$d failed	%1$d tersimpan, %2$d menunggu, %3$d gagal
 Reel queue canceled	Antrean reel dibatalkan
 Cancel the reel queue	Batalkan antrean reel
+Save this reel and the ones after it	Simpan reel ini dan reel sesudahnya
+%1$d reels	%1$d reel
+Going through %1$d reels for the reel queue. Hold Download again or cancel the queue to stop.	Menelusuri %1$d reel untuk antrean reel. Tahan Unduh lagi atau batalkan antrean untuk berhenti.
+Put %1$d reels in the reel queue	%1$d reel dimasukkan ke antrean reel
+No more reels came. %1$d went in the reel queue.	Tidak ada reel lagi. %1$d masuk ke antrean reel.
+Stopped going through reels	Berhenti menelusuri reel

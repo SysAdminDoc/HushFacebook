@@ -152,13 +152,21 @@ public final class ReelQueue {
      * it joined. Never throws: it runs inside Facebook's click handling.
      */
     static boolean add(Context context, @Nullable String videoId, @Nullable MediaDownload.ReelSave reel) {
+        return add(context, videoId, reel, false);
+    }
+
+    /**
+     * {@link #add}, where [quiet] leaves out the toasts that say how one reel went, for a batch of
+     * reels (#449), which says how the whole batch went. The card still counts each one.
+     */
+    static boolean add(Context context, @Nullable String videoId, @Nullable MediaDownload.ReelSave reel, boolean quiet) {
         Context app = null;
         try {
             app = context == null ? null : context.getApplicationContext();
             if (app == null) app = context;
             if (app == null) return false;
             if (reel == null) {
-                Feedback.show(app, L10n.t(app, "Download failed. Try again in a moment."), true);
+                if (!quiet) Feedback.show(app, L10n.t(app, "Download failed. Try again in a moment."), true);
                 return false;
             }
             String refused = null;
@@ -183,11 +191,12 @@ public final class ReelQueue {
             if (refused != null) {
                 final String reason = why;
                 MediaDownload.info(() -> "a reel was not queued: " + reason);
-                Feedback.show(app, refused, false);
+                if (!quiet) Feedback.show(app, refused, false);
                 return false;
             }
             MediaDownload.info(() -> "a reel joined the queue");
             boolean carded = changed();
+            if (quiet) return true;
             if (!carded) {
                 Feedback.show(app, L10n.t(app,
                     "Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings."), true);
@@ -246,6 +255,8 @@ public final class ReelQueue {
             app = application;
         }
         MediaDownload.info(() -> "the reel queue was cancelled");
+        // A batch going through reels (#449) stops with the queue it fills.
+        new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> ReelBatch.stop(null));
         changed();
         if (app != null) Feedback.show(app, L10n.t(app, "Reel queue canceled"), false);
     }

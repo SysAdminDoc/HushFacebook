@@ -2740,7 +2740,7 @@ Double tap the right side of a playing feed video to jump ahead 10 seconds, or t
 Show only comments that match	只顯示相符的留言
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	搜尋框中有文字時，不含這些文字的留言會被隱藏。清空搜尋框即可恢復。
 Queue reel saves	排隊儲存 Reels
-Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	每個你點了「下載」的 Reels 都會加入一個佇列，在背景中一次儲存一個。可以從它的通知或這裡的「下載」暫停或取消。已在佇列中的 Reels 會略過，儲存失敗的會再試一次。佇列會保留到 Facebook 關閉為止。
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes. Hold Download to save that reel and the ones after it, 10 to 150 at a time.	每個你點了「下載」的 Reels 都會加入一個佇列，在背景中一次儲存一個。可以從它的通知或這裡的「下載」暫停或取消。已在佇列中的 Reels 會略過，儲存失敗的會再試一次。佇列會保留到 Facebook 關閉為止。長按「下載」可儲存該 Reels 及之後的 Reels，每次 10 到 150 個。
 Added to the reel queue	已加入 Reels 佇列
 Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	已加入 Reels 佇列。如要暫停或取消，請開啟 Hushfacebook 設定中的「下載」。
 Already in the reel queue	已在 Reels 佇列中
@@ -2752,3 +2752,9 @@ Reel queue done	Reels 佇列已完成
 %1$d saved, %2$d waiting, %3$d failed	已儲存 %1$d 個，等待 %2$d 個，失敗 %3$d 個
 Reel queue canceled	Reels 佇列已取消
 Cancel the reel queue	取消 Reels 佇列
+Save this reel and the ones after it	儲存這個 Reels 及之後的 Reels
+%1$d reels	%1$d 個 Reels
+Going through %1$d reels for the reel queue. Hold Download again or cancel the queue to stop.	正在為 Reels 佇列瀏覽 %1$d 個 Reels。再次長按「下載」或取消佇列即可停止。
+Put %1$d reels in the reel queue	已將 %1$d 個 Reels 加入 Reels 佇列
+No more reels came. %1$d went in the reel queue.	沒有更多 Reels 了。已有 %1$d 個加入 Reels 佇列。
+Stopped going through reels	已停止瀏覽 Reels

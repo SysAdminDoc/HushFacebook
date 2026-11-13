@@ -2736,7 +2736,7 @@ Double tap the right side of a playing feed video to jump ahead 10 seconds, or t
 Show only comments that match	Chỉ hiện bình luận khớp
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	Khi ô tìm kiếm có chữ, các bình luận không chứa chữ đó sẽ bị ẩn. Xóa ô tìm kiếm để hiện lại.
 Queue reel saves	Xếp hàng lưu reel
-Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	Mỗi reel bạn nhấn Tải xuống sẽ vào một hàng đợi lưu từng reel một ở chế độ nền. Bạn có thể tạm dừng hoặc hủy hàng đợi từ thông báo của nó hoặc từ mục Tải xuống tại đây. Reel đã có trong hàng đợi sẽ được bỏ qua, và reel bị lỗi sẽ được thử lại một lần nữa. Hàng đợi tồn tại cho đến khi Facebook đóng.
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes. Hold Download to save that reel and the ones after it, 10 to 150 at a time.	Mỗi reel bạn nhấn Tải xuống sẽ vào một hàng đợi lưu từng reel một ở chế độ nền. Bạn có thể tạm dừng hoặc hủy hàng đợi từ thông báo của nó hoặc từ mục Tải xuống tại đây. Reel đã có trong hàng đợi sẽ được bỏ qua, và reel bị lỗi sẽ được thử lại một lần nữa. Hàng đợi tồn tại cho đến khi Facebook đóng. Nhấn giữ Tải xuống để lưu reel đó và các reel sau nó, mỗi lần từ 10 đến 150.
 Added to the reel queue	Đã thêm vào hàng đợi reel
 Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	Đã thêm vào hàng đợi reel. Để tạm dừng hoặc hủy, hãy mở Tải xuống trong cài đặt Hushfacebook.
 Already in the reel queue	Đã có trong hàng đợi reel
@@ -2748,3 +2748,9 @@ Reel queue done	Hàng đợi reel đã xong
 %1$d saved, %2$d waiting, %3$d failed	Đã lưu %1$d, đang chờ %2$d, lỗi %3$d
 Reel queue canceled	Đã hủy hàng đợi reel
 Cancel the reel queue	Hủy hàng đợi reel
+Save this reel and the ones after it	Lưu reel này và các reel sau nó
+%1$d reels	%1$d reel
+Going through %1$d reels for the reel queue. Hold Download again or cancel the queue to stop.	Đang duyệt %1$d reel cho hàng đợi reel. Nhấn giữ Tải xuống lần nữa hoặc hủy hàng đợi để dừng.
+Put %1$d reels in the reel queue	Đã đưa %1$d reel vào hàng đợi reel
+No more reels came. %1$d went in the reel queue.	Không còn reel nào nữa. %1$d reel đã vào hàng đợi reel.
+Stopped going through reels	Đã dừng duyệt reel

@@ -2622,7 +2622,7 @@ Double tap the right side of a playing feed video to jump ahead 10 seconds, or t
 Show only comments that match	Mostrar só os comentários que correspondem
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	Enquanto a caixa de pesquisa tiver palavras, os comentários sem elas ficam ocultos. Limpar a caixa traz todos de volta.
 Queue reel saves	Enfileirar downloads de Reels
-Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	Cada Reel em que você toca em Download entra em uma fila que salva um Reel por vez em segundo plano. Pause ou cancele a fila pela notificação dela ou por Downloads aqui. Um Reel que já está na fila é ignorado, e um que falha ganha mais uma tentativa. A fila dura até o Facebook fechar.
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes. Hold Download to save that reel and the ones after it, 10 to 150 at a time.	Cada Reel em que você toca em Download entra em uma fila que salva um Reel por vez em segundo plano. Pause ou cancele a fila pela notificação dela ou por Downloads aqui. Um Reel que já está na fila é ignorado, e um que falha ganha mais uma tentativa. A fila dura até o Facebook fechar. Mantenha Download pressionado para salvar esse Reel e os seguintes, de 10 a 150 por vez.
 Added to the reel queue	Adicionado à fila de Reels
 Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	Adicionado à fila de Reels. Para pausar ou cancelar, abra Downloads nas configurações do Hushfacebook.
 Already in the reel queue	Já está na fila de Reels
@@ -2634,3 +2634,9 @@ Reel queue done	Fila de Reels concluída
 %1$d saved, %2$d waiting, %3$d failed	%1$d salvos, %2$d aguardando, %3$d com falha
 Reel queue canceled	Fila de Reels cancelada
 Cancel the reel queue	Cancelar a fila de Reels
+Save this reel and the ones after it	Salvar este Reel e os seguintes
+%1$d reels	%1$d Reels
+Going through %1$d reels for the reel queue. Hold Download again or cancel the queue to stop.	Percorrendo %1$d Reels para a fila de Reels. Mantenha Download pressionado de novo ou cancele a fila para parar.
+Put %1$d reels in the reel queue	%1$d Reels colocados na fila de Reels
+No more reels came. %1$d went in the reel queue.	Não vieram mais Reels. %1$d entraram na fila de Reels.
+Stopped going through reels	Parou de percorrer os Reels

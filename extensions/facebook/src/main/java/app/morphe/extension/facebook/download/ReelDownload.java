@@ -157,6 +157,38 @@ public final class ReelDownload implements Function1<Object, Object> {
         this.saves = saves;
         this.story = story;
         this.kind = kind;
+        // A batch of reels takes each reel from the tap handler its sidebar builds (#449).
+        if (kind == SAVE && saves) ReelBatch.built(this);
+    }
+
+    /** This reel's player params, which tell one reel's handlers from another's. */
+    Object playerParams() {
+        return playerParams;
+    }
+
+    /** This reel's id on Facebook, or null. */
+    @androidx.annotation.Nullable
+    String videoId() {
+        return videoIdOf(playerParams);
+    }
+
+    /**
+     * Puts this reel in the reel queue for a batch (#449), at [quality] or Download quality, without
+     * a toast of its own. Answers whether it joined. Never throws.
+     */
+    boolean queueForBatch(@androidx.annotation.Nullable DownloadQuality quality) {
+        try {
+            Object source = sourceOf(playerParams);
+            if (source == null) return false;
+            String videoId = videoIdOf(playerParams);
+            PostDetails details = PostDetails.read(videoId, story);
+            QualityChooser.Save queue = () -> ReelQueue.add(context, videoId,
+                    MediaDownload.takeReel(source, hdField, sdField, manifestField, details), true);
+            return quality == null ? queue.start() : MediaDownload.withQuality(quality, queue);
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel batch", t);
+            return false;
+        }
     }
 
     /*
@@ -331,6 +363,7 @@ public final class ReelDownload implements Function1<Object, Object> {
             // are sent, the touch slot's lift after a long press copies the link (#41).
             if (!saves) {
                 if (SendLink.sending()) copyOnLongPress(argument);
+                else if (queueing()) batchOnLongPress(argument);
                 return null;
             }
             // The same lift ends in a tap too, which mustn't send the link the press just copied.
@@ -430,6 +463,19 @@ public final class ReelDownload implements Function1<Object, Object> {
         String link = SendLink.reelLink(videoIdOf(playerParams));
         if (link == null) noLink();
         else SendLink.copy(context, link);
+    }
+
+    /**
+     * The touch slot's event while Queue reel saves is on: a finger lifted at least the phone's
+     * long-press time after it went down asks how many reels to save from this one on, or stops the
+     * batch that runs (#449). The tap Android sends for the same lift is let go, as after a copy.
+     */
+    private void batchOnLongPress(Object argument) {
+        MotionEvent event = motionEventOf(argument);
+        if (event == null || event.getActionMasked() != MotionEvent.ACTION_UP) return;
+        if (event.getEventTime() - event.getDownTime() < ViewConfiguration.getLongPressTimeout()) return;
+        copied = new Copied(playerParams, SystemClock.uptimeMillis() + TAP_AFTER_COPY_MS);
+        ReelBatch.ask(context, this);
     }
 
     /**

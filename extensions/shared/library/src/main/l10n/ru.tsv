@@ -2790,7 +2790,7 @@ Double tap the right side of a playing feed video to jump ahead 10 seconds, or t
 Show only comments that match	Показывать только подходящие комментарии
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	Пока в поле поиска есть слова, комментарии без них скрыты. Если очистить поле, они вернутся.
 Queue reel saves	Очередь сохранения Reels
-Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	Каждое видео Reels, на котором вы нажимаете «Скачать», попадает в очередь, которая сохраняет видео по одному в фоновом режиме. Приостановить или отменить её можно из её уведомления или здесь, в разделе «Загрузки». Видео, которое уже есть в очереди, пропускается, а несохранившееся получает ещё одну попытку. Очередь существует, пока Facebook не закроется.
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes. Hold Download to save that reel and the ones after it, 10 to 150 at a time.	Каждое видео Reels, на котором вы нажимаете «Скачать», попадает в очередь, которая сохраняет видео по одному в фоновом режиме. Приостановить или отменить её можно из её уведомления или здесь, в разделе «Загрузки». Видео, которое уже есть в очереди, пропускается, а несохранившееся получает ещё одну попытку. Очередь существует, пока Facebook не закроется. Удерживайте «Скачать», чтобы сохранить это видео и следующие за ним, от 10 до 150 за раз.
 Added to the reel queue	Добавлено в очередь Reels
 Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	Добавлено в очередь Reels. Чтобы приостановить или отменить её, откройте раздел «Загрузки» в настройках Hushfacebook.
 Already in the reel queue	Уже в очереди Reels
@@ -2802,3 +2802,9 @@ Reel queue done	Очередь Reels завершена
 %1$d saved, %2$d waiting, %3$d failed	Сохранено: %1$d, в очереди: %2$d, с ошибкой: %3$d
 Reel queue canceled	Очередь Reels отменена
 Cancel the reel queue	Отменить очередь Reels
+Save this reel and the ones after it	Сохранить это видео Reels и следующие
+%1$d reels	Видео Reels: %1$d
+Going through %1$d reels for the reel queue. Hold Download again or cancel the queue to stop.	Просматриваю видео для очереди Reels: %1$d. Чтобы остановить, снова удерживайте «Скачать» или отмените очередь.
+Put %1$d reels in the reel queue	В очередь Reels добавлено видео: %1$d
+No more reels came. %1$d went in the reel queue.	Больше видео не появилось. В очередь Reels добавлено: %1$d.
+Stopped going through reels	Просмотр видео Reels остановлен

@@ -2736,7 +2736,7 @@ Double tap the right side of a playing feed video to jump ahead 10 seconds, or t
 Show only comments that match	Nur passende Kommentare zeigen
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	Solange im Suchfeld Wörter stehen, werden Kommentare ohne sie ausgeblendet. Wenn du das Feld leerst, kommen sie zurück.
 Queue reel saves	Reel-Downloads einreihen
-Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	Jedes Reel, bei dem du auf Download tippst, kommt in eine Warteschlange, die im Hintergrund ein Reel nach dem anderen speichert. Pausiere oder brich sie über ihre Benachrichtigung oder hier unter Downloads ab. Ein Reel, das schon in der Warteschlange ist, wird übersprungen, und eines, das fehlschlägt, bekommt einen weiteren Versuch. Die Warteschlange bleibt, bis Facebook geschlossen wird.
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes. Hold Download to save that reel and the ones after it, 10 to 150 at a time.	Jedes Reel, bei dem du auf Download tippst, kommt in eine Warteschlange, die im Hintergrund ein Reel nach dem anderen speichert. Pausiere oder brich sie über ihre Benachrichtigung oder hier unter Downloads ab. Ein Reel, das schon in der Warteschlange ist, wird übersprungen, und eines, das fehlschlägt, bekommt einen weiteren Versuch. Die Warteschlange bleibt, bis Facebook geschlossen wird. Halte Download gedrückt, um dieses Reel und die folgenden zu speichern, 10 bis 150 auf einmal.
 Added to the reel queue	Zur Reel-Warteschlange hinzugefügt
 Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	Zur Reel-Warteschlange hinzugefügt. Zum Pausieren oder Abbrechen öffne Downloads in den Hushfacebook-Einstellungen.
 Already in the reel queue	Schon in der Reel-Warteschlange
@@ -2748,3 +2748,9 @@ Reel queue done	Reel-Warteschlange fertig
 %1$d saved, %2$d waiting, %3$d failed	%1$d gespeichert, %2$d wartend, %3$d fehlgeschlagen
 Reel queue canceled	Reel-Warteschlange abgebrochen
 Cancel the reel queue	Reel-Warteschlange abbrechen
+Save this reel and the ones after it	Dieses Reel und die folgenden speichern
+%1$d reels	%1$d Reels
+Going through %1$d reels for the reel queue. Hold Download again or cancel the queue to stop.	%1$d Reels werden für die Reel-Warteschlange durchgegangen. Halte Download erneut gedrückt oder brich die Warteschlange ab, um aufzuhören.
+Put %1$d reels in the reel queue	%1$d Reels in die Reel-Warteschlange gestellt
+No more reels came. %1$d went in the reel queue.	Es kamen keine Reels mehr. %1$d sind in der Reel-Warteschlange.
+Stopped going through reels	Durchgehen der Reels beendet

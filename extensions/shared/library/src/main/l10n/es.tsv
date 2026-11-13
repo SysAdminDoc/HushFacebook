@@ -2736,7 +2736,7 @@ Double tap the right side of a playing feed video to jump ahead 10 seconds, or t
 Show only comments that match	Mostrar solo los comentarios que coinciden
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	Mientras el cuadro de búsqueda tenga palabras, se ocultan los comentarios que no las contienen. Al vaciar el cuadro, vuelven.
 Queue reel saves	Poner en cola las descargas de reels
-Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	Cada reel en el que tocas Descargar entra en una cola que guarda un reel a la vez en segundo plano. Pausa o cancela la cola desde su notificación o desde Descargas aquí. Un reel que ya está en la cola se omite, y uno que falla tiene un intento más. La cola dura hasta que se cierra Facebook.
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes. Hold Download to save that reel and the ones after it, 10 to 150 at a time.	Cada reel en el que tocas Descargar entra en una cola que guarda un reel a la vez en segundo plano. Pausa o cancela la cola desde su notificación o desde Descargas aquí. Un reel que ya está en la cola se omite, y uno que falla tiene un intento más. La cola dura hasta que se cierra Facebook. Mantén pulsado Descargar para guardar ese reel y los siguientes, de 10 a 150 a la vez.
 Added to the reel queue	Añadido a la cola de reels
 Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	Añadido a la cola de reels. Para pausarla o cancelarla, abre Descargas en los ajustes de Hushfacebook.
 Already in the reel queue	Ya está en la cola de reels
@@ -2748,3 +2748,9 @@ Reel queue done	Cola de reels terminada
 %1$d saved, %2$d waiting, %3$d failed	%1$d guardados, %2$d en espera, %3$d con error
 Reel queue canceled	Cola de reels cancelada
 Cancel the reel queue	Cancelar la cola de reels
+Save this reel and the ones after it	Guardar este reel y los siguientes
+%1$d reels	%1$d reels
+Going through %1$d reels for the reel queue. Hold Download again or cancel the queue to stop.	Recorriendo %1$d reels para la cola de reels. Mantén pulsado Descargar otra vez o cancela la cola para parar.
+Put %1$d reels in the reel queue	%1$d reels añadidos a la cola de reels
+No more reels came. %1$d went in the reel queue.	No llegaron más reels. %1$d entraron en la cola de reels.
+Stopped going through reels	Se dejó de recorrer reels

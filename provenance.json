@@ -473,6 +473,15 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/ReelBatch.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: a batch of reels for the reel queue, picked by a long press on a reel's Download button, which notes each reel's Download handler as Facebook builds it, swipes the reels viewer on by itself and queues each new reel until it has the count picked, waiting while the queue is paused or full."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/settings/SettingsBackup.java"
       ],
       "origin": "ported",

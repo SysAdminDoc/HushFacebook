@@ -2736,7 +2736,7 @@ Double tap the right side of a playing feed video to jump ahead 10 seconds, or t
 Show only comments that match	Yalnızca eşleşen yorumları göster
 While the search box holds words, comments without them are hidden. Clearing the box brings them back.	Arama kutusunda kelime olduğu sürece, bu kelimeleri içermeyen yorumlar gizlenir. Kutuyu temizlemek onları geri getirir.
 Queue reel saves	Reel kaydetmelerini sıraya al
-Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes.	İndir'e dokunduğunuz her reel, arka planda reelleri tek tek kaydeden bir sıraya girer. Sırayı bildiriminden veya buradaki İndirmeler bölümünden duraklatabilir ya da iptal edebilirsiniz. Zaten sırada olan bir reel atlanır, kaydedilemeyen bir reel bir kez daha denenir. Sıra, Facebook kapanana kadar sürer.
+Each reel you tap Download on joins a queue that saves one reel at a time in the background. Pause or cancel it from its notification or from Downloads here. A reel already in the queue is skipped, and one that fails gets one more try. The queue lasts until Facebook closes. Hold Download to save that reel and the ones after it, 10 to 150 at a time.	İndir'e dokunduğunuz her reel, arka planda reelleri tek tek kaydeden bir sıraya girer. Sırayı bildiriminden veya buradaki İndirmeler bölümünden duraklatabilir ya da iptal edebilirsiniz. Zaten sırada olan bir reel atlanır, kaydedilemeyen bir reel bir kez daha denenir. Sıra, Facebook kapanana kadar sürer. O reeli ve sonrakileri kaydetmek için İndir'e basılı tutun, bir seferde 10 ile 150 arası.
 Added to the reel queue	Reel sırasına eklendi
 Added to the reel queue. To pause or cancel it, open Downloads in Hushfacebook settings.	Reel sırasına eklendi. Duraklatmak veya iptal etmek için Hushfacebook ayarlarında İndirmeler'i açın.
 Already in the reel queue	Zaten reel sırasında
@@ -2748,3 +2748,9 @@ Reel queue done	Reel sırası tamamlandı
 %1$d saved, %2$d waiting, %3$d failed	%1$d kaydedildi, %2$d bekliyor, %3$d başarısız
 Reel queue canceled	Reel sırası iptal edildi
 Cancel the reel queue	Reel sırasını iptal et
+Save this reel and the ones after it	Bu reeli ve sonrakileri kaydet
+%1$d reels	%1$d reel
+Going through %1$d reels for the reel queue. Hold Download again or cancel the queue to stop.	Reel sırası için %1$d reel geziliyor. Durdurmak için İndir'e yeniden basılı tutun veya sırayı iptal edin.
+Put %1$d reels in the reel queue	Reel sırasına %1$d reel eklendi
+No more reels came. %1$d went in the reel queue.	Başka reel gelmedi. %1$d reel sıraya girdi.
+Stopped going through reels	Reellerde gezinme durduruldu
