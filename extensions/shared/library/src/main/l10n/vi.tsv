@@ -2014,6 +2014,10 @@ A video you open from Saved goes on to the next one in Saved when it ends or whe
 Skip "Are you still watching?"	Bỏ qua "Bạn vẫn đang xem chứ?"
 # context: summary of that switch; reels and videos go on to the next one by themselves
 Reels and videos keep going to the next one without pausing to ask if you're still watching.	Reels và video tiếp tục chuyển sang cái tiếp theo mà không dừng lại để hỏi bạn có còn đang xem không.
+# context: switch title under Reels and Watch; on, a reel that would show black bars above and below (or at the sides) is enlarged until it fills the whole screen
+Fill the screen with reels	Cho Reels lấp đầy màn hình
+# context: summary of that switch; the reel is zoomed in until it reaches every edge, so a little of the picture at two of its edges is cut off
+Reels that would leave black bars fill the screen instead, with a little cut off the edges.	Reels lẽ ra để lại dải đen sẽ lấp đầy màn hình, cắt bớt một chút ở các cạnh.
 Hide the new comments pop-up	Ẩn bong bóng bình luận mới
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	Bong bóng "bình luận mới" không còn bật lên khi bạn đọc bình luận. Bình luận mới vẫn hiện trong danh sách.

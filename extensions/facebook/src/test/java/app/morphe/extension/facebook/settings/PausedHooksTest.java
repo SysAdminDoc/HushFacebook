@@ -173,6 +173,7 @@ import app.morphe.extension.facebook.reels.FeedVideoAloneForTests;
 import app.morphe.extension.facebook.reels.FollowedReelsForTests;
 import app.morphe.extension.facebook.reels.ReelCleanMode;
 import app.morphe.extension.facebook.reels.ReelDeclutter;
+import app.morphe.extension.facebook.reels.ReelFillForTests;
 import app.morphe.extension.facebook.reels.ReelLoopForTests;
 import app.morphe.extension.facebook.reels.NewestReelsForTests;
 import app.morphe.extension.facebook.reels.ReelMidCardsForTests;
@@ -770,7 +771,9 @@ public class PausedHooksTest {
                 // A video tapped in Saved plays in the video player instead of the Reels viewer (#404).
                 () -> SavedVideos.staysInPlayer("vod_watchfeed_saved"),
                 // The next video isn't held back to ask "Are you still watching?" (#427).
-                () -> !StillWatching.idle(1)));
+                () -> !StillWatching.idle(1),
+                // A reel Facebook would fit between black bars fills the screen (#453).
+                ReelFillForTests::fillsAFullScreenReel));
         // A reel that would get the interest prompt is answered as one that doesn't.
         probes.put(PatchFamily.REEL_PROMPTS, Collections.singletonList(() -> !ReelPrompts.keep(true)));
         // The Reels batcher's send of the reels you watched never reaches its executor.

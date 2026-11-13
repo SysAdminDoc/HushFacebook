@@ -1052,6 +1052,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_skip_still_watching", FALSE);
 
     /**
+     * A reel that Facebook would fit between black bars on a tall screen fills the screen instead,
+     * with a little cut off its sides ({@link app.morphe.extension.facebook.reels.ReelFill}, #453).
+     * Off by default. Asked each time a player view is sized, so a change shows on the next reel.
+     */
+    public static final BooleanSetting FILL_REELS =
+            new BooleanSetting("hushfacebook_fill_reels", FALSE);
+
+    /**
      * The batches of watched reels the Reels viewer sends as FbShortsSeenStateMutation: only their
      * ids, the record Facebook ranks the Reels feed with, which nobody else sees. Held back, reels
      * already watched may come back in the feed.

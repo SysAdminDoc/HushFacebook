@@ -122,6 +122,7 @@ import app.morphe.extension.facebook.reels.ReelHold;
 import app.morphe.extension.facebook.reels.ReelHoldForTests;
 import app.morphe.extension.facebook.reels.ReelCleanMode;
 import app.morphe.extension.facebook.reels.ReelDeclutter;
+import app.morphe.extension.facebook.reels.ReelFillForTests;
 import app.morphe.extension.facebook.reels.NewestReelsForTests;
 import app.morphe.extension.facebook.reels.ReelMidCardsForTests;
 import app.morphe.extension.facebook.reels.SavedVideos;
@@ -300,6 +301,7 @@ public class ColdStartHooksTest {
         assertTrue("a Watch again tap before the context came off replayed in place", WatchAgain.opensElsewhere(true));
         assertFalse("a saved video tapped before the context stayed in the player", SavedVideos.staysInPlayer("vod_watchfeed_saved"));
         assertTrue("an idle answer before the context was dropped", StillWatching.idle(1));
+        assertFalse("a reel before the context filled the screen", ReelFillForTests.fillsAFullScreenReel());
         assertFalse("a batch of watched reels sent before the context was held back", SeenStateSendForTests.heldBack());
         assertFalse("a Reels rerank before the context put the newest first", NewestReelsForTests.putsTheNewestFirst());
         assertFalse("a double-tap skip test read before the context was turned on", DoubleTapSkip.flag(false));

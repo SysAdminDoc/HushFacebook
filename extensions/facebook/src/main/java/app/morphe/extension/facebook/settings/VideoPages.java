@@ -264,6 +264,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SKIP_STILL_WATCHING,
                     L10n.t("Reels and videos keep going to the next one without pausing to ask if you're still "
                             + "watching.")));
+            // Asked each time a player view is sized, so a change shows on the next reel (#453).
+            reels.addPreference(toggle(context, Settings.FILL_REELS,
+                    L10n.t("Reels that would leave black bars fill the screen instead, with a little cut off the "
+                            + "edges.")));
             // Asked as each tile of the feed's Reels row is drawn, so a change shows on the next tiles.
             reels.addPreference(toggle(context, Settings.PLAY_FEED_REELS_WHOLE,
                     L10n.t("The reels in your feed's Reels row play from the start and keep going, instead of "

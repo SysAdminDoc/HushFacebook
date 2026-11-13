@@ -11,6 +11,7 @@ Changes in each Hushfacebook version, newest first.
 * `Full player button by the speaker` under Video and audio moves a feed video's full player button down to the video's bottom corner, where Facebook's speaker button was, and slides the speaker over to make room. Live videos and videos without the speaker keep it up top. It needs `Full player button on feed videos` and starts off. (#431)
 * With `Queue reel saves` on, holding Download on a reel asks how many to save, from 10 to 150. That reel goes in the reel queue, then Hushfacebook swipes to each next reel and queues it too, until it has them all or the reels run out. It waits while the queue is paused or full. Hold Download again, or cancel the queue, to stop it early. (#449)
 * `Hold a post to react` under News feed opens a post's reactions when you hold its photo or video, the same way holding Like does. Slide to one and let go, or let go and tap one. Its `Reaction` list can pick one reaction instead (Love, Haha and the rest), and then holding a post gives that one right away. On feed posts it goes ahead of `Long press opens comments`. It's part of `Open comments with a gesture` and starts off. (#454)
+* `Fill the screen with reels` under Reels and Watch zooms a reel in a little so it reaches the top and bottom of a tall screen, instead of sitting between black bars. A bit of the sides gets cut off. Only reels where that's a small slice fill, so 4:5 and square posts keep their whole picture. It's off until you turn it on. (#453)
 
 ### Changed
 

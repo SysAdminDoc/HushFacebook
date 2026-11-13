@@ -2016,6 +2016,10 @@ A video you open from Saved goes on to the next one in Saved when it ends or whe
 Skip "Are you still watching?"	略過「你還在看嗎？」
 # context: summary of that switch; reels and videos go on to the next one by themselves
 Reels and videos keep going to the next one without pausing to ask if you're still watching.	Reels 和影片會繼續播放下一部，不再停下來詢問你是否還在觀看。
+# context: switch title under Reels and Watch; on, a reel that would show black bars above and below (or at the sides) is enlarged until it fills the whole screen
+Fill the screen with reels	讓 Reels 填滿螢幕
+# context: summary of that switch; the reel is zoomed in until it reaches every edge, so a little of the picture at two of its edges is cut off
+Reels that would leave black bars fill the screen instead, with a little cut off the edges.	原本會留下黑邊的 Reels 會填滿螢幕，邊緣會被裁掉一點。
 Hide the new comments pop-up	隱藏新留言彈出提示
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	閱讀留言時不再彈出「新留言」泡泡。新留言仍會顯示在清單中。

@@ -1900,6 +1900,10 @@ A video you open from Saved goes on to the next one in Saved when it ends or whe
 Skip "Are you still watching?"	Pular "Você ainda está assistindo?"
 # context: summary of that switch; reels and videos go on to the next one by themselves
 Reels and videos keep going to the next one without pausing to ask if you're still watching.	Reels e vídeos continuam passando para o próximo sem parar para perguntar se você ainda está assistindo.
+# context: switch title under Reels and Watch; on, a reel that would show black bars above and below (or at the sides) is enlarged until it fills the whole screen
+Fill the screen with reels	Preencher a tela com os reels
+# context: summary of that switch; the reel is zoomed in until it reaches every edge, so a little of the picture at two of its edges is cut off
+Reels that would leave black bars fill the screen instead, with a little cut off the edges.	Reels que deixariam faixas pretas preenchem a tela, cortando um pouco das bordas.
 Hide the new comments pop-up	Ocultar o aviso de novos comentários
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	A bolha de “novos comentários” não aparece mais enquanto você lê os comentários. Os novos comentários continuam aparecendo na lista.
