@@ -1000,6 +1000,7 @@
     {
       "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/CreateStoryTile.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/PassedStories.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/StoriesTrayPaging.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/SuggestedStories.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/stories/suggested/**"

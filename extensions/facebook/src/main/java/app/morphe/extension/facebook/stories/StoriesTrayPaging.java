@@ -101,7 +101,8 @@ public final class StoriesTrayPaging {
 
     /**
      * Injection point, first thing in the tray's tile handler when a tile comes into view.
-     * Remembers the handler and counts the placeholders in view. Never throws.
+     * Remembers the handler, counts the placeholders in view, and hands a story's tile to Hide
+     * stories you scrolled past (#463). Never throws.
      *
      * @param handler  the tile handler, made a {@link Pager} by the patch.
      * @param bucketId the tile's bucket id, {@link #PLACEHOLDER} for a placeholder.
@@ -109,6 +110,7 @@ public final class StoriesTrayPaging {
      */
     public static void tileShown(@Nullable Object handler, @Nullable String bucketId, int position) {
         try {
+            if (!PLACEHOLDER.equals(bucketId)) PassedStories.shown(bucketId);
             synchronized (StoriesTrayPaging.class) {
                 if (showing) return;
                 if (handler instanceof Pager && pager.get() != handler) pager = new WeakReference<>((Pager) handler);

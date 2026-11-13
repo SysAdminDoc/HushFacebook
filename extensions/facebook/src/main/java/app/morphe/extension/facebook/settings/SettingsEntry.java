@@ -858,10 +858,16 @@ public final class SettingsEntry {
             if (SettingsStatus.suggestedStories()) SuggestedStories.activityCreated(activity);
         }
 
-        @Override public void onActivityStarted(Activity activity) { }
+        @Override
+        public void onActivityStarted(Activity activity) {
+            // Hide stories you scrolled past waits for the next visit (#463).
+            if (SettingsStatus.suggestedStories()) SuggestedStories.activityStarted(activity);
+        }
+
         @Override
         public void onActivityStopped(Activity activity) {
             TapToPlay.activityStopped(activity);
+            if (SettingsStatus.suggestedStories()) SuggestedStories.activityStopped(activity);
         }
 
         @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }

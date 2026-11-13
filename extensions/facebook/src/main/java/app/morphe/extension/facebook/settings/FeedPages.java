@@ -721,6 +721,10 @@ final class FeedPages {
                         L10n.t("The Stories tray keeps only the stories you've already watched, so you can find one again. "
                                 + "Turn it off to see the new ones. Hide seen stories waits while this is on. Applies when "
                                 + "Facebook next loads the tray.")));
+                // Stories that showed in Home's tray count as seen, watched or not (#463).
+                stories.addPreference(toggle(context, Settings.HIDE_PASSED_STORIES,
+                        L10n.t("A story you scrolled past in the Stories tray leaves it the next time you open Facebook, "
+                                + "even if you didn't watch it. A new story brings that person back.")));
             }
             if (build.contains(PatchFamily.STORY_AUTO_ADVANCE)) {
                 stories.addPreference(toggle(context, Settings.BLOCK_STORY_AUTO_ADVANCE,

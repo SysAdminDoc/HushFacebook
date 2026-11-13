@@ -60,7 +60,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * round: a story whose flag reads false and that wasn't watched here goes, and Hide seen stories
  * waits while it's on (#340). A bucket whose flag can't be read stays either way. While a story
  * viewer is open, a bucket a tray kept doesn't leave as seen, so the viewer keeps the one it's
- * playing, and it leaves the first tray after the viewer closes (#438).
+ * playing, and it leaves the first tray after the viewer closes (#438). Hide stories you scrolled
+ * past takes a story whose tile came into view on an earlier visit to Facebook, watched or not,
+ * until its person posts another ({@link PassedStories}, #463).
  *
  * <p>Nothing else counts, so a friend's story, a Page you follow, your own story, a friend
  * request and anything that isn't a bucket or whose type isn't one of those stay.
@@ -262,7 +264,7 @@ public final class SuggestedStories {
     /** Which kinds leave the tray, read once for each tray. */
     static final class Switches {
         /** Before the settings are ready, or when they can't be read: every bucket stays. */
-        static final Switches NONE = new Switches(false, false, false, false, false, false, false);
+        static final Switches NONE = new Switches(false, false, false, false, false, false, false, false);
 
         final boolean suggested;
         /** Whether the People you may know switch is in this build at all. */
@@ -274,9 +276,17 @@ public final class SuggestedStories {
         final boolean seenStories;
         /** Show only watched stories (#340). */
         final boolean onlyWatched;
+        /** Hide stories you scrolled past (#463). */
+        final boolean passedStories;
 
         Switches(boolean suggested, boolean peopleYouMayKnowInBuild, boolean peopleYouMayKnow, boolean contactImport,
                 boolean pageStories, boolean seenStories, boolean onlyWatched) {
+            this(suggested, peopleYouMayKnowInBuild, peopleYouMayKnow, contactImport, pageStories, seenStories,
+                    onlyWatched, false);
+        }
+
+        Switches(boolean suggested, boolean peopleYouMayKnowInBuild, boolean peopleYouMayKnow, boolean contactImport,
+                boolean pageStories, boolean seenStories, boolean onlyWatched, boolean passedStories) {
             this.suggested = suggested;
             this.peopleYouMayKnowInBuild = peopleYouMayKnowInBuild;
             this.peopleYouMayKnow = peopleYouMayKnowInBuild && peopleYouMayKnow;
@@ -284,6 +294,7 @@ public final class SuggestedStories {
             this.pageStories = pageStories;
             this.seenStories = seenStories && !onlyWatched;
             this.onlyWatched = onlyWatched;
+            this.passedStories = passedStories;
         }
 
         /** Whether a bucket of this kind leaves the tray. */
@@ -303,6 +314,16 @@ public final class SuggestedStories {
         /** Whether a bucket of this kind leaves while you haven't watched it, with Show only watched stories on. */
         boolean leavesUnwatched(String kind) {
             return onlyWatched && story(kind);
+        }
+
+        /** Whether a bucket of this kind leaves once its tile came into view on an earlier visit (#463). */
+        boolean leavesPassed(String kind) {
+            return passedStories && story(kind);
+        }
+
+        /** Whether a bucket leaving as seen or scrolled past stays while a story viewer is open (#438). */
+        boolean holdsForViewer() {
+            return seenStories || passedStories;
         }
 
         private static boolean story(String kind) {
@@ -361,8 +382,10 @@ public final class SuggestedStories {
                 FeedFilterCounters.sawKind(ROUTE, kind);
                 String leaving = switches.leaves(kind) ? kind
                         : switches.leavesSeen(kind) && watched(bucket, access) ? SEEN
-                        : switches.leavesUnwatched(kind) && unwatched(bucket, access) ? UNWATCHED : null;
-                if (switches.seenStories && (leaving == null || SEEN.equals(leaving))
+                        : switches.leavesUnwatched(kind) && unwatched(bucket, access) ? UNWATCHED
+                        : switches.leavesPassed(kind) && passed(bucket, access) ? PassedStories.PASSED : null;
+                if (switches.holdsForViewer()
+                        && (leaving == null || SEEN.equals(leaving) || PassedStories.PASSED.equals(leaving))
                         && keptForViewer(bucket, access, leaving != null)) {
                     leaving = null;
                     held++;
@@ -475,6 +498,16 @@ public final class SuggestedStories {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "story viewer closed", failure);
         }
+    }
+
+    /** From the activity callbacks: one of Facebook's screens started, for {@link PassedStories} (#463). */
+    public static void activityStarted(Activity activity) {
+        PassedStories.activityStarted(activity);
+    }
+
+    /** From the activity callbacks: one of Facebook's screens stopped, for {@link PassedStories} (#463). */
+    public static void activityStopped(Activity activity) {
+        PassedStories.activityStopped(activity);
     }
 
     /** Forgets the open viewers and the kept ids, as a fresh start of the app would. */
@@ -630,6 +663,33 @@ public final class SuggestedStories {
      */
     static boolean unwatched(Object bucket, Buckets access) {
         return Boolean.FALSE.equals(watchedOrNot(bucket, access));
+    }
+
+    /**
+     * Whether a story's tile came into view on an earlier visit, with no story posted since (#463),
+     * noting the bucket's id and expiration_time for a tile that comes into view later. The Add to
+     * story tile and a bucket whose id or time can't be read stay. Never throws.
+     */
+    static boolean passed(Object bucket, Buckets access) {
+        Object id;
+        Object expires;
+        try {
+            Object type = access.type(bucket);
+            if (type instanceof Enum && ((Enum<?>) type).name().startsWith(ADD_TO_STORY_TYPE)) return false;
+            id = access.id(bucket);
+            expires = access.expires(bucket);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "bucket id and expiration", failure);
+            return false;
+        }
+        if (id == UNPATCHED || expires == UNPATCHED) {
+            HookStatus.missingMember(FamilyNames.SUGGESTED_STORIES, "method", "tray bucket",
+                    id == UNPATCHED ? ID_FIELD : EXPIRATION_FIELD);
+            return false;
+        }
+        if (!(id instanceof String) || !(expires instanceof Long)) return false;
+        HookStatus.bound(FamilyNames.SUGGESTED_STORIES, "tray bucket#" + EXPIRATION_FIELD);
+        return PassedStories.listed((String) id, (Long) expires);
     }
 
     /** {@link #watched}'s answer, or null for the Add to story tile and a flag it can't read. */
@@ -859,7 +919,7 @@ public final class SuggestedStories {
             return new Switches(Settings.HIDE_SUGGESTED_STORIES.get(), peopleYouMayKnowInBuild(),
                     Settings.HIDE_PEOPLE_YOU_MAY_KNOW.get(), Settings.HIDE_CONTACT_IMPORT_CARD.get(),
                     Settings.HIDE_PAGE_STORIES.get(), Settings.HIDE_SEEN_STORIES.get(),
-                    Settings.SHOW_ONLY_WATCHED_STORIES.get());
+                    Settings.SHOW_ONLY_WATCHED_STORIES.get(), Settings.HIDE_PASSED_STORIES.get());
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "switch read", failure);
             return Switches.NONE;

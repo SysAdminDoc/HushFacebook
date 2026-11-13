@@ -200,6 +200,7 @@ public final class SettingsBackup {
             Settings.HIDE_PAGE_STORIES,
             Settings.HIDE_SEEN_STORIES,
             Settings.SHOW_ONLY_WATCHED_STORIES,
+            Settings.HIDE_PASSED_STORIES,
             Settings.BLOCK_STORY_AUTO_ADVANCE,
             Settings.LOOP_STORIES,
             Settings.VIEW_STORIES_ANONYMOUSLY,

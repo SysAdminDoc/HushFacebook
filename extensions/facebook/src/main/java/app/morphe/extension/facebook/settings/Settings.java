@@ -414,6 +414,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_show_only_watched_stories", FALSE);
 
     /**
+     * The Stories tray's buckets whose tile came into view on an earlier visit to Facebook, watched or
+     * not (#463). A new story brings the person back. Off until you turn it on.
+     */
+    public static final BooleanSetting HIDE_PASSED_STORIES =
+            new BooleanSetting("hushfacebook_hide_passed_stories", FALSE);
+
+    /**
      * The cards beside Create story in the Stories tray that suggest a story to make, such as
      * "Share music you love": the tray's fetch asks the server to leave out their list,
      * skip_srtt_item_list, as Facebook does for the Video tab's tray. Off until you turn it on.
