@@ -75,8 +75,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * under it, records the part of itself the bar covers into a RenderNode each frame, and draws that
  * blurred in its overlay, so the blur sits between the feed and the bar's tint. RenderEffect only
  * blurs a view's own content, which is why the copy is needed. It costs one recording and one blur
- * of a bar sized area per bar per frame, and only while a frame draws anyway. The frost fades and
- * moves with the bar, so a bar sliding away takes its frost along. It stays inside the bar's rows,
+ * per bar per frame, and only while a frame draws anyway. The copy is drawn and blurred at a
+ * quarter of the bar's size ({@link #FROST_SCALE}) and drawn back at full size (#461). The frost
+ * fades and moves with the bar, so a bar sliding away takes its frost along. It stays inside the bar's rows,
  * so a holder taller than its tabs can't blur a band of the feed above them, and a SurfaceView is
  * left out of the copy: drawing one a second time moves or drops its video surface, and the reel
  * went black (#171). The copy is drawn around it and cleared where it is, so the video shows
@@ -121,6 +122,12 @@ public final class TranslucentBars {
     static final int FROSTED_ALPHA = 0xA6;
     /** The frost's blur radius, in dp. */
     static final float FROST_RADIUS_DP = 18f;
+    /**
+     * How many times smaller the frost is drawn before its blur. The blur takes the detail out
+     * anyway, so the small copy looks the same and is a sixteenth of the pixels for the graphics
+     * chip to draw and blur on each frame (#461). Android's own window blur works at a quarter too.
+     */
+    static final int FROST_SCALE = 4;
     /** How long a screen without both bars waits before it looks for them again. */
     static final long RESCAN_MS = 1000;
     /** How far below a bar's top view a fill can sit. The top bar's NavigationBar is seven down. */
@@ -1280,7 +1287,8 @@ public final class TranslucentBars {
 
         Frost(View host, float radius) {
             this.host = host;
-            blur.setRenderEffect(RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.CLAMP));
+            float small = radius / FROST_SCALE;
+            blur.setRenderEffect(RenderEffect.createBlurEffect(small, small, Shader.TileMode.CLAMP));
             blur.setClipToBounds(true);
             node.setClipToBounds(true);
             setBounds(0, 0, host.getWidth(), host.getHeight());
@@ -1310,10 +1318,14 @@ public final class TranslucentBars {
                 node.setOutline(null);
             }
             node.setClipToOutline(corner > 0f);
-            blur.setPosition(0, 0, width, height);
-            RecordingCanvas canvas = blur.beginRecording(width, height);
+            // Drawn FROST_SCALE times smaller and blurred there, then drawn back at full size.
+            int smallWidth = small(width);
+            int smallHeight = small(height);
+            blur.setPosition(0, 0, smallWidth, smallHeight);
+            RecordingCanvas canvas = blur.beginRecording(smallWidth, smallHeight);
             recording = true;
             try {
+                canvas.scale(1f / FROST_SCALE, 1f / FROST_SCALE);
                 canvas.translate(-left, -top);
                 inside.set(left, top, left + width, top + height);
                 record(host, canvas, inside, box);
@@ -1321,8 +1333,15 @@ public final class TranslucentBars {
                 recording = false;
                 blur.endRecording();
             }
-            node.beginRecording(width, height).drawRenderNode(blur);
+            RecordingCanvas whole = node.beginRecording(width, height);
+            whole.scale(FROST_SCALE, FROST_SCALE);
+            whole.drawRenderNode(blur);
             node.endRecording();
+        }
+
+        /** [size] pixels drawn {@link #FROST_SCALE} times smaller, rounded up so the copy covers it all. */
+        static int small(int size) {
+            return Math.max(1, (size + FROST_SCALE - 1) / FROST_SCALE);
         }
 
         /** Draws nothing this frame, for a bar out of sight. */

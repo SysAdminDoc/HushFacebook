@@ -597,8 +597,11 @@ public class TranslucentBarsTest {
         assertEquals(1600 - origin[1], frost.node.getBottom());
         assertEquals("the blur itself is drawn whole", 1f, frost.blur.getAlpha(), 0f);
         assertEquals(0, frost.blur.getTop());
-        assertEquals(160, frost.blur.getBottom());
-        assertEquals(720, frost.blur.getRight());
+        // #461: blurred a quarter the size, a sixteenth of the pixels, and drawn back over the whole box.
+        assertEquals(40, frost.blur.getBottom());
+        assertEquals(180, frost.blur.getRight());
+        assertEquals(160, frost.node.getHeight());
+        assertEquals(720, frost.node.getWidth());
         assertFalse("a square bar's frost is its box", frost.node.getClipToOutline());
 
         // #344: a rounded tab bar's frost gets the pill's round ends, and loses them with the pill.
@@ -607,6 +610,22 @@ public class TranslucentBarsTest {
         frost.update(new Rect(0, 1440, 720, 1600), 1f, 3, 0f);
         assertFalse(frost.node.getClipToOutline());
         frost.remove();
+    }
+
+    @Test
+    @Config(sdk = 34)
+    public void theSmallCopyStillCoversTheWholeBar() {
+        // #461: a size that isn't a multiple of the scale rounds up, so no row or column of the bar
+        // is left out of the frost, and a sliver of a bar still gets one pixel.
+        assertEquals(4, TranslucentBars.FROST_SCALE);
+        assertEquals(40, TranslucentBars.Frost.small(160));
+        assertEquals(41, TranslucentBars.Frost.small(161));
+        assertEquals(1, TranslucentBars.Frost.small(1));
+        for (int size = 1; size <= 2400; size++) {
+            int small = TranslucentBars.Frost.small(size);
+            assertTrue(size + " px", small * TranslucentBars.FROST_SCALE >= size);
+            assertTrue(size + " px", (small - 1) * TranslucentBars.FROST_SCALE < size);
+        }
     }
 
     @Test
