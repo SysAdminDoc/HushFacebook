@@ -17,6 +17,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -113,14 +114,18 @@ internal fun logoTouchListenerIndex(builder: Method): Int {
  * null when it has no such path. 583 has one: when none of its three ways to read the logo's tap
  * is on (seen in Arabic), it makes the logo unimportant for accessibility and jumps past its tap,
  * its touch listener and its description, so the logo stays disabled with no listener. It's the
- * one `setImportantForAccessibility` call on the logo ahead of the logo's tap.
+ * one `setImportantForAccessibility` call on the logo ahead of the logo's tap. 587 jumps the other
+ * way, to a call below the description that the path with the tap jumps over (`A0I` at 140), so a
+ * call after the touch listener counts too while the logo's register still holds the logo.
  */
 internal fun logoWithoutTapIndex(builder: Method): Int? {
     val where = "${builder.definingClass}->${builder.name}"
-    val click = logoTouchListenerIndex(builder) - 1
+    val touch = logoTouchListenerIndex(builder)
+    val click = touch - 1
     val instructions = builder.implementation!!.instructions.toList()
     val logo = instructions[click].receiver()
-    val hides = (0 until click).filter { index ->
+    val below = (touch + 1 until instructions.size).takeWhile { !writes(instructions[it], logo) }
+    val hides = ((0 until click) + below).filter { index ->
         val instruction = instructions[index]
         if (instruction.opcode != Opcode.INVOKE_VIRTUAL && instruction.opcode != Opcode.INVOKE_VIRTUAL_RANGE) return@filter false
         val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return@filter false
@@ -130,10 +135,17 @@ internal fun logoWithoutTapIndex(builder: Method): Int? {
     }
     if (hides.size > 1) {
         throw PatchException(
-            "Expected $where to hide the Facebook logo from accessibility at most once before its tap; it does ${hides.size} times",
+            "Expected $where to hide the Facebook logo from accessibility at most once around its tap; it does ${hides.size} times",
         )
     }
     return hides.singleOrNull()
+}
+
+/** Whether [instruction] can write [register], a wide write counting for both halves. */
+private fun writes(instruction: Instruction, register: Int): Boolean {
+    val opcode = instruction.opcode
+    if (!opcode.setsRegister() || instruction !is OneRegisterInstruction) return false
+    return instruction.registerA == register || (opcode.setsWideRegister() && instruction.registerA + 1 == register)
 }
 
 /**

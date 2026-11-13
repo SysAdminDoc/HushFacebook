@@ -162,7 +162,39 @@ class LogoLongPressTest {
             .contains("goes to another view (v2, not v1)"))
         val hides = SettingsPatchHosts.viewCall("setImportantForAccessibility", "I")
         assertTrue(refusal(bar(loaded, on(1, 4, hides), on(1, 4, hides), on(1, 2, setOnClickListener), on(1, 3, setOnTouchListener)))
-            .contains("at most once before its tap; it does 2 times"))
+            .contains("at most once around its tap; it does 2 times"))
+        assertTrue(refusal(bar(loaded, on(1, 4, hides), on(1, 2, setOnClickListener), on(1, 3, setOnTouchListener), on(1, 4, hides)))
+            .contains("at most once around its tap; it does 2 times"))
+    }
+
+    /**
+     * 587's builder hides the logo below its description instead, where its path with no tap jumps
+     * and its path with the tap jumps over (`A0I` at 140). That call goes to the stand-in too, and a
+     * hide after the logo's register holds something else stays Facebook's.
+     */
+    @Test
+    fun theLogosPathWithNoTapBelowItsDescriptionGoesToItsStandIn() {
+        val hides = SettingsPatchHosts.viewCall("setImportantForAccessibility", "I")
+        val bar = SettingsPatchHosts.bar(
+            loads(0, CREATE_WORDMARK_VIEW),
+            on(1, 2, setOnClickListener),
+            on(1, 3, setOnTouchListener),
+            on(1, 0, setContentDescription),
+            on(1, 4, hides),
+            ImmutableInstruction11n(Opcode.CONST_4, 1, 0),
+            on(1, 4, hides),
+            ImmutableInstruction10x(Opcode.RETURN_VOID),
+        )
+
+        val after = patched(listOf(bar)) { hookLogoLongPress() }
+
+        assertEquals("instruction count", 8, after.size)
+        assertEquals(LOGO_TOUCH_STAND_IN, after[2].call())
+        assertEquals(Opcode.INVOKE_STATIC, after[4].opcode)
+        assertEquals(LOGO_WITHOUT_TAP_STAND_IN, after[4].call())
+        assertEquals("the logo, then Facebook's importance", listOf(1, 4), after[4].registers())
+        assertEquals("a hide once the register holds something else is Facebook's", Opcode.INVOKE_VIRTUAL, after[6].opcode)
+        assertEquals(hides.toString(), after[6].call())
     }
 
     /**
@@ -305,16 +337,19 @@ class LogoLongPressTest {
      * and the logo hidden at 114, on the same registers. 585's two put them one earlier, at 122 and
      * 113, on new registers. 586's two build it in `A0I` with the touch listener at 136 and the logo
      * hidden at 127, on new registers again. 586's Android 9 build makes it a static `A0J` taking
-     * the context and the bar, with the touch listener at 159 and the logo hidden at 150. Last,
-     * where the title bar's constructor that builds it returns.
+     * the context and the bar, with the touch listener at 159 and the logo hidden at 150. 587's two
+     * keep the static `A0I` with the touch listener at 135 and move the hide below the description,
+     * to 140, where the path with no tap jumps and the path with the tap jumps over. Last, where the
+     * title bar's constructor that builds it returns.
      */
     private val pins = mapOf(
-        "586.0.0.52.53" to mapOf(
-            "arm64-v8a" to Pin(136, listOf(6, 4), 127, listOf(6, 9), listOf(120)),
-            "armeabi-v7a" to Pin(136, listOf(6, 4), 127, listOf(6, 9), listOf(120)),
-            "arm64-v8a-minapi28-storeless" to Pin(159, listOf(4, 2), 150, listOf(4, 5), listOf(120)),
+        "587.0.0.39.55" to mapOf(
+            "arm64-v8a" to Pin(135, listOf(5, 3), 140, listOf(5, 9), listOf(120)),
+            "armeabi-v7a" to Pin(135, listOf(5, 3), 140, listOf(5, 9), listOf(118)),
         ),
     )
+
+    private val gotos = setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32)
 
     /** The index the goto at [index] of [instructions] jumps to. */
     private fun gotoTarget(instructions: List<Instruction>, index: Int): Int {
@@ -370,10 +405,17 @@ class LogoLongPressTest {
                 val withoutTap = logoWithoutTapIndex(builder)
                 assertEquals("${bundle.name}: where the path with no tap hides the logo", pin.withoutTap, withoutTap)
                 assertEquals("${bundle.name}: the logo hidden there", logo, was[pin.withoutTap].registers().first())
-                assertTrue("${bundle.name}: no goto follows the logo being hidden",
-                    was[pin.withoutTap + 1].opcode in setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32))
-                assertTrue("${bundle.name}: the path with no tap doesn't jump past the logo's description",
-                    gotoTarget(was, pin.withoutTap + 1) > index + 1)
+                if (pin.withoutTap < index) {
+                    assertTrue("${bundle.name}: no goto follows the logo being hidden", was[pin.withoutTap + 1].opcode in gotos)
+                    assertTrue("${bundle.name}: the path with no tap doesn't jump past the logo's description",
+                        gotoTarget(was, pin.withoutTap + 1) > index + 1)
+                } else {
+                    // 587: a goto ahead of the tap lands on the hide, and the path with the tap jumps over it.
+                    assertTrue("${bundle.name}: no goto ahead of the logo's tap lands on the hide",
+                        (0 until index - 1).any { was[it].opcode in gotos && gotoTarget(was, it) == pin.withoutTap })
+                    assertTrue("${bundle.name}: the path with the tap doesn't jump over the hide",
+                        was[pin.withoutTap - 1].opcode in gotos && gotoTarget(was, pin.withoutTap - 1) > pin.withoutTap)
+                }
 
                 val context = PatchContexts.of(SettingsPatchHosts.appAndMainTab() + bar + titleBar)
                 settingsPatch.execute(context)
