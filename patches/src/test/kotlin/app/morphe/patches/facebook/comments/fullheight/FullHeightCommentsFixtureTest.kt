@@ -87,6 +87,15 @@ class FullHeightCommentsFixtureTest {
         return holding + FixtureDex.classes(bundle, asking).values
     }
 
+    /** The methods naming [string] themselves or asking a string table holding it, as the patch finds them (587's launchers). */
+    private fun namingMethods(bundle: File, string: String): List<Method> {
+        val tables = holders(bundle, string).associateBy { it.type }
+        val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+        return FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in tables } }) {
+            !isStringTable(it) && namesString(it, string, resolve)
+        }
+    }
+
     private fun sheet(bundle: File) {
         val params = FixtureDex.classes(bundle, setOf(POPOVER_PARAMS)).values.single()
         val constructor = sheetConstructor(params)
@@ -121,7 +130,7 @@ class FullHeightCommentsFixtureTest {
         val name = bundle.name
         val launchers = splitScreenLaunchers(
             (namers(bundle, REEL_FOOTER) + holders(bundle, UNIT_NOT_MEASURED)).distinctBy { it.type },
-            holders(bundle, NOT_ENTERED),
+            namingMethods(bundle, NOT_ENTERED),
         )
         assertEquals("$name: five split-screen launchers", 5, launchers.size)
         assertEquals("$name: three build the split screen's Intent", 3, launchers.count(::buildsSplitScreen))
@@ -264,8 +273,10 @@ class FullHeightCommentsFixtureTest {
     }
 
     private fun tapThrough(bundle: File) {
-        val popover = FixtureDex.classes(bundle, setOf(SIMPLE_POPOVER)).values.single()
-        val site = tapThroughSite(popover)
+        // 587 moved the setup from the base popover into the comment popover's override.
+        val popovers = FixtureDex.classes(bundle, setOf(SIMPLE_POPOVER, UFI_POPOVER)).values.toList()
+        assertEquals("${bundle.name}: both popover classes", 2, popovers.size)
+        val site = tapThroughSite(popovers)
         val where = "${bundle.name}: ${site.method.descriptor()}"
         val code = site.method.implementation!!.instructions.toList()
         val at = site.index
@@ -277,8 +288,8 @@ class FullHeightCommentsFixtureTest {
         assertEquals("$where: the dialog is the one parameter", site.method.implementation!!.registerCount - 1, site.dialog)
         assertEquals("$where: the surface is the one unboxed", (code[at - 1] as OneRegisterInstruction).registerA, site.source)
 
-        val context = PatchContexts.of(listOf(popover))
-        val method = context.mutableClassDefBy(SIMPLE_POPOVER).methods.single { it.descriptor() == site.method.descriptor() }
+        val context = PatchContexts.of(popovers)
+        val method = context.mutableClassDefBy(site.method.definingClass).methods.single { it.descriptor() == site.method.descriptor() }
         val original = method.implementation!!.instructions.toList()
         method.tapThrough(site)
         val patched = method.implementation!!.instructions.toList()
