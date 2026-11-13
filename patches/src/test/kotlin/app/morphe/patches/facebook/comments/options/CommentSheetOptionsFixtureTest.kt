@@ -89,6 +89,9 @@ import java.io.File
 /** The plugin that draws Like as a button beside the thumbs-down, as the plugin table names it. */
 private const val LIKE_PLUGIN = "com.facebook.feedback.comments.plugins.commentufi.like.LikePlugin"
 
+/** The update a tap on View replies sends, where a build numbers it other than 1 (587 arm64 2). */
+private val EXPAND_NUMBERS = mapOf("587.0.0.39.55" to 2)
+
 class CommentSheetOptionsFixtureTest {
     private fun bundles(check: (File) -> Unit) {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -380,7 +383,9 @@ class CommentSheetOptionsFixtureTest {
         val updates = holders(bundle, EXPAND_REPLIES).flatMap { methodsHolding(it, EXPAND_REPLIES) }
         assertEquals("$name: one method sends \"$EXPAND_REPLIES\"", 1, updates.size)
         val (_, number) = expandUpdate(updates.single())
-        assertEquals("$name: the update a tap on View replies sends", 1, number)
+        // 587 numbers the section's state updates one further along.
+        val expected = EXPAND_NUMBERS.entries.firstOrNull { name.contains("-${it.key}-") }?.value ?: 1
+        assertEquals("$name: the update a tap on View replies sends", expected, number)
         val threads = replyThreads(holders(bundle, COMMENT_SECTION), updates) { types -> FixtureDex.classes(bundle, types) }
         val start = threads.initialState
         val where = "$name: ${start.descriptor()}"
@@ -684,9 +689,28 @@ class CommentSheetOptionsFixtureTest {
     private fun gifAction(bundle: File): String? =
         FixtureDex.classes(bundle, setOf(COMPOSER_ACTION)).values.singleOrNull()?.let { enumConstant(it, VIEWER_GIF_ACTION) }
 
+    /**
+     * The classes calling one of [holders]' sticker labels, the classes the patch's
+     * stickerLabelCallers hands on: from 587 the render asks a static label for the sticker's name.
+     */
+    private fun stickerLabelCallersOf(bundle: File, holders: List<ClassDef>): List<ClassDef> {
+        val labels = holders.flatMap { owner -> owner.methods.filter(::isStickerLabel) }
+        if (labels.isEmpty()) return emptyList()
+        val owners = labels.map { it.definingClass }.toSet()
+        val descriptors = labels.map { it.descriptor() }.toSet()
+        val callers = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it.toString() in owners } }) { method ->
+            method.implementation?.instructions?.any {
+                ((it as? ReferenceInstruction)?.reference as? MethodReference)?.descriptor() in descriptors
+            } == true
+        }
+        return FixtureDex.classes(bundle, callers.map { it.definingClass }.toSet()).values
+            .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+    }
+
     private fun viewerButtonsOf(bundle: File): ViewerButtons {
         val gif = gifAction(bundle)
-        val found = viewerButtons(holders(bundle, VIEWER_STICKER), gif)
+        val stickers = holders(bundle, VIEWER_STICKER)
+        val found = viewerButtons(stickers, gif, stickerLabelCallersOf(bundle, stickers))
         val code = found.render.implementation!!.instructions.toList()
         if (!holdsString(found.render, VIEWER_GIF)) {
             // Without the GIF button's name the enum constant must be what the kept GIF button was built from.
@@ -1026,7 +1050,19 @@ class CommentSheetOptionsFixtureTest {
         }
         assertEquals("$senderWhere: sends the number", HIDE_REPLIES, toUpdate[3].literal())
         val kind = toUpdate[0].reference()
-        assertEquals("$senderWhere: reads what its switch reads", sender.method.implementation!!.instructions.first().reference(), kind)
+        // Up to 586 the sender reads the number into its switch first thing. 587's sender is a
+        // static (lambda, int) method switching on the int, which the lambda's invoke reads from
+        // the field and hands over.
+        val opening = sender.method.implementation!!.instructions.first()
+        val switchKind = if (opening.opcode == Opcode.IGET) opening.reference() else {
+            val lambdaType = sender.method.definingClass
+            val invoke = classes(setOf(lambdaType)).getValue(lambdaType).methods.single { it.name == "invoke" && it.implementation != null }
+            val invokeCode = invoke.implementation!!.instructions.toList()
+            assertTrue("$senderWhere: the lambda's invoke hands the sender its number",
+                invokeCode.any { (it.reference() ?: "").startsWith("$lambdaType->${sender.method.name}(") })
+            invokeCode.first { it.opcode == Opcode.IGET }.reference()
+        }
+        assertEquals("$senderWhere: reads what its switch reads", switchKind, kind)
         val built = restMethod(sender.method).implementation!!.instructions.toList()
         val builds = built.indexOf(toUpdate[3]) + 1
         assertEquals("$senderWhere: into the register the update is built from",
