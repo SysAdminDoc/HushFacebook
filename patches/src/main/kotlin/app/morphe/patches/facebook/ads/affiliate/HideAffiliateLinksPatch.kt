@@ -20,6 +20,7 @@ import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.refresh.enumConstant
 import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.filterBooleanReturns
 import app.morphe.patches.facebook.misc.extension.filterObjectReturns
@@ -28,6 +29,8 @@ import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.facebook.reels.prompts.findOverlayEnum
+import app.morphe.patches.facebook.shared.MOBILE_CONFIG
+import app.morphe.patches.facebook.shared.readsMobileConfig
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
@@ -42,7 +45,9 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
+import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
@@ -85,6 +90,9 @@ internal const val KEEP_PROFILE_ENTRY = "$AFFILIATE_LINKS->keepProfileEntry($STR
 
 /** The bundle key a reel or post sets on the profile it opens, which then shows the shop banner. */
 internal const val PROFILE_ENTRY_POINT = "affiliate_profile_cta_entry_point"
+
+/** The tag a reel's author tap puts under [PROFILE_ENTRY_POINT], one of the two the profile shows its banner for. */
+internal const val REEL_ENTRY_POINT = "REELS_VDD"
 
 /** What the reel's disclosure row keeps: the component's name, and what it logs for the label. */
 internal const val DISCLOSURE_COMPONENT = "FbShortsViewerDisclosureComponent"
@@ -144,7 +152,10 @@ internal const val FB_USER_SESSION = "Lcom/facebook/auth/usersession/FbUserSessi
  *   tag a reel, post or feed video puts in the bundle of the profile it opens. One static helper
  *   (585 arm64 `LX/0cuE;->A00(String, Bundle)`, which the reel's author tap calls with "REELS_VDD")
  *   stores it under [PROFILE_ENTRY_POINT], and the profile asks for the banner only with it. The value
- *   it stores goes through the extension, so the profile gets null and opens like any other.
+ *   it stores goes through the extension, so the profile gets null and opens like any other. 587 names
+ *   the key through a string table where it stores it, so the hook moves to the one method that reads
+ *   it back to pick the banner (arm64 `LX/0Bb0;->A01(Bundle)`, answering the banner's model or null):
+ *   each read goes through the extension, and a null matches neither tag, so the method answers null.
  *
  * Every answer of those four goes through the extension, which turns a yes into a no, an id or a
  * model into null, and a list of reel cards into one without the shop kinds while the switch is on.
@@ -182,7 +193,7 @@ val hideAffiliateLinksPatch = bytecodePatch(
         mutableClassDefBy(anchors.ctaFilter.definingClass).findMutableMethodOf(anchors.ctaFilter)
             .filterCtaReturns()
         try {
-            val entry = findProfileEntryWrite()
+            val entry = findProfileEntry()
             mutableClassDefBy(entry.definingClass).findMutableMethodOf(entry).hookProfileEntry()
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so a profile opened from a reel keeps its shop banner.")
@@ -209,9 +220,10 @@ internal class AffiliateAnchors(
 /**
  * The reel disclosure row's render, the check in front of it, the flag both read, and the methods
  * holding that read: the render and the check up to 585, and on 586 the one static helper both of
- * them call for it (arm64 `LX/09Du;->A03`, beside the check `LX/09Du;->A00`).
+ * them call for it (arm64 `LX/09Du;->A03`, beside the check `LX/09Du;->A00`). 587 is back to the
+ * render and the check each reading it, as a MobileConfig id (arm64 `LX/0CTS;->render` and `LX/09ZE;->A00`).
  */
-internal class CommissionLabelAnchors(val render: Method, val gate: Method, val flag: Int, val readers: List<Method>)
+internal class CommissionLabelAnchors(val render: Method, val gate: Method, val flag: Long, val readers: List<Method>)
 
 /** The static calls answering a boolean that [method] makes. */
 private fun staticBooleanCalls(method: Method): List<MethodReference> =
@@ -254,20 +266,46 @@ internal fun disclosureGate(render: Method): MethodReference? =
         }
     }
 
-/** Each read in [method] of a reel's boolean flag by its number, as the read's index and the number. */
-internal fun flagReads(method: Method): List<Pair<Int, Int>> {
+/**
+ * Each read in [method] of a reel's boolean flag by its number, as the read's index and the number:
+ * up to 586 `getBooleanValue(int)`, and on 587 a MobileConfig boolean asked by its long id, the
+ * render through a static of [MOBILE_CONFIG] and the check through the config's interface.
+ */
+internal fun flagReads(method: Method): List<Pair<Int, Long>> {
     val code = method.implementation?.instructions?.toList() ?: return emptyList()
     return code.indices.mapNotNull { at ->
-        val call = (code[at] as? ReferenceInstruction)?.reference as? MethodReference
-        val read = code[at] as? FiveRegisterInstruction
-        if (call == null || read == null || call.name != "getBooleanValue" || call.returnType != "Z" ||
-            call.parameterTypes.map { it.toString() } != listOf("I")
-        ) return@mapNotNull null
-        val number = (at - 1 downTo 0).map(code::get).firstOrNull {
-            it is NarrowLiteralInstruction && it is OneRegisterInstruction && it.registerA == read.registerD
-        } as? NarrowLiteralInstruction
-        number?.let { at to it.narrowLiteral }
+        val call = (code[at] as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
+        val parameters = call.parameterTypes.map { it.toString() }
+        if (call.name == "getBooleanValue" && call.returnType == "Z" && parameters == listOf("I")) {
+            val read = code[at] as? FiveRegisterInstruction ?: return@mapNotNull null
+            val number = (at - 1 downTo 0).map(code::get).firstOrNull {
+                it is NarrowLiteralInstruction && it is OneRegisterInstruction && it.registerA == read.registerD
+            } as? NarrowLiteralInstruction
+            return@mapNotNull number?.let { at to it.narrowLiteral.toLong() }
+        }
+        if (!readsMobileConfig(code[at], "Z") && !readsConfigStatic(code[at], call, parameters)) return@mapNotNull null
+        val id = idRegister(code[at]) ?: return@mapNotNull null
+        // The last write of the id's register before the read, which has to be its literal.
+        val writer = (at - 1 downTo 0).map(code::get).firstOrNull {
+            it is OneRegisterInstruction && it.opcode.setsRegister() &&
+                (it.registerA == id || (it.opcode.setsWideRegister() && it.registerA == id - 1))
+        }
+        (writer as? WideLiteralInstruction)?.takeIf { (writer as OneRegisterInstruction).registerA == id }
+            ?.let { at to it.wideLiteral }
     }
+}
+
+/** 587's other static boolean read on [MOBILE_CONFIG]: the config, then the long id last (`A0U(X, Object, long)`). */
+private fun readsConfigStatic(instruction: Instruction, call: MethodReference, parameters: List<String>) =
+    instruction.opcode in setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE) && call.definingClass == MOBILE_CONFIG &&
+        call.returnType == "Z" && parameters.lastOrNull() == "J"
+
+/** The register holding the long id a MobileConfig read hands over last: the first of its last two registers. */
+private fun idRegister(read: Instruction): Int? = when (read) {
+    is RegisterRangeInstruction -> read.startRegister + read.registerCount - 2
+    is FiveRegisterInstruction -> listOf(read.registerC, read.registerD, read.registerE, read.registerF, read.registerG)
+        .take(read.registerCount).getOrNull(read.registerCount - 2)
+    else -> null
 }
 
 /** The label's render and check, each sure to read the flag once. Changes nothing. */
@@ -307,7 +345,7 @@ internal fun BytecodePatchContext.findCommissionLabel(): CommissionLabelAnchors 
  * jump that lands right after the read comes from a path that never read the flag, and it stays on
  * Facebook's next instruction with its own answer.
  */
-private fun MutableMethod.hookCommissionFlag(flag: Int) {
+private fun MutableMethod.hookCommissionFlag(flag: Long) {
     val read = flagReads(this).single { it.second == flag }.first
     val answer = (getInstruction(read + 1) as OneRegisterInstruction).registerA
     addInstructions(
@@ -338,17 +376,94 @@ internal fun profileEntryWrites(method: Method): List<Pair<Int, Int>> {
     }
 }
 
-/** The one method that tags a profile's bundle with [PROFILE_ENTRY_POINT]. Changes nothing. */
-internal fun BytecodePatchContext.findProfileEntryWrite(): Method {
-    val writers = classDefByStrings(PROFILE_ENTRY_POINT, StringComparisonType.EQUALS)
-        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        .flatMap { classDef -> classDef.methods.filter { profileEntryWrites(it).isNotEmpty() } }
-    return writers.singleOrNull() ?: refuse("expected one method storing $PROFILE_ENTRY_POINT in a bundle, found ${writers.size}")
+/**
+ * Each `getString` in [method] that reads [PROFILE_ENTRY_POINT] from a bundle, as the index right after
+ * its `move-result-object` and the register the value lands in. Only a read nothing jumps into counts.
+ */
+internal fun profileEntryReads(method: Method): List<Pair<Int, Int>> {
+    val code = method.implementation?.instructions?.toList() ?: return emptyList()
+    val targets = branchTargets(code)
+    return code.indices.mapNotNull { at ->
+        val call = (code[at] as? ReferenceInstruction)?.reference as? MethodReference
+        val get = code[at] as? FiveRegisterInstruction
+        val result = code.getOrNull(at + 1)
+        if (call == null || get == null || code[at].opcode != Opcode.INVOKE_VIRTUAL || call.name != "getString" ||
+            call.parameterTypes.size != 1 || get.registerCount != 2 || result?.opcode != Opcode.MOVE_RESULT_OBJECT ||
+            at + 1 in targets || at + 2 in targets
+        ) return@mapNotNull null
+        val key = (at - 1 downTo 0).map(code::get).firstOrNull { writesRegister(it, get.registerD) }
+        val named = ((key as? ReferenceInstruction)?.reference as? StringReference)?.string == PROFILE_ENTRY_POINT
+        if (named) at + 2 to (result as OneRegisterInstruction).registerA else null
+    }
 }
 
-/** Hands the value each store of [PROFILE_ENTRY_POINT] is about to write through the extension first. */
+private val RETURNS = setOf(Opcode.RETURN_VOID, Opcode.RETURN, Opcode.RETURN_WIDE, Opcode.RETURN_OBJECT)
+
+/**
+ * Whether [method] is where a profile picks its shop banner from [PROFILE_ENTRY_POINT] (587): it answers
+ * something, and a value it reads under that key goes to `String.equals` against [REEL_ENTRY_POINT]
+ * before anything writes its register again.
+ */
+internal fun isProfileEntryReader(method: Method): Boolean {
+    if (method.returnType == "V") return false
+    val code = method.implementation?.instructions?.toList() ?: return false
+    return profileEntryReads(method).any { (after, value) ->
+        for (at in after until code.size) {
+            val instruction = code[at]
+            val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            if (instruction.opcode == Opcode.INVOKE_VIRTUAL && call?.definingClass == STRING && call.name == "equals") {
+                val compare = instruction as FiveRegisterInstruction
+                val other = when (value) {
+                    compare.registerD -> compare.registerC
+                    compare.registerC -> compare.registerD
+                    else -> null
+                }
+                val load = other?.let { register -> (at - 1 downTo after).map(code::get).firstOrNull { writesRegister(it, register) } }
+                if (((load as? ReferenceInstruction)?.reference as? StringReference)?.string == REEL_ENTRY_POINT) return@any true
+            }
+            if (writesRegister(instruction, value) || instruction.opcode in RETURNS) break
+        }
+        false
+    }
+}
+
+/**
+ * The one method that tags a profile's bundle with [PROFILE_ENTRY_POINT] (up to 586), or else the one
+ * that reads it back to pick the profile's shop banner (587). Changes nothing.
+ */
+internal fun BytecodePatchContext.findProfileEntry(): Method {
+    val holders = classDefByStrings(PROFILE_ENTRY_POINT, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+    val writers = holders.flatMap { classDef -> classDef.methods.filter { profileEntryWrites(it).isNotEmpty() } }
+    if (writers.isNotEmpty()) {
+        return writers.singleOrNull() ?: refuse("expected one method storing $PROFILE_ENTRY_POINT in a bundle, found ${writers.size}")
+    }
+    val readers = holders.flatMap { classDef -> classDef.methods.filter(::isProfileEntryReader) }
+    return readers.singleOrNull() ?: refuse(
+        "expected one method storing $PROFILE_ENTRY_POINT in a bundle, or one reading it to pick the profile's " +
+            "shop banner, found ${readers.size} readers",
+    )
+}
+
+/**
+ * Hands the value each store of [PROFILE_ENTRY_POINT] is about to write through the extension first, or
+ * on a reader, the value each read gives back.
+ */
 private fun MutableMethod.hookProfileEntry() {
-    for ((put, value) in profileEntryWrites(this).asReversed()) {
+    val writes = profileEntryWrites(this)
+    if (writes.isEmpty()) {
+        for ((after, value) in profileEntryReads(this).asReversed()) {
+            addInstructions(
+                after,
+                """
+                    invoke-static/range { v$value .. v$value }, $KEEP_PROFILE_ENTRY
+                    move-result-object v$value
+                """,
+            )
+        }
+        return
+    }
+    for ((put, value) in writes.asReversed()) {
         addInstructionsAtControlFlowLabel(
             put,
             """

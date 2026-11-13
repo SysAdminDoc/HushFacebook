@@ -42,7 +42,8 @@ import java.io.File
  * one static Z card check, on 586 the comment sheet's plugin gate's one case for it), and the
  * reel overlay's one filterCtasForCategorySuppression (on 585, which dropped that name, the one list
  * filter beside the overlay's kind sets, called from the overlay's builder), plus the one store of a
- * profile's shop banner tag, which the reel's author tap calls. Then the patch: every answer each of them
+ * profile's shop banner tag, which the reel's author tap calls (on 587 the one method that reads the tag
+ * back and compares it with the reel's). Then the patch: every answer each of them
  * gives goes through the extension on its own register, cast back where the hook answers a wider
  * type, the filter's with the list it was given beside it, and no branch skips the hook. Reads the
  * fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
@@ -74,6 +75,14 @@ class HideAffiliateLinksFixtureTest {
     )
     private val android9CommentCardForm = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to "CHECK",
+    )
+
+    /**
+     * Whether a build's banner tag is hooked where the profile reads it back (587, which names the key
+     * through a string table where it stores it, arm64 `LX/0Bb0;->A01`) rather than in its one store.
+     */
+    private val profileEntryRead = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to true,
     )
 
     private val PAYLOADS = setOf(Opcode.PACKED_SWITCH_PAYLOAD, Opcode.SPARSE_SWITCH_PAYLOAD, Opcode.ARRAY_PAYLOAD)
@@ -204,7 +213,7 @@ class HideAffiliateLinksFixtureTest {
     }
 
     /** Right after the flag's read keeps its answer, that answer goes through the extension and comes back to it. */
-    private fun assertLabelHooked(name: String, method: Method, flag: Int) {
+    private fun assertLabelHooked(name: String, method: Method, flag: Long) {
         val call = flagReads(method).single { it.second == flag }.first
         val code = method.code()
         val answer = (code[call + 1] as OneRegisterInstruction).registerA
@@ -291,23 +300,35 @@ class HideAffiliateLinksFixtureTest {
                 val labelRender = labelRenders.single()
                 val labelGate = disclosureGate(labelRender)
                 assertNotNull("$name: the render asks no session check first", labelGate)
-                // The profile's shop banner tag: exactly one method stores it in a bundle.
-                val entryWriters = FixtureDex.classesHolding(bundle, PROFILE_ENTRY_POINT)
-                    .flatMap { classDef -> classDef.methods.filter { profileEntryWrites(it).isNotEmpty() } }
-                assertEquals("$name: methods storing $PROFILE_ENTRY_POINT", 1, entryWriters.size)
-                val entryWriter = entryWriters.single()
-                // Positive control: the reel's author tap is what hands it the reel's tag. 586's Android 9
-                // build asks a name table for the tag (04al.A00), so naming it through that table counts too.
-                val tagHolders = FixtureDex.classesHolding(bundle, REEL_ENTRY_TAG).associateBy { it.type }
-                val tagResolve: (MethodReference) -> Method? = { call -> tagHolders[call.definingClass]?.let { resolveStatic(it, call) } }
-                val reelTaps = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it.toString() in tagHolders } }) { method ->
-                    method.implementation?.instructions?.any { instruction ->
-                        ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.let {
-                            it.definingClass == entryWriter.definingClass && MethodUtil.methodSignaturesMatch(it, entryWriter)
-                        } == true
-                    } == true && namesString(method, REEL_ENTRY_TAG, tagResolve)
+                // The profile's shop banner tag: exactly one method stores it in a bundle. 587 names the key
+                // through a string table where it stores it, and exactly one method reads it back instead.
+                val entryHolders = FixtureDex.classesHolding(bundle, PROFILE_ENTRY_POINT)
+                val entryWriters = entryHolders.flatMap { classDef -> classDef.methods.filter { profileEntryWrites(it).isNotEmpty() } }
+                val readsEntry = profileEntryRead.getValue(version)
+                assertEquals("$name: methods storing $PROFILE_ENTRY_POINT", if (readsEntry) 0 else 1, entryWriters.size)
+                val entryWriter = if (readsEntry) {
+                    // The reader compares what it read with the reel's tag itself (isProfileEntryReader), so
+                    // that is the positive control here.
+                    val entryReaders = entryHolders.flatMap { classDef -> classDef.methods.filter(::isProfileEntryReader) }
+                    assertEquals("$name: methods reading $PROFILE_ENTRY_POINT to pick the banner", 1, entryReaders.size)
+                    entryReaders.single()
+                } else {
+                    entryWriters.single()
                 }
-                assertTrue("$name: nothing holding $REEL_ENTRY_TAG calls ${entryWriter.definingClass}->${entryWriter.name}", reelTaps.isNotEmpty())
+                if (!readsEntry) {
+                    // Positive control: the reel's author tap is what hands it the reel's tag. 586's Android 9
+                    // build asks a name table for the tag (04al.A00), so naming it through that table counts too.
+                    val tagHolders = FixtureDex.classesHolding(bundle, REEL_ENTRY_TAG).associateBy { it.type }
+                    val tagResolve: (MethodReference) -> Method? = { call -> tagHolders[call.definingClass]?.let { resolveStatic(it, call) } }
+                    val reelTaps = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it.toString() in tagHolders } }) { method ->
+                        method.implementation?.instructions?.any { instruction ->
+                            ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.let {
+                                it.definingClass == entryWriter.definingClass && MethodUtil.methodSignaturesMatch(it, entryWriter)
+                            } == true
+                        } == true && namesString(method, REEL_ENTRY_TAG, tagResolve)
+                    }
+                    assertTrue("$name: nothing holding $REEL_ENTRY_TAG calls ${entryWriter.definingClass}->${entryWriter.name}", reelTaps.isNotEmpty())
+                }
                 val entryOriginal = entryWriter.code()
                 val android9 = name.substringAfter("-$version-").contains("-minapi")
                 val form = (if (android9) android9CommentCardForm else commentCardForm).getValue(version)
@@ -366,7 +387,7 @@ class HideAffiliateLinksFixtureTest {
                 }
                 assertCtaFiltered("$name CTA filter", originals[2], patched(ctaFilter), list)
                 // The flag is read in the render and its check up to 585, and on 586 in one static
-                // helper of the check's class that both call.
+                // helper of the check's class that both call; 587 reads it in both again, by MobileConfig id.
                 val gateMethod = classes.getValue(labelGate.definingClass).methods.single { MethodUtil.methodSignaturesMatch(it, labelGate) }
                 val labelReaders: List<MethodReference> = if (flagReads(labelRender).isNotEmpty()) listOf(labelRender, gateMethod) else
                     listOfNotNull(sharedFlagReader(labelRender, gateMethod) { call ->
@@ -379,21 +400,43 @@ class HideAffiliateLinksFixtureTest {
                         .single { MethodUtil.methodSignaturesMatch(it, read) }
                     assertLabelHooked("$name label ${read.definingClass}", hooked, labelFlag)
                 }
-                // The value the store writes goes through the extension right in front of it, and nothing jumps past.
-                val (put, value) = profileEntryWrites(entryWriter).single()
                 val entryPatched = context.mutableClassDefBy(entryWriter.definingClass).methods
                     .single { MethodUtil.methodSignaturesMatch(it, entryWriter) }.code()
-                assertEquals("$name: 2 instructions in front of the store", entryOriginal.size + 2, entryPatched.size)
-                val entryHook = entryPatched[put] as RegisterRangeInstruction
-                assertEquals("$name: the profile tag hook", KEEP_PROFILE_ENTRY, (entryHook as ReferenceInstruction).reference.toString())
-                assertEquals("$name: the profile tag handed over", value, entryHook.startRegister)
-                assertEquals("$name: one register handed over", 1, entryHook.registerCount)
-                assertEquals("$name: the extension's answer", Opcode.MOVE_RESULT_OBJECT, entryPatched[put + 1].opcode)
-                assertEquals("$name: the answer lands where the store reads it", value, (entryPatched[put + 1] as OneRegisterInstruction).registerA)
-                assertEquals("$name: the store follows", "putString",
-                    ((entryPatched[put + 2] as ReferenceInstruction).reference as MethodReference).name)
-                for ((branch, target) in branchTargets(entryPatched)) {
-                    assertTrue("$name: the branch at $branch skips the profile tag hook", target != put + 1 && target != put + 2)
+                if (readsEntry) {
+                    // Each value read under the key goes through the extension right after the read, and nothing jumps in between.
+                    val reads = profileEntryReads(entryWriter)
+                    assertTrue("$name: ${entryWriter.definingClass}->${entryWriter.name} reads no $PROFILE_ENTRY_POINT", reads.isNotEmpty())
+                    assertEquals("$name: 2 instructions after each read", entryOriginal.size + 2 * reads.size, entryPatched.size)
+                    val hooks = reads.mapIndexed { order, (after, value) ->
+                        val at = after + 2 * order
+                        val entryHook = entryPatched[at] as RegisterRangeInstruction
+                        assertEquals("$name: the profile tag hook", KEEP_PROFILE_ENTRY, (entryHook as ReferenceInstruction).reference.toString())
+                        assertEquals("$name: the profile tag handed over", value, entryHook.startRegister)
+                        assertEquals("$name: one register handed over", 1, entryHook.registerCount)
+                        assertEquals("$name: the extension's answer", Opcode.MOVE_RESULT_OBJECT, entryPatched[at + 1].opcode)
+                        assertEquals("$name: the answer lands where the read left it", value, (entryPatched[at + 1] as OneRegisterInstruction).registerA)
+                        assertEquals("$name: the read comes right before", "getString",
+                            ((entryPatched[at - 2] as ReferenceInstruction).reference as MethodReference).name)
+                        at
+                    }
+                    for ((branch, target) in branchTargets(entryPatched)) {
+                        assertTrue("$name: the branch at $branch lands in a profile tag hook", hooks.none { target == it || target == it + 1 })
+                    }
+                } else {
+                    // The value the store writes goes through the extension right in front of it, and nothing jumps past.
+                    val (put, value) = profileEntryWrites(entryWriter).single()
+                    assertEquals("$name: 2 instructions in front of the store", entryOriginal.size + 2, entryPatched.size)
+                    val entryHook = entryPatched[put] as RegisterRangeInstruction
+                    assertEquals("$name: the profile tag hook", KEEP_PROFILE_ENTRY, (entryHook as ReferenceInstruction).reference.toString())
+                    assertEquals("$name: the profile tag handed over", value, entryHook.startRegister)
+                    assertEquals("$name: one register handed over", 1, entryHook.registerCount)
+                    assertEquals("$name: the extension's answer", Opcode.MOVE_RESULT_OBJECT, entryPatched[put + 1].opcode)
+                    assertEquals("$name: the answer lands where the store reads it", value, (entryPatched[put + 1] as OneRegisterInstruction).registerA)
+                    assertEquals("$name: the store follows", "putString",
+                        ((entryPatched[put + 2] as ReferenceInstruction).reference as MethodReference).name)
+                    for ((branch, target) in branchTargets(entryPatched)) {
+                        assertTrue("$name: the branch at $branch skips the profile tag hook", target != put + 1 && target != put + 2)
+                    }
                 }
 
                 val status = context.mutableClassDefBy(SETTINGS_STATUS).methods.single { it.name == "affiliateLinks" }
