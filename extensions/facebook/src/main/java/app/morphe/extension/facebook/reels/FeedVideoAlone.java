@@ -581,7 +581,9 @@ public final class FeedVideoAlone {
      * reel only. A tapped feed video's data source passes once, on its first ask, and the page that
      * brings the video in can hold the next video after it too, a swipe away (#457, 586 with Open
      * feed videos on their own: now and then one more video, then nothing). That page keeps its first
-     * video only as well. Every other page, and any page held back anyway, is left as it is. Never
+     * video only as well, and so does the first page of a data source a shared reel's viewer starts
+     * after its reel is on screen (#421, a reel opened from a chat inside Facebook: one more reel,
+     * then nothing). Every other page, and any page held back anyway, is left as it is. Never
      * throws.
      *
      * @param source the data source the loader just asked.
@@ -604,7 +606,10 @@ public final class FeedVideoAlone {
                     }
                 }
             }
-            if (from == null || (from.shared ? from.reelShown : !passed)) return;
+            // A data source the viewer starts after its shared reel is on screen gets its one first
+            // ask too (#421, a chat's reel: a second data source 0.4 s after the reel showed), and
+            // the page that ask lets through carries the next reel as well.
+            if (from == null || (!passed && (!from.shared || from.reelShown))) return;
             boolean shared = from.shared;
             HookStatus.bound(FAMILY, "reels page");
             List<?> page = (List<?>) reels;

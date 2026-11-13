@@ -702,6 +702,43 @@ public class FeedVideoAloneTest {
     }
 
     /**
+     * #421: a reel opened from a chat inside Facebook (a reporter with no Messenger app, 2026-11-13)
+     * had its viewer start a second data source 0.4 s after the reel was on screen. That one keeps
+     * Facebook's answer on its first ask like any player's, and the page that ask let through brought
+     * the next reel in: one swipe to another reel, then nothing. That first page keeps the reel only;
+     * its held asks after it, and the first data source's, are left as they are.
+     */
+    @Test
+    public void aChatReelsLateDataSourceKeepsOnlyItsFirstReel() {
+        Settings.SHARED_REELS_ALONE.save(true);
+        FeedVideoAlone.reelsViewerOpening(origin("messaging::fb_shorts_viewer"));
+        clock.addAndGet(53);
+        Object first = new Object();
+        assertFalse("the first data source loads the reel", FeedVideoAlone.seedCheck(first));
+        clock.addAndGet(20);
+        Object viewer = new Object();
+        FeedVideoAlone.warionOpening(viewer, true);
+        clock.addAndGet(123);
+        ReelBinding.bound(new Object(), new Object());
+        clock.addAndGet(218);
+        Object late = new Object();
+        assertFalse("the late data source's first ask starts its video", FeedVideoAlone.seedCheck(late));
+        List<String> page = new ArrayList<>(List.of("chat reel", "next reel"));
+        FeedVideoAlone.vending(late, page);
+        assertEquals(List.of("chat reel"), page);
+        assertTrue("the next reel counted as left out: " + statusLine(),
+                statusLine().contains(FeedVideoAlone.LEFT_OUT + " 1"));
+        assertTrue("its next ask is held", FeedVideoAlone.seedCheck(late));
+        List<String> held = new ArrayList<>(List.of("x", "y"));
+        FeedVideoAlone.vending(late, held);
+        assertEquals("a page its held ask skips is left as it is", List.of("x", "y"), held);
+        assertTrue("the first data source is held too", FeedVideoAlone.seedCheck(first));
+        List<String> firstPage = new ArrayList<>(List.of("p", "q"));
+        FeedVideoAlone.vending(first, firstPage);
+        assertEquals(List.of("p", "q"), firstPage);
+    }
+
+    /**
      * #457: with Open feed videos on their own, a tapped feed video's data source keeps Facebook's
      * answer on its first ask so the video loads, and the page that ask lets through could hold the
      * next video too: a swipe up went on to one more video, then nothing (586, a feed reel and a
