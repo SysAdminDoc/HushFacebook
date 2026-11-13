@@ -111,7 +111,16 @@ class SuggestedGroupsCardFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val classes = GROUPS_TAB_SUGGESTIONS.flatMap { FixtureDex.classesHolding(bundle, it) }
+                val holders = GROUPS_TAB_SUGGESTIONS.flatMap { FixtureDex.classesHolding(bundle, it) }
+                    .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+                // 587 asks a string table for "GroupsTabDiscoverSuggestionHScroll" (arm64 LX/0Zqi;->A00),
+                // so the renders asking a holder for a name come too.
+                val tables = holders.associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+                val askers = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in tables } }) { method ->
+                    !AccessFlags.STATIC.isSet(method.accessFlags) && GROUPS_TAB_SUGGESTIONS.any { namesString(method, it, resolve) }
+                }
+                val classes = (holders + FixtureDex.classes(bundle, askers.map { it.definingClass }.toSet()).values)
                     .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
                 // Positive control: what builds each layout loads the end-of-feed block's surface name.
                 val endOfFeed = FixtureDex.classesHolding(bundle, END_OF_FEED).flatMap { it.methods }

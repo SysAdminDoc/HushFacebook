@@ -12,6 +12,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.methodsHolding
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.util.findMutableMethodOf
@@ -145,18 +146,15 @@ internal fun nullAnswerRegister(method: Method): Int? {
 }
 
 /**
- * The layouts outside the extension naming themselves [name]: instance methods taking one argument
- * and answering an object, with a null answer of their own.
+ * The layouts outside the extension naming themselves [name], holding it or asking a string table for
+ * it (587 moved "GroupsTabDiscoverSuggestionHScroll" into one, arm64 LX/0Zqi;->A00): instance methods
+ * taking one argument and answering an object, with a null answer of their own.
  */
 internal fun BytecodePatchContext.groupsTabSuggestionLayouts(name: String): List<Method> =
-    classDefByStrings(name, StringComparisonType.EQUALS)
-        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        .distinctBy { it.type }
-        .flatMap { methodsHolding(it, name) }
-        .filter { method ->
-            !AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.size == 1 &&
-                method.returnType.startsWith("L") && nullAnswerRegister(method) != null
-        }
+    methodsNaming(name) { method ->
+        !AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.size == 1 &&
+            method.returnType.startsWith("L") && nullAnswerRegister(method) != null
+    }.distinctBy { "${it.definingClass}->${it.name}${it.parameterTypes.map(CharSequence::toString)}${it.returnType}" }
 
 /**
  * First thing in each of the Groups tab's own suggestion layouts: a yes from
