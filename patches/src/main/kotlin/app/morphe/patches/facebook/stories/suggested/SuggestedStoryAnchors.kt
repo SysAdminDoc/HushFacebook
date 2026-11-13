@@ -175,87 +175,94 @@ internal fun interfaceFlagCalls(method: Method): List<MethodReference> = method.
     .distinctBy { "${it.definingClass}->${it.name}" }
 
 /**
+ * Whether [instruction] reads a tree field: a virtual call named one of [names] (on [owner] when
+ * given) taking [parameters] and answering [returnType] (any, when null), or the same shape asked
+ * of an app interface. 587 keeps two kinds of tree class side by side: TreeJNI subclasses that ask
+ * their reader by name, and delegating trees (super LX/02bA;) that ask the delegate they hold
+ * through an interface whose methods are obfuscated (LX/0Ttg;->Ey4(I, Enum) for an enum, CZs(I)
+ * for a boolean), so there only the shape tells the reads apart.
+ */
+private fun readsTreeField(
+    instruction: Instruction,
+    names: Set<String>,
+    parameters: List<String>,
+    returnType: String?,
+    owner: String? = null,
+): Boolean {
+    val call = instruction.methodReference() ?: return false
+    if (returnType != null && call.returnType != returnType || call.parameterTypes.map { it.toString() } != parameters) return false
+    return when (instruction.opcode) {
+        Opcode.INVOKE_VIRTUAL -> call.name in names && (owner == null || call.definingClass == owner)
+        Opcode.INVOKE_INTERFACE -> !call.definingClass.startsWith("Ljava/") && !call.definingClass.startsWith("Landroid/")
+        else -> false
+    }
+}
+
+/**
  * Whether [method] answers the tree's boolean [field]: an instance method with no arguments and a
- * boolean back, loading the field's key and reading it with TreeJNI.getBooleanValue(int).
+ * boolean back, loading the field's key and reading it with TreeJNI.getBooleanValue(int), or (587)
+ * a delegate's (int) boolean read.
  */
 internal fun isTreeFlagReader(method: Method, field: String): Boolean {
     if (method.isStatic() || method.parameterTypes.isNotEmpty() || method.returnType != "Z") return false
     val body = method.body()
     val key = treeFieldKey(field)
     return body.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == key } &&
-        body.any { instruction ->
-            val call = instruction.methodReference()
-            instruction.opcode == Opcode.INVOKE_VIRTUAL && call != null && call.definingClass == TREE_JNI &&
-                call.name == "getBooleanValue" && call.returnType == "Z" && call.parameterTypes.map { it.toString() } == listOf("I")
-        }
+        body.any { readsTreeField(it, setOf("getBooleanValue"), listOf("I"), "Z", owner = TREE_JNI) }
 }
 
 /**
  * Whether [method] answers the tree's enum [field]: an instance method with no arguments and an
- * object back, loading the field's key and reading it with getCachedEnum(int, Enum). The call names
- * the tree class's own superclass (580 LX/i17;), a TreeJNI subclass, so only its name and shape count.
+ * object back, loading the field's key and reading it with getCachedEnum(int, Enum), or (587)
+ * getCachedNullableEnum or a delegate's (int, Enum) enum read. The call names the tree class's own
+ * superclass (580 LX/i17;), a TreeJNI subclass, so only its name and shape count.
  */
 internal fun isTreeEnumReader(method: Method, field: String): Boolean {
     if (method.isStatic() || method.parameterTypes.isNotEmpty() || !method.returnType.startsWith("L")) return false
     val body = method.body()
     val key = treeFieldKey(field)
     return body.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == key } &&
-        body.any { instruction ->
-            val call = instruction.methodReference()
-            instruction.opcode == Opcode.INVOKE_VIRTUAL && call != null && call.name == "getCachedEnum" &&
-                call.returnType == "Ljava/lang/Enum;" && call.parameterTypes.map { it.toString() } == listOf("I", "Ljava/lang/Enum;")
-        }
+        body.any { readsTreeField(it, setOf("getCachedEnum", "getCachedNullableEnum"), listOf("I", "Ljava/lang/Enum;"), "Ljava/lang/Enum;") }
 }
 
 /**
  * Whether [method] answers the tree's time [field]: an instance method with no arguments and a long
- * back, loading the field's key and reading it with getTimeValue(int), TreeJNI's on 585. Only the
- * call's name and shape count, as for an enum.
+ * back, loading the field's key and reading it with getTimeValue(int), TreeJNI's on 585, or a
+ * delegate's (int) long read. Only the call's name and shape count, as for an enum.
  */
 internal fun isTreeTimeReader(method: Method, field: String): Boolean {
     if (method.isStatic() || method.parameterTypes.isNotEmpty() || method.returnType != "J") return false
     val body = method.body()
     val key = treeFieldKey(field)
     return body.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == key } &&
-        body.any { instruction ->
-            val call = instruction.methodReference()
-            instruction.opcode == Opcode.INVOKE_VIRTUAL && call != null && call.name == "getTimeValue" &&
-                call.returnType == "J" && call.parameterTypes.map { it.toString() } == listOf("I")
-        }
+        body.any { readsTreeField(it, setOf("getTimeValue"), listOf("I"), "J") }
 }
 
 /**
  * Whether [method] answers the tree's string [field]: an instance method with no arguments and a
  * String back, loading the field's key and reading it with getCachedNullableString(int), which names
- * the tree class's own superclass, so only its name and shape count.
+ * the tree class's own superclass, so only its name and shape count, or a delegate's (int) String read.
  */
 internal fun isTreeStringReader(method: Method, field: String): Boolean {
     if (method.isStatic() || method.parameterTypes.isNotEmpty() || method.returnType != "Ljava/lang/String;") return false
     val body = method.body()
     val key = treeFieldKey(field)
     return body.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == key } &&
-        body.any { instruction ->
-            val call = instruction.methodReference()
-            instruction.opcode == Opcode.INVOKE_VIRTUAL && call != null && call.name == "getCachedNullableString" &&
-                call.returnType == "Ljava/lang/String;" && call.parameterTypes.map { it.toString() } == listOf("I")
-        }
+        body.any { readsTreeField(it, setOf("getCachedNullableString"), listOf("I"), "Ljava/lang/String;") }
 }
 
 /**
  * Whether [method] answers the tree's object [field]: an instance method with no arguments and an
- * object back, loading the field's key and reading it with getCachedNullableTree(int, Class, int).
- * Like getCachedEnum, the call names the tree class's own superclass, so only its name and shape count.
+ * object back, loading the field's key and reading it with getCachedNullableTree(int, Class, int), or
+ * a delegate's read of the same shape. Like getCachedEnum, the call names the tree class's own
+ * superclass, so only its name and shape count.
  */
 internal fun isTreeNodeReader(method: Method, field: String): Boolean {
     if (method.isStatic() || method.parameterTypes.isNotEmpty() || !method.returnType.startsWith("L")) return false
     val body = method.body()
     val key = treeFieldKey(field)
     return body.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == key } &&
-        body.any { instruction ->
-            val call = instruction.methodReference()
-            instruction.opcode == Opcode.INVOKE_VIRTUAL && call != null && call.name == "getCachedNullableTree" &&
-                call.parameterTypes.map { it.toString() } == listOf("I", "Ljava/lang/Class;", "I")
-        }
+        body.any { readsTreeField(it, setOf("getCachedNullableTree"), listOf("I", "Ljava/lang/Class;", "I"), null) }
 }
 
 /**

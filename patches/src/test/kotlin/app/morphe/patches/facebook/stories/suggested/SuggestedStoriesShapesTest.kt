@@ -131,21 +131,22 @@ class SuggestedStoriesShapesTest {
         ))
 
     /** A tree accessor: [field]'s key read with [reader]. */
-    private fun treeReader(name: String, field: String, reader: MethodReference = getBoolean, static: Boolean = false) =
+    private fun treeReader(name: String, field: String, reader: MethodReference = getBoolean, static: Boolean = false,
+                           opcode: Opcode = Opcode.INVOKE_VIRTUAL) =
         method(tree, name, emptyList(), "Z", if (static) publicStatic else public or AccessFlags.FINAL.value, 2, listOf(
             ImmutableInstruction31i(Opcode.CONST, 0, field.hashCode()),
-            invoke(Opcode.INVOKE_VIRTUAL, reader, 1, 0),
+            invoke(opcode, reader, 1, 0),
             ImmutableInstruction11x(Opcode.MOVE_RESULT, 0),
             ImmutableInstruction11x(Opcode.RETURN, 0),
         ))
 
     /** The tree's type accessor: [field]'s key read with [reader], Facebook's unset value as the default. */
     private fun typeReader(name: String = "C9d", field: String = BUCKET_TYPE_FIELD, reader: MethodReference = getCachedEnum,
-                           static: Boolean = false) =
+                           static: Boolean = false, opcode: Opcode = Opcode.INVOKE_VIRTUAL) =
         method(tree, name, emptyList(), typeEnumType, if (static) publicStatic else public or AccessFlags.FINAL.value, 3, listOf(
             ImmutableInstruction31i(Opcode.CONST, 1, field.hashCode()),
             ImmutableInstruction21c(Opcode.SGET_OBJECT, 0, ImmutableFieldReference(typeEnumType, "A0o", typeEnumType)),
-            invoke(Opcode.INVOKE_VIRTUAL, reader, 2, 1, 0),
+            invoke(opcode, reader, 2, 1, 0),
             ImmutableInstruction11x(Opcode.MOVE_RESULT_OBJECT, 0),
             ImmutableInstruction21c(Opcode.CHECK_CAST, 0, ImmutableTypeReference(typeEnumType)),
             ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),
@@ -265,6 +266,33 @@ class SuggestedStoriesShapesTest {
             "getEnumValue", listOf("I", "Ljava/lang/Enum;"), "Ljava/lang/Enum;")), BUCKET_TYPE_FIELD))
         assertFalse("a boolean flag", isTreeEnumReader(treeReader("BZd", BUCKET_TYPE_FIELD), BUCKET_TYPE_FIELD))
         assertEquals(0xa5133025L.toInt(), BUCKET_TYPE_FIELD.hashCode())
+    }
+
+    /**
+     * 587's delegating trees ask the delegate they hold through an interface whose methods are
+     * obfuscated (LX/0Ttg;->Ey4 and CZs), so there the read is known by its shape, and its other trees
+     * read a nullable enum by that name.
+     */
+    @Test
+    fun `a reader may ask a delegate interface by shape, or the nullable enum reader`() {
+        val enumDelegate = ImmutableMethodReference("Lfixture/Delegate;", "Ey4", listOf("I", "Ljava/lang/Enum;"), "Ljava/lang/Enum;")
+        val flagDelegate = ImmutableMethodReference("Lfixture/Delegate;", "CZs", listOf("I"), "Z")
+        assertTrue(isTreeEnumReader(typeReader(reader = enumDelegate, opcode = Opcode.INVOKE_INTERFACE), BUCKET_TYPE_FIELD))
+        assertTrue(isTreeEnumReader(typeReader(reader = ImmutableMethodReference("Lfixture/TreeBase;", "getCachedNullableEnum",
+            listOf("I", "Ljava/lang/Enum;"), "Ljava/lang/Enum;")), BUCKET_TYPE_FIELD))
+        assertFalse("another key", isTreeEnumReader(typeReader(field = "story_bucket_owner_type", reader = enumDelegate,
+            opcode = Opcode.INVOKE_INTERFACE), BUCKET_TYPE_FIELD))
+        assertFalse("another shape", isTreeEnumReader(typeReader(reader = ImmutableMethodReference("Lfixture/Delegate;", "Ey5",
+            listOf("I", "Ljava/lang/Class;"), "Ljava/lang/Enum;"), opcode = Opcode.INVOKE_INTERFACE), BUCKET_TYPE_FIELD))
+        assertFalse("a framework interface", isTreeEnumReader(typeReader(reader = ImmutableMethodReference("Ljava/util/Map;", "Ey4",
+            listOf("I", "Ljava/lang/Enum;"), "Ljava/lang/Enum;"), opcode = Opcode.INVOKE_INTERFACE), BUCKET_TYPE_FIELD))
+        assertTrue(isTreeFlagReader(treeReader("BZd", SUGGESTED_FLAG_FIELD, reader = flagDelegate, opcode = Opcode.INVOKE_INTERFACE),
+            SUGGESTED_FLAG_FIELD))
+        assertFalse("another key", isTreeFlagReader(treeReader("BZf", "is_trending_bucket", reader = flagDelegate,
+            opcode = Opcode.INVOKE_INTERFACE), SUGGESTED_FLAG_FIELD))
+        assertFalse("an int read", isTreeFlagReader(treeReader("BZd", SUGGESTED_FLAG_FIELD,
+            reader = ImmutableMethodReference("Lfixture/Delegate;", "CZt", listOf("I"), "I"), opcode = Opcode.INVOKE_INTERFACE),
+            SUGGESTED_FLAG_FIELD))
     }
 
     @Test
