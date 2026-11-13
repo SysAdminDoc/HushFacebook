@@ -22,6 +22,7 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableField
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
+import com.android.tools.smali.dexlib2.immutable.value.ImmutableStringEncodedValue
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -685,6 +686,34 @@ class CleanUpReelsShapesTest {
         assertTrue("no name", !footerRunnableNamed(null, HOT_COMMENT_RUNNABLE))
         assertTrue(footerRunnableNamed(SOCIAL_BUBBLES_RUNNABLE, SOCIAL_BUBBLES_RUNNABLE))
         assertTrue("the bubbles name is exact", !footerRunnableNamed(SOCIAL_BUBBLES_RUNNABLE.dropLast(1) + "2", SOCIAL_BUBBLES_RUNNABLE))
+    }
+
+    /** A class Redex named [redexName], a Runnable unless [runnable] is false, whose run() loads [loads]. */
+    private fun namedRunnableClass(redexName: String, loads: String?, runnable: Boolean = true): ClassDef {
+        val type = "Lfixture/Row;"
+        val flags = AccessFlags.PUBLIC.value or AccessFlags.STATIC.value or AccessFlags.FINAL.value
+        val run = method("run", emptyList(), "V", 2, static = false, (loads?.let { "const-string v0, \"$it\"\n" } ?: "") + "return-void")
+        return ImmutableClassDef(
+            type, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", if (runnable) listOf("Ljava/lang/Runnable;") else null, null, null,
+            listOf(ImmutableField(type, "__redex_internal_original_name", "Ljava/lang/String;", flags, ImmutableStringEncodedValue(redexName), null, null)),
+            listOf(run),
+        )
+    }
+
+    /**
+     * #464: the caption row's comment runnable is the one of its numbered runnables loading either
+     * comment query. A hot comment runnable needs only its name, since 587's `$2` hands a lambda the
+     * query and loads none itself.
+     */
+    @Test
+    fun `the caption row's comment runnable loads a comment query, a hot comment one needs only its name`() {
+        assertNotNull(captionCommentRunnable(namedRunnableClass("${CAPTION_ROW_RUNNABLE}1", XAR_INLINE_COMMENTS_QUERY)))
+        assertNotNull(captionCommentRunnable(namedRunnableClass("${CAPTION_ROW_RUNNABLE}1", INLINE_COMMENTS_QUERY)))
+        assertNull("another of the row's runnables", captionCommentRunnable(namedRunnableClass("${CAPTION_ROW_RUNNABLE}2", null)))
+        assertNull("another row's", captionCommentRunnable(namedRunnableClass("${HOT_COMMENT_RUNNABLE}1", XAR_INLINE_COMMENTS_QUERY)))
+        assertNull("not a Runnable", captionCommentRunnable(namedRunnableClass("${CAPTION_ROW_RUNNABLE}1", INLINE_COMMENTS_QUERY, runnable = false)))
+        assertNotNull("a hot comment runnable loading no query", namedRunnable(namedRunnableClass("${HOT_COMMENT_RUNNABLE}2", null), HOT_COMMENT_RUNNABLE))
+        assertNull("a nested lambda", namedRunnable(namedRunnableClass("${HOT_COMMENT_RUNNABLE}2\$1", null), HOT_COMMENT_RUNNABLE))
     }
 
     private val lambdaType = "Lfixture/Lambda;"

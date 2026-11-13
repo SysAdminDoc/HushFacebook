@@ -68,7 +68,9 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  *       and the row hands each slot it wraps that pill in to {@link #fanPillSlot}.
  *   <li>The comment Facebook picks to show under a reel and the bubbles of friends who reacted each
  *       come from a query a runnable starts. {@link #skipHotComment} and {@link #skipSocialBubbles}
- *       are asked first thing in each, and true makes the runnable return before it queries.
+ *       are asked first thing in each, and true makes the runnable return before it queries. The
+ *       author and caption row starts a comment query of its own, for the comment it swaps in for
+ *       the caption a few seconds in, and {@link #skipCaptionComment} is asked first in that (#464).
  *   <li>Each button down a reel's right side is one vertical button component whose constructor
  *       takes the text under the icon. {@link #countText} is handed that text first thing in the
  *       constructor and answers what the button keeps (#180).
@@ -282,6 +284,7 @@ public final class ReelDeclutter {
     /** The footer queries' kinds in the report. */
     static final String HOT_COMMENT = "hot comment";
     static final String SOCIAL_BUBBLES = "friends' reactions";
+    static final String CAPTION_COMMENT = "caption comment";
 
     /** What has had its debug line, so each kind of change is logged once. */
     private static final Set<String> LOGGED = ConcurrentHashMap.newKeySet();
@@ -468,6 +471,15 @@ public final class ReelDeclutter {
      */
     public static boolean skipSocialBubbles() {
         return skipFooterQuery(SOCIAL_BUBBLES);
+    }
+
+    /**
+     * Injection point, first thing in the runnable the author and caption row starts for the
+     * comment it swaps in for the caption a few seconds in, "Name commented: ..." (#464). True
+     * makes it return without querying, so the caption stays. Never throws.
+     */
+    public static boolean skipCaptionComment() {
+        return skipFooterQuery(CAPTION_COMMENT);
     }
 
     private static boolean skipFooterQuery(String kind) {

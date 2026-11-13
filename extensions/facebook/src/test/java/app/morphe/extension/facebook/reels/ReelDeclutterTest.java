@@ -1376,15 +1376,19 @@ public class ReelDeclutterTest {
     }
 
     @Test
-    public void bothFooterQueriesAreSkippedWhileTheirSwitchIsOn() {
+    public void everyFooterQueryIsSkippedWhileTheirSwitchIsOn() {
         assertTrue(ReelDeclutter.skipHotComment());
         assertTrue(ReelDeclutter.skipSocialBubbles());
+        // #464: and the comment the caption row swaps in for the caption.
+        assertTrue(ReelDeclutter.skipCaptionComment());
         Settings.HIDE_REEL_SOCIAL_FOOTER.save(false);
         assertFalse(ReelDeclutter.skipHotComment());
         assertFalse(ReelDeclutter.skipSocialBubbles());
-        assertEquals(ReelDeclutter.FOOTER_ROUTE + ": 4 lists, 4 items, 2 removed. Last reason: "
-                + ReelDeclutter.SOCIAL_BUBBLES + ". Removed: " + ReelDeclutter.SOCIAL_BUBBLES + " 1, "
-                + ReelDeclutter.HOT_COMMENT + " 1. Kinds: " + ReelDeclutter.SOCIAL_BUBBLES + " 2, "
+        assertFalse(ReelDeclutter.skipCaptionComment());
+        assertEquals(ReelDeclutter.FOOTER_ROUTE + ": 6 lists, 6 items, 3 removed. Last reason: "
+                + ReelDeclutter.CAPTION_COMMENT + ". Removed: " + ReelDeclutter.CAPTION_COMMENT + " 1, "
+                + ReelDeclutter.SOCIAL_BUBBLES + " 1, " + ReelDeclutter.HOT_COMMENT + " 1. Kinds: "
+                + ReelDeclutter.CAPTION_COMMENT + " 2, " + ReelDeclutter.SOCIAL_BUBBLES + " 2, "
                 + ReelDeclutter.HOT_COMMENT + " 2", line(ReelDeclutter.FOOTER_ROUTE));
     }
 
@@ -1417,6 +1421,7 @@ public class ReelDeclutterTest {
             assertFalse(why + " hid the Following button", ReelDeclutter.hideFollowingButton());
             assertFalse(why + " skipped the hot comment", ReelDeclutter.skipHotComment());
             assertFalse(why + " skipped the bubbles", ReelDeclutter.skipSocialBubbles());
+            assertFalse(why + " skipped the caption comment", ReelDeclutter.skipCaptionComment());
         }
         PauseForTests.resume();
         assertTrue("the Follow hook didn't come back after the pause", ReelDeclutter.hideFollowButton());
@@ -1431,6 +1436,7 @@ public class ReelDeclutterTest {
             assertFalse(ReelDeclutter.hideFollowingButton());
             assertFalse(ReelDeclutter.skipHotComment());
             assertFalse(ReelDeclutter.skipSocialBubbles());
+            assertFalse(ReelDeclutter.skipCaptionComment());
         });
         assertEquals(1, ReelDeclutter.filterChips(Arrays.asList(chip(REMIX), chip(SONG))).length);
     }
@@ -1458,6 +1464,7 @@ public class ReelDeclutterTest {
                 ReelDeclutter.hideFollowingButton();
                 ReelDeclutter.skipHotComment();
                 ReelDeclutter.skipSocialBubbles();
+                ReelDeclutter.skipCaptionComment();
             }
             String log = LogBufferManager.buildExportText();
             assertEquals(log, 1, occurrences(log, "Reel chips: hid " + REMIX));
@@ -1466,6 +1473,7 @@ public class ReelDeclutterTest {
             assertEquals(log, 1, occurrences(log, "Reel Follow button: hid the Following button"));
             assertEquals(log, 1, occurrences(log, "Reel footer: skipped the " + ReelDeclutter.HOT_COMMENT + " query"));
             assertEquals(log, 1, occurrences(log, "Reel footer: skipped the " + ReelDeclutter.SOCIAL_BUBBLES + " query"));
+            assertEquals(log, 1, occurrences(log, "Reel footer: skipped the " + ReelDeclutter.CAPTION_COMMENT + " query"));
         } finally {
             LogBufferManager.clearLogBuffer();
         }

@@ -12,6 +12,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -26,6 +27,7 @@ import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
@@ -38,6 +40,7 @@ internal const val HIDE_FOLLOW_BUTTON = "$DECLUTTER->hideFollowButton()Z"
 internal const val HIDE_FOLLOWING_BUTTON = "$DECLUTTER->hideFollowingButton()Z"
 internal const val SKIP_HOT_COMMENT = "$DECLUTTER->skipHotComment()Z"
 internal const val SKIP_SOCIAL_BUBBLES = "$DECLUTTER->skipSocialBubbles()Z"
+internal const val SKIP_CAPTION_COMMENT = "$DECLUTTER->skipCaptionComment()Z"
 
 private const val PATCH = "Clean up Reels"
 
@@ -389,30 +392,39 @@ private fun MutableMethod.answerWhen(hook: String, answer: Boolean) {
 }
 
 /**
- * The footer runnables return before they query when the switch is on. 586 builds one of two hot
- * comment runnables as a MobileConfig flag says, the plain query's or the MFC one's, and 587 keeps
- * only the MFC one (arm64 `LX/0WKq;`), so each is skipped wherever a build has it and at least one
- * has to be there.
+ * The footer runnables return before they query when the switch is on. The footer builds one of two
+ * hot comment runnables as a MobileConfig flag says. 586's each hold their query, plain or MFC, but
+ * 587's `$2` (arm64 `LX/0CT7;`) only hands a lambda the plain or XAR query beside the MFC `$1`
+ * (`LX/0WKq;`), so they're found by name, every one a build has, and at least one has to be there
+ * (#464). The bubbles runnable is found by the one literal it loads. The author and caption row's
+ * own comment runnable, which swaps a comment in for the caption a few seconds in, goes under the
+ * same switch (#464).
  */
 private fun BytecodePatchContext.skipFooterQueries() {
-    var hotComments = 0
-    listOf(
-        Triple(HOT_COMMENT_RUNNABLE, INLINE_COMMENTS_QUERY, SKIP_HOT_COMMENT),
-        Triple(SOCIAL_BUBBLES_RUNNABLE, VIDEO_ID, SKIP_SOCIAL_BUBBLES),
-        Triple(HOT_COMMENT_RUNNABLE, MFC_INLINE_COMMENTS_QUERY, SKIP_HOT_COMMENT),
-    ).forEach { (redexName, holding, hook) ->
-        val runs = classDefByStrings(holding, StringComparisonType.EQUALS)
-            .mapNotNull { owner -> footerRunnable(owner, redexName, holding)?.let { owner to it } }
-        if (runs.isEmpty() && redexName == HOT_COMMENT_RUNNABLE) return@forEach
-        val (owner, run) = runs.singleOrNull() ?: throw PatchException(
-            "$PATCH: expected one Runnable named $redexName whose run() holds \"$holding\", found ${runs.size}",
-        )
-        if (redexName == HOT_COMMENT_RUNNABLE) hotComments++
+    val bubbles = classDefByStrings(VIDEO_ID, StringComparisonType.EQUALS)
+        .mapNotNull { owner -> footerRunnable(owner, SOCIAL_BUBBLES_RUNNABLE, VIDEO_ID)?.let { owner to it } }
+    val (bubblesOwner, bubblesRun) = bubbles.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one Runnable named $SOCIAL_BUBBLES_RUNNABLE whose run() holds \"$VIDEO_ID\", found ${bubbles.size}",
+    )
+    // Found by their kept names, which reads no code, and changed once the walk is done.
+    val hotComments = mutableListOf<Pair<ClassDef, Method>>()
+    val captionComments = mutableListOf<Pair<ClassDef, Method>>()
+    classDefForEach { classDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
+        namedRunnable(classDef, HOT_COMMENT_RUNNABLE)?.let { hotComments += classDef to it }
+        captionCommentRunnable(classDef)?.let { captionComments += classDef to it }
+    }
+    if (hotComments.isEmpty()) throw PatchException("$PATCH: expected a Runnable named $HOT_COMMENT_RUNNABLE and a number, found none")
+    val caption = captionComments.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one Runnable named $CAPTION_ROW_RUNNABLE and a number whose run() holds " +
+            CAPTION_COMMENT_QUERIES.joinToString(" or ") { "\"$it\"" } + ", found ${captionComments.size}",
+    )
+    val skips = hotComments.map { it to SKIP_HOT_COMMENT } + ((bubblesOwner to bubblesRun) to SKIP_SOCIAL_BUBBLES) +
+        (caption to SKIP_CAPTION_COMMENT)
+    for ((found, hook) in skips) {
+        val (owner, run) = found
         mutableClassDefBy(owner).methods.first { it.sameSignatureAs(run) }.returnVoidWhen(hook)
     }
-    if (hotComments == 0) throw PatchException(
-        "$PATCH: expected a Runnable named $HOT_COMMENT_RUNNABLE whose run() holds \"$INLINE_COMMENTS_QUERY\" or \"$MFC_INLINE_COMMENTS_QUERY\", found none",
-    )
 }
 
 /**

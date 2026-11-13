@@ -296,6 +296,7 @@ public class ColdStartHooksTest {
         assertFalse(ReelDeclutter.hideFollowingButton());
         assertFalse(ReelDeclutter.skipHotComment());
         assertFalse(ReelDeclutter.skipSocialBubbles());
+        assertFalse(ReelDeclutter.skipCaptionComment());
         assertFalse("a Threads card read before the context came off", ReelMidCardsForTests.dropsAThreadsCard());
         assertFalse("a reel made before the context started in Clean mode", ReelCleanMode.startClean(false));
         assertTrue("a Watch again tap before the context came off replayed in place", WatchAgain.opensElsewhere(true));

@@ -42,22 +42,19 @@ class ReelAnchorsFixtureTest {
         var immutableList: ClassDef? = null
         val dumpers = mutableListOf<Method>()
         val hotComments = mutableListOf<Method>()
-        val mfcHotComments = mutableListOf<Method>()
+        val captionComments = mutableListOf<Method>()
         val bubbles = mutableListOf<Method>()
         var footerHelperClasses = 0
     }
 
-    private val wanted = setOf(CHIP_ANCHOR, WATCH_FEED_DUMP, INLINE_COMMENTS_QUERY, MFC_INLINE_COMMENTS_QUERY, VIDEO_ID)
-
-    /** How many MFC hot comment runnables each version has: 586 added the one a flag picks over the plain query's. */
-    private val mfcHotCommentRunnables = mapOf("586.0.0.52.53" to 1, "587.0.0.39.55" to 1)
+    private val wanted = setOf(CHIP_ANCHOR, WATCH_FEED_DUMP, VIDEO_ID)
 
     /**
-     * How many plain query hot comment runnables each version has, one by default: 587 dropped it
-     * (586's `$2`, LX/0Cj2;), leaving the MFC one (`$1`, arm64 LX/0WKq;). The author and description
-     * component's own runnable holds the plain query on both, and is no footer runnable.
+     * How many hot comment runnables each version has, one by default: 586 added the MFC one a flag
+     * picks over the plain query's, and 587's `$2` (arm64 LX/0CT7;) hands a lambda the plain or XAR
+     * query beside the MFC `$1` (LX/0WKq;), with no query name of its own (#464).
      */
-    private val plainHotCommentRunnables = mapOf("587.0.0.39.55" to 0)
+    private val hotCommentRunnables = mapOf("586.0.0.52.53" to 2, "587.0.0.39.55" to 2)
 
     /** One pass over the bundle for everything but the Follow getter's readers. */
     private fun scan(bundle: File): Found {
@@ -78,12 +75,8 @@ class ReelAnchorsFixtureTest {
                 if (WATCH_FEED_DUMP in present) {
                     classDef.methods.filter { holdsString(it, WATCH_FEED_DUMP) }.mapTo(found.dumpers) { ImmutableMethod.of(it) }
                 }
-                if (INLINE_COMMENTS_QUERY in present) {
-                    footerRunnable(classDef, HOT_COMMENT_RUNNABLE, INLINE_COMMENTS_QUERY)?.let { found.hotComments += ImmutableMethod.of(it) }
-                }
-                if (MFC_INLINE_COMMENTS_QUERY in present) {
-                    footerRunnable(classDef, HOT_COMMENT_RUNNABLE, MFC_INLINE_COMMENTS_QUERY)?.let { found.mfcHotComments += ImmutableMethod.of(it) }
-                }
+                namedRunnable(classDef, HOT_COMMENT_RUNNABLE)?.let { found.hotComments += ImmutableMethod.of(it) }
+                captionCommentRunnable(classDef)?.let { found.captionComments += ImmutableMethod.of(it) }
                 if (VIDEO_ID in present) {
                     footerRunnable(classDef, SOCIAL_BUBBLES_RUNNABLE, VIDEO_ID)?.let { found.bubbles += ImmutableMethod.of(it) }
                 }
@@ -189,12 +182,13 @@ class ReelAnchorsFixtureTest {
                     assertTrue("$name: ${getter.name} has no local for the hook", locals(method) >= 1)
                 }
 
-                // Both footer runnables, among the footer helpers' other kept-name classes.
-                assertEquals("$name: ${found.hotComments}", plainHotCommentRunnables[version] ?: 1, found.hotComments.size)
-                assertEquals("$name: ${found.mfcHotComments}", mfcHotCommentRunnables[version] ?: 0, found.mfcHotComments.size)
+                // The footer runnables, among the footer helpers' other kept-name classes, and the
+                // caption row's comment runnable among that row's others (#464).
+                assertEquals("$name: ${found.hotComments}", hotCommentRunnables[version] ?: 1, found.hotComments.size)
                 assertEquals("$name: ${found.bubbles}", 1, found.bubbles.size)
+                assertEquals("$name: ${found.captionComments}", 1, found.captionComments.size)
                 assertTrue("$name: ${found.footerHelperClasses} footer helper classes", found.footerHelperClasses >= 3)
-                for (run in found.hotComments + found.mfcHotComments + found.bubbles) {
+                for (run in found.hotComments + found.bubbles + found.captionComments) {
                     assertTrue("$name: $run has no local for the hook", locals(run) >= 1)
                 }
                 checked[version] = "${follow.literals} Follow literal(s), " +

@@ -700,6 +700,7 @@ public class PausedHooksTest {
                 ReelDeclutter::hideFollowingButton,
                 ReelDeclutter::skipHotComment,
                 ReelDeclutter::skipSocialBubbles,
+                ReelDeclutter::skipCaptionComment,
                 ReelMidCardsForTests::dropsAThreadsCard,
                 FollowedReelsForTests::dropsANotFollowedReel,
                 () -> ReelCleanMode.startClean(false),
