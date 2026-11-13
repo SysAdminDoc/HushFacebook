@@ -83,6 +83,15 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * instruction. The config is `LX/087O;->A0B:LX/0APO;` in v15, the band height `LX/0BOH;->A00`, read at
  * 980 and 1250 after the merge and at 606 on the reply bar's way to it, which stays Facebook's. The
  * list root is `LX/0BOl;->BLf` and the height function's class `LX/0BOM;`.
+ *
+ * 587 (read 2026-11-13) has the picker as a static of its own again (arm64 `LX/0B2h;->A07`, armv7
+ * `LX/0B29;->A07`), which builds only the comment bar and returns it (arm64 63), so the drop goes back
+ * in front of that return. The root's render calls it from two branches (arm64 702 and 793, armv7 698
+ * and 790), each keeping the bar in v6 and jumping to 641 (armv7 637), where the root's own no-bar
+ * path arrives with v6 null. The kept bar is told right after that spot's first instruction. On
+ * arm64 the config is `LX/0B2h;->A0C:LX/0AUE;` in v13 and the band height `LX/0B1u;->A01` (armv7
+ * `LX/0B1M;->A00`), read at 998 and 1357 after the merge and at 682 on the way to the first pick,
+ * which stays Facebook's.
  */
 
 internal const val DROPS_SHORTS_COMMENT_BAR = "$COMMENT_SHEET_OPTIONS->dropsShortsCommentBar()Z"
@@ -266,6 +275,26 @@ internal fun videoBarPicks(root: Method, picker: Method): List<Int> {
 }
 
 /**
+ * 587's form of the root's pick: the root calls its picker from more than one branch (arm64
+ * `LX/0B2h;->render` 702 and 793), and each keeps the bar in one register and jumps to one spot where
+ * the picks meet with the root's own no-bar path (641, v6 null there). The spot and the bar's register
+ * when every pick in [picks] keeps its bar by the move-result-object right after it, in one register,
+ * and goes on by a goto right after that to one spot. Null otherwise.
+ */
+internal fun videoBarPickJumps(root: Method, picks: List<Int>): Pair<Int, Int>? {
+    if (picks.isEmpty()) return null
+    val code = root.implementation?.instructions?.toList() ?: return null
+    val flow = ControlFlow.of(root)
+    val meets = picks.map { pick ->
+        val keep = code.getOrNull(pick + 1)?.takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT } ?: return null
+        if (code.getOrNull(pick + 2)?.opcode !in GOTOS) return null
+        val merge = flow.normal[pick + 2].singleOrNull() ?: return null
+        merge to (keep as OneRegisterInstruction).registerA
+    }.toSet()
+    return meets.singleOrNull()
+}
+
+/**
  * Where [root] reads the band height: each static call [isBand] says is the band height, with its
  * result kept by the move-result right after it.
  */
@@ -287,9 +316,11 @@ internal fun bandConfigRegister(method: Method, at: Int): Int? {
 }
 
 /**
- * Where [root] loads [register], the viewer's config, of type [type]: the one instruction of [root]
- * that writes it, an iget-object of a [type] field, if every path from the start to [pick] runs it
- * first. Null otherwise, since a hook at the pick couldn't count on the register holding the config.
+ * Where [root] loads [register], the viewer's config, of type [type]: its one write of the register
+ * ahead of [pick] that is an iget-object of a [type] field, if every path from the start to [pick]
+ * runs it first and no other write of the register reaches [pick] without running it again (587's
+ * armv7 root, LX/0B29;->render, reuses v13 for a builder argument at 1380 on its way to a return).
+ * Null otherwise, since a hook at the pick couldn't count on the register holding the config.
  */
 internal fun videoConfigLoad(root: Method, register: Int, type: String, pick: Int): Int? {
     val code = root.implementation?.instructions?.toList() ?: return null
@@ -298,21 +329,29 @@ internal fun videoConfigLoad(root: Method, register: Int, type: String, pick: In
         val written = (code[at] as? OneRegisterInstruction)?.registerA ?: return@filter false
         (opcode.setsRegister() && written == register) || (opcode.setsWideRegister() && written + 1 == register)
     }
-    val load = writes.singleOrNull() ?: return null
-    if (load >= pick || code[load].opcode != Opcode.IGET_OBJECT) return null
-    if (((code[load] as ReferenceInstruction).reference as FieldReference).type != type) return null
+    val load = writes.filter { at ->
+        at < pick && code[at].opcode == Opcode.IGET_OBJECT &&
+            ((code[at] as ReferenceInstruction).reference as FieldReference).type == type
+    }.singleOrNull() ?: return null
     val flow = ControlFlow.of(root)
-    val seen = BooleanArray(code.size)
-    val next = ArrayDeque(listOf(0))
-    while (next.isNotEmpty()) {
-        val at = next.removeFirst()
-        if (seen[at]) continue
-        if (at == pick) return null
-        seen[at] = true
-        // A load that throws never writes the register, so its handler goes on without the config.
-        if (at != load) flow.normal[at].forEach(next::addLast)
-        flow.exceptional[at].forEach(next::addLast)
+    fun reachesPick(from: List<Int>): Boolean {
+        val seen = BooleanArray(code.size)
+        val next = ArrayDeque(from)
+        while (next.isNotEmpty()) {
+            val at = next.removeFirst()
+            if (seen[at]) continue
+            if (at == pick) return true
+            seen[at] = true
+            // A load that throws never writes the register, so its handler goes on without the config.
+            if (at != load) flow.normal[at].forEach(next::addLast)
+            flow.exceptional[at].forEach(next::addLast)
+        }
+        return false
     }
+    if (reachesPick(listOf(0))) return null
+    // Another write's value reaches the pick unless the load runs again on the way.
+    val overwrites = (writes - load).flatMap { flow.normal[it] + flow.exceptional[it] }
+    if (reachesPick(overwrites)) return null
     return load
 }
 
@@ -351,7 +390,8 @@ internal fun commentBarAnswer(
  * root, the one caller of the height function [slot], which reads the same band height at
  * [listRead]. Up to 585 the builder is a method of its own returning the bar at [at], and the root
  * keeps its answer at [kept] - 1. On 586 ([jumps]) the builder is the root, [at] is the goto that
- * takes the bar to where the picks meet, and [kept] is just after that.
+ * takes the bar to where the picks meet, and [kept] is just after that. On 587 the builder is a
+ * method of its own again, and [kept] is just after the spot where the root's picks of it meet.
  */
 internal class VideoCommentBand(
     val owner: ClassDef,
@@ -370,7 +410,8 @@ internal class VideoCommentBand(
 
 /**
  * Finds every spot of the Shorts viewer's comment band (#375) and refuses unless there's exactly one
- * bar return, one caller of its picker that calls it once, one caller of one height function, the
+ * bar return, one caller of its picker that calls it once or from branches meeting at one spot, one
+ * caller of one height function, the
  * root reads one band height at least once after the pick with one config it loads before the pick,
  * and the list reads that same band height exactly once. Every register the hooks name is checked
  * here, so a refusal leaves Facebook's code untouched.
@@ -410,10 +451,12 @@ internal fun BytecodePatchContext.videoCommentBand(): VideoCommentBand {
     val methods = setOf(builder.descriptor(), root.descriptor(), list.descriptor())
     if (methods.size != if (inline) 2 else 3) refuse("${builder.descriptor()}, ${root.descriptor()} and ${list.descriptor()} overlap")
     val rootCode = root.implementation!!.instructions.toList()
-    // Where the bar lands: the move-result after the root's one call of the picker up to 585, and on
-    // 586 the register the bar was built in, at the spot the goto takes it to.
+    // Where the bar lands: the move-result after the root's one call of the picker up to 585, on 586
+    // the register the bar was built in, at the spot the goto takes it to, and on 587 the register
+    // every call's move-result keeps, at the spot their gotos take it to.
     val bar: Int
     val merge: Int
+    var picksMeet = false
     if (inline) {
         merge = ControlFlow.of(root).normal[at].single()
         // The bar the root goes on with, one register that holds it at the goto and is read where the picks meet.
@@ -423,10 +466,20 @@ internal fun BytecodePatchContext.videoCommentBand(): VideoCommentBand {
             ?: refuse("${root.descriptor()} doesn't go on with the bar it builds at ${at - 1} in one register, held in $holders")
     } else {
         val picks = videoBarPicks(root, builder)
-        val pick = picks.singleOrNull()
-            ?: refuse("${root.descriptor()} keeps the pick of ${builder.descriptor()} ${picks.size} times, not once")
-        bar = (rootCode[pick + 1] as OneRegisterInstruction).registerA
-        merge = pick + 1
+        val meet = if (picks.size > 1) videoBarPickJumps(root, picks) else null
+        if (meet != null) {
+            picksMeet = true
+            merge = meet.first
+            bar = meet.second
+            if (bar !in RegisterLiveness.of(root).liveInto(merge)) {
+                refuse("${root.descriptor()} doesn't read the bar v$bar its picks bring to $merge")
+            }
+        } else {
+            val pick = picks.singleOrNull()
+                ?: refuse("${root.descriptor()} keeps the pick of ${builder.descriptor()} ${picks.size} times, not once or at one spot")
+            bar = (rootCode[pick + 1] as OneRegisterInstruction).registerA
+            merge = pick + 1
+        }
     }
     val bandHeights = mutableMapOf<String, Boolean>()
     val isBand = { call: MethodReference ->
@@ -452,9 +505,9 @@ internal fun BytecodePatchContext.videoCommentBand(): VideoCommentBand {
     }.toSet()
     val config = configs.singleOrNull() ?: refuse("${root.descriptor()} hands its band height ${configs.size} configs")
     val configType = callee(root, reads.first()).parameterTypes.single().toString()
-    val kept = if (inline) keptAfterMerge(root, merge, bar, config) else merge + 1
+    val kept = if (inline || picksMeet) keptAfterMerge(root, merge, bar, config) else merge + 1
     videoConfigLoad(root, config, configType, kept)
-        ?: refuse("${root.descriptor()} doesn't load its config v$config once, on every path before its pick at $kept")
+        ?: refuse("${root.descriptor()} doesn't load its config v$config once, on every path before its pick at $kept and not overwritten there")
     if (reads.any { it < kept }) refuse("${root.descriptor()} reads its band height before it keeps its pick at $kept")
     if (bar > 15 || config > 15) refuse("${root.descriptor()} keeps its pick in v$bar with its config in v$config, past v15")
     reads.forEach { bandHandOff(root, it) }

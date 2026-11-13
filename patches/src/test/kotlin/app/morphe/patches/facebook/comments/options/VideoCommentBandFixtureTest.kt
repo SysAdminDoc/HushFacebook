@@ -48,7 +48,8 @@ import java.io.File
  * extension first thing that a render starts, hands it the bar its pick got back and the viewer's
  * config right after the pick, and reads one band height (the static that adds 44 dp) twice for the
  * seek bar; after the hook each read hands the extension its dp, and only the read reaches that hook.
- * The config is loaded once, on every path before the pick. The one caller of vddVideoSlotHeightPx,
+ * The config is loaded once, on every path before the pick, and no other write of its register gets
+ * back to the pick (587's armv7 root reuses it on the way to a return). The one caller of vddVideoSlotHeightPx,
  * the viewer's list root, reads the same band height once, the dp it gets is what reaches the height
  * function's band, and after the hook that read hands the extension its dp and the config. The height
  * function itself stays Facebook's, and so does the code around each hook. Reads the fixture bundles
@@ -73,6 +74,20 @@ class VideoCommentBandFixtureTest {
     private fun List<Instruction>.opcodes() = map {
         if (it.opcode == Opcode.GOTO_16 || it.opcode == Opcode.GOTO_32) Opcode.GOTO else it.opcode
     }.filter { it != Opcode.NOP }
+
+    /**
+     * How many times each declared build's root writes its config's register besides the load, read
+     * 2026-11-13: none on 587's arm64 root, once on its armv7 root (LX/0B29;->render 1380,
+     * `move-object v13, v7` for a builder argument on the way to a return).
+     */
+    private val configOverwrites = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 1),
+    )
+
+    private fun configOverwrites(version: String, bundle: String): Int {
+        val abi = bundle.substringAfter("-$version-").substringBefore(".apkm")
+        return configOverwrites[version]?.get(abi) ?: throw AssertionError("$bundle: no pin for the root's other config writes")
+    }
 
     /** The indices of [method] reachable from [from], [from] included. */
     private fun reachable(method: Method, from: Int): Set<Int> {
@@ -192,6 +207,8 @@ class VideoCommentBandFixtureTest {
                 val root: Method
                 val merge: Int
                 val bar: Int
+                // 587 calls its picker from two branches that jump to one spot where the picks meet.
+                var picksMeet = false
                 if (inline) {
                     root = builder
                     val code = root.body()
@@ -215,12 +232,34 @@ class VideoCommentBandFixtureTest {
                     val code = root.body()
                     val calls = code.indices.filter { code[it].called() == "${builder.definingClass}->${builder.name}(" +
                         "${builder.params().joinToString("")})${builder.returnType}" }
-                    assertEquals("$name: the root's calls of the picker", 1, calls.size)
-                    val pick = calls.single()
-                    assertEquals("$name: the root keeps the bar it picks", Opcode.MOVE_RESULT_OBJECT, code[pick + 1].opcode)
-                    assertEquals("$name: the patch's picks", listOf(pick), videoBarPicks(root, builder))
-                    merge = pick + 1
-                    bar = (code[merge] as OneRegisterInstruction).registerA
+                    assertTrue("$name: the root never calls the picker", calls.isNotEmpty())
+                    for (pick in calls) {
+                        assertEquals("$name: the root keeps the bar it picks at $pick", Opcode.MOVE_RESULT_OBJECT, code[pick + 1].opcode)
+                    }
+                    assertEquals("$name: the patch's picks", calls, videoBarPicks(root, builder))
+                    if (calls.size == 1) {
+                        merge = calls.single() + 1
+                        bar = (code[merge] as OneRegisterInstruction).registerA
+                    } else {
+                        picksMeet = true
+                        val flow = ControlFlow.of(root)
+                        val meets = calls.map { pick ->
+                            assertTrue("$name: the pick at $pick goes on by a goto",
+                                code[pick + 2].opcode in setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32))
+                            flow.normal[pick + 2].single() to (code[pick + 1] as OneRegisterInstruction).registerA
+                        }.toSet()
+                        assertEquals("$name: where the picks meet and the register they bring the bar in", 1, meets.size)
+                        merge = meets.single().first
+                        bar = meets.single().second
+                        assertEquals("$name: the patch's meeting of the picks", merge to bar, videoBarPickJumps(root, calls))
+                        // Where the picks meet, the root asks whether the bar it went on with is the comment bar.
+                        val asked = reachable(root, merge).filter {
+                            code[it].opcode == Opcode.INSTANCE_OF && ((code[it] as ReferenceInstruction).reference as TypeReference).type in bars
+                        }.map { (code[it] as TwoRegisterInstruction).registerB }.toSet()
+                        assertEquals("$name: the bars the root asks about after the merge", setOf(bar), asked)
+                        // Negative control: the spot where the picks meet doesn't pass for one more pick.
+                        assertNull("$name: the merge passed for a pick", videoBarPickJumps(root, calls + merge))
+                    }
                 }
                 val rootCode = root.body()
                 val kept = merge + 1
@@ -234,8 +273,9 @@ class VideoCommentBandFixtureTest {
                 val allReads = videoBandReads(root, ::isBand)
                 val reads = allReads.filter { it in afterMerge }
                 assertEquals("$name: the root's reads of the band height after its pick", 2, reads.size)
-                // 586's reply bar reads the band height for itself on its way to the merge.
-                assertEquals("$name: the root's other reads of the band height", if (inline) 1 else 0, allReads.size - reads.size)
+                // 586's reply bar reads the band height for itself on its way to the merge, and 587 on the
+                // way to its first pick.
+                assertEquals("$name: the root's other reads of the band height", if (inline || picksMeet) 1 else 0, allReads.size - reads.size)
                 assertTrue("$name: the root reads the band height after its pick", reads.all { it > kept })
                 val bandHeight = reads.map { rootCode[it].called() }.toSet()
                 assertEquals("$name: every read is of the one band height", 1, bandHeight.size)
@@ -243,21 +283,31 @@ class VideoCommentBandFixtureTest {
                 assertEquals("$name: every read is handed the one config", 1, configs.size)
                 val config = configs.single()
                 val configType = (((rootCode[reads.first()] as ReferenceInstruction).reference as MethodReference).parameterTypes.single()).toString()
-                val loads = rootCode.indices.filter {
+                val writes = rootCode.indices.filter {
                     rootCode[it].opcode.setsRegister() && (rootCode[it] as? OneRegisterInstruction)?.registerA == config
                 }
-                assertEquals("$name: the root writes its config v$config once", 1, loads.size)
+                val loads = writes.filter { rootCode[it].opcode == Opcode.IGET_OBJECT }
+                assertEquals("$name: the root loads its config v$config once", 1, loads.size)
                 val load = loads.single()
-                assertEquals("$name: the config comes from a field", Opcode.IGET_OBJECT, rootCode[load].opcode)
                 assertEquals("$name: of the band height's config type", configType,
                     ((rootCode[load] as ReferenceInstruction).reference as FieldReference).type)
                 assertTrue("$name: the config is loaded before the pick", load < merge)
+                // 587's armv7 root reuses the config's register for a builder argument on its way to a
+                // return; nothing from there gets back to the pick.
+                val overwrites = writes - load
+                assertEquals("$name: the root's other writes of v$config", configOverwrites(version, name), overwrites.size)
+                for (overwrite in overwrites) {
+                    assertTrue("$name: v$config written at $overwrite reaches the pick", kept !in reachable(root, overwrite))
+                    // Negative control: a pick right after that write doesn't get the config.
+                    assertNull("$name: the write at $overwrite passed for the config",
+                        videoConfigLoad(root, config, configType, overwrite + 1))
+                }
                 assertEquals("$name: the patch's config load", load, videoConfigLoad(root, config, configType, kept))
                 // Negative controls: a register written again, another type, or a pick the load doesn't come before.
                 assertNull("$name: the bar's register passed for the config", videoConfigLoad(root, bar, configType, kept))
                 assertNull("$name: another type passed for the config's", videoConfigLoad(root, config, "LX/other;", kept))
                 assertNull("$name: the load passed for one before itself", videoConfigLoad(root, config, configType, load))
-                if (inline) {
+                if (inline || picksMeet) {
                     assertEquals("$name: the patch's kept spot", kept, keptAfterMerge(root, merge, bar, config))
                     // Negative control: a register the merge writes first thing can't be the bar.
                     val written = (rootCode[merge] as OneRegisterInstruction).registerA
@@ -370,6 +420,15 @@ class VideoCommentBandFixtureTest {
                         rootPatched[hook + 3].let { listOf(it.opcode, (it as OneRegisterInstruction).registerA, (it as NarrowLiteralInstruction).narrowLiteral) })
                     assertEquals("$name: a no goes straight to Facebook's goto", setOf(hook + 3, goto), rootFlow.normal[hook + 2].toSet())
                     assertEquals("$name: the goto still takes the bar to where the picks meet", setOf(met), rootFlow.normal[goto].toSet())
+                }
+                if (picksMeet) {
+                    val picks = videoBarPicks(hookedRoot, builder)
+                    assertEquals("$name: the root's picks after the hooks", videoBarPicks(root, builder).size, picks.size)
+                    for (pick in picks) {
+                        assertEquals("$name: the pick at $pick still takes its bar to where the picks meet", setOf(met), rootFlow.normal[pick + 2].toSet())
+                    }
+                }
+                if (inline || picksMeet) {
                     // Facebook's own no-bar path brings null to the merge in the same register.
                     assertTrue("$name: no path of the root's own brings null to the merge in v$bar", (0 until merge).any { nulled ->
                         rootCode[nulled].opcode == Opcode.CONST_4 && (rootCode[nulled] as OneRegisterInstruction).registerA == bar &&
