@@ -21,6 +21,7 @@ import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -119,6 +120,11 @@ class ShowFullPostTextFixtureTest {
             "armeabi-v7a" to Place("LX/041q;", 5, 2, "LX/02za;", "LX/040k;"),
             "arm64-v8a-minapi28-storeless" to Place("LX/042d;", 5, 0, "LX/030M;", "LX/041X;"),
         ),
+        // 587, read 2026-11-12 from this test's output: the cut's answer is in v4 now (v5 before) on both ABIs.
+        "587.0.0.39.55" to mapOf(
+            "arm64-v8a" to Place("LX/03GO;", 4, 2, "LX/02sT;", "LX/03Ex;"),
+            "armeabi-v7a" to Place("LX/03GU;", 4, 2, "LX/02sZ;", "LX/03F3;"),
+        ),
     )
 
     /** Each declared build's reel caption component, by ABI. */
@@ -127,11 +133,22 @@ class ShowFullPostTextFixtureTest {
             "arm64-v8a-minapi28-storeless" to "LX/09bQ;"),
         "586.0.0.52.53" to mapOf("arm64-v8a" to "LX/09Dk;", "armeabi-v7a" to "LX/09Dk;",
             "arm64-v8a-minapi28-storeless" to "LX/09FO;"),
+        "587.0.0.39.55" to mapOf("arm64-v8a" to "LX/09Z2;", "armeabi-v7a" to "LX/09Yp;"),
     )
 
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
 
     private fun Instruction.names(call: String) = (this as? ReferenceInstruction)?.reference?.toString() == call
+
+    /** How many branches and gotos in [code] land on [index]. */
+    private fun jumpsInto(code: List<Instruction>, index: Int): Int {
+        val addresses = code.runningFold(0) { address, instruction -> address + instruction.codeUnits }
+        return code.indices.count { from ->
+            val jump = code[from] as? OffsetInstruction ?: return@count false
+            code[from].opcode !in setOf(Opcode.FILL_ARRAY_DATA, Opcode.PACKED_SWITCH, Opcode.SPARSE_SWITCH) &&
+                addresses[from] + jump.codeOffset == addresses[index]
+        }
+    }
 
     private fun declaredBundles(): Map<String, List<File>> {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -221,6 +238,9 @@ class ShowFullPostTextFixtureTest {
                     (patched[at + 1] as OneRegisterInstruction).registerA)
                 assertEquals("$name: the null check after the hook", Opcode.IF_EQZ, patched[at + 2].opcode)
                 assertEquals(cut.register, (patched[at + 2] as OneRegisterInstruction).registerA)
+                // 587's second cut jumps to the null check: each jump that went there lands on the hook now.
+                assertEquals("$name: jumps onto the hook", jumpsInto(original, cut.hookIndex), jumpsInto(patched, at))
+                assertEquals("$name: jumps past the hook to the null check", 0, jumpsInto(patched, at + 2))
 
                 // A post's first "allow truncation" goes through the extension before it's stored.
                 val first = context.mutableClassDefBy(fold.first.definingClass).methods.single {

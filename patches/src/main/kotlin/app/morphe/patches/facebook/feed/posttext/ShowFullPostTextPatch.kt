@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.containsLiteralInstruction
 import app.morphe.util.findMutableMethodOf
@@ -121,7 +122,8 @@ val showFullPostTextPatch = bytecodePatch(
         // Translate posts adds to this method too, and may have run first, so the place is read from it as it is now.
         val cut = textCut(method)
         val fold = findFold(cut.storyField)
-        method.addInstructions(
+        // At the null check's label: 587's second cut reaches it by a goto.
+        method.addInstructionsAtControlFlowLabel(
             cut.hookIndex,
             """
                 invoke-static { v${cut.register}, v${cut.story} }, $CUT
@@ -275,9 +277,12 @@ private fun requireDeadAfter(code: List<Instruction>, index: Int, register: Int,
 }
 
 /**
- * Reads the cut out of [method]. Refuses unless it calls the helper once (a static call answering a
- * SpannableString from a CharacterStyle first), the answer lands right after it, and the very next
- * instruction branches on that answer being null: the split between text that fits and cut text.
+ * Reads the cut out of [method]. Refuses unless every call of the helper (a static call answering a
+ * SpannableString from a CharacterStyle first) keeps its answer right after it and goes on to one
+ * branch on that answer being null, the split between text that fits and cut text: right after the
+ * answer, or by a goto there. 585 and 586 cut once; 587 cuts in two places (`LX/03GO;->A06`, the
+ * line-limit cut jumping back to the other's null check), so the hook goes at that branch, at its
+ * label, and nothing else may reach it.
  * The story is the one register cast to [GRAPHQL_STORY] right after it's read from the post's props,
  * and every way to the cut gets its value from that cast, so it still holds the story there (586's
  * Android 9 build reuses the register after the cut, `LX/042d;->A06` v0).
@@ -290,13 +295,25 @@ internal fun textCut(method: Method): TextCut {
         (instruction.opcode == Opcode.INVOKE_STATIC || instruction.opcode == Opcode.INVOKE_STATIC_RANGE) &&
             ((instruction as ReferenceInstruction).reference as? MethodReference)?.let(::cutsText) == true
     }
-    val call = calls.singleOrNull() ?: refuse("expected one call cutting the text in $where, found ${calls.size}")
-    val answer = code.getOrNull(call + 1)
-    if (answer?.opcode != Opcode.MOVE_RESULT_OBJECT) refuse("the cut text in $where isn't kept right after its call")
-    val register = (answer as OneRegisterInstruction).registerA
-    val branch = code.getOrNull(call + 2)
-    if (branch?.opcode != Opcode.IF_EQZ || (branch as OneRegisterInstruction).registerA != register) {
+    if (calls.isEmpty()) refuse("expected a call cutting the text in $where, found 0")
+    val flow = Flow(code, where)
+    // Each cut's branch and answer register, and the instruction that goes on to that branch.
+    val ways = calls.map { call ->
+        val answer = code.getOrNull(call + 1)
+        if (answer?.opcode != Opcode.MOVE_RESULT_OBJECT) refuse("the cut text in $where isn't kept right after its call at $call")
+        val after = code.getOrNull(call + 2)
+        val branch = if (after?.opcode?.format in GOTOS) flow.next(call + 2).single() else call + 2
+        Triple(branch, (answer as OneRegisterInstruction).registerA, if (branch == call + 2) call + 1 else call + 2)
+    }
+    val (branch, register) = ways.map { it.first to it.second }.distinct().singleOrNull()
+        ?: refuse("the ${calls.size} cuts in $where don't go on to one place: ${ways.map { it.first to it.second }}")
+    val test = code.getOrNull(branch)
+    if (test?.opcode != Opcode.IF_EQZ || (test as OneRegisterInstruction).registerA != register) {
         refuse("$where doesn't branch on the cut text in v$register right after it")
+    }
+    val leading = code.indices.filter { branch in flow.next(it) }.toSet()
+    if (leading != ways.map { it.third }.toSet()) {
+        refuse("$where reaches its null check on the cut text from $leading, not only from its cuts")
     }
 
     val casts = code.indices.filter { index ->
@@ -310,10 +327,10 @@ internal fun textCut(method: Method): TextCut {
         refuse("the story in $where isn't read from the post's props right before its cast")
     }
     val storyField = (read as ReferenceInstruction).reference as FieldReference
-    val reaching = method.writersReaching(call + 2, story)
+    val reaching = method.writersReaching(branch, story)
     if (reaching != listOf(cast)) refuse("$where's v$story reaches its cut written at $reaching, not only by the story's cast at $cast")
     if (story > 15 || register > 15) refuse("the cut's v$register or the story's v$story in $where is past v15")
-    return TextCut(method, call + 2, register, story, storyField)
+    return TextCut(method, branch, register, story, storyField)
 }
 
 /** The one method shaped like the cut's caller that reads the line limit: Facebook's builder of a post's text. */
