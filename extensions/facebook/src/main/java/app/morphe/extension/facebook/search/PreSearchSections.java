@@ -63,6 +63,11 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * the constants the template carries as {@code template_names}, so two unnamed rows no longer log as
  * one line.
  *
+ * <p>A reporter's For you and People you may know still stayed on 586 (#80, 0.22.0), logged as a query
+ * row with no template the patch could read at all. A node like that is matched the same way through
+ * the tree's own debug text of everything it holds, a {@code module_name} key first, and its Debug
+ * line lists what that text names as {@code debug_names}.
+ *
  * <p>With Debug logging on, this logs the GraphQL type names of the node and the module, read through
  * {@link FeedFilter#typeName}'s checks, and the module names. Only names survive: a type or module
  * name that isn't letters, underscores and at most four digits is logged as "other", so no id, title
@@ -89,6 +94,10 @@ public final class PreSearchSections {
     private static final Pattern TEMPLATE_CONSTANT = Pattern.compile("(?<![A-Za-z0-9_])[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+(?![A-Za-z0-9_])");
     /** How many distinct constants are read off one node's templates at most. */
     static final int MAX_TEMPLATE_NAMES = 256;
+    /** The tree's own spelled-out text of everything it holds, kept public on Facebook's JNI tree. */
+    private static final String DEBUG_TEXT = "toExpensiveHumanReadableDebugString";
+    /** How much of a node's debug text is read at most. */
+    static final int MAX_DEBUG_TEXT = 1 << 18;
 
     /** The node type of the For you and People you may know entries. */
     static final String NULL_STATE_NODE = "SearchNullStateNativeTemplatesResult";
@@ -269,6 +278,8 @@ public final class PreSearchSections {
         if (modules == null) {
             // No module_name key either: the name can sit elsewhere in the template (#80).
             Set<String> names = templateNames(node);
+            // No template to read at all: the node's own debug text still names the row (#80, 586).
+            if (names.isEmpty()) names = debugNames(debugText(node));
             if (forYou && names.contains(FOR_YOU_MODULE)) return HIDDEN;
             if (people && names.contains(PEOPLE_YOU_MAY_KNOW_MODULE)) return HIDDEN_PEOPLE;
             return null;
@@ -300,6 +311,11 @@ public final class PreSearchSections {
                 template = " template_modules=" + (named == null ? "none" : names(named));
                 Set<String> constants = named == null ? templateNames(node) : Collections.emptySet();
                 if (!constants.isEmpty()) template += " template_names=" + names(String.join(",", constants));
+                String text = named == null && constants.isEmpty() ? debugText(node) : null;
+                if (text != null) {
+                    Set<String> spelled = debugNames(text);
+                    template += " debug_names=" + (spelled.isEmpty() ? "none" : names(String.join(",", spelled)));
+                }
             }
             String source = from == null ? "" : " from=" + from;
             record("node=" + name(nodeType) + moduleName + " rendered_modules=" + modules + template + source);
@@ -371,6 +387,44 @@ public final class PreSearchSections {
                 String constant = found.group();
                 if (!"other".equals(name(constant))) names.add(constant);
             }
+        }
+        return names;
+    }
+
+    /**
+     * The node's whole tree as Facebook spells it out, at most {@link #MAX_DEBUG_TEXT} characters of
+     * it. Null when the node isn't live or the text can't be read. A reporter's For you and People you
+     * may know rows on 586 carried no template bundle the patch could read (#80), and this text holds
+     * whatever the row is drawn from.
+     */
+    @Nullable
+    static String debugText(@Nullable Object node) {
+        if (!PostDetails.isLiveTree(node)) return null;
+        try {
+            Object text = node.getClass().getMethod(DEBUG_TEXT).invoke(node);
+            if (!(text instanceof String)) return null;
+            String spelled = (String) text;
+            return spelled.length() > MAX_DEBUG_TEXT ? spelled.substring(0, MAX_DEBUG_TEXT) : spelled;
+        } catch (Throwable unreadable) {
+            return null;
+        }
+    }
+
+    /**
+     * The module names in a node's debug [text]: those after a {@code module_name} key when it has
+     * any, taken at their word, and otherwise every constant standing whole in it, each one a
+     * {@link #name}. Empty for null.
+     */
+    static Set<String> debugNames(@Nullable String text) {
+        Set<String> names = new LinkedHashSet<>();
+        if (text == null) return names;
+        Matcher keyed = TEMPLATE_MODULE.matcher(text);
+        while (names.size() <= MAX_MODULES && keyed.find()) names.add(keyed.group(1));
+        if (!names.isEmpty()) return names;
+        Matcher found = TEMPLATE_CONSTANT.matcher(text);
+        while (names.size() < MAX_TEMPLATE_NAMES && found.find()) {
+            String constant = found.group();
+            if (!"other".equals(name(constant))) names.add(constant);
         }
         return names;
     }

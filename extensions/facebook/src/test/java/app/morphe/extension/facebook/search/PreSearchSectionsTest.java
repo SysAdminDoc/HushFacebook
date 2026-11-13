@@ -317,6 +317,75 @@ public class PreSearchSectionsTest {
         assertTrue(line, line.contains(PreSearchSections.HIDDEN_PEOPLE + " 1"));
     }
 
+    /** The debug text of a For you row's node as Facebook spells a tree out, the module named inside its logging data. */
+    private static String spelled(String key, String module) {
+        return "SearchNullStateNativeTemplatesResult {native_templates_view: {view: {logging: \"{\\\"" + key + "\\\":\\\""
+                + module + "\\\",\\\"position_in_module\\\":0}\"}, style: \"HEADLINE3_DEEMPHASIZED\"}}";
+    }
+
+    @Test
+    public void aRowWithNoTemplateToReadIsMatchedByItsDebugText() {
+        // #80: on a reporter's 586, For you and People you may know came as a query row with no template the patch could read.
+        BaseSettings.DEBUG.save(false);
+        QueryNode off = new QueryNode();
+        off.debugString(spelled("module_name", PreSearchSections.FOR_YOU_MODULE));
+        assertSame("both off keeps it", off, PreSearchSections.queryNode(off));
+        assertEquals("both off reads nothing", 0, off.debugReads);
+        BaseSettings.DEBUG.save(true);
+        Settings.HIDE_SEARCH_FOR_YOU.save(true);
+        QueryNode forYou = new QueryNode();
+        forYou.debugString(spelled("module_name", PreSearchSections.FOR_YOU_MODULE));
+        assertNull(PreSearchSections.queryNode(forYou));
+        QueryNode loose = new QueryNode();
+        loose.debugString(spelled("result_type", PreSearchSections.FOR_YOU_MODULE));
+        assertNull("the whole name anywhere counts when nothing is keyed", PreSearchSections.queryNode(loose));
+        QueryNode people = new QueryNode();
+        people.debugString(spelled("module_name", PreSearchSections.PEOPLE_YOU_MAY_KNOW_MODULE));
+        assertSame("People you may know leaves only with its own switch", people, PreSearchSections.queryNode(people));
+        Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW.save(true);
+        assertNull(PreSearchSections.queryNode(people));
+        // A keyed name is taken at its word, so a stray constant elsewhere doesn't count.
+        QueryNode recent = new QueryNode();
+        recent.debugString(spelled("module_name", "RECENT_SEARCH") + " " + PreSearchSections.FOR_YOU_MODULE);
+        assertSame(recent, PreSearchSections.queryNode(recent));
+        // A row whose template reads isn't asked for its debug text, whatever that holds.
+        QueryNode visited = new QueryNode(row("VISITED_ENTITIES"));
+        visited.debugString(spelled("module_name", PreSearchSections.FOR_YOU_MODULE));
+        assertSame(visited, PreSearchSections.queryNode(visited));
+        assertEquals(0, visited.debugReads);
+        // Only the whole name counts, and a node with no debug text is Facebook's.
+        QueryNode longer = new QueryNode();
+        longer.debugString(spelled("result_type", PreSearchSections.FOR_YOU_MODULE + "_V2"));
+        assertSame(longer, PreSearchSections.queryNode(longer));
+        QueryNode silent = new QueryNode();
+        assertSame(silent, PreSearchSections.queryNode(silent));
+        // A released node's debug text is never asked for.
+        QueryNode gone = new QueryNode();
+        gone.debugString(spelled("module_name", PreSearchSections.FOR_YOU_MODULE));
+        TreeJNI released = gone.releasedTree();
+        assertSame(released, PreSearchSections.queryNode(released));
+        assertFalse(released.readAfterRelease);
+        String line = statusLine();
+        assertTrue(line, line.contains(PreSearchSections.HIDDEN + " 2"));
+        assertTrue(line, line.contains(PreSearchSections.HIDDEN_PEOPLE + " 1"));
+    }
+
+    @Test
+    public void aRowWithNoTemplateLogsWhatItsDebugTextNames() {
+        QueryNode forYou = new QueryNode();
+        forYou.debugString(spelled("module_name", PreSearchSections.FOR_YOU_MODULE));
+        PreSearchSections.queryNode(forYou);
+        QueryNode blank = new QueryNode();
+        blank.debugString("SearchNullStateNativeTemplatesResult {title: \"Ann 1000123456789\"}");
+        PreSearchSections.queryNode(blank);
+        String log = log();
+        String node = PreSearchSections.PREFIX + "node=" + PreSearchSections.NULL_STATE_NODE + " rendered_modules=none template_modules=none";
+        assertTrue(log, log.contains(node + " debug_names=" + PreSearchSections.FOR_YOU_MODULE + " from=" + PreSearchSections.FROM_QUERY));
+        assertTrue(log, log.contains(node + " debug_names=none from=" + PreSearchSections.FROM_QUERY));
+        assertFalse(log, log.contains("1000123456789"));
+        assertFalse(log, log.contains("Ann"));
+    }
+
     @Test
     public void anUnnamedRowsLineListsTheConstantsItsTemplateCarries() {
         PreSearchSections.queryNode(new QueryNode(row("VISITED_ENTITIES")));
