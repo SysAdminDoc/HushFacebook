@@ -37,8 +37,8 @@ class KeepPostDatesFixtureTest {
     /** Where each declared build keeps the choice, by ABI: the subtitle's class and the choice's register. */
     private val expected = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to ("LX/03gS;" to 13),
-            "armeabi-v7a" to ("LX/03gS;" to 13),
+            "arm64-v8a" to ("LX/03lF;" to 13),
+            "armeabi-v7a" to ("LX/03lD;" to 13),
             "arm64-v8a-minapi28-storeless" to ("LX/03hC;" to 13),
         ),
     )
