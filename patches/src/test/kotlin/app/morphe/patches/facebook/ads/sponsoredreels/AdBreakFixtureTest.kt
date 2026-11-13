@@ -36,13 +36,30 @@ private const val DEFERRED_CARD_STATE_LITERAL = "UnresolvedWithDeferredCardState
  * Read from 585 (2026-10-29): the shared fetch logs both literals, its banner helper returns the
  * SettableFuture it creates (584 declared ListenableFuture), the server API keeps two
  * ListenableFuture queries next to a Pair maker, and each of the two other queries calls a static
- * executor answering a SettableFuture. No obfuscated name is used here.
+ * executor answering a SettableFuture.
+ *
+ * Read from 587 (2026-11-13): the video query declares the transform future it returns instead of
+ * ListenableFuture, so the fetch was matched to its banner call twice. The query still sends
+ * through one static executor answering a SettableFuture, and its result goes straight into the
+ * fetch's ListenableFuture field.
  */
 class AdBreakFixtureTest {
     private val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
 
     private val listenable = "Lcom/google/common/util/concurrent/ListenableFuture;"
     private val settable = "Lcom/google/common/util/concurrent/SettableFuture;"
+
+    /**
+     * The type the server API's video query declares in each declared build, by the bundle's ABI,
+     * and the index of its executor call. 587's is Guava's transform future under an obfuscated
+     * name, an AbstractFuture that a SettableFuture isn't (each ABI is its own Redex output).
+     */
+    private val videoQuery = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to ("LX/02NP;" to 582),
+            "armeabi-v7a" to ("LX/02NU;" to 575),
+        ),
+    )
 
     @Before
     @After
@@ -84,10 +101,13 @@ class AdBreakFixtureTest {
 
     @Test
     fun `each fetch hold lands on the banner helper, the server API queries and the two executor calls, and the tick stops, on every declared build`() {
+        assertEquals("the declared builds", videoQuery.keys, versions)
         val checked = mutableSetOf<String>()
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
+                val (videoType, videoExecutor) = videoQuery.getValue(version)
+                    .getValue(name.substringAfter("-$version-").substringBefore(".apkm"))
                 forgetMatches()
 
                 val fetches = FixtureDex.classesHolding(bundle, BANNER_FETCH_LOG)
@@ -98,7 +118,7 @@ class AdBreakFixtureTest {
                 val video = body.futureCallBefore(VIDEO_FETCH_LOG)
                 assertNotEquals("$name: the banner helper and the server API are two classes", banner.definingClass, video.definingClass)
                 assertTrue("$name: the banner helper answers a future (${banner.returnType})", banner.returnType == listenable || banner.returnType == settable)
-                assertEquals("$name: the server API call answers a ListenableFuture", listenable, video.returnType)
+                assertEquals("$name: the type the server API's video query declares", videoType, video.returnType)
 
                 val idle = FixtureDex.classesHolding(bundle, REELS_VIDEO_AD_QUERY)
                     .flatMap { owner -> owner.methods.filter { holdsString(it, REELS_VIDEO_AD_QUERY) && it.returnType == "V" } }
@@ -131,6 +151,11 @@ class AdBreakFixtureTest {
                 val extendedCall = idleExecutorCallIndex(extended.single().code(), name, EXTENDED_BREAK_QUERY)
                 val idleSize = idle.single().code().count { it.opcode != Opcode.NOP }
                 val extendedSize = extended.single().code().count { it.opcode != Opcode.NOP }
+                val videoQueries = classes.single { it.type == video.definingClass }.methods.filter { it.returnType == videoType }
+                assertEquals("$name: the server API's queries declaring $videoType", listOf(video.name), videoQueries.map { it.name })
+                val videoCall = queryExecutorCallIndex(videoQueries.single().code(), name)
+                assertEquals("$name: the video query's executor call", videoExecutor, videoCall)
+                val videoSize = videoQueries.single().code().count { it.opcode != Opcode.NOP }
 
                 with(context) {
                     holdAdBreakFetches()
@@ -149,18 +174,20 @@ class AdBreakFixtureTest {
                 assertEquals("$name: one banner helper", 1, helpers.size)
                 assertFailedFutureFirst("$name: the banner helper", helpers.single(), banner.definingClass)
 
-                // Each query the server API answers a ListenableFuture to is held, and nothing else.
+                // Each query the server API answers a ListenableFuture to is held at its head, the
+                // video query at its executor call (below), and nothing else.
                 val api = context.mutableClassDefBy(video.definingClass).methods
                 val queries = api.filter { it.returnType == listenable }
                 assertTrue("$name: the server API has no query", queries.isNotEmpty())
                 queries.forEach { assertFailedFutureFirst("$name: ${it.name}", it, video.definingClass) }
                 api.filter { it.returnType != listenable }.forEach {
                     val first = it.implementation?.instructions?.firstOrNull()?.call
-                    assertTrue("$name: ${it.name} is not a query and was held", first?.name != FAILED_FUTURE)
+                    assertTrue("$name: ${it.name} is held at its head", first?.name != FAILED_FUTURE)
                 }
 
-                // The idle and extended executor calls become the failed future, same size, move-result kept.
+                // The video, idle and extended executor calls become the failed future, same size, move-result kept.
                 for ((label, original, call, size) in listOf(
+                    Quad("video", videoQueries.single(), videoCall, videoSize),
                     Quad("idle", idle.single(), idleCall, idleSize),
                     Quad("extended", extended.single(), extendedCall, extendedSize),
                 )) {

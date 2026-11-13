@@ -309,6 +309,83 @@ class HideSponsoredReelsShapesTest {
         assertTrue(refused.message, refused.message.orEmpty().contains(BANNER_FETCH_LOG))
     }
 
+    /** A fetch whose video query declares [declared] and whose answer goes into a field of [stored]. */
+    private fun narrowedFetch(declared: String, stored: String, storeFrom: String = "v0") = method(
+        "fetch", emptyList(), "V", 3, static = false,
+        smali = """
+            invoke-static { }, Lfixture/Api;->banner()$settableFuture
+            move-result-object v0
+            iput-object v0, p0, Lfixture/Fetch;->banner:$listenableFuture
+            invoke-virtual { p0 }, Lfixture/Api;->video()$declared
+            move-result-object v0
+            iput-object $storeFrom, p0, Lfixture/Fetch;->video:$stored
+            const-string v1, "$VIDEO_FETCH_LOG"
+            return-void
+        """,
+    ).body()
+
+    /**
+     * 587 declares the video query as the transform future it builds, an obfuscated class, and
+     * stores it straight into a ListenableFuture field. Matching only the two Guava types skipped
+     * it and named the banner call for the video log as well.
+     */
+    @Test
+    fun `a call stored straight into a ListenableFuture field is the fetch, whatever type it declares`() {
+        val transform = "Lfixture/TransformFuture;"
+        val video = narrowedFetch(transform, listenableFuture).futureCallBefore(VIDEO_FETCH_LOG)
+        assertEquals("video", video.name)
+        assertEquals(transform, video.returnType)
+
+        // Negative controls: stored into a field of another type, or a register other than its
+        // answer's, the call isn't a future fetch, and the banner call before it is.
+        assertEquals("banner", narrowedFetch(transform, "Ljava/lang/Object;").futureCallBefore(VIDEO_FETCH_LOG).name)
+        assertEquals("banner", narrowedFetch(transform, listenableFuture, storeFrom = "v1").futureCallBefore(VIDEO_FETCH_LOG).name)
+    }
+
+    /** A query that sends through [execute] and then transforms the answer into what it declares. */
+    private fun narrowedQuery(execute: String) = method(
+        "video", emptyList(), "Lfixture/TransformFuture;", 4, static = false,
+        smali = """
+            invoke-static { }, Lfixture/Executor;->prepare()$settableFuture
+            move-result-object v0
+            $execute
+            sget-object v2, Lfixture/Transform;->INSTANCE:Lcom/google/common/base/Function;
+            invoke-static { v2, v1 }, Lfixture/Futures;->transform(Lcom/google/common/base/Function;$listenableFuture)Lfixture/TransformFuture;
+            move-result-object v0
+            return-object v0
+        """,
+        definingClass = "Lfixture/Api;",
+    ).body()
+
+    @Test
+    fun `a query declaring a narrower future is held at its last SettableFuture call`() {
+        val sent = narrowedQuery(
+            "invoke-static { v0 }, Lfixture/Executor;->run(Ljava/lang/Object;)$settableFuture\nmove-result-object v1",
+        )
+        assertEquals(2, queryExecutorCallIndex(sent, "video"))
+
+        // Not static, or its answer not moved straight after: the same-size static call can't stand in.
+        assertThrows(PatchException::class.java) {
+            queryExecutorCallIndex(
+                narrowedQuery("invoke-virtual { p0, v0 }, Lfixture/Api;->run(Ljava/lang/Object;)$settableFuture\nmove-result-object v1"),
+                "video",
+            )
+        }
+        assertThrows(PatchException::class.java) {
+            queryExecutorCallIndex(
+                narrowedQuery("invoke-static { v0 }, Lfixture/Executor;->run(Ljava/lang/Object;)$settableFuture\nconst/4 v1, 0x0"),
+                "video",
+            )
+        }
+        // No SettableFuture call at all.
+        assertThrows(PatchException::class.java) {
+            queryExecutorCallIndex(
+                method("video", emptyList(), "Lfixture/TransformFuture;", 1, static = true, smali = "const/4 v0, 0x0\nreturn-object v0").body(),
+                "video",
+            )
+        }
+    }
+
     private fun tick(name: String, owner: String = "Lfixture/State;") = method(
         name, listOf("Lfixture/Media;", "I"), "J", 5, static = false,
         smali = "const-wide/16 v0, 0x0\nreturn-wide v0", definingClass = owner,

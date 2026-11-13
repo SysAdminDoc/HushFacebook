@@ -31,7 +31,9 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
@@ -131,8 +133,10 @@ val hideSponsoredReelsPatch = bytecodePatch(
  * queries, and the idle state's and the extended break's own queries on the shared executor.
  *
  * <p>585 (Redex): the banner helper returns the SettableFuture it creates where 584 declared
- * ListenableFuture, so [futureCallBefore] reads either. AdBreakFixtureTest runs this on every
- * declared build.
+ * ListenableFuture, so [futureCallBefore] reads either. 587 declares the server API's video query
+ * as the transform future it builds, an obfuscated subclass of Guava's AbstractFuture that a
+ * SettableFuture isn't, so that query is held at its executor call instead. AdBreakFixtureTest
+ * runs this on every declared build.
  */
 internal fun BytecodePatchContext.holdAdBreakFetches() {
     val adBreakFetch = AdBreakFetchFingerprint.method.instructions()
@@ -144,12 +148,25 @@ internal fun BytecodePatchContext.holdAdBreakFetches() {
         .singleOrPatchException("$PATCH: the banner query helper $bannerFetch, declared on its own class")
         .let(::returnFailedFuture)
 
-    // The ad-break server API. Each of its methods that returns a future is an ad query.
-    val videoFetcher = adBreakFetch.futureCallBefore(VIDEO_FETCH_LOG).definingClass
-    mutableClassDefBy(videoFetcher).methods
-        .filter { it.returnType == LISTENABLE_FUTURE }
-        .also { check(it.isNotEmpty()) { "$videoFetcher has no method that returns a future" } }
-        .forEach(::returnFailedFuture)
+    // The ad-break server API. Each of its methods that returns a future is an ad query. One that
+    // declares a ListenableFuture returns the failed future at once. One that declares the narrower
+    // future type the fetch stores (587's transform future) can't return a SettableFuture, so its
+    // executor call hands the failed future to the transform: no query goes out, and the transform
+    // fails with it.
+    val videoFetch = adBreakFetch.futureCallBefore(VIDEO_FETCH_LOG)
+    val videoFetcher = videoFetch.definingClass
+    val narrowed = videoFetch.returnType.takeUnless { it == LISTENABLE_FUTURE || it == SETTABLE_FUTURE }
+    val apiMethods = mutableClassDefBy(videoFetcher).methods.toList()
+    val queries = apiMethods.filter { it.returnType == LISTENABLE_FUTURE }
+    val narrowedQueries = apiMethods.filter { narrowed != null && it.returnType == narrowed }
+    check(queries.isNotEmpty() || narrowedQueries.isNotEmpty()) { "$videoFetcher has no method that returns a future" }
+    queries.forEach(::returnFailedFuture)
+    narrowedQueries.forEach { query ->
+        query.replaceInstruction(
+            queryExecutorCallIndex(query.instructions(), "${query.definingClass}->${query.name}"),
+            "invoke-static { }, ${failedFutureOn(query.definingClass)}",
+        )
+    }
 
     // The idle state runs its own video ad query on the GraphQL executor, which the whole app
     // shares. Thus only this one executor call changes. The helper call has the same size and
@@ -299,17 +316,44 @@ private fun BytecodePatchContext.returnFailedFuture(method: MutableMethod) =
  * The last call before [log] that returns a future. This is the fetch that the log reports. A
  * call may declare either future type: 585's banner helper returns the SettableFuture it creates
  * (584's declared ListenableFuture), and the caller stores both into a ListenableFuture field.
+ * 587 declares the video query as an obfuscated future class, so a call whose answer goes straight
+ * into a ListenableFuture field counts too, whatever it declares. Matched by declared type alone,
+ * that query was skipped and both logs led to the banner helper.
  */
 internal fun List<Instruction>.futureCallBefore(log: String): MethodReference {
     val logIndex = indexOfFirst { it.string == log }
     check(logIndex >= 0) { "\"$log\" is not in the ad-break fetch" }
 
-    return take(logIndex)
-        .mapNotNull { it.methodReference }
-        .lastOrNull { it.returnType == LISTENABLE_FUTURE || it.returnType == SETTABLE_FUTURE }
-        ?: throw PatchException(
-            "$PATCH: the ad-break fetch makes no call returning ListenableFuture or SettableFuture before \"$log\"",
-        )
+    return (logIndex - 1 downTo 0).firstNotNullOfOrNull { index ->
+        this[index].methodReference?.takeIf {
+            it.returnType == LISTENABLE_FUTURE || it.returnType == SETTABLE_FUTURE || storedAsFuture(index)
+        }
+    } ?: throw PatchException(
+        "$PATCH: the ad-break fetch makes no call returning a future before \"$log\"",
+    )
+}
+
+/** Whether the call at [call] has its answer moved out and put straight into a ListenableFuture field. */
+private fun List<Instruction>.storedAsFuture(call: Int): Boolean {
+    val result = getOrNull(call + 1)?.takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT } as? OneRegisterInstruction
+        ?: return false
+    val store = getOrNull(call + 2)?.takeIf { it.opcode == Opcode.IPUT_OBJECT || it.opcode == Opcode.SPUT_OBJECT }
+        ?: return false
+    val field = (store as ReferenceInstruction).reference as? FieldReference ?: return false
+    return field.type == LISTENABLE_FUTURE && (store as OneRegisterInstruction).registerA == result.registerA
+}
+
+/**
+ * The executor call of a server API query that declares a narrower future than ListenableFuture:
+ * the last call in it that hands back a SettableFuture, which the query then transforms into what
+ * it returns. Static with its answer moved straight after, as the replacement is a static call of
+ * the same size.
+ */
+internal fun queryExecutorCallIndex(instructions: List<Instruction>, method: String): Int {
+    val execute = instructions.indices.lastOrNull { index ->
+        instructions[index].methodReference?.returnType == SETTABLE_FUTURE
+    } ?: throw PatchException("$PATCH: $method makes no call returning SettableFuture")
+    return requireReplaceableExecutorCall(instructions, execute, method)
 }
 
 /**
@@ -339,6 +383,11 @@ internal fun idleExecutorCallIndex(
     } ?: throw PatchException(
         "$PATCH: $method makes no call returning SettableFuture after \"$literal\"",
     )
+    return requireReplaceableExecutorCall(instructions, execute, method)
+}
+
+/** [execute], once it's a static call with its answer moved straight after. */
+private fun requireReplaceableExecutorCall(instructions: List<Instruction>, execute: Int, method: String): Int {
     if (instructions[execute].opcode != Opcode.INVOKE_STATIC) {
         throw PatchException("$PATCH: the executor call at $execute in $method is not invoke-static")
     }
