@@ -19,6 +19,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -75,7 +76,7 @@ class BloksFillFixtureTest {
                 val builders = box.methods.filter { method ->
                     AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.size == 3 &&
                         method.parameterTypes.last().toString() == "I" &&
-                        method.body().any { it.setsPaintColour(method.parameterRegisterNumber(2)) }
+                        paintsFrom(method.body(), method.parameterRegisterNumber(2))
                 }
                 assertEquals("$name: one builder paints its int parameter", 1, builders.size)
                 val builder = builders.single()
@@ -99,7 +100,7 @@ class BloksFillFixtureTest {
                     assertEquals("$name: and the answer", Opcode.MOVE_RESULT, after[1].opcode)
                     assertEquals("$name: goes back into the fill", fill, (after[1] as OneRegisterInstruction).registerA)
                     assertEquals("$name: the rest of the builder is as it was", builder.body().size + 2, after.size)
-                    assertTrue("$name: and still paints the fill", after.drop(2).any { it.setsPaintColour(fill) })
+                    assertTrue("$name: and still paints the fill", paintsFrom(after.drop(2), fill))
                 }
                 checked += version
             }
@@ -241,5 +242,27 @@ class BloksFillFixtureTest {
         val call = (this as? ReferenceInstruction)?.reference as? MethodReference ?: return false
         return call.definingClass == "Landroid/graphics/Paint;" && call.name == "setColor" &&
             (this as FiveRegisterInstruction).registerD == register
+    }
+
+    /**
+     * Whether [code] sets a Paint's colour to the int in [register] or a plain copy of it, in code
+     * order: 587's builder copies its fill to another register first (`move/from16 v15, v16`, arm64
+     * `LX/05nv;->A02`) and paints the copy. Any other write to a register drops it.
+     */
+    private fun paintsFrom(code: List<Instruction>, register: Int): Boolean {
+        val holders = mutableSetOf(register)
+        for (instruction in code) {
+            if (holders.any { instruction.setsPaintColour(it) }) return true
+            if (!instruction.opcode.setsRegister()) continue
+            val target = (instruction as? OneRegisterInstruction)?.registerA ?: continue
+            val source = (instruction as? TwoRegisterInstruction)?.registerB
+            if (instruction.opcode in setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16) && source in holders) {
+                holders += target
+                continue
+            }
+            holders -= target
+            if (instruction.opcode.setsWideRegister()) holders -= target + 1
+        }
+        return false
     }
 }

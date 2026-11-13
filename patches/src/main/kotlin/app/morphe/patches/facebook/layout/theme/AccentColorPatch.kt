@@ -20,7 +20,10 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 private const val ACCENT = "Lapp/morphe/extension/facebook/theme/AccentColor;"
@@ -93,26 +96,45 @@ internal fun BytecodePatchContext.hookBloksFills(target: String = ACCENT_BLOKS_F
 /**
  * Bloks' box builder (582 `LX/4Nl;->A01`): the static method beside the [border] reader that takes
  * the reader's two parameters and the fill, asks the reader for the border, and sets a Paint's colour
- * to the fill as it came in.
+ * to the fill as it came in. 587 copies the fill to a lower register first (`move/from16`) and
+ * paints that copy, so a plain move of the fill carries it.
  */
 internal fun isBoxBuilder(method: Method, border: Method): Boolean {
     if (!AccessFlags.STATIC.isSet(method.accessFlags) || !method.returnType.startsWith("L")) return false
     val parameters = method.parameterTypes.map(CharSequence::toString)
     if (parameters != border.parameterTypes.map(CharSequence::toString) + "I") return false
     val code = method.implementation?.instructions ?: return false
-    val fill = method.parameterRegisterNumber(parameters.lastIndex)
+    val fills = mutableSetOf(method.parameterRegisterNumber(parameters.lastIndex))
     var asksBorder = false
     var paintsFill = false
     for (instruction in code) {
-        val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: continue
-        if (call.definingClass == border.definingClass && call.name == border.name && call.returnType == "I") asksBorder = true
-        if (call.definingClass == "Landroid/graphics/Paint;" && call.name == "setColor" &&
-            (instruction as? FiveRegisterInstruction)?.registerD == fill
-        ) {
-            paintsFill = true
+        val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        if (call != null) {
+            if (call.definingClass == border.definingClass && call.name == border.name && call.returnType == "I") asksBorder = true
+            if (call.definingClass == "Landroid/graphics/Paint;" && call.name == "setColor" &&
+                (instruction as? FiveRegisterInstruction)?.registerD in fills
+            ) {
+                paintsFill = true
+            }
         }
+        trackFillCopies(instruction, fills)
     }
     return asksBorder && paintsFill
+}
+
+private val PLAIN_MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+
+/** Keeps [fills] the registers that hold the fill in code order: a plain move of one adds its target, any other write drops it. */
+private fun trackFillCopies(instruction: Instruction, fills: MutableSet<Int>) {
+    if (!instruction.opcode.setsRegister()) return
+    val target = (instruction as? OneRegisterInstruction)?.registerA ?: return
+    val source = (instruction as? TwoRegisterInstruction)?.registerB
+    if (instruction.opcode in PLAIN_MOVES && source in fills) {
+        fills += target
+        return
+    }
+    fills -= target
+    if (instruction.opcode.setsWideRegister()) fills -= target + 1
 }
 
 /**
