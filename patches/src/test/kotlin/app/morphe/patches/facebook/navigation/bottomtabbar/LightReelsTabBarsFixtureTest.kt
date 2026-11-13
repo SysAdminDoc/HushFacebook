@@ -63,8 +63,18 @@ class LightReelsTabBarsFixtureTest {
         val videoBars = fragments.getValue(VIDEO_HOME_ROOT_FRAGMENT).methods.single { it.name == SYSTEM_BARS_CONFIG && it.parameterTypes.size == 1 }
         val helpers = videoBars.body().mapNotNull { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.definingClass }
             .filter { it.startsWith("LX/") }.toSet()
+        // 587 calls the status bar helper from a lambda the fragment's getSystemBarsConfig asks (arm64
+        // `LX/0CxW;`), handing it the fragment's tab field: that lambda's class and the helper's.
+        val statusBarType = statusBarConfigType(
+            fragments.getValue(FB_CHROME_FRAGMENT).methods.single { it.name == SYSTEM_BARS_CONFIG && it.parameterTypes.size == 1 },
+        )!!
+        val lambdas = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it == VIDEO_HOME_ROOT_FRAGMENT } }) {
+            fragmentTabStatusBars(it, statusBarType).isNotEmpty()
+        }
+        val lambdaTypes = lambdas.map { it.definingClass }.toSet() +
+            lambdas.flatMap { fragmentTabStatusBars(it, statusBarType) }.map { it.definingClass }
         val controller = FixtureDex.classesHolding(bundle, "fb.e2e.enable_dark_mode").single()
-        return (fragments + FixtureDex.classes(bundle, helpers)).values.distinctBy { it.type } + controller
+        return (fragments + FixtureDex.classes(bundle, helpers + lambdaTypes)).values.distinctBy { it.type } + controller
     }
 
     @Test
@@ -86,7 +96,14 @@ class LightReelsTabBarsFixtureTest {
                     sites.otherTabs.parameterTypes.isEmpty() && sites.otherTabs.returnType == sites.statusBarType)
                 assertEquals("$name: the Video tab's helper answers the status bar", sites.statusBarType, sites.reelsBars.returnType)
                 assertEquals("$name: one reels-in-tab answer", 1, sites.darkReads.map { it.name }.distinct().size)
-                assertEquals("$name: its reads paint both bars", DarkPaint.values().toSet(), sites.darkReads.map { it.paints }.toSet())
+                val paints = sites.darkReads.map { it.paints }.toSet()
+                assertTrue("$name: its reads paint the top bar", DarkPaint.TOP_BAR in paints)
+                // 587 paints no status bar in the fragment: the helper reads the same answer itself
+                // (arm64 `LX/09jn;->A02` reads it at 55) to build the dark one, and the helper's
+                // first-thing answer covers that.
+                assertTrue("$name: its reads paint the status bar, or the helper reads the answer itself",
+                    DarkPaint.STATUS_BAR in paints ||
+                        readsTabAnswer(sites.reelsBars, sites.reelsBars.parameterTypes.first().toString(), sites.darkReads.first().name))
                 assertTrue("$name: every read sits in the Video tab",
                     sites.darkReads.all { it.method.definingClass == VIDEO_HOME_ROOT_FRAGMENT })
 

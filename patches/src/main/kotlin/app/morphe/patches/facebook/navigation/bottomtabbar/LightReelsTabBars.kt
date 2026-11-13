@@ -9,6 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.layout.theme.DarkModeFingerprint
 import app.morphe.patches.facebook.layout.theme.hookDarkModeAnswer
@@ -51,6 +52,12 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  *   `Jd2`) dark wherever an interface of the tab's (585 `LX/0DhY;->BWR`) says its reels show in
  *   the tab. The helper hands back the other tabs' status bar first thing while the extension says
  *   so, and each of those answers goes through the extension, which says no.
+ *
+ * 587 (2026-11-12) moved the Video tab's status bar out of the fragment. Its getSystemBarsConfig asks
+ * a Function0 for it, and the lambda (arm64 `LX/0CxW;` case 0x38, v7 `LX/0A4x;`) hands the helper
+ * (arm64 `LX/09jn;->A02`) the tab the fragment keeps in a field. The fragment paints only the top bar
+ * now (arm64 `A0A(Z)V`), and the helper reads the same reels-in-tab answer itself to build the dark
+ * status bar, which the helper's first-thing answer already covers.
  */
 
 internal const val LIGHT_REELS_TAB_BARS = "Lapp/morphe/extension/facebook/navigation/LightReelsTabBars;"
@@ -123,6 +130,39 @@ internal fun reelsStatusBars(method: Method, type: String): List<MethodReference
     instruction.methodCall()?.takeIf { instruction.opcode == Opcode.INVOKE_VIRTUAL && it.returnType == type }
 }.distinctBy { "${it.definingClass}->${it.name}" }
 
+/**
+ * The calls in [method] answering [type] that hand over the tab the Video tab's fragment keeps: the
+ * call's first argument is what an `iget-object` of a VideoHomeRootFragment field of the call's first
+ * parameter type last wrote. 587's lambda behind the fragment's getSystemBarsConfig makes this call.
+ */
+internal fun fragmentTabStatusBars(method: Method, type: String): List<MethodReference> {
+    val body = method.body()
+    return body.indices.mapNotNull { at ->
+        val call = body[at].methodCall() ?: return@mapNotNull null
+        val opcode = body[at].opcode
+        if ((opcode != Opcode.INVOKE_VIRTUAL && opcode != Opcode.INVOKE_VIRTUAL_RANGE) || call.returnType != type) {
+            return@mapNotNull null
+        }
+        val tabType = call.parameterTypes.firstOrNull()?.toString() ?: return@mapNotNull null
+        val tab = body[at].namedRegisters().getOrNull(1) ?: return@mapNotNull null
+        val write = (at - 1 downTo 0).firstOrNull { writesRegister(body[it], tab) } ?: return@mapNotNull null
+        val field = (body[write] as? ReferenceInstruction)?.reference as? FieldReference
+        call.takeIf {
+            body[write].opcode == Opcode.IGET_OBJECT && field?.definingClass == VIDEO_HOME_ROOT_FRAGMENT && field.type == tabType
+        }
+    }
+}
+
+/** [fragmentTabStatusBars] across the classes naming VideoHomeRootFragment, each target once. */
+private fun BytecodePatchContext.fragmentTabStatusBarCalls(type: String): List<MethodReference> {
+    val calls = mutableListOf<MethodReference>()
+    classDefForEachReferencing(types = listOf(VIDEO_HOME_ROOT_FRAGMENT)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
+        classDef.methods.flatMapTo(calls) { fragmentTabStatusBars(it, type) }
+    }
+    return calls.distinctBy { "${it.definingClass}->${it.name}${it.parameterTypes.joinToString("")}" }
+}
+
 /** What the Video tab's dark branch paints. */
 internal enum class DarkPaint { STATUS_BAR, TOP_BAR }
 
@@ -168,15 +208,24 @@ internal fun darkBarReads(method: Method, tabInterface: String): List<DarkBarRea
     }
 }
 
+/** Whether [method] reads the no-arg boolean [name] of [tabInterface] itself. */
+internal fun readsTabAnswer(method: Method, tabInterface: String, name: String): Boolean = method.body().any { instruction ->
+    instruction.opcode == Opcode.INVOKE_INTERFACE && instruction.methodCall()?.let {
+        it.definingClass == tabInterface && it.name == name && it.parameterTypes.isEmpty() && it.returnType == "Z"
+    } == true
+}
+
 /**
  * The reads [darkBarReads] finds in [videoHome] of the one answer whose true branch paints the top
- * bar. Empty unless that's one answer, painting the top bar and the status bar.
+ * bar. Empty unless that's one answer, painting the top bar and the status bar, or painting the top
+ * bar while the status bar helper [statusBarHelper] reads that answer itself to build the dark one (587).
  */
-internal fun reelsInTabReads(videoHome: ClassDef, tabInterface: String): List<DarkBarRead> {
+internal fun reelsInTabReads(videoHome: ClassDef, tabInterface: String, statusBarHelper: Method): List<DarkBarRead> {
     val reads = videoHome.methods.flatMap { darkBarReads(it, tabInterface) }
     val name = reads.filter { it.paints == DarkPaint.TOP_BAR }.map { it.name }.distinct().singleOrNull() ?: return emptyList()
     val chosen = reads.filter { it.name == name }
-    return if (chosen.any { it.paints == DarkPaint.STATUS_BAR }) chosen else emptyList()
+    if (chosen.any { it.paints == DarkPaint.STATUS_BAR }) return chosen
+    return if (readsTabAnswer(statusBarHelper, tabInterface, name)) chosen else emptyList()
 }
 
 /** The local registers [method] has below its parameters. */
@@ -241,17 +290,26 @@ internal fun BytecodePatchContext.lightReelsSites(): LightReelsSites? {
     val reelsTabBar = videoHome.methods.singleOrNull(::isReelsTabBarAnswer)
         ?: return skipLight("expected one ($TAB_TAG)Z in $VIDEO_HOME_ROOT_FRAGMENT comparing the tab's id with the Video tab's")
     val reelsTabBarRead = barsTabRead(reelsTabBar)!!
-    val reelsCall = reelsStatusBars(videoBars, statusBarType).singleOrNull()
-        ?: return skipLight("expected one call answering $statusBarType in $VIDEO_HOME_ROOT_FRAGMENT->$SYSTEM_BARS_CONFIG")
+    // 585 and 586 call the helper from getSystemBarsConfig; 587 calls it from a lambda that
+    // getSystemBarsConfig asks, handing it the tab from the fragment's own field.
+    val direct = reelsStatusBars(videoBars, statusBarType)
+    val reelsCall = (direct.ifEmpty { fragmentTabStatusBarCalls(statusBarType) }).singleOrNull()
+        ?: return skipLight(
+            "expected one call answering $statusBarType in $VIDEO_HOME_ROOT_FRAGMENT->$SYSTEM_BARS_CONFIG " +
+                "or handed a tab from one of its fields",
+        )
     val reelsBars = classDefByOrNull(reelsCall.definingClass)?.methods?.singleOrNull {
         it.name == reelsCall.name && it.returnType == statusBarType &&
             it.parameterTypes.map(CharSequence::toString) == reelsCall.parameterTypes.map(CharSequence::toString)
     } ?: return skipLight("$reelsCall isn't in this build")
     if (localsOf(reelsBars) < 1) return skipLight("$reelsCall has no local register to borrow")
     val tabInterface = reelsCall.parameterTypes.firstOrNull()?.toString() ?: return skipLight("$reelsCall takes no tab")
-    val darkReads = reelsInTabReads(videoHome, tabInterface)
+    val darkReads = reelsInTabReads(videoHome, tabInterface, reelsBars)
     if (darkReads.isEmpty()) {
-        return skipLight("expected one boolean of $tabInterface that $VIDEO_HOME_ROOT_FRAGMENT reads before painting the top bar and the status bar")
+        return skipLight(
+            "expected one boolean of $tabInterface that $VIDEO_HOME_ROOT_FRAGMENT reads before painting the top bar " +
+                "and that it or $reelsCall reads for the status bar",
+        )
     }
     // Last, so a build missing the rest never matches the fingerprint.
     if (DarkModeFingerprint.methodOrNull == null) return skipLight("Facebook's dark mode answer isn't in this build")
