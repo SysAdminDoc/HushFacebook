@@ -22,6 +22,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.util.MethodUtil
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -39,6 +40,49 @@ class TranslatePostsFixtureTest {
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
 
     private fun Instruction.names(call: String) = (this as? ReferenceInstruction)?.reference?.toString() == call
+
+    /**
+     * Per build, how many places besides the builder show a post's whole text, and what the ones that
+     * only measure it answer. 585 had the two that show it: the renderer a tap on a cut post takes, and
+     * the whole text the feed builds beside the cut one. 587 also runs the text through the step to ask
+     * whether it runs past its lines (a yes/no) and to pick how the post opens (a number).
+     */
+    private val wholeTextPlaces = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to (2 to listOf("Ljava/lang/Integer;", "Z")),
+            "armeabi-v7a" to (2 to listOf("Ljava/lang/Integer;", "Z")),
+        ),
+    )
+
+    private fun callsOf(method: Method): List<MethodReference> = method.implementation?.instructions
+        ?.mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }.orEmpty()
+
+    /**
+     * Every method [start] reaches by calls that name it, [depth] calls down. A call through an
+     * interface names the interface's method, so whatever answers it isn't followed.
+     */
+    private fun reachedFrom(bundle: File, start: Method, depth: Int): Set<String> {
+        val reached = mutableSetOf<String>()
+        // By class, the methods to read next.
+        var next: Map<String, Set<String>> = callsOf(start).filter { reached.add(it.toString()) }
+            .groupBy({ it.definingClass }, { it.toString() }).mapValues { it.value.toSet() }
+        repeat(depth - 1) {
+            val found = mutableMapOf<String, MutableSet<String>>()
+            FixtureDex.forEach(bundle) { dex ->
+                for (classDef in dex.classes) {
+                    val wanted = next[classDef.type] ?: continue
+                    for (method in classDef.methods.filter { it.toString() in wanted }) {
+                        for (call in callsOf(method)) {
+                            val named = call.toString()
+                            if (reached.add(named)) found.getOrPut(call.definingClass) { mutableSetOf() } += named
+                        }
+                    }
+                }
+            }
+            next = found
+        }
+        return reached
+    }
 
     /** The builder after [patches], with the feed post component and its state ([foldTypes]) there for Show full post text. */
     private fun builderAfter(bundle: File, patches: List<BytecodePatch>, builder: Method, foldTypes: Set<String>): List<Instruction> {
@@ -148,11 +192,6 @@ class TranslatePostsFixtureTest {
                         !(method.definingClass == builder.definingClass && MethodUtil.methodSignaturesMatch(method, builder)) &&
                         method.implementation!!.instructions.any(callsStep)
                 }
-                // 585: the renderer a tap on a cut post takes, and the whole text the feed builds beside the cut one.
-                // The Android 9 build folds that renderer's cut into the builder, which runs both texts through the
-                // step itself, and the two outside it are left.
-                assertTrue("$name: expected two places building a post's whole text, found ${callers.size}", callers.size >= 2)
-
                 val classes = FixtureDex.classes(bundle, callers.map { it.definingClass }.toSet() + builder.definingClass + FRAGMENT_ACTIVITY)
                 val context = PatchContexts.of((classes.values + ExtensionDex.classDef(SETTINGS_STATUS)).toList())
                 translatePostsPatch.execute(context)
@@ -163,12 +202,31 @@ class TranslatePostsFixtureTest {
                     context.mutableClassDefBy(builder.definingClass).methods.single {
                         it.name == builder.name && MethodUtil.methodSignaturesMatch(it, builder)
                     }.code().size)
-                for (caller in callers) {
+                val after = callers.associateWith { caller ->
+                    context.mutableClassDefBy(caller.definingClass).methods.single {
+                        it.name == caller.name && MethodUtil.methodSignaturesMatch(it, caller)
+                    }.code()
+                }
+                // The places that show the whole text take the hooks. The ones that only measure it for the cut
+                // answer a yes/no or a number and stay as they were, down to the instruction.
+                val (measuring, showing) = callers.partition { after.getValue(it).size == it.code().size }
+                val (shown, measured) = wholeTextPlaces.getValue(version)[name.substringAfter("-$version-").substringBefore(".apkm")]
+                    ?: throw AssertionError("$name has no pin")
+                assertEquals(
+                    "$name: the places showing a post's whole text ${showing.map { it.toString() }}, and what the ones " +
+                        "measuring it answer ${measuring.map { it.toString() }}",
+                    shown to measured, showing.size to measuring.map { it.returnType }.sorted(),
+                )
+                // The extension keeps one note per thread from the text's hook to the return's. A hooked place the
+                // builder reaches while it builds would take the builder's note, and its post would lose its line.
+                val reached = reachedFrom(bundle, builder, 3)
+                for (caller in showing) {
+                    assertTrue("$name: $caller is hooked and runs inside the builder's own build", caller.toString() !in reached)
+                }
+                for (caller in showing) {
                     val original = caller.code()
                     val calls = original.count(callsStep)
-                    val patched = context.mutableClassDefBy(caller.definingClass).methods.single {
-                        it.name == caller.name && it.parameterTypes == caller.parameterTypes
-                    }.code()
+                    val patched = after.getValue(caller)
                     val where = "$name: ${caller.definingClass}->${caller.name}"
                     assertEquals("$where: four instructions per call", original.size + 4 * calls, patched.size)
                     for ((at, call) in patched.withIndex().filter { callsStep(it.value) }) {

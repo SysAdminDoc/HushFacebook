@@ -146,10 +146,21 @@ internal fun wholeTextStep(builder: Method): MethodReference? = builder.implemen
     .distinctBy { it.toString() }
     .singleOrNull()
 
+/** What a method answers when it only measures a post's text for the cut: a yes/no or a number, never the text. */
+private val MEASURES = setOf("Z", "B", "S", "C", "I", "J", "F", "D") +
+    listOf("Boolean", "Byte", "Short", "Character", "Integer", "Long", "Float", "Double").map { "Ljava/lang/$it;" }
+
 /**
- * Every method besides [builder] that calls [step]: where a post shows its whole text without the
- * builder. A tap that opens a cut post takes 585's `LX/03Bf;->A00` past the builder, and the feed's
- * `LX/0cQv;->render` builds the whole text through `LX/03Bn;->A07` next to the cut one (#332).
+ * Every method besides [builder] that calls [step] and shows what comes back: where a post shows its
+ * whole text without the builder. A tap that opens a cut post takes 585's `LX/03Bf;->A00` past the
+ * builder, and the feed's `LX/0cQv;->render` builds the whole text through `LX/03Bn;->A07` next to
+ * the cut one (#332).
+ *
+ * 587 also runs the text through the step to measure it: `LX/0HxX;->A00(FbUserSession, 02cx)Z` asks
+ * whether it runs past its lines and `LX/02z2;->A09(...)Integer` picks how the post opens. Those
+ * stay as they are. Nothing they build is shown, and the builder itself reaches the first one
+ * (through `LX/02xx;->A01`), so its hooks would take what the builder's own noted at its top and the
+ * post would come out with no Translate line.
  */
 internal fun BytecodePatchContext.wholeTextCallers(builder: Method, step: MethodReference): List<Method> {
     val found = mutableListOf<Method>()
@@ -158,7 +169,7 @@ internal fun BytecodePatchContext.wholeTextCallers(builder: Method, step: Method
         classDef.methods.filterTo(found) { method ->
             // Signatures, not the parameter lists: a mutable class's parameters aren't Strings, so `==` misses.
             val isBuilder = method.definingClass == builder.definingClass && MethodUtil.methodSignaturesMatch(method, builder)
-            !isBuilder && method.implementation?.instructions?.any { callsStep(it, step) } == true
+            !isBuilder && method.returnType !in MEASURES && method.implementation?.instructions?.any { callsStep(it, step) } == true
         }
     }
     return found
