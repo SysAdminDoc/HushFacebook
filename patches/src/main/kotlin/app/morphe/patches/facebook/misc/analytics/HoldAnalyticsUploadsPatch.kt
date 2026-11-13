@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.superclassChain
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 /**
  * Holds back Facebook's own analytics uploads: the XAnalytics event uploader and the Papaya
@@ -81,12 +82,13 @@ val holdAnalyticsUploadsPatch = bytecodePatch(
                     ". Applying the rest would leave that sender running, so nothing was changed.",
             )
         }
+        val table = { call: MethodReference -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
         val retryOutcomes = classDefByStrings(ANALYTICS2_JOB_RAN, StringComparisonType.EQUALS).flatMap { owner ->
-            owner.methods.mapNotNull { method -> analytics2RetryValue(method)?.let { method to it } }
+            owner.methods.mapNotNull { method -> analytics2RetryValue(method, table)?.let { method to it } }
         }
         if (retryOutcomes.size == 1) {
             val (method, index) = retryOutcomes.single()
-            mutable(method).observeAnalytics2Retry(index)
+            mutable(method).observeAnalytics2Retry(index, table)
         } else {
             patchLog.warning("$PATCH: found ${retryOutcomes.size} Analytics2 retry stores. Debug reports go on without retry outcomes.")
         }

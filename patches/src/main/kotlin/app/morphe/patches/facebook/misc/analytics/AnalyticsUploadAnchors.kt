@@ -11,6 +11,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.reels.watchhistory.callRegisters
 import app.morphe.patches.facebook.shared.readsMobileConfig
@@ -63,29 +64,42 @@ internal const val PAPAYA_ON = "$ANALYTICS_UPLOADS->papayaOn(Z)Z"
 internal const val ANALYTICS2_JOB_RAN = "com.facebook.analytics2.action.UPLOAD_JOB_RAN"
 internal const val OBSERVE_ANALYTICS2_RETRY = "$ANALYTICS_UPLOADS->observeAnalytics2Retry(Z)V"
 
-/** The unique framework store of Analytics2's retry flag, after the state machine finishes. */
-internal fun analytics2RetryValue(method: Method): Int? {
+/**
+ * The unique framework store of Analytics2's retry flag, after the state machine finishes. Its key
+ * is "will_retry", loaded straight before the store or read from a string table into the key
+ * register: 587's arm64 `LX/064q;->A00` asks `LX/0fSL;->A00` for index 0x1ea, which [resolve] finds.
+ */
+internal fun analytics2RetryValue(method: Method, resolve: (MethodReference) -> Method? = { null }): Int? {
     if (method.returnType != "V" || method.parameterTypes.isNotEmpty() ||
         !holdsString(method, ANALYTICS2_JOB_RAN) || !holdsString(method, "exitStateMachine")) return null
     val instructions = method.implementation?.instructions?.toList() ?: return null
     return (1 until instructions.lastIndex).filter { index ->
         val call = instructions[index]
         val ref = (call as? ReferenceInstruction)?.reference as? MethodReference
-        val key = instructions[index - 1]
         val registers = call.callRegisters()
         call.opcode in listOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE) &&
             ref?.definingClass == "Landroid/os/BaseBundle;" && ref.name == "putBoolean" &&
             ref.returnType == "V" && ref.parameterTypes.map(Any::toString) == listOf("Ljava/lang/String;", "Z") &&
             registers.size == 3 && registers.toSet().size == 3 &&
-            key.opcode in listOf(Opcode.CONST_STRING, Opcode.CONST_STRING_JUMBO) &&
-            ((key as? ReferenceInstruction)?.reference as? StringReference)?.string == "will_retry" &&
-            (key as? OneRegisterInstruction)?.registerA == registers[1]
+            loadsRetryKey(instructions, index - 1, registers[1], resolve)
     }.singleOrNull()
 }
 
+/** Whether the instruction at [index] puts "will_retry" in [register], as a literal or a string table's answer. */
+private fun loadsRetryKey(code: List<Instruction>, index: Int, register: Int, resolve: (MethodReference) -> Method?): Boolean {
+    val key = code[index]
+    if ((key as? OneRegisterInstruction)?.registerA != register) return false
+    return when (key.opcode) {
+        Opcode.CONST_STRING, Opcode.CONST_STRING_JUMBO ->
+            ((key as ReferenceInstruction).reference as? StringReference)?.string == "will_retry"
+        Opcode.MOVE_RESULT_OBJECT -> tableStringAt(code, index - 1, resolve) == "will_retry"
+        else -> false
+    }
+}
+
 /** One void call after the existing store, borrowing no registers and changing no host values. */
-internal fun MutableMethod.observeAnalytics2Retry(index: Int) {
-    if (analytics2RetryValue(this) != index) throw PatchException("$PATCH: Analytics2's retry store moved in $definingClass->$name")
+internal fun MutableMethod.observeAnalytics2Retry(index: Int, resolve: (MethodReference) -> Method? = { null }) {
+    if (analytics2RetryValue(this, resolve) != index) throw PatchException("$PATCH: Analytics2's retry store moved in $definingClass->$name")
     val value = getInstruction(index).callRegisters()[2]
     addInstructions(index + 1, "invoke-static/range { v$value .. v$value }, $OBSERVE_ANALYTICS2_RETRY")
 }

@@ -9,12 +9,14 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.reels.watchhistory.callRegisters
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.findFreeRegister
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Format
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -22,6 +24,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -53,18 +56,28 @@ class AnalyticsUploadsFixtureTest {
     }
 
     private fun checkAnalytics2Retry(bundle: File) {
+        val resolve = tableResolver(bundle)
         val matches = FixtureDex.classesHolding(bundle, ANALYTICS2_JOB_RAN).flatMap { owner ->
-            owner.methods.mapNotNull { method -> analytics2RetryValue(method)?.let { method to it } }
+            owner.methods.mapNotNull { method -> analytics2RetryValue(method, resolve)?.let { method to it } }
         }
         assertEquals("${bundle.name}: Analytics2 retry stores", 1, matches.size)
         val (method, index) = matches.single()
-        assertObservationOnly(method, index)
+        assertObservationOnly(method, index, resolve)
     }
 
-    private fun assertObservationOnly(method: Method, index: Int) {
+    /** Finds a static call's method in [bundle], reading each class once: how a string table is asked for its literal. */
+    private fun tableResolver(bundle: File): (MethodReference) -> Method? {
+        val read = HashMap<String, ClassDef?>()
+        return { call ->
+            read.getOrPut(call.definingClass) { FixtureDex.classes(bundle, setOf(call.definingClass))[call.definingClass] }
+                ?.let { resolveStatic(it, call) }
+        }
+    }
+
+    private fun assertObservationOnly(method: Method, index: Int, resolve: (MethodReference) -> Method? = { null }) {
         val original = method.implementation!!.instructions.toList()
         val value = original[index].callRegisters()[2]
-        val patched = MutableMethod(method).apply { observeAnalytics2Retry(index) }
+        val patched = MutableMethod(method).apply { observeAnalytics2Retry(index, resolve) }
         val instructions = patched.implementation!!.instructions.toList()
         val observer = instructions[index + 1]
         assertEquals(method.implementation!!.registerCount, patched.implementation!!.registerCount)
@@ -129,6 +142,58 @@ class AnalyticsUploadsFixtureTest {
         val before = method.implementation!!.instructions.toList()
         assertThrows(PatchException::class.java) { method.observeAnalytics2Retry(0) }
         assertEquals(before.size, method.implementation!!.instructions.count())
+    }
+
+    /** A string table answering "will_retry" for 0x1ea, as 587's arm64 `LX/0fSL;->A00` does. */
+    private val strings = MutableMethod(
+        ImmutableMethod("Lfixture/Strings;", "A00", listOf(ImmutableMethodParameter("I", null, null)), "Ljava/lang/String;",
+            AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, null, null,
+            ImmutableMethodImplementation(2, emptyList(), null, null)),
+    ).apply {
+        addInstructionsWithLabels(0, """
+            packed-switch p0, :cases
+            const-string v0, "unused"
+            return-object v0
+            :retry
+            const-string v0, "will_retry"
+            return-object v0
+            :cases
+            .packed-switch 0x1ea
+                :retry
+            .end packed-switch
+        """)
+    }
+
+    private val tableLookup: (MethodReference) -> Method? = { call ->
+        strings.takeIf { call.definingClass == it.definingClass && call.name == it.name }
+    }
+
+    private fun tableStore(index: String) = """
+        const/16 v16, $index
+        invoke-static/range {v16 .. v16}, Lfixture/Strings;->A00(I)Ljava/lang/String;
+        move-result-object v16
+        invoke-virtual/range {v15 .. v17}, Landroid/os/BaseBundle;->putBoolean(Ljava/lang/String;Z)V
+    """.trimIndent()
+
+    @Test
+    fun `retry observation finds a key the store reads from a string table`() {
+        val method = retryMethod(tableStore("0x1ea"))
+        val index = analytics2RetryValue(method, tableLookup)
+        assertNotNull("the store after the table's answer", index)
+        assertNull("without the table the key is unknown", analytics2RetryValue(method))
+        assertObservationOnly(method, index!!, tableLookup)
+        method.observeAnalytics2Retry(index, tableLookup)
+        assertEquals(listOf(17), method.implementation!!.instructions.elementAt(index + 1).callRegisters())
+    }
+
+    @Test
+    fun `retry observation rejects a table answer that isn't the retry key`() {
+        for (store in listOf(
+            tableStore("0x1eb"),
+            tableStore("0x1ea").replace("move-result-object v16", "move-result-object v14"),
+        )) {
+            assertNull(analytics2RetryValue(retryMethod(store), tableLookup))
+        }
     }
 
     private fun checkPapaya(bundle: File) {
