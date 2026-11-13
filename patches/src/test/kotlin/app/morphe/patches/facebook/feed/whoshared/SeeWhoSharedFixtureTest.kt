@@ -111,8 +111,13 @@ class SeeWhoSharedFixtureTest {
                     GRAPHQL_STORY_ATTACHMENT, launcher.definingClass) + tables
                 val classes = FixtureDex.classes(bundle, types)
                 assertEquals("$name: classes read", types, classes.keys)
+                // 587 builds the stock Download row in a helper the menu calls, with a lambda the menu makes.
+                val called = videoMenu.implementation!!.instructions.mapNotNull { it.methodRef()?.definingClass } +
+                    videoMenu.implementation!!.instructions.filter { it.opcode == Opcode.NEW_INSTANCE }
+                        .map { ((it as ReferenceInstruction).reference as TypeReference).type }
+                val helpers = FixtureDex.classes(bundle, called.toSet() - types)
 
-                val context = PatchContexts.of(classes.values +
+                val context = PatchContexts.of(classes.values + helpers.values +
                     listOf(ExtensionDex.classDef(WHO_SHARED), ExtensionDex.classDef(SETTINGS_STATUS)))
                 seeWhoSharedPatch.execute(context)
 

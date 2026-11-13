@@ -30,6 +30,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstructio
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.util.MethodUtil
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -105,8 +106,13 @@ class PostMenuPhotoFixtureTest {
                 val types = setOf(videoMenu.definingClass, base, site.definingClass, props, GRAPHQL_STORY, GRAPHQL_STORY_ATTACHMENT) + tables
                 val classes = FixtureDex.classes(bundle, types)
                 assertEquals("$name: classes read", types, classes.keys)
+                // 587 builds the stock Download row in a helper the menu calls, with a lambda the menu makes.
+                val called = videoMenu.implementation!!.instructions.mapNotNull { it.methodRef()?.definingClass } +
+                    videoMenu.implementation!!.instructions.filter { it.opcode == Opcode.NEW_INSTANCE }
+                        .map { ((it as ReferenceInstruction).reference as TypeReference).type }
+                val helpers = FixtureDex.classes(bundle, called.toSet() - types)
 
-                val context = PatchContexts.of(classes.values)
+                val context = PatchContexts.of(classes.values + helpers.values)
                 with(context) { postMenuPhotoItem()() }
 
                 val creator = context.mutableClassDefBy(site.definingClass)
