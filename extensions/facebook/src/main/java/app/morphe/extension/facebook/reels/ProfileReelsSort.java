@@ -40,7 +40,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>The patch hands over the class that holds Facebook's play count reader and a names string,
  * "reader/getter": the reader's name, then the name Facebook's tree models give their play count
- * getter (a no-argument int method). No obfuscated name is written down here. A count is read by
+ * getter (a no-argument int method). A build with no reader (587's armeabi-v7a build) hands over
+ * Object and "/getter", and the getter is read alone. No obfuscated name is written down here. A count is read by
  * walking no-argument getters returning interfaces from a list node, shortest chains first, either
  * to an object answering the play count getter or to the reader's argument, and taking the first
  * chain that reads. The Reels tab of a Page carries its count on a different branch than the one
@@ -258,7 +259,9 @@ public final class ProfileReelsSort {
     private static Method reader(Class<?> holder, String name) {
         for (Method method : holder.getDeclaredMethods()) {
             if (!method.getName().equals(name) || !Modifier.isStatic(method.getModifiers())) continue;
-            if (method.getParameterTypes().length != 1 || method.getReturnType() != Integer.class) continue;
+            // An Integer up to Facebook 586, an int from 587 on; invoke boxes either.
+            Class<?> answer = method.getReturnType();
+            if (method.getParameterTypes().length != 1 || (answer != Integer.class && answer != int.class)) continue;
             method.setAccessible(true);
             return method;
         }

@@ -48,6 +48,12 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * AO1().FXV().Eq8(). Facebook's tree models name every play count getter alike, a no-argument int
  * method holding the key (Eq8 on 585, all 24 of them), so that name goes to the extension too, as
  * "reader/getter", and the extension tries chains ending at that getter first.
+ *
+ * 587 (arm64 0lvQ.A0E) answers an int instead of an Integer, from a tree argument, and the getters
+ * are named FCg. One static int method taking a GraphQLStory holds the key as well, so the reader's
+ * argument has to be something other than a GraphQL model class. Some arm64 getters (0ma6.FCg) call
+ * the reader instead of holding the key. 587's armeabi-v7a build has no reader at all: each of its
+ * getters (FCe) holds the key, so the extension gets the getter alone there.
  */
 
 private const val PROFILE_SORT = "Newest reels first (profile reels order)"
@@ -79,10 +85,20 @@ internal class ProfileReelsSites(
 private fun holdsPlayCountKey(method: Method): Boolean =
     method.implementation?.instructions?.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == PLAY_COUNT_KEY } == true
 
-/** Whether [method] reads a play count: a static (one argument) method answering an Integer, holding the key. */
+/**
+ * Whether [method] reads a play count: a static (one argument) method answering an Integer, or from
+ * 587 on an int, holding the key. Its argument is a tree model, never a GraphQL model class: 587 also
+ * has static int helpers holding the key that take one of those.
+ */
 internal fun isPlayCountReader(method: Method): Boolean =
-    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Ljava/lang/Integer;" &&
-        method.parameterTypes.size == 1 && holdsPlayCountKey(method)
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType in PLAY_COUNT_TYPES &&
+        method.parameterTypes.size == 1 && !method.parameterTypes[0].toString().startsWith(GRAPHQL_MODELS) &&
+        holdsPlayCountKey(method)
+
+/** What a play count reader answers: an Integer up to 586, an int from 587 on. */
+private val PLAY_COUNT_TYPES = setOf("Ljava/lang/Integer;", "I")
+
+private const val GRAPHQL_MODELS = "Lcom/facebook/graphql/model/"
 
 /** Whether [method] is a tree model's play count getter: an instance method of no arguments answering an int, holding the key. */
 internal fun isPlayCountGetter(method: Method): Boolean =
@@ -93,14 +109,23 @@ internal fun isPlayCountGetter(method: Method): Boolean =
 internal class PlayCount(val holder: String, val names: String)
 
 /**
+ * What a build with no reader hands over as the reader's class: one the extension finds no reader on,
+ * so it reads the getter alone. 587's armeabi-v7a build has no reader: Redex folded it into each
+ * getter, and every getter holds the key itself.
+ */
+internal const val NO_READER = "Ljava/lang/Object;"
+
+/**
  * The play count, from [methods] (those [isPlayCountReader] or [isPlayCountGetter] accepts). Refuses
- * unless there is one reader and every getter shares one name.
+ * unless there is at most one reader and every getter shares one name. With no reader, the getter
+ * alone is handed over, on [NO_READER].
  */
 internal fun playCount(methods: List<Method>): PlayCount {
     val readers = methods.filter { isPlayCountReader(it) }
-    val reader = readers.singleOrNull() ?: refuseProfile("expected one play count reader, found ${readers.size}")
+    if (readers.size > 1) refuseProfile("expected one play count reader at most, found ${readers.size}")
     val getters = methods.filter { isPlayCountGetter(it) }.map { it.name }.toSortedSet()
     val getter = getters.singleOrNull() ?: refuseProfile("expected the play count getters to share one name, found $getters")
+    val reader = readers.singleOrNull() ?: return PlayCount(NO_READER, "/$getter")
     return PlayCount(reader.definingClass, "${reader.name}/$getter")
 }
 
@@ -116,12 +141,25 @@ internal fun profileReelsSites(sections: List<Method>, count: PlayCount): Profil
     val section = candidates.singleOrNull() ?: refuseProfile("expected one section method of one parameter loading \"$PROFILE_REELS_SECTION\", found ${candidates.size}")
     val parameter = section.parameterTypes[0].toString()
     val code = section.implementation!!.instructions.toList()
-    val builds = code.withIndex().filter { (_, instruction) ->
-        if (instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) return@filter false
-        val call = (instruction as ReferenceInstruction).reference as? MethodReference ?: return@filter false
-        call.parameterTypes.map { it.toString() } == listOf(parameter, LIST_TYPE)
+    val calls = code.map { (it as? ReferenceInstruction)?.reference as? MethodReference }
+    val statics = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
+    // A static (context, List) call builds the tiles from the list, up to 586 and on 587 arm64.
+    // 587's armeabi-v7a build inlines it: a static (context) call makes the builder, and the list
+    // is handed to it by a (List)V call (`LX/04C5;->A09`). The list is the second register either way.
+    val builders = code.indices.filter { code[it].opcode in statics }.mapNotNull { calls[it] }
+        .filter { call -> call.parameterTypes.map { it.toString() } == listOf(parameter) }.map { it.returnType }.toSet()
+    val builds = code.withIndex().filter { (index, instruction) ->
+        val call = calls[index] ?: return@filter false
+        val types = call.parameterTypes.map { it.toString() }
+        when (instruction.opcode) {
+            in statics -> types == listOf(parameter, LIST_TYPE)
+            Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE ->
+                types == listOf(LIST_TYPE) && call.returnType == "V" && call.definingClass in builders
+            else -> false
+        }
     }
-    val build = builds.singleOrNull() ?: refuseProfile("expected one ($parameter, List) builder call in ${section.name}, found ${builds.size}")
+    val build = builds.singleOrNull()
+        ?: refuseProfile("expected one ($parameter, List) builder call, or one List handed to a builder made from $parameter, in ${section.name}, found ${builds.size}")
     val listRegister = when (val instruction = build.value) {
         is FiveRegisterInstruction -> instruction.registerD
         is RegisterRangeInstruction -> instruction.startRegister + 1

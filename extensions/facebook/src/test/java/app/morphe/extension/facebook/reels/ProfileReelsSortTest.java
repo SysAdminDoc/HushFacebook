@@ -87,6 +87,13 @@ public class ProfileReelsSortTest {
         }
     }
 
+    /** Where Facebook 587 keeps its reader, which answers an int. */
+    public static final class IntReader {
+        public static int read(Story story) {
+            return story instanceof Counted ? ((Counted) story).views : -1;
+        }
+    }
+
     /** A node whose shape the sort can't follow. */
     public static final class Odd {
     }
@@ -187,6 +194,15 @@ public class ProfileReelsSortTest {
         List<Object> list = nodes();
         ProfileReelsSort.sort(list, Reader.class, "other");
         assertEquals("a b c d none", order(list));
+    }
+
+    @Test
+    public void aReaderAnsweringAnIntSortsTheSame() {
+        Settings.PROFILE_REELS_MOST_VIEWED.save(true);
+        List<Object> list = nodes();
+        ProfileReelsSort.sort(list, IntReader.class, "read");
+        assertEquals("d b a c none", order(list));
+        assertTrue(statusLine().contains(ProfileReelsSort.SORTED + " 1"));
     }
 
     @Test
@@ -292,6 +308,16 @@ public class ProfileReelsSortTest {
         Paged again = new Paged(tabNodes(), true);
         assertTrue(ProfileReelsSort.list(again, Reader.class, "read") == again);
         assertTrue(statusLine().contains(ProfileReelsSort.NO_COUNT));
+    }
+
+    @Test
+    public void aBuildWithNoReaderIsReadByTheGetterAlone() {
+        // Facebook 587's armeabi-v7a build has no reader: the patch hands over Object and "/getter".
+        Settings.PROFILE_REELS_MOST_VIEWED.save(true);
+        Paged paged = new Paged(tabNodes(), true);
+        Paged copy = (Paged) ProfileReelsSort.list(paged, Object.class, "/views");
+        assertEquals("d b a c none", order(copy.rows));
+        assertTrue(statusLine().contains(ProfileReelsSort.SORTED + " 1"));
     }
 
     /** A Reels tab row: Facebook's tab holds each tab item in a one-field row. */

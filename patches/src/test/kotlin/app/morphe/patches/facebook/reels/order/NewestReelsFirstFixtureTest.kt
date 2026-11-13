@@ -8,6 +8,7 @@ import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
@@ -50,7 +51,12 @@ class NewestReelsFirstFixtureTest {
             for (fixture in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = fixture.name
                 val rankers = FixtureDex.classesHolding(fixture, RANKER_TAG)
-                val reranks = rankers.flatMap { owner -> owner.methods.mapNotNull { m -> rerankList(m)?.let { m to it } } }
+                // 587's rerank builds a state object from its list, so the state's class is read too.
+                val known = rankers.associateBy { it.type }.toMutableMap()
+                val classOf: (String) -> ClassDef? = { type ->
+                    known[type] ?: FixtureDex.classes(fixture, setOf(type))[type]?.also { known[type] = it }
+                }
+                val reranks = rankers.flatMap { owner -> owner.methods.mapNotNull { m -> rerankList(m, classOf)?.let { m to it } } }
                 assertEquals("$name: reranks", 1, reranks.size)
                 val (rerank, list) = reranks.single()
                 // The hook reads the List parameter (this, the context, then the list) as the rerank
@@ -58,10 +64,22 @@ class NewestReelsFirstFixtureTest {
                 // long over the register late on one branch, which the start hook doesn't mind.
                 assertEquals("$name: the list register is the List parameter",
                     rerank.implementation!!.registerCount - 2, list)
-                assertTrue("$name: the rerank has no (List, Comparator) sort", rerank.code().any { it.isListSort() })
-                assertTrue("$name: the rerank never writes its List parameter", rerank.code().none { instruction ->
-                    instruction.opcode.setsRegister() && (instruction as? OneRegisterInstruction)?.registerA == list
-                })
+                if (holdsString(rerank, RANKER_TAG)) {
+                    assertTrue("$name: the rerank has no (List, Comparator) sort", rerank.code().any { it.isListSort() })
+                    assertTrue("$name: the rerank never writes its List parameter", rerank.code().none { instruction ->
+                        instruction.opcode.setsRegister() && (instruction as? OneRegisterInstruction)?.registerA == list
+                    })
+                } else {
+                    // 587: the rerank keeps the list in one List field of a state object it builds, and one
+                    // method of its class loads the tag and sorts a list read from that field. The rerank
+                    // reuses the parameter's register for a call argument later, after the start hook took it.
+                    val fields = listStateFields(rerank, list, classOf)
+                    assertEquals("$name: the state fields keeping the list", 1, fields.size)
+                    val ranker = rankerOf(rerank, fields.single(), classOf)
+                    assertNotNull("$name: no method of ${rerank.definingClass} sorts ${fields.single()}", ranker)
+                    assertTrue("$name: the ranker has no (List, Comparator) sort", ranker!!.code().any { it.isListSort() })
+                    assertTrue("$name: the ranker loads the tag", holdsString(ranker, RANKER_TAG))
+                }
 
                 val makers = FixtureDex.methodsWhere(fixture, { dex -> dex.stringSection.any { it == SIGNAL_MAKER } }, ::isSignalMaker)
                 assertTrue("$name: no signal maker", makers.isNotEmpty())
@@ -75,7 +93,7 @@ class NewestReelsFirstFixtureTest {
                         signalReads(maker) { classes[it] })
                 }
 
-                val owners: List<ClassDef> = (rankers + classes.values).distinctBy { it.type }
+                val owners: List<ClassDef> = (rankers + classes.values + known.values).distinctBy { it.type }
                 val context = PatchContexts.of(owners + ExtensionDex.classDef(SETTINGS_STATUS))
                 newestReelsFirstPatch.execute(context)
                 fun patched(method: Method) = context.mutableClassDefBy(method.definingClass).methods.single {

@@ -47,6 +47,12 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * parameter's register late on one branch, so the parameter goes to the extension at the start and
  * each return only says the rerank is done.
  *
+ * 587 split the rerank. JnY (04xj on arm64) keeps the (context, list, position) shape but loads no
+ * tag and sorts nothing: it packs its parameters into a state object (0BuN, the list in A1P) and
+ * ends by calling two private methods of its own class with it. Both load the tag; the second (A06)
+ * sorts the state's list in place, or a copy of a side list when there is one. The hook stays on
+ * JnY, the method the callers call, found by following its list into the state and on to that sort.
+ *
  * The list holds ranking signals, one per reel, which Facebook makes from each pool item with
  * createSignalForModel(model). The signal carries a key and scores but no posting time. The model
  * does: its edge (the interface's one no-argument Object getter) is the reel's GraphQL edge, whose
@@ -124,25 +130,128 @@ private fun Method.holdsListParameter(code: List<Instruction>, at: Int, register
 /**
  * The List parameter's register, or null when [method] isn't the rerank: a void instance method
  * taking (object, List, int) that loads [RANKER_TAG] and sorts that list in place with a static
- * `(List, Comparator)V` call on some path (straight from the parameter or through a copy register).
- * The hook hands the parameter over as the rerank starts and tells the extension at each return,
- * so it sorts the list the callers take the head of whichever sort ran, and the 585 rerank's other
- * sort, which orders a copy, doesn't matter. 586's rerank (05ZB.JNX) writes a long over the
- * parameter's register on its recordRankPass branch, so the returns can't read it there.
+ * `(List, Comparator)V` call on some path (straight from the parameter or through a copy register),
+ * or from 587 on hands it to a method of its own class that does ([handsListToRanker], which reads
+ * classes through [classOf]). The hook hands the parameter over as the rerank starts and tells the
+ * extension at each return, so it sorts the list the callers take the head of whichever sort ran,
+ * and the 585 rerank's other sort, which orders a copy, doesn't matter. 586's rerank (05ZB.JNX)
+ * writes a long over the parameter's register on its recordRankPass branch, so the returns can't
+ * read it there.
  */
-internal fun rerankList(method: Method): Int? {
+internal fun rerankList(method: Method, classOf: (String) -> ClassDef? = { null }): Int? {
     if (method.returnType != "V" || AccessFlags.STATIC.isSet(method.accessFlags)) return null
     val parameters = method.parameterTypes.map(CharSequence::toString)
     if (parameters.size != 3 || !parameters[0].startsWith("L") || parameters[1] != LIST || parameters[2] != "I") return null
-    if (!holdsString(method, RANKER_TAG)) return null
     val code = method.implementation?.instructions?.toList() ?: return null
     // this, the context, then the list.
     val listParameter = method.localRegisterCount() + 2
     if (code.none { it.opcode == Opcode.RETURN_VOID }) return null
+    if (!holdsString(method, RANKER_TAG)) {
+        return if (handsListToRanker(method, code, listParameter, classOf)) listParameter else null
+    }
     val sortsParameter = code.indices.filter { code[it].isListSort() }.any { index ->
         method.holdsListParameter(code, index, code[index].callRegisters().first(), listParameter, 3)
     }
     return if (sortsParameter) listParameter else null
+}
+
+/**
+ * The ranker method 587's rerank hands its list to: the one method of [rerank]'s own class it calls
+ * directly with only a state object, that loads [RANKER_TAG] and sorts a list read from the state's
+ * [field] in place. Null when there isn't exactly one. [classOf] finds the rerank's class.
+ */
+internal fun rankerOf(rerank: Method, field: String, classOf: (String) -> ClassDef?): Method? {
+    val own = classOf(rerank.definingClass) ?: return null
+    val state = field.substringBefore("->")
+    val code = rerank.implementation?.instructions?.toList() ?: return null
+    val callees = code.mapNotNull { instruction ->
+        if (instruction.opcode != Opcode.INVOKE_DIRECT && instruction.opcode != Opcode.INVOKE_DIRECT_RANGE) return@mapNotNull null
+        val call = (instruction as ReferenceInstruction).reference as? MethodReference ?: return@mapNotNull null
+        if (call.definingClass != rerank.definingClass || call.returnType != "V" ||
+            call.parameterTypes.map(CharSequence::toString) != listOf(state)) return@mapNotNull null
+        own.methods.singleOrNull {
+            it.name == call.name && it.returnType == "V" && it.implementation != null &&
+                it.parameterTypes.map(CharSequence::toString) == listOf(state)
+        }
+    }.distinct()
+    return callees.filter { callee ->
+        if (!holdsString(callee, RANKER_TAG)) return@filter false
+        val body = callee.implementation!!.instructions.toList()
+        body.indices.filter { body[it].isListSort() }.any { index ->
+            callee.readsField(body, index, body[index].callRegisters().first(), field, 3)
+        }
+    }.singleOrNull()
+}
+
+/**
+ * Whether [register] holds a value read from [field] (an `iget-object`) when the instruction at [at]
+ * runs, on some path, straight or through a chain of at most [hops] move-objects.
+ */
+private fun Method.readsField(code: List<Instruction>, at: Int, register: Int, field: String, hops: Int): Boolean =
+    writersReaching(at, register).any { writer ->
+        if (writer < 0) return@any false
+        val instruction = code[writer]
+        when {
+            instruction.opcode == Opcode.IGET_OBJECT -> (instruction as ReferenceInstruction).reference.toString() == field
+            hops > 0 && instruction.isObjectMove() ->
+                readsField(code, writer, (instruction as TwoRegisterInstruction).registerB, field, hops - 1)
+            else -> false
+        }
+    }
+
+/**
+ * The List fields of the state objects [method] builds from its List parameter ([listParameter]):
+ * for each constructor call handed the parameter (straight or through a copy register, with nothing
+ * written over it before), the field of the state's class that its constructor stores that argument
+ * in. [classOf] finds the state's class.
+ */
+internal fun listStateFields(method: Method, listParameter: Int, classOf: (String) -> ClassDef?): List<String> {
+    val code = method.implementation?.instructions?.toList() ?: return emptyList()
+    fun width(type: String) = if (type == "J" || type == "D") 2 else 1
+    return code.indices.flatMap { index ->
+        val init = code[index]
+        if (init.opcode != Opcode.INVOKE_DIRECT && init.opcode != Opcode.INVOKE_DIRECT_RANGE) return@flatMap emptyList()
+        val constructor = (init as ReferenceInstruction).reference as? MethodReference ?: return@flatMap emptyList()
+        if (constructor.name != "<init>") return@flatMap emptyList()
+        val types = constructor.parameterTypes.map(CharSequence::toString)
+        val registers = init.callRegisters()
+        types.indices.filter { types[it] == LIST }.mapNotNull { at ->
+            // The receiver comes first, then each argument takes one register, or two when wide.
+            val position = 1 + types.take(at).sumOf(::width)
+            val passed = registers.getOrNull(position) ?: return@mapNotNull null
+            if (!method.holdsListParameter(code, index, passed, listParameter, 3)) return@mapNotNull null
+            val stateClass = classOf(constructor.definingClass) ?: return@mapNotNull null
+            val body = stateClass.methods.singleOrNull {
+                it.name == "<init>" && it.implementation != null && it.parameterTypes.map(CharSequence::toString) == types
+            } ?: return@mapNotNull null
+            val self = body.localRegisterCount()
+            val argument = self + position
+            val stores = body.implementation!!.instructions.toList()
+            stores.indices.mapNotNull { store ->
+                val put = stores[store]
+                if (put.opcode != Opcode.IPUT_OBJECT) return@mapNotNull null
+                val field = (put as ReferenceInstruction).reference.toString()
+                val registersOf = put as TwoRegisterInstruction
+                field.takeIf {
+                    registersOf.registerA == argument && registersOf.registerB == self &&
+                        it.startsWith("${constructor.definingClass}->") && it.endsWith(":$LIST") &&
+                        body.writersReaching(store, argument) == listOf(-1)
+                }
+            }.singleOrNull()
+        }
+    }.distinct()
+}
+
+/**
+ * Whether [method], which loads no [RANKER_TAG] itself, hands its List parameter to the ranker: 587's
+ * rerank (04xj.JnY on arm64) builds a state object from its three parameters, whose constructor keeps
+ * the list in a List field, and calls the private method of its own class that loads the tag and
+ * sorts that field's list in place (A06; it sorts a copy of a side list instead when there is one).
+ */
+private fun handsListToRanker(method: Method, code: List<Instruction>, listParameter: Int, classOf: (String) -> ClassDef?): Boolean {
+    if (code.none { it.opcode == Opcode.INVOKE_DIRECT || it.opcode == Opcode.INVOKE_DIRECT_RANGE }) return false
+    val fields = listStateFields(method, listParameter, classOf)
+    return fields.mapNotNull { rankerOf(method, it, classOf) }.distinct().size == 1
 }
 
 /**

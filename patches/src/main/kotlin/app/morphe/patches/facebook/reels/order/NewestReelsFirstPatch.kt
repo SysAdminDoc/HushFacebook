@@ -42,11 +42,11 @@ val newestReelsFirstPatch = bytecodePatch(
         requireStatusMethod("newestReelsFirst")
 
         val reranks = classDefByStrings(RANKER_TAG, StringComparisonType.EQUALS).flatMap { owner ->
-            owner.methods.mapNotNull { method -> rerankList(method)?.let { method to it } }
+            owner.methods.mapNotNull { method -> rerankList(method) { classDefByOrNull(it) }?.let { method to it } }
         }
         val (rerank, list) = reranks.singleOrNull() ?: refuse(
             "expected one void (object, List, int) method loading \"$RANKER_TAG\" that sorts its List parameter " +
-                "in place with a (List, Comparator) call, found ${reranks.size}",
+                "in place with a (List, Comparator) call, or hands it to one of its class that does, found ${reranks.size}",
         )
 
         val makers = mutableListOf<Pair<Method, SignalReads>>()
