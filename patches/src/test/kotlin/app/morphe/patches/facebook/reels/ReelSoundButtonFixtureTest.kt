@@ -80,14 +80,23 @@ class ReelSoundButtonFixtureTest {
                 val buildsSpeaker = { call: MethodReference ->
                     callees[call.definingClass]?.methods?.any { isCalledBy(it, call) && newInstanceTypes(it).any(toggles::contains) } == true
                 }
-                val found = pieces.flatMap { piece -> piece.methods.flatMap { m -> controlSpeakerBuilds(m, buildsSpeaker).map { Triple(piece, m, it) } } }
+                val answersNull = { call: MethodReference ->
+                    callees[call.definingClass]?.methods?.any { isCalledBy(it, call) && builderAnswersNull(it) } == true
+                }
+                val found = pieces.flatMap { piece -> piece.methods.flatMap { m -> footerSpeakerBuilds(m, buildsSpeaker, answersNull).map { Triple(piece, m, it) } } }
                 assertEquals("$name: pieces of the footer that build the speaker", 1, found.size)
                 val (owner, method, build) = found.single()
                 val original = method.code()
                 // Negative control: the call-move-check shape alone matches more than the speaker, so
                 // the builder's toggle is what picks it.
-                val shapes = pieces.sumOf { piece -> piece.methods.sumOf { m -> controlSpeakerBuilds(m) { true }.size } }
+                val shapes = pieces.sumOf { piece -> piece.methods.sumOf { m -> footerSpeakerBuilds(m, { true }, { true }).size } }
                 assertTrue("$name: only the speaker's call has the shape, so the toggle check proves nothing", shapes > 1)
+                // What takes the builder's answer: 587 hands it straight to the column's add, with no null check.
+                val taker = FOOTER_TAKERS.getValue(version).getValue(abiOf(name, version))
+                assertEquals("$name: what takes the builder's answer", taker, original[build.call + 2].opcode)
+                // Negative control: an answer handed on counts only when the builder answers null itself.
+                assertEquals("$name: the speaker is found without the builder's own null", taker == Opcode.IF_EQZ,
+                    footerSpeakerBuilds(method, buildsSpeaker) { false }.isNotEmpty())
                 // No branch or switch case lands on the null check, so every path to it passes the hook.
                 assertTrue("$name: a branch lands on the null check", build.call + 2 !in branchTargets(original))
                 val builder = (original[build.call] as ReferenceInstruction).reference as MethodReference
@@ -104,7 +113,7 @@ class ReelSoundButtonFixtureTest {
                 val at = build.call + 2
                 assertEquals("$name: three instructions added", original.size + 3, patched.size)
                 assertEquals("$name: shape of the hook",
-                    listOf(Opcode.MOVE_RESULT_OBJECT, Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT_OBJECT, Opcode.CHECK_CAST, Opcode.IF_EQZ),
+                    listOf(Opcode.MOVE_RESULT_OBJECT, Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT_OBJECT, Opcode.CHECK_CAST, taker),
                     patched.subList(at - 1, at + 4).map { it.opcode })
                 val call = patched[at] as RegisterRangeInstruction
                 assertEquals("$name: the extension is asked", REEL_FOOTER_SOUND_BUTTON,
@@ -115,8 +124,9 @@ class ReelSoundButtonFixtureTest {
                     (patched[at + 1] as OneRegisterInstruction).registerA)
                 assertEquals("$name: the answer is cast back to the builder's type", build.type,
                     ((patched[at + 2] as ReferenceInstruction).reference as TypeReference).type)
-                assertEquals("$name: the null check reads the extension's answer", build.register,
-                    (patched[at + 3] as OneRegisterInstruction).registerA)
+                // The null check's register, or the add's one argument behind the column it adds to.
+                val takes = patched[at + 3].let { if (taker == Opcode.IF_EQZ) (it as OneRegisterInstruction).registerA else (it as FiveRegisterInstruction).registerD }
+                assertEquals("$name: what takes the answer reads the extension's", build.register, takes)
                 assertEquals("$name: the rest is Facebook's", original.map { it.opcode },
                     patched.take(at).map { it.opcode } + patched.drop(at + 3).map { it.opcode })
 
@@ -127,6 +137,19 @@ class ReelSoundButtonFixtureTest {
         assertEquals("a declared build has no fixture", versions, checked)
         assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
     }
+
+    /**
+     * What takes the footer builder's answer, per declared build and ABI. 587 arm64 (read 2026-11-12):
+     * LX/0CNe;->render hands LX/0DnE;->A02's answer straight to LX/01PG;->A00 with invoke-virtual.
+     * armeabi-v7a (read 2026-11-13): LX/0CN6;->render, instructions 267 to 269, hands LX/0DnT;->A02's
+     * answer to LX/01PL;->A00 with invoke-virtual.
+     */
+    private val FOOTER_TAKERS = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to Opcode.INVOKE_VIRTUAL,
+            "armeabi-v7a" to Opcode.INVOKE_VIRTUAL,
+        ),
+    )
 
     /** The ABI a fixture named [name] is built for, the Android 9 build counting as its ABI's. */
     private fun abiOf(name: String, version: String) = name.substringAfter("-$version-").substringBefore(".apkm").substringBefore("-minapi")

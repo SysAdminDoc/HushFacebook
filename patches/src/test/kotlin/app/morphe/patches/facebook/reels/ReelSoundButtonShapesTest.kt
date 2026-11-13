@@ -15,6 +15,7 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableField
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11n
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11x
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21t
@@ -165,17 +166,104 @@ class ReelSoundButtonShapesTest {
     }
 
     /**
+     * 587's footer piece: a virtual call to Lfixture/Builder;->A02 on v1, its answer moved into v0 and
+     * handed by [adds] to Lfixture/Column;->A00 answering [answers], called on [registers] (the column,
+     * then the answer) with one [takes] parameter per register after the first, then a return.
+     */
+    private fun handingPiece(
+        adds: Opcode = Opcode.INVOKE_VIRTUAL,
+        answers: String = "V",
+        takes: String = "Lfixture/Row;",
+        registers: List<Int> = listOf(1, 0),
+    ): Method {
+        val build = ImmutableMethodReference("Lfixture/Builder;", "A02", emptyList(), "Lfixture/Row;")
+        val add = ImmutableMethodReference("Lfixture/Column;", "A00", List(registers.size - 1) { takes }, answers)
+        val slots = registers + List(5 - registers.size) { 0 }
+        val code = listOf<Instruction>(
+            ImmutableInstruction35c(Opcode.INVOKE_VIRTUAL, 1, 1, 0, 0, 0, 0, build),
+            ImmutableInstruction11x(Opcode.MOVE_RESULT_OBJECT, 0),
+            ImmutableInstruction35c(adds, registers.size, slots[0], slots[1], slots[2], slots[3], slots[4], add),
+            ImmutableInstruction10x(Opcode.RETURN_VOID),
+        )
+        return ImmutableMethod(
+            "Lfixture/Piece;", "render", emptyList(), "V", AccessFlags.PUBLIC.value, null, null,
+            ImmutableMethodImplementation(2, code, null, null),
+        )
+    }
+
+    @Test
+    fun `587's footer hands the answer to the column's add only when the builder answers null itself`() {
+        val found = listOf(SpeakerBuild(call = 0, register = 0, type = "Lfixture/Row;"))
+        assertEquals(found, footerSpeakerBuilds(handingPiece(), anyBuilder) { true })
+        assertEquals(found, footerSpeakerBuilds(handingPiece(adds = Opcode.INVOKE_INTERFACE), anyBuilder) { true })
+        // It's the builder that is asked whether it answers null, never the add.
+        assertEquals(found, footerSpeakerBuilds(handingPiece(), anyBuilder) { it.definingClass == "Lfixture/Builder;" })
+        assertTrue(footerSpeakerBuilds(handingPiece(), anyBuilder) { it.definingClass == "Lfixture/Column;" }.isEmpty())
+        // A builder that never answers null would get its first null from the hook: refused.
+        assertTrue(footerSpeakerBuilds(handingPiece(), anyBuilder) { false }.isEmpty())
+        assertTrue(footerSpeakerBuilds(handingPiece(), { false }) { true }.isEmpty())
+        // The null-checked shapes before 587 still count, with or without the builder's own null.
+        assertEquals(found, footerSpeakerBuilds(piece(call = Opcode.INVOKE_VIRTUAL), anyBuilder) { false })
+        assertEquals(found, footerSpeakerBuilds(piece(), anyBuilder) { false })
+        // The controls and the static matcher never take a hand-on.
+        assertTrue(controlSpeakerBuilds(handingPiece(), anyBuilder).isEmpty())
+        assertTrue(speakerBuilds(handingPiece(), anyBuilder).isEmpty())
+    }
+
+    @Test
+    fun `a hand-on that answers something, takes more or other, or isn't on another object is refused`() {
+        val answersNull = { _: MethodReference -> true }
+        assertTrue(footerSpeakerBuilds(handingPiece(answers = "Z"), anyBuilder, answersNull).isEmpty())
+        assertTrue(footerSpeakerBuilds(handingPiece(takes = "I"), anyBuilder, answersNull).isEmpty())
+        assertTrue(footerSpeakerBuilds(handingPiece(registers = listOf(1, 0, 0)), anyBuilder, answersNull).isEmpty())
+        // The answer has to be the argument, on some other object.
+        assertTrue(footerSpeakerBuilds(handingPiece(registers = listOf(0, 1)), anyBuilder, answersNull).isEmpty())
+        assertTrue(footerSpeakerBuilds(handingPiece(registers = listOf(0, 0)), anyBuilder, answersNull).isEmpty())
+        assertTrue(footerSpeakerBuilds(handingPiece(adds = Opcode.INVOKE_STATIC), anyBuilder, answersNull).isEmpty())
+    }
+
+    /** A builder A02 that puts [literal] in v[literalIn] with const/4, maybe a nop, then returns v[returned]. */
+    private fun nullBuilder(literal: Int = 0, literalIn: Int = 0, returned: Int = 0, between: Boolean = false): Method {
+        val code = listOfNotNull<Instruction>(
+            ImmutableInstruction11n(Opcode.CONST_4, literalIn, literal),
+            if (between) ImmutableInstruction10x(Opcode.NOP) else null,
+            ImmutableInstruction11x(Opcode.RETURN_OBJECT, returned),
+        )
+        return ImmutableMethod(
+            "Lfixture/Builder;", "A02", emptyList(), "Lfixture/Row;", AccessFlags.PUBLIC.value or AccessFlags.FINAL.value, null, null,
+            ImmutableMethodImplementation(2, code, null, null),
+        )
+    }
+
+    @Test
+    fun `a builder answers null itself only with a const 0 moved straight into its return`() {
+        assertTrue(builderAnswersNull(nullBuilder()))
+        assertTrue(builderAnswersNull(nullBuilder(literalIn = 1, returned = 1)))
+        // Another constant, another register returned, or something between isn't a null answer.
+        assertTrue(!builderAnswersNull(nullBuilder(literal = 1)))
+        assertTrue(!builderAnswersNull(nullBuilder(returned = 1)))
+        assertTrue(!builderAnswersNull(nullBuilder(between = true)))
+        // A builder that only returns what it news up never answers null.
+        assertTrue(!builderAnswersNull(builder(SOUND_BUTTON_KEY, "Lfixture/Toggle;")))
+    }
+
+    /**
      * A footer builder: an if-nez on v0 over the toggle's new-instance, landing on [landsOn], and a
      * return of the toggle in front of it. Two code units each for the if-nez and the new-instance and
-     * one for the return, so the branch's offset of 5 lands just past them.
+     * one for the return, so the branch's offset of 5 lands just past them. Landing on a const/4, it
+     * puts [literal] in v0 and returns v0 straight after, as 587's builder does.
      */
-    private fun footerBuilder(check: Opcode = Opcode.IF_NEZ, landsOn: Opcode = Opcode.RETURN_OBJECT): Method {
+    private fun footerBuilder(check: Opcode = Opcode.IF_NEZ, landsOn: Opcode = Opcode.RETURN_OBJECT, literal: Int = 0): Method {
+        val landing = when (landsOn) {
+            Opcode.RETURN_OBJECT -> listOf(ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0))
+            Opcode.CONST_4 -> listOf(ImmutableInstruction11n(Opcode.CONST_4, 0, literal), ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0))
+            else -> listOf(ImmutableInstruction10x(landsOn))
+        }
         val code = listOf<Instruction>(
             ImmutableInstruction21t(check, 0, 5),
             ImmutableInstruction21c(Opcode.NEW_INSTANCE, 1, ImmutableTypeReference("Lfixture/Toggle;")),
             ImmutableInstruction11x(Opcode.RETURN_OBJECT, 1),
-            if (landsOn == Opcode.RETURN_OBJECT) ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0) else ImmutableInstruction10x(landsOn),
-        )
+        ) + landing
         return ImmutableMethod(
             "Lfixture/Builder;", "A00", emptyList(), "Lfixture/Row;", AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, null, null,
             ImmutableMethodImplementation(2, code, null, null),
@@ -186,9 +274,12 @@ class ReelSoundButtonShapesTest {
     fun `the footer's check is the last if-nez in front of the toggle, landing on a return`() {
         val toggles = setOf("Lfixture/Toggle;")
         assertEquals(0, footerSpeakerCheck(footerBuilder(), toggles))
-        // An if-eqz, a branch that lands anywhere but a return, or no toggle in the method isn't it.
+        // 587 lands on a const/4 of 0 moved straight into the return, which answers null the same way.
+        assertEquals(0, footerSpeakerCheck(footerBuilder(landsOn = Opcode.CONST_4), toggles))
+        // An if-eqz, a branch that lands anywhere but a return or a null one, or no toggle in the method isn't it.
         assertEquals(null, footerSpeakerCheck(footerBuilder(check = Opcode.IF_EQZ), toggles))
         assertEquals(null, footerSpeakerCheck(footerBuilder(landsOn = Opcode.NOP), toggles))
+        assertEquals(null, footerSpeakerCheck(footerBuilder(landsOn = Opcode.CONST_4, literal = 1), toggles))
         assertEquals(null, footerSpeakerCheck(footerBuilder(), emptySet()))
     }
 

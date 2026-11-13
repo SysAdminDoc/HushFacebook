@@ -96,7 +96,8 @@ private fun CharSequence.isObjectType() = startsWith("L") || startsWith("[")
 /**
  * The if-nez in the speaker builder [method] that answers null when the video controls are the ones
  * to build it: the last if-nez before it news up one of the sound [toggles], landing on a return.
- * Null when the builder has no such branch.
+ * From 587 (arm64 LX/0DnE;->A02, armv7 LX/0DnT;->A02) it lands on a const/4 of 0 moved straight into
+ * the return, which answers null the same way. Null when the builder has no such branch.
  */
 internal fun footerSpeakerCheck(method: Method, toggles: Set<String>): Int? {
     val code = method.code()
@@ -104,7 +105,8 @@ internal fun footerSpeakerCheck(method: Method, toggles: Set<String>): Int? {
         it.opcode == Opcode.NEW_INSTANCE && ((it as ReferenceInstruction).reference as TypeReference).type in toggles
     }
     val check = (toggle - 1 downTo 0).firstOrNull { code[it].opcode == Opcode.IF_NEZ } ?: return null
-    return check.takeIf { branchTarget(code, check)?.let(code::getOrNull)?.opcode == Opcode.RETURN_OBJECT }
+    val lands = branchTarget(code, check) ?: return null
+    return check.takeIf { code.getOrNull(lands)?.opcode == Opcode.RETURN_OBJECT || returnsNullAt(code, lands) }
 }
 
 /**
