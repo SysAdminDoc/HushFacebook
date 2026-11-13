@@ -189,10 +189,21 @@ class ReturnRefreshFixtureTest {
         // The tab's visibility change and the worker the feed posts on pause hand the executor their
         // decision, and the visibility change and the revisit refresh ask the hot-start check.
         val targets = setOf(signature(executor), signature(hotStart))
+        // 587 moved the visibility change's half into the executor's own class: NewsFeedFragment's
+        // onSetUserVisibleHint calls a (ZZ)V there (arm64 `LX/02gj;->A0N`) that asks the hot-start
+        // check and hands the executor its decision. A call to a method of the executor's class
+        // calling both counts as a call to each.
+        val relays = FixtureDex.classes(bundle, setOf(executor.definingClass)).getValue(executor.definingClass).methods
+            .filter { method ->
+                val calls = method.implementation?.instructions?.map { it.call() }.orEmpty()
+                signature(executor) in calls && signature(hotStart) in calls
+            }.map(::signature).toSet()
         val callers = FixtureDex.methodsWhere(bundle, { dex -> dex.stringSection.any { it in callerTexts } }) { method ->
-            method.implementation?.instructions?.any { it.call() in targets } == true
+            method.implementation?.instructions?.any { it.call() in targets || it.call() in relays } == true
         }
-        fun callersOf(target: Method) = callers.filter { caller -> caller.body().any { it.call() == signature(target) } }
+        fun callersOf(target: Method) = callers.filter { caller ->
+            caller.body().any { it.call() == signature(target) || it.call() in relays }
+        }
         assertTrue("$name: no onSetUserVisibleHint hands the executor a decision",
             callersOf(executor).any { it.name == "onSetUserVisibleHint" })
         assertTrue("$name: no pause worker hands the executor a decision",

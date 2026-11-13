@@ -204,7 +204,7 @@ val blockReturnRefreshPatch = bytecodePatch(
         val hotStarts = classDefByStrings(HOT_START_CHECK, StringComparisonType.EQUALS)
             .flatMap { it.methods.filter(::isHotStartCheck) }
         val hotStart = hotStarts.singleOrNull() ?: throw PatchException(
-            "Expected one static (owner, String...) hot-start check holding $HOT_START_CHECK, found ${hotStarts.size}",
+            "Expected one (owner, String...) or instance (String...) hot-start check holding $HOT_START_CHECK, found ${hotStarts.size}",
         )
         if (hotStart.implementation!!.instructions.none { callsMethod(it, check) }) {
             throw PatchException("The hot-start check ${hotStart.definingClass}->${hotStart.name} doesn't ask the warm-start check")
@@ -499,15 +499,21 @@ internal fun isStalePostExecutor(method: Method): Boolean =
         holdsString(method, STALE_POST_RE_RANK)
 
 /**
- * Whether [method] is the feed's hot-start check: a static void or boolean taking its own class and
- * the caller's source first. 580 and 581 take a threshold after the source and answer nothing, 577
- * takes none and answers whether it refreshed.
+ * Whether [method] is the feed's hot-start check: a void or boolean taking the caller's source first,
+ * after its own class when it is static. 580 and 581 take a threshold after the source and answer
+ * nothing, 577 takes none and answers whether it refreshed. 587 made it a private instance method
+ * (`LX/02gj;->A08(String, long)`), so the owner is `this`.
  */
 internal fun isHotStartCheck(method: Method): Boolean {
     val parameters = method.parameterTypes.map { it.toString() }
-    return AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType in setOf("V", "Z") &&
-        method.implementation != null && parameters.size >= 2 && parameters[0] == method.definingClass &&
-        parameters[1] == STRING && holdsString(method, HOT_START_CHECK)
+    val source = if (AccessFlags.STATIC.isSet(method.accessFlags)) {
+        if (parameters.firstOrNull() != method.definingClass) return false
+        parameters.getOrNull(1)
+    } else {
+        parameters.firstOrNull()
+    }
+    return method.returnType in setOf("V", "Z") && method.implementation != null && parameters.size >= 2 &&
+        source == STRING && holdsString(method, HOT_START_CHECK)
 }
 
 /** Whether [method] is NewsFeedTabDataFetch's dispatch: a static void, its last parameter a boolean, that loads its source. */
