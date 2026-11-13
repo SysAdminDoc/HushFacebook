@@ -41,6 +41,16 @@ class MenuSubpagesFixtureTest {
         it.name == method.name && it.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
     }
 
+    /**
+     * The stack's methods asking for the page update, per build. 587 moved the push's and the pop's
+     * shared body into one static taking the stack (`LX/0B3f;->A00` on arm64, `LX/0B37;->A00` on
+     * 32-bit), so it has one where earlier builds have two.
+     */
+    private val pageChangeCounts = mapOf("587.0.0.39.55" to 1)
+
+    private fun pageChangeCount(bundle: String): Int =
+        pageChangeCounts.entries.singleOrNull { bundle.contains("-${it.key}-") }?.value ?: 2
+
     @Test
     fun `each declared bundle asks every Menu on the page stack for the page`() {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -61,8 +71,8 @@ class MenuSubpagesFixtureTest {
             val found = context.menuSubpages()
             assertNotNull("$name: the parts the patch needs", found)
             found!!
-            // Positive controls: Facebook's push and pop, each asking for the page update with one literal.
-            assertEquals("$name: the stack's push and pop", 2, found.pages.size)
+            // Positive controls: Facebook's push and pop, or the static they share, each asking for the page update with one literal.
+            assertEquals("$name: the stack's push and pop", pageChangeCount(name), found.pages.size)
             assertEquals("$name: the tree field's owner", binding.contextType, found.tree.definingClass)
             val stackBefore = others.getValue(binding.stack)
             val pagesBefore = found.pages.map { (page, read) -> page.code() to read }

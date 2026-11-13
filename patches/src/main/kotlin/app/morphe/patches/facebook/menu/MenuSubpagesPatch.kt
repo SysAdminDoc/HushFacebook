@@ -165,7 +165,7 @@ internal fun BytecodePatchContext.menuSubpages(): MenuSubpages? {
     )
     val stack = classDefByOrNull(binding.stack) ?: return warn("${binding.stack} isn't in the app")
     val pages = pageChanges(stack, binding.reference)
-    if (pages.isEmpty()) return warn("${stack.type} has no push or pop reading its Menu once and asking for \"$PAGE_UPDATE\"")
+    if (pages.isEmpty()) return warn("${stack.type} has no push, pop or static they share reading its Menu once and asking for \"$PAGE_UPDATE\"")
     val updates = pages.map { (page, _) -> pageUpdate(page) }.distinct()
     if (updates.size != 1) return warn("${stack.type}'s push and pop build their page update ${updates.size} ways")
     val update = updates.single() ?: return warn("${stack.type}'s push and pop don't build \"$PAGE_UPDATE\" the way 585 does")
@@ -310,11 +310,12 @@ internal fun treeField(context: ClassDef): FieldReference? {
 }
 
 /**
- * The stack's push and pop: its instance methods holding [PAGE_UPDATE] that read [reference] once,
- * each with the index of that read.
+ * The stack's push and pop: its methods holding [PAGE_UPDATE] that read [reference] once, each with
+ * the index of that read. Instance methods on 585, and on 587 the one static both call, taking the
+ * stack alone (`LX/0B3f;->A00`, 32-bit `LX/0B37;->A00`).
  */
 internal fun pageChanges(stack: ClassDef, reference: FieldReference): List<Pair<Method, Int>> = stack.methods
-    .filter { !AccessFlags.STATIC.isSet(it.accessFlags) && holds(it, PAGE_UPDATE) }
+    .filter { (!AccessFlags.STATIC.isSet(it.accessFlags) || takesStackAlone(stack, it)) && holds(it, PAGE_UPDATE) }
     .mapNotNull { page ->
         val reads = page.implementation!!.instructions.withIndex()
             .filter { (_, instruction) -> instruction.opcode == Opcode.IGET_OBJECT && instruction.field() == reference }
@@ -354,3 +355,5 @@ private fun Instruction.method() = (this as? ReferenceInstruction)?.reference as
 private fun Instruction.string() = ((this as? ReferenceInstruction)?.reference as? StringReference)?.string
 
 private fun holds(method: Method, string: String) = method.implementation?.instructions?.any { it.string() == string } == true
+
+private fun takesStackAlone(stack: ClassDef, method: Method) = method.parameterTypes.map(CharSequence::toString) == listOf(stack.type)

@@ -52,11 +52,13 @@ class MenuSectionsFixtureTest {
      * 585's (`LX/0IqZ;->A17` arm64) loads 584's five in the same order, each 6 higher, so 0x7f140466.
      * 586's header asks the bookmark UI's kept `getHeadContentDescription` for its words, which formats
      * 0x7f14046c with the title, 585's two states (each 6 higher) and its two actions (each 8 higher),
-     * since 586 adds a one-argument label behind a MobileConfig flag between them.
+     * since 586 adds a one-argument label behind a MobileConfig flag between them. 587's
+     * `getHeadContentDescription` (`LX/0HF4;` arm64) is 586's with every id 12 higher, so 0x7f140478.
      */
     private val headerLabel = mapOf(
         "585.0.0.47.54" to 0x7f140466,
         "586.0.0.52.53" to 0x7f14046c,
+        "587.0.0.39.55" to 0x7f140478,
     )
 
     private val testKeys = listOf(UPGRADES_TEST_KEY, ALSO_FROM_META_TEST_KEY)
