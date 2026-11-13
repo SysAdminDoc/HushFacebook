@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 import app.morphe.extension.facebook.navigation.MarketplaceFilterButton;
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -42,8 +43,9 @@ import app.morphe.extension.shared.settings.HushfacebookPause;
  *       boosted listings out of its answer. A Marketplace query whose variables name either one at
  *       their top level has it set to true. A variable a query doesn't name is never added.
  *   <li>The four ads-only queries Facebook's own code lists beside the feed ({@link
- *       #ADS_ONLY_QUERIES}) aren't sent, and neither are the three that fill a listing page's ad
- *       rows ({@link #LISTING_ADS_QUERIES}). The body answered is null, and the Networking module
+ *       #ADS_ONLY_QUERIES}) aren't sent, and neither are the home feed's themed ad rows ({@link
+ *       #THEMED_ADS_QUERIES}) or the three that fill a listing page's ad rows ({@link
+ *       #LISTING_ADS_QUERIES}). The body answered is null, and the Networking module
  *       reports that to Relay as a request it couldn't make, its own error path.
  * </ul>
  *
@@ -100,6 +102,21 @@ public final class MarketplaceAdFilter {
             "MarketplaceHomeFeedBoostedListingAdsQuery",
             "MarketplaceHomeFeedBoostedListingAdsPaginationQuery",
     };
+
+    /**
+     * The home feed's themed ad rows, a pair of sponsored tiles under an advertiser's name and "Ad"
+     * (#459, 586 on a Pixel 10 Pro XL: MarketplaceHomeFeedThemedAdsFetch answered two
+     * MarketplaceFeedAdStory items with their sponsored_data, and both were drawn). Neither name is
+     * on Facebook's list above; they're in its JavaScript bundle. Any other home feed query with
+     * "Ads" as a word of its name is taken to be one more of these ({@link #homeFeedAds}).
+     */
+    static final String[] THEMED_ADS_QUERIES = {
+            "MarketplaceHomeFeedThemedAdsFetch",
+            "MarketplaceHomeFeedAdsThemedQuery",
+    };
+
+    /** "Ads" as a whole word of a query's camel-case name, so not the "ads" in "Loads" or "Uploads". */
+    private static final Pattern ADS_WORD = Pattern.compile("Ads(?![a-z])");
 
     /**
      * The queries that fill a listing page's ad rows: "Ads inspired by your views", the boosted
@@ -473,10 +490,19 @@ public final class MarketplaceAdFilter {
         for (String ads : ADS_ONLY_QUERIES) {
             if (ads.equals(query)) return "one of the feed's ads-only queries";
         }
+        if (homeFeedAds(query)) return "one of the feed's themed ad rows";
         for (String ads : LISTING_ADS_QUERIES) {
             if (ads.equals(query)) return "one of the listing page's ad rows";
         }
         return null;
+    }
+
+    /** Whether [query] is one of {@link #THEMED_ADS_QUERIES}, or a home feed query named for its ads. */
+    static boolean homeFeedAds(String query) {
+        for (String ads : THEMED_ADS_QUERIES) {
+            if (ads.equals(query)) return true;
+        }
+        return query.startsWith(MARKETPLACE + "HomeFeed") && ADS_WORD.matcher(query).find();
     }
 
     /**

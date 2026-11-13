@@ -188,6 +188,30 @@ public class MarketplaceAdFilterTest {
     }
 
     /**
+     * #459: the home feed's themed ad rows came from a query of their own, which went out, and its
+     * two ad stories were drawn as a pair of "Ad" tiles. Both themed names are held back, as is any
+     * home feed query with "Ads" as a word of its name. The home feed itself, a query whose "ads"
+     * is inside a word, and a non-home query go out.
+     */
+    @Test
+    public void theHomeFeedsThemedAdRowsDontGoOut() {
+        String body = body("{\"count\":2,\"localOnly\":false,\"shippedOnly\":null}");
+        for (String query : MarketplaceAdFilter.THEMED_ADS_QUERIES) {
+            assertNull(query, MarketplaceAdFilterForTests.requestBody(query, body));
+        }
+        assertNull("a later themed ads page", MarketplaceAdFilterForTests.requestBody("MarketplaceHomeFeedThemedAdsPaginationQuery", body));
+        assertTrue(counterLine(), counterLine().contains(" 3 removed. Last reason: " + MarketplaceAdFilter.HELD_BACK));
+        assertEquals("one of the feed's themed ad rows", MarketplaceAdFilter.heldBack("MarketplaceHomeFeedThemedAdsFetch"));
+
+        for (String query : new String[]{"MarketplaceHomeQuery", FEED, "MarketplaceHomeFeedUploadsQuery",
+                "MarketplaceHomeFeedLoadsMoreQuery", "MarketplaceSurfaceHighlightsSurfaceQuery"}) {
+            assertFalse(query, MarketplaceAdFilter.homeFeedAds(query));
+            assertNull(query, MarketplaceAdFilter.heldBack(query));
+            assertNotNull(query, MarketplaceAdFilterForTests.requestBody(query, body));
+        }
+    }
+
+    /**
      * The three queries behind a listing page's ad rows are held back too, and the log says so.
      * The page's own queries go out as they were, and off or paused so do the ad rows' queries.
      */
