@@ -234,24 +234,32 @@ private fun calls(method: Method, target: Method): Boolean =
 internal fun callsSender(owner: ClassDef, sender: Method): Boolean = owner.methods.any { calls(it, sender) }
 
 /**
- * The seen helper: the one class among [callers] with a method calling [sender] and a method naming
- * [SEEN_HELPER_LITERAL], as a literal of its own or as a string table entry [resolve] reads.
+ * The seen helper: the one class among [callers] with a method calling [sender], a method naming
+ * [SEEN_HELPER_LITERAL] (as a literal of its own or as a string table entry [resolve] reads), and a
+ * per-card method. 587 also names the literal in the viewer's controller (LX/0CBG;), which calls the
+ * sender too but marks no single card; the helper (LX/0Boj;) is the one with the per-card method.
  */
 internal fun seenHelper(callers: List<ClassDef>, sender: Method, resolve: (MethodReference) -> Method?): ClassDef {
     val helpers = callers.filter { caller ->
-        callsSender(caller, sender) && caller.methods.any { namesString(it, SEEN_HELPER_LITERAL, resolve) }
+        callsSender(caller, sender) && caller.methods.any { namesString(it, SEEN_HELPER_LITERAL, resolve) } &&
+            perCardMethods(caller).isNotEmpty()
     }.distinctBy { it.type }
     return helpers.singleOrNull()
         ?: refuse("expected one class naming \"$SEEN_HELPER_LITERAL\" that calls the sender, found ${helpers.size}")
 }
 
-/** The seen helper's per-card method: its one static void (FbUserSession, StoryBucket, StoryCard, helper, boolean). */
-internal fun cardSeen(helper: ClassDef): Method {
+/** The static voids of [helper] taking (FbUserSession, StoryBucket, StoryCard, helper, boolean). */
+private fun perCardMethods(helper: ClassDef): List<Method> {
     val shape = listOf(FB_USER_SESSION, STORY_BUCKET, STORY_CARD, helper.type, "Z")
-    val methods = helper.methods.filter {
+    return helper.methods.filter {
         AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" && it.implementation != null &&
             it.parameterTypes.map { type -> type.toString() } == shape
     }
+}
+
+/** The seen helper's per-card method: its one static void (FbUserSession, StoryBucket, StoryCard, helper, boolean). */
+internal fun cardSeen(helper: ClassDef): Method {
+    val methods = perCardMethods(helper)
     return methods.singleOrNull() ?: refuse("expected one static per-card method in ${helper.type}, found ${methods.size}")
 }
 
@@ -893,24 +901,36 @@ internal fun MutableMethod.reportState() {
 internal class CountLater(val listener: ClassDef, val constructor: Method, val session: Field)
 
 /**
+ * True for a listener constructor's parameters: (StoryBucket, StoryCard, [helper]) and then only
+ * primitives, ending in a boolean. Up to 586 that tail was the boolean alone; 587 puts an int
+ * before it.
+ */
+private fun isCountLaterShape(types: List<String>, helper: String): Boolean =
+    types.size >= 4 && types.take(3) == listOf(STORY_BUCKET, STORY_CARD, helper) && types.last() == "Z" &&
+        types.drop(3).all { it.length == 1 }
+
+/**
  * In [helper]'s instance void (StoryBucket, StoryCard) method: the one class it creates with a
- * constructor taking (StoryBucket, StoryCard, [helper], boolean), which [classes] looks up, and
- * [helper]'s one FbUserSession field. Null when the helper isn't shaped that way.
+ * constructor taking (StoryBucket, StoryCard, [helper], primitives..., boolean), which [classes]
+ * looks up, and [helper]'s one FbUserSession field. Null when the helper isn't shaped that way.
  */
 internal fun countLater(helper: ClassDef, classes: (String) -> ClassDef?): CountLater? {
     val session = helper.fields.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == FB_USER_SESSION }
         .singleOrNull() ?: return null
-    val shape = listOf(STORY_BUCKET, STORY_CARD, helper.type, "Z")
     val made = helper.methods.filter {
         !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
             it.parameterTypes.map(Any::toString) == listOf(STORY_BUCKET, STORY_CARD)
     }.flatMap { method ->
         method.implementation?.instructions?.toList().orEmpty().mapNotNull { instruction ->
             val call = instruction.call(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE)
-            if (call != null && call.name == "<init>" && call.takes(*shape.toTypedArray())) call.definingClass else null
+            if (call != null && call.name == "<init>" && isCountLaterShape(call.parameterTypes.map(Any::toString), helper.type)) {
+                call.definingClass to call.parameterTypes.map(Any::toString)
+            } else {
+                null
+            }
         }
     }.toSet()
-    val type = made.singleOrNull() ?: return null
+    val (type, shape) = made.singleOrNull() ?: return null
     val listener = classes(type) ?: return null
     val constructor = listener.methods.singleOrNull {
         it.name == "<init>" && it.parameterTypes.map(Any::toString) == shape && it.implementation != null

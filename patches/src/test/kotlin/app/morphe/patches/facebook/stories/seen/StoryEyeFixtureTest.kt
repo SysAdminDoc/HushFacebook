@@ -81,7 +81,8 @@ class StoryEyeFixtureTest {
                 assertTrue("$name: the helper's session isn't public", AccessFlags.PUBLIC.isSet(later.session.accessFlags))
 
                 // The helper's (StoryBucket, StoryCard) method counts a card at once when the story
-                // plays and makes the listener otherwise, after the same checks.
+                // plays and makes the listener otherwise, after the same checks. Up to 586 the
+                // count came first in the code; 587 lays the listener's block out first.
                 val activated = helper.methods.single {
                     !AccessFlags.STATIC.isSet(it.accessFlags) &&
                         it.parameterTypes.map(Any::toString) == listOf(STORY_BUCKET, STORY_CARD) &&
@@ -90,10 +91,14 @@ class StoryEyeFixtureTest {
                 val code = activated.implementation!!.instructions.toList()
                 val countNow = code.indexOfFirst { it.call?.let { c -> c.definingClass == helper.type && c.takes(cardSeen(helper)) } == true }
                 val made = code.indexOfFirst { it.opcode == Opcode.NEW_INSTANCE && (it as ReferenceInstruction).reference.toString() == later.listener.type }
-                assertTrue("$name: the helper doesn't count the card at once before making the listener", countNow in 0 until made)
+                assertTrue("$name: the helper doesn't count the card at once", countNow >= 0)
+                assertTrue("$name: the helper doesn't make the listener", made >= 0)
 
+                // The bucket, the card and the helper are the constructor's first three
+                // parameters (p1 to p3) whatever primitives follow them.
                 val constructor = later.constructor
                 val count = constructor.implementation!!.registerCount
+                val p1 = count - constructor.parameterTypes.map { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }.sum()
                 val before = constructor.implementation!!.instructions.toList()
                 val patched = MutableMethod(constructor).apply { reportCardLater() }
                 val after = patched.implementation!!.instructions.toList()
@@ -101,7 +106,7 @@ class StoryEyeFixtureTest {
                 assertEquals("$name: the hook's form", Opcode.INVOKE_STATIC_RANGE, after[0].opcode)
                 assertEquals("$name: the hook", ON_CARD_LATER, after[0].call!!.descriptor())
                 assertEquals("$name: the hook's arguments are the bucket, the card and the helper",
-                    (count - 4 until count - 1).toList(), registers(after[0]))
+                    (p1 until p1 + 3).toList(), registers(after[0]))
                 assertTrue("$name: the constructor branches", before.none { it.opcode.name.startsWith("if-") || it.opcode.name.startsWith("goto") })
                 checked += version
             }

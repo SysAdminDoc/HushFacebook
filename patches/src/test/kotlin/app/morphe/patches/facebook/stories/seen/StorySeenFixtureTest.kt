@@ -96,14 +96,22 @@ class StorySeenFixtureTest {
                 assertTrue("$name: the sender doesn't ask whether it has cards before building", isEmpty in 0 until build)
                 assertTrue("$name: the sender has no return-void", code.any { it.opcode == Opcode.RETURN_VOID })
 
-                // One caller: the seen helper's flush, which takes the reason it flushes for.
+                // The seen helper's flush, which takes the reason it flushes for, calls the sender.
+                // 587 calls it from the story viewer's controller too, in a class of its own; the
+                // hook sits in the sender, so it covers both.
                 val senderCallers = FixtureDex.methodsWhere(bundle, dexFilter = { dex ->
                     dex.methodSection.any { it.definingClass == owner.type && it.name == sender.name }
                 }) { calls(it, sender) }
-                assertEquals("$name: callers of the sender", 1, senderCallers.size)
-                val flush = senderCallers.single()
-                assertEquals("$name: the flush's shape", listOf("Ljava/lang/String;"), flush.parameterTypes.map { it.toString() })
-                assertEquals("$name: the flush's shape", "V", flush.returnType)
+                assertEquals("$name: callers of the sender", SENDER_CALLERS[version] ?: 1, senderCallers.size)
+                assertEquals("$name: classes calling the sender", senderCallers.size, senderCallers.map { it.definingClass }.toSet().size)
+                // 587 made the flush static, taking the helper first and a callback last.
+                val flush = senderCallers.filter {
+                    val types = it.parameterTypes.map { type -> type.toString() }
+                    it.returnType == "V" && (types == listOf("Ljava/lang/String;") ||
+                        AccessFlags.STATIC.isSet(it.accessFlags) &&
+                        types == listOf(it.definingClass, "Ljava/lang/String;", "Lkotlin/jvm/functions/Function0;"))
+                }
+                assertEquals("$name: callers shaped like the flush, (String)V or (helper, String, Function0)V", 1, flush.size)
 
                 // Replies and reactions go out from a class of their own, which the hook leaves alone.
                 val viewerMutations = FixtureDex.classesHolding(bundle, "surface=story_viewer")
@@ -119,8 +127,11 @@ class StorySeenFixtureTest {
     }
 }
 
-/** Builds whose seen request builder makes the query itself, with no query class of its own. */
-internal val SEEN_QUERY_IN_BUILDER = setOf("586.0.0.52.53")
+/** Builds where the story viewer's controller calls the seen sender beside the helper's flush (587 arm64 LX/0CBG;). */
+private val SENDER_CALLERS = mapOf("587.0.0.39.55" to 2)
+
+/** Builds whose seen request builder makes the query itself, with no query class of its own (586 on; 587 arm64 LX/0CE7;->getRequest). */
+internal val SEEN_QUERY_IN_BUILDER = setOf("587.0.0.39.55")
 
 /**
  * The seen mutation's query class in [bundle], one class whose constructor names it, or null on a
