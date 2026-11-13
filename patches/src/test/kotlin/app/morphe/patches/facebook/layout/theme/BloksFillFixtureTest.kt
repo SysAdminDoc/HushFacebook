@@ -108,6 +108,50 @@ class BloksFillFixtureTest {
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
+    /**
+     * A build with every patch hooks the builder three times, AMOLED and Material You before Accent
+     * color or after it, so each search has to find a builder another theme already hooked. On 587
+     * the search followed the fill through a copy and lost it at the first hook's move-result, and
+     * patching every patch stopped at Accent color (2026-11-13).
+     */
+    @Test
+    fun `the three themes hook one Bloks box builder in turn, on each declared build`() {
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in bundles(version)) {
+                val name = bundle.name
+                val box = FixtureDex.classesHolding(bundle, BOX_DECORATION_BORDER_ERROR).single()
+                val builder = box.methods.single { method ->
+                    AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.size == 3 &&
+                        method.parameterTypes.last().toString() == "I" &&
+                        paintsFrom(method.body(), method.parameterRegisterNumber(2))
+                }
+                val fill = builder.parameterRegisterNumber(2)
+                val targets = listOf(AMOLED_BLOKS_FILL, MATERIAL_YOU_BLOKS_FILL, ACCENT_BLOKS_FILL)
+                val context = PatchContexts.of(listOf(box))
+                for (target in targets) {
+                    BoxDecorationBorderFingerprint.clearMatch()
+                    with(context) { hookBloksFills(target) }
+                }
+                val after = context.mutableClassDefBy(box.type).methods.single { it.descriptor() == builder.descriptor() }.body()
+
+                // Each hook goes in at the top, so the last one asked runs first.
+                targets.reversed().forEachIndexed { index, target ->
+                    val hook = after[index * 2]
+                    assertEquals("$name: hook ${index + 1} is $target", target,
+                        ((hook as ReferenceInstruction).reference as MethodReference).toString())
+                    assertEquals("$name: on the fill's register", fill, (hook as RegisterRangeInstruction).startRegister)
+                    assertEquals("$name: its answer goes back into the fill", fill,
+                        (after[index * 2 + 1] as OneRegisterInstruction).registerA)
+                }
+                assertEquals("$name: the rest of the builder is as it was", builder.body().size + 6, after.size)
+                assertTrue("$name: and still paints the fill", paintsFrom(after.drop(6), fill))
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
     @Test
     fun `each Bloks text span's colour goes through the accent before the span is made, on each declared build`() {
         val checked = mutableSetOf<String>()

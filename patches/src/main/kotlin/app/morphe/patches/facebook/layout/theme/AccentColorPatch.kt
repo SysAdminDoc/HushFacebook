@@ -23,6 +23,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
@@ -107,6 +108,7 @@ internal fun isBoxBuilder(method: Method, border: Method): Boolean {
     val fills = mutableSetOf(method.parameterRegisterNumber(parameters.lastIndex))
     var asksBorder = false
     var paintsFill = false
+    var previous: Instruction? = null
     for (instruction in code) {
         val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
         if (call != null) {
@@ -117,9 +119,23 @@ internal fun isBoxBuilder(method: Method, border: Method): Boolean {
                 paintsFill = true
             }
         }
-        trackFillCopies(instruction, fills)
+        if (!isFillHookAnswer(previous, instruction, fills)) trackFillCopies(instruction, fills)
+        previous = instruction
     }
     return asksBorder && paintsFill
+}
+
+/**
+ * A theme's own hook on the fill ([hookBloksFill]): an extension call given only the fill, whose
+ * answer goes back into the fill, so the fill is still the fill after it. AMOLED, Material You and
+ * Accent color each put one at the top of the builder, so every search but the first sees one.
+ */
+private fun isFillHookAnswer(previous: Instruction?, instruction: Instruction, fills: Set<Int>): Boolean {
+    if (instruction.opcode != Opcode.MOVE_RESULT || previous?.opcode != Opcode.INVOKE_STATIC_RANGE) return false
+    val hook = previous as RegisterRangeInstruction
+    val target = ((previous as ReferenceInstruction).reference as? MethodReference)?.definingClass ?: return false
+    val fill = (instruction as OneRegisterInstruction).registerA
+    return target.startsWith(EXTENSION_PACKAGE) && hook.registerCount == 1 && hook.startRegister == fill && fill in fills
 }
 
 private val PLAIN_MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
