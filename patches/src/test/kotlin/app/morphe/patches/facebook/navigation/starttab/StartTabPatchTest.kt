@@ -23,6 +23,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
@@ -186,6 +187,83 @@ class StartTabPatchTest {
                 """,
             ),
         )
+    }
+
+    /**
+     * 587's form of the step: the dispatcher's case for [step] asks a method of its own for the
+     * copy and sets what it answers, after a null check unless [nullCheck] is false. The maker
+     * builds the copy in v0 from the action and the link and copies [kept] over inline, or with
+     * [copier] through a static method taking the original and the copy, then returns the copy
+     * ([returnsCopy] false returns the original).
+     */
+    private fun copyMakingSanitizer(
+        step: String = SANITIZE_INTENT,
+        kept: String = KEPT_EXTRA,
+        copier: Boolean = false,
+        returnsCopy: Boolean = true,
+        nullCheck: Boolean = true,
+    ): List<Method> {
+        val maker = "Lfixture/IntentSanitizer;"
+        val extras = "Lfixture/IntentExtras;"
+        val keep = if (copier) {
+            "invoke-static { p1, v0 }, $extras->copy(Landroid/content/Intent;Landroid/content/Intent;)V"
+        } else {
+            """
+                const-string v1, "$kept"
+                invoke-virtual { p1, v1 }, Landroid/content/Intent;->getStringExtra(Ljava/lang/String;)Ljava/lang/String;
+                move-result-object v2
+                invoke-virtual { v0, v1, v2 }, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
+            """
+        }
+        return listOfNotNull(
+            method(
+                startOps, "run", listOf("Landroid/app/Activity;", "Ljava/lang/String;"), "V", 4, static = true,
+                smali = """
+                    const-string v0, "$step"
+                    invoke-virtual { p1, v0 }, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+                    move-result v0
+                    if-eqz v0, :done
+                    invoke-virtual { p0 }, Landroid/app/Activity;->getIntent()Landroid/content/Intent;
+                    move-result-object v1
+                    new-instance v0, $maker
+                    invoke-virtual { v0, v1 }, $maker->sanitize(Landroid/content/Intent;)Landroid/content/Intent;
+                    move-result-object v1
+                    ${if (nullCheck) "if-eqz v1, :done" else ""}
+                    invoke-virtual { p0, v1 }, Landroid/app/Activity;->setIntent(Landroid/content/Intent;)V
+                    goto :done
+                    :done
+                    return-void
+                """,
+            ),
+            method(
+                maker, "sanitize", listOf(INTENT), INTENT, 5, static = false,
+                smali = """
+                    invoke-virtual { p1 }, Landroid/content/Intent;->getAction()Ljava/lang/String;
+                    move-result-object v1
+                    invoke-virtual { p1 }, Landroid/content/Intent;->getData()Landroid/net/Uri;
+                    move-result-object v2
+                    new-instance v0, Landroid/content/Intent;
+                    invoke-direct { v0, v1, v2 }, Landroid/content/Intent;-><init>(Ljava/lang/String;Landroid/net/Uri;)V
+                    $keep
+                    return-object ${if (returnsCopy) "v0" else "p1"}
+                """,
+            ),
+            if (!copier) null else method(
+                extras, "copy", listOf(INTENT, INTENT), "V", 4, static = true,
+                smali = """
+                    const-string v0, "$kept"
+                    invoke-virtual { p0, v0 }, Landroid/content/Intent;->getStringExtra(Ljava/lang/String;)Ljava/lang/String;
+                    move-result-object v1
+                    invoke-virtual { p1, v0, v1 }, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
+                    return-void
+                """,
+            ),
+        )
+    }
+
+    /** What a call names among [methods], as the patch finds a method in the app by its class. */
+    private fun named(methods: List<Method>) = { call: MethodReference ->
+        methods.firstOrNull { it.definingClass == call.definingClass && it.name == call.name }
     }
 
     /**
@@ -466,6 +544,45 @@ class StartTabPatchTest {
             openOnChosenTabPatch.execute(PatchContexts.of(build(sanitizers = outlinedSanitizer(kept = "app_switch_source_user"))))
         }
         assertTrue(noCase.message, noCase.message!!.contains("\"$SANITIZE_INTENT\"), found 0"))
+    }
+
+    @Test
+    fun `587's step case sets a copy a method of its own makes, and the patch goes in the case`() {
+        for (copier in listOf(false, true)) {
+            val form = if (copier) "extras copied by a static method" else "extras copied inline"
+            val methods = copyMakingSanitizer(copier = copier)
+            val (dispatcher, maker) = methods
+            val makes = { call: MethodReference -> named(methods)(call)?.let { returnsSanitizedCopy(it, named(methods)) } == true }
+            assertTrue("$form: the maker", returnsSanitizedCopy(maker, named(methods)))
+            assertNull("$form: the maker hands nothing over itself", sanitizedCopyHandOver(maker))
+            assertNull("$form: the dispatcher builds no copy itself", sanitizedIntentHandOver(dispatcher))
+            assertEquals(form, ACTIVITY_SET_INTENT, dispatcher.body()[sanitizeCaseHandOver(dispatcher, makes)!!].reference)
+
+            copyMakingSanitizer(kept = "app_switch_source_user", copier = copier).let {
+                assertFalse("$form: no kept extra", returnsSanitizedCopy(it[1], named(it)))
+            }
+            copyMakingSanitizer(returnsCopy = false, copier = copier).let {
+                assertFalse("$form: returns the original", returnsSanitizedCopy(it[1], named(it)))
+            }
+            copyMakingSanitizer(nullCheck = false, copier = copier).let {
+                assertEquals("$form: without the null check", ACTIVITY_SET_INTENT, it[0].body()[sanitizeCaseHandOver(it[0], makes)!!].reference)
+            }
+            assertNull("$form: another step's case", sanitizeCaseHandOver(copyMakingSanitizer(step = "sanitize_intents", copier = copier)[0], makes))
+            assertNull("$form: a case setting what no maker made", sanitizeCaseHandOver(dispatcher) { false })
+
+            val context = PatchContexts.of(build(sanitizers = methods))
+            openOnChosenTabPatch.execute(context)
+            val step = context.mutableClassDefBy(startOps).methods.single().body()
+            val handOver = step.single { (it as? ReferenceInstruction)?.reference?.toString() == SET_SANITIZED_INTENT }
+            // p0 of a four-register static method of two parameters is v2; the copy is in v1.
+            assertEquals(form, listOf(2, 1), handOver.callRegisters())
+            assertTrue("$form: the old setIntent is still there", step.none { (it as? ReferenceInstruction)?.reference?.toString() == ACTIVITY_SET_INTENT })
+            assertEquals("$form: the maker changed", maker.body().map { it.opcode },
+                context.mutableClassDefBy(maker.definingClass).methods.single().body().map { it.opcode })
+        }
+        // Through a copier the build hasn't got, nothing says the kept extra is copied.
+        val methods = copyMakingSanitizer(copier = true)
+        assertFalse("the copier isn't there", returnsSanitizedCopy(methods[1]) { null })
     }
 
     @Test

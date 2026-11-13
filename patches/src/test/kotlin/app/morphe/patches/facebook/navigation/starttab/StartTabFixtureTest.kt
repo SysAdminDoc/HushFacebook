@@ -151,6 +151,7 @@ class StartTabFixtureTest {
                 val inlineChecks = mutableListOf<Pair<Method, Int>>()
                 val queues = mutableSetOf<String>()
                 val stepCalls = mutableListOf<Pair<String, MethodReference>>()
+                val cases = mutableListOf<Method>()
                 FixtureDex.forEach(fixture) { dex ->
                     val strings = dex.stringSection.toHashSet()
                     val sanitizes = SANITIZE_INTENT in strings
@@ -163,7 +164,9 @@ class StartTabFixtureTest {
                         for (method in classDef.methods) {
                             if (sanitizes) {
                                 sanitizedIntentHandOver(method)?.let { handOvers += ImmutableMethod.of(method) to it }
-                                sanitizeStepCalls(method).forEach { stepCalls += classDef.type to ImmutableMethodReference.of(it) }
+                                val calls = sanitizeStepCalls(method)
+                                calls.forEach { stepCalls += classDef.type to ImmutableMethodReference.of(it) }
+                                if (calls.isNotEmpty()) cases += ImmutableMethod.of(method)
                             }
                             if (traces) startPositionGate(method)?.let { gates += ImmutableMethod.of(method) to it }
                             if (targets && keepsAskedStartTab(method)) checks += ImmutableMethod.of(method)
@@ -173,6 +176,8 @@ class StartTabFixtureTest {
                 }
                 // From 585 the dispatcher's case only calls the step's body, a method of its own.
                 val dispatchers = mutableSetOf<String>()
+                // From 587 the case only asks a method of its own for the copy and sets what it answers.
+                val makers = mutableSetOf<String>()
                 if (handOvers.isEmpty()) {
                     val owners = FixtureDex.classes(fixture, stepCalls.map { it.second.definingClass }.toSet())
                     stepCalls.distinctBy { it.toString() }.forEach { (dispatcher, call) ->
@@ -184,7 +189,32 @@ class StartTabFixtureTest {
                             dispatchers += dispatcher
                         }
                     }
-                    assertEquals("$name: dispatchers whose \"$SANITIZE_INTENT\" case calls the step's body", 1, dispatchers.size)
+                    if (handOvers.isEmpty()) {
+                        val answering = stepCalls.filter { it.second.returnType == INTENT }
+                            .mapNotNull { (_, call) -> owners[call.definingClass]?.let { stepBody(it, call) } }
+                        val called = FixtureDex.classes(fixture, answering.flatMap { code(it).mapNotNull { i -> i.call?.definingClass } }.toSet())
+                        val body = { call: MethodReference -> (owners[call.definingClass] ?: called[call.definingClass])?.let { stepBody(it, call) } }
+                        val makes = { call: MethodReference ->
+                            val maker = body(call)
+                            (maker != null && returnsSanitizedCopy(maker, body)).also { made ->
+                                if (!made) return@also
+                                makers += call.definingClass
+                                code(maker!!).mapNotNullTo(makers) { i ->
+                                    i.call?.takeIf { c ->
+                                        c.parameterTypes.map(CharSequence::toString) == listOf(INTENT, INTENT) && c.returnType == "V"
+                                    }?.definingClass
+                                }
+                            }
+                        }
+                        cases.forEach { case ->
+                            sanitizeCaseHandOver(case, makes)?.let {
+                                handOvers += case to it
+                                dispatchers += case.definingClass
+                            }
+                        }
+                        assertTrue("$name: the copy's makers: $makers", makers.isNotEmpty())
+                    }
+                    assertEquals("$name: dispatchers whose \"$SANITIZE_INTENT\" case calls the step's body or the copy's maker", 1, dispatchers.size)
                 }
                 assertEquals("$name: start-up steps that sanitize the main screen's intent", 1, handOvers.size)
                 assertEquals("$name: tab bar start position gates", 1, gates.size)
@@ -208,7 +238,7 @@ class StartTabFixtureTest {
 
                 val kept = setOf(MAIN_TAB_ACTIVITY, fragmentActivity, delegate, navigationConfig, TAB_TAG,
                     STARTUP_DESTINATION_ROUTER, picker.definingClass, sanitizer.definingClass, position.definingClass,
-                    checkOwner, FEED_FILTERS_FRAGMENT, FEED_TYPE) + offered.keys + dispatchers
+                    checkOwner, FEED_FILTERS_FRAGMENT, FEED_TYPE) + offered.keys + dispatchers + makers
                 val classes = FixtureDex.classes(fixture, kept)
                 assertEquals("$name: classes missing", emptySet<String>(), kept - classes.keys)
 
@@ -278,7 +308,7 @@ class StartTabFixtureTest {
                 // The patch, on this build's main screen classes, picker and start-up steps.
                 val context = PatchContexts.of(
                     listOf(MAIN_TAB_ACTIVITY, fragmentActivity, picker.definingClass, sanitizer.definingClass,
-                        position.definingClass, checkOwner, FEED_FILTERS_FRAGMENT).plus(dispatchers).distinct()
+                        position.definingClass, checkOwner, FEED_FILTERS_FRAGMENT).plus(dispatchers).plus(makers).distinct()
                         .map(classes::getValue) +
                         ExtensionDex.classDef(SETTINGS_STATUS),
                 )

@@ -28,6 +28,7 @@ import com.android.tools.smali.dexlib2.builder.BuilderInstruction
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 /**
  * Opens Facebook on the tab chosen in Hushfacebook's settings when it's started from its launcher
@@ -78,13 +79,17 @@ val openOnChosenTabPatch = bytecodePatch(
         val inline = steps.flatMap { owner ->
             owner.methods.mapNotNull { method -> sanitizedIntentHandOver(method)?.let { method to it } }
         }
+        fun body(call: MethodReference): Method? = classDefByOrNull(call.definingClass)?.let { stepBody(it, call) }
         // 585 moves the step's body out of the dispatcher, so it's the method the step's case calls.
         val handOvers = inline.ifEmpty {
             steps.flatMap { owner -> owner.methods.flatMap(::sanitizeStepCalls) }.distinctBy { it.toString() }
-                .mapNotNull { call ->
-                    val body = classDefByOrNull(call.definingClass)?.let { stepBody(it, call) } ?: return@mapNotNull null
-                    sanitizedCopyHandOver(body)?.let { body to it }
-                }
+                .mapNotNull { call -> body(call)?.let { step -> sanitizedCopyHandOver(step)?.let { step to it } } }
+        }.ifEmpty {
+            // 587 only makes the copy in a method of its own, and the step's case sets what it answers.
+            val makesCopy = { call: MethodReference -> body(call)?.let { returnsSanitizedCopy(it, ::body) } == true }
+            steps.flatMap { owner ->
+                owner.methods.mapNotNull { method -> sanitizeCaseHandOver(method, makesCopy)?.let { method to it } }
+            }
         }
         val handOver = exactlyOne(
             handOvers,

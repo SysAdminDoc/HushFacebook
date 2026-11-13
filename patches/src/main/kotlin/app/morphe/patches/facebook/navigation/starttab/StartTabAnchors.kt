@@ -50,7 +50,8 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *    own tab shortcuts put the tab in a link for that reason, and its notifications carry the
  *    PendingIntent. The patch hands the step's copy to the extension, which asks for the tab
  *    again when it asked for one in the first place. Up to 584 the step ran inside the dispatcher
- *    that compares step names; 585 moves its body into a method of its own the case calls.
+ *    that compares step names; 585 moves its body into a method of its own the case calls, and
+ *    587 moves only the copy out, into a method that answers it for the case to set.
  * 2. "setup_main_view_controllers" asks the picker about the (now sanitized) intent, keeps the
  *    answer as the main screen's start tab and gives it to the tab bar. The tab bar's
  *    "TabBarController.determineStartingTabPosition" then uses it only when one of Facebook's
@@ -299,16 +300,85 @@ private val CASE_ENDS = setOf(
  */
 internal fun sanitizeStepCalls(method: Method): List<MethodReference> {
     val code = method.implementation?.instructions?.toList() ?: return emptyList()
+    return sanitizeCases(code).flatMap { case -> case.mapNotNull { code[it].call } }
+}
+
+/** The instructions of each case for [SANITIZE_INTENT] in [code]: from after its `String.equals` to the end of the case. */
+private fun sanitizeCases(code: List<Instruction>): List<IntRange> {
     // A case starts by comparing the step's name, so a load of the literal elsewhere doesn't count.
     val starts = code.indices.filter { index ->
         ((code[index] as? ReferenceInstruction)?.reference as? StringReference)?.string == SANITIZE_INTENT &&
             code.getOrNull(index + 1)?.call?.let { it.definingClass == "Ljava/lang/String;" && it.name == "equals" } == true
     }
-    return starts.flatMap { start ->
+    return starts.map { start ->
         val end = (start + 2 until code.size).firstOrNull { code[it].opcode in CASE_ENDS } ?: code.size
-        (start + 2 until end).mapNotNull { code[it].call }
+        start + 2 until end
     }
 }
+
+/** Whether [instruction] is the screen's `Activity.setIntent(Intent)`. */
+private fun setsIntent(instruction: Instruction): Boolean {
+    val call = instruction.call ?: return false
+    return (instruction.opcode == Opcode.INVOKE_VIRTUAL || instruction.opcode == Opcode.INVOKE_VIRTUAL_RANGE) &&
+        call.definingClass == ACTIVITY && call.name == "setIntent" && call.parameters() == listOf(INTENT) &&
+        call.returnType == "V"
+}
+
+/** Whether [instruction] builds a new Intent from an action and a link, as the sanitized copy is built. */
+private fun buildsCopy(instruction: Instruction): Boolean {
+    val call = instruction.call ?: return false
+    return instruction.opcode == Opcode.INVOKE_DIRECT && call.definingClass == INTENT && call.name == "<init>" &&
+        call.parameters() == listOf("Ljava/lang/String;", "Landroid/net/Uri;")
+}
+
+/**
+ * Whether [method] makes the sanitized copy and answers it, as 587's step does in a method of its
+ * own: it builds a new Intent from the action and the link, copies [KEPT_EXTRA] into it and returns
+ * it. The copy is made inline on armeabi-v7a (`LX/01Vu;->A00`), and arm64 (`LX/01Vp;->A02`) hands
+ * the original and the copy to a static `(Intent, Intent)V` that copies the extras
+ * (`LX/01Vp;->A01`). [body] finds the method such a call names.
+ */
+internal fun returnsSanitizedCopy(method: Method, body: (MethodReference) -> Method?): Boolean {
+    if (method.returnType != INTENT || method.parameterTypes.none { it.toString() == INTENT }) return false
+    val code = method.implementation?.instructions?.toList() ?: return false
+    val built = code.indexOfFirst(::buildsCopy)
+    if (built < 0) return false
+    val copy = code[built].callRegisters().firstOrNull() ?: return false
+    val after = code.subList(built + 1, code.size)
+    val keptInline = after.any { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == KEPT_EXTRA }
+    val keptByCopier = after.any { instruction ->
+        val call = instruction.call
+        (instruction.opcode == Opcode.INVOKE_STATIC || instruction.opcode == Opcode.INVOKE_STATIC_RANGE) && call != null &&
+            call.parameters() == listOf(INTENT, INTENT) && call.returnType == "V" &&
+            instruction.callRegisters().getOrNull(1) == copy && body(call)?.let { holdsString(it, KEPT_EXTRA) } == true
+    }
+    return (keptInline || keptByCopier) &&
+        after.any { it.opcode == Opcode.RETURN_OBJECT && (it as OneRegisterInstruction).registerA == copy }
+}
+
+/**
+ * Where [method]'s case for [SANITIZE_INTENT] hands the main screen a copy another method made and
+ * answered, the index of that `setIntent`, or null when it doesn't. 587's case (`LX/03I1;->A00`
+ * arm64) calls the copy's maker, checks the answer isn't null and sets it; [makesCopy] says whether
+ * a call's method is such a maker ([returnsSanitizedCopy]).
+ */
+internal fun sanitizeCaseHandOver(method: Method, makesCopy: (MethodReference) -> Boolean): Int? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val sets = sanitizeCases(code).flatMap { case ->
+        case.filter { index -> setsIntent(code[index]) }.filter { set ->
+            val copy = code[set].callRegisters().getOrNull(1) ?: return@filter false
+            // Only a null check on the copy may come between the maker's answer and the hand-over.
+            var at = set - 1
+            while (at > case.first && code[at].opcode in NULL_CHECKS && (code[at] as OneRegisterInstruction).registerA == copy) at--
+            val answer = code[at]
+            at > case.first && answer.opcode == Opcode.MOVE_RESULT_OBJECT && (answer as OneRegisterInstruction).registerA == copy &&
+                code[at - 1].call?.let { it.returnType == INTENT && makesCopy(it) } == true
+        }
+    }
+    return sets.singleOrNull()
+}
+
+private val NULL_CHECKS = setOf(Opcode.IF_EQZ, Opcode.IF_NEZ)
 
 /** The method of [owner] that [call] names, if it has code. */
 internal fun stepBody(owner: ClassDef, call: MethodReference): Method? = owner.methods.firstOrNull {
@@ -321,18 +391,10 @@ internal fun sanitizedCopyHandOver(method: Method): Int? {
     val code = method.implementation?.instructions?.toList() ?: return null
     val kept = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == KEPT_EXTRA }
     if (kept < 0) return null
-    val set = (kept + 1 until minOf(code.size, kept + 1 + HAND_OVER_WINDOW)).firstOrNull { index ->
-        val call = code[index].call
-        (code[index].opcode == Opcode.INVOKE_VIRTUAL || code[index].opcode == Opcode.INVOKE_VIRTUAL_RANGE) &&
-            call != null && call.definingClass == ACTIVITY && call.name == "setIntent" &&
-            call.parameters() == listOf(INTENT) && call.returnType == "V"
-    } ?: return null
+    val set = (kept + 1 until minOf(code.size, kept + 1 + HAND_OVER_WINDOW)).firstOrNull { setsIntent(code[it]) } ?: return null
     val copy = code[set].callRegisters().getOrNull(1) ?: return null
     val built = (maxOf(0, kept - COPY_WINDOW) until kept).any { index ->
-        val call = code[index].call
-        code[index].opcode == Opcode.INVOKE_DIRECT && call != null && call.definingClass == INTENT &&
-            call.name == "<init>" && call.parameters() == listOf("Ljava/lang/String;", "Landroid/net/Uri;") &&
-            code[index].callRegisters().firstOrNull() == copy
+        buildsCopy(code[index]) && code[index].callRegisters().firstOrNull() == copy
     }
     return if (built) set else null
 }
