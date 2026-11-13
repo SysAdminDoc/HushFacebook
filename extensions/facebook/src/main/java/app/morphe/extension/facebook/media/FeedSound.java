@@ -4,7 +4,16 @@
  */
 package app.morphe.extension.facebook.media;
 
+import android.app.Activity;
+import android.app.Application;
+import android.content.Context;
+import android.os.Bundle;
+import android.os.PowerManager;
+
 import androidx.annotation.Nullable;
+
+import java.lang.ref.WeakReference;
+import java.lang.reflect.Method;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -31,10 +40,24 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * videos works apart from that switch ({@link #viewerSoundTime}). Nothing here may throw into
  * Facebook's player: off, paused, before the settings are ready or when anything here fails,
  * Facebook's own answer goes through.
+ *
+ * <p>Facebook starts a new session only on a cold start or after a long time away, so a sound you
+ * turned on stayed on when you went Home and came back a minute later (#465). Both setters tell
+ * {@link #soundSet} which sound state they ran on and the flag they're setting, and when Facebook
+ * comes back after all its screens stopped, with that flag on, the state starts a new session of
+ * its own ({@link #NEW_SESSION}), which {@link #sessionSound} mutes. A rotation isn't leaving,
+ * nor is the screen going off with Facebook in front, nor a picture-in-picture window, and a video
+ * carried on in the background keeps its sound.
  */
 public final class FeedSound {
     /** Counted under the patch's name each time a new session's sound starts off instead of on. */
     static final String SESSION_MUTED = "Session started muted";
+
+    /** Counted each time Facebook came back with the sound on and its feed went quiet again. */
+    static final String RETURN_MUTED = "Sound off again on return";
+
+    /** The sound state's session start, a name Facebook keeps. */
+    static final String NEW_SESSION = "startNewSession";
 
     /** Counted each time a video opened from the feed closed after playing with its sound on. */
     static final String SOUND_PUT_BACK = "Feed sound put back";
@@ -52,6 +75,17 @@ public final class FeedSound {
     static final String KEY_UP = "onKeyUp";
 
     private static final String FAMILY = FamilyNames.KEEP_FEED_VIDEOS_MUTED;
+
+    /** The sound state Facebook's setters last ran on, and whether the flag they set was on. */
+    private static volatile WeakReference<Object> state = new WeakReference<>(null);
+    private static volatile boolean soundOn;
+
+    /** Main process screens between their start and their stop. */
+    private static int started;
+    /** Whether all of them stopped with the phone in use since the last start. */
+    private static boolean left;
+    /** The application this process's callbacks went on, so a second start of the hook adds none. */
+    private static WeakReference<Application> watching = new WeakReference<>(null);
 
     private FeedSound() {
     }
@@ -123,6 +157,87 @@ public final class FeedSound {
             HookStatus.threw(FAMILY, "opened video close", failure);
             return soundOn;
         }
+    }
+
+    /**
+     * Injection point, in both of the sound state's setters right after the asks above, with the
+     * state itself ([manager]), the setter's [reason] and the flag it's about to set ([sound]).
+     */
+    public static void soundSet(@Nullable Object manager, @Nullable Object reason, boolean sound) {
+        try {
+            if (manager == null) return;
+            if (state.get() != manager) state = new WeakReference<>(manager);
+            soundOn = sound;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "sound set", failure);
+        }
+    }
+
+    /** From the settings entry's application hook, in the main process. */
+    public static void watch(Context context) {
+        if (!(context instanceof Application)) return;
+        Application application = (Application) context;
+        if (watching.get() == application) return;
+        application.registerActivityLifecycleCallbacks(new Watcher());
+        watching = new WeakReference<>(application);
+    }
+
+    static final class Watcher implements Application.ActivityLifecycleCallbacks {
+        @Override public void onActivityCreated(Activity activity, @Nullable Bundle saved) { }
+        @Override public void onActivityStarted(Activity activity) { started(activity); }
+        @Override public void onActivityResumed(Activity activity) { }
+        @Override public void onActivityPaused(Activity activity) { }
+        @Override public void onActivityStopped(Activity activity) { stopped(activity); }
+        @Override public void onActivitySaveInstanceState(Activity activity, Bundle saved) { }
+        @Override public void onActivityDestroyed(Activity activity) { }
+    }
+
+    static void started(Activity activity) {
+        started++;
+        if (started != 1 || !left) return;
+        left = false;
+        muteOnReturn();
+    }
+
+    static void stopped(Activity activity) {
+        try {
+            if (started > 0) started--;
+            if (started > 0 || activity.isChangingConfigurations()) return;
+            PowerManager power = activity.getSystemService(PowerManager.class);
+            if (power != null && !power.isInteractive()) return;
+            left = true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "leaving Facebook", failure);
+        }
+    }
+
+    /** Facebook is back after you left it: a sound left on starts a new, muted session. */
+    static void muteOnReturn() {
+        try {
+            Object manager = state.get();
+            if (!soundOn || manager == null || !on()) return;
+            if (BackgroundPlay.playingOn()) {
+                Logger.printDebug(() -> "Keep feed videos muted: back with a video playing in the background, its sound stays");
+                return;
+            }
+            Method start = manager.getClass().getMethod(NEW_SESSION);
+            start.setAccessible(true);
+            start.invoke(manager);
+            soundOn = false;
+            HookStatus.bound(FAMILY, "return to Facebook");
+            HookStatus.counted(FAMILY, RETURN_MUTED);
+            Logger.printDebug(() -> "Keep feed videos muted: back in Facebook, the sound starts off again");
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "return to Facebook", failure);
+        }
+    }
+
+    /** Forgets the sound state, the screens and a leave, for tests. */
+    static void forget() {
+        state = new WeakReference<>(null);
+        soundOn = false;
+        started = 0;
+        left = false;
     }
 
     /** Whether feed videos are kept muted: the switch on, not paused, and the settings ready. */

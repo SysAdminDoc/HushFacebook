@@ -30,6 +30,7 @@ private const val PATCH = "Keep feed videos muted"
 internal const val FEED_SOUND = "$EXTENSION_PACKAGE/media/FeedSound;"
 internal const val OWN_SESSION_SOUND = "$FEED_SOUND->sessionSound(Z)Z"
 internal const val OWN_SOUND_CHANGE = "$FEED_SOUND->soundChange(Ljava/lang/Object;ZZ)Z"
+internal const val OWN_SOUND_SET = "$FEED_SOUND->soundSet(Ljava/lang/Object;Ljava/lang/Object;Z)V"
 
 /** The feed sound state's session start, a name Facebook keeps. */
 internal const val NEW_SESSION = "startNewSession"
@@ -46,6 +47,11 @@ internal const val NEW_SESSION = "startNewSession"
  * sessionSound before anything reads it, and the reasoned setter's flag goes to soundChange with
  * its reason and the flag the state holds now, right after the setter reads that. A tap on a
  * video's speaker, the volume up key and every mute pass as Facebook sent them.
+ *
+ * Then both hand soundSet the state, the reason and the flag they set. A session starts only on a
+ * cold start or after a long time away, so a sound turned on stayed on across a quick trip Home
+ * (#465): when Facebook comes back with the flag on, the extension calls the state's own
+ * [NEW_SESSION], and the session setter's ask mutes it.
  *
  * Its Mute stories switch (#261) asks the extension's StorySound for each story video's volume in
  * the story viewer's volume setter ([storyVolume]), which works its answer out apart from the
@@ -203,22 +209,29 @@ internal fun BytecodePatchContext.feedSoundState(): FeedSoundState {
 /**
  * Asks FeedSound for the session setter's flag before anything reads it, and for the reasoned
  * setter's right after that setter reads the flag the state holds. Each answer goes back in the
- * flag's own register, so the rest of both methods runs as Facebook wrote it.
+ * flag's own register, so the rest of both methods runs as Facebook wrote it, and then goes to
+ * soundSet with the state and the reason.
  */
 internal fun BytecodePatchContext.askFeedSound(state: FeedSoundState) {
     val owner = mutableClassDefBy(state.owner)
+    // The reasoned setter's registers all sit under v16 (feedSoundState checks), its own just under its reason's.
+    val changeSelf = state.reason - 1
     owner.methods.single { same(it, state.change) }.addInstructions(
         state.askAt,
         """
             invoke-static { v${state.reason}, v${state.changeFlag}, v${state.current} }, $OWN_SOUND_CHANGE
             move-result v${state.changeFlag}
+            invoke-static { v$changeSelf, v${state.reason}, v${state.changeFlag} }, $OWN_SOUND_SET
         """,
     )
+    // The session setter's own, its reason and its flag are its three parameters, in a row.
+    val sessionSelf = state.sessionFlag - 2
     owner.methods.single { same(it, state.session) }.addInstructions(
         0,
         """
             invoke-static/range { v${state.sessionFlag} .. v${state.sessionFlag} }, $OWN_SESSION_SOUND
             move-result v${state.sessionFlag}
+            invoke-static/range { v$sessionSelf .. v${state.sessionFlag} }, $OWN_SOUND_SET
         """,
     )
 }

@@ -31,6 +31,7 @@ Changes in each Hushfacebook version, newest first.
 * `Hide For you in search` and `Hide "People you may know" in search` also find those sections when Facebook sends them with nothing Hush could read before. With `Debug logging` on, the report lists the section names each such row carries. (#80)
 * With `See-through bars` and `Hold a feed video for 2x` both on, holding a button on the Reels tab works again. Download, Like and More used to speed the reel up instead of doing their own hold, because the Reels tab looked like a feed once its pages ran under the tab bar. (#449)
 * With either `Clean up Reels` switch on, the Clean mode button over a clean reel sits higher now, clear of the seek bar. A tap meant for it used to land on the bar and jump the video. (#391)
+* With `Keep feed videos muted` on, a video you unmuted goes quiet again when you leave Facebook and come back. The sound used to stay on until Facebook was force stopped or left alone for a long time. A video playing in the background keeps its sound, and turning the phone's screen off and on doesn't count as leaving. (#465)
 * The News feed switches of `Show full post text`, `Translate posts`, `Open comments with a gesture`, `See who shared` and `Photo carousel` show up even when that's the only feed patch you picked. The page used to open only for a set list of patches, and those five weren't on it.
 
 ## 0.22.0 (2026-11-12)

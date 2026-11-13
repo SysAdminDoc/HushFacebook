@@ -327,7 +327,12 @@ public final class BackgroundPlay {
      * this switch let through, or its notification resuming it.
      */
     static boolean allowsStart(@Nullable String trigger) {
-        return BACKGROUND_TRIGGER.equals(trigger) && (carrying || session);
+        return BACKGROUND_TRIGGER.equals(trigger) && playingOn();
+    }
+
+    /** Whether a video is being carried on, or Facebook's background player has one now. */
+    static boolean playingOn() {
+        return carrying || session;
     }
 
     // The rule.
