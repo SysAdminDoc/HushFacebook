@@ -383,10 +383,12 @@ private fun MutableMethod.answerWhen(hook: String, answer: Boolean) {
 
 /**
  * The footer runnables return before they query when the switch is on. 586 builds one of two hot
- * comment runnables as a MobileConfig flag says, the plain query's or the MFC one's, so the MFC one
- * is skipped too wherever a build has it.
+ * comment runnables as a MobileConfig flag says, the plain query's or the MFC one's, and 587 keeps
+ * only the MFC one (arm64 `LX/0WKq;`), so each is skipped wherever a build has it and at least one
+ * has to be there.
  */
 private fun BytecodePatchContext.skipFooterQueries() {
+    var hotComments = 0
     listOf(
         Triple(HOT_COMMENT_RUNNABLE, INLINE_COMMENTS_QUERY, SKIP_HOT_COMMENT),
         Triple(SOCIAL_BUBBLES_RUNNABLE, VIDEO_ID, SKIP_SOCIAL_BUBBLES),
@@ -394,12 +396,16 @@ private fun BytecodePatchContext.skipFooterQueries() {
     ).forEach { (redexName, holding, hook) ->
         val runs = classDefByStrings(holding, StringComparisonType.EQUALS)
             .mapNotNull { owner -> footerRunnable(owner, redexName, holding)?.let { owner to it } }
-        if (runs.isEmpty() && holding == MFC_INLINE_COMMENTS_QUERY) return@forEach
+        if (runs.isEmpty() && redexName == HOT_COMMENT_RUNNABLE) return@forEach
         val (owner, run) = runs.singleOrNull() ?: throw PatchException(
             "$PATCH: expected one Runnable named $redexName whose run() holds \"$holding\", found ${runs.size}",
         )
+        if (redexName == HOT_COMMENT_RUNNABLE) hotComments++
         mutableClassDefBy(owner).methods.first { it.sameSignatureAs(run) }.returnVoidWhen(hook)
     }
+    if (hotComments == 0) throw PatchException(
+        "$PATCH: expected a Runnable named $HOT_COMMENT_RUNNABLE whose run() holds \"$INLINE_COMMENTS_QUERY\" or \"$MFC_INLINE_COMMENTS_QUERY\", found none",
+    )
 }
 
 /**

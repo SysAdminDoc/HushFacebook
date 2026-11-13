@@ -551,6 +551,56 @@ class CleanUpReelsShapesTest {
         assertEquals(Opcode.RETURN_OBJECT, body[4].opcode)
     }
 
+    /** A TreeJNI tree class behind [flags] whose [name]()Z reads [key]. */
+    private fun flagTree(flags: String, name: String, key: Int): ClassDef = ImmutableClassDef(
+        "Lfixture/FlagTree;", AccessFlags.PUBLIC.value, "Ljava/lang/Object;", listOf(flags), null, null, emptyList(),
+        listOf(
+            method(name, emptyList(), "Z", 2, static = false, """
+                const v0, $key
+                invoke-virtual { p0, v0 }, Lcom/facebook/graphservice/tree/TreeJNI;->getBooleanValue(I)Z
+                move-result v0
+                return v0
+            """),
+        ),
+    )
+
+    /**
+     * 587 asks a tree model's interface for the Edits flag (arm64 LX/0DXO;->HdZ) instead of reading the
+     * tree in the render. The TreeJNI class behind the interface names the getter, and the render asking
+     * it is the line. A render asking another getter, one reading a second flag beside it and a static
+     * helper asking it are not.
+     */
+    @Test
+    fun `587's Edits line asks the tree model's getter for the flag`() {
+        val flags = "Lfixture/Flags;"
+        val getters = editsGetterCalls(flagTree(flags, "HdZ", MADE_WITH_EDITS))
+        assertEquals(setOf("$flags->HdZ", "Lfixture/FlagTree;->HdZ"), getters)
+        assertTrue("another flag's getter was taken",
+            editsGetterCalls(flagTree(flags, "HdZ", "can_viewer_comment".hashCode())).isEmpty())
+        val tail = """
+            new-instance v2, Lfixture/Row;
+            return-object v2
+            :none
+            const/4 v2, 0x0
+            return-object v2
+        """
+        val asks = """
+            invoke-interface { p1 }, $flags->HdZ()Z
+            move-result v0
+            if-eqz v0, :none
+        """
+        val line = render(asks + tail)
+        assertTrue(isEditsLabelRender(line, getters))
+        assertTrue("a render asking a getter no tree class named was taken", !isEditsLabelRender(line))
+        val asksAnother = render(asks.replace("HdZ", "HdY") + tail)
+        assertTrue("a render asking another getter was taken", !isEditsLabelRender(asksAnother, getters))
+        val alsoReads = render(asks + readFlag("can_viewer_comment".hashCode()) + tail)
+        assertTrue("a render reading a second flag was taken", !isEditsLabelRender(alsoReads, getters))
+        val helper = method(RENDER, listOf("Lfixture/Context;"), "Lfixture/Component;", 6, static = true,
+            asks.replace("p1", "p0") + tail)
+        assertTrue("a static helper was taken", !isEditsLabelRender(helper, getters))
+    }
+
     /** A reel header: p0 the row, p1 the search bar, p2 its send button, each wrapped and tagged when there is one. */
     private fun header(add: String = "Lfixture/Row;->add(Lfixture/Component;)V", sendTag: String = SEARCH_BAR_SEND) = method(
         "A00", listOf("Lfixture/Row;", "Lfixture/Component;", "Lfixture/Component;"), "Lfixture/Component;", 6, static = true, """

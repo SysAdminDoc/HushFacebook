@@ -50,7 +50,14 @@ class ReelAnchorsFixtureTest {
     private val wanted = setOf(CHIP_ANCHOR, WATCH_FEED_DUMP, INLINE_COMMENTS_QUERY, MFC_INLINE_COMMENTS_QUERY, VIDEO_ID)
 
     /** How many MFC hot comment runnables each version has: 586 added the one a flag picks over the plain query's. */
-    private val mfcHotCommentRunnables = mapOf("586.0.0.52.53" to 1)
+    private val mfcHotCommentRunnables = mapOf("586.0.0.52.53" to 1, "587.0.0.39.55" to 1)
+
+    /**
+     * How many plain query hot comment runnables each version has, one by default: 587 dropped it
+     * (586's `$2`, LX/0Cj2;), leaving the MFC one (`$1`, arm64 LX/0WKq;). The author and description
+     * component's own runnable holds the plain query on both, and is no footer runnable.
+     */
+    private val plainHotCommentRunnables = mapOf("587.0.0.39.55" to 0)
 
     /** One pass over the bundle for everything but the Follow getter's readers. */
     private fun scan(bundle: File): Found {
@@ -170,6 +177,8 @@ class ReelAnchorsFixtureTest {
                         "586.0.0.52.53 arm64-v8a" to "LX/0A3w;:134:A18 LX/0A3h;:198:A0Q",
                         "586.0.0.52.53 armeabi-v7a" to "LX/0A3w;:134:A18 LX/0A3h;:198:A0Q",
                         "586.0.0.52.53 arm64-v8a-minapi28-storeless" to "LX/0A5H;:52:A0A LX/0A4q;:118:invoke",
+                        "587.0.0.39.55 arm64-v8a" to "LX/0CxW;:19:A0N LX/0A59;:120:A0V",
+                        "587.0.0.39.55 armeabi-v7a" to "LX/0A4x;:67:A0G LX/0A4w;:96:A0W",
                     )["$version $abi"]
                     assertEquals(name, pinned, follow.flags.joinToString(" ") { "${it.lambda}:${it.key}:${it.reader.name}" })
                 } else {
@@ -181,7 +190,7 @@ class ReelAnchorsFixtureTest {
                 }
 
                 // Both footer runnables, among the footer helpers' other kept-name classes.
-                assertEquals("$name: ${found.hotComments}", 1, found.hotComments.size)
+                assertEquals("$name: ${found.hotComments}", plainHotCommentRunnables[version] ?: 1, found.hotComments.size)
                 assertEquals("$name: ${found.mfcHotComments}", mfcHotCommentRunnables[version] ?: 0, found.mfcHotComments.size)
                 assertEquals("$name: ${found.bubbles}", 1, found.bubbles.size)
                 assertTrue("$name: ${found.footerHelperClasses} footer helper classes", found.footerHelperClasses >= 3)
@@ -261,8 +270,8 @@ class ReelAnchorsFixtureTest {
 
     /**
      * "Made with Edits" under a caption (#314), found the way the patch finds it: the one `render`
-     * reading the video's Edits flag and nothing else from the tree. The flag's other readers are
-     * static helpers.
+     * reading the video's Edits flag and nothing else from the tree, or (587) asking the tree model's
+     * Edits getter for it. The flag's other readers are static helpers.
      */
     @Test
     fun `every declared build has one Made with Edits line, with a local for its hook`() {
@@ -272,10 +281,12 @@ class ReelAnchorsFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
+                val getters = mutableSetOf<String>()
+                FixtureDex.forEach(bundle) { dex -> dex.classes.forEach { getters += editsGetterCalls(it) } }
                 val lines = mutableListOf<Method>()
                 FixtureDex.forEach(bundle) { dex ->
                     for (classDef in dex.classes) {
-                        classDef.methods.filter(::isEditsLabelRender).mapTo(lines) { ImmutableMethod.of(it) }
+                        classDef.methods.filter { isEditsLabelRender(it, getters) }.mapTo(lines) { ImmutableMethod.of(it) }
                     }
                 }
                 assertEquals("$name: $lines", 1, lines.size)

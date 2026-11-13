@@ -417,12 +417,21 @@ private fun firstLambdaOf(body: List<Instruction>, picker: Int, first: Int): Pai
                 body[it].opcode == Opcode.INVOKE_DIRECT && invokeRegisters(body[it]).firstOrNull() == first
             } ?: return null
             val constructor = body[init].methodReference ?: return null
-            if (constructor.definingClass != type || constructor.name != "<init>" ||
-                constructor.parameterTypes.map { it.toString() } != listOf("Ljava/lang/Object;", "I")) return null
+            if (!isKeyedConstructor(constructor, type)) return null
             type to (constantAt(body, init, invokeRegisters(body[init]).last()) ?: return null)
         }
         else -> null
     }
+}
+
+/**
+ * Whether [constructor] makes a merged lambda of [type] keyed by its int: one object (the captured
+ * value, an Object up to 586, the config's own class on 587's helper) and then the key.
+ */
+private fun isKeyedConstructor(constructor: MethodReference, type: String): Boolean {
+    val parameters = constructor.parameterTypes.map { it.toString() }
+    return constructor.definingClass == type && constructor.name == "<init>" && parameters.size == 2 &&
+        parameters[0].startsWith("L") && parameters[1] == "I"
 }
 
 /** A lambda the picker helper hands the config's pick: one of its own parameters, or one it makes from an int parameter. */
@@ -468,8 +477,7 @@ private fun pickedLambdas(helper: Method): List<PickedLambda>? {
                     body[it].opcode == Opcode.INVOKE_DIRECT && invokeRegisters(body[it]).firstOrNull() == register
                 } ?: return null
                 val constructor = body[init].methodReference ?: return null
-                if (constructor.definingClass != type || constructor.name != "<init>" ||
-                    constructor.parameterTypes.map { it.toString() } != listOf("Ljava/lang/Object;", "I")) return null
+                if (!isKeyedConstructor(constructor, type)) return null
                 MadeHere(type, parameterAt(helper, invokeRegisters(body[init]).last()) ?: return null)
             }
             else -> return null
@@ -493,6 +501,8 @@ private fun pickedLambdas(helper: Method): List<PickedLambda>? {
  * - 585's Android 9 build, both values (LX/0ArK;->A01): `(config, Function0, I)String` as on 584, the
  *   first lambda made in the dump with `new-instance`, but the helper makes the second of a class of
  *   its own from its int, as the Player tab's helper does on 585's other builds.
+ * - 587 arm64, both values (09kw.A01): the Android 9 shape, except that the helper's own lambda
+ *   (0A59) is made from the config and the int, not from an Object and the int.
  */
 internal fun followFlagsAt(body: List<Instruction>, literal: Int, classOf: (String) -> ClassDef?): List<FollowFlag>? {
     val name = (body[literal] as? OneRegisterInstruction)?.registerA ?: return null
