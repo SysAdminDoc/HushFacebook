@@ -40,12 +40,12 @@ import app.morphe.extension.shared.SettingsContextRule;
 public class OwnFontTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
-    /** Every constant of Facebook 580's font family enum, as the fixture test reads them. */
+    /** Every constant of Facebook 580's font family enum, as the fixture test reads them, with 587's OPTIMISTIC_MONO. */
     enum Family {
         AVENY_T_REGULAR, FACEBOOK_NARROW, FACEBOOK_SANS_HEAVY_ITALIC, OPTIMISTIC_DISPLAY_APP,
         OPTIMISTIC_DISPLAY_APP_MEDIUM, OPTIMISTIC_TEXT_APP_REGULAR, OPTIMISTIC_TEXT_APP_MEDIUM,
         OPTIMISTIC_TEXT_APP_BOLD, OPTIMISTIC_VARIABLE_APP_LITE, OPTIMISTIC_AI, OPTIMISTIC_AI_1_BETA,
-        OPTIMISTIC_AI_2_BETA, OPTIMISTIC_AI_3_BETA, OPTIMISTIC_VF_APP_LITE, FACEBOOK_SANS_VARIABLE,
+        OPTIMISTIC_AI_2_BETA, OPTIMISTIC_AI_3_BETA, OPTIMISTIC_MONO, OPTIMISTIC_VF_APP_LITE, FACEBOOK_SANS_VARIABLE,
         OLD_STANDARD_TT_REGULAR, SF_UI_TEXT_REGULAR, AVENIR_NEXT_BOLD_ITALIC, MONTSERRAT_EXTRA_BOLD,
         MONTSERRAT_EXTRA_BOLD_ITALIC, OLD_STANDARD_TT_BOLD, OLD_STANDARD_TT_ITALIC, ROBOTO_LIGHT,
         ROBOTO_LIGHT_ITALIC, SFUI_TEXT_REGULAR, SFUI_TEXT_REGULAR_ITALIC, BARLOW_SEMI_BOLD,
@@ -53,7 +53,10 @@ public class OwnFontTest {
         SERIF_REGULAR
     }
 
-    /** The families Meta draws its interface in. OwnFontFixtureTest pins the same twelve on both builds. */
+    /**
+     * The families Meta draws its interface in, every Optimistic family of 580 to 587. 587's
+     * OPTIMISTIC_MONO is left out: monospace text keeps its fixed width.
+     */
     private static final List<Family> META = Arrays.asList(
             Family.OPTIMISTIC_DISPLAY_APP, Family.OPTIMISTIC_DISPLAY_APP_MEDIUM, Family.OPTIMISTIC_TEXT_APP_REGULAR,
             Family.OPTIMISTIC_TEXT_APP_MEDIUM, Family.OPTIMISTIC_TEXT_APP_BOLD, Family.OPTIMISTIC_VARIABLE_APP_LITE,
@@ -80,6 +83,37 @@ public class OwnFontTest {
         }
         assertFalse(OwnFont.isInterfaceFamily(null));
         assertEquals(12, META.size());
+        // A monospace word anywhere in the name keeps a family off the list, and only a word's start counts.
+        assertFalse(OwnFont.isInterfaceFamily("OPTIMISTIC_MONOSPACE_APP"));
+        assertTrue(OwnFont.isInterfaceFamily("OPTIMISTIC_HARMONOUS"));
+    }
+
+    @Test
+    public void aMonospaceFamilyKeepsMetasFont() {
+        assertSame(Typeface.MONOSPACE, OwnFont.replace(Typeface.MONOSPACE, Family.OPTIMISTIC_MONO, 400));
+        assertSame(Typeface.MONOSPACE, OwnFont.replace(Typeface.MONOSPACE, Family.ROBOTO_MONO_REGULAR, -1));
+    }
+
+    /**
+     * A builder made for a family the switch leaves alone keeps what it built, whatever it was told;
+     * one made for an interface family, the positive control, gets the phone's font.
+     */
+    @Test
+    public void aBuilderMadeForAMonospaceFamilyKeepsItsFace() {
+        Object mono = new Object();
+        assertSame("the maker gets its builder back", mono, OwnFont.rememberFamily(mono, Family.OPTIMISTIC_MONO));
+        OwnFont.rememberVariation(mono, "'wght' 700");
+        assertSame(Typeface.MONOSPACE, OwnFont.replaceBuilt(Typeface.MONOSPACE, mono));
+
+        Object text = new Object();
+        assertSame(text, OwnFont.rememberFamily(text, Family.OPTIMISTIC_VARIABLE_APP_LITE));
+        OwnFont.rememberVariation(text, "'wght' 700");
+        assertNotSame(Typeface.SERIF, OwnFont.replaceBuilt(Typeface.SERIF, text));
+
+        assertNull(OwnFont.rememberFamily(null, Family.OPTIMISTIC_MONO));
+        Object unnamed = new Object();
+        assertSame(unnamed, OwnFont.rememberFamily(unnamed, null));
+        assertNotSame(Typeface.SERIF, OwnFont.replaceBuilt(Typeface.SERIF, unnamed));
     }
 
     @Test

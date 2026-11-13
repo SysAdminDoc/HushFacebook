@@ -37,16 +37,44 @@ class OwnFontFixtureTest {
     private val OBJECT_TYPE = "Ljava/lang/Object;"
 
     /**
-     * The families the switch swaps. The extension picks them by name (OPTIMISTIC_* and
-     * FACEBOOK_SANS_VARIABLE), so 586 dropping 585's OPTIMISTIC_AI_1_BETA and OPTIMISTIC_AI_3_BETA
-     * leaves these ten, and OwnFontTest's twelve from 580 still cover every one.
+     * The families the switch swaps, per declared build (version and ABI, each its own Redex output).
+     * The extension picks them by name (OPTIMISTIC_* and FACEBOOK_SANS_VARIABLE, never a face with a
+     * MONO word), so 586 dropping 585's OPTIMISTIC_AI_1_BETA and OPTIMISTIC_AI_3_BETA left these ten,
+     * and 587's new OPTIMISTIC_MONO, a monospace face, stays Meta's. OwnFontTest's twelve from 580
+     * still cover every one.
      */
-    private val metaFamilies = sortedSetOf(
-        "FACEBOOK_SANS_VARIABLE", "OPTIMISTIC_AI", "OPTIMISTIC_AI_2_BETA",
-        "OPTIMISTIC_DISPLAY_APP", "OPTIMISTIC_DISPLAY_APP_MEDIUM",
-        "OPTIMISTIC_TEXT_APP_BOLD", "OPTIMISTIC_TEXT_APP_MEDIUM", "OPTIMISTIC_TEXT_APP_REGULAR",
-        "OPTIMISTIC_VARIABLE_APP_LITE", "OPTIMISTIC_VF_APP_LITE",
+    private val metaFamilies = mapOf(
+        "587.0.0.39.55-arm64-v8a" to sortedSetOf(
+            "FACEBOOK_SANS_VARIABLE", "OPTIMISTIC_AI", "OPTIMISTIC_AI_2_BETA",
+            "OPTIMISTIC_DISPLAY_APP", "OPTIMISTIC_DISPLAY_APP_MEDIUM",
+            "OPTIMISTIC_TEXT_APP_BOLD", "OPTIMISTIC_TEXT_APP_MEDIUM", "OPTIMISTIC_TEXT_APP_REGULAR",
+            "OPTIMISTIC_VARIABLE_APP_LITE", "OPTIMISTIC_VF_APP_LITE",
+        ),
+        "587.0.0.39.55-armeabi-v7a" to sortedSetOf(
+            "FACEBOOK_SANS_VARIABLE", "OPTIMISTIC_AI", "OPTIMISTIC_AI_2_BETA",
+            "OPTIMISTIC_DISPLAY_APP", "OPTIMISTIC_DISPLAY_APP_MEDIUM",
+            "OPTIMISTIC_TEXT_APP_BOLD", "OPTIMISTIC_TEXT_APP_MEDIUM", "OPTIMISTIC_TEXT_APP_REGULAR",
+            "OPTIMISTIC_VARIABLE_APP_LITE", "OPTIMISTIC_VF_APP_LITE",
+        ),
     )
+
+    /**
+     * The families with variable axes, per declared build. Their builders come from the one maker
+     * that takes the family, which the patch hooks, so OPTIMISTIC_MONO's keep Meta's face.
+     */
+    private val axisFamilies = mapOf(
+        "587.0.0.39.55-arm64-v8a" to listOf("OPTIMISTIC_AI", "OPTIMISTIC_AI_2_BETA", "OPTIMISTIC_MONO", "OPTIMISTIC_VARIABLE_APP_LITE"),
+        "587.0.0.39.55-armeabi-v7a" to listOf("OPTIMISTIC_AI", "OPTIMISTIC_AI_2_BETA", "OPTIMISTIC_MONO", "OPTIMISTIC_VARIABLE_APP_LITE"),
+    )
+
+    /** The builder makers the patch hooks, per declared build. */
+    private val builderMakerCount = mapOf("587.0.0.39.55-arm64-v8a" to 1, "587.0.0.39.55-armeabi-v7a" to 1)
+
+    /** [bundle]'s declared build: its version and ABI. */
+    private fun build(bundle: File) = bundle.name.removePrefix("facebook-").removeSuffix(".apkm")
+
+    private fun <T> Map<String, T>.pinFor(bundle: File, what: String): T =
+        this[build(bundle)] ?: throw AssertionError("${bundle.name}: $what has no pin for ${build(bundle)}")
 
     private fun bundles(check: (File) -> Unit) {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -447,14 +475,19 @@ class OwnFontFixtureTest {
         val family = FixtureDex.classes(bundle, setOf(type)).getValue(type)
         assertEquals("${bundle.name}: the family is an enum", ENUM, family.superclass)
         val names = familyNames(family)
-        assertEquals("${bundle.name}: Meta's interface families", metaFamilies,
+        assertEquals("${bundle.name}: Meta's interface families", metaFamilies.pinFor(bundle, "the swapped families"),
             names.filter(::isInterfaceFamily).toSortedSet())
         assertTrue("${bundle.name}: the creative families stay",
             "MONTSERRAT_REGULAR" in names && "COURIER_PRIME_BOLD" in names && "FACEBOOK_NARROW" in names)
+        // The monospace families are declared and left alone: the negative control for the swap.
+        assertEquals("${bundle.name}: the monospace families kept", listOf("OPTIMISTIC_MONO", "ROBOTO_MONO_REGULAR"),
+            names.filter(::isMonospaceFamily).sorted())
+        assertEquals("${bundle.name}: a monospace family is swapped", emptyList<String>(),
+            names.filter { isMonospaceFamily(it) && isInterfaceFamily(it) })
         val withAxes = familiesWithAxes(family)
-        assertTrue("${bundle.name}: the variable Optimistic family has axes: $withAxes",
-            "OPTIMISTIC_VARIABLE_APP_LITE" in withAxes)
-        assertEquals("${bundle.name}: every family with axes is Meta's", emptyList<String>(),
+        assertEquals("${bundle.name}: the families with axes", axisFamilies.pinFor(bundle, "the families with axes"),
+            withAxes.sorted())
+        assertEquals("${bundle.name}: the families with axes the switch leaves alone", listOf("OPTIMISTIC_MONO"),
             withAxes.filterNot(::isInterfaceFamily))
     }
 
@@ -463,21 +496,42 @@ class OwnFontFixtureTest {
         val builders = builderClasses(apiUtils)
         assertEquals("${bundle.name}: an asset builder and a font file builder", 2, builders.size)
 
-        // Every maker of a builder reads the family enum (580 takes it in the repository, 577 looks
-        // it up by name in a helper), so a builder is only ever made for a family, and only one
-        // with variable axes reaches it: the check above says those are all Meta's.
+        // Every maker of a builder takes the family enum (580 takes it in the repository, 577 looked
+        // it up by name in a helper), so a builder is only ever made for a family. Only families with
+        // variable axes reach it, and since 587 one of those is OPTIMISTIC_MONO, so the patch hooks
+        // each maker to tell the extension which family a builder is for.
         val makers = FixtureDex.methodsWhere(bundle, dexFilter = { dex ->
             dex.methodSection.any { it.definingClass == TYPEFACE_BUILDERS && it.name == BUILDER_FACTORY }
         }) { method ->
-            method.implementation?.instructions?.any { instruction ->
-                val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-                call?.definingClass == TYPEFACE_BUILDERS && call.name == BUILDER_FACTORY
-            } == true
+            method.definingClass != TYPEFACE_BUILDERS && method.implementation?.instructions?.any(::callsBuilderFactory) == true
         }
-        assertTrue("${bundle.name}: nothing makes builders", makers.isNotEmpty())
+        assertEquals("${bundle.name}: builder makers", builderMakerCount.pinFor(bundle, "the builder makers"), makers.size)
         val familyType = familyType(typefaceResolvers(owner).single())
-        val strangers = makers.filterNot { touchesFamily(it, familyType) }.map { "${it.definingClass}->${it.name}" }
-        assertEquals("${bundle.name}: makers that don't read the family enum", emptyList<String>(), strangers)
+        val strangers = makers.filterNot { maker -> maker.parameterTypes.count { it.toString() == familyType } == 1 }
+            .map { "${it.definingClass}->${it.name}" }
+        assertEquals("${bundle.name}: makers that don't take the family enum", emptyList<String>(), strangers)
+
+        // Through the patcher: each maker hands every builder it returns, and its family, to the
+        // extension and casts the answer back to its own return type.
+        val context = PatchContexts.of(FixtureDex.classes(bundle, makers.map { it.definingClass }.toSet()).values.toList())
+        assertEquals("${bundle.name}: builder makers hooked", makers.size, context.hookBuilderMakers(familyType))
+        for (maker in makers) {
+            val where = "${bundle.name}: ${maker.definingClass}->${maker.name}"
+            val body = context.mutableClassDefBy(maker.definingClass).methods
+                .single { it.name == maker.name && it.parameterTypes.map(Any::toString) == maker.parameterTypes.map(Any::toString) }
+                .implementation!!.instructions.toList()
+            val returns = body.indices.filter { body[it].opcode == Opcode.RETURN_OBJECT }
+            assertEquals("$where: returns", objectReturns(maker).size, returns.size)
+            for (at in returns) {
+                val returned = (body[at] as OneRegisterInstruction).registerA
+                assertEquals("$where: cast before the return at $at", listOf(Opcode.CHECK_CAST, returned, maker.returnType),
+                    listOf(body[at - 1].opcode, (body[at - 1] as OneRegisterInstruction).registerA, (body[at - 1] as ReferenceInstruction).reference.toString()))
+                assertEquals("$where: answer before the return at $at", listOf(Opcode.MOVE_RESULT_OBJECT, returned),
+                    listOf(body[at - 2].opcode, (body[at - 2] as OneRegisterInstruction).registerA))
+                assertEquals("$where: the extension's call before the return at $at", REMEMBER_FAMILY,
+                    (body[at - 3] as ReferenceInstruction).reference.toString())
+            }
+        }
 
         val chains = chains(bundle, builders)
         for (builder in builders) {

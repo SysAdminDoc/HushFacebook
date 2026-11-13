@@ -103,6 +103,9 @@ public final class OwnFont {
     /** The font variation strings each builder was given, by the builder, for as long as it lives. */
     private static final Map<Object, String> VARIATIONS = Collections.synchronizedMap(new WeakHashMap<>());
 
+    /** The builders made for a family the switch leaves alone, for as long as each lives, whose builds keep their face. */
+    private static final Set<Object> KEPT_BUILDERS = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
+
     /** A variation axis and its value, as Android writes them: 'wght' 700 or "wght" 700. */
     private static final Pattern AXIS = Pattern.compile("['\"]([a-zA-Z]{4})['\"]\\s*(-?\\d+(?:\\.\\d+)?)");
 
@@ -195,12 +198,21 @@ public final class OwnFont {
 
     /**
      * Whether [name], a constant of Facebook's font family enum, is one Meta draws its interface
-     * in: the Optimistic families and the variable Facebook Sans. The story sticker fonts and the
-     * downloaded creative families keep their names off this list.
+     * in: the Optimistic families and the variable Facebook Sans, less the monospace ones
+     * ({@link #isMonospaceFamily}), whose fixed width code and aligned text count on. The story
+     * sticker fonts and the downloaded creative families keep their names off this list.
      */
     static boolean isInterfaceFamily(@Nullable String name) {
         if (name == null) return false;
-        return name.startsWith("OPTIMISTIC") || name.equals("FACEBOOK_SANS_VARIABLE");
+        return (name.startsWith("OPTIMISTIC") || name.equals("FACEBOOK_SANS_VARIABLE")) && !isMonospaceFamily(name);
+    }
+
+    /** Whether [name], a family constant, is a monospace face: one of its words starts with MONO, as in OPTIMISTIC_MONO. */
+    static boolean isMonospaceFamily(String name) {
+        for (String word : name.split("_")) {
+            if (word.startsWith("MONO")) return true;
+        }
+        return false;
     }
 
     /**
@@ -233,13 +245,28 @@ public final class OwnFont {
     }
 
     /**
+     * Notes [builder], made for [family], when that's a family the switch leaves alone, so its
+     * build keeps what it built. Hands [builder] back either way.
+     */
+    public static Object rememberFamily(Object builder, Enum<?> family) {
+        try {
+            if (builder != null && family != null && !isInterfaceFamily(family.name())) KEPT_BUILDERS.add(builder);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.SYSTEM_FONT, BUILDER, failure);
+        }
+        return builder;
+    }
+
+    /**
      * The chosen font at the weight and slant [builder]'s variation string asked for, or at
-     * [built]'s own when it was given none, while the switch is on. Otherwise [built] as it came.
+     * [built]'s own when it was given none, while the switch is on and [builder] wasn't made for a
+     * family the switch leaves alone ({@link #rememberFamily}). Otherwise [built] as it came.
      */
     public static Typeface replaceBuilt(Typeface built, Object builder) {
         try {
             HookStatus.invoked(FamilyNames.SYSTEM_FONT);
             if (built == null) return null;
+            if (builder != null && KEPT_BUILDERS.contains(builder)) return built;
             if (!ready(BUILDER) || !Settings.USE_SYSTEM_FONT.get()) return built;
             String settings = builder == null ? null : VARIATIONS.get(builder);
             HookStatus.bound(FamilyNames.SYSTEM_FONT, BUILDER);

@@ -11,6 +11,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
@@ -174,6 +175,99 @@ class OwnFontHookTest {
             build("const/4 v0, 0x0\nreturn-object v0", static = true).requireBuilderHookFits()
         }
         assertTrue(static.message, static.message.orEmpty().contains("is static"))
+    }
+
+    private val fonts = "Lfixture/Fonts;"
+    private val typefaceBuilder = "Lfixture/TypefaceBuilder;"
+    private val fromFile = "$TYPEFACE_BUILDERS->$BUILDER_FACTORY(Ljava/io/File;Ljava/util/List;)$typefaceBuilder"
+
+    /**
+     * A builder maker cut down from 587's: an instance method taking the family, with four locals,
+     * so this is in v4 and the family in v5. The builder comes back in v1 when the family has axes,
+     * and null from v3, a jump's target, when it has none.
+     */
+    private fun maker(type: String = fonts, parameters: List<String> = listOf(family), smali: String = makerSmali): MutableMethod =
+        MutableMethod(
+            ImmutableMethod(
+                type, "make", parameters.map { ImmutableMethodParameter(it, null, null) }, typefaceBuilder,
+                AccessFlags.PUBLIC.value, null, null, ImmutableMethodImplementation(5 + parameters.size, emptyList(), null, null),
+            ),
+        ).apply { addInstructionsWithLabels(0, smali) }
+
+    private val makerSmali = """
+        iget-object v0, v5, $family->axes:Ljava/util/List;
+        const/4 v3, 0x0
+        if-eqz v0, :none
+        iget-object v2, v5, $family->file:Ljava/io/File;
+        invoke-static { v2, v0 }, $fromFile
+        move-result-object v1
+        return-object v1
+        :none
+        return-object v3
+    """
+
+    private fun fontsClass(type: String, vararg methods: MutableMethod) =
+        ImmutableClassDef(type, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null, null, methods.toList())
+
+    /**
+     * Through the patcher: at each return the maker hands its builder and the family to the
+     * extension, takes back what it answers and casts it to its own return type. The return a jump
+     * lands on gets the hook at its label, so the jump goes through it too. The factory's own class
+     * and the extension's, which call the factory as well, are left alone.
+     */
+    @Test
+    fun `a builder maker hands each builder and its family to the extension`() {
+        val extension = "Lapp/morphe/extension/facebook/font/Stub;"
+        val passOn = MutableMethod(
+            ImmutableMethod(
+                TYPEFACE_BUILDERS, "passOn", listOf("Ljava/io/File;", "Ljava/util/List;").map { ImmutableMethodParameter(it, null, null) },
+                typefaceBuilder, AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, null, null,
+                ImmutableMethodImplementation(2, emptyList(), null, null),
+            ),
+        ).apply { addInstructionsWithLabels(0, "invoke-static { v0, v1 }, $fromFile\nmove-result-object v0\nreturn-object v0") }
+        val context = PatchContexts.of(
+            listOf(fontsClass(fonts, maker()), fontsClass(extension, maker(type = extension)), fontsClass(TYPEFACE_BUILDERS, passOn)),
+        )
+        assertEquals("makers hooked", 1, context.hookBuilderMakers(family))
+
+        val body = context.mutableClassDefBy(fonts).methods.single().implementation!!.instructions.toList()
+        val calls = body.indices.filter { (body[it] as? ReferenceInstruction)?.reference?.toString() == REMEMBER_FAMILY }
+        assertEquals("one call before each of the two returns", 2, calls.size)
+        for ((call, returned) in calls.zip(listOf(1, 3))) {
+            assertEquals(listOf(2, 0, 1), (body[call] as FiveRegisterInstruction).let { listOf(it.registerCount, it.registerC, it.registerD) })
+            val copied = body[call - 1] as TwoRegisterInstruction
+            assertEquals("the family is copied down from v5", listOf(Opcode.MOVE_OBJECT_FROM16, 1, 5),
+                listOf(copied.opcode, copied.registerA, copied.registerB))
+            val builder = body[call - 2] as TwoRegisterInstruction
+            assertEquals("the builder is copied to v0 first", listOf(Opcode.MOVE_OBJECT_FROM16, 0, returned),
+                listOf(builder.opcode, builder.registerA, builder.registerB))
+            assertEquals(listOf(Opcode.MOVE_RESULT_OBJECT, returned), (body[call + 1] as OneRegisterInstruction).let { listOf(it.opcode, it.registerA) })
+            assertEquals(listOf(Opcode.CHECK_CAST, returned), (body[call + 2] as OneRegisterInstruction).let { listOf(it.opcode, it.registerA) })
+            assertEquals(typefaceBuilder, (body[call + 2] as ReferenceInstruction).reference.toString())
+            assertEquals(listOf(Opcode.RETURN_OBJECT, returned), (body[call + 3] as OneRegisterInstruction).let { listOf(it.opcode, it.registerA) })
+        }
+        val jump = body.single { it.opcode == Opcode.IF_EQZ } as BuilderOffsetInstruction
+        assertEquals("the jump to the null return goes through the hook", calls[1] - 2, jump.target.location.index)
+        for (type in listOf(extension, TYPEFACE_BUILDERS)) {
+            assertEquals("$type was hooked", 0, context.mutableClassDefBy(type).methods.single().implementation!!.instructions
+                .count { (it as? ReferenceInstruction)?.reference?.toString() == REMEMBER_FAMILY })
+        }
+    }
+
+    /** A maker that doesn't take the family, or writes over it before a return, stops the patch; nothing calling the factory too. */
+    @Test
+    fun `a builder maker that can't name its family stops the patch`() {
+        val noFamily = PatchContexts.of(listOf(fontsClass(fonts, maker(parameters = listOf("Ljava/lang/Object;")))))
+        val unnamed = assertThrows(PatchException::class.java) { noFamily.hookBuilderMakers(family) }
+        assertTrue(unnamed.message, unnamed.message.orEmpty().contains("takes 0 parameter(s) of the family"))
+
+        val overwritten = PatchContexts.of(listOf(fontsClass(fonts, maker(smali = makerSmali.replace("move-result-object v1", "move-result-object v1\nconst/4 v5, 0x0")))))
+        val spoiled = assertThrows(PatchException::class.java) { overwritten.hookBuilderMakers(family) }
+        assertTrue(spoiled.message, spoiled.message.orEmpty().contains("writes over parameter 0 (v5)"))
+
+        val none = PatchContexts.of(listOf(fontsClass(fonts, build("const/4 v0, 0x0\nreturn-object v0"))))
+        val missing = assertThrows(PatchException::class.java) { none.hookBuilderMakers(family) }
+        assertTrue(missing.message, missing.message.orEmpty().contains("calls its $BUILDER_FACTORY"))
     }
 
     private val reactUtils = "Lfixture/ReactTypefaceUtils;"
@@ -1057,7 +1151,7 @@ class OwnFontHookTest {
         val calls = DEFAULT_CALLS.map(::ownCall)
         assertTrue(OWN_DEFAULT_FROM_STYLE in calls)
         val views = listOf(OWN_TEXT_VIEW, OWN_INFLATED)
-        for (call in listOf(REPLACE, REMEMBER_VARIATION, REPLACE_BUILT, REPLACE_REACT_NATIVE, REPLACE_PHONE_FONT) + getters + calls + views) {
+        for (call in listOf(REPLACE, REMEMBER_VARIATION, REPLACE_BUILT, REMEMBER_FAMILY, REPLACE_REACT_NATIVE, REPLACE_PHONE_FONT) + getters + calls + views) {
             assertTrue("OwnFont declares no public static $call: $declared", call in declared)
         }
     }

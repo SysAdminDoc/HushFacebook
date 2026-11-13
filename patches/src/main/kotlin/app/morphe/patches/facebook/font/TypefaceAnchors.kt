@@ -311,10 +311,15 @@ private val INFLATER_OWNER = setOf(CREATE_VIEW.substringBefore("->"))
 
 /**
  * The family constants the extension swaps: Meta's interface families, by the names the enum
- * keeps. OwnFont.isInterfaceFamily is the same rule on the phone.
+ * keeps, less the monospace ones. 587 adds OPTIMISTIC_MONO, which code and other fixed-width text
+ * ask for so their columns line up; the picked font would break that, so it keeps Meta's face.
+ * OwnFont.isInterfaceFamily is the same rule on the phone.
  */
 internal fun isInterfaceFamily(name: String): Boolean =
-    name.startsWith("OPTIMISTIC") || name == "FACEBOOK_SANS_VARIABLE"
+    (name.startsWith("OPTIMISTIC") || name == "FACEBOOK_SANS_VARIABLE") && !isMonospaceFamily(name)
+
+/** Whether [name], a family constant, is a monospace face: one of its words starts with MONO. */
+internal fun isMonospaceFamily(name: String): Boolean = name.split('_').any { it.startsWith("MONO") }
 
 /** An enum constant's name as Redex leaves it: capitals, digits and underscores. */
 private val CONSTANT_NAME = Regex("[A-Z][A-Z0-9_]{2,}")
@@ -389,6 +394,17 @@ internal fun builderClasses(apiUtils: ClassDef): List<String> =
         }
     }.distinct()
 
+/** Whether [instruction] calls the builder factory. */
+internal fun callsBuilderFactory(instruction: Instruction): Boolean {
+    val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    return call.definingClass == TYPEFACE_BUILDERS && call.name == BUILDER_FACTORY
+}
+
+/** The methods of [classDef] that make a builder: each one calling the factory. */
+internal fun builderMakers(classDef: ClassDef): List<Method> = classDef.methods.filter { method ->
+    method.implementation?.instructions?.any(::callsBuilderFactory) == true
+}
+
 /** A builder's build: its instance method answering a Typeface for a Context. */
 internal fun buildMethods(classDef: ClassDef): List<Method> = classDef.methods.filter {
     !it.isStatic() && it.returnType == TYPEFACE && it.parameterTypeNames() == listOf(CONTEXT)
@@ -398,21 +414,6 @@ internal fun buildMethods(classDef: ClassDef): List<Method> = classDef.methods.f
 internal fun variationSetters(classDef: ClassDef): List<Method> = classDef.methods.filter {
     !it.isStatic() && it.returnType == "V" && it.parameterTypeNames() == listOf(STRING)
 }
-
-/**
- * Whether [method] takes the family enum or reads one of its members, which is how every maker
- * of a builder gets the family it builds for: 580's repository takes it, 577's asset helper looks
- * it up by name and reads its asset name and axes.
- */
-internal fun touchesFamily(method: Method, familyType: String): Boolean =
-    method.parameterTypeNames().any { it == familyType } ||
-        method.implementation?.instructions?.any { instruction ->
-            when (val reference = (instruction as? ReferenceInstruction)?.reference) {
-                is FieldReference -> reference.definingClass == familyType
-                is MethodReference -> reference.definingClass == familyType
-                else -> false
-            }
-        } == true
 
 /**
  * React Native's typeface resolvers among [owner]'s methods: static, answering a Typeface for an

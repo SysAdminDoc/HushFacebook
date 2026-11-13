@@ -31,6 +31,7 @@ import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -41,6 +42,7 @@ internal const val OWN_FONT = "$EXTENSION_PACKAGE/font/OwnFont;"
 internal const val REPLACE = "$OWN_FONT->replace($TYPEFACE${ENUM}I)$TYPEFACE"
 internal const val REMEMBER_VARIATION = "$OWN_FONT->rememberVariation(Ljava/lang/Object;$STRING)V"
 internal const val REPLACE_BUILT = "$OWN_FONT->replaceBuilt(${TYPEFACE}Ljava/lang/Object;)$TYPEFACE"
+internal const val REMEMBER_FAMILY = "$OWN_FONT->rememberFamily(Ljava/lang/Object;$ENUM)Ljava/lang/Object;"
 internal const val REPLACE_REACT_NATIVE = "$OWN_FONT->replaceReactNative($TYPEFACE$STRING)$TYPEFACE"
 internal const val REPLACE_PHONE_FONT = "$OWN_FONT->replacePhoneFont($TYPEFACE)$TYPEFACE"
 internal const val OWN_DEFAULT_FROM_STYLE = "$OWN_FONT->defaultFromStyle(I)$TYPEFACE"
@@ -77,8 +79,7 @@ val useSystemFontPatch = bytecodePatch(
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {
-        hookTypefaceRepository()
-        hookVariableFontBuilders()
+        hookVariableFontBuilders(hookTypefaceRepository())
         hookReactNativeFonts()
         hookRobotoBuilder()
         hookDefaultTypefaces()
@@ -329,8 +330,11 @@ internal fun BytecodePatchContext.hookRobotoBuilder() {
     }
 }
 
-/** Every Typeface the repository answers goes through the extension, with the family and the weight asked for. */
-private fun BytecodePatchContext.hookTypefaceRepository() {
+/**
+ * Every Typeface the repository answers goes through the extension, with the family and the weight
+ * asked for. Answers the family enum's type, which the builder makers take too.
+ */
+private fun BytecodePatchContext.hookTypefaceRepository(): String {
     val resolvers = classDefByStrings(NO_BACKING_SOURCE, StringComparisonType.EQUALS).flatMap(::typefaceResolvers)
     val resolver = resolvers.singleOrNull() ?: throw PatchException(
         "$PATCH: expected one typeface resolver holding the no-source refusal, found ${resolvers.size}",
@@ -341,13 +345,6 @@ private fun BytecodePatchContext.hookTypefaceRepository() {
     }
     if (familyNames(family).none(::isInterfaceFamily)) {
         throw PatchException("$PATCH: the font family enum ${family.type} names none of Meta's interface families")
-    }
-    val creativeWithAxes = familiesWithAxes(family).filterNot(::isInterfaceFamily)
-    if (creativeWithAxes.isNotEmpty()) {
-        throw PatchException(
-            "$PATCH: a family the switch leaves alone has variable axes, so its text would reach the " +
-                "builders and be swapped: $creativeWithAxes",
-        )
     }
 
     val mutable = mutableClassDefBy(resolver.definingClass).findMutableMethodOf(resolver)
@@ -367,14 +364,16 @@ private fun BytecodePatchContext.hookTypefaceRepository() {
             "move-result-object v$register",
         )
     }
+    return family.type
 }
 
 /**
  * The builders Meta's factory makes, with the superclasses their build and setters can sit on:
  * each variation setter tells the extension what the builder was given, and each build's answer
- * goes through it.
+ * goes through it. A builder is made for one family of [familyType], and the extension hears which
+ * (see [hookBuilderMakers]), so one made for a family the switch leaves alone keeps its face.
  */
-private fun BytecodePatchContext.hookVariableFontBuilders() {
+private fun BytecodePatchContext.hookVariableFontBuilders(familyType: String) {
     val apiUtils = classDefByOrNull(TYPEFACE_BUILDERS)
         ?: throw PatchException("$PATCH: this build has no $TYPEFACE_BUILDERS")
     val builders = builderClasses(apiUtils)
@@ -410,6 +409,51 @@ private fun BytecodePatchContext.hookVariableFontBuilders() {
                 .addInstruction(0, "invoke-static/range { p0 .. p1 }, $REMEMBER_VARIATION")
         }
     }
+    hookBuilderMakers(familyType)
+}
+
+/**
+ * Each method that makes a builder through the factory takes the family of [familyType] it makes
+ * it for, and at each of its object returns hands the builder and that family to the extension,
+ * which notes a builder made for a family the switch leaves alone and hands it back. 587 gives
+ * OPTIMISTIC_MONO variable axes, so monospace text reaches the builders too, and their builds
+ * would otherwise swap it like the rest. A maker that doesn't take one family, or answers
+ * something other than what the factory made, stops the patch: its builders couldn't be told
+ * apart. The answer is cast back to the maker's return type. Answers how many makers it hooked.
+ */
+internal fun BytecodePatchContext.hookBuilderMakers(familyType: String): Int {
+    val makers = mutableListOf<Method>()
+    classDefForEachReferencing(names = listOf(BUILDER_FACTORY)) { classDef ->
+        if (classDef.type != TYPEFACE_BUILDERS && !classDef.type.startsWith(EXTENSION_CLASSES)) makers += builderMakers(classDef)
+    }
+    if (makers.isEmpty()) throw PatchException("$PATCH: nothing outside $TYPEFACE_BUILDERS calls its $BUILDER_FACTORY")
+    for (maker in makers) {
+        val where = "${maker.definingClass}->${maker.name}"
+        val families = maker.parameterTypes.withIndex().filter { it.value.toString() == familyType }.map { it.index }
+        if (families.size != 1) {
+            throw PatchException("$PATCH: the builder maker $where takes ${families.size} parameter(s) of the family $familyType, needs one")
+        }
+        val made = maker.implementation!!.instructions.filter(::callsBuilderFactory)
+            .map { ((it as ReferenceInstruction).reference as MethodReference).returnType }.toSet()
+        if (made != setOf(maker.returnType)) {
+            throw PatchException("$PATCH: the builder maker $where answers ${maker.returnType}, not what the factory made: $made")
+        }
+        if (objectReturns(maker).isEmpty()) throw PatchException("$PATCH: the builder maker $where never returns its builder")
+        val mutable = mutableClassDefBy(maker.definingClass).findMutableMethodOf(maker)
+        mutable.requireLocals(PATCH, 2)
+        mutable.requireMakerHookFits(families.single())
+        val familyRegister = mutable.parameterRegister(families.single())
+        mutable.forEachObjectReturn { register ->
+            listOfNotNull(
+                if (register != 0) "move-object/from16 v0, v$register" else null,
+                "move-object/from16 v1, $familyRegister",
+                "invoke-static { v0, v1 }, $REMEMBER_FAMILY",
+                "move-result-object v$register",
+                "check-cast v$register, ${maker.returnType}",
+            )
+        }
+    }
+    return makers.size
 }
 
 /**
@@ -460,6 +504,13 @@ internal fun Method.requireResolverHookFits() {
 internal fun Method.requireBuilderHookFits() {
     val returns = objectReturns(this)
     requireThisIntact(PATCH, returns)
+    requireReturnCopiesFree(returns, listOf(0, 1))
+}
+
+/** The same for a builder maker: the family, parameter [family], still in its register at each object return, and v0 and v1 free there. */
+internal fun Method.requireMakerHookFits(family: Int) {
+    val returns = objectReturns(this)
+    requireParameterIntact(PATCH, family, returns)
     requireReturnCopiesFree(returns, listOf(0, 1))
 }
 
