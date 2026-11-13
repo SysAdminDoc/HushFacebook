@@ -2773,3 +2773,11 @@ Going through %1$d reels for the reel queue. Hold Download again or cancel the q
 Put %1$d reels in the reel queue	%1$d Reels in die Reel-Warteschlange gestellt
 No more reels came. %1$d went in the reel queue.	Es kamen keine Reels mehr. %1$d sind in der Reel-Warteschlange.
 Stopped going through reels	Durchgehen der Reels beendet
+Reel from %1$s	Reel von %1$s
+Reel %1$d	Reel %1$d
+Saving now	Wird gerade gespeichert
+Waiting	Wartet
+Paused	Pausiert
+Pause this reel	Dieses Reel pausieren
+Resume this reel	Dieses Reel fortsetzen
+Cancel this reel	Dieses Reel abbrechen

@@ -236,10 +236,13 @@ final class SettingsRows {
 
     /**
      * The reel queue (#449): what it's doing, its counts, and Pause or Resume with Cancel. Above the
-     * running saves, one of which is its reel. Its text and buttons change in place, as a save's do.
+     * reels in it (#462) and the running saves, one of which is its reel. Its text and buttons change
+     * in place, as a save's do.
      */
     static final class QueueRow extends Preference {
-        static final String KEY = "reel_queue";
+        static final String KEY = ReelQueue.ROW_KEY;
+        /** Room under it for every reel the queue holds at once, and the one saving, before the saves. */
+        static final int ORDER = SaveRow.FIRST - ReelQueue.MOST_WAITING - 2;
 
         private ReelQueue.Status status;
         private Button toggleButton;
@@ -252,7 +255,7 @@ final class SettingsRows {
             setKey(KEY);
             setPersistent(false);
             setSelectable(false);
-            setOrder(SaveRow.FIRST - 1);
+            setOrder(ORDER);
             setTitle(ReelQueue.title(status));
         }
 
@@ -279,41 +282,130 @@ final class SettingsRows {
             android.view.ViewGroup frame = view.findViewById(android.R.id.widget_frame);
             if (frame == null) return;
             frame.removeAllViews();
-            toggleButton = button(view, status.paused ? L10n.t("Resume") : L10n.t("Pause"), null);
+            toggleButton = queueButton(view, status.paused ? L10n.t("Resume") : L10n.t("Pause"), null);
             toggleButton.setOnClickListener(ignored -> {
                 if (status.paused) ReelQueue.resume();
                 else ReelQueue.pause();
             });
-            Button cancel = button(view, L10n.t("Cancel"), L10n.t("Cancel the reel queue"));
+            Button cancel = queueButton(view, L10n.t("Cancel"), L10n.t("Cancel the reel queue"));
             cancel.setOnClickListener(ignored -> {
                 cancel.setEnabled(false);
                 ReelQueue.cancel();
             });
-            android.widget.LinearLayout.LayoutParams wrap = new android.widget.LinearLayout.LayoutParams(
-                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
-            frame.addView(toggleButton, wrap);
-            frame.addView(cancel, new android.widget.LinearLayout.LayoutParams(wrap));
-            frame.setVisibility(View.VISIBLE);
+            twoButtons(frame, toggleButton, cancel);
+        }
+    }
+
+    /**
+     * One reel in the reel queue (#462): who posted it, whether it's saving, waiting or paused, and its
+     * own Pause or Resume and Cancel. Under the queue's row, in the order the reels go. Its text and
+     * buttons change in place, as the queue's do.
+     */
+    static final class QueuedReelRow extends Preference {
+        final int number;
+        private ReelQueue.Item item;
+        @Nullable
+        private Button toggleButton;
+        @Nullable
+        private View bound;
+
+        QueuedReelRow(Context context, ReelQueue.Item item, int place) {
+            super(context);
+            number = item.number;
+            this.item = item;
+            setKey("queued_reel_" + item.number);
+            setPersistent(false);
+            setSelectable(false);
+            setOrder(QueueRow.ORDER + 1 + place);
+            setTitle(ReelQueue.name(item));
         }
 
-        /** A button styled as a running save's Cancel is, at least 48 dp each way. */
-        private Button button(View row, String text, @Nullable String description) {
-            Button button = new Button(getContext());
-            button.setText(text);
-            if (description != null) button.setContentDescription(description);
-            button.setAllCaps(false);
-            button.setTextSize(14);
-            ScreenColors colors = ScreenColors.current();
-            button.setTextColor(colors.heading);
-            ScreenColors.pressFeedback(button, colors.heading, false);
-            int touch = Math.round(48 * row.getResources().getDisplayMetrics().density);
-            button.setMinWidth(touch);
-            button.setMinimumWidth(touch);
-            button.setMinHeight(touch);
-            button.setMinimumHeight(touch);
-            button.setPadding(touch / 4, 0, touch / 4, 0);
-            return button;
+        @Override
+        public CharSequence getSummary() {
+            return ReelQueue.state(item);
         }
+
+        /** [now] is this reel as the queue has it, [place] its place in line, the one saving first. */
+        void show(ReelQueue.Item now, int place) {
+            item = now;
+            setTitle(ReelQueue.name(now));
+            if (getOrder() != QueueRow.ORDER + 1 + place) setOrder(QueueRow.ORDER + 1 + place);
+            TextView summary = bound == null ? null : bound.findViewById(android.R.id.summary);
+            if (summary != null) summary.setText(ReelQueue.state(now));
+            if (toggleButton != null) label(toggleButton);
+        }
+
+        private void label(Button toggle) {
+            boolean paused = item.state == ReelQueue.Item.State.PAUSED;
+            toggle.setText(paused ? L10n.t("Resume") : L10n.t("Pause"));
+            toggle.setContentDescription(paused ? L10n.t("Resume this reel") : L10n.t("Pause this reel"));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            bound = view;
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setScreenReaderFocusable(true);
+            android.view.ViewGroup frame = view.findViewById(android.R.id.widget_frame);
+            if (frame == null) return;
+            frame.removeAllViews();
+            Button toggle = queueButton(view, L10n.t("Pause"), null);
+            toggleButton = toggle;
+            label(toggle);
+            toggle.setOnClickListener(ignored -> {
+                if (item.state == ReelQueue.Item.State.PAUSED) ReelQueue.resume(number);
+                else ReelQueue.pause(number);
+            });
+            Button cancel = queueButton(view, L10n.t("Cancel"), L10n.t("Cancel this reel"));
+            cancel.setOnClickListener(ignored -> {
+                cancel.setEnabled(false);
+                ReelQueue.cancel(number);
+            });
+            twoButtons(frame, toggle, cancel);
+        }
+    }
+
+    /** A button styled as a running save's Cancel is, at least 48 dp each way. */
+    private static Button queueButton(View row, String text, @Nullable String description) {
+        Button button = new Button(row.getContext());
+        button.setText(text);
+        if (description != null) button.setContentDescription(description);
+        button.setAllCaps(false);
+        button.setTextSize(14);
+        ScreenColors colors = ScreenColors.current();
+        button.setTextColor(colors.heading);
+        ScreenColors.pressFeedback(button, colors.heading, false);
+        int touch = Math.round(48 * row.getResources().getDisplayMetrics().density);
+        button.setMinWidth(touch);
+        button.setMinimumWidth(touch);
+        button.setMinHeight(touch);
+        button.setMinimumHeight(touch);
+        button.setPadding(touch / 4, 0, touch / 4, 0);
+        return button;
+    }
+
+    /** Puts [first] and [second] side by side in a row's widget [frame]. */
+    private static void twoButtons(android.view.ViewGroup frame, Button first, Button second) {
+        // A preference's widget frame stacks what it holds, which put Cancel under Pause and
+        // squeezed both below a finger's size.
+        if (frame instanceof android.widget.LinearLayout) {
+            ((android.widget.LinearLayout) frame).setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        }
+        // The frame fills the row's height, and a row leaves such a part out when it sizes itself,
+        // so the buttons got what the text and the card's margins left, under a finger's size.
+        // Sized to its buttons, the frame makes the row grow to fit them.
+        android.view.ViewGroup.LayoutParams place = frame.getLayoutParams();
+        if (place != null && place.height != android.view.ViewGroup.LayoutParams.WRAP_CONTENT) {
+            place.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+            frame.setLayoutParams(place);
+        }
+        android.widget.LinearLayout.LayoutParams wrap = new android.widget.LinearLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        frame.addView(first, wrap);
+        frame.addView(second, new android.widget.LinearLayout.LayoutParams(wrap));
+        frame.setVisibility(View.VISIBLE);
     }
 
     /** A switch row, which a screen reader calls a switch and reads as on or off. */

@@ -37,13 +37,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import app.morphe.extension.facebook.settings.SettingsEntry;
+import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.SettingsContextRule;
 
 /**
  * Queue reel saves (#449): tapped reels save one at a time in the order they were tapped, a reel
  * already waiting or saved isn't queued twice, a failed one gets one more try, Pause and Resume
  * from the card hold and release the next turn, Cancel stops the turn and drops the rest, and the
- * card counts it all.
+ * card counts it all. Each reel's own Pause, Resume and Cancel (#462) act on that reel alone.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -282,6 +284,165 @@ public class ReelQueueTest {
         assertTrue(ReelQueue.add(context, "2", reel("b")));
         finishRun();
         assertEquals(Arrays.asList("a", "b"), turns);
+    }
+
+    /** A turn that ends only when something stops it: the queue's Cancel, or a reel's own Pause or Cancel. */
+    private void holdUntilStopped(String name) {
+        holds.put(name, new CountDownLatch(1) {
+            @Override public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
+                super.await();
+                return true;
+            }
+        });
+    }
+
+    private static String names() {
+        StringBuilder listed = new StringBuilder();
+        for (ReelQueue.Item item : ReelQueue.items()) {
+            if (listed.length() > 0) listed.append(", ");
+            listed.append(ReelQueue.name(item)).append(' ').append(ReelQueue.state(item));
+        }
+        return listed.toString();
+    }
+
+    /** #462: the card opens Downloads at the queue, which lists each reel by who posted it, or by its number. */
+    @Test
+    public void theCardOpensTheQueuePageWhichListsEveryReelInOrder() throws Exception {
+        holdOf("a");
+        assertTrue(ReelQueue.add(context, "1", reel("a")));
+        await(startedOf("a"));
+        MediaDownload.ReelSave fromAna = new MediaDownload.ReelSave(Collections.singletonList("b"), null,
+            DownloadQuality.BEST, new PostDetails("2", "Ana", null));
+        assertTrue(ReelQueue.add(context, "2", fromAna));
+        assertTrue(ReelQueue.add(context, "3", reel("c")));
+
+        assertEquals("Reel 1 Saving now, Reel from " + L10n.isolate("Ana") + " Waiting, Reel 3 Waiting", names());
+        Notification running = card();
+        assertNotNull("a running queue's card opens nothing", running.contentIntent);
+        Intent open = Shadows.shadowOf(running.contentIntent).getSavedIntent();
+        assertTrue("the card's tap doesn't open the settings", open.getBooleanExtra(SettingsEntry.EXTRA_OPEN_SETTINGS, false));
+        assertEquals(ReelQueue.ROW_KEY, open.getStringExtra(SettingsEntry.EXTRA_SHOW_SETTING));
+
+        holds.get("a").countDown();
+        finishRun();
+        assertTrue("a finished queue still lists reels", ReelQueue.items().isEmpty());
+    }
+
+    /** #462: a waiting reel paused on its own keeps its place, the ones behind it go on, and Resume lets it go. */
+    @Test
+    public void aWaitingReelPausedOnItsOwnKeepsItsPlaceWhileTheRestGoOn() throws Exception {
+        CountDownLatch holdA = holdOf("a");
+        assertTrue(ReelQueue.add(context, "1", reel("a")));
+        await(startedOf("a"));
+        assertTrue(ReelQueue.add(context, "2", reel("b")));
+        assertTrue(ReelQueue.add(context, "3", reel("c")));
+
+        ReelQueue.pause(2);
+        assertEquals("Reel 1 Saving now, Reel 2 Paused, Reel 3 Waiting", names());
+        assertFalse("one paused reel paused the whole queue", ReelQueue.status().paused);
+
+        holdA.countDown();
+        // The card goes up last, after the counts change.
+        waitUntil("the reel behind the paused one never went", () -> {
+            Notification now = card();
+            return turns.contains("c") && now != null && "Reel queue paused".equals(text(now, Notification.EXTRA_TITLE));
+        });
+        Thread.sleep(50);
+        assertEquals("the paused reel went", Arrays.asList("a", "c"), turns);
+        ReelQueue.Status held = ReelQueue.status();
+        assertNotNull("the run ended with a paused reel still in it", held);
+        assertEquals(1, held.waiting);
+        assertTrue("with only paused reels left, the queue doesn't read as paused", held.paused);
+        assertEquals("Resume", String.valueOf(card().actions[0].title));
+
+        ReelQueue.resume(2);
+        finishRun();
+        assertEquals(Arrays.asList("a", "c", "b"), turns);
+        assertEquals("3 saved, 0 waiting, 0 failed", text(card(), Notification.EXTRA_TEXT));
+    }
+
+    /** #462: pausing the reel that's saving stops its save and puts it back at the front, to start over on Resume. */
+    @Test
+    public void pausingTheReelSavingStopsItAndPutsItBackAtTheFront() throws Exception {
+        holdUntilStopped("a");
+        assertTrue(ReelQueue.add(context, "1", reel("a")));
+        await(startedOf("a"));
+        assertTrue(ReelQueue.add(context, "2", reel("b")));
+
+        ReelQueue.pause(1);
+        waitUntil("the stopped reel never let the next one go", () -> {
+            ReelQueue.Status now = ReelQueue.status();
+            return now != null && now.saved == 1 && !now.saving;
+        });
+        assertEquals(Arrays.asList("a", "b"), turns);
+        assertEquals("Reel 1 Paused", names());
+        assertEquals("a stopped reel counted as failed", 0, ReelQueue.status().failed);
+
+        holds.remove("a");
+        ReelQueue.resume(1);
+        finishRun();
+        assertEquals("the paused reel didn't start over", Arrays.asList("a", "b", "a"), turns);
+        assertEquals("2 saved, 0 waiting, 0 failed", text(card(), Notification.EXTRA_TEXT));
+    }
+
+    /** #462: Resume on the queue's own card lets every reel paused on its own go, too. */
+    @Test
+    public void theQueuesResumeLetsEveryPausedReelGo() throws Exception {
+        CountDownLatch holdA = holdOf("a");
+        assertTrue(ReelQueue.add(context, "1", reel("a")));
+        await(startedOf("a"));
+        assertTrue(ReelQueue.add(context, "2", reel("b")));
+        assertTrue(ReelQueue.add(context, "3", reel("c")));
+        ReelQueue.pause(2);
+        ReelQueue.pause(3);
+        holdA.countDown();
+        waitUntil("the queue never stopped at its paused reels", () -> {
+            ReelQueue.Status now = ReelQueue.status();
+            return now != null && now.saved == 1 && !now.saving;
+        });
+
+        context.sendBroadcast(ReelQueue.intent(context, ReelQueue.ACTION_RESUME));
+        ShadowLooper.idleMainLooper();
+        finishRun();
+        assertEquals(Arrays.asList("a", "b", "c"), turns);
+    }
+
+    /** #462: Cancel on one reel takes out that reel alone, whether it waits or saves, and frees it to be queued again. */
+    @Test
+    public void cancelOnOneReelTakesOutThatReelAlone() throws Exception {
+        holdUntilStopped("a");
+        assertTrue(ReelQueue.add(context, "1", reel("a")));
+        await(startedOf("a"));
+        assertTrue(ReelQueue.add(context, "2", reel("b")));
+        assertTrue(ReelQueue.add(context, "3", reel("c")));
+
+        ReelQueue.cancel(2);
+        assertEquals("Reel 1 Saving now, Reel 3 Waiting", names());
+        assertTrue("a reel taken out stayed in the queue's memory", ReelQueue.add(context, "2", reel("b again")));
+
+        ReelQueue.cancel(1);
+        finishRun();
+        assertEquals(Arrays.asList("a", "c", "b again"), turns);
+        assertEquals("a reel taken out counted", "2 saved, 0 waiting, 0 failed", text(card(), Notification.EXTRA_TEXT));
+    }
+
+    /** #462: every reel taken out by hand ends the run with its card gone and nothing to say, as the queue's Cancel does. */
+    @Test
+    public void takingOutEveryReelByHandEndsTheRunQuietly() throws Exception {
+        holdUntilStopped("a");
+        assertTrue(ReelQueue.add(context, "1", reel("a")));
+        await(startedOf("a"));
+        assertTrue(ReelQueue.add(context, "2", reel("b")));
+        ShadowLooper.idleMainLooper();
+        ShadowToast.reset();
+
+        ReelQueue.cancel(2);
+        ReelQueue.cancel(1);
+        finishRun();
+        assertEquals(Collections.singletonList("a"), turns);
+        assertNull(ReelQueue.status());
+        assertNull("an emptied queue left its card up", card());
+        assertNull("an emptied queue said it was done", ShadowToast.getTextOfLatestToast());
     }
 
     @Test

@@ -231,6 +231,9 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     /** The rows of the saves running now, by save number. */
     private final Map<Integer, SaveRow> saveRows = new HashMap<>();
 
+    /** The rows of the reels in the reel queue (#462), by their number in its run. */
+    private final Map<Integer, SettingsRows.QueuedReelRow> reelRows = new HashMap<>();
+
     /** Keeps the rows in step with the saves while the page is showing. Saves tell it from their own thread. */
     private final SaveControl.Watcher saves = () -> Utils.runOnMainThread(this::showSaves);
 
@@ -248,6 +251,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     /** Goes to the row the request that opened the page named, if it named one this build has. */
     void showRequestedSetting() {
         String key = SettingsEntry.takeRequestedSetting();
+        // The queue's card opens the page at the queue (#462), whose rows go up with the saves'.
+        if (ReelQueue.ROW_KEY.equals(key)) showSaves();
         Preference target = key == null ? null : findPreference(key);
         // The tab bar switches have no rows of their own: each pair is one choice row.
         TabBarChoices.Pair pair = TabBarChoices.Pair.forKey(key);
@@ -457,8 +462,11 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         }
     }
 
-    /** The reel queue's row (#449) while it holds reels, above the running saves. Changed in place while it stays. */
-    private static void showReelQueue(PreferenceCategory group) {
+    /**
+     * The reel queue's row (#449) while it holds reels, with a row under it for each reel in it
+     * (#462), above the running saves. Rows that stay are changed in place.
+     */
+    private void showReelQueue(PreferenceCategory group) {
         ReelQueue.Status queue = ReelQueue.status();
         Preference shown = group.findPreference(SettingsRows.QueueRow.KEY);
         if (queue == null) {
@@ -467,6 +475,26 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((SettingsRows.QueueRow) shown).show(queue);
         } else {
             group.addPreference(new SettingsRows.QueueRow(group.getContext(), queue));
+        }
+        List<ReelQueue.Item> items = queue == null ? new ArrayList<>() : ReelQueue.items();
+        Set<Integer> now = new HashSet<>();
+        for (ReelQueue.Item item : items) now.add(item.number);
+        for (java.util.Iterator<Map.Entry<Integer, SettingsRows.QueuedReelRow>> rows = reelRows.entrySet().iterator(); rows.hasNext(); ) {
+            Map.Entry<Integer, SettingsRows.QueuedReelRow> row = rows.next();
+            if (now.contains(row.getKey())) continue;
+            group.removePreference(row.getValue());
+            rows.remove();
+        }
+        for (int place = 0; place < items.size(); place++) {
+            ReelQueue.Item item = items.get(place);
+            SettingsRows.QueuedReelRow row = reelRows.get(item.number);
+            if (row != null) {
+                row.show(item, place);
+                continue;
+            }
+            row = new SettingsRows.QueuedReelRow(group.getContext(), item, place);
+            reelRows.put(item.number, row);
+            group.addPreference(row);
         }
     }
 

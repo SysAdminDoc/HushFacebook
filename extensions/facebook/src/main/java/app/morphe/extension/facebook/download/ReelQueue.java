@@ -17,10 +17,13 @@ import android.os.Build;
 import androidx.annotation.Nullable;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import app.morphe.extension.facebook.settings.SettingsEntry;
 import app.morphe.extension.shared.L10n;
 
 /**
@@ -39,6 +42,11 @@ import app.morphe.extension.shared.L10n;
  * in this run is skipped, a failed one gets one more try at the back of the queue, and the run ends
  * when the queue empties.
  *
+ * <p>A tap on the card opens Downloads at the queue (#462), which lists every reel in it with its own
+ * Pause or Resume and Cancel. A paused reel keeps its place and the ones behind it go on. Pausing
+ * the reel that's saving stops its save and puts it back at the front, to start over on Resume.
+ * Cancel takes just that reel out.
+ *
  * <p>All of it is in memory and gone when Facebook's process ends, like the list of running saves:
  * no reel's address, name or number outlives the run it was queued in.
  */
@@ -52,6 +60,8 @@ public final class ReelQueue {
     static final String ACTION_RESUME = "app.morphe.extension.facebook.REEL_QUEUE_RESUME";
     static final String ACTION_CANCEL = "app.morphe.extension.facebook.REEL_QUEUE_CANCEL";
     static final String EXTRA_TOKEN = "app.morphe.extension.facebook.REEL_QUEUE_TOKEN";
+    /** The key of the queue's row in Downloads, which a tap on its card opens the settings at (#462). */
+    public static final String ROW_KEY = "reel_queue";
     /** Unguessable, and new in every process, as a save's Cancel is. */
     private static final String TOKEN = UUID.randomUUID().toString();
 
@@ -59,7 +69,7 @@ public final class ReelQueue {
      * The most reels that wait at once. A reel's manifest can run to tens of kilobytes, and the
      * queue holds each in Facebook's memory until its turn.
      */
-    static final int MOST_WAITING = 50;
+    public static final int MOST_WAITING = 50;
 
     /** One save of a queued reel. Tests set their own; on a phone it's {@link MediaDownload#saveQueued}. */
     interface Saver {
@@ -71,11 +81,20 @@ public final class ReelQueue {
     static volatile Saver saverForTests;
 
     private static final class Entry {
+        /** Its number in this run, which its row on the queue page goes by. */
+        final int number;
         @Nullable final String videoId;
         final MediaDownload.ReelSave reel;
         boolean retried;
+        /** Paused on the queue page: it keeps its place, and its turn waits until it's resumed. */
+        boolean held;
+        /** Paused while it saved: its turn was stopped, and it goes back to the front of the queue. */
+        boolean putBack;
+        /** Cancelled on the queue page while it saved: its turn was stopped, and it goes. */
+        boolean dropped;
 
-        Entry(@Nullable String videoId, MediaDownload.ReelSave reel) {
+        Entry(int number, @Nullable String videoId, MediaDownload.ReelSave reel) {
+            this.number = number;
             this.videoId = videoId;
             this.reel = reel;
         }
@@ -99,6 +118,8 @@ public final class ReelQueue {
     private static boolean cancelled;
     private static int saved;
     private static int failed;
+    /** The number the last reel to join this run got. */
+    private static int numbered;
     @Nullable private static Context application;
     /** The application the receiver is registered on: one per process, and one per test. */
     @Nullable private static Context listeningOn;
@@ -120,12 +141,66 @@ public final class ReelQueue {
         }
     }
 
-    /** The queue now, or null when it holds no reel. */
+    /**
+     * The queue now, or null when it holds no reel. It reads as paused, too, when nothing saves and
+     * every reel left was paused on its own, since nothing goes until one is resumed.
+     */
     @Nullable
     public static Status status() {
         synchronized (LOCK) {
             if (current == null && WAITING.isEmpty()) return null;
-            return new Status(saved, WAITING.size(), failed, current != null, paused);
+            boolean allHeld = current == null;
+            for (Entry entry : WAITING) allHeld &= entry.held;
+            return new Status(saved, WAITING.size(), failed, current != null, paused || allHeld);
+        }
+    }
+
+    /** One reel in the queue, as its row on the queue page shows it (#462). */
+    public static final class Item {
+        public enum State { SAVING, WAITING, PAUSED }
+
+        /** Its number in this run, which {@link #pause(int)}, {@link #resume(int)} and {@link #cancel(int)} take. */
+        public final int number;
+        /** Who posted it, or null when the tap didn't say. */
+        @Nullable public final String owner;
+        public final State state;
+
+        Item(int number, @Nullable String owner, State state) {
+            this.number = number;
+            this.owner = owner;
+            this.state = state;
+        }
+    }
+
+    /** Every reel in the queue, the one saving first and then the rest in the order they'll go. */
+    public static List<Item> items() {
+        synchronized (LOCK) {
+            List<Item> items = new ArrayList<>();
+            // A reel cancelled while it saved is on its way out, and a paused one on its way back.
+            if (current != null && !current.dropped) {
+                items.add(item(current, current.held ? Item.State.PAUSED : Item.State.SAVING));
+            }
+            for (Entry entry : WAITING) items.add(item(entry, entry.held ? Item.State.PAUSED : Item.State.WAITING));
+            return items;
+        }
+    }
+
+    private static Item item(Entry entry, Item.State state) {
+        String owner = entry.reel.details.owner;
+        return new Item(entry.number, owner == null || owner.trim().isEmpty() ? null : owner.trim(), state);
+    }
+
+    /** "Reel from Ana" or, when the tap didn't say who posted it, "Reel 3", in the phone's language. */
+    public static String name(Item item) {
+        return item.owner != null ? L10n.f("Reel from %1$s", L10n.isolate(item.owner)) : L10n.f("Reel %1$d", item.number);
+    }
+
+    /** "Saving now", "Waiting" or "Paused", in the phone's language. */
+    public static String state(Item item) {
+        switch (item.state) {
+            case SAVING: return L10n.t("Saving now");
+            case PAUSED: return L10n.t("Paused");
+            default: return L10n.t("Waiting");
         }
     }
 
@@ -183,7 +258,7 @@ public final class ReelQueue {
                     refused = L10n.t(app, "The reel queue is full. Try again when it's shorter.");
                 } else {
                     application = app;
-                    WAITING.addLast(new Entry(videoId, reel));
+                    WAITING.addLast(new Entry(++numbered, videoId, reel));
                     if (videoId != null) QUEUED.add(videoId);
                     if (worker == null) startWorker();
                 }
@@ -221,15 +296,95 @@ public final class ReelQueue {
         changed();
     }
 
-    /** Starts the next reel's turn again after {@link #pause}. */
+    /** Starts the next reel's turn again after {@link #pause}, and lets every reel paused on its own go too. */
     public static void resume() {
         synchronized (LOCK) {
-            if (!paused) return;
+            boolean any = paused;
+            for (Entry entry : WAITING) {
+                any |= entry.held;
+                entry.held = false;
+            }
+            if (current != null) {
+                any |= current.held;
+                current.held = false;
+            }
+            if (!any) return;
             paused = false;
             LOCK.notifyAll();
         }
         MediaDownload.info(() -> "the reel queue resumed");
         changed();
+    }
+
+    /**
+     * Pauses one reel from the queue page (#462). Waiting, it keeps its place and the reels behind it
+     * go on. Saving, its save stops and it goes back to the front, to start over on Resume.
+     */
+    public static void pause(int number) {
+        synchronized (LOCK) {
+            Entry entry = find(number);
+            if (entry == null || entry.held) return;
+            entry.held = true;
+            if (entry == current) {
+                entry.putBack = true;
+                stopTurn();
+            }
+        }
+        MediaDownload.info(() -> "a queued reel was paused");
+        changed();
+    }
+
+    /** Lets one reel paused on the queue page take its turn again. */
+    public static void resume(int number) {
+        synchronized (LOCK) {
+            Entry entry = find(number);
+            if (entry == null || !entry.held) return;
+            entry.held = false;
+            LOCK.notifyAll();
+        }
+        MediaDownload.info(() -> "a queued reel was resumed");
+        changed();
+    }
+
+    /** Takes one reel out of the queue from the queue page, stopping its save if it's the one saving. */
+    public static void cancel(int number) {
+        synchronized (LOCK) {
+            Entry entry = find(number);
+            if (entry == null) return;
+            if (entry == current) {
+                entry.dropped = true;
+                stopTurn();
+            } else {
+                WAITING.remove(entry);
+                if (entry.videoId != null) QUEUED.remove(entry.videoId);
+                // The worker may be waiting on reels that were all paused, and this one was the last.
+                LOCK.notifyAll();
+            }
+        }
+        MediaDownload.info(() -> "a queued reel was cancelled");
+        changed();
+    }
+
+    /** The reel with [number], saving or waiting, or null. Under LOCK. */
+    @Nullable
+    private static Entry find(int number) {
+        if (current != null && current.number == number && !current.dropped) return current;
+        for (Entry entry : WAITING) {
+            if (entry.number == number) return entry;
+        }
+        return null;
+    }
+
+    /**
+     * Stops the turn running now as its save's own Cancel would. A turn still waiting for a free
+     * slot has no save yet, so the wait itself is what stops. Under LOCK.
+     */
+    private static void stopTurn() {
+        MediaDownload.Turn turn = currentTurn;
+        Thread running = worker;
+        if (turn == null) return;
+        if (turn.saveId >= 0) SaveControl.cancel(turn.saveId);
+        else if (running != null) running.interrupt();
     }
 
     /** Drops every waiting reel and stops the one saving, and says so on screen. */
@@ -243,14 +398,7 @@ public final class ReelQueue {
                 if (entry.videoId != null) QUEUED.remove(entry.videoId);
             }
             WAITING.clear();
-            MediaDownload.Turn turn = currentTurn;
-            Thread running = worker;
-            if (turn != null) {
-                // A turn with a save running stops it as its own Cancel would. One still waiting for
-                // a slot has no save yet, so the wait itself is what stops.
-                if (turn.saveId >= 0) SaveControl.cancel(turn.saveId);
-                else if (running != null) running.interrupt();
-            }
+            stopTurn();
             LOCK.notifyAll();
             app = application;
         }
@@ -280,20 +428,25 @@ public final class ReelQueue {
             Status last = null;
             boolean wasCancelled = false;
             synchronized (LOCK) {
-                while (paused && !WAITING.isEmpty()) {
+                // Paused, or with every reel left paused on its own, the run waits: they're still in it.
+                while ((entry = paused ? null : nextReady()) == null && !WAITING.isEmpty()) {
                     try {
                         LOCK.wait();
                     } catch (InterruptedException e) {
-                        // Only Cancel interrupts this thread, and it empties the queue first.
+                        // Only a stop of the turn that just ended interrupts this thread. Look again.
                     }
                 }
-                entry = WAITING.pollFirst();
+                // A stop that landed as the last turn ended must not cut this one short. Stops come
+                // under LOCK while a turn runs, so none can be on its way now.
+                Thread.interrupted();
                 app = application;
                 if (entry == null) {
                     last = new Status(saved, 0, failed, false, false);
-                    wasCancelled = cancelled;
+                    // Every reel taken out by hand leaves nothing to say, as a Cancel of the queue doesn't.
+                    wasCancelled = cancelled || (saved == 0 && failed == 0);
                     endRun();
                 } else {
+                    WAITING.remove(entry);
                     turn = new MediaDownload.Turn();
                     current = entry;
                     currentTurn = turn;
@@ -332,14 +485,36 @@ public final class ReelQueue {
         }
     }
 
-    /** Counts how [entry]'s turn [ended], and puts a failed reel back once. Under LOCK. */
+    /** The first waiting reel not paused on its own, or null. Under LOCK. */
+    @Nullable
+    private static Entry nextReady() {
+        for (Entry entry : WAITING) {
+            if (!entry.held) return entry;
+        }
+        return null;
+    }
+
+    /**
+     * Counts how [entry]'s turn [ended], and puts a failed reel back once. A reel paused while it
+     * saved goes back to the front and one cancelled goes, unless it had saved by then. Under LOCK.
+     */
     private static void settle(Entry entry, @Nullable Downloader.Status ended) {
+        boolean putBack = entry.putBack;
+        entry.putBack = false;
         if (ended == Downloader.Status.OK) {
             saved++;
             if (entry.videoId != null) {
                 QUEUED.remove(entry.videoId);
                 SAVED.add(entry.videoId);
             }
+            return;
+        }
+        if (entry.dropped) {
+            if (entry.videoId != null) QUEUED.remove(entry.videoId);
+            return;
+        }
+        if (putBack && !cancelled) {
+            WAITING.addFirst(entry);
             return;
         }
         // A save stopped from its own Cancel, or the queue's, is neither saved nor failed.
@@ -358,6 +533,7 @@ public final class ReelQueue {
         worker = null;
         saved = 0;
         failed = 0;
+        numbered = 0;
         paused = false;
         cancelled = false;
         QUEUED.clear();
@@ -422,6 +598,9 @@ public final class ReelQueue {
                 .setAutoCancel(done);
             if (!done) {
                 card.setProgress(Math.max(total, 1), status.saved + status.failed, false);
+                // A tap opens Downloads at the queue, where each reel has its own buttons (#462).
+                card.setContentIntent(PendingIntent.getActivity(app, 3, SettingsEntry.settingIntent(app, ROW_KEY),
+                    PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
                 listen(app);
                 String toggle = status.paused ? ACTION_RESUME : ACTION_PAUSE;
                 card.addAction(new Notification.Action.Builder((Icon) null,

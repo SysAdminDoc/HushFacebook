@@ -2768,3 +2768,11 @@ Going through %1$d reels for the reel queue. Hold Download again or cancel the q
 Put %1$d reels in the reel queue	已将 %1$d 个 Reels 加入 Reels 队列
 No more reels came. %1$d went in the reel queue.	没有更多 Reels 了。已有 %1$d 个加入 Reels 队列。
 Stopped going through reels	已停止浏览 Reels
+Reel from %1$s	来自 %1$s 的 Reels
+Reel %1$d	Reels %1$d
+Saving now	正在保存
+Waiting	等待中
+Paused	已暂停
+Pause this reel	暂停这个 Reels
+Resume this reel	恢复这个 Reels
+Cancel this reel	取消这个 Reels

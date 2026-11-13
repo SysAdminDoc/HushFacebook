@@ -2773,3 +2773,11 @@ Going through %1$d reels for the reel queue. Hold Download again or cancel the q
 Put %1$d reels in the reel queue	Reel sırasına %1$d reel eklendi
 No more reels came. %1$d went in the reel queue.	Başka reel gelmedi. %1$d reel sıraya girdi.
 Stopped going through reels	Reellerde gezinme durduruldu
+Reel from %1$s	Reel (%1$s)
+Reel %1$d	Reel %1$d
+Saving now	Şimdi kaydediliyor
+Waiting	Bekliyor
+Paused	Duraklatıldı
+Pause this reel	Bu reeli duraklat
+Resume this reel	Bu reele devam et
+Cancel this reel	Bu reeli iptal et
