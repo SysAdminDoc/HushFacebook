@@ -2704,6 +2704,10 @@ Open chats in Messenger	在 Messenger 中開啟聊天
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	在 Messenger 應用程式中開啟聊天，而不是在 Facebook 內開啟，包括個人檔案上的「傳送訊息」按鈕，前提是已安裝並啟用 Messenger。未安裝 Messenger 時，聊天仍在 Facebook 中開啟。變更後請重新啟動 Facebook。
 Hide the Fullscreen button	隱藏「全螢幕」按鈕
 Takes the Fullscreen button off the space under a wide video in Reels. A change shows from the next video.	移除 Reels 中寬螢幕影片下方空白處的「全螢幕」按鈕。從下一部影片起生效。
+# context: switch title under Reels and Watch, right under Hide the Fullscreen button; on, a video playing in the feed or in search results loses its full-screen arrows and its picture-in-picture (PiP) button
+Hide the full-screen and PiP buttons	隱藏「全螢幕」和子母畫面按鈕
+# context: description of that switch; "a live video that has ended" is a past Facebook Live shown as a video; the video still plays, only the two buttons go
+Takes the full-screen and picture-in-picture buttons off videos that play in the feed and in search results, like a live video that has ended. A change shows from the next video.	移除在動態消息和搜尋結果中播放的影片上的「全螢幕」和子母畫面按鈕，例如已結束的直播影片。從下一部影片起生效。
 Hide rings in the feed	隱藏動態消息中的圓環
 Hide rings in comments	隱藏留言中的圓環
 Hide rings on profiles	隱藏個人檔案上的圓環

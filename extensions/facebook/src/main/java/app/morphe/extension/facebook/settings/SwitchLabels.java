@@ -214,6 +214,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_SLOW_CONNECTION_MESSAGE) return L10n.t("Hide the slow connection message");
         if (setting == Settings.HIDE_UP_NEXT) return L10n.t("Hide Up next on videos");
         if (setting == Settings.HIDE_REEL_FULLSCREEN_PILL) return L10n.t("Hide the Fullscreen button");
+        if (setting == Settings.HIDE_FEED_VIDEO_BUTTONS) return L10n.t("Hide the full-screen and PiP buttons");
         if (setting == Settings.FEED_VIDEOS_ALONE) return L10n.t("Open feed videos on their own");
         if (setting == Settings.SHARED_REELS_ALONE) return L10n.t("Open shared reels on their own");
         if (setting == Settings.WATCH_AGAIN_IN_PLACE) return L10n.t("Replay feed videos in place");

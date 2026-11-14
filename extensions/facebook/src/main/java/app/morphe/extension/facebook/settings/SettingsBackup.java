@@ -281,6 +281,7 @@ public final class SettingsBackup {
             Settings.HIDE_SLOW_CONNECTION_MESSAGE,
             Settings.HIDE_UP_NEXT,
             Settings.HIDE_REEL_FULLSCREEN_PILL,
+            Settings.HIDE_FEED_VIDEO_BUTTONS,
             Settings.FEED_VIDEOS_ALONE,
             Settings.SHARED_REELS_ALONE,
             Settings.WATCH_AGAIN_IN_PLACE,

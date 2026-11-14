@@ -2700,6 +2700,10 @@ Open chats in Messenger	Abrir los chats en Messenger
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	Abre los chats en la app Messenger en lugar de dentro de Facebook, también desde el botón Mensaje de un perfil, mientras Messenger esté instalado y activado. Sin Messenger, los chats siguen en Facebook. Reinicia Facebook después de cambiarlo.
 Hide the Fullscreen button	Ocultar el botón Pantalla completa
 Takes the Fullscreen button off the space under a wide video in Reels. A change shows from the next video.	Quita el botón Pantalla completa del espacio debajo de un video ancho en Reels. El cambio se aplica a partir del siguiente video.
+# context: switch title under Reels and Watch, right under Hide the Fullscreen button; on, a video playing in the feed or in search results loses its full-screen arrows and its picture-in-picture (PiP) button
+Hide the full-screen and PiP buttons	Ocultar los botones Pantalla completa e imagen en imagen
+# context: description of that switch; "a live video that has ended" is a past Facebook Live shown as a video; the video still plays, only the two buttons go
+Takes the full-screen and picture-in-picture buttons off videos that play in the feed and in search results, like a live video that has ended. A change shows from the next video.	Quita los botones de pantalla completa e imagen en imagen de los videos que se reproducen en el feed y en los resultados de búsqueda, como un video en vivo que ya terminó. El cambio se aplica a partir del siguiente video.
 Hide rings in the feed	Ocultar anillos en el feed
 Hide rings in comments	Ocultar anillos en comentarios
 Hide rings on profiles	Ocultar anillos en perfiles

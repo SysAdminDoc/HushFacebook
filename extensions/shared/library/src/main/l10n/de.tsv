@@ -2700,6 +2700,10 @@ Open chats in Messenger	Chats in Messenger öffnen
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	Öffnet Chats in der Messenger-App statt in Facebook, auch über die Nachricht-Schaltfläche auf einem Profil, solange Messenger installiert und aktiviert ist. Ohne Messenger bleiben Chats in Facebook. Starte Facebook nach einer Änderung neu.
 Hide the Fullscreen button	Vollbild-Schaltfläche ausblenden
 Takes the Fullscreen button off the space under a wide video in Reels. A change shows from the next video.	Entfernt die Vollbild-Schaltfläche aus dem leeren Bereich unter einem breiten Video in Reels. Die Änderung gilt ab dem nächsten Video.
+# context: switch title under Reels and Watch, right under Hide the Fullscreen button; on, a video playing in the feed or in search results loses its full-screen arrows and its picture-in-picture (PiP) button
+Hide the full-screen and PiP buttons	Vollbild- und Bild-im-Bild-Schaltflächen ausblenden
+# context: description of that switch; "a live video that has ended" is a past Facebook Live shown as a video; the video still plays, only the two buttons go
+Takes the full-screen and picture-in-picture buttons off videos that play in the feed and in search results, like a live video that has ended. A change shows from the next video.	Entfernt die Vollbild- und Bild-im-Bild-Schaltflächen von Videos, die im Feed und in Suchergebnissen abgespielt werden, etwa bei einem beendeten Live-Video. Die Änderung gilt ab dem nächsten Video.
 Hide rings in the feed	Ringe im Feed ausblenden
 Hide rings in comments	Ringe in Kommentaren ausblenden
 Hide rings on profiles	Ringe auf Profilen ausblenden

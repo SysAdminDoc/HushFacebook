@@ -999,6 +999,13 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting HIDE_REEL_FULLSCREEN_PILL =
             new BooleanSetting("hushfacebook_hide_reel_fullscreen_pill", FALSE);
+    /**
+     * Leaves the full-screen and picture-in-picture buttons off videos that play in the feed and in
+     * search results, a Live that has ended among them (#478). Off by default. A change shows as the
+     * next video draws.
+     */
+    public static final BooleanSetting HIDE_FEED_VIDEO_BUTTONS =
+            new BooleanSetting("hushfacebook_hide_feed_video_buttons", FALSE);
 
     /**
      * The tiles in the feed's Reels row play their reel from the start to its end instead of the

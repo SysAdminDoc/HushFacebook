@@ -239,6 +239,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.HIDE_REEL_FULLSCREEN_PILL,
                     L10n.t("Takes the Fullscreen button off the space under a wide video in Reels. "
                             + "A change shows from the next video.")));
+            // Asked as a feed or search video's player adds its buttons, so a change shows from the next video (#478).
+            reels.addPreference(toggle(context, Settings.HIDE_FEED_VIDEO_BUTTONS,
+                    L10n.t("Takes the full-screen and picture-in-picture buttons off videos that play in the feed "
+                            + "and in search results, like a live video that has ended. A change shows from the next video.")));
             // Asked as a feed video's player asks for more, so a change shows from the next feed video.
             reels.addPreference(toggle(context, Settings.FEED_VIDEOS_ALONE,
                     L10n.t("A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. "

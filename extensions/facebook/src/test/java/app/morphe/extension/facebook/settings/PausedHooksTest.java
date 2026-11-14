@@ -699,6 +699,9 @@ public class PausedHooksTest {
                 ReelDeclutter::hideEditsLabel,
                 // A stalled video's slow connection message.
                 ReelDeclutter::hideSlowConnectionMessage,
+                // A feed or search video's full-screen and picture-in-picture buttons (#478).
+                ReelDeclutter::hideFeedVideoFullscreen,
+                ReelDeclutter::hideFeedVideoPip,
                 // The UP NEXT bar's lookup and the videos it hands out (#367), and its room (#375).
                 ReelDeclutter::skipUpNextFetch,
                 ReelDeclutter::hideUpNextVideos,

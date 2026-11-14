@@ -172,6 +172,14 @@ public final class ReelDeclutter {
     static final String FULLSCREEN_PILL = "Fullscreen pill";
 
     /**
+     * Counted under its own name each time a feed or search video's full-screen or picture-in-picture
+     * button is left out (#478).
+     */
+    static final String FEED_VIDEO_ROUTE = "Feed video buttons";
+    static final String FEED_VIDEO_FULLSCREEN = "full-screen button";
+    static final String FEED_VIDEO_PIP = "picture-in-picture button";
+
+    /**
      * Counted under its own name each time the UP NEXT bar's lookup is skipped, each time its
      * videos are handed out empty (#367), each time no room is kept for it and each time the
      * full-screen viewer's UP NEXT pill isn't shown (#375).
@@ -592,6 +600,41 @@ public final class ReelDeclutter {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, FULLSCREEN_PILL, failure);
             Logger.printException(() -> "Video Fullscreen pill: could not read its switch", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, first thing in the include check of the full-screen button on a video in the
+     * feed or in search results (#478). True makes the check answer false, so the player leaves the
+     * button out. Never throws: false leaves Facebook's own check to answer.
+     */
+    public static boolean hideFeedVideoFullscreen() {
+        return hideFeedVideoButton(FEED_VIDEO_FULLSCREEN);
+    }
+
+    /**
+     * Injection point, first thing in the include checks of both picture-in-picture buttons on a
+     * video in the feed or in search results (#478). Same answers as {@link #hideFeedVideoFullscreen}.
+     */
+    public static boolean hideFeedVideoPip() {
+        return hideFeedVideoButton(FEED_VIDEO_PIP);
+    }
+
+    private static boolean hideFeedVideoButton(String kind) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            FeedFilterCounters.sawList(FEED_VIDEO_ROUTE, 1);
+            FeedFilterCounters.sawKind(FEED_VIDEO_ROUTE, kind);
+            boolean hide = Utils.settingsReady() && Settings.HIDE_FEED_VIDEO_BUTTONS.get();
+            if (hide) {
+                FeedFilterCounters.removed(FEED_VIDEO_ROUTE, 1, kind);
+                logOnce(kind, () -> "Feed video buttons: " + kind + " left out");
+            }
+            return hide;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, kind, failure);
+            Logger.printException(() -> "Feed video buttons: could not read the switch for the " + kind, failure);
             return false;
         }
     }

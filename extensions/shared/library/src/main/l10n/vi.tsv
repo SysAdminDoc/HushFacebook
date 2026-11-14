@@ -2700,6 +2700,10 @@ Open chats in Messenger	Mở đoạn chat trong Messenger
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	Mở đoạn chat trong ứng dụng Messenger thay vì trong Facebook, kể cả từ nút Nhắn tin trên trang cá nhân, khi Messenger đã được cài và bật. Nếu không có Messenger, đoạn chat vẫn ở trong Facebook. Hãy khởi động lại Facebook sau khi thay đổi.
 Hide the Fullscreen button	Ẩn nút Toàn màn hình
 Takes the Fullscreen button off the space under a wide video in Reels. A change shows from the next video.	Gỡ nút Toàn màn hình khỏi khoảng trống bên dưới video ngang trong Reels. Thay đổi có hiệu lực từ video tiếp theo.
+# context: switch title under Reels and Watch, right under Hide the Fullscreen button; on, a video playing in the feed or in search results loses its full-screen arrows and its picture-in-picture (PiP) button
+Hide the full-screen and PiP buttons	Ẩn nút Toàn màn hình và hình trong hình
+# context: description of that switch; "a live video that has ended" is a past Facebook Live shown as a video; the video still plays, only the two buttons go
+Takes the full-screen and picture-in-picture buttons off videos that play in the feed and in search results, like a live video that has ended. A change shows from the next video.	Gỡ nút toàn màn hình và nút hình trong hình khỏi video phát trong bảng tin và kết quả tìm kiếm, như video trực tiếp đã kết thúc. Thay đổi có hiệu lực từ video tiếp theo.
 Hide rings in the feed	Ẩn vòng trong bảng tin
 Hide rings in comments	Ẩn vòng trong bình luận
 Hide rings on profiles	Ẩn vòng trên trang cá nhân

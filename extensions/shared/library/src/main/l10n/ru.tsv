@@ -2754,6 +2754,10 @@ Open chats in Messenger	Открывать чаты в Messenger
 Opens chats in the Messenger app instead of inside Facebook, the Message button on a profile included, while Messenger is installed and enabled. Without Messenger, chats stay in Facebook. Restart Facebook after changing it.	Чаты открываются в приложении Messenger, а не внутри Facebook, в том числе по кнопке «Отправить сообщение» в профиле, пока Messenger установлен и включён. Без Messenger чаты остаются в Facebook. Перезапустите Facebook после изменения.
 Hide the Fullscreen button	Скрывать кнопку «Во весь экран»
 Takes the Fullscreen button off the space under a wide video in Reels. A change shows from the next video.	Убирает кнопку «Во весь экран» из пустого места под широким видео в Reels. Изменение применяется начиная со следующего видео.
+# context: switch title under Reels and Watch, right under Hide the Fullscreen button; on, a video playing in the feed or in search results loses its full-screen arrows and its picture-in-picture (PiP) button
+Hide the full-screen and PiP buttons	Скрывать кнопки «Во весь экран» и «Картинка в картинке»
+# context: description of that switch; "a live video that has ended" is a past Facebook Live shown as a video; the video still plays, only the two buttons go
+Takes the full-screen and picture-in-picture buttons off videos that play in the feed and in search results, like a live video that has ended. A change shows from the next video.	Убирает кнопки полноэкранного режима и режима «картинка в картинке» с видео, которые воспроизводятся в ленте и в результатах поиска, например с завершившегося прямого эфира. Изменение действует со следующего видео.
 Hide rings in the feed	Скрыть кольца в ленте
 Hide rings in comments	Скрыть кольца в комментариях
 Hide rings on profiles	Скрыть кольца в профилях

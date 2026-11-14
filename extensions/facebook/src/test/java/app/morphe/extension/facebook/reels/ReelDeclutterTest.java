@@ -90,6 +90,7 @@ public class ReelDeclutterTest {
         Settings.HIDE_SLOW_CONNECTION_MESSAGE.resetToDefault();
         Settings.HIDE_UP_NEXT.resetToDefault();
         Settings.HIDE_REEL_FULLSCREEN_PILL.resetToDefault();
+        Settings.HIDE_FEED_VIDEO_BUTTONS.resetToDefault();
         Settings.PLAY_FEED_REELS_WHOLE.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         FeedFilterCounters.clear();
@@ -314,6 +315,47 @@ public class ReelDeclutterTest {
         assertEquals(ReelDeclutter.FULLSCREEN_ROUTE + ": 5 lists, 5 items, 1 removed. Last reason: " + ReelDeclutter.FULLSCREEN_PILL
                 + ". Removed: " + ReelDeclutter.FULLSCREEN_PILL + " 1. Kinds: " + ReelDeclutter.FULLSCREEN_PILL + " 5",
                 line(ReelDeclutter.FULLSCREEN_ROUTE));
+    }
+
+    /**
+     * A feed or search video's full-screen and picture-in-picture buttons (#478) stay until their
+     * switch is on, then not, and they come back paused, before the settings are ready and once the
+     * switch is off again. The Reels pill's switch doesn't take them.
+     */
+    @Test
+    public void theFeedVideoButtonsStayUntilTheirSwitchIsOn() {
+        assertFalse(Settings.HIDE_FEED_VIDEO_BUTTONS.defaultValue);
+        Settings.HIDE_REEL_FULLSCREEN_PILL.save(true);
+        assertFalse("the pill's switch took the full-screen button", ReelDeclutter.hideFeedVideoFullscreen());
+        assertFalse("the pill's switch took the PiP button", ReelDeclutter.hideFeedVideoPip());
+        Settings.HIDE_FEED_VIDEO_BUTTONS.save(true);
+        assertTrue(ReelDeclutter.hideFeedVideoFullscreen());
+        assertTrue(ReelDeclutter.hideFeedVideoPip());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("the full-screen button went while paused", ReelDeclutter.hideFeedVideoFullscreen());
+        assertFalse("the PiP button went while paused", ReelDeclutter.hideFeedVideoPip());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse("a button went before the settings were ready",
+                ReelDeclutter.hideFeedVideoPip()));
+        Settings.HIDE_FEED_VIDEO_BUTTONS.save(false);
+        assertFalse("turning the switch off didn't bring the buttons back", ReelDeclutter.hideFeedVideoFullscreen());
+        assertEquals(ReelDeclutter.FEED_VIDEO_ROUTE + ": 8 lists, 8 items, 2 removed. Last reason: " + ReelDeclutter.FEED_VIDEO_PIP
+                + ". Removed: " + ReelDeclutter.FEED_VIDEO_FULLSCREEN + " 1, " + ReelDeclutter.FEED_VIDEO_PIP + " 1. Kinds: "
+                + ReelDeclutter.FEED_VIDEO_FULLSCREEN + " 4, " + ReelDeclutter.FEED_VIDEO_PIP + " 4",
+                line(ReelDeclutter.FEED_VIDEO_ROUTE));
+    }
+
+    /** A feed video buttons switch that can't be read leaves the buttons, and the report names the hook. */
+    @Test
+    public void aFeedVideoButtonsSwitchThatCantBeReadLeavesTheButtons() {
+        SettingReadsForTests.breakReads(Settings.HIDE_FEED_VIDEO_BUTTONS);
+        try {
+            assertFalse(ReelDeclutter.hideFeedVideoPip());
+        } finally {
+            SettingReadsForTests.mend(Settings.HIDE_FEED_VIDEO_BUTTONS);
+        }
+        assertTrue(HookStatus.missing(FamilyNames.REEL_DECLUTTER).toString(), HookStatus.missing(FamilyNames.REEL_DECLUTTER)
+                .contains("a working '" + ReelDeclutter.FEED_VIDEO_PIP + "' hook (it threw " + NullPointerException.class.getName() + ")"));
     }
 
     /** A Fullscreen pill switch that can't be read draws the pill, and the report names the hook. */
