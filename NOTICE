@@ -38,6 +38,7 @@ Hushfacebook, then More settings, About and Licenses.
   HushMessenger               https://github.com/SysAdminDoc/HushMessenger
   HushPinterest               https://github.com/SysAdminDoc/HushPinterest
   JhouHank's translation      https://github.com/JhouHank/HushFacebook
+  MangaThatsFine's translation https://github.com/MangaThatsFine/HushFacebook
   morphe-patches (Andrew's)   https://github.com/andrewliang25/morphe-patches
   morphe-patches (rushiranpise) https://github.com/rushiranpise/morphe-patches
   FroggoMorphePatches         https://github.com/SapitoSucio/FroggoMorphePatches
@@ -57,6 +58,12 @@ Traditional Chinese (Taiwan) was contributed by JhouHank in pull request 227,
 from commit be766e7e629931d376974c642435de22f8970c26 of the repository above.
 The contributed translations are preserved, with one added Save video row.
 The contributor credits their Piko Instagram translations for terminology.
+
+Thai was contributed by MangaThatsFine in pull request 436, from commit
+d1c82fe65fe6cd4e59968ad474adcd9076634343 of the repository above. The
+contributed translations are preserved. Rows whose English changed after
+the pull request were brought up to the current wording, and rows for
+strings added since were translated to match.
 
 
 Morphe: Project Name Restriction
