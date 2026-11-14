@@ -2787,3 +2787,9 @@ Resume this reel	繼續這個 Reels
 Cancel this reel	取消這個 Reels
 Hide stories you scrolled past	隱藏滑過的限時動態
 A story you scrolled past in the Stories tray leaves it the next time you open Facebook, even if you didn't watch it. A new story brings that person back.	你在橫幅中滑過的限時動態，下次開啟 Facebook 時會從橫幅中消失，即使你沒看過。有新的限時動態時，這個人會重新出現。
+# context: row under Home header picture that puts Hushfacebook's logo there (#467)
+Use the Hushfacebook logo	使用 Hushfacebook 標誌
+# context: summary under Use the Hushfacebook logo
+Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. Restart Facebook to see it.	在首頁頂端顯示 Hushfacebook 標誌，取代自訂文字和 Facebook 標誌。重新啟動 Facebook 後生效。
+# context: the name Home header picture shows once the logo is picked
+Hushfacebook logo	Hushfacebook 標誌

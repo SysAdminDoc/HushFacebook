@@ -48,7 +48,8 @@ import app.morphe.extension.shared.settings.preference.AbstractPreferenceFragmen
 /**
  * Home header picture and Remove the header picture under Appearance (#230): the picker a tap
  * opens, the shrunk copy a picked picture becomes, what's said when a file isn't a picture, and the
- * way back to the words or the logo.
+ * way back to the words or the logo. Use the Hushfacebook logo (#467) copies the logo the settings
+ * patch ships in the same way.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -71,6 +72,7 @@ public class HeaderPicturePreferenceTest {
         FontFileProvider.releaseAll();
         settle();
         PatchFamily.inBuildForTests = null;
+        HeaderPicturePreference.logoForTests = null;
         Settings.HEADER_PICTURE.resetToDefault();
         HeaderPicture.forget();
         File copy = copy();
@@ -94,6 +96,58 @@ public class HeaderPicturePreferenceTest {
             assertEquals(words.getParent(), choose.getParent());
             assertTrue("after the words", choose.getOrder() > words.getOrder());
             assertNull("nothing to remove", page.findPreference(HeaderPicturePreference.REMOVE_KEY));
+            assertNull("this app has no Hushfacebook logo", page.findPreference(HeaderPicturePreference.LOGO_KEY));
+        }
+    }
+
+    @Test
+    public void theLogoRowPutsHushfacebooksLogoAtTheTopOfHome() throws Exception {
+        // Any picture in the app's resources stands in for the one the settings patch adds.
+        HeaderPicturePreference.logoForTests = android.R.drawable.star_big_on;
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            HushfacebookPreferenceFragment page = SettingsL10nTest.pageOf(SettingsL10nTest.show(activity));
+            Preference choose = page.findPreference(HeaderPicturePreference.CHOOSE_KEY);
+            Preference logo = page.findPreference(HeaderPicturePreference.LOGO_KEY);
+            assertNotNull("no logo row", logo);
+            assertEquals("Use the Hushfacebook logo", String.valueOf(logo.getTitle()));
+            assertEquals("Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. "
+                    + "Restart Facebook to see it.", String.valueOf(logo.getSummary()));
+            assertTrue("it acts on the tap", ((HeaderPicturePreference) logo).actsOnTap());
+            assertEquals(choose.getParent(), logo.getParent());
+            assertTrue("after the picture", logo.getOrder() > choose.getOrder());
+
+            logo.getOnPreferenceClickListener().onPreferenceClick(logo);
+            settle();
+            assertNull("no picker opened", shadowOf(activity).getNextStartedActivityForResult());
+            assertEquals("Hushfacebook logo", Settings.HEADER_PICTURE.savedValue());
+            assertNotNull("the copy is a picture", BitmapFactory.decodeFile(copy().getPath()));
+            assertEquals("Selected " + L10n.isolate("Hushfacebook logo") + ". Restart Facebook to see it at the top of Home.",
+                    ShadowToast.getTextOfLatestToast());
+            assertEquals("Selected " + L10n.isolate("Hushfacebook logo")
+                            + ". It shows at the top of Home in place of your words and Facebook's logo.",
+                    String.valueOf(choose.getSummary()));
+            assertTrue(AbstractPreferenceFragment.restartPending.contains(HeaderPicturePreference.CHOOSE_KEY));
+            Preference remove = page.findPreference(HeaderPicturePreference.REMOVE_KEY);
+            assertNotNull("the way back came", remove);
+            assertTrue("the way back comes after the logo", remove.getOrder() > logo.getOrder());
+            assertTrue("the logo row stays", logo.isEnabled());
+        }
+    }
+
+    @Test
+    public void aLogoThatWontOpenSaysSoAndChangesNothing() throws Exception {
+        HeaderPicturePreference.logoForTests = 0x7f7f0fff; // No resource has this id.
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushfacebookPreferenceFragment page = SettingsL10nTest.pageOf(SettingsL10nTest.show(controller.get()));
+            Preference logo = page.findPreference(HeaderPicturePreference.LOGO_KEY);
+            logo.getOnPreferenceClickListener().onPreferenceClick(logo);
+            settle();
+            assertEquals("Couldn't open that file. The top of Home didn't change.", ShadowToast.getTextOfLatestToast());
+            assertEquals("", Settings.HEADER_PICTURE.savedValue());
+            assertFalse(copy().exists());
+            assertTrue("the rows came back", logo.isEnabled());
+            assertFalse(AbstractPreferenceFragment.restartPending.contains(HeaderPicturePreference.CHOOSE_KEY));
         }
     }
 

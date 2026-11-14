@@ -2783,3 +2783,9 @@ Resume this reel	Dieses Reel fortsetzen
 Cancel this reel	Dieses Reel abbrechen
 Hide stories you scrolled past	Überscrollte Stories ausblenden
 A story you scrolled past in the Stories tray leaves it the next time you open Facebook, even if you didn't watch it. A new story brings that person back.	Eine Story, an der du in der Stories-Leiste vorbeigescrollt bist, verschwindet beim nächsten Öffnen von Facebook aus der Leiste, auch wenn du sie nicht angesehen hast. Eine neue Story bringt die Person zurück.
+# context: row under Home header picture that puts Hushfacebook's logo there (#467)
+Use the Hushfacebook logo	Hushfacebook-Logo verwenden
+# context: summary under Use the Hushfacebook logo
+Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. Restart Facebook to see it.	Zeigt das Hushfacebook-Logo oben auf der Startseite anstelle deiner Worte und Facebooks Logo. Starte Facebook neu, um es zu sehen.
+# context: the name Home header picture shows once the logo is picked
+Hushfacebook logo	Hushfacebook-Logo

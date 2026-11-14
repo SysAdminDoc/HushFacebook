@@ -2783,3 +2783,9 @@ Resume this reel	Lanjutkan reel ini
 Cancel this reel	Batalkan reel ini
 Hide stories you scrolled past	Sembunyikan cerita yang sudah kamu lewati
 A story you scrolled past in the Stories tray leaves it the next time you open Facebook, even if you didn't watch it. A new story brings that person back.	Cerita yang kamu lewati di baris Cerita hilang dari situ saat kamu membuka Facebook lagi, meski belum kamu tonton. Cerita baru membawa orang itu kembali.
+# context: row under Home header picture that puts Hushfacebook's logo there (#467)
+Use the Hushfacebook logo	Gunakan logo Hushfacebook
+# context: summary under Use the Hushfacebook logo
+Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. Restart Facebook to see it.	Menampilkan logo Hushfacebook di bagian atas Beranda sebagai pengganti kata-kata Anda dan logo Facebook. Mulai ulang Facebook untuk melihatnya.
+# context: the name Home header picture shows once the logo is picked
+Hushfacebook logo	logo Hushfacebook

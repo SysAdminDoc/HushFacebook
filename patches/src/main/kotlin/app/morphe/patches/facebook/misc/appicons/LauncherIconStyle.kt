@@ -13,13 +13,15 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 /*
  * The Icon style option of Hushfacebook settings (#278): Facebook's home screen icon white on
- * black or black on white, Hushfeed's two plain styles. No artwork ships. 584's icon,
- * @mipmap/icon_katana, is an adaptive icon: a blue shape behind a PNG of the white "f", with a
- * 108dp vector of the same "f" as its themed-icon (monochrome) layer. The style writes a solid
- * color as the background and a copy of that vector, filled with the style's color, as the
- * foreground. Both are written inline, which AdaptiveIconDrawable reads when a layer names no
- * drawable, so Facebook's own drawables stay as they are for everything else that draws them. The
- * monochrome layer stays, so Android 13's themed icons still work.
+ * black or black on white, Hushfeed's two plain styles, or Hushfacebook's own logo (#467). 584's
+ * icon, @mipmap/icon_katana, is an adaptive icon: a blue shape behind a PNG of the white "f", with
+ * a 108dp vector of the same "f" as its themed-icon (monochrome) layer. A plain style writes a
+ * solid color as the background and a copy of that vector, filled with the style's color, as the
+ * foreground. The Hushfacebook style writes its blue as the background, the H with its two
+ * shadows as the foreground, and the H alone as the monochrome layer (HushfacebookLogo.kt). All of
+ * it is written inline, which AdaptiveIconDrawable reads when a layer names no drawable, so
+ * Facebook's own drawables stay as they are for everything else that draws them. Android 13's
+ * themed icons keep working: the plain styles leave the monochrome layer as it is.
  *
  * Every launcher alias in the manifest that shows the plain Facebook icon points at the same
  * mipmap, so the enabled one and the icon choices that reuse it all change. The Facebook Plus
@@ -32,9 +34,13 @@ private const val VECTOR = "vector"
 private const val FILL_COLOR = "android:fillColor"
 private const val STROKE_COLOR = "android:strokeColor"
 
-/** The looks the option offers. [background] and [glyph] are null for Facebook's own icon. */
+/**
+ * The looks the option offers. [background] and [glyph] are null for Facebook's own icon, and
+ * [glyph], the one color of a plain style's "f", is null for Hushfacebook's logo, which draws its own.
+ */
 internal enum class LauncherIconStyle(val key: String, val label: String, val background: String?, val glyph: String?) {
     FACEBOOK("facebook", "Facebook colors", null, null),
+    HUSHFACEBOOK("hushfacebook", "Hushfacebook", HushfacebookLogo.BLUE, null),
     WHITE_ON_BLACK("white-on-black", "White on black", "#ff000000", "#ffffffff"),
     BLACK_ON_WHITE("black-on-white", "Black on white", "#ffffffff", "#ff000000"),
 }
@@ -108,6 +114,7 @@ internal fun monochromeReference(icon: Document): Pair<String, String> {
  * before the first change, so a refusal leaves [icon] as it was.
  */
 internal fun restyleLauncherIcon(icon: Document, glyph: Document, style: LauncherIconStyle) {
+    if (style == LauncherIconStyle.HUSHFACEBOOK) return drawHushfacebookIcon(icon)
     val background = style.background ?: refuse("${style.label} keeps Facebook's icon")
     val color = style.glyph ?: refuse("${style.label} keeps Facebook's icon")
     monochromeReference(icon)
@@ -129,6 +136,43 @@ internal fun restyleLauncherIcon(icon: Document, glyph: Document, style: Launche
     front.drawInline(copy)
 }
 
+/** A 108 by 108 vector of [paths], fill color to path data, drawn back to front. */
+private fun Document.vector(paths: List<Pair<String, String>>, fillType: String? = null): Element =
+    createElement(VECTOR).apply {
+        setAttribute("android:width", "108dp")
+        setAttribute("android:height", "108dp")
+        setAttribute("android:viewportWidth", "108")
+        setAttribute("android:viewportHeight", "108")
+        for ((color, data) in paths) {
+            appendChild(
+                createElement("path").apply {
+                    setAttribute(FILL_COLOR, color)
+                    fillType?.let { setAttribute("android:fillType", it) }
+                    setAttribute("android:pathData", data)
+                },
+            )
+        }
+    }
+
+/**
+ * Draws Hushfacebook's logo into [icon] in place: its blue as the background, the H with its two
+ * shadows as the foreground, and the H alone, slots cut out, as the themed-icon layer, added when
+ * Facebook's icon has none. Every check runs before the first change.
+ */
+internal fun drawHushfacebookIcon(icon: Document) {
+    val root = icon.documentElement
+    if (root?.tagName != ADAPTIVE_ICON) refuse("Facebook's icon isn't an adaptive icon")
+    val back = root.layer("background") ?: refuse("Facebook's icon has no background layer")
+    val front = root.layer("foreground") ?: refuse("Facebook's icon has no foreground layer")
+    val background = LauncherIconStyle.HUSHFACEBOOK.background ?: refuse("Hushfacebook has no background color")
+
+    val mono = root.layer("monochrome") ?: icon.createElement("monochrome").also { root.appendChild(it) }
+    back.drawInline(icon.createElement("color").apply { setAttribute("android:color", background) })
+    front.drawInline(icon.vector(HushfacebookLogo.FOREGROUND))
+    // Themed icons tint the layer's shape, so its one fill color doesn't show.
+    mono.drawInline(icon.vector(listOf("#ffffffff" to HushfacebookLogo.MONOCHROME), fillType = "evenOdd"))
+}
+
 private fun Element.drawInline(drawable: Element) {
     removeAttribute("android:drawable")
     while (firstChild != null) removeChild(firstChild)
@@ -148,6 +192,13 @@ internal fun launcherIconPatch(iconStyle: () -> String?) = resourcePatch {
             ?: refuse("Facebook's icon isn't one of its own resources")
         // Patcher 2.0 decodes only the files a patch asks for: an undecoded file does not exist yet.
         val iconPath = singleXml(decode(resourceGlob(icon)), icon, ADAPTIVE_ICON, read)
+        if (style == LauncherIconStyle.HUSHFACEBOOK) {
+            // Its own artwork: Facebook's themed-icon vector isn't needed. Dry run first, as below.
+            drawHushfacebookIcon(read(iconPath))
+            document(iconPath).use { drawHushfacebookIcon(it) }
+            patchLog.info("$OPTION: the home screen icon is Hushfacebook's logo ($iconPath).")
+            return@execute
+        }
         val glyph = monochromeReference(read(iconPath))
         val glyphPath = singleXml(decode(resourceGlob(glyph)), glyph, VECTOR, read)
         val vector = read(glyphPath)

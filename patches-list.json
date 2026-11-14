@@ -2613,7 +2613,7 @@
     },
     {
       "name": "Hushfacebook settings",
-      "description": "Adds Hushfacebook settings to Facebook, where you turn features on or off, pause Hushfacebook and back up your choices. To open them, long-press the Facebook logo at the top of your feed, the title at the top of another tab, or Facebook's app icon. Its App name option shows a name you pick under the icon, and Icon style can make the icon white on black or black on white. Other patches need it, so keep it selected.",
+      "description": "Adds Hushfacebook settings to Facebook, where you turn features on or off, pause Hushfacebook and back up your choices. To open them, long-press the Facebook logo at the top of your feed, the title at the top of another tab, or Facebook's app icon. Its App name option shows a name you pick under the icon, Icon style can make the icon Hushfacebook's logo, white on black or black on white, and Notification icon puts Hushfacebook's H on notifications. Other patches need it, so keep it selected.",
       "category": "Settings",
       "use": true,
       "dependencies": [
@@ -2660,14 +2660,27 @@
         {
           "key": "iconStyle",
           "title": "Icon style",
-          "description": "Facebook colors keeps the home screen icon as it is. White on black and Black on white draw Facebook's \"f\" in one color on a plain icon. Themed icons on Android 13 and up still work.",
+          "description": "Facebook colors keeps the home screen icon as it is. Hushfacebook draws Hushfacebook's blue H logo instead, so this copy is easy to tell apart from the official app. White on black and Black on white draw Facebook's \"f\" in one color on a plain icon. Themed icons on Android 13 and up still work.",
           "required": false,
           "type": "kotlin.String",
           "default": "facebook",
           "values": {
             "Facebook colors": "facebook",
+            "Hushfacebook": "hushfacebook",
             "White on black": "white-on-black",
             "Black on white": "black-on-white"
+          }
+        },
+        {
+          "key": "notificationIcon",
+          "title": "Notification icon",
+          "description": "Facebook keeps Facebook's \"f\" on notifications and in the status bar. Hushfacebook puts Hushfacebook's H there instead. Icons that show what a notification is about, like a friend request's, stay.",
+          "required": false,
+          "type": "kotlin.String",
+          "default": "facebook",
+          "values": {
+            "Facebook": "facebook",
+            "Hushfacebook": "hushfacebook"
           }
         }
       ]

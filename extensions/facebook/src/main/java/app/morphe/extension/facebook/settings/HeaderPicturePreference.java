@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Build;
 import android.os.CancellationSignal;
@@ -48,6 +49,10 @@ import app.morphe.extension.shared.settings.preference.ImmediateAction;
  * file. A copy the screen stopped waiting for can't name the picture or take the old copy's place,
  * and until it has ended no other copy starts.
  *
+ * <p>Use the Hushfacebook logo (#467) copies the logo the settings patch ships with the app in the
+ * same way, so the top of Home shows it the way it shows a picked picture. It acts on the tap, and
+ * it's on the page only when the logo is in the app.
+ *
  * <p>Remove the header picture takes the copy away, so the words or Facebook's logo come back after
  * a restart. It acts on the tap, so it goes without a chevron, and it's on the page only while a
  * picture is picked or a copy is left to remove.
@@ -61,9 +66,16 @@ public class HeaderPicturePreference extends Preference implements ImmediateActi
     static final int CHOOSE = 1;
     /** The row that takes the picture away. */
     static final int REMOVE = 2;
+    /** The row that puts Hushfacebook's logo there. */
+    static final int LOGO = 3;
 
     static final String CHOOSE_KEY = "action_choose_header_picture";
     static final String REMOVE_KEY = "action_remove_header_picture";
+    static final String LOGO_KEY = "action_use_hushfacebook_logo";
+
+    /** The logo's resource id in place of the one the settings patch adds, for a test. */
+    @Nullable
+    static volatile Integer logoForTests;
 
     /** How long the app holding a picked picture gets to name, open and read it before the rows come back. A test sets its own. */
     static volatile long timeoutMs = 30_000L;
@@ -139,14 +151,16 @@ public class HeaderPicturePreference extends Preference implements ImmediateActi
     HeaderPicturePreference(HushfacebookPreferenceFragment page, Context context, int role) {
         super(context);
         this.role = role;
-        setKey(role == CHOOSE ? CHOOSE_KEY : REMOVE_KEY);
+        setKey(role == CHOOSE ? CHOOSE_KEY : role == LOGO ? LOGO_KEY : REMOVE_KEY);
         setPersistent(false);
-        setTitle(role == CHOOSE ? L10n.t("Home header picture") : L10n.t("Remove the header picture"));
+        setTitle(role == CHOOSE ? L10n.t("Home header picture")
+                : role == LOGO ? L10n.t("Use the Hushfacebook logo") : L10n.t("Remove the header picture"));
         setOnPreferenceClickListener(preference -> {
             // Rows are out of reach while a run is going, so this is only the race between a tap
             // and that.
             if (OWNER.get() == null) {
                 if (role == REMOVE) remove(page);
+                else if (role == LOGO) copyIn(page, LOGO_SOURCE);
                 else if (!stillStalled()) pick(page);
             }
             return true;
@@ -157,7 +171,7 @@ public class HeaderPicturePreference extends Preference implements ImmediateActi
 
     @Override
     public boolean actsOnTap() {
-        return role == REMOVE;
+        return role != CHOOSE;
     }
 
     /** The row's line and whether a tap reaches it. Home header picture also shows or hides Remove. */
@@ -172,6 +186,10 @@ public class HeaderPicturePreference extends Preference implements ImmediateActi
             setEnabled(!running);
             setSummary(line != null ? line : chosenSummary(source, copy));
             showWayBack(wayBack);
+        } else if (role == LOGO) {
+            setEnabled(!running);
+            setSummary(L10n.t("Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's "
+                    + "logo. Restart Facebook to see it."));
         } else {
             setEnabled(!running && wayBack);
             setSummary(L10n.t("Puts your words or Facebook's logo back at the top of Home. Restart Facebook to see "
@@ -233,11 +251,68 @@ public class HeaderPicturePreference extends Preference implements ImmediateActi
     static boolean onResult(HushfacebookPreferenceFragment page, int request, int result, @Nullable Intent data) {
         if (request != PICK_PICTURE) return false;
         Uri uri = result == Activity.RESULT_OK && data != null ? data.getData() : null;
-        if (uri != null) copyIn(page, uri); // Cancelled: nothing to do and nothing to say.
+        if (uri != null) copyIn(page, picked(uri)); // Cancelled: nothing to do and nothing to say.
         return true;
     }
 
-    private static void copyIn(HushfacebookPreferenceFragment page, Uri uri) {
+    /** Where a copy's picture comes from. */
+    private interface Source {
+        /** The name the setting saves and the message says. */
+        String name(Context context, Run run);
+
+        /** The picture's bytes, held by [run] where the screen can close them. */
+        InputStream open(Context context, Run run) throws HeaderPicture.Refused;
+    }
+
+    /** The picture the picker answered with, named and read through the app holding it. */
+    private static Source picked(Uri uri) {
+        return new Source() {
+            @Override
+            public String name(Context context, Run run) {
+                return FontFilePreference.displayName(context, uri, run.cancel, "picture");
+            }
+
+            @Override
+            public InputStream open(Context context, Run run) throws HeaderPicture.Refused {
+                return HeaderPicturePreference.open(context, uri, run);
+            }
+        };
+    }
+
+    /** Hushfacebook's logo, read from the app's own resources. */
+    private static final Source LOGO_SOURCE = new Source() {
+        @Override
+        public String name(Context context, Run run) {
+            // What Home header picture names it from then on.
+            return L10n.t("Hushfacebook logo");
+        }
+
+        @Override
+        public InputStream open(Context context, Run run) throws HeaderPicture.Refused {
+            try {
+                int id = logoId(context);
+                if (id == 0) throw new Resources.NotFoundException(SettingsHeader.LOGO);
+                return run.hold(context.getResources().openRawResource(id));
+            } catch (IOException | RuntimeException error) {
+                closeQuietly(run.open);
+                throw new HeaderPicture.Refused(HeaderPicture.Refusal.UNREADABLE, error.getClass().getSimpleName());
+            }
+        }
+    };
+
+    /** The logo the settings patch adds, or 0 when this app has none. */
+    static int logoId(Context context) {
+        Integer forTests = logoForTests;
+        if (forTests != null) return forTests;
+        try {
+            return context.getResources().getIdentifier(SettingsHeader.LOGO, "drawable", context.getPackageName());
+        } catch (RuntimeException error) {
+            Logger.printInfo(() -> "Could not look up the settings logo: " + error.getClass().getSimpleName());
+            return 0;
+        }
+    }
+
+    private static void copyIn(HushfacebookPreferenceFragment page, Source source) {
         Context context = appContext(page);
         if (context == null || stillStalled()) return;
         Run run = start(L10n.t("Copying the picture"));
@@ -245,11 +320,11 @@ public class HeaderPicturePreference extends Preference implements ImmediateActi
         boolean accepted = Utils.runOnBackgroundThread(() -> {
             Runnable result = null;
             try {
-                String name = FontFilePreference.displayName(context, uri, run.cancel, "picture");
+                String name = source.name(context, run);
                 String before = Settings.HEADER_PICTURE.savedValue();
                 // The name is saved before the copy moves in and put back if it can't, so the row,
                 // the message and the copy never disagree about which picture is selected.
-                HeaderPicture.copy(open(context, uri, run), HeaderPicture.file(context), new HeaderPicture.Choice() {
+                HeaderPicture.copy(source.open(context, run), HeaderPicture.file(context), new HeaderPicture.Choice() {
                     @Override
                     public boolean save() {
                         return run.commit() && Settings.HEADER_PICTURE.save(name);

@@ -290,6 +290,10 @@ final class HushfacebookPages {
             picture.wayBack = new PictureRow(page, context, HeaderPicturePreference.REMOVE);
             // The Remove row goes in once, as Font file's way back does, so it keeps its place after a pick.
             appearance.addPreference(picture);
+            // Hushfacebook's logo as the picture, when the settings patch put it in the app (#467).
+            if (HeaderPicturePreference.logoId(context) != 0) {
+                appearance.addPreference(new PictureRow(page, context, HeaderPicturePreference.LOGO));
+            }
             appearance.addPreference(picture.wayBack);
             picture.show();
         }

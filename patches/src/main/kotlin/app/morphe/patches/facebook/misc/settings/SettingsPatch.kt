@@ -22,7 +22,9 @@ import app.morphe.patches.facebook.coexist.taskLabels
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.media.hdr.playbackFormatEvidencePatch
 import app.morphe.patches.facebook.misc.appicons.LauncherIconStyle
+import app.morphe.patches.facebook.misc.appicons.NotificationIconStyle
 import app.morphe.patches.facebook.misc.appicons.launcherIconPatch
+import app.morphe.patches.facebook.misc.appicons.notificationIconPatch
 import app.morphe.patches.facebook.misc.extension.FACEBOOK_APPLICATION
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -92,8 +94,9 @@ val settingsPatch = bytecodePatch(
     name = "Hushfacebook settings",
     description = "Adds Hushfacebook settings to Facebook, where you turn features on or off, pause Hushfacebook " +
         "and back up your choices. To open them, long-press the Facebook logo at the top of your feed, the " +
-        "title at the top of another tab, or Facebook's app icon. Its App name option shows a name you pick under the icon, and Icon style can make " +
-        "the icon white on black or black on white. Other patches need it, " +
+        "title at the top of another tab, or Facebook's app icon. Its App name option shows a name you pick under the icon, Icon style can make " +
+        "the icon Hushfacebook's logo, white on black or black on white, and Notification icon puts Hushfacebook's H on " +
+        "notifications. Other patches need it, " +
         "so keep it selected.",
     default = true,
 ) {
@@ -111,13 +114,24 @@ val settingsPatch = bytecodePatch(
         default = LauncherIconStyle.FACEBOOK.key,
         values = LauncherIconStyle.entries.associate { it.label to it.key },
         title = "Icon style",
-        description = "Facebook colors keeps the home screen icon as it is. White on black and Black on white draw " +
+        description = "Facebook colors keeps the home screen icon as it is. Hushfacebook draws Hushfacebook's blue H " +
+            "logo instead, so this copy is easy to tell apart from the official app. White on black and Black on white draw " +
             "Facebook's \"f\" in one color on a plain icon. Themed icons on Android 13 and up still work.",
+    )
+    val notificationIcon by stringOption(
+        key = "notificationIcon",
+        default = NotificationIconStyle.FACEBOOK.key,
+        values = NotificationIconStyle.entries.associate { it.label to it.key },
+        title = "Notification icon",
+        description = "Facebook keeps Facebook's \"f\" on notifications and in the status bar. Hushfacebook puts " +
+            "Hushfacebook's H there instead. Icons that show what a notification is about, like a friend request's, stay.",
     )
     // The name goes into the manifest and the resources, which only a resource patch can write.
     dependsOn(appLabelPatch { appName })
-    // So does the icon's look (#278).
+    // So does the icon's look (#278, #467).
     dependsOn(launcherIconPatch { iconStyle })
+    // And the notification icon's (#467). See NotificationIconStyle.kt.
+    dependsOn(notificationIconPatch { notificationIcon })
     // The settings page's header shows Hushfacebook's logo, which ships with this patch into
     // drawable-nodpi. See SettingsLogo.kt.
     dependsOn(settingsLogoPatch)

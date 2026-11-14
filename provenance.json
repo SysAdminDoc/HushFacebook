@@ -1379,7 +1379,38 @@
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook: the Icon style option of Hushfacebook settings for issue #278, after the idea of Hushfeed's two plain app icons. No artwork ships. The resource patch reads the application icon from the manifest, finds its one adaptive-icon configuration and the themed-icon vector its monochrome layer names, and writes a solid background color and a one-color copy of that vector inline into the adaptive icon. The monochrome layer stays."
+      "changes": "Written for Hushfacebook: the Icon style option of Hushfacebook settings for issue #278, after the idea of Hushfeed's two plain app icons. The resource patch reads the application icon from the manifest, finds its one adaptive-icon configuration and the themed-icon vector its monochrome layer names, and writes a solid background color and a one-color copy of that vector inline into the adaptive icon. The monochrome layer stays. For issue #467 the Hushfacebook style instead writes Hushfacebook's own logo, from HushfacebookLogo.kt, inline as the foreground on Hushfacebook blue, with a one-color H as the themed layer."
+    },
+    {
+      "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/HushfacebookLogo.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Hushfacebook's own logo (assets/icons/icon-1024.png) traced into vector paths for issue #467: the white H with its two blue slots, its light blue and navy copies behind it, and a one-color outline for themed icons, scaled into an adaptive icon's 66 dp safe circle."
+    },
+    {
+      "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/misc/appicons/NotificationIconStyle.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: the Notification icon option of Hushfacebook settings for issue #467. A resource patch asks the decoder for Facebook's four \"f\" notification pictures, reads each one's pixel size from its PNG or WebP header, and overwrites it in place with Hushfacebook's H at that size, so the notification code and resource table stay as they were."
+    },
+    {
+      "paths": [
+        "patches/src/main/resources/app/morphe/patches/facebook/misc/appicons/notification_icon_24.png",
+        "patches/src/main/resources/app/morphe/patches/facebook/misc/appicons/notification_icon_36.png",
+        "patches/src/main/resources/app/morphe/patches/facebook/misc/appicons/notification_icon_48.png",
+        "patches/src/main/resources/app/morphe/patches/facebook/misc/appicons/notification_icon_72.png",
+        "patches/src/main/resources/app/morphe/patches/facebook/misc/appicons/notification_icon_96.png"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Hushfacebook's H cut out of a white disc at 24, 36, 48, 72 and 96 px with clear corners, drawn from HushfacebookLogo.kt's paths, for Facebook's notification icons."
     },
     {
       "paths": [

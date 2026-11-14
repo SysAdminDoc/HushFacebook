@@ -2669,3 +2669,9 @@ Resume this reel	Retomar este Reel
 Cancel this reel	Cancelar este Reel
 Hide stories you scrolled past	Ocultar Stories que você passou
 A story you scrolled past in the Stories tray leaves it the next time you open Facebook, even if you didn't watch it. A new story brings that person back.	Um story que você passou na bandeja de stories sai dela na próxima vez que você abrir o Facebook, mesmo que não tenha assistido. Um story novo traz essa pessoa de volta.
+# context: row under Home header picture that puts Hushfacebook's logo there (#467)
+Use the Hushfacebook logo	Usar o logo do Hushfacebook
+# context: summary under Use the Hushfacebook logo
+Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. Restart Facebook to see it.	Mostra o logo do Hushfacebook no topo da Página inicial no lugar das suas palavras e do logo do Facebook. Reinicie o Facebook para ver.
+# context: the name Home header picture shows once the logo is picked
+Hushfacebook logo	logo do Hushfacebook

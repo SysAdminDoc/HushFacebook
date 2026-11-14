@@ -2837,3 +2837,9 @@ Resume this reel	Возобновить это видео
 Cancel this reel	Отменить это видео
 Hide stories you scrolled past	Скрывать пролистанные Истории
 A story you scrolled past in the Stories tray leaves it the next time you open Facebook, even if you didn't watch it. A new story brings that person back.	История, мимо которой вы пролистали в панели Историй, исчезает из неё при следующем открытии Facebook, даже если вы её не смотрели. Новая История возвращает этого человека.
+# context: row under Home header picture that puts Hushfacebook's logo there (#467)
+Use the Hushfacebook logo	Использовать логотип Hushfacebook
+# context: summary under Use the Hushfacebook logo
+Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. Restart Facebook to see it.	Показывает логотип Hushfacebook в верхней части Главной вместо вашего текста и логотипа Facebook. Перезапустите Facebook, чтобы увидеть его.
+# context: the name Home header picture shows once the logo is picked
+Hushfacebook logo	логотип Hushfacebook

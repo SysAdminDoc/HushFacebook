@@ -75,6 +75,45 @@ class LauncherIconStyleTest {
         assertEquals("$where monochrome", "@drawable/icon_katana_monochrome", icon.layer("monochrome").getAttribute("android:drawable"))
     }
 
+    /** Every point a path's lines and arcs end on, as x to y. */
+    private fun points(pathData: String): List<Pair<Double, Double>> =
+        Regex("""(?:[ML]|A[\d.]+,[\d.]+ 0 0 1 )([\d.]+),([\d.]+)""").findAll(pathData)
+            .map { it.groupValues[1].toDouble() to it.groupValues[2].toDouble() }.toList()
+
+    private fun Element.paths() = getElementsByTagName("path").let { list -> (0 until list.length).map { list.item(it) as Element } }
+
+    /** Hushfacebook's logo in every layer, all of it inside the 66 dp circle no launcher mask cuts. */
+    private fun assertHushfacebook(icon: Document, where: String = "") {
+        val background = icon.layer("background")
+        assertEquals("$where background names a drawable", "", background.getAttribute("android:drawable"))
+        assertEquals("$where background color", "#ff1371f1", background.children().single().getAttribute("android:color"))
+
+        val foreground = icon.layer("foreground")
+        assertEquals("$where foreground names a drawable", "", foreground.getAttribute("android:drawable"))
+        val paths = foreground.children().single().paths()
+        // Navy copy, light blue copy, the white H, then its slots in the background's blue.
+        assertEquals(
+            "$where foreground colors, back to front",
+            listOf("#ff05255b", "#ff3c92fc", "#fff6f9fd", "#ff1371f1"),
+            paths.map { it.getAttribute("android:fillColor") },
+        )
+
+        val monochrome = icon.layer("monochrome")
+        assertEquals("$where monochrome names a drawable", "", monochrome.getAttribute("android:drawable"))
+        val shape = monochrome.children().single().paths().single()
+        assertEquals("$where the H's slots aren't cut out", "evenOdd", shape.getAttribute("android:fillType"))
+        // The H's outline and its two slots.
+        assertEquals("$where monochrome shapes", 3, shape.getAttribute("android:pathData").count { it == 'M' })
+
+        for (path in paths + shape) {
+            val corners = points(path.getAttribute("android:pathData"))
+            assertTrue("$where a path has no points", corners.size >= 8)
+            corners.forEach { (x, y) ->
+                assertTrue("$where ($x, $y) is outside the safe circle", Math.hypot(x - 54, y - 54) <= 33.0)
+            }
+        }
+    }
+
     @Test
     fun `Facebook colors and an empty option keep the icon`() {
         assertNull(pickedIconStyle(null))
@@ -83,7 +122,36 @@ class LauncherIconStyleTest {
         assertNull(pickedIconStyle("Facebook colors"))
         assertEquals(LauncherIconStyle.WHITE_ON_BLACK, pickedIconStyle("white-on-black"))
         assertEquals(LauncherIconStyle.BLACK_ON_WHITE, pickedIconStyle(" Black on white "))
+        assertEquals(LauncherIconStyle.HUSHFACEBOOK, pickedIconStyle("hushfacebook"))
+        assertEquals(LauncherIconStyle.HUSHFACEBOOK, pickedIconStyle("Hushfacebook"))
         assertThrows(PatchException::class.java) { pickedIconStyle("blue") }
+    }
+
+    @Test
+    fun `the Hushfacebook style draws the H on Hushfacebook blue and themes it too`() {
+        val icon = icon()
+        restyleLauncherIcon(icon, glyph(), LauncherIconStyle.HUSHFACEBOOK)
+        assertHushfacebook(icon)
+    }
+
+    @Test
+    fun `the Hushfacebook style adds a themed layer to an icon without one`() {
+        val icon = xml(
+            """<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+                <background android:drawable="@mipmap/icon_katana_background"/>
+                <foreground android:drawable="@mipmap/icon_katana_foreground"/>
+            </adaptive-icon>""",
+        )
+        drawHushfacebookIcon(icon)
+        assertHushfacebook(icon)
+    }
+
+    @Test
+    fun `the Hushfacebook style refuses a plain picture untouched`() {
+        val icon = xml("""<bitmap xmlns:android="http://schemas.android.com/apk/res/android" android:src="@mipmap/icon_katana_foreground"/>""")
+        assertThrows(PatchException::class.java) { drawHushfacebookIcon(icon) }
+        assertEquals("@mipmap/icon_katana_foreground", icon.documentElement.getAttribute("android:src"))
+        assertTrue(icon.documentElement.children().isEmpty())
     }
 
     @Test
@@ -181,6 +249,9 @@ class LauncherIconStyleTest {
                     val document = read(iconPath)
                     restyleLauncherIcon(document, read(glyphPath), LauncherIconStyle.BLACK_ON_WHITE)
                     assertRestyled(document, LauncherIconStyle.BLACK_ON_WHITE, name)
+                    val hush = read(iconPath)
+                    restyleLauncherIcon(hush, read(glyphPath), LauncherIconStyle.HUSHFACEBOOK)
+                    assertHushfacebook(hush, name)
                 }
                 checked += version
             }

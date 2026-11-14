@@ -2778,3 +2778,9 @@ Resume this reel	恢复这个 Reels
 Cancel this reel	取消这个 Reels
 Hide stories you scrolled past	隐藏划过的快拍
 A story you scrolled past in the Stories tray leaves it the next time you open Facebook, even if you didn't watch it. A new story brings that person back.	你在快拍栏中划过的快拍，下次打开 Facebook 时会从快拍栏中消失，即使你没看过。有新快拍时，这个人会重新出现。
+# context: row under Home header picture that puts Hushfacebook's logo there (#467)
+Use the Hushfacebook logo	使用 Hushfacebook 标志
+# context: summary under Use the Hushfacebook logo
+Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. Restart Facebook to see it.	在主页顶部显示 Hushfacebook 标志，取代你的文字和 Facebook 标志。重启 Facebook 后可看到。
+# context: the name Home header picture shows once the logo is picked
+Hushfacebook logo	Hushfacebook 标志

@@ -2783,3 +2783,9 @@ Resume this reel	Tiếp tục reel này
 Cancel this reel	Hủy reel này
 Hide stories you scrolled past	Ẩn tin bạn đã lướt qua
 A story you scrolled past in the Stories tray leaves it the next time you open Facebook, even if you didn't watch it. A new story brings that person back.	Tin bạn đã lướt qua trong khay tin sẽ rời khỏi khay vào lần tới bạn mở Facebook, kể cả khi bạn chưa xem. Tin mới sẽ đưa người đó trở lại.
+# context: row under Home header picture that puts Hushfacebook's logo there (#467)
+Use the Hushfacebook logo	Dùng logo Hushfacebook
+# context: summary under Use the Hushfacebook logo
+Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. Restart Facebook to see it.	Hiện logo Hushfacebook ở đầu Trang chủ thay cho chữ của bạn và logo Facebook. Khởi động lại Facebook để thấy.
+# context: the name Home header picture shows once the logo is picked
+Hushfacebook logo	logo Hushfacebook
