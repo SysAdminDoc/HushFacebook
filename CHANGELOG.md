@@ -48,6 +48,7 @@ Changes in each Hushfacebook version, newest first.
 * With either `Clean up Reels` switch on, the Clean mode button over a clean reel sits higher now, clear of the seek bar. A tap meant for it used to land on the bar and jump the video. (#391)
 * With `Keep feed videos muted` on, a video you unmuted goes quiet again when you leave Facebook and come back. The sound used to stay on until Facebook was force stopped or left alone for a long time. A video playing in the background keeps its sound, and turning the phone's screen off and on doesn't count as leaving. (#465)
 * With `Hide comment and reaction previews` on, a reel's caption stays put. A few seconds in, Facebook used to swap it for a "Name commented: ..." line. (#464)
+* On accounts where Facebook puts the tab bar at the top by itself, the Reels tab no longer leaves a black strip under the tabs once you scroll, when Reels isn't the first tab. The reel runs right up to the tabs, the way it already did with `Put the tab bar at the top` on. (#390)
 * The News feed switches of `Show full post text`, `Translate posts`, `Open comments with a gesture`, `See who shared` and `Photo carousel` show up even when that's the only feed patch you picked. The page used to open only for a set list of patches, and those five weren't on it.
 
 ## 0.22.0 (2026-11-12)

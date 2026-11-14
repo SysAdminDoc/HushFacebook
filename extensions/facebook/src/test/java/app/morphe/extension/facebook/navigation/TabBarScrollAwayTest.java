@@ -506,4 +506,29 @@ public class TabBarScrollAwayTest {
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertEquals("paused", 150, TabBarScrollAway.pagesTop(150));
     }
+
+    @Test
+    public void reelsFurtherAlongABarFacebookPutAtTheTopRunsUnderIt() {
+        // Neither position switch is on: Facebook put the tabs at the top itself, so the top bar's
+        // scroll-away entry it moves carries them (#390).
+        onTab(new FeedTab());
+        assertEquals(-40, TabBarScrollAway.topBarOffset(TabBarScrollAway.TITLE_AND_TABS, -40));
+        TabBarScrollAway.topBarsLetGo();
+        onTab(new WatchTab());
+        assertEquals("Reels second on a bar Facebook put at the top kept a band where the title bar was", 0,
+                TabBarScrollAway.pagesTop(150));
+        onTab(new NotificationsTab());
+        assertEquals("Notifications under that bar lost its padding", 150, TabBarScrollAway.pagesTop(150));
+
+        // The same account with its bar at the bottom: the top entry is the title bar alone.
+        TabBarScrollAway.topBarsTakenBack();
+        assertEquals(0.5f, TabBarScrollAway.topBarFade(TabBarScrollAway.APP_HEADER, 0.5f), 0f);
+        TabBarScrollAway.topBarsLetGo();
+        onTab(new WatchTab());
+        assertEquals("Reels further along a bar at the bottom lost Facebook's padding", 150, TabBarScrollAway.pagesTop(150));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        TabBarScrollAway.topBarOffset(TabBarScrollAway.TITLE_AND_TABS, 0);
+        assertEquals("paused", 150, TabBarScrollAway.pagesTop(150));
+    }
 }

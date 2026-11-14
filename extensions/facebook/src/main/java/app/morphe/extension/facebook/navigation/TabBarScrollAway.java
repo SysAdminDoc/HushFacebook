@@ -19,6 +19,7 @@ import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.Setting;
 
 /**
  * Whether the tab bar at the bottom slides away while the feed scrolls down. Facebook has this
@@ -133,6 +134,21 @@ public final class TabBarScrollAway {
     public static void forgetBuilt() {
         builtKept = null;
         builtSeeThrough = null;
+        tabsInTopEntry = false;
+    }
+
+    /**
+     * Whether the top bar's scroll-away entry carries the tabs as well, which is how Facebook lays
+     * the bars out with the tab bar at the top. That covers a bar Facebook put there itself, on the
+     * accounts its server setting gives a top bar, as well as one Put the tab bar at the top moved
+     * (#390). Read from the entries Facebook moves, so false until one has moved.
+     */
+    private static volatile boolean tabsInTopEntry;
+
+    /** Notes which top bar entry Facebook moves: the one holding the tabs, or the title bar alone. */
+    private static void noteTopEntry(@Nullable String entry) {
+        if (TITLE_AND_TABS.equals(entry)) tabsInTopEntry = true;
+        else if (APP_HEADER.equals(entry)) tabsInTopEntry = false;
     }
 
     /** A new main screen, as it's created. */
@@ -168,15 +184,17 @@ public final class TabBarScrollAway {
      * (#390). That happens wherever the tab bar sits, since only the title bar slides there, so the
      * answer is 0 for it whatever the bar's position, unless Keep the top bar on screen holds the
      * bar. Reels further along a bar that isn't at the top keeps Facebook's number: Facebook hides
-     * the title bar there itself. Anywhere else, paused, before the settings are ready or on a
-     * failure, it's Facebook's own number.
+     * the title bar there itself. A bar Facebook put at the top on its own counts as at the top, so
+     * Reels further along it runs under it too instead of leaving a black band where the title bar
+     * was (#390). Anywhere else, paused, before the settings are ready or on a failure, it's
+     * Facebook's own number.
      */
     public static int pagesTop(int padding) {
         try {
             if (padding == 0) return padding;
             HookStatus.invoked(FAMILY);
-            if (!Utils.settingsReady()) return padding;
-            boolean tabsOnTop = Settings.TOP_TAB_BAR.get() && !Settings.BOTTOM_TAB_BAR.get();
+            if (!Utils.settingsReady() || Setting.isPaused()) return padding;
+            boolean tabsOnTop = tabsInTopEntry || (Settings.TOP_TAB_BAR.get() && !Settings.BOTTOM_TAB_BAR.get());
             if (offTheFeed && !tabsOnTop) return padding;
             if (!offTheFeed && Settings.KEEP_TOP_BAR.get()) return padding;
             if (!onReelsTab()) return padding;
@@ -267,6 +285,7 @@ public final class TabBarScrollAway {
      */
     public static int topBarOffset(@Nullable String entry, int offset) {
         try {
+            noteTopEntry(entry);
             if (offset == 0) return offset;
             boolean topBar = APP_HEADER.equals(entry) || TITLE_AND_TABS.equals(entry);
             if (!topBar && !BOTTOM_TABS.equals(entry)) return offset;
@@ -295,6 +314,7 @@ public final class TabBarScrollAway {
      */
     public static float topBarFade(@Nullable String entry, float hidden) {
         try {
+            noteTopEntry(entry);
             if (hidden == 0f) return hidden;
             boolean topBar = APP_HEADER.equals(entry) || TITLE_AND_TABS.equals(entry);
             if (!topBar && !BOTTOM_TABS.equals(entry)) return hidden;
