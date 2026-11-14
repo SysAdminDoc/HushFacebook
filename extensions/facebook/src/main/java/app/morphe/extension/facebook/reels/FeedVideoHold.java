@@ -469,6 +469,20 @@ public final class FeedVideoHold {
     }
 
     /**
+     * Whether a feed video shows at the screen point ([x], [y]) inside [root], whatever this switch
+     * says, so a hold to react can tell a post's video from its photo (#454). Never throws: a
+     * failure is reported and reads as no video.
+     */
+    static boolean videoUnder(@Nullable View root, int x, int y) {
+        try {
+            return root != null && videoAt(root, x, y) != null;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "feed post hold video", failure);
+            return false;
+        }
+    }
+
+    /**
      * The player whose feed video shows at the screen point ([x], [y]) inside [root], or null: its
      * container is shown in [root]'s window with the point inside it and inside its list, and the
      * list scrolls up and down with the container's row smaller than it, with no scroller or pager

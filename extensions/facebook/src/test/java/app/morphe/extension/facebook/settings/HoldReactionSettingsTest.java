@@ -38,9 +38,10 @@ import app.morphe.extension.facebook.reels.HoldReaction;
 import app.morphe.extension.shared.SettingsContextRule;
 
 /**
- * Hold a post to react's rows on the feed page (#454): the switch, off to start, right under Select
- * part of a post's text, and its Reaction list under it, Pick one each time to start. The list goes
- * in a settings file as its file value and comes back only as one this build offers.
+ * Hold to react's rows on the feed page (#454): Hold a feed photo to react and Hold a feed video to
+ * react, both off to start, right under Select part of a post's text, and their Reaction list under
+ * them, Pick one each time to start. Only the video's row says Hold a feed video for 2x comes first.
+ * The list goes in a settings file as its file value and comes back only as one this build offers.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -57,27 +58,37 @@ public class HoldReactionSettingsTest {
     public void restore() {
         PatchFamily.inBuildForTests = null;
         ScreenColors.shown = null;
-        Settings.HOLD_POST_TO_REACT.resetToDefault();
+        Settings.HOLD_PHOTO_TO_REACT.resetToDefault();
+        Settings.HOLD_VIDEO_TO_REACT.resetToDefault();
         Settings.HOLD_REACTION.resetToDefault();
     }
 
     @Test
-    public void theSwitchAndItsListFollowSelectPartOfAPostsTextAndStartOff() {
+    public void theTwoSwitchesAndTheirListFollowSelectPartOfAPostsTextAndStartOff() {
         try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
             List<Preference> rows = rowsOf(page(controller));
             int select = indexOfKey(rows, Settings.SELECT_POST_TEXT.key);
-            int hold = indexOfKey(rows, Settings.HOLD_POST_TO_REACT.key);
+            int photo = indexOfKey(rows, Settings.HOLD_PHOTO_TO_REACT.key);
+            int video = indexOfKey(rows, Settings.HOLD_VIDEO_TO_REACT.key);
             assertTrue("Select part of a post's text is missing", select >= 0);
-            assertEquals(select + 1, hold);
-            assertEquals(hold + 1, indexOfKey(rows, Settings.HOLD_REACTION.key));
+            assertEquals(select + 1, photo);
+            assertEquals(photo + 1, video);
+            assertEquals(video + 1, indexOfKey(rows, Settings.HOLD_REACTION.key));
 
-            SwitchPreference toggle = (SwitchPreference) rows.get(hold);
-            assertEquals("Hold a post to react", String.valueOf(toggle.getTitle()));
-            assertEquals("Holding a post's photo or video opens its reactions, as holding Like does. On a feed post it "
-                    + "comes before Long press opens comments.", String.valueOf(toggle.getSummary()));
-            assertFalse(toggle.isChecked());
-            assertFalse(Settings.HOLD_POST_TO_REACT.defaultValue);
-            assertTrue(rows.get(hold + 1) instanceof ValueRows.HoldReactionRow);
+            SwitchPreference photoRow = (SwitchPreference) rows.get(photo);
+            assertEquals("Hold a feed photo to react", String.valueOf(photoRow.getTitle()));
+            assertEquals("Holding a post's photo opens its reactions, as holding Like does. It comes before Long press "
+                    + "opens comments.", String.valueOf(photoRow.getSummary()));
+            SwitchPreference videoRow = (SwitchPreference) rows.get(video);
+            assertEquals("Hold a feed video to react", String.valueOf(videoRow.getTitle()));
+            assertEquals("Holding a post's video opens its reactions too. It comes before Long press opens comments. "
+                    + "With Hold a feed video for 2x on, that one wins and the video plays fast.",
+                    String.valueOf(videoRow.getSummary()));
+            assertFalse("only the video's row is about 2x", String.valueOf(photoRow.getSummary()).contains("2x"));
+            for (SwitchPreference row : Arrays.asList(photoRow, videoRow)) assertFalse(row.getKey(), row.isChecked());
+            assertFalse(Settings.HOLD_PHOTO_TO_REACT.defaultValue);
+            assertFalse(Settings.HOLD_VIDEO_TO_REACT.defaultValue);
+            assertTrue(rows.get(video + 1) instanceof ValueRows.HoldReactionRow);
         }
     }
 
@@ -86,7 +97,8 @@ public class HoldReactionSettingsTest {
         PatchFamily.inBuildForTests = EnumSet.noneOf(PatchFamily.class);
         try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
             List<Preference> rows = rowsOf(page(controller));
-            assertEquals(-1, indexOfKey(rows, Settings.HOLD_POST_TO_REACT.key));
+            assertEquals(-1, indexOfKey(rows, Settings.HOLD_PHOTO_TO_REACT.key));
+            assertEquals(-1, indexOfKey(rows, Settings.HOLD_VIDEO_TO_REACT.key));
             assertEquals(-1, indexOfKey(rows, Settings.HOLD_REACTION.key));
         }
     }
@@ -113,16 +125,19 @@ public class HoldReactionSettingsTest {
         }
     }
 
-    /** Each choice goes out as its file value and comes back as itself, along with the switch. */
+    /** Each choice goes out as its file value and comes back as itself, along with the switches. */
     @Test
-    public void bothRoundTripThroughASettingsFile() throws Exception {
-        Settings.HOLD_POST_TO_REACT.save(true);
+    public void allRoundTripThroughASettingsFile() throws Exception {
+        Settings.HOLD_PHOTO_TO_REACT.save(true);
+        Settings.HOLD_VIDEO_TO_REACT.save(false);
         for (HoldReaction choice : HoldReaction.values()) {
             Settings.HOLD_REACTION.save(choice);
             String file = SettingsBackup.create();
             JSONObject settings = new JSONObject(file).getJSONObject("settings");
             assertEquals(choice.fileValue, settings.get(SettingsBackup.HOLD_REACTION.key));
-            assertEquals(true, settings.get(Settings.HOLD_POST_TO_REACT.key));
+            assertEquals(true, settings.get(Settings.HOLD_PHOTO_TO_REACT.key));
+            assertEquals(false, settings.get(Settings.HOLD_VIDEO_TO_REACT.key));
+            assertFalse("the old key stays out", settings.has(HoldReactSetting.LEGACY_KEY));
             Settings.HOLD_REACTION.save(choice == HoldReaction.LOVE ? HoldReaction.SAD : HoldReaction.LOVE);
 
             SettingsBackup.Snapshot snapshot = SettingsBackup.parse(file);
@@ -163,9 +178,9 @@ public class HoldReactionSettingsTest {
 
     @Test
     public void theImportSentencesNameTheChoice() {
-        assertEquals("Hold a post to react will open the reactions to pick from.",
+        assertEquals("Holding a post to react will open the reactions to pick from.",
                 SettingsBackupPreference.holdReactionSentence(HoldReaction.PICK));
-        assertEquals("Hold a post to react will give Care.", SettingsBackupPreference.holdReactionSentence(HoldReaction.CARE));
+        assertEquals("Holding a post to react will give Care.", SettingsBackupPreference.holdReactionSentence(HoldReaction.CARE));
     }
 
     private static void refuses(String file, String key, Object refused) throws Exception {

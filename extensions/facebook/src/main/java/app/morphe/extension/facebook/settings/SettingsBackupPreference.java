@@ -633,10 +633,10 @@ public class SettingsBackupPreference extends Preference {
         return L10n.f("Burn-in guard will dim the Reels screen after %1$d seconds without a touch.", (int) (wait.millis / 1000));
     }
 
-    /** The sentence that says what Hold a post to react gives after an import (#454). */
+    /** The sentence that says what a hold to react gives after an import, for a photo and a video alike (#454). */
     static String holdReactionSentence(HoldReaction reaction) {
-        if (reaction == HoldReaction.PICK) return L10n.t("Hold a post to react will open the reactions to pick from.");
-        return L10n.f("Hold a post to react will give %1$s.", HushfacebookPreferenceFragment.holdReactionLabel(reaction));
+        if (reaction == HoldReaction.PICK) return L10n.t("Holding a post to react will open the reactions to pick from.");
+        return L10n.f("Holding a post to react will give %1$s.", HushfacebookPreferenceFragment.holdReactionLabel(reaction));
     }
 
     /** The sentence that says how Show Reels in gray takes the color out after an import. */

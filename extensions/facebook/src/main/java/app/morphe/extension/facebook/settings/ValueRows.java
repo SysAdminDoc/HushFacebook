@@ -1634,7 +1634,7 @@ final class ValueRows {
         }
     }
 
-    /** Hold a post to react's Reaction (#454). Its summary follows its value, as Dim after's does. */
+    /** Hold to react's Reaction (#454). Its summary follows its value, as Dim after's does. */
     static final class HoldReactionRow extends PlainSummaryList {
         HoldReactionRow(Context context) {
             super(context);

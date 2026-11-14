@@ -706,14 +706,14 @@ public final class CommentSheetOptions {
     /**
      * The hook, first thing where a long press on Like opens the reaction picker. True returns
      * before the picker opens while Like only is on; false lets it open, as it does for the tray
-     * Hold a post to react opens.
+     * Hold to react opens.
      */
     public static boolean skipReactionPicker() {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, PICKER);
             if (!Utils.settingsReady() || !Settings.LIKE_ONLY.get()) return false;
-            // Hold a post to react asks for the tray, so the one it opens shows all the same.
+            // Hold to react asks for the tray, so the one it opens shows all the same.
             if (ReactionHold.opening()) return false;
             HookStatus.counted(FAMILY, PICKER_SKIPPED);
             return true;

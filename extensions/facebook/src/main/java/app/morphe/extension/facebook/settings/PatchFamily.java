@@ -168,7 +168,7 @@ public enum PatchFamily {
             Settings.TAP_SHOWS_CONTROLS),
     REEL_GESTURES(FamilyNames.REEL_GESTURES, "reelGestures", null,
             Settings.DOUBLE_TAP_OPENS_COMMENTS, Settings.LONG_PRESS_OPENS_COMMENTS, Settings.SELECT_POST_TEXT,
-            Settings.HOLD_POST_TO_REACT),
+            Settings.HOLD_PHOTO_TO_REACT, Settings.HOLD_VIDEO_TO_REACT),
     KEEP_REEL_SPEED(FamilyNames.KEEP_REEL_SPEED, "keepReelSpeed", null,
             Settings.KEEP_REEL_SPEED, Settings.KEEP_VIDEO_SPEED, Settings.SLOWER_REEL_SPEEDS,
             Settings.FASTER_REEL_SPEEDS, Settings.SPEED_ON_REPLAYS, Settings.POST_MENU_SPEED),
@@ -638,8 +638,8 @@ public enum PatchFamily {
                 line.append(", ").append(Settings.REEL_POST_DATE_STYLE.key).append('=')
                         .append(Settings.REEL_POST_DATE_STYLE.savedValue());
             }
-            // What a hold gives follows its switch (#454).
-            if (setting == Settings.HOLD_POST_TO_REACT) {
+            // What a hold gives follows its two switches, once after the second (#454).
+            if (setting == Settings.HOLD_VIDEO_TO_REACT) {
                 line.append(", ").append(Settings.HOLD_REACTION.key).append('=')
                         .append(Settings.HOLD_REACTION.savedValue());
             }

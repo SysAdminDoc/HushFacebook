@@ -46,7 +46,7 @@ import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
- * Hold a post to react (#454): a press held on a feed post's photo long-clicks the post's Like, the
+ * Hold to react (#454): a press held on a feed post's photo long-clicks the post's Like, the
  * first button of its footer, as Facebook's own long press on Like does. With Pick each time the rest
  * of the gesture goes to Like in Like's coordinates, screen ones kept, so sliding over the tray and
  * letting go picks; the post itself gets a cancel. With one reaction chosen, the tray Like opens is
@@ -75,11 +75,15 @@ public class ReactionHoldTest {
     private int trayLists = 7;
     /** The last tray shown. */
     private View tray;
+    /** The player whose video the photo becomes in {@link #photoPlaysAVideo}, held here since the hold keeps players weakly. */
+    private final Object player = new Object();
 
     @Before
     public void setUp() {
         PostLongPress.reset();
-        Settings.HOLD_POST_TO_REACT.save(true);
+        FeedVideoHold.reset();
+        Settings.HOLD_PHOTO_TO_REACT.save(true);
+        Settings.HOLD_VIDEO_TO_REACT.save(true);
         window = Robolectric.buildActivity(Activity.class).setup();
         activity = window.get();
         root = new FrameLayout(activity);
@@ -95,11 +99,44 @@ public class ReactionHoldTest {
     @After
     public void restore() {
         PostLongPress.reset();
-        Settings.HOLD_POST_TO_REACT.resetToDefault();
+        FeedVideoHold.reset();
+        Settings.HOLD_PHOTO_TO_REACT.resetToDefault();
+        Settings.HOLD_VIDEO_TO_REACT.resetToDefault();
+        Settings.HOLD_FEED_VIDEO_FOR_2X.resetToDefault();
         Settings.HOLD_REACTION.resetToDefault();
         Settings.LONG_PRESS_OPENS_COMMENTS.resetToDefault();
         Settings.LIKE_ONLY.resetToDefault();
         HookStatus.clear();
+    }
+
+    private static void bothSwitchesOff() {
+        Settings.HOLD_PHOTO_TO_REACT.save(false);
+        Settings.HOLD_VIDEO_TO_REACT.save(false);
+    }
+
+    /** The post's photo becomes a feed video, its player attached to it the way Facebook attaches one. */
+    private void photoPlaysAVideo() {
+        FeedVideoHold.access = new FeedVideoHold.Players() {
+            @Override
+            public ViewGroup view(Object of) {
+                return of == player ? (ViewGroup) photo : null;
+            }
+
+            @Override
+            public Object origin(Object of) {
+                return null;
+            }
+
+            @Override
+            public float speed(Object of) {
+                return 1f;
+            }
+
+            @Override
+            public void speed(Object of, float speed) {
+            }
+        };
+        FeedVideoHold.attached((ViewGroup) photo, player);
     }
 
     /** A feed post: name line, photo, then the footer bar with Like, Comment and Share. */
@@ -307,7 +344,7 @@ public class ReactionHoldTest {
         send(event(MotionEvent.ACTION_UP, at[0], at[1]));
         // A tray from somewhere else shows before the hold's wait runs out.
         trayLists = 7;
-        Settings.HOLD_POST_TO_REACT.save(false);
+        bothSwitchesOff();
         send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
         showTray();
         waitFor(1000);
@@ -345,7 +382,7 @@ public class ReactionHoldTest {
         assertTrue(clicked.toString(), clicked.isEmpty());
         send(event(MotionEvent.ACTION_UP, at[0], at[1]));
 
-        Settings.HOLD_POST_TO_REACT.save(false);
+        bothSwitchesOff();
         send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
         holdLongEnough();
         assertEquals("with the switch off the hold opens comments again", List.of("comment"), clicked);
@@ -365,12 +402,79 @@ public class ReactionHoldTest {
 
     @Test
     public void withTheSwitchOffAHoldIsFacebooks() {
-        Settings.HOLD_POST_TO_REACT.save(false);
+        bothSwitchesOff();
         int[] at = middleOf(photo);
         send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
         holdLongEnough();
         assertEquals(MotionEvent.ACTION_UP, send(event(MotionEvent.ACTION_UP, at[0], at[1])).getActionMasked());
         assertTrue(like.toString(), like.isEmpty());
         assertTrue(clicked.toString(), clicked.isEmpty());
+    }
+
+    /** Hold a feed photo to react alone reacts on a photo and leaves a hold on a feed video to Facebook. */
+    @Test
+    public void thePhotoSwitchAloneLeavesAVideosHoldToFacebook() {
+        Settings.HOLD_VIDEO_TO_REACT.save(false);
+        int[] at = middleOf(photo);
+        send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
+        holdLongEnough();
+        assertEquals("a photo's hold reacts", List.of("long"), like);
+        send(event(MotionEvent.ACTION_UP, at[0], at[1]));
+
+        photoPlaysAVideo();
+        send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
+        holdLongEnough();
+        assertEquals("the video's hold goes on as Facebook's", MotionEvent.ACTION_UP,
+                send(event(MotionEvent.ACTION_UP, at[0], at[1])).getActionMasked());
+        assertEquals("Like got the first hold's lift and no second long press", 2, like.size());
+        assertTrue(clicked.toString(), clicked.isEmpty());
+        assertTrue(statusLine(), statusLine().contains(PostLongPress.REACT_OFF + " 1"));
+        assertTrue(statusLine(), statusLine().contains(PostLongPress.HELD + " 1"));
+    }
+
+    /**
+     * Hold a feed video to react alone reacts on a video, and a hold on a photo goes to Long press
+     * opens comments as it would with no react switch on.
+     */
+    @Test
+    public void theVideoSwitchAloneReactsOnAVideoAndLeavesAPhotoToComments() {
+        Settings.HOLD_PHOTO_TO_REACT.save(false);
+        Settings.LONG_PRESS_OPENS_COMMENTS.save(true);
+        int[] at = middleOf(photo);
+        send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
+        holdLongEnough();
+        assertEquals("a photo's hold opens comments", List.of("comment"), clicked);
+        assertTrue(like.toString(), like.isEmpty());
+        send(event(MotionEvent.ACTION_UP, at[0], at[1]));
+
+        photoPlaysAVideo();
+        send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
+        holdLongEnough();
+        assertEquals("a video's hold reacts", List.of("long"), like);
+        assertEquals("and opens no comments", List.of("comment"), clicked);
+        send(event(MotionEvent.ACTION_UP, at[0], at[1]));
+        assertTrue(statusLine(), statusLine().contains(ReactionHold.OPENED + " 1"));
+        assertTrue(statusLine(), statusLine().contains(PostLongPress.OPENED + " 1"));
+    }
+
+    /** With Hold a feed video for 2x on, a hold on a feed video is that one's, and it reacts again once 2x is off. */
+    @Test
+    public void holdAFeedVideoFor2xComesFirstOnAVideo() {
+        Settings.HOLD_PHOTO_TO_REACT.save(false);
+        photoPlaysAVideo();
+        FeedVideoHold.inBuildForTests = true;
+        Settings.HOLD_FEED_VIDEO_FOR_2X.save(true);
+        int[] at = middleOf(photo);
+        send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
+        holdLongEnough();
+        assertTrue(like.toString(), like.isEmpty());
+        assertTrue(statusLine(), statusLine().contains(PostLongPress.ON_VIDEO + " 1"));
+        send(event(MotionEvent.ACTION_UP, at[0], at[1]));
+
+        Settings.HOLD_FEED_VIDEO_FOR_2X.save(false);
+        send(event(MotionEvent.ACTION_DOWN, at[0], at[1]));
+        holdLongEnough();
+        assertEquals(List.of("long"), like);
+        send(event(MotionEvent.ACTION_UP, at[0], at[1]));
     }
 }

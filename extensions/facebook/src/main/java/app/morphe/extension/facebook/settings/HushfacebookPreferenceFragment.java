@@ -1941,7 +1941,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
                 + "stay faded.", burnInWaitLabel(wait));
     }
 
-    /** What Hold a post to react gives, right under its switch (#454). */
+    /** What a hold to react gives, right under its two switches (#454). */
     static HoldReactionRow holdReactionRow(Context context) {
         HoldReactionRow row = new HoldReactionRow(context);
         row.setKey(Settings.HOLD_REACTION.key);

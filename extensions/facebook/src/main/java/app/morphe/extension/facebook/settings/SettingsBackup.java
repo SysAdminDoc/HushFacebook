@@ -311,7 +311,8 @@ public final class SettingsBackup {
             Settings.DOUBLE_TAP_OPENS_COMMENTS,
             Settings.LONG_PRESS_OPENS_COMMENTS,
             Settings.SELECT_POST_TEXT,
-            Settings.HOLD_POST_TO_REACT,
+            Settings.HOLD_PHOTO_TO_REACT,
+            Settings.HOLD_VIDEO_TO_REACT,
             Settings.KEEP_REEL_SPEED,
             Settings.KEEP_VIDEO_SPEED,
             Settings.SLOWER_REEL_SPEEDS,
@@ -681,7 +682,7 @@ public final class SettingsBackup {
     static final EnumSetting<BurnInWait> BURN_IN_WAIT = Settings.BURN_IN_WAIT;
 
     /**
-     * Hold a post to react's Reaction (#454), held in a file as its {@link HoldReaction#fileValue}.
+     * Hold to react's Reaction (#454), held in a file as its {@link HoldReaction#fileValue}.
      * Anything else refuses the whole file, as a Dim after wait does.
      */
     static final EnumSetting<HoldReaction> HOLD_REACTION = Settings.HOLD_REACTION;
@@ -1073,7 +1074,7 @@ public final class SettingsBackup {
         /** The Dim after wait the file holds, the same way. */
         @Nullable
         BurnInWait burnInWait;
-        /** The Hold a post to react choice the file holds, the same way. */
+        /** The Hold to react choice the file holds, the same way. */
         @Nullable
         HoldReaction holdReaction;
         /** The Turn gray over choice the file holds, the same way. */
@@ -1638,7 +1639,7 @@ public final class SettingsBackup {
             return burnInWait == null || burnInWait == BURN_IN_WAIT.savedValue() ? null : burnInWait;
         }
 
-        /** The Hold a post to react choice after this file, the same way. */
+        /** The Hold to react choice after this file, the same way. */
         @Nullable
         HoldReaction holdReactionChange() {
             return holdReaction == null || holdReaction == HOLD_REACTION.savedValue() ? null : holdReaction;
@@ -2022,6 +2023,7 @@ public final class SettingsBackup {
         for (BooleanSetting setting : ALLOWLIST) known.put(setting.key, setting);
         Map<BooleanSetting, Boolean> found = new HashMap<>();
         Boolean legacyStories = null;
+        Boolean legacyHoldToReact = null;
         String folder = null;
         DownloadQuality quality = null;
         String fileName = null;
@@ -2082,6 +2084,14 @@ public final class SettingsBackup {
                     throw new Rejected(Reason.VALUE, "Not true or false: " + name);
                 }
                 legacyStories = (Boolean) value;
+                continue;
+            }
+            if (HoldReactSetting.LEGACY_KEY.equals(name)) {
+                Object value = values.opt(name);
+                if (!(value instanceof Boolean)) {
+                    throw new Rejected(Reason.VALUE, "Not true or false: " + name);
+                }
+                legacyHoldToReact = (Boolean) value;
                 continue;
             }
             if (CommentsHeightSetting.LEGACY_KEY.equals(name)) {
@@ -2390,6 +2400,12 @@ public final class SettingsBackup {
             found.putIfAbsent(Settings.HIDE_TOP_STORIES_TRAY, legacyStories);
             found.putIfAbsent(Settings.HIDE_STORIES_BETWEEN_POSTS, legacyStories);
         }
+        if (legacyHoldToReact != null) {
+            // A file from before the split (#454): the old Hold a post to react supplies both, and
+            // either new key the file also carries wins, whatever order the JSON object uses.
+            found.putIfAbsent(Settings.HOLD_PHOTO_TO_REACT, legacyHoldToReact);
+            found.putIfAbsent(Settings.HOLD_VIDEO_TO_REACT, legacyHoldToReact);
+        }
         if (commentsHeight == null && legacyFullHeight != null) {
             // A file from before the list: the old switch on is full height, off Facebook's
             // height. The list's own key wins whatever order the JSON object uses.
@@ -2477,6 +2493,7 @@ public final class SettingsBackup {
                 if (changes.isEmpty()) return 0;
                 StoriesSetting.finishMigration();
                 CommentsHeightSetting.finishMigration();
+                HoldReactSetting.finishMigration();
                 Setting.saveAll(changes);
                 return changes.size();
             } catch (Setting.BatchFailed failed) {

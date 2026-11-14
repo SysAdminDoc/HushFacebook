@@ -24,9 +24,10 @@ import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
- * Hold a post to react (#454): a hold on a feed post's photo or video does what a hold on its Like
- * button does. {@link PostLongPress} times the hold and finds the post's Like, the first button of
- * its footer line.
+ * Hold a feed photo to react and Hold a feed video to react (#454): a hold on a feed post's photo or
+ * video, each with its own switch, does what a hold on its Like button does. {@link PostLongPress}
+ * times the hold, tells a video from a photo and finds the post's Like, the first button of its
+ * footer line.
  *
  * <p>Facebook's long press on Like is a Litho long click on Like's host. It opens the reaction tray
  * (com.facebook.feedback.sharedcomponents.reactions.dock.RopeStyleUFIDockView, a kept name) in a
@@ -80,9 +81,14 @@ public final class ReactionHold {
     private ReactionHold() {
     }
 
-    /** Whether Hold a post to react is on. */
+    /** Whether Hold a feed photo to react or Hold a feed video to react is on. */
     static boolean on() {
-        return Settings.HOLD_POST_TO_REACT.get();
+        return Settings.HOLD_PHOTO_TO_REACT.get() || Settings.HOLD_VIDEO_TO_REACT.get();
+    }
+
+    /** Whether a hold on a feed post's video, [video], or on its photo reacts. */
+    static boolean on(boolean video) {
+        return video ? Settings.HOLD_VIDEO_TO_REACT.get() : Settings.HOLD_PHOTO_TO_REACT.get();
     }
 
     /**

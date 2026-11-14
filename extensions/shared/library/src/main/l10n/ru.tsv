@@ -2368,8 +2368,10 @@ Shows when a reel or a video you open full screen was posted, under the name of 
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	Оставляет кнопку «Комментировать» в Reels, где комментарии отключены, чтобы вы могли читать уже существующие комментарии. Изменение применяется начиная со следующего Reels.
 Select part of a post's text	Выбирать часть текста публикации
 Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	Удержание текста публикации открывает его в окне, где можно выделить только нужную часть и скопировать её или скопировать всё. Само удержание ничего не копирует.
-Hold a post to react	Удержание публикации для реакции
-Holding a post's photo or video opens its reactions, as holding Like does. On a feed post it comes before Long press opens comments.	Удержание фото или видео публикации открывает её реакции, как удержание кнопки «Нравится». В публикации ленты это срабатывает раньше, чем «Долгое нажатие открывает комментарии».
+Hold a feed photo to react	Удержание фото в Ленте для реакции
+Hold a feed video to react	Удержание видео в Ленте для реакции
+Holding a post's photo opens its reactions, as holding Like does. It comes before Long press opens comments.	Удержание фото публикации открывает её реакции, как удержание кнопки «Нравится». Это срабатывает раньше, чем «Долгое нажатие открывает комментарии».
+Holding a post's video opens its reactions too. It comes before Long press opens comments. With Hold a feed video for 2x on, that one wins and the video plays fast.	Удержание видео публикации тоже открывает её реакции. Это срабатывает раньше, чем «Долгое нажатие открывает комментарии». Если включено «Удерживать видео в Ленте для скорости 2x», срабатывает оно, и видео играет быстрее.
 Reaction	Реакция
 Pick one each time	Выбирать каждый раз
 Like	Нравится
@@ -2381,8 +2383,8 @@ Sad	Сочувствую
 Angry	Возмутительно
 Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	Выбирать каждый раз. Реакции открываются поверх публикации: проведите к нужной и отпустите или отпустите и нажмите на неё.
 %1$s. Holding a post gives it straight away.	%1$s. Удержание публикации сразу ставит эту реакцию.
-Hold a post to react will open the reactions to pick from.	Удержание публикации для реакции откроет реакции для выбора.
-Hold a post to react will give %1$s.	Удержание публикации для реакции поставит «%1$s».
+Holding a post to react will open the reactions to pick from.	Удержание публикации для реакции откроет реакции для выбора.
+Holding a post to react will give %1$s.	Удержание публикации для реакции поставит «%1$s».
 Select text	Выбрать текст
 Done	Готово
 Copy all	Копировать всё

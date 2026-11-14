@@ -59,6 +59,7 @@ public class Settings extends BaseSettings {
     static {
         StoriesSetting.migrate();
         CommentsHeightSetting.migrate();
+        HoldReactSetting.migrate();
         RecentlyWatched.keepOlderListAsItWas();
     }
 
@@ -1276,17 +1277,26 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_select_post_text", FALSE);
 
     /**
-     * A hold on a feed post's photo or video does what a hold on its Like button does: opens the
-     * reaction tray, or gives {@link #HOLD_REACTION} straight away
-     * ({@link app.morphe.extension.facebook.reels.ReactionHold}, #454). Wins over
-     * {@link #LONG_PRESS_OPENS_COMMENTS} on a feed post. Starts off.
+     * A hold on a feed post's photo, or anywhere above its buttons that isn't a video, does what a
+     * hold on its Like button does: opens the reaction tray, or gives {@link #HOLD_REACTION} straight
+     * away ({@link app.morphe.extension.facebook.reels.ReactionHold}, #454). Wins over
+     * {@link #LONG_PRESS_OPENS_COMMENTS} on a feed post. Starts off. Split with
+     * {@link #HOLD_VIDEO_TO_REACT} from the old Hold a post to react, whose stored value both take
+     * over once ({@link HoldReactSetting}).
      */
-    public static final BooleanSetting HOLD_POST_TO_REACT =
-            new BooleanSetting("hushfacebook_hold_post_to_react", FALSE);
+    public static final BooleanSetting HOLD_PHOTO_TO_REACT =
+            new HoldReactSetting(HoldReactSetting.PHOTO_KEY);
 
     /**
-     * What {@link #HOLD_POST_TO_REACT} gives: the reaction tray to pick from, by default, or one
-     * reaction (#454).
+     * The same for a hold on a feed post's video. Hold a feed video for 2x asks first, so with that on
+     * too a hold on a video plays it fast instead. Starts off.
+     */
+    public static final BooleanSetting HOLD_VIDEO_TO_REACT =
+            new HoldReactSetting(HoldReactSetting.VIDEO_KEY);
+
+    /**
+     * What {@link #HOLD_PHOTO_TO_REACT} and {@link #HOLD_VIDEO_TO_REACT} give: the reaction tray to
+     * pick from, by default, or one reaction (#454).
      */
     public static final EnumSetting<HoldReaction> HOLD_REACTION =
             new EnumSetting<>("hushfacebook_hold_reaction", HoldReaction.PICK);

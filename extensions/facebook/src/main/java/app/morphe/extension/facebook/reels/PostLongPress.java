@@ -78,9 +78,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * arms {@link PostTextSelect}, which opens the text Facebook's own long press copies. With only
  * that switch on, the hold itself is always left to Facebook.
  *
- * <p>The same hold serves Hold a post to react (#454): with that switch on, the post's Like, the
- * first button of the footer line, gets the long press instead of Comment getting a click
- * ({@link ReactionHold}), and it wins over Long press opens comments on a feed post.
+ * <p>The same hold serves Hold a feed photo to react and Hold a feed video to react (#454): with the
+ * switch for what the finger is on, a feed video or anything else above the footer, the post's
+ * Like, the first button of the footer line, gets the long press instead of Comment getting a click
+ * ({@link ReactionHold}), and it wins over Long press opens comments on a feed post. With that
+ * switch off the hold opens comments, or with Long press opens comments off too stays Facebook's.
  *
  * <p>A held press left to Facebook counts why, and with Debug logging on logs the view under the
  * finger, so a phone's report says which check passed the hold over.
@@ -115,6 +117,7 @@ public final class PostLongPress {
     static final String ON_BUTTON = "feed hold passed: its own tap, on a small button";
     static final String ON_VIDEO = "feed hold passed: on a feed video the hold speeds up";
     static final String ON_BAR = "feed hold passed: on a video's bar";
+    static final String REACT_OFF = "feed hold passed: its photo or video react switch is off";
 
     /** The kept name of the list every feed is drawn in; Facebook's own lists extend it. */
     static final String LIST = "androidx.recyclerview.widget.RecyclerView";
@@ -144,6 +147,8 @@ public final class PostLongPress {
     private static boolean timing;
     /** The press opened comments, so every later event of the gesture becomes a cancel. */
     private static boolean swallowing;
+    /** The held press reacts, its photo's or video's Hold to react switch being on, instead of opening comments. */
+    private static boolean reacting;
     /** Counts finger-downs, so a footer looked for after a scroll is only clicked for the same press. */
     private static int presses;
     /** Until when, in uptime, the next comment sheet made comes from a hold's click; 0 when none is due. */
@@ -257,6 +262,13 @@ public final class PostLongPress {
                 passed(ON_BUTTON, root);
                 return;
             }
+            // A feed photo and a feed video each have their own Hold to react switch. With the one
+            // for what's held off, the hold opens comments, or stays Facebook's with that off too.
+            reacting = ReactionHold.on(FeedVideoHold.videoUnder(root, Math.round(downX), Math.round(downY)));
+            if (!reacting && !Settings.LONG_PRESS_OPENS_COMMENTS.get()) {
+                passed(REACT_OFF, root);
+                return;
+            }
             HookStatus.counted(FAMILY, HELD);
             if (footer == null) {
                 // Litho mounts only what's on screen, so a post running past the bottom of the feed
@@ -284,10 +296,10 @@ public final class PostLongPress {
 
     /**
      * Does what the hold on [row] is for, given its [footer] line in reading order: opens the post's
-     * reaction tray with Hold a post to react on, its comments otherwise. Says whether it happened.
+     * reaction tray when the hold reacts, its comments otherwise. Says whether it happened.
      */
     private static boolean act(View row, List<View> footer) {
-        return ReactionHold.on() ? ReactionHold.start(footer.get(0), row) : open(footer.get(1));
+        return reacting ? ReactionHold.start(footer.get(0), row) : open(footer.get(1));
     }
 
     /** The photo's own long press was timed from the same touch, so it would run next: cancels it. */
@@ -660,6 +672,7 @@ public final class PostLongPress {
     static void reset() {
         stop();
         swallowing = false;
+        reacting = false;
         passedOver = null;
         sheetDue = 0L;
         ReactionHold.reset();

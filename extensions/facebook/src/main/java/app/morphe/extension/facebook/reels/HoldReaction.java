@@ -7,7 +7,7 @@ package app.morphe.extension.facebook.reels;
 import androidx.annotation.Nullable;
 
 /**
- * What Hold a post to react gives (#454): the reaction tray to pick from, or one reaction straight
+ * What Hold to react gives (#454): the reaction tray to pick from, or one reaction straight
  * away. {@link #index} is the reaction's place in Facebook's tray, which has listed Like, Love, Care,
  * Haha, Wow, Sad and Angry in that order since Care came in.
  */
