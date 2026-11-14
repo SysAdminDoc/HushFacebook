@@ -34,7 +34,9 @@ import java.util.function.Consumer;
  * library, which no catch here sees, so callers treat anything without that last line as a
  * refusal.
  *
- * <p>The Hush Unpacker app (helper/) calls {@link #decode} in its own process instead.
+ * <p>The Hush Unpacker app (helper/) calls {@link #decode} in its own process instead, and the
+ * desktop decoder (scripts/superpack-desktop) hands {@link #decode(Natives, File, File, File,
+ * Consumer)} the same library running under an ARM emulator, so every route makes the same checks.
  */
 public final class DecodeStore {
     private DecodeStore() {
@@ -63,32 +65,37 @@ public final class DecodeStore {
      * inputs can't be used.
      */
     public static boolean decode(File library, File store, File metadata, File out, Consumer<String> log) throws Exception {
+        return decode(new InProcess(library), store, metadata, out, log);
+    }
+
+    /** The same decode and checks, with the library's natives reached through {@code natives}. */
+    public static boolean decode(Natives natives, File store, File metadata, File out, Consumer<String> log) throws Exception {
         Map<String, String> want = readMetadata(metadata);
         if (want.isEmpty()) refuse("metadata lists no dex files");
         if (!out.mkdirs() && !out.isDirectory()) refuse("can't make " + out);
 
-        System.load(library.getAbsolutePath());
+        natives.load();
         long started = System.nanoTime();
         int good = 0;
         int bad = 0;
         byte[] chunk = new byte[1 << 20];
         try (InputStream in = new BufferedInputStream(new FileInputStream(store), 1 << 20)) {
-            long archive = SuperpackArchive.readNative(in, "spo", 0L);
+            long archive = natives.readArchive(in, "spo", 0L);
             if (archive == 0) refuse("the library didn't open the store");
             try {
-                while (!SuperpackArchive.isEmptyNative(archive)) {
-                    long file = SuperpackArchive.nextNative(archive);
+                while (!natives.isEmpty(archive)) {
+                    long file = natives.next(archive);
                     if (file == 0) refuse("the library returned no file before the end");
                     try {
-                        String name = SuperpackFile.getNameNative(file);
-                        int length = SuperpackFile.getLengthNative(file);
+                        String name = natives.name(file);
+                        int length = natives.length(file);
                         String expected = want.remove(name);
                         File target = new File(out, safeName(name) + ".part");
                         MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
                         try (OutputStream os = new FileOutputStream(target)) {
                             for (int at = 0; at < length; ) {
                                 int count = Math.min(chunk.length, length - at);
-                                SuperpackFile.readBytesNative(file, at, count, chunk, 0);
+                                natives.readBytes(file, at, count, chunk, 0);
                                 sha1.update(chunk, 0, count);
                                 os.write(chunk, 0, count);
                                 at += count;
@@ -114,11 +121,11 @@ public final class DecodeStore {
                             log.accept("OK " + name + " " + length + " " + actual);
                         }
                     } finally {
-                        SuperpackFile.closeNative(file);
+                        natives.closeFile(file);
                     }
                 }
             } finally {
-                SuperpackArchive.closeNative(archive);
+                natives.closeArchive(archive);
             }
         }
         for (String missing : want.keySet()) {
@@ -173,6 +180,85 @@ public final class DecodeStore {
 
     private static void refuse(String why) {
         throw new Refusal(why);
+    }
+
+    /**
+     * The library's archive natives, one method each, as SuperpackArchive and SuperpackFile
+     * declare them. Handles are the library's own pointers.
+     */
+    public interface Natives {
+        /** Loads the library. Called once, after the inputs have been checked. */
+        void load() throws Exception;
+
+        long readArchive(InputStream in, String extension, long options) throws Exception;
+
+        boolean isEmpty(long archive) throws Exception;
+
+        long next(long archive) throws Exception;
+
+        void closeArchive(long archive) throws Exception;
+
+        String name(long file) throws Exception;
+
+        int length(long file) throws Exception;
+
+        void readBytes(long file, int offset, int count, byte[] into, int intoOffset) throws Exception;
+
+        void closeFile(long file) throws Exception;
+    }
+
+    /** The library loaded into this process, on a phone. */
+    private static final class InProcess implements Natives {
+        private final File library;
+
+        InProcess(File library) {
+            this.library = library;
+        }
+
+        @Override
+        public void load() {
+            System.load(library.getAbsolutePath());
+        }
+
+        @Override
+        public long readArchive(InputStream in, String extension, long options) {
+            return SuperpackArchive.readNative(in, extension, options);
+        }
+
+        @Override
+        public boolean isEmpty(long archive) {
+            return SuperpackArchive.isEmptyNative(archive);
+        }
+
+        @Override
+        public long next(long archive) {
+            return SuperpackArchive.nextNative(archive);
+        }
+
+        @Override
+        public void closeArchive(long archive) {
+            SuperpackArchive.closeNative(archive);
+        }
+
+        @Override
+        public String name(long file) {
+            return SuperpackFile.getNameNative(file);
+        }
+
+        @Override
+        public int length(long file) {
+            return SuperpackFile.getLengthNative(file);
+        }
+
+        @Override
+        public void readBytes(long file, int offset, int count, byte[] into, int intoOffset) {
+            SuperpackFile.readBytesNative(file, offset, count, into, intoOffset);
+        }
+
+        @Override
+        public void closeFile(long file) {
+            SuperpackFile.closeNative(file);
+        }
     }
 
     /** The store or its metadata can't be decoded; the message says why. */
