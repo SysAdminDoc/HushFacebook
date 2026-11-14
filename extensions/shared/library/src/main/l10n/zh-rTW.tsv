@@ -875,6 +875,10 @@ Continue	繼續
 Double tap to skip	雙擊跳轉
 # context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video
 A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. A double tap in the middle works as before.	雙擊 Reels 或影片的左側或右側邊緣，可後退或前進 10 秒；長度不足 30 秒時則為 5 秒。雙擊中央的功能不變。
+# context: switch title under Reels and Watch, right under Double tap to skip; on, the "+5s" or "-10s" Facebook shows over the player when a double tap skips stays hidden
+Hide the skip seconds	隱藏跳轉秒數
+# context: description of that switch; keep +5s and -10s as written, they're what Facebook shows on screen; Facebook can give an account the skip on its own, without the switch above
+A double tap on the edge still skips, but the +5s or -10s over the reel or video stays hidden. It also works when Facebook turned the skip on for you.	雙擊邊緣仍會跳轉，但 Reels 或影片上方的 +5s 或 -10s 會保持隱藏。Facebook 自行為你開啟雙擊跳轉時也有效。
 # context: switch title under Reels and Watch; on, a tap on a playing reel shows its controls without pausing it
 Tap shows the controls	點按顯示控制項
 # context: summary of that switch; the button in the middle is the play and pause button in the reel's controls

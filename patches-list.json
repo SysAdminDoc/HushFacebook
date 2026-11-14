@@ -872,7 +872,7 @@
     },
     {
       "name": "Double tap to skip",
-      "description": "A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. Starts off. Turn it on in Hushfacebook settings > Reels and Watch.",
+      "description": "A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. Starts off. Turn it on in Hushfacebook settings > Reels and Watch. Hide the skip seconds there, also off, keeps the +5s or -10s off the screen while the skip still works.",
       "category": "Reels",
       "use": true,
       "dependencies": [

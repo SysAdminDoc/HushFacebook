@@ -1244,6 +1244,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_double_tap_skip", FALSE);
 
     /**
+     * Keeps the "+5s" or "-10s" Facebook shows over a reel or video on a double-tap skip hidden,
+     * while the skip itself still happens (#476). Works whether {@link #DOUBLE_TAP_SKIP} or
+     * Facebook turned the skip on. Starts off. Read on each skip.
+     */
+    public static final BooleanSetting HIDE_SKIP_SECONDS =
+            new BooleanSetting("hushfacebook_hide_skip_seconds", FALSE);
+
+    /**
      * A tap on a playing reel shows its controls and lets it play on, Facebook's own answer to a
      * tap that it ships off, with the controls kept up three seconds in place of one
      * ({@link app.morphe.extension.facebook.reels.TapShowsControls}, #225). The button in the middle

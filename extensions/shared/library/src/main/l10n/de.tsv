@@ -871,6 +871,10 @@ Continue	Weiter
 Double tap to skip	Doppeltippen zum Springen
 # context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video
 A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. A double tap in the middle works as before.	Doppeltippen am linken oder rechten Rand eines Reels oder Videos springt 10 Sekunden zurück oder vor, bei einem unter 30 Sekunden 5. Doppeltippen in der Mitte funktioniert wie bisher.
+# context: switch title under Reels and Watch, right under Double tap to skip; on, the "+5s" or "-10s" Facebook shows over the player when a double tap skips stays hidden
+Hide the skip seconds	Sprung-Sekunden ausblenden
+# context: description of that switch; keep +5s and -10s as written, they're what Facebook shows on screen; Facebook can give an account the skip on its own, without the switch above
+A double tap on the edge still skips, but the +5s or -10s over the reel or video stays hidden. It also works when Facebook turned the skip on for you.	Doppeltippen am Rand springt weiterhin, aber das +5s oder -10s über dem Reel oder Video bleibt ausgeblendet. Es funktioniert auch, wenn Facebook das Springen für dich eingeschaltet hat.
 # context: switch title under Reels and Watch; on, a tap on a playing reel shows its controls without pausing it
 Tap shows the controls	Tippen zeigt die Steuerung
 # context: summary of that switch; the button in the middle is the play and pause button in the reel's controls

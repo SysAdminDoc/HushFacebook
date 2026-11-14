@@ -327,6 +327,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.DOUBLE_TAP_SKIP,
                     L10n.t("A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, "
                             + "or 5 on one under 30 seconds. A double tap in the middle works as before.")));
+            // Read on each skip, so a change shows on the next one.
+            reels.addPreference(toggle(context, Settings.HIDE_SKIP_SECONDS,
+                    L10n.t("A double tap on the edge still skips, but the +5s or -10s over the reel or video stays "
+                            + "hidden. It also works when Facebook turned the skip on for you.")));
         }
         if (build.contains(PatchFamily.TAP_SHOWS_CONTROLS)) {
             // Read on each tap, so a change shows on the next one.

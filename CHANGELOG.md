@@ -23,6 +23,7 @@ Changes in each Hushfacebook version, newest first.
 * New patch, `Post menu items`. `3-dot menu items to hide` under News feed lists the rows of a post's three-dot menu, like Interested, Not interested, Cast or Report, and the ones you tick stop showing up there, so a thumb can't land on them by accident. The list also picks up any other rows Facebook has shown you. Nothing is hidden until you pick. (#475)
 * `Refresh rate` under Appearance, in every build, asks your screen for its highest refresh rate while Facebook is open, or for a fixed rate like 60, 90 or 120 Hz. The list only shows the rates your screen has, and your phone's own refresh rate setting still sets the most Facebook gets. It starts at `As Facebook has it`. (#480)
 * New `Hide the comment box` under Comments and writing. The Write a comment box at the bottom of a post's comments goes away, so you can read them without it. Off by default. (#479)
+* New `Hide the skip seconds` switch under Reels and Watch, right below `Double tap to skip`. A double tap on the edge of a reel or video still skips, but the +5s or -10s Facebook flashes over it doesn't show. It works on accounts where Facebook turned the skip on by itself too. It starts off. (#476)
 * **Tooling:** `superpack-unpack.ps1 -Desktop` unpacks Facebook's Android 9+ build on a PC with no phone or emulator attached. (#102)
 
 ### Changed

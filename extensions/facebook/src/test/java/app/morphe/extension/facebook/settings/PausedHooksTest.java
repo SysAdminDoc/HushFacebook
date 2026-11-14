@@ -805,8 +805,14 @@ public class PausedHooksTest {
                 () -> asksBeforeALike(AskBeforeLike.REEL),
                 () -> asksBeforeALike(AskBeforeLike.COMMENT),
                 () -> asksBeforeALike(AskBeforeLike.POST_TOUCH)));
-        // Facebook's double-tap skip test, read as off, is answered on.
-        probes.put(PatchFamily.DOUBLE_TAP_SKIP, Collections.singletonList(() -> DoubleTapSkip.flag(false)));
+        // Facebook's double-tap skip test, read as off, is answered on, and the seconds it shows stay hidden.
+        probes.put(PatchFamily.DOUBLE_TAP_SKIP, Arrays.asList(
+                () -> DoubleTapSkip.flag(false),
+                () -> {
+                    View label = new View(RuntimeEnvironment.getApplication());
+                    DoubleTapSkip.label(label, View.VISIBLE);
+                    return label.getVisibility() != View.VISIBLE;
+                }));
         // A reel tap gets the controls in place of the pause, they stay up longer, and the unified player hides them.
         probes.put(PatchFamily.TAP_SHOWS_CONTROLS, Arrays.asList(
                 () -> TapShowsControls.showControls(false),

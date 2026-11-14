@@ -165,7 +165,7 @@ public enum PatchFamily {
     ASK_BEFORE_LIKE(FamilyNames.ASK_BEFORE_LIKE, "askBeforeLike", null,
             Settings.ASK_BEFORE_LIKING_POSTS, Settings.ASK_BEFORE_LIKING_REELS, Settings.ASK_BEFORE_LIKING_COMMENTS),
     DOUBLE_TAP_SKIP(FamilyNames.DOUBLE_TAP_SKIP, "doubleTapSkip", null,
-            Settings.DOUBLE_TAP_SKIP),
+            Settings.DOUBLE_TAP_SKIP, Settings.HIDE_SKIP_SECONDS),
     TAP_SHOWS_CONTROLS(FamilyNames.TAP_SHOWS_CONTROLS, "tapShowsControls", null,
             Settings.TAP_SHOWS_CONTROLS),
     REEL_GESTURES(FamilyNames.REEL_GESTURES, "reelGestures", null,

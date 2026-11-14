@@ -871,6 +871,10 @@ Continue	Tiếp tục
 Double tap to skip	Nhấn đúp để tua
 # context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video
 A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. A double tap in the middle works as before.	Nhấn đúp vào cạnh trái hoặc phải của reel hoặc video sẽ tua lùi hoặc tới 10 giây, hoặc 5 giây với video dưới 30 giây. Nhấn đúp ở giữa vẫn hoạt động như trước.
+# context: switch title under Reels and Watch, right under Double tap to skip; on, the "+5s" or "-10s" Facebook shows over the player when a double tap skips stays hidden
+Hide the skip seconds	Ẩn số giây khi tua
+# context: description of that switch; keep +5s and -10s as written, they're what Facebook shows on screen; Facebook can give an account the skip on its own, without the switch above
+A double tap on the edge still skips, but the +5s or -10s over the reel or video stays hidden. It also works when Facebook turned the skip on for you.	Nhấn đúp vào cạnh vẫn tua, nhưng +5s hoặc -10s trên reel hoặc video sẽ được ẩn. Cũng hoạt động khi Facebook tự bật tính năng tua cho bạn.
 # context: switch title under Reels and Watch; on, a tap on a playing reel shows its controls without pausing it
 Tap shows the controls	Nhấn để hiện nút điều khiển
 # context: summary of that switch; the button in the middle is the play and pause button in the reel's controls
