@@ -20,6 +20,7 @@ Changes in each Hushfacebook version, newest first.
 * New `Notification icon` option in Hushfacebook settings. Pick `Hushfacebook` when you patch and Facebook's notifications and status bar icon show the H instead of the "f". Icons that say what a notification is about, like a friend request's, stay. (#467)
 * `Use the Hushfacebook logo` sits under `Home header picture` in Appearance and puts Hushfacebook's logo at the top of Home in place of your words or Facebook's logo. `Remove the header picture` takes it off again. (#467)
 * The Hush settings now come in Thai, translated by MangaThatsFine. (#436)
+* `superpack-unpack.ps1 -Desktop` unpacks Facebook's Android 9+ build on a PC with no phone or emulator attached, so it can run in CI. (#102)
 
 ### Changed
 
