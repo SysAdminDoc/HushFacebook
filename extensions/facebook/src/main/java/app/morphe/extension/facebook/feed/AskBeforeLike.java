@@ -33,12 +33,15 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.BooleanSetting;
 
 /**
- * Asks "Like or unlike this post?" before a tap on Like goes through (#437, #443). The hook sits
- * first in each of Facebook's Like handlers: the feed footer's four, the Reels sidebar's Like and
- * a comment's two (the comment list's and the one drawn inline under a feed post). It hands over the handler's own descriptor and arguments, and while the
- * switch for that kind is on, the handler returns without liking and a question goes up. Continue
- * runs the same handler again with the same arguments, which this time passes, so the like is
- * Facebook's own. Cancel, Back or a tap outside leaves it untouched.
+ * Asks "Like or unlike this post?" before a tap on Like goes through (#437, #443), and "Follow or
+ * unfollow this account?" before a tap on Follow (#477). The hook sits first in each of Facebook's
+ * Like handlers: the feed footer's four, the Reels sidebar's Like and a comment's two (the comment
+ * list's and the one drawn inline under a feed post). It sits first in four Follow handlers too: a
+ * reel's author row, a collaborator reel's author row, the Follow link beside a poster's name and a
+ * post attachment's Follow button. It hands over the handler's own descriptor and arguments, and
+ * while the switch for that kind is on, the handler returns without liking or following and a
+ * question goes up. Continue runs the same handler again with the same arguments, which this time
+ * passes, so the like or follow is Facebook's own. Cancel, Back or a tap outside leaves it untouched.
  *
  * <p>One question is up at a time; a tap that comes while it's showing over the same screen is held
  * without a second one. Off, paused, before the settings are ready, with no screen to ask on, or
@@ -62,11 +65,24 @@ public final class AskBeforeLike {
     public static final int POST_CLICK = 5;
     /** The Like in the comment actions drawn inline under a feed post, a span that hands over the tapped view. */
     public static final int COMMENT_INLINE = 6;
+    /** The Follow on a reel's author row, which takes the tapped view. */
+    public static final int REEL_FOLLOW = 7;
+    /**
+     * The Follow on a collaborator reel's author row, written into its component's event dispatcher,
+     * which takes the event handler and the click event holding the view.
+     */
+    public static final int REEL_COLLAB_FOLLOW = 8;
+    /** The Follow link beside a poster's name, a span that hands over the tapped view. */
+    public static final int POST_FOLLOW = 9;
+    /** The Follow button on a post's attachment, a click listener's onClick. */
+    public static final int POST_ATTACHMENT_FOLLOW = 10;
 
-    private static final String[] KINDS = {"post footer", "post plugin footer", "reel", "comment", "post footer touch", "post footer click",
-            "inline comment"};
+    private static final String[] KINDS = {"post footer like", "post plugin footer like", "reel like", "comment like",
+            "post footer touch like", "post footer click like", "inline comment like", "reel follow", "collaborator reel follow",
+            "post header follow", "post attachment follow"};
     private static final int CONTEXT_DEPTH = 10;
     static final String ASKED = "asked before a like";
+    static final String ASKED_FOLLOW = "asked before a follow";
     static final String HELD = "held a tap while asking";
 
     /** Each handler the hooks name, found once. */
@@ -101,12 +117,12 @@ public final class AskBeforeLike {
             }
             Dialog question = ask(screen, kind, descriptor, call);
             if (question == null) {
-                Logger.printDebug(() -> "Ask before a like: no screen to ask on, the " + KINDS[kind] + " like goes through");
+                Logger.printDebug(() -> "Ask before a like: no screen to ask on, the " + KINDS[kind] + " goes through");
                 return false;
             }
             open = new WeakReference<>(question);
-            HookStatus.counted(FamilyNames.ASK_BEFORE_LIKE, ASKED);
-            Logger.printDebug(() -> "Ask before a like: asked before a " + KINDS[kind] + " like");
+            HookStatus.counted(FamilyNames.ASK_BEFORE_LIKE, follows(kind) ? ASKED_FOLLOW : ASKED);
+            Logger.printDebug(() -> "Ask before a like: asked before a " + KINDS[kind]);
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.ASK_BEFORE_LIKE, "ask before a like", failure);
@@ -127,12 +143,24 @@ public final class AskBeforeLike {
             case COMMENT:
             case COMMENT_INLINE:
                 return Settings.ASK_BEFORE_LIKING_COMMENTS;
+            case REEL_FOLLOW:
+            case REEL_COLLAB_FOLLOW:
+                return Settings.ASK_BEFORE_FOLLOWING_REELS;
+            case POST_FOLLOW:
+            case POST_ATTACHMENT_FOLLOW:
+                return Settings.ASK_BEFORE_FOLLOWING_POSTS;
             default:
                 return null;
         }
     }
 
+    /** Whether [kind] is a Follow handler's. */
+    static boolean follows(int kind) {
+        return kind >= REEL_FOLLOW && kind <= POST_ATTACHMENT_FOLLOW;
+    }
+
     private static String questionOf(Context context, int kind) {
+        if (follows(kind)) return L10n.t(context, "Follow or unfollow this account?");
         if (kind == REEL) return L10n.t(context, "Like or unlike this reel?");
         if (kind == COMMENT || kind == COMMENT_INLINE) return L10n.t(context, "Like or unlike this comment?");
         return L10n.t(context, "Like or unlike this post?");
@@ -141,8 +169,8 @@ public final class AskBeforeLike {
     /**
      * The screen the tap came from: the context of the first view in [call], else its first
      * context, else the first screen one of its values keeps in a field (the plugin footer's sender
-     * takes no view, only a component context holding one, and the click lambda takes a click
-     * event holding the view).
+     * takes no view, only a component context holding one, and the click lambda and the
+     * collaborator reel's dispatcher take a click event holding the view).
      */
     @Nullable
     static Context screenOf(Object[] call) throws IllegalAccessException {
@@ -202,9 +230,9 @@ public final class AskBeforeLike {
         replaying = true;
         try {
             handler(descriptor).invoke(call[0], Arrays.copyOfRange(call, 1, call.length));
-            Logger.printDebug(() -> "Ask before a like: the " + KINDS[kind] + " like went through");
+            Logger.printDebug(() -> "Ask before a like: the " + KINDS[kind] + " went through");
         } catch (Throwable failure) {
-            HookStatus.threw(FamilyNames.ASK_BEFORE_LIKE, "like after asking", failure);
+            HookStatus.threw(FamilyNames.ASK_BEFORE_LIKE, follows(kind) ? "follow after asking" : "like after asking", failure);
         } finally {
             replaying = false;
         }

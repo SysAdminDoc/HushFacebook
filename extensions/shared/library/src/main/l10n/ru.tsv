@@ -887,6 +887,16 @@ Like or unlike this post?	Поставить или снять отметку «
 Like or unlike this reel?	Поставить или снять отметку «Нравится» для этого видео Reels?
 # context: the same question for a comment
 Like or unlike this comment?	Поставить или снять отметку «Нравится» для этого комментария?
+# context: switch title on the News feed page, under Ask before liking a post; on, a tap on Follow in a post asks first
+Ask before following from a post	Спрашивать перед подпиской из публикации
+# context: summary of that switch; Follow is Facebook's own button as Facebook shows it in this language, here the link beside the name of whoever posted and the Follow button on a shared Page or profile; Continue is the question's button
+A tap on Follow in a post, beside the poster's name or on its Follow button, asks first, and only Continue follows or unfollows.	Нажатие на «Подписаться» в публикации, рядом с именем автора или на её кнопке «Подписаться», сначала спрашивает, и только «Продолжить» оформляет или отменяет подписку.
+# context: switch title under Reels and Watch, under Ask before liking a reel; on, a tap on Follow beside a reel's author asks first
+Ask before following from a reel	Спрашивать перед подпиской из Reels
+# context: summary of that switch
+A tap on Follow beside a reel's author asks first, and only Continue follows or unfollows.	Нажатие на «Подписаться» рядом с автором видео Reels сначала спрашивает, и только «Продолжить» оформляет или отменяет подписку.
+# context: the question shown after a tap on Follow in a post or beside a reel; Continue goes ahead with the follow or unfollow, Cancel leaves it
+Follow or unfollow this account?	Подписаться на этот аккаунт или отменить подписку?
 # context: the question's button that goes ahead
 Continue	Продолжить
 # context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it

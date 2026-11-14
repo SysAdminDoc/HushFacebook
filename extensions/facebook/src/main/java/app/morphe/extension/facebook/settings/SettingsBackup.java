@@ -311,6 +311,8 @@ public final class SettingsBackup {
             Settings.ASK_BEFORE_LIKING_POSTS,
             Settings.ASK_BEFORE_LIKING_REELS,
             Settings.ASK_BEFORE_LIKING_COMMENTS,
+            Settings.ASK_BEFORE_FOLLOWING_POSTS,
+            Settings.ASK_BEFORE_FOLLOWING_REELS,
             Settings.DOUBLE_TAP_SKIP,
             Settings.HIDE_SKIP_SECONDS,
             Settings.TAP_SHOWS_CONTROLS,

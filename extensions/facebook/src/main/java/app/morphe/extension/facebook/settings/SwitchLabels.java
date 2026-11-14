@@ -244,6 +244,8 @@ final class SwitchLabels {
         if (setting == Settings.ASK_BEFORE_LIKING_POSTS) return L10n.t("Ask before liking a post");
         if (setting == Settings.ASK_BEFORE_LIKING_REELS) return L10n.t("Ask before liking a reel");
         if (setting == Settings.ASK_BEFORE_LIKING_COMMENTS) return L10n.t("Ask before liking a comment");
+        if (setting == Settings.ASK_BEFORE_FOLLOWING_POSTS) return L10n.t("Ask before following from a post");
+        if (setting == Settings.ASK_BEFORE_FOLLOWING_REELS) return L10n.t("Ask before following from a reel");
         if (setting == Settings.DOUBLE_TAP_SKIP) return L10n.t("Double tap to skip");
         if (setting == Settings.HIDE_SKIP_SECONDS) return L10n.t("Hide the skip seconds");
         if (setting == Settings.TAP_SHOWS_CONTROLS) return L10n.t("Tap shows the controls");

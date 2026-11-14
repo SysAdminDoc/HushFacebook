@@ -25,6 +25,7 @@ Changes in each Hushfacebook version, newest first.
 * New `Hide the comment box` under Comments and writing. The Write a comment box at the bottom of a post's comments goes away, so you can read them without it. Off by default. (#479)
 * New `Hide the skip seconds` switch under Reels and Watch, right below `Double tap to skip`. A double tap on the edge of a reel or video still skips, but the +5s or -10s Facebook flashes over it doesn't show. It works on accounts where Facebook turned the skip on by itself too. It starts off. (#476)
 * `Hide the full-screen and PiP buttons` under Reels and Watch takes the full-screen arrows and the picture-in-picture button off videos that play in the feed and in search results, like a Live that's already ended. (#478)
+* `Ask before following from a post` under News feed and `Ask before following from a reel` under Reels and Watch make a tap on Follow ask first, so a stray tap doesn't follow someone. In a post that's the Follow link next to the poster's name and the Follow button on a shared Page or profile, and on a reel it's the Follow next to the author or a collaborator. Only Continue follows. Unfollow asks too. Both start off. (#477)
 * **Tooling:** `superpack-unpack.ps1 -Desktop` unpacks Facebook's Android 9+ build on a PC with no phone or emulator attached. (#102)
 
 ### Changed

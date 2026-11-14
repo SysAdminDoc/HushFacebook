@@ -55,6 +55,8 @@ public class AskBeforeLikeTest {
     private static final String TOUCH = OWN + "->touch(Ljava/lang/Object;" + KEPT + ")V";
     private static final String CLICK = OWN + "->click(Ljava/lang/Object;)Ljava/lang/Object;";
     private static final String INLINE = OWN + "->inline(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
+    private static final String HEADER_FOLLOW = OWN + "->onClick(Landroid/view/View;)V";
+    private static final String COLLAB_FOLLOW = OWN + "->dispatch(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
 
     /** A stand-in for the component context the plugin footer's sender takes: it keeps a context, it isn't one. */
     static final class Kept {
@@ -119,6 +121,21 @@ public class AskBeforeLikeTest {
             likes++;
             return "liked";
         }
+
+        int follows;
+
+        /** The post header's Follow link: an onClick on the tapped view. */
+        public void onClick(View view) {
+            if (AskBeforeLike.hold(AskBeforeLike.POST_FOLLOW, HEADER_FOLLOW, new Object[] {this, view})) return;
+            follows++;
+        }
+
+        /** The collaborator reel's event dispatcher: its click case follows and returns null, as the hook's exit does. */
+        Object dispatch(Object handler, Object event) {
+            if (AskBeforeLike.hold(AskBeforeLike.REEL_COLLAB_FOLLOW, COLLAB_FOLLOW, new Object[] {this, handler, event})) return null;
+            follows++;
+            return "followed";
+        }
     }
 
     private Activity screen;
@@ -142,6 +159,8 @@ public class AskBeforeLikeTest {
         Settings.ASK_BEFORE_LIKING_POSTS.resetToDefault();
         Settings.ASK_BEFORE_LIKING_REELS.resetToDefault();
         Settings.ASK_BEFORE_LIKING_COMMENTS.resetToDefault();
+        Settings.ASK_BEFORE_FOLLOWING_POSTS.resetToDefault();
+        Settings.ASK_BEFORE_FOLLOWING_REELS.resetToDefault();
         HookStatus.clear();
     }
 
@@ -172,6 +191,8 @@ public class AskBeforeLikeTest {
         assertFalse(Settings.ASK_BEFORE_LIKING_POSTS.defaultValue);
         assertFalse(Settings.ASK_BEFORE_LIKING_REELS.defaultValue);
         assertFalse(Settings.ASK_BEFORE_LIKING_COMMENTS.defaultValue);
+        assertFalse(Settings.ASK_BEFORE_FOLLOWING_POSTS.defaultValue);
+        assertFalse(Settings.ASK_BEFORE_FOLLOWING_REELS.defaultValue);
         footer.like(button, "post", true);
         Footer.reel(button, footer, false);
         assertEquals("liked", footer.comment(button, "post"));
@@ -328,6 +349,43 @@ public class AskBeforeLikeTest {
         press(showing(), AlertDialog.BUTTON_POSITIVE);
         assertEquals("Continue didn't like it once", 2, footer.likes);
         assertNull(showing());
+    }
+
+    @Test
+    public void aFollowTapAsksWithItsOwnSwitchAndOnlyContinueFollows() {
+        Settings.ASK_BEFORE_LIKING_POSTS.save(true);
+        Settings.ASK_BEFORE_LIKING_REELS.save(true);
+        footer.onClick(button);
+        assertEquals("a like switch held a follow", "followed", footer.dispatch("handler", new Event(button)));
+        assertEquals(2, footer.follows);
+        assertNull(showing());
+
+        Settings.ASK_BEFORE_FOLLOWING_POSTS.save(true);
+        footer.onClick(button);
+        assertEquals("the tap followed before the answer", 2, footer.follows);
+        AlertDialog question = showing();
+        assertTrue("no question went up over the screen the tapped view is on", question != null);
+        assertEquals("Follow or unfollow this account?", shadowOf(question).getMessage().toString());
+        press(question, AlertDialog.BUTTON_NEGATIVE);
+        assertEquals("Cancel followed", 2, footer.follows);
+        footer.onClick(button);
+        press(showing(), AlertDialog.BUTTON_POSITIVE);
+        assertEquals("Continue didn't follow once", 3, footer.follows);
+        assertNull(showing());
+
+        assertEquals("the posts switch held a reel follow", "followed", footer.dispatch("handler", new Event(button)));
+        Settings.ASK_BEFORE_FOLLOWING_REELS.save(true);
+        assertNull("a held dispatch didn't return null at once", footer.dispatch("handler", new Event(button)));
+        assertEquals(4, footer.follows);
+        AlertDialog reel = showing();
+        assertTrue("no question went up over the screen the click event's view is on", reel != null);
+        assertEquals("Follow or unfollow this account?", shadowOf(reel).getMessage().toString());
+        press(reel, AlertDialog.BUTTON_POSITIVE);
+        assertEquals("Continue didn't run the dispatcher", 5, footer.follows);
+        assertNull(showing());
+        assertEquals(0, footer.likes);
+        assertTrue(statusLine(), statusLine().contains(AskBeforeLike.ASKED_FOLLOW + " 3"));
+        assertFalse("a follow counted as a like", statusLine().contains(AskBeforeLike.ASKED + " "));
     }
 
     @Test

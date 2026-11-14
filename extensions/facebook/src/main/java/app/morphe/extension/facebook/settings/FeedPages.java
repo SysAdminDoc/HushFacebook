@@ -340,6 +340,9 @@ final class FeedPages {
                 // Read on each tap, so a change shows on the next one.
                 feed.addPreference(toggle(context, Settings.ASK_BEFORE_LIKING_POSTS,
                         L10n.t("A tap on Like under a post asks first, and only Continue likes or unlikes it.")));
+                feed.addPreference(toggle(context, Settings.ASK_BEFORE_FOLLOWING_POSTS,
+                        L10n.t("A tap on Follow in a post, beside the poster's name or on its Follow button, asks first, "
+                                + "and only Continue follows or unfollows.")));
             }
             if (build.contains(PatchFamily.POST_DATES)) {
                 feed.addPreference(toggle(context, Settings.KEEP_POST_DATES,

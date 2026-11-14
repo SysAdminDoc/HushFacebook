@@ -1242,6 +1242,21 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_ask_before_liking_comments", FALSE);
 
     /**
+     * A tap on Follow in a post on Home, the link beside the poster's name or the attachment's
+     * Follow button, asks "Follow or unfollow this account?" first, and only Continue goes ahead
+     * ({@link app.morphe.extension.facebook.feed.AskBeforeLike}, #477). Starts off. Read on each tap.
+     */
+    public static final BooleanSetting ASK_BEFORE_FOLLOWING_POSTS =
+            new BooleanSetting("hushfacebook_ask_before_following_posts", FALSE);
+
+    /**
+     * The same question before the Follow on a reel's author row, collaborator reels included
+     * ({@link app.morphe.extension.facebook.feed.AskBeforeLike}, #477). Starts off. Read on each tap.
+     */
+    public static final BooleanSetting ASK_BEFORE_FOLLOWING_REELS =
+            new BooleanSetting("hushfacebook_ask_before_following_reels", FALSE);
+
+    /**
      * Facebook's own double-tap skip on reels and videos, which a server test keeps off for most
      * accounts: a double tap on the left or right edge skips back or forward 10 seconds, or 5 on a
      * video under 30 seconds ({@link app.morphe.extension.facebook.reels.DoubleTapSkip}, #225).

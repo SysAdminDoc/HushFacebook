@@ -325,6 +325,8 @@ final class VideoPages {
             // Read on each tap, so a change shows on the next one.
             reels.addPreference(toggle(context, Settings.ASK_BEFORE_LIKING_REELS,
                     L10n.t("A tap on Like beside a reel asks first, and only Continue likes or unlikes it.")));
+            reels.addPreference(toggle(context, Settings.ASK_BEFORE_FOLLOWING_REELS,
+                    L10n.t("A tap on Follow beside a reel's author asks first, and only Continue follows or unfollows.")));
         }
         if (build.contains(PatchFamily.DOUBLE_TAP_SKIP)) {
             // Read as each player is set up, so a change shows on the next reel or video.

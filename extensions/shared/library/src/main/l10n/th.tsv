@@ -865,6 +865,16 @@ Like or unlike this post?	ยืนยันการถูกใจหรือ
 Like or unlike this reel?	ยืนยันการถูกใจหรือเลิกถูกใจ Reel นี้
 # context: the same question for a comment
 Like or unlike this comment?	ยืนยันการถูกใจหรือเลิกถูกใจความคิดเห็นนี้
+# context: switch title on the News feed page, under Ask before liking a post; on, a tap on Follow in a post asks first
+Ask before following from a post	ถามก่อนติดตามจากโพสต์
+# context: summary of that switch; Follow is Facebook's own button as Facebook shows it in this language, here the link beside the name of whoever posted and the Follow button on a shared Page or profile; Continue is the question's button
+A tap on Follow in a post, beside the poster's name or on its Follow button, asks first, and only Continue follows or unfollows.	การแตะ "ติดตาม" ในโพสต์ ข้างชื่อผู้โพสต์หรือที่ปุ่มติดตามของโพสต์ จะถามก่อน และจะติดตามหรือเลิกติดตามก็ต่อเมื่อคุณแตะ "ดำเนินการต่อ" เท่านั้น
+# context: switch title under Reels and Watch, under Ask before liking a reel; on, a tap on Follow beside a reel's author asks first
+Ask before following from a reel	ถามก่อนติดตามจาก Reel
+# context: summary of that switch
+A tap on Follow beside a reel's author asks first, and only Continue follows or unfollows.	การแตะ "ติดตาม" ข้างผู้โพสต์ Reel จะถามก่อน และจะติดตามหรือเลิกติดตามก็ต่อเมื่อคุณแตะ "ดำเนินการต่อ" เท่านั้น
+# context: the question shown after a tap on Follow in a post or beside a reel; Continue goes ahead with the follow or unfollow, Cancel leaves it
+Follow or unfollow this account?	ยืนยันการติดตามหรือเลิกติดตามบัญชีนี้
 # context: the question's button that goes ahead
 Continue	ดำเนินการต่อ
 # context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it

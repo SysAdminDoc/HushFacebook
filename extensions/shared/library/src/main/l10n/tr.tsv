@@ -865,6 +865,16 @@ Like or unlike this post?	Bu gönderi beğenilsin mi, beğeni kaldırılsın mı
 Like or unlike this reel?	Bu reel beğenilsin mi, beğeni kaldırılsın mı?
 # context: the same question for a comment
 Like or unlike this comment?	Bu yorum beğenilsin mi, beğeni kaldırılsın mı?
+# context: switch title on the News feed page, under Ask before liking a post; on, a tap on Follow in a post asks first
+Ask before following from a post	Gönderiden takip etmeden önce sor
+# context: summary of that switch; Follow is Facebook's own button as Facebook shows it in this language, here the link beside the name of whoever posted and the Follow button on a shared Page or profile; Continue is the question's button
+A tap on Follow in a post, beside the poster's name or on its Follow button, asks first, and only Continue follows or unfollows.	Bir gönderide, paylaşanın adının yanındaki ya da gönderinin Takip Et düğmesindeki Takip Et'e dokunmak önce sorar, takibi yalnızca Devam başlatır ya da bırakır.
+# context: switch title under Reels and Watch, under Ask before liking a reel; on, a tap on Follow beside a reel's author asks first
+Ask before following from a reel	Reel'den takip etmeden önce sor
+# context: summary of that switch
+A tap on Follow beside a reel's author asks first, and only Continue follows or unfollows.	Bir reel'in sahibinin yanındaki Takip Et'e dokunmak önce sorar, takibi yalnızca Devam başlatır ya da bırakır.
+# context: the question shown after a tap on Follow in a post or beside a reel; Continue goes ahead with the follow or unfollow, Cancel leaves it
+Follow or unfollow this account?	Bu hesap takip edilsin mi, takipten çıkılsın mı?
 # context: the question's button that goes ahead
 Continue	Devam
 # context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it
