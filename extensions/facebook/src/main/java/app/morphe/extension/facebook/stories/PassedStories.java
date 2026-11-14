@@ -6,11 +6,15 @@ package app.morphe.extension.facebook.stories;
 
 import android.app.Activity;
 import android.content.Context;
+import android.util.Base64;
 
 import androidx.annotation.Nullable;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -32,7 +36,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * back. What's kept lives in a preferences file of its own, never in the settings export or the
  * diagnostic report, at most {@link SeenBuckets#MAX_BUCKETS} buckets for {@link SeenBuckets#KEEP_MS}.
  * A topic tile (a trend gathering public stories) gets a new id and expiration_time each time the
- * tray loads, so it's kept by its label, with its list of stories standing in for the time.
+ * tray loads, so each of its stories is kept instead, and the topic leaves once all of them came
+ * into view. A story that joins it brings it back.
  *
  * <p>A bucket leaves only once you've left Facebook and come back since its tile came into view, so
  * a tray you're scrolling never loses a tile under your finger, a refresh in the same visit included.
@@ -53,8 +58,14 @@ final class PassedStories {
     /** How many buckets the trays listed are remembered by id, for the tiles that come into view. */
     static final int TRAY_BUCKETS = 512;
 
-    /** How a topic tile's bucket id starts, and what one is kept under, ahead of its label. */
+    /** How a topic tile's bucket id starts. */
     static final String TOPIC = "vs_bucket:";
+
+    /** What each story of a topic that came into view is kept under, ahead of the story's id. */
+    static final String TOPIC_STORY = "vs_story:";
+
+    /** What's kept for each of those stories. */
+    private static final String TOPIC_STORY_SEEN = "in view";
 
     /** The trays' buckets' expiration_time by id, the one a tray listed last at the end. */
     private static final LinkedHashMap<String, Long> expiresById = new LinkedHashMap<>();
@@ -85,25 +96,29 @@ final class PassedStories {
     /**
      * Notes a tray's bucket [bucketId] and the expiration_time it came with, for a tile that comes
      * into view later, and answers whether it leaves the tray: it came into view on an earlier visit
-     * with the same expiration_time. Only asked with the switch on. Never throws.
+     * with the same expiration_time, or for a topic, every one of its stories did. Only asked with
+     * the switch on. Never throws.
      */
     static boolean listed(String bucketId, long expiresSeconds) {
         try {
             if (expiresSeconds <= 0) return false;
-            String[] topic = topic(bucketId);
-            String key = topic == null ? bucketId : TOPIC + topic[0];
-            long time = topic == null ? expiresSeconds : storiesTime(topic[1]);
+            List<String> stories = topicStories(bucketId);
             synchronized (PassedStories.class) {
-                expiresById.remove(key);
-                expiresById.put(key, time);
+                expiresById.remove(bucketId);
+                expiresById.put(bucketId, expiresSeconds);
                 while (expiresById.size() > TRAY_BUCKETS) {
                     expiresById.remove(expiresById.keySet().iterator().next());
                 }
-                if (thisVisit.contains(key)) return false;
+                if (stories == null ? thisVisit.contains(bucketId) : anyThisVisit(stories)) return false;
             }
             SeenBuckets kept = store();
-            return kept != null
-                    && String.valueOf(time).equals(kept.newestWatched(key, System.currentTimeMillis()));
+            if (kept == null) return false;
+            long now = System.currentTimeMillis();
+            if (stories == null) return String.valueOf(expiresSeconds).equals(kept.newestWatched(bucketId, now));
+            for (String story : stories) {
+                if (kept.newestWatched(TOPIC_STORY + story, now) == null) return false;
+            }
+            return true;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "scrolled past story", failure);
             return false;
@@ -112,26 +127,41 @@ final class PassedStories {
 
     /**
      * From {@link StoriesTrayPaging#tileShown}: the tile of the bucket [bucketId] came into view. It's
-     * kept with the expiration_time its tray listed, once for each, with the switch on. A bucket no
-     * tray listed, the gray placeholders among them, isn't kept. Never throws.
+     * kept with the expiration_time its tray listed, once for each, or for a topic, each of its
+     * stories is, with the switch on. A bucket no tray listed, the gray placeholders among them,
+     * isn't kept. Never throws.
      */
     static void shown(@Nullable String bucketId) {
         try {
             if (bucketId == null || !on()) return;
-            String[] topic = topic(bucketId);
-            String key = topic == null ? bucketId : TOPIC + topic[0];
+            List<String> stories = topicStories(bucketId);
             Long expires;
             synchronized (PassedStories.class) {
-                expires = expiresById.get(key);
+                expires = expiresById.get(bucketId);
                 if (expires == null) return;
-                thisVisit.add(key);
+                if (stories == null) {
+                    thisVisit.add(bucketId);
+                } else {
+                    for (String story : stories) thisVisit.add(TOPIC_STORY + story);
+                }
             }
             SeenBuckets kept = store();
             if (kept == null) return;
             long now = System.currentTimeMillis();
-            String time = String.valueOf(expires);
-            if (time.equals(kept.newestWatched(key, now))) return;
-            kept.watched(key, time, now);
+            if (stories == null) {
+                String time = String.valueOf(expires);
+                if (time.equals(kept.newestWatched(bucketId, now))) return;
+                kept.watched(bucketId, time, now);
+            } else {
+                boolean added = false;
+                for (String story : stories) {
+                    String key = TOPIC_STORY + story;
+                    if (kept.newestWatched(key, now) != null) continue;
+                    kept.watched(key, TOPIC_STORY_SEEN, now);
+                    added = true;
+                }
+                if (!added) return;
+            }
             HookStatus.bound(FamilyNames.SUGGESTED_STORIES, "tray tile in view");
             HookStatus.counted(FamilyNames.SUGGESTED_STORIES, KEPT);
             Logger.printDebug(() -> "Stories tray: a story came into view, it leaves the tray from the next visit");
@@ -141,31 +171,40 @@ final class PassedStories {
     }
 
     /**
-     * A topic tile's label and list of story ids from its bucket id, or null for any other bucket.
-     * Facebook builds the id from the fetch the tray came in, the tile's place in the row, then the
-     * stories' ids and the label, so only those last two hold from one load of the tray to the next.
+     * A topic tile's story ids from its bucket id, or null for any other bucket and an id it can't
+     * read. Facebook builds the id from the load the tray came in, the tile's place in the row, then
+     * a base64 list of the stories' ids and the label. The first two change every time the tray
+     * loads and the label's wording can change too, so only the stories name a topic from one visit
+     * to the next.
      */
     @Nullable
-    static String[] topic(String bucketId) {
+    static List<String> topicStories(String bucketId) {
         if (!bucketId.startsWith(TOPIC)) return null;
-        int label = bucketId.lastIndexOf(':');
-        int stories = bucketId.lastIndexOf(':', label - 1);
-        if (stories <= TOPIC.length() || label - stories < 2 || label == bucketId.length() - 1) return null;
-        return new String[] {bucketId.substring(label + 1), bucketId.substring(stories + 1, label)};
+        String[] parts = bucketId.split(":", -1);
+        if (parts.length < 6) return null;
+        String list;
+        try {
+            list = new String(Base64.decode(parts[parts.length - 2], Base64.DEFAULT), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException notBase64) {
+            return null;
+        }
+        List<String> stories = new ArrayList<>();
+        for (String story : list.split(",")) {
+            if (story.isEmpty()) continue;
+            for (int i = 0; i < story.length(); i++) {
+                if (!Character.isDigit(story.charAt(i))) return null;
+            }
+            stories.add(story);
+        }
+        return stories.isEmpty() ? null : stories;
     }
 
-    /**
-     * What stands in for a topic's expiration_time, which moves with every load of the tray: a number
-     * from its list of story ids, so the topic comes back once a story joins it. Always above zero.
-     */
-    static long storiesTime(String stories) {
-        long hash = 0xcbf29ce484222325L;
-        for (int i = 0; i < stories.length(); i++) {
-            hash ^= stories.charAt(i);
-            hash *= 0x100000001b3L;
+    /** Whether one of a topic's stories came into view this visit. Holds the class lock. */
+    private static boolean anyThisVisit(List<String> stories) {
+        for (String story : stories) {
+            if (thisVisit.contains(TOPIC_STORY + story)) return true;
         }
-        hash &= Long.MAX_VALUE;
-        return hash == 0 ? 1 : hash;
+        return false;
     }
 
     /** From the activity callbacks: one of Facebook's screens started. Never throws. */

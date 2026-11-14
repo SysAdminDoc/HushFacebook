@@ -207,28 +207,34 @@ public class PassedStoriesTest {
     }
 
     /**
-     * A topic tile comes with a new id and expiration_time on every load of the tray, and another
-     * topic can take its place in the row. Scrolled past, it still leaves from the next visit, the
-     * topic now at its place stays, and a story joining it brings it back.
+     * A topic tile comes with a new id and expiration_time on every load of the tray, another topic
+     * can take its place in the row, and its label's wording can change. Scrolled past, it stays
+     * through the visit, leaves from the next one while all its stories are ones that were in view,
+     * the topic now at its place stays, and a story joining it brings it back.
      */
     @Test
     public void aTopicScrolledPastLeavesUntilAStoryJoinsIt() {
-        Tree show = topic(1, 0, "The Rings of Power Season 3", "1949462266031627,1487681476558120");
+        Tree show = topic(1, 0, "The Rings of Power Season 3", "1949462266031627,1487681476558120,1481741313916431");
         Tree game = topic(1, 1, "Pete Crow-Armstrong wins MVP", "1113312008357836,1149072544263553");
         kept(Arrays.asList(show, game));
         scrollPast((String) show.id, 0);
+        Tree showFewer = topic(2, 0, "The Rings of Power season 3", "1949462266031627,1487681476558120");
+        List<Tree> refreshed = Arrays.asList(showFewer, game);
+        assertSame("it left on a refresh in the same visit", refreshed, kept(refreshed));
         nextVisit();
 
-        Tree race = topic(2, 0, "SCORE Baja 1000 race", "1671607497691223");
-        Tree showAgain = topic(2, 1, "The Rings of Power Season 3", "1949462266031627,1487681476558120");
-        Tree gameAgain = topic(2, 2, "Pete Crow-Armstrong wins MVP", "1113312008357836,1149072544263553");
+        Tree race = topic(3, 0, "SCORE Baja 1000 race", "1671607497691223");
+        Tree showAgain = topic(3, 1, "The Rings of Power season 3", "1949462266031627,1487681476558120");
+        Tree gameAgain = topic(3, 2, "Pete Crow-Armstrong wins MVP", "1113312008357836,1149072544263553");
         assertNotEquals(show.id, showAgain.id);
         assertNotEquals(show.expires, showAgain.expires);
         assertEquals(Arrays.asList(race, gameAgain), kept(Arrays.asList(race, showAgain, gameAgain)));
 
-        Tree showGrew = topic(3, 0, "The Rings of Power Season 3", "1949462266031627,1487681476558120,1157223300604085");
+        Tree showGrew = topic(4, 0, "The Rings of Power season 3", "1949462266031627,1487681476558120,1157223300604085");
         List<Tree> later = Arrays.asList(showGrew, gameAgain);
         assertSame("a story joined it, so it's back", later, kept(later));
+        String status = line(FamilyNames.SUGGESTED_STORIES, HookStatus.report());
+        assertTrue(status, status.contains(PassedStories.KEPT + " 1"));
     }
 
     @Test
