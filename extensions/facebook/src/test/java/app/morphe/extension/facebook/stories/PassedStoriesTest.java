@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.stories;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -25,8 +26,10 @@ import org.robolectric.annotation.Config;
 
 import com.facebook.stories.viewer.activity.StoryViewerActivity;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 
@@ -126,6 +129,21 @@ public class PassedStoriesTest {
         return new Tree(id, (posted + StorySeen.STORY_LIFE_MS) / 1000, Type.STORY);
     }
 
+    /**
+     * A topic tile as load [load] of the tray sends it at [place] in the row: the id carries that
+     * load's snapshot and the place, and it expires a day after the load, as Facebook 587 sends them.
+     */
+    private static Tree topic(int load, int place, String label, String stories) {
+        Base64.Encoder base64 = Base64.getEncoder().withoutPadding();
+        long loaded = System.currentTimeMillis() / 1000 - 3600 + load * 60L;
+        String snapshot = "{\"shardManagerScope\":\"vcn\",\"snapshotId\":" + (5518075157327447599L - load * 7919L)
+                + ",\"versionId\":1,\"creationTime\":" + loaded + "}";
+        String id = PassedStories.TOPIC + base64.encodeToString(snapshot.getBytes(StandardCharsets.UTF_8)) + ":1:"
+                + (2255050798638548L + place) + ":" + base64.encodeToString(stories.getBytes(StandardCharsets.UTF_8))
+                + ":" + base64.encodeToString(label.getBytes(StandardCharsets.UTF_8));
+        return new Tree(id, loaded + 24 * 60 * 60, Type.AGGREGATED_STORY);
+    }
+
     private static Object kept(List<Tree> tray) {
         return SuggestedStories.keptBuckets(tray, TREES);
     }
@@ -186,6 +204,31 @@ public class PassedStoriesTest {
         assertSame(newStory, kept(newStory));
         nextVisit();
         assertEquals("scrolled past again, it goes again", Collections.emptyList(), kept(newStory));
+    }
+
+    /**
+     * A topic tile comes with a new id and expiration_time on every load of the tray, and another
+     * topic can take its place in the row. Scrolled past, it still leaves from the next visit, the
+     * topic now at its place stays, and a story joining it brings it back.
+     */
+    @Test
+    public void aTopicScrolledPastLeavesUntilAStoryJoinsIt() {
+        Tree show = topic(1, 0, "The Rings of Power Season 3", "1949462266031627,1487681476558120");
+        Tree game = topic(1, 1, "Pete Crow-Armstrong wins MVP", "1113312008357836,1149072544263553");
+        kept(Arrays.asList(show, game));
+        scrollPast((String) show.id, 0);
+        nextVisit();
+
+        Tree race = topic(2, 0, "SCORE Baja 1000 race", "1671607497691223");
+        Tree showAgain = topic(2, 1, "The Rings of Power Season 3", "1949462266031627,1487681476558120");
+        Tree gameAgain = topic(2, 2, "Pete Crow-Armstrong wins MVP", "1113312008357836,1149072544263553");
+        assertNotEquals(show.id, showAgain.id);
+        assertNotEquals(show.expires, showAgain.expires);
+        assertEquals(Arrays.asList(race, gameAgain), kept(Arrays.asList(race, showAgain, gameAgain)));
+
+        Tree showGrew = topic(3, 0, "The Rings of Power Season 3", "1949462266031627,1487681476558120,1157223300604085");
+        List<Tree> later = Arrays.asList(showGrew, gameAgain);
+        assertSame("a story joined it, so it's back", later, kept(later));
     }
 
     @Test
