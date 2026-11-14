@@ -52,7 +52,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>The same move lifts the bar when its line would sit behind the tab bar (#282). One reporter's
  * Reels tab runs the whole reel about 60 px lower than ours, so Facebook's own line and the kept
  * bar's thumb both went under the tabs. On the S22 and the emulator the line clears the tab bar by
- * 8 dp or more, so nothing moves there. See-through bars and Rounded tab bar stretch the reel under
+ * 8 dp or more, so nothing moves there. Nor under a viewer drawn over the tab bar, as the reels
+ * opened from a feed video play in, where the tabs are hidden and the lift put the line on the
+ * caption (#469). See-through bars and Rounded tab bar stretch the reel under
  * the tabs, which takes Facebook's own scrubber, shown while a reel is paused, behind them too, so
  * with either one on the lift runs with Keep the progress bar off as well (#412), without the follow.
  */
@@ -182,6 +184,60 @@ final class ReelBarFollow {
         return null;
     }
 
+    /** Whether [view] and every level above it draw at all, so a tab bar faded right out hides nothing. */
+    private static boolean opaque(View view) {
+        float alpha = 1f;
+        for (View up = view; up != null; up = parentOf(up)) {
+            alpha *= up.getAlpha();
+            if (alpha < 0.01f) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Whether the reels [pager] belongs to draw on top of [tabBar] and reach down over its top. A
+     * reel opened from a feed video plays in a viewer laid over the whole window, the tab bar
+     * included, which stays shown underneath it, so the line rose by the tab bar's height onto the
+     * caption (#469). In the Reels tab the tab bar draws after the reels, so its lift stays. Compares
+     * the two branches where they meet: elevation first, then the order they're drawn in.
+     */
+    private static boolean underReels(View tabBar, View pager, int tabTop, int[] at) {
+        View tabSide = tabBar;
+        View reelSide = pager;
+        int tabDepth = depth(tabSide);
+        int reelDepth = depth(reelSide);
+        for (; tabDepth > reelDepth; tabDepth--) tabSide = parentOf(tabSide);
+        for (; reelDepth > tabDepth; reelDepth--) reelSide = parentOf(reelSide);
+        if (tabSide == null || reelSide == null || tabSide == reelSide) return false;
+        while (true) {
+            View tabUp = parentOf(tabSide);
+            View reelUp = parentOf(reelSide);
+            if (tabUp == null || reelUp == null) return false;
+            if (tabUp == reelUp) break;
+            tabSide = tabUp;
+            reelSide = reelUp;
+        }
+        ViewGroup both = (ViewGroup) tabSide.getParent();
+        boolean reelsLater = reelSide.getZ() > tabSide.getZ()
+                || (reelSide.getZ() == tabSide.getZ() && both.indexOfChild(reelSide) > both.indexOfChild(tabSide));
+        if (!reelsLater || !reelSide.isShown()) return false;
+        reelSide.getLocationInWindow(at);
+        return at[1] + reelSide.getHeight() > tabTop;
+    }
+
+    private static int depth(View view) {
+        int levels = 0;
+        for (View up = parentOf(view); up != null; up = parentOf(up)) levels++;
+        return levels;
+    }
+
+    @Nullable
+    private static View parentOf(@Nullable View view) {
+        if (view == null) return null;
+        ViewParent above = view.getParent();
+        return above instanceof View ? (View) above : null;
+    }
+
     /** Whether [mover] is still [label] or one of the levels above it that {@link #start} walks. */
     private static boolean holds(View mover, View label) {
         View up = label;
@@ -282,13 +338,15 @@ final class ReelBarFollow {
                 tabBar = tabBarIn(label.getRootView(), TAB_BAR_LEVELS);
                 heldTabBar = tabBar == null ? null : new WeakReference<>(tabBar);
             }
-            if (tabBar == null || !tabBar.isShown()) return 0;
+            if (tabBar == null || !tabBar.isShown() || !opaque(tabBar)) return 0;
             View bar = barBeside(label);
             if (bar == null) return 0;
             int[] at = new int[2];
             tabBar.getLocationInWindow(at);
             int tabTop = at[1];
             if (tabTop < tabBar.getRootView().getHeight() / 2) return 0;
+            ViewGroup pager = heldPager.get();
+            if (pager != null && underReels(tabBar, pager, tabTop, at)) return 0;
             bar.getLocationInWindow(at);
             int line = at[1] + bar.getHeight() / 2 - applied;
             int clearance = Math.round(LINE_CLEARANCE_DP * bar.getResources().getDisplayMetrics().density);

@@ -27,6 +27,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* With `Keep the progress bar` on, reels you swipe to from a feed video's full-screen player keep the bar at the bottom again. It used to sit on top of the caption there, raised for a tab bar that the player covers. (#469)
 * `Hide song and effect credits` takes the song pill with its "Try it" button off the story itself now, under the poster's name. Before, it only emptied the list that opens when you tap that pill, so the pill stayed. Effect credits on that row go too. (#380)
 * With `Open feed videos on their own` on, a feed video you open plays by itself again. Every so often one more video slipped in after it, because the first batch Facebook loaded for the viewer came in with the next video already in it. That batch keeps only the video you tapped now. (#457)
 * A reel opened from a chat inside Facebook stays on its own with `Open feed videos on their own` on. One more reel used to play after it before the viewer stopped. (#421)

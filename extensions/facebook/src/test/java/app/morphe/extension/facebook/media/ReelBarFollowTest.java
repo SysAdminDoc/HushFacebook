@@ -337,6 +337,52 @@ public class ReelBarFollowTest {
     }
 
     @Test
+    public void aViewerDrawnOverTheTabBarKeepsTheLineWhereFacebookPutsIt() {
+        // A reel opened from a feed video: the viewer covers the whole window and the tab bar,
+        // still shown, sits under it, so lifting the line put it on the caption (#469).
+        addTabBar(1980);
+        viewer.bringToFront();
+        layOut();
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        assertEquals(0f, host.getTranslationY(), 0f);
+        assertFalse(HookStatus.report().toString().contains(ReelBarFollow.LIFTED));
+
+        drag(-400);
+        assertEquals("the bar still rides on its reel", -400f, host.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void aTabBarDrawnOverTheReelsStillLiftsTheLineWhenRaisedAboveThem() {
+        addTabBar(1980);
+        viewer.bringToFront();
+        tabBar.setZ(4f);
+        layOut();
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        float lift = 2018 + 6 * activity.getResources().getDisplayMetrics().density - 1980;
+        assertEquals(-lift, host.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void aTabBarFadedRightOutLeavesTheLineAlone() {
+        addTabBar(1980);
+        tabBar.setAlpha(0f);
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        assertEquals(0f, host.getTranslationY(), 0f);
+        tabBar.setAlpha(1f);
+        frame();
+        assertTrue("it rises once the tabs show", host.getTranslationY() < 0f);
+    }
+
+    @Test
     public void aTabBarAtTheTopLeavesTheLineAlone() {
         addTabBar(0);
 
