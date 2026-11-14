@@ -22,6 +22,7 @@ import android.graphics.RenderNode;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.view.Gravity;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -511,8 +512,10 @@ public class TranslucentBarsTest {
     /**
      * #471: where the tab bar stays put, Facebook pads the tabs' pager up to the bar instead of a
      * holder, so every tab's page stopped there and the window's light grey showed around the pill.
-     * Every page runs under the pill, the Reels page found after Home's still gets black under its
-     * reel, and the pager gets its padding back once the pill goes.
+     * It pads the pager before the gesture bar's space goes under the tabs, so the bar grows after
+     * the stretch, and the Reels viewer sizes its reels to stop at the grown bar. Every page runs
+     * under the pill, the Reels page found after Home's gets black from the bar's top down, not the
+     * next reel, and the pager gets its padding back once the pill goes.
      */
     @Test
     @Config(qualifiers = "w720dp-h1800dp")
@@ -520,8 +523,9 @@ public class TranslucentBarsTest {
         Settings.TRANSLUCENT_BARS.save(false);
         Settings.ROUNDED_TAB_BAR.save(true);
         TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        barTall(screen, 120);
         ViewPager pager = new ViewPager(screen.activity);
-        pager.setPadding(0, 0, 0, 160);
+        pager.setPadding(0, 0, 0, 120);
         View home = new View(screen.activity);
         pager.addView(home);
         FrameLayout reelsPage = new FrameLayout(screen.activity);
@@ -530,8 +534,8 @@ public class TranslucentBarsTest {
         pager.addView(reelsPage);
         screen.page.addView(pager, new FrameLayout.LayoutParams(720, 1600));
         screen.layOut();
-        assertEquals("both pages stop at the bar", 1440, home.getBottom());
-        assertEquals(1440, reelsPage.getBottom());
+        assertEquals("both pages stop at the bar", 1480, home.getBottom());
+        assertEquals(1480, reelsPage.getBottom());
 
         screen.bars.update();
         screen.layOut();
@@ -540,19 +544,28 @@ public class TranslucentBarsTest {
         assertEquals("and Reels beside it", 1600, reels.getBottom());
         assertTrue(statusLine(), statusLine().contains(TranslucentBars.STRETCHED + " 2"));
 
+        // The gesture bar's space goes under the tabs, and the reels stop at the taller bar.
+        barTall(screen, 160);
+        screen.layOut();
         nextLook(screen);
         TranslucentBars.Backdrop backdrop = screen.bars.backdrops.get(reels);
         assertNotNull("black under the reel on the page found second", backdrop);
         Rect black = new Rect();
         assertTrue(backdrop.paints(black));
-        assertEquals("over the gap the pager had", new Rect(0, 1440, 720, 1600), black);
+        assertEquals("from the bar's top down, over the next reel", new Rect(0, 1440, 720, 1600), black);
 
         Settings.ROUNDED_TAB_BAR.save(false);
         screen.bars.update();
         screen.layOut();
-        assertEquals("the pager's padding back", 160, pager.getPaddingBottom());
-        assertEquals(1440, home.getBottom());
+        assertEquals("the pager's padding back", 120, pager.getPaddingBottom());
+        assertEquals(1480, home.getBottom());
         assertTrue(screen.bars.backdrops.isEmpty());
+    }
+
+    /** The tab bar and its holder [height] pixels tall, at the bottom of the screen. */
+    private static void barTall(TranslucentBarsForTests screen, int height) {
+        screen.tabBar.setLayoutParams(new FrameLayout.LayoutParams(720, height));
+        screen.tabHolder.setLayoutParams(new FrameLayout.LayoutParams(720, height, Gravity.BOTTOM));
     }
 
     /** #412: a feed inside a stretched page scrolls rows shorter than itself, so it gets no black. */

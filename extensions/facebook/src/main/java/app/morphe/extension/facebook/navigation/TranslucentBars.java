@@ -633,7 +633,7 @@ public final class TranslucentBars {
     static final class Backdrop extends Drawable {
         private final WeakReference<View> list;
         private final WeakReference<ViewGroup> holder;
-        private final int taken;
+        private int taken;
         private final Paint paint = new Paint();
         private final Rect area = new Rect();
 
@@ -642,6 +642,13 @@ public final class TranslucentBars {
             this.holder = new WeakReference<>(holder);
             this.taken = taken;
             paint.setColor(BACKDROP_COLOUR);
+        }
+
+        /** Black over [taken] pixels instead, where the tab bar's top has moved since. */
+        void take(int taken) {
+            if (this.taken == taken) return;
+            this.taken = taken;
+            invalidateSelf();
         }
 
         /** The holder's box, which the overlay draws it in. */
@@ -961,25 +968,33 @@ public final class TranslucentBars {
             stopsAt(page, edge, height / 2, rows, origin, 0, found);
             for (int i = 0; i < found.size(); i++) reach(found.get(i), now);
             found.clear();
-            backPagingInside();
+            backPagingInside(edge);
         }
 
         /**
          * Black under each list that pages inside a stretched page, over the part its reels don't
-         * fill (#412). A tab opened after the stretch, Reels most of all, is found on the next look.
+         * fill (#412): from [edge], the tab bar's top, down. That's measured from the bar, not from
+         * the gap taken, since the Reels viewer sizes its reels to stop at the bar and the bar can
+         * grow after the stretch: where the bar stays put, Facebook pads the tabs' pager before the
+         * gesture bar's space is added under the tabs (#471). A tab opened after the stretch, Reels
+         * most of all, is found on the next look.
          */
-        private void backPagingInside() {
+        private void backPagingInside(int edge) {
             for (Map.Entry<View, Stretch> entry : stretched.entrySet()) {
                 View page = entry.getKey();
                 Stretch stretch = entry.getValue();
-                int taken = stretch.padding + stretch.margin;
-                if (stretch.leftAlone || taken <= 0 || isList(page)) continue;
+                if (stretch.leftAlone || stretch.padding + stretch.margin <= 0 || isList(page)) continue;
                 page.getLocationInWindow(origin);
-                pagingInside(page, origin[1] + page.getHeight(), taken, origin, 0, found);
+                int bottom = origin[1] + page.getHeight();
+                int taken = bottom - edge;
+                // Not laid out under the bar yet: the next look finds it.
+                if (taken <= 1) continue;
+                pagingInside(page, bottom, taken, origin, 0, found);
                 for (int i = 0; i < found.size(); i++) {
                     View list = found.get(i);
                     Backdrop backdrop = backdrops.get(list);
                     if (backdrop != null) {
+                        backdrop.take(taken);
                         backdrop.fit();
                     } else if (list.getParent() instanceof ViewGroup) {
                         addBackdrop(list, (ViewGroup) list.getParent(), taken);
