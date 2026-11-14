@@ -125,6 +125,12 @@ public final class StorySeen {
      */
     static final String TRAY_POSTED_AFTER = "tray bucket posted after the watch";
 
+    /** What Hook status counts each Highlights tile Hide seen stories took as watched here under (#165). */
+    static final String TRAY_HIGHLIGHTS_WATCHED = "tray highlights watched here";
+
+    /** What the tray's store keeps for a Highlights tile sent as watched, where a story's expiration_time goes (#165). */
+    static final String HIGHLIGHTS_SENT = "highlights";
+
     /** How long a story is up: a bucket expires this long after its newest story was posted. */
     static final long STORY_LIFE_MS = 24L * 60 * 60 * 1000;
 
@@ -775,6 +781,50 @@ public final class StorySeen {
                 return false;
             }
             HookStatus.counted(FamilyNames.STORY_SEEN, TRAY_WATCHED);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_SEEN, "tray bucket watched here", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Keeps the tray's Highlights tile [bucketId], sent as watched, so a later tray that sends it
+     * unwatched still reads it as watched. A tile of saved highlights has no day-long expiration_time
+     * to tell a new story by, so it's kept by its id alone (#165). With the switch off or paused
+     * nothing is kept. Never throws.
+     */
+    static void trayHighlightsReadWatched(@Nullable String bucketId) {
+        try {
+            if (bucketId == null || !holdsViewsBack()) return;
+            SeenBuckets tray = trayStore();
+            if (tray == null) return;
+            long now = System.currentTimeMillis();
+            if (!HIGHLIGHTS_SENT.equals(tray.newestWatched(bucketId, now))) tray.watched(bucketId, HIGHLIGHTS_SENT, now);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_SEEN, "tray bucket sent watched", failure);
+        }
+    }
+
+    /**
+     * Whether the tray's Highlights tile [bucketId] was watched to the end on this phone with the
+     * switch on, or was sent as watched before (#165). It goes by the id alone: the tile's
+     * expiration_time isn't a day after its newest story, and is 0 when the tile has none, so
+     * {@link #trayWatchedHere} never took it. False for one watched partway, one past what's kept,
+     * and with the switch off or paused. Never throws.
+     */
+    static boolean trayHighlightsWatchedHere(@Nullable String bucketId) {
+        try {
+            if (bucketId == null || !holdsViewsBack()) return false;
+            long now = System.currentTimeMillis();
+            SeenBuckets tray = trayStore();
+            if (tray != null && HIGHLIGHTS_SENT.equals(tray.newestWatched(bucketId, now))) {
+                HookStatus.counted(FamilyNames.STORY_SEEN, TRAY_SEEN_BEFORE);
+                return true;
+            }
+            SeenBuckets seen = store();
+            if (seen == null || seen.watchedAt(bucketId, now) < 0) return false;
+            HookStatus.counted(FamilyNames.STORY_SEEN, TRAY_HIGHLIGHTS_WATCHED);
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_SEEN, "tray bucket watched here", failure);

@@ -68,16 +68,22 @@ public class SeenStoriesWatchedHereTest {
         final Object id;
         final Object expires;
         final boolean seen;
+        final Type type;
 
         Tree(Object id, Object expires, boolean seen) {
+            this(id, expires, seen, Type.STORY);
+        }
+
+        Tree(Object id, Object expires, boolean seen, Type type) {
             this.id = id;
             this.expires = expires;
             this.seen = seen;
+            this.type = type;
         }
 
         @Override
         public String toString() {
-            return "Tree(" + id + ", " + expires + ", " + seen + ")";
+            return "Tree(" + id + ", " + expires + ", " + seen + ", " + type + ")";
         }
     }
 
@@ -92,7 +98,7 @@ public class SeenStoriesWatchedHereTest {
     /** The tray's stubs as the patch fills them, a friend's story each, with the two new reads. */
     private static final SuggestedStories.Buckets TREES = new SuggestedStories.Buckets() {
         @Override public boolean isBucket(Object item) { return item instanceof Tree; }
-        @Override public Object type(Object bucket) { return Type.STORY; }
+        @Override public Object type(Object bucket) { return ((Tree) bucket).type; }
         @Override public Object suggested(Object bucket) { return false; }
         @Override public Object label(Object bucket) { return null; }
         @Override public Object copy(List<Object> kept) { return Collections.unmodifiableList(new ArrayList<>(kept)); }
@@ -291,6 +297,40 @@ public class SeenStoriesWatchedHereTest {
         Tree zeroTime = new Tree("b1", 0L, false);
         List<Tree> tray = Arrays.asList(noId, noTime, zeroTime);
         assertSame(tray, kept(tray));
+    }
+
+    /**
+     * #165: a Highlights tile watched to the end here stayed in the tray with Hide seen stories on.
+     * Its expiration_time isn't a story's day, and one with none reads 0, which the expiration check
+     * turned away. It goes by its id now: one watched to the end leaves whatever its expiration
+     * reads, one sent as watched stays out after a refresh, and one watched partway stays. A day
+     * of stories with no expiration still stays, as before.
+     */
+    @Test
+    public void aHighlightsTileWatchedHereLeavesWhateverItsExpiration() {
+        watch(new Played("h1", "s1", "s2"), "s1", "s2");
+        watch(new Played("h2", "s1", "s2"), "s1");
+        Tree none = new Tree("h1", 0L, false, Type.FEATURED_HIGHLIGHTS_STORY);
+        Tree later = new Tree("h1", (System.currentTimeMillis() + 30 * HOUR_MS) / 1000, false, Type.HIGHLIGHTED_STORY);
+        Tree partway = new Tree("h2", 0L, false, Type.FEATURED_HIGHLIGHTS_STORY);
+        Tree story = new Tree("h1", 0L, false);
+
+        assertEquals("a watched Highlights tile stayed", Arrays.asList(partway, story),
+                kept(Arrays.asList(none, partway, story)));
+        assertEquals("one with a later expiration stayed", Collections.singletonList(partway),
+                kept(Arrays.asList(later, partway)));
+        String status = line(FamilyNames.STORY_SEEN, HookStatus.report());
+        assertTrue(status, status.contains(StorySeen.TRAY_HIGHLIGHTS_WATCHED + " 2"));
+
+        Tree sent = new Tree("h3", 0L, true, Type.FEATURED_HIGHLIGHTS_STORY);
+        Tree resent = new Tree("h3", 0L, false, Type.FEATURED_HIGHLIGHTS_STORY);
+        assertEquals(Collections.singletonList(partway), kept(Arrays.asList(sent, partway)));
+        assertEquals("one sent as watched came back on the refresh", Collections.singletonList(partway),
+                kept(Arrays.asList(resent, partway)));
+
+        Settings.VIEW_STORIES_ANONYMOUSLY.save(false);
+        List<Tree> sentViews = Arrays.asList(none, resent);
+        assertSame("with views sent, the phone's record took a Highlights tile out", sentViews, kept(sentViews));
     }
 
     @Test

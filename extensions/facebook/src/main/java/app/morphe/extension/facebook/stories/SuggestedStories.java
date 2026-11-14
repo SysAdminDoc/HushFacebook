@@ -103,6 +103,14 @@ public final class SuggestedStories {
     static final String PROFILE_PLUS_PAGE_TYPE = "PROFILE_PLUS_STORY";
     static final String ADD_TO_STORY_TYPE = "ADD_TO_STORY";
 
+    /**
+     * The types a tray tile comes as when it holds a person's saved highlights, the tiles named
+     * Highlights, rather than a day of stories. Its expiration_time doesn't follow a story's day, and
+     * one with none reads 0, so watched here goes by the bucket alone (#165).
+     */
+    static final String FEATURED_HIGHLIGHTS_TYPE = "FEATURED_HIGHLIGHTS_STORY";
+    static final String HIGHLIGHTED_TYPE = "HIGHLIGHTED_STORY";
+
     /** The GraphQL fields of who posted a bucket and whether you've watched it, and a Page's type name. */
     static final String OWNER_FIELD = "story_bucket_owner";
     static final String SEEN_FIELD = "is_bucket_seen_by_viewer";
@@ -728,6 +736,10 @@ public final class SuggestedStories {
         if (!StorySeen.holdsViewsBack()) return;
         try {
             Object id = access.id(bucket);
+            if (id instanceof String && highlights(bucket, access)) {
+                StorySeen.trayHighlightsReadWatched((String) id);
+                return;
+            }
             Object expires = access.expires(bucket);
             if (id instanceof String && expires instanceof Long) StorySeen.trayReadWatched((String) id, (Long) expires);
         } catch (Throwable failure) {
@@ -739,15 +751,16 @@ public final class SuggestedStories {
      * Whether a bucket the servers send as unwatched was watched to the end on this phone with View
      * stories anonymously on, which keeps them from hearing of it, so its flag stays false after
      * every refresh and restart (#218). Its id and expiration_time are read only when something is
-     * kept to look them up in. Never throws.
+     * kept to look them up in. A Highlights tile goes by its id alone (#165). Never throws.
      */
     static boolean watchedHere(Object bucket, Buckets access) {
         if (!StorySeen.keepsTrayWatched()) return false;
+        boolean highlights = highlights(bucket, access);
         Object id;
         Object expires;
         try {
             id = access.id(bucket);
-            expires = access.expires(bucket);
+            expires = highlights ? null : access.expires(bucket);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "bucket id and expiration", failure);
             return false;
@@ -757,9 +770,23 @@ public final class SuggestedStories {
                     id == UNPATCHED ? ID_FIELD : EXPIRATION_FIELD);
             return false;
         }
-        if (!(id instanceof String) || !(expires instanceof Long)) return false;
+        if (!(id instanceof String)) return false;
+        if (highlights) return StorySeen.trayHighlightsWatchedHere((String) id);
+        if (!(expires instanceof Long)) return false;
         HookStatus.bound(FamilyNames.SUGGESTED_STORIES, "tray bucket#" + EXPIRATION_FIELD);
         return StorySeen.trayWatchedHere((String) id, (Long) expires);
+    }
+
+    /** Whether a bucket is a Highlights tile, by its story_bucket_type. Never throws. */
+    static boolean highlights(Object bucket, Buckets access) {
+        try {
+            Object type = access.type(bucket);
+            if (!(type instanceof Enum)) return false;
+            String name = ((Enum<?>) type).name();
+            return FEATURED_HIGHLIGHTS_TYPE.equals(name) || HIGHLIGHTED_TYPE.equals(name);
+        } catch (Throwable ignored) {
+            return false; // cardKind already reported this read.
+        }
     }
 
     /**
