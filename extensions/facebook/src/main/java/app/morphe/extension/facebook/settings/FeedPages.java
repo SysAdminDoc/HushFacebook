@@ -967,6 +967,8 @@ final class FeedPages {
                     L10n.t("The row of emoji over the comment box goes away. You can still type emoji from your keyboard.")));
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_BOX_LINE,
                     L10n.t("The thin line along the top of the comment box goes away.")));
+            comments.addPreference(toggle(context, Settings.HIDE_COMMENT_BOX,
+                    L10n.t("The Write a comment box under a post's comments goes away. You can still read every comment.")));
             comments.addPreference(toggle(context, Settings.HIDE_VIDEO_COMMENT_COMPOSER,
                     L10n.t("The Add a comment box under a full-screen video goes away. Comment boxes on posts stay.")));
             comments.addPreference(toggle(context, Settings.OPEN_REPLY_THREADS,

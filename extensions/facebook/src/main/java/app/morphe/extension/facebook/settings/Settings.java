@@ -1461,6 +1461,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_comment_box_line", FALSE);
 
     /**
+     * A post's comments open without the Write a comment box at the bottom (#479,
+     * {@link app.morphe.extension.facebook.comments.CommentSheetOptions}), so they can be read
+     * with nothing to type into. The box stays gone while those comments are open. Off by default.
+     * A change shows on the next comments opened.
+     */
+    public static final BooleanSetting HIDE_COMMENT_BOX =
+            new BooleanSetting("hushfacebook_hide_comment_box", FALSE);
+
+    /**
      * The comment composer at the bottom of Facebook's full-screen video viewer is omitted from
      * the viewer's render method ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}).
      * In the Shorts viewer most feed videos open in, the band the bar sits in goes with it, the

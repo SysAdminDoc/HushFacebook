@@ -22,6 +22,7 @@ Changes in each Hushfacebook version, newest first.
 * The Hush settings now come in Thai, translated by MangaThatsFine. (#436)
 * New patch, `Post menu items`. `3-dot menu items to hide` under News feed lists the rows of a post's three-dot menu, like Interested, Not interested, Cast or Report, and the ones you tick stop showing up there, so a thumb can't land on them by accident. The list also picks up any other rows Facebook has shown you. Nothing is hidden until you pick. (#475)
 * `Refresh rate` under Appearance, in every build, asks your screen for its highest refresh rate while Facebook is open, or for a fixed rate like 60, 90 or 120 Hz. The list only shows the rates your screen has, and your phone's own refresh rate setting still sets the most Facebook gets. It starts at `As Facebook has it`. (#480)
+* New `Hide the comment box` under Comments and writing. The Write a comment box at the bottom of a post's comments goes away, so you can read them without it. Off by default. (#479)
 * **Tooling:** `superpack-unpack.ps1 -Desktop` unpacks Facebook's Android 9+ build on a PC with no phone or emulator attached. (#102)
 
 ### Changed

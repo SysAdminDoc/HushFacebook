@@ -334,6 +334,7 @@ public final class SettingsBackup {
             Settings.HIDE_COMMENT_GIF_STICKER_BUTTONS,
             Settings.HIDE_COMMENT_EMOJI_ROW,
             Settings.HIDE_COMMENT_BOX_LINE,
+            Settings.HIDE_COMMENT_BOX,
             Settings.OPEN_REPLY_THREADS,
             Settings.LOAD_WHOLE_REPLY_THREADS,
             Settings.HIDE_REPLIES_BUTTON,

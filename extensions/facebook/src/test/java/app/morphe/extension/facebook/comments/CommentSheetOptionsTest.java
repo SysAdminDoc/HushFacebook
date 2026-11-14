@@ -21,6 +21,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.view.View;
+import android.widget.FrameLayout;
 
 import java.util.Collections;
 
@@ -29,6 +30,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
@@ -80,6 +82,7 @@ public class CommentSheetOptionsTest {
         Settings.HIDE_COMMENT_EMOJI_ROW.resetToDefault();
         Settings.HIDE_COMMENT_BOX_LINE.resetToDefault();
         Settings.HIDE_VIDEO_COMMENT_COMPOSER.resetToDefault();
+        Settings.HIDE_COMMENT_BOX.resetToDefault();
         Settings.OPEN_REPLY_THREADS.resetToDefault();
         Settings.LOAD_WHOLE_REPLY_THREADS.resetToDefault();
         Settings.HIDE_REPLIES_BUTTON.resetToDefault();
@@ -225,6 +228,58 @@ public class CommentSheetOptionsTest {
         assertEquals("paused or before the settings, the line's color went", 255, border.getDrawable(0).getAlpha());
         String line = statusLine();
         assertFalse("a box left alone was counted: " + line, line != null && line.contains("Counted"));
+    }
+
+    /**
+     * Hide the comment box (#479): on, a box built for a post's comments is gone, a frame where
+     * Facebook showed it again is skipped with the box gone, and the box's second background call
+     * holds it once. Off, paused or detached, the box is Facebook's.
+     */
+    @Test
+    public void theCommentBoxGoesAndStaysGoneUnderItsOwnSwitch() {
+        android.app.Activity activity = Robolectric.buildActivity(android.app.Activity.class).setup().get();
+        FrameLayout sheet = new FrameLayout(activity);
+        activity.setContentView(sheet);
+
+        View kept = new View(activity);
+        Settings.HIDE_COMMENT_BOX_LINE.save(true);
+        CommentSheetOptions.flattenCommentBox(kept);
+        assertEquals("the line's switch hid the box", View.VISIBLE, kept.getVisibility());
+
+        Settings.HIDE_COMMENT_BOX.save(true);
+        View box = new View(activity);
+        CommentSheetOptions.flattenCommentBox(box);
+        CommentSheetOptions.flattenCommentBox(box);
+        assertEquals(View.GONE, box.getVisibility());
+        sheet.addView(box);
+        sheet.addView(kept);
+        box.setVisibility(View.VISIBLE);
+        assertTrue("a frame drawing the box went ahead", sheet.getViewTreeObserver().dispatchOnPreDraw());
+        assertEquals(View.GONE, box.getVisibility());
+        assertFalse("a frame without the box was held back", sheet.getViewTreeObserver().dispatchOnPreDraw());
+        assertEquals("another view lost its place", View.VISIBLE, kept.getVisibility());
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 3, 1 found, 0 missing. Counted: "
+                + CommentSheetOptions.BOX_HIDDEN + " 1", statusLine());
+
+        Settings.HIDE_COMMENT_BOX.save(false);
+        box.setVisibility(View.VISIBLE);
+        assertFalse("off, the box was held", sheet.getViewTreeObserver().dispatchOnPreDraw());
+        assertEquals(View.VISIBLE, box.getVisibility());
+
+        Settings.HIDE_COMMENT_BOX.save(true);
+        sheet.removeView(box);
+        box.setVisibility(View.VISIBLE);
+        assertFalse("a box taken off the screen was still held", sheet.getViewTreeObserver().dispatchOnPreDraw());
+        assertEquals(View.VISIBLE, box.getVisibility());
+
+        View paused = new View(activity);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        CommentSheetOptions.flattenCommentBox(paused);
+        PauseForTests.resume();
+        View early = new View(activity);
+        SettingsContextRule.withoutContext(() -> CommentSheetOptions.flattenCommentBox(early));
+        assertEquals("paused, the box went", View.VISIBLE, paused.getVisibility());
+        assertEquals("before the settings, the box went", View.VISIBLE, early.getVisibility());
     }
 
     @Test
@@ -696,7 +751,7 @@ public class CommentSheetOptionsTest {
                 Settings.HIDE_COMMENTS_WITH_WORDS, Settings.HIDE_INCOMING_COMMENT_TYPING, Settings.HIDE_NEW_COMMENTS_PILL,
                 Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES, Settings.HIDE_POST_COMMENT_PREVIEWS,
                 Settings.HIDE_COMMENT_DOWNVOTE_BUTTON, Settings.HIDE_COMMENT_LIKE_BUTTON, Settings.HIDE_COMMENT_REPLY_BUTTON,
-                Settings.HIDE_COMMENT_EMOJI_ROW, Settings.HIDE_COMMENT_BOX_LINE}) {
+                Settings.HIDE_COMMENT_EMOJI_ROW, Settings.HIDE_COMMENT_BOX_LINE, Settings.HIDE_COMMENT_BOX}) {
             assertFalse(setting.key + " asks for a restart, but each hook reads it again", setting.rebootApp);
             assertNull(setting.key + " asks before it changes", setting.userDialogMessage);
             assertTrue("Pause and the report don't know " + setting.key,

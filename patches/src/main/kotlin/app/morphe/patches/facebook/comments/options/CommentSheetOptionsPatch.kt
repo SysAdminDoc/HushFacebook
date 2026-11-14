@@ -260,6 +260,9 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * after each of those calls on the box itself, the extension is handed the box, and while the switch
  * is on it moves the top layer back up and stops the ones under it drawing.
  *
+ * Hide the comment box (#479) rides the same call: while its switch is on, the extension makes the
+ * box gone and keeps it gone before each frame of its window, whatever background it set.
+ *
  * Hide related groups: what comes after a post's comments is drawn through another socket, the one
  * that names itself [BOTTOM_SOCKET] in the two comment surfaces' methods going through its plugins
  * (581 `LX/Aco;->A0j` and `LX/BIE;->A0j`, 580 `LX/B8E;->A1S` and `LX/BLp;->A1S`, 577 `LX/AeD;->A3Y`

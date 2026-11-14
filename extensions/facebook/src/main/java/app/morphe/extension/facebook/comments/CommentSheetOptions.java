@@ -13,14 +13,18 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.net.Uri;
 import android.view.View;
+import android.view.ViewTreeObserver;
 
 import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.feed.PostWords;
 import app.morphe.extension.facebook.reels.ReactionHold;
@@ -257,6 +261,12 @@ public final class CommentSheetOptions {
     /** Counted each time the line along the top of the comment box, or of the socket over it, is taken off. */
     static final String BOX_LINE_HIDDEN = "Comment box line kept out";
 
+    /** Counted each time a comment box is kept off a post's comments (#479). */
+    static final String BOX_HIDDEN = "Comment box kept out";
+
+    /** The comment boxes held gone, so a box that sets its background twice as it's built is held once. */
+    private static final Set<View> heldBoxes = Collections.newSetFromMap(new WeakHashMap<>());
+
     /** The member the report names once the socket under a post's comments has asked about Related groups. */
     static final String BOTTOM = "related groups under comments";
 
@@ -406,15 +416,82 @@ public final class CommentSheetOptions {
      * the box's layer goes back to the top and the layers under it stop drawing, on this box's own
      * copy of the drawable. Any other background, off, paused, or before the settings are ready,
      * the box stays as Facebook drew it.
+     *
+     * <p>While Hide the comment box is on (#479), the box is held gone for as long as it lives
+     * ({@link #holdGone}), whatever its background.
      */
     public static void flattenCommentBox(@Nullable View box) {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, BOX_LINE);
-            if (box == null || !Utils.settingsReady() || !Settings.HIDE_COMMENT_BOX_LINE.get()) return;
+            if (box == null || !Utils.settingsReady()) return;
+            if (Settings.HIDE_COMMENT_BOX.get() && holdGone(box)) HookStatus.counted(FAMILY, BOX_HIDDEN);
+            if (!Settings.HIDE_COMMENT_BOX_LINE.get()) return;
             if (flatten(box.getBackground(), "box")) HookStatus.counted(FAMILY, BOX_LINE_HIDDEN);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, BOX_LINE, failure);
+        }
+    }
+
+    /**
+     * Holds [box] gone for as long as it lives (#479): gone now, and gone again before any frame
+     * that would draw it, since Facebook shows the box again on its own (a tap on Reply, a
+     * comment posted, the sheet growing). False when this box was already held. Turning the
+     * switch off lets go at the next frame, and the box comes back on the next comments built.
+     */
+    static boolean holdGone(View box) {
+        if (!heldBoxes.add(box)) return false;
+        box.setVisibility(View.GONE);
+        BoxHold hold = new BoxHold(box);
+        box.addOnAttachStateChangeListener(hold);
+        if (box.isAttachedToWindow()) hold.onViewAttachedToWindow(box);
+        return true;
+    }
+
+    /** Puts a held comment box back to gone before each frame of the window it's in, while the switch is on. */
+    private static final class BoxHold implements View.OnAttachStateChangeListener, ViewTreeObserver.OnPreDrawListener {
+        private final WeakReference<View> held;
+        @Nullable
+        private ViewTreeObserver tree;
+
+        BoxHold(View box) {
+            held = new WeakReference<>(box);
+        }
+
+        @Override
+        public void onViewAttachedToWindow(View view) {
+            stop();
+            tree = view.getViewTreeObserver();
+            tree.addOnPreDrawListener(this);
+        }
+
+        @Override
+        public void onViewDetachedFromWindow(View view) {
+            stop();
+        }
+
+        private void stop() {
+            if (tree != null && tree.isAlive()) tree.removeOnPreDrawListener(this);
+            tree = null;
+        }
+
+        /** False skips a frame that would have drawn the box, and the next one draws without it. */
+        @Override
+        public boolean onPreDraw() {
+            try {
+                View box = held.get();
+                if (box == null) {
+                    stop();
+                    return true;
+                }
+                if (box.getVisibility() == View.GONE || !Utils.settingsReady() || !Settings.HIDE_COMMENT_BOX.get()) return true;
+                box.setVisibility(View.GONE);
+                return false;
+            } catch (Throwable failure) {
+                stop();
+                HookStatus.threw(FAMILY, BOX_LINE, failure);
+                return true;
+            }
         }
     }
 
