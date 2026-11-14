@@ -2834,3 +2834,11 @@ Your list of 3-dot menu items to hide will be empty.	要隱藏的三點選單項
 Your list of 3-dot menu items to hide will hold %1$d item.	要隱藏的三點選單項目清單將包含 %1$d 個項目。
 # context: import preview and toast, several 3-dot menu rows will be in that list after the import
 Your list of 3-dot menu items to hide will hold %1$d items.	要隱藏的三點選單項目清單將包含 %1$d 個項目。
+Refresh rate	螢幕更新率
+Highest your screen offers	螢幕支援的最高值
+Facebook runs at whatever refresh rate your phone picks for it.	Facebook 依手機為它選擇的螢幕更新率執行。
+Facebook asks for your screen's highest refresh rate, so scrolling and reels look smoother. It uses a bit more battery, and your phone's own refresh rate setting still caps it.	Facebook 會要求螢幕的最高更新率，讓捲動和 Reels 看起來更流暢。這會多耗一點電，手機本身的螢幕更新率設定仍是上限。
+Facebook asks your screen for %1$s. Your phone's own refresh rate setting still caps it.	Facebook 會向螢幕要求 %1$s。手機本身的螢幕更新率設定仍是上限。
+Facebook will run at the refresh rate your phone picks for it.	Facebook 將依手機為它選擇的螢幕更新率執行。
+Facebook will ask for your screen's highest refresh rate.	Facebook 將要求螢幕的最高更新率。
+Facebook will ask your screen for %1$s.	Facebook 將向螢幕要求 %1$s。

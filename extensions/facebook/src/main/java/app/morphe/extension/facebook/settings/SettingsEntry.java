@@ -66,6 +66,7 @@ import app.morphe.extension.facebook.misc.BlockedListPictures;
 import app.morphe.extension.facebook.misc.CloseWhenLeft;
 import app.morphe.extension.facebook.misc.IconDensity;
 import app.morphe.extension.facebook.misc.OpeningPause;
+import app.morphe.extension.facebook.misc.RefreshRate;
 import app.morphe.extension.facebook.misc.ScreenTransitions;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.navigation.HiddenStatusBar;
@@ -814,6 +815,7 @@ public final class SettingsEntry {
         public void onActivityResumed(Activity activity) {
             resumed = new WeakReference<>(activity);
             TextSize.activity(activity);
+            RefreshRate.activity(activity);
             ScreenLog.resumed(activity);
             SavedFileActions.onResumed(activity);
             ScreenTransitions.activityResumed(activity);
@@ -843,10 +845,14 @@ public final class SettingsEntry {
             LastScreen.read(activity);
         }
 
-        /** Before the activity's own onCreate, so its first layout is measured at the chosen text size. */
+        /**
+         * Before the activity's own onCreate, so its first layout is measured at the chosen text size
+         * and its first frame comes at the chosen refresh rate.
+         */
         @Override
         public void onActivityPreCreated(Activity activity, Bundle state) {
             TextSize.activity(activity);
+            RefreshRate.activity(activity);
         }
 
         @Override

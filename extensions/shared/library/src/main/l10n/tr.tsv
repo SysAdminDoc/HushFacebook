@@ -2830,3 +2830,11 @@ Your list of 3-dot menu items to hide will be empty.	Üç nokta menüsünde gizl
 Your list of 3-dot menu items to hide will hold %1$d item.	Üç nokta menüsünde gizlenecek öğeler listende %1$d öğe olacak.
 # context: import preview and toast, several 3-dot menu rows will be in that list after the import
 Your list of 3-dot menu items to hide will hold %1$d items.	Üç nokta menüsünde gizlenecek öğeler listende %1$d öğe olacak.
+Refresh rate	Yenileme hızı
+Highest your screen offers	Ekranınızın sunduğu en yüksek
+Facebook runs at whatever refresh rate your phone picks for it.	Facebook, telefonunuzun onun için seçtiği yenileme hızında çalışır.
+Facebook asks for your screen's highest refresh rate, so scrolling and reels look smoother. It uses a bit more battery, and your phone's own refresh rate setting still caps it.	Facebook ekranınızın en yüksek yenileme hızını ister, böylece kaydırma ve Reels daha akıcı görünür. Biraz daha fazla pil harcar ve üst sınırı yine telefonunuzun yenileme hızı ayarı belirler.
+Facebook asks your screen for %1$s. Your phone's own refresh rate setting still caps it.	Facebook ekranınızdan %1$s ister. Üst sınırı yine telefonunuzun yenileme hızı ayarı belirler.
+Facebook will run at the refresh rate your phone picks for it.	Facebook, telefonunuzun onun için seçtiği yenileme hızında çalışacak.
+Facebook will ask for your screen's highest refresh rate.	Facebook ekranınızın en yüksek yenileme hızını isteyecek.
+Facebook will ask your screen for %1$s.	Facebook ekranınızdan %1$s isteyecek.

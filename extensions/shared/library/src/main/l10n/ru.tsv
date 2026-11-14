@@ -2886,3 +2886,11 @@ Your list of 3-dot menu items to hide will hold %1$d item.	В списке пу�
 Your list of 3-dot menu items to hide will hold %1$d items.	В списке пунктов меню с тремя точками для скрытия будет %1$d пунктов.
 Your list of 3-dot menu items to hide will hold %1$d items.|few	В списке пунктов меню с тремя точками для скрытия будет %1$d пункта.
 Your list of 3-dot menu items to hide will hold %1$d items.|many	В списке пунктов меню с тремя точками для скрытия будет %1$d пунктов.
+Refresh rate	Частота обновления
+Highest your screen offers	Максимальная для экрана
+Facebook runs at whatever refresh rate your phone picks for it.	Facebook работает с той частотой обновления, которую выбирает для него телефон.
+Facebook asks for your screen's highest refresh rate, so scrolling and reels look smoother. It uses a bit more battery, and your phone's own refresh rate setting still caps it.	Facebook запрашивает максимальную частоту обновления экрана, чтобы прокрутка и Reels выглядели плавнее. Это расходует чуть больше заряда, а верхний предел по-прежнему задает настройка частоты обновления в телефоне.
+Facebook asks your screen for %1$s. Your phone's own refresh rate setting still caps it.	Facebook запрашивает у экрана %1$s. Верхний предел по-прежнему задает настройка частоты обновления в телефоне.
+Facebook will run at the refresh rate your phone picks for it.	Facebook будет работать с частотой обновления, которую выбирает для него телефон.
+Facebook will ask for your screen's highest refresh rate.	Facebook будет запрашивать максимальную частоту обновления экрана.
+Facebook will ask your screen for %1$s.	Facebook будет запрашивать у экрана %1$s.

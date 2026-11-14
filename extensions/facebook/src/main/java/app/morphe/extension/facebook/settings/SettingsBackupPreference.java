@@ -69,6 +69,7 @@ import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.misc.OpeningPause;
 import app.morphe.extension.facebook.misc.PostMenuItems;
+import app.morphe.extension.facebook.misc.RefreshRate;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.feed.ReactionCeiling;
@@ -430,6 +431,7 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.holdReactionChange() != null) parts.add(holdReactionSentence(snapshot.holdReactionChange()));
             if (snapshot.grayOverChange() != null) parts.add(grayOverSentence(snapshot.grayOverChange()));
             if (snapshot.newRowMarkChange() != null) parts.add(newRowMarkSentence(snapshot.newRowMarkChange()));
+            if (snapshot.refreshRateChange() != null) parts.add(refreshRateSentence(snapshot.refreshRateChange()));
             if (snapshot.dateStyleChange() != null) parts.add(dateStyleSentence(snapshot.dateStyleChange()));
             if (snapshot.commentsHeightChange() != null) parts.add(commentsHeightSentence(snapshot.commentsHeightChange()));
             if (snapshot.backgroundChange() != null) parts.add(backgroundSentence(snapshot.backgroundChange()));
@@ -627,6 +629,13 @@ public class SettingsBackupPreference extends Preference {
         if (mark == NewRowMark.ONE_VISIT) return L10n.t("Settings an update adds will get a dot until you leave their page.");
         return L10n.f("Settings an update adds will get a dot for %1$s from the first time you open their page.",
                 HushfacebookPreferenceFragment.newRowMarkLabel(mark));
+    }
+
+    /** The sentence that says what refresh rate Facebook asks for after an import (#480). */
+    static String refreshRateSentence(RefreshRate.Rate rate) {
+        if (rate == RefreshRate.Rate.FACEBOOK) return L10n.t("Facebook will run at the refresh rate your phone picks for it.");
+        if (rate == RefreshRate.Rate.HIGHEST) return L10n.t("Facebook will ask for your screen's highest refresh rate.");
+        return L10n.f("Facebook will ask your screen for %1$s.", rate.hertzLabel());
     }
 
     /** The sentence that says how long Burn-in guard waits after an import (#288). */
@@ -1124,6 +1133,7 @@ public class SettingsBackupPreference extends Preference {
                     + (snapshot.holdReactionChange() == null ? "" : " " + holdReactionSentence(snapshot.holdReactionChange()))
                     + (snapshot.grayOverChange() == null ? "" : " " + grayOverSentence(snapshot.grayOverChange()))
                     + (snapshot.newRowMarkChange() == null ? "" : " " + newRowMarkSentence(snapshot.newRowMarkChange()))
+                    + (snapshot.refreshRateChange() == null ? "" : " " + refreshRateSentence(snapshot.refreshRateChange()))
                     + (snapshot.dateStyleChange() == null ? "" : " " + dateStyleSentence(snapshot.dateStyleChange()))
                     + (snapshot.commentsHeightChange() == null ? "" : " " + commentsHeightSentence(snapshot.commentsHeightChange()))
                     + (snapshot.backgroundChange() == null ? "" : " " + backgroundSentence(snapshot.backgroundChange()))

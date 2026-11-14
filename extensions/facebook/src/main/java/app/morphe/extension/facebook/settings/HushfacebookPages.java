@@ -158,7 +158,10 @@ final class HushfacebookPages {
         }
     }
 
-    /** Appearance, in every build for Text size: the font, the emoji, the colors, the bars, motion and the app icons. */
+    /**
+     * Appearance, in every build for Text size and Refresh rate: the font, the emoji, the colors,
+     * the bars, motion and the app icons.
+     */
     static void appearance(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context,
             Set<PatchFamily> build) {
         PreferenceCategory appearance = category(screen, L10n.t("Appearance"));
@@ -225,6 +228,8 @@ final class HushfacebookPages {
                             L10n.isolate(FamilyNames.AMOLED_THEME))));
         }
         subheading(appearance, L10n.t("Screen and motion"));
+        // The settings entry's own, so every build has it. Asked as each Facebook screen comes back (#480).
+        appearance.addPreference(HushfacebookPreferenceFragment.refreshRateRow(context));
         if (build.contains(PatchFamily.BOTTOM_TAB_BAR)) {
             // Asked as each frame of the main screen draws, so a change shows right away, except on
             // a kept tab bar, where the page's restart row says the change waits (#250).

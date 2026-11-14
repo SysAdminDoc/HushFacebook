@@ -30,6 +30,7 @@ import app.morphe.extension.facebook.reels.ReelsOrder;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.misc.OpeningPause;
+import app.morphe.extension.facebook.misc.RefreshRate;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.navigation.FeedsSubtab;
 import app.morphe.extension.facebook.feed.ReactionCeiling;
@@ -3547,6 +3548,15 @@ public class Settings extends BaseSettings {
      */
     public static final EnumSetting<TextSize.Scale> TEXT_SIZE =
             new EnumSetting<>("hushfacebook_text_size", TextSize.Scale.P100, true);
+
+    /**
+     * Refresh rate ({@link RefreshRate}, #480): the display mode Facebook's windows ask for, the
+     * screen's highest or a fixed rate it offers. It isn't a switch: Facebook's is what it ships
+     * with, and what a paused Facebook reads. The settings entry carries it, so every build has it,
+     * and a change shows as the next Facebook screen comes back.
+     */
+    public static final EnumSetting<RefreshRate.Rate> REFRESH_RATE =
+            new EnumSetting<>("hushfacebook_refresh_rate", RefreshRate.Rate.FACEBOOK);
 
     /**
      * Mark new settings ({@link NewRowDots}, #16): how long the dot beside a setting an update added

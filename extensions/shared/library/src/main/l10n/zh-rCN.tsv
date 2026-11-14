@@ -2825,3 +2825,11 @@ Your list of 3-dot menu items to hide will be empty.	你要隐藏的三点菜单
 Your list of 3-dot menu items to hide will hold %1$d item.	你要隐藏的三点菜单项目列表将包含 %1$d 项。
 # context: import preview and toast, several 3-dot menu rows will be in that list after the import
 Your list of 3-dot menu items to hide will hold %1$d items.	你要隐藏的三点菜单项目列表将包含 %1$d 项。
+Refresh rate	刷新率
+Highest your screen offers	屏幕支持的最高值
+Facebook runs at whatever refresh rate your phone picks for it.	Facebook 按手机为它选择的刷新率运行。
+Facebook asks for your screen's highest refresh rate, so scrolling and reels look smoother. It uses a bit more battery, and your phone's own refresh rate setting still caps it.	Facebook 会请求屏幕的最高刷新率，让滑动和 Reels 看起来更流畅。这会多耗一点电，手机自己的刷新率设置仍是上限。
+Facebook asks your screen for %1$s. Your phone's own refresh rate setting still caps it.	Facebook 会向屏幕请求 %1$s。手机自己的刷新率设置仍是上限。
+Facebook will run at the refresh rate your phone picks for it.	Facebook 将按手机为它选择的刷新率运行。
+Facebook will ask for your screen's highest refresh rate.	Facebook 将请求屏幕的最高刷新率。
+Facebook will ask your screen for %1$s.	Facebook 将向屏幕请求 %1$s。

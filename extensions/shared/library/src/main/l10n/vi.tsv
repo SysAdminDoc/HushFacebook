@@ -2830,3 +2830,11 @@ Your list of 3-dot menu items to hide will be empty.	Danh sách mục cần ẩn
 Your list of 3-dot menu items to hide will hold %1$d item.	Danh sách mục cần ẩn trong menu ba chấm sẽ có %1$d mục.
 # context: import preview and toast, several 3-dot menu rows will be in that list after the import
 Your list of 3-dot menu items to hide will hold %1$d items.	Danh sách mục cần ẩn trong menu ba chấm sẽ có %1$d mục.
+Refresh rate	Tần số quét
+Highest your screen offers	Cao nhất màn hình hỗ trợ
+Facebook runs at whatever refresh rate your phone picks for it.	Facebook chạy ở tần số quét mà điện thoại của bạn chọn cho nó.
+Facebook asks for your screen's highest refresh rate, so scrolling and reels look smoother. It uses a bit more battery, and your phone's own refresh rate setting still caps it.	Facebook yêu cầu tần số quét cao nhất của màn hình, để cuộn và xem reels mượt hơn. Việc này tốn pin hơn một chút, và cài đặt tần số quét của điện thoại vẫn là mức tối đa.
+Facebook asks your screen for %1$s. Your phone's own refresh rate setting still caps it.	Facebook yêu cầu màn hình chạy ở %1$s. Cài đặt tần số quét của điện thoại vẫn là mức tối đa.
+Facebook will run at the refresh rate your phone picks for it.	Facebook sẽ chạy ở tần số quét mà điện thoại của bạn chọn cho nó.
+Facebook will ask for your screen's highest refresh rate.	Facebook sẽ yêu cầu tần số quét cao nhất của màn hình.
+Facebook will ask your screen for %1$s.	Facebook sẽ yêu cầu màn hình chạy ở %1$s.

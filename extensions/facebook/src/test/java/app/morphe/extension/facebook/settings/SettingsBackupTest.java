@@ -92,6 +92,7 @@ import app.morphe.extension.facebook.media.RecentlyWatched;
 import app.morphe.extension.facebook.misc.OpeningPause;
 import app.morphe.extension.facebook.misc.PostMenuItems;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
+import app.morphe.extension.facebook.misc.RefreshRate;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.theme.AccentColor;
 import app.morphe.extension.facebook.theme.MarkColors.Mark;
@@ -245,6 +246,7 @@ public class SettingsBackupTest {
         Settings.BREAK_LENGTH.resetToDefault();
         Settings.TEXT_SIZE.resetToDefault();
         Settings.NEW_ROW_MARK.resetToDefault();
+        Settings.REFRESH_RATE.resetToDefault();
         Settings.ACCENT_COLOR.resetToDefault();
         Settings.VIDEO_SUBFOLDER.resetToDefault();
         Settings.PHOTO_SUBFOLDER.resetToDefault();
@@ -317,7 +319,7 @@ public class SettingsBackupTest {
                 Settings.START_TAB, Settings.FEEDS_SUBTAB, Settings.COMMENT_ORDER, Settings.PLAYBACK_QUALITY,
                 Settings.REELS_PLAYBACK_QUALITY, Settings.STORIES_PLAYBACK_QUALITY, Settings.QUIET_HOURS_FROM,
                 Settings.QUIET_HOURS_UNTIL, Settings.APP_LOCK_AFTER, Settings.OPENING_PAUSE_LENGTH, Settings.BREAK_AFTER,
-                Settings.BREAK_LENGTH, Settings.TEXT_SIZE, Settings.NEW_ROW_MARK, Settings.ACCENT_COLOR, Settings.ACCENT_CUSTOM, Settings.LOGO_EMOJI, Settings.BADGE_COLOR, Settings.LOGO_COLOR, Settings.TAB_COLOR), SettingsBackup.VALUES);
+                Settings.BREAK_LENGTH, Settings.TEXT_SIZE, Settings.REFRESH_RATE, Settings.NEW_ROW_MARK, Settings.ACCENT_COLOR, Settings.ACCENT_CUSTOM, Settings.LOGO_EMOJI, Settings.BADGE_COLOR, Settings.LOGO_COLOR, Settings.TAB_COLOR), SettingsBackup.VALUES);
         assertEquals(Settings.SAVE_TO, SettingsBackup.TO);
         assertEquals(Settings.HIDDEN_WORDS, SettingsBackup.HIDDEN);
         assertEquals(Settings.KEPT_WORDS, SettingsBackup.KEPT);
@@ -349,6 +351,7 @@ public class SettingsBackupTest {
         assertEquals(Settings.QUIET_HOURS_FROM, SettingsBackup.QUIET_FROM);
         assertEquals(Settings.QUIET_HOURS_UNTIL, SettingsBackup.QUIET_UNTIL);
         assertEquals(Settings.TEXT_SIZE, SettingsBackup.TEXT_SIZE);
+        assertEquals(Settings.REFRESH_RATE, SettingsBackup.REFRESH_RATE);
         assertEquals(Settings.NEW_ROW_MARK, SettingsBackup.NEW_ROW_MARK);
         assertEquals(Settings.ACCENT_COLOR, SettingsBackup.ACCENT);
         assertEquals(Settings.VIDEO_SUBFOLDER, SettingsBackup.VIDEO_SUBFOLDER);
@@ -3098,6 +3101,63 @@ public class SettingsBackupTest {
         assertEquals("Settings imported. Facebook's text will be 130% of the size your phone's font size setting gives it.",
                 SettingsBackupPreference.importedMessage(0, null, null, null, null, null, null, null, null, null, null,
                         null, null, null, null, null, null, null, null, null, null, null, TextSize.Scale.P130));
+    }
+
+    /**
+     * The refresh rate (#480) goes out as its file value and comes back only as one this build
+     * offers, with a sentence in the preview: anything else, or a value that isn't text, refuses
+     * the file, and a file from before it was carried leaves it alone.
+     */
+    @Test
+    public void theRefreshRateRoundTripsAndComesBackOnlyAsOneThisBuildOffers() throws Exception {
+        for (RefreshRate.Rate choice : RefreshRate.Rate.values()) {
+            RefreshRate.Rate other = choice == RefreshRate.Rate.HZ60 ? RefreshRate.Rate.HIGHEST : RefreshRate.Rate.HZ60;
+            Settings.REFRESH_RATE.save(choice);
+            String file = SettingsBackup.create();
+            assertEquals(choice.fileValue, new JSONObject(file).getJSONObject("settings").get(SettingsBackup.REFRESH_RATE.key));
+            Settings.REFRESH_RATE.save(other);
+
+            SettingsBackup.Snapshot snapshot = SettingsBackup.parse(file);
+            assertEquals(choice, snapshot.refreshRate);
+            assertEquals(choice, snapshot.refreshRateChange());
+            Map<Setting<?>, Object> expected = new LinkedHashMap<>();
+            expected.put(SettingsBackup.REFRESH_RATE, choice);
+            assertEquals(expected, snapshot.changes());
+            assertEquals(1, SettingsBackup.apply(snapshot));
+            assertEquals(choice, Settings.REFRESH_RATE.savedValue());
+            assertEquals("a file read back is the file", file, SettingsBackup.create());
+            assertEquals("the same rate again changes nothing", 0, SettingsBackup.parse(file).changes().size());
+            Bundle state = SettingsBackup.parse(file).toBundle();
+            assertEquals("a preview kept across a rebuild keeps it", choice, SettingsBackup.Snapshot.fromBundle(state).refreshRate);
+        }
+
+        Settings.REFRESH_RATE.save(RefreshRate.Rate.HZ120);
+        String file = SettingsBackup.create();
+        Map<String, ?> before = store();
+        for (Object refused : new Object[]{"HZ120", "120 Hz", "75", "", 120, true, JSONObject.NULL,
+                new JSONObject(), new org.json.JSONArray()}) {
+            JSONObject hostile = new JSONObject(file);
+            hostile.getJSONObject("settings").put(SettingsBackup.REFRESH_RATE.key, refused);
+            try {
+                SettingsBackup.parse(hostile.toString());
+                fail("a file with the refresh rate " + printable(String.valueOf(refused)) + " was read");
+            } catch (SettingsBackup.Rejected rejected) {
+                assertEquals(printable(String.valueOf(refused)), SettingsBackup.Reason.VALUE, rejected.reason);
+            }
+        }
+        assertEquals("a refused file wrote something", before, store());
+
+        SettingsBackup.Snapshot older = SettingsBackup.parse(fileWith(Settings.HIDE_SUGGESTED_POSTS, false));
+        assertNull(older.refreshRate);
+        assertNull(older.refreshRateChange());
+        SettingsBackup.apply(older);
+        assertEquals(RefreshRate.Rate.HZ120, Settings.REFRESH_RATE.savedValue());
+
+        assertEquals("Facebook will ask your screen for 90 Hz.", SettingsBackupPreference.refreshRateSentence(RefreshRate.Rate.HZ90));
+        assertEquals("Facebook will ask for your screen's highest refresh rate.",
+                SettingsBackupPreference.refreshRateSentence(RefreshRate.Rate.HIGHEST));
+        assertEquals("Facebook will run at the refresh rate your phone picks for it.",
+                SettingsBackupPreference.refreshRateSentence(RefreshRate.Rate.FACEBOOK));
     }
 
     /**

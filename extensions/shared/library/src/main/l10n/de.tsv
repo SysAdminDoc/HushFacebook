@@ -2830,3 +2830,11 @@ Your list of 3-dot menu items to hide will be empty.	Deine Liste der im Drei-Pun
 Your list of 3-dot menu items to hide will hold %1$d item.	Deine Liste der im Drei-Punkte-Menü ausgeblendeten Einträge enthält dann %1$d Eintrag.
 # context: import preview and toast, several 3-dot menu rows will be in that list after the import
 Your list of 3-dot menu items to hide will hold %1$d items.	Deine Liste der im Drei-Punkte-Menü ausgeblendeten Einträge enthält dann %1$d Einträge.
+Refresh rate	Bildwiederholrate
+Highest your screen offers	Höchste, die dein Bildschirm bietet
+Facebook runs at whatever refresh rate your phone picks for it.	Facebook läuft mit der Bildwiederholrate, die dein Handy dafür wählt.
+Facebook asks for your screen's highest refresh rate, so scrolling and reels look smoother. It uses a bit more battery, and your phone's own refresh rate setting still caps it.	Facebook fordert die höchste Bildwiederholrate deines Bildschirms an, damit Scrollen und Reels flüssiger aussehen. Das braucht etwas mehr Akku, und die Einstellung deines Handys für die Bildwiederholrate bleibt die Obergrenze.
+Facebook asks your screen for %1$s. Your phone's own refresh rate setting still caps it.	Facebook fordert bei deinem Bildschirm %1$s an. Die Einstellung deines Handys für die Bildwiederholrate bleibt die Obergrenze.
+Facebook will run at the refresh rate your phone picks for it.	Facebook läuft dann mit der Bildwiederholrate, die dein Handy dafür wählt.
+Facebook will ask for your screen's highest refresh rate.	Facebook fordert dann die höchste Bildwiederholrate deines Bildschirms an.
+Facebook will ask your screen for %1$s.	Facebook fordert dann bei deinem Bildschirm %1$s an.

@@ -1912,6 +1912,15 @@
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
       "changes": "Written for Hushfacebook for issue #448: Choose quality on each save. With the switch on, a reel's Download button and a video's Download to phone show a single-choice list of the Download quality values first, checked at the current one. A pick starts that save with the picked quality held in a thread-local that MediaDownload.quality() reads on the tap, so Download quality itself keeps its value. Cancel saves nothing."
+    },
+    {
+      "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/RefreshRate.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #480: Refresh rate. As each Facebook activity is created and resumes, its window asks for a display mode through preferredDisplayModeId: the screen's fastest mode at its current resolution, or the one within 1.5 Hz of a fixed rate. Facebook's own choice, a paused Hushfacebook and a rate the screen lacks ask for nothing, and they put Facebook's value back only on a window this class changed."
     }
   ]
 }

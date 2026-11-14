@@ -2716,3 +2716,11 @@ Your list of 3-dot menu items to hide will be empty.	Sua lista de itens ocultos 
 Your list of 3-dot menu items to hide will hold %1$d item.	Sua lista de itens ocultos do menu de três pontos terá %1$d item.
 # context: import preview and toast, several 3-dot menu rows will be in that list after the import
 Your list of 3-dot menu items to hide will hold %1$d items.	Sua lista de itens ocultos do menu de três pontos terá %1$d itens.
+Refresh rate	Taxa de atualização
+Highest your screen offers	A mais alta da sua tela
+Facebook runs at whatever refresh rate your phone picks for it.	O Facebook roda na taxa de atualização que seu celular escolher para ele.
+Facebook asks for your screen's highest refresh rate, so scrolling and reels look smoother. It uses a bit more battery, and your phone's own refresh rate setting still caps it.	O Facebook pede a taxa de atualização mais alta da sua tela, para a rolagem e os reels ficarem mais suaves. Gasta um pouco mais de bateria, e a configuração de taxa de atualização do seu celular continua sendo o limite.
+Facebook asks your screen for %1$s. Your phone's own refresh rate setting still caps it.	O Facebook pede %1$s à sua tela. A configuração de taxa de atualização do seu celular continua sendo o limite.
+Facebook will run at the refresh rate your phone picks for it.	O Facebook vai rodar na taxa de atualização que seu celular escolher para ele.
+Facebook will ask for your screen's highest refresh rate.	O Facebook vai pedir a taxa de atualização mais alta da sua tela.
+Facebook will ask your screen for %1$s.	O Facebook vai pedir %1$s à sua tela.

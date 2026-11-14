@@ -58,6 +58,7 @@ import app.morphe.extension.facebook.misc.LogoEmoji;
 import app.morphe.extension.facebook.misc.OpeningPause;
 import app.morphe.extension.facebook.misc.PostMenuItems;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
+import app.morphe.extension.facebook.misc.RefreshRate;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.feed.ReactionCeiling;
 import app.morphe.extension.facebook.theme.AccentColor;
@@ -764,6 +765,13 @@ public final class SettingsBackup {
     static final EnumSetting<NewRowMark> NEW_ROW_MARK = Settings.NEW_ROW_MARK;
 
     /**
+     * Refresh rate (#480), held in a file as its {@link RefreshRate.Rate#fileValue}. Anything else
+     * refuses the whole file, as a text size does. A fixed rate the next phone's screen doesn't
+     * offer still comes in, and that screen keeps Facebook's own rate.
+     */
+    static final EnumSetting<RefreshRate.Rate> REFRESH_RATE = Settings.REFRESH_RATE;
+
+    /**
      * The accent color, held in a file as its {@link AccentColor.Preset#fileValue}. Anything else
      * refuses the whole file, as a text size does.
      */
@@ -816,7 +824,7 @@ public final class SettingsBackup {
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
             Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, POST_MENU_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY,
-                    QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, NEW_ROW_MARK, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI,
+                    QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, REFRESH_RATE, NEW_ROW_MARK, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI,
                     BADGE, LOGO, TAB));
 
     /** The longest name or value a file holds that isn't a word list, far past a package name. */
@@ -946,6 +954,7 @@ public final class SettingsBackup {
         private static final String HOLD_REACTION_NAME = "hold_reaction";
         private static final String GRAY_OVER_NAME = "gray_reels_over";
         private static final String NEW_ROW_MARK_NAME = "new_row_mark";
+        private static final String REFRESH_RATE_NAME = "refresh_rate";
         private static final String DATE_STYLE_NAME = "reel_post_date_style";
         private static final String COMMENTS_HEIGHT_NAME = "comments_height";
 
@@ -1098,6 +1107,9 @@ public final class SettingsBackup {
         /** The Mark new settings choice the file holds, the same way. */
         @Nullable
         NewRowMark newRowMark;
+        /** The refresh rate the file holds, the same way. */
+        @Nullable
+        RefreshRate.Rate refreshRate;
         /** How the file says a reel's post date reads, the same way. */
         @Nullable
         ReelDateStyle dateStyle;
@@ -1358,6 +1370,8 @@ public final class SettingsBackup {
             if (grayOverChange != null) changes.put(GRAY_OVER, grayOverChange);
             NewRowMark newRowMarkChange = newRowMarkChange();
             if (newRowMarkChange != null) changes.put(NEW_ROW_MARK, newRowMarkChange);
+            RefreshRate.Rate refreshRateChange = refreshRateChange();
+            if (refreshRateChange != null) changes.put(REFRESH_RATE, refreshRateChange);
             ReelDateStyle dateStyleChange = dateStyleChange();
             if (dateStyleChange != null) changes.put(DATE_STYLE, dateStyleChange);
             CommentsHeight commentsHeightChange = commentsHeightChange();
@@ -1681,6 +1695,12 @@ public final class SettingsBackup {
             return newRowMark == null || newRowMark == NEW_ROW_MARK.savedValue() ? null : newRowMark;
         }
 
+        /** The refresh rate after this file, the same way. */
+        @Nullable
+        RefreshRate.Rate refreshRateChange() {
+            return refreshRate == null || refreshRate == REFRESH_RATE.savedValue() ? null : refreshRate;
+        }
+
         /** How a reel's post date reads after this file, the same way. */
         @Nullable
         ReelDateStyle dateStyleChange() {
@@ -1756,6 +1776,7 @@ public final class SettingsBackup {
             if (holdReaction != null) state.putString(HOLD_REACTION_NAME, holdReaction.fileValue);
             if (grayOver != null) state.putString(GRAY_OVER_NAME, grayOver.fileValue);
             if (newRowMark != null) state.putString(NEW_ROW_MARK_NAME, newRowMark.fileValue);
+            if (refreshRate != null) state.putString(REFRESH_RATE_NAME, refreshRate.fileValue);
             if (dateStyle != null) state.putString(DATE_STYLE_NAME, dateStyle.fileValue);
             if (commentsHeight != null) state.putString(COMMENTS_HEIGHT_NAME, commentsHeight.fileValue);
             state.putInt(UNKNOWN, unknown);
@@ -1837,6 +1858,7 @@ public final class SettingsBackup {
             read.holdReaction = HoldReaction.fromFile(state.get(HOLD_REACTION_NAME));
             read.grayOver = GrayOver.fromFile(state.get(GRAY_OVER_NAME));
             read.newRowMark = NewRowMark.fromFile(state.get(NEW_ROW_MARK_NAME));
+            read.refreshRate = RefreshRate.Rate.fromFile(state.get(REFRESH_RATE_NAME));
             read.dateStyle = ReelDateStyle.fromFile(state.get(DATE_STYLE_NAME));
             read.commentsHeight = CommentsHeight.fromFile(state.get(COMMENTS_HEIGHT_NAME));
             Object background = state.get(BACKGROUND_NAME);
@@ -1925,6 +1947,7 @@ public final class SettingsBackup {
             switches.put(SEEN_KEEP.key, of(SEEN_KEEP).fileValue);
             switches.put(TEXT_SIZE.key, of(TEXT_SIZE).fileValue);
             switches.put(NEW_ROW_MARK.key, of(NEW_ROW_MARK).fileValue);
+            switches.put(REFRESH_RATE.key, of(REFRESH_RATE).fileValue);
             switches.put(ACCENT.key, of(ACCENT).fileValue);
             switches.put(CEILING.key, of(CEILING).fileValue);
             switches.put(ACTION.key, of(ACTION).fileValue);
@@ -2102,6 +2125,7 @@ public final class SettingsBackup {
         HoldReaction holdReaction = null;
         GrayOver grayOver = null;
         NewRowMark newRowMark = null;
+        RefreshRate.Rate refreshRate = null;
         ReelDateStyle dateStyle = null;
         CommentsHeight commentsHeight = null;
         Boolean legacyFullHeight = null;
@@ -2277,6 +2301,11 @@ public final class SettingsBackup {
             if (NEW_ROW_MARK.key.equals(name)) {
                 newRowMark = NewRowMark.fromFile(values.opt(name));
                 if (newRowMark == null) throw new Rejected(Reason.VALUE, "Not a new settings mark: " + name);
+                continue;
+            }
+            if (REFRESH_RATE.key.equals(name)) {
+                refreshRate = RefreshRate.Rate.fromFile(values.opt(name));
+                if (refreshRate == null) throw new Rejected(Reason.VALUE, "Not a refresh rate: " + name);
                 continue;
             }
             if (DATE_STYLE.key.equals(name)) {
@@ -2488,6 +2517,7 @@ public final class SettingsBackup {
         read.holdReaction = holdReaction;
         read.grayOver = grayOver;
         read.newRowMark = newRowMark;
+        read.refreshRate = refreshRate;
         read.dateStyle = dateStyle;
         read.commentsHeight = commentsHeight;
         return read;

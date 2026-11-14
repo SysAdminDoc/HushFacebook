@@ -10,6 +10,7 @@ import static org.junit.Assert.assertThrows;
 import android.content.Context;
 import android.preference.ListPreference;
 
+import app.morphe.extension.facebook.misc.RefreshRate;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.shared.SettingsContextRule;
 
@@ -37,6 +38,7 @@ public class ListRowSummaryTest {
     public void restore() {
         Settings.TEXT_SIZE.resetToDefault();
         Settings.ACCENT_COLOR.resetToDefault();
+        Settings.REFRESH_RATE.resetToDefault();
     }
 
     private static Context context() {
@@ -60,6 +62,19 @@ public class ListRowSummaryTest {
             ValueRows.TextSizeRow row = HushfacebookPreferenceFragment.textSizeRow(context());
             assertEquals(scale.name(), HushfacebookPreferenceFragment.textSizeSummary(scale), String.valueOf(row.getSummary()));
         }
+    }
+
+    /** The refresh rate row (#480): its summary as written for every choice, and the row lists the one set. */
+    @Test
+    public void everyRefreshRateChoiceShowsItsSummaryAsWritten() {
+        for (RefreshRate.Rate rate : RefreshRate.Rate.values()) {
+            Settings.REFRESH_RATE.save(rate);
+            ValueRows.RefreshRateRow row = HushfacebookPreferenceFragment.refreshRateRow(context());
+            assertEquals(rate.name(), HushfacebookPreferenceFragment.refreshRateSummary(rate), String.valueOf(row.getSummary()));
+            assertEquals(rate.name(), HushfacebookPreferenceFragment.refreshRateLabel(rate), String.valueOf(row.getEntry()));
+        }
+        assertEquals("Facebook asks your screen for 60 Hz. Your phone's own refresh rate setting still caps it.",
+                HushfacebookPreferenceFragment.refreshRateSummary(RefreshRate.Rate.HZ60));
     }
 
     @Test
