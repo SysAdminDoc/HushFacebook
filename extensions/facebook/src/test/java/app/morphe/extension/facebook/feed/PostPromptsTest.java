@@ -44,6 +44,7 @@ public class PostPromptsTest {
         PauseForTests.resume();
         Settings.HIDE_POST_PROMPTS.resetToDefault();
         Settings.HIDE_POST_FOLLOW_LINK.resetToDefault();
+        Settings.HIDE_POST_SUBSCRIBE_LINK.resetToDefault();
         Settings.HIDE_POST_JOIN_BUTTON.resetToDefault();
         Settings.HIDE_POST_X.resetToDefault();
         Settings.HIDE_POST_COUNTS.resetToDefault();
@@ -83,19 +84,58 @@ public class PostPromptsTest {
     }
 
     /**
-     * The Follow link: the switch starts off, so the title plugin's yes stays a yes. Turned on, a yes
-     * becomes a no, a no stays a no, and the count and the status line say so.
+     * The Subscribe link: the switch starts off, so the title plugin's yes stays a yes. Turned on, a
+     * yes becomes a no, a no stays a no, and the count and the status line say so.
      */
     @Test
-    public void theFollowLinkStaysUntilItsSwitchIsOn() {
-        assertFalse("the switch doesn't start off", Settings.HIDE_POST_FOLLOW_LINK.get());
+    public void theSubscribeLinkStaysUntilItsSwitchIsOn() {
+        assertFalse("the switch doesn't start off", Settings.HIDE_POST_SUBSCRIBE_LINK.get());
         assertTrue(PostPrompts.showFollowLink(true));
         assertFalse(PostPrompts.showFollowLink(false));
 
         Settings.HIDE_POST_FOLLOW_LINK.save(true);
-        assertFalse("a header kept its Follow link", PostPrompts.showFollowLink(true));
+        assertTrue("the Follow switch hid a Subscribe link", PostPrompts.showFollowLink(true));
+
+        Settings.HIDE_POST_SUBSCRIBE_LINK.save(true);
+        assertFalse("a header kept its Subscribe link", PostPrompts.showFollowLink(true));
         assertFalse(PostPrompts.showFollowLink(false));
+        assertTrue("the status line doesn't count the hidden link", statusLine().contains(PostPrompts.SUBSCRIBE_HIDDEN + " 1"));
+    }
+
+    /**
+     * The Follow link (#434): when the subscribe check says no, the plugin picker looks for a Follow,
+     * Follow back or Following text, and that goes only while the Follow switch is on.
+     */
+    @Test
+    public void theFollowLinkStaysUntilItsSwitchIsOn() {
+        assertFalse("the switch doesn't start off", Settings.HIDE_POST_FOLLOW_LINK.get());
+        assertFalse(PostPrompts.showFollowLink(false));
+        assertFalse("the picker lost its Follow text with the switch off", PostPrompts.hideFollowRoute());
+
+        Settings.HIDE_POST_SUBSCRIBE_LINK.save(true);
+        assertFalse(PostPrompts.showFollowLink(false));
+        assertFalse("the Subscribe switch hid a Follow link", PostPrompts.hideFollowRoute());
+
+        Settings.HIDE_POST_FOLLOW_LINK.save(true);
+        assertFalse(PostPrompts.showFollowLink(false));
+        assertTrue("a header kept its Follow link", PostPrompts.hideFollowRoute());
         assertTrue("the status line doesn't count the hidden link", statusLine().contains(PostPrompts.FOLLOW_HIDDEN + " 1"));
+    }
+
+    /**
+     * A header whose Subscribe link the switch held back doesn't get a Follow link in its place,
+     * even with the Follow switch off, and the next header is asked afresh.
+     */
+    @Test
+    public void aHeldSubscribeLinkIsntSwappedForAFollowLink() {
+        Settings.HIDE_POST_SUBSCRIBE_LINK.save(true);
+        assertFalse(PostPrompts.showFollowLink(true));
+        assertTrue("the picker offered a Follow text in place of the held Subscribe link", PostPrompts.hideFollowRoute());
+        assertFalse("the held answer reached the next header", PostPrompts.hideFollowRoute());
+
+        assertFalse(PostPrompts.showFollowLink(true));
+        assertFalse("a header without Subscribe kept the earlier header's answer", PostPrompts.showFollowLink(false));
+        assertFalse("a header Facebook offered no Subscribe lost its Follow text", PostPrompts.hideFollowRoute());
     }
 
     @Test
@@ -166,37 +206,43 @@ public class PostPromptsTest {
         assertFalse("a paused Hushfacebook hid the Join group bar", PostPrompts.hideVideoJoinBar());
     }
 
-    /** The two switches are independent: neither one's hook answers for the other. */
+    /** The switches are independent: none of their hooks answers for another. */
     @Test
-    public void thePromptsSwitchAndTheFollowSwitchDontShareAnAnswer() {
+    public void thePromptsSwitchAndTheFollowSwitchesDontShareAnAnswer() {
         Settings.HIDE_POST_FOLLOW_LINK.save(true);
+        Settings.HIDE_POST_SUBSCRIBE_LINK.save(true);
         Settings.HIDE_POST_PROMPTS.save(false);
-        assertTrue("the follow switch hid a bumper", PostPrompts.keep(true));
+        assertTrue("the follow switches hid a bumper", PostPrompts.keep(true));
         assertFalse(PostPrompts.showFollowLink(true));
         Settings.HIDE_POST_FOLLOW_LINK.save(false);
+        Settings.HIDE_POST_SUBSCRIBE_LINK.save(false);
         Settings.HIDE_POST_PROMPTS.save(true);
         assertFalse(PostPrompts.keep(true));
-        assertTrue("the prompts switch hid a Follow link", PostPrompts.showFollowLink(true));
+        assertTrue("the prompts switch hid a Subscribe link", PostPrompts.showFollowLink(true));
+        assertFalse(PostPrompts.showFollowLink(false));
+        assertFalse("the prompts switch hid a Follow link", PostPrompts.hideFollowRoute());
     }
 
     @Test
-    public void pausedTheFollowLinkStays() {
+    public void pausedTheFollowAndSubscribeLinksStay() {
         Settings.HIDE_POST_FOLLOW_LINK.save(true);
+        Settings.HIDE_POST_SUBSCRIBE_LINK.save(true);
         for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
                 HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP}) {
             PauseForTests.pause(reason);
-            assertTrue("a Hushfacebook paused by " + reason + " hid the Follow link", PostPrompts.showFollowLink(true));
+            assertTrue("a Hushfacebook paused by " + reason + " hid the Subscribe link", PostPrompts.showFollowLink(true));
+            assertFalse("a Hushfacebook paused by " + reason + " hid the Follow link", PostPrompts.hideFollowRoute());
             PauseForTests.resume();
         }
     }
 
-    /** The follow hook hands Facebook's answer over as an int too. */
+    /** The subscribe hook hands Facebook's answer over as an int too. */
     @Test
-    public void theFollowEntrysIntReadsNonZeroAsYes() {
-        Settings.HIDE_POST_FOLLOW_LINK.save(true);
+    public void theSubscribeEntrysIntReadsNonZeroAsYes() {
+        Settings.HIDE_POST_SUBSCRIBE_LINK.save(true);
         assertFalse(PostPrompts.showFollowLink(1));
         assertFalse(PostPrompts.showFollowLink(0));
-        Settings.HIDE_POST_FOLLOW_LINK.save(false);
+        Settings.HIDE_POST_SUBSCRIBE_LINK.save(false);
         assertTrue(PostPrompts.showFollowLink(1));
         assertFalse(PostPrompts.showFollowLink(0));
     }

@@ -34,6 +34,7 @@ Changes in each Hushfacebook version, newest first.
 * The Playback speed row that `Playback speed in the post menu` adds now sits on the menu's first page, with Save and Report, so it's one tap away. Before, it was under More options. Turn off `Playback speed on the menu's first page` to put it back there. (#473)
 * `Double tap to skip on feed videos` shows how far you jumped, +10s on the right or -10s on the left, over the side you tapped. Keep tapping and it counts up, +20s, +30s, then fades out a moment after the last tap. (#432)
 * In Morphe Manager's grouped patch list, `Block promotional notifications` now sits with the ad patches, so the Interface group stays short enough to scan.
+* `Hide the Follow and Subscribe links on posts` is two switches now, `Hide the Follow link on posts` and `Hide the Subscribe link on posts` under News feed, so you can keep one and drop the other. The Subscribe one covers the link next to a creator's name on posts and videos. With only the Subscribe one on, a creator's header no longer swaps its Subscribe link for a Follow one. If you had the old switch on, both start on for you, and a settings file saved before the split turns both on too. (#434)
 
 ### Fixed
 

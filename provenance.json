@@ -913,7 +913,16 @@
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook for issue #396: the Follow a collab post or a partnership ad adds after its second name. In Facebook 585 CollabFollowTitleTextPlugin and FBPADualHeaderFollowTextPlugin (kept class names) each build that \" · Follow\" text themselves and hand it to the title segment's (click, CharSequence) constructor as their last step, outside the follow check Hide the Follow link on posts already answers. The patch hands the text to the extension right before that constructor, and the extension answers an empty text of the same kind while the switch is on, so the header has no dot, no word and nothing to tap."
+      "changes": "Written for Hushfacebook for issue #396: the Follow a collab post or a partnership ad adds after its second name. In Facebook 585 CollabFollowTitleTextPlugin and FBPADualHeaderFollowTextPlugin (kept class names) each build that \" · Follow\" text themselves and hand it to the title segment's (click, CharSequence) constructor as their last step, outside the follow check Hide the Follow link on posts already answers. The patch hands the text to the extension right before that constructor, and the extension answers an empty text of the same kind while the switch is on, so the header has no dot, no word and nothing to tap. For issue #434, read from Facebook 586 and 587, the header's plugin picker gets a second hook: it asks the follow check and, on a no, takes its own Follow route, so the patch calls the extension at that route's first instruction, and the picker answers no while Hide the Follow link on posts is on or the check's hook just held a Subscribe link."
+    },
+    {
+      "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/settings/SubscribeLinkSetting.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #434: Hide the Subscribe link on posts, split off the Follow switch. With no value of its own yet, it takes the Follow switch's stored yes once and the main process stores it, so someone who had the one switch on keeps the Subscribe link hidden, and from then on the two switches don't move each other."
     },
     {
       "paths": [

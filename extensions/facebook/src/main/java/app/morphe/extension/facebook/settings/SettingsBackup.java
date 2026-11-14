@@ -174,6 +174,7 @@ public final class SettingsBackup {
             Settings.HIDE_OTHER_LANGUAGES,
             Settings.HIDE_POST_PROMPTS,
             Settings.HIDE_POST_FOLLOW_LINK,
+            Settings.HIDE_POST_SUBSCRIBE_LINK,
             Settings.HIDE_POST_JOIN_BUTTON,
             Settings.HIDE_POST_X,
             Settings.HIDE_POST_COUNTS,
@@ -2473,6 +2474,12 @@ public final class SettingsBackup {
             // either new key the file also carries wins, whatever order the JSON object uses.
             found.putIfAbsent(Settings.HOLD_PHOTO_TO_REACT, legacyHoldToReact);
             found.putIfAbsent(Settings.HOLD_VIDEO_TO_REACT, legacyHoldToReact);
+        }
+        Boolean followLink = found.get(Settings.HIDE_POST_FOLLOW_LINK);
+        if (followLink != null) {
+            // A file from before the split (#434) has the Follow key only, which then hid the Subscribe
+            // link too. A file written since carries the Subscribe key, and that one wins.
+            found.putIfAbsent(Settings.HIDE_POST_SUBSCRIBE_LINK, followLink);
         }
         if (commentsHeight == null && legacyFullHeight != null) {
             // A file from before the list: the old switch on is full height, off Facebook's

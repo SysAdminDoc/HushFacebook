@@ -9,6 +9,7 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.layout.theme.branchTargets as switchAndBranchTargets
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -86,10 +87,48 @@ class HidePostPromptsFixtureTest {
                 val builderOriginals = builders.mapValues { (_, builder) -> builder.code() }
                 val constructions = builders.mapValues { (_, builder) -> segmentConstructions(builder).single() }
 
+                // The header's plugin picker asks the follow check and, on a no, takes its own Follow route (#434).
+                val pickers = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it.toString() == FOLLOW_TEXT_PLUGIN } }) {
+                    it.definingClass != FOLLOW_TEXT_PLUGIN && it.returnType == "Z" && followRouteStarts(it, followCheck).isNotEmpty()
+                }
+                assertEquals("$name: plugin pickers with a Follow route", 1, pickers.size)
+                val picker = pickers.single()
+                val pickerOriginal = picker.code()
+                val (route, answer) = followRouteStarts(picker, followCheck).single()
+                assertTrue("$name: something branches onto the Follow route", route !in switchAndBranchTargets(pickerOriginal))
+                val pickerClass = FixtureDex.classes(bundle, setOf(picker.definingClass)).getValue(picker.definingClass)
+
                 // The counts and reaction preview hooks have their own fixture tests (PostCounts, ReactionPreview).
-                val context = PatchContexts.of(listOf(component, plugin) + textPlugins.values + ExtensionDex.classDef(SETTINGS_STATUS))
+                val context = PatchContexts.of(
+                    listOf(component, plugin, pickerClass) + textPlugins.values + ExtensionDex.classDef(SETTINGS_STATUS),
+                )
                 context.hidePromptChecks()
                 context.enableStatus("postPrompts")
+
+                val pickerPatched = context.mutableClassDefBy(picker.definingClass).methods.single {
+                    it.name == picker.name && it.parameterTypes.map(CharSequence::toString) == picker.parameterTypes.map(CharSequence::toString)
+                }.code()
+                // The picker's switch payloads sit at its end, so the nop aligning them can come or go.
+                assertEquals("$name: five instructions added to the picker",
+                    pickerOriginal.count { it.opcode != Opcode.NOP } + 5, pickerPatched.count { it.opcode != Opcode.NOP })
+                assertEquals("$name: the check's yes still leaves first", Opcode.IF_NEZ, pickerPatched[route - 1].opcode)
+                val routeCall = pickerPatched[route]
+                assertEquals("$name: the Follow route call", Opcode.INVOKE_STATIC, routeCall.opcode)
+                assertEquals("$name: the Follow route call", HIDE_FOLLOW_ROUTE,
+                    ((routeCall as ReferenceInstruction).reference as MethodReference).toString())
+                assertEquals("$name: the extension's answer", Opcode.MOVE_RESULT, pickerPatched[route + 1].opcode)
+                assertEquals("$name: the extension's answer", Opcode.IF_EQZ, pickerPatched[route + 2].opcode)
+                assertEquals("$name: the picker's no", Opcode.CONST_16, pickerPatched[route + 3].opcode)
+                assertEquals("$name: the picker's no", 0, (pickerPatched[route + 3] as NarrowLiteralInstruction).narrowLiteral)
+                assertEquals("$name: the picker leaves with no", Opcode.RETURN, pickerPatched[route + 4].opcode)
+                for (at in route + 1..route + 4) {
+                    assertEquals("$name: the hook's register at ${at - route}", answer, (pickerPatched[at] as OneRegisterInstruction).registerA)
+                }
+                assertEquals("$name: an answer of yes takes Facebook's Follow route", route + 5, branchTargets(pickerPatched)[route + 2])
+                assertEquals("$name: Facebook's Follow route follows the hook", pickerOriginal[route].opcode, pickerPatched[route + 5].opcode)
+                for (target in switchAndBranchTargets(pickerPatched)) {
+                    assertTrue("$name: a branch lands inside the Follow route hook at $target", target !in route..route + 4)
+                }
 
                 for ((type, builder) in builders) {
                     val (at, text) = constructions.getValue(type)

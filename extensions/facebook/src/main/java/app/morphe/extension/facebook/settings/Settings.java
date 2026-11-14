@@ -3133,11 +3133,22 @@ public class Settings extends BaseSettings {
 
     /**
      * The "Follow" link after the name in the header of posts from Pages and people you don't follow
-     * goes ({@link app.morphe.extension.facebook.feed.PostPrompts#showFollowLink}). Off by default.
-     * A change shows on the posts drawn after it.
+     * goes, "Follow back" and "Following" too ({@link
+     * app.morphe.extension.facebook.feed.PostPrompts#hideFollowRoute}, {@link
+     * app.morphe.extension.facebook.feed.PostPrompts#followText}). Off by default. A change shows on
+     * the posts drawn after it. Until #434 it also covered the Subscribe link.
      */
     public static final BooleanSetting HIDE_POST_FOLLOW_LINK =
-            new BooleanSetting("hushfacebook_hide_post_follow_link", FALSE);
+            new BooleanSetting(SubscribeLinkSetting.FOLLOW_KEY, FALSE);
+
+    /**
+     * The "Subscribe" link after the name in the header of posts and videos from creators you can
+     * subscribe to goes ({@link app.morphe.extension.facebook.feed.PostPrompts#showFollowLink}).
+     * Split from {@link #HIDE_POST_FOLLOW_LINK} (#434), whose stored value it takes over once. Off by
+     * default. A change shows on the posts drawn after it.
+     */
+    public static final BooleanSetting HIDE_POST_SUBSCRIBE_LINK =
+            new SubscribeLinkSetting("hushfacebook_hide_post_subscribe_link");
 
     /**
      * The Join button after the group's name in the header of a post from a group you haven't joined

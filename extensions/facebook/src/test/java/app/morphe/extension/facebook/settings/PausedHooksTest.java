@@ -531,6 +531,11 @@ public class PausedHooksTest {
         probes.put(PatchFamily.POST_PROMPTS, Arrays.asList(
                 () -> !PostPrompts.keep(true),
                 () -> !PostPrompts.showFollowLink(true),
+                // A header the subscribe check said no to isn't given a Follow text by the plugin picker.
+                () -> {
+                    PostPrompts.showFollowLink(false);
+                    return PostPrompts.hideFollowRoute();
+                },
                 // A collab or partnership header's own " · Follow" comes back empty.
                 () -> PostPrompts.followText(" · Follow").length() == 0,
                 // A header the X check says yes to is drawn as one without the X.

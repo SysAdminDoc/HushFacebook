@@ -16,10 +16,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * one predicate on its component answers whether a story has one. The bumper plugin and every row
  * that keeps room for a bumper ask it, so with the switch on, a no means no strip and no gap.
  *
- * <p>The same family holds a second switch, off by default: the header of a post from a Page or a
- * person you don't follow shows a dot and "Follow" after the name, a text a title plugin adds when its own check says
- * yes. {@link #showFollowLink} answers that check no, so the header is drawn as for a post that has
- * no such text.
+ * <p>The same family holds two more switches, off by default (split in #434): the header of a post
+ * from a Page or a person you don't follow shows a dot and "Follow" or "Subscribe" after the name, a
+ * text one title plugin adds. Its own check says yes for Subscribe, and {@link #showFollowLink}
+ * answers that check no while the Subscribe switch is on. When the check says no, the header's
+ * plugin picker looks for a Follow text instead, and {@link #hideFollowRoute} stops it there while
+ * the Follow switch is on. Either way the header is drawn as for a post that has no such text.
  *
  * <p>A third switch, also off by default, takes the numbers off a post's Like, Comment and Share
  * buttons. Each button's text comes from one builder that answers an empty text for a post nobody
@@ -80,9 +82,22 @@ public final class PostPrompts {
         }
     }
 
+    /** Counted under the patch's name each time a header's Subscribe link is answered away. */
+    static final String SUBSCRIBE_HIDDEN = "Subscribe link kept out";
+
+    private static volatile boolean subscribeLogged;
+
     /**
-     * The entry the follow-link hook calls, handed the check's answer as an int for the same reason
-     * as {@link #keep(int)}.
+     * Whether the last answer {@link #showFollowLink} gave on this thread was a yes it turned into a
+     * no. The header's plugin picker asks the check, and when the answer is no it goes on to ask
+     * whether a Follow, Follow back or Following text fits instead; {@link #hideFollowRoute} reads
+     * this right after, so a header whose Subscribe link went doesn't get a Follow link in its place.
+     */
+    private static final ThreadLocal<Boolean> subscribeHeld = new ThreadLocal<>();
+
+    /**
+     * The entry the subscribe-link hook calls, handed the check's answer as an int for the same
+     * reason as {@link #keep(int)}.
      */
     public static boolean showFollowLink(int shown) {
         return showFollowLink(shown != 0);
@@ -90,24 +105,55 @@ public final class PostPrompts {
 
     /**
      * The hook, at each return of the check that decides whether a post's header carries the
-     * "Follow" (or "Subscribe") text after the name. The header builds without that text when the
-     * check says no, so the name, the date and the layout stay as Facebook draws a header without
-     * it. A yes becomes a no while the switch is on; everything else is Facebook's answer.
+     * "Subscribe" (or "Subscribed") text after the name. The header builds without that text when
+     * the check says no, so the name, the date and the layout stay as Facebook draws a header without
+     * it. A yes becomes a no while the Subscribe switch is on; everything else is Facebook's answer.
      */
     public static boolean showFollowLink(boolean shown) {
         try {
             HookStatus.invoked(FAMILY);
-            if (!shown || !Utils.settingsReady() || !Settings.HIDE_POST_FOLLOW_LINK.get()) return shown;
+            boolean hide = shown && Utils.settingsReady() && Settings.HIDE_POST_SUBSCRIBE_LINK.get();
+            subscribeHeld.set(hide);
+            if (!hide) return shown;
+            HookStatus.bound(FAMILY, "subscribe link");
+            HookStatus.counted(FAMILY, SUBSCRIBE_HIDDEN);
+            if (!subscribeLogged) {
+                subscribeLogged = true;
+                Logger.printDebug(() -> "Post prompts: a post header's Subscribe link was kept out");
+            }
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "subscribe link", failure);
+            return shown;
+        }
+    }
+
+    /**
+     * The hook in the header's plugin picker, right where the subscribe check has said no and the
+     * picker goes on to see whether a Follow, Follow back or Following text fits. True makes the
+     * picker answer that the plugin isn't needed, so the header carries no such text: while the
+     * Follow switch is on, and for a header whose Subscribe link {@link #showFollowLink} just held
+     * back. False, which is the answer while the switch is off, paused, before the settings are
+     * ready or when anything here fails, lets Facebook decide.
+     */
+    public static boolean hideFollowRoute() {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (Boolean.TRUE.equals(subscribeHeld.get())) {
+                subscribeHeld.set(Boolean.FALSE);
+                return true;
+            }
+            if (!Utils.settingsReady() || !Settings.HIDE_POST_FOLLOW_LINK.get()) return false;
             HookStatus.bound(FAMILY, "follow link");
             HookStatus.counted(FAMILY, FOLLOW_HIDDEN);
             if (!followLogged) {
                 followLogged = true;
                 Logger.printDebug(() -> "Post prompts: a post header's Follow link was kept out");
             }
-            return false;
+            return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "follow link", failure);
-            return shown;
+            return false;
         }
     }
 

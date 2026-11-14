@@ -57,7 +57,9 @@ internal const val STORY_MODEL = "Lcom/facebook/graphql/model/GraphQLStory;"
  * is needed, and the title builder asks it again before appending the text, so a no from the check
  * leaves the title as a header without that plugin builds it. Its answers go through the extension
  * the same way. A collab post and a partnership ad build their own " · Follow" text in two other
- * plugins, and the same switch empties that text (PostFollowText.kt, #396).
+ * plugins, and the same switch empties that text (PostFollowText.kt, #396). Since #434 the check's
+ * hook takes the Subscribe link and a second switch drives it; the Follow switch stops the picker's
+ * own Follow route (PostFollowText.kt).
  *
  * The third switch, also off by default, takes the numbers off a post's Like, Comment and Share
  * buttons by having their one text builder give its zero answer (PostCounts.kt, #180). The fourth,
@@ -71,9 +73,9 @@ val hidePostPromptsPatch = bytecodePatch(
     name = "Hide post prompts",
     description = "Removes the strip Facebook adds to some posts, like \"Are you interested in this post?\", " +
         "\"Show less\" or follow suggestions, so posts look less cluttered. No gap is left. On by default. Turn " +
-        "it off in Hushfacebook settings > News feed. Five more switches there, Hide the Follow and Subscribe links on posts, " +
-        "Hide the Join button on posts, Hide the X on posts, Hide counts on posts and Hide the reaction preview " +
-        "on posts, start off.",
+        "it off in Hushfacebook settings > News feed. Six more switches there, Hide the Follow link on posts, " +
+        "Hide the Subscribe link on posts, Hide the Join button on posts, Hide the X on posts, Hide counts on posts " +
+        "and Hide the reaction preview on posts, start off.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -96,6 +98,7 @@ internal fun BytecodePatchContext.hidePromptChecks() {
     mutableClassDefBy(check.definingClass).findMutableMethodOf(check).filterBooleanReturns(PATCH, KEEP)
     val follow = findFollowLinkCheck()
     mutableClassDefBy(follow.definingClass).findMutableMethodOf(follow).filterBooleanReturns(PATCH, SHOW_FOLLOW_LINK)
+    hideFollowRoute(follow)
     hidePostFollowTexts()
 }
 
