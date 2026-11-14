@@ -66,13 +66,17 @@ val hideSponsoredProfilePostsPatch = bytecodePatch(
     execute {
         val story = timelineStory()
         fillStoryModelStub(PROFILE_AD_FILTER, SPONSORED_DATA_STUB, story.sponsoredData)
-        mutableClassDefBy(story.render.definingClass).methods.single {
-            it.name == story.render.name && it.returnType == story.render.returnType &&
-                it.parameterTypes.map(Any::toString) == story.render.parameterTypes.map(Any::toString)
-        }.skipSponsoredStories(story.unit)
+        mutableRender(story).skipSponsoredStories(story.unit)
         enableStatus("sponsoredProfilePosts")
     }
 }
+
+/** The render method [story] found, as the method a patch can add to. */
+internal fun BytecodePatchContext.mutableRender(story: TimelineStory): MutableMethod =
+    mutableClassDefBy(story.render.definingClass).methods.single {
+        it.name == story.render.name && it.returnType == story.render.returnType &&
+            it.parameterTypes.map(Any::toString) == story.render.parameterTypes.map(Any::toString)
+    }
 
 /**
  * The timeline story component's render method, held to the evidence the rule rests on: it's the
@@ -152,8 +156,12 @@ private fun BytecodePatchContext.storyInterfaces(): Set<String> {
  * instruction. v0 is free at index 0. For a field, `this` is copied down into it because
  * `iget-object` names its registers in four bits; a parameter is copied with `move-object/from16`,
  * since 585's sits past v15.
+ *
+ * [judge] is the extension method asked, `(Ljava/lang/Object;)Z`: this patch's, or Hide posts by
+ * words' own (#458). Each patch's check goes in whole at index 0 and jumps to whatever was first,
+ * so the two run one after the other and neither one's branch points into the other's code.
  */
-internal fun MutableMethod.skipSponsoredStories(unit: StoryUnit) {
+internal fun MutableMethod.skipSponsoredStories(unit: StoryUnit, judge: String = HIDE) {
     val load = when (unit) {
         is StoryUnit.InField -> {
             val field = unit.field
@@ -175,7 +183,7 @@ internal fun MutableMethod.skipSponsoredStories(unit: StoryUnit) {
         0,
         """
             $load
-            invoke-static { v0 }, $HIDE
+            invoke-static { v0 }, $judge
             move-result v0
             if-eqz v0, :render
             const/4 v0, 0x0

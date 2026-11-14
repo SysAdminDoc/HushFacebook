@@ -1034,6 +1034,7 @@
       "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/PostText.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/PostWords.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/TimelineWords.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/words/**"
       ],
       "origin": "original",

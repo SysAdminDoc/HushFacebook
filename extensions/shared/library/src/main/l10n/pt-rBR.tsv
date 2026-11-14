@@ -604,7 +604,7 @@ Nobody listed yet, so no post is hidden.	Ninguém na lista ainda, então nenhuma
 Your list of people, Pages and sites to hide will be empty.	Sua lista de pessoas, Páginas e sites para ocultar ficará vazia.
 Your list of people, Pages and sites to hide will hold %1$d entry.	Sua lista de pessoas, Páginas e sites para ocultar terá %1$d item.
 Your list of people, Pages and sites to hide will hold %1$d entries.	Sua lista de pessoas, Páginas e sites para ocultar terá %1$d itens.
-Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Reels tab reels go by their captions too.	Oculta publicações que contêm uma palavra ou frase da sua lista abaixo. Palavras que mantêm uma publicação têm prioridade. Suas palavras ficam neste celular, a menos que você as exporte. Os Reels da aba Reels também são filtrados pela legenda.
+Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Posts on profiles and Pages go too, and Reels tab reels go by their captions.	Oculta publicações que contêm uma palavra ou frase da sua lista abaixo. Palavras que mantêm uma publicação têm prioridade. Suas palavras ficam neste celular, a menos que você as exporte. Publicações em perfis e Páginas também são ocultadas, e os Reels da aba Reels são filtrados pela legenda.
 Words to hide	Palavras para ocultar
 Words that keep a post	Palavras que mantêm uma publicação
 One word or phrase per line, up to %1$d lines, each %2$d to %3$d characters long. A single emoji or Chinese, Japanese or Korean character is enough on its own. Capital letters don't matter, and a phrase matches anywhere in a post's text, even inside longer words.	Uma palavra ou frase por linha, até %1$d linhas, com %2$d a %3$d caracteres cada. Um único emoji ou caractere chinês, japonês ou coreano já basta. Maiúsculas não importam, e uma frase corresponde em qualquer parte do texto de uma publicação, até dentro de palavras maiores.
@@ -1290,7 +1290,7 @@ Hides posts with a photo or album, including shares.	Oculta publicações com fo
 # context: summary of the Hide video posts switch
 Hides posts with a video, including shares. Reels in the feed have their own switch.	Oculta publicações com vídeo, incluindo compartilhamentos. Os reels no feed têm o próprio botão.
 # context: summary of the Hide link posts switch
-Hides posts that share a link to a website, with its preview card. Reels tab reels whose caption names a website go too.	Oculta publicações que compartilham um link para um site, com o cartão de prévia. Reels da aba Reels cuja legenda cita um site também são ocultados.
+Hides posts that share a link to a website, with its preview card. On profiles, Pages and the Reels tab, a post or reel whose words name a website goes too.	Oculta publicações que compartilham um link para um site, com o cartão de prévia. Em perfis, Páginas e na aba Reels, uma publicação ou reel cujo texto cita um site também é ocultado.
 # context: summary of the Hide posts on a colored background switch
 Hides short posts shown as big text on a colored background.	Oculta publicações curtas exibidas como texto grande sobre um fundo colorido.
 # context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language

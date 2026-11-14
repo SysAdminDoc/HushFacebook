@@ -7,6 +7,9 @@ package app.morphe.patches.facebook.feed.words
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patches.facebook.ads.sponsoredprofile.mutableRender
+import app.morphe.patches.facebook.ads.sponsoredprofile.skipSponsoredStories
+import app.morphe.patches.facebook.ads.sponsoredprofile.timelineStory
 import app.morphe.patches.facebook.feed.BASE_MODEL_WITH_TREE
 import app.morphe.patches.facebook.feed.GRAPHQL_STORY
 import app.morphe.patches.facebook.feed.TREE_JNI
@@ -28,6 +31,9 @@ internal const val POST_TEXT = "$EXTENSION_PACKAGE/feed/PostText;"
 internal const val MESSAGE_STUB = "message"
 internal const val ATTACHED_STORY_STUB = "attachedStory"
 internal const val ACTION_LINKS_STUB = "actionLinks"
+
+/** What judges a profile or Page timeline row for the words and link rules (#458). */
+internal const val TIMELINE_WORDS = "$EXTENSION_PACKAGE/feed/TimelineWords;->hide(Ljava/lang/Object;)Z"
 
 internal const val PATCH = "Hide posts by words"
 
@@ -59,6 +65,11 @@ internal const val PATCH = "Hide posts by words"
  * authors stub as well, and asks each person author's `friendship_status` through the kept
  * `getCachedString(int)`.
  *
+ * The words and link rules also judge each post on a profile's or a Page's timeline (#458). That
+ * timeline's story component is found the way Hide sponsored profile posts finds it, and this patch
+ * puts its own check first in the render method, so either patch works without the other. A build
+ * where the component can't be found keeps the rest of the patch.
+ *
  * The lists live in Hushfacebook's settings on the phone. Nothing here reads a post until a
  * switch is on and its list has something in it, and nothing of the text, the names or the lists
  * goes into a log, the diagnostic report or a request.
@@ -68,8 +79,9 @@ val hidePostsByWordsPatch = bytecodePatch(
     name = "Hide posts by words",
     description = "Hides feed posts with words you list, or from people, Pages or sites you list, so you skip " +
         "topics you're tired of. Photo, video, link and colored background posts, every post a Page wrote, or " +
-        "posts in languages you don't read can go too. Your words, link posts and other languages also work on " +
-        "the Reels tab, going by each reel's caption. Starts off. Turn it on in Hushfacebook settings > News feed.",
+        "posts in languages you don't read can go too. Your words and link posts also work on profiles and Pages. " +
+        "On the Reels tab they go by each reel's caption, and so do other languages. Starts off. Turn it on in " +
+        "Hushfacebook settings > News feed.",
     default = true,
 ) {
     category("Feed")
@@ -101,6 +113,15 @@ val hidePostsByWordsPatch = bytecodePatch(
             null
         }
 
+        // So are profile and Page timelines (#458): the timeline story component Hide sponsored
+        // profile posts finds, whose render method draws every post there.
+        val timeline = try {
+            timelineStory()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on without profile and Page timelines.")
+            null
+        }
+
         // The extension reads the text and the model's type tag through these, by reflection.
         if (!hasPublicStringReader(classDefBy(BASE_MODEL_WITH_TREE))) {
             throw PatchException("$PATCH: BaseModelWithTree has no public getCachedString(int)")
@@ -129,6 +150,7 @@ val hidePostsByWordsPatch = bytecodePatch(
         }
         if (types != null) fillPostTypeStubs(types)
         if (reactions != null) fillReactionStubs(reactions)
+        if (timeline != null) mutableRender(timeline).skipSponsoredStories(timeline.unit, TIMELINE_WORDS)
         enableStatus("postWords")
     }
 }

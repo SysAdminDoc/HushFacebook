@@ -684,7 +684,7 @@ Your list of people, Pages and sites to hide will be empty.	Daftar orang, Halama
 Your list of people, Pages and sites to hide will hold %1$d entry.	Daftar orang, Halaman, dan situs yang kamu sembunyikan akan berisi %1$d entri.
 Your list of people, Pages and sites to hide will hold %1$d entries.	Daftar orang, Halaman, dan situs yang kamu sembunyikan akan berisi %1$d entri.
 # context: summary of that switch; the keep list is the second list under it, and a settings file is the one Export settings writes
-Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Reels tab reels go by their captions too.	Menyembunyikan postingan yang berisi kata atau frasa dari daftarmu di bawah. Kata yang mempertahankan postingan lebih diutamakan. Kata-katamu tetap di ponsel ini kecuali kamu mengekspornya. Reel di tab Reels juga disaring menurut keterangannya.
+Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Posts on profiles and Pages go too, and Reels tab reels go by their captions.	Menyembunyikan postingan yang berisi kata atau frasa dari daftarmu di bawah. Kata yang mempertahankan postingan lebih diutamakan. Kata-katamu tetap di ponsel ini kecuali kamu mengekspornya. Postingan di profil dan Halaman juga disembunyikan, dan Reel di tab Reels disaring menurut keterangannya.
 # context: title of the row and dialog holding the list of words and phrases that hide a post
 Words to hide	Kata untuk disembunyikan
 # context: title of the row and dialog holding the list of words and phrases that keep a post even when it has a word to hide
@@ -1404,7 +1404,7 @@ Hides posts with a photo or album, including shares.	Menyembunyikan postingan de
 # context: summary of the Hide video posts switch
 Hides posts with a video, including shares. Reels in the feed have their own switch.	Menyembunyikan postingan dengan video, termasuk yang dibagikan ulang. Reel di feed punya sakelar sendiri.
 # context: summary of the Hide link posts switch
-Hides posts that share a link to a website, with its preview card. Reels tab reels whose caption names a website go too.	Menyembunyikan postingan yang membagikan tautan ke situs web, beserta kartu pratinjaunya. Reel di tab Reels yang keterangannya menyebut situs web juga disembunyikan.
+Hides posts that share a link to a website, with its preview card. On profiles, Pages and the Reels tab, a post or reel whose words name a website goes too.	Menyembunyikan postingan yang membagikan tautan ke situs web, beserta kartu pratinjaunya. Di profil, Halaman, dan tab Reels, postingan atau reel yang teksnya menyebut situs web juga disembunyikan.
 # context: summary of the Hide posts on a colored background switch
 Hides short posts shown as big text on a colored background.	Menyembunyikan postingan pendek yang tampil sebagai teks besar di atas latar berwarna.
 # context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language
