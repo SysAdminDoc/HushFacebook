@@ -18,7 +18,7 @@ final class L10nTableDe {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(3742);
+        Map<String, String> table = new HashMap<>(3744);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -3543,6 +3543,8 @@ final class L10nTableDe {
                 "Schalte %1$s ein, um Videos zu speichern, die WhatsApp und diese Editoren annehmen.");
         table.put("Turn on %1$s to use this.",
                 "Schalte %1$s ein, um das zu nutzen.");
+        table.put("Turned off lately",
+                "Zuletzt ausgeschaltet");
         table.put("Type @ before Facebook suggests someone to tag in posts or comments. Your text stays unchanged.",
                 "Facebook schl\u00e4gt Personen in Beitr\u00e4gen und Kommentaren erst nach @ vor. Dein Text bleibt unver\u00e4ndert.");
         table.put("Type a six-digit color code, like #2ECC71.",
@@ -3617,11 +3619,11 @@ final class L10nTableDe {
                 "Video-Stories starten nicht von selbst. Halte eine Story gedr\u00fcckt und lass dann los, um sie abzuspielen. Funktioniert mit \u201eZum Abspielen tippen\u201c an oder aus.");
         table.put("Video stories follow the Default quality row.",
                 "Video-Stories folgen der Zeile \u201eStandardqualit\u00e4t\u201c.");
-        table.put("Video stories wait for a tap",
-                "Video-Stories warten auf Antippen");
     }
 
     private static void fill29(Map<String, String> table) {
+        table.put("Video stories wait for a tap",
+                "Video-Stories warten auf Antippen");
         table.put("Video stories will play at the same quality as other videos.",
                 "Video-Stories laufen dann in derselben Qualit\u00e4t wie andere Videos.");
         table.put("Video subfolder",
@@ -3740,11 +3742,11 @@ final class L10nTableDe {
                 "Mit %1$s an zeigt Start dann dieselben Beitr\u00e4ge wie %2$s im Feeds-Tab.");
         table.put("With Block Instant Games ads on, a game's rewarded ad counts as watched. No ad plays and the game still gives its reward.",
                 "Bei eingeschaltetem \u201eWerbung in Instant Games blockieren\u201c z\u00e4hlt die Werbung mit Belohnung als angesehen. Es l\u00e4uft keine Werbung, und das Spiel gibt trotzdem die Belohnung.");
-        table.put("With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.",
-                "Wenn \u201eVideos aus Feed und Watch herunterladen\u201c an ist und du mit einem kopierten Reel- oder Videolink zu Facebook zur\u00fcckkommst, wird der Download angeboten, einmal pro Link. Ausgeschaltet schaut Facebook nicht nach, was du kopiert hast.");
     }
 
     private static void fill30(Map<String, String> table) {
+        table.put("With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.",
+                "Wenn \u201eVideos aus Feed und Watch herunterladen\u201c an ist und du mit einem kopierten Reel- oder Videolink zu Facebook zur\u00fcckkommst, wird der Download angeboten, einmal pro Link. Ausgeschaltet schaut Facebook nicht nach, was du kopiert hast.");
         table.put("With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.",
                 "Wenn Fortschrittsbalken behalten an ist, bleiben die vergangene und die Gesamtzeit eines Reels \u00fcber dem Balken. Ist es aus, erscheinen sie nur, w\u00e4hrend du den Balken ziehst.");
         table.put("With Lock Facebook on, it will lock as soon as you leave it.",
@@ -3863,11 +3865,11 @@ final class L10nTableDe {
                 "Deine Tab-Leiste beh\u00e4lt die Reihenfolge von Facebook.");
         table.put("ads",
                 "Anzeigen");
-        table.put("answered",
-                "beantwortet");
     }
 
     private static void fill31(Map<String, String> table) {
+        table.put("answered",
+                "beantwortet");
         table.put("facebook.com and m.me links open here now.",
                 "facebook.com- und m.me-Links \u00f6ffnen sich jetzt hier.");
         table.put("facebook.com links open here now.",

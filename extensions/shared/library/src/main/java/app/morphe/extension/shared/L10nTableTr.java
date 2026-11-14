@@ -18,7 +18,7 @@ final class L10nTableTr {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(3742);
+        Map<String, String> table = new HashMap<>(3744);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -3543,6 +3543,8 @@ final class L10nTableTr {
                 "WhatsApp ve bu d\u00fczenleyicilerin kabul etti\u011fi videolar\u0131 kaydetmek i\u00e7in %1$s se\u00e7ene\u011fini a\u00e7\u0131n.");
         table.put("Turn on %1$s to use this.",
                 "Bunu kullanmak i\u00e7in %1$s se\u00e7ene\u011fini a\u00e7\u0131n.");
+        table.put("Turned off lately",
+                "Son kapat\u0131lanlar");
         table.put("Type @ before Facebook suggests someone to tag in posts or comments. Your text stays unchanged.",
                 "Facebook'un g\u00f6nderi ve yorumlarda etiketlenecek ki\u015fi \u00f6nermesi i\u00e7in @ yaz\u0131n. Metniniz de\u011fi\u015fmez.");
         table.put("Type a six-digit color code, like #2ECC71.",
@@ -3617,11 +3619,11 @@ final class L10nTableTr {
                 "Video hikayeler kendili\u011finden ba\u015flamaz. Oynatmak i\u00e7in bir hikayeye bas\u0131l\u0131 tut, sonra b\u0131rak. \"Oynatmak i\u00e7in dokun\" a\u00e7\u0131kken de kapal\u0131yken de \u00e7al\u0131\u015f\u0131r.");
         table.put("Video stories follow the Default quality row.",
                 "Video hikayeler, Varsay\u0131lan kalite sat\u0131r\u0131n\u0131 izler.");
-        table.put("Video stories wait for a tap",
-                "Video hikayeler dokunman\u0131 bekler");
     }
 
     private static void fill29(Map<String, String> table) {
+        table.put("Video stories wait for a tap",
+                "Video hikayeler dokunman\u0131 bekler");
         table.put("Video stories will play at the same quality as other videos.",
                 "Video hikayeler, di\u011fer videolarla ayn\u0131 kalitede oynat\u0131lacak.");
         table.put("Video subfolder",
@@ -3740,11 +3742,11 @@ final class L10nTableTr {
                 "%1$s a\u00e7\u0131kken Ana Sayfa, Ak\u0131\u015flar sekmesindeki %2$s ile ayn\u0131 g\u00f6nderileri g\u00f6sterecek.");
         table.put("With Block Instant Games ads on, a game's rewarded ad counts as watched. No ad plays and the game still gives its reward.",
                 "\u201cInstant Games reklamlar\u0131n\u0131 engelle\u201d a\u00e7\u0131kken oyunun \u00f6d\u00fcll\u00fc reklam\u0131 izlenmi\u015f say\u0131l\u0131r. Reklam oynat\u0131lmaz ve oyun \u00f6d\u00fcl\u00fcn\u00fc yine de verir.");
-        table.put("With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.",
-                "Ak\u0131\u015f ve Watch videolar\u0131n\u0131 indir a\u00e7\u0131kken, kopyalanm\u0131\u015f bir reel veya video ba\u011flant\u0131s\u0131yla Facebook'a d\u00f6nd\u00fc\u011f\u00fcnde onu indirmen \u00f6nerilir, her ba\u011flant\u0131 i\u00e7in bir kez. Kapal\u0131yken Facebook kopyalad\u0131\u011f\u0131n \u015feye bakmaz.");
     }
 
     private static void fill30(Map<String, String> table) {
+        table.put("With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.",
+                "Ak\u0131\u015f ve Watch videolar\u0131n\u0131 indir a\u00e7\u0131kken, kopyalanm\u0131\u015f bir reel veya video ba\u011flant\u0131s\u0131yla Facebook'a d\u00f6nd\u00fc\u011f\u00fcnde onu indirmen \u00f6nerilir, her ba\u011flant\u0131 i\u00e7in bir kez. Kapal\u0131yken Facebook kopyalad\u0131\u011f\u0131n \u015feye bakmaz.");
         table.put("With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.",
                 "\u0130lerleme \u00e7ubu\u011funu koru a\u00e7\u0131kken bir reel'in ge\u00e7en ve toplam s\u00fcresi \u00e7ubu\u011fun \u00fcst\u00fcnde kal\u0131r. Kapal\u0131yken yaln\u0131zca \u00e7ubu\u011fu s\u00fcr\u00fcklerken g\u00f6r\u00fcn\u00fcr.");
         table.put("With Lock Facebook on, it will lock as soon as you leave it.",
@@ -3863,11 +3865,11 @@ final class L10nTableTr {
                 "Sekme \u00e7ubu\u011funuz Facebook'un s\u0131ras\u0131n\u0131 koruyacak.");
         table.put("ads",
                 "reklamlar");
-        table.put("answered",
-                "yan\u0131t verdi");
     }
 
     private static void fill31(Map<String, String> table) {
+        table.put("answered",
+                "yan\u0131t verdi");
         table.put("facebook.com and m.me links open here now.",
                 "facebook.com ve m.me ba\u011flant\u0131lar\u0131 art\u0131k burada a\u00e7\u0131l\u0131yor.");
         table.put("facebook.com links open here now.",

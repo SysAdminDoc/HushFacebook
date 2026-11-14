@@ -18,7 +18,7 @@ final class L10nTableIn {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(3742);
+        Map<String, String> table = new HashMap<>(3744);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -3543,6 +3543,8 @@ final class L10nTableIn {
                 "Nyalakan %1$s untuk menyimpan video yang diterima WhatsApp dan editor-editor ini.");
         table.put("Turn on %1$s to use this.",
                 "Nyalakan %1$s untuk menggunakannya.");
+        table.put("Turned off lately",
+                "Baru dinonaktifkan");
         table.put("Type @ before Facebook suggests someone to tag in posts or comments. Your text stays unchanged.",
                 "Ketik @ sebelum Facebook menyarankan orang untuk ditandai dalam postingan atau komentar. Teks Anda tidak berubah.");
         table.put("Type a six-digit color code, like #2ECC71.",
@@ -3617,11 +3619,11 @@ final class L10nTableIn {
                 "Cerita video tidak mulai sendiri. Tekan lama sebuah cerita, lalu lepaskan, untuk memutarnya. Berfungsi saat \"Ketuk untuk memutar\" menyala maupun mati.");
         table.put("Video stories follow the Default quality row.",
                 "Cerita video mengikuti baris Kualitas bawaan.");
-        table.put("Video stories wait for a tap",
-                "Cerita video menunggu ketukan");
     }
 
     private static void fill29(Map<String, String> table) {
+        table.put("Video stories wait for a tap",
+                "Cerita video menunggu ketukan");
         table.put("Video stories will play at the same quality as other videos.",
                 "Cerita video akan diputar dengan kualitas yang sama seperti video lainnya.");
         table.put("Video subfolder",
@@ -3740,11 +3742,11 @@ final class L10nTableIn {
                 "Saat %1$s menyala, Beranda akan menampilkan postingan yang sama dengan %2$s di tab Feed.");
         table.put("With Block Instant Games ads on, a game's rewarded ad counts as watched. No ad plays and the game still gives its reward.",
                 "Saat \u201cBlokir iklan Instant Games\u201d menyala, iklan berhadiah di game dianggap sudah ditonton. Tidak ada iklan yang diputar dan game tetap memberi hadiahnya.");
-        table.put("With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.",
-                "Saat Unduh video dari Kabar Beranda dan Watch aktif, kembali ke Facebook dengan tautan reel atau video yang disalin akan menawarkan unduhannya, sekali per tautan. Saat nonaktif, Facebook tidak melihat apa yang kamu salin.");
     }
 
     private static void fill30(Map<String, String> table) {
+        table.put("With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.",
+                "Saat Unduh video dari Kabar Beranda dan Watch aktif, kembali ke Facebook dengan tautan reel atau video yang disalin akan menawarkan unduhannya, sekali per tautan. Saat nonaktif, Facebook tidak melihat apa yang kamu salin.");
         table.put("With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.",
                 "Dengan Pertahankan bilah progres aktif, waktu berjalan dan total reel tetap tampil di atas bilah. Jika nonaktif, waktu hanya tampil saat Anda menggeser bilah.");
         table.put("With Lock Facebook on, it will lock as soon as you leave it.",
@@ -3863,11 +3865,11 @@ final class L10nTableIn {
                 "Bilah tab Anda akan tetap memakai urutan Facebook.");
         table.put("ads",
                 "iklan");
-        table.put("answered",
-                "dijawab");
     }
 
     private static void fill31(Map<String, String> table) {
+        table.put("answered",
+                "dijawab");
         table.put("facebook.com and m.me links open here now.",
                 "Tautan facebook.com dan m.me kini terbuka di sini.");
         table.put("facebook.com links open here now.",

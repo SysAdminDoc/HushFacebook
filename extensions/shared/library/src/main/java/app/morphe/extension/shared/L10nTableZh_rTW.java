@@ -18,7 +18,7 @@ final class L10nTableZh_rTW {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(3742);
+        Map<String, String> table = new HashMap<>(3744);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -3543,6 +3543,8 @@ final class L10nTableZh_rTW {
                 "\u555f\u7528 %1$s\uff0c\u5373\u53ef\u5132\u5b58 WhatsApp \u8207\u9019\u4e9b\u7de8\u8f2f\u5668\u652f\u63f4\u7684\u5f71\u7247\u3002");
         table.put("Turn on %1$s to use this.",
                 "\u555f\u7528 %1$s \u4ee5\u4f7f\u7528\u6b64\u529f\u80fd\u3002");
+        table.put("Turned off lately",
+                "\u6700\u8fd1\u95dc\u9589");
         table.put("Type @ before Facebook suggests someone to tag in posts or comments. Your text stays unchanged.",
                 "\u5728\u8cbc\u6587\u6216\u7559\u8a00\u4e2d\u8f38\u5165 @ \u5f8c\uff0cFacebook \u624d\u6703\u5efa\u8b70\u53ef\u6a19\u8a3b\u7684\u4eba\u3002\u4f60\u7684\u6587\u5b57\u4e0d\u53d7\u5f71\u97ff\u3002");
         table.put("Type a six-digit color code, like #2ECC71.",
@@ -3617,11 +3619,11 @@ final class L10nTableZh_rTW {
                 "\u5f71\u7247\u9650\u6642\u52d5\u614b\u4e0d\u6703\u81ea\u52d5\u958b\u59cb\u64ad\u653e\u3002\u9577\u6309\u9650\u6642\u52d5\u614b\u5f8c\u653e\u958b\u5373\u53ef\u64ad\u653e\u3002\u7121\u8ad6\u300c\u9ede\u6309\u64ad\u653e\u300d\u958b\u555f\u6216\u95dc\u9589\u7686\u53ef\u4f7f\u7528\u3002");
         table.put("Video stories follow the Default quality row.",
                 "\u5f71\u7247\u9650\u6642\u52d5\u614b\u4f7f\u7528\u300c\u9810\u8a2d\u756b\u8cea\u300d\u7684\u8a2d\u5b9a\u3002");
-        table.put("Video stories wait for a tap",
-                "\u5f71\u7247\u9650\u6642\u52d5\u614b\u7b49\u5f85\u9ede\u6309");
     }
 
     private static void fill29(Map<String, String> table) {
+        table.put("Video stories wait for a tap",
+                "\u5f71\u7247\u9650\u6642\u52d5\u614b\u7b49\u5f85\u9ede\u6309");
         table.put("Video stories will play at the same quality as other videos.",
                 "\u5f71\u7247\u9650\u6642\u52d5\u614b\u5c07\u4f7f\u7528\u8207\u5176\u4ed6\u5f71\u7247\u76f8\u540c\u7684\u64ad\u653e\u756b\u8cea\u3002");
         table.put("Video subfolder",
@@ -3740,11 +3742,11 @@ final class L10nTableZh_rTW {
                 "\u555f\u7528 %1$s \u6642\uff0c\u9996\u9801\u5c07\u986f\u793a\u8207\u300c\u52d5\u614b\u6d88\u606f\u300d\u5206\u9801\u4e2d %2$s \u76f8\u540c\u7684\u8cbc\u6587\u3002");
         table.put("With Block Instant Games ads on, a game's rewarded ad counts as watched. No ad plays and the game still gives its reward.",
                 "\u555f\u7528\u300c\u5c01\u9396\u5373\u6642\u904a\u6232\u5ee3\u544a\u300d\u5f8c\uff0c\u904a\u6232\u7684\u734e\u52f5\u5ee3\u544a\u6703\u8996\u70ba\u5df2\u89c0\u770b\u3002\u4e0d\u64ad\u653e\u5ee3\u544a\uff0c\u904a\u6232\u4ecd\u6703\u63d0\u4f9b\u734e\u52f5\u3002");
-        table.put("With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.",
-                "\u555f\u7528\u300c\u4e0b\u8f09\u52d5\u614b\u6d88\u606f\u8207 Watch \u5f71\u7247\u300d\u5f8c\uff0c\u8907\u88fd Reels \u6216\u5f71\u7247\u9023\u7d50\u4e26\u8fd4\u56de Facebook \u6642\uff0c\u6703\u63d0\u793a\u4e0b\u8f09\uff0c\u6bcf\u500b\u9023\u7d50\u53ea\u63d0\u793a\u4e00\u6b21\u3002\u505c\u7528\u6642\uff0cFacebook \u4e0d\u6703\u67e5\u770b\u4f60\u8907\u88fd\u7684\u5167\u5bb9\u3002");
     }
 
     private static void fill30(Map<String, String> table) {
+        table.put("With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.",
+                "\u555f\u7528\u300c\u4e0b\u8f09\u52d5\u614b\u6d88\u606f\u8207 Watch \u5f71\u7247\u300d\u5f8c\uff0c\u8907\u88fd Reels \u6216\u5f71\u7247\u9023\u7d50\u4e26\u8fd4\u56de Facebook \u6642\uff0c\u6703\u63d0\u793a\u4e0b\u8f09\uff0c\u6bcf\u500b\u9023\u7d50\u53ea\u63d0\u793a\u4e00\u6b21\u3002\u505c\u7528\u6642\uff0cFacebook \u4e0d\u6703\u67e5\u770b\u4f60\u8907\u88fd\u7684\u5167\u5bb9\u3002");
         table.put("With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.",
                 "\u555f\u7528\u300c\u4fdd\u6301\u986f\u793a\u9032\u5ea6\u5217\u300d\u5f8c\uff0cReels \u7684\u5df2\u64ad\u653e\u6642\u9593\u8207\u7e3d\u6642\u9593\u6703\u6301\u7e8c\u986f\u793a\u5728\u9032\u5ea6\u5217\u4e0a\u65b9\u3002\u505c\u7528\u6642\u53ea\u6703\u5728\u62d6\u66f3\u9032\u5ea6\u5217\u6642\u986f\u793a\u3002");
         table.put("With Lock Facebook on, it will lock as soon as you leave it.",
@@ -3863,11 +3865,11 @@ final class L10nTableZh_rTW {
                 "\u4f60\u7684\u5206\u9801\u5217\u6703\u7dad\u6301 Facebook \u7684\u9806\u5e8f\u3002");
         table.put("ads",
                 "\u5ee3\u544a");
-        table.put("answered",
-                "\u5df2\u56de\u61c9");
     }
 
     private static void fill31(Map<String, String> table) {
+        table.put("answered",
+                "\u5df2\u56de\u61c9");
         table.put("facebook.com and m.me links open here now.",
                 "facebook.com \u8207 m.me \u9023\u7d50\u73fe\u5728\u6703\u5728\u6b64\u958b\u555f\u3002");
         table.put("facebook.com links open here now.",

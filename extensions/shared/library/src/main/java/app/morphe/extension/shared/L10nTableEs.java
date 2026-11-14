@@ -18,7 +18,7 @@ final class L10nTableEs {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(3742);
+        Map<String, String> table = new HashMap<>(3744);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -3543,6 +3543,8 @@ final class L10nTableEs {
                 "Activa %1$s para guardar v\u00eddeos que WhatsApp y estos editores acepten.");
         table.put("Turn on %1$s to use this.",
                 "Activa %1$s para usar esto.");
+        table.put("Turned off lately",
+                "Desactivados hace poco");
         table.put("Type @ before Facebook suggests someone to tag in posts or comments. Your text stays unchanged.",
                 "Escribe @ para que Facebook sugiera a qui\u00e9n etiquetar en publicaciones o comentarios. Tu texto no cambia.");
         table.put("Type a six-digit color code, like #2ECC71.",
@@ -3617,11 +3619,11 @@ final class L10nTableEs {
                 "Las historias de v\u00eddeo no empiezan solas. Mant\u00e9n pulsada una historia y luego su\u00e9ltala para reproducirla. Funciona con \u00abToca para reproducir\u00bb activado o desactivado.");
         table.put("Video stories follow the Default quality row.",
                 "Las historias en video siguen la fila Calidad predeterminada.");
-        table.put("Video stories wait for a tap",
-                "Las historias de v\u00eddeo esperan a que toques");
     }
 
     private static void fill29(Map<String, String> table) {
+        table.put("Video stories wait for a tap",
+                "Las historias de v\u00eddeo esperan a que toques");
         table.put("Video stories will play at the same quality as other videos.",
                 "Las historias en video se reproducir\u00e1n con la misma calidad que los dem\u00e1s videos.");
         table.put("Video subfolder",
@@ -3740,11 +3742,11 @@ final class L10nTableEs {
                 "Con %1$s activado, Inicio mostrar\u00e1 las mismas publicaciones que %2$s en la pesta\u00f1a Feeds.");
         table.put("With Block Instant Games ads on, a game's rewarded ad counts as watched. No ad plays and the game still gives its reward.",
                 "Con \u00abBloquear anuncios de Instant Games\u00bb activado, el anuncio con recompensa de un juego cuenta como visto. No se muestra ning\u00fan anuncio y el juego da igualmente su premio.");
-        table.put("With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.",
-                "Con Descargar videos del feed y de Watch activado, al volver a Facebook con un enlace de un reel o un video copiado se ofrece descargarlo, una vez por enlace. Desactivado, Facebook no mira lo que copiaste.");
     }
 
     private static void fill30(Map<String, String> table) {
+        table.put("With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.",
+                "Con Descargar videos del feed y de Watch activado, al volver a Facebook con un enlace de un reel o un video copiado se ofrece descargarlo, una vez por enlace. Desactivado, Facebook no mira lo que copiaste.");
         table.put("With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.",
                 "Con Mantener la barra de progreso activado, el tiempo transcurrido y el total de un reel se quedan encima de la barra. Desactivado, solo se ven mientras la arrastras.");
         table.put("With Lock Facebook on, it will lock as soon as you leave it.",
@@ -3863,11 +3865,11 @@ final class L10nTableEs {
                 "Tu barra de pesta\u00f1as mantendr\u00e1 el orden de Facebook.");
         table.put("ads",
                 "anuncios");
-        table.put("answered",
-                "respondi\u00f3");
     }
 
     private static void fill31(Map<String, String> table) {
+        table.put("answered",
+                "respondi\u00f3");
         table.put("facebook.com and m.me links open here now.",
                 "Los enlaces de facebook.com y m.me ahora se abren aqu\u00ed.");
         table.put("facebook.com links open here now.",
