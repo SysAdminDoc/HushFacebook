@@ -98,8 +98,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * While the bars are see-through or the tab bar is rounded, a page that stops at the tab bar's top
  * edge through its holder's bottom padding or its own bottom margin, at least half the window tall
  * and with a gap covering the tab bar's rows, gets that gap taken away and runs under the bar the
- * way Home's feed does. With the pill alone, that gap showed black around it (#412). The gap comes
- * back when both switches are off. A page Facebook keeps putting the gap back on is left as
+ * way Home's feed does. With the pill alone, that gap showed black around it (#412). Where the bar
+ * stays put, on an account Facebook keeps it on or with Keep the tab bar on screen, Facebook pads
+ * the tabs' own pager up to the bar instead, so every tab's page stops there and the window's
+ * background showed around the pill, white in light mode (#471). That pager's bottom padding is
+ * a gap like the holder's, taken once for all the pages in it. The gap comes back when both
+ * switches are off. A page Facebook keeps putting the gap back on is left as
  * Facebook has it, so the two never fight over its layout. A list that pages, as the Reels viewer
  * does, keeps its gap instead: its rows keep their height, so stretched it showed the next reel
  * under the bar, and its gap is painted black (#412). Video controls Facebook pins to the
@@ -148,6 +152,8 @@ public final class TranslucentBars {
     static final long LEFT_ALONE_MS = 10_000;
     /** The list class every feed and the Reels viewer use, which Redex keeps. */
     static final String LIST = "androidx.recyclerview.widget.RecyclerView";
+    /** The pager class Facebook's tabs page through, which Redex keeps too (#471). */
+    static final String PAGER = "androidx.viewpager.widget.ViewPager";
     /** The colour under a paging list's gap: the Reels viewer's own black. */
     static final int BACKDROP_COLOUR = 0xFF000000;
 
@@ -498,8 +504,17 @@ public final class TranslucentBars {
 
     /** Whether [view] is a RecyclerView, the list every feed and the Reels viewer are, by its class name. */
     static boolean isList(View view) {
+        return isA(view, LIST);
+    }
+
+    /** Whether [view] is a ViewPager, the pager Facebook's tabs page through, by its class name. */
+    static boolean isPager(View view) {
+        return isA(view, PAGER);
+    }
+
+    private static boolean isA(View view, String className) {
         for (Class<?> type = view.getClass(); type != null && type != View.class; type = type.getSuperclass()) {
-            if (LIST.equals(type.getName())) return true;
+            if (className.equals(type.getName())) return true;
         }
         return false;
     }
@@ -536,13 +551,14 @@ public final class TranslucentBars {
     }
 
     /**
-     * The gap under [view] that its FrameLayout holder's bottom padding and its own bottom margin
-     * make, or 0 when it isn't laid out by those alone (another holder, a gravity, a height of its own).
+     * The gap under [view] that its holder's bottom padding and its own bottom margin make, or 0
+     * when it isn't laid out by those alone (another holder, a gravity, a height of its own). The
+     * holder is a FrameLayout, or the tabs' ViewPager on a bar that stays put (#471).
      */
     static int gapBelow(View view) {
         ViewParent parent = view.getParent();
-        if (!(parent instanceof FrameLayout)) return 0;
-        FrameLayout holder = (FrameLayout) parent;
+        if (!(parent instanceof FrameLayout) && !(parent instanceof ViewGroup && isPager((View) parent))) return 0;
+        ViewGroup holder = (ViewGroup) parent;
         int margin = bottomMargin(view);
         int gap = holder.getPaddingBottom() + margin;
         return gap > 0 && view.getBottom() + margin == holder.getHeight() - holder.getPaddingBottom() ? gap : 0;
@@ -555,7 +571,14 @@ public final class TranslucentBars {
 
     /** A page stretched under the tab bar: the gap Facebook gave it, taken away while the bars are see-through. */
     static final class Stretch {
-        private WeakReference<FrameLayout> holder = new WeakReference<>(null);
+        /**
+         * The padding taken off each holder, by the holder. Every tab's page in the tabs' pager
+         * shares its padding (#471): the first page found takes it, and the rest count it as theirs,
+         * so the Reels page found after Home's still gets black under its reel.
+         */
+        static final Map<View, Integer> TAKEN = new WeakHashMap<>();
+
+        private WeakReference<ViewGroup> holder = new WeakReference<>(null);
         /** Facebook's bottom padding on the holder, and its bottom margin on the page. */
         int padding;
         int margin;
@@ -567,9 +590,15 @@ public final class TranslucentBars {
 
         /** Takes [view]'s gap away: its holder's bottom padding and its own bottom margin. */
         void take(View view, long now) {
-            FrameLayout holder = (FrameLayout) view.getParent();
+            ViewGroup holder = (ViewGroup) view.getParent();
             this.holder = new WeakReference<>(holder);
             padding = holder.getPaddingBottom();
+            if (padding > 0) {
+                TAKEN.put(holder, padding);
+            } else {
+                Integer shared = TAKEN.get(holder);
+                if (shared != null) padding = shared;
+            }
             margin = bottomMargin(view);
             takenAt = now;
             if (padding > 0) holder.setPadding(holder.getPaddingLeft(), holder.getPaddingTop(), holder.getPaddingRight(), 0);
@@ -582,10 +611,11 @@ public final class TranslucentBars {
 
         /** Facebook's gap back on [view], where nothing has set it since. */
         void giveBack(View view) {
-            FrameLayout holder = this.holder.get();
+            ViewGroup holder = this.holder.get();
             if (holder != null && padding > 0 && holder.getPaddingBottom() == 0) {
                 holder.setPadding(holder.getPaddingLeft(), holder.getPaddingTop(), holder.getPaddingRight(), padding);
             }
+            if (holder != null) TAKEN.remove(holder);
             if (margin > 0 && view.getParent() == holder && bottomMargin(view) == 0) {
                 ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
                 params.bottomMargin = margin;
@@ -996,8 +1026,8 @@ public final class TranslucentBars {
                 Logger.printDebug(() -> "See-through bars: Facebook keeps a page's gap, left alone for now");
                 return;
             }
-            int gap = gapBelow(content);
             stretch.take(content, now);
+            int gap = stretch.padding + stretch.margin;
             HookStatus.counted(FAMILY, STRETCHED);
             Logger.printDebug(() -> "See-through bars: stretched a page " + gap + " px under the tab bar");
         }

@@ -28,6 +28,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
 
 import org.junit.After;
 import org.junit.Before;
@@ -505,6 +506,53 @@ public class TranslucentBarsTest {
         assertTrue(screen.bars.backdrops.isEmpty());
         assertNull("out of the overlay", backdrop.getCallback());
         assertEquals("the gap back", 160, holder.getPaddingBottom());
+    }
+
+    /**
+     * #471: where the tab bar stays put, Facebook pads the tabs' pager up to the bar instead of a
+     * holder, so every tab's page stopped there and the window's light grey showed around the pill.
+     * Every page runs under the pill, the Reels page found after Home's still gets black under its
+     * reel, and the pager gets its padding back once the pill goes.
+     */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void tabPagesInAPaddedPagerRunUnderARoundedTabBar() {
+        Settings.TRANSLUCENT_BARS.save(false);
+        Settings.ROUNDED_TAB_BAR.save(true);
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        ViewPager pager = new ViewPager(screen.activity);
+        pager.setPadding(0, 0, 0, 160);
+        View home = new View(screen.activity);
+        pager.addView(home);
+        FrameLayout reelsPage = new FrameLayout(screen.activity);
+        RecyclerView reels = listOf(screen, 3, 1440, false);
+        reelsPage.addView(reels, new FrameLayout.LayoutParams(720, FrameLayout.LayoutParams.MATCH_PARENT));
+        pager.addView(reelsPage);
+        screen.page.addView(pager, new FrameLayout.LayoutParams(720, 1600));
+        screen.layOut();
+        assertEquals("both pages stop at the bar", 1440, home.getBottom());
+        assertEquals(1440, reelsPage.getBottom());
+
+        screen.bars.update();
+        screen.layOut();
+        assertEquals("the pager's padding taken", 0, pager.getPaddingBottom());
+        assertEquals("Home under the pill", 1600, home.getBottom());
+        assertEquals("and Reels beside it", 1600, reels.getBottom());
+        assertTrue(statusLine(), statusLine().contains(TranslucentBars.STRETCHED + " 2"));
+
+        nextLook(screen);
+        TranslucentBars.Backdrop backdrop = screen.bars.backdrops.get(reels);
+        assertNotNull("black under the reel on the page found second", backdrop);
+        Rect black = new Rect();
+        assertTrue(backdrop.paints(black));
+        assertEquals("over the gap the pager had", new Rect(0, 1440, 720, 1600), black);
+
+        Settings.ROUNDED_TAB_BAR.save(false);
+        screen.bars.update();
+        screen.layOut();
+        assertEquals("the pager's padding back", 160, pager.getPaddingBottom());
+        assertEquals(1440, home.getBottom());
+        assertTrue(screen.bars.backdrops.isEmpty());
     }
 
     /** #412: a feed inside a stretched page scrolls rows shorter than itself, so it gets no black. */
