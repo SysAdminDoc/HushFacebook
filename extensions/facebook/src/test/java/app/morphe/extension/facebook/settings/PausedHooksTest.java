@@ -535,6 +535,8 @@ public class PausedHooksTest {
                 () -> PostPrompts.followText(" · Follow").length() == 0,
                 // A header the X check says yes to is drawn as one without the X.
                 () -> !PostPrompts.showPostX(true),
+                // So is the Reels row's header in the feed.
+                () -> !PostPrompts.showReelsRowX(true),
                 PostPrompts::hidePostCounts,
                 // The reaction preview is left undrawn only while the patch runs.
                 PostPrompts::hideReactionPreview,

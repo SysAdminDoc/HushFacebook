@@ -199,6 +199,38 @@ public final class PostPrompts {
         }
     }
 
+    private static volatile boolean reelsRowXLogged;
+
+    /** Counted under the patch's name each time the Reels row in the feed is drawn without its X. */
+    static final String REELS_ROW_X_HIDDEN = "Reels row X kept out";
+
+    /** The entry the Reels row hook calls, handed the check's answer as an int like {@link #showPostX(int)}. */
+    public static boolean showReelsRowX(int shown) {
+        return showReelsRowX(shown != 0);
+    }
+
+    /**
+     * The hook in the header of the Reels row in the feed, handed whether it's about to add the X
+     * next to its three-dot menu (#389). Facebook adds it only when the row can be hidden from the
+     * feed, so a no draws the header with the menu alone. Same switch as the X on posts.
+     */
+    public static boolean showReelsRowX(boolean shown) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, "Reels row X");
+            if (!shown || !Utils.settingsReady() || !Settings.HIDE_POST_X.get()) return shown;
+            HookStatus.counted(FAMILY, REELS_ROW_X_HIDDEN);
+            if (!reelsRowXLogged) {
+                reelsRowXLogged = true;
+                Logger.printDebug(() -> "Post prompts: the Reels row's X was kept out");
+            }
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Reels row X", failure);
+            return shown;
+        }
+    }
+
     private static volatile boolean joinBarLogged;
 
     /** Counted under the patch's name each time a group's video is drawn without its Join group bar. */

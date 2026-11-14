@@ -35,6 +35,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* `Hide the X on posts` takes the X off the Reels row in your feed too, next to its three-dot menu. The menu stays. (#389)
 * With `View stories anonymously` and `Hide seen stories` on, a Highlights tile in the Stories tray that you watched all the way through leaves the tray like any other watched story. Highlights don't run on a story's 24 hours, so the check for a newer story never let them go. (#165)
 * The black bar that sometimes stuck under the floating tab bar in Marketplace, even while scrolling, goes away by itself now. Marketplace lays its page out again a few times while it loads after a swipe from Home, and the bars used to give up on it until Facebook restarted. They wait a few seconds and try again instead. (#468)
 * With `Rounded tab bar` on and a tab bar that doesn't slide away, the space beside the pill shows the page again instead of a white or light grey block, and the Reels tab is black around it. That happened with `Keep the tab bar on screen` on, or on accounts where Facebook keeps the bar in place, because pages there stop above the bar in a different way. (#471)

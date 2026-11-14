@@ -3140,7 +3140,9 @@ public class Settings extends BaseSettings {
     /**
      * The X at the top of a feed post, next to its ⋯ menu, goes, and the header is drawn as for a
      * post Facebook gives no X ({@link app.morphe.extension.facebook.feed.PostPrompts#showPostX},
-     * #389). Off by default. A change shows on the posts drawn after it.
+     * #389). The Reels row in the feed loses its X the same way
+     * ({@link app.morphe.extension.facebook.feed.PostPrompts#showReelsRowX}). Off by default. A
+     * change shows on the posts drawn after it.
      */
     public static final BooleanSetting HIDE_POST_X =
             new BooleanSetting("hushfacebook_hide_post_x", FALSE);

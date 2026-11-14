@@ -141,6 +141,23 @@ public class PostPromptsTest {
         assertTrue("a paused Hushfacebook hid the X", PostPrompts.showPostX(true));
     }
 
+    /** The Reels row's X follows the same switch: off it stays, on it goes, paused it's back. */
+    @Test
+    public void theReelsRowXFollowsThePostXSwitch() {
+        assertTrue("the Reels row lost its X with the switch off", PostPrompts.showReelsRowX(1));
+        assertFalse("a Reels row that can't be hidden got an X", PostPrompts.showReelsRowX(0));
+
+        Settings.HIDE_POST_X.save(true);
+        assertFalse("the Reels row kept its X", PostPrompts.showReelsRowX(1));
+        assertFalse(PostPrompts.showReelsRowX(false));
+        assertTrue("the status line doesn't count the Reels row's X",
+                statusLine().contains(PostPrompts.REELS_ROW_X_HIDDEN + " 1"));
+        assertFalse("the Reels row's X counted as a post's", statusLine().contains(PostPrompts.POST_X_HIDDEN));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue("a paused Hushfacebook hid the Reels row's X", PostPrompts.showReelsRowX(true));
+    }
+
     @Test
     public void pausedTheJoinButtonStays() {
         Settings.HIDE_POST_JOIN_BUTTON.save(true);
