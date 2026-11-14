@@ -14,13 +14,15 @@ import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
- * Fill the screen with reels (#453).
+ * Fill the screen with reels (#453, #456).
  *
- * <p>Facebook sizes every player view through one method, which asks a helper how big the video
- * should be in its container. The Reels tab and the full-screen viewers ask it to fit the video
- * inside, so a 9:16 reel on a taller screen gets black bars above and below. The patch asks
- * {@link #fills} first, and a yes asks the helper to fill the container instead, cutting a little off
- * the reel's sides.
+ * <p>Facebook works out how big a video should be in its container with one helper, asked by the
+ * method that sizes a player view, by the reel's binder and by the video surface's own resize. The
+ * Reels tab and the full-screen viewers ask it to fit the video inside, so a 9:16 reel on a taller
+ * screen gets black bars above and below. The patch has the helper ask {@link #fills} first thing,
+ * and a yes has it fill the container instead, cutting a little off the reel's sides, whoever asked.
+ * Closing a reel's comment sheet resizes the surface, so a hook on the player view's call alone let
+ * the bars come back after the sheet closed.
  *
  * <p>Only a portrait video in a portrait container about the size of the screen fills, and only when
  * no more than {@link #MOST_CUT} of the picture would be cut off, so feed videos, landscape videos and
