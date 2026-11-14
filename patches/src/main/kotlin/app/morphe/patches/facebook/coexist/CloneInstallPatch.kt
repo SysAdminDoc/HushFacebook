@@ -54,6 +54,9 @@ internal const val CLONE_PATCH_NAME = "Clone install under another package name"
 internal const val CLONE_DEFAULT_PACKAGE = "com.facebook.katana.hush"
 internal const val CLONE_DEFAULT_LABEL = "Facebook Clone"
 
+/** The option key Morphe Manager reads to tell a clone from the app's own install. */
+internal const val CLONE_PACKAGE_OPTION = "packageName"
+
 /** The string resource the clone's app name and launcher entries point at. */
 internal const val CLONE_LABEL = "hushfacebook_clone_label"
 
@@ -345,8 +348,11 @@ val cloneInstallPatch = bytecodePatch(
     dependsOn(settingsPatch, installBesideMetaAppsPatch, cloneResources, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
+    // Morphe Manager marks an install as a clone (its Clone chip, and a card of its own that a
+    // repatch aims at) only when a selected patch has an option keyed exactly "packageName"
+    // (morphe-manager PatchRunTargeting.producesClone), so this key can't carry a prefix (#474).
     val packageName by stringOption(
-        key = "clonePackageName",
+        key = CLONE_PACKAGE_OPTION,
         default = CLONE_DEFAULT_PACKAGE,
         title = "Package name",
         description = "The copy's unique app ID, like com.facebook.katana.hush. Use words joined by dots, each " +

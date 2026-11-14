@@ -8,6 +8,7 @@ import app.morphe.patcher.patch.OptionException
 import app.morphe.patcher.patch.PatchException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -289,22 +290,31 @@ class CloneInstallManifestTest {
     }
 
     @Test
+    fun `Morphe Manager can tell the copy is a clone`() {
+        // morphe-manager PatchRunTargeting: a run produces a clone when a selected patch declares an
+        // option keyed "packageName", and it renames by default when that option has a default (#474).
+        val option = cloneInstallPatch.options.values.singleOrNull { it.key == "packageName" }
+        assertNotNull("no option keyed packageName, so Manager files the copy as Facebook itself", option)
+        assertEquals(CLONE_DEFAULT_PACKAGE, option!!.default)
+    }
+
+    @Test
     fun `the patch starts off and its options refuse what the rename refuses`() {
         assertEquals(CLONE_PATCH_NAME, cloneInstallPatch.name)
         assertFalse("selected by default", cloneInstallPatch.default)
-        val packageName = cloneInstallPatch.options["clonePackageName"]
+        val packageName = cloneInstallPatch.options["packageName"]
         val label = cloneInstallPatch.options["cloneAppName"]
         try {
             assertEquals(CLONE_DEFAULT_PACKAGE, packageName.default)
             assertEquals(CLONE_DEFAULT_LABEL, label.default)
             assertTrue(packageName.required && label.required)
 
-            cloneInstallPatch.options["clonePackageName"] = "com.example.fb2"
+            cloneInstallPatch.options["packageName"] = "com.example.fb2"
             assertEquals("com.example.fb2", packageName.value)
             cloneInstallPatch.options["cloneAppName"] = "Work Facebook"
             assertEquals("Work Facebook", label.value)
             assertThrows(OptionException.ValueValidationException::class.java) {
-                cloneInstallPatch.options["clonePackageName"] = "com.facebook.orca"
+                cloneInstallPatch.options["packageName"] = "com.facebook.orca"
             }
             assertThrows(OptionException.ValueValidationException::class.java) {
                 cloneInstallPatch.options["cloneAppName"] = " "

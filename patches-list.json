@@ -585,7 +585,7 @@
       ],
       "options": [
         {
-          "key": "clonePackageName",
+          "key": "packageName",
           "title": "Package name",
           "description": "The copy's unique app ID, like com.facebook.katana.hush. Use words joined by dots, each starting with a letter. It can't match Facebook or another Meta app.",
           "required": true,
