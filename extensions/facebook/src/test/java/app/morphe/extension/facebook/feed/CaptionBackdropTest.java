@@ -53,6 +53,7 @@ public class CaptionBackdropTest {
     public void restore() {
         PauseForTests.resume();
         Settings.DIM_OPEN_REEL_CAPTIONS.resetToDefault();
+        Settings.DIM_FOLDED_REEL_CAPTIONS.resetToDefault();
         HookStatus.clear();
     }
 
@@ -109,5 +110,41 @@ public class CaptionBackdropTest {
             PauseForTests.resume();
         }
         assertNotNull("resumed, an open caption got no box", CaptionBackdrop.forCaption(Integer.MAX_VALUE));
+    }
+
+    /** Dark box behind folded captions (#472): a folded caption gets the very box an open one does, and an open one is left to its own switch. */
+    @Test
+    public void theFoldedSwitchGivesAFoldedCaptionTheSameBox() {
+        assertFalse("the switch doesn't start off", Settings.DIM_FOLDED_REEL_CAPTIONS.get());
+        Settings.DIM_FOLDED_REEL_CAPTIONS.save(true);
+        Drawable box = CaptionBackdrop.forCaption(FOLDED);
+        assertNotNull("a folded caption got no box", box);
+        GradientDrawable gradient = (GradientDrawable) box;
+        assertEquals(CaptionBackdrop.COLOR, gradient.getColor().getDefaultColor());
+        assertEquals(CaptionBackdrop.CORNER_DP * Resources.getSystem().getDisplayMetrics().density,
+                gradient.getCornerRadius(), 0.01f);
+        Rect padding = new Rect();
+        assertFalse("the box carries padding", box.getPadding(padding));
+        assertNotNull("a one-line caption is folded too", CaptionBackdrop.forCaption(1));
+        assertNull("a caption with no lines has no text to box", CaptionBackdrop.forCaption(0));
+        assertNull("an open caption follows its own switch", CaptionBackdrop.forCaption(Integer.MAX_VALUE));
+        assertEquals(FamilyNames.FULL_POST_TEXT + ": invoked 2, 1 found, 0 missing. Counted: "
+                + CaptionBackdrop.FOLDED_DIMMED + " 2", statusLine());
+    }
+
+    @Test
+    public void bothSwitchesOnBoxEveryCaption() {
+        Settings.DIM_OPEN_REEL_CAPTIONS.save(true);
+        Settings.DIM_FOLDED_REEL_CAPTIONS.save(true);
+        assertNotNull(CaptionBackdrop.forCaption(FOLDED));
+        assertNotNull(CaptionBackdrop.forCaption(Integer.MAX_VALUE));
+        assertEquals(FamilyNames.FULL_POST_TEXT + ": invoked 2, 1 found, 0 missing. Counted: "
+                + CaptionBackdrop.FOLDED_DIMMED + " 1, " + CaptionBackdrop.DIMMED + " 1", statusLine());
+
+        Settings.DIM_FOLDED_REEL_CAPTIONS.save(false);
+        assertNull("turned off, a folded caption keeps Facebook's look", CaptionBackdrop.forCaption(FOLDED));
+        Settings.DIM_FOLDED_REEL_CAPTIONS.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertNull("paused, a folded caption keeps Facebook's look", CaptionBackdrop.forCaption(FOLDED));
     }
 }

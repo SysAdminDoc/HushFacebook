@@ -1038,6 +1038,8 @@ Long captions on reels show all of their text right away. Tap the caption to fol
 Dark box behind open captions	Dunkler Kasten hinter offenen Beschreibungen
 # context: summary of that switch
 An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	Eine geöffnete Reel-Beschreibung liegt auf einem dunklen Kasten, wie Untertitel, damit sie sich über einem hellen Video gut lesen lässt. Die Änderung gilt ab dem nächsten Reel.
+Dark box behind folded captions	Dunkler Kasten hinter eingeklappten Beschreibungen
+A folded reel caption, the short one with more at the end, sits on the same dark box. Turn on both to box every caption. A change shows from the next reel.	Eine eingeklappte Reel-Beschreibung, die kurze mit „mehr“ am Ende, liegt auf demselben dunklen Kasten. Schalte beide ein, damit jede Beschreibung einen Kasten bekommt. Die Änderung gilt ab dem nächsten Reel.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Wer hat geteilt
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Fügt dem Menü eines Beitrags Wer hat geteilt hinzu. Es öffnet die Facebook-Liste der Personen, die ihn geteilt haben.

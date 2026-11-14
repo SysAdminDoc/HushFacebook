@@ -1042,6 +1042,8 @@ Long captions on reels show all of their text right away. Tap the caption to fol
 Dark box behind open captions	展開的說明加上深色底框
 # context: summary of that switch
 An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	展開的連續短片說明會顯示在深色底框上，像字幕一樣，在明亮的影片上也容易看清楚。變更從下一部連續短片開始生效。
+Dark box behind folded captions	收合的說明加上深色底框
+A folded reel caption, the short one with more at the end, sits on the same dark box. Turn on both to box every caption. A change shows from the next reel.	收合的連續短片說明，也就是結尾有「更多」的簡短說明，也會顯示在同樣的深色底框上。兩個都開啟即可為每則說明加上底框。變更從下一部連續短片開始生效。
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	查看誰分享了
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	在貼文選單中加入「查看誰分享了」，開啟 Facebook 上分享這則貼文的使用者清單。

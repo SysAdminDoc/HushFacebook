@@ -285,6 +285,10 @@ final class VideoPages {
                 reels.addPreference(toggle(context, Settings.DIM_OPEN_REEL_CAPTIONS,
                         L10n.t("An open reel caption sits on a dark box, like subtitles, so it's easy to read over a "
                                 + "bright video. A change shows from the next reel.")));
+                // The folded caption's box, from the same hook (#472).
+                reels.addPreference(toggle(context, Settings.DIM_FOLDED_REEL_CAPTIONS,
+                        L10n.t("A folded reel caption, the short one with more at the end, sits on the same dark box. "
+                                + "Turn on both to box every caption. A change shows from the next reel.")));
             }
         }
         if (build.contains(PatchFamily.REEL_WATCH_HISTORY)) {

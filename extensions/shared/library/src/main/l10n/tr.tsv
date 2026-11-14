@@ -1038,6 +1038,8 @@ Long captions on reels show all of their text right away. Tap the caption to fol
 Dark box behind open captions	Açılan açıklamaların arkasına koyu kutu
 # context: summary of that switch
 An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	Açılan bir reel açıklaması, altyazılar gibi koyu bir kutunun üstünde durur, böylece parlak bir videonun üzerinde kolayca okunur. Değişiklik bir sonraki reel'den itibaren geçerli olur.
+Dark box behind folded captions	Daraltılmış açıklamaların arkasına koyu kutu
+A folded reel caption, the short one with more at the end, sits on the same dark box. Turn on both to box every caption. A change shows from the next reel.	Sonunda devamı yazan kısa, daraltılmış bir reel açıklaması da aynı koyu kutunun üstünde durur. Her açıklama kutulu olsun diye ikisini de aç. Değişiklik bir sonraki reel'den itibaren geçerli olur.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Kimlerin paylaştığını gör
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Bir gönderinin menüsüne Kimlerin paylaştığını gör ekler. Facebook'un gönderiyi paylaşan kişiler listesini açar.

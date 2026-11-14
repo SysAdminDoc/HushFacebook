@@ -924,6 +924,8 @@ Long captions on reels show all of their text right away. Tap the caption to fol
 Dark box behind open captions	Fundo escuro atrás das legendas abertas
 # context: summary of that switch
 An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	Uma legenda de reel aberta fica sobre uma caixa escura, como as legendas de filme, para ser fácil de ler sobre um vídeo claro. A mudança vale a partir do próximo reel.
+Dark box behind folded captions	Fundo escuro atrás das legendas recolhidas
+A folded reel caption, the short one with more at the end, sits on the same dark box. Turn on both to box every caption. A change shows from the next reel.	Uma legenda de reel recolhida, a curta com mais no final, fica sobre a mesma caixa escura. Ative as duas para que toda legenda tenha a caixa. A mudança vale a partir do próximo reel.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Ver quem compartilhou
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Adiciona Ver quem compartilhou ao menu de uma publicação. Abre a lista do Facebook com as pessoas que a compartilharam.

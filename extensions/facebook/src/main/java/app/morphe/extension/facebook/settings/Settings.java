@@ -3229,6 +3229,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_dim_open_reel_captions", FALSE);
 
     /**
+     * A folded reel caption, the one cut with "more", sits on the same dark box an open one gets
+     * from {@link #DIM_OPEN_REEL_CAPTIONS} (#472,
+     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop}). Each switch covers its own kind,
+     * so both on box every caption. A change shows on the captions drawn after it.
+     */
+    public static final BooleanSetting DIM_FOLDED_REEL_CAPTIONS =
+            new BooleanSetting("hushfacebook_dim_folded_reel_captions", FALSE);
+
+    /**
      * A post in another language gets a Translate line under its text, and a tap sends the text to
      * Google Translate ({@link app.morphe.extension.facebook.feed.PostTranslation}). A change shows
      * on the posts drawn after it.

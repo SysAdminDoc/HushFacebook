@@ -16,17 +16,18 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
  * An open reel caption gets a dark rounded box behind its text, like subtitles, so a long caption
- * stays readable over a bright video (#419).
+ * stays readable over a bright video (#419). A folded one gets the same box from its own switch
+ * (#472).
  *
  * <p>The caption under a reel (FbShortsViewerDescriptionComponent) is a Litho text component whose
  * builder holds the caption's line limit. Facebook starts that limit at Integer.MAX_VALUE and sets a
  * few lines only while the caption is folded, so an open caption is one still at MAX_VALUE when it's
- * built. Right before the build, the patch hands the limit here and, given a drawable back, sets it
- * as the component's background through Litho's own style, with no padding, so the text keeps its
- * place.
+ * built, and a folded one is one with a limit of a line or more below that. Right before the build,
+ * the patch hands the limit here and, given a drawable back, sets it as the component's background
+ * through Litho's own style, with no padding, so the text keeps its place.
  *
- * <p>Off, paused, before the settings are ready, for a folded caption, or when anything here fails,
- * the caption keeps Facebook's look.
+ * <p>With the switch for its kind off, paused, before the settings are ready, or when anything here
+ * fails, the caption keeps Facebook's look.
  */
 public final class CaptionBackdrop {
     /** The member the report names once a caption's line limit has gone through here. */
@@ -34,6 +35,9 @@ public final class CaptionBackdrop {
 
     /** Counted each time an open caption gets the box. */
     static final String DIMMED = "open reel caption dimmed";
+
+    /** Counted each time a folded caption gets the box (#472). */
+    static final String FOLDED_DIMMED = "folded reel caption dimmed";
 
     /** About 70% black, close to the box behind video subtitles. */
     static final int COLOR = 0xB3000000;
@@ -44,6 +48,7 @@ public final class CaptionBackdrop {
     private static final String FAMILY = FamilyNames.FULL_POST_TEXT;
 
     private static volatile boolean logged;
+    private static volatile boolean loggedFolded;
 
     private CaptionBackdrop() {
     }
@@ -58,19 +63,31 @@ public final class CaptionBackdrop {
 
     /**
      * The hook, right before a reel caption's text component is built, handed its line limit. Answers
-     * the box for an open caption while the switch is on, otherwise null, which keeps Facebook's look.
+     * the box for an open caption while Dark box behind open captions is on, and for a folded one
+     * while Dark box behind folded captions is, otherwise null, which keeps Facebook's look.
      */
     public static Drawable forCaption(int maxLines) {
         try {
             HookStatus.bound(FAMILY, BACKDROP);
-            if (maxLines != Integer.MAX_VALUE || !Utils.settingsReady() || !Settings.DIM_OPEN_REEL_CAPTIONS.get()) {
-                return null;
-            }
+            boolean open = maxLines == Integer.MAX_VALUE;
+            // A folded caption shows a few lines; a limit of none shows no text to put a box behind.
+            boolean folded = !open && maxLines > 0;
+            if (!(open || folded) || !Utils.settingsReady()) return null;
+            if (open ? !Settings.DIM_OPEN_REEL_CAPTIONS.get() : !Settings.DIM_FOLDED_REEL_CAPTIONS.get()) return null;
             HookStatus.invoked(FAMILY);
-            HookStatus.counted(FAMILY, DIMMED);
-            if (!logged) {
-                logged = true;
-                Logger.printDebug(() -> "Full post text: an open reel caption got its dark box");
+            if (open) {
+                HookStatus.counted(FAMILY, DIMMED);
+                if (!logged) {
+                    logged = true;
+                    Logger.printDebug(() -> "Full post text: an open reel caption got its dark box");
+                }
+            } else {
+                HookStatus.counted(FAMILY, FOLDED_DIMMED);
+                if (!loggedFolded) {
+                    loggedFolded = true;
+                    Logger.printDebug(() -> "Full post text: a folded reel caption got its dark box, "
+                            + maxLines + " lines");
+                }
             }
             // A drawable of its own each time: Litho mounts a background per component.
             GradientDrawable box = new GradientDrawable();

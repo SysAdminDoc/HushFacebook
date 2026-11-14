@@ -186,6 +186,7 @@ public final class SettingsBackup {
             Settings.SHOW_FULL_POST_TEXT,
             Settings.SHOW_FULL_REEL_CAPTIONS,
             Settings.DIM_OPEN_REEL_CAPTIONS,
+            Settings.DIM_FOLDED_REEL_CAPTIONS,
             Settings.TRANSLATE_POST_LINK,
             Settings.TRANSLATE_POSTS_BY_THEMSELVES,
             Settings.SEE_WHO_SHARED,
