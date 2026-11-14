@@ -530,7 +530,7 @@ internal fun holdNuxFlags(holder: ClassDef): Set<String> = holder.methods.filter
 private val CONSTANTS = setOf(Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST, Opcode.CONST_HIGH16)
 
 /**
- * Where 586's Android 9 build and 587 (LX/05iD;->A1D) inline the check into the feed video player's setup, the indexes of
+ * Where 586's Android 9 build and 587 arm64 (LX/05iD;->A1D) inline the check into the feed video player's setup, the indexes of
  * [method]'s reads of one of [flags] off [holder] whose next branch is an if-nez on what was read,
  * past nothing but constants into other registers. The method reads the clock, as the check does.
  */

@@ -257,7 +257,7 @@ private fun BytecodePatchContext.applyFeedHoldNux() {
 }
 
 /**
- * 586's Android 9 build and both 587 builds have no check to hook: the player's setup reads the
+ * 586's Android 9 build and 587's arm64 build have no check to hook (587's 32-bit build still does): the player's setup reads the
  * tip's flag under the class's lock and skips the tip when it's set. Right after that read, a yes from the extension
  * reads as set too, so the tip is skipped the same way and its timer is neither read nor saved.
  */
