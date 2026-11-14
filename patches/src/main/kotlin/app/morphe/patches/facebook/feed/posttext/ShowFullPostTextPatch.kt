@@ -110,7 +110,7 @@ val showFullPostTextPatch = bytecodePatch(
     name = "Show full post text",
     description = "Shows all of a post's text in the feed, and a reel's caption, so you don't have to tap See more. " +
         "A tap on the text folds it back. Starts off. Turn posts on in Hushfacebook settings > News feed, " +
-        "and reel captions under Reels and Watch, where an open caption can also sit on a dark box like subtitles.",
+        "and reel captions under Reels and Watch, where an open or folded caption can also sit on a dark box like subtitles.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)

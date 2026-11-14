@@ -75,8 +75,8 @@ val openCommentsWithGesturePatch = bytecodePatch(
     description = "Open a reel's comments with a double tap or a long press, on the sheet the Comment button opens, " +
         "instead of liking or holding, and a feed post's with a long press on its photo or name line. Starts off. " +
         "Turn it on in Hushfacebook settings > Reels and Watch. It also lets a long press on a post's text open " +
-        "that text to select part of it, a switch in Hushfacebook settings > News feed. Another switch there makes " +
-        "holding a post's photo or video open its reactions, or give one reaction you pick.",
+        "that text to select part of it, a switch in Hushfacebook settings > News feed. Two more switches there make " +
+        "holding a post's photo, or its video, open its reactions or give one reaction you pick.",
 ) {
     category("Reels")
     dependsOn(settingsPatch, turnOffDoubleTapLikePatch, holdReelFor2xPatch)
@@ -120,7 +120,7 @@ internal class GestureAnchors(
     val sheet: SheetCalls,
     /** The story holder's constructor taking the reel and an Integer, for a handler that keeps no holder. */
     val holderInit: Method,
-    /** The reaction tray's constructors, which hand each tray to Hold a post to react. */
+    /** The reaction tray's constructors, which hand each tray to Hold a feed photo or video to react. */
     val docks: List<Method>,
 )
 
@@ -507,7 +507,7 @@ internal fun BytecodePatchContext.applyGestureAnchors(anchors: GestureAnchors) {
         )
     }
 
-    // Each reaction tray, as its constructor returns, for Hold a post to react to click a chosen reaction in.
+    // Each reaction tray, as its constructor returns, for Hold a feed photo or video to react to click a chosen reaction in.
     anchors.docks.forEach { init ->
         val made = mutableClassDefBy(init.definingClass).findMutableMethodOf(init)
         returnsOf(made).asReversed().forEach { index ->

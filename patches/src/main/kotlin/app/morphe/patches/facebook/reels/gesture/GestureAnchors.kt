@@ -61,7 +61,7 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
  *   then it has reused the object's register (v3) for a long, and reading the flag from there failed
  *   verification on the S22, so every comment sheet crashed. The store's value register (v0) is
  *   written again by the next instruction in both builds.
- * - Hold a post to react (#454) long-clicks the post's Like itself, which opens the reaction tray
+ * - Hold a feed photo or video to react (#454) long-clicks the post's Like itself, which opens the reaction tray
  *   (RopeStyleUFIDockView, a kept name, read from 587 on both ABIs) and tracks the rest of the
  *   gesture through Like. To give one chosen reaction, the extension clicks the tray through its
  *   accessibility helper, so it needs the tray: every constructor of the class hands the new tray
@@ -120,5 +120,5 @@ internal const val KEYBOARD_LABEL = ", showKeyboardOnFirstLoad="
 internal const val PARCEL = "Landroid/os/Parcel;"
 internal const val KEYBOARD = "$EXTENSION_PACKAGE/reels/PostLongPress;->keyboardOnFirstLoad(Z)Z"
 
-/** Where each reaction tray made goes, for Hold a post to react to click a chosen reaction in. */
+/** Where each reaction tray made goes, for Hold a feed photo or video to react to click a chosen reaction in. */
 internal const val DOCK_MADE = "$EXTENSION_PACKAGE/reels/ReactionHold;->dockMade(Ljava/lang/Object;)V"

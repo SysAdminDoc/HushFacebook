@@ -229,7 +229,7 @@ class OpenCommentsFixtureTest {
                 assertEquals("$name: whether the guard finds the builder constructor's object intact at its returns",
                     android9, runCatching { build.requireThisIntact("control", returnAt) }.isSuccess)
 
-                // Hold a post to react (#454): the reaction tray has the one constructor read from 587,
+                // Hold a feed photo or video to react (#454): the reaction tray has the one constructor read from 587,
                 // taking a Context and the session, and holds the tray in this at each return.
                 val docks = dockConstructors(found.dock)
                 assertEquals("$name: the tray's constructors", listOf(listOf(CONTEXT, FB_USER_SESSION)),

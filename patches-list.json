@@ -3182,7 +3182,7 @@
     },
     {
       "name": "Open comments with a gesture",
-      "description": "Open a reel's comments with a double tap or a long press, on the sheet the Comment button opens, instead of liking or holding, and a feed post's with a long press on its photo or name line. Starts off. Turn it on in Hushfacebook settings > Reels and Watch. It also lets a long press on a post's text open that text to select part of it, a switch in Hushfacebook settings > News feed. Another switch there makes holding a post's photo or video open its reactions, or give one reaction you pick.",
+      "description": "Open a reel's comments with a double tap or a long press, on the sheet the Comment button opens, instead of liking or holding, and a feed post's with a long press on its photo or name line. Starts off. Turn it on in Hushfacebook settings > Reels and Watch. It also lets a long press on a post's text open that text to select part of it, a switch in Hushfacebook settings > News feed. Two more switches there make holding a post's photo, or its video, open its reactions or give one reaction you pick.",
       "category": "Reels",
       "use": true,
       "dependencies": [
@@ -3939,7 +3939,7 @@
     },
     {
       "name": "Show full post text",
-      "description": "Shows all of a post's text in the feed, and a reel's caption, so you don't have to tap See more. A tap on the text folds it back. Starts off. Turn posts on in Hushfacebook settings > News feed, and reel captions under Reels and Watch, where an open caption can also sit on a dark box like subtitles.",
+      "description": "Shows all of a post's text in the feed, and a reel's caption, so you don't have to tap See more. A tap on the text folds it back. Starts off. Turn posts on in Hushfacebook settings > News feed, and reel captions under Reels and Watch, where an open or folded caption can also sit on a dark box like subtitles.",
       "category": "Feed",
       "use": true,
       "dependencies": [
