@@ -267,6 +267,49 @@ public class TranslucentBarsTest {
         assertTrue(statusLine(), statusLine().contains(TranslucentBars.LEFT_SHORT + " 1"));
     }
 
+    /**
+     * #468: Marketplace's React page lays its gap out again a few times while it loads after a
+     * swipe from Home. That left it alone for good, and the black bar stayed under the pill, even
+     * while scrolling, until Facebook restarted. It's tried again {@link
+     * TranslucentBars#LEFT_ALONE_MS} later on a frame booked for then, and stays under the bar.
+     */
+    @Test
+    @Config(qualifiers = "w720dp-h1800dp")
+    public void aPageLeftAloneIsTriedAgainLater() {
+        TranslucentBarsForTests screen = new TranslucentBarsForTests();
+        View market = new View(screen.activity);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(720, FrameLayout.LayoutParams.MATCH_PARENT);
+        params.bottomMargin = 160;
+        screen.page.addView(market, params);
+        screen.layOut();
+        for (int stretch = 1; stretch <= TranslucentBars.MAX_PUT_BACKS; stretch++) {
+            screen.bars.update();
+            screen.layOut();
+            params.bottomMargin = 160;
+            market.setLayoutParams(params);
+            screen.layOut();
+            ShadowLooper.idleMainLooper(TranslucentBars.RESCAN_MS + 1, TimeUnit.MILLISECONDS);
+        }
+        screen.bars.update();
+        screen.layOut();
+        assertEquals("left alone while it loads", 1440, market.getBottom());
+
+        nextLook(screen);
+        assertEquals("still left alone a second later", 1440, market.getBottom());
+
+        shadowOf(screen.window).clearWasInvalidated();
+        ShadowLooper.idleMainLooper(TranslucentBars.LEFT_ALONE_MS, TimeUnit.MILLISECONDS);
+        assertTrue("a frame is booked for the next try", shadowOf(screen.window).wasInvalidated());
+        screen.bars.update();
+        screen.layOut();
+        assertEquals("under the tab bar again", 1600, market.getBottom());
+
+        nextLook(screen);
+        nextLook(screen);
+        assertEquals("and it stays there", 1600, market.getBottom());
+        assertTrue(statusLine(), statusLine().contains(TranslucentBars.STRETCHED + " 4"));
+    }
+
     /** A FrameLayout as tall as the screen whose bottom padding stops [page] at the tab bar. */
     private static FrameLayout holding(TranslucentBarsForTests screen, View page) {
         FrameLayout holder = new FrameLayout(screen.activity);

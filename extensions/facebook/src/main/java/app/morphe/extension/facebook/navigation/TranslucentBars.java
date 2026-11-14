@@ -140,6 +140,12 @@ public final class TranslucentBars {
     static final long PUT_BACK_MS = 3000;
     /** How many put-backs in a row leave a page as Facebook has it. */
     static final int MAX_PUT_BACKS = 3;
+    /**
+     * How long a page left as Facebook has it waits before it's tried again. Marketplace's React
+     * page lays its gap out again a few times while it loads after a swipe from Home, and left
+     * alone for good it kept the black bar under the pill until Facebook restarted (#468).
+     */
+    static final long LEFT_ALONE_MS = 10_000;
     /** The list class every feed and the Reels viewer use, which Redex keeps. */
     static final String LIST = "androidx.recyclerview.widget.RecyclerView";
     /** The colour under a paging list's gap: the Reels viewer's own black. */
@@ -556,6 +562,8 @@ public final class TranslucentBars {
         long takenAt;
         int putBacks;
         boolean leftAlone;
+        /** When it was left alone, which {@link #LEFT_ALONE_MS} counts from. */
+        long leftAt;
 
         /** Takes [view]'s gap away: its holder's bottom padding and its own bottom margin. */
         void take(View view, long now) {
@@ -769,6 +777,9 @@ public final class TranslucentBars {
         /** Whether a frame is booked for when the stretch may look again ({@link #wakeAfter}). */
         private boolean wakeBooked;
         private final Runnable wake = this::wake;
+        /** Whether a frame is booked for when a page left alone is tried again ({@link #retryAfter}). */
+        private boolean retryBooked;
+        private final Runnable retry = this::retry;
         private int frame;
         private boolean stopped;
 
@@ -887,10 +898,29 @@ public final class TranslucentBars {
         }
 
         /**
+         * Books one frame [delay] ms from now, when a page left alone is tried again (#468). A
+         * still Marketplace draws nothing more, so without it the next try waited for a touch.
+         * Kept apart from {@link #wakeAfter}, whose short wait it would otherwise hold up.
+         */
+        private void retryAfter(long delay) {
+            View window = this.window.get();
+            if (retryBooked || window == null) return;
+            retryBooked = true;
+            window.postDelayed(retry, Math.max(0, delay));
+        }
+
+        private void retry() {
+            retryBooked = false;
+            View window = this.window.get();
+            if (window != null && !stopped) window.invalidate();
+        }
+
+        /**
          * Stretches the page under the tab bar [bar] when it stops at [edge], the top of the bar's
          * rows, with a gap of at least [rows] pixels, in a window [height] tall (#250). A page
          * Facebook puts the gap back on {@link #MAX_PUT_BACKS} times in a row, each within {@link
-         * #PUT_BACK_MS}, is left as Facebook has it. Every page found counts, and one left alone
+         * #PUT_BACK_MS}, is left as Facebook has it for {@link #LEFT_ALONE_MS}, then tried again
+         * (#468). Every page found counts, and one left alone
          * doesn't stop the rest. A list that pages keeps its gap with black under it ({@link #back}).
          */
         private void reachUnder(View bar, int edge, int rows, int height, long now) {
@@ -948,13 +978,22 @@ public final class TranslucentBars {
                 stretch = new Stretch();
                 stretched.put(content, stretch);
             } else if (stretch.leftAlone) {
-                return;
+                long waited = now - stretch.leftAt;
+                if (waited < LEFT_ALONE_MS) {
+                    retryAfter(LEFT_ALONE_MS - waited);
+                    return;
+                }
+                stretch.leftAlone = false;
+                stretch.putBacks = 0;
+                Logger.printDebug(() -> "See-through bars: a page left alone is tried again");
             } else if (now - stretch.takenAt >= PUT_BACK_MS) {
                 stretch.putBacks = 0;
             } else if (++stretch.putBacks >= MAX_PUT_BACKS) {
                 stretch.leftAlone = true;
+                stretch.leftAt = now;
+                retryAfter(LEFT_ALONE_MS);
                 HookStatus.counted(FAMILY, LEFT_SHORT);
-                Logger.printDebug(() -> "See-through bars: Facebook keeps a page's gap, left alone");
+                Logger.printDebug(() -> "See-through bars: Facebook keeps a page's gap, left alone for now");
                 return;
             }
             int gap = gapBelow(content);
@@ -1226,6 +1265,7 @@ public final class TranslucentBars {
             View window = this.window.get();
             if (window == null) return;
             window.removeCallbacks(wake);
+            window.removeCallbacks(retry);
             ViewTreeObserver observer = window.getViewTreeObserver();
             if (!observer.isAlive()) return;
             observer.removeOnPreDrawListener(this);
