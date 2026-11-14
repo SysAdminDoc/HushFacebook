@@ -30,6 +30,7 @@ import app.morphe.extension.facebook.download.SendLink;
 import app.morphe.extension.facebook.feed.PostWordsForTests;
 import app.morphe.extension.facebook.feed.SeenPostsForTests;
 import app.morphe.extension.facebook.media.PlaybackQuality;
+import app.morphe.extension.facebook.misc.PostMenuItems;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
 import app.morphe.extension.facebook.media.SurfaceQuality;
 import app.morphe.extension.facebook.navigation.FeedsSubtab;
@@ -1041,6 +1042,50 @@ public class HushfacebookPreferenceFragmentTest {
             assertEquals(AppPages.shareItemsSummary(ShareSheetItems.hidden()), String.valueOf(items.getSummary()));
         } finally {
             Settings.HIDDEN_SHARE_ITEMS.resetToDefault();
+        }
+    }
+
+    /**
+     * 3-dot menu items to hide sits on News feed only in a build with Post menu items. Its list
+     * offers the common rows by their names, Save keeps the ticks and the summary names them, and
+     * the list closes with the page like the share sheet's.
+     */
+    @Test
+    public void thePostMenuListSavesItsTicksAndClosesWhenTheViewGoes() {
+        PatchFamily.inBuildForTests = EnumSet.noneOf(PatchFamily.class);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            assertEquals("the row showed without the patch", -1, indexOfKey(rowsOf(controller), FeedPages.POST_MENU_ITEMS_ROW));
+        }
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.POST_MENU_ITEMS);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(controller);
+            Preference items = rows.get(indexOfKey(rows, FeedPages.POST_MENU_ITEMS_ROW));
+            assertEquals("3-dot menu items to hide", String.valueOf(items.getTitle()));
+            assertEquals("None picked yet.", String.valueOf(items.getSummary()));
+            ShadowAlertDialog.reset();
+            items.getOnPreferenceClickListener().onPreferenceClick(items);
+            AlertDialog list = ShadowAlertDialog.getLatestAlertDialog();
+            assertNotNull("the row opened nothing", list);
+            assertEquals("Hide from a post's 3-dot menu", String.valueOf(Shadows.shadowOf(list).getTitle()));
+            List<String> choices = PostMenuItems.choices();
+            assertEquals("Interested", String.valueOf(list.getListView().getAdapter().getItem(choices.indexOf("SEE_MORE"))));
+            Shadows.shadowOf(list).clickOnItem(choices.indexOf("SEE_MORE"));
+            Shadows.shadowOf(list).clickOnItem(choices.indexOf("CAST"));
+            ShadowLooper.idleMainLooper();
+            list.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            ShadowLooper.idleMainLooper();
+            assertFalse(list.isShowing());
+            assertEquals("SEE_MORE,CAST", Settings.HIDDEN_POST_MENU_ITEMS.savedValue());
+            assertEquals("Hidden: Interested and Cast", String.valueOf(items.getSummary()));
+
+            items.getOnPreferenceClickListener().onPreferenceClick(items);
+            AlertDialog again = ShadowAlertDialog.getLatestAlertDialog();
+            assertTrue(again.isShowing());
+            controller.recreate();
+            ShadowLooper.idleMainLooper();
+            assertFalse("the 3-dot menu list outlived the page", again.isShowing());
+        } finally {
+            Settings.HIDDEN_POST_MENU_ITEMS.resetToDefault();
         }
     }
 

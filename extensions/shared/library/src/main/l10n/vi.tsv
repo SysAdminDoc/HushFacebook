@@ -2794,3 +2794,39 @@ Use the Hushfacebook logo	Dùng logo Hushfacebook
 Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. Restart Facebook to see it.	Hiện logo Hushfacebook ở đầu Trang chủ thay cho chữ của bạn và logo Facebook. Khởi động lại Facebook để thấy.
 # context: the name Home header picture shows once the logo is picked
 Hushfacebook logo	logo Hushfacebook
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for more posts like this one
+Interested	Quan tâm
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for fewer posts like this one
+Not interested	Không quan tâm
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that opens its feed preferences
+Manage your Feed	Quản lý bảng feed
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that reports the post
+Report	Báo cáo
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that plays the video on a TV
+Cast	Truyền
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that adds the poster to Favorites
+Add to Favorites	Thêm vào Yêu thích
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Why am I seeing this post?	Tại sao tôi nhìn thấy bài viết này?
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Turn on notifications for this post	Bật thông báo cho bài viết này
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Hide post	Ẩn bài viết
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that hides a poster for 30 days
+Snooze	Tạm ẩn 30 ngày
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Unfollow	Bỏ theo dõi
+# context: switch title under Playback speed in the post menu
+Playback speed on the menu's first page	Tốc độ phát ở trang đầu của menu
+# context: summary of that switch; Playback speed, Save, Report and More options are rows of the menu
+Puts Playback speed on the menu's first page, with Save and Report, so it's one tap away. Off, it stays under More options.	Đưa Tốc độ phát lên trang đầu của menu, cạnh Lưu và Báo cáo, chỉ cần một lần chạm. Khi tắt, mục này vẫn nằm trong Tùy chọn khác.
+# context: row title in News feed settings: the rows of a post's 3-dot menu the user picks to hide
+3-dot menu items to hide	Mục cần ẩn trong menu ba chấm
+# context: title of that row's list of checkboxes
+Hide from a post's 3-dot menu	Ẩn khỏi menu ba chấm của bài viết
+# context: import preview and toast, no 3-dot menu row will be in that list after the import
+Your list of 3-dot menu items to hide will be empty.	Danh sách mục cần ẩn trong menu ba chấm sẽ trống.
+# context: import preview and toast, one 3-dot menu row will be in that list after the import
+Your list of 3-dot menu items to hide will hold %1$d item.	Danh sách mục cần ẩn trong menu ba chấm sẽ có %1$d mục.
+# context: import preview and toast, several 3-dot menu rows will be in that list after the import
+Your list of 3-dot menu items to hide will hold %1$d items.	Danh sách mục cần ẩn trong menu ba chấm sẽ có %1$d mục.

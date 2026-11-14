@@ -118,6 +118,7 @@ public final class FamilyNames {
     public static final String MENU_PROMOTIONS = "Hide Menu promotions";
     public static final String META_UPSELLS = "Hide Meta upsells";
     public static final String SHARE_SHEET_ITEMS = "Share sheet items";
+    public static final String POST_MENU_ITEMS = "Post menu items";
     public static final String META_AI_SEARCH = "Hide Meta AI in search";
     public static final String SEARCH_HISTORY = "Don't save search history";
     public static final String SEARCH_DATE_RANGE = "Search date range";

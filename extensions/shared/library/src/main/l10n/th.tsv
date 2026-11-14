@@ -2794,3 +2794,39 @@ Use the Hushfacebook logo	ใช้โลโก้ Hushfacebook
 Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. Restart Facebook to see it.	แสดงโลโก้ Hushfacebook ที่ด้านบนของหน้าหลักแทนข้อความของคุณและโลโก้ Facebook รีสตาร์ท Facebook เพื่อดูผล
 # context: the name Home header picture shows once the logo is picked
 Hushfacebook logo	โลโก้ Hushfacebook
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for more posts like this one
+Interested	สนใจ
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for fewer posts like this one
+Not interested	ไม่สนใจ
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that opens its feed preferences
+Manage your Feed	จัดการฟีดของคุณ
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that reports the post
+Report	รายงาน
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that plays the video on a TV
+Cast	แคสต์
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that adds the poster to Favorites
+Add to Favorites	เพิ่มในรายการโปรด
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Why am I seeing this post?	ทำไมฉันจึงเห็นโพสต์นี้
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Turn on notifications for this post	เปิดการแจ้งเตือนสำหรับโพสต์นี้
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Hide post	ซ่อนโพสต์
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that hides a poster for 30 days
+Snooze	พักไว้ 30 วัน
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Unfollow	เลิกติดตาม
+# context: switch title under Playback speed in the post menu
+Playback speed on the menu's first page	ความเร็วในการเล่นในหน้าแรกของเมนู
+# context: summary of that switch; Playback speed, Save, Report and More options are rows of the menu
+Puts Playback speed on the menu's first page, with Save and Report, so it's one tap away. Off, it stays under More options.	ย้าย "ความเร็วในการเล่น" ไปไว้ในหน้าแรกของเมนู ร่วมกับ "บันทึก" และ "รายงาน" แตะครั้งเดียวก็ถึง เมื่อปิด จะยังอยู่ใน "ตัวเลือกเพิ่มเติม"
+# context: row title in News feed settings: the rows of a post's 3-dot menu the user picks to hide
+3-dot menu items to hide	รายการในเมนูจุดสามจุดที่จะซ่อน
+# context: title of that row's list of checkboxes
+Hide from a post's 3-dot menu	ซ่อนจากเมนูจุดสามจุดของโพสต์
+# context: import preview and toast, no 3-dot menu row will be in that list after the import
+Your list of 3-dot menu items to hide will be empty.	รายการที่จะซ่อนในเมนูจุดสามจุดของคุณจะว่างเปล่า
+# context: import preview and toast, one 3-dot menu row will be in that list after the import
+Your list of 3-dot menu items to hide will hold %1$d item.	รายการที่จะซ่อนในเมนูจุดสามจุดของคุณจะมี %1$d รายการ
+# context: import preview and toast, several 3-dot menu rows will be in that list after the import
+Your list of 3-dot menu items to hide will hold %1$d items.	รายการที่จะซ่อนในเมนูจุดสามจุดของคุณจะมี %1$d รายการ

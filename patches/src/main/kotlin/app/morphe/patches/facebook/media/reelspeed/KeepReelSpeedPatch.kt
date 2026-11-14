@@ -13,6 +13,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.postmenu.postMenuSheetHookPatch
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.media.resume.TRACK_START
@@ -89,7 +90,8 @@ val keepReelSpeedPatch = bytecodePatch(
 ) {
     category("Playback")
     // The guard keeps a tap from undoing a picked speed on accounts Facebook gives its own hold.
-    dependsOn(settingsPatch, reelLiftGuardPatch)
+    // The sheet hook moves the menu's Playback speed row up to the first page, beside Save and Report.
+    dependsOn(settingsPatch, reelLiftGuardPatch, postMenuSheetHookPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {

@@ -125,6 +125,7 @@ public final class VideoMenuItem {
             }
             if (speed) {
                 MenuItem entry = menu.add(PostMenuSpeed.rowTitle());
+                PostMenuSpeed.remember(entry);
                 if (entry != null) {
                     entry.setOnMenuItemClickListener(tapped -> {
                         PostMenuSpeed.open(context, video.id);

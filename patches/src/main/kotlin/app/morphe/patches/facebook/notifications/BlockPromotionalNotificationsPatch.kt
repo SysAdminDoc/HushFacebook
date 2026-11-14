@@ -37,7 +37,7 @@ val blockPromotionalNotificationsPatch = bytecodePatch(
         "always come through. Starts off. Turn on the kinds you want in Hushfacebook settings > Notifications.",
     default = true,
 ) {
-    category("Interface")
+    category("Ads")
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 

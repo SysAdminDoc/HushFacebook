@@ -56,6 +56,7 @@ import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.misc.HeaderText;
 import app.morphe.extension.facebook.misc.LogoEmoji;
 import app.morphe.extension.facebook.misc.OpeningPause;
+import app.morphe.extension.facebook.misc.PostMenuItems;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.feed.ReactionCeiling;
@@ -320,6 +321,7 @@ public final class SettingsBackup {
             Settings.FASTER_REEL_SPEEDS,
             Settings.SPEED_ON_REPLAYS,
             Settings.POST_MENU_SPEED,
+            Settings.POST_MENU_SPEED_ON_TOP,
             Settings.HOLD_REEL_FOR_2X,
             Settings.HOLD_REEL_RIGHT_EDGE,
             Settings.HOLD_FEED_VIDEO_FOR_2X,
@@ -783,6 +785,14 @@ public final class SettingsBackup {
     static final StringSetting SHARE_ITEMS = Settings.HIDDEN_SHARE_ITEMS;
 
     /**
+     * The kinds of 3-dot menu row to hide, held in a file exactly as their row stores them: Facebook's
+     * kind names, commas between. A kind this build doesn't name is carried like any other. A list
+     * {@link PostMenuItems#clean} would change refuses the whole file, as a share items list does. The
+     * kinds Facebook has shown on this phone stay on it.
+     */
+    static final StringSetting POST_MENU_ITEMS = Settings.HIDDEN_POST_MENU_ITEMS;
+
+    /**
      * The Menu tiles to hide, held in a file exactly as their row stores them: the first word of each
      * tile's deep link, commas between. A key this build doesn't list is carried like any other. A list
      * {@link MenuTiles#clean} would change refuses the whole file, as a share items list does.
@@ -804,7 +814,7 @@ public final class SettingsBackup {
 
     /** The settings a file carries that aren't switches, in the order Settings declares them. */
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
-            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
+            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, POST_MENU_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY,
                     QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, NEW_ROW_MARK, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI,
                     BADGE, LOGO, TAB));
@@ -917,6 +927,7 @@ public final class SettingsBackup {
         private static final String ACCENT_NAME = "accent_color";
         private static final String CEILING_NAME = "hide_posts_over_reactions";
         private static final String SHARE_ITEMS_NAME = "hidden_share_items";
+        private static final String POST_MENU_ITEMS_NAME = "hidden_post_menu_items";
         private static final String MENU_TILES_NAME = "hidden_menu_tiles";
         private static final String FEED_TYPES_NAME = "hidden_feed_types";
         private static final String TAB_ORDER_NAME = "tab_order";
@@ -1030,6 +1041,9 @@ public final class SettingsBackup {
         /** The clean list of share sheet items to hide the file holds, or null when it names none. Set once, as it's read. */
         @Nullable
         String shareItems;
+        /** The clean list of 3-dot menu rows to hide the file holds, or null when it names none. Set once, as it's read. */
+        @Nullable
+        String postMenuItems;
         /** The clean list of Menu tiles to hide the file holds, or null when it names none. Set once, as it's read. */
         @Nullable
         String menuTiles;
@@ -1305,6 +1319,8 @@ public final class SettingsBackup {
             if (ceilingChange != null) changes.put(CEILING, ceilingChange);
             String shareItemsChange = shareItemsChange();
             if (shareItemsChange != null) changes.put(SHARE_ITEMS, shareItemsChange);
+            String postMenuItemsChange = postMenuItemsChange();
+            if (postMenuItemsChange != null) changes.put(POST_MENU_ITEMS, postMenuItemsChange);
             String menuTilesChange = menuTilesChange();
             if (menuTilesChange != null) changes.put(MENU_TILES, menuTilesChange);
             String feedTypesChange = feedTypesChange();
@@ -1539,6 +1555,13 @@ public final class SettingsBackup {
             return shareItems.equals(ShareSheetItems.clean(SHARE_ITEMS.savedValue())) ? null : shareItems;
         }
 
+        /** The 3-dot menu rows to hide this file sets, or null when it names none or the ones already set. */
+        @Nullable
+        String postMenuItemsChange() {
+            if (postMenuItems == null) return null;
+            return postMenuItems.equals(PostMenuItems.clean(POST_MENU_ITEMS.savedValue())) ? null : postMenuItems;
+        }
+
         /** The Menu tiles to hide this file sets, or null when it names none or the ones already set. */
         @Nullable
         String menuTilesChange() {
@@ -1714,6 +1737,7 @@ public final class SettingsBackup {
             if (breakLength != null) state.putString(BREAK_LENGTH_NAME, breakLength.fileValue);
             if (watchedKeep != null) state.putString(WATCHED_KEEP_NAME, watchedKeep.fileValue);
             if (shareItems != null) state.putString(SHARE_ITEMS_NAME, shareItems);
+            if (postMenuItems != null) state.putString(POST_MENU_ITEMS_NAME, postMenuItems);
             if (menuTiles != null) state.putString(MENU_TILES_NAME, menuTiles);
             if (feedTypes != null) state.putString(FEED_TYPES_NAME, feedTypes);
             if (tabOrder != null) state.putString(TAB_ORDER_NAME, tabOrder);
@@ -1794,6 +1818,9 @@ public final class SettingsBackup {
             Object shareItems = state.get(SHARE_ITEMS_NAME);
             read.shareItems = shareItems instanceof String && ShareSheetItems.isClean((String) shareItems)
                     ? (String) shareItems : null;
+            Object postMenuItems = state.get(POST_MENU_ITEMS_NAME);
+            read.postMenuItems = postMenuItems instanceof String && PostMenuItems.isClean((String) postMenuItems)
+                    ? (String) postMenuItems : null;
             Object menuTiles = state.get(MENU_TILES_NAME);
             read.menuTiles = menuTiles instanceof String && MenuTiles.isClean((String) menuTiles)
                     ? (String) menuTiles : null;
@@ -1908,6 +1935,7 @@ public final class SettingsBackup {
             switches.put(KEPT.key, PostWords.clean(of(KEPT)));
             switches.put(SOURCES.key, PostSources.clean(of(SOURCES)));
             switches.put(SHARE_ITEMS.key, ShareSheetItems.clean(of(SHARE_ITEMS)));
+            switches.put(POST_MENU_ITEMS.key, PostMenuItems.clean(of(POST_MENU_ITEMS)));
             switches.put(MENU_TILES.key, MenuTiles.clean(of(MENU_TILES)));
             switches.put(FEED_TYPES.key, FeedTypeNames.clean(of(FEED_TYPES)));
             switches.put(TAB_ORDER.key, TabOrder.clean(of(TAB_ORDER)));
@@ -2055,6 +2083,7 @@ public final class SettingsBackup {
         AccentColor.Preset accent = null;
         ReactionCeiling ceiling = null;
         String shareItems = null;
+        String postMenuItems = null;
         String menuTiles = null;
         String feedTypes = null;
         String tabOrder = null;
@@ -2358,6 +2387,14 @@ public final class SettingsBackup {
                 shareItems = (String) value;
                 continue;
             }
+            if (POST_MENU_ITEMS.key.equals(name)) {
+                Object value = values.opt(name);
+                if (!(value instanceof String) || !PostMenuItems.isClean((String) value)) {
+                    throw new Rejected(Reason.VALUE, "Not one clean list of 3-dot menu items: " + name);
+                }
+                postMenuItems = (String) value;
+                continue;
+            }
             if (MENU_TILES.key.equals(name)) {
                 Object value = values.opt(name);
                 if (!(value instanceof String) || !MenuTiles.isClean((String) value)) {
@@ -2432,6 +2469,7 @@ public final class SettingsBackup {
         read.breakLength = breakLength;
         read.watchedKeep = watchedKeep;
         read.shareItems = shareItems;
+        read.postMenuItems = postMenuItems;
         read.menuTiles = menuTiles;
         read.feedTypes = feedTypes;
         read.tabOrder = tabOrder;

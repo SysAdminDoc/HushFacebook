@@ -474,6 +474,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean postMenuItems() {
+        return false;
+    }
+
     public static boolean metaAiSearch() {
         return false;
     }

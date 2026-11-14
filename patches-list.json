@@ -360,7 +360,7 @@
     {
       "name": "Block promotional notifications",
       "description": "Blocks the kinds of notification you pick, such as trending videos, memories and birthdays, so you get fewer pings you don't care about. Messages, friend requests, comments and login alerts always come through. Starts off. Turn on the kinds you want in Hushfacebook settings > Notifications.",
-      "category": "Interface",
+      "category": "Ads",
       "use": true,
       "dependencies": [
         "Hushfacebook settings"
@@ -3449,6 +3449,44 @@
       "name": "Post action buttons",
       "description": "Adds Facebook's own Save button next to Like, Comment and Share under posts, and a Download button on posts with a video or photos that saves them the way the post's menu does. It can also take Like, Comment, Share or Send out of that row. Each has its own switch, and they all start off. Find them in Hushfacebook settings > News feed.",
       "category": "Feed",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "587.0.0.39.55"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "587.0.0.39.55",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 707414333,
+                "ARMEABI_V7A": 707414338
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Post menu items",
+      "description": "Lets you hide rows you never use from a post's three-dot menu, such as Interested, Not interested or Cast, so you can't tap them by accident. Nothing is hidden until you pick. Choose them in Hushfacebook settings > News feed.",
+      "category": "Interface",
       "use": true,
       "dependencies": [
         "BytecodePatch",

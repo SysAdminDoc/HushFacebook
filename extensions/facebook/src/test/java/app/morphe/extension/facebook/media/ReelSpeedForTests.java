@@ -146,4 +146,9 @@ public final class ReelSpeedForTests {
         boolean labelled = ReelSpeed.gearLabels(new String[] {"0.5", "1", "2"}).length > facebooks.length;
         return values || longer || labelled;
     }
+
+    /** Forgets the post menu's Playback speed rows, as a new Facebook process would. */
+    public static void forgetPostMenuRows() {
+        PostMenuSpeed.forgetRowsForTests();
+    }
 }

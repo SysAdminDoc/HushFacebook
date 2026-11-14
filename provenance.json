@@ -342,6 +342,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/PostMenuItems.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postmenu/**"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook from Facebook 587 for issues #473 and #475. The post menu sheet hook finds the one static method that sorts a post's three-dot menu into the sheet's parts by the enum of row kinds that names SEE_MORE, SEE_LESS, TUNE_YOUR_ALGORITHM, SAVE and REPORT, adds a helper to its class and hands the holder it returns to the extension in front of each return, with the row metadata class, its kind field and the first page list read from the method. Post menu items takes rows of the picked kinds out of every part of the holder and writes down the kinds this phone has shown. Keep the reel speed's Playback speed row, which has no kind and lands under More options, moves to the end of the first page while its switch is on."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/ShareSheetItems.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/ShareSheetGroups.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/ShareSheetPeople.java",

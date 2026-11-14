@@ -2794,3 +2794,39 @@ Use the Hushfacebook logo	Hushfacebook logosunu kullan
 Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. Restart Facebook to see it.	Ana Sayfa'nın üstünde sözlerin ve Facebook'un logosu yerine Hushfacebook'un logosunu gösterir. Görmek için Facebook'u yeniden başlat.
 # context: the name Home header picture shows once the logo is picked
 Hushfacebook logo	Hushfacebook logosu
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for more posts like this one
+Interested	İlgileniyorum
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for fewer posts like this one
+Not interested	İlgilenmiyorum
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that opens its feed preferences
+Manage your Feed	Akışını yönet
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that reports the post
+Report	Şikayet et
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that plays the video on a TV
+Cast	Yansıt
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that adds the poster to Favorites
+Add to Favorites	Favorilere ekle
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Why am I seeing this post?	Bu gönderiyi neden görüyorum?
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Turn on notifications for this post	Bu gönderi için bildirimleri aç
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Hide post	Gönderiyi gizle
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that hides a poster for 30 days
+Snooze	30 gün ertele
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Unfollow	Takibi bırak
+# context: switch title under Playback speed in the post menu
+Playback speed on the menu's first page	Menünün ilk sayfasında oynatma hızı
+# context: summary of that switch; Playback speed, Save, Report and More options are rows of the menu
+Puts Playback speed on the menu's first page, with Save and Report, so it's one tap away. Off, it stays under More options.	Oynatma hızını menünün ilk sayfasına, Kaydet ve Şikayet et yanına koyar, böylece tek dokunuşla ulaşılır. Kapalıyken Diğer seçenekler altında kalır.
+# context: row title in News feed settings: the rows of a post's 3-dot menu the user picks to hide
+3-dot menu items to hide	Üç nokta menüsünde gizlenecek öğeler
+# context: title of that row's list of checkboxes
+Hide from a post's 3-dot menu	Gönderinin üç nokta menüsünden gizle
+# context: import preview and toast, no 3-dot menu row will be in that list after the import
+Your list of 3-dot menu items to hide will be empty.	Üç nokta menüsünde gizlenecek öğeler listen boş olacak.
+# context: import preview and toast, one 3-dot menu row will be in that list after the import
+Your list of 3-dot menu items to hide will hold %1$d item.	Üç nokta menüsünde gizlenecek öğeler listende %1$d öğe olacak.
+# context: import preview and toast, several 3-dot menu rows will be in that list after the import
+Your list of 3-dot menu items to hide will hold %1$d items.	Üç nokta menüsünde gizlenecek öğeler listende %1$d öğe olacak.

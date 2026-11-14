@@ -20,6 +20,7 @@ Changes in each Hushfacebook version, newest first.
 * New `Notification icon` option in Hushfacebook settings. Pick `Hushfacebook` when you patch and Facebook's notifications and status bar icon show the H instead of the "f". Icons that say what a notification is about, like a friend request's, stay. (#467)
 * `Use the Hushfacebook logo` sits under `Home header picture` in Appearance and puts Hushfacebook's logo at the top of Home in place of your words or Facebook's logo. `Remove the header picture` takes it off again. (#467)
 * The Hush settings now come in Thai, translated by MangaThatsFine. (#436)
+* New patch, `Post menu items`. `3-dot menu items to hide` under News feed lists the rows of a post's three-dot menu, like Interested, Not interested, Cast or Report, and the ones you tick stop showing up there, so a thumb can't land on them by accident. The list also picks up any other rows Facebook has shown you. Nothing is hidden until you pick. (#475)
 * **Tooling:** `superpack-unpack.ps1 -Desktop` unpacks Facebook's Android 9+ build on a PC with no phone or emulator attached. (#102)
 
 ### Changed
@@ -28,6 +29,8 @@ Changes in each Hushfacebook version, newest first.
 * `Tab bar height` goes up to 130 now. Past 100 the pill gets taller instead of shorter. There's barely any room above the icons, so most of the extra height goes toward the bottom of the screen. (#425)
 * `Hide posts with words you choose` and `Hide link posts` work on profiles, Pages, in groups and on the Reels tab too. Group posts go in a group's own feed and in the Groups tab's feed, while search results and a post you open stay as they are. A post or reel with one of your words goes, and so does one whose words send you to a website, like the "Watch More: https://..." drama reels. Words that keep a post keep these too, and a link to Facebook itself doesn't count. (#458)
 * `See-through bars` makes its frosted copy of the screen at a quarter of the size, blurs that and stretches it back over the bar. The blur takes out the fine detail anyway, so it looks the same, and phones with a weaker graphics chip have a sixteenth of the pixels to blur on every frame. (#461)
+* The Playback speed row that `Playback speed in the post menu` adds now sits on the menu's first page, with Save and Report, so it's one tap away. Before, it was under More options. Turn off `Playback speed on the menu's first page` to put it back there. (#473)
+* In Morphe Manager's grouped patch list, `Block promotional notifications` now sits with the ad patches, so the Interface group stays short enough to scan.
 
 ### Fixed
 

@@ -2789,3 +2789,39 @@ Use the Hushfacebook logo	使用 Hushfacebook 标志
 Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. Restart Facebook to see it.	在主页顶部显示 Hushfacebook 标志，取代你的文字和 Facebook 标志。重启 Facebook 后可看到。
 # context: the name Home header picture shows once the logo is picked
 Hushfacebook logo	Hushfacebook 标志
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for more posts like this one
+Interested	感兴趣
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for fewer posts like this one
+Not interested	不感兴趣
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that opens its feed preferences
+Manage your Feed	管理你的动态
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that reports the post
+Report	举报
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that plays the video on a TV
+Cast	投屏
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that adds the poster to Favorites
+Add to Favorites	添加到特别关注
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Why am I seeing this post?	为什么我会看到这条帖子？
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Turn on notifications for this post	开启这条帖子的通知
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Hide post	隐藏帖子
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that hides a poster for 30 days
+Snooze	暂停 30 天
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Unfollow	取消关注
+# context: switch title under Playback speed in the post menu
+Playback speed on the menu's first page	菜单首页上的播放速度
+# context: summary of that switch; Playback speed, Save, Report and More options are rows of the menu
+Puts Playback speed on the menu's first page, with Save and Report, so it's one tap away. Off, it stays under More options.	把“播放速度”放在菜单首页，和“保存”“举报”放在一起，点一下就能用。关闭时，它仍在“更多选项”里。
+# context: row title in News feed settings: the rows of a post's 3-dot menu the user picks to hide
+3-dot menu items to hide	要隐藏的三点菜单项目
+# context: title of that row's list of checkboxes
+Hide from a post's 3-dot menu	从帖子的三点菜单中隐藏
+# context: import preview and toast, no 3-dot menu row will be in that list after the import
+Your list of 3-dot menu items to hide will be empty.	你要隐藏的三点菜单项目列表将为空。
+# context: import preview and toast, one 3-dot menu row will be in that list after the import
+Your list of 3-dot menu items to hide will hold %1$d item.	你要隐藏的三点菜单项目列表将包含 %1$d 项。
+# context: import preview and toast, several 3-dot menu rows will be in that list after the import
+Your list of 3-dot menu items to hide will hold %1$d items.	你要隐藏的三点菜单项目列表将包含 %1$d 项。

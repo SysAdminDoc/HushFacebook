@@ -364,6 +364,9 @@ final class VideoPages {
                 reels.addPreference(toggle(context, Settings.POST_MENU_SPEED,
                         L10n.t("A feed or Watch video's 3-dot menu gets Playback speed, from 0.5x to 3x, live videos "
                                 + "too. Off by default, since it hasn't been tried on a real account yet.")));
+                reels.addPreference(toggle(context, Settings.POST_MENU_SPEED_ON_TOP,
+                        L10n.t("Puts Playback speed on the menu's first page, with Save and Report, so it's one tap "
+                                + "away. Off, it stays under More options.")));
             }
         }
         if (build.contains(PatchFamily.REEL_HOLD)) {

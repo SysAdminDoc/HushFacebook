@@ -1347,6 +1347,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_post_menu_speed", FALSE);
 
     /**
+     * The post menu's Playback speed row sits on the menu's first page, with Save and Report, in
+     * place of under More options (#473). It rides on the post menu sheet's hook, which Keep the reel
+     * speed brings. Off, paused, or a build where the sheet moved, and the row stays under More
+     * options.
+     */
+    public static final BooleanSetting POST_MENU_SPEED_ON_TOP =
+            new BooleanSetting("hushfacebook_post_menu_speed_on_top", TRUE, Setting.parent(POST_MENU_SPEED));
+
+    /**
      * The gear menu offers Playback speed on a full-screen video that isn't live, a finished live
      * video among them, where Facebook's full-screen player leaves it out behind a server flag
      * (#238). It rides on Keep the reel speed's patch
@@ -2303,6 +2312,20 @@ public class Settings extends BaseSettings {
      */
     public static final StringSetting SEEN_SHARE_ITEMS =
             new StringSetting("hushfacebook_seen_share_items", "");
+
+    /**
+     * The kinds of post menu row Post menu items keeps out (#475), as the kind enum's constant names
+     * separated by commas. Empty, every post menu is Facebook's own.
+     */
+    public static final StringSetting HIDDEN_POST_MENU_ITEMS =
+            new StringSetting("hushfacebook_hidden_post_menu_items", "");
+
+    /**
+     * The kinds of post menu row Facebook has shown on this install, in the order they first came, so
+     * the list of rows to hide shows real ones. Written by the hook, never by a person.
+     */
+    public static final StringSetting SEEN_POST_MENU_ITEMS =
+            new StringSetting("hushfacebook_seen_post_menu_items", "");
 
     /**
      * The Menu tiles kept out of the shortcut list (#153), as the first word of each tile's deep link

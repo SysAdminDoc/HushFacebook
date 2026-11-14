@@ -43,6 +43,7 @@ import app.morphe.extension.facebook.feed.HiddenTally;
 import app.morphe.extension.facebook.feed.SeenPosts;
 import app.morphe.extension.facebook.feed.TranslateLanguages;
 import app.morphe.extension.facebook.misc.BreakTimer;
+import app.morphe.extension.facebook.misc.PostMenuItems;
 import app.morphe.extension.facebook.navigation.MarketplaceOnly;
 import app.morphe.extension.facebook.profile.LocalProfileCounts;
 import app.morphe.extension.facebook.settings.SettingsRows.Row;
@@ -185,7 +186,8 @@ final class FeedPages {
                 || build.contains(PatchFamily.TRANSLATE_POSTS)
                 || build.contains(PatchFamily.REEL_GESTURES)
                 || build.contains(PatchFamily.WHO_SHARED)
-                || build.contains(PatchFamily.PHOTO_CAROUSEL)) {
+                || build.contains(PatchFamily.PHOTO_CAROUSEL)
+                || build.contains(PatchFamily.POST_MENU_ITEMS)) {
             PreferenceCategory feed = category(screen, L10n.t("News feed"));
             // The families whose rules run in the feed guard, which keeps the tally.
             if (build.contains(PatchFamily.SPONSORED_POSTS) || build.contains(PatchFamily.SUGGESTED_POSTS)
@@ -483,11 +485,76 @@ final class FeedPages {
                     feed.addPreference(feedTypesRow(page, context));
                 }
             }
+            if (build.contains(PatchFamily.POST_MENU_ITEMS)) feed.addPreference(postMenuItemsRow(page, context));
         }
     }
 
     /** The row's key, for the settings search. No setting is behind it. */
     static final String FEED_TYPES_ROW = "action_feed_types";
+
+    /** The row's key, for the settings search. No setting is behind it. */
+    static final String POST_MENU_ITEMS_ROW = "action_post_menu_items";
+
+    /** Post menu items' row: the rows it keeps out of a post's 3-dot menu, picked from a list of checkboxes. */
+    static Preference postMenuItemsRow(HushfacebookPreferenceFragment page, Context context) {
+        Row row = new Row(context);
+        row.setKey(POST_MENU_ITEMS_ROW);
+        row.setTitle(L10n.t("3-dot menu items to hide"));
+        row.setPersistent(false);
+        row.setSummary(postMenuItemsSummary(PostMenuItems.hidden()));
+        row.setOnPreferenceClickListener(p -> {
+            showPostMenuItems(page, context, row);
+            return true;
+        });
+        return row;
+    }
+
+    /** The row's summary: the rows kept out, by the names the list gives them, or none. */
+    static String postMenuItemsSummary(Set<String> hidden) {
+        if (hidden.isEmpty()) return L10n.t("None picked yet.");
+        List<String> names = new ArrayList<>();
+        for (String kind : hidden) names.add(PostMenuItems.label(kind));
+        return L10n.f("Hidden: %s", L10n.join(names));
+    }
+
+    /**
+     * The list: every kind of row it knows, ticked when it's kept out. Save keeps the ticks, or, when
+     * they need more room than the setting has or the phone doesn't keep the write, keeps the list
+     * open with its ticks, so Save can be tried again.
+     */
+    private static void showPostMenuItems(HushfacebookPreferenceFragment page, Context context, Preference row) {
+        List<String> kinds = PostMenuItems.choices();
+        Set<String> hidden = PostMenuItems.hidden();
+        String[] names = new String[kinds.size()];
+        boolean[] ticked = new boolean[kinds.size()];
+        for (int i = 0; i < names.length; i++) {
+            names[i] = PostMenuItems.label(kinds.get(i));
+            ticked[i] = hidden.contains(kinds.get(i));
+        }
+        AlertDialog list = page.show(new AlertDialog.Builder(context)
+                .setTitle(L10n.t("Hide from a post's 3-dot menu"))
+                .setMultiChoiceItems(names, ticked, (shown, which, isTicked) -> ticked[which] = isTicked)
+                .setPositiveButton(L10n.t("Save"), null)
+                .setNegativeButton(L10n.t("Cancel"), null));
+        if (list == null) return;
+        list.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(button -> {
+            List<String> picked = new ArrayList<>();
+            for (int i = 0; i < ticked.length; i++) {
+                if (ticked[i]) picked.add(kinds.get(i));
+            }
+            PostMenuItems.Hidden saved = PostMenuItems.hide(picked);
+            if (saved == PostMenuItems.Hidden.NO_ROOM) {
+                Utils.showToastLong(L10n.t("This list needs more room than it has. Shorten it, then save again."));
+                return;
+            }
+            if (saved == PostMenuItems.Hidden.NOT_STORED) {
+                Utils.showToastLong(L10n.t("Couldn't save the change. Try again."));
+                return;
+            }
+            row.setSummary(postMenuItemsSummary(PostMenuItems.hidden()));
+            list.dismiss();
+        });
+    }
 
     /** The row's key, for the settings search. The setting it writes is a list of codes. */
     static final String LEAVE_ALONE_ROW = "action_translate_leave_alone";

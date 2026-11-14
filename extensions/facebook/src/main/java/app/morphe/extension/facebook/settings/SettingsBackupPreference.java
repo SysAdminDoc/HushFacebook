@@ -68,6 +68,7 @@ import app.morphe.extension.facebook.notifications.QuietHour;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.BreakTimer;
 import app.morphe.extension.facebook.misc.OpeningPause;
+import app.morphe.extension.facebook.misc.PostMenuItems;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.feed.ReactionCeiling;
@@ -418,6 +419,7 @@ public class SettingsBackupPreference extends Preference {
                     snapshot.lockAfterChange(), snapshot.textSizeChange(), snapshot.accentChange()));
             if (snapshot.ceilingChange() != null) parts.add(ceilingSentence(snapshot.ceilingChange()));
             if (snapshot.shareItemsChange() != null) parts.add(shareItemsSentence(snapshot.shareItemsChange()));
+            if (snapshot.postMenuItemsChange() != null) parts.add(postMenuItemsSentence(snapshot.postMenuItemsChange()));
             if (snapshot.menuTilesChange() != null) parts.add(menuTilesSentence(snapshot.menuTilesChange()));
             if (snapshot.feedTypesChange() != null) parts.add(feedTypesSentence(snapshot.feedTypesChange()));
             if (snapshot.tabOrderChange() != null) parts.add(tabOrderSentence(snapshot.tabOrderChange()));
@@ -867,6 +869,14 @@ public class SettingsBackupPreference extends Preference {
                 "Your list of share sheet items to hide will hold %1$d items.", items);
     }
 
+    /** The sentence that says how many kinds of 3-dot menu row will be hidden after an import. */
+    static String postMenuItemsSentence(String list) {
+        int items = PostMenuItems.count(list);
+        if (items == 0) return L10n.t("Your list of 3-dot menu items to hide will be empty.");
+        return L10n.quantity(items, "Your list of 3-dot menu items to hide will hold %1$d item.",
+                "Your list of 3-dot menu items to hide will hold %1$d items.", items);
+    }
+
     /** The sentence that says how many Menu tiles will be hidden after an import. */
     static String menuTilesSentence(String list) {
         int tiles = MenuTiles.count(list);
@@ -1103,6 +1113,7 @@ public class SettingsBackupPreference extends Preference {
                     snapshot.lockAfterChange(), snapshot.textSizeChange(), snapshot.accentChange())
                     + (snapshot.ceilingChange() == null ? "" : " " + ceilingSentence(snapshot.ceilingChange()))
                     + (snapshot.shareItemsChange() == null ? "" : " " + shareItemsSentence(snapshot.shareItemsChange()))
+                    + (snapshot.postMenuItemsChange() == null ? "" : " " + postMenuItemsSentence(snapshot.postMenuItemsChange()))
                     + (snapshot.menuTilesChange() == null ? "" : " " + menuTilesSentence(snapshot.menuTilesChange()))
                     + (snapshot.feedTypesChange() == null ? "" : " " + feedTypesSentence(snapshot.feedTypesChange()))
                     + (snapshot.tabOrderChange() == null ? "" : " " + tabOrderSentence(snapshot.tabOrderChange()))

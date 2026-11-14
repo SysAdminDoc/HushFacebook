@@ -12,8 +12,10 @@ import android.content.ContextWrapper;
 import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import app.morphe.extension.facebook.reels.PostTextSelect;
@@ -63,6 +65,9 @@ public final class PostMenuSpeed {
     @Nullable
     private static WeakReference<Object> lastPlayer;
 
+    /** The Playback speed rows added lately, oldest first, so the menu sheet's hook can find ours. */
+    private static final List<WeakReference<Object>> ROWS = new ArrayList<>();
+
     /** Whether a started video's params reported an id, so the row can tell players apart by it. */
     private static boolean idsRead;
 
@@ -93,6 +98,56 @@ public final class PostMenuSpeed {
     public static String rowTitle() {
         HookStatus.counted(FAMILY, ROW_ADDED);
         return L10n.t("Playback speed");
+    }
+
+    /**
+     * Keeps [row], a Playback speed row just added to a menu, so the post menu sheet's hook can tell
+     * it from Facebook's rows by the object itself and not its words: a Facebook row of the same
+     * title stays where Facebook puts it. The newest few are kept, weakly.
+     */
+    public static void remember(@Nullable Object row) {
+        if (row == null) return;
+        synchronized (LOCK) {
+            for (Iterator<WeakReference<Object>> kept = ROWS.iterator(); kept.hasNext(); ) {
+                if (kept.next().get() == null) kept.remove();
+            }
+            while (ROWS.size() >= REMEMBERED) ROWS.remove(0);
+            ROWS.add(new WeakReference<>(row));
+        }
+    }
+
+    /** Whether [item] is a Playback speed row this added. */
+    public static boolean isRow(@Nullable Object item) {
+        if (item == null) return false;
+        synchronized (LOCK) {
+            for (WeakReference<Object> kept : ROWS) {
+                if (kept.get() == item) return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Whether the post menu sheet's hook puts the row on the menu's first page (#473): the row on and
+     * {@link Settings#POST_MENU_SPEED_ON_TOP} on, with a row made lately. Never throws.
+     */
+    public static boolean onFirstPage() {
+        try {
+            if (!on() || !Settings.POST_MENU_SPEED_ON_TOP.get()) return false;
+            synchronized (LOCK) {
+                return !ROWS.isEmpty();
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "post menu speed on the first page", failure);
+            return false;
+        }
+    }
+
+    /** Forgets the rows kept. Tests only. */
+    static void forgetRowsForTests() {
+        synchronized (LOCK) {
+            ROWS.clear();
+        }
     }
 
     /**

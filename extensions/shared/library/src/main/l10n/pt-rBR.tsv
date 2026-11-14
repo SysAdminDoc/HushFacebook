@@ -2680,3 +2680,39 @@ Use the Hushfacebook logo	Usar o logo do Hushfacebook
 Shows Hushfacebook's logo at the top of Home in place of your words and Facebook's logo. Restart Facebook to see it.	Mostra o logo do Hushfacebook no topo da Página inicial no lugar das suas palavras e do logo do Facebook. Reinicie o Facebook para ver.
 # context: the name Home header picture shows once the logo is picked
 Hushfacebook logo	logo do Hushfacebook
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for more posts like this one
+Interested	Tenho interesse
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row asking for fewer posts like this one
+Not interested	Não tenho interesse
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that opens its feed preferences
+Manage your Feed	Gerenciar seu Feed
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that reports the post
+Report	Denunciar
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that plays the video on a TV
+Cast	Transmitir
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that adds the poster to Favorites
+Add to Favorites	Adicionar aos Favoritos
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Why am I seeing this post?	Por que estou vendo esta publicação?
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Turn on notifications for this post	Ativar notificações desta publicação
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Hide post	Ocultar publicação
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide: Facebook's row that hides a poster for 30 days
+Snooze	Adiar
+# context: a kind of row in a post's 3-dot menu, offered in the list of rows to hide
+Unfollow	Deixar de seguir
+# context: switch title under Playback speed in the post menu
+Playback speed on the menu's first page	Velocidade de reprodução na primeira página do menu
+# context: summary of that switch; Playback speed, Save, Report and More options are rows of the menu
+Puts Playback speed on the menu's first page, with Save and Report, so it's one tap away. Off, it stays under More options.	Coloca Velocidade de reprodução na primeira página do menu, junto de Salvar e Denunciar, a um toque. Desligado, ela fica em Mais opções.
+# context: row title in News feed settings: the rows of a post's 3-dot menu the user picks to hide
+3-dot menu items to hide	Itens ocultos do menu de três pontos
+# context: title of that row's list of checkboxes
+Hide from a post's 3-dot menu	Ocultar do menu de três pontos de uma publicação
+# context: import preview and toast, no 3-dot menu row will be in that list after the import
+Your list of 3-dot menu items to hide will be empty.	Sua lista de itens ocultos do menu de três pontos ficará vazia.
+# context: import preview and toast, one 3-dot menu row will be in that list after the import
+Your list of 3-dot menu items to hide will hold %1$d item.	Sua lista de itens ocultos do menu de três pontos terá %1$d item.
+# context: import preview and toast, several 3-dot menu rows will be in that list after the import
+Your list of 3-dot menu items to hide will hold %1$d items.	Sua lista de itens ocultos do menu de três pontos terá %1$d itens.

@@ -79,6 +79,7 @@ import app.morphe.extension.facebook.profile.LocalProfileCounts;
 import app.morphe.extension.facebook.stories.StoriesTrayCircles;
 import app.morphe.extension.facebook.misc.OpeningPause;
 import app.morphe.extension.facebook.menu.MenuTiles;
+import app.morphe.extension.facebook.misc.PostMenuItems;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.theme.AccentColor;
@@ -957,6 +958,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         showShareItemsSummary();
         showMenuTilesSummary();
         showFeedTypesSummary();
+        showPostMenuItemsSummary();
         for (TabBarChoices.Pair pair : TabBarChoices.Pair.values()) {
             if (getPreferenceScreen() != null) TabBarChoices.showSaved(findPreference(pair.rowKey), pair);
         }
@@ -991,6 +993,13 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         if (row != null) {
             row.setSummary(FeedPages.feedTypesSummary(FeedTypeNames.hidden()));
         }
+    }
+
+    /** No setting is behind the 3-dot menu items row's key, so its summary is redone here after an import. */
+    private void showPostMenuItemsSummary() {
+        if (getPreferenceScreen() == null) return;
+        Preference row = findPreference(FeedPages.POST_MENU_ITEMS_ROW);
+        if (row != null) row.setSummary(FeedPages.postMenuItemsSummary(PostMenuItems.hidden()));
     }
 
     /** No setting is behind the share sheet row's key, so its summary is redone here after an import. */
