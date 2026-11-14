@@ -6,6 +6,9 @@ package app.morphe.extension.facebook.reels;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -302,5 +305,50 @@ public class FeedVideoDoubleTapTest {
         assertEquals(1, clicks);
         assertEquals("held again, not jumped", MotionEvent.ACTION_CANCEL, tap(0.9f));
         assertTrue(seeks.isEmpty());
+    }
+
+    @Test public void eachJumpShowsItsRunningTotalOverTheSideTapped() {
+        tap(0.9f);
+        assertNull("a held tap showed an amount before anything jumped", SkipLabel.showing());
+        tap(0.9f);
+        SkipLabel label = SkipLabel.showing();
+        assertNotNull("a jump showed no amount", label);
+        assertEquals("+10s", label.text());
+        assertSame(player.view, label.host());
+        assertTrue("the amount isn't over the right side", label.getBounds().centerX() > player.view.getWidth() * 0.6f);
+        assertTrue("the amount isn't halfway down the video", Math.abs(label.getBounds().centerY() - player.view.getHeight() / 2) <= 1);
+        tap(0.9f);
+        assertSame("a third tap made a second label", label, SkipLabel.showing());
+        assertEquals("+20s", label.text());
+        assertEquals(255, label.shownAlpha());
+
+        // A quick tap on the other side jumps back, and starts a count of its own there.
+        tap(0.1f);
+        SkipLabel back = SkipLabel.showing();
+        assertNotNull(back);
+        assertEquals("-10s", back.text());
+        assertTrue("the amount isn't over the left side", back.getBounds().centerX() < player.view.getWidth() * 0.4f);
+        assertEquals(List.of(40000, 50000, 40000), seeks);
+        assertTrue(report(), report().contains("double tap skip, amount shown"));
+
+        // It fades out a moment after the last jump.
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(SkipLabel.SHOWN_MS + SkipLabel.FADE_MS + 200));
+        assertNull("the amount stayed on screen", SkipLabel.showing());
+    }
+
+    @Test public void nothingIsShownWithoutAJump() {
+        tap(0.9f);
+        waitOut();
+        drain();
+        assertNull("a lone tap showed an amount", SkipLabel.showing());
+        player.length = 0;
+        tap(0.9f);
+        tap(0.9f);
+        assertNull("a video that couldn't jump showed an amount", SkipLabel.showing());
+    }
+
+    @Test public void theAmountReadsInSecondsWithItsDirection() {
+        assertEquals("+10s", SkipLabel.words(1, 10000, java.util.Locale.US));
+        assertEquals("-30s", SkipLabel.words(-1, 30000, java.util.Locale.US));
     }
 }

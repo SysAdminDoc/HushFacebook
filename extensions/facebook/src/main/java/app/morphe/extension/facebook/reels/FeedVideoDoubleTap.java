@@ -40,7 +40,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * does each quick tap after that, the way the skip buttons add up. A lone tap goes on to Facebook as
  * a fresh tap at the same spot once the time is up, so it still opens the video, a moment late. The
  * middle of the video, the buttons on it, its seek bar, ads, a video that hasn't started and a press
- * that stops a moving feed get their touches at once, as before.
+ * that stops a moving feed get their touches at once, as before. Each jump shows its running total
+ * over the side tapped, +10s, +20s and on, through {@link SkipLabel}.
  */
 public final class FeedVideoDoubleTap {
     private static final String FAMILY = FamilyNames.TAP_TO_PLAY;
@@ -114,7 +115,9 @@ public final class FeedVideoDoubleTap {
         last = new WeakReference<>(player);
         lastUp = event.getEventTime();
         if (follows) {
-            FeedVideoControls.skipBy(player, pressSide * FeedVideoControls.SKIP_MS);
+            if (FeedVideoControls.skipBy(player, pressSide * FeedVideoControls.SKIP_MS)) {
+                SkipLabel.jumped(FeedVideoControls.access.view(player), pressSide, FeedVideoControls.SKIP_MS);
+            }
             return;
         }
         waiting = true;
@@ -304,6 +307,7 @@ public final class FeedVideoDoubleTap {
     /** For tests: forgets everything, the windows watched for scrolls too, and goes back to the build's answer. */
     static void reset() {
         forget();
+        SkipLabel.clear();
         synchronized (watched) {
             for (ViewTreeObserver observer : watched) {
                 if (observer.isAlive()) observer.removeOnScrollChangedListener(SCROLLED);

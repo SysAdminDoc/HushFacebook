@@ -30,6 +30,7 @@ Changes in each Hushfacebook version, newest first.
 * `Hide posts with words you choose` and `Hide link posts` work on profiles, Pages, in groups and on the Reels tab too. Group posts go in a group's own feed and in the Groups tab's feed, while search results and a post you open stay as they are. A post or reel with one of your words goes, and so does one whose words send you to a website, like the "Watch More: https://..." drama reels. Words that keep a post keep these too, and a link to Facebook itself doesn't count. (#458)
 * `See-through bars` makes its frosted copy of the screen at a quarter of the size, blurs that and stretches it back over the bar. The blur takes out the fine detail anyway, so it looks the same, and phones with a weaker graphics chip have a sixteenth of the pixels to blur on every frame. (#461)
 * The Playback speed row that `Playback speed in the post menu` adds now sits on the menu's first page, with Save and Report, so it's one tap away. Before, it was under More options. Turn off `Playback speed on the menu's first page` to put it back there. (#473)
+* `Double tap to skip on feed videos` shows how far you jumped, +10s on the right or -10s on the left, over the side you tapped. Keep tapping and it counts up, +20s, +30s, then fades out a moment after the last tap. (#432)
 * In Morphe Manager's grouped patch list, `Block promotional notifications` now sits with the ad patches, so the Interface group stays short enough to scan.
 
 ### Fixed
