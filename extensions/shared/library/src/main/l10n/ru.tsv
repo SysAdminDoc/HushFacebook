@@ -2061,7 +2061,7 @@ Reels and videos keep going to the next one without pausing to ask if you're sti
 # context: switch title under Reels and Watch; on, a reel that would show black bars above and below (or at the sides) is enlarged until it fills the whole screen
 Fill the screen with reels	Растягивать Reels на весь экран
 # context: summary of that switch; the reel is zoomed in until it reaches every edge, so a little of the picture at two of its edges is cut off
-Reels that would leave black bars fill the screen instead, with a little cut off the edges.	Reels, которые оставили бы чёрные полосы, заполняют экран, а края немного обрезаются.
+Reels and full-screen videos that would leave black bars fill the screen instead, with a little cut off the edges. Pinch in on a reel to see all of it, or pinch out to fill it again.	Reels и полноэкранные видео, которые оставили бы чёрные полосы, заполняют экран, а края немного обрезаются. Сведите пальцы на Reels, чтобы увидеть его целиком, или разведите, чтобы снова заполнить экран.
 Hide the new comments pop-up	Скрывать всплывающее уведомление о новых комментариях
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	Пузырь «Новые комментарии» больше не появляется во время чтения комментариев. Новые комментарии по-прежнему отображаются в списке.

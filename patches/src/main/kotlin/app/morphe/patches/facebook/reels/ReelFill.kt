@@ -11,7 +11,11 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
+import app.morphe.patches.facebook.media.taptoplay.MOTION_EVENT
+import app.morphe.patches.facebook.media.taptoplay.touchDispatches
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.Method
@@ -37,7 +41,17 @@ import com.android.tools.smali.dexlib2.iface.Method
  *   same answer.
  */
 
+/*
+ * A pinch on a reel shows it whole or fills it (#466). Read from 587, 2026-11-14: Facebook has no
+ * relayout of its own to ask the helper again for one reel (the only global layout listener that
+ * sizes a video belongs to another player, LX/0QO1 case 0), so the extension scales the reel's video
+ * view instead, from the touch hook every screen shares.
+ */
+
 internal const val REEL_FILL = "$EXTENSION_PACKAGE/reels/ReelFill;"
+
+/** The extension's first look at each touch, for a pinch on a reel. */
+internal const val REEL_FIT_PINCH_TOUCH = "$EXTENSION_PACKAGE/reels/ReelFitPinch;->touch(Landroid/app/Activity;$MOTION_EVENT)Z"
 /** The flag goes in as an int, read non-zero as set, so the hook takes the boolean register as it is. */
 internal const val REEL_FILL_FILLS = "$REEL_FILL->fills(DIIII)Z"
 
@@ -96,5 +110,29 @@ internal fun BytecodePatchContext.fillReels() {
             const/16 v${first + 5}, 0x0
         """,
         ExternalLabel("size", method.getInstruction(0)),
+    )
+}
+
+/**
+ * A pinch on a reel (#466): FbFragmentActivity.dispatchTouchEvent asks the extension first thing,
+ * and a yes returns true before Facebook sees the event. Refuses before anything changes.
+ */
+internal fun BytecodePatchContext.pinchReels() {
+    val activity = classDefByOrNull(FRAGMENT_ACTIVITY) ?: refuseFill("this build has no $FRAGMENT_ACTIVITY")
+    val dispatch = touchDispatches(activity).singleOrNull()
+        ?: refuseFill("expected $FRAGMENT_ACTIVITY to declare one dispatchTouchEvent($MOTION_EVENT)Z")
+    // The screen and the event are p0 and p1, next to each other, so the range form passes both.
+    // The answer borrows v0, which holds nothing before the method's own first instruction.
+    val touches = mutableClassDefBy(FRAGMENT_ACTIVITY).findMutableMethodOf(dispatch)
+    touches.requireLocals(PATCH, 1)
+    touches.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p0 .. p1 }, $REEL_FIT_PINCH_TOUCH
+            move-result v0
+            if-eqz v0, :facebook
+            return v0
+        """,
+        ExternalLabel("facebook", touches.getInstruction(0)),
     )
 }

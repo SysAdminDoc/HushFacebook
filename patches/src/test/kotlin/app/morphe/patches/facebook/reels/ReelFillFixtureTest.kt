@@ -9,10 +9,14 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
+import app.morphe.patches.facebook.media.taptoplay.touchDispatches
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -26,6 +30,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -123,12 +128,60 @@ class ReelFillFixtureTest {
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
+    /**
+     * A pinch on a reel (#466): FbFragmentActivity's one touch dispatch asks the extension first
+     * with the screen and the event, a yes returns true in v0, and a no goes on to Facebook's own
+     * first instruction.
+     */
     @Test
-    fun `the extension has the hook`() {
+    fun `each declared build asks the extension first thing in the touch dispatch`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val activity = FixtureDex.classes(bundle, setOf(FRAGMENT_ACTIVITY))[FRAGMENT_ACTIVITY]
+                assertNotNull("$name: no $FRAGMENT_ACTIVITY", activity)
+                val original = touchDispatches(activity!!).singleOrNull()
+                assertNotNull("$name: touch dispatches", original)
+
+                val context = PatchContexts.of(listOf(activity))
+                context.pinchReels()
+                val dispatch = context.mutableClassDefBy(FRAGMENT_ACTIVITY).methods.single {
+                    it.name == original!!.name && it.returnType == original.returnType &&
+                        it.parameterTypes.map(CharSequence::toString) == original.parameterTypes.map(CharSequence::toString)
+                }
+                val touch = dispatch.body()
+                val locals = dispatch.localRegisterCount()
+                assertEquals("$name: the pinch isn't asked first", REEL_FIT_PINCH_TOUCH, touch[0].called()?.let(::described))
+                assertEquals("$name: the pinch gets the screen and the event", listOf(locals, locals + 1), registersOf(touch[0]))
+                assertEquals("$name: the answer", Opcode.MOVE_RESULT, touch[1].opcode)
+                assertEquals("$name: the answer's register", 0, (touch[1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: the yes test", Opcode.IF_EQZ, touch[2].opcode)
+                assertEquals("$name: a yes doesn't return", Opcode.RETURN, touch[3].opcode)
+                assertEquals("$name: a yes doesn't return the answer", 0, (touch[3] as OneRegisterInstruction).registerA)
+                assertSame("$name: a no doesn't go on to Facebook's code", touch[4],
+                    (touch[2] as BuilderOffsetInstruction).target.location.instruction)
+                assertEquals("$name: dispatchTouchEvent lost its own code",
+                    original!!.body().map { it.opcode }, touch.drop(4).map { it.opcode })
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    @Test
+    fun `the extension has the hooks`() {
         val hook = ExtensionDex.classDef(REEL_FILL).methods.singleOrNull { described(it) == REEL_FILL_FILLS }
         assertNotNull("the extension has no $REEL_FILL_FILLS", hook)
         assertTrue("the hook isn't public static",
             AccessFlags.STATIC.isSet(hook!!.accessFlags) && AccessFlags.PUBLIC.isSet(hook.accessFlags))
+        val pinch = ExtensionDex.classDef(REEL_FIT_PINCH_TOUCH.substringBefore("->")).methods
+            .singleOrNull { described(it) == REEL_FIT_PINCH_TOUCH }
+        assertNotNull("the extension has no $REEL_FIT_PINCH_TOUCH", pinch)
+        assertTrue("the pinch hook isn't public static",
+            AccessFlags.STATIC.isSet(pinch!!.accessFlags) && AccessFlags.PUBLIC.isSet(pinch.accessFlags))
     }
 
     private companion object {

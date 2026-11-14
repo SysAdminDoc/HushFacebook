@@ -2012,7 +2012,7 @@ Reels and videos keep going to the next one without pausing to ask if you're sti
 # context: switch title under Reels and Watch; on, a reel that would show black bars above and below (or at the sides) is enlarged until it fills the whole screen
 Fill the screen with reels	让 Reels 填满屏幕
 # context: summary of that switch; the reel is zoomed in until it reaches every edge, so a little of the picture at two of its edges is cut off
-Reels that would leave black bars fill the screen instead, with a little cut off the edges.	原本会留出黑边的 Reels 会填满屏幕，边缘会被裁掉一点。
+Reels and full-screen videos that would leave black bars fill the screen instead, with a little cut off the edges. Pinch in on a reel to see all of it, or pinch out to fill it again.	原本会留出黑边的 Reels 和全屏视频会填满屏幕，边缘会被裁掉一点。在 Reels 上双指捏合可看到完整画面，双指张开可再次填满。
 Hide the new comments pop-up	隐藏新评论弹窗
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	阅读评论时不再弹出“新评论”气泡。新评论仍会显示在列表中。

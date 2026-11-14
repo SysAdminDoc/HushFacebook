@@ -31,7 +31,8 @@ import app.morphe.extension.shared.settings.SettingReadsForTests;
  * Fill the screen with reels (#453): right before Facebook sizes a player view, the hook is asked
  * whether to fill the container instead of fitting the video inside it. Once the switch is on, a
  * portrait video in a portrait container about the screen's size fills when that cuts off a quarter
- * of the picture or less. Feed-sized players, landscape videos, square and 4:5 posts, Facebook's own
+ * of the picture or less, and so does a full-screen landscape video (#466). Feed-sized players,
+ * landscape videos in a portrait player, square and 4:5 posts, Facebook's own
  * fill or keep-size modes, a paused Hushfacebook, settings that aren't ready and a switch that can't
  * be read all keep Facebook's fit.
  */
@@ -74,6 +75,28 @@ public class ReelFillTest {
         // Taller than the container: filling cuts a little off the top and bottom instead of the sides.
         assertTrue("a reel narrower than its container didn't fill",
                 ReelFill.worthFilling(0.42, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT));
+    }
+
+    /**
+     * A landscape video in a landscape player about the size of the turned screen fills too (#466),
+     * whichever way up the screen reports itself. A 4:3 one would lose too much, and a feed-sized
+     * landscape player keeps the whole picture.
+     */
+    @Test
+    public void aFullScreenLandscapeVideoFills() {
+        double wide = 16.0 / 9.0;
+        assertTrue("a full-screen landscape video didn't fill",
+                ReelFill.worthFilling(wide, SCREEN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH));
+        assertTrue("a full-screen landscape video didn't fill while the screen reported itself upright",
+                ReelFill.worthFilling(wide, SCREEN_HEIGHT, SCREEN_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT));
+        assertTrue("a landscape video beside the navigation bar didn't fill",
+                ReelFill.worthFilling(wide, SCREEN_HEIGHT - 150, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH));
+        assertFalse("a 4:3 video filled the turned screen",
+                ReelFill.worthFilling(4.0 / 3.0, SCREEN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH));
+        assertFalse("a feed-sized landscape player filled",
+                ReelFill.worthFilling(wide, SCREEN_WIDTH, SCREEN_WIDTH * 9 / 16, SCREEN_WIDTH, SCREEN_HEIGHT));
+        assertFalse("a portrait reel filled a landscape player",
+                ReelFill.worthFilling(REEL, SCREEN_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH));
     }
 
     /** What isn't a full-screen portrait reel keeps its whole picture. */

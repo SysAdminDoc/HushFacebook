@@ -673,7 +673,7 @@ public final class PinchZoom {
      * subclasses (DefaultNavBar, BlackNavBar, Floating), so the kept name is looked for up the class's
      * parents.
      */
-    static boolean storyViewer(Activity activity) {
+    public static boolean storyViewer(Activity activity) {
         for (Class<?> type = activity.getClass(); type != null; type = type.getSuperclass()) {
             if (STORY_VIEWER.equals(type.getName())) return true;
         }

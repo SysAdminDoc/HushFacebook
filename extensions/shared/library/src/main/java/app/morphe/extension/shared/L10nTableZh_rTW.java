@@ -2587,6 +2587,8 @@ final class L10nTableZh_rTW {
                 "Reels");
         table.put("Reels and Watch",
                 "Reels \u8207 Watch");
+        table.put("Reels and full-screen videos that would leave black bars fill the screen instead, with a little cut off the edges. Pinch in on a reel to see all of it, or pinch out to fill it again.",
+                "\u539f\u672c\u6703\u7559\u4e0b\u9ed1\u908a\u7684 Reels \u548c\u5168\u87a2\u5e55\u5f71\u7247\u6703\u586b\u6eff\u87a2\u5e55\uff0c\u908a\u7de3\u6703\u88ab\u88c1\u6389\u4e00\u9ede\u3002\u5728 Reels \u4e0a\u7528\u5169\u6307\u634f\u5408\u53ef\u770b\u5230\u5b8c\u6574\u756b\u9762\uff0c\u5f35\u958b\u5247\u6703\u518d\u6b21\u586b\u6eff\u3002");
         table.put("Reels and their buttons show in black and white, which makes them easier to put down. Your feed, stories, photos and chats keep their colors. It starts from the next reel, and Reels use a little more battery.",
                 "Reels \u53ca\u5176\u6309\u9215\u4ee5\u9ed1\u767d\u986f\u793a\uff0c\u8b93\u4f60\u66f4\u5bb9\u6613\u653e\u4e0b\u624b\u6a5f\u3002\u4f60\u7684\u52d5\u614b\u3001\u9650\u6642\u52d5\u614b\u3001\u76f8\u7247\u548c\u804a\u5929\u4fdd\u6301\u539f\u672c\u7684\u984f\u8272\u3002\u5f9e\u4e0b\u4e00\u5247 reel \u958b\u59cb\u751f\u6548\uff0cReels \u6703\u7a0d\u5fae\u591a\u8017\u4e00\u9ede\u96fb\u3002");
         table.put("Reels and videos go to the app below as a facebook.com link. Hold the reel Download button to copy the link instead. Stories still save to this phone.",
@@ -2619,8 +2621,6 @@ final class L10nTableZh_rTW {
                 "Reels \u5206\u9801\u548c\u5ee3\u544a");
         table.put("Reels that play by themselves",
                 "\u81ea\u52d5\u64ad\u653e\u7684 Reels");
-        table.put("Reels that would leave black bars fill the screen instead, with a little cut off the edges.",
-                "\u539f\u672c\u6703\u7559\u4e0b\u9ed1\u908a\u7684 Reels \u6703\u586b\u6eff\u87a2\u5e55\uff0c\u908a\u7de3\u6703\u88ab\u88c1\u6389\u4e00\u9ede\u3002");
         table.put("Reels will play at the same quality as other videos.",
                 "Reels \u5c07\u4f7f\u7528\u8207\u5176\u4ed6\u5f71\u7247\u76f8\u540c\u7684\u64ad\u653e\u756b\u8cea\u3002");
         table.put("Reels you've already seen may come back.",
