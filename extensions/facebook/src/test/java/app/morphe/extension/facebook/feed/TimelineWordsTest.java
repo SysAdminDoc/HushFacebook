@@ -31,10 +31,11 @@ import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
- * Hide posts with words you choose and Hide link posts on profile and Page timelines (#458): on,
- * a post whose words hold a hidden phrase, or whose words name a website off Facebook, isn't drawn.
- * A kept phrase wins, a facebook.com link stays, and a row that isn't a story or has no words stays,
- * each counted under why. Off, paused or before the settings are ready, every row is drawn.
+ * Hide posts with words you choose and Hide link posts on profile and Page timelines and in groups
+ * (#458): on, a post whose words hold a hidden phrase, or whose words name a website off Facebook,
+ * isn't drawn. A kept phrase wins, a facebook.com link stays, and a row that isn't a story or has no
+ * words stays, each counted under why. A row in any list but a group's is drawn as it comes. Off,
+ * paused or before the settings are ready, every row is drawn.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -185,5 +186,104 @@ public class TimelineWordsTest {
 
         assertFalse(TimelineWords.hide(post(SPOILER), broken, links));
         assertTrue(HookStatus.report().toString(), HookStatus.report().toString().contains("timeline row"));
+    }
+
+    /** Each environment's list name, none for an environment missing here. */
+    private final Map<Object, String> listNames = new IdentityHashMap<>();
+
+    private final TimelineWords.ListReader lists = listNames::get;
+
+    private Object environment(String list) {
+        Object environment = new Object();
+        if (list != null) listNames.put(environment, list);
+        return environment;
+    }
+
+    private boolean hidesIn(String list, Object story) {
+        return TimelineWords.hideInList(story, environment(list), lists, words, links);
+    }
+
+    /** In a group's feed, the Groups tab's feed and a set of groups, both rules take their posts. */
+    @Test
+    public void groupListsDropTheirPosts() {
+        Settings.HIDE_POSTS_WITH_WORDS.save(true);
+        Settings.HIDE_LINK_POSTS.save(true);
+
+        for (String list : new String[] {"GROUPS", "CROSS_GROUP_FEED", "GROUP_SET_FEED"}) {
+            assertTrue(list, hidesIn(list, post(SPOILER)));
+            assertFalse(list + ": a keep phrase wins", hidesIn(list, post(KEPT_SPOILER)));
+            assertFalse(list, hidesIn(list, post(PLAIN)));
+        }
+        assertTrue(hidesIn("GROUPS_PINNED", post(DRAMA)));
+        assertFalse("a link to Facebook itself stays", hidesIn("GROUPS", post(FACEBOOK_LINK)));
+
+        String wordsRow = line(TimelineWords.GROUP_WORDS.route);
+        assertNotNull(FeedFilterCounters.report().toString(), wordsRow);
+        assertTrue(wordsRow, wordsRow.contains("Removed: " + PostWordsForTests.HIDE_WORD + " 3"));
+        assertEquals("the settings row counts them with the feed's", 3, PostWordsForTests.hidden());
+        String linksRow = line(TimelineWords.GROUP_LINKS.route);
+        assertNotNull(FeedFilterCounters.report().toString(), linksRow);
+        assertTrue(linksRow, linksRow.contains("Removed: " + PostWordsForTests.CAPTION_LINK + " 1"));
+        assertTrue(line(TimelineWords.LISTS), line(TimelineWords.LISTS).contains("GROUPS 4"));
+        assertNull("profile routes stay apart", line(TimelineWords.WORDS.route));
+    }
+
+    /** Search, an opened post, the News feed, a profile and an admin's queue are drawn as they come. */
+    @Test
+    public void otherListsAreDrawnAsTheyCome() {
+        Settings.HIDE_POSTS_WITH_WORDS.save(true);
+        Settings.HIDE_LINK_POSTS.save(true);
+
+        for (String list : new String[] {"FEED", "PERMALINK", "SEARCH_RESULTS", "PROFILE_PAGE", "GROUPS_PENDING", null}) {
+            assertFalse(String.valueOf(list), hidesIn(list, post(SPOILER + " https://spoilers.example")));
+        }
+
+        assertNull("no group row was read", line(TimelineWords.GROUP_WORDS.route));
+        assertNull(line(TimelineWords.GROUP_LINKS.route));
+        String seen = line(TimelineWords.LISTS);
+        assertNotNull(FeedFilterCounters.report().toString(), seen);
+        assertTrue(seen, seen.startsWith(TimelineWords.LISTS + ": 6 lists, 6 items, 0 removed"));
+        assertTrue(seen, seen.endsWith(". Kinds: FEED 1, GROUPS_PENDING 1, PERMALINK 1, PROFILE_PAGE 1, SEARCH_RESULTS 1, "
+                + TimelineWords.UNNAMED_LIST + " 1"));
+    }
+
+    /** Both switches off, the story component's rows aren't read, and no list is asked for. */
+    @Test
+    public void offTheListIsNeverAskedFor() {
+        TimelineWords.ListReader broken = environment -> {
+            throw new IllegalStateException("asked with both switches off");
+        };
+
+        assertFalse(TimelineWords.hideInList(post(SPOILER), environment("GROUPS"), broken, words, links));
+        assertNull(line(TimelineWords.LISTS));
+        assertFalse(HookStatus.report().toString(), HookStatus.report().toString().contains("group feed row"));
+    }
+
+    /** Before the patch fills in the stubs, no list has a name, so every row is drawn. */
+    @Test
+    public void unpatchedStubsNameNoList() {
+        Settings.HIDE_POSTS_WITH_WORDS.save(true);
+
+        assertNull(TimelineWords.listNameOf(new Object()));
+        assertNull(TimelineWords.listNameOf(null));
+        assertFalse(TimelineWords.hideInList(post(SPOILER), new Object()));
+        assertTrue(line(TimelineWords.LISTS), line(TimelineWords.LISTS).contains(TimelineWords.UNNAMED_LIST + " 1"));
+    }
+
+    /** Paused, before the settings are ready, or with a list reader that throws, every row is drawn. */
+    @Test
+    public void pausedNotReadyOrFailingGroupRowsAreDrawn() {
+        Settings.HIDE_POSTS_WITH_WORDS.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse(hidesIn("GROUPS", post(SPOILER)));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse(hidesIn("GROUPS", post(SPOILER))));
+        assertNull(line(TimelineWords.GROUP_WORDS.route));
+
+        TimelineWords.ListReader broken = environment -> {
+            throw new IllegalStateException("environment released");
+        };
+        assertFalse(TimelineWords.hideInList(post(SPOILER), environment("GROUPS"), broken, words, links));
+        assertTrue(HookStatus.report().toString(), HookStatus.report().toString().contains("group feed row"));
     }
 }

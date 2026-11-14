@@ -684,7 +684,7 @@ Your list of people, Pages and sites to hide will be empty.	Gizlenecek kişiler,
 Your list of people, Pages and sites to hide will hold %1$d entry.	Gizlenecek kişiler, sayfalar ve siteler listende %1$d kayıt olacak.
 Your list of people, Pages and sites to hide will hold %1$d entries.	Gizlenecek kişiler, sayfalar ve siteler listende %1$d kayıt olacak.
 # context: summary of that switch; the keep list is the second list under it, and a settings file is the one Export settings writes
-Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Posts on profiles and Pages go too, and Reels tab reels go by their captions.	Aşağıdaki listenizdeki bir sözcük veya ifade içeren gönderileri gizler. Bir gönderiyi tutan sözcükler bunun önüne geçer. Sözcükleriniz dışa aktarmadıkça bu telefonda kalır. Profillerdeki ve Sayfalardaki gönderiler de gizlenir, Reels sekmesindeki reeller ise açıklamalarına göre filtrelenir.
+Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Posts on profiles, Pages and in groups go too, and Reels tab reels go by their captions.	Aşağıdaki listenizdeki bir sözcük veya ifade içeren gönderileri gizler. Bir gönderiyi tutan sözcükler bunun önüne geçer. Sözcükleriniz dışa aktarmadıkça bu telefonda kalır. Profillerdeki, Sayfalardaki ve gruplardaki gönderiler de gizlenir, Reels sekmesindeki reeller ise açıklamalarına göre filtrelenir.
 # context: title of the row and dialog holding the list of words and phrases that hide a post
 Words to hide	Gizlenecek kelimeler
 # context: title of the row and dialog holding the list of words and phrases that keep a post even when it has a word to hide
@@ -1404,7 +1404,7 @@ Hides posts with a photo or album, including shares.	Fotoğraf veya albüm içer
 # context: summary of the Hide video posts switch
 Hides posts with a video, including shares. Reels in the feed have their own switch.	Video içeren gönderileri, paylaşımlar dahil, gizler. Akıştaki reellerin kendi anahtarı var.
 # context: summary of the Hide link posts switch
-Hides posts that share a link to a website, with its preview card. On profiles, Pages and the Reels tab, a post or reel whose words name a website goes too.	Bir web sitesine bağlantı paylaşan gönderileri, önizleme kartıyla birlikte gizler. Profillerde, Sayfalarda ve Reels sekmesinde metninde bir web sitesi geçen gönderi veya reel de gizlenir.
+Hides posts that share a link to a website, with its preview card. On profiles, Pages, groups and the Reels tab, a post or reel whose words name a website goes too.	Bir web sitesine bağlantı paylaşan gönderileri, önizleme kartıyla birlikte gizler. Profillerde, Sayfalarda, gruplarda ve Reels sekmesinde metninde bir web sitesi geçen gönderi veya reel de gizlenir.
 # context: summary of the Hide posts on a colored background switch
 Hides short posts shown as big text on a colored background.	Renkli bir arka planda büyük yazı olarak görünen kısa gönderileri gizler.
 # context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language

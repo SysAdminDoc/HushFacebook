@@ -151,6 +151,8 @@ internal fun BytecodePatchContext.requireStoryFlagReaders() {
  * cast to the accessor's own class: GraphQLStory for the story flags, and the renamed class that
  * answers the type name for a unit's accessor. Only the parameter register is used, so the stub's
  * own register count doesn't matter; the extension checks what the unit is before it calls the stub.
+ * An accessor an interface declares (a feed environment's getter, #458) is called through the
+ * interface.
  */
 internal fun BytecodePatchContext.fillStoryModelStub(stubClass: String, stubName: String, accessor: Method) {
     if (accessor.parameterTypes.isNotEmpty() || AccessFlags.STATIC.isSet(accessor.accessFlags) ||
@@ -165,11 +167,13 @@ internal fun BytecodePatchContext.fillStoryModelStub(stubClass: String, stubName
     } ?: throw PatchException("$stubClass has no static Object $stubName(Object)")
 
     val host = accessor.definingClass
+    val onInterface = classDefByOrNull(host)?.let { AccessFlags.INTERFACE.isSet(it.accessFlags) } == true
+    val invoke = if (onInterface) "invoke-interface" else "invoke-virtual"
     stub.addInstructions(
         0,
         """
             check-cast p0, $host
-            invoke-virtual { p0 }, $host->${accessor.name}()${accessor.returnType}
+            $invoke { p0 }, $host->${accessor.name}()${accessor.returnType}
             move-result-object p0
             return-object p0
         """,

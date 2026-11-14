@@ -684,7 +684,7 @@ Your list of people, Pages and sites to hide will be empty.	Danh sách người,
 Your list of people, Pages and sites to hide will hold %1$d entry.	Danh sách người, Trang và trang web cần ẩn sẽ có %1$d mục.
 Your list of people, Pages and sites to hide will hold %1$d entries.	Danh sách người, Trang và trang web cần ẩn sẽ có %1$d mục.
 # context: summary of that switch; the keep list is the second list under it, and a settings file is the one Export settings writes
-Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Posts on profiles and Pages go too, and Reels tab reels go by their captions.	Ẩn bài viết chứa từ hoặc cụm từ trong danh sách bên dưới. Từ giữ lại bài viết được ưu tiên hơn. Các từ chỉ ở trên điện thoại này trừ khi bạn xuất chúng. Bài viết trên trang cá nhân và Trang cũng bị ẩn, còn reel trong tab Reels được lọc theo chú thích.
+Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Posts on profiles, Pages and in groups go too, and Reels tab reels go by their captions.	Ẩn bài viết chứa từ hoặc cụm từ trong danh sách bên dưới. Từ giữ lại bài viết được ưu tiên hơn. Các từ chỉ ở trên điện thoại này trừ khi bạn xuất chúng. Bài viết trên trang cá nhân, Trang và trong nhóm cũng bị ẩn, còn reel trong tab Reels được lọc theo chú thích.
 # context: title of the row and dialog holding the list of words and phrases that hide a post
 Words to hide	Từ cần ẩn
 # context: title of the row and dialog holding the list of words and phrases that keep a post even when it has a word to hide
@@ -1404,7 +1404,7 @@ Hides posts with a photo or album, including shares.	Ẩn bài viết có ảnh 
 # context: summary of the Hide video posts switch
 Hides posts with a video, including shares. Reels in the feed have their own switch.	Ẩn bài viết có video, kể cả bài chia sẻ lại. Reels trên bảng tin có công tắc riêng.
 # context: summary of the Hide link posts switch
-Hides posts that share a link to a website, with its preview card. On profiles, Pages and the Reels tab, a post or reel whose words name a website goes too.	Ẩn bài viết chia sẻ liên kết đến trang web, kèm thẻ xem trước. Trên trang cá nhân, Trang và tab Reels, bài viết hoặc reel có nội dung nêu tên trang web cũng bị ẩn.
+Hides posts that share a link to a website, with its preview card. On profiles, Pages, groups and the Reels tab, a post or reel whose words name a website goes too.	Ẩn bài viết chia sẻ liên kết đến trang web, kèm thẻ xem trước. Trên trang cá nhân, Trang, nhóm và tab Reels, bài viết hoặc reel có nội dung nêu tên trang web cũng bị ẩn.
 # context: summary of the Hide posts on a colored background switch
 Hides short posts shown as big text on a colored background.	Ẩn bài viết ngắn hiển thị dạng chữ lớn trên nền màu.
 # context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language

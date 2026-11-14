@@ -439,8 +439,8 @@ final class FeedPages {
             if (build.contains(PatchFamily.POST_WORDS)) {
                 feed.addPreference(toggle(context, Settings.HIDE_POSTS_WITH_WORDS,
                         L10n.t("Hides posts containing a word or phrase from your list below. Words that keep a post win over it. "
-                                + "Your words stay on this phone unless you export them. Posts on profiles and Pages go too, and Reels "
-                                + "tab reels go by their captions.")));
+                                + "Your words stay on this phone unless you export them. Posts on profiles, Pages and in groups go too, "
+                                + "and Reels tab reels go by their captions.")));
                 feed.addPreference(page.wordsRow(context, Settings.HIDDEN_WORDS, true));
                 feed.addPreference(page.wordsRow(context, Settings.KEPT_WORDS, false));
                 feed.addPreference(toggle(context, Settings.POST_WORDS_WHOLE_WORDS,
@@ -454,8 +454,8 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_VIDEO_POSTS,
                         L10n.t("Hides posts with a video, including shares. Reels in the feed have their own switch.")));
                 feed.addPreference(toggle(context, Settings.HIDE_LINK_POSTS,
-                        L10n.t("Hides posts that share a link to a website, with its preview card. On profiles, Pages and the Reels "
-                                + "tab, a post or reel whose words name a website goes too.")));
+                        L10n.t("Hides posts that share a link to a website, with its preview card. On profiles, Pages, groups and "
+                                + "the Reels tab, a post or reel whose words name a website goes too.")));
                 feed.addPreference(toggle(context, Settings.HIDE_BACKGROUND_POSTS,
                         L10n.t("Hides short posts shown as big text on a colored background.")));
                 feed.addPreference(toggle(context, Settings.HIDE_REPOSTS,

@@ -1628,7 +1628,7 @@
     },
     {
       "name": "Hide posts by words",
-      "description": "Hides feed posts with words you list, or from people, Pages or sites you list, so you skip topics you're tired of. Photo, video, link and colored background posts, every post a Page wrote, or posts in languages you don't read can go too. Your words and link posts also work on profiles and Pages. On the Reels tab they go by each reel's caption, and so do other languages. Starts off. Turn it on in Hushfacebook settings > News feed.",
+      "description": "Hides feed posts with words you list, or from people, Pages or sites you list, so you skip topics you're tired of. Photo, video, link and colored background posts, every post a Page wrote, or posts in languages you don't read can go too. Your words and link posts also work on profiles, Pages and in groups. On the Reels tab they go by each reel's caption, and so do other languages. Starts off. Turn it on in Hushfacebook settings > News feed.",
       "category": "Feed",
       "use": true,
       "dependencies": [

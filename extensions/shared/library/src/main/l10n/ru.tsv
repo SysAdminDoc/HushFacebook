@@ -694,7 +694,7 @@ Your list of people, Pages and sites to hide will hold %1$d entries.	В спис
 Your list of people, Pages and sites to hide will hold %1$d entries.|few	В списке людей, Страниц и сайтов для скрытия будет %1$d записи.
 Your list of people, Pages and sites to hide will hold %1$d entries.|many	В списке людей, Страниц и сайтов для скрытия будет %1$d записей.
 # context: summary of that switch; the keep list is the second list under it, and a settings file is the one Export settings writes
-Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Posts on profiles and Pages go too, and Reels tab reels go by their captions.	Скрывает публикации, содержащие слово или фразу из списка ниже. Слова, разрешающие публикацию, имеют приоритет. Список хранится на этом телефоне, если вы не экспортируете его. Публикации в профилях и на Страницах тоже скрываются, а видео во вкладке Reels фильтруются по подписи.
+Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Posts on profiles, Pages and in groups go too, and Reels tab reels go by their captions.	Скрывает публикации, содержащие слово или фразу из списка ниже. Слова, разрешающие публикацию, имеют приоритет. Список хранится на этом телефоне, если вы не экспортируете его. Публикации в профилях, на Страницах и в группах тоже скрываются, а видео во вкладке Reels фильтруются по подписи.
 # context: title of the row and dialog holding the list of words and phrases that hide a post
 Words to hide	Слова для скрытия
 # context: title of the row and dialog holding the list of words and phrases that keep a post even when it has a word to hide
@@ -1430,7 +1430,7 @@ Hides posts with a photo or album, including shares.	Скрывает публи
 # context: summary of the Hide video posts switch
 Hides posts with a video, including shares. Reels in the feed have their own switch.	Скрывает публикации с видео, включая репосты. Для Reels в Ленте есть отдельный переключатель.
 # context: summary of the Hide link posts switch
-Hides posts that share a link to a website, with its preview card. On profiles, Pages and the Reels tab, a post or reel whose words name a website goes too.	Скрывает публикации со ссылкой на сайт и карточкой предпросмотра. В профилях, на Страницах и во вкладке Reels тоже скрываются публикации и видео, в тексте которых указан сайт.
+Hides posts that share a link to a website, with its preview card. On profiles, Pages, groups and the Reels tab, a post or reel whose words name a website goes too.	Скрывает публикации со ссылкой на сайт и карточкой предпросмотра. В профилях, на Страницах, в группах и во вкладке Reels тоже скрываются публикации и видео, в тексте которых указан сайт.
 # context: summary of the Hide posts on a colored background switch
 Hides short posts shown as big text on a colored background.	Скрывает короткие публикации, отображаемые крупным текстом на цветном фоне.
 # context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language

@@ -68,7 +68,11 @@ internal const val PATCH = "Hide posts by words"
  * The words and link rules also judge each post on a profile's or a Page's timeline (#458). That
  * timeline's story component is found the way Hide sponsored profile posts finds it, and this patch
  * puts its own check first in the render method, so either patch works without the other. A build
- * where the component can't be found keeps the rest of the patch.
+ * where the component can't be found keeps the rest of the patch. Group posts are drawn by
+ * Facebook's story component, which draws a post on every surface, so this patch puts a check first
+ * in its render method too, handing the extension the story and the row's environment, and fills
+ * TimelineWords' two stubs with the getters that name the row's list (see StoryListAnchors.kt). The
+ * extension judges only a group's list, and a build without the component keeps the rest.
  *
  * The lists live in Hushfacebook's settings on the phone. Nothing here reads a post until a
  * switch is on and its list has something in it, and nothing of the text, the names or the lists
@@ -79,7 +83,8 @@ val hidePostsByWordsPatch = bytecodePatch(
     name = "Hide posts by words",
     description = "Hides feed posts with words you list, or from people, Pages or sites you list, so you skip " +
         "topics you're tired of. Photo, video, link and colored background posts, every post a Page wrote, or " +
-        "posts in languages you don't read can go too. Your words and link posts also work on profiles and Pages. " +
+        "posts in languages you don't read can go too. Your words and link posts also work on profiles, Pages and " +
+        "in groups. " +
         "On the Reels tab they go by each reel's caption, and so do other languages. Starts off. Turn it on in " +
         "Hushfacebook settings > News feed.",
     default = true,
@@ -122,6 +127,15 @@ val hidePostsByWordsPatch = bytecodePatch(
             null
         }
 
+        // And groups (#458): Facebook's story component, which draws a post on every surface, and
+        // the getters that name the list a row is in.
+        val lists = try {
+            storyComponent()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on without groups.")
+            null
+        }
+
         // The extension reads the text and the model's type tag through these, by reflection.
         if (!hasPublicStringReader(classDefBy(BASE_MODEL_WITH_TREE))) {
             throw PatchException("$PATCH: BaseModelWithTree has no public getCachedString(int)")
@@ -151,6 +165,11 @@ val hidePostsByWordsPatch = bytecodePatch(
         if (types != null) fillPostTypeStubs(types)
         if (reactions != null) fillReactionStubs(reactions)
         if (timeline != null) mutableRender(timeline).skipSponsoredStories(timeline.unit, TIMELINE_WORDS)
+        if (lists != null) {
+            fillStoryModelStub(TIMELINE_WORDS_CLASS, LIST_TYPE_STUB, lists.listType)
+            fillStoryModelStub(TIMELINE_WORDS_CLASS, LIST_NAME_STUB, lists.listName)
+            mutableStoryRender(lists).judgeStoryRows(lists)
+        }
         enableStatus("postWords")
     }
 }

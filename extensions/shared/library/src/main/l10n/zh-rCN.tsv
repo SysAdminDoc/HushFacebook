@@ -684,7 +684,7 @@ Your list of people, Pages and sites to hide will be empty.	你要隐藏的用�
 Your list of people, Pages and sites to hide will hold %1$d entry.	你要隐藏的用户、公共主页和网站列表将包含 %1$d 项。
 Your list of people, Pages and sites to hide will hold %1$d entries.	你要隐藏的用户、公共主页和网站列表将包含 %1$d 项。
 # context: summary of that switch; the keep list is the second list under it, and a settings file is the one Export settings writes
-Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Posts on profiles and Pages go too, and Reels tab reels go by their captions.	隐藏包含下方列表中字词或短语的帖子。保留帖子的字词优先于它。除非你导出，否则你的字词只保存在这部手机上。个人主页和公共主页上的帖子也会被隐藏，“Reels”标签页中的 Reels 则按说明文字过滤。
+Hides posts containing a word or phrase from your list below. Words that keep a post win over it. Your words stay on this phone unless you export them. Posts on profiles, Pages and in groups go too, and Reels tab reels go by their captions.	隐藏包含下方列表中字词或短语的帖子。保留帖子的字词优先于它。除非你导出，否则你的字词只保存在这部手机上。个人主页、公共主页和小组中的帖子也会被隐藏，“Reels”标签页中的 Reels 则按说明文字过滤。
 # context: title of the row and dialog holding the list of words and phrases that hide a post
 Words to hide	要隐藏的字词
 # context: title of the row and dialog holding the list of words and phrases that keep a post even when it has a word to hide
@@ -1400,7 +1400,7 @@ Hides posts with a photo or album, including shares.	隐藏带照片或相册的
 # context: summary of the Hide video posts switch
 Hides posts with a video, including shares. Reels in the feed have their own switch.	隐藏带视频的帖子，包括转发的帖子。动态中的 Reels 有单独的开关。
 # context: summary of the Hide link posts switch
-Hides posts that share a link to a website, with its preview card. On profiles, Pages and the Reels tab, a post or reel whose words name a website goes too.	隐藏分享网站链接的帖子，包括其预览卡片。在个人主页、公共主页和“Reels”标签页中，文字里含有网站地址的帖子或 Reels 也会被隐藏。
+Hides posts that share a link to a website, with its preview card. On profiles, Pages, groups and the Reels tab, a post or reel whose words name a website goes too.	隐藏分享网站链接的帖子，包括其预览卡片。在个人主页、公共主页、小组和“Reels”标签页中，文字里含有网站地址的帖子或 Reels 也会被隐藏。
 # context: summary of the Hide posts on a colored background switch
 Hides short posts shown as big text on a colored background.	隐藏以彩色背景上的大字显示的短帖子。
 # context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language
