@@ -1038,6 +1038,8 @@ Long captions on reels show all of their text right away. Tap the caption to fol
 Dark box behind open captions	กล่องสีเข้มด้านหลังคำบรรยายที่เปิดอยู่
 # context: summary of that switch
 An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	คำบรรยาย Reels ที่เปิดอยู่จะอยู่บนกล่องสีเข้มคล้ายคำบรรยายภาพ ช่วยให้อ่านง่ายขึ้นบนวิดีโอที่มีความสว่าง การเปลี่ยนแปลงจะมีผลตั้งแต่ Reel ถัดไป
+Dark box behind folded captions	กล่องสีเข้มด้านหลังคำบรรยายที่ย่ออยู่
+A folded reel caption, the short one with more at the end, sits on the same dark box. Turn on both to box every caption. A change shows from the next reel.	คำบรรยาย Reels ที่ย่ออยู่ ซึ่งเป็นแบบสั้นที่มีคำว่าเพิ่มเติมต่อท้าย จะอยู่บนกล่องสีเข้มแบบเดียวกัน เปิดทั้งสองสวิตช์เพื่อให้คำบรรยายทุกอันมีกล่อง การเปลี่ยนแปลงจะมีผลตั้งแต่ Reel ถัดไป
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	ดูว่าใครแชร์บ้าง
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	เพิ่ม "ดูว่าใครแชร์บ้าง" ในเมนูของโพสต์ เพื่อเปิดดูรายชื่อผู้ที่แชร์โพสต์บน Facebook
@@ -2324,8 +2326,10 @@ Shows when a reel or a video you open full screen was posted, under the name of 
 Keeps the Comment button on reels whose comments are turned off, so you can still read the ones already there. A change shows from the next reel.	คงปุ่มความคิดเห็นไว้ใน Reels ที่ปิดความคิดเห็น เพื่อให้คุณยังคงสามารถอ่านความคิดเห็นที่มีอยู่แล้วได้ การเปลี่ยนแปลงจะมีผลตั้งแต่ Reel ถัดไป
 Select part of a post's text	เลือกข้อความบางส่วนของโพสต์
 Holding a post's text opens it in a box where you can select just the part you want and copy that, or copy all of it. The hold itself copies nothing.	การกดข้อความของโพสต์ค้างไว้จะเปิดข้อความขึ้นในกล่องที่คุณสามารถเลือกเฉพาะส่วนที่ต้องการและคัดลอก หรือคัดลอกทั้งหมด การกดค้างเพียงอย่างเดียวจะไม่คัดลอกสิ่งใด
-Hold a post to react	แตะโพสต์ค้างไว้เพื่อแสดงความรู้สึก
-Holding a post's photo or video opens its reactions, as holding Like does. On a feed post it comes before Long press opens comments.	การแตะรูปภาพหรือวิดีโอของโพสต์ค้างไว้จะเปิดความรู้สึกขึ้นมา เหมือนกับการแตะปุ่มถูกใจค้างไว้ สำหรับโพสต์ในฟีด การตั้งค่านี้จะมีผลก่อน "แตะค้างไว้เพื่อเปิดความคิดเห็น"
+Hold a feed photo to react	แตะรูปภาพในฟีดค้างไว้เพื่อแสดงความรู้สึก
+Hold a feed video to react	แตะวิดีโอในฟีดค้างไว้เพื่อแสดงความรู้สึก
+Holding a post's photo opens its reactions, as holding Like does. It comes before Long press opens comments.	การแตะรูปภาพของโพสต์ค้างไว้จะเปิดความรู้สึกขึ้นมา เหมือนกับการแตะปุ่มถูกใจค้างไว้ การตั้งค่านี้จะมีผลก่อน "แตะค้างไว้เพื่อเปิดความคิดเห็น"
+Holding a post's video opens its reactions too. It comes before Long press opens comments. With Hold a feed video for 2x on, that one wins and the video plays fast.	การแตะวิดีโอของโพสต์ค้างไว้ก็จะเปิดความรู้สึกขึ้นมาเช่นกัน การตั้งค่านี้จะมีผลก่อน "แตะค้างไว้เพื่อเปิดความคิดเห็น" ถ้าเปิด "แตะค้างที่วิดีโอในฟีดเพื่อเล่น 2x" ไว้ สวิตช์นั้นจะมีผลแทนและวิดีโอจะเล่นเร็วขึ้น
 Reaction	ความรู้สึก
 Pick one each time	เลือกทุกครั้ง
 Like	ถูกใจ
@@ -2337,8 +2341,8 @@ Sad	เศร้า
 Angry	โกรธ
 Pick one each time. The reactions open over the post, so slide to one and let go, or let go and tap one.	เลือกทุกครั้ง ความรู้สึกจะเปิดขึ้นเหนือโพสต์ ให้เลื่อนนิ้วไปที่ความรู้สึกที่ต้องการแล้วปล่อย หรือปล่อยนิ้วแล้วแตะเลือก
 %1$s. Holding a post gives it straight away.	%1$s การแตะโพสต์ค้างไว้จะใส่ความรู้สึกนี้ทันที
-Hold a post to react will open the reactions to pick from.	"แตะโพสต์ค้างไว้เพื่อแสดงความรู้สึก" จะเปิดความรู้สึกขึ้นมาให้เลือก
-Hold a post to react will give %1$s.	"แตะโพสต์ค้างไว้เพื่อแสดงความรู้สึก" จะใส่ความรู้สึก %1$s
+Holding a post to react will open the reactions to pick from.	การแตะโพสต์ค้างไว้เพื่อแสดงความรู้สึกจะเปิดความรู้สึกขึ้นมาให้เลือก
+Holding a post to react will give %1$s.	การแตะโพสต์ค้างไว้เพื่อแสดงความรู้สึกจะใส่ความรู้สึก %1$s
 Select text	เลือกข้อความ
 Done	เรียบร้อย
 Copy all	คัดลอกทั้งหมด
@@ -2626,6 +2630,7 @@ Pick Custom color again to change it.	เลือกสีที่กำหน
 Switches that are on	สวิตช์ที่เปิดใช้งานอยู่
 Every switch you have on, in one list. Turn one off here and it's off everywhere.	สวิตช์ทั้งหมดที่คุณเปิดใช้งาน รวมอยู่ในรายการเดียว ปิดสวิตช์ที่นี่แล้วสวิตช์นั้นจะปิดทุกที่
 No switches are on yet.	ยังไม่มีสวิตช์ใดเปิดใช้งานอยู่
+Turned off lately	ปิดไปเมื่อเร็วๆ นี้
 Emoji after the logo	อิโมจิหลังโลโก้
 An emoji drawn right after the Facebook logo at the top of Home, in its own colors. Leave it blank for none.	อิโมจิที่แสดงอยู่ด้านหลังโลโก้ Facebook ที่ด้านบนของหน้าหลัก โดยใช้สีดั้งเดิมของอิโมจิ เว้นว่างไว้หากไม่ต้องการแสดง
 No emoji after the logo. Type one to show it there.	ไม่มีอิโมจิหลังโลโก้ พิมพ์อิโมจิเพื่อแสดงตรงนั้น
