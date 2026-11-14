@@ -42,7 +42,7 @@ public class L10nTest {
 
     @Test
     public void everyLanguageTheBundleCarriesHasATableWithTheKey() {
-        assertEquals(Arrays.asList("de", "es", "in", "pt-rbr", "ru", "tr", "vi", "zh-rcn", "zh-rtw"),
+        assertEquals(Arrays.asList("de", "es", "in", "pt-rbr", "ru", "th", "tr", "vi", "zh-rcn", "zh-rtw"),
                 Arrays.asList(L10nTranslations.LANGUAGES));
         for (String language : L10nTranslations.LANGUAGES) {
             Map<String, String> table = L10nTranslations.of(language);

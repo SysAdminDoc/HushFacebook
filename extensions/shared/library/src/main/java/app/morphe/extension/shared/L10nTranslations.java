@@ -17,7 +17,7 @@ public final class L10nTranslations {
     }
 
     /** The language tags with a table, lower case. */
-    static final String[] LANGUAGES = {"de", "es", "in", "pt-rbr", "ru", "tr", "vi", "zh-rcn", "zh-rtw"};
+    static final String[] LANGUAGES = {"de", "es", "in", "pt-rbr", "ru", "th", "tr", "vi", "zh-rcn", "zh-rtw"};
 
     /**
      * The table for one language tag, or null when nothing was translated into it.
@@ -37,6 +37,8 @@ public final class L10nTranslations {
                 return L10nTablePt_rBR.build();
             case "ru":
                 return L10nTableRu.build();
+            case "th":
+                return L10nTableTh.build();
             case "tr":
                 return L10nTableTr.build();
             case "vi":

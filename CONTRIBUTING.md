@@ -98,7 +98,7 @@ For DEX edits, check the utilities in `patches/src/main/kotlin/app/morphe/util/`
 
 ## Translating
 
-Hushfacebook's own text (its settings, toasts and the menu rows it adds) comes from one table per language in `extensions/shared/library/src/main/l10n/`. Facebook's own text isn't in them. There's `de.tsv`, `es.tsv`, `in.tsv` (Indonesian, under Android's older code), `pt-rBR.tsv`, `ru.tsv`, `tr.tsv`, `vi.tsv`, `zh-rCN.tsv` and `zh-rTW.tsv`.
+Hushfacebook's own text (its settings, toasts and the menu rows it adds) comes from one table per language in `extensions/shared/library/src/main/l10n/`. Facebook's own text isn't in them. There's `de.tsv`, `es.tsv`, `in.tsv` (Indonesian, under Android's older code), `pt-rBR.tsv`, `ru.tsv`, `th.tsv`, `tr.tsv`, `vi.tsv`, `zh-rCN.tsv` and `zh-rTW.tsv`.
 
 Each row is the English exactly as the code hands it to `L10n.t`, `L10n.f` or `L10n.quantity`, then one tab, then the translation. Lines starting with `#` are comments, and a `# context:` line above a row says where the text shows and what it does. Write a line break as `\n`. The English is the whole sentence, so change only the right-hand column. A row can keep the English as its translation, and that's how a string sits until someone translates it.
 
@@ -116,7 +116,7 @@ It stops at the first row it can't use and names the file and line: a missing tr
 ./gradlew :extensions:facebook:testDebugUnitTest --tests "app.morphe.extension.shared.L10nCatalogTest"
 ```
 
-It checks the generated class against the tables, and it holds every table to exactly the English the code shows, both ways. A row missing from any table fails it, and so does a row for text the code no longer shows. So when a change retires a string, delete its row from all eight tables. When a change rewords one, the key is the English, so update the key in every table and keep each translation that still fits. Where you can't say, put the new English in as the translation. A second `--tests "*L10nTest"` adds the other language tests, `SettingsL10nTest` among them, which builds the settings screens in each language.
+It checks the generated class against the tables, and it holds every table to exactly the English the code shows, both ways. A row missing from any table fails it, and so does a row for text the code no longer shows. So when a change retires a string, delete its row from every table. When a change rewords one, the key is the English, so update the key in every table and keep each translation that still fits. Where you can't say, put the new English in as the translation. A second `--tests "*L10nTest"` adds the other language tests, `SettingsL10nTest` among them, which builds the settings screens in each language.
 
 To add a language, copy `de.tsv` to the new code, named the way an Android resource folder would be (`fr.tsv`, `pt-rPT.tsv`), and translate the right-hand column. Every row has to be there, translated or not. Then add the code to the three language lists in `SettingsL10nTest` and to the README sentence that names the translated languages.
 

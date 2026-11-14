@@ -439,12 +439,23 @@
     },
     {
       "paths": [
+        "extensions/shared/library/src/main/l10n/th.tsv"
+      ],
+      "origin": "ported",
+      "upstream": "https://github.com/MangaThatsFine/HushFacebook",
+      "commit": "d1c82fe65fe6cd4e59968ad474adcd9076634343",
+      "license": "GPL-3.0-only",
+      "changes": "Thai translation contributed by MangaThatsFine in pull request 436. The submitted translations are preserved with contributor credit. Rows whose English changed after the pull request were brought up to the current wording, and rows for strings added since were translated to match."
+    },
+    {
+      "paths": [
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTranslations.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableDe.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableEs.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableIn.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTablePt_rBR.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableRu.java",
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableTh.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableTr.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableVi.java",
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTableZh_rCN.java",
