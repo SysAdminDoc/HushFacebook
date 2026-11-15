@@ -1066,7 +1066,7 @@ public class HushfacebookPreferenceFragmentTest {
             items.getOnPreferenceClickListener().onPreferenceClick(items);
             AlertDialog list = ShadowAlertDialog.getLatestAlertDialog();
             assertNotNull("the row opened nothing", list);
-            assertEquals("Hide from a post's 3-dot menu", String.valueOf(Shadows.shadowOf(list).getTitle()));
+            assertEquals("Hide from the 3-dot menus of posts and reels", String.valueOf(Shadows.shadowOf(list).getTitle()));
             List<String> choices = PostMenuItems.choices();
             assertEquals("Interested", String.valueOf(list.getListView().getAdapter().getItem(choices.indexOf("SEE_MORE"))));
             Shadows.shadowOf(list).clickOnItem(choices.indexOf("SEE_MORE"));

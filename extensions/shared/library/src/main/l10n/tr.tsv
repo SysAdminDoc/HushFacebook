@@ -2845,7 +2845,7 @@ Puts Playback speed on the menu's first page, with Save and Report, so it's one 
 # context: row title in News feed settings: the rows of a post's 3-dot menu the user picks to hide
 3-dot menu items to hide	Üç nokta menüsünde gizlenecek öğeler
 # context: title of that row's list of checkboxes
-Hide from a post's 3-dot menu	Gönderinin üç nokta menüsünden gizle
+Hide from the 3-dot menus of posts and reels	Gönderilerin ve reels videolarının üç nokta menüsünden gizle
 # context: import preview and toast, no 3-dot menu row will be in that list after the import
 Your list of 3-dot menu items to hide will be empty.	Üç nokta menüsünde gizlenecek öğeler listen boş olacak.
 # context: import preview and toast, one 3-dot menu row will be in that list after the import
@@ -2862,3 +2862,8 @@ Facebook will ask for your screen's highest refresh rate.	Facebook ekranınızı
 Facebook will ask your screen for %1$s.	Facebook ekranınızdan %1$s isteyecek.
 Hide the comment box	Yorum alanını gizle
 The Write a comment box under a post's comments goes away. You can still read every comment.	Bir gönderinin yorumlarının altındaki Yorum yaz alanı kaybolur. Tüm yorumları yine okuyabilirsiniz.
+Captions	Altyazılar
+Clear mode	Sade mod
+Scroll to next reel automatically	Sonraki reels videosuna otomatik geç
+Transcript	Transkript
+Audio and language	Ses ve dil

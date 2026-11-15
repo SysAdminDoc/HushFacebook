@@ -2845,7 +2845,7 @@ Puts Playback speed on the menu's first page, with Save and Report, so it's one 
 # context: row title in News feed settings: the rows of a post's 3-dot menu the user picks to hide
 3-dot menu items to hide	รายการในเมนูจุดสามจุดที่จะซ่อน
 # context: title of that row's list of checkboxes
-Hide from a post's 3-dot menu	ซ่อนจากเมนูจุดสามจุดของโพสต์
+Hide from the 3-dot menus of posts and reels	ซ่อนจากเมนูจุดสามจุดของโพสต์และ Reels
 # context: import preview and toast, no 3-dot menu row will be in that list after the import
 Your list of 3-dot menu items to hide will be empty.	รายการที่จะซ่อนในเมนูจุดสามจุดของคุณจะว่างเปล่า
 # context: import preview and toast, one 3-dot menu row will be in that list after the import
@@ -2862,3 +2862,8 @@ Facebook will ask for your screen's highest refresh rate.	Facebook จะขอ�
 Facebook will ask your screen for %1$s.	Facebook จะขอ %1$s จากหน้าจอ
 Hide the comment box	ซ่อนกล่องความคิดเห็น
 The Write a comment box under a post's comments goes away. You can still read every comment.	กล่องเขียนความคิดเห็นใต้ความคิดเห็นของโพสต์จะหายไป คุณยังอ่านความคิดเห็นทั้งหมดได้
+Captions	คำบรรยาย
+Clear mode	โหมดหน้าจอโล่ง
+Scroll to next reel automatically	เลื่อนไปยัง Reels ถัดไปโดยอัตโนมัติ
+Transcript	ข้อความถอดเสียง
+Audio and language	เสียงและภาษา

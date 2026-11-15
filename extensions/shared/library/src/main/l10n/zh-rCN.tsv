@@ -2840,7 +2840,7 @@ Puts Playback speed on the menu's first page, with Save and Report, so it's one 
 # context: row title in News feed settings: the rows of a post's 3-dot menu the user picks to hide
 3-dot menu items to hide	要隐藏的三点菜单项目
 # context: title of that row's list of checkboxes
-Hide from a post's 3-dot menu	从帖子的三点菜单中隐藏
+Hide from the 3-dot menus of posts and reels	从帖子和 Reels 的三点菜单中隐藏
 # context: import preview and toast, no 3-dot menu row will be in that list after the import
 Your list of 3-dot menu items to hide will be empty.	你要隐藏的三点菜单项目列表将为空。
 # context: import preview and toast, one 3-dot menu row will be in that list after the import
@@ -2857,3 +2857,8 @@ Facebook will ask for your screen's highest refresh rate.	Facebook 将请求屏�
 Facebook will ask your screen for %1$s.	Facebook 将向屏幕请求 %1$s。
 Hide the comment box	隐藏评论框
 The Write a comment box under a post's comments goes away. You can still read every comment.	帖子评论下方的“写评论”框会消失。你仍然可以阅读所有评论。
+Captions	字幕
+Clear mode	清爽模式
+Scroll to next reel automatically	自动滚动到下一个 Reels
+Transcript	文字记录
+Audio and language	音频和语言

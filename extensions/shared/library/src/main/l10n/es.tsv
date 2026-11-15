@@ -2845,7 +2845,7 @@ Puts Playback speed on the menu's first page, with Save and Report, so it's one 
 # context: row title in News feed settings: the rows of a post's 3-dot menu the user picks to hide
 3-dot menu items to hide	Opciones del menú de tres puntos que ocultar
 # context: title of that row's list of checkboxes
-Hide from a post's 3-dot menu	Ocultar del menú de tres puntos de una publicación
+Hide from the 3-dot menus of posts and reels	Ocultar de los menús de tres puntos de publicaciones y reels
 # context: import preview and toast, no 3-dot menu row will be in that list after the import
 Your list of 3-dot menu items to hide will be empty.	Tu lista de opciones del menú de tres puntos que ocultar quedará vacía.
 # context: import preview and toast, one 3-dot menu row will be in that list after the import
@@ -2862,3 +2862,8 @@ Facebook will ask for your screen's highest refresh rate.	Facebook pedirá la fr
 Facebook will ask your screen for %1$s.	Facebook le pedirá %1$s a tu pantalla.
 Hide the comment box	Ocultar el cuadro de comentarios
 The Write a comment box under a post's comments goes away. You can still read every comment.	Desaparece el cuadro Escribe un comentario debajo de los comentarios de una publicación. Puedes seguir leyendo todos los comentarios.
+Captions	Subtítulos
+Clear mode	Modo despejado
+Scroll to next reel automatically	Pasar al siguiente reel automáticamente
+Transcript	Transcripción
+Audio and language	Audio e idioma

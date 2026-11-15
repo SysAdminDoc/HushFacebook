@@ -538,7 +538,7 @@ final class FeedPages {
             ticked[i] = hidden.contains(kinds.get(i));
         }
         AlertDialog list = page.show(new AlertDialog.Builder(context)
-                .setTitle(L10n.t("Hide from a post's 3-dot menu"))
+                .setTitle(L10n.t("Hide from the 3-dot menus of posts and reels"))
                 .setMultiChoiceItems(names, ticked, (shown, which, isTicked) -> ticked[which] = isTicked)
                 .setPositiveButton(L10n.t("Save"), null)
                 .setNegativeButton(L10n.t("Cancel"), null));

@@ -2845,7 +2845,7 @@ Puts Playback speed on the menu's first page, with Save and Report, so it's one 
 # context: row title in News feed settings: the rows of a post's 3-dot menu the user picks to hide
 3-dot menu items to hide	Item menu titik tiga yang disembunyikan
 # context: title of that row's list of checkboxes
-Hide from a post's 3-dot menu	Sembunyikan dari menu titik tiga postingan
+Hide from the 3-dot menus of posts and reels	Sembunyikan dari menu titik tiga postingan dan reel
 # context: import preview and toast, no 3-dot menu row will be in that list after the import
 Your list of 3-dot menu items to hide will be empty.	Daftar item menu titik tiga yang disembunyikan akan kosong.
 # context: import preview and toast, one 3-dot menu row will be in that list after the import
@@ -2862,3 +2862,8 @@ Facebook will ask for your screen's highest refresh rate.	Facebook akan meminta 
 Facebook will ask your screen for %1$s.	Facebook akan meminta %1$s ke layarmu.
 Hide the comment box	Sembunyikan kotak komentar
 The Write a comment box under a post's comments goes away. You can still read every comment.	Kotak Tulis komentar di bawah komentar postingan hilang. Kamu tetap bisa membaca semua komentar.
+Captions	Teks
+Clear mode	Mode bersih
+Scroll to next reel automatically	Gulir ke reel berikutnya secara otomatis
+Transcript	Transkrip
+Audio and language	Audio dan bahasa

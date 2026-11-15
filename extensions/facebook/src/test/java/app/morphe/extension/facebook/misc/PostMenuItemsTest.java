@@ -359,5 +359,125 @@ public class PostMenuItemsTest {
         assertEquals("Manage your Feed", PostMenuItems.label("TUNE_YOUR_ALGORITHM"));
         assertEquals("Add to Favorites", PostMenuItems.label("FAVORITE"));
         assertEquals("Ask meta ai", PostMenuItems.label("ASK_META_AI"));
+        assertEquals("Clear mode", PostMenuItems.label("CLEAR_MODE"));
+        assertEquals("Scroll to next reel automatically", PostMenuItems.label("AUTO_ADVANCE"));
+    }
+
+    /** Stands in for 587's LX/0Hyj, a reel sheet row's model, whose A04 answers the row's id. */
+    static class ReelModel {
+        private final String id;
+
+        ReelModel(String id) {
+            this.id = id;
+        }
+
+        final String A04() {
+            return id;
+        }
+    }
+
+    /** Stands in for 587's LX/0HKE, a reel sheet row that is a model itself. */
+    static final class ReelRow extends ReelModel {
+        private final String title;
+
+        ReelRow(String title, String id) {
+            super(id);
+            this.title = title;
+        }
+
+        @Override
+        public String toString() {
+            return title;
+        }
+    }
+
+    /** Stands in for 587's LX/0Htm, a reel sheet row holding its model in A00. */
+    static final class HeldRow {
+        final ReelModel A00;
+
+        HeldRow(String id) {
+            A00 = new ReelModel(id);
+        }
+    }
+
+    private static final String REEL_MODEL = ReelModel.class.getName();
+
+    private final ReelRow reelInterested = new ReelRow("Interested", "fds_control_type_preference_signal_positive");
+    private final ReelRow reelSpeed = new ReelRow("Playback speed", "fds_control_playback_speed");
+    private final ReelRow captions = new ReelRow("Captions", "fds_control_type_captions_and_translations");
+    private final ReelRow ownDownload = new ReelRow("Download", "hushfacebook_download_reel");
+    private final ReelRow clearMode = new ReelRow("Clear mode", "fds_control_clear_mode");
+    private final ReelRow transcript = new ReelRow("Transcript", "fds_transcript_control");
+    private final HeldRow saveReel = new HeldRow("fds_control_type_save");
+
+    private List<Object> reelSection() {
+        return new ArrayList<>(Arrays.asList(reelInterested, reelSpeed, captions, ownDownload, clearMode, transcript,
+                saveReel));
+    }
+
+    @Test
+    public void reelIdsReadAsTheListsKinds() {
+        assertEquals("SEE_MORE", PostMenuItems.reelKind("fds_control_type_preference_signal_positive"));
+        assertEquals("SEE_LESS", PostMenuItems.reelKind("fds_control_type_preference_signal_negative"));
+        assertEquals("SAVE", PostMenuItems.reelKind("fds_control_type_save"));
+        assertEquals("COPY_LINK", PostMenuItems.reelKind("fds_control_type_copy_link"));
+        assertEquals("TUNE_YOUR_ALGORITHM", PostMenuItems.reelKind("fds_control_type_tune_your_algorithm"));
+        assertEquals("PLAYBACK_SPEED", PostMenuItems.reelKind("fds_control_playback_speed"));
+        assertEquals("CLEAR_MODE", PostMenuItems.reelKind("fds_control_clear_mode"));
+        assertEquals("TRANSCRIPT", PostMenuItems.reelKind("fds_transcript_control"));
+        assertEquals("AUDIO_AND_LANGUAGE", PostMenuItems.reelKind("fds_audio_and_language_control"));
+        assertEquals("LEGAL_REPORT", PostMenuItems.reelKind("legal_report"));
+        assertNull("Hushfacebook's own row", PostMenuItems.reelKind("hushfacebook_download_reel"));
+        assertNull(PostMenuItems.reelKind("fds_control_"));
+        assertNull(PostMenuItems.reelKind("9 lives"));
+        assertNull(PostMenuItems.reelKind(null));
+    }
+
+    @Test
+    public void nothingPickedAReelSectionIsFacebooksAndItsKindsAreWrittenDown() {
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        List<Object> rows = reelSection();
+        assertSame(rows, PostMenuItems.reelRows(rows, REEL_MODEL, "A04"));
+        assertEquals(7, rows.size());
+        assertEquals(Arrays.asList("SEE_MORE", "PLAYBACK_SPEED", "CAPTIONS_AND_TRANSLATIONS", "CLEAR_MODE", "TRANSCRIPT",
+                "SAVE"), new ArrayList<>(PostMenuItems.parse(Settings.SEEN_POST_MENU_ITEMS.savedValue())));
+        assertTrue("the reel rows are offered in the list", PostMenuItems.choices().containsAll(
+                Arrays.asList("PLAYBACK_SPEED", "CLEAR_MODE", "TRANSCRIPT")));
+    }
+
+    @Test
+    public void pickedKindsLeaveAReelSectionAndHushfacebooksRowsStay() {
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        PostMenuItems.hide(Arrays.asList("SEE_MORE", "CLEAR_MODE", "SAVE", "CAST"));
+        List<Object> rows = Collections.unmodifiableList(reelSection());
+        List<?> shown = PostMenuItems.reelRows(rows, REEL_MODEL, "A04");
+        assertEquals(Arrays.asList(reelSpeed, captions, ownDownload, transcript), shown);
+        assertEquals("Facebook's own list is left alone", 7, rows.size());
+        String line = statusLine(FamilyNames.POST_MENU_ITEMS);
+        assertNotNull(String.join("\n", HookStatus.report()), line);
+        assertTrue(line, line.contains(PostMenuItems.REEL_HIDDEN + " 3"));
+    }
+
+    @Test
+    public void outOfTheBuildPausedOrUnreadableAReelSectionIsFacebooks() {
+        PostMenuItems.hide(Arrays.asList("CLEAR_MODE", "SAVE"));
+        PatchFamilyForTests.carry();
+        List<Object> rows = reelSection();
+        assertSame(rows, PostMenuItems.reelRows(rows, REEL_MODEL, "A04"));
+        assertEquals("a build without the patch wrote kinds down", "", Settings.SEEN_POST_MENU_ITEMS.savedValue());
+
+        PatchFamilyForTests.carry(PatchFamily.POST_MENU_ITEMS);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals(7, PostMenuItems.reelRows(rows, REEL_MODEL, "A04").size());
+        PauseForTests.resume();
+        assertSame("a model class this build doesn't have", rows,
+                PostMenuItems.reelRows(rows, "X.Missing", "A04"));
+        assertSame("an id method the model doesn't have", rows,
+                PostMenuItems.reelRows(rows, REEL_MODEL, "A99"));
+        List<Object> odd = new ArrayList<>(Arrays.asList("not a row", null, clearMode));
+        assertEquals("a row of no known shape stays", Arrays.asList("not a row", null),
+                PostMenuItems.reelRows(odd, REEL_MODEL, "A04"));
+        assertEquals("the control: running, Clear mode and Save go", 5,
+                PostMenuItems.reelRows(rows, REEL_MODEL, "A04").size());
     }
 }

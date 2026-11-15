@@ -112,6 +112,78 @@ class PostMenuItemsFixtureTest {
     }
 
     @Test
+    fun `each declared build's reel More sheet hands every section's rows to the extension`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                // The post menu's classes, so the patch gets past its own sheet to the reel one.
+                val kind = FixtureDex.classesHolding(bundle, SEE_MORE).single { isEnumNaming(it, POST_MENU_KINDS) }
+                val sorter = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it.toString() == kind.type } }) {
+                    isPostMenuSorter(it, kind.type)
+                }.single()
+                val loggerClasses = FixtureDex.classesHolding(bundle, REEL_INTERESTED)
+                val sheets = loggerClasses.flatMap { it.methods.mapNotNull(::reelSheetOf) }
+                    .distinctBy { "${it.rows}|${it.model}->${it.idMethod}" }
+                assertEquals("$name: reel More sheet loggers", 1, sheets.size)
+                val sheet = sheets.single()
+                assertEquals("$name: the rows method's shape", "()Ljava/util/List;",
+                    "(${sheet.rows.parameterTypes.joinToString("")})${sheet.rows.returnType}")
+
+                val pool = (listOf(kind) + loggerClasses + ExtensionDex.classDef(SETTINGS_STATUS)).associateByTo(mutableMapOf()) { it.type }
+                pool += FixtureDex.classes(bundle, setOf(sorter.definingClass, sorter.returnType, sheet.rows.definingClass))
+                var model: String? = sheet.model
+                while (model != null && model.startsWith("LX/")) {
+                    val classDef = FixtureDex.classes(bundle, setOf(model)).values.singleOrNull() ?: break
+                    pool[model] = classDef
+                    model = classDef.superclass
+                }
+                val context = PatchContexts.of(pool.values)
+                postMenuSheetHookPatch.execute(context)
+                postMenuItemsPatch.execute(context)
+
+                val owner = context.mutableClassDefBy(sheet.rows.definingClass)
+                val helper = owner.methods.single { it.name == REEL_ROWS_HELPER }
+                assertTrue("$name: the reel helper isn't static", AccessFlags.STATIC.isSet(helper.accessFlags))
+                assertEquals("$name: the reel helper's names", listOf(javaName(sheet.model), sheet.idMethod),
+                    helper.code().mapNotNull { it.text() })
+                assertEquals("$name: the reel helper calls the extension", POST_MENU_REEL_ROWS,
+                    helper.code().single { it.opcode == Opcode.INVOKE_STATIC }.called())
+
+                val original = FixtureDex.classes(bundle, setOf(sheet.rows.definingClass)).getValue(sheet.rows.definingClass)
+                    .methods.single { it.name == sheet.rows.name && it.parameterTypes.isEmpty() }.code()
+                val patched = owner.methods.single { it.name == sheet.rows.name && it.parameterTypes.isEmpty() }.code()
+                val returns = original.count { it.opcode == Opcode.RETURN_OBJECT }
+                assertTrue("$name: the rows method has no returns", returns > 0)
+                assertEquals("$name: a call and a move in front of each return", original.size + 2 * returns, patched.size)
+                patched.withIndex().filter { it.value.opcode == Opcode.RETURN_OBJECT }.forEach { (at, ret) ->
+                    val answer = (ret as OneRegisterInstruction).registerA
+                    val call = patched[at - 2]
+                    assertEquals("$name: the reel helper before return v$answer",
+                        "${owner.type}->$REEL_ROWS_HELPER(Ljava/util/List;)Ljava/util/List;", call.called())
+                    assertEquals("$name: the reel helper handed v$answer", listOf(answer, 1),
+                        listOf((call as RegisterRangeInstruction).startRegister, call.registerCount))
+                    val move = patched[at - 1]
+                    assertEquals("$name: the answer goes back in v$answer", listOf(Opcode.MOVE_RESULT_OBJECT, answer),
+                        listOf(move.opcode, (move as OneRegisterInstruction).registerA))
+                }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    @Test
+    fun `the extension has the reel sheet's hook`() {
+        val hook = ExtensionDex.classDef(POST_MENU_ITEMS).methods.singleOrNull { it.name == "reelRows" }
+        assertTrue("the extension has no PostMenuItems.reelRows", hook != null)
+        assertEquals("reelRows' shape", POST_MENU_REEL_ROWS, hook!!.descriptor())
+        assertTrue("reelRows isn't static", AccessFlags.STATIC.isSet(hook.accessFlags))
+    }
+
+    @Test
     fun `the extension has the sheet's hook`() {
         val hook = ExtensionDex.classDef(POST_MENU_ITEMS).methods.singleOrNull { it.name == "arrange" }
         assertTrue("the extension has no PostMenuItems.arrange", hook != null)

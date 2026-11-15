@@ -2899,7 +2899,7 @@ Puts Playback speed on the menu's first page, with Save and Report, so it's one 
 # context: row title in News feed settings: the rows of a post's 3-dot menu the user picks to hide
 3-dot menu items to hide	Пункты меню с тремя точками для скрытия
 # context: title of that row's list of checkboxes
-Hide from a post's 3-dot menu	Скрывать в меню публикации с тремя точками
+Hide from the 3-dot menus of posts and reels	Скрывать в меню с тремя точками у публикаций и Reels
 # context: import preview and toast, no 3-dot menu row will be in that list after the import
 Your list of 3-dot menu items to hide will be empty.	Список пунктов меню с тремя точками для скрытия будет пуст.
 # context: import preview and toast, one 3-dot menu row will be in that list after the import
@@ -2918,3 +2918,8 @@ Facebook will ask for your screen's highest refresh rate.	Facebook будет з
 Facebook will ask your screen for %1$s.	Facebook будет запрашивать у экрана %1$s.
 Hide the comment box	Скрывать поле комментария
 The Write a comment box under a post's comments goes away. You can still read every comment.	Поле «Напишите комментарий» под комментариями к публикации исчезает. Все комментарии можно читать как раньше.
+Captions	Субтитры
+Clear mode	Режим без элементов
+Scroll to next reel automatically	Автоматически переходить к следующему Reels
+Transcript	Расшифровка
+Audio and language	Аудио и язык

@@ -3485,7 +3485,7 @@
     },
     {
       "name": "Post menu items",
-      "description": "Lets you hide rows you never use from a post's three-dot menu, such as Interested, Not interested or Cast, so you can't tap them by accident. Nothing is hidden until you pick. Choose them in Hushfacebook settings > News feed.",
+      "description": "Lets you hide rows you never use from the three-dot menu of posts and reels, such as Interested, Not interested or Cast, so you can't tap them by accident. Nothing is hidden until you pick. Choose them in Hushfacebook settings > News feed.",
       "category": "Interface",
       "use": true,
       "dependencies": [

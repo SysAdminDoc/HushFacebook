@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.misc;
 import androidx.annotation.Nullable;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,7 +17,9 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import app.morphe.extension.facebook.media.PostMenuSpeed;
@@ -44,10 +47,39 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>The holder's fields are found by what they hold, and the kind by the names the patch hands over:
  * the row metadata's class and its kind field, and the first page's list. Settings that aren't ready
  * yet, a holder of another shape, or a failure in here, and the sheet stays as Facebook sorted it.
+ *
+ * <p>A reel's More sheet has no kinds. Each of its rows carries an id instead, such as
+ * fds_control_type_save or fds_control_clear_mode, and {@link #reelRows} reads each id as a kind of
+ * the same list: Interested and Not interested by the post menu's own names, the rest by the id
+ * with its fds_control_ wrapping taken off. So Save, Copy link or Report picked once leave both
+ * menus, and the reel's own rows join the list the first time a reel's sheet shows them.
  */
 public final class PostMenuItems {
     /** Counted under the patch's name each time a sheet loses a row. */
     static final String HIDDEN = "Post menu row kept out";
+
+    /** Counted under the patch's name each time a reel's More sheet loses a row. */
+    static final String REEL_HIDDEN = "Reel menu row kept out";
+
+    /** The ids Hushfacebook's own reel rows carry. Each of those has a switch of its own. */
+    static final String OWN_ROW = "hushfacebook_";
+
+    /** What a reel row id starts and ends with around its kind, taken off in this order. */
+    private static final String[] REEL_ID_STARTS = {"fds_control_type_", "fds_control_", "fds_"};
+    private static final String REEL_ID_END = "_control";
+
+    /** Marks a row class that has no way to its model, so it isn't searched again. */
+    private static final Object NONE = new Object();
+
+    /** How each row class reaches its model, and each model class its id: a Field, a Method or NONE. */
+    private static final Map<Class<?>, Object> reelModels = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Object> reelIds = new ConcurrentHashMap<>();
+
+    /** The model class and id method name the two maps above were filled for. */
+    @Nullable
+    private static volatile Class<?> reelModelClass;
+    @Nullable
+    private static volatile String reelIdName;
 
     /** Counted under Keep the reel speed's name each time Playback speed goes to the first page. */
     static final String SPEED_MOVED = "post menu Playback speed put on the first page";
@@ -116,6 +148,158 @@ public final class PostMenuItems {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.KEEP_REEL_SPEED, "post menu speed on the first page", failure);
         }
+    }
+
+    /**
+     * The hook in front of each return of the method that lists the rows of a reel More sheet's
+     * section, handed the list it answers, the class of a row's model (Java's name for it) and the
+     * model's id method. Answers the list to return: [rows] itself, or a copy without the rows of a
+     * picked kind. Never throws.
+     */
+    public static List<?> reelRows(@Nullable List<?> rows, @Nullable String model, @Nullable String idMethod) {
+        // PatchFamily names Settings, which mustn't load before the extension has its context.
+        if (rows == null || rows.isEmpty() || model == null || idMethod == null || !Utils.settingsReady()) {
+            return rows;
+        }
+        try {
+            if (!PatchFamily.POST_MENU_ITEMS.inBuild()) return rows;
+            HookStatus.invoked(FAMILY);
+            Class<?> modelClass = reelModel(model, idMethod);
+            Set<String> hidden = parse(Settings.HIDDEN_POST_MENU_ITEMS.get());
+            List<String> kinds = new ArrayList<>();
+            List<Object> kept = null;
+            for (int i = 0; i < rows.size(); i++) {
+                Object row = rows.get(i);
+                String kind = reelKind(reelId(row, modelClass, idMethod));
+                if (kind != null) kinds.add(kind);
+                if (kind != null && hidden.contains(kind)) {
+                    if (kept == null) kept = new ArrayList<>(rows.subList(0, i));
+                } else if (kept != null) {
+                    kept.add(row);
+                }
+            }
+            remember(kinds);
+            if (kept == null) return rows;
+            HookStatus.bound(FAMILY, "reel menu items");
+            for (int i = kept.size(); i < rows.size(); i++) HookStatus.counted(FAMILY, REEL_HIDDEN);
+            if (!logged) {
+                logged = true;
+                Logger.printDebug(() -> "Post menu items: kept a row out of a reel's More sheet");
+            }
+            return kept;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel menu items", failure);
+            return rows;
+        }
+    }
+
+    /**
+     * The kind a reel row's [id] stands for: SEE_MORE and SEE_LESS for Interested and Not interested,
+     * else the id without its fds_control_ wrapping, in capitals. Null for Hushfacebook's own rows
+     * and for an id that leaves no kind.
+     */
+    @Nullable
+    static String reelKind(@Nullable String id) {
+        if (id == null || id.startsWith(OWN_ROW)) return null;
+        switch (id) {
+            case "fds_control_type_preference_signal_positive": return "SEE_MORE";
+            case "fds_control_type_preference_signal_negative": return "SEE_LESS";
+            default: break;
+        }
+        String rest = id;
+        for (String start : REEL_ID_STARTS) {
+            if (rest.startsWith(start)) {
+                rest = rest.substring(start.length());
+                break;
+            }
+        }
+        if (rest.endsWith(REEL_ID_END) && rest.length() > REEL_ID_END.length()) {
+            rest = rest.substring(0, rest.length() - REEL_ID_END.length());
+        }
+        String kind = rest.toUpperCase(Locale.ROOT);
+        return KIND.matcher(kind).matches() ? kind : null;
+    }
+
+    /**
+     * [row]'s id: read off the row itself when it is a [model], else off the model it holds in a
+     * field or answers from a method that takes nothing. Null when it has none.
+     */
+    @Nullable
+    static String reelId(@Nullable Object row, Class<?> model, String idMethod) throws ReflectiveOperationException {
+        if (row == null) return null;
+        Object meta = row;
+        if (!model.isInstance(row)) {
+            Object way = reelModels.get(row.getClass());
+            if (way == null) {
+                way = wayToModel(row.getClass(), model);
+                reelModels.put(row.getClass(), way);
+            }
+            if (way instanceof Field) meta = ((Field) way).get(row);
+            else if (way instanceof Method) meta = ((Method) way).invoke(row);
+            else return null;
+            if (meta == null) return null;
+        }
+        Object way = reelIds.get(meta.getClass());
+        if (way == null) {
+            Method found = noArgMethod(meta.getClass(), idMethod, String.class);
+            way = found != null ? found : NONE;
+            reelIds.put(meta.getClass(), way);
+        }
+        if (!(way instanceof Method)) return null;
+        Object id = ((Method) way).invoke(meta);
+        return id instanceof String ? (String) id : null;
+    }
+
+    /**
+     * The model class named [model], loaded where the extension is (the patch merges it into the
+     * app). The ways to models and ids found so far are forgotten when the names change.
+     */
+    private static Class<?> reelModel(String model, String idMethod) throws ClassNotFoundException {
+        Class<?> known = reelModelClass;
+        if (known != null && known.getName().equals(model) && idMethod.equals(reelIdName)) return known;
+        reelModels.clear();
+        reelIds.clear();
+        Class<?> loaded = Class.forName(model, false, PostMenuItems.class.getClassLoader());
+        reelIdName = idMethod;
+        reelModelClass = loaded;
+        return loaded;
+    }
+
+    /** The field holding a [model], or else the method taking nothing that answers one, or NONE. */
+    private static Object wayToModel(Class<?> type, Class<?> model) {
+        for (Class<?> at = type; at != null && at != Object.class; at = at.getSuperclass()) {
+            for (Field field : at.getDeclaredFields()) {
+                if (!Modifier.isStatic(field.getModifiers()) && model.isAssignableFrom(field.getType())) {
+                    field.setAccessible(true);
+                    return field;
+                }
+            }
+        }
+        for (Class<?> at = type; at != null && at != Object.class; at = at.getSuperclass()) {
+            for (Method method : at.getDeclaredMethods()) {
+                if (!Modifier.isStatic(method.getModifiers()) && method.getParameterTypes().length == 0
+                        && model.isAssignableFrom(method.getReturnType())) {
+                    method.setAccessible(true);
+                    return method;
+                }
+            }
+        }
+        return NONE;
+    }
+
+    /** [type]'s method [name] that takes nothing and answers a [answer], declared on it or above it. */
+    @Nullable
+    private static Method noArgMethod(Class<?> type, String name, Class<?> answer) {
+        for (Class<?> at = type; at != null && at != Object.class; at = at.getSuperclass()) {
+            for (Method method : at.getDeclaredMethods()) {
+                if (method.getName().equals(name) && !Modifier.isStatic(method.getModifiers())
+                        && method.getParameterTypes().length == 0 && answer.isAssignableFrom(method.getReturnType())) {
+                    method.setAccessible(true);
+                    return method;
+                }
+            }
+        }
+        return null;
     }
 
     /** Takes the rows of a picked kind out of [holder]'s lists and its rows of their own. */
@@ -357,6 +541,12 @@ public final class PostMenuItems {
             case "HIDE": return L10n.t("Hide post");
             case "SNOOZE": return L10n.t("Snooze");
             case "UNFOLLOW": return L10n.t("Unfollow");
+            case "PLAYBACK_SPEED": return L10n.t("Playback speed");
+            case "CAPTIONS_AND_TRANSLATIONS": return L10n.t("Captions");
+            case "CLEAR_MODE": return L10n.t("Clear mode");
+            case "AUTO_ADVANCE": return L10n.t("Scroll to next reel automatically");
+            case "TRANSCRIPT": return L10n.t("Transcript");
+            case "AUDIO_AND_LANGUAGE": return L10n.t("Audio and language");
             default: return readable(kind);
         }
     }
@@ -391,6 +581,10 @@ public final class PostMenuItems {
         seen = null;
         shape = null;
         logged = false;
+        reelModels.clear();
+        reelIds.clear();
+        reelModelClass = null;
+        reelIdName = null;
     }
 
     /** The kinds in a saved list, in order, each once. Anything that isn't a kind is dropped. */

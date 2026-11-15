@@ -2845,7 +2845,7 @@ Puts Playback speed on the menu's first page, with Save and Report, so it's one 
 # context: row title in News feed settings: the rows of a post's 3-dot menu the user picks to hide
 3-dot menu items to hide	Mục cần ẩn trong menu ba chấm
 # context: title of that row's list of checkboxes
-Hide from a post's 3-dot menu	Ẩn khỏi menu ba chấm của bài viết
+Hide from the 3-dot menus of posts and reels	Ẩn khỏi menu ba chấm của bài viết và thước phim
 # context: import preview and toast, no 3-dot menu row will be in that list after the import
 Your list of 3-dot menu items to hide will be empty.	Danh sách mục cần ẩn trong menu ba chấm sẽ trống.
 # context: import preview and toast, one 3-dot menu row will be in that list after the import
@@ -2862,3 +2862,8 @@ Facebook will ask for your screen's highest refresh rate.	Facebook sẽ yêu c�
 Facebook will ask your screen for %1$s.	Facebook sẽ yêu cầu màn hình chạy ở %1$s.
 Hide the comment box	Ẩn ô bình luận
 The Write a comment box under a post's comments goes away. You can still read every comment.	Ô Viết bình luận bên dưới phần bình luận của bài viết biến mất. Bạn vẫn đọc được mọi bình luận.
+Captions	Phụ đề
+Clear mode	Chế độ xem gọn
+Scroll to next reel automatically	Tự động cuộn đến thước phim tiếp theo
+Transcript	Bản chép lời
+Audio and language	Âm thanh và ngôn ngữ
