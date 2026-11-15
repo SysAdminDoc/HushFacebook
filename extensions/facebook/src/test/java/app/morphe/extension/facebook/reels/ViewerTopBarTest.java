@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
@@ -326,6 +327,41 @@ public class ViewerTopBarTest {
         assertEquals(View.INVISIBLE, title.getVisibility());
     }
 
+    /**
+     * #388: a reel opened from search results. Its bar sits in the main screen's own layer, after
+     * the tab pages, so the Reels tab's header is the first view with the id in that layer.
+     */
+    @Test
+    public void aReelOpenedFromSearchLosesBackToo() {
+        Settings.HIDE_VIEWER_BACK_BUTTON.save(true);
+        Settings.HIDE_VIEWER_TOP_BUTTONS.save(true);
+        Activity main = Robolectric.buildActivity(Activity.class).setup().get();
+        FrameLayout screen = new FrameLayout(main);
+        main.setContentView(screen);
+        HorizontalScrollView tabs = new HorizontalScrollView(main);
+        screen.addView(tabs, new FrameLayout.LayoutParams(1080, 2106));
+        ComponentHost[] header = reelsHeader(tabs);
+        FrameLayout search = new FrameLayout(main);
+        screen.addView(search, new FrameLayout.LayoutParams(1080, 2181));
+        LithoView viewerBar = new LithoView(main);
+        viewerBar.setId(BAR_ID);
+        place(search, viewerBar, 0, 0, 1080, 338);
+        ComponentHost viewerBack = button(viewerBar, 23, 112, 91, 180);
+        ComponentHost viewerSearch = button(viewerBar, 838, 98, 939, 199);
+
+        ViewerTopBar.resumed(main);
+        layOut(main);
+
+        assertEquals("Back stayed on the reel", View.INVISIBLE, viewerBack.getVisibility());
+        assertEquals(View.INVISIBLE, viewerSearch.getVisibility());
+        assertEquals("the header lost Menu", View.INVISIBLE, header[0].getVisibility());
+
+        Settings.HIDE_VIEWER_BACK_BUTTON.save(false);
+        layOut(main);
+        assertEquals("Back stayed away with its switch off", View.VISIBLE, viewerBack.getVisibility());
+        assertEquals(View.VISIBLE, header[0].getVisibility());
+    }
+
     private boolean reported(String counted) {
         for (String line : HookStatus.report()) {
             if (line.contains(FamilyNames.REEL_DECLUTTER) && line.contains(counted)) return true;
@@ -340,6 +376,12 @@ public class ViewerTopBarTest {
     private static ComponentHost[] reelsTab(Activity main) {
         HorizontalScrollView tabs = new HorizontalScrollView(main);
         main.setContentView(tabs);
+        return reelsHeader(tabs);
+    }
+
+    /** The Reels tab's page inside [tabs], with its header. Answers Menu, Search and the profile button. */
+    private static ComponentHost[] reelsHeader(HorizontalScrollView tabs) {
+        Context main = tabs.getContext();
         FrameLayout page = new FrameLayout(main);
         tabs.addView(page, new FrameLayout.LayoutParams(1080, 2106));
         LithoView header = new LithoView(main);

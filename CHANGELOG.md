@@ -62,6 +62,7 @@ Changes in each Hushfacebook version, newest first.
 * With `Hide comment and reaction previews` on, a reel's caption stays put. A few seconds in, Facebook used to swap it for a "Name commented: ..." line. (#464)
 * On accounts where Facebook puts the tab bar at the top by itself, the Reels tab no longer leaves a black strip under the tabs once you scroll, when Reels isn't the first tab. The reel runs right up to the tabs, the way it already did with `Put the tab bar at the top` on. (#390)
 * The News feed switches of `Show full post text`, `Translate posts`, `Open comments with a gesture`, `See who shared` and `Photo carousel` show up even when that's the only feed patch you picked. The page used to open only for a set list of patches, and those five weren't on it.
+* `Hide Back on opened videos` now also works on a reel or video you open from search results. Before, its arrow stayed, because that player sits in the same part of the screen as the Reels tab's header and only the header got looked at. (#388)
 
 ## 0.22.0 (2026-11-12)
 

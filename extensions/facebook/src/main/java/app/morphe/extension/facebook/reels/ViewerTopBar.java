@@ -41,8 +41,9 @@ import app.morphe.extension.shared.settings.Setting;
  * screen, a layer of its own under the content view with the same bar in it (S22, 585). The Reels
  * tab's header there has the same id too, Menu where Back would be, inside the tab pages that slide
  * sideways, and its Search and profile button go the same way (#346). No other tab's header has the
- * id (emulator, 585, 2026-11-02). So past the full-screen player screens, each layer of the content
- * view is looked through for the bar.
+ * id (emulator, 585, 2026-11-02). So past the full-screen player screens, every view with the bar's
+ * id under the content view is tidied, since a reel opened from search results shares the main
+ * screen's layer with the Reels tab's header (#388).
  *
  * <p>The buttons are Litho hosts with no ids, and their labels change with the language, so with
  * the switch on every clickable host in the bar that sits past its middle, away from Back, and in
@@ -161,11 +162,24 @@ public final class ViewerTopBar {
         }
         View content = activity.findViewById(android.R.id.content);
         if (!(content instanceof ViewGroup)) return;
-        ViewGroup layers = (ViewGroup) content;
-        for (int i = 0; i < layers.getChildCount(); i++) {
-            View bar = layers.getChildAt(i).findViewById(id);
-            if (bar != null) tidy(bar, true);
+        List<View> bars = new ArrayList<>();
+        collectBars(content, id, bars);
+        for (View bar : bars) tidy(bar, true);
+    }
+
+    /**
+     * Every view with the bar's id under [view], not only the first: a reel opened from search
+     * results sits in the main screen's own layer, after the tab pages holding the Reels tab's
+     * header, so a first match stops at the header (#388). A bar holds no bar, so one isn't looked in.
+     */
+    static void collectBars(View view, int id, List<View> found) {
+        if (view.getId() == id) {
+            found.add(view);
+            return;
         }
+        if (!(view instanceof ViewGroup)) return;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0; i < group.getChildCount(); i++) collectBars(group.getChildAt(i), id, found);
     }
 
     /** Whether the Reels tab's title goes now. */
