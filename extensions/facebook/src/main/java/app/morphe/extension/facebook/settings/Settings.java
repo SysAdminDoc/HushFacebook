@@ -753,6 +753,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_threads_cards", FALSE);
 
     /**
+     * The carousel of posts between reels, like Groups, "Catch up on conversations" (#441), a
+     * mid-card Facebook types NEWS_FEED_MIDCARD. It comes off each batch of reels as it arrives.
+     * Off until it's turned on, like the Threads card.
+     */
+    public static final BooleanSetting HIDE_REEL_POST_CARDS =
+            new BooleanSetting("hushfacebook_hide_reel_post_cards", FALSE);
+
+    /**
      * Only reels from accounts you follow on the Reels tab ({@link
      * app.morphe.extension.facebook.reels.FollowedReels}, #349): a reel whose author Facebook's own
      * Follow button would offer to follow comes off each batch as it arrives. Off by default, since

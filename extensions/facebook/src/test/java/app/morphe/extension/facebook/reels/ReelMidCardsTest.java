@@ -59,6 +59,7 @@ public class ReelMidCardsTest {
         Settings.HIDE_REEL_THREADS_CARDS.resetToDefault();
         Settings.HIDE_REEL_PROMPTS.resetToDefault();
         Settings.HIDE_SUGGESTED_GROUPS.resetToDefault();
+        Settings.HIDE_REEL_POST_CARDS.resetToDefault();
         FeedFilterCounters.clear();
         HookStatus.clear();
     }
@@ -216,6 +217,41 @@ public class ReelMidCardsTest {
         Section off = section(reel, groups);
         ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(off));
         assertTrue("switched off, the groups card stays", off.items.contains(groups));
+    }
+
+    /**
+     * #441: the carousel of posts between reels, like Groups, "Catch up on conversations", stays
+     * until Hide post cards between reels is turned on, then comes off on its own, the Threads card
+     * staying with its switch off. A build without Clean up Reels keeps it whatever the switch says.
+     */
+    @Test
+    public void thePostCarouselComesOffWithHidePostCards() {
+        assertFalse(Settings.HIDE_REEL_POST_CARDS.defaultValue);
+        Settings.HIDE_REEL_PROMPTS.save(false);
+        Settings.HIDE_SUGGESTED_GROUPS.save(false);
+        Object reel = new Object();
+        MidCard posts = new MidCard(MidCardType.NEWS_FEED_MIDCARD);
+        MidCard threads = new MidCard(MidCardType.THREADS_MIDCARD);
+
+        Section offByDefault = section(reel, posts, threads);
+        List<Section> untouched = Collections.singletonList(offByDefault);
+        assertSame(untouched, ReelMidCardsForTests.withoutThreadsCards(untouched));
+        assertTrue("off from the start, the post carousel stays", offByDefault.items.contains(posts));
+
+        Settings.HIDE_REEL_POST_CARDS.save(true);
+        Section section = section(reel, posts, threads);
+        List<Section> page = Collections.singletonList(section);
+        assertSame(page, ReelMidCardsForTests.withoutThreadsCards(page));
+        assertEquals(Arrays.asList(reel, threads), section.items);
+        String line = line();
+        assertNotNull(FeedFilterCounters.report().toString(), line);
+        assertTrue(line, line.contains("Removed: mid-card NEWS_FEED_MIDCARD 1"));
+        assertFalse(line, line.contains("Removed: mid-card THREADS_MIDCARD"));
+
+        ReelMidCards.threadsPatchForTests = Boolean.FALSE;
+        Section noCleanUp = section(reel, posts);
+        ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(noCleanUp));
+        assertTrue("no Clean up Reels, the post carousel stays", noCleanUp.items.contains(posts));
     }
 
     /** Every item that isn't a mid-card is counted by its class, so a report tells two kinds of reel item apart. */

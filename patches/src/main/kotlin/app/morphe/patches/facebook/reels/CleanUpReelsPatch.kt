@@ -124,7 +124,7 @@ val cleanUpReelsPatch = bytecodePatch(
         audioLine.returnNullWhen(HIDE_AUDIO_LINE)
         hideFollowButtons()
         skipFooterQueries()
-        // #85: the Threads card between reels goes through reelMidCardsPatch's hook.
+        // #85, #441: the Threads card and the post carousels between reels go through reelMidCardsPatch's hook.
         startReelsInCleanMode()
         // #304: and its button over a clean reel switches Clean mode off and back on.
         toggleReelCleanMode()

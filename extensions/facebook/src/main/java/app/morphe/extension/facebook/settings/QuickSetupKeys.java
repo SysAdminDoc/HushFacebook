@@ -47,6 +47,7 @@ final class QuickSetupKeys {
             Settings.HIDE_SPONSORED_REELS,
             Settings.HIDE_REEL_CHIPS,
             Settings.HIDE_REEL_THREADS_CARDS,
+            Settings.HIDE_REEL_POST_CARDS,
             Settings.HIDE_REEL_PROMPTS,
             Settings.HIDE_REELS_TAB_DOT,
             Settings.HIDE_SPONSORED_SEARCH_RESULTS,

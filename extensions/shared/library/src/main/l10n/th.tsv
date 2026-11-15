@@ -311,6 +311,8 @@ Hide comment and reaction previews	ซ่อนตัวอย่างควา
 The comment Facebook previews under a reel and the bubbles of friends who reacted. Open the comments to see them all.	ความคิดเห็นที่ Facebook แสดงตัวอย่างไว้ใต้ reel และฟองสบู่รูปเพื่อนที่แสดงความรู้สึก เปิดความคิดเห็นเพื่อดูทั้งหมด
 Hide Threads cards between reels	ซ่อนการ์ด Threads ระหว่าง Reels
 Hides the "Threads you might like" card between reels. Off by default, since it hasn't been tried on a real account yet.	ซ่อนการ์ด "Threads ที่คุณอาจชอบ" ระหว่าง Reels ปิดใช้งานตามค่าเริ่มต้นเนื่องจากยังไม่ได้ทดสอบกับบัญชีจริง
+Hide post cards between reels	ซ่อนการ์ดโพสต์ระหว่าง Reels
+Hides the carousels of posts Facebook puts between reels, like "Catch up on conversations" from your groups. Off by default.	ซ่อนแถบโพสต์ที่ Facebook แทรกไว้ระหว่าง Reels เช่น "ติดตามบทสนทนา" จากกลุ่มของคุณ ปิดใช้งานตามค่าเริ่มต้น
 Only reels from accounts I follow	เฉพาะ Reels จากบัญชีที่ฉันติดตาม
 The Reels tab only shows reels from people and Pages you follow, starting with the next batch Facebook loads. The tab can take longer to fill. Off by default.	แท็บ Reels จะแสดงเฉพาะ Reels จากบุคคลและเพจที่คุณติดตาม เริ่มตั้งแต่ชุดถัดไปที่ Facebook โหลด แท็บนี้อาจใช้เวลาโหลดนานขึ้น ปิดใช้งานตามค่าเริ่มต้น
 Facebook has no more reels your filters would keep, so these reels aren't filtered for now.	Facebook ไม่มี Reels ที่ตรงตามตัวกรองของคุณเหลือแล้ว Reels เหล่านี้จึงไม่ถูกกรองในขณะนี้

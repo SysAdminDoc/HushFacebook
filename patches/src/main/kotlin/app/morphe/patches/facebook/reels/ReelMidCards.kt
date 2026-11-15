@@ -192,7 +192,8 @@ internal class MidCardScan {
 }
 
 /**
- * The mid-card filter's hook, shared by Clean up Reels (the Threads card, #85) and Hide reel
+ * The mid-card filter's hook, shared by Clean up Reels (the Threads card, #85, and the post
+ * carousel, #441) and Hide reel
  * interest prompts (the interest survey, #405), so it goes in once whichever of them is picked. Each
  * page of sections the Reels controller takes goes through the same walk the sponsored reels and
  * GenAI filters use, with the mid-card item's class beside it, and the extension reads each
