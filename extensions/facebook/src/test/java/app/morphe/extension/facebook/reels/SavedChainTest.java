@@ -18,6 +18,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -48,9 +49,11 @@ import app.morphe.extension.shared.settings.PauseForTests;
 /**
  * Play saved videos in a row (#404): a reel opened from a card on the Saved page, once it ends or
  * is swiped past, closes and the card after it is tapped, scrolled into view first when it's below
- * the fold, and so on until the last card, where Facebook's suggestions follow. Settling players,
- * an early end, something over the video, Back, another origin, a stale press, the switch off and
- * Pause each leave Facebook's viewer alone.
+ * the fold, and so on until the last card, where the chain ends on Saved. A swipe up or down in
+ * that viewer is taken from Facebook and opens the next or previous card, with Saved covered in
+ * black until the next video is in front. Settling players, an early end, something over the video,
+ * Back, another origin, a stale press, a short slow drag, a side drag, the switch off and Pause each
+ * leave Facebook's viewer alone.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30, qualifiers = "w360dp-h800dp")
@@ -83,17 +86,32 @@ public class SavedChainTest {
 
         @Override
         public boolean dispatchTouchEvent(MotionEvent event) {
-            SavedChain.touched(this, event);
+            if (SavedChain.touched(this, event)) return true;
             return super.dispatchTouchEvent(event);
         }
     }
 
-    /** The Reels viewer a card opens. */
+    /** The Reels viewer a card opens, its touches read first as the patch does, keeping what reaches Facebook's video. */
     public static final class ReelsViewer extends Activity {
+        final List<Integer> facebook = new ArrayList<>();
+
         @Override
         protected void onCreate(Bundle state) {
             super.onCreate(state);
-            setContentView(new FrameLayout(this));
+            requestWindowFeature(Window.FEATURE_NO_TITLE);
+            FrameLayout video = new FrameLayout(this);
+            video.setOnTouchListener((view, event) -> facebook.add(event.getActionMasked()));
+            setContentView(video);
+        }
+
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent event) {
+            if (SavedChain.touched(this, event)) return true;
+            return super.dispatchTouchEvent(event);
+        }
+
+        View content() {
+            return findViewById(android.R.id.content);
         }
     }
 
@@ -152,10 +170,29 @@ public class SavedChainTest {
 
     @Before
     public void start() {
+        forgetEarlierTouches();
         HookStatus.clear();
         SavedChain.resetForTests();
         RuntimeEnvironment.getApplication().registerActivityLifecycleCallbacks(screens);
         Settings.SAVED_VIDEOS_IN_ORDER.save(true);
+    }
+
+    /**
+     * Robolectric keeps VelocityTracker's pool of two from test to test, and its clear() leaves each
+     * of a tracker's 20 slots holding its place and time, while the clock starts over every test. So
+     * a pooled tracker can still hold an earlier test's touches timed after this test's, and the
+     * speed reads as theirs. Both pooled trackers get every slot at time 0, out of any later window.
+     */
+    private static void forgetEarlierTouches() {
+        VelocityTracker[] pooled = {VelocityTracker.obtain(), VelocityTracker.obtain()};
+        for (VelocityTracker tracker : pooled) {
+            for (int i = 0; i < 21; i++) {
+                MotionEvent old = MotionEvent.obtain(0, 0, MotionEvent.ACTION_MOVE, 0, 0, 0);
+                tracker.addMovement(old);
+                old.recycle();
+            }
+        }
+        for (VelocityTracker tracker : pooled) tracker.recycle();
     }
 
     @After
@@ -163,6 +200,7 @@ public class SavedChainTest {
         RuntimeEnvironment.getApplication().unregisterActivityLifecycleCallbacks(screens);
         PauseForTests.resume();
         Settings.SAVED_VIDEOS_IN_ORDER.resetToDefault();
+        Settings.SAVED_VIDEOS_STAY_ON_END.resetToDefault();
         SavedChain.resetForTests();
         HookStatus.clear();
     }
@@ -223,6 +261,51 @@ public class SavedChainTest {
     }
 
     private static final List<Integer> TAP = List.of(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP);
+
+    /**
+     * A finger on [viewer] from [fromY] to [toY] across the middle (or from the middle to [toX] when
+     * it's set), in [steps] moves [stepMs] apart, lifting a few milliseconds after the last move right
+     * where it was, as a phone reports it.
+     */
+    private static void drag(ReelsViewer viewer, float fromY, float toY, float toX, int steps, long stepMs) {
+        float x = 180;
+        long down = SystemClock.uptimeMillis();
+        MotionEvent event = MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, x, fromY, 0);
+        viewer.dispatchTouchEvent(event);
+        event.recycle();
+        float lastX = x;
+        float lastY = fromY;
+        for (int i = 1; i <= steps; i++) {
+            lastX = Float.isNaN(toX) ? x : x + (toX - x) * i / steps;
+            lastY = Float.isNaN(toX) ? fromY + (toY - fromY) * i / steps : fromY;
+            event = MotionEvent.obtain(down, down + i * stepMs, MotionEvent.ACTION_MOVE, lastX, lastY, 0);
+            viewer.dispatchTouchEvent(event);
+            event.recycle();
+        }
+        event = MotionEvent.obtain(down, down + steps * stepMs + 4, MotionEvent.ACTION_UP, lastX, lastY, 0);
+        viewer.dispatchTouchEvent(event);
+        event.recycle();
+    }
+
+    private static void swipe(ReelsViewer viewer, float fromY, float toY) {
+        drag(viewer, fromY, toY, Float.NaN, 10, 16);
+    }
+
+    private static final List<Integer> TAKEN = List.of(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_CANCEL);
+
+    /** The black cover over the Saved page's content, or null when it's off. */
+    private View coverOnSaved() {
+        ViewGroup content = page.findViewById(android.R.id.content);
+        return content.getChildCount() > 1 ? content.getChildAt(content.getChildCount() - 1) : null;
+    }
+
+    private ReelsViewer playing(int card) {
+        press(card);
+        ReelsViewer viewer = openViewer(SAVED);
+        SavedChain.bound(new Object());
+        idle(SavedChain.OPEN_GUARD_MS + 100);
+        return viewer;
+    }
 
     private static String statusLine() {
         for (String line : HookStatus.report()) {
@@ -292,6 +375,126 @@ public class SavedChainTest {
         assertEquals("the card after the swiped one", TAP, touchesOf(3));
     }
 
+    /** The reporter's video: Facebook's own swipe flashed a suggested reel and then Saved before the next saved one. */
+    @Test
+    public void aSwipeUpIsTakenFromFacebookAndSavedStaysCoveredUntilTheNextVideo() {
+        openSaved(6, true);
+        ReelsViewer viewer = playing(1);
+        swipe(viewer, 600, 300);
+        assertEquals("Facebook's video went on with the swipe", TAKEN, viewer.facebook);
+        assertEquals("the video didn't follow the finger", -300f, viewer.content().getTranslationY(), 0.5f);
+        assertFalse("the viewer closed before the video slid off", viewer.isFinishing());
+
+        idle(SavedChain.SLIDE_MS + 50);
+        assertTrue("a swipe up stayed in the viewer", viewer.isFinishing());
+        View cover = coverOnSaved();
+        assertNotNull("Saved showed between one saved video and the next", cover);
+        assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_NO, cover.getImportantForAccessibility());
+
+        backToSaved();
+        idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
+        assertEquals("the tap under the cover didn't reach card 2", TAP, touchesOf(2));
+        assertTrue("card 0 was tapped", touchesOf(0).isEmpty());
+        assertTrue(statusLine(), statusLine().contains(SavedChain.NEXT + " 1"));
+        assertNotNull("the cover came off before the next video opened", coverOnSaved());
+
+        openViewer(SAVED);
+        assertEquals("the next chain's card", "card 2", SavedChain.chainForTests().card.label);
+        assertNotNull("the cover came off as the next video opened, before it drew", coverOnSaved());
+        idle(SavedChain.UNCOVER_MS + 50);
+        assertNull("the cover stayed on Saved", coverOnSaved());
+    }
+
+    @Test
+    public void aSwipeDownOpensTheSavedVideoBefore() {
+        openSaved(6, true);
+        ReelsViewer viewer = playing(3);
+        swipe(viewer, 300, 600);
+        assertEquals(TAKEN, viewer.facebook);
+        idle(SavedChain.SLIDE_MS + 50);
+        assertTrue("a swipe down stayed in the viewer", viewer.isFinishing());
+
+        backToSaved();
+        idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
+        assertEquals("card 2, the one before", TAP, touchesOf(2));
+        assertTrue("card 4 was tapped", touchesOf(4).isEmpty());
+        assertTrue(statusLine(), statusLine().contains(SavedChain.PREVIOUS + " 1"));
+        assertFalse(statusLine(), statusLine().contains(SavedChain.NEXT + " "));
+    }
+
+    @Test
+    public void aShortSlowDragSlidesBack() {
+        openSaved(6, true);
+        ReelsViewer viewer = playing(1);
+        drag(viewer, 400, 340, Float.NaN, 20, 100);
+        assertEquals("Facebook didn't get a cancel once the drag was taken",
+                MotionEvent.ACTION_CANCEL, (int) viewer.facebook.get(viewer.facebook.size() - 1));
+        assertFalse("Facebook got the lift of a taken drag", viewer.facebook.contains(MotionEvent.ACTION_UP));
+        idle(SavedChain.SLIDE_MS + 100);
+        assertFalse("a short slow drag left the video", viewer.isFinishing());
+        assertEquals("the video didn't slide back", 0f, viewer.content().getTranslationY(), 0.5f);
+        assertNotNull(SavedChain.chainForTests());
+        assertFalse(SavedChain.chainForTests().moving);
+        assertNull(coverOnSaved());
+    }
+
+    @Test
+    public void aQuickFlickIsASwipeHoweverShort() {
+        openSaved(6, true);
+        ReelsViewer viewer = playing(1);
+        drag(viewer, 400, 340, Float.NaN, 4, 8);
+        idle(SavedChain.SLIDE_MS + 50);
+        assertTrue("a quick flick up stayed in the viewer", viewer.isFinishing());
+        backToSaved();
+        idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
+        assertEquals(TAP, touchesOf(2));
+    }
+
+    @Test
+    public void aSwipeDownOnTheFirstSavedVideoStays() {
+        openSaved(6, true);
+        ReelsViewer viewer = playing(0);
+        swipe(viewer, 300, 600);
+        idle(SavedChain.SLIDE_MS + 100);
+        assertFalse("a swipe down on the first saved video left it", viewer.isFinishing());
+        assertEquals(0f, viewer.content().getTranslationY(), 0.5f);
+        assertNotNull(SavedChain.chainForTests());
+        assertNull(coverOnSaved());
+    }
+
+    @Test
+    public void facebookKeepsSideDragsAndSwipesUnderASheet() {
+        openSaved(6, true);
+        ReelsViewer viewer = playing(1);
+        drag(viewer, 400, 400, 330, 10, 16);
+        assertFalse("a side drag was taken", viewer.facebook.contains(MotionEvent.ACTION_CANCEL));
+        assertEquals((int) MotionEvent.ACTION_UP, (int) viewer.facebook.get(viewer.facebook.size() - 1));
+
+        viewer.facebook.clear();
+        viewers.get(0).windowFocusChanged(false);
+        swipe(viewer, 600, 300);
+        assertFalse("a swipe under a sheet was taken", viewer.facebook.contains(MotionEvent.ACTION_CANCEL));
+        idle(SavedChain.SLIDE_MS + 100);
+        assertFalse(viewer.isFinishing());
+        assertEquals(0f, viewer.content().getTranslationY(), 0.5f);
+    }
+
+    @Test
+    public void stayOnEndKeepsAnEndedVideoButASwipeStillMovesOn() {
+        assertFalse("Stay on a saved video when it ends starts on", Settings.SAVED_VIDEOS_STAY_ON_END.defaultValue);
+        Settings.SAVED_VIDEOS_STAY_ON_END.save(true);
+        openSaved(6, true);
+        ReelsViewer viewer = playing(1);
+        SavedChain.ended(new Object());
+        idle(SavedChain.SLIDE_MS + 50);
+        assertFalse("the saved video that ended moved on", viewer.isFinishing());
+        assertNotNull(SavedChain.chainForTests());
+
+        swipe(viewer, 600, 300);
+        idle(SavedChain.SLIDE_MS + 50);
+        assertTrue("a swipe up stayed in the viewer", viewer.isFinishing());
+    }
+
     /** A card below the fold is scrolled up into view and then tapped, found by its place when cards have no labels. */
     @Test
     public void theNextCardIsScrolledIntoViewFirst() {
@@ -327,10 +530,12 @@ public class SavedChainTest {
         SavedChain.ended(player);
         idle(0);
         assertTrue("the last saved reel went on to Facebook's suggestions", viewer.isFinishing());
+        assertNotNull(coverOnSaved());
 
         backToSaved();
         idle(SavedChain.SETTLE_MS + SavedChain.SCROLL_SETTLE_MS + SavedChain.PRESS_MS + 50);
         assertNull("the chain went on past the last card", SavedChain.chainForTests());
+        assertNull("Saved stayed covered with nothing to play", coverOnSaved());
         for (int card = 0; card < 6; card++) {
             assertTrue("card " + card + " was tapped after the last one", touchesOf(card).isEmpty());
         }

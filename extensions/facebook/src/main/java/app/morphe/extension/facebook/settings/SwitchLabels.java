@@ -220,6 +220,7 @@ final class SwitchLabels {
         if (setting == Settings.WATCH_AGAIN_IN_PLACE) return L10n.t("Replay feed videos in place");
         if (setting == Settings.SAVED_VIDEOS_IN_PLAYER) return L10n.t("Open saved videos in the video player");
         if (setting == Settings.SAVED_VIDEOS_IN_ORDER) return L10n.t("Play saved videos in a row");
+        if (setting == Settings.SAVED_VIDEOS_STAY_ON_END) return L10n.t("Stay on a saved video when it ends");
         if (setting == Settings.SKIP_STILL_WATCHING) return L10n.t("Skip \"Are you still watching?\"");
         if (setting == Settings.FILL_REELS) return L10n.t("Fill the screen with reels");
         if (setting == Settings.PLAY_FEED_REELS_WHOLE) return L10n.t("Play whole reels in the feed's Reels row");

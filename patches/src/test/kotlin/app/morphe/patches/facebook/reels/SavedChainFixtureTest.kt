@@ -17,6 +17,8 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -31,8 +33,9 @@ import org.junit.Test
  * Clean up Reels' Saved page taps (#404) on every Facebook build the bundle declares: the Saved
  * page's screen base, DelegatingFbFragmentFrameworkActivity, dispatches touches without running
  * FbFragmentActivity's dispatch (so a hook in that one alone never sees a Saved tap), and after the
- * patch both dispatches hand the screen and the event to the extension first, with the rest of each
- * Facebook's. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * patch both dispatches hand the screen and the event to the extension first and return its yes (a
+ * swipe it takes in a viewer opened from Saved), with the rest of each Facebook's. Reads the fixture
+ * bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class SavedChainFixtureTest {
     private fun Method.body(): List<Instruction> = implementation?.instructions?.toList().orEmpty()
@@ -71,16 +74,24 @@ class SavedChainFixtureTest {
                     val original = dispatchOf(classes.single { it.type == type })
                     val patched = dispatchOf(context.mutableClassDefBy(type))
                     val body = patched.body()
-                    assertEquals("$name: one instruction added to $type", original.body().size + 1, body.size)
+                    assertEquals("$name: four instructions added to $type", original.body().size + 4, body.size)
                     val first = body[0]
                     assertEquals("$name: $type calls the extension first", Opcode.INVOKE_STATIC_RANGE, first.opcode)
                     assertEquals("$name: $type hands it the touch hook", SAVED_CHAIN_TOUCH, first.called()?.text())
                     first as RegisterRangeInstruction
                     val registers = patched.implementation!!.registerCount
+                    assertEquals("$name: $type borrows no new register", original.implementation!!.registerCount, registers)
                     assertEquals("$name: $type hands over the screen and the event, p0 and p1",
                         listOf(2, registers - 2), listOf(first.registerCount, first.startRegister))
+                    // A yes from the extension returns it before Facebook's dispatch, a no falls through to it.
+                    assertEquals("$name: $type returns the extension's yes",
+                        listOf(Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.RETURN), body.subList(1, 4).map { it.opcode })
+                    assertEquals("$name: $type keeps the answer in v0", listOf(0, 0, 0),
+                        body.subList(1, 4).map { (it as OneRegisterInstruction).registerA })
+                    assertEquals("$name: a no in $type jumps past the return to Facebook's first instruction",
+                        body[2].codeUnits + body[3].codeUnits, (body[2] as OffsetInstruction).codeOffset)
                     assertEquals("$name: the rest of $type's dispatch is Facebook's",
-                        original.body().map { it.opcode }, body.drop(1).map { it.opcode })
+                        original.body().map { it.opcode }, body.drop(4).map { it.opcode })
                 }
                 checked += version
             }

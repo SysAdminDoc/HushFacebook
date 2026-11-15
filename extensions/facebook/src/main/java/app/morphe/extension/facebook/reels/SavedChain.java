@@ -7,13 +7,16 @@ package app.morphe.extension.facebook.reels;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.VelocityTracker;
 import android.view.ViewParent;
 import android.view.Window;
 
@@ -46,13 +49,23 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * Reels viewer opening from Saved ({@link #viewerOpening}, origin "saved::fb_shorts_viewer") within
  * {@link #TOUCH_WINDOW_MS} of such a press starts a chain, and the screen created for it is the
  * chain's viewer. While that viewer is in front with nothing over it, a reel ending there
- * ({@link #ended}) or a second reel taking its screen ({@link #bound}, a swipe up) closes it. Once
- * the Saved page is back, the card after the one played (by its label when it has one, else its
- * place in the grid, left to right and then down) is scrolled into view if it has to be and tapped,
- * and the viewer that opens starts the chain again. The last saved video closes as well, and with
- * no card after it the chain ends on Saved. Back from the viewer, another viewer opening from anywhere but Saved, the
- * Saved page closing, a page that doesn't come back within {@link #RETURN_WINDOW_MS}, the switch
- * going off and Pause each end the chain.
+ * ({@link #ended}) or a second reel taking its screen ({@link #bound}) closes it. Once the Saved
+ * page is back, the card after the one played (by its label when it has one, else its place in the
+ * grid, left to right and then down) is scrolled into view if it has to be and tapped, and the
+ * viewer that opens starts the chain again. The last saved video closes as well, and with no card
+ * after it the chain ends on Saved. Back from the viewer, another viewer opening from anywhere but
+ * Saved, the Saved page closing, a page that doesn't come back within {@link #RETURN_WINDOW_MS},
+ * the switch going off and Pause each end the chain.
+ *
+ * <p>Facebook's own swipe showed a suggested reel before the viewer closed, and a swipe down had
+ * nothing to go back to (#404, a reporter's video). So in the chain's viewer an up or down drag is
+ * taken from Facebook once it passes the touch slop: Facebook gets a cancel, the video follows the
+ * finger, and a long enough or quick enough swipe slides it off and plays the next saved video, or
+ * the one before for a swipe down, while anything shorter slides back. A swipe down on the first
+ * card slides back too. While the viewer closes and Saved taps the next card, a black cover lies
+ * over the Saved page, taken off once the next video's screen is in front or the chain ends. With
+ * Stay on a saved video when it ends on, an end leaves the video where Facebook does and only a
+ * swipe moves on.
  *
  * <p>Off, paused, before the settings are ready, or when anything here fails, Facebook's viewer
  * goes on as it was. Cards' labels are only compared, never written anywhere.
@@ -108,6 +121,27 @@ public final class SavedChain {
     /** A card's tap point has to be this far inside the list's visible part, as a share of its height. */
     static final float EDGE_SHARE = 0.08f;
 
+    /** The swipe takeover's name in the diagnostics report. */
+    static final String SWIPE_HOOK = "Saved video swipes";
+
+    /** Counted each time a swipe goes back to the saved video before. */
+    static final String PREVIOUS = "Previous saved video opened";
+
+    /** A drag past this share of the viewer's height is a swipe, however slow. */
+    static final float SWIPE_SHARE = 0.12f;
+
+    /** A drag moving faster than this, in dp a second, is a swipe, however short. */
+    static final float FLING_DP_PER_SECOND = 350f;
+
+    /** How long the video takes to slide off or back. */
+    static final long SLIDE_MS = 160;
+
+    /** How long the cover stays on Saved after the next video's screen is in front, while it opens. */
+    static final long UNCOVER_MS = 400;
+
+    /** The longest the cover stays on Saved, whatever happens. */
+    static final long COVER_MS = RETURN_WINDOW_MS + 2000;
+
     /** The clock for tests, or null for the uptime clock. */
     @Nullable static LongSupplier clockForTests;
 
@@ -147,6 +181,8 @@ public final class SavedChain {
         boolean moving;
         boolean returned;
         int scrolls;
+        /** Which card Saved taps once it's back: 1 the one after, -1 the one before. */
+        int direction = 1;
 
         Chain(Card card, long openedAt) {
             this.card = card;
@@ -154,8 +190,50 @@ public final class SavedChain {
         }
     }
 
+    /** A finger on the chain's viewer, watched for an up or down swipe. Main thread only. */
+    static final class Drag {
+        final WeakReference<Activity> viewer;
+        final Chain chain;
+        final float downX;
+        final float downY;
+        final int slop;
+        boolean taken;
+        boolean dropped;
+        WeakReference<View> moved = new WeakReference<>(null);
+        /** How fast the finger goes. A lift often lands right where the last move did, so two events can't tell. */
+        @Nullable private VelocityTracker tracker = VelocityTracker.obtain();
+
+        Drag(Activity viewer, Chain chain, MotionEvent down) {
+            this.viewer = new WeakReference<>(viewer);
+            this.chain = chain;
+            downX = down.getX();
+            downY = down.getY();
+            slop = ViewConfiguration.get(viewer).getScaledTouchSlop();
+            track(down);
+        }
+
+        void track(MotionEvent event) {
+            if (tracker != null) tracker.addMovement(event);
+        }
+
+        /** The finger's speed up or down in pixels a second, down positive. */
+        float speed() {
+            if (tracker == null) return 0;
+            tracker.computeCurrentVelocity(1000);
+            return tracker.getYVelocity();
+        }
+
+        void forget() {
+            if (tracker != null) tracker.recycle();
+            tracker = null;
+        }
+    }
+
     @Nullable private static Card lastCard;
     @Nullable private static Chain chain;
+    @Nullable private static Drag drag;
+    private static WeakReference<View> cover = new WeakReference<>(null);
+    private static int coverToken;
     private static WeakReference<Activity> resumed = NO_SCREEN;
     private static WeakReference<Activity> lastCreated = NO_SCREEN;
     private static long lastCreatedAt;
@@ -166,21 +244,161 @@ public final class SavedChain {
 
     /**
      * Injection point, first thing in Facebook's screens' touch dispatch: keeps the card a finger
-     * press lands on, for a viewer that opens from it. Never throws.
+     * press lands on, for a viewer that opens from it, and in the chain's viewer takes an up or down
+     * swipe from Facebook. True keeps the event from Facebook. Never throws.
      */
-    public static void touched(@Nullable Activity activity, @Nullable MotionEvent event) {
+    public static boolean touched(@Nullable Activity activity, @Nullable MotionEvent event) {
         try {
-            if (activity == null || event == null || event.getActionMasked() != MotionEvent.ACTION_DOWN) return;
+            if (activity == null || event == null) return false;
+            int action = event.getActionMasked();
+            if (action != MotionEvent.ACTION_DOWN) return dragged(activity, event, action);
+            Drag old = drag;
+            drag = null;
+            if (old != null) old.forget();
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, TOUCH_HOOK);
-            if (!on()) return;
+            if (!on()) return false;
             Card card = cardAt(activity, event.getX(), event.getY());
+            Chain current;
             synchronized (SavedChain.class) {
                 lastCard = card;
+                current = chain;
+                if (current == null || current.moving || current.viewer.get() != activity || !viewerInFront(current)) {
+                    current = null;
+                }
             }
+            if (current != null && activity.hasWindowFocus()) drag = new Drag(activity, current, event);
+            return false;
         } catch (Throwable failure) {
+            Drag lost = drag;
+            drag = null;
+            if (lost != null) {
+                lost.forget();
+                if (lost.taken) slideBack(lost);
+            }
             HookStatus.threw(FAMILY, TOUCH_HOOK, failure);
+            return false;
         }
+    }
+
+    /**
+     * The rest of a finger's way across the chain's viewer. Until it passes the touch slop up or down
+     * it's Facebook's. Then Facebook gets a cancel, the video follows the finger, and the lift
+     * decides between the next saved video, the one before and staying.
+     */
+    private static boolean dragged(Activity activity, MotionEvent event, int action) {
+        Drag current = drag;
+        if (current == null || current.viewer.get() != activity) return false;
+        boolean ends = action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL;
+        if (current.dropped) {
+            if (ends) drag = null;
+            return false;
+        }
+        current.track(event);
+        float dx = event.getX() - current.downX;
+        float dy = event.getY() - current.downY;
+        if (!current.taken) {
+            if (ends) {
+                drag = null;
+                current.forget();
+                return false;
+            }
+            if (action == MotionEvent.ACTION_POINTER_DOWN) {
+                drop(current);
+                return false;
+            }
+            if (action != MotionEvent.ACTION_MOVE) return false;
+            if (Math.abs(dx) > current.slop && Math.abs(dx) >= Math.abs(dy)) {
+                drop(current);
+                return false;
+            }
+            if (Math.abs(dy) <= current.slop || Math.abs(dy) <= Math.abs(dx)) return false;
+            synchronized (SavedChain.class) {
+                if (chain != current.chain || current.chain.moving || !viewerInFront(current.chain)) {
+                    drop(current);
+                    return false;
+                }
+            }
+            if (!on()) {
+                drop(current);
+                return false;
+            }
+            current.taken = true;
+            current.moved = new WeakReference<>(activity.findViewById(android.R.id.content));
+            HookStatus.bound(FAMILY, SWIPE_HOOK);
+            follow(current, dy);
+            event.setAction(MotionEvent.ACTION_CANCEL);
+            return false;
+        }
+        if (action == MotionEvent.ACTION_MOVE) {
+            follow(current, dy);
+        } else if (action == MotionEvent.ACTION_UP) {
+            drag = null;
+            follow(current, dy);
+            release(current, dy);
+        } else if (action == MotionEvent.ACTION_CANCEL) {
+            drag = null;
+            current.forget();
+            slideBack(current);
+        }
+        return true;
+    }
+
+    /** Leaves the rest of the finger's way to Facebook. */
+    private static void drop(Drag current) {
+        current.dropped = true;
+        current.forget();
+    }
+
+    /** Moves the video with the finger. */
+    private static void follow(Drag current, float dy) {
+        View moved = current.moved.get();
+        if (moved != null) moved.setTranslationY(dy);
+    }
+
+    /** The finger lifted after a taken drag: slide off to the next or previous saved video, or back. */
+    private static void release(Drag current, float dy) {
+        float speed = current.speed();
+        current.forget();
+        View moved = current.moved.get();
+        Activity viewer = current.viewer.get();
+        if (moved == null || viewer == null) return;
+        float height = Math.max(1, moved.getHeight());
+        float fling = FLING_DP_PER_SECOND * viewer.getResources().getDisplayMetrics().density;
+        int direction = 0;
+        if (dy < 0 && (-dy > height * SWIPE_SHARE || -speed > fling)) direction = 1;
+        else if (dy > 0 && (dy > height * SWIPE_SHARE || speed > fling)) direction = -1;
+        if (direction == -1 && !hasPrevious(current.chain)) {
+            Logger.printDebug(() -> "Saved videos in a row: a swipe down on the first saved video, so it stays");
+            direction = 0;
+        }
+        if (direction == 0) {
+            slideBack(current);
+            return;
+        }
+        int way = direction;
+        moved.animate().translationY(-way * height).setDuration(SLIDE_MS);
+        Utils.runOnMainThreadDelayed(() -> {
+            try {
+                if (!leave(current.chain, way > 0 ? "a swipe up" : "a swipe down", way)) slideBack(current);
+            } catch (Throwable failure) {
+                slideBack(current);
+                disarm();
+                HookStatus.threw(FAMILY, SWIPE_HOOK, failure);
+            }
+        }, SLIDE_MS);
+    }
+
+    /** Puts the video back where Facebook had it. */
+    private static void slideBack(Drag current) {
+        View moved = current.moved.get();
+        if (moved != null) moved.animate().translationY(0).setDuration(SLIDE_MS);
+    }
+
+    /** Whether Saved may hold a card before the chain's: one is shown above it, or the list scrolls up. */
+    static boolean hasPrevious(Chain current) {
+        ViewGroup list = current.card.list.get();
+        return list != null && (previousTile(list, current.card) != null || list.canScrollVertically(-1));
     }
 
     /**
@@ -231,6 +449,7 @@ public final class SavedChain {
                 if (current == null || current.moving || !viewerInFront(current)) return;
                 if (now() - current.openedAt < OPEN_GUARD_MS) return;
             }
+            if (Settings.SAVED_VIDEOS_STAY_ON_END.get()) return;
             advance(current, "the video ended");
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, CHAIN_HOOK, failure);
@@ -275,31 +494,48 @@ public final class SavedChain {
         }
         Utils.runOnMainThread(() -> {
             try {
-                Activity viewer;
-                synchronized (SavedChain.class) {
-                    if (chain != current || current.moving) return;
-                    viewer = current.viewer.get();
-                }
-                if (viewer == null || viewer.isFinishing()) return;
-                if (!viewer.hasWindowFocus()) {
-                    Logger.printDebug(() -> "Saved videos in a row: " + why + " with something over the video, so it stays");
-                    return;
-                }
-                if (current.card.list.get() == null) {
-                    disarm();
-                    return;
-                }
-                synchronized (SavedChain.class) {
-                    current.moving = true;
-                }
-                Logger.printDebug(() -> "Saved videos in a row: " + why + ", back to Saved for the next one");
-                viewer.finish();
-                Utils.runOnMainThreadDelayed(() -> giveUp(current), RETURN_WINDOW_MS);
+                leave(current, why, 1);
             } catch (Throwable failure) {
                 disarm();
                 HookStatus.threw(FAMILY, CHAIN_HOOK, failure);
             }
         });
+    }
+
+    /**
+     * On the main thread: covers the Saved page and closes the chain's viewer with no animation, so
+     * Saved taps the card [direction] away from the chain's. False when the viewer stays.
+     */
+    private static boolean leave(Chain current, String why, int direction) {
+        if (!on()) {
+            disarm();
+            return false;
+        }
+        Activity viewer;
+        synchronized (SavedChain.class) {
+            if (chain != current || current.moving) return false;
+            viewer = current.viewer.get();
+        }
+        if (viewer == null || viewer.isFinishing()) return false;
+        if (!viewer.hasWindowFocus()) {
+            Logger.printDebug(() -> "Saved videos in a row: " + why + " with something over the video, so it stays");
+            return false;
+        }
+        if (current.card.list.get() == null) {
+            disarm();
+            return false;
+        }
+        synchronized (SavedChain.class) {
+            current.moving = true;
+            current.direction = direction;
+        }
+        Logger.printDebug(() -> "Saved videos in a row: " + why + ", back to Saved for the "
+                + (direction > 0 ? "next" : "previous") + " one");
+        coverPage(current.card.page.get());
+        viewer.finish();
+        viewer.overridePendingTransition(0, 0);
+        Utils.runOnMainThreadDelayed(() -> giveUp(current), RETURN_WINDOW_MS);
+        return true;
     }
 
     /** Ends a chain whose Saved page never came back. */
@@ -308,10 +544,58 @@ public final class SavedChain {
             if (chain != current || current.returned) return;
             chain = null;
         }
+        uncover();
         Logger.printDebug(() -> "Saved videos in a row: the Saved page didn't come back");
     }
 
-    /** Taps the card after the chain's, once the Saved page is back, scrolling to it first when it has to. */
+    /**
+     * Lays black over [page]'s content, so it doesn't show between one saved video and the next.
+     * Main thread. Touches pass through it, and {@link #cardAt} looks past it.
+     */
+    static void coverPage(@Nullable Activity page) {
+        if (page == null) return;
+        View content = page.findViewById(android.R.id.content);
+        if (!(content instanceof ViewGroup)) return;
+        uncover();
+        View black = new View(page);
+        black.setBackgroundColor(Color.BLACK);
+        black.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        ((ViewGroup) content).addView(black, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        cover = new WeakReference<>(black);
+        int token = ++coverToken;
+        Utils.runOnMainThreadDelayed(() -> {
+            if (coverToken == token) uncover();
+        }, COVER_MS);
+    }
+
+    /** Takes the cover off the Saved page, if one is on. Main thread. */
+    static void uncover() {
+        View black = cover.get();
+        cover = new WeakReference<>(null);
+        coverToken++;
+        if (black == null) return;
+        ViewParent parent = black.getParent();
+        if (parent instanceof ViewGroup) ((ViewGroup) parent).removeView(black);
+    }
+
+    /** Takes the cover off after [delay], unless another one went on meanwhile. Main thread. */
+    private static void uncoverAfter(long delay) {
+        if (cover.get() == null) return;
+        int token = coverToken;
+        Utils.runOnMainThreadDelayed(() -> {
+            if (coverToken == token) uncover();
+        }, delay);
+    }
+
+    private static boolean isCover(View view) {
+        return view == cover.get();
+    }
+
+    /**
+     * Taps the card after the chain's, or the one before it after a swipe down, once the Saved page
+     * is back, scrolling to it first when it has to.
+     */
     static void tapNext(Chain current) {
         try {
             synchronized (SavedChain.class) {
@@ -328,15 +612,19 @@ public final class SavedChain {
                 disarm();
                 return;
             }
-            View next = nextTile(list, card);
+            boolean back = current.direction < 0;
+            View next = back ? previousTile(list, card) : nextTile(list, card);
             if (next == null) {
-                if (current.scrolls < MAX_SCROLLS && scroll(list, card, Math.max(1, list.getHeight() / 2))) {
+                int step = Math.max(1, list.getHeight() / 2);
+                if (current.scrolls < MAX_SCROLLS && scroll(list, card, back ? -step : step)) {
                     current.scrolls++;
                     Utils.runOnMainThreadDelayed(() -> tapNext(current), SCROLL_SETTLE_MS);
                     return;
                 }
                 disarm();
-                Logger.printDebug(() -> "Saved videos in a row: no card after the last one played, so it ends on Saved");
+                Logger.printDebug(() -> back
+                        ? "Saved videos in a row: no card before the one played, so it ends on Saved"
+                        : "Saved videos in a row: no card after the last one played, so it ends on Saved");
                 return;
             }
             float[] point = tapPoint(next);
@@ -368,8 +656,9 @@ public final class SavedChain {
             int left = next.getLeft();
             int top = next.getTop();
             tap(page, point[0], point[1]);
-            HookStatus.counted(FAMILY, NEXT);
-            Logger.printDebug(() -> "Saved videos in a row: tapped the next card, at " + left + "," + top);
+            HookStatus.counted(FAMILY, back ? PREVIOUS : NEXT);
+            Logger.printDebug(() -> "Saved videos in a row: tapped the " + (back ? "previous" : "next") + " card, at "
+                    + left + "," + top);
         } catch (Throwable failure) {
             disarm();
             HookStatus.threw(FAMILY, CHAIN_HOOK, failure);
@@ -380,19 +669,7 @@ public final class SavedChain {
     @Nullable
     static View nextTile(ViewGroup list, Card card) {
         List<View> tiles = tiles(list, card.width);
-        int at = -1;
-        if (card.label != null) {
-            int nearest = Integer.MAX_VALUE;
-            for (int i = 0; i < tiles.size(); i++) {
-                View tile = tiles.get(i);
-                if (!card.label.equals(labelOf(tile))) continue;
-                int distance = Math.abs(tile.getTop() - card.top) + Math.abs(tile.getLeft() - card.left);
-                if (distance < nearest) {
-                    nearest = distance;
-                    at = i;
-                }
-            }
-        }
+        int at = labelled(tiles, card);
         if (at >= 0) return at + 1 < tiles.size() ? tiles.get(at + 1) : null;
         for (View tile : tiles) {
             int top = tile.getTop();
@@ -400,6 +677,39 @@ public final class SavedChain {
             if (Math.abs(top - card.top) <= SAME_PX && tile.getLeft() > card.left + SAME_PX) return tile;
         }
         return null;
+    }
+
+    /** The card before [card] among [list]'s children, or null when none of them is. */
+    @Nullable
+    static View previousTile(ViewGroup list, Card card) {
+        List<View> tiles = tiles(list, card.width);
+        int at = labelled(tiles, card);
+        if (at >= 0) return at > 0 ? tiles.get(at - 1) : null;
+        View before = null;
+        for (View tile : tiles) {
+            int top = tile.getTop();
+            if (top < card.top - SAME_PX || (Math.abs(top - card.top) <= SAME_PX && tile.getLeft() < card.left - SAME_PX)) {
+                before = tile;
+            }
+        }
+        return before;
+    }
+
+    /** Where among [tiles] [card] is by its label, the nearest when several share it, or -1. */
+    private static int labelled(List<View> tiles, Card card) {
+        if (card.label == null) return -1;
+        int at = -1;
+        int nearest = Integer.MAX_VALUE;
+        for (int i = 0; i < tiles.size(); i++) {
+            View tile = tiles.get(i);
+            if (!card.label.equals(labelOf(tile))) continue;
+            int distance = Math.abs(tile.getTop() - card.top) + Math.abs(tile.getLeft() - card.left);
+            if (distance < nearest) {
+                nearest = distance;
+                at = i;
+            }
+        }
+        return at;
     }
 
     /** [list]'s shown children [width] wide, in reading order: down by top, then left to right. */
@@ -505,7 +815,7 @@ public final class SavedChain {
             View hit = null;
             for (int i = group.getChildCount() - 1; i >= 0; i--) {
                 View child = group.getChildAt(i);
-                if (child == null || child.getVisibility() != View.VISIBLE) continue;
+                if (child == null || child.getVisibility() != View.VISIBLE || isCover(child)) continue;
                 float cx = px + group.getScrollX() - child.getLeft() - child.getTranslationX();
                 float cy = py + group.getScrollY() - child.getTop() - child.getTranslationY();
                 if (cx >= 0 && cy >= 0 && cx < child.getWidth() && cy < child.getHeight()) {
@@ -583,6 +893,7 @@ public final class SavedChain {
         synchronized (SavedChain.class) {
             chain = null;
         }
+        if (cover.get() != null) uncoverAfter(0);
     }
 
     private static boolean on() {
@@ -629,13 +940,21 @@ public final class SavedChain {
             synchronized (SavedChain.class) {
                 resumed = new WeakReference<>(activity);
                 Chain current = chain;
-                if (current == null || activity != current.card.page.get()) return;
-                if (current.moving && !current.returned) {
-                    current.returned = true;
-                    back = current;
-                } else if (!current.moving) {
-                    chain = null; // Back from the viewer.
+                if (current != null && activity == current.card.page.get()) {
+                    if (current.moving && !current.returned) {
+                        current.returned = true;
+                        back = current;
+                    } else if (!current.moving) {
+                        chain = null; // Back from the viewer.
+                    }
                 }
+            }
+            View black = cover.get();
+            if (black != null && back == null) {
+                // The next video's screen in front keeps the cover while it opens. Saved back with
+                // nothing to tap shows at once.
+                if (black.getContext() == activity) uncover();
+                else uncoverAfter(UNCOVER_MS);
             }
             if (back != null) {
                 Chain next = back;
@@ -677,6 +996,10 @@ public final class SavedChain {
     static synchronized void resetForTests() {
         lastCard = null;
         chain = null;
+        if (drag != null) drag.forget();
+        drag = null;
+        cover = new WeakReference<>(null);
+        coverToken = 0;
         resumed = NO_SCREEN;
         lastCreated = NO_SCREEN;
         lastCreatedAt = 0;
