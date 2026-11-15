@@ -72,5 +72,5 @@ if ($IsLinux -or $IsMacOS) {
 }
 
 Write-Host "Installed $hookPath"
-Write-Host 'A push now runs the runtime tests when extension or patch sources changed, and the'
-Write-Host 'release check when a published file changed. Set HUSHFACEBOOK_SKIP_PRE_PUSH=1 to skip it.'
+Write-Host 'An everyday push now runs the quick commit checks. The build and tests run for a release'
+Write-Host 'push or with HUSHFACEBOOK_FULL_GATE=1. Set HUSHFACEBOOK_SKIP_PRE_PUSH=1 to skip the hook.'
