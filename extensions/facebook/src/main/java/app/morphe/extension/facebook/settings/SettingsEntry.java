@@ -77,6 +77,7 @@ import app.morphe.extension.facebook.notifications.PushDiagnostics;
 import app.morphe.extension.facebook.reels.BurnInGuard;
 import app.morphe.extension.facebook.reels.FeedVideoAlone;
 import app.morphe.extension.facebook.reels.GrayReels;
+import app.morphe.extension.facebook.reels.LandscapeFill;
 import app.morphe.extension.facebook.reels.SavedChain;
 import app.morphe.extension.facebook.reels.ViewerTopBar;
 import app.morphe.extension.facebook.stories.StorySeenButton;
@@ -209,6 +210,8 @@ public final class SettingsEntry {
                 FeedVideoAlone.watch(context);
                 SavedChain.watch(context);
                 ViewerTopBar.watch(context);
+                // And Fill the screen with reels for a landscape video opened full screen (#466).
+                LandscapeFill.watch(context);
                 BurnInGuard.install(context);
                 if (SettingsStatus.turnOffHdrBrightness()) GrayReels.install(context);
             }

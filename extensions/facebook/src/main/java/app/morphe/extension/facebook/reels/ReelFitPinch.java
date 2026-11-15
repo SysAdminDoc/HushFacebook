@@ -159,8 +159,9 @@ public final class ReelFitPinch {
 
     /**
      * The scale that shows {@code video} whole ({@code fit}) or filling its parent, from the sizes
-     * Facebook laid them out at. Never shrinks to fill or grows to fit, so a reel already that way
-     * gets 1.
+     * Facebook laid them out at. A landscape video in a turned window fills the window, since its
+     * player is only as big as the video. Never shrinks to fill or grows to fit, so a reel already
+     * that way gets 1.
      */
     static float target(View video, boolean fit) {
         ViewParent parent = video.getParent();
@@ -170,6 +171,12 @@ public final class ReelFitPinch {
         float across = ((View) parent).getWidth();
         float down = ((View) parent).getHeight();
         if (width <= 0 || height <= 0 || across <= 0 || down <= 0) return 1f;
+        View root = video.getRootView();
+        if (!fit && width > height && root != null && root.getWidth() > root.getHeight()) {
+            // A landscape player sized to its video, with bars at the turned screen's sides, fills the screen (LandscapeFill).
+            across = Math.max(across, root.getWidth());
+            down = Math.max(down, root.getHeight());
+        }
         return fit
                 ? Math.min(1f, Math.min(across / width, down / height))
                 : Math.max(1f, Math.max(across / width, down / height));
