@@ -109,6 +109,68 @@ public class FamilyLinkHandoffTest {
     }
 
     @Test
+    public void aThreadsPostWebLinkOpensAsThePostItself() {
+        // A Threads card can hand over the post's web address. Threads 455 opens that as its home feed
+        // with the post on top, and its own media link as the post (#385). DOMD1yDj9M4 is
+        // 3714360682692465464, the id that opened the same post on a phone.
+        String post = "barcelona://media?id=3714360682692465464";
+        List<?> targets = Arrays.asList(INSTAGRAM_LINKS, THREADS_LINKS);
+
+        Intent handoff = FamilyLinkHandoff.publicLink(
+                threadsCard("https://www.threads.com/@zuck/post/DOMD1yDj9M4?xmt=AQF0abc&slof=1"), targets);
+
+        assertEquals(Uri.parse(post), handoff.getData());
+        assertEquals("com.instagram.barcelona.url.BarcelonaUrlHandlerActivity", handoff.getComponent().getClassName());
+        assertTrue(handoff.hasCategory(Intent.CATEGORY_BROWSABLE));
+        assertNull("no extras leave with it", handoff.getExtras());
+        assertEquals(Uri.parse(post), FamilyLinkHandoff.publicLink(
+                dropped("https://www.threads.net/@zuck/post/DOMD1yDj9M4/"), targets).getData());
+        assertEquals(Uri.parse(post), FamilyLinkHandoff.publicLink(
+                dropped("https://www.threads.net/t/DOMD1yDj9M4"), targets).getData());
+    }
+
+    @Test
+    public void aThreadsCardsFeedWithThePostOnTopOpensAsThePostItself() {
+        // Threads' route table reads barcelona://mainfeed?injected_media_ids= as the home feed with those
+        // posts on top, which is what the reporter saw (#385). The first post goes over as Threads' own
+        // media link, an id_owner pair as given.
+        List<?> targets = Collections.singletonList(THREADS_LINKS);
+        assertEquals(Uri.parse("barcelona://media?id=3714360682692465464"), FamilyLinkHandoff.publicLink(
+                threadsCard("barcelona://mainfeed?injected_media_ids=3714360682692465464"), targets).getData());
+        assertEquals(Uri.parse("barcelona://media?id=3714360682692465464"), FamilyLinkHandoff.publicLink(
+                threadsCard("barcelona://mainfeed?injected_media_ids=3714360682692465464,3714360682692465465"
+                        + "&injected_user_ids=314216"), targets).getData());
+        assertEquals(Uri.parse("barcelona://media?id=3714360682692465464_314216"), FamilyLinkHandoff.publicLink(
+                threadsCard("barcelona://mainfeed?injected_media_ids=3714360682692465464_314216"), targets).getData());
+
+        for (String feed : new String[] {
+                "barcelona://mainfeed?injected_media_ids=",
+                "barcelona://mainfeed?injected_media_ids=DOMD1yDj9M4",
+                "barcelona://mainfeed?injected_media_ids=371436068_",
+                "barcelona://mainfeed?injected_user_ids=314216",
+                "barcelona://activity?injected_media_ids=3714360682692465464",
+        }) {
+            assertEquals(feed, Uri.parse(feed), FamilyLinkHandoff.publicLink(threadsCard(feed), targets).getData());
+        }
+    }
+
+    @Test
+    public void aThreadsLinkThatIsNoPostStaysAWebLink() {
+        List<?> targets = Collections.singletonList(THREADS_LINKS);
+        for (String link : new String[] {
+                "https://www.threads.com/@zuck",
+                "https://www.threads.com/search?q=post",
+                "https://www.threads.com/@zuck/post/",
+                "https://www.threads.com/@zuck/post/DOMD1yDj9M4DOMD1yDj9M4",
+                "https://www.threads.com/@zuck/post/DOMD1y.j9M4",
+                // Eleven of the last letter is past the largest id a post can have.
+                "https://www.threads.com/@zuck/post/___________",
+        }) {
+            assertEquals(link, Uri.parse(link), FamilyLinkHandoff.publicLink(dropped(link), targets).getData());
+        }
+    }
+
+    @Test
     public void aThreadsLinkWithNoPackageStillOnlyGoesToThreads() {
         ActivityInfo lookalike = activity("com.example.lookalike", "com.example.lookalike.Links", true);
 

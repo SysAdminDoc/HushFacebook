@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.shared.Logger;
@@ -30,6 +31,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * Threads card in the feed opens Threads with a {@code barcelona://} link by package rather than a web
  * link (#385), and that goes to Threads' link activity the same way.
  *
+ * <p>Threads opens a post's web address, and its own {@code barcelona://mainfeed?injected_media_ids=}
+ * link, as its home feed with the post on top. Only its {@code barcelona://media?id=} link opens the
+ * post itself, so either of those goes over as that link: the first injected id, or the web address's
+ * short code read back into the post's number.
+ *
  * <p>The new intent holds only the action, the address and the browsable category: no extras, no
  * clip data, no permissions the dropped intent may have carried. A family intent can carry sign-in
  * tokens, and those never leave with it. The address itself is the public link the user tapped, the
@@ -46,6 +52,10 @@ public final class FamilyLinkHandoff {
     static final String THREADS = "com.instagram.barcelona";
     /** Threads' own link scheme, which Facebook opens Threads with from a Threads card or bookmark. */
     static final String THREADS_SCHEME = "barcelona";
+    /** The letters of a Threads post's short code, each worth its index (base 64). */
+    private static final String CODE_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    /** A post id Threads' media link takes: the number, or the number and its owner's. */
+    private static final Pattern MEDIA_ID = Pattern.compile("\\d+(_\\d+)?");
 
     /**
      * The intent to start instead of the one the scope dropped, or null to keep Facebook's refusal.
@@ -79,7 +89,8 @@ public final class FamilyLinkHandoff {
                 ActivityInfo activity = (ActivityInfo) candidate;
                 if (!app.equals(activity.packageName) || activity.name == null || !activity.exported) continue;
 
-                Intent handoff = new Intent(Intent.ACTION_VIEW, link);
+                Uri post = THREADS.equals(app) ? threadsPost(link) : null;
+                Intent handoff = new Intent(Intent.ACTION_VIEW, post != null ? post : link);
                 handoff.addCategory(Intent.CATEGORY_BROWSABLE);
                 handoff.setClassName(activity.packageName, activity.name);
                 handoff.addFlags(dropped.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -113,5 +124,47 @@ public final class FamilyLinkHandoff {
 
     private static boolean within(String host, String domain) {
         return host.equals(domain) || host.endsWith("." + domain);
+    }
+
+    /**
+     * Threads' own link to the post [link] puts on top of its feed, or null when it names none:
+     * threads.com/@name/post/CODE, threads.net/t/CODE, or barcelona://mainfeed?injected_media_ids=ID.
+     */
+    @Nullable
+    static Uri threadsPost(Uri link) {
+        String scheme = link.getScheme();
+        String id = null;
+        if (THREADS_SCHEME.equalsIgnoreCase(scheme)) {
+            if (!"mainfeed".equalsIgnoreCase(link.getHost())) return null;
+            String injected = link.getQueryParameter("injected_media_ids");
+            if (injected == null) return null;
+            int comma = injected.indexOf(',');
+            String first = comma < 0 ? injected : injected.substring(0, comma);
+            if (MEDIA_ID.matcher(first).matches()) id = first;
+        } else if ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) {
+            List<String> path = link.getPathSegments();
+            String code = null;
+            if (path.size() >= 3 && path.get(0).length() > 1 && path.get(0).startsWith("@") && "post".equals(path.get(1))) {
+                code = path.get(2);
+            } else if (path.size() >= 2 && "t".equals(path.get(0))) {
+                code = path.get(1);
+            }
+            long number = postId(code);
+            if (number > 0) id = Long.toString(number);
+        }
+        if (id == null) return null;
+        return new Uri.Builder().scheme(THREADS_SCHEME).authority("media").appendQueryParameter("id", id).build();
+    }
+
+    /** The post number a short code stands for, or 0 for no code, a letter outside the code's set, or a number too big. */
+    static long postId(@Nullable String code) {
+        if (code == null || code.isEmpty()) return 0;
+        long id = 0;
+        for (int i = 0; i < code.length(); i++) {
+            int digit = CODE_LETTERS.indexOf(code.charAt(i));
+            if (digit < 0 || id > (Long.MAX_VALUE - digit) / 64) return 0;
+            id = id * 64 + digit;
+        }
+        return id;
     }
 }
