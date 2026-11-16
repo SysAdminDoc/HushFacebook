@@ -23,20 +23,24 @@ import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** What the patcher holds a method to for the funnel's fingerprint: its name, return type and parameters. */
+/**
+ * What the patcher holds a method to for the funnel's fingerprint: its name, return type and
+ * parameters. Patcher 2.4.0 reads the return type and parameters lazily behind internal getters and
+ * deprecates the public ones as an error, so the internal getters are read the way the JVM names them.
+ */
 internal fun admittedAsFeedFunnel(method: Method): Boolean {
-    val fingerprint = AddNewEdgeToCollectionFingerprint
-    val parameters = fingerprint.declared<List<String>>("parameters")
+    val fingerprint: Fingerprint = AddNewEdgeToCollectionFingerprint
+    val parameters = fingerprint.internal<List<String>>("parameters")
         ?: throw AssertionError("the funnel's parameters are not pinned")
-    return method.name == fingerprint.declared<String>("name") &&
-        method.returnType == fingerprint.declared<String>("returnType") &&
+    return method.name == fingerprint.internal<String>("name") &&
+        method.returnType == fingerprint.internal<String>("returnType") &&
         parametersMatch(method.parameterTypes, parameters)
 }
 
-/** A field the fingerprint was declared with: patcher 1.15.0 made them internal (its #230). */
+/** One of Fingerprint's internal getters, by the name the compiler gives it outside the patcher's module. */
 @Suppress("UNCHECKED_CAST")
-private fun <T> Fingerprint.declared(field: String): T? =
-    Fingerprint::class.java.getDeclaredField(field).also { it.isAccessible = true }.get(this) as T?
+private fun <T> Fingerprint.internal(property: String): T? =
+    Fingerprint::class.java.getMethod("get${property.replaceFirstChar { it.uppercase() }}\$morphe_patcher").invoke(this) as T?
 
 /**
  * How the one feed guard finds its method and the edge's two getters, without a Facebook build: the

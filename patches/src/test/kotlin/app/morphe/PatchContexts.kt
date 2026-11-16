@@ -18,10 +18,12 @@ import java.io.File
  *
  * The patcher fills its class pool from an APK's dex files, and what takes a pool directly is
  * internal to it: the context's constructor, the pool's class and its setter. They are reached by
- * their JVM names, pinned to morphe-patcher 2.3.0. A bump that renames one fails here, naming it,
+ * their JVM names, pinned to morphe-patcher 2.4.0. A bump that renames one fails here, naming it,
  * rather than leaving a test that never ran the patch. Nothing is written to disk: the context only
  * names its work folders until something compiles the dex, which no test here asks for. Patcher
- * 2.3.0 hands the pool a nullable PatcherProgress beside the classes; tests report none.
+ * 2.3.0 began handing the pool a nullable PatcherProgress beside the classes; tests report none.
+ * Patcher 2.4.0 hands the package metadata the bundle's OBB files after the signature block; a
+ * context with no APK has none.
  */
 internal object PatchContexts {
     fun of(classes: Collection<ClassDef>, validate: Boolean = false): BytecodePatchContext {
@@ -30,8 +32,8 @@ internal object PatchContexts {
         val metadataType = Class.forName("app.morphe.patcher.PackageMetadata")
         val metadata = metadataType.getConstructor(
             String::class.java, String::class.java, String::class.java,
-            Class.forName("com.reandroid.archive.block.ApkSignatureBlock"),
-        ).newInstance("com.facebook.katana", "0", "0", null)
+            Class.forName("com.reandroid.archive.block.ApkSignatureBlock"), Map::class.java,
+        ).newInstance("com.facebook.katana", "0", "0", null, emptyMap<String, File>())
         val context = BytecodePatchContext::class.java.getConstructor(PatcherConfig::class.java, metadataType)
             .newInstance(config, metadata)
         val poolType = Class.forName("app.morphe.patcher.util.PatchClasses")
@@ -44,7 +46,7 @@ internal object PatchContexts {
     }
 
     /**
-     * Patcher 2.3.0 matches fingerprints, and answers its global functions, against the one APK being
+     * Patcher 2.4.0 matches fingerprints, and answers its global functions, against the one APK being
      * patched: [PatcherContext]'s `current`, which a real context sets as it is built. Its
      * constructor reads an APK's resources, so a context over loose classes gets a [PatcherContext]
      * made without one, holding this bytecode context and its metadata, and becomes current the

@@ -27,11 +27,11 @@ import com.reandroid.arsc.chunk.TableBlock
 import com.reandroid.arsc.chunk.xml.ResXmlDocument
 import com.reandroid.arsc.chunk.xml.ResXmlElement
 import com.reandroid.arsc.model.ResourceEntry
+import com.reandroid.arsc.value.DataType
 import com.reandroid.arsc.value.Entry
 import com.reandroid.arsc.value.ResConfig
 import com.reandroid.arsc.value.ResTableMapEntry
 import com.reandroid.arsc.value.ValueItem
-import com.reandroid.arsc.value.ValueType
 import java.io.File
 import java.io.StringWriter
 import java.util.zip.ZipFile
@@ -409,7 +409,7 @@ class MaterialYouTokenFixtureTest {
                 for (item in entry.tableEntry as ResTableMapEntry) {
                     if (item.nameId != WINDOW_BACKGROUND) continue
                     val where = "$build: style %08x %s windowBackground".format(style, entry.resConfig)
-                    assertEquals(where, ValueType.ATTRIBUTE, item.valueType)
+                    assertEquals(where, DataType.ATTRIBUTE, item.dataType)
                     assertEquals(where, wash, item.data)
                     found = true
                 }
@@ -1068,11 +1068,11 @@ class MaterialYouTokenFixtureTest {
             }
         }
         fun name(resource: ResourceEntry) = "${resource.type}_0x%08x".format(resource.resourceId)
-        fun text(item: ValueItem): String = when (item.valueType) {
-            ValueType.COLOR_ARGB8, ValueType.COLOR_RGB8, ValueType.COLOR_ARGB4, ValueType.COLOR_RGB4 -> "#%08x".format(item.data)
-            ValueType.REFERENCE, ValueType.DYNAMIC_REFERENCE ->
+        fun text(item: ValueItem): String = when (item.dataType) {
+            DataType.COLOR_ARGB8, DataType.COLOR_RGB8, DataType.COLOR_ARGB4, DataType.COLOR_RGB4 -> "#%08x".format(item.data)
+            DataType.REFERENCE, DataType.DYNAMIC_REFERENCE ->
                 byId[item.data]?.takeIf { it.type == "color" }?.let { "@color/${name(it)}" } ?: "@null"
-            ValueType.ATTRIBUTE, ValueType.DYNAMIC_ATTRIBUTE -> "?attr/attr_0x%08x".format(item.data)
+            DataType.ATTRIBUTE, DataType.DYNAMIC_ATTRIBUTE -> "?attr/attr_0x%08x".format(item.data)
             else -> "@null"
         }
 
@@ -1145,9 +1145,9 @@ class MaterialYouTokenFixtureTest {
     }
 
     /** A colour value, following references to colour resources in their default configuration. */
-    private fun colour(item: ValueItem, byId: Map<Int, ResourceEntry>, depth: Int): Int? = when (item.valueType) {
-        ValueType.COLOR_ARGB8, ValueType.COLOR_RGB8, ValueType.COLOR_ARGB4, ValueType.COLOR_RGB4 -> item.data
-        ValueType.REFERENCE, ValueType.DYNAMIC_REFERENCE -> {
+    private fun colour(item: ValueItem, byId: Map<Int, ResourceEntry>, depth: Int): Int? = when (item.dataType) {
+        DataType.COLOR_ARGB8, DataType.COLOR_RGB8, DataType.COLOR_ARGB4, DataType.COLOR_RGB4 -> item.data
+        DataType.REFERENCE, DataType.DYNAMIC_REFERENCE -> {
             val target = byId[item.data]
             val entry: Entry? = target?.let { resource ->
                 resource.iterator().asSequence().firstOrNull { it != null && !it.isNull && it.resConfig.isDefault }

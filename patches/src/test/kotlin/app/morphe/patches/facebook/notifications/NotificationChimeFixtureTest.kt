@@ -57,7 +57,7 @@ class NotificationChimeFixtureTest {
         assertTrue("$name: $RESOURCE_NAME is under ${chime.type}", chime.type in RESOURCE_TYPES)
 
         val file = chime.iterator().asSequence().filterNotNull()
-            .first { !it.isNull && it.resConfig.isDefault }.resValue.valueAsString
+            .first { !it.isNull && it.resConfig.isDefault }.resValue.dataAsString
         val head = baseApk(bundle) { apk ->
             generateSequence { apk.nextEntry }.first { it.name == file }
             apk.readNBytes(12)

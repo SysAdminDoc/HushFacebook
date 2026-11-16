@@ -9,9 +9,9 @@ import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.reandroid.arsc.chunk.TableBlock
 import com.reandroid.arsc.model.ResourceEntry
+import com.reandroid.arsc.value.DataType
 import com.reandroid.arsc.value.ResTableMapEntry
 import com.reandroid.arsc.value.ValueItem
-import com.reandroid.arsc.value.ValueType
 import java.io.File
 import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
@@ -92,9 +92,9 @@ class AccentResourceBluesFixtureTest {
             }
         }
         fun name(resource: ResourceEntry) = "${resource.type}_0x%08x".format(resource.resourceId)
-        fun text(item: ValueItem): String = when (item.valueType) {
-            ValueType.COLOR_ARGB8, ValueType.COLOR_RGB8, ValueType.COLOR_ARGB4, ValueType.COLOR_RGB4 -> "#%08x".format(item.data)
-            ValueType.REFERENCE, ValueType.DYNAMIC_REFERENCE ->
+        fun text(item: ValueItem): String = when (item.dataType) {
+            DataType.COLOR_ARGB8, DataType.COLOR_RGB8, DataType.COLOR_ARGB4, DataType.COLOR_RGB4 -> "#%08x".format(item.data)
+            DataType.REFERENCE, DataType.DYNAMIC_REFERENCE ->
                 byId[item.data]?.takeIf { it.type == "color" }?.let { "@color/${name(it)}" } ?: "@null"
             else -> "@null"
         }

@@ -23,7 +23,7 @@ import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.reandroid.arsc.chunk.TableBlock
-import com.reandroid.arsc.value.ValueType
+import com.reandroid.arsc.value.DataType
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -150,7 +150,7 @@ class VideoTabColourFixtureTest {
                     if (resource == null || resource.resourceId != id) continue
                     return resource.iterator().asSequence().filter { it != null && !it.isNull }.map { entry ->
                         val value = entry.resValue
-                        val colour = if (value.valueType in setOf(ValueType.COLOR_ARGB8, ValueType.COLOR_RGB8)) value.data else null
+                        val colour = if (value.dataType in setOf(DataType.COLOR_ARGB8, DataType.COLOR_RGB8)) value.data else null
                         entry.resConfig.isDefault to colour
                     }.toList()
                 }
