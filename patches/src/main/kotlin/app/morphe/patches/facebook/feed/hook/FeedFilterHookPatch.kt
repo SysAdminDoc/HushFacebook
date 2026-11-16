@@ -93,9 +93,12 @@ private fun hidesEdgeHelper(categoryGetter: String, feedUnit: Method) = Immutabl
  * With the posts that do get through arriving one by one, Home adds most of them while it's on
  * screen, so it also brings the hook that lets in a row only an accessibility change holds back
  * (HeldInserts.kt).
+ *
+ * <p>A post the person hid could come back as a new edge on a pull to refresh, so the guard also
+ * brings the hooks that remember each hide and Undo (HiddenPosts.kt).
  */
 internal val feedFilterHookPatch = bytecodePatch {
-    dependsOn(facebookExtensionPatch, homeTailFetchPatch, heldInsertsPatch)
+    dependsOn(facebookExtensionPatch, homeTailFetchPatch, heldInsertsPatch, hiddenPostsPatch)
 
     execute {
         val categoryGetter = storyCategoryGetter()

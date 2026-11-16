@@ -598,6 +598,8 @@ public final class FeedFilter {
             }
             // Last of the filters: a type picked by name, which also writes the type down for its list.
             if (reason == null && wordsPatched) reason = FeedTypeNames.reason(typeName(feedUnit));
+            // A post the person hid that a pull to refresh brought back as a new edge (#444).
+            if (reason == null) reason = HiddenPosts.hideReason(feedUnit);
             // The seen rule goes last so a post another rule would hide is counted under that rule.
             if (reason == null) {
                 kind = HiddenTally.Kind.SEEN;
