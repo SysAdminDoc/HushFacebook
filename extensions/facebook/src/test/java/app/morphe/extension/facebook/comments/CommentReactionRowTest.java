@@ -30,9 +30,9 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * under a comment, the one with only the top reaction beside the count, is answered no and
  * counted, so the row keeps Like, Reply and every reaction. The check the feed's inline comments
  * and the comment list share is answered no the same way, and the comment list's row layout is
- * answered 0, each counted under its own name so the report tells the three apart. Off, paused,
- * before the settings are ready, or when Facebook already picked the full row, its answer goes back
- * unchanged.
+ * answered 0, and the cap that keeps a single icon beside a comment's reaction count is answered no,
+ * each counted under its own name so the report tells them apart. Off, paused, before the settings
+ * are ready, or when Facebook already picked the full row, its answer goes back unchanged.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -159,6 +159,39 @@ public class CommentReactionRowTest {
         SettingsContextRule.withoutContext(() -> assertEquals(3, CommentSheetOptions.topReactionLayout(3)));
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertEquals(3, CommentSheetOptions.topReactionLayout(3));
+    }
+
+    @Test
+    public void theIconCapStartsOffAndKeepsOneIcon() {
+        assertTrue(CommentSheetOptions.topReactionIcons(true));
+        String line = statusLine();
+        assertNotNull(line);
+        assertFalse("counted with the switch off: " + line, line.contains(CommentSheetOptions.EVERY_REACTION_ICON));
+    }
+
+    @Test
+    public void theIconCapOnAnswersNoAndCountsUnderItsOwnName() {
+        Settings.SHOW_EVERY_COMMENT_REACTION.save(true);
+        assertFalse(CommentSheetOptions.topReactionIcons(true));
+        String line = statusLine();
+        assertTrue(line, line.contains(CommentSheetOptions.EVERY_REACTION_ICON));
+        assertFalse("counted as the shared check's: " + line, line.contains(CommentSheetOptions.EVERY_REACTION_CHECKED));
+        assertFalse("counted as the plugin's: " + line, line.contains(CommentSheetOptions.EVERY_REACTION_KEPT));
+    }
+
+    @Test
+    public void theIconCapLeavesThreeIconsUncounted() {
+        Settings.SHOW_EVERY_COMMENT_REACTION.save(true);
+        assertFalse(CommentSheetOptions.topReactionIcons(false));
+        assertFalse(statusLine().contains(CommentSheetOptions.EVERY_REACTION_ICON));
+    }
+
+    @Test
+    public void theIconCapPausedOrEarlyKeepsOneIcon() {
+        Settings.SHOW_EVERY_COMMENT_REACTION.save(true);
+        SettingsContextRule.withoutContext(() -> assertTrue(CommentSheetOptions.topReactionIcons(true)));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue(CommentSheetOptions.topReactionIcons(true));
     }
 
     @Test

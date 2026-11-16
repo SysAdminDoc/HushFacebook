@@ -17,6 +17,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -32,22 +33,29 @@ private const val INLINE_ACTIONS = "InlineCommentActionsComponent"
 /** Kept by the method that builds a comment in an open post's comment list. */
 private const val COMMENT_LIST = "CommentComponentSocket"
 
+private const val MATH_MIN = "Ljava/lang/Math;->min(II)I"
+
+private const val IMMUTABLE_LIST = "Lcom/google/common/collect/ImmutableList;"
+
 private val WIDE_CONSTS = setOf(Opcode.CONST_WIDE, Opcode.CONST_WIDE_32, Opcode.CONST_WIDE_16, Opcode.CONST_WIDE_HIGH16)
 
 /**
  * Show every reaction on comments (#241) on every Facebook build the bundle declares. The class
- * named CommentActionsWithSimplifiedReactionsComponent is found by its kept string, and three spots
- * pick it:
+ * named CommentActionsWithSimplifiedReactionsComponent is found by its kept string. Three spots
+ * pick it, and a fourth trims the older row:
  *
  * - the comment actions plugin, through a MobileConfig read of its own;
  * - the shared check that a feed post's inline comment actions and an open post's comment list
  *   both call, a static boolean that reads another MobileConfig boolean past a gate;
- * - the comment list's MobileConfig int, read past that same gate, which picks its second build.
+ * - the comment list's MobileConfig int, read past that same gate, which picks its second build;
+ * - the older row's own cap, a MobileConfig boolean past that gate keeping one reaction icon
+ *   beside the count instead of three.
  *
  * Right after each read's `move-result` the extension is asked as a range call, and its answer goes
  * back into the read's register. The inline and comment list builders are found here by their own
- * kept strings, and the shared check from the call the inline builder's branch tests, so these
- * expectations don't come from the finder they check. Reads the fixture bundles from
+ * kept strings, the shared check from the call the inline builder's branch tests, and the icon cap
+ * from the gate's one caller that trims a list with Math.min, so these expectations don't come from
+ * the finder they check. Reads the fixture bundles from
  * HUSHFACEBOOK_FIXTURE_DIR and skips without it. Redex names differ between the arm64 and armv7
  * bundles, so nothing here names a class.
  */
@@ -160,8 +168,36 @@ class CommentReactionRowFixtureTest {
                 assertEquals("$name: MobileConfig ints the comment list reads past the gate", 1, layoutResults.size)
                 val layoutResult = layoutResults.single()
 
+                // The reaction icons beside a comment's count: the one method asking the gate that also
+                // trims an ImmutableList with Math.min, keeping that many icons.
+                val cappers = FixtureDex.methodsWhere(
+                    bundle,
+                    { dex -> dex.methodSection.any { it.toString() == gate } },
+                ) { method ->
+                    val code = method.implementation?.instructions?.toList().orEmpty()
+                    code.any { it.called() == gate } && code.any { it.called() == MATH_MIN } &&
+                        code.any { it.method()?.definingClass == IMMUTABLE_LIST && it.method()?.name == "subList" }
+                }
+                assertEquals("$name: methods trimming reaction icons past the gate", 1, cappers.size)
+                val capper = cappers.single()
+                val capCode = capper.code()
+                // Its flag: the first boolean read of an id after the gate, picking one icon over three.
+                val gateCall = capCode.indexOfFirst { it.called() == gate }
+                val capRead = (gateCall + 1 until capCode.size).first { capCode[it].method()?.returnType == "Z" && capCode.idFor(it) >= 0 }
+                val capResult = capRead + 1
+                assertEquals("$name: the icon flag has an answer", Opcode.MOVE_RESULT, capCode[capResult].opcode)
+                val one = capCode[capResult + 1]
+                val test = capCode[capResult + 2]
+                val three = capCode[capResult + 3]
+                assertEquals("$name: yes keeps one icon", listOf(Opcode.CONST_4, 1), listOf(one.opcode, (one as? NarrowLiteralInstruction)?.narrowLiteral))
+                assertEquals("$name: the answer is tested", listOf(Opcode.IF_NEZ, capCode[capResult].register()), listOf(test.opcode, test.register()))
+                assertEquals("$name: no keeps three", listOf(Opcode.CONST_4, 3), listOf(three.opcode, (three as? NarrowLiteralInstruction)?.narrowLiteral))
+                assertEquals("$name: both land in one register", one.register(), three.register())
+                assertTrue("$name: that count trims the icons", capCode.any { it.called() == MATH_MIN && one.register() in it.passes() })
+                val capClass = FixtureDex.classes(bundle, setOf(capper.definingClass)).values.single()
+
                 val owners = FixtureDex.classes(bundle, builders.map { it.definingClass }.toSet()).values.toList()
-                val classes: List<ClassDef> = (owners + component + checkClass).distinctBy { it.type }
+                val classes: List<ClassDef> = (owners + component + checkClass + capClass).distinctBy { it.type }
                 val reads = topReactionReads(classes)
                 assertEquals("$name: plugin reads deciding on the component", 1, reads.size)
                 val read = reads.single()
@@ -177,6 +213,7 @@ class CommentReactionRowFixtureTest {
                 assertHooked("$name plugin", pluginBefore, patched(read.method), read.result, TOP_REACTION_ONLY)
                 assertHooked("$name shared check", checkCode, patched(check), checkResult, TOP_REACTION_CHECK)
                 assertHooked("$name comment list", listCode, patched(list), layoutResult, TOP_REACTION_LAYOUT)
+                assertHooked("$name icon cap", capCode, patched(capper), capResult, TOP_REACTION_ICONS)
                 checked += version
             }
         }
@@ -190,6 +227,7 @@ class CommentReactionRowFixtureTest {
             "topReactionOnly" to TOP_REACTION_ONLY,
             "topReactionCheck" to TOP_REACTION_CHECK,
             "topReactionLayout" to TOP_REACTION_LAYOUT,
+            "topReactionIcons" to TOP_REACTION_ICONS,
         )) {
             val hook = methods.singleOrNull { it.name == name }
             assertTrue("the extension has no CommentSheetOptions.$name", hook != null)

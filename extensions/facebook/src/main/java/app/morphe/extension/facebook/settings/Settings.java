@@ -1675,7 +1675,9 @@ public class Settings extends BaseSettings {
      * the feed's inline comments and an open post's comment list share
      * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions#topReactionCheck}) and the
      * comment list's row layout
-     * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions#topReactionLayout}), #241.
+     * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions#topReactionLayout}), and
+     * the older row's cap of one icon beside the count is answered no
+     * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions#topReactionIcons}), #241.
      * Off by default.
      */
     public static final BooleanSetting SHOW_EVERY_COMMENT_REACTION =

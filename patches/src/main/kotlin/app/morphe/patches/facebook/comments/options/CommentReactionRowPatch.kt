@@ -18,6 +18,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -57,6 +58,13 @@ import java.util.EnumSet
  *   The extension is asked through topReactionLayout, and answers 0, the value the list takes where
  *   the gate is closed.
  *
+ * The older row can still show a single icon. Its count pill (587 arm64 `LX/05lh;->render`, armv7
+ * `LX/05lP;->render`) keeps as many icons as a count it trims its reaction list to with Math.min,
+ * and when its own count is 0 it asks the same gate, then one MobileConfig boolean (587 id
+ * 0x010102fb001d239f): yes keeps one icon, no or a closed gate keeps three. The read is the one
+ * past the gate whose answer an `if-nez` tests between `const/4` 1 and `const/4` 3 into the
+ * register Math.min later takes. The extension is asked through topReactionIcons, and answers no.
+ *
  * One more method makes the component in 587 (arm64 `LX/0wse;->render`), a card in a carousel of
  * comments in the feed. It builds the component every time with no older row to pick instead, so
  * it's left as it is. MobileConfig ids change between builds, so each id is read from the spot and
@@ -74,6 +82,10 @@ internal const val TOP_REACTION_CHECK = "$COMMENT_SHEET_OPTIONS->topReactionChec
 
 internal const val TOP_REACTION_LAYOUT = "$COMMENT_SHEET_OPTIONS->topReactionLayout(I)I"
 
+internal const val TOP_REACTION_ICONS = "$COMMENT_SHEET_OPTIONS->topReactionIcons(Z)Z"
+
+private const val MATH_MIN = "Ljava/lang/Math;->min(II)I"
+
 private const val PATCH = "Comment sheet options (every reaction on comments)"
 
 /** The most instructions from the id's load to the read taking it. */
@@ -88,7 +100,8 @@ private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $det
 /**
  * Facebook's picks of the newer row go through the extension. Nameless, so Comment sheet options
  * carries it and its fixture tests run it on its own. It finds every spot before changing anything
- * and refuses unless the plugin's reads, the shared check and the comment list's layout are all there.
+ * and refuses unless the plugin's reads, the shared check, the comment list's layout and the older
+ * row's icon cap are all there.
  */
 internal val commentReactionRowPatch = bytecodePatch {
     dependsOn(facebookExtensionPatch)
@@ -122,7 +135,8 @@ internal fun BytecodePatchContext.hookTopReactionPicks() {
     val check = sharedCheck(classes, picks)
     val hooks = pluginReads(picks).map { it to TOP_REACTION_ONLY } +
         (check.read to TOP_REACTION_CHECK) +
-        (listLayout(builders, check.gate) to TOP_REACTION_LAYOUT)
+        (listLayout(builders, check.gate) to TOP_REACTION_LAYOUT) +
+        (iconCap(classes, check.gate) to TOP_REACTION_ICONS)
     // Later spots first, so an earlier one's index still holds when two share a method.
     for ((read, hook) in hooks.sortedByDescending { it.first.result }) {
         val method = mutableClassDefBy(read.method.definingClass).findMutableMethodOf(read.method)
@@ -252,18 +266,64 @@ private fun listLayout(builders: List<Builder>, gate: String): TopReactionRead {
     val found = mutableListOf<TopReactionRead>()
     for (builder in builders) {
         val code = builder.code
-        for (branch in 2 until code.size - 1) {
-            if (code[branch].opcode != Opcode.IF_EQZ || code[branch - 1].opcode != Opcode.MOVE_RESULT ||
-                code[branch - 1].register() != code[branch].register() || code[branch - 2].callee()?.toString() != gate
-            ) continue
-            val load = branch + 1
-            if (code[load].opcode !in WIDE_CONSTS) continue
-            val call = (load + 1..minOf(code.size - 2, load + READ_REACH)).firstOrNull { at ->
-                code[at].isStaticCall("I") && code.idLoadFor(at) == load && code[at + 1].opcode == Opcode.MOVE_RESULT
-            } ?: continue
-            found += code.read(builder.method, call + 1, load)
+        for (branch in code.indices) {
+            val result = code.gatedResult(branch, gate, "I") ?: continue
+            found += code.read(builder.method, result, branch + 1)
         }
     }
     if (found.size != 1) refuse("expected one layout read past the shared check's gate, found ${found.size}")
     return found.single()
+}
+
+/**
+ * The older row's icon cap: anywhere in [classes], a static boolean read past [gate] (as
+ * [gatedResult] finds it) whose answer picks one icon over three, by [capsIcons].
+ */
+private fun iconCap(classes: Iterable<ClassDef>, gate: String): TopReactionRead {
+    val found = mutableListOf<TopReactionRead>()
+    for (classDef in classes) {
+        for (method in classDef.methods) {
+            val code = method.implementation?.instructions?.toList() ?: continue
+            for (branch in code.indices) {
+                val result = code.gatedResult(branch, gate, "Z") ?: continue
+                if (code.capsIcons(result)) found += code.read(method, result, branch + 1)
+            }
+        }
+    }
+    if (found.size != 1) refuse("expected one reaction icon cap past the shared check's gate, found ${found.size}")
+    return found.single()
+}
+
+/**
+ * The `move-result` of a read past [gate]: the gate's answer, which the `if-eqz` at [branch] tests
+ * straight away, falls through to an id's load and, within reach, a static read returning [returns]
+ * that takes the id. Null anywhere else.
+ */
+private fun List<Instruction>.gatedResult(branch: Int, gate: String, returns: String): Int? {
+    if (branch < 2 || branch + 1 >= size) return null
+    if (this[branch].opcode != Opcode.IF_EQZ || this[branch - 1].opcode != Opcode.MOVE_RESULT ||
+        this[branch - 1].register() != this[branch].register() || this[branch - 2].callee()?.toString() != gate
+    ) return null
+    val load = branch + 1
+    if (this[load].opcode !in WIDE_CONSTS) return null
+    val call = (load + 1..minOf(size - 2, load + READ_REACH)).firstOrNull { at ->
+        this[at].isStaticCall(returns) && idLoadFor(at) == load && this[at + 1].opcode == Opcode.MOVE_RESULT
+    } ?: return null
+    return call + 1
+}
+
+private fun Instruction.smallConst(): Int? = if (opcode == Opcode.CONST_4) (this as NarrowLiteralInstruction).narrowLiteral else null
+
+/**
+ * Whether the answer at [result] picks how many reaction icons to keep: `const/4 vN, 1`, an
+ * `if-nez` on the answer, `const/4 vN, 3`, and vN later passed to [MATH_MIN].
+ */
+private fun List<Instruction>.capsIcons(result: Int): Boolean {
+    if (result + 3 >= size) return false
+    val one = this[result + 1]
+    val test = this[result + 2]
+    val three = this[result + 3]
+    if (one.smallConst() != 1 || three.smallConst() != 3 || one.register() != three.register()) return false
+    if (test.opcode != Opcode.IF_NEZ || test.register() != this[result].register()) return false
+    return (result + 4 until size).any { at -> this[at].callee()?.toString() == MATH_MIN && one.register() in this[at].registers() }
 }

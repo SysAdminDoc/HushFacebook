@@ -212,6 +212,12 @@ public final class CommentSheetOptions {
     /** The member the report names once the comment list's row layout has been through the hook. */
     static final String REACTION_LAYOUT = "comment list reaction layout";
 
+    /** Counted each time the older row's cap of one reaction icon beside the count is answered no. */
+    static final String EVERY_REACTION_ICON = "Comment row icons kept past one";
+
+    /** The member the report names once that icon cap has been through the hook. */
+    static final String REACTION_ICONS = "comment reaction icons";
+
     /** Counted each time the "new comments" pill's text is answered empty, so the pill never shows. */
     static final String PILL_HIDDEN = "New comments pill kept out";
 
@@ -396,6 +402,25 @@ public final class CommentSheetOptions {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, REACTION_LAYOUT, failure);
             return layout;
+        }
+    }
+
+    /**
+     * The hook, right after the older row under a comment reads whether to keep a single reaction
+     * icon beside its count (#241). With the switch on it answers no, so the row keeps three icons,
+     * as it does where its surface is left out; otherwise, and for a throw, it hands back what
+     * Facebook read.
+     */
+    public static boolean topReactionIcons(boolean oneIcon) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, REACTION_ICONS);
+            if (!oneIcon || !Utils.settingsReady() || !Settings.SHOW_EVERY_COMMENT_REACTION.get()) return oneIcon;
+            HookStatus.counted(FAMILY, EVERY_REACTION_ICON);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, REACTION_ICONS, failure);
+            return oneIcon;
         }
     }
 
