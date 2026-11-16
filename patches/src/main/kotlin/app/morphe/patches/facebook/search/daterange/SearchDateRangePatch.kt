@@ -21,9 +21,11 @@ import app.morphe.patches.facebook.feed.reels.categoryNames
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.RegisterLiveness
 import app.morphe.util.classDefForEachReferencing
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -57,6 +59,7 @@ internal const val LABEL = "$SEARCH_DATE_RANGE->label(Ljava/lang/String;Ljava/la
 internal const val STATE_LABEL =
     "$SEARCH_DATE_RANGE->stateLabel(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
 internal const val KEPT_STATES = "$SEARCH_DATE_RANGE->keptStates(Ljava/util/Map;Ljava/util/List;)Ljava/util/List;"
+internal const val OPENS_ON_TODAY = "$SEARCH_DATE_RANGE->opensOnToday()Z"
 
 /** The state Facebook keeps for each filter a search applies, built from the filter's name, label, value and key. */
 internal const val FILTER_STATE = "Lcom/facebook/search/results/filters/state/FilterPersistentState;"
@@ -168,6 +171,9 @@ val searchDateRangePatch = bytecodePatch(
         val view = classDefByOrNull(PICKER)?.methods?.singleOrNull(::isPickerView)
             ?.let { picker -> pickerReturns(picker)?.let { picker to it } }
             ?: throw PatchException("$PATCH: $PICKER has no onCreateView handing back a view it can wrap")
+        val opening = classDefByOrNull(PICKER)?.methods?.singleOrNull(::isPickerCreate)
+            ?.let { create -> pickerMonths(create)?.let { create to it } }
+            ?: throw PatchException("$PATCH: $PICKER has no onCreate picking last month to this month where a hook can follow")
         val writes = classDefByStrings(RANGE_MONTHS, StringComparisonType.EQUALS)
             .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
             .flatMap { holder -> methodsHolding(holder, RANGE_MONTHS) }
@@ -200,6 +206,8 @@ val searchDateRangePatch = bytecodePatch(
         method.hookCallback(sheet)
         mutableClassDefBy(view.first.definingClass).methods.single { it.descriptor() == view.first.descriptor() }
             .hookPickerView(view.second)
+        mutableClassDefBy(opening.first.definingClass).methods.single { it.descriptor() == opening.first.descriptor() }
+            .hookPickerMonths(opening.second)
         mutableClassDefBy(sender.definingClass).methods.single { it.descriptor() == sender.descriptor() }
             .hookRangeWrite(write)
         mutableClassDefBy(FILTER_STATE).methods.single { it.descriptor() == state.descriptor() }.hookStateLabel()
@@ -371,6 +379,95 @@ internal fun MutableMethod.hookPickerView(returns: List<Int>) {
             """,
         )
     }
+}
+
+/** Whether [method] is the picker's onCreate. */
+internal fun isPickerCreate(method: Method) = method.name == "onCreate" && method.returnType == "V" &&
+    method.parameterTypes.map(CharSequence::toString) == listOf("Landroid/os/Bundle;")
+
+/** The month fields the picker opens on, and where a hook can follow Facebook picking them. */
+internal class PickerMonths(
+    /** The index of the instruction right after the start year's write, the last of the four. */
+    val after: Int,
+    val endMonth: FieldReference,
+    val endYear: FieldReference,
+    val startMonth: FieldReference,
+    val startYear: FieldReference,
+    /** The register holding the picker. */
+    val self: Int,
+    /** A local register below v16 that nothing reads at [after] before writing it. */
+    val free: Int,
+)
+
+/** One write of an int field of the picker through its own register. */
+private class MonthWrite(val at: Int, val register: Int, val field: FieldReference)
+
+/**
+ * In the picker's onCreate, the months it opens on when the filter has no range applied (587 arm64:
+ * `A00` end month, `A01` end year, `A02` start month, `A03` start year). Facebook takes the year and
+ * then the month from two Calendar.get calls, writes the month to the end month and the year to the
+ * end year, the month less one (11 in January, with the year less one) to the start month, and the
+ * year last to the start year. A filter with a range applied writes the same four from its months and
+ * jumps to the instruction after that last write, so a hook put in front of that instruction runs
+ * only for a filter with none. Null unless the four are distinct int fields of the picker, the
+ * picker's register and a free one are below v16, and something follows the start year's write.
+ */
+internal fun pickerMonths(method: Method): PickerMonths? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val self = method.localRegisterCount()
+    if (self > 15) return null
+    val gets = code.indices.filter { at ->
+        val target = (code[at] as? ReferenceInstruction)?.reference as? MethodReference
+        code[at].opcode == Opcode.INVOKE_VIRTUAL && target?.definingClass == "Ljava/util/Calendar;" &&
+            target.name == "get" && target.returnType == "I" && code.getOrNull(at + 1)?.opcode == Opcode.MOVE_RESULT
+    }
+    if (gets.size < 2) return null
+    val year = (code[gets[0] + 1] as OneRegisterInstruction).registerA
+    val month = (code[gets[1] + 1] as OneRegisterInstruction).registerA
+    if (year == month) return null
+    val writes = (gets[1] + 2 until code.size).mapNotNull { at ->
+        if (code[at].opcode != Opcode.IPUT) return@mapNotNull null
+        val field = (code[at] as ReferenceInstruction).reference as FieldReference
+        val put = code[at] as TwoRegisterInstruction
+        if (field.definingClass != method.definingClass || field.type != "I" || put.registerB != self) return@mapNotNull null
+        MonthWrite(at, put.registerA, field)
+    }
+    val endMonth = writes.firstOrNull { it.register == month } ?: return null
+    val endYear = writes.firstOrNull { it.register == year } ?: return null
+    val startYear = writes.firstOrNull {
+        it.at > maxOf(endMonth.at, endYear.at) && it.register == year && it.field != endYear.field
+    } ?: return null
+    val startMonth = writes.filter { it.at in endMonth.at..startYear.at }.map { it.field }
+        .filter { it != endMonth.field && it != endYear.field && it != startYear.field }.distinct().singleOrNull()
+        ?: return null
+    val after = startYear.at + 1
+    if (after >= code.size) return null
+    val live = RegisterLiveness.of(method).liveInto(after)
+    val free = (0 until minOf(self, 16)).firstOrNull { it !in live } ?: return null
+    return PickerMonths(after, endMonth.field, endYear.field, startMonth, startYear.field, self, free)
+}
+
+/**
+ * In front of the instruction after the start year's write: on a yes from the extension, the start
+ * month and year become the end's, this month, and the extension has set both day wheels to today
+ * (#279). Jumps to that instruction, the applied range's way in, still land on it and skip this.
+ */
+internal fun MutableMethod.hookPickerMonths(months: PickerMonths) {
+    val free = months.free
+    val self = months.self
+    addInstructionsWithLabels(
+        months.after,
+        """
+            invoke-static {}, $OPENS_ON_TODAY
+            move-result v$free
+            if-eqz v$free, :facebook
+            iget v$free, v$self, ${months.endMonth.smali()}
+            iput v$free, v$self, ${months.startMonth.smali()}
+            iget v$free, v$self, ${months.endYear.smali()}
+            iput v$free, v$self, ${months.startYear.smali()}
+        """,
+        ExternalLabel("facebook", getInstruction(months.after)),
+    )
 }
 
 /** Where a range's Apply writes its months and then its chip label. */

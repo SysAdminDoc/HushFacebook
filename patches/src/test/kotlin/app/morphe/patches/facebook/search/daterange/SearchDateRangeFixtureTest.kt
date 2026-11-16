@@ -14,6 +14,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -195,6 +196,74 @@ class SearchDateRangeFixtureTest {
             }.map { it.opcode })
     }
 
+    /** The index each jump (or switch or array payload) in [code] lands on, keyed by its own index. */
+    private fun jumps(code: List<com.android.tools.smali.dexlib2.iface.instruction.Instruction>): Map<Int, Int> {
+        val addresses = code.runningFold(0) { at, instruction -> at + instruction.codeUnits }
+        return code.indices.filter { code[it] is OffsetInstruction }
+            .associateWith { addresses.indexOf(addresses[it] + (code[it] as OffsetInstruction).codeOffset) }
+    }
+
+    private fun today(bundle: File) {
+        val picker = FixtureDex.classes(bundle, setOf(PICKER)).values.single()
+        val create = picker.methods.single(::isPickerCreate)
+        val where = "${bundle.name}: ${create.descriptor()}"
+        val months = pickerMonths(create)
+        assertTrue("$where picks last month to this month where a hook can follow", months != null)
+        months!!
+        val stock = create.implementation!!.instructions.toList()
+
+        // From Facebook's code: the year comes from Calendar.get(1) and the month from Calendar.get(2).
+        val gets = stock.indices.filter { at ->
+            val target = (stock[at] as? ReferenceInstruction)?.reference as? MethodReference
+            target?.definingClass == "Ljava/util/Calendar;" && target.name == "get"
+        }
+        fun constant(at: Int): Int? {
+            val register = (stock[at] as FiveRegisterInstruction).registerD
+            return stock.subList(0, at).lastOrNull { (it as? OneRegisterInstruction)?.registerA == register }
+                ?.let { (it as? NarrowLiteralInstruction)?.narrowLiteral }
+        }
+        assertEquals("$where takes the year first", 1, constant(gets[0]))
+        assertEquals("$where then the month", 2, constant(gets[1]))
+        fun writesOf(field: FieldReference) = stock.indices.filter { at ->
+            stock[at].opcode == Opcode.IPUT && ((stock[at] as ReferenceInstruction).reference as FieldReference).let {
+                it.definingClass == field.definingClass && it.name == field.name
+            }
+        }
+        // The start month is this month less one.
+        val startWrite = writesOf(months.startMonth).first()
+        val month = (stock[gets[1] + 1] as OneRegisterInstruction).registerA
+        assertTrue("$where writes the month less one to the start month",
+            stock.subList(gets[1], startWrite).any { it.opcode == Opcode.SUB_INT_2ADDR && (it as TwoRegisterInstruction).registerA == month })
+        // An applied range writes all four again, and then joins where the hook goes.
+        for (field in listOf(months.endMonth, months.endYear, months.startMonth, months.startYear)) {
+            assertTrue("$where writes ${field.name} again for an applied range", writesOf(field).any { it > months.after })
+        }
+        val stockJumps = jumps(stock).filterValues { it == months.after }.keys
+        assertTrue("$where has a range's path join right after the start year", stockJumps.isNotEmpty())
+
+        val mutable = PatchContexts.of(listOf(picker)).mutableClassDefBy(PICKER).methods.single { it.descriptor() == create.descriptor() }
+        mutable.hookPickerMonths(months)
+        val patched = mutable.implementation!!.instructions.toList()
+        assertEquals("$where gains seven instructions", stock.size + 7, patched.size)
+        assertEquals("$where asks the extension", OPENS_ON_TODAY, (patched[months.after] as ReferenceInstruction).reference.toString())
+        assertEquals("$where: then reads the answer, tests it and copies two fields",
+            listOf(Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.IGET, Opcode.IPUT, Opcode.IGET, Opcode.IPUT),
+            patched.subList(months.after + 1, months.after + 7).map { it.opcode })
+        fun field(at: Int) = ((patched[at] as ReferenceInstruction).reference as FieldReference).name
+        assertEquals("$where: the start month becomes the end's", listOf(months.endMonth.name, months.startMonth.name),
+            listOf(field(months.after + 3), field(months.after + 4)))
+        assertEquals("$where: the start year becomes the end's", listOf(months.endYear.name, months.startYear.name),
+            listOf(field(months.after + 5), field(months.after + 6)))
+        val patchedJumps = jumps(patched)
+        assertEquals("$where: a no goes on to Facebook's instruction", months.after + 7, patchedJumps[months.after + 2])
+        for (jump in stockJumps) {
+            assertEquals("$where: the applied range still joins at Facebook's instruction, past the hook",
+                months.after + 7, patchedJumps[if (jump < months.after) jump else jump + 7])
+        }
+        assertEquals("$where: the rest of Facebook's code stays", stock.map { it.opcode },
+            patched.filterIndexed { index, _ -> index !in (months.after until months.after + 7) }.map { it.opcode })
+    }
+
     private fun state(bundle: File) {
         val holder = FixtureDex.classes(bundle, setOf(FILTER_STATE)).values.singleOrNull()
         assertTrue("${bundle.name}: $FILTER_STATE is there", holder != null)
@@ -318,4 +387,8 @@ class SearchDateRangeFixtureTest {
     @Test
     fun `each declared build builds a filter state from its name, label and value, and the label can be handed back`() =
         bundles(::state)
+
+    @Test
+    fun `each declared build opens the picker on last month to this month where today can take over, and an applied range skips it`() =
+        bundles(::today)
 }

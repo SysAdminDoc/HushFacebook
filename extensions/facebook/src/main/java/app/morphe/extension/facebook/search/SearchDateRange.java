@@ -64,6 +64,8 @@ import app.morphe.extension.shared.ui.Dim;
  * picker, {@link #days} adds the two days to the range Facebook sends, clamped to each month's
  * length, and {@link #label} puts them in the chip Facebook shows for the range. The first of the
  * start month to the last of the end month is the range Facebook sends anyway, so it goes as it is.
+ * With no range applied, Facebook opens the picker on last month to this month; {@link #opensOnToday}
+ * makes both ends today instead, so today's posts are one tap on Apply away.
  *
  * <p>The Date posted row read "Any date" after a range was applied. The server's answer to a search
  * replaces the states Facebook keeps for its filters with the ones the server sends back, and it
@@ -102,6 +104,12 @@ public final class SearchDateRange {
 
     /** What the report counts each time a range goes out with its days. */
     static final String DAYS_SENT = "Range sent with days";
+
+    /** The member the report names once the picker's opening months have been asked about. */
+    static final String TODAY = "opening months";
+
+    /** What the report counts each time the picker opens on today. */
+    static final String OPENED_ON_TODAY = "Picker opened on today";
 
     /** The member the report names once a filter state's label has been asked about. */
     static final String STATE_LABEL = "filter state label";
@@ -282,6 +290,30 @@ public final class SearchDateRange {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, DAY_ROW, failure);
             return facebookView;
+        }
+    }
+
+    /**
+     * The hook in the picker's onCreate right after Facebook picks last month to this month, which
+     * it does only when the filter has no range applied (#279). True has the start month be this
+     * month too and sets both day wheels to today, so the picker opens on today alone, the way
+     * Facebook Lite's does, before {@link #dayRow} builds the wheels. Off, paused, before the
+     * settings or on any failure it's false, and Facebook's months and the wheels' last days stay.
+     * A range already applied opens on that range, since Facebook never reaches this then.
+     */
+    public static boolean opensOnToday() {
+        try {
+            HookStatus.bound(FAMILY, TODAY);
+            if (!Utils.settingsReady() || !Settings.SEARCH_DATE_RANGE.get()) return false;
+            int today = Calendar.getInstance().get(Calendar.DAY_OF_MONTH);
+            fromDay = today;
+            toDay = today;
+            HookStatus.counted(FAMILY, OPENED_ON_TODAY);
+            Logger.printDebug(() -> "Search date range: the picker opens on today, day " + today);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, TODAY, failure);
+            return false;
         }
     }
 

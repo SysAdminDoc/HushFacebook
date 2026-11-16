@@ -242,6 +242,34 @@ public class SearchDateRangeTest {
         assertTrue(line, line.contains(SearchDateRange.DAYS_SENT + " 1"));
     }
 
+    /** #279: the picker opened on last month to this month, days 1 to 31, and today alone took six spins. */
+    @Test
+    public void onThePickerWithNoRangeOpensOnTodayAndApplySendsJustToday() {
+        java.util.Calendar now = java.util.Calendar.getInstance();
+        String month = String.format(Locale.US, "%04d-%02d", now.get(java.util.Calendar.YEAR), now.get(java.util.Calendar.MONTH) + 1);
+        String today = month + String.format(Locale.US, "-%02d", now.get(java.util.Calendar.DAY_OF_MONTH));
+        assertFalse("off, Facebook's months", SearchDateRange.opensOnToday());
+        assertEquals("off, the wheels keep their days", 1, SearchDateRange.fromDay);
+        assertEquals(31, SearchDateRange.toDay);
+
+        Settings.SEARCH_DATE_RANGE.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused, Facebook's months", SearchDateRange.opensOnToday());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse("before the settings, Facebook's months", SearchDateRange.opensOnToday()));
+        assertEquals(1, SearchDateRange.fromDay);
+
+        assertTrue("the start month becomes this month", SearchDateRange.opensOnToday());
+        assertEquals("From day is today", now.get(java.util.Calendar.DAY_OF_MONTH), SearchDateRange.fromDay);
+        assertEquals("To day is today", now.get(java.util.Calendar.DAY_OF_MONTH), SearchDateRange.toDay);
+        String thisMonth = SearchDateRangeForTests.months(month, month);
+        assertEquals("Apply sends today to today", thisMonth + ",\\\"start_day\\\":\\\"" + today + "\\\",\\\"end_day\\\":\\\"" + today + "\\\"",
+                SearchDateRange.days(thisMonth));
+        String line = statusLine();
+        assertTrue(line, line.contains(SearchDateRange.OPENED_ON_TODAY + " 1"));
+        assertFalse(line, line.contains("threw"));
+    }
+
     @Test
     public void aLabelItCannotTakeApartStays() {
         Settings.SEARCH_DATE_RANGE.save(true);

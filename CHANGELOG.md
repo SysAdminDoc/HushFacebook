@@ -41,6 +41,7 @@ Changes in each Hushfacebook version, newest first.
 * `Hide the Follow and Subscribe links on posts` is two switches now, `Hide the Follow link on posts` and `Hide the Subscribe link on posts` under News feed, so you can keep one and drop the other. The Subscribe one covers the link next to a creator's name on posts and videos. With only the Subscribe one on, a creator's header no longer swaps its Subscribe link for a Follow one. If you had the old switch on, both start on for you, and a settings file saved before the split turns both on too. (#434)
 
 * `Play saved videos in a row` handles the swipe itself now. Before, Facebook's swipe showed a suggested reel for a moment, then the Saved page, before your next saved video came up. Now the video slides off under your finger and the screen stays black until the next saved one opens. Swipe down to go back to the one before. A short or slow drag slides back where it was, and a side swipe is still Facebook's. New `Stay on a saved video when it ends` under it keeps a finished video on screen until you swipe, off by default. (#404)
+* With `Search date range` on, the Date posted picker opens on today for both ends, so today's posts are one tap on Apply away. A range you already applied still opens the way you left it. (#279)
 
 ### Fixed
 
