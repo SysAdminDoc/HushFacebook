@@ -53,6 +53,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* `Loop stories` now replays video stories too. A finished video used to sit on its last frame with a full bar while only photo stories started over, and the replay button on a held story had the same problem. (#380)
 * A post you hide from the feed, with Hide post or "Hide all from" someone, stays hidden when you pull down to refresh. It used to come right back. Undo still brings it back. (#444)
 * `Report a problem` leaves the "What went wrong?" box empty now, so you can type straight into it. It used to come pre-filled with two questions, and on a phone that box looked done (or wouldn't take typing at all). The questions show in it as a grey hint instead. (#488)
 * `Hide the X on posts` takes the X off the Reels row in your feed too, next to its three-dot menu. The menu stays. (#389)

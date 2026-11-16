@@ -45,6 +45,7 @@ internal const val STORY_ADVANCE = "$EXTENSION_PACKAGE/stories/StoryAdvance;"
 internal const val HELD = "$STORY_ADVANCE->held(Ljava/lang/Object;)V"
 internal const val PROGRESSED = "$STORY_ADVANCE->progressed(I)V"
 internal const val LAST_CARD_TAP = "$STORY_ADVANCE->lastCardTap(Ljava/lang/Object;)Z"
+internal const val RESTARTING = "$STORY_ADVANCE->restarting(Ljava/lang/Object;Ljava/lang/Object;)V"
 
 /** The trace Facebook's forward navigation writes as it picks the next card, the next bucket or leaving. */
 internal const val NEXT_OR_EXIT = "StoryViewerNavigationDelegate.moveToNextBucketOrThreadOrExit"
@@ -70,6 +71,9 @@ internal const val RESTART_HELPER = "hushfacebookRestartStory"
  * when a one-card bucket finishes on a surface that loops, and its back-tap on a first card
  * resets the same way. The loop makes that same call, found in the navigator by its shape, from
  * a method the patch adds to the callback's class, so a tap or swipe still moves on as before.
+ * It resets with the call's flag on, the replay Facebook asks for when a one-card bucket starts
+ * again: a finished story video clears its finished state only then, and with the flag off it
+ * stayed on its last frame with a full bar while a photo's timer restarted (#380).
  *
  * The held story's callback goes to the extension too, so the story play button can make the same
  * restart on a tap (#380), and every progress the callback gets tells the extension whether a card
@@ -360,11 +364,13 @@ internal fun restartRoute(navigator: Method, owner: String): RestartRoute? {
 
 /**
  * A static method of [owner], the callback's class, taking the callback: when Loop stories is on
- * it makes Facebook's own restart through [route] with false, as the navigator does, so the
- * finished card plays again from the start. It has registers of its own, so the callback lends it
- * none. The navigator reaches the restart only after its own checks, and the environment getter
- * throws once the viewer has detached, so a throw or a missing restart leaves the story on its
- * last frame instead of reaching the progress callback.
+ * it makes Facebook's own restart through [route] with true, Facebook's replay, so the finished
+ * card plays again from the start. The story video's reset listener clears its finished state
+ * only with the flag on, and the navigator's own false left a finished video still (#380). The
+ * extension logs the restart first, with the callback and the reset's owner. It has registers of
+ * its own, so the callback lends it none. The navigator reaches the restart only after its own
+ * checks, and the environment getter throws once the viewer has detached, so a throw or a
+ * missing restart leaves the story on its last frame instead of reaching the progress callback.
  */
 internal fun loopHelper(owner: String, route: RestartRoute): MutableMethod = ImmutableMethod(
     owner,
@@ -387,7 +393,8 @@ internal fun loopHelper(owner: String, route: RestartRoute): MutableMethod = Imm
             invoke-static { v0 }, ${route.lookup}
             move-result-object v0
             if-eqz v0, :done
-            const/4 v1, 0x0
+            invoke-static { p0, v0 }, $RESTARTING
+            const/4 v1, 0x1
             invoke-interface { v0, v1 }, ${route.reset}
             :done
             return-void
@@ -403,12 +410,13 @@ internal fun loopHelper(owner: String, route: RestartRoute): MutableMethod = Imm
 
 /** The helper's restart, from the environment getter up to (not including) the return it skips to. */
 internal const val LOOP_RESTART_FROM = 3
-internal const val LOOP_RESTART_TO = 10
+internal const val LOOP_RESTART_TO = 11
 
 /**
  * A static method of [owner] taking the callback that makes Facebook's own restart through [route]
- * with no switch to ask, for the play button's replay, and answers whether it reached the reset. A
- * throw goes back to the extension's replay, which reports it and leaves the story where it is.
+ * with no switch to ask, for the play button's replay, and answers whether it reached the reset. It
+ * resets with the flag on and logs first, as the loop does. A throw goes back to the extension's
+ * replay, which reports it and leaves the story where it is.
  */
 internal fun restartHelper(owner: String, route: RestartRoute): MutableMethod = ImmutableMethod(
     owner,
@@ -428,7 +436,8 @@ internal fun restartHelper(owner: String, route: RestartRoute): MutableMethod = 
             invoke-static { v0 }, ${route.lookup}
             move-result-object v0
             if-eqz v0, :none
-            const/4 v1, 0x0
+            invoke-static { p0, v0 }, $RESTARTING
+            const/4 v1, 0x1
             invoke-interface { v0, v1 }, ${route.reset}
             const/4 v0, 0x1
             return v0

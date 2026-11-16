@@ -7,9 +7,19 @@ package app.morphe.extension.facebook.stories;
 import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
@@ -31,6 +41,18 @@ public final class StoryAdvance {
 
     /** The progress Facebook reports a finished card with. */
     static final int COMPLETE = 1000;
+
+    /** Facebook's story card, which keeps its name: the log line reads its media type off it. */
+    private static final String STORY_CARD = "com.facebook.stories.model.StoryCard";
+
+    /** Names Facebook's media type enum keeps, so the log line can tell it from the card's other enums. */
+    private static final List<String> MEDIA_NAMES = Arrays.asList("PHOTO", "VIDEO");
+
+    /** What the log line says for anything it couldn't read. */
+    static final String UNREAD = "unread";
+
+    /** Whether the restart running now is the play button's, so the log line can tell it from a loop. */
+    private static boolean replaying;
 
     private static final WeakReference<Object> NONE = new WeakReference<>(null);
 
@@ -122,6 +144,7 @@ public final class StoryAdvance {
         Object callback = held.get();
         if (callback == null) return false;
         try {
+            replaying = true;
             if (!restart(callback)) return false;
             held = NONE;
             HookStatus.counted(FamilyNames.STORY_AUTO_ADVANCE, REPLAYED);
@@ -129,6 +152,8 @@ public final class StoryAdvance {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_AUTO_ADVANCE, "Story replay", failure);
             return false;
+        } finally {
+            replaying = false;
         }
     }
 
@@ -164,6 +189,88 @@ public final class StoryAdvance {
         if (test == null) return false;
         test.run();
         return true;
+    }
+
+    /**
+     * Injection point, in both restart helpers just before Facebook's reset, with the progress
+     * callback and the reset's owner, Facebook's interrupt manager. With debug logging on it logs
+     * the restart: the loop's or the play button's, the card's media type, and the reasons the
+     * viewer was held by just then, which keep a video paused after a reset that clears its
+     * finished state (#380). Builds nothing with debug logging off. Never throws.
+     */
+    public static void restarting(@Nullable Object callback, @Nullable Object interrupts) {
+        try {
+            boolean replay = replaying;
+            Logger.printDebug(() -> restartLine(callback, interrupts, replay));
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORY_AUTO_ADVANCE, "Story restart log", failure);
+        }
+    }
+
+    static String restartLine(@Nullable Object callback, @Nullable Object interrupts, boolean replay) {
+        return (replay ? "Story replay" : "Loop stories") + ": restarting the story (type " + mediaOf(callback)
+            + ") through Facebook's reset with replay on, held by " + reasonsOf(interrupts);
+    }
+
+    /**
+     * The media type of the callback's card, PHOTO or VIDEO and the rest, read off the card's
+     * getters that answer an enum with Facebook's media names, since the getters' own names change
+     * with each build. {@link #UNREAD} when there's no card or nothing answers.
+     */
+    private static String mediaOf(@Nullable Object callback) {
+        try {
+            Object card = fieldValue(callback, STORY_CARD);
+            if (card == null) return UNREAD;
+            Set<String> names = new TreeSet<>();
+            for (Method getter : card.getClass().getMethods()) {
+                if (Modifier.isStatic(getter.getModifiers()) || getter.getParameterTypes().length != 0) continue;
+                Object[] constants = getter.getReturnType().getEnumConstants();
+                if (constants == null || !enumNames(constants).containsAll(MEDIA_NAMES)) continue;
+                Object media = getter.invoke(card);
+                if (media instanceof Enum) names.add(((Enum<?>) media).name());
+            }
+            return names.isEmpty() ? UNREAD : String.join("/", names);
+        } catch (Throwable failure) {
+            return UNREAD;
+        }
+    }
+
+    /** The interrupt reasons the manager holds, its one enum set, as their names: [] when none. */
+    private static String reasonsOf(@Nullable Object interrupts) {
+        try {
+            if (interrupts == null) return UNREAD;
+            for (Class<?> type = interrupts.getClass(); type != null; type = type.getSuperclass()) {
+                for (Field field : type.getDeclaredFields()) {
+                    if (Modifier.isStatic(field.getModifiers())) continue;
+                    field.setAccessible(true);
+                    Object value = field.get(interrupts);
+                    if (value instanceof EnumSet) return enumNames(((EnumSet<?>) value).toArray()).toString();
+                }
+            }
+            return UNREAD;
+        } catch (Throwable failure) {
+            return UNREAD;
+        }
+    }
+
+    /** The value of the first instance field of [owner]'s class or one it extends declared as [typeName]. */
+    @Nullable
+    private static Object fieldValue(@Nullable Object owner, String typeName) throws IllegalAccessException {
+        if (owner == null) return null;
+        for (Class<?> type = owner.getClass(); type != null; type = type.getSuperclass()) {
+            for (Field field : type.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers()) || !typeName.equals(field.getType().getName())) continue;
+                field.setAccessible(true);
+                return field.get(owner);
+            }
+        }
+        return null;
+    }
+
+    private static List<String> enumNames(Object[] constants) {
+        List<String> names = new ArrayList<>();
+        for (Object constant : constants) if (constant instanceof Enum) names.add(((Enum<?>) constant).name());
+        return names;
     }
 
     /** Forgets the held story, for tests. */

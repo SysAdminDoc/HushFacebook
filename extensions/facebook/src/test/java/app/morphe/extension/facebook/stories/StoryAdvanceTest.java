@@ -15,13 +15,20 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowLog;
 
+import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.facebook.stories.model.StoryCard;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.BaseSettings;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
 
@@ -142,6 +149,87 @@ public class StoryAdvanceTest {
         Settings.BLOCK_STORY_AUTO_ADVANCE.save(true);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertFalse(StoryAdvance.lastCardTap(NavigationReason.TAP_FORWARD));
+    }
+
+    /** Stands in for Facebook's interrupt reasons, which keep their names. */
+    private enum Interrupt { PHOTO_TO_VIDEO_CAPPED, ACTIVITY_PAUSED }
+
+    /** Stands in for Facebook's interrupt manager, the reset's owner: its reasons are a set in a field. */
+    private static final class Interrupts {
+        final List<Object> listeners = new ArrayList<>();
+        final EnumSet<Interrupt> reasons = EnumSet.noneOf(Interrupt.class);
+        final AtomicBoolean paused = new AtomicBoolean();
+    }
+
+    /** Facebook's progress callback keeps its card in a field of a class it extends. */
+    private static class CardHolder {
+        StoryCard card;
+    }
+
+    private static final class Callback extends CardHolder {
+        Callback(StoryCard.Media media) {
+            card = new StoryCard(media);
+        }
+    }
+
+    @Test public void aLoopLogsTheStoryTypeAndWhatHeldIt() {
+        BaseSettings.DEBUG.save(true);
+        try {
+            Interrupts interrupts = new Interrupts();
+            interrupts.reasons.add(Interrupt.PHOTO_TO_VIDEO_CAPPED);
+            ShadowLog.clear();
+            StoryAdvance.restarting(new Callback(StoryCard.Media.VIDEO), interrupts);
+            assertEquals(List.of("Loop stories: restarting the story (type VIDEO) through Facebook's reset with "
+                + "replay on, held by [PHOTO_TO_VIDEO_CAPPED]"), logged());
+        } finally {
+            BaseSettings.DEBUG.resetToDefault();
+        }
+    }
+
+    @Test public void aReplayLogsAsTheReplayAndALoopAfterItAsTheLoop() {
+        BaseSettings.DEBUG.save(true);
+        try {
+            Callback callback = new Callback(StoryCard.Media.PHOTO);
+            Interrupts interrupts = new Interrupts();
+            StoryAdvance.held(callback);
+            StoryAdvance.restartForTests = () -> StoryAdvance.restarting(callback, interrupts);
+            ShadowLog.clear();
+            assertTrue(StoryAdvance.replay());
+            StoryAdvance.restarting(callback, interrupts);
+            assertEquals(List.of(
+                "Story replay: restarting the story (type PHOTO) through Facebook's reset with replay on, held by []",
+                "Loop stories: restarting the story (type PHOTO) through Facebook's reset with replay on, held by []"),
+                logged());
+        } finally {
+            BaseSettings.DEBUG.resetToDefault();
+        }
+    }
+
+    @Test public void aRestartItCannotReadIsStillLoggedAndNeverThrows() {
+        BaseSettings.DEBUG.save(true);
+        try {
+            ShadowLog.clear();
+            StoryAdvance.restarting(new Object(), new Object());
+            StoryAdvance.restarting(null, null);
+            String unread = "Loop stories: restarting the story (type unread) through Facebook's reset with replay "
+                + "on, held by unread";
+            assertEquals(List.of(unread, unread), logged());
+        } finally {
+            BaseSettings.DEBUG.resetToDefault();
+        }
+    }
+
+    @Test public void aRestartLogsNothingWithDebugLoggingOff() {
+        ShadowLog.clear();
+        StoryAdvance.restarting(new Callback(StoryCard.Media.VIDEO), new Interrupts());
+        assertEquals(List.of(), logged());
+    }
+
+    /** What StoryAdvance logged since the last clear. */
+    private static List<String> logged() {
+        List<String> lines = new ArrayList<>();
+        for (ShadowLog.LogItem item : ShadowLog.getLogsForTag("morphe: StoryAdvance")) lines.add(item.msg);
+        return lines;
     }
 
     /** The diagnostic report's line for the patch, or empty when it has none. */
