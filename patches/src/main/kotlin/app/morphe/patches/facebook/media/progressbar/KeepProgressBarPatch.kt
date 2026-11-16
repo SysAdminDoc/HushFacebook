@@ -526,11 +526,11 @@ val keepProgressBarPatch = bytecodePatch(
         val liveCheck = liveChecks.singleOrNull()
             ?: refuse("${liveChecks.size} seek handlers skip a live video's ${seekRequest.type}, expected one")
         checkLiveSeekThrough(liveCheck)
-        val liveRewind = liveRewind(
-            classDefByOrNull(liveCheck.live.definingClass) ?: refuse("${liveCheck.live.definingClass}, the player, isn't in this APK"),
-            liveCheck,
-            liveNowField(classDefByOrNull(VIDEO_PLAYER_PARAMS) ?: refuse("VideoPlayerParams isn't in this APK")),
-        )
+        val player = classDefByOrNull(liveCheck.live.definingClass) ?: refuse("${liveCheck.live.definingClass}, the player, isn't in this APK")
+        val liveNow = liveNowField(classDefByOrNull(VIDEO_PLAYER_PARAMS) ?: refuse("VideoPlayerParams isn't in this APK"))
+        val liveRewind = liveRewind(player, liveCheck, liveNow)
+        // The scrubber search results open a live video with seeks from its bar straight in the player's own seek.
+        val liveGate = liveGate(player, liveCheck, liveNow, liveRewind)
 
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(scrubber.passive) }
             .activeInstead(scrubber, graph)
@@ -609,6 +609,7 @@ val keepProgressBarPatch = bytecodePatch(
         }
         mutableClassDefBy(liveCheck.method.definingClass).methods.single { it.sameAs(liveCheck.method) }
             .letsLiveSeekThrough(liveCheck)
+        mutableClassDefBy(liveRewind.player).methods.single { it.sameAs(liveGate.method) }.rewindsForTheBar(liveGate)
         fillLiveRewound(liveRewind)
         enableStatus("keepProgressBar")
     }

@@ -248,3 +248,76 @@ internal fun BytecodePatchContext.fillLiveRewound(rewind: LiveRewind) {
         """,
     )
 }
+
+internal const val LIVE_BAR_SEEK = "$PROGRESS_BAR->liveBarSeek(Ljava/lang/Object;Ljava/lang/Object;)V"
+
+/**
+ * The player's own skip of a seek on a live video, in the [method] its seek hands the seek to (587
+ * arm64 `LX/05MK;->A1a(LX/02xv;IZ)V`, from `JsQ`): past its read of the live flag, [at] is its ask
+ * whether the video was rewound, and a no returns without the seek. The scrubber search results
+ * open a live video with sends its bar's seek straight there, past the seek handler (#482).
+ */
+internal class LiveGate(val method: Method, val at: Int)
+
+/**
+ * The live gate of [rewind]'s player: the one method of its own that [check]'s seek calls, taking
+ * the trigger, a position and a flag, where a read of [liveNow] comes before the player's ask of
+ * a check that reads what the latency setter writes, whose no returns. Refuses otherwise, or when
+ * the hook's registers wouldn't fit.
+ */
+internal fun liveGate(player: ClassDef, check: LiveSeekCheck, liveNow: FieldReference, rewind: LiveRewind): LiveGate {
+    fun own(call: MethodReference) = player.methods.singleOrNull {
+        it.name == call.name && it.returnType == call.returnType && it.implementation != null &&
+            it.parameterTypes.map(CharSequence::toString) == call.parameterTypes.map(CharSequence::toString)
+    }
+    val seek = own(check.seek) ?: refuseLiveSeek("${player.type} has no ${check.seek.name} of its own")
+    val handedTo = seek.implementation!!.instructions.mapNotNull { it.referencedMethod() }
+        .filter { it.definingClass == player.type }.distinctBy { it.toString() }
+    val call = handedTo.singleOrNull()
+        ?: refuseLiveSeek("${player.type}->${seek.name} calls ${handedTo.size} of the player's methods, expected the one it hands the seek to")
+    val gate = own(call) ?: refuseLiveSeek("${player.type} has no ${call.name} of its own")
+    val parameters = listOf(check.seek.parameterTypes.first().toString(), "I", "Z")
+    if (AccessFlags.STATIC.isSet(gate.accessFlags) || gate.returnType != "V" || gate.parameterTypes.map(CharSequence::toString) != parameters) {
+        refuseLiveSeek("${player.type}->${gate.name} doesn't take the trigger, a position and a flag")
+    }
+    val written = rewind.setter.implementation!!.instructions
+        .mapNotNull { (it as? ReferenceInstruction)?.reference as? FieldReference }
+        .filter { it.definingClass == player.type }.map { it.toString() }.toSet()
+    val implementation = gate.implementation!!
+    val code = implementation.instructions.toList()
+    // The player and the trigger, in the last registers: this, then the trigger, the position and the flag.
+    val self = implementation.registerCount - 4
+    val liveRead = code.indexOfFirst { it.opcode == Opcode.IGET_BOOLEAN && it.referenced() == liveNow.toString() }
+    if (liveRead < 0) refuseLiveSeek("${player.type}->${gate.name} doesn't read $liveNow")
+    val asks = (liveRead + 1 until code.size - 3).filter { i ->
+        val ask = code[i]
+        val asked = ask.referencedMethod()
+        ask.opcode == Opcode.INVOKE_VIRTUAL && asked != null && asked.definingClass == player.type &&
+            asked.returnType == "Z" && asked.parameterTypes.isEmpty() &&
+            (ask as FiveRegisterInstruction).registerCount == 1 && ask.registerC == self &&
+            code[i + 1].opcode == Opcode.MOVE_RESULT && code[i + 2].opcode == Opcode.IF_NEZ &&
+            (code[i + 2] as OneRegisterInstruction).registerA == (code[i + 1] as OneRegisterInstruction).registerA &&
+            code[i + 3].opcode == Opcode.RETURN_VOID &&
+            own(asked)?.implementation?.instructions?.any { it.referenced() in written } == true
+    }
+    val at = asks.singleOrNull()
+        ?: refuseLiveSeek("${player.type}->${gate.name} asks ${asks.size} times whether a live video was rewound, expected once")
+    if (self + 1 > 15) refuseLiveSeek("${player.type}->${gate.name} keeps its trigger past v15")
+    return LiveGate(gate, at)
+}
+
+private fun Instruction.referencedMethod() = (this as? ReferenceInstruction)?.reference as? MethodReference
+
+/**
+ * In front of the player's ask whether a live video was rewound, the extension gets the seek's
+ * trigger and the player, and marks the video rewound for the scrubber's bar, so the ask says yes.
+ * Refuses when a jump lands on the ask, as the hook would be skipped there.
+ */
+internal fun MutableMethod.rewindsForTheBar(gate: LiveGate) {
+    val ask = implementation!!.instructions[gate.at] as BuilderInstruction
+    if (ask.opcode != Opcode.INVOKE_VIRTUAL || ask.referenced() != gate.method.implementation!!.instructions.elementAt(gate.at).referenced()) {
+        refuseLiveSeek("$definingClass->$name changed at its rewound check")
+    }
+    if (ask.location.labels.isNotEmpty()) refuseLiveSeek("$definingClass->$name has a jump onto its rewound check")
+    addInstructions(gate.at, "invoke-static { p1, p0 }, $LIVE_BAR_SEEK")
+}

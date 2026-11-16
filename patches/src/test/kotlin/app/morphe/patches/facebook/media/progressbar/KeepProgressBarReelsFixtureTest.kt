@@ -1449,6 +1449,29 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$where: on the player and the flag it's handed", listOf(2, 0, 1), listOf(set.registerCount, set.registerC, set.registerD))
         extensionHas(where, LIVE_SEEK_REFUSED)
         extensionHas(where, "$PROGRESS_BAR->$LIVE_REWOUND_STUB(Ljava/lang/Object;Z)V")
+
+        // The scrubber search results open a live video with sends its bar's seek straight to the gate
+        // the player's seek hands on to, past the handler, so the hook goes in front of the gate's ask.
+        val liveGate = liveGate(player, check, liveNow, rewind)
+        val atGate = "$name: ${player.type}->${liveGate.method.name}"
+        assertEquals("$atGate: the gate is the player's seek's own", gate.name, liveGate.method.name)
+        val gateStock = liveGate.method.code()
+        assertEquals("$atGate: a no to the ask returns without the seek",
+            listOf(Opcode.INVOKE_VIRTUAL, Opcode.MOVE_RESULT, Opcode.IF_NEZ, Opcode.RETURN_VOID),
+            gateStock.subList(liveGate.at, liveGate.at + 4).map { it.opcode })
+        assertEquals("$atGate: the ask is the rewound check", rewound.name, ((gateStock[liveGate.at] as ReferenceInstruction).reference as MethodReference).name)
+        val players = PatchContexts.of(listOf(ImmutableClassDef.of(player)))
+        val gateMethod = players.mutableClassDefBy(player.type).methods.single { it.sameAs(liveGate.method) }
+        gateMethod.rewindsForTheBar(liveGate)
+        val gatePatched = gateMethod.code()
+        assertEquals("$atGate: the extension hears of the seek", LIVE_BAR_SEEK, gatePatched[liveGate.at].reference())
+        val heard = gatePatched[liveGate.at] as FiveRegisterInstruction
+        val self = liveGate.method.implementation!!.registerCount - 4
+        assertEquals("$atGate: with the trigger and the player", listOf(2, self + 1, self),
+            listOf(heard.registerCount, heard.registerC, heard.registerD))
+        assertEquals("$atGate: right in front of the ask", gateStock[liveGate.at].reference(), gatePatched[liveGate.at + 1].reference())
+        assertEquals("$atGate: Facebook's code stays", gateStock.kinds(), gatePatched.filterIndexed { index, _ -> index != liveGate.at }.kinds())
+        extensionHas(atGate, LIVE_BAR_SEEK)
     }
 
     /**

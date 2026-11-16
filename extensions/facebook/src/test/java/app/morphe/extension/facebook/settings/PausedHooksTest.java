@@ -124,6 +124,7 @@ import app.morphe.extension.facebook.media.FeedSound;
 import app.morphe.extension.facebook.media.FrameStepForTests;
 import app.morphe.extension.facebook.media.PinchZoomForTests;
 import app.morphe.extension.facebook.media.ProgressBar;
+import app.morphe.extension.facebook.media.ProgressBarForTests;
 import app.morphe.extension.facebook.media.QualityChoiceForTests;
 import app.morphe.extension.facebook.media.SkipSilence;
 import app.morphe.extension.facebook.media.ReelSpeedForTests;
@@ -1236,7 +1237,7 @@ public class PausedHooksTest {
         probes.put(PatchFamily.PROGRESS_BAR, Arrays.asList(ProgressBar::keepsReelBar, ProgressBar::keepsControls,
                 ProgressBar::liftsFooter, ProgressBar::noFadedBar, PausedHooksTest::holdsATapOnTheBar,
                 PausedHooksTest::startsTheNextReelOver, PausedHooksTest::givesAThinBarTheKeptLook,
-                PausedHooksTest::letsALiveSeekThrough));
+                PausedHooksTest::letsALiveSeekThrough, ProgressBarForTests::rewindsForTheBarsSeek));
         // A tab asked for shows without its slide.
         probes.put(PatchFamily.SCREEN_TRANSITIONS, Collections.singletonList(() -> !ScreenTransitionsForTests.slides()));
         // The app icon benefit is answered yes, at the provider's check and at the picker's own look,

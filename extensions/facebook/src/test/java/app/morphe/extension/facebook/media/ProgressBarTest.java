@@ -1135,6 +1135,65 @@ public class ProgressBarTest {
         assertTrue(ProgressBar.liveSeekRefused(1, releasedAt(400), "player"));
     }
 
+    /**
+     * #482: the scrubber search results open a live video with sends its bar's seek straight to the
+     * player, past the seek handler, and the player marks the video rewound first so the seek goes through.
+     */
+    @Test
+    public void theScrubbersBarSeekOnALiveVideoIsLetThroughRewound() {
+        List<String> calls = recordLiveRewinds();
+        for (boolean kept : new boolean[] {false, true}) {
+            Settings.KEEP_PROGRESS_BAR.save(kept);
+            calls.clear();
+            ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, "player");
+            assertEquals("kept " + kept, Collections.singletonList("player true"), calls);
+        }
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.LIVE_BAR_SEEK + " 2"));
+    }
+
+    /** Any other seek on a live video, and one with no player, stay Facebook's to skip. */
+    @Test
+    public void anotherSeekOnALiveVideoIsLeftToFacebook() {
+        List<String> calls = recordLiveRewinds();
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_USER, "player");
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_PLAYER, "player");
+        ProgressBar.liveBarSeek("BY_SEEKBAR_CONTROLLER", "player");
+        ProgressBar.liveBarSeek(null, "player");
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, null);
+        assertTrue(calls.toString(), calls.isEmpty());
+    }
+
+    /** The reel bar's seek the handler let through reaches the player already rewound, so it isn't marked twice. */
+    @Test
+    public void aSeekTheHandlerLetThroughIsntRewoundAgain() {
+        List<String> calls = recordLiveRewinds();
+        assertFalse(ProgressBar.liveSeekRefused(1, releasedAt(400), "player"));
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, "player");
+        assertEquals(Collections.singletonList("player true"), calls);
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, "player");
+        assertEquals("the next bar seek is the scrubber's own", Arrays.asList("player true", "player true"), calls);
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.LIVE_SEEK + " 1"));
+        assertTrue(line, line.contains(ProgressBar.LIVE_BAR_SEEK + " 1"));
+    }
+
+    @Test
+    public void theScrubbersBarSeekUnderPauseKeepsFacebooksSkip() {
+        List<String> calls = recordLiveRewinds();
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, "player");
+        assertTrue(calls.isEmpty());
+    }
+
+    @Test
+    public void aThrowingRewindForTheScrubbersBarStaysOutOfFacebook() {
+        ProgressBar.liveRewoundForTests = (player, rewound) -> {
+            throw new IllegalStateException("Facebook moved");
+        };
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, "player");
+    }
+
     @Test
     public void aReelNothingDrewSinceItsMountHasItsUpdateRunAgainUntilItDraws() {
         Settings.KEEP_PROGRESS_BAR.save(true);
