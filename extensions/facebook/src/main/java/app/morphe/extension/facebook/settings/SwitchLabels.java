@@ -293,6 +293,7 @@ final class SwitchLabels {
         if (setting == Settings.FEED_VIDEO_DOUBLE_TAP_SKIP) return L10n.t("Double tap to skip on feed videos");
         if (setting == Settings.FEED_VIDEO_SPEED_BUTTON) return L10n.t("Speed button on feed videos");
         if (setting == Settings.FEED_VIDEO_SEEK_BAR_TIMES) return L10n.t("Times on the seek bar");
+        if (setting == Settings.FEED_VIDEO_SEEK_BAR_LENGTH) return L10n.t("Full length on the seek bar");
         if (setting == Settings.CENTER_FULL_SCREEN_VIDEOS) return L10n.t("Open full screen videos centered");
         if (setting == Settings.STORY_SEEK_BAR) return L10n.t("Seek bar on stories");
         if (setting == Settings.STORY_SEEK_BAR_FADE) return L10n.t("Fade the story seek bar");

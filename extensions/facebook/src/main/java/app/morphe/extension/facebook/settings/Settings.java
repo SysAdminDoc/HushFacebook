@@ -1951,6 +1951,18 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * With {@link #FEED_VIDEO_SEEK_BAR_TIMES} on, the bar's right end shows the video's whole length
+     * in place of the time left (#487). Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_SEEK_BAR_LENGTH =
+            new BooleanSetting("hushfacebook_feed_video_seek_bar_length", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
      * A video opened in Facebook's full screen player, from a comment or a link, starts with its
      * details and comments folded away, so it sits in the middle of the screen the way the
      * player's own chevron leaves it (#242). Asked as each video is set up. Starts off.

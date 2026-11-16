@@ -378,6 +378,7 @@ public final class SettingsBackup {
             Settings.FEED_VIDEO_SEEK_BAR_LOWER,
             Settings.FEED_VIDEO_SEEK_BAR_EDGE,
             Settings.FEED_VIDEO_SEEK_BAR_TIMES,
+            Settings.FEED_VIDEO_SEEK_BAR_LENGTH,
             Settings.FEED_VIDEO_FULL_PLAYER_BUTTON,
             Settings.FEED_VIDEO_FULL_PLAYER_CORNER,
             Settings.FEED_VIDEO_SKIP_BUTTONS,

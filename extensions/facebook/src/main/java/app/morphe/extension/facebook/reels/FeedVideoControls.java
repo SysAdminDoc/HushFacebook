@@ -323,6 +323,11 @@ public final class FeedVideoControls {
         return seekOn() && Settings.FEED_VIDEO_SEEK_BAR_TIMES.get();
     }
 
+    /** The bar's right end shows the whole length in place of the time left (#487). */
+    private static boolean lengthOn() {
+        return Settings.FEED_VIDEO_SEEK_BAR_LENGTH.get();
+    }
+
     private static boolean storySeekOn() {
         return inBuild() && Settings.STORY_SEEK_BAR.get();
     }
@@ -1326,6 +1331,8 @@ public final class FeedVideoControls {
         boolean cancelled;
         /** The times show at the line's ends. */
         boolean times;
+        /** The right end shows the whole length, not the time left. */
+        boolean length;
         /** A drag on a story's bar paused it, and the let go plays it again. */
         boolean held;
         int landing = -1;
@@ -1373,7 +1380,8 @@ public final class FeedVideoControls {
             setVisibility(length > 0 ? View.VISIBLE : View.GONE);
             if (length <= 0) return;
             if (getMax() != length) setMax(length);
-            times(!control.story && timesOn());
+            boolean shown = !control.story && timesOn();
+            times(shown, shown && lengthOn());
             int position = Math.max(0, Math.min(length, access.position(player)));
             // The player reports the old spot until a seek lands, which would spring the bar back.
             if (landing >= 0 && Math.abs(position - landing) > LANDED_WITHIN_MS && SystemClock.uptimeMillis() < landingUntil) return;
@@ -1384,16 +1392,20 @@ public final class FeedVideoControls {
          * With Times on the seek bar on, the time so far shows at the line's left end and the time
          * left at its right, as in Facebook's player (#239). The line makes room for them, and a
          * SeekBar maps a touch between its paddings, so the time under a finger stays the one it gets.
+         * With [whole], Full length on the seek bar, the right end shows the video's length in place of
+         * the time left (#487). The room is measured on the time left either way, the wider of the two,
+         * so the line keeps its length when the switch changes.
          */
-        void times(boolean on) {
+        void times(boolean on, boolean whole) {
             int room = 0;
             if (on && getMax() > 0) {
                 paint.setTextSize(timeSize());
                 room = Math.round(paint.measureText("-" + ProgressBar.time(getMax()))
                         + 8 * getResources().getDisplayMetrics().density);
             }
-            boolean changed = on != times;
+            boolean changed = on != times || whole != length;
             times = on;
+            length = whole;
             if (getPaddingLeft() != room || getPaddingRight() != room) {
                 setPadding(room, 0, room, 0);
             } else if (changed) {
@@ -1437,7 +1449,10 @@ public final class FeedVideoControls {
             if (times && getMax() > 0) drawTimes(canvas, y, density);
             if (dragging) drawTime(canvas, x, y - radius - 2 * density, density);
         }
-        /** The time so far at the left end and the time left at the right, white with a dark edge so they read on any video. */
+        /**
+         * The time so far at the left end and the time left (or the whole length) at the right, white
+         * with a dark edge so they read on any video.
+         */
         private void drawTimes(Canvas canvas, float y, float density) {
             paint.setTextSize(timeSize());
             paint.setShadowLayer(2 * density, 0, 0, 0xCC000000);
@@ -1445,7 +1460,8 @@ public final class FeedVideoControls {
             paint.setTextAlign(Paint.Align.LEFT);
             canvas.drawText(ProgressBar.time(getProgress()), 2 * density, base, paint);
             paint.setTextAlign(Paint.Align.RIGHT);
-            canvas.drawText("-" + ProgressBar.time(getMax() - getProgress()), getWidth() - 2 * density, base, paint);
+            String right = length ? ProgressBar.time(getMax()) : "-" + ProgressBar.time(getMax() - getProgress());
+            canvas.drawText(right, getWidth() - 2 * density, base, paint);
             paint.setTextAlign(Paint.Align.CENTER);
             paint.clearShadowLayer();
         }

@@ -2280,6 +2280,8 @@ Playback speed	播放速度
 Adds buttons to feed videos that jump back or ahead 10 seconds, like Facebook's own player has. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	为动态视频添加后退或前进 10 秒的按钮，和 Facebook 自己的播放器一样。直播视频和广告仍使用它们自己的控件。开启“点按播放”时，还需要开启“动态消息视频控件”。
 Adds a button to feed videos that shows their speed. Each tap moves to the next one: 1x, 1.25x, 1.5x, 2x, then 0.5x. Live videos and ads keep their own controls. With Tap to play on, it needs Inline feed video controls on too.	为动态视频添加一个显示播放速度的按钮。每点一次切换到下一档：1x、1.25x、1.5x、2x，然后是 0.5x。直播视频和广告仍使用它们自己的控件。开启“点按播放”时，还需要开启“动态消息视频控件”。
 Shows how far into a feed video you are at the left end of its seek bar, and how much is left at the right end. Needs Seek bar on feed videos on.	在动态视频进度条的左端显示已播放的时间，右端显示剩余时间。需要开启“动态视频上的进度条”。
+Full length on the seek bar	进度条上显示总时长
+Shows a feed video's full length at the right end of its seek bar, in place of the time left. Needs Times on the seek bar on.	在动态视频进度条的右端显示视频总时长，而不是剩余时间。需要开启“进度条上的时间”。
 Adds a button to feed videos that opens the video in Facebook's own full player, with all its controls. Live videos get it too. With Tap to play on, it needs Inline feed video controls on too.	为动态中的视频添加一个按钮，在 Facebook 自己的完整播放器中打开视频，附带全部控件。直播视频也有。开启“点按播放”时，还需要开启“动态消息视频控件”。
 # context: switch title under Playback; on, the full player button sits in a feed video's bottom corner next to Facebook's speaker (mute) button
 Full player button by the speaker	完整播放器按钮放在扬声器旁

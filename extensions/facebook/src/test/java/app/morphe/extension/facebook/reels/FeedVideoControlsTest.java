@@ -165,6 +165,7 @@ public class FeedVideoControlsTest {
         Settings.FEED_VIDEO_SKIP_BUTTONS.resetToDefault();
         Settings.FEED_VIDEO_SPEED_BUTTON.resetToDefault();
         Settings.FEED_VIDEO_SEEK_BAR_TIMES.resetToDefault();
+        Settings.FEED_VIDEO_SEEK_BAR_LENGTH.resetToDefault();
         Settings.TAP_TO_PLAY.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         LogBufferManager.clearLogBuffer();
@@ -1313,6 +1314,35 @@ public class FeedVideoControlsTest {
         drain();
         tick();
         assertEquals(0, bar().getPaddingLeft());
+    }
+
+    @Test public void fullLengthOnTheSeekBarShowsTheWholeVideoInPlaceOfTheTimeLeft() {
+        barOn();
+        Settings.FEED_VIDEO_SEEK_BAR_LENGTH.save(true);
+        drain();
+        tick();
+        assertEquals("it needs Times on the seek bar", 0, bar().getPaddingLeft());
+        assertEquals(new ArrayList<String>(), drawnTexts(bar()));
+        Settings.FEED_VIDEO_SEEK_BAR_TIMES.save(true);
+        drain();
+        tick();
+        int room = bar().getPaddingLeft();
+        assertTrue("room for the text and a gap: " + room, room > 8);
+        assertEquals(java.util.Arrays.asList("0:15", "1:00"), drawnTexts(bar()));
+        Settings.FEED_VIDEO_SEEK_BAR_LENGTH.save(false);
+        drain();
+        tick();
+        assertEquals("the time left comes back", java.util.Arrays.asList("0:15", "-0:45"), drawnTexts(bar()));
+        assertEquals("the line keeps the same room either way", room, bar().getPaddingLeft());
+    }
+
+    /** The text [bar] draws, in order. */
+    private static List<String> drawnTexts(SeekBar bar) {
+        List<String> texts = new ArrayList<>();
+        bar.draw(new Canvas(Bitmap.createBitmap(1080, Math.max(1, bar.getHeight()), Bitmap.Config.ARGB_8888)) {
+            @Override public void drawText(String text, float x, float y, android.graphics.Paint paint) { texts.add(text); }
+        });
+        return texts;
     }
 
     @Test public void aSurfaceTooNarrowForTwoButtonsGetsNeitherButOneFits() {
