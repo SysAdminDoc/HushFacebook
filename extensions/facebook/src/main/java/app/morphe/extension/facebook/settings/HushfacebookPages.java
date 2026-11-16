@@ -373,6 +373,14 @@ final class HushfacebookPages {
                 L10n.t("Import settings"),
                 L10n.t("Choose a settings file you saved earlier. You'll see how many switches it changes before anything "
                         + "is applied.")), SettingsIcons.DOWNLOADS));
+        // At once and with no dialog, since Undo the reset right below takes it back.
+        hushfacebook.addPreference(mark(new BackupRow(page, context, SettingsBackupPreference.RESET,
+                L10n.t("Reset settings"),
+                L10n.t("Turns every switch and choice that Export settings saves back to how a new install has them. "
+                        + "Pause, Debug logging and the update check stay as they are.")), SettingsIcons.DELETE));
+        hushfacebook.addPreference(mark(new BackupRow(page, context, SettingsBackupPreference.UNDO_RESET,
+                L10n.t("Undo the reset"),
+                L10n.t("Brings back the switches and choices you had before the last reset.")), SettingsIcons.BACK));
         subheading(hushfacebook, L10n.t("Troubleshooting"));
         // The settings entry's own: it's what a Facebook that won't open can still send.
         hushfacebook.addPreference(mark(toggle(context, Settings.SAVE_CRASH_FILE,

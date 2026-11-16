@@ -2873,3 +2873,15 @@ Clear mode	Modo despejado
 Scroll to next reel automatically	Pasar al siguiente reel automáticamente
 Transcript	Transcripción
 Audio and language	Audio e idioma
+Reset settings	Restablecer configuración
+Turns every switch and choice that Export settings saves back to how a new install has them. Pause, Debug logging and the update check stay as they are.	Devuelve cada interruptor y opción que guarda Exportar configuración a como vienen en una instalación nueva. Pausa, Registro de depuración y la búsqueda de actualizaciones se quedan como están.
+Undo the reset	Deshacer el restablecimiento
+Brings back the switches and choices you had before the last reset.	Recupera los interruptores y opciones que tenías antes del último restablecimiento.
+Couldn't reset the settings. Nothing was changed.	No se pudo restablecer la configuración. No se cambió nada.
+Your settings already match a new install.	Tu configuración ya es la de una instalación nueva.
+Resetting settings	Restableciendo la configuración
+Settings reset. Undo the reset puts yours back.	Configuración restablecida. Deshacer el restablecimiento recupera la tuya.
+Couldn't undo the reset. Nothing was changed.	No se pudo deshacer el restablecimiento. No se cambió nada.
+Putting your settings back	Recuperando tu configuración
+Your settings are back the way they were before the reset.	Tu configuración volvió a estar como antes del restablecimiento.
+Couldn't finish, and couldn't put back the settings you had. Check the switches on this screen.	No se pudo terminar ni restaurar la configuración que tenías. Revisa los interruptores de esta pantalla.

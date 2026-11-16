@@ -2399,6 +2399,13 @@ public class Settings extends BaseSettings {
             new StringSetting("hushfacebook_seen_menu_tiles", "");
 
     /**
+     * The settings file as it stood just before the last Reset settings, which Undo the reset
+     * applies, or blank when there's nothing to undo. Never in a settings file of its own.
+     */
+    public static final StringSetting RESET_UNDO =
+            new StringSetting("hushfacebook_reset_undo", "");
+
+    /**
      * The share sheet's Send to group button, which makes a new group chat of the people picked,
      * and its new-group row, header icon and search button. Send separately stays. Off until it's
      * turned on.

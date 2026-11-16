@@ -2759,3 +2759,15 @@ Clear mode	Modo limpo
 Scroll to next reel automatically	Rolar para o próximo reel automaticamente
 Transcript	Transcrição
 Audio and language	Áudio e idioma
+Reset settings	Redefinir configurações
+Turns every switch and choice that Export settings saves back to how a new install has them. Pause, Debug logging and the update check stay as they are.	Volta cada botão e opção que Exportar configurações salva para como vêm numa instalação nova. Pausa, Registro de depuração e a verificação de atualizações ficam como estão.
+Undo the reset	Desfazer a redefinição
+Brings back the switches and choices you had before the last reset.	Traz de volta os botões e as opções que você tinha antes da última redefinição.
+Couldn't reset the settings. Nothing was changed.	Não foi possível redefinir as configurações. Nada foi alterado.
+Your settings already match a new install.	Suas configurações já são as de uma instalação nova.
+Resetting settings	Redefinindo as configurações
+Settings reset. Undo the reset puts yours back.	Configurações redefinidas. Desfazer a redefinição traz as suas de volta.
+Couldn't undo the reset. Nothing was changed.	Não foi possível desfazer a redefinição. Nada foi alterado.
+Putting your settings back	Trazendo suas configurações de volta
+Your settings are back the way they were before the reset.	Suas configurações voltaram a ser como antes da redefinição.
+Couldn't finish, and couldn't put back the settings you had. Check the switches on this screen.	Não foi possível terminar nem restaurar as configurações que você tinha. Confira as opções nesta tela.

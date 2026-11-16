@@ -2868,3 +2868,15 @@ Clear mode	清爽模式
 Scroll to next reel automatically	自动滚动到下一个 Reels
 Transcript	文字记录
 Audio and language	音频和语言
+Reset settings	重置设置
+Turns every switch and choice that Export settings saves back to how a new install has them. Pause, Debug logging and the update check stay as they are.	把“导出设置”会保存的每个开关和选项恢复成新安装时的样子。暂停、调试日志和更新检查保持不变。
+Undo the reset	撤销重置
+Brings back the switches and choices you had before the last reset.	恢复你在上次重置之前的开关和选项。
+Couldn't reset the settings. Nothing was changed.	无法重置设置。未更改任何内容。
+Your settings already match a new install.	你的设置已经和新安装时一样。
+Resetting settings	正在重置设置
+Settings reset. Undo the reset puts yours back.	设置已重置。“撤销重置”可以找回你原来的设置。
+Couldn't undo the reset. Nothing was changed.	无法撤销重置。未更改任何内容。
+Putting your settings back	正在恢复你的设置
+Your settings are back the way they were before the reset.	你的设置已恢复到重置之前的样子。
+Couldn't finish, and couldn't put back the settings you had. Check the switches on this screen.	无法完成，也无法恢复你原来的设置。请检查此页面上的开关。

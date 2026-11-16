@@ -534,10 +534,19 @@ final class SettingsRows {
         }
     }
 
-    /** Export settings or Import settings. */
-    static final class BackupRow extends SettingsBackupPreference {
+    /** Export settings, Import settings, Reset settings or Undo the reset. */
+    static final class BackupRow extends SettingsBackupPreference implements ImmediateAction {
+        private final boolean actsAtOnce;
+
         BackupRow(HushfacebookPreferenceFragment page, Context context, int action, String title, String summary) {
             super(page, context, action, title, summary);
+            // Export and Import open the file picker first. The other two act on the tap.
+            actsAtOnce = action == RESET || action == UNDO_RESET;
+        }
+
+        @Override
+        public boolean actsOnTap() {
+            return actsAtOnce;
         }
 
         @Override

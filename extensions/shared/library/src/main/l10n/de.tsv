@@ -2873,3 +2873,15 @@ Clear mode	Klarer Modus
 Scroll to next reel automatically	Automatisch zum nächsten Reel scrollen
 Transcript	Transkript
 Audio and language	Audio und Sprache
+Reset settings	Einstellungen zurücksetzen
+Turns every switch and choice that Export settings saves back to how a new install has them. Pause, Debug logging and the update check stay as they are.	Setzt jeden Schalter und jede Auswahl, die Einstellungen exportieren speichert, auf den Stand einer neuen Installation zurück. Pause, Debug-Protokollierung und die Update-Prüfung bleiben, wie sie sind.
+Undo the reset	Zurücksetzen rückgängig machen
+Brings back the switches and choices you had before the last reset.	Holt die Schalter und Auswahlen zurück, die du vor dem letzten Zurücksetzen hattest.
+Couldn't reset the settings. Nothing was changed.	Die Einstellungen ließen sich nicht zurücksetzen. Es wurde nichts geändert.
+Your settings already match a new install.	Deine Einstellungen entsprechen schon einer neuen Installation.
+Resetting settings	Einstellungen werden zurückgesetzt
+Settings reset. Undo the reset puts yours back.	Einstellungen zurückgesetzt. Zurücksetzen rückgängig machen holt deine zurück.
+Couldn't undo the reset. Nothing was changed.	Das Zurücksetzen ließ sich nicht rückgängig machen. Es wurde nichts geändert.
+Putting your settings back	Deine Einstellungen werden zurückgeholt
+Your settings are back the way they were before the reset.	Deine Einstellungen sind wieder so wie vor dem Zurücksetzen.
+Couldn't finish, and couldn't put back the settings you had. Check the switches on this screen.	Das ließ sich nicht abschließen, und deine vorherigen Einstellungen ließen sich nicht wiederherstellen. Prüfe die Schalter auf diesem Bildschirm.

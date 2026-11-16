@@ -2877,3 +2877,15 @@ Clear mode	清爽模式
 Scroll to next reel automatically	自動捲動到下一個 Reels
 Transcript	文字記錄
 Audio and language	音訊和語言
+Reset settings	重設設定
+Turns every switch and choice that Export settings saves back to how a new install has them. Pause, Debug logging and the update check stay as they are.	把「匯出設定」會儲存的每個開關與選項還原成新安裝時的樣子。暫停、偵錯記錄與更新檢查維持不變。
+Undo the reset	復原重設
+Brings back the switches and choices you had before the last reset.	還原你在上次重設之前的開關與選項。
+Couldn't reset the settings. Nothing was changed.	無法重設設定。未變更任何內容。
+Your settings already match a new install.	你的設定已經和新安裝時一樣。
+Resetting settings	正在重設設定
+Settings reset. Undo the reset puts yours back.	已重設設定。「復原重設」可以找回你原本的設定。
+Couldn't undo the reset. Nothing was changed.	無法復原重設。未變更任何內容。
+Putting your settings back	正在還原你的設定
+Your settings are back the way they were before the reset.	你的設定已還原成重設之前的樣子。
+Couldn't finish, and couldn't put back the settings you had. Check the switches on this screen.	無法完成，也無法還原原有設定。請檢查此畫面上的開關。

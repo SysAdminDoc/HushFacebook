@@ -32,6 +32,8 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
+import org.json.JSONException;
+
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -109,6 +111,9 @@ import app.morphe.extension.shared.settings.preference.LogBufferManager;
 public class SettingsBackupPreference extends Preference {
     static final int EXPORT = 7311;
     static final int IMPORT = 7312;
+    /** Reset settings and Undo the reset act at once, with no file and no picker. */
+    static final int RESET = 7313;
+    static final int UNDO_RESET = 7314;
 
     /** What a settings file is saved as. */
     static final String MIME_TYPE = "application/json";
@@ -183,20 +188,42 @@ public class SettingsBackupPreference extends Preference {
         super(context);
         rowAction = action;
         restingSummary = summary;
-        setKey(action == EXPORT ? "action_export_settings" : "action_import_settings");
+        setKey(keyFor(action));
         setPersistent(false);
         setTitle(title);
         setSummary(summary);
         setOnPreferenceClickListener(preference -> {
             // Rows are out of reach while a run is going, so this is only the race between a tap
             // and that.
-            if (OWNER.get() == null && !stillStalled()) pickFile(page, action);
+            if (OWNER.get() != null || stillStalled()) return true;
+            if (action == RESET) reset(page);
+            else if (action == UNDO_RESET) undoReset(page);
+            else pickFile(page, action);
             return true;
         });
         latestPage = new WeakReference<>(page);
         ROWS.add(new WeakReference<>(this));
         int running = runningAction;
         if (running != 0) showBusy(running, runningLine);
+        else setEnabled(restingEnabled());
+    }
+
+    static String keyFor(int action) {
+        switch (action) {
+            case EXPORT:
+                return "action_export_settings";
+            case RESET:
+                return "action_reset_settings";
+            case UNDO_RESET:
+                return "action_undo_reset_settings";
+            default:
+                return "action_import_settings";
+        }
+    }
+
+    /** Undo the reset is out of reach until a reset has left something to put back. */
+    private boolean restingEnabled() {
+        return rowAction != UNDO_RESET || !Settings.RESET_UNDO.savedValue().isEmpty();
     }
 
     /** A readable, sortable name for the file, stamped in UTC like the diagnostic report. */
@@ -1189,6 +1216,112 @@ public class SettingsBackupPreference extends Preference {
         }
     }
 
+    /**
+     * Reset settings: everything a settings file carries goes back to how a new install has it, at
+     * once, and what was saved before is kept for Undo the reset. Both are read here on the main
+     * thread, as an export reads, so neither can straddle a change made on this screen.
+     */
+    private static void reset(HushfacebookPreferenceFragment page) {
+        String saved;
+        SettingsBackup.Snapshot defaults;
+        try {
+            saved = SettingsBackup.create();
+            defaults = SettingsBackup.parse(SettingsBackup.defaults().file());
+        } catch (JSONException | SettingsBackup.Rejected error) {
+            Logger.printInfo(() -> "Settings reset didn't start: " + error.getClass().getSimpleName());
+            Utils.showToastLong(L10n.t("Couldn't reset the settings. Nothing was changed."));
+            return;
+        }
+        if (defaults.changes().isEmpty()) {
+            Utils.showToastLong(L10n.t("Your settings already match a new install."));
+            return;
+        }
+        // An earlier copy comes back if this reset is refused, so a failed one can't lose it.
+        String earlier = Settings.RESET_UNDO.savedValue();
+        write(page, RESET, L10n.t("Resetting settings"), defaults,
+                () -> Settings.RESET_UNDO.save(saved), null, () -> Settings.RESET_UNDO.save(earlier),
+                L10n.t("Settings reset. Undo the reset puts yours back."),
+                L10n.t("Couldn't reset the settings. Nothing was changed."));
+    }
+
+    /** Undo the reset: the settings saved just before the last reset come back, and the copy goes. */
+    private static void undoReset(HushfacebookPreferenceFragment page) {
+        String saved = Settings.RESET_UNDO.savedValue();
+        if (saved.isEmpty()) {
+            setRowsBusy(0, null);
+            return;
+        }
+        SettingsBackup.Snapshot snapshot;
+        try {
+            snapshot = SettingsBackup.parse(saved);
+        } catch (SettingsBackup.Rejected refused) {
+            Logger.printInfo(() -> "Reset undo copy refused: " + refused.reason);
+            Settings.RESET_UNDO.save("");
+            setRowsBusy(0, null);
+            Utils.showToastLong(L10n.t("Couldn't undo the reset. Nothing was changed."));
+            return;
+        }
+        write(page, UNDO_RESET, L10n.t("Putting your settings back"), snapshot,
+                null, () -> Settings.RESET_UNDO.save(""), null,
+                L10n.t("Your settings are back the way they were before the reset."),
+                L10n.t("Couldn't undo the reset. Nothing was changed."));
+    }
+
+    /**
+     * Writes [snapshot] the way an import does, holding the rows until it's done, so the page shows
+     * what the store then holds and a switch that needs a restart offers one. On the worker, [first]
+     * runs before the write, [written] after it, and [refused] when it was refused and rolled back.
+     */
+    private static void write(HushfacebookPreferenceFragment page, int action, String line,
+                              SettingsBackup.Snapshot snapshot, @Nullable Runnable first,
+                              @Nullable Runnable written, @Nullable Runnable refused,
+                              String done, String failed) {
+        Run run = start(action, line);
+        if (run == null) return;
+        String name = action == RESET ? "reset" : "undo";
+        Map<Setting<?>, Object> before = new LinkedHashMap<>();
+        boolean accepted = false;
+        try {
+            before.putAll(AbstractPreferenceFragment.beginSettingsImport(snapshot.changes().keySet()));
+            accepted = Utils.runOnBackgroundThread(() -> {
+                try {
+                    if (first != null) first.run();
+                    SettingsBackup.apply(snapshot);
+                    if (written != null) written.run();
+                    Utils.showToastLong(done);
+                } catch (SettingsBackup.ApplyFailed failure) {
+                    Logger.printInfo(() -> "Settings " + name + " failed: " + failure.getMessage()
+                            + (failure.rolledBack ? ", rolled back" : ", not rolled back"));
+                    if (failure.rolledBack && refused != null) refused.run();
+                    Utils.showToastLong(failure.rolledBack ? failed
+                            : L10n.t("Couldn't finish, and couldn't put back the settings you had. "
+                                    + "Check the switches on this screen."));
+                } finally {
+                    Utils.runOnMainThread(() -> {
+                        HushfacebookPreferenceFragment current = latestPage.get();
+                        try {
+                            AbstractPreferenceFragment.finishSettingsImport(before, current);
+                        } finally {
+                            finish(run);
+                            if (current != null && current.isAdded()) current.refreshSwitches();
+                        }
+                    });
+                }
+            });
+        } catch (RuntimeException error) {
+            Logger.printInfo(() -> "Settings " + name + " didn't start: " + error.getClass().getSimpleName());
+        } finally {
+            // Nothing else would give the rows back.
+            if (!accepted) {
+                try {
+                    AbstractPreferenceFragment.finishSettingsImport(before, page);
+                } finally {
+                    notStarted(run);
+                }
+            }
+        }
+    }
+
     /** The toast after an import that changed no start tab. */
     static String importedMessage(int switches, @Nullable String folder, @Nullable DownloadQuality quality,
                                   @Nullable String fileName) {
@@ -1444,7 +1577,7 @@ public class SettingsBackupPreference extends Preference {
     }
 
     /**
-     * Takes both rows out of reach while one of them runs and puts the running line on the one
+     * Takes every row here out of reach while one of them runs and puts the running line on the one
      * acting. With a zero action and no line, they come back with their own summaries.
      */
     static void setRowsBusy(int action, @Nullable String line) {
@@ -1467,7 +1600,7 @@ public class SettingsBackupPreference extends Preference {
 
     private void showResting() {
         busyLine = null;
-        setEnabled(true);
+        setEnabled(restingEnabled());
         setSummary(restingSummary);
     }
 

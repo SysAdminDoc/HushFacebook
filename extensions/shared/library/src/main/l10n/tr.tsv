@@ -2873,3 +2873,15 @@ Clear mode	Sade mod
 Scroll to next reel automatically	Sonraki reels videosuna otomatik geç
 Transcript	Transkript
 Audio and language	Ses ve dil
+Reset settings	Ayarları sıfırla
+Turns every switch and choice that Export settings saves back to how a new install has them. Pause, Debug logging and the update check stay as they are.	Ayarları dışa aktar'ın kaydettiği her anahtarı ve seçimi yeni bir kurulumdaki hâline döndürür. Duraklat, Hata ayıklama günlüğü ve güncelleme denetimi olduğu gibi kalır.
+Undo the reset	Sıfırlamayı geri al
+Brings back the switches and choices you had before the last reset.	Son sıfırlamadan önceki anahtarlarını ve seçimlerini geri getirir.
+Couldn't reset the settings. Nothing was changed.	Ayarlar sıfırlanamadı. Hiçbir şey değiştirilmedi.
+Your settings already match a new install.	Ayarların zaten yeni bir kurulumla aynı.
+Resetting settings	Ayarlar sıfırlanıyor
+Settings reset. Undo the reset puts yours back.	Ayarlar sıfırlandı. Sıfırlamayı geri al seninkileri geri getirir.
+Couldn't undo the reset. Nothing was changed.	Sıfırlama geri alınamadı. Hiçbir şey değiştirilmedi.
+Putting your settings back	Ayarların geri getiriliyor
+Your settings are back the way they were before the reset.	Ayarların sıfırlamadan önceki hâline döndü.
+Couldn't finish, and couldn't put back the settings you had. Check the switches on this screen.	Tamamlanamadı ve önceki ayarların geri yüklenemedi. Bu ekrandaki anahtarları kontrol et.

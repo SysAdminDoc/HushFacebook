@@ -2873,3 +2873,15 @@ Clear mode	Chế độ xem gọn
 Scroll to next reel automatically	Tự động cuộn đến thước phim tiếp theo
 Transcript	Bản chép lời
 Audio and language	Âm thanh và ngôn ngữ
+Reset settings	Đặt lại cài đặt
+Turns every switch and choice that Export settings saves back to how a new install has them. Pause, Debug logging and the update check stay as they are.	Đưa mọi công tắc và lựa chọn mà Xuất cài đặt lưu về như lúc mới cài. Tạm dừng, Ghi nhật ký gỡ lỗi và kiểm tra cập nhật vẫn giữ nguyên.
+Undo the reset	Hoàn tác đặt lại
+Brings back the switches and choices you had before the last reset.	Đưa lại các công tắc và lựa chọn bạn có trước lần đặt lại gần nhất.
+Couldn't reset the settings. Nothing was changed.	Không thể đặt lại cài đặt. Không có gì thay đổi.
+Your settings already match a new install.	Cài đặt của bạn đã giống như lúc mới cài.
+Resetting settings	Đang đặt lại cài đặt
+Settings reset. Undo the reset puts yours back.	Đã đặt lại cài đặt. Hoàn tác đặt lại sẽ đưa cài đặt của bạn trở lại.
+Couldn't undo the reset. Nothing was changed.	Không thể hoàn tác đặt lại. Không có gì thay đổi.
+Putting your settings back	Đang đưa cài đặt của bạn trở lại
+Your settings are back the way they were before the reset.	Cài đặt của bạn đã trở lại như trước khi đặt lại.
+Couldn't finish, and couldn't put back the settings you had. Check the switches on this screen.	Không thể hoàn tất, và cũng không thể khôi phục cài đặt cũ của bạn. Hãy kiểm tra các công tắc trên màn hình này.

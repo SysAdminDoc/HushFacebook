@@ -2873,3 +2873,15 @@ Clear mode	Mode bersih
 Scroll to next reel automatically	Gulir ke reel berikutnya secara otomatis
 Transcript	Transkrip
 Audio and language	Audio dan bahasa
+Reset settings	Setel ulang pengaturan
+Turns every switch and choice that Export settings saves back to how a new install has them. Pause, Debug logging and the update check stay as they are.	Mengembalikan setiap sakelar dan pilihan yang disimpan Ekspor pengaturan ke keadaan instalasi baru. Jeda, Pencatatan debug, dan pengecekan pembaruan tetap seperti semula.
+Undo the reset	Urungkan setel ulang
+Brings back the switches and choices you had before the last reset.	Mengembalikan sakelar dan pilihan yang kamu punya sebelum setel ulang terakhir.
+Couldn't reset the settings. Nothing was changed.	Pengaturan tidak dapat disetel ulang. Tidak ada yang diubah.
+Your settings already match a new install.	Pengaturan kamu sudah sama dengan instalasi baru.
+Resetting settings	Menyetel ulang pengaturan
+Settings reset. Undo the reset puts yours back.	Pengaturan disetel ulang. Urungkan setel ulang akan mengembalikan pengaturan kamu.
+Couldn't undo the reset. Nothing was changed.	Setel ulang tidak dapat diurungkan. Tidak ada yang diubah.
+Putting your settings back	Mengembalikan pengaturan kamu
+Your settings are back the way they were before the reset.	Pengaturan kamu sudah kembali seperti sebelum setel ulang.
+Couldn't finish, and couldn't put back the settings you had. Check the switches on this screen.	Tidak dapat diselesaikan, dan pengaturan sebelumnya tidak dapat dikembalikan. Periksa sakelar di layar ini.

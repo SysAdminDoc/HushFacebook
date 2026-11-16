@@ -2929,3 +2929,15 @@ Clear mode	Режим без элементов
 Scroll to next reel automatically	Автоматически переходить к следующему Reels
 Transcript	Расшифровка
 Audio and language	Аудио и язык
+Reset settings	Сбросить настройки
+Turns every switch and choice that Export settings saves back to how a new install has them. Pause, Debug logging and the update check stay as they are.	Возвращает все переключатели и параметры, которые сохраняет «Экспортировать настройки», к состоянию новой установки. Приостановка, журнал отладки и проверка обновлений остаются как есть.
+Undo the reset	Отменить сброс
+Brings back the switches and choices you had before the last reset.	Возвращает переключатели и параметры, которые были до последнего сброса.
+Couldn't reset the settings. Nothing was changed.	Не удалось сбросить настройки. Изменения не внесены.
+Your settings already match a new install.	Ваши настройки уже совпадают с новой установкой.
+Resetting settings	Сброс настроек
+Settings reset. Undo the reset puts yours back.	Настройки сброшены. «Отменить сброс» вернёт ваши.
+Couldn't undo the reset. Nothing was changed.	Не удалось отменить сброс. Изменения не внесены.
+Putting your settings back	Возврат ваших настроек
+Your settings are back the way they were before the reset.	Ваши настройки снова такие же, как до сброса.
+Couldn't finish, and couldn't put back the settings you had. Check the switches on this screen.	Не удалось завершить и восстановить прежние настройки. Проверьте переключатели на этом экране.

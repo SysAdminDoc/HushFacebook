@@ -183,6 +183,8 @@ public class SettingsBackupTest {
                 "it records the 3-dot menu rows this install's Facebook showed, which the hook writes, not a choice.");
         out.put("hushfacebook_seen_menu_tiles",
                 "it records the Menu tiles this install's Facebook showed, which the hook writes, not a choice.");
+        out.put("hushfacebook_reset_undo",
+                "it is the settings file Undo the reset puts back, which Reset settings writes, not a choice.");
         return Collections.unmodifiableMap(out);
     }
 
@@ -197,6 +199,8 @@ public class SettingsBackupTest {
 
     private static final String EXPORT_ROW = "action_export_settings";
     private static final String IMPORT_ROW = "action_import_settings";
+    private static final String RESET_ROW = "action_reset_settings";
+    private static final String UNDO_RESET_ROW = "action_undo_reset_settings";
     /** The app behind every file the tests pick. */
     private static final String AUTHORITY = "settings-test";
 
@@ -271,6 +275,7 @@ public class SettingsBackupTest {
         Settings.SEEN_SHARE_ITEMS.resetToDefault();
         Settings.HIDDEN_POST_MENU_ITEMS.resetToDefault();
         Settings.SEEN_POST_MENU_ITEMS.resetToDefault();
+        Settings.RESET_UNDO.resetToDefault();
         BaseSettings.PAUSED.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         BaseSettings.DEBUG_LOG_FILTERS.resetToDefault();
@@ -2165,6 +2170,62 @@ public class SettingsBackupTest {
         assertEquals("Settings imported. " + "Saved videos will be named "
                         + app.morphe.extension.shared.L10n.isolate("Clip") + ".",
                 SettingsBackupPreference.importedMessage(0, null, null, "Clip"));
+    }
+
+    /**
+     * Reset settings puts everything a settings file carries back to a new install's values on the
+     * tap, with no picker and no dialog, and leaves what a file never carries alone. Undo the reset
+     * then brings back exactly what was saved, once, and a reset with nothing to change keeps it.
+     */
+    @Test
+    public void resetPutsBackEveryCarriedSettingAndUndoBringsThemBack() throws Exception {
+        for (BooleanSetting setting : SettingsBackup.ALLOWLIST) setting.save(!setting.defaultValue);
+        Settings.FILENAME_TEMPLATE.save("{date}_{video_id}");
+        Settings.HIDDEN_WORDS.save("spoiler");
+        Settings.DOWNLOAD_QUALITY.save(DownloadQuality.SMALLEST);
+        Settings.START_TAB.save(StartTab.MARKETPLACE);
+        BaseSettings.DEBUG.save(true);
+        String chosen = SettingsBackup.create();
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            HushfacebookPreferenceFragment page = SettingsL10nTest.pageOf(SettingsL10nTest.show(activity));
+            assertFalse("Undo the reset is open with nothing to undo", page.findPreference(UNDO_RESET_ROW).isEnabled());
+            assertFalse("Reset settings shows a chevron", ScreenColors.opensSomething(page.findPreference(RESET_ROW)));
+
+            click(page.findPreference(RESET_ROW));
+            settle();
+            assertNull("Reset settings opened a picker", shadowOf(activity).getNextStartedActivityForResult());
+            assertNull("Reset settings asked first", ShadowAlertDialog.getLatestAlertDialog());
+            assertEquals("Settings reset. Undo the reset puts yours back.", ShadowToast.getTextOfLatestToast());
+            for (BooleanSetting setting : SettingsBackup.ALLOWLIST) {
+                assertEquals(setting.key + " wasn't reset", setting.defaultValue, setting.savedValue());
+            }
+            for (Setting<?> setting : SettingsBackup.VALUES) {
+                assertEquals(setting.key + " wasn't reset", setting.defaultValue, setting.savedValue());
+            }
+            assertTrue("Debug logging, which no file carries, was reset", BaseSettings.DEBUG.savedValue());
+            assertEquals("the name row still shows the old name",
+                    HushfacebookPreferenceFragment.fileNameSummary(Settings.FILENAME_TEMPLATE.defaultValue),
+                    String.valueOf(page.findPreference(Settings.FILENAME_TEMPLATE.key).getSummary()));
+            assertFalse("the copy to undo went into a settings file",
+                    new JSONObject(SettingsBackup.create()).getJSONObject("settings").has(Settings.RESET_UNDO.key));
+            assertTrue("Undo the reset stayed out of reach", page.findPreference(UNDO_RESET_ROW).isEnabled());
+
+            click(page.findPreference(RESET_ROW));
+            settle();
+            assertEquals("Your settings already match a new install.", ShadowToast.getTextOfLatestToast());
+            assertEquals("a reset with nothing to change replaced the copy to undo",
+                    chosen, Settings.RESET_UNDO.savedValue());
+
+            click(page.findPreference(UNDO_RESET_ROW));
+            settle();
+            assertEquals("Your settings are back the way they were before the reset.", ShadowToast.getTextOfLatestToast());
+            assertEquals("the undo brought back something else", chosen, SettingsBackup.create());
+            assertEquals("{date}_{video_id}", Settings.FILENAME_TEMPLATE.savedValue());
+            assertEquals(StartTab.MARKETPLACE, Settings.START_TAB.savedValue());
+            assertEquals("the copy to undo stayed", "", Settings.RESET_UNDO.savedValue());
+            assertFalse("Undo the reset can run twice", page.findPreference(UNDO_RESET_ROW).isEnabled());
+        }
     }
 
     /** A preview kept across a rebuild keeps its quality, and only one this build offers comes back. */

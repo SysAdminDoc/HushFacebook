@@ -1907,9 +1907,12 @@ public final class SettingsBackup {
     static final class Saved {
         private final Map<Setting<?>, Object> values = new HashMap<>();
 
-        private Saved() {
-            for (BooleanSetting setting : ALLOWLIST) values.put(setting, setting.savedValue());
-            for (Setting<?> setting : VALUES) values.put(setting, setting.savedValue());
+        /** What's saved, or with [defaults] what a new install starts with. */
+        private Saved(boolean defaults) {
+            for (BooleanSetting setting : ALLOWLIST) {
+                values.put(setting, defaults ? setting.defaultValue : setting.savedValue());
+            }
+            for (Setting<?> setting : VALUES) values.put(setting, defaults ? setting.defaultValue : setting.savedValue());
         }
 
         @SuppressWarnings("unchecked")
@@ -1995,7 +1998,12 @@ public final class SettingsBackup {
 
     /** What's saved right now, read in one pass on this thread. An export asks on the main thread. */
     static Saved savedNow() {
-        return new Saved();
+        return new Saved(false);
+    }
+
+    /** Every value a file carries as a new install has it, which Reset settings applies. */
+    static Saved defaults() {
+        return new Saved(true);
     }
 
     /** The file for the switches as they're saved now, read and written out on this thread. */

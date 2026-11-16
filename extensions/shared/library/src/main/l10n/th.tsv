@@ -2873,3 +2873,15 @@ Clear mode	โหมดหน้าจอโล่ง
 Scroll to next reel automatically	เลื่อนไปยัง Reels ถัดไปโดยอัตโนมัติ
 Transcript	ข้อความถอดเสียง
 Audio and language	เสียงและภาษา
+Reset settings	รีเซ็ตการตั้งค่า
+Turns every switch and choice that Export settings saves back to how a new install has them. Pause, Debug logging and the update check stay as they are.	คืนค่าสวิตช์และตัวเลือกทุกรายการที่ส่งออกการตั้งค่าบันทึกไว้ ให้เหมือนตอนติดตั้งใหม่ ส่วนการหยุดชั่วคราว การบันทึกข้อมูลดีบัก และการตรวจสอบการอัปเดตจะยังคงเหมือนเดิม
+Undo the reset	เลิกทำการรีเซ็ต
+Brings back the switches and choices you had before the last reset.	นำสวิตช์และตัวเลือกที่คุณมีก่อนการรีเซ็ตครั้งล่าสุดกลับมา
+Couldn't reset the settings. Nothing was changed.	ไม่สามารถรีเซ็ตการตั้งค่า ไม่มีการเปลี่ยนแปลงใดๆ
+Your settings already match a new install.	การตั้งค่าของคุณตรงกับการติดตั้งใหม่อยู่แล้ว
+Resetting settings	กำลังรีเซ็ตการตั้งค่า
+Settings reset. Undo the reset puts yours back.	รีเซ็ตการตั้งค่าแล้ว เลิกทำการรีเซ็ตจะนำการตั้งค่าของคุณกลับมา
+Couldn't undo the reset. Nothing was changed.	ไม่สามารถเลิกทำการรีเซ็ต ไม่มีการเปลี่ยนแปลงใดๆ
+Putting your settings back	กำลังนำการตั้งค่าของคุณกลับมา
+Your settings are back the way they were before the reset.	การตั้งค่าของคุณกลับเป็นเหมือนก่อนการรีเซ็ตแล้ว
+Couldn't finish, and couldn't put back the settings you had. Check the switches on this screen.	ไม่สามารถทำให้เสร็จ และไม่สามารถกู้คืนการตั้งค่าเดิมของคุณได้ โปรดตรวจสอบสวิตช์บนหน้าจอนี้
