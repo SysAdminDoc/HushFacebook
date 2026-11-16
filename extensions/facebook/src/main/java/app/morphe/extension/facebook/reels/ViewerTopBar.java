@@ -43,7 +43,9 @@ import app.morphe.extension.shared.settings.Setting;
  * sideways, and its Search and profile button go the same way (#346). No other tab's header has the
  * id (emulator, 585, 2026-11-02). So past the full-screen player screens, every view with the bar's
  * id under the content view is tidied, since a reel opened from search results shares the main
- * screen's layer with the Reels tab's header (#388).
+ * screen's layer with the Reels tab's header (#388). On 587 that reel opens on a player screen
+ * instead, under a header with no id at the top of the reel's own LithoView, which is found by its
+ * shape: full width, short, Back on its start side and another button (#388).
  *
  * <p>The buttons are Litho hosts with no ids, and their labels change with the language, so with
  * the switch on every clickable host in the bar that sits past its middle, away from Back, and in
@@ -73,6 +75,12 @@ public final class ViewerTopBar {
 
     /** How many levels under the bar a button is looked for. 585's sit 2 to 5 down. */
     static final int MAX_DEPTH = 8;
+
+    /** The class of a Litho surface, a reel's own LithoView among them. */
+    static final String LITHO = "com.facebook.litho.LithoView";
+
+    /** How deep under the content view a LithoView holding a header is looked for. 587's sits 6 down. */
+    static final int HEADER_DEPTH = 12;
 
     /** The screens watched for layouts. */
     private static final Map<Activity, Boolean> watched = new WeakHashMap<>();
@@ -158,6 +166,9 @@ public final class ViewerTopBar {
         if (FeedVideoAlone.PLAYER_SCREENS.contains(activity.getClass().getName())) {
             View bar = activity.findViewById(id);
             if (bar != null) tidy(bar);
+            for (View header : headers(activity.findViewById(android.R.id.content))) {
+                if (bar == null || !within(bar, header)) tidy(header);
+            }
             return;
         }
         View content = activity.findViewById(android.R.id.content);
@@ -180,6 +191,52 @@ public final class ViewerTopBar {
         if (!(view instanceof ViewGroup)) return;
         ViewGroup group = (ViewGroup) view;
         for (int i = 0; i < group.getChildCount(); i++) collectBars(group.getChildAt(i), id, found);
+    }
+
+    /**
+     * The headers with no id over the reels a player screen shows, under [content]. A reel opened
+     * from search results on 587 shows Back, the "Find related reels" pill and Search in a Litho host
+     * at the top of the reel's LithoView, which fills the screen, so the bar's id never finds them
+     * (S22, 2026-11-16: the LithoView 0,0-1080,2274, the header 0,0-1080,338, Back's clickable host
+     * at -6,95-107,208, #388). Only a LithoView at least three quarters of [content]'s height is
+     * looked at, so a post's header in a list keeps its buttons.
+     */
+    static List<View> headers(View content) {
+        List<View> found = new ArrayList<>();
+        if (content instanceof ViewGroup && content.getHeight() > 0) {
+            collectHeaders(content, 0, content.getHeight() * 3 / 4, found);
+        }
+        return found;
+    }
+
+    private static void collectHeaders(View view, int depth, int tall, List<View> found) {
+        if (!(view instanceof ViewGroup) || depth > HEADER_DEPTH || view.getVisibility() != View.VISIBLE) return;
+        ViewGroup group = (ViewGroup) view;
+        boolean litho = LITHO.equals(view.getClass().getName());
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            if (!litho) {
+                collectHeaders(child, depth + 1, tall, found);
+            } else if (view.getHeight() >= tall && isHeader(group, child)) {
+                found.add(child);
+            }
+        }
+    }
+
+    /**
+     * Whether [host] is a header of [litho]: a host that isn't a button, at its top, as wide as it
+     * and at most a fifth of its height, with an icon-sized Back on its start side and a second
+     * button. A reel page's own column, as tall as its LithoView, isn't one.
+     */
+    private static boolean isHeader(View litho, View host) {
+        if (!isHost(host) || host.isClickable() || host.getVisibility() != View.VISIBLE) return false;
+        int width = litho.getWidth();
+        if (width <= 0 || host.getLeft() != 0 || host.getTop() != 0 || host.getWidth() != width) return false;
+        if (host.getHeight() <= 0 || host.getHeight() * 5 > litho.getHeight()) return false;
+        List<View> found = new ArrayList<>();
+        buttons(host, 0, found);
+        View back = back(host, found);
+        return back != null && found.size() >= 2 && back.getWidth() * 6 <= width;
     }
 
     /** Whether the Reels tab's title goes now. */

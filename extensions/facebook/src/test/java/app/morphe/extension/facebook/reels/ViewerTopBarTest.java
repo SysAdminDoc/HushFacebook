@@ -362,6 +362,93 @@ public class ViewerTopBarTest {
         assertEquals(View.VISIBLE, header[0].getVisibility());
     }
 
+    /**
+     * #388: a reel opened from search results on 587 shows Back, the "Find related reels" pill and
+     * Search in a header with no id at the top of the reel's LithoView (S22, 2026-11-16).
+     */
+    @Test
+    public void aSearchReelsHeaderWithNoIdLosesBack() {
+        Settings.HIDE_VIEWER_BACK_BUTTON.save(true);
+        Settings.HIDE_VIEWER_TOP_BUTTONS.save(true);
+        Activity player = Robolectric.buildActivity(ImmersiveActivity.class).setup().get();
+        FrameLayout root = new FrameLayout(player);
+        LithoView reel = new LithoView(player);
+        place(root, reel, 0, 0, 1080, 2274);
+        place(reel, new FrameLayout(player), 0, 0, 1080, 2105);
+        ComponentHost header = new ComponentHost(player);
+        place(reel, header, 0, 0, 1080, 338);
+        ComponentHost headerRow = new ComponentHost(player);
+        place(header, headerRow, 0, 0, 1080, 212);
+        ComponentHost backSlot = new ComponentHost(player);
+        place(headerRow, backSlot, 23, 118, 80, 186);
+        ComponentHost backIcon = new ComponentHost(player);
+        place(backSlot, backIcon, -28, -28, 85, 96);
+        ComponentHost reelBack = button(backIcon, -1, 5, 112, 118);
+        ComponentHost related = button(headerRow, 103, 104, 926, 206);
+        ComponentHost reelSearch = button(headerRow, 966, 105, 1067, 206);
+        player.setContentView(root);
+
+        ViewerTopBar.resumed(player);
+        layOut(player);
+
+        assertEquals("Back stayed on a search reel", View.INVISIBLE, reelBack.getVisibility());
+        assertEquals(View.INVISIBLE, reelSearch.getVisibility());
+        assertEquals("the related reels pill went", View.VISIBLE, related.getVisibility());
+
+        Settings.HIDE_VIEWER_BACK_BUTTON.save(false);
+        Settings.HIDE_VIEWER_TOP_BUTTONS.save(false);
+        layOut(player);
+        assertEquals("Back stayed away with its switches off", View.VISIBLE, reelBack.getVisibility());
+        assertEquals(View.VISIBLE, reelSearch.getVisibility());
+    }
+
+    /**
+     * A post's header in a list on a player screen has the same row (the profile picture first, then
+     * More), but its LithoView is a post, not the screen, so nothing in it goes.
+     */
+    @Test
+    public void aPostsHeaderOnAPlayerScreenStays() {
+        Settings.HIDE_VIEWER_BACK_BUTTON.save(true);
+        Settings.HIDE_VIEWER_TOP_BUTTONS.save(true);
+        Activity player = Robolectric.buildActivity(ImmersiveActivity.class).setup().get();
+        FrameLayout root = new FrameLayout(player);
+        LithoView post = new LithoView(player);
+        place(root, post, 0, 400, 1080, 1100);
+        ComponentHost header = new ComponentHost(player);
+        place(post, header, 0, 0, 1080, 130);
+        ComponentHost picture = button(header, 34, 17, 135, 118);
+        ComponentHost more = button(header, 930, 17, 1046, 118);
+        player.setContentView(root);
+
+        ViewerTopBar.resumed(player);
+        layOut(player);
+
+        assertEquals("a post lost its profile picture", View.VISIBLE, picture.getVisibility());
+        assertEquals(View.VISIBLE, more.getVisibility());
+    }
+
+    /** A reel's own page, as tall as its LithoView, is no header even with a button in its corner. */
+    @Test
+    public void aReelPagesOwnColumnIsNoHeader() {
+        Settings.HIDE_VIEWER_BACK_BUTTON.save(true);
+        Settings.HIDE_VIEWER_TOP_BUTTONS.save(true);
+        Activity player = Robolectric.buildActivity(ImmersiveActivity.class).setup().get();
+        FrameLayout root = new FrameLayout(player);
+        LithoView reel = new LithoView(player);
+        place(root, reel, 0, 0, 1080, 2106);
+        ComponentHost page = new ComponentHost(player);
+        place(reel, page, 0, 0, 1080, 2105);
+        ComponentHost corner = button(page, 34, 17, 135, 118);
+        ComponentHost side = button(page, 945, 1200, 1080, 1374);
+        player.setContentView(root);
+
+        ViewerTopBar.resumed(player);
+        layOut(player);
+
+        assertEquals("the reel page lost a button", View.VISIBLE, corner.getVisibility());
+        assertEquals(View.VISIBLE, side.getVisibility());
+    }
+
     private boolean reported(String counted) {
         for (String line : HookStatus.report()) {
             if (line.contains(FamilyNames.REEL_DECLUTTER) && line.contains(counted)) return true;
