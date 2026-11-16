@@ -1472,6 +1472,43 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$atGate: right in front of the ask", gateStock[liveGate.at].reference(), gatePatched[liveGate.at + 1].reference())
         assertEquals("$atGate: Facebook's code stays", gateStock.kinds(), gatePatched.filterIndexed { index, _ -> index != liveGate.at }.kinds())
         extensionHas(atGate, LIVE_BAR_SEEK)
+
+        // Search results open some live videos with settings that say they aren't live, so the player's
+        // conversion of the seek position skips the engine's live offset unless its flag is set.
+        val shift = liveShift(player, check) { type -> FixtureDex.classes(bundle, setOf(type))[type] }
+        val conversion = player.methods.single {
+            AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "I" && it.code().any { op ->
+                (op as? ReferenceInstruction)?.reference is StringReference && op.reference() == NEGATIVE_SEEK_LOG
+            }
+        }
+        val atShift = "$name: ${player.type}->${conversion.name}"
+        val converted = conversion.code()
+        val asked = converted.indexOfFirst { it.opcode == Opcode.INVOKE_VIRTUAL && it.reference() == check.live.toString() }
+        val flagRead = converted.indexOfFirst { it.opcode == Opcode.IGET_OBJECT && it.reference() == shift.shift.toString() }
+        assertTrue("$atShift: the flag is asked after the live check", asked in 0 until flagRead)
+        assertEquals("$atShift: the flag is the one whose set adds the offset",
+            "Ljava/util/concurrent/atomic/AtomicBoolean;->get()Z", converted[flagRead + 1].reference())
+        val engineAt = converted.indexOfFirst { it.reference() == shift.engine.toString() }
+        val offsetAt = converted.indexOfFirst { it.reference() == shift.offset.toString() }
+        assertTrue("$atShift: the offset is asked of the engine the getter returns", engineAt in 0 until offsetAt)
+        assertEquals("$atShift: the getter takes the player", listOf(player.type), shift.engine.parameterTypes.map(CharSequence::toString))
+        assertEquals("$atShift: the offset is the engine's", shift.engine.returnType, shift.offset.definingClass)
+
+        stubs.fillLiveShift(shift)
+        val offsetStub = stubs.mutableClassDefBy(PROGRESS_BAR).methods.single(::isLiveOffsetStub).code()
+        assertEquals("$atShift: the offset stub's code",
+            listOf(Opcode.CHECK_CAST, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT_OBJECT, Opcode.IF_EQZ, Opcode.INVOKE_INTERFACE,
+                Opcode.MOVE_RESULT_WIDE, Opcode.RETURN_WIDE, Opcode.CONST_WIDE_16, Opcode.RETURN_WIDE),
+            offsetStub.map { it.opcode })
+        assertEquals("$atShift: the player is cast to its class", player.type, offsetStub[0].reference())
+        assertEquals("$atShift: the engine comes from the getter", shift.engine.toString(), offsetStub[1].reference())
+        assertEquals("$atShift: the offset is the engine's", shift.offset.toString(), offsetStub[4].reference())
+        val shiftStub = stubs.mutableClassDefBy(PROGRESS_BAR).methods.single(::isLiveSeekShiftStub).code()
+        assertEquals("$atShift: the flag stub's code, then the stub's own null",
+            listOf(Opcode.CHECK_CAST, Opcode.IGET_OBJECT, Opcode.RETURN_OBJECT, Opcode.CONST_4, Opcode.RETURN_OBJECT), shiftStub.map { it.opcode })
+        assertEquals("$atShift: the flag stub reads the flag", shift.shift.toString(), shiftStub[1].reference())
+        extensionHas(atShift, "$PROGRESS_BAR->$LIVE_OFFSET_STUB(Ljava/lang/Object;)J")
+        extensionHas(atShift, "$PROGRESS_BAR->$LIVE_SEEK_SHIFT_STUB(Ljava/lang/Object;)Ljava/lang/Object;")
     }
 
     /**

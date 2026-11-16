@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.PatchFamily;
@@ -72,6 +73,7 @@ public class ProgressBarTest {
         ProgressBar.endScrollForTests = null;
         ProgressBar.handOverAgainForTests = null;
         ProgressBar.liveRewoundForTests = null;
+        ProgressBar.liveStreamForTests = null;
         ProgressBar.forgetWatchesForTests();
         ProgressBar.forgetFootersForTests();
         ProgressBar.forgetHandOversForTests();
@@ -1133,6 +1135,90 @@ public class ProgressBarTest {
             throw new IllegalStateException("Facebook moved");
         };
         assertTrue(ProgressBar.liveSeekRefused(1, releasedAt(400), "player"));
+    }
+
+    /** The player's engine in its place: [offset] is the live offset it reports, and the flag returned the player's own for it. */
+    private static AtomicBoolean liveStream(long offset) {
+        AtomicBoolean shift = new AtomicBoolean();
+        ProgressBar.liveStreamForTests = new ProgressBar.LiveStream() {
+            @Override
+            public long offset(Object player) {
+                return offset;
+            }
+
+            @Override
+            public AtomicBoolean shift(Object player) {
+                return shift;
+            }
+        };
+        return shift;
+    }
+
+    /**
+     * #482: search results open some live videos with settings that say they aren't live, so the
+     * handler lets the reel bar's seek through and the player stayed at the live edge. One whose
+     * engine reports a live offset is marked rewound first, and the seek adds the offset, as the
+     * full player's does, with the switch either way.
+     */
+    @Test
+    public void aLiveStreamTheHandlerCallsNotLiveSeeksRewound() {
+        List<String> calls = recordLiveRewinds();
+        for (boolean kept : new boolean[] {false, true}) {
+            Settings.KEEP_PROGRESS_BAR.save(kept);
+            calls.clear();
+            AtomicBoolean shift = liveStream(112_066);
+            assertFalse("the seek was skipped, kept " + kept, ProgressBar.liveSeekRefused(0, releasedAt(400), "player"));
+            assertEquals(Collections.singletonList("player true"), calls);
+            assertTrue("the seek doesn't add the live offset, kept " + kept, shift.get());
+        }
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.LIVE_STREAM_SEEK + " 2"));
+    }
+
+    /** #482: let go at the bar's end, that live video is marked live again, and its seek still goes through. */
+    @Test
+    public void aLiveStreamLetGoAtItsEndGoesBackToLive() {
+        List<String> calls = recordLiveRewinds();
+        AtomicBoolean shift = liveStream(112_066);
+        assertFalse(ProgressBar.liveSeekRefused(0, releasedAt(1000), "player"));
+        assertEquals(Collections.singletonList("player false"), calls);
+        assertTrue(shift.get());
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.LIVE_EDGE + " 1"));
+    }
+
+    /** A reel with no live offset, a seek the reel bar didn't make, no player and Pause leave the seek as Facebook made it. */
+    @Test
+    public void aSeekWithNoLiveOffsetIsLeftToFacebook() {
+        List<String> calls = recordLiveRewinds();
+        AtomicBoolean none = liveStream(0);
+        assertFalse(ProgressBar.liveSeekRefused(0, releasedAt(400), "player"));
+        assertFalse(none.get());
+        AtomicBoolean shift = liveStream(112_066);
+        assertFalse(ProgressBar.liveSeekRefused(0, new Object(), "player"));
+        assertFalse(ProgressBar.liveSeekRefused(0, releasedAt(400), null));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse(ProgressBar.liveSeekRefused(0, releasedAt(400), "player"));
+        assertTrue(calls.isEmpty());
+        assertFalse(shift.get());
+    }
+
+    @Test
+    public void aThrowingLiveOffsetLeavesTheSeekAlone() {
+        List<String> calls = recordLiveRewinds();
+        ProgressBar.liveStreamForTests = new ProgressBar.LiveStream() {
+            @Override
+            public long offset(Object player) {
+                throw new IllegalStateException("Facebook moved");
+            }
+
+            @Override
+            public AtomicBoolean shift(Object player) {
+                return null;
+            }
+        };
+        assertFalse(ProgressBar.liveSeekRefused(0, releasedAt(400), "player"));
+        assertTrue(calls.isEmpty());
     }
 
     /**

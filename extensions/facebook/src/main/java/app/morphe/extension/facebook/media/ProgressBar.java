@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import app.morphe.extension.facebook.reels.CaptionRoom;
 import app.morphe.extension.facebook.reels.SeekPreviewRoom;
@@ -216,6 +217,12 @@ public final class ProgressBar {
     /** Counted each time the scrubber's bar seeks a live video and the player is marked rewound for it (#482). */
     static final String LIVE_BAR_SEEK = "Live video scrubber seek let through";
 
+    /**
+     * Counted each time the bar is let go part way on a live stream whose settings say it isn't live,
+     * and the player is marked rewound so the seek moves it (#482).
+     */
+    static final String LIVE_STREAM_SEEK = "Live stream bar let go, marked rewound";
+
     /** How long after a light mount, and then between checks, a kept bar is checked for having drawn its reel. */
     static final long UPDATE_CHECK_MS = 500;
 
@@ -361,6 +368,19 @@ public final class ProgressBar {
 
     interface LiveRewind {
         void run(Object player, boolean rewound);
+    }
+
+    /** The player's playback engine in its place, for tests, where the stubs have nothing behind them. */
+    @Nullable
+    static volatile LiveStream liveStreamForTests;
+
+    interface LiveStream {
+        /** The engine's live offset, non-zero only while it plays a live stream. */
+        long offset(Object player);
+
+        /** The player's flag that has its seeks add that offset, or null. */
+        @Nullable
+        AtomicBoolean shift(Object player);
     }
 
     /** The trigger name of a seek the bar sends, Facebook's EventTriggerType constant. */
@@ -1067,7 +1087,13 @@ public final class ProgressBar {
      * through there. The scrubber that search results open a live video with never does, so dragging
      * its bar did nothing (#482). For a seek request the scrubber's release made, this does what the
      * full player does: marks the video rewound and lets the seek through, or, let go at the bar's
-     * end, marks it live again and leaves the seek skipped, which takes it back to live. Any other
+     * end, marks it live again and leaves the seek skipped, which takes it back to live.
+     *
+     * <p>Search results also open some live videos with settings that say they aren't live, so the
+     * handler lets the seek through, but the player never left the live edge and the seek did
+     * nothing. For a seek request the scrubber's release made on a video whose engine reports a live
+     * offset, this marks the video rewound (live again at the bar's end) and has the seek add that
+     * offset, as the player does for a live video, so it lands where the bar was let go. Any other
      * request, a throw, Pause, or settings that aren't ready yet keep Facebook's answer.
      */
     public static boolean liveSeekRefused(int refused, Object request, Object player) {
@@ -1077,7 +1103,12 @@ public final class ProgressBar {
                 Logger.printDebug(() -> "Seek handler: " + (refused != 0 ? "live video" : "not live") + ", "
                         + (atEnd == null ? "not from the reel bar" : "from the reel bar"));
             }
-            if (refused == 0) return false;
+            if (refused == 0) {
+                if (atEnd != null && player != null && Utils.settingsReady() && !HushfacebookPause.isPaused()) {
+                    liveStreamSeek(player, atEnd);
+                }
+                return false;
+            }
             HookStatus.invoked(FAMILY);
             if (atEnd == null || player == null || !Utils.settingsReady() || HushfacebookPause.isPaused()) return true;
             HookStatus.bound(FAMILY, "live seek");
@@ -1102,6 +1133,49 @@ public final class ProgressBar {
      * is dragged. Only a rewound live video takes a seek. Does nothing until filled.
      */
     public static void liveRewound(Object player, boolean rewound) {
+    }
+
+    /**
+     * The reel bar's seek on a video the seek handler calls not live: when the player's engine
+     * reports a live offset, marks it rewound, or live again at the bar's end, and sets the player's
+     * flag that has the seek add that offset. A throw leaves the seek as Facebook made it.
+     */
+    private static void liveStreamSeek(Object player, boolean atEnd) {
+        try {
+            LiveStream forced = liveStreamForTests;
+            long offset = forced != null ? forced.offset(player) : liveOffset(player);
+            Logger.printDebug(() -> "Seek handler: live offset " + offset);
+            if (offset == 0) return;
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, "live stream seek");
+            LiveRewind rewind = liveRewoundForTests;
+            if (rewind != null) {
+                rewind.run(player, !atEnd);
+            } else {
+                liveRewound(player, !atEnd);
+            }
+            AtomicBoolean shift = forced != null ? forced.shift(player) : (AtomicBoolean) liveSeekShift(player);
+            if (shift != null) shift.set(true);
+            HookStatus.counted(FAMILY, atEnd ? LIVE_EDGE : LIVE_STREAM_SEEK);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "live stream seek", failure);
+        }
+    }
+
+    /**
+     * Filled in by the patch: the live offset of [player]'s playback engine, which is non-zero only
+     * while it plays a live stream. Zero until filled.
+     */
+    public static long liveOffset(Object player) {
+        return 0;
+    }
+
+    /**
+     * Filled in by the patch: [player]'s flag that has its seeks add the engine's live offset, as it
+     * does for a live video. Null until filled.
+     */
+    public static Object liveSeekShift(Object player) {
+        return null;
     }
 
     /**

@@ -531,6 +531,8 @@ val keepProgressBarPatch = bytecodePatch(
         val liveRewind = liveRewind(player, liveCheck, liveNow)
         // The scrubber search results open a live video with seeks from its bar straight in the player's own seek.
         val liveGate = liveGate(player, liveCheck, liveNow, liveRewind)
+        // Search results open some live videos with settings that say they aren't live, whose seeks skip the live offset.
+        val liveShift = liveShift(player, liveCheck) { classDefByOrNull(it) }
 
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(scrubber.passive) }
             .activeInstead(scrubber, graph)
@@ -611,6 +613,7 @@ val keepProgressBarPatch = bytecodePatch(
             .letsLiveSeekThrough(liveCheck)
         mutableClassDefBy(liveRewind.player).methods.single { it.sameAs(liveGate.method) }.rewindsForTheBar(liveGate)
         fillLiveRewound(liveRewind)
+        fillLiveShift(liveShift)
         enableStatus("keepProgressBar")
     }
 }

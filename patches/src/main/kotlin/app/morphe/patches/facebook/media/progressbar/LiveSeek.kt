@@ -5,9 +5,12 @@
 package app.morphe.patches.facebook.media.progressbar
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
+import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.media.reelspeed.REEL_PARAM_STUBS
 import app.morphe.patches.facebook.media.resume.reportedValues
@@ -320,4 +323,117 @@ internal fun MutableMethod.rewindsForTheBar(gate: LiveGate) {
     }
     if (ask.location.labels.isNotEmpty()) refuseLiveSeek("$definingClass->$name has a jump onto its rewound check")
     addInstructions(gate.at, "invoke-static { p1, p0 }, $LIVE_BAR_SEEK")
+}
+
+/** What the player's conversion of a seek position logs when the result is negative, a kept literal. */
+internal const val NEGATIVE_SEEK_LOG = "seekTo's mediaTimeMsWithPreview is negative: %d. Forcing to 0"
+
+internal const val LIVE_OFFSET_STUB = "liveOffset"
+internal const val LIVE_SEEK_SHIFT_STUB = "liveSeekShift"
+
+private const val ATOMIC_BOOLEAN = "Ljava/util/concurrent/atomic/AtomicBoolean;"
+
+/**
+ * How the player turns a seek position into its engine's (587 arm64 `LX/05MK;->A00(LX/02xv;LX/05MK;I)I`):
+ * for a live video, or while the player's [shift] flag is set, it adds the [offset] of the playback
+ * engine the static [engine] getter returns. Search results open some live videos with settings that
+ * say they aren't live, so their seeks skip that, and the player stays at the live edge (#482).
+ */
+internal class LiveShift(val player: String, val engine: MethodReference, val offset: MethodReference, val shift: FieldReference)
+
+/**
+ * The [player]'s seek conversion: its one static method returning an int that logs [NEGATIVE_SEEK_LOG]
+ * and takes the player, where [check]'s live check comes with one static engine getter on the
+ * player, one offset call on that engine and one read of an AtomicBoolean of the player's. Refuses
+ * otherwise, or when the extension couldn't reach any of them.
+ */
+internal fun liveShift(player: ClassDef, check: LiveSeekCheck, classOf: (String) -> ClassDef?): LiveShift {
+    val conversions = player.methods.filter {
+        AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "I" &&
+            player.type in it.parameterTypes.map(CharSequence::toString) && holdsString(it, NEGATIVE_SEEK_LOG)
+    }
+    val conversion = conversions.singleOrNull()
+        ?: refuseLiveSeek("${conversions.size} static methods of ${player.type} log \"$NEGATIVE_SEEK_LOG\", expected one")
+    val where = "${player.type}->${conversion.name}"
+    val code = conversion.implementation!!.instructions.toList()
+    if (code.none { it.opcode == Opcode.INVOKE_VIRTUAL && it.referenced() == check.live.toString() }) {
+        refuseLiveSeek("$where doesn't ask ${check.live}, the live check")
+    }
+    fun calls(opcode: Opcode, matches: (MethodReference) -> Boolean) = code.withIndex()
+        .filter { (_, it) -> it.opcode == opcode && it.referencedMethod()?.let(matches) == true }
+    val engines = calls(Opcode.INVOKE_STATIC) {
+        it.returnType.startsWith("L") && it.parameterTypes.map(CharSequence::toString) == listOf(player.type)
+    }
+    val engine = engines.map { it.value.referencedMethod()!! }.distinctBy { it.toString() }.singleOrNull()
+        ?: refuseLiveSeek("$where gets ${engines.size} things from the player, expected its playback engine")
+    val offsets = calls(Opcode.INVOKE_INTERFACE) {
+        it.definingClass == engine.returnType && it.returnType == "J" && it.parameterTypes.isEmpty()
+    }
+    val offset = offsets.map { it.value.referencedMethod()!! }.distinctBy { it.toString() }.singleOrNull()
+        ?: refuseLiveSeek("$where asks ${engine.returnType} for ${offsets.size} longs, expected its live offset")
+    if (offsets.first().index < engines.first().index) refuseLiveSeek("$where asks for the live offset before it gets the engine")
+    val shifts = code.mapNotNull { (it as? ReferenceInstruction)?.reference as? FieldReference }
+        .filter { it.definingClass == player.type && it.type == ATOMIC_BOOLEAN }.distinctBy { it.toString() }
+    val shift = shifts.singleOrNull()
+        ?: refuseLiveSeek("$where reads ${shifts.size} AtomicBooleans of the player, expected the flag that adds the live offset")
+    val engineClass = classOf(engine.definingClass)
+    val getter = engineClass?.methods?.singleOrNull {
+        it.name == engine.name && it.returnType == engine.returnType &&
+            it.parameterTypes.map(CharSequence::toString) == engine.parameterTypes.map(CharSequence::toString)
+    }
+    if (engineClass == null || getter == null || !AccessFlags.PUBLIC.isSet(engineClass.accessFlags) ||
+        !AccessFlags.PUBLIC.isSet(getter.accessFlags) || !AccessFlags.STATIC.isSet(getter.accessFlags)
+    ) refuseLiveSeek("$engine, the player's engine getter, isn't public static, so the extension can't call it")
+    val engineType = classOf(engine.returnType)
+    if (engineType == null || !AccessFlags.PUBLIC.isSet(engineType.accessFlags)) {
+        refuseLiveSeek("${engine.returnType}, the player's engine, isn't public, so the extension can't ask it")
+    }
+    val field = player.fields.singleOrNull { it.name == shift.name && it.type == shift.type }
+    if (field == null || !AccessFlags.PUBLIC.isSet(field.accessFlags)) {
+        refuseLiveSeek("$shift isn't public, so the extension can't set it")
+    }
+    return LiveShift(player.type, engine, offset, shift)
+}
+
+internal fun isLiveOffsetStub(method: Method) = method.name == LIVE_OFFSET_STUB &&
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "J" &&
+    method.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;")
+
+internal fun isLiveSeekShiftStub(method: Method) = method.name == LIVE_SEEK_SHIFT_STUB &&
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Ljava/lang/Object;" &&
+    method.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;")
+
+/**
+ * Fills the extension's [LIVE_OFFSET_STUB] with the engine's live offset for the player (its zero
+ * when the player has no engine) and [LIVE_SEEK_SHIFT_STUB] with the player's flag that adds it. d8
+ * gives the offset stub two locals for its zero, which the offset comes back in.
+ */
+internal fun BytecodePatchContext.fillLiveShift(shift: LiveShift) {
+    val extension = mutableClassDefBy(PROGRESS_BAR)
+    val offset = extension.methods.singleOrNull(::isLiveOffsetStub)
+        ?: refuseLiveSeek("$PROGRESS_BAR has no static long $LIVE_OFFSET_STUB(Object)")
+    if (offset.implementation!!.registerCount < 3) refuseLiveSeek("$PROGRESS_BAR->$LIVE_OFFSET_STUB has no locals for a long")
+    offset.addInstructionsWithLabels(
+        0,
+        """
+            check-cast p0, ${shift.player}
+            invoke-static { p0 }, ${shift.engine}
+            move-result-object p0
+            if-eqz p0, :none
+            invoke-interface { p0 }, ${shift.offset}
+            move-result-wide v0
+            return-wide v0
+        """,
+        ExternalLabel("none", offset.getInstruction(0)),
+    )
+    val flag = extension.methods.singleOrNull(::isLiveSeekShiftStub)
+        ?: refuseLiveSeek("$PROGRESS_BAR has no static Object $LIVE_SEEK_SHIFT_STUB(Object)")
+    flag.addInstructions(
+        0,
+        """
+            check-cast p0, ${shift.player}
+            iget-object p0, p0, ${shift.shift}
+            return-object p0
+        """,
+    )
 }
