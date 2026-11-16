@@ -185,6 +185,12 @@ public final class CommentSheetOptions {
     /** The member the report names once a count of people typing has been through the hook. */
     static final String TYPING = "incoming typing";
 
+    /** Counted each time Facebook's pick of the top-reaction-only row under a comment is answered no. */
+    static final String EVERY_REACTION_KEPT = "Comment row with every reaction kept";
+
+    /** The member the report names once Facebook's pick of a comment's reaction row has been through the hook. */
+    static final String REACTION_ROW = "comment reaction row";
+
     /** Counted each time the "new comments" pill's text is answered empty, so the pill never shows. */
     static final String PILL_HIDDEN = "New comments pill kept out";
 
@@ -311,6 +317,25 @@ public final class CommentSheetOptions {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "incoming comment typing", failure);
             return typers;
+        }
+    }
+
+    /**
+     * The hook, right after Facebook asks whether the row under a comment should be its newer one,
+     * Reply beside the top reaction and its count with Like and the thumbs-down as buttons (#241).
+     * With the switch on it answers no, so the row is the one with Like, Reply and every reaction
+     * beside the count; otherwise, and for a throw, it hands back what Facebook read.
+     */
+    public static boolean topReactionOnly(boolean topOnly) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, REACTION_ROW);
+            if (!topOnly || !Utils.settingsReady() || !Settings.SHOW_EVERY_COMMENT_REACTION.get()) return topOnly;
+            HookStatus.counted(FAMILY, EVERY_REACTION_KEPT);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "comment reaction row", failure);
+            return topOnly;
         }
     }
 

@@ -151,6 +151,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_COMMENTS_WITH_WORDS) return L10n.t("Hide comments with your words");
         if (setting == Settings.HIDE_INCOMING_COMMENT_TYPING) return L10n.t("Hide who is typing in comments");
         if (setting == Settings.HIDE_NEW_COMMENTS_PILL) return L10n.t("Hide the new comments pop-up");
+        if (setting == Settings.SHOW_EVERY_COMMENT_REACTION) return L10n.t("Show every reaction on comments");
         if (setting == Settings.PAUSE_REELS_UNDER_COMMENTS) return L10n.t("Pause reels while comments are open");
         if (setting == Settings.TAP_REELS_ABOVE_COMMENTS) return L10n.t("Tap a reel above its comments");
         if (setting == Settings.SEARCH_COMMENTS) return L10n.t("Search comments");

@@ -1012,6 +1012,10 @@ final class FeedPages {
                     L10n.t("Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.")));
             comments.addPreference(toggle(context, Settings.HIDE_NEW_COMMENTS_PILL,
                     L10n.t("The \"new comments\" bubble no longer pops up while you read comments. New comments still show in the list.")));
+            // Read as each comment's row is built, so a change shows on the comments drawn after it.
+            comments.addPreference(toggle(context, Settings.SHOW_EVERY_COMMENT_REACTION,
+                    L10n.t("Where Facebook shows only a comment's top reaction next to its count, keeps Like, Reply and every "
+                            + "reaction instead. A change shows on the comments drawn after it.")));
             comments.addPreference(reactionCountsRow(context));
         }
         if (fullHeight) {

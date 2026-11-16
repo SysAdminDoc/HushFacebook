@@ -28,6 +28,7 @@ Changes in each Hushfacebook version, newest first.
 * `Hide the full-screen and PiP buttons` under Reels and Watch takes the full-screen arrows and the picture-in-picture button off videos that play in the feed and in search results, like a Live that's already ended. (#478)
 * `Ask before following from a post` under News feed and `Ask before following from a reel` under Reels and Watch make a tap on Follow ask first, so a stray tap doesn't follow someone. In a post that's the Follow link next to the poster's name and the Follow button on a shared Page or profile, and on a reel it's the Follow next to the author or a collaborator. Only Continue follows. Unfollow asks too. Both start off. (#477)
 * `Reset settings`, next to `Import settings`, turns every switch and choice that `Export settings` saves back to how a new install has them, right away. `Undo the reset` below it puts yours back. Pause, debug logging and the update check stay as they are. (#483)
+* `Show every reaction on comments` under Comments and writing brings back the row with Like, Reply and every reaction next to a comment's count, on accounts where Facebook changed it to show only the top reaction. It starts off. (#241)
 * **Tooling:** `superpack-unpack.ps1 -Desktop` unpacks Facebook's Android 9+ build on a PC with no phone or emulator attached. (#102)
 
 ### Changed

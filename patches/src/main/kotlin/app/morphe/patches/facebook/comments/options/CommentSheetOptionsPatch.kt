@@ -385,8 +385,9 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * equality methods ([commentFilter] has the detail). A build where they don't fit keeps the rest of
  * the patch, with that switch doing nothing and a warning saying why.
  *
- * Hide who is typing in comments (#170) and Hide the new comments pop-up (#185) are nameless patches
- * this one carries, [incomingCommentTypingPatch] and [newCommentsPillPatch].
+ * Hide who is typing in comments (#170), Hide the new comments pop-up (#185) and Show every reaction
+ * on comments (#241) are nameless patches this one carries, [incomingCommentTypingPatch],
+ * [newCommentsPillPatch] and [commentReactionRowPatch].
  *
  * In the default selection with every switch off, so nothing changes until one is turned on.
  */
@@ -396,11 +397,11 @@ val commentSheetOptionsPatch = bytecodePatch(
     name = "Comment sheet options",
     description = "Small fixes for comments. Stop a long press on Like from opening reactions, hide the GIF and " +
         "sticker buttons, show every reply without tapping View replies, load a whole reply thread as you " +
-        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, put Block on reaction lists, hide Like on comments, hide Reply on comments, hide Related groups under group posts, hide comments with shop links or your words, show only the comments a search matches, hide who is typing and the new comments pop-up, hide the emoji row over the comment box, hide the line over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
+        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, put Block on reaction lists, hide Like on comments, hide Reply on comments, hide Related groups under group posts, hide comments with shop links or your words, show only the comments a search matches, hide who is typing and the new comments pop-up, keep every reaction beside a comment's count, hide the emoji row over the comment box, hide the line over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
         "Hushfacebook settings > Comments and writing.",
 ) {
     category("Comments")
-    dependsOn(settingsPatch, facebookExtensionPatch, incomingCommentTypingPatch, newCommentsPillPatch, commentBlockPatch, reactorBlockPatch)
+    dependsOn(settingsPatch, facebookExtensionPatch, incomingCommentTypingPatch, newCommentsPillPatch, commentBlockPatch, reactorBlockPatch, commentReactionRowPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {

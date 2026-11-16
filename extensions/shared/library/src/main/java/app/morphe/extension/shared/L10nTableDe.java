@@ -18,7 +18,7 @@ final class L10nTableDe {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(3864);
+        Map<String, String> table = new HashMap<>(3868);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -3064,6 +3064,8 @@ final class L10nTableDe {
                 "Zeit eines Reels anzeigen");
         table.put("Show all settings as a list",
                 "Alle Einstellungen als Liste zeigen");
+        table.put("Show every reaction on comments",
+                "Alle Reaktionen bei Kommentaren zeigen");
         table.put("Show full post text",
                 "Ganzen Beitragstext zeigen");
         table.put("Show full reel captions",
@@ -3126,11 +3128,11 @@ final class L10nTableDe {
                 "Sprungtasten bei Feed-Videos");
         table.put("Skip feed preloading",
                 "Feed-Vorladen \u00fcberspringen");
-        table.put("Skip silent parts",
-                "Stille Stellen \u00fcberspringen");
     }
 
     private static void fill25(Map<String, String> table) {
+        table.put("Skip silent parts",
+                "Stille Stellen \u00fcberspringen");
         table.put("Skip silent parts: off for this video",
                 "Stille Stellen \u00fcberspringen: aus f\u00fcr dieses Video");
         table.put("Skip silent parts: on",
@@ -3249,11 +3251,11 @@ final class L10nTableDe {
                 "Markierungsvorschl\u00e4ge nur nach @");
         table.put("Take breaks",
                 "Pausen machen");
-        table.put("Takes Like off the row under comments. Reply and the reaction count stay.",
-                "Entfernt \u201eGef\u00e4llt mir\u201c aus der Zeile unter Kommentaren. Antworten und die Zahl der Reaktionen bleiben.");
     }
 
     private static void fill26(Map<String, String> table) {
+        table.put("Takes Like off the row under comments. Reply and the reaction count stay.",
+                "Entfernt \u201eGef\u00e4llt mir\u201c aus der Zeile unter Kommentaren. Antworten und die Zahl der Reaktionen bleiben.");
         table.put("Takes Reply off the row under comments. View replies, Like and the reaction count stay.",
                 "Entfernt \u201eAntworten\u201c aus der Zeile unter Kommentaren. \u201eAntworten ansehen\u201c, \u201eGef\u00e4llt mir\u201c und die Zahl der Reaktionen bleiben.");
         table.put("Takes Search and the button next to it off the top of a video or reel you open, and off the Reels tab. Back and Menu stay, and so does More at the bottom of the side buttons, where Download is.",
@@ -3372,11 +3374,11 @@ final class L10nTableDe {
                 "Das ist keine .ttf- oder .otf-Schriftdatei. Deine Schrift hat sich nicht ge\u00e4ndert.");
         table.put("That isn't a Hushfacebook settings file. Nothing was changed.",
                 "Das ist keine Hushfacebook-Einstellungsdatei. Es wurde nichts ge\u00e4ndert.");
-        table.put("That isn't a picture Android can open. The top of Home didn't change.",
-                "Das ist kein Bild, das Android \u00f6ffnen kann. Oben auf der Startseite hat sich nichts ge\u00e4ndert.");
     }
 
     private static void fill27(Map<String, String> table) {
+        table.put("That isn't a picture Android can open. The top of Home didn't change.",
+                "Das ist kein Bild, das Android \u00f6ffnen kann. Oben auf der Startseite hat sich nichts ge\u00e4ndert.");
         table.put("That picture is over %1$d MB. The top of Home didn't change.",
                 "Dieses Bild ist gr\u00f6\u00dfer als %1$d MB. Oben auf der Startseite hat sich nichts ge\u00e4ndert.");
         table.put("That reel is already saved",
@@ -3495,11 +3497,11 @@ final class L10nTableDe {
                 "Die Liste fasst bis zu %1$d Personen, Seiten oder Websites. Entferne einige und speichere erneut.");
         table.put("The list is full, so nothing was added.",
                 "Die Liste ist voll, deshalb wurde nichts hinzugef\u00fcgt.");
-        table.put("The list is full, so the rest weren't added.",
-                "Die Liste ist voll, der Rest wurde nicht hinzugef\u00fcgt.");
     }
 
     private static void fill28(Map<String, String> table) {
+        table.put("The list is full, so the rest weren't added.",
+                "Die Liste ist voll, der Rest wurde nicht hinzugef\u00fcgt.");
         table.put("The newest Hushfacebook release is %1$s.",
                 "Die neueste Version von Hushfacebook ist %1$s.");
         table.put("The phone's language",
@@ -3618,11 +3620,11 @@ final class L10nTableDe {
                 "Trend-Videos und die Reels, die Facebook f\u00fcr dich ausgew\u00e4hlt hat, tauchen nicht mehr in deinen Benachrichtigungen auf.");
         table.put("Troubleshooting",
                 "Fehlerbehebung");
-        table.put("Try Facebook without Hushfacebook. From the next start, switches act as if off, except Debug logging and Lock Facebook. Your choices stay saved.",
-                "Probiere Facebook ohne Hushfacebook aus. Ab dem n\u00e4chsten Start verhalten sich die Schalter wie aus, au\u00dfer Debug-Protokollierung und Facebook sperren. Deine Auswahl bleibt gespeichert.");
     }
 
     private static void fill29(Map<String, String> table) {
+        table.put("Try Facebook without Hushfacebook. From the next start, switches act as if off, except Debug logging and Lock Facebook. Your choices stay saved.",
+                "Probiere Facebook ohne Hushfacebook aus. Ab dem n\u00e4chsten Start verhalten sich die Schalter wie aus, au\u00dfer Debug-Protokollierung und Facebook sperren. Deine Auswahl bleibt gespeichert.");
         table.put("Try a different word or clear the search.",
                 "Versuch ein anderes Wort oder l\u00f6sche die Suche.");
         table.put("Try again, or go back to Facebook.",
@@ -3741,11 +3743,11 @@ final class L10nTableDe {
                 "Videos");
         table.put("Videos and photos are saved on %1$s, in the same folders. Saves you already have stay where they are.",
                 "Videos und Fotos werden auf %1$s gespeichert, in denselben Ordnern. Bereits gespeicherte Dateien bleiben, wo sie sind.");
-        table.put("Videos and photos are saved on the phone's storage.",
-                "Videos und Fotos werden im Telefonspeicher gespeichert.");
     }
 
     private static void fill30(Map<String, String> table) {
+        table.put("Videos and photos are saved on the phone's storage.",
+                "Videos und Fotos werden im Telefonspeicher gespeichert.");
         table.put("Videos and photos are saved on the phone's storage. Put in an SD card to save on it instead.",
                 "Videos und Fotos werden im Telefonspeicher gespeichert. Setze eine SD-Karte ein, um stattdessen dort zu speichern.");
         table.put("Videos and photos go to %1$s, next to the camera's. Saves you already have stay where they are.",
@@ -3836,6 +3838,8 @@ final class L10nTableDe {
                 "Wenn Facebook mit Feeds startet, zeigt der Feeds-Tab den Filter, den Facebook ausw\u00e4hlt.");
         table.put("When you tap Download",
                 "Beim Tippen auf Download");
+        table.put("Where Facebook shows only a comment's top reaction next to its count, keeps Like, Reply and every reaction instead. A change shows on the comments drawn after it.",
+                "Wo Facebook neben der Anzahl nur die h\u00e4ufigste Reaktion eines Kommentars zeigt, bleiben stattdessen \u201eGef\u00e4llt mir\u201c, \u201eAntworten\u201c und alle Reaktionen. Eine \u00c4nderung zeigt sich bei den Kommentaren, die danach geladen werden.");
         table.put("Where ads and tracking are blocked",
                 "Wo Anzeigen und Tracking blockiert werden");
         table.put("While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.",
@@ -3862,13 +3866,13 @@ final class L10nTableDe {
                 "Wenn Fortschrittsbalken behalten an ist, bleiben die vergangene und die Gesamtzeit eines Reels \u00fcber dem Balken. Ist es aus, erscheinen sie nur, w\u00e4hrend du den Balken ziehst.");
         table.put("With Lock Facebook on, it will lock as soon as you leave it.",
                 "Wenn Facebook sperren an ist, sperrt sich Facebook, sobald du es verl\u00e4sst.");
+    }
+
+    private static void fill31(Map<String, String> table) {
         table.put("With Lock Facebook on, it will lock once you've been away for %1$s.",
                 "Wenn Facebook sperren an ist, sperrt sich Facebook, wenn du %1$s weg warst.");
         table.put("With Opening pause on, Facebook will wait %1$s before it opens.",
                 "Mit Pause beim \u00d6ffnen wartet Facebook %1$s, bevor es sich \u00f6ffnet.");
-    }
-
-    private static void fill31(Map<String, String> table) {
         table.put("With Pinch to zoom on, a video you zoom keeps playing, stories included. To zoom a story on a still frame, hold it first and then pinch. With Stay zoomed on too, press and hold the zoom to pause the video, and again to play it.",
                 "Wenn \u201eZum Zoomen auseinanderziehen\u201c an ist, l\u00e4uft ein Video, das du zoomst, weiter, auch in Storys. Um eine Story auf einem Standbild zu zoomen, halte sie zuerst gedr\u00fcckt und zieh dann auseinander. Ist auch \u201eGezoomt bleiben\u201c an, halte den Zoom gedr\u00fcckt, um das Video zu pausieren, und noch mal, um es abzuspielen.");
         table.put("With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. A single tap still opens the photo, a moment later.",
@@ -3985,13 +3989,13 @@ final class L10nTableDe {
                 "Starttab und Startverhalten");
         table.put("Your tab bar will go in this order: %1$s.",
                 "Deine Tab-Leiste bekommt diese Reihenfolge: %1$s.");
+    }
+
+    private static void fill32(Map<String, String> table) {
         table.put("Your tab bar will keep Facebook's order.",
                 "Deine Tab-Leiste beh\u00e4lt die Reihenfolge von Facebook.");
         table.put("ads",
                 "Anzeigen");
-    }
-
-    private static void fill32(Map<String, String> table) {
         table.put("answered",
                 "beantwortet");
         table.put("facebook.com and m.me links open here now.",

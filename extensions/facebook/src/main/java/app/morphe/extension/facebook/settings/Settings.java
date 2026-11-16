@@ -1643,6 +1643,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_incoming_comment_typing", FALSE);
 
     /**
+     * The row under a comment keeps Like, Reply and every reaction beside the count, where Facebook
+     * would draw its newer row with only the top reaction: Facebook's pick of the newer row is
+     * answered no ({@link app.morphe.extension.facebook.comments.CommentSheetOptions#topReactionOnly},
+     * #241). Off by default.
+     */
+    public static final BooleanSetting SHOW_EVERY_COMMENT_REACTION =
+            new BooleanSetting("hushfacebook_show_every_comment_reaction", FALSE);
+
+    /**
      * The "3 new comments" pill that shows while a comment list is open never shows: its text is
      * answered empty, and Facebook skips a pill with no text
      * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}, #185). New comments still
