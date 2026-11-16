@@ -53,6 +53,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* `Show every reaction on comments` now covers the comments under a post you've opened and the ones shown under posts in your feed. Those rows kept showing only the top reaction even with the switch on, since Facebook picks them in two other places. (#241)
 * `Loop stories` now replays video stories too. A finished video used to sit on its last frame with a full bar while only photo stories started over, and the replay button on a held story had the same problem. (#380)
 * A post you hide from the feed, with Hide post or "Hide all from" someone, stays hidden when you pull down to refresh. It used to come right back. Undo still brings it back. (#444)
 * `Report a problem` leaves the "What went wrong?" box empty now, so you can type straight into it. It used to come pre-filled with two questions, and on a phone that box looked done (or wouldn't take typing at all). The questions show in it as a grey hint instead. (#488)

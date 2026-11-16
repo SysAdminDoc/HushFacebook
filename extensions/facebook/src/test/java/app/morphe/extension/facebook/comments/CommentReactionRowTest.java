@@ -4,6 +4,7 @@
  */
 package app.morphe.extension.facebook.comments;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -27,8 +28,11 @@ import app.morphe.extension.shared.settings.PauseForTests;
 /**
  * Show every reaction on comments (#241): with the switch on, Facebook's pick of the newer row
  * under a comment, the one with only the top reaction beside the count, is answered no and
- * counted, so the row keeps Like, Reply and every reaction. Off, paused, before the settings are
- * ready, or when Facebook already picked the full row, its answer goes back unchanged.
+ * counted, so the row keeps Like, Reply and every reaction. The check the feed's inline comments
+ * and the comment list share is answered no the same way, and the comment list's row layout is
+ * answered 0, each counted under its own name so the report tells the three apart. Off, paused,
+ * before the settings are ready, or when Facebook already picked the full row, its answer goes back
+ * unchanged.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -88,6 +92,73 @@ public class CommentReactionRowTest {
     public void beforeTheSettingsAreReadyThePickStays() {
         Settings.SHOW_EVERY_COMMENT_REACTION.save(true);
         SettingsContextRule.withoutContext(() -> assertTrue(CommentSheetOptions.topReactionOnly(true)));
+    }
+
+    @Test
+    public void theSharedCheckStartsOffAndLeavesFacebooksPick() {
+        assertTrue(CommentSheetOptions.topReactionCheck(true));
+        String line = statusLine();
+        assertNotNull(line);
+        assertFalse("counted with the switch off: " + line, line.contains(CommentSheetOptions.EVERY_REACTION_CHECKED));
+    }
+
+    @Test
+    public void theSharedCheckOnAnswersNoAndCountsUnderItsOwnName() {
+        Settings.SHOW_EVERY_COMMENT_REACTION.save(true);
+        assertFalse(CommentSheetOptions.topReactionCheck(true));
+        String line = statusLine();
+        assertTrue(line, line.contains(CommentSheetOptions.EVERY_REACTION_CHECKED));
+        assertFalse("counted as the plugin's: " + line, line.contains(CommentSheetOptions.EVERY_REACTION_KEPT));
+        assertFalse("counted as the list layout's: " + line, line.contains(CommentSheetOptions.EVERY_REACTION_LAID_OUT));
+    }
+
+    @Test
+    public void theSharedCheckLeavesTheFullRowUncounted() {
+        Settings.SHOW_EVERY_COMMENT_REACTION.save(true);
+        assertFalse(CommentSheetOptions.topReactionCheck(false));
+        assertFalse(statusLine().contains(CommentSheetOptions.EVERY_REACTION_CHECKED));
+    }
+
+    @Test
+    public void theSharedCheckPausedOrEarlyLeavesThePick() {
+        Settings.SHOW_EVERY_COMMENT_REACTION.save(true);
+        SettingsContextRule.withoutContext(() -> assertTrue(CommentSheetOptions.topReactionCheck(true)));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue(CommentSheetOptions.topReactionCheck(true));
+    }
+
+    @Test
+    public void theListLayoutStartsOffAndKeepsFacebooksPick() {
+        assertEquals(2, CommentSheetOptions.topReactionLayout(2));
+        String line = statusLine();
+        assertNotNull(line);
+        assertFalse("counted with the switch off: " + line, line.contains(CommentSheetOptions.EVERY_REACTION_LAID_OUT));
+    }
+
+    @Test
+    public void theListLayoutOnAnswersTheFullRowsAndCountsUnderItsOwnName() {
+        Settings.SHOW_EVERY_COMMENT_REACTION.save(true);
+        assertEquals(0, CommentSheetOptions.topReactionLayout(1));
+        assertEquals(0, CommentSheetOptions.topReactionLayout(2));
+        assertEquals(0, CommentSheetOptions.topReactionLayout(3));
+        String line = statusLine();
+        assertTrue(line, line.contains(CommentSheetOptions.EVERY_REACTION_LAID_OUT + " 3"));
+        assertFalse("counted as the shared check's: " + line, line.contains(CommentSheetOptions.EVERY_REACTION_CHECKED));
+    }
+
+    @Test
+    public void theListLayoutLeavesTheFullRowsUncounted() {
+        Settings.SHOW_EVERY_COMMENT_REACTION.save(true);
+        assertEquals(0, CommentSheetOptions.topReactionLayout(0));
+        assertFalse(statusLine().contains(CommentSheetOptions.EVERY_REACTION_LAID_OUT));
+    }
+
+    @Test
+    public void theListLayoutPausedOrEarlyKeepsThePick() {
+        Settings.SHOW_EVERY_COMMENT_REACTION.save(true);
+        SettingsContextRule.withoutContext(() -> assertEquals(3, CommentSheetOptions.topReactionLayout(3)));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals(3, CommentSheetOptions.topReactionLayout(3));
     }
 
     @Test

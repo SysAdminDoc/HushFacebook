@@ -1669,9 +1669,14 @@ public class Settings extends BaseSettings {
 
     /**
      * The row under a comment keeps Like, Reply and every reaction beside the count, where Facebook
-     * would draw its newer row with only the top reaction: Facebook's pick of the newer row is
-     * answered no ({@link app.morphe.extension.facebook.comments.CommentSheetOptions#topReactionOnly},
-     * #241). Off by default.
+     * would draw its newer row with only the top reaction: Facebook's picks of the newer row are
+     * answered no, in the comment actions plugin
+     * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions#topReactionOnly}), the check
+     * the feed's inline comments and an open post's comment list share
+     * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions#topReactionCheck}) and the
+     * comment list's row layout
+     * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions#topReactionLayout}), #241.
+     * Off by default.
      */
     public static final BooleanSetting SHOW_EVERY_COMMENT_REACTION =
             new BooleanSetting("hushfacebook_show_every_comment_reaction", FALSE);

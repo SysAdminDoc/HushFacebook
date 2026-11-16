@@ -200,6 +200,18 @@ public final class CommentSheetOptions {
     /** The member the report names once Facebook's pick of a comment's reaction row has been through the hook. */
     static final String REACTION_ROW = "comment reaction row";
 
+    /** Counted each time the shared check behind the feed's and the comment list's rows is answered no. */
+    static final String EVERY_REACTION_CHECKED = "Comment row check answered with every reaction";
+
+    /** The member the report names once that shared check has been through the hook. */
+    static final String REACTION_CHECK = "comment reaction check";
+
+    /** Counted each time the comment list's pick of a row layout is answered with the full row's. */
+    static final String EVERY_REACTION_LAID_OUT = "Comment list layout kept with every reaction";
+
+    /** The member the report names once the comment list's row layout has been through the hook. */
+    static final String REACTION_LAYOUT = "comment list reaction layout";
+
     /** Counted each time the "new comments" pill's text is answered empty, so the pill never shows. */
     static final String PILL_HIDDEN = "New comments pill kept out";
 
@@ -345,6 +357,45 @@ public final class CommentSheetOptions {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "comment reaction row", failure);
             return topOnly;
+        }
+    }
+
+    /**
+     * The hook, right after the check that a feed post's inline comment actions, an open post's
+     * comment list and several renders around a comment's row share reads whether the row should be
+     * the newer one (#241). With the switch on it answers no, the answer the check gives where its
+     * surface is left out, so every row it decides keeps Like, Reply and every reaction; otherwise,
+     * and for a throw, it hands back what Facebook read.
+     */
+    public static boolean topReactionCheck(boolean topOnly) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, REACTION_CHECK);
+            if (!topOnly || !Utils.settingsReady() || !Settings.SHOW_EVERY_COMMENT_REACTION.get()) return topOnly;
+            HookStatus.counted(FAMILY, EVERY_REACTION_CHECKED);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, REACTION_CHECK, failure);
+            return topOnly;
+        }
+    }
+
+    /**
+     * The hook, right after an open post's comment list reads which layout its rows take (#241): 0
+     * for the older row, and 1 to 3 for parts of the newer one, where 2 and 3 build it whatever the
+     * shared check says. With the switch on it answers 0, the value the list takes where its surface
+     * is left out; otherwise, and for 0 or a throw, it hands back what Facebook read.
+     */
+    public static int topReactionLayout(int layout) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, REACTION_LAYOUT);
+            if (layout == 0 || !Utils.settingsReady() || !Settings.SHOW_EVERY_COMMENT_REACTION.get()) return layout;
+            HookStatus.counted(FAMILY, EVERY_REACTION_LAID_OUT);
+            return 0;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, REACTION_LAYOUT, failure);
+            return layout;
         }
     }
 
