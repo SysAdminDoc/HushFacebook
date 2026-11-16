@@ -41,6 +41,42 @@ public class ReturnRefreshTest {
     @Before
     public void turnTheSwitchOn() {
         Settings.BLOCK_RETURN_REFRESH.save(true);
+        ReturnRefresh.launchedForTests(true);
+    }
+
+    /**
+     * A fresh launch is no return. Its checks go to Facebook, so a cold start loads new posts
+     * instead of holding a cached feed whose posts may all be hidden, which left Home blank until a
+     * scroll (#493). The feed back from another screen later in that run still keeps its place.
+     */
+    @Test public void aFreshLaunchLetsFacebookLoad() {
+        HookStatus.clear();
+        try {
+            ReturnRefresh.launchedForTests(false);
+            assertFalse("the launch's warm start", ReturnRefresh.holdWarmStart());
+            assertFalse("the launch's foreground auto-scroll", ReturnRefresh.holdAutoScroll());
+            String report = String.join("\n", HookStatus.report());
+            assertTrue(report, report.contains("let Facebook refresh: a fresh launch 2"));
+            long later = SystemClock.elapsedRealtime() + ReturnRefresh.SAME_RETURN_MS + 1;
+            assertTrue("back from a post later in the run", ReturnRefresh.askAt(later, ReturnRefresh.FEED_RESUME));
+        } finally {
+            HookStatus.clear();
+        }
+    }
+
+    /** A launch whose first feed check is the hot start's, a tab switch to Home, also goes to Facebook (#493). */
+    @Test public void aFreshLaunchsHotStartLetsFacebookLoad() {
+        ReturnRefresh.launchedForTests(false);
+        ReturnRefresh.hotStart();
+        assertFalse("the launch's hot start", ReturnRefresh.holdWarmStart());
+        assertFalse("the launch's tab auto refresh", ReturnRefresh.holdTabAutoRefresh());
+    }
+
+    /** A return from the background before the first feed check of a run is still that run's launch (#493). */
+    @Test public void aReturnBeforeTheFirstFeedCheckIsTheLaunch() {
+        ReturnRefresh.launchedForTests(false);
+        ReturnRefresh.uiHidden(SystemClock.elapsedRealtime());
+        assertFalse("the launch's warm start", ReturnRefresh.holdWarmStart());
     }
 
     @After public void restore() {

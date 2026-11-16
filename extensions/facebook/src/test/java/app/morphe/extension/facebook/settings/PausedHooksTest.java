@@ -84,6 +84,7 @@ import app.morphe.extension.facebook.emoji.SystemEmoji;
 import app.morphe.extension.facebook.feed.AutoTranslationForTests;
 import app.morphe.extension.facebook.feed.FeedFilter;
 import app.morphe.extension.facebook.feed.FindFriendsCard;
+import app.morphe.extension.facebook.feed.ReturnRefreshForTests;
 import app.morphe.extension.facebook.feed.SeenPostsForTests;
 import app.morphe.extension.facebook.feed.SuggestedGroupsCard;
 import app.morphe.extension.facebook.feed.FeedsHeader;
@@ -473,6 +474,8 @@ public class PausedHooksTest {
         // tab switch back to Home reaches.
         probes.put(PatchFamily.RETURN_REFRESH, Arrays.asList(
                 () -> {
+                    // Past the launch, whose checks go to Facebook whatever the switch says (#493).
+                    ReturnRefreshForTests.launched();
                     ReturnRefresh.uiHidden();
                     return ReturnRefresh.skip();
                 },

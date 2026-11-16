@@ -67,6 +67,10 @@ public final class ReturnRefresh {
     private static final String KEPT_WHILE_AWAY = "kept the feed loaded while away";
     /** Prefix for a refusal's count label; one label per fixed reason from refreshBecause()/offBecause(). */
     private static final String LET_FACEBOOK_REFRESH = "let Facebook refresh: ";
+    /** Why the first feed checks of a run go to Facebook: a launch is no return (#493). */
+    static final String FRESH_LAUNCH = "a fresh launch";
+    /** Whether this run's first feed check has come, the one a launch makes. */
+    private static boolean launched;
     private static long hiddenAt = -1;
     private static long decidedAt = -1;
     /** Why the first check of the current return let Facebook refresh, or null while it's holding. */
@@ -285,7 +289,10 @@ public final class ReturnRefresh {
         final boolean returning;
         final String reason;
         synchronized (ReturnRefresh.class) {
-            if (hiddenAt >= 0) {
+            if (!launched) {
+                returning = true;
+                reason = launchBecause(now);
+            } else if (hiddenAt >= 0) {
                 returning = true;
                 reason = refreshBecause(now, hiddenAt);
             } else if (decidedAt >= 0 && now >= decidedAt && now - decidedAt <= SAME_RETURN_MS) {
@@ -326,7 +333,10 @@ public final class ReturnRefresh {
         final String reason;
         synchronized (ReturnRefresh.class) {
             long at = hiddenAt;
-            if (at >= 0) {
+            if (!launched) {
+                away = -3;
+                reason = launchBecause(now);
+            } else if (at >= 0) {
                 hiddenAt = -1;
                 decidedAt = now;
                 away = now - at;
@@ -344,7 +354,8 @@ public final class ReturnRefresh {
         boolean hold = reason == null;
         String logReason = away == -1 && reason != null ? "as the first check of this return decided" : reason;
         Logger.printDebug(() -> "Return refresh: " + check
-                + (away >= 0 ? " after " + away / 1000 + " s away" : away == -1 ? " in the same return" : " inside the app")
+                + (away >= 0 ? " after " + away / 1000 + " s away" : away == -1 ? " in the same return"
+                        : away == -3 ? " at launch" : " inside the app")
                 + (hold ? ": keeping the feed" : ": Facebook goes ahead, " + logReason));
         return new Decision(hold, true, reason);
     }
@@ -359,6 +370,33 @@ public final class ReturnRefresh {
             this.hold = hold;
             this.countable = countable;
             this.reason = reason;
+        }
+    }
+
+    /**
+     * Takes this run's launch at its first feed check and says why it goes to Facebook. A cold start
+     * holds no feed of the user's to keep, only Facebook's cached one, and holding that left Home
+     * blank until a scroll when none of its posts showed (#493). The launch's checks within
+     * {@link #SAME_RETURN_MS} get the same answer, as a return's do. A return before it is part of it.
+     * Called holding the class lock.
+     */
+    private static String launchBecause(long now) {
+        launched = true;
+        hiddenAt = -1;
+        decidedAt = now;
+        String off = offBecause();
+        decidedBecause = off != null ? off : FRESH_LAUNCH;
+        return decidedBecause;
+    }
+
+    /** Sets whether this run's launch has had its first feed check, for a test. */
+    static synchronized void launchedForTests(boolean value) {
+        launched = value;
+        if (!value) {
+            hotStartAt = -1;
+            hiddenAt = -1;
+            decidedAt = -1;
+            decidedBecause = null;
         }
     }
 
