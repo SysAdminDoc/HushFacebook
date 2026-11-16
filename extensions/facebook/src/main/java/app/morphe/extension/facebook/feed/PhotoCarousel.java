@@ -15,6 +15,7 @@ import android.view.accessibility.AccessibilityEvent;
 import androidx.annotation.Nullable;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -52,6 +53,9 @@ public final class PhotoCarousel {
 
     /** Counted each time the count over a row changes to a new photo. */
     static final String COUNT_SHOWN = "Photo count shown";
+
+    /** Counted each time a row takes more of a post's photos than Facebook's limit (#484). */
+    static final String EVERY_PHOTO = "Every photo let in";
 
     /** The most dots drawn under a row. A longer row shows a window of them that moves along. */
     static final int MAX_DOTS = 7;
@@ -114,6 +118,28 @@ public final class PhotoCarousel {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "carousel check", failure);
             return facebooks;
+        }
+    }
+
+    /**
+     * The hook right before the row takes the first [limit] of a post's [photos] (#484). Facebook's
+     * limit comes from a server setting, 12 for the reporter, and a 76-photo album stopped there
+     * while its grid had every photo. While the switch is on the row takes every photo the post
+     * brought, so the limit is never less than the list. Off, paused, before the settings or on any
+     * failure it's Facebook's.
+     */
+    public static int limit(@Nullable Iterable<?> photos, int limit) {
+        try {
+            if (!(photos instanceof Collection) || !on()) return limit;
+            int size = ((Collection<?>) photos).size();
+            if (size <= limit) return limit;
+            HookStatus.bound(FAMILY, "photo limit");
+            HookStatus.counted(FAMILY, EVERY_PHOTO);
+            Logger.printDebug(() -> "Photo carousel: the row takes all " + size + " photos, not " + limit);
+            return size;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "photo limit", failure);
+            return limit;
         }
     }
 

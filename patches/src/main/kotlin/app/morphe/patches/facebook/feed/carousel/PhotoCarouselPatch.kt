@@ -34,10 +34,12 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.util.MethodUtil
 
 internal const val PATCH = "Photo carousel"
@@ -46,6 +48,15 @@ internal const val PATCH = "Photo carousel"
 internal const val CAROUSEL_PLUGIN = "com.facebook.feedplugins.attachments.album.MultiMediaAttachmentHScrollPlugin"
 
 internal const val PHOTO_CAROUSEL = "Lapp/morphe/extension/facebook/feed/PhotoCarousel;"
+
+/** The row's plugin as a type, which builds the row's own component. */
+internal const val CAROUSEL_PLUGIN_TYPE = "Lcom/facebook/feedplugins/attachments/album/MultiMediaAttachmentHScrollPlugin;"
+
+/** The attachment whose photos the row takes. */
+internal const val STORY_ATTACHMENT = "Lcom/facebook/graphql/model/GraphQLStoryAttachment;"
+
+/** The extension's limit on how many of a post's photos the row takes, handed the list and Facebook's (#484). */
+internal const val PHOTO_LIMIT = "$PHOTO_CAROUSEL->limit(Ljava/lang/Iterable;I)I"
 
 /** The extension's answer to whether the row may show in this feed, handed Facebook's. */
 internal const val LET_CAROUSEL_IN = "$PHOTO_CAROUSEL->carousel(I)Z"
@@ -166,6 +177,58 @@ internal class AlbumLayouts(val names: Method, val applies: Method, val feedAnsw
 
 private fun ReferenceInstruction.method() = reference as? MethodReference
 
+/** Whether [instruction] is Kotlin's take under its Redex name: a static (Iterable, int) List. */
+internal fun isTake(instruction: Instruction): Boolean {
+    if (instruction.opcode != Opcode.INVOKE_STATIC) return false
+    val call = (instruction as ReferenceInstruction).method() ?: return false
+    return call.returnType == "Ljava/util/List;" &&
+        call.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Iterable;", "I")
+}
+
+/**
+ * The row's own component render and the index of its one take (#484). The row's plugin creates
+ * the component (`LX/0PUX;` in 587), whose render reads the attachment's photos and takes the first
+ * n of them, n from a server setting unless the feed is one Facebook leaves uncapped, and the rest
+ * wait behind an end card. Throws unless exactly one render of a class the plugin creates reads the
+ * attachment and takes once.
+ */
+internal fun photoTake(plugin: ClassDef, classOf: (String) -> ClassDef?): Pair<Method, Int> {
+    val created = plugin.methods.flatMap { method ->
+        method.implementation?.instructions?.toList().orEmpty().filter { it.opcode == Opcode.NEW_INSTANCE }
+            .map { ((it as ReferenceInstruction).reference as TypeReference).type }
+    }.toSet()
+    val found = created.mapNotNull(classOf).flatMap { it.methods }
+        .filter { it.name == "render" && it.parameterTypes.size == 1 }
+        .mapNotNull { render ->
+            val code = render.implementation?.instructions?.toList() ?: return@mapNotNull null
+            if (code.none { (it as? ReferenceInstruction)?.method()?.definingClass == STORY_ATTACHMENT }) return@mapNotNull null
+            code.indices.filter { isTake(code[it]) }.singleOrNull()?.let { render to it }
+        }
+    return found.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one render that ${plugin.type} creates taking the post's photos, found ${found.size}")
+}
+
+/**
+ * Hands the take's list and limit to [PHOTO_LIMIT] right before it, and the limit register takes
+ * the answer. Facebook works out the end card's count from the same register after the take, so
+ * a post that brought every photo gets no end card. At the take's label, so a branch to it goes
+ * through the hook too.
+ */
+internal fun BytecodePatchContext.hookPhotoLimit() {
+    val render = photoTake(classDefBy(CAROUSEL_PLUGIN_TYPE)) { classDefByOrNull(it) }.first
+    val mutable = mutableClassDefBy(render.definingClass).methods.single { MethodUtil.methodSignaturesMatch(it, render) }
+    // Read again off the method that's changed, in case another patch moved its instructions.
+    val take = mutable.implementation!!.instructions.indexOfFirst(::isTake)
+    val call = mutable.implementation!!.instructions.elementAt(take) as FiveRegisterInstruction
+    mutable.addInstructionsAtControlFlowLabel(
+        take,
+        """
+            invoke-static { v${call.registerC}, v${call.registerD} }, $PHOTO_LIMIT
+            move-result v${call.registerD}
+        """,
+    )
+}
+
 /**
  * Whether [instruction] is the swipeable row's feed check: a static call answering a boolean about
  * one Facebook object, which is how 585 asks whether the row is on in this feed. The calls before
@@ -269,6 +332,7 @@ val photoCarouselPatch = bytecodePatch(
             ?: throw PatchException("$PATCH: expected one render naming $CAROUSEL_PHOTO, found ${photos.size}")
         fillPhotoClass(photo.definingClass)
         hookRowDraw()
+        hookPhotoLimit()
         enableStatus("photoCarousel")
     }
 }

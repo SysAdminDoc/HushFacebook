@@ -237,6 +237,30 @@ public class PhotoCarouselTest {
         assertFalse(statusLine(), statusLine().contains("threw"));
     }
 
+    /** #484: a 76-photo post stopped at 12 in the row, Facebook's server-set limit, and its grid had all 76. */
+    @Test
+    public void onTheRowTakesEveryPhotoThePostBroughtNotFacebooksFirstFew() {
+        java.util.List<Integer> photos = new java.util.ArrayList<>();
+        for (int i = 0; i < 76; i++) photos.add(i);
+        assertEquals("off, Facebook's limit", 12, PhotoCarousel.limit(photos, 12));
+        assertFalse(statusLine(), statusLine().contains(PhotoCarousel.EVERY_PHOTO));
+
+        Settings.PHOTO_CAROUSEL.save(true);
+        assertEquals("the reporter's post", 76, PhotoCarousel.limit(photos, 12));
+        assertTrue(statusLine(), statusLine().contains(PhotoCarousel.EVERY_PHOTO));
+        assertEquals("a limit already past the list stays", 80, PhotoCarousel.limit(photos, 80));
+        assertEquals("a short post keeps Facebook's limit", 12, PhotoCarousel.limit(photos.subList(0, 5), 12));
+        assertEquals("no list, Facebook's limit", 12, PhotoCarousel.limit(null, 12));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused, Facebook's limit", 12, PhotoCarousel.limit(photos, 12));
+        PauseForTests.resume();
+        int[] before = new int[1];
+        SettingsContextRule.withoutContext(() -> before[0] = PhotoCarousel.limit(photos, 12));
+        assertEquals("before the settings, Facebook's limit", 12, before[0]);
+        assertFalse(statusLine(), statusLine().contains("threw"));
+    }
+
     @Test
     public void aListThatDoesntScrollSidewaysGetsNothingDrawn() {
         Settings.PHOTO_CAROUSEL.save(true);
