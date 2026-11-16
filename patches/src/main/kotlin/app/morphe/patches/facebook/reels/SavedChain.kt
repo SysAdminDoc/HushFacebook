@@ -18,7 +18,8 @@ import app.morphe.util.findMutableMethodOf
 
 /**
  * The screen class the full-screen viewers and pages like Saved (ImmersiveActivity) come down from.
- * Its touch dispatch hands the event straight to its delegate and never runs FbFragmentActivity's.
+ * Its touch dispatch hands the event to its delegate. On 585 that never ran FbFragmentActivity's. On
+ * 587 the delegate calls back into it through super, with the same event.
  */
 internal const val DELEGATING_ACTIVITY = "Lcom/facebook/base/activity/DelegatingFbFragmentFrameworkActivity;"
 
@@ -33,9 +34,10 @@ private const val PATCH = "Clean up Reels"
 /**
  * Play saved videos in a row (#404): the extension reads every touch first thing in the touch
  * dispatch of FbFragmentActivity and of DelegatingFbFragmentFrameworkActivity, the base of the Saved
- * page and the viewer it opens (ImmersiveActivity, Facebook 585), whose own dispatch skips
- * FbFragmentActivity's. It keeps the card a press lands on, and in a viewer opened from Saved takes
- * an up or down swipe for itself: a yes returns true before Facebook sees the event. The screen and
+ * page and the viewer it opens (ImmersiveActivity). On 587 those screens run both dispatches for one
+ * event, so the extension answers a second read of an event as it did the first. It keeps the card a
+ * press lands on, and in a viewer opened from Saved takes an up or down swipe for itself: a yes
+ * returns true before Facebook sees the event. The screen and
  * the event are p0 and p1, next to each other, so the range form passes both, and the answer borrows
  * v0, which holds nothing before the method's own first instruction. The rest, the viewer opening
  * from Saved, a reel ending and a reel taking the screen, comes through the reels viewer entry and

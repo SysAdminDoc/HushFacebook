@@ -232,6 +232,16 @@ public final class SavedChain {
     @Nullable private static Card lastCard;
     @Nullable private static Chain chain;
     @Nullable private static Drag drag;
+    /**
+     * The event {@link #touched} read last, with its times and its action as left after the read, and
+     * the answer it got. Facebook reuses event objects, so the times and action tell a second read of
+     * one event from the next event in the same object. Main thread only.
+     */
+    @Nullable private static MotionEvent readEvent;
+    private static long readDownTime;
+    private static long readEventTime;
+    private static int readAction;
+    private static boolean readAnswer;
     private static WeakReference<View> cover = new WeakReference<>(null);
     private static int coverToken;
     private static WeakReference<Activity> resumed = NO_SCREEN;
@@ -246,10 +256,30 @@ public final class SavedChain {
      * Injection point, first thing in Facebook's screens' touch dispatch: keeps the card a finger
      * press lands on, for a viewer that opens from it, and in the chain's viewer takes an up or down
      * swipe from Facebook. True keeps the event from Facebook. Never throws.
+     *
+     * Facebook 587's Saved page and viewer hand each event to a delegate that runs the base screen's
+     * dispatch with the same event, so both hooks read it. The second read gets the first one's
+     * answer: read again, the move a swipe was taken on is a cancel by then, which used to end the
+     * swipe and leave the rest of it to Facebook's pager (#404).
      */
     public static boolean touched(@Nullable Activity activity, @Nullable MotionEvent event) {
+        if (activity == null || event == null) return false;
+        if (event == readEvent && event.getDownTime() == readDownTime && event.getEventTime() == readEventTime
+                && event.getActionMasked() == readAction) {
+            return readAnswer;
+        }
+        boolean answer = read(activity, event);
+        readEvent = event;
+        readDownTime = event.getDownTime();
+        readEventTime = event.getEventTime();
+        readAction = event.getActionMasked();
+        readAnswer = answer;
+        return answer;
+    }
+
+    /** One event's first read, for {@link #touched}. */
+    private static boolean read(Activity activity, MotionEvent event) {
         try {
-            if (activity == null || event == null) return false;
             int action = event.getActionMasked();
             if (action != MotionEvent.ACTION_DOWN) return dragged(activity, event, action);
             Drag old = drag;
@@ -998,6 +1028,7 @@ public final class SavedChain {
         chain = null;
         if (drag != null) drag.forget();
         drag = null;
+        readEvent = null;
         cover = new WeakReference<>(null);
         coverToken = 0;
         resumed = NO_SCREEN;

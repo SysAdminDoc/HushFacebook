@@ -91,13 +91,19 @@ public class SavedChainTest {
         }
     }
 
-    /** The Reels viewer a card opens, its touches read first as the patch does, keeping what reaches Facebook's video. */
+    /**
+     * The Reels viewer a card opens, its touches read first as the patch does, keeping what reaches
+     * Facebook's video. With "reads" 2 it's Facebook 587's: the screen's dispatch hands each event to
+     * its delegate, which runs the base screen's dispatch with the same event, so both hooks read it.
+     */
     public static final class ReelsViewer extends Activity {
         final List<Integer> facebook = new ArrayList<>();
+        int reads = 1;
 
         @Override
         protected void onCreate(Bundle state) {
             super.onCreate(state);
+            reads = getIntent().getIntExtra("reads", 1);
             requestWindowFeature(Window.FEATURE_NO_TITLE);
             FrameLayout video = new FrameLayout(this);
             video.setOnTouchListener((view, event) -> facebook.add(event.getActionMasked()));
@@ -106,7 +112,9 @@ public class SavedChainTest {
 
         @Override
         public boolean dispatchTouchEvent(MotionEvent event) {
-            if (SavedChain.touched(this, event)) return true;
+            for (int read = 0; read < reads; read++) {
+                if (SavedChain.touched(this, event)) return true;
+            }
             return super.dispatchTouchEvent(event);
         }
 
@@ -235,9 +243,15 @@ public class SavedChainTest {
 
     /** The viewer opening from [origin] over the Saved page, in front with nothing over it. */
     private ReelsViewer openViewer(String origin) {
+        return openViewer(origin, 1);
+    }
+
+    /** The same, its touches read [reads] times each. */
+    private ReelsViewer openViewer(String origin, int reads) {
         pageController.pause();
         SavedChain.viewerOpening(origin);
-        ActivityController<ReelsViewer> viewer = Robolectric.buildActivity(ReelsViewer.class).setup();
+        Intent intent = new Intent(RuntimeEnvironment.getApplication(), ReelsViewer.class).putExtra("reads", reads);
+        ActivityController<ReelsViewer> viewer = Robolectric.buildActivity(ReelsViewer.class, intent).setup();
         viewer.windowFocusChanged(true);
         viewers.add(viewer);
         idle(0);
@@ -300,8 +314,12 @@ public class SavedChainTest {
     }
 
     private ReelsViewer playing(int card) {
+        return playing(card, 1);
+    }
+
+    private ReelsViewer playing(int card, int reads) {
         press(card);
-        ReelsViewer viewer = openViewer(SAVED);
+        ReelsViewer viewer = openViewer(SAVED, reads);
         SavedChain.bound(new Object());
         idle(SavedChain.OPEN_GUARD_MS + 100);
         return viewer;
@@ -403,6 +421,34 @@ public class SavedChainTest {
         assertNotNull("the cover came off as the next video opened, before it drew", coverOnSaved());
         idle(SavedChain.UNCOVER_MS + 50);
         assertNull("the cover stayed on Saved", coverOnSaved());
+    }
+
+    /**
+     * Facebook 587 (#404): both hooks read every event in the viewer, and the second read of the move
+     * that was taken, a cancel by then, ended the takeover, so Facebook's pager scrolled a suggested
+     * reel in under the saved one before the next saved video.
+     */
+    @Test
+    public void aSwipeReadTwiceIsStillTakenFromFacebook() {
+        openSaved(6, true);
+        ReelsViewer viewer = playing(1, 2);
+        swipe(viewer, 600, 300);
+        assertEquals("Facebook's video went on with the swipe", TAKEN, viewer.facebook);
+        assertEquals("the video didn't follow the finger", -300f, viewer.content().getTranslationY(), 0.5f);
+
+        idle(SavedChain.SLIDE_MS + 50);
+        assertTrue("a swipe up stayed in the viewer", viewer.isFinishing());
+        backToSaved();
+        idle(SavedChain.SETTLE_MS + SavedChain.PRESS_MS + 50);
+        assertEquals("card 2, the one after", TAP, touchesOf(2));
+
+        ReelsViewer next = openViewer(SAVED, 2);
+        SavedChain.bound(new Object());
+        idle(SavedChain.OPEN_GUARD_MS + 100);
+        drag(next, 400, 340, Float.NaN, 20, 100);
+        idle(SavedChain.SLIDE_MS + 100);
+        assertFalse("a short slow drag read twice left the video", next.isFinishing());
+        assertEquals("the video didn't slide back", 0f, next.content().getTranslationY(), 0.5f);
     }
 
     @Test
