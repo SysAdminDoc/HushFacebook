@@ -1044,6 +1044,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_shared_reels_alone", FALSE);
 
     /**
+     * Opening a reel someone who isn't your friend shared no longer brings up the "[Name] shared this
+     * reel. Add him as a friend" sheet over it
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#hideSharedReelFriendSheet}, #486).
+     * Off by default. A change shows from the next shared reel.
+     */
+    public static final BooleanSetting HIDE_SHARED_REEL_FRIEND_SHEET =
+            new BooleanSetting("hushfacebook_hide_shared_reel_friend_sheet", FALSE);
+
+    /**
      * Watch again at the end of a feed video plays it again where it is instead of opening it in
      * the Reels viewer ({@link app.morphe.extension.facebook.reels.WatchAgain}, #403). Off by
      * default. A change shows on the next tap.

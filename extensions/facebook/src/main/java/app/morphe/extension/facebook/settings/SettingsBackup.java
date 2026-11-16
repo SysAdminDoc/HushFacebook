@@ -285,6 +285,7 @@ public final class SettingsBackup {
             Settings.HIDE_FEED_VIDEO_BUTTONS,
             Settings.FEED_VIDEOS_ALONE,
             Settings.SHARED_REELS_ALONE,
+            Settings.HIDE_SHARED_REEL_FRIEND_SHEET,
             Settings.WATCH_AGAIN_IN_PLACE,
             Settings.SAVED_VIDEOS_IN_PLAYER,
             Settings.SAVED_VIDEOS_IN_ORDER,

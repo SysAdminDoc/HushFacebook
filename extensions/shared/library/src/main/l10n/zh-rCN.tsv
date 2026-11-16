@@ -2739,6 +2739,10 @@ Not found yet	暂未找到
 A magnifier at the top of the comments opens a search box that finds the comments with your words.	评论顶部的放大镜会打开搜索框，找出包含你输入的文字的评论。
 Open shared reels on their own	单独打开分享的 Reels
 A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.	从其他应用的链接或聊天中打开的 Reels 会单独播放，之后没有可以继续滑动的 Reels.
+# context: switch title under Reels and Watch, right under Open shared reels on their own; on, the sheet "[Name] shared this reel. Add him as a friend to make sharing even easier" with Add friend and Not now no longer opens over a reel a non-friend sent; use Facebook's own label for its Add friend button
+Hide the Add friend pop-up on shared reels	隐藏分享的 Reels 上的加好友弹窗
+# context: description of that switch; the sheet only opens for a reel shared by someone who isn't your Facebook friend; only the sheet goes, the reel still plays
+Opening a reel from someone who isn't your friend yet no longer pops up a sheet asking you to add them. A change shows from the next shared reel.	打开还不是好友的人分享的 Reels 时，不再弹出请你加对方为好友的窗口。从下一个分享的 Reels 起生效.
 Light bars on the Reels tab	Reels 标签页使用浅色栏
 In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the other tabs, instead of turning them dark.	在浅色模式下，Reels 标签页保持与其他标签页相同的浅色状态栏、顶部栏和标签栏，而不是把它们变暗.
 Bar opacity	栏的不透明度

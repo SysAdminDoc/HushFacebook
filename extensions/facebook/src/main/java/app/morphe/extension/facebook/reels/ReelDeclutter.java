@@ -180,6 +180,13 @@ public final class ReelDeclutter {
     static final String FEED_VIDEO_PIP = "picture-in-picture button";
 
     /**
+     * Counted under its own name each time the Add friend sheet over a reel a non-friend shared is
+     * kept from opening (#486).
+     */
+    static final String FRIEND_SHEET_ROUTE = "Shared reel friend sheet";
+    static final String FRIEND_SHEET = "Add friend sheet";
+
+    /**
      * Counted under its own name each time the UP NEXT bar's lookup is skipped, each time its
      * videos are handed out empty (#367), each time no room is kept for it and each time the
      * full-screen viewer's UP NEXT pill isn't shown (#375).
@@ -635,6 +642,30 @@ public final class ReelDeclutter {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, kind, failure);
             Logger.printException(() -> "Feed video buttons: could not read the switch for the " + kind, failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, first thing in the run() of the Runnable the reel viewer posts to open the
+     * "[Name] shared this reel. Add him as a friend" sheet over a reel someone who isn't your friend
+     * shared (#486). True makes run() return before it opens the sheet, so the reel plays with
+     * nothing over it and nothing is sent. Never throws: false lets Facebook decide.
+     */
+    public static boolean hideSharedReelFriendSheet() {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            FeedFilterCounters.sawList(FRIEND_SHEET_ROUTE, 1);
+            FeedFilterCounters.sawKind(FRIEND_SHEET_ROUTE, FRIEND_SHEET);
+            boolean hide = Utils.settingsReady() && Settings.HIDE_SHARED_REEL_FRIEND_SHEET.get();
+            if (hide) {
+                FeedFilterCounters.removed(FRIEND_SHEET_ROUTE, 1, FRIEND_SHEET);
+                logOnce(FRIEND_SHEET, () -> "Shared reel friend sheet: kept closed");
+            }
+            return hide;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, FRIEND_SHEET, failure);
+            Logger.printException(() -> "Shared reel friend sheet: could not read its switch", failure);
             return false;
         }
     }

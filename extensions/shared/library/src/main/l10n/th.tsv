@@ -2744,6 +2744,10 @@ Not found yet	ยังไม่พบ
 A magnifier at the top of the comments opens a search box that finds the comments with your words.	แว่นขยายที่ด้านบนของความคิดเห็นจะเปิดช่องค้นหาเพื่อค้นหาความคิดเห็นที่มีคำของคุณ
 Open shared reels on their own	เปิด Reels ที่แชร์แยกต่างหาก
 A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.	Reel ที่คุณเปิดจากลิงก์ในแอปอื่นหรือจากแชทจะเล่นแยกต่างหาก โดยไม่มี Reels อื่นให้ปัดดูต่อหลังจากนั้น
+# context: switch title under Reels and Watch, right under Open shared reels on their own; on, the sheet "[Name] shared this reel. Add him as a friend to make sharing even easier" with Add friend and Not now no longer opens over a reel a non-friend sent; use Facebook's own label for its Add friend button
+Hide the Add friend pop-up on shared reels	ซ่อนป๊อปอัปเพิ่มเพื่อนใน Reels ที่แชร์
+# context: description of that switch; the sheet only opens for a reel shared by someone who isn't your Facebook friend; only the sheet goes, the reel still plays
+Opening a reel from someone who isn't your friend yet no longer pops up a sheet asking you to add them. A change shows from the next shared reel.	เมื่อคุณเปิด Reel จากคนที่ยังไม่ได้เป็นเพื่อนกับคุณ จะไม่มีหน้าต่างขอให้เพิ่มเขาเป็นเพื่อนขึ้นมาอีก การเปลี่ยนแปลงจะเห็นตั้งแต่ Reel ที่แชร์ถัดไป
 Light bars on the Reels tab	แถบสีสว่างในแท็บ Reels
 In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the other tabs, instead of turning them dark.	ในโหมดสว่าง แท็บ Reels จะยังคงใช้แถบสถานะ แถบด้านบน และแถบแท็บสีสว่างเช่นเดียวกับแท็บอื่นๆ แทนที่จะเปลี่ยนเป็นสีเข้ม
 Bar opacity	ความทึบแสงของแถบ

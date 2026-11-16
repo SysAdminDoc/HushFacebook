@@ -255,6 +255,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.SHARED_REELS_ALONE,
                     L10n.t("A reel you open from a link in another app or from a chat plays by itself, with no "
                             + "reels to swipe to after it.")));
+            // Asked as a shared reel's viewer posts the Add friend sheet, so a change shows from the next one (#486).
+            reels.addPreference(toggle(context, Settings.HIDE_SHARED_REEL_FRIEND_SHEET,
+                    L10n.t("Opening a reel from someone who isn't your friend yet no longer pops up a sheet asking "
+                            + "you to add them. A change shows from the next shared reel.")));
             // Asked as Watch again is tapped, so a change shows on the next tap (#403).
             reels.addPreference(toggle(context, Settings.WATCH_AGAIN_IN_PLACE,
                     L10n.t("Watch again at the end of a feed video plays it again right there, instead of "

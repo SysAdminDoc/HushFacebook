@@ -2744,6 +2744,10 @@ Not found yet	Belum ditemukan
 A magnifier at the top of the comments opens a search box that finds the comments with your words.	Kaca pembesar di bagian atas komentar membuka kotak pencarian yang menemukan komentar berisi kata-kata Anda.
 Open shared reels on their own	Buka reel yang dibagikan sendiri
 A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.	Reel yang kamu buka dari tautan di aplikasi lain atau dari obrolan diputar sendiri, tanpa reel lain untuk digeser setelahnya.
+# context: switch title under Reels and Watch, right under Open shared reels on their own; on, the sheet "[Name] shared this reel. Add him as a friend to make sharing even easier" with Add friend and Not now no longer opens over a reel a non-friend sent; use Facebook's own label for its Add friend button
+Hide the Add friend pop-up on shared reels	Sembunyikan pop-up Tambahkan teman di reel yang dibagikan
+# context: description of that switch; the sheet only opens for a reel shared by someone who isn't your Facebook friend; only the sheet goes, the reel still plays
+Opening a reel from someone who isn't your friend yet no longer pops up a sheet asking you to add them. A change shows from the next shared reel.	Saat kamu membuka reel dari orang yang belum menjadi temanmu, tidak ada lagi jendela yang memintamu menambahkannya. Perubahan terlihat mulai reel yang dibagikan berikutnya.
 Light bars on the Reels tab	Bilah terang di tab Reels
 In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the other tabs, instead of turning them dark.	Dalam mode terang, tab Reels tetap memakai bilah status, bilah atas, dan bilah tab terang yang sama dengan tab lain, bukan menggelapkannya.
 Bar opacity	Opasitas bilah

@@ -91,6 +91,8 @@ public class ReelDeclutterTest {
         Settings.HIDE_UP_NEXT.resetToDefault();
         Settings.HIDE_REEL_FULLSCREEN_PILL.resetToDefault();
         Settings.HIDE_FEED_VIDEO_BUTTONS.resetToDefault();
+        Settings.HIDE_SHARED_REEL_FRIEND_SHEET.resetToDefault();
+        Settings.SHARED_REELS_ALONE.resetToDefault();
         Settings.PLAY_FEED_REELS_WHOLE.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         FeedFilterCounters.clear();
@@ -356,6 +358,43 @@ public class ReelDeclutterTest {
         }
         assertTrue(HookStatus.missing(FamilyNames.REEL_DECLUTTER).toString(), HookStatus.missing(FamilyNames.REEL_DECLUTTER)
                 .contains("a working '" + ReelDeclutter.FEED_VIDEO_PIP + "' hook (it threw " + NullPointerException.class.getName() + ")"));
+    }
+
+    /**
+     * The Add friend sheet over a reel a non-friend shared (#486) opens until its switch is on, then
+     * not, and it opens again paused, before the settings are ready and once the switch is off again.
+     * Open shared reels on their own doesn't keep it closed.
+     */
+    @Test
+    public void theSharedReelFriendSheetOpensUntilItsSwitchIsOn() {
+        assertFalse(Settings.HIDE_SHARED_REEL_FRIEND_SHEET.defaultValue);
+        Settings.SHARED_REELS_ALONE.save(true);
+        assertFalse("Open shared reels on their own kept the sheet closed", ReelDeclutter.hideSharedReelFriendSheet());
+        Settings.HIDE_SHARED_REEL_FRIEND_SHEET.save(true);
+        assertTrue(ReelDeclutter.hideSharedReelFriendSheet());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("the sheet was kept closed while paused", ReelDeclutter.hideSharedReelFriendSheet());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse("the sheet was kept closed before the settings were ready",
+                ReelDeclutter.hideSharedReelFriendSheet()));
+        Settings.HIDE_SHARED_REEL_FRIEND_SHEET.save(false);
+        assertFalse("turning the switch off didn't let the sheet open", ReelDeclutter.hideSharedReelFriendSheet());
+        assertEquals(ReelDeclutter.FRIEND_SHEET_ROUTE + ": 5 lists, 5 items, 1 removed. Last reason: " + ReelDeclutter.FRIEND_SHEET
+                + ". Removed: " + ReelDeclutter.FRIEND_SHEET + " 1. Kinds: " + ReelDeclutter.FRIEND_SHEET + " 5",
+                line(ReelDeclutter.FRIEND_SHEET_ROUTE));
+    }
+
+    /** A shared reel friend sheet switch that can't be read lets the sheet open, and the report names the hook. */
+    @Test
+    public void aSharedReelFriendSheetSwitchThatCantBeReadLetsTheSheetOpen() {
+        SettingReadsForTests.breakReads(Settings.HIDE_SHARED_REEL_FRIEND_SHEET);
+        try {
+            assertFalse(ReelDeclutter.hideSharedReelFriendSheet());
+        } finally {
+            SettingReadsForTests.mend(Settings.HIDE_SHARED_REEL_FRIEND_SHEET);
+        }
+        assertTrue(HookStatus.missing(FamilyNames.REEL_DECLUTTER).toString(), HookStatus.missing(FamilyNames.REEL_DECLUTTER)
+                .contains("a working '" + ReelDeclutter.FRIEND_SHEET + "' hook (it threw " + NullPointerException.class.getName() + ")"));
     }
 
     /** A Fullscreen pill switch that can't be read draws the pill, and the report names the hook. */

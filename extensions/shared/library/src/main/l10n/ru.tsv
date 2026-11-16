@@ -2798,6 +2798,10 @@ Not found yet	Пока не найдено
 A magnifier at the top of the comments opens a search box that finds the comments with your words.	Лупа вверху комментариев открывает поле поиска, которое находит комментарии с вашими словами.
 Open shared reels on their own	Открывать присланные Reels отдельно
 A reel you open from a link in another app or from a chat plays by itself, with no reels to swipe to after it.	Reels, открытый по ссылке из другого приложения или из чата, играет сам по себе, без других Reels для пролистывания после него.
+# context: switch title under Reels and Watch, right under Open shared reels on their own; on, the sheet "[Name] shared this reel. Add him as a friend to make sharing even easier" with Add friend and Not now no longer opens over a reel a non-friend sent; use Facebook's own label for its Add friend button
+Hide the Add friend pop-up on shared reels	Скрыть окно «Добавить в друзья» у присланных Reels
+# context: description of that switch; the sheet only opens for a reel shared by someone who isn't your Facebook friend; only the sheet goes, the reel still plays
+Opening a reel from someone who isn't your friend yet no longer pops up a sheet asking you to add them. A change shows from the next shared reel.	Когда вы открываете Reels от человека, который ещё не у вас в друзьях, больше не всплывает окно с предложением добавить его. Изменение видно со следующего присланного Reels.
 Light bars on the Reels tab	Светлые панели на вкладке Reels
 In light mode, the Reels tab keeps the same light status bar, top bar and tab bar as the other tabs, instead of turning them dark.	В светлой теме вкладка Reels сохраняет такие же светлые строку состояния, верхнюю панель и панель вкладок, как другие вкладки, а не делает их тёмными.
 Bar opacity	Непрозрачность панелей

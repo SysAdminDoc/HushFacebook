@@ -220,6 +220,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_FEED_VIDEO_BUTTONS) return L10n.t("Hide the full-screen and PiP buttons");
         if (setting == Settings.FEED_VIDEOS_ALONE) return L10n.t("Open feed videos on their own");
         if (setting == Settings.SHARED_REELS_ALONE) return L10n.t("Open shared reels on their own");
+        if (setting == Settings.HIDE_SHARED_REEL_FRIEND_SHEET) return L10n.t("Hide the Add friend pop-up on shared reels");
         if (setting == Settings.WATCH_AGAIN_IN_PLACE) return L10n.t("Replay feed videos in place");
         if (setting == Settings.SAVED_VIDEOS_IN_PLAYER) return L10n.t("Open saved videos in the video player");
         if (setting == Settings.SAVED_VIDEOS_IN_ORDER) return L10n.t("Play saved videos in a row");

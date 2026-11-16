@@ -702,6 +702,8 @@ public class PausedHooksTest {
                 // A feed or search video's full-screen and picture-in-picture buttons (#478).
                 ReelDeclutter::hideFeedVideoFullscreen,
                 ReelDeclutter::hideFeedVideoPip,
+                // The Add friend sheet over a reel a non-friend shared (#486).
+                ReelDeclutter::hideSharedReelFriendSheet,
                 // The UP NEXT bar's lookup and the videos it hands out (#367), and its room (#375).
                 ReelDeclutter::skipUpNextFetch,
                 ReelDeclutter::hideUpNextVideos,
