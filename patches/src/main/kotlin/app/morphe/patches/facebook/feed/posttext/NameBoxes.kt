@@ -30,7 +30,10 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 internal const val TRAY_NAME_KEY = "profile_name"
 internal const val TRAY_TITLE_KEY = "story_pog_title"
 
-/** What the method making an open story's title loads: the title's component and its spec (587 `LX/0C8E;->A00`). */
+/**
+ * What the method making an open story's title loads: the title's component and its spec (587
+ * `LX/0C8E;->A00`). The header's own render (587 `LX/0C8D;->A19`) loads the component's name alone.
+ */
 internal const val STORY_TITLE_COMPONENT = "StoryViewerTitleSubtitleComponent"
 internal const val STORY_TITLE_SPEC = "StoryViewerTitleSubtitleComponentSpec"
 
@@ -44,7 +47,7 @@ internal const val REEL_AUTHOR_COMPONENT = "FbShortsViewerVideoAuthorComponentSp
 internal const val STORY_NAME_HELPER = "hushfacebookStoryNameBox"
 internal const val REEL_NAME_HELPER = "hushfacebookReelNameBox"
 
-/** The helper the box adds to an open story's title component, putting the box on its container's style. */
+/** The helper the box adds to an open story's title components, putting the box on the style its name is laid out with. */
 internal const val STORY_TITLE_HELPER = "hushfacebookStoryTitleBox"
 
 private const val LIST = "Ljava/util/List;"
@@ -58,8 +61,8 @@ internal const val HEADER = "$CAPTION_BACKDROP->header($OBJECT)V"
 
 /**
  * Instruction [index] of [method] leaves an object in v[register]; the hook goes right after it. For an
- * open story's title, [index] is the call making the title's container and v[register] the style it's
- * handed, and the hook goes right before it.
+ * open story's title, [index] is the call making the title's container or wrapping the shown title's
+ * name, v[register] the style it's handed, and the hook goes right before it.
  */
 internal class Place(val method: Method, val index: Int, val register: Int) {
     override fun toString() = "${method.definingClass}->${method.name}@$index/v$register"
@@ -165,25 +168,56 @@ private fun containerStyle(instruction: Instruction, style: String): Int? {
 }
 
 /**
- * Finds an open story's title. Its title component is the one class the method loading
- * [STORY_TITLE_COMPONENT] and [STORY_TITLE_SPEC] makes (587 `LX/0C8E;->A00`) that puts text into a text
- * builder's [text] field (587 `LX/0C8e;`). Each of its methods doing that, for a name alone (587
- * `render`) or a name over its line (`A07`), then hands the built lines to one container made with a
- * Litho style, and that style is where the box goes: a lone name's own background never draws, since
- * Litho folds it into its clickable container (#490, 587 on the S22). Each place is that container call
- * with its style's register.
+ * The register of the style [instruction] wraps a component in, or null when it's no such call: a static
+ * call taking a [component] first and one [style] after it (587 arm64 `LX/04UR;->A0T` takes the style
+ * second, arm-v7a `LX/0AeV;->A0K` third, after the context).
+ */
+private fun wrapStyle(instruction: Instruction, component: String, style: String): Int? {
+    if (instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) return null
+    val types = ((instruction as ReferenceInstruction).reference as MethodReference).parameterTypes.map { it.toString() }
+    if (types.firstOrNull() != component || types.count { it == style } != 1) return null
+    val before = types.take(types.indexOf(style))
+    return argument(instruction, before.size + before.count { it == "J" || it == "D" })
+}
+
+/** The types [method] makes with new-instance. */
+private fun madeBy(method: Method) = method.implementation!!.instructions.filter { it.opcode == Opcode.NEW_INSTANCE }
+    .map { ((it as ReferenceInstruction).reference as TypeReference).type }
+
+/**
+ * Finds an open story's titles, each place being a call handed the style the name is laid out with,
+ * with that style's register. The box goes on that style.
+ *
+ * The title an open story shows (587 `LX/0C8Y;`, StoryViewerTitleComponent) is the one class the
+ * methods loading [STORY_TITLE_COMPONENT] make (587 `LX/0C8D;->A19`) whose code wraps a component of its
+ * own method's return type in a Litho style (587 `render` and `LX/04UR;->A0T`). That wrap is the clickable
+ * host drawing the name.
+ *
+ * The other title component is the one class the method loading [STORY_TITLE_COMPONENT] and
+ * [STORY_TITLE_SPEC] makes (587 `LX/0C8E;->A00`) that puts text into a text builder's [text] field (587
+ * `LX/0C8e;`). Each of its methods doing that, for a name alone (587 `render`) or a name over its line
+ * (`A07`), hands the built lines to one container made with a Litho style. On 587 on the S22 it only
+ * fills the story pager's hidden neighbour card (#490), and it's boxed in case Facebook shows it.
  */
 internal fun BytecodePatchContext.findOpenStoryNames(text: FieldReference): List<Place> {
-    val makers = methodsWithString(STORY_TITLE_COMPONENT).filter { loadsString(it, STORY_TITLE_SPEC) }
+    val headers = methodsWithString(STORY_TITLE_COMPONENT)
+    val makers = headers.filter { loadsString(it, STORY_TITLE_SPEC) }
     if (makers.isEmpty()) refuse("no method makes an open story's title (\"$STORY_TITLE_COMPONENT\", \"$STORY_TITLE_SPEC\")")
-    val made = makers.flatMap { maker ->
-        maker.implementation!!.instructions.filter { it.opcode == Opcode.NEW_INSTANCE }
-            .map { ((it as ReferenceInstruction).reference as TypeReference).type }
-    }.toSet()
+    val made = makers.flatMap(::madeBy).toSet()
     val titles = made.filter { type -> classDefByOrNull(type)?.methods?.any { textPuts(it, text).isNotEmpty() } == true }
     val title = titles.singleOrNull() ?: refuse("expected one open story title component naming its text, found ${titles.size}")
     val style = findBoxStyle(text.definingClass).background.substringAfterLast(')')
-    return classDefByOrNull(title)!!.methods.mapNotNull { method ->
+
+    val wraps = (headers.flatMap(::madeBy).toSet() - title).flatMap { type ->
+        (classDefByOrNull(type)?.methods ?: emptyList()).flatMap { method ->
+            val code = method.implementation?.instructions?.toList().orEmpty()
+            code.indices.mapNotNull { index -> wrapStyle(code[index], method.returnType, style)?.let { Place(method, index, it) } }
+        }
+    }
+    val shown = wraps.singleOrNull()
+        ?: refuse("expected one open story title wrapping its name in a style (\"$STORY_TITLE_COMPONENT\"), found ${wraps.size}")
+
+    return listOf(shown) + classDefByOrNull(title)!!.methods.mapNotNull { method ->
         val puts = textPuts(method, text)
         if (puts.isEmpty()) return@mapNotNull null
         val code = method.implementation!!.instructions.toList()
@@ -333,8 +367,9 @@ private fun call(helper: String, builderType: String, register: Int, host: Strin
 /**
  * Boxes the stories row's names and an open story's title (#490). Right after a name in the row goes
  * into its text builder, a helper on that class asks [CAPTION_BACKDROP] for a box and puts it on the
- * builder as its background. Right before an open story's title goes into its container ([openStory]
- * from [findOpenStoryNames]), a helper on the title's class puts the box on the container's style.
+ * builder as its background. Right before an open story's title is wrapped in its style or goes into its
+ * container ([openStory] from [findOpenStoryNames]), a helper on the title's class puts the box on that
+ * style.
  */
 internal fun BytecodePatchContext.addStoryNameBoxes(text: FieldReference, tray: List<Place>, openStory: List<Place>) {
     val builderType = text.definingClass

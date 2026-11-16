@@ -16,6 +16,7 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -42,7 +43,7 @@ class NameBoxesFixtureTest {
     private data class Hosts(
         val tray: String,
         val trayNames: Int,
-        val openStory: String,
+        val openStory: Set<String>,
         val openStoryTitles: Int,
         val header: String,
         val props: String,
@@ -54,11 +55,12 @@ class NameBoxesFixtureTest {
     private val expected = mapOf(
         // 587, read 2026-11-16: `LX/03CI;->render` names two builders "profile_name", `LX/0C8e;` hands its
         // title to a container in two methods (`render` for a name alone, `A07` for a name over its line),
-        // and `LX/08j3;->A19` makes the header's `LX/03J1;` props as a `LX/09Y8;` or, for a long name, a
-        // `LX/039q;`.
+        // the title an open story shows (`LX/0C8Y;`, StoryViewerTitleComponent) wraps its name in one
+        // style in `render`, and `LX/08j3;->A19` makes the header's `LX/03J1;` props as a `LX/09Y8;` or,
+        // for a long name, a `LX/039q;`.
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Hosts(
-                "LX/03CI;", 2, "LX/0C8e;", 2, "LX/09Y7;", "LX/03J1;", setOf("LX/09Y8;", "LX/039q;"),
+                "LX/03CI;", 2, setOf("LX/0C8e;", "LX/0C8Y;"), 3, "LX/09Y7;", "LX/03J1;", setOf("LX/09Y8;", "LX/039q;"),
                 setOf("A08/p1", "A0A/p2"),
             ),
         ),
@@ -92,7 +94,18 @@ class NameBoxesFixtureTest {
     }
 
     /** The types [classes]' methods make with new-instance or construct. */
-    private fun madeIn(classes: Collection<ClassDef>) = classes.flatMap { it.methods }.flatMap { method ->
+    /** The register static call [instruction] hands its parameter [index] in, a wide parameter taking two. */
+    private fun argumentRegister(instruction: Instruction, index: Int): Int {
+        val types = ((instruction as ReferenceInstruction).reference as MethodReference).parameterTypes.map { it.toString() }
+        val slot = types.take(index).let { before -> before.size + before.count { it == "J" || it == "D" } }
+        return when (instruction) {
+            is RegisterRangeInstruction -> instruction.startRegister + slot
+            is FiveRegisterInstruction -> with(instruction) { listOf(registerC, registerD, registerE, registerF, registerG)[slot] }
+            else -> error("$instruction isn't a call")
+        }
+    }
+
+    private fun madeIn(classes: Collection<ClassDef>) =classes.flatMap { it.methods }.flatMap { method ->
         method.implementation?.instructions?.mapNotNull { instruction ->
             when {
                 instruction.opcode == Opcode.NEW_INSTANCE ->
@@ -210,7 +223,7 @@ class NameBoxesFixtureTest {
                 val reel = context.findReelNames(trayNames.text)
                 val style = context.findBoxStyle(builderType)
                 val trayHost = trayNames.places.map { it.method.definingClass }.toSet().single()
-                val openStoryHost = openStory.map { it.method.definingClass }.toSet().single()
+                val openStoryHosts = openStory.map { it.method.definingClass }.toSet()
                 val header = reel.names.map { it.method.definingClass }.toSet().single()
                 val marks = reel.marks.map { place ->
                     ((place.method.code()[place.index] as ReferenceInstruction).reference as MethodReference).definingClass
@@ -218,18 +231,35 @@ class NameBoxesFixtureTest {
                 val entries = reel.entries.map { (method, props) -> "${method.name}/p$props" }.toSet()
                 expected[version]?.get(abi)?.let { hosts ->
                     assertEquals("$name: where the names are drawn", hosts, Hosts(
-                        trayHost, trayNames.places.size, openStoryHost, openStory.size, header, reel.props, marks, entries,
+                        trayHost, trayNames.places.size, openStoryHosts, openStory.size, header, reel.props, marks, entries,
                     ))
                 }
                 assertTrue("$name: a story in the row has a name", trayNames.places.isNotEmpty())
                 assertTrue("$name: an open story has a name", openStory.isNotEmpty())
-                // An open story's title is boxed on the container its lines go into: a lone name's own
-                // background never draws there (#490, seen on the S22 with 587).
+                // An open story's title is boxed on the style its name is laid out with: the container its
+                // lines go into, or the style the shown title wraps its name in. 587 on the S22 draws the
+                // name through the wrapped title; the other one only fills a hidden neighbour card (#490).
                 val styleType = style.background.substringAfterLast(')')
                 openStory.forEach { place ->
-                    val container = (place.method.code()[place.index] as ReferenceInstruction).reference as MethodReference
-                    assertEquals("$name: $place hands a container its style first", styleType, container.parameterTypes[0].toString())
-                    assertTrue("$name: $place hands a container its lines", container.parameterTypes.any { it.toString() == "Ljava/util/List;" })
+                    val call = (place.method.code()[place.index] as ReferenceInstruction).reference as MethodReference
+                    val types = call.parameterTypes.map { it.toString() }
+                    if (types.firstOrNull() == styleType) {
+                        assertTrue("$name: $place hands a container its lines", "Ljava/util/List;" in types)
+                    } else {
+                        assertEquals("$name: $place wraps the title's own component", place.method.returnType, types[0])
+                        assertEquals("$name: $place wraps it in one style", 1, types.count { it == styleType })
+                        assertEquals("$name: $place hands over that style", place.register,
+                            argumentRegister(place.method.code()[place.index], types.indexOf(styleType)))
+                    }
+                }
+                val wrapped = openStory.filter {
+                    ((it.method.code()[it.index] as ReferenceInstruction).reference as MethodReference).parameterTypes[0].toString() != styleType
+                }
+                assertEquals("$name: one shown title wraps its name in a style", 1, wrapped.size)
+                // Negative control: without the shown title's class there's nothing to box, so the patch says so.
+                val shown = wrapped.single().method.definingClass
+                assertThrows("$name: an open story's title was found without the title it shows", PatchException::class.java) {
+                    PatchContexts.of(classes.filterKeys { it != shown }.values.toList() + extension).findOpenStoryNames(trayNames.text)
                 }
                 assertEquals("$name: each name method of the header names once", reel.entries.size, reel.names.size)
                 assertTrue("$name: the reel author's props are marked", reel.marks.isNotEmpty())
@@ -253,9 +283,11 @@ class NameBoxesFixtureTest {
                 context.addReelNameBoxes(trayNames.text, reel)
 
                 context.checkHelper(name, trayHost, STORY_NAME_HELPER, FOR_STORY_NAME, builderType, style)
-                context.checkStyleHelper(name, openStoryHost, STORY_TITLE_HELPER, FOR_STORY_NAME, style)
-                assertTrue("$name: an open story's names keep their builders as Facebook made them",
-                    context.mutableClassDefBy(openStoryHost).methods.none { it.name == STORY_NAME_HELPER })
+                openStoryHosts.forEach { host ->
+                    context.checkStyleHelper(name, host, STORY_TITLE_HELPER, FOR_STORY_NAME, style)
+                    assertTrue("$name: an open story's names keep their builders as Facebook made them",
+                        context.mutableClassDefBy(host).methods.none { it.name == STORY_NAME_HELPER })
+                }
                 context.checkHelper(name, header, REEL_NAME_HELPER, FOR_REEL_NAME, builderType, style)
 
                 for ((method, original) in originals) {

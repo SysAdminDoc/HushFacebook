@@ -41,8 +41,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * through Litho's own style, with no padding, so the text keeps its place.
  *
  * <p>A name's text builder comes here right after it's handed the name. An open story's title comes
- * here right before its lines go into their container, and the box goes on the container, since a
- * lone name's own background never draws there. A reel's name is drawn by
+ * here right before it's laid out, and the box goes on the style it's laid out with: the style the
+ * shown title wraps its name in, or the container a title's lines go into. A reel's name is drawn by
  * the post header that feed posts use too, so the reel's author component marks the header props it
  * makes ({@link #reelAuthor}), and the header says whose props it's building from ({@link #header})
  * before it asks for the box.
