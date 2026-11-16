@@ -177,7 +177,7 @@ val showFullPostTextPatch = bytecodePatch(
                 null
             }
             try {
-                addStoryNameBoxes(tray.text, tray.places + openStory)
+                addStoryNameBoxes(tray.text, tray.places, openStory)
             } catch (missing: PatchException) {
                 patchLog.warning("${missing.message}, so the dark box behind story names isn't in this build")
             }

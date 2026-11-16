@@ -18,6 +18,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -42,7 +43,7 @@ class NameBoxesFixtureTest {
         val tray: String,
         val trayNames: Int,
         val openStory: String,
-        val openStoryNames: Int,
+        val openStoryTitles: Int,
         val header: String,
         val props: String,
         val marks: Set<String>,
@@ -51,12 +52,13 @@ class NameBoxesFixtureTest {
 
     /** Each declared build's places, by ABI, read from the dex with the probe. */
     private val expected = mapOf(
-        // 587, read 2026-11-16: `LX/03CI;->render` names two builders "profile_name", `LX/0C8e;` puts its
-        // title and its subtitle in three places, and `LX/08j3;->A19` makes the header's `LX/03J1;` props
-        // as a `LX/09Y8;` or, for a long name, a `LX/039q;`.
+        // 587, read 2026-11-16: `LX/03CI;->render` names two builders "profile_name", `LX/0C8e;` hands its
+        // title to a container in two methods (`render` for a name alone, `A07` for a name over its line),
+        // and `LX/08j3;->A19` makes the header's `LX/03J1;` props as a `LX/09Y8;` or, for a long name, a
+        // `LX/039q;`.
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Hosts(
-                "LX/03CI;", 2, "LX/0C8e;", 3, "LX/09Y7;", "LX/03J1;", setOf("LX/09Y8;", "LX/039q;"),
+                "LX/03CI;", 2, "LX/0C8e;", 2, "LX/09Y7;", "LX/03J1;", setOf("LX/09Y8;", "LX/039q;"),
                 setOf("A08/p1", "A0A/p2"),
             ),
         ),
@@ -121,6 +123,45 @@ class NameBoxesFixtureTest {
         assertEquals(Opcode.RETURN_VOID, code.last().opcode)
     }
 
+    /**
+     * Checks the helper [name] on [host]: it takes a container's style and hands it back, with a background
+     * made from [ask]'s drawable on top when there is one (the empty style standing in for a missing one).
+     */
+    private fun BytecodePatchContext.checkStyleHelper(where: String, host: String, name: String, ask: String, style: BoxStyle) {
+        val styleType = style.background.substringAfterLast(')')
+        val helper = mutableClassDefBy(host).methods.singleOrNull { it.name == name }
+        assertNotNull("$where: no $name on $host", helper)
+        assertEquals("$where: the helper takes the container's style", listOf(styleType), helper!!.parameterTypes.map { it.toString() })
+        assertEquals("$where: the helper hands a style back", styleType, helper.returnType)
+        val code = helper.code()
+        assertTrue("$where: the helper asks the extension", code[0].names(ask))
+        assertEquals("$where: a null answer leaves the style alone", Opcode.IF_EQZ, code[2].opcode)
+        assertTrue("$where: the empty style stands in for a missing one", code[4].names(style.emptyStyle))
+        assertTrue("$where: the background goes on the style", code[5].names(style.background))
+        assertEquals(Opcode.RETURN_OBJECT, code.last().opcode)
+    }
+
+    /**
+     * Checks [patched] is [original] with a call to [call] and its move-result right before each of
+     * [places], the call handed that place's register and its answer put back there.
+     */
+    private fun checkBefore(where: String, original: List<Instruction>, patched: List<Instruction>, places: List<Place>, call: String) {
+        assertEquals("$where: two instructions per hook", original.size + 2 * places.size, patched.size)
+        val hooks = places.sortedBy { it.index }.flatMapIndexed { added, place ->
+            val at = place.index + 2 * added
+            val hook = patched[at]
+            assertTrue("$where: the hook before $place calls $call", hook.names(call))
+            assertEquals("$where: $place's register handed over", place.register to 1,
+                (hook as RegisterRangeInstruction).let { it.startRegister to it.registerCount })
+            assertEquals("$where: the boxed style goes back in v${place.register}", Opcode.MOVE_RESULT_OBJECT, patched[at + 1].opcode)
+            assertEquals("$where: the boxed style goes back in v${place.register}", place.register,
+                (patched[at + 1] as OneRegisterInstruction).registerA)
+            listOf(at, at + 1)
+        }.toSet()
+        assertEquals("$where: the rest is Facebook's", original.map { it.opcode },
+            patched.filterIndexed { at, _ -> at !in hooks }.map { it.opcode })
+    }
+
     /** Checks [patched] is [original] with one call to [call] right after each of [places], handed that place's register. */
     private fun checkAfter(where: String, original: List<Instruction>, patched: List<Instruction>, places: List<Place>, call: String) {
         assertEquals("$where: one instruction per hook", original.size + places.size, patched.size)
@@ -182,6 +223,14 @@ class NameBoxesFixtureTest {
                 }
                 assertTrue("$name: a story in the row has a name", trayNames.places.isNotEmpty())
                 assertTrue("$name: an open story has a name", openStory.isNotEmpty())
+                // An open story's title is boxed on the container its lines go into: a lone name's own
+                // background never draws there (#490, seen on the S22 with 587).
+                val styleType = style.background.substringAfterLast(')')
+                openStory.forEach { place ->
+                    val container = (place.method.code()[place.index] as ReferenceInstruction).reference as MethodReference
+                    assertEquals("$name: $place hands a container its style first", styleType, container.parameterTypes[0].toString())
+                    assertTrue("$name: $place hands a container its lines", container.parameterTypes.any { it.toString() == "Ljava/util/List;" })
+                }
                 assertEquals("$name: each name method of the header names once", reel.entries.size, reel.names.size)
                 assertTrue("$name: the reel author's props are marked", reel.marks.isNotEmpty())
                 marks.forEach { assertEquals("$name: $it is the header's props", reel.props, classes[it]?.superclass) }
@@ -191,7 +240,7 @@ class NameBoxesFixtureTest {
                 val background = style.background.substringBefore("->")
                 assertThrows("$name: a background style was found without its class", PatchException::class.java) {
                     PatchContexts.of(classes.filterKeys { it != background }.values.toList() + extension)
-                        .addStoryNameBoxes(trayNames.text, trayNames.places + openStory)
+                        .addStoryNameBoxes(trayNames.text, trayNames.places, openStory)
                 }
                 assertThrows("$name: the reel's props were found without the author's subclasses", PatchException::class.java) {
                     PatchContexts.of(classes.filterKeys { it !in marks }.values.toList() + extension).findReelNames(trayNames.text)
@@ -200,11 +249,13 @@ class NameBoxesFixtureTest {
                 val originals = (trayNames.places + openStory + reel.marks + reel.names).map { it.method }
                     .distinctBy { "${it.definingClass}->${it.name}${it.parameterTypes}" }
                     .associateWith { it.code() }
-                context.addStoryNameBoxes(trayNames.text, trayNames.places + openStory)
+                context.addStoryNameBoxes(trayNames.text, trayNames.places, openStory)
                 context.addReelNameBoxes(trayNames.text, reel)
 
                 context.checkHelper(name, trayHost, STORY_NAME_HELPER, FOR_STORY_NAME, builderType, style)
-                context.checkHelper(name, openStoryHost, STORY_NAME_HELPER, FOR_STORY_NAME, builderType, style)
+                context.checkStyleHelper(name, openStoryHost, STORY_TITLE_HELPER, FOR_STORY_NAME, style)
+                assertTrue("$name: an open story's names keep their builders as Facebook made them",
+                    context.mutableClassDefBy(openStoryHost).methods.none { it.name == STORY_NAME_HELPER })
                 context.checkHelper(name, header, REEL_NAME_HELPER, FOR_REEL_NAME, builderType, style)
 
                 for ((method, original) in originals) {
@@ -222,12 +273,15 @@ class NameBoxesFixtureTest {
                             (hook as RegisterRangeInstruction).startRegister)
                         patched = patched.drop(1)
                     }
-                    val story = (trayNames.places + openStory).filter { it.method == method }
+                    val story = trayNames.places.filter { it.method == method }
+                    val titles = openStory.filter { it.method == method }
                     val names = reel.names.filter { it.method == method }
                     val reelMarks = reel.marks.filter { it.method == method }
                     when {
                         story.isNotEmpty() -> checkAfter(where, original, patched, story,
                             "${method.definingClass}->$STORY_NAME_HELPER($builderType)V")
+                        titles.isNotEmpty() -> checkBefore(where, original, patched, titles,
+                            "${method.definingClass}->$STORY_TITLE_HELPER($styleType)$styleType")
                         names.isNotEmpty() -> checkAfter(where, original, patched, names, "$header->$REEL_NAME_HELPER($builderType)V")
                         else -> checkAfter(where, original, patched, reelMarks, REEL_AUTHOR)
                     }

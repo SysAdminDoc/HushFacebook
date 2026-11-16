@@ -44,6 +44,10 @@ internal const val REEL_AUTHOR_COMPONENT = "FbShortsViewerVideoAuthorComponentSp
 internal const val STORY_NAME_HELPER = "hushfacebookStoryNameBox"
 internal const val REEL_NAME_HELPER = "hushfacebookReelNameBox"
 
+/** The helper the box adds to an open story's title component, putting the box on its container's style. */
+internal const val STORY_TITLE_HELPER = "hushfacebookStoryTitleBox"
+
+private const val LIST = "Ljava/util/List;"
 private const val STRING = "Ljava/lang/String;"
 private const val CHAR_SEQUENCE = "Ljava/lang/CharSequence;"
 private const val OBJECT = "Ljava/lang/Object;"
@@ -52,7 +56,11 @@ internal const val FOR_REEL_NAME = "$CAPTION_BACKDROP->forReelName()$DRAWABLE"
 internal const val REEL_AUTHOR = "$CAPTION_BACKDROP->reelAuthor($OBJECT)V"
 internal const val HEADER = "$CAPTION_BACKDROP->header($OBJECT)V"
 
-/** Instruction [index] of [method] leaves an object in v[register]; the hook goes right after it. */
+/**
+ * Instruction [index] of [method] leaves an object in v[register]; the hook goes right after it. For an
+ * open story's title, [index] is the call making the title's container and v[register] the style it's
+ * handed, and the hook goes right before it.
+ */
 internal class Place(val method: Method, val index: Int, val register: Int) {
     override fun toString() = "${method.definingClass}->${method.name}@$index/v$register"
 }
@@ -141,9 +149,29 @@ internal fun BytecodePatchContext.findTrayNames(): TrayNames {
 }
 
 /**
- * Finds an open story's name. Its title component is the one class the method loading
+ * The style register [instruction] hands a container it makes from a [style] and a list of lines, or
+ * null when it makes no such thing: a static call or a constructor taking the style first and a list
+ * (587 `LX/04UP;->A0Q` and `LX/02lQ;-><init>`).
+ */
+private fun containerStyle(instruction: Instruction, style: String): Int? {
+    val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return null
+    val types = reference.parameterTypes.map { it.toString() }
+    if (types.firstOrNull() != style || LIST !in types) return null
+    return when {
+        instruction.opcode == Opcode.INVOKE_STATIC || instruction.opcode == Opcode.INVOKE_STATIC_RANGE -> argument(instruction, 0)
+        isConstructorCall(instruction) -> argument(instruction, 1)
+        else -> null
+    }
+}
+
+/**
+ * Finds an open story's title. Its title component is the one class the method loading
  * [STORY_TITLE_COMPONENT] and [STORY_TITLE_SPEC] makes (587 `LX/0C8E;->A00`) that puts text into a text
- * builder's [text] field (587 `LX/0C8e;`), and each of those puts is a name or the line under it.
+ * builder's [text] field (587 `LX/0C8e;`). Each of its methods doing that, for a name alone (587
+ * `render`) or a name over its line (`A07`), then hands the built lines to one container made with a
+ * Litho style, and that style is where the box goes: a lone name's own background never draws, since
+ * Litho folds it into its clickable container (#490, 587 on the S22). Each place is that container call
+ * with its style's register.
  */
 internal fun BytecodePatchContext.findOpenStoryNames(text: FieldReference): List<Place> {
     val makers = methodsWithString(STORY_TITLE_COMPONENT).filter { loadsString(it, STORY_TITLE_SPEC) }
@@ -154,7 +182,17 @@ internal fun BytecodePatchContext.findOpenStoryNames(text: FieldReference): List
     }.toSet()
     val titles = made.filter { type -> classDefByOrNull(type)?.methods?.any { textPuts(it, text).isNotEmpty() } == true }
     val title = titles.singleOrNull() ?: refuse("expected one open story title component naming its text, found ${titles.size}")
-    return classDefByOrNull(title)!!.methods.flatMap { textPuts(it, text) }
+    val style = findBoxStyle(text.definingClass).background.substringAfterLast(')')
+    return classDefByOrNull(title)!!.methods.mapNotNull { method ->
+        val puts = textPuts(method, text)
+        if (puts.isEmpty()) return@mapNotNull null
+        val code = method.implementation!!.instructions.toList()
+        val containers = (puts.minOf { it.index } + 1 until code.size).mapNotNull { index ->
+            containerStyle(code[index], style)?.let { Place(method, index, it) }
+        }
+        containers.singleOrNull()
+            ?: refuse("expected ${method.definingClass}->${method.name} to hand its title to one container, found ${containers.size}")
+    }
 }
 
 /**
@@ -234,6 +272,45 @@ private fun BytecodePatchContext.addBoxHelper(host: String, name: String, builde
     )
 }
 
+/**
+ * Adds a helper to [host] that takes a container's Litho style and hands it back with a background
+ * made from [ask]'s drawable on top, or as it was when [ask] answers null. A missing style becomes
+ * [BoxStyle.emptyStyle] under the background.
+ */
+private fun BytecodePatchContext.addStyleHelper(host: String, name: String, style: BoxStyle, ask: String) {
+    val owner = mutableClassDefBy(host)
+    if (owner.methods.any { it.name == name }) return
+    val styleType = style.background.substringAfterLast(')')
+    owner.methods.add(
+        ImmutableMethod(
+            host,
+            name,
+            listOf(ImmutableMethodParameter(styleType, null, null)),
+            styleType,
+            AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+            null,
+            null,
+            MutableMethodImplementation(3),
+        ).toMutable().apply {
+            addInstructions(
+                0,
+                """
+                    invoke-static { }, $ask
+                    move-result-object v0
+                    if-eqz v0, :facebook
+                    if-nez p0, :styled
+                    sget-object p0, ${style.emptyStyle}
+                    :styled
+                    invoke-static { v0, p0 }, ${style.background}
+                    move-result-object p0
+                    :facebook
+                    return-object p0
+                """,
+            )
+        },
+    )
+}
+
 /** Adds [code] after each of [places], the last of a method first so the earlier indices still hold. */
 private fun BytecodePatchContext.addAfter(places: List<Place>, code: (Place) -> String) {
     places.groupBy { it.method }.forEach { (method, at) ->
@@ -242,23 +319,41 @@ private fun BytecodePatchContext.addAfter(places: List<Place>, code: (Place) -> 
     }
 }
 
+/** Adds [code] right before each of [places], the last of a method first so the earlier indices still hold. */
+private fun BytecodePatchContext.addBefore(places: List<Place>, code: (Place) -> String) {
+    places.groupBy { it.method }.forEach { (method, at) ->
+        val mutable = mutableClassDefBy(method.definingClass).findMutableMethodOf(method)
+        at.sortedByDescending { it.index }.forEach { mutable.addInstructions(it.index, code(it)) }
+    }
+}
+
 private fun call(helper: String, builderType: String, register: Int, host: String) =
     "invoke-static/range { v$register .. v$register }, $host->$helper($builderType)V"
 
 /**
- * Boxes the stories row's names and an open story's (#490). Right after a name goes into its text
- * builder, a helper on that class asks [CAPTION_BACKDROP] for a box and puts it on the builder as its
- * background.
+ * Boxes the stories row's names and an open story's title (#490). Right after a name in the row goes
+ * into its text builder, a helper on that class asks [CAPTION_BACKDROP] for a box and puts it on the
+ * builder as its background. Right before an open story's title goes into its container ([openStory]
+ * from [findOpenStoryNames]), a helper on the title's class puts the box on the container's style.
  */
-internal fun BytecodePatchContext.addStoryNameBoxes(text: FieldReference, places: List<Place>) {
+internal fun BytecodePatchContext.addStoryNameBoxes(text: FieldReference, tray: List<Place>, openStory: List<Place>) {
     val builderType = text.definingClass
     val style = findBoxStyle(builderType)
-    val hosts = places.map { it.method.definingClass }.toSet()
-    hosts.forEach { requireReachable(style, it) }
+    val styleType = style.background.substringAfterLast(')')
+    val trayHosts = tray.map { it.method.definingClass }.toSet()
+    val titleHosts = openStory.map { it.method.definingClass }.toSet()
+    (trayHosts + titleHosts).forEach { requireReachable(style, it) }
     val inBuild = classDefByOrNull(CAPTION_BACKDROP)?.methods?.any { it.name == "storyNamesInBuild" }
     if (inBuild != true) refuse("the extension has no $CAPTION_BACKDROP->storyNamesInBuild()")
-    hosts.forEach { addBoxHelper(it, STORY_NAME_HELPER, builderType, style, FOR_STORY_NAME) }
-    addAfter(places) { call(STORY_NAME_HELPER, builderType, it.register, it.method.definingClass) }
+    trayHosts.forEach { addBoxHelper(it, STORY_NAME_HELPER, builderType, style, FOR_STORY_NAME) }
+    addAfter(tray) { call(STORY_NAME_HELPER, builderType, it.register, it.method.definingClass) }
+    titleHosts.forEach { addStyleHelper(it, STORY_TITLE_HELPER, style, FOR_STORY_NAME) }
+    addBefore(openStory) {
+        """
+            invoke-static/range { v${it.register} .. v${it.register} }, ${it.method.definingClass}->$STORY_TITLE_HELPER($styleType)$styleType
+            move-result-object v${it.register}
+        """
+    }
     mutableClassDefBy(CAPTION_BACKDROP).methods.single { it.name == "storyNamesInBuild" }.returnEarly(true)
 }
 

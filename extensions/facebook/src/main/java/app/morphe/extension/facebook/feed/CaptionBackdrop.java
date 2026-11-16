@@ -40,7 +40,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the patch hands the limit here and, given a drawable back, sets it as the component's background
  * through Litho's own style, with no padding, so the text keeps its place.
  *
- * <p>A name's text builder comes here right after it's handed the name. A reel's name is drawn by
+ * <p>A name's text builder comes here right after it's handed the name. An open story's title comes
+ * here right before its lines go into their container, and the box goes on the container, since a
+ * lone name's own background never draws there. A reel's name is drawn by
  * the post header that feed posts use too, so the reel's author component marks the header props it
  * makes ({@link #reelAuthor}), and the header says whose props it's building from ({@link #header})
  * before it asks for the box.
@@ -176,8 +178,9 @@ public final class CaptionBackdrop {
     }
 
     /**
-     * The hook, right after a name in the stories row or on an open story goes into its text builder.
-     * Answers the box while Dark box behind story names is on, otherwise null.
+     * The hook, right after a name in the stories row goes into its text builder, and right before an
+     * open story's title goes into its container. Answers the box while Dark box behind story names is
+     * on, otherwise null.
      */
     public static Drawable forStoryName() {
         try {
