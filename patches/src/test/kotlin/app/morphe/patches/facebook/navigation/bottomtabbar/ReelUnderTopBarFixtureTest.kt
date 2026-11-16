@@ -16,14 +16,17 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The reel under a top tab bar (#264) on every Facebook build the bundle declares: the content
+ * The reel under a top tab bar (#264), and the Reels header kept below it (#390), on every Facebook
+ * build the bundle declares: the content
  * manager is the one class tracing the padding setup, it has exactly two top padding methods (each
  * ends by returning a static (controller, boolean) int answer), and the patch hands each answer to
  * the extension right before its return and changes nothing else. Reads the fixture bundles from
@@ -75,6 +78,54 @@ class ReelUnderTopBarFixtureTest {
                 }
             }
         }
+    }
+
+    /**
+     * #390: the Reels header. onCreateView finds it on four paths that all meet at one store into
+     * a LithoView field, and the hook goes right after that store with the register it stored.
+     */
+    @Test
+    fun `each declared build hands the Reels header to the extension right after storing it`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val fragment = FixtureDex.classes(bundle, setOf(VIDEO_HOME_ROOT_FRAGMENT)).getValue(VIDEO_HOME_ROOT_FRAGMENT)
+                val onCreateView = fragment.methods.single { it.name == "onCreateView" }
+                val before = onCreateView.implementation!!.instructions.toList()
+                val (store, register) = reelsHeaderStore(onCreateView)
+                    ?: throw AssertionError("$name: onCreateView has no single store of a LithoView field")
+                // Positive control: the store is of a LithoView field of the fragment, and every LithoView cast in the method feeds it.
+                val field = (before[store] as ReferenceInstruction).reference as FieldReference
+                assertEquals("$name: the header's field", listOf(VIDEO_HOME_ROOT_FRAGMENT, "Lcom/facebook/litho/LithoView;"),
+                    listOf(field.definingClass, field.type))
+                val casts = before.filter { it.opcode == Opcode.CHECK_CAST &&
+                    ((it as ReferenceInstruction).reference as TypeReference).type == "Lcom/facebook/litho/LithoView;" }
+                assertTrue("$name: LithoView casts in onCreateView", casts.size >= 2)
+
+                val context = PatchContexts.of(listOf(fragment))
+                context.hookReelsHeader { why -> throw AssertionError("$name: $why") }
+                val after = context.mutableClassDefBy(VIDEO_HOME_ROOT_FRAGMENT).methods.single { it.name == "onCreateView" }
+                    .implementation!!.instructions.toList()
+                assertEquals("$name: onCreateView gained one instruction", before.opcodes().size + 1, after.opcodes().size)
+                val hand = after[store + 1] as FiveRegisterInstruction
+                assertEquals("$name: the header goes to the extension right after the store",
+                    listOf(Opcode.INVOKE_STATIC, REELS_HEADER_MADE, 1, register),
+                    listOf(hand.opcode, ((hand as ReferenceInstruction).reference as MethodReference).toString(), hand.registerCount, hand.registerC))
+                assertEquals("$name: the rest of onCreateView is Facebook's", before.opcodes(),
+                    (after.take(store + 1) + after.drop(store + 2)).opcodes())
+            }
+        }
+    }
+
+    @Test
+    fun `the extension has the header hook`() {
+        val type = REELS_HEADER_MADE.substringBefore("->")
+        val hook = ExtensionDex.classDef(type).methods.singleOrNull { it.name == "headerMade" }
+        assertNotNull("the extension has no ReelsHeaderClear.headerMade", hook)
+        assertEquals(REELS_HEADER_MADE, "${hook!!.definingClass}->${hook.name}(${hook.parameterTypes.joinToString("")})${hook.returnType}")
+        assertTrue("headerMade isn't static", AccessFlags.STATIC.isSet(hook.accessFlags))
     }
 
     @Test
