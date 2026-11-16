@@ -34,6 +34,10 @@ internal const val LOCAL_COUNTS_OPENED = "$EXTENSION_PACKAGE/profile/LocalProfil
 internal const val LOCAL_COUNTS_TEXT =
     "$EXTENSION_PACKAGE/profile/LocalProfileCounts;->text(Ljava/lang/String;)Ljava/lang/String;"
 
+/** The extension method every child list a Bloks node hands out goes through, to find counts drawn in two pieces. */
+internal const val LOCAL_COUNTS_CHILDREN =
+    "$EXTENSION_PACKAGE/profile/LocalProfileCounts;->children(Ljava/util/List;)Ljava/util/List;"
+
 private const val NODE_STRING = "getString(I)Ljava/lang/String;"
 
 /**
@@ -41,7 +45,8 @@ private const val NODE_STRING = "getString(I)Ljava/lang/String;"
  * phone only. The top of a profile is laid out with Bloks, so a count is a string a Bloks node
  * answers with. Every return of the node classes' string getter goes through the extension's
  * LocalProfileCounts, and the profile screen tells it when one opens so it can tell whose profile is
- * on top.
+ * on top. 586 and 587 draw a count's number and its word as two nodes side by side (#488), so every
+ * child list the node classes hand out goes through it too, which is where the pair is seen.
  *
  * In the default selection with its switch off, so nothing changes until it's turned on.
  */
@@ -58,11 +63,17 @@ val localProfileCountsPatch = bytecodePatch(
 
     execute {
         requireStatusMethod("localProfileCounts")
-        val getters = stringGetters(bloksNodes())
+        val nodes = bloksNodes()
+        val getters = stringGetters(nodes)
+        val lists = childGetters(nodes)
         val screen = profileScreenCreate()
         getters.forEach { getter ->
             mutableClassDefBy(getter.definingClass).methods.single { it.name == getter.name && isStringGetter(it) }
                 .passStrings()
+        }
+        lists.forEach { getter ->
+            mutableClassDefBy(getter.definingClass).methods.single { it.name == getter.name && isChildGetter(it) }
+                .filterChildren(LOCAL_COUNTS_CHILDREN)
         }
         mutableClassDefBy(PROFILE_SCREEN).methods.single { it.name == screen.name && isScreenCreate(it) }.reportOpened()
         enableStatus("localProfileCounts")

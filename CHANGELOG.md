@@ -75,6 +75,7 @@ Changes in each Hushfacebook version, newest first.
 * `Photo carousel` lets you swipe through every photo a post brought now. Facebook's row stopped at its own limit, 12 for some accounts, so a 76-photo album ended there while tapping into the post showed all 76. (#484)
 * Dragging the seek bar on a live video you opened from search results moves the video now. Facebook only seeks a live video once it's marked as behind live, which its full player does while you drag but that viewer never did. Let go at the far right end and it goes back to live. (#482)
 * Tapping a Threads post in your feed opens that post in Threads now, not the Threads home feed. (#385)
+* `Local profile counts` changes the numbers on your profile now. Facebook draws a count and its word as two separate pieces, and the switch only looked for them together. (#488)
 
 ## 0.22.0 (2026-11-12)
 

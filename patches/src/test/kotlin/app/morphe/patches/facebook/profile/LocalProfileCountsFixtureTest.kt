@@ -50,6 +50,8 @@ class LocalProfileCountsFixtureTest {
                 val getters = stringGetters(nodes)
                 assertEquals("$name: a string getter in each node class", 2, getters.size)
                 val before = getters.associate { "${it.definingClass}->${it.name}" to it.implementation!!.instructions.toList() }
+                val lists = childGetters(nodes)
+                val listsBefore = lists.associate { "${it.definingClass}->${it.name}" to it.implementation!!.instructions.toList() }
 
                 val context = PatchContexts.of(classes)
                 val screen = with(context) { profileScreenCreate() }
@@ -58,6 +60,10 @@ class LocalProfileCountsFixtureTest {
                     stringGetters(bloksNodes()).forEach { getter ->
                         mutableClassDefBy(getter.definingClass).methods.single { it.name == getter.name && isStringGetter(it) }
                             .passStrings()
+                    }
+                    childGetters(bloksNodes()).forEach { getter ->
+                        mutableClassDefBy(getter.definingClass).methods.single { it.name == getter.name && isChildGetter(it) }
+                            .filterChildren(LOCAL_COUNTS_CHILDREN)
                     }
                     mutableClassDefBy(PROFILE_SCREEN).methods.single { it.name == screen.name && isScreenCreate(it) }.reportOpened()
                 }
@@ -83,6 +89,25 @@ class LocalProfileCountsFixtureTest {
                     assertEquals("$name: $key is otherwise as it was",
                         before.getValue(key).count { it.opcode != Opcode.NOP } + 2 * returns.size,
                         after.count { it.opcode != Opcode.NOP })
+                }
+
+                // 586 and 587 draw a count's number and its word as two nodes, seen side by side in a child list (#488).
+                assertTrue("$name: the node classes hand out child lists", listsBefore.isNotEmpty())
+                for (getter in nodes.flatMap { context.mutableClassDefBy(it.type).methods.filter(::isChildGetter) }) {
+                    val key = "${getter.definingClass}->${getter.name}"
+                    val after = getter.implementation!!.instructions.toList()
+                    val returns = after.indices.filter { after[it].opcode == Opcode.RETURN_OBJECT }
+                    assertEquals("$name: $key returns as often as before",
+                        listsBefore.getValue(key).count { it.opcode == Opcode.RETURN_OBJECT }, returns.size)
+                    for (index in returns) {
+                        val list = (after[index] as OneRegisterInstruction).registerA
+                        val call = after[index - 2]
+                        assertEquals("$name: $key hands its list to the extension before it returns",
+                            LOCAL_COUNTS_CHILDREN, (call as ReferenceInstruction).reference.toString())
+                        assertEquals("$name: $key hands it that register", list, (call as RegisterRangeInstruction).startRegister)
+                        assertEquals("$name: $key returns the same register", list,
+                            (after[index - 1] as OneRegisterInstruction).registerA)
+                    }
                 }
 
                 val created = context.mutableClassDefBy(PROFILE_SCREEN).methods.single { isScreenCreate(it) }

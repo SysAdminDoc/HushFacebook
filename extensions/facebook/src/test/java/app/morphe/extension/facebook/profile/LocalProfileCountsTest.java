@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.profile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
@@ -17,6 +18,9 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 import app.morphe.extension.facebook.profile.LocalProfileCountsForTests.Screen;
@@ -203,6 +207,84 @@ public class LocalProfileCountsTest {
         LocalProfileCounts.opened(LocalProfileCountsForTests.own());
         String longLine = "812 friends and a very long line that goes past the limit of eighty characters, for sure";
         assertEquals(longLine, LocalProfileCounts.text(longLine));
+    }
+
+    /** A Bloks text node holding [text] the way a parsed layout holds it. */
+    private static ProfileNotesForTests.Node textNode(String text) {
+        return new ProfileNotesForTests.Node().with(0x24, text).with(0x31, "bold");
+    }
+
+    @Test
+    public void aCountSplitIntoItsNumberAndItsWordGetsTheTypedNumber() {
+        // Facebook 586 and 587 draw "121M followers" as two nodes, the number and " followers" (#488).
+        LocalProfileCounts.opened(LocalProfileCountsForTests.own());
+        String friends = new String("812");
+        String followers = new String("1.2K");
+        List<Object> line = Arrays.asList(textNode(friends), textNode(" friends"), textNode(" · "),
+                textNode(followers), textNode(" followers"));
+
+        assertSame(line, LocalProfileCounts.children(line));
+
+        assertEquals("1,234", LocalProfileCounts.text(friends));
+        assertEquals("56", LocalProfileCounts.text(followers));
+        assertEquals(" friends", LocalProfileCounts.text(" friends"));
+    }
+
+    @Test
+    public void aSplitCountInsideAWrapperIsFoundToo() {
+        LocalProfileCounts.opened(LocalProfileCountsForTests.own());
+        String friends = new String("812");
+        ProfileNotesForTests.Node number = new ProfileNotesForTests.Node().with(0x26,
+                Collections.singletonList(new ProfileNotesForTests.Node().with(0x26, textNode(friends))));
+        ProfileNotesForTests.Node word = new ProfileNotesForTests.Node().with(0x26,
+                Collections.singletonList(textNode(" Freunde")));
+
+        LocalProfileCounts.children(Arrays.asList(number, word));
+
+        assertEquals("1,234", LocalProfileCounts.text(friends));
+    }
+
+    @Test
+    public void onlyTheNumberBeforeTheWordIsSwapped() {
+        LocalProfileCounts.opened(LocalProfileCountsForTests.own());
+        String count = new String("812");
+        String sameDigitsElsewhere = new String("812");
+        String likes = new String("40");
+        LocalProfileCounts.children(Arrays.asList(textNode(count), textNode(" friends")));
+        LocalProfileCounts.children(Arrays.asList(textNode(likes), textNode(" likes")));
+        LocalProfileCounts.children(Arrays.asList(textNode(" friends"), textNode(new String("9"))));
+
+        assertEquals("a like count with the same digits keeps its number", "812", LocalProfileCounts.text(sameDigitsElsewhere));
+        assertEquals("40", LocalProfileCounts.text(likes));
+        assertEquals("1,234", LocalProfileCounts.text(count));
+    }
+
+    @Test
+    public void aSplitCountOnAnotherProfileOrSwitchedOffKeepsItsNumber() {
+        String count = new String("812");
+        LocalProfileCounts.opened(new Screen(555L, true, LocalProfileCountsForTests.VIEWER));
+        LocalProfileCounts.children(Arrays.asList(textNode(count), textNode(" friends")));
+        assertEquals("812", LocalProfileCounts.text(count));
+
+        LocalProfileCounts.opened(LocalProfileCountsForTests.own());
+        Settings.LOCAL_PROFILE_COUNTS.save(false);
+        LocalProfileCounts.children(Arrays.asList(textNode(count), textNode(" friends")));
+        assertEquals("812", LocalProfileCounts.text(count));
+
+        Settings.LOCAL_PROFILE_COUNTS.save(true);
+        Settings.LOCAL_FRIENDS.save("");
+        LocalProfileCounts.children(Arrays.asList(textNode(count), textNode(" friends")));
+        assertEquals("a blank count keeps Facebook's", "812", LocalProfileCounts.text(count));
+    }
+
+    @Test
+    public void childListsPassThroughUntouched() {
+        assertNull(LocalProfileCounts.children(null));
+        List<Object> empty = Collections.emptyList();
+        assertSame(empty, LocalProfileCounts.children(empty));
+        List<Object> odd = Arrays.asList("not a node", null, 7);
+        LocalProfileCounts.opened(LocalProfileCountsForTests.own());
+        assertSame(odd, LocalProfileCounts.children(odd));
     }
 
     @Test
