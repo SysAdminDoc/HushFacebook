@@ -346,6 +346,15 @@ public final class ProgressBar {
     /** Whether the bar last let go sat at its end, for the seek request its release goes on to make. */
     private static volatile boolean releasedAtEnd;
 
+    /** No release at the bar's end for {@link #liveBarSeek} to read. */
+    private static final long NO_END_RELEASE = Long.MIN_VALUE;
+
+    /**
+     * When the bar was last let go at its end, for the scrubber's own bar seek that release queues
+     * after the seek handler's, or {@link #NO_END_RELEASE}. {@link #liveBarSeek} reads it once.
+     */
+    private static volatile long endReleaseAt = NO_END_RELEASE;
+
     /** Facebook's live latency setter in its place, for tests, where the stub has nothing behind it. */
     @Nullable
     static volatile LiveRewind liveRewoundForTests;
@@ -357,6 +366,9 @@ public final class ProgressBar {
     /** The trigger name of a seek the bar sends, Facebook's EventTriggerType constant. */
     static final String BAR_SEEK_TRIGGER = "BY_SEEKBAR_CONTROLLER";
 
+    /** How long after the bar is let go the scrubber's own bar seek still counts as that release's. */
+    static final long BAR_SEEK_AFTER_RELEASE_MS = 3000;
+
     /**
      * The player {@link #liveSeekRefused} just marked rewound and let a seek through for, on the thread
      * that goes on into the player's seek, so {@link #liveBarSeek} doesn't mark it a second time.
@@ -367,6 +379,7 @@ public final class ProgressBar {
     static void forgetLiveSeeksForTests() {
         seeks.clear();
         releasedAtEnd = false;
+        endReleaseAt = NO_END_RELEASE;
         handedOn.remove();
     }
 
@@ -994,7 +1007,8 @@ public final class ProgressBar {
      * this switch keeps doesn't seek, so the bar and its time stood still until the reel looped (#120).
      * While the bar is kept this runs the update again just after the release: one more ordinary run
      * after a real seek, and on a paused reel the update stops itself. Whatever the switch, it notes
-     * whether the bar was let go at its end, for the seek request the release goes on to make (#482).
+     * whether the bar was let go at its end, for the seek request the release goes on to make and the
+     * scrubber's own bar seek after it (#482).
      */
     public static void barReleased(Object scrubber, View bar) {
         try {
@@ -1003,6 +1017,7 @@ public final class ProgressBar {
             releasedAtEnd = bar instanceof SeekBar && ((SeekBar) bar).getMax() > 0
                     && ((SeekBar) bar).getProgress() >= ((SeekBar) bar).getMax();
             boolean end = releasedAtEnd;
+            endReleaseAt = end ? SystemClock.uptimeMillis() : NO_END_RELEASE;
             Logger.printDebug(() -> "Reel bar: let go" + (end ? " at its end" : "") + " on " + bar.getClass().getName());
             if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) return;
             Utils.runOnMainThreadDelayed(() -> updateAfterRelease(scrubber, bar), BAR_RELEASE_MS);
@@ -1095,26 +1110,32 @@ public final class ProgressBar {
      * its bar's seek ([trigger] {@link #BAR_SEEK_TRIGGER}) straight there, past the seek handler
      * {@link #liveSeekRefused} sits in, so dragging its bar did nothing (#482). For that seek this
      * marks the video rewound, as Facebook's full player does while its bar is dragged back, and the
-     * seek goes through. A seek the handler already let through, any other seek, Pause, or settings
-     * that aren't ready keep Facebook's answer.
+     * seek goes through. The first bar seek within {@link #BAR_SEEK_AFTER_RELEASE_MS} of the bar
+     * being let go at its end marks the video live again instead, so the player skips it and the video
+     * stays live, as the seek handler does for that release. A seek the handler already let through,
+     * any other seek, Pause, or settings that aren't ready keep Facebook's answer.
      */
     public static void liveBarSeek(Object trigger, Object player) {
         try {
             Object letThrough = handedOn.get();
             handedOn.remove();
             if (!(trigger instanceof Enum) || !BAR_SEEK_TRIGGER.equals(((Enum<?>) trigger).name())) return;
+            long endAt = endReleaseAt;
+            endReleaseAt = NO_END_RELEASE;
+            boolean atEnd = endAt != NO_END_RELEASE && SystemClock.uptimeMillis() - endAt <= BAR_SEEK_AFTER_RELEASE_MS;
             HookStatus.invoked(FAMILY);
             boolean handled = player != null && letThrough == player;
-            Logger.printDebug(() -> "Player: the bar's seek on a live video" + (handled ? ", let through by the seek handler" : ""));
+            Logger.printDebug(() -> "Player: the bar's seek on a live video"
+                    + (handled ? ", let through by the seek handler" : atEnd ? ", let go at the bar's end" : ""));
             if (handled || player == null || !Utils.settingsReady() || HushfacebookPause.isPaused()) return;
             HookStatus.bound(FAMILY, "live scrubber seek");
             LiveRewind forced = liveRewoundForTests;
             if (forced != null) {
-                forced.run(player, true);
+                forced.run(player, !atEnd);
             } else {
-                liveRewound(player, true);
+                liveRewound(player, !atEnd);
             }
-            HookStatus.counted(FAMILY, LIVE_BAR_SEEK);
+            HookStatus.counted(FAMILY, atEnd ? LIVE_EDGE : LIVE_BAR_SEEK);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "live scrubber seek", failure);
         }

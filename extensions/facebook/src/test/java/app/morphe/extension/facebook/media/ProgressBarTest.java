@@ -1194,6 +1194,58 @@ public class ProgressBarTest {
         ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, "player");
     }
 
+    /** #482: the scrubber's bar let go at its end marks the video live again, so the player skips the seek and stays live. */
+    @Test
+    public void theScrubbersBarLetGoAtItsEndGoesBackToLive() {
+        List<String> calls = recordLiveRewinds();
+        ProgressBar.barReleased(new Object(), barAt(1000));
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, "player");
+        assertEquals(Collections.singletonList("player false"), calls);
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.LIVE_EDGE + " 1"));
+        assertFalse(line, line.contains(ProgressBar.LIVE_BAR_SEEK));
+    }
+
+    @Test
+    public void theScrubbersBarLetGoShortOfItsEndIsLetThroughRewound() {
+        List<String> calls = recordLiveRewinds();
+        ProgressBar.barReleased(new Object(), barAt(400));
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, "player");
+        assertEquals(Collections.singletonList("player true"), calls);
+    }
+
+    /** One release at the end goes back to live once, and the next bar seek is the scrubber's own again. */
+    @Test
+    public void theEndOfOneBarReleaseIsntCarriedToTheNextBarSeek() {
+        List<String> calls = recordLiveRewinds();
+        ProgressBar.barReleased(new Object(), barAt(1000));
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, "player");
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, "player");
+        assertEquals(Arrays.asList("player false", "player true"), calls);
+    }
+
+    /** A bar seek long after the bar was let go at its end isn't that release's, so it's let through rewound. */
+    @Test
+    public void aBarSeekLongAfterTheReleaseAtTheEndIsLetThroughRewound() {
+        List<String> calls = recordLiveRewinds();
+        ProgressBar.barReleased(new Object(), barAt(1000));
+        ShadowSystemClock.advanceBy(ProgressBar.BAR_SEEK_AFTER_RELEASE_MS + 1, TimeUnit.MILLISECONDS);
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, "player");
+        assertEquals(Collections.singletonList("player true"), calls);
+    }
+
+    /**
+     * A release at the end goes through the seek handler and, with seeks still in flight, the scrubber's
+     * own bar seek later too. The handler leaves it live, and the bar seek after it mustn't rewind it.
+     */
+    @Test
+    public void aBarLetGoAtItsEndStaysLiveThroughBothOfItsSeeks() {
+        List<String> calls = recordLiveRewinds();
+        assertTrue(ProgressBar.liveSeekRefused(1, releasedAt(1000), "player"));
+        ProgressBar.liveBarSeek(FrameStepForTests.Trigger.BY_SEEKBAR_CONTROLLER, "player");
+        assertEquals(Arrays.asList("player false", "player false"), calls);
+    }
+
     @Test
     public void aReelNothingDrewSinceItsMountHasItsUpdateRunAgainUntilItDraws() {
         Settings.KEEP_PROGRESS_BAR.save(true);
