@@ -504,6 +504,10 @@ Hide Like on comments	隱藏留言的讚按鈕
 Takes Like off the row under comments. Reply and the reaction count stay.	移除留言下方那一列的讚。回覆和心情數量保留。
 Hide Reply on comments	隱藏留言的回覆按鈕
 Takes Reply off the row under comments. View replies, Like and the reaction count stay.	移除留言下方那一列的回覆。「查看回覆」、讚和心情數量保留。
+# context: switch title under Comments and writing, right under Hide Reply on comments; on, the small badges Facebook puts by a commenter's name (Top fan, Subscriber, group roles) go away; use Facebook's own name for the Top fan badge in your language
+Hide badges like Top fan on comments	隱藏留言中的頭號粉絲等徽章
+# context: description of that switch; "Top fan" and "Subscriber" are Facebook's badge names, use Facebook's wording in your language; only the badge goes, the commenter's name and comment stay
+Takes Top fan, Subscriber and the other badges off commenters' names. The name and the comment stay.	移除留言者名字旁的頭號粉絲、訂閱者等徽章。名字和留言保留。
 # context: switch title under Comments; Like is the button under a post or a comment
 Like only	僅使用讚
 # context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens

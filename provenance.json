@@ -1751,12 +1751,13 @@
     {
       "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/comments/CommentSheetOptions.java",
-        "patches/src/main/kotlin/app/morphe/patches/facebook/comments/options/CommentSheetOptionsPatch.kt"
+        "patches/src/main/kotlin/app/morphe/patches/facebook/comments/options/CommentSheetOptionsPatch.kt",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/comments/options/CommenterBadges.kt"
       ],
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook from Facebook 577, 580 and 581: the comment box's attachment button socket is found by the name it gives itself, its name table by the GIF and sticker button plugins it names, and its per-button check, in another class, by the plugin numbers it shares with the table. The extension answers no for those two buttons while the switch is on. The reaction picker a long press on Like opens is found as the method that builds the kept RopeStyleUFIDockView and logs reactions_dock, and it returns early while Like only is on. The comment section is found by the name it gives itself, its reply flag through the expandReplySection update's arm of its state's update switch, and the extension's answer is written into that flag as the initial state finishes. The settings row opens Facebook's own fb://facebook_settings route. No Facebook patch source in the ledger describes these."
+      "changes": "Written for Hushfacebook from Facebook 577, 580 and 581: the comment box's attachment button socket is found by the name it gives itself, its name table by the GIF and sticker button plugins it names, and its per-button check, in another class, by the plugin numbers it shares with the table. The extension answers no for those two buttons while the switch is on. The reaction picker a long press on Like opens is found as the method that builds the kept RopeStyleUFIDockView and logs reactions_dock, and it returns early while Like only is on. The comment section is found by the name it gives itself, its reply flag through the expandReplySection update's arm of its state's update switch, and the extension's answer is written into that flag as the initial state finishes. The settings row opens Facebook's own fb://facebook_settings route. A commenter's badge (Top fan, Subscriber) is found through the two sockets that draw a commenter's name, by the names they give themselves and the badge plugins' kept class names, and its number is held first in each socket's check. No Facebook patch source in the ledger describes these."
     },
     {
       "paths": [

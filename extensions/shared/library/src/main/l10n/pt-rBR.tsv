@@ -461,6 +461,10 @@ Hide Like on comments	Ocultar Curtir nos comentários
 Takes Like off the row under comments. Reply and the reaction count stay.	Tira o Curtir da linha abaixo dos comentários. Responder e a contagem de reações continuam.
 Hide Reply on comments	Ocultar Responder nos comentários
 Takes Reply off the row under comments. View replies, Like and the reaction count stay.	Tira o Responder da linha abaixo dos comentários. Ver respostas, Curtir e a contagem de reações continuam.
+# context: switch title under Comments and writing, right under Hide Reply on comments; on, the small badges Facebook puts by a commenter's name (Top fan, Subscriber, group roles) go away; use Facebook's own name for the Top fan badge in your language
+Hide badges like Top fan on comments	Ocultar selos como Fã destaque nos comentários
+# context: description of that switch; "Top fan" and "Subscriber" are Facebook's badge names, use Facebook's wording in your language; only the badge goes, the commenter's name and comment stay
+Takes Top fan, Subscriber and the other badges off commenters' names. The name and the comment stay.	Tira Fã destaque, Assinante e os outros selos dos nomes nos comentários. O nome e o comentário continuam.
 # context: switch title under Comments; Like is the button under a post or a comment
 Like only	Só Curtir
 # context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens

@@ -500,6 +500,10 @@ Hide Like on comments	„Gefällt mir“ bei Kommentaren ausblenden
 Takes Like off the row under comments. Reply and the reaction count stay.	Entfernt „Gefällt mir“ aus der Zeile unter Kommentaren. Antworten und die Zahl der Reaktionen bleiben.
 Hide Reply on comments	„Antworten“ bei Kommentaren ausblenden
 Takes Reply off the row under comments. View replies, Like and the reaction count stay.	Entfernt „Antworten“ aus der Zeile unter Kommentaren. „Antworten ansehen“, „Gefällt mir“ und die Zahl der Reaktionen bleiben.
+# context: switch title under Comments and writing, right under Hide Reply on comments; on, the small badges Facebook puts by a commenter's name (Top fan, Subscriber, group roles) go away; use Facebook's own name for the Top fan badge in your language
+Hide badges like Top fan on comments	Abzeichen wie Top-Fan bei Kommentaren ausblenden
+# context: description of that switch; "Top fan" and "Subscriber" are Facebook's badge names, use Facebook's wording in your language; only the badge goes, the commenter's name and comment stay
+Takes Top fan, Subscriber and the other badges off commenters' names. The name and the comment stay.	Entfernt Top-Fan, Abonnent und die anderen Abzeichen von den Namen in Kommentaren. Der Name und der Kommentar bleiben.
 # context: switch title under Comments; Like is the button under a post or a comment
 Like only	Nur „Gefällt mir“
 # context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens

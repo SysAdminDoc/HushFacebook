@@ -144,6 +144,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_COMMENT_DOWNVOTE_BUTTON) return L10n.t("Hide dislike on comments");
         if (setting == Settings.HIDE_COMMENT_LIKE_BUTTON) return L10n.t("Hide Like on comments");
         if (setting == Settings.HIDE_COMMENT_REPLY_BUTTON) return L10n.t("Hide Reply on comments");
+        if (setting == Settings.HIDE_COMMENTER_BADGES) return L10n.t("Hide badges like Top fan on comments");
         if (setting == Settings.COMMENT_BLOCK_BUTTON) return L10n.t("Block button on comments");
         if (setting == Settings.REACTOR_BLOCK_BUTTON) return L10n.t("Block button on reaction lists");
         if (setting == Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS) return L10n.t("Hide related groups");

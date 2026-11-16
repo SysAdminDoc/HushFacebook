@@ -1043,6 +1043,7 @@ public class PausedHooksTest {
                 () -> CommentSheetOptions.holdsBottomContent(CommentSheetOptions.RELATED_GROUPS),
                 () -> CommentSheetOptions.holdsPostComments(CommentSheetOptions.INLINE_COMMENTS),
                 () -> CommentSheetOptions.holdsCommentReply(CommentSheetOptions.REPLY_PLUGIN),
+                CommentSheetOptions::hidesCommenterBadge,
                 () -> {
                     // Block button on comments keeps the dislike it redraws (#271).
                     Settings.COMMENT_BLOCK_BUTTON.save(false);

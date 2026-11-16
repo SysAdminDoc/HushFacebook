@@ -92,6 +92,7 @@ public class CommentSheetOptionsTest {
         Settings.HIDE_COMMENT_DOWNVOTE_BUTTON.resetToDefault();
         Settings.HIDE_COMMENT_LIKE_BUTTON.resetToDefault();
         Settings.HIDE_COMMENT_REPLY_BUTTON.resetToDefault();
+        Settings.HIDE_COMMENTER_BADGES.resetToDefault();
         Settings.COMMENT_BLOCK_BUTTON.resetToDefault();
         HookStatus.clear();
     }
@@ -631,6 +632,43 @@ public class CommentSheetOptionsTest {
     }
 
     @Test
+    public void onACommentersBadgeIsHeldAndCountedWhileTheRestOfTheirNameIsFacebooks() {
+        Settings.HIDE_COMMENTER_BADGES.save(true);
+        assertTrue("the badge after a name stayed", CommentSheetOptions.hidesCommenterBadge());
+        assertTrue("the badge over a name stayed", CommentSheetOptions.hidesCommenterBadge());
+        assertFalse("the badge switch held Reply", CommentSheetOptions.holdsCommentReply(CommentSheetOptions.REPLY_PLUGIN));
+        assertFalse("the badge switch held Like", CommentSheetOptions.holdsCommentLike());
+        assertEquals(FamilyNames.COMMENT_SHEET_OPTIONS + ": invoked 4, 3 found, 0 missing. Counted: "
+                + CommentSheetOptions.BADGE_HIDDEN + " 2", statusLine());
+    }
+
+    @Test
+    public void offPausedOrColdACommentersBadgeIsFacebooks() {
+        assertFalse("Hide badges like Top fan on comments doesn't start off", Settings.HIDE_COMMENTER_BADGES.get());
+        assertFalse("off, a badge was held", CommentSheetOptions.hidesCommenterBadge());
+        Settings.HIDE_COMMENT_REPLY_BUTTON.save(true);
+        Settings.HIDE_COMMENT_LIKE_BUTTON.save(true);
+        assertFalse("Hide Reply and Hide Like held a badge", CommentSheetOptions.hidesCommenterBadge());
+        Settings.HIDE_COMMENT_REPLY_BUTTON.save(false);
+        Settings.HIDE_COMMENT_LIKE_BUTTON.save(false);
+
+        Settings.HIDE_COMMENTER_BADGES.save(true);
+        for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP,
+                HushfacebookPause.Reason.MARKER_FILE}) {
+            PauseForTests.pause(reason);
+            assertFalse("a Hushfacebook paused by " + reason + " held a badge", CommentSheetOptions.hidesCommenterBadge());
+            PauseForTests.resume();
+        }
+        SettingsContextRule.withoutContext(() -> assertFalse("a badge was held before the settings were ready",
+                CommentSheetOptions.hidesCommenterBadge()));
+
+        String line = statusLine();
+        assertFalse("a badge left to Facebook was counted: " + line, line != null && line.contains("Counted"));
+        assertTrue("on again after the pause, the badge stayed", CommentSheetOptions.hidesCommenterBadge());
+    }
+
+    @Test
     public void offPausedOrColdACommentsDislikeIsFacebooks() {
         assertFalse("Hide dislike on comments doesn't start off", Settings.HIDE_COMMENT_DOWNVOTE_BUTTON.get());
         assertFalse("off, the dislike was held", CommentSheetOptions.holdsCommentDislike());
@@ -751,7 +789,7 @@ public class CommentSheetOptionsTest {
                 Settings.HIDE_COMMENTS_WITH_WORDS, Settings.HIDE_INCOMING_COMMENT_TYPING, Settings.HIDE_NEW_COMMENTS_PILL,
                 Settings.TAP_ANYWHERE_ON_VIEW_MORE_REPLIES, Settings.HIDE_POST_COMMENT_PREVIEWS,
                 Settings.HIDE_COMMENT_DOWNVOTE_BUTTON, Settings.HIDE_COMMENT_LIKE_BUTTON, Settings.HIDE_COMMENT_REPLY_BUTTON,
-                Settings.HIDE_COMMENT_EMOJI_ROW, Settings.HIDE_COMMENT_BOX_LINE, Settings.HIDE_COMMENT_BOX,
+                Settings.HIDE_COMMENTER_BADGES, Settings.HIDE_COMMENT_EMOJI_ROW, Settings.HIDE_COMMENT_BOX_LINE, Settings.HIDE_COMMENT_BOX,
                 Settings.SHOW_EVERY_COMMENT_REACTION}) {
             assertFalse(setting.key + " asks for a restart, but each hook reads it again", setting.rebootApp);
             assertNull(setting.key + " asks before it changes", setting.userDialogMessage);

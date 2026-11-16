@@ -55,7 +55,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * beside the Dislike, both through one method, and the patch asks {@link #holdsCommentLike} first
  * there the same way. Reply in that row has no builder of its own, so the patch asks
  * {@link #holdsCommentReply} first in the check of the socket of a comment's buttons, with the
- * plugin's name, and a yes answers no for either Reply plugin. A long press on Like opens the reaction
+ * plugin's name, and a yes answers no for either Reply plugin. A commenter's badge (Top fan,
+ * Subscriber) is a plugin of the sockets that draw the commenter's name, and the patch asks
+ * {@link #hidesCommenterBadge} first in each socket's check when it's asked about that plugin; a
+ * yes answers no for the badge. A long press on Like opens the reaction
  * picker through one method, and the patch asks {@link #skipReactionPicker} first there; a yes
  * returns before anything opens. A comment keeps whether its reply thread is open in its state,
  * which starts closed until a tap on View replies opens it. The patch hands
@@ -142,6 +145,12 @@ public final class CommentSheetOptions {
 
     /** The member the report names once the socket of a comment's buttons has asked about Reply. */
     static final String COMMENT_REPLY = "comment reply";
+
+    /** Counted each time a badge like Top fan is kept off a commenter's name (#485). */
+    static final String BADGE_HIDDEN = "Commenter badge kept out";
+
+    /** The member the report names once a check of a commenter's name has asked about its badge. */
+    static final String COMMENTER_BADGE = "commenter badge";
 
     /** Counted each time a feed post's inline comments are kept out from under its buttons. */
     static final String POST_COMMENTS_HIDDEN = "Comments under a post kept out";
@@ -801,6 +810,25 @@ public final class CommentSheetOptions {
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, COMMENT_REPLY, failure);
+            return false;
+        }
+    }
+
+    /**
+     * The hook, first thing in each check that decides what goes by a commenter's name, asked only
+     * when the check is about the badge plugin (#485). True answers no for that badge, Top fan,
+     * Subscriber and the rest, while Hide badges like Top fan on comments is on; false leaves it to
+     * Facebook. The name, the time and the comment come through other plugins, so they stay.
+     */
+    public static boolean hidesCommenterBadge() {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, COMMENTER_BADGE);
+            if (!Utils.settingsReady() || !Settings.HIDE_COMMENTER_BADGES.get()) return false;
+            HookStatus.counted(FAMILY, BADGE_HIDDEN);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, COMMENTER_BADGE, failure);
             return false;
         }
     }

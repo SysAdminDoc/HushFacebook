@@ -1600,6 +1600,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_comment_reply_button", FALSE);
 
     /**
+     * Commenters' names lose their badges, Top fan, Subscriber and the rest
+     * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}, #485). The name, the time
+     * and the comment stay. Off by default. A change shows on comments drawn after it.
+     */
+    public static final BooleanSetting HIDE_COMMENTER_BADGES =
+            new BooleanSetting("hushfacebook_hide_commenter_badges", FALSE);
+
+    /**
      * The thumbs-down under a comment becomes a Block button that opens Facebook's own block
      * sheet for the commenter, confirmation included
      * ({@link app.morphe.extension.facebook.comments.CommentBlock}, #271). Off by default. A

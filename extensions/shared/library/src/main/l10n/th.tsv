@@ -500,6 +500,10 @@ Hide Like on comments	ซ่อน "ถูกใจ" ในความคิด
 Takes Like off the row under comments. Reply and the reaction count stay.	นำปุ่มถูกใจออกจากแถวใต้ความคิดเห็น โดยปุ่มตอบกลับและจำนวนความรู้สึกจะยังคงอยู่
 Hide Reply on comments	ซ่อน "ตอบกลับ" ในความคิดเห็น
 Takes Reply off the row under comments. View replies, Like and the reaction count stay.	นำปุ่มตอบกลับออกจากแถวใต้ความคิดเห็น โดย "ดูการตอบกลับ" ปุ่มถูกใจ และจำนวนความรู้สึกจะยังคงอยู่
+# context: switch title under Comments and writing, right under Hide Reply on comments; on, the small badges Facebook puts by a commenter's name (Top fan, Subscriber, group roles) go away; use Facebook's own name for the Top fan badge in your language
+Hide badges like Top fan on comments	ซ่อนป้ายอย่างแฟนตัวยงในความคิดเห็น
+# context: description of that switch; "Top fan" and "Subscriber" are Facebook's badge names, use Facebook's wording in your language; only the badge goes, the commenter's name and comment stay
+Takes Top fan, Subscriber and the other badges off commenters' names. The name and the comment stay.	นำป้ายแฟนตัวยง ผู้สมัครสมาชิก และป้ายอื่นๆ ออกจากชื่อของผู้แสดงความคิดเห็น ชื่อและความคิดเห็นยังอยู่
 # context: switch title under Comments; Like is the button under a post or a comment
 Like only	เฉพาะ "ถูกใจ"
 # context: summary of that switch; the reactions are the row of Love, Haha, Wow and the rest that a long press on Like opens

@@ -447,6 +447,8 @@ public class ColdStartHooksTest {
                 CommentSheetOptions.holdsCommentDislike());
         assertFalse("a comment drawn before the context lost Reply",
                 CommentSheetOptions.holdsCommentReply(CommentSheetOptions.REPLY_PLUGIN));
+        assertFalse("a comment drawn before the context lost its commenter's badge",
+                CommentSheetOptions.hidesCommenterBadge());
         assertFalse("a comment with a shop link drawn before the context was left out",
                 CommentSheetOptions.hidesComment(new GraphQLComment("https://s.shopee.vn/9zKs")));
         assertFalse("a comment sheet built before the context opened at full height",

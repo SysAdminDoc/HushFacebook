@@ -309,6 +309,12 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * get a no and the socket goes on to its next plugin. View replies is a section of its own under the
  * comment, so it stays.
  *
+ * Hide badges like Top fan on comments (#485): the badge by a commenter's name is a plugin of the
+ * two sockets that draw that name, [TITLE_SOCKET] and [META_TITLE_SOCKET], and each socket asks a
+ * static check of its own class by number before it draws one. [commenterBadgeCheck] has how the
+ * check and the badge's number are read; the hook goes first in each check and answers no for that
+ * number while the switch is on. Every other number goes on to Facebook's code untouched.
+ *
  * Like only: a long press on Like opens the reaction picker through one method that builds
  * [UFI_DOCK] in a popup and logs [DOCK_NAME] (581 `LX/3FO;->A06`, each an instance (View, View)V
  * method). The extension goes first there, and while the switch is on the method returns before
@@ -397,7 +403,7 @@ val commentSheetOptionsPatch = bytecodePatch(
     name = "Comment sheet options",
     description = "Small fixes for comments. Stop a long press on Like from opening reactions, hide the GIF and " +
         "sticker buttons, show every reply without tapping View replies, load a whole reply thread as you " +
-        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, put Block on reaction lists, hide Like on comments, hide Reply on comments, hide Related groups under group posts, hide comments with shop links or your words, show only the comments a search matches, hide who is typing and the new comments pop-up, keep every reaction beside a comment's count, hide the emoji row over the comment box, hide the line over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
+        "scroll, close an open reply thread with a Hide replies button, open more replies with a tap anywhere on their row, hide the comments under feed posts, hide the thumbs-down on comments or turn it into a Block button, put Block on reaction lists, hide Like on comments, hide Reply on comments, hide badges like Top fan on comments, hide Related groups under group posts, hide comments with shop links or your words, show only the comments a search matches, hide who is typing and the new comments pop-up, keep every reaction beside a comment's count, hide the emoji row over the comment box, hide the line over the comment box, and hide the comment box under full-screen videos. Starts off. Turn on the parts you want in " +
         "Hushfacebook settings > Comments and writing.",
 ) {
     category("Comments")
@@ -515,6 +521,16 @@ val commentSheetOptionsPatch = bytecodePatch(
         dropVideoCommentBand(band)
         emojiRowCheck(holders(EMOJI_ROW))?.let { check ->
             mutableClassDefBy(check.definingClass).methods.single { it.descriptor() == check.descriptor() }.holdEmojiRow()
+        }
+        // #485: each socket that draws by a commenter's name asks its own check, and the badge's number is held first there.
+        for ((socket, plugin) in COMMENTER_BADGES) {
+            val found = commenterBadgeCheck(holders(socket), socket, plugin) ?: continue
+            if (found.check.descriptor() in hooked) {
+                patchLog.warning("$PATCH: ${found.check.descriptor()} holds $plugin and another hook. Hide badges like Top fan on comments leaves that badge in this build")
+                continue
+            }
+            mutableClassDefBy(found.check.definingClass).methods.single { it.descriptor() == found.check.descriptor() }
+                .holdCommenterBadge(found.number)
         }
         commentBoxBackground(holders(COMMENT_BOX_INIT))?.let { box ->
             mutableClassDefBy(box.init.definingClass).methods.single { it.descriptor() == box.init.descriptor() }
