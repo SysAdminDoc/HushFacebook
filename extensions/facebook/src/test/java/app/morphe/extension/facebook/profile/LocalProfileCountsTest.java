@@ -244,6 +244,59 @@ public class LocalProfileCountsTest {
         assertEquals("1,234", LocalProfileCounts.text(friends));
     }
 
+    /**
+     * One piece of a count line the way Facebook 587 builds it: the text node under key 32 next to a
+     * "..." node under key 44 and an empty node under key 133, with its alignment and colors.
+     */
+    private static ProfileNotesForTests.Node piece(String text) {
+        ProfileNotesForTests.Node label = new ProfileNotesForTests.Node().with(0x23, "sans-serif").with(0x26, text)
+                .with(0x2a, "13.00sp").with(0x2b, "bold");
+        ProfileNotesForTests.Node more = new ProfileNotesForTests.Node().with(0x26, "...").with(0x2a, "13.00sp");
+        return new ProfileNotesForTests.Node().with(0x20, Collections.singletonList(label)).with(0x2a, "start")
+                .with(0x2c, Collections.singletonList(more))
+                .with(0x85, Collections.singletonList(new ProfileNotesForTests.Node()));
+    }
+
+    @Test
+    public void aSplitCountWhosePiecesHoldMoreThanTheirTextIsFoundToo() {
+        // Facebook 587 gives each piece of "121M followers" three child lists, so no piece has a lone child (#488).
+        LocalProfileCounts.opened(LocalProfileCountsForTests.own());
+        String followers = new String("121M");
+
+        LocalProfileCounts.children(Arrays.asList(piece(followers), piece(" followers")));
+
+        assertEquals("56", LocalProfileCounts.text(followers));
+    }
+
+    @Test
+    public void aWholeCountRowIsNeverTakenForTheNextRowsNumber() {
+        LocalProfileCounts.opened(LocalProfileCountsForTests.own());
+        Settings.LOCAL_FOLLOWING.save("77");
+        String followers = new String("121M");
+        String following = new String("5");
+        ProfileNotesForTests.Node followersRow = new ProfileNotesForTests.Node().with(0x20,
+                Arrays.asList(piece(followers), piece(" followers")));
+        ProfileNotesForTests.Node followingRow = new ProfileNotesForTests.Node().with(0x20,
+                Arrays.asList(piece(following), piece(" following")));
+
+        LocalProfileCounts.children(Arrays.asList(followersRow, followingRow));
+
+        assertEquals("a followers count never gets the following number", "121M", LocalProfileCounts.text(followers));
+        assertEquals("5", LocalProfileCounts.text(following));
+    }
+
+    @Test
+    public void aPieceHoldingTwoNumbersIsNoCount() {
+        LocalProfileCounts.opened(LocalProfileCountsForTests.own());
+        String first = new String("12");
+        ProfileNotesForTests.Node two = new ProfileNotesForTests.Node().with(0x20,
+                Arrays.asList(textNode(first), textNode(new String("34"))));
+
+        LocalProfileCounts.children(Arrays.asList(two, piece(" friends")));
+
+        assertEquals("12", LocalProfileCounts.text(first));
+    }
+
     @Test
     public void onlyTheNumberBeforeTheWordIsSwapped() {
         LocalProfileCounts.opened(LocalProfileCountsForTests.own());

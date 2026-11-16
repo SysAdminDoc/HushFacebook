@@ -101,8 +101,17 @@ public final class LocalProfileCounts {
                 Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.DOTALL);
     }
 
-    /** How far into lone-child wrappers a split count's number or word is looked for. */
+    /** How far into wrappers a split count's number or word is looked for. */
     private static final int WRAPPER_DEPTH = 3;
+
+    /**
+     * How many nodes one piece of a split count holds at most. Facebook 587 keeps the text node next
+     * to a "..." node and an empty one, so a piece is about four; a bigger node is a whole section.
+     */
+    private static final int PIECE_NODES = 16;
+
+    /** What a search returns when more than one string matched, or the node was too big to be a piece. */
+    private static final String NOT_ONE = new String("not one");
 
     /** How many split counts are remembered: a profile shows three at most, twice with its Friends section. */
     private static final int REMEMBERED = 8;
@@ -133,10 +142,14 @@ public final class LocalProfileCounts {
             Object current = screen.get();
             if (current == null || !resumed(current)) return list;
             for (int index = 0, last = list.size() - 1; index < last; index++) {
-                String number = textIn(list.get(index), BARE_NUMBER, WRAPPER_DEPTH);
+                Object numberPiece = list.get(index);
+                String number = textIn(numberPiece, BARE_NUMBER);
                 if (number == null) continue;
-                Count count = wordIn(list.get(index + 1));
+                Object wordPiece = list.get(index + 1);
+                Count count = wordIn(wordPiece);
                 if (count == null) continue;
+                // A whole "121M followers" row next to a "5 following" row is two counts, not one.
+                if (wordIn(numberPiece) != null || textIn(wordPiece, BARE_NUMBER) != null) continue;
                 remember(number, count);
             }
         } catch (Throwable failure) {
@@ -149,40 +162,57 @@ public final class LocalProfileCounts {
     /** Which count [node]'s text names when it starts with the word for one, or null. */
     @Nullable
     private static Count wordIn(@Nullable Object node) throws IllegalAccessException {
-        if (textIn(node, FRIENDS_WORD, WRAPPER_DEPTH) != null) return Count.FRIENDS;
-        if (textIn(node, FOLLOWERS_WORD, WRAPPER_DEPTH) != null) return Count.FOLLOWERS;
-        if (textIn(node, FOLLOWING_WORD, WRAPPER_DEPTH) != null) return Count.FOLLOWING;
+        if (textIn(node, FRIENDS_WORD) != null) return Count.FRIENDS;
+        if (textIn(node, FOLLOWERS_WORD) != null) return Count.FOLLOWERS;
+        if (textIn(node, FOLLOWING_WORD) != null) return Count.FOLLOWING;
         return null;
     }
 
     /**
-     * The first of [node]'s own short strings that [shape] matches whole, or else the one its lone
-     * child has, [depth] wrappers down at most. Null for anything that isn't a Bloks node.
+     * The first of [node]'s own short strings that [shape] matches whole, or else the one string a
+     * single one of its children has, a few wrappers down at most. Null when two children have one,
+     * when the node is too big to be a piece of a count line, and for anything that isn't a Bloks node.
      */
     @Nullable
-    private static String textIn(@Nullable Object node, Pattern shape, int depth) throws IllegalAccessException {
+    private static String textIn(@Nullable Object node, Pattern shape) throws IllegalAccessException {
+        String found = search(node, shape, WRAPPER_DEPTH, new int[] {PIECE_NODES});
+        return found == NOT_ONE ? null : found;
+    }
+
+    @Nullable
+    private static String search(@Nullable Object node, Pattern shape, int depth, int[] budget)
+            throws IllegalAccessException {
         if (node == null) return null;
         Field field = ProfileNotes.attributes(node.getClass());
         if (field == null) return null;
+        if (--budget[0] < 0) return NOT_ONE;
         SparseArray<?> attributes = (SparseArray<?>) field.get(node);
         if (attributes == null) return null;
-        Object lone = null;
-        int children = 0;
-        for (int index = 0, size = attributes.size(); index < size; index++) {
+        int size = attributes.size();
+        for (int index = 0; index < size; index++) {
             Object value = attributes.valueAt(index);
             if (value instanceof String) {
                 String text = (String) value;
                 if (text.length() <= LONGEST_TEXT && shape.matcher(text).matches()) return text;
-            } else if (value instanceof List) {
-                List<?> list = (List<?>) value;
-                children += list.size();
-                if (list.size() == 1) lone = list.get(0);
-            } else if (value != null && ProfileNotes.attributes(value.getClass()) != null) {
-                children++;
-                lone = value;
             }
         }
-        return depth > 0 && children == 1 ? textIn(lone, shape, depth - 1) : null;
+        if (depth == 0) return null;
+        String found = null;
+        for (int index = 0; index < size; index++) {
+            Object value = attributes.valueAt(index);
+            if (value instanceof List) {
+                for (Object child : (List<?>) value) {
+                    String hit = search(child, shape, depth - 1, budget);
+                    if (hit == NOT_ONE || (hit != null && found != null)) return NOT_ONE;
+                    if (hit != null) found = hit;
+                }
+            } else if (value != null && !(value instanceof String)) {
+                String hit = search(value, shape, depth - 1, budget);
+                if (hit == NOT_ONE || (hit != null && found != null)) return NOT_ONE;
+                if (hit != null) found = hit;
+            }
+        }
+        return found;
     }
 
     private static void remember(String number, Count count) {
