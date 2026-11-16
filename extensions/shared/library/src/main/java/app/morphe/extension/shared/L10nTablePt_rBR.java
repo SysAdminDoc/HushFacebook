@@ -18,7 +18,7 @@ final class L10nTablePt_rBR {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(3884);
+        Map<String, String> table = new HashMap<>(3888);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -3108,6 +3108,8 @@ final class L10nTablePt_rBR {
                 "Mostra uma barra na parte de baixo de um story em v\u00eddeo que voc\u00ea arrasta para andar por ele. O story espera enquanto voc\u00ea arrasta. \u201cBarra de progresso embaixo\u201d d\u00e1 lugar a ela nos stories em v\u00eddeo.");
         table.put("Shows a feed video's full length at the right end of its seek bar, in place of the time left. Needs Times on the seek bar on.",
                 "Mostra a dura\u00e7\u00e3o total de um v\u00eddeo do feed na ponta direita da barra de progresso, no lugar do tempo que falta. Precisa de \u201cTempos na barra de progresso\u201d ligado.");
+        table.put("Shows a feed video's seek bar as a thin line right on its bottom edge, like Instagram's, with no dot or times until you drag it. Live videos get it too while they can be rewound. Let go at the far right end to go back to live. Facebook's speaker and tagged people buttons move up to sit above it. Needs Seek bar on feed videos on.",
+                "Mostra a barra de progresso de um v\u00eddeo do feed como uma linha fina bem na borda de baixo, como a do Instagram, sem bolinha nem tempos at\u00e9 voc\u00ea arrastar. V\u00eddeos ao vivo tamb\u00e9m ganham a linha enquanto d\u00e1 para voltar neles. Solte na ponta direita para voltar ao ao vivo. Os bot\u00f5es de alto-falante e de pessoas marcadas do Facebook sobem para ficar acima dela. Precisa de \u201cBarra de progresso nos v\u00eddeos do feed\u201d ligado.");
         table.put("Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open the window right away. Works with Picture-in-picture on.",
                 "Mostra um bot\u00e3o pequeno na borda esquerda de um reel ou v\u00eddeo que tem a janela pronta. Toque nele para abrir a janela na hora. Funciona com Picture-in-picture ativado.");
         table.put("Shows a thin bar along the bottom of a story that fills as it plays, like the one on Reels.",
@@ -3126,11 +3128,11 @@ final class L10nTablePt_rBR {
                 "Mostra o \u00edcone do app que voc\u00ea escolheu no topo do In\u00edcio no lugar do logotipo de texto do Facebook. Precisa de Desbloquear \u00edcones do app e de uma escolha diferente do azul. Reinicie o Facebook para ver a mudan\u00e7a.");
         table.put("Shows the friends, followers and following numbers you type below on your own profile, on this phone only. Other profiles and Facebook's real numbers aren't touched. Applies the next time you open your profile.",
                 "Mostra no seu pr\u00f3prio perfil os n\u00fameros de amigos, seguidores e seguindo que voc\u00ea digitar abaixo, s\u00f3 neste celular. Outros perfis e os n\u00fameros reais do Facebook n\u00e3o s\u00e3o alterados. Vale na pr\u00f3xima vez que voc\u00ea abrir seu perfil.");
-        table.put("Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.",
-                "Mostra a data da publica\u00e7\u00e3o abaixo do nome de quem publicou, em vez dos detalhes rotativos do Facebook, que ficam em branco em alguns celulares.");
     }
 
     private static void fill25(Map<String, String> table) {
+        table.put("Shows the post's date under the poster's name instead of Facebook's rotating details, which can go blank on some phones.",
+                "Mostra a data da publica\u00e7\u00e3o abaixo do nome de quem publicou, em vez dos detalhes rotativos do Facebook, que ficam em branco em alguns celulares.");
         table.put("Shows when a reel or a video you open full screen was posted, under the name of who posted it. A change shows from the next reel.",
                 "Mostra quando um reel ou um v\u00eddeo que voc\u00ea abre em tela cheia foi publicado, abaixo do nome de quem publicou. A mudan\u00e7a aparece a partir do pr\u00f3ximo reel.");
         table.put("Shows your phone's own emoji instead of Facebook's. Reactions and stickers don't change. Restart Facebook to see the change.",
@@ -3249,11 +3251,11 @@ final class L10nTablePt_rBR {
                 "Barra de abas ao rolar");
         table.put("Tab bar width",
                 "Largura da barra de abas");
-        table.put("Tab bar, top bar, hidden tabs and dots",
-                "Barra de abas, barra superior, abas ocultas e pontos");
     }
 
     private static void fill26(Map<String, String> table) {
+        table.put("Tab bar, top bar, hidden tabs and dots",
+                "Barra de abas, barra superior, abas ocultas e pontos");
         table.put("Tab order",
                 "Ordem das abas");
         table.put("Tab to open on",
@@ -3372,11 +3374,11 @@ final class L10nTablePt_rBR {
                 "Verde-azulado");
         table.put("Test the Messenger link",
                 "Testar a conex\u00e3o com o Messenger");
-        table.put("Text and emoji",
-                "Texto e emoji");
     }
 
     private static void fill27(Map<String, String> table) {
+        table.put("Text and emoji",
+                "Texto e emoji");
         table.put("Text of a post",
                 "Texto de uma publica\u00e7\u00e3o");
         table.put("Text size",
@@ -3495,11 +3497,11 @@ final class L10nTablePt_rBR {
                 "N\u00e3o foi poss\u00edvel salvar o relat\u00f3rio de diagn\u00f3stico. Tente de novo.");
         table.put("The download ended before the whole file arrived. Try again.",
                 "O download terminou antes de o arquivo chegar inteiro. Tente de novo.");
-        table.put("The feed will hide posts with more than %1$s reactions.",
-                "O feed vai ocultar publica\u00e7\u00f5es com mais de %1$s rea\u00e7\u00f5es.");
     }
 
     private static void fill28(Map<String, String> table) {
+        table.put("The feed will hide posts with more than %1$s reactions.",
+                "O feed vai ocultar publica\u00e7\u00f5es com mais de %1$s rea\u00e7\u00f5es.");
         table.put("The feed won't hide posts for how many reactions they have.",
                 "O feed n\u00e3o vai ocultar publica\u00e7\u00f5es pela quantidade de rea\u00e7\u00f5es.");
         table.put("The file %1$s couldn't be removed. Delete it from %2$s to turn Hushfacebook back on.",
@@ -3594,6 +3596,8 @@ final class L10nTablePt_rBR {
                 "N\u00e3o h\u00e1 dados de diagn\u00f3stico para restaurar.");
         table.put("They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off. Patch again to change them.",
                 "Eles s\u00e3o escolhidos no Morphe Manager quando voc\u00ea aplica os patches, e a pausa n\u00e3o os desativa. Aplique os patches novamente para alter\u00e1-los.");
+        table.put("Thin line seek bar",
+                "Barra de progresso em linha fina");
         table.put("This Facebook build has no App icon page.",
                 "Esta vers\u00e3o do Facebook n\u00e3o tem a p\u00e1gina \u00cdcone do app.");
         table.put("This Facebook build has no Whitehat settings screen.",
@@ -3616,13 +3620,13 @@ final class L10nTablePt_rBR {
                 "O t\u00edtulo precisa incluir");
         table.put("To day",
                 "At\u00e9 o dia");
+    }
+
+    private static void fill29(Map<String, String> table) {
         table.put("Too many saves at once. Try again when one finishes.",
                 "Muitos downloads ao mesmo tempo. Tente de novo quando um terminar.");
         table.put("Top bar",
                 "Barra superior");
-    }
-
-    private static void fill29(Map<String, String> table) {
         table.put("Transcript",
                 "Transcri\u00e7\u00e3o");
         table.put("Translate",
@@ -3739,13 +3743,13 @@ final class L10nTablePt_rBR {
                 "Controles de v\u00eddeo");
         table.put("Video file name",
                 "Nome do arquivo de v\u00eddeo");
+    }
+
+    private static void fill30(Map<String, String> table) {
         table.put("Video link",
                 "Link do v\u00eddeo");
         table.put("Video quality",
                 "Qualidade do v\u00eddeo");
-    }
-
-    private static void fill30(Map<String, String> table) {
         table.put("Video saved",
                 "V\u00eddeo salvo");
         table.put("Video stories don't start by themselves. Touch and hold a story, then let go, to play it. Works with Tap to play on or off.",
@@ -3862,13 +3866,13 @@ final class L10nTablePt_rBR {
                 "Enquanto o modo Marketplace est\u00e1 ligado, carrega menos do feed em segundo plano. Ainda h\u00e1 algum carregamento ao abrir.");
         table.put("While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.",
                 "Enquanto o modo Marketplace est\u00e1 ligado, silencia sugest\u00f5es de v\u00eddeos, lembran\u00e7as, anivers\u00e1rios e sugest\u00f5es de amizade. Mensagens e novidades de compra e venda continuam chegando.");
+    }
+
+    private static void fill31(Map<String, String> table) {
         table.put("While a feed video plays, its seek bar and Facebook's speaker button fade a few seconds after it starts or you last touch them. Touch the bar or pause the video and they come back. Needs Seek bar on feed videos on.",
                 "Enquanto um v\u00eddeo do feed toca, a barra de progresso e o bot\u00e3o de alto-falante do Facebook esmaecem alguns segundos depois que ele come\u00e7a ou depois do seu \u00faltimo toque. Toque na barra ou pause o v\u00eddeo e eles voltam. Precisa de \u201cBarra de progresso nos v\u00eddeos do feed\u201d ligado.");
         table.put("While the search box holds words, comments without them are hidden. Clearing the box brings them back.",
                 "Enquanto a caixa de pesquisa tiver palavras, os coment\u00e1rios sem elas ficam ocultos. Limpar a caixa traz todos de volta.");
-    }
-
-    private static void fill31(Map<String, String> table) {
         table.put("Why am I seeing this post?",
                 "Por que estou vendo esta publica\u00e7\u00e3o?");
         table.put("Width in dp, from %1$s to %2$s. Leave it blank for %3$s.",
@@ -3985,13 +3989,13 @@ final class L10nTablePt_rBR {
                 "Sua lista de palavras a ocultar ficar\u00e1 vazia.");
         table.put("Your list of words to hide will hold %1$d word or phrase.",
                 "Sua lista de palavras a ocultar ter\u00e1 %1$d palavra ou frase.");
+    }
+
+    private static void fill32(Map<String, String> table) {
         table.put("Your list of words to hide will hold %1$d words or phrases.",
                 "Sua lista de palavras a ocultar ter\u00e1 %1$d palavras ou frases.");
         table.put("Your own words at the top of Home instead of the Facebook logo, up to %1$d characters. They take Facebook's colors in light and dark mode. Leave it blank for Facebook's logo.",
                 "Suas pr\u00f3prias palavras no topo da P\u00e1gina inicial no lugar do logo do Facebook, at\u00e9 %1$d caracteres. Elas usam as cores do Facebook nos modos claro e escuro. Deixe em branco para o logo do Facebook.");
-    }
-
-    private static void fill32(Map<String, String> table) {
         table.put("Your phone couldn't put this video together. Try another Download quality.",
                 "Seu celular n\u00e3o conseguiu montar este v\u00eddeo. Tente outra Qualidade do download.");
         table.put("Your phone couldn't write the file. Check your free space and try again.",

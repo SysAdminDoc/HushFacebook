@@ -13,6 +13,7 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.ads.sponsoredsearch.enumConstantFields
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.media.framestep.STEP_TRIGGER
+import app.morphe.patches.facebook.media.progressbar.liveLatencySetters
 import app.morphe.patches.facebook.media.reelspeed.originGetters
 import app.morphe.patches.facebook.media.resume.IS_PLAYING
 import app.morphe.patches.facebook.media.resume.VIDEO_PLAYER_PARAMS
@@ -77,6 +78,8 @@ internal fun BytecodePatchContext.installFeedVideoControls(play: Method) {
     val origin = single("PlayerOrigin getter", originGetters(owner))
     val release = single("native release", releases(owner, trigger))
     val seekTo = single("native seek", seekTos(owner, trigger, single("safe seek", safeSeeks(owner, trigger))))
+    // The native seek drops a seek on a live video unless the player was marked rewound behind live first (#431).
+    val rewind = single("live rewind setter", liveLatencySetters(owner))
     val playingFace = playingInterfaces(owner.interfaces.mapNotNull { classDefByOrNull(it) }).singleOrNull()
         ?: refuse("expected one interface declaring isPlaying()")
     val position = single("position reader", positionReaders(owner, playingFace))
@@ -110,7 +113,7 @@ internal fun BytecodePatchContext.installFeedVideoControls(play: Method) {
     listOf(owner, paramsClass, triggerClass).forEach {
         if (!AccessFlags.PUBLIC.isSet(it.accessFlags)) refuse("${it.type} isn't public")
     }
-    listOf(play, pause, playing, params, origin, position, length, seekTo).forEach {
+    listOf(play, pause, playing, params, origin, position, length, seekTo, rewind).forEach {
         if (!AccessFlags.PUBLIC.isSet(it.accessFlags)) refuse("${it.definingClass}->${it.name} isn't public")
     }
     val extension = mutableClassDefBy(FEED_CONTROLS)
@@ -127,6 +130,7 @@ internal fun BytecodePatchContext.installFeedVideoControls(play: Method) {
     val flagStubs = INLINE_FLAGS.values.associateWith { stub(it, "Z") }
     val command = stub("commandPlayer", "V", listOf("Ljava/lang/Object;", "Z"))
     val seek = stub("seekPlayer", "V", listOf("Ljava/lang/Object;", "Ljava/lang/Object;", "I"))
+    val rewound = stub("rewindPlayer", "V", listOf("Ljava/lang/Object;", "Z"))
     stubs.getValue("playerView").addInstructions(0, """
         check-cast p0, ${owner.type}
         iget-object p0, p0, $container
@@ -157,6 +161,11 @@ internal fun BytecodePatchContext.installFeedVideoControls(play: Method) {
         check-cast p0, ${owner.type}
         sget-object p1, $seekBy
         invoke-virtual/range { p0 .. p2 }, ${seekTo.definingClass}->${seekTo.name}(${trigger}I)V
+        return-void
+    """)
+    rewound.addInstructions(0, """
+        check-cast p0, ${owner.type}
+        invoke-virtual { p0, p1 }, ${rewind.definingClass}->${rewind.name}(Z)V
         return-void
     """)
     INLINE_FLAGS.forEach { (name, stub) ->

@@ -1827,6 +1827,7 @@ public class SettingsNavigationTest {
         assertTrue(contains(Settings.FEED_VIDEO_SEEK_BAR_FADE.key));
         assertTrue(contains(Settings.FEED_VIDEO_SEEK_BAR_LOWER.key));
         assertTrue(contains(Settings.FEED_VIDEO_SEEK_BAR_EDGE.key));
+        assertTrue(contains(Settings.FEED_VIDEO_SEEK_BAR_THIN.key));
         assertTrue(contains(Settings.FEED_VIDEO_SEEK_BAR_LENGTH.key));
         assertTrue(contains(Settings.FEED_VIDEO_FULL_PLAYER_CORNER.key));
         assertEquals(before, list().getCount());

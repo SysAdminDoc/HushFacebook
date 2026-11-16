@@ -11,6 +11,7 @@ import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.ads.sponsoredsearch.enumConstantFields
+import app.morphe.patches.facebook.media.progressbar.LIVE_LATENCY_LOG
 import app.morphe.patches.facebook.media.resume.POSITION_STUB
 import app.morphe.patches.facebook.media.resume.VIDEO_PLAYER_PARAMS
 import app.morphe.patches.facebook.media.resume.paramsGetters
@@ -208,6 +209,30 @@ class TapToPlayFixtureTest {
                 val seekCall = seekCode.mapNotNull { it.call }.single()
                 assertEquals("$name: the seek's owner", groot.type, seekCall.definingClass)
                 assertEquals("$name: the seek's arguments", listOf(trigger, "I"), seekCall.parameterTypes.map(CharSequence::toString))
+                // The seek drops a live video's seek unless the player's rewound flag is set, and the
+                // rewind stub sets that flag through the setter logging the latency message (#431).
+                val rewindCall = bridge.methods.single { it.name == "rewindPlayer" }.implementation!!.instructions.mapNotNull { it.call }.single()
+                assertEquals("$name: the rewind's owner", groot.type, rewindCall.definingClass)
+                assertEquals("$name: the rewind's arguments", listOf("Z"), rewindCall.parameterTypes.map(CharSequence::toString))
+                fun own(call: MethodReference) = groot.methods.single {
+                    it.name == call.name && it.returnType == call.returnType &&
+                        it.parameterTypes.map(CharSequence::toString) == call.parameterTypes.map(CharSequence::toString)
+                }
+                val setter = own(rewindCall)
+                assertTrue("$name: the rewind setter doesn't log \"$LIVE_LATENCY_LOG\"", holdsString(setter, LIVE_LATENCY_LOG))
+                val liveNow = bridge.methods.single { it.name == "liveNow" }.implementation!!.instructions
+                    .single { it.opcode == Opcode.IGET_BOOLEAN }.let { (it as ReferenceInstruction).reference.toString() }
+                val gate = own(own(seekCall).implementation!!.instructions.mapNotNull { it.call }.single { it.definingClass == groot.type })
+                val gateCode = gate.implementation!!.instructions.toList()
+                assertTrue("$name: the seek's gate doesn't read $liveNow",
+                    gateCode.any { it.opcode == Opcode.IGET_BOOLEAN && (it as ReferenceInstruction).reference.toString() == liveNow })
+                val rewoundCheck = own(gateCode.mapNotNull { it.call }.single {
+                    it.definingClass == groot.type && it.returnType == "Z" && it.parameterTypes.isEmpty()
+                })
+                fun objectReads(method: Method) = method.implementation!!.instructions.filter { it.opcode == Opcode.IGET_OBJECT }
+                    .map { (it as ReferenceInstruction).reference.toString() }.toSet()
+                val flag = objectReads(rewoundCheck).single()
+                assertTrue("$name: the rewind setter doesn't write the flag $flag the seek's gate reads", flag in objectReads(setter))
                 listOf("playerPosition", "playerLength").forEach { stub ->
                     val call = bridge.methods.single { it.name == stub }.implementation!!.instructions.mapNotNull { it.call }.single()
                     assertEquals("$name: $stub's owner", groot.type, call.definingClass)

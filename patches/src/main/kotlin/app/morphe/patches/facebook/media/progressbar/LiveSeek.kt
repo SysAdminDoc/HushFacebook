@@ -172,6 +172,12 @@ internal fun liveNowField(params: ClassDef): FieldReference {
  */
 internal class LiveRewind(val player: String, val setter: Method)
 
+/** The [player]'s own methods that take a boolean and log [LIVE_LATENCY_LOG], the live latency setter. */
+internal fun liveLatencySetters(player: ClassDef): List<Method> = player.methods.filter {
+    !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
+        it.parameterTypes.map(CharSequence::toString) == listOf("Z") && holdsString(it, LIVE_LATENCY_LOG)
+}
+
 internal fun liveRewind(player: ClassDef, check: LiveSeekCheck, liveNow: FieldReference): LiveRewind {
     val live = player.methods.singleOrNull {
         it.name == check.live.name && it.returnType == "Z" && it.parameterTypes.isEmpty() && it.implementation != null
@@ -179,10 +185,7 @@ internal fun liveRewind(player: ClassDef, check: LiveSeekCheck, liveNow: FieldRe
     if (live.implementation!!.instructions.none { it.opcode == Opcode.IGET_BOOLEAN && it.referenced() == liveNow.toString() }) {
         refuseLiveSeek("${player.type}->${live.name}, which the seek handler skips on, doesn't read $liveNow")
     }
-    val setters = player.methods.filter {
-        !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
-            it.parameterTypes.map(CharSequence::toString) == listOf("Z") && holdsString(it, LIVE_LATENCY_LOG)
-    }
+    val setters = liveLatencySetters(player)
     val setter = setters.singleOrNull()
         ?: refuseLiveSeek("${setters.size} methods of ${player.type} take a boolean and log \"$LIVE_LATENCY_LOG\", expected one")
     if (!AccessFlags.PUBLIC.isSet(player.accessFlags) || !AccessFlags.PUBLIC.isSet(setter.accessFlags)) {

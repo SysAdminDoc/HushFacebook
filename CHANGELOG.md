@@ -33,6 +33,7 @@ Changes in each Hushfacebook version, newest first.
 * New `Hide the Add friend pop-up on shared reels` under Reels and Watch. When someone who isn't your friend sends you a reel, opening it no longer brings up the sheet asking you to add them. It starts off. (#486)
 * New `Move seen stories to the end` on the Stories page. Stories you've already watched go after the ones you haven't, so the new ones come first in the tray. A story you're watching keeps its place until you close it. It starts off. (#489)
 * `Full length on the seek bar` under Video and audio shows a feed video's whole length at the right end of its seek bar, where the time left was. A 41 second video that reads -0:12 left now reads 0:41 there. It needs `Times on the seek bar` on and starts off. (#487)
+* `Thin line seek bar` under Video and audio draws a feed video's seek bar as a thin line right on its bottom edge, like the one on Instagram. There's no dot and no times until you drag it. Live videos get the line too while they can be rewound, and letting go at the far right end takes you back to live. Facebook's speaker and tagged people buttons move up above it. Reels and stories keep their own bars. A double tap to skip on a live feed video now moves it too, where Facebook's player used to drop the jump. It needs `Seek bar on feed videos` on and starts off. (#431)
 * **Tooling:** `superpack-unpack.ps1 -Desktop` unpacks Facebook's Android 9+ build on a PC with no phone or emulator attached. (#102)
 
 ### Changed

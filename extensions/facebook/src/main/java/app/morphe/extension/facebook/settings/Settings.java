@@ -1856,6 +1856,20 @@ public class Settings extends BaseSettings {
             };
 
     /**
+     * With {@link #FEED_VIDEO_SEEK_BAR} on, the bar is a thin line flush with the video's bottom
+     * edge, as on Instagram, with no thumb or times until a drag, and a live video that can be
+     * rewound gets it too. It sits on the edge as {@link #FEED_VIDEO_SEEK_BAR_EDGE} does (#431).
+     * Starts off.
+     */
+    public static final BooleanSetting FEED_VIDEO_SEEK_BAR_THIN =
+            new BooleanSetting("hushfacebook_feed_video_seek_bar_thin", FALSE) {
+                @Override
+                protected void onValueChanged() {
+                    FeedVideoControls.settingsChanged();
+                }
+            };
+
+    /**
      * A seek bar along the bottom of a video story, where {@link #STORY_PROGRESS_BAR} draws, which
      * makes way for it. A drag holds the story and the let go moves it there (#386). Starts off.
      */

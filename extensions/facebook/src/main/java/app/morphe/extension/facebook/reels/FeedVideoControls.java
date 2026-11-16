@@ -66,7 +66,8 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * Two more switches can lower the bar and those buttons together, and fade the bar and the speaker
  * while the video plays untouched (#386). A video story in the story viewer can get the seek bar
  * alone, along its card's bottom, with a fade switch of its own (#386). A live video gets play/pause and the full player button but no cast button or seek bar, having
- * no file to hand over and no end to seek to. The full player button, next to play, opens the video
+ * no file to hand over and no end to seek to, except the thin line, which shows how far behind live
+ * one that can be rewound is (#431). The full player button, next to play, opens the video
  * in Facebook's own player with all its controls, a wide one in the full screen player that turns
  * sideways rather than the upright reels viewer (#239). Like that player, a feed video can also
  * get buttons that jump back or ahead 10 seconds and one that steps its speed, and the seek bar can
@@ -81,6 +82,8 @@ public final class FeedVideoControls {
     static final int TOP_DP = 54;
     /** The seek bar's touch height, short because a feed video's caption sits right above it, and the room a drag's time takes above it. */
     static final int BAR_DP = 20, TIME_DP = 28;
+    /** How thick Thin line seek bar draws its line, flush with the video's bottom edge, as Instagram's is (#431). */
+    static final int THIN_DP = 2;
     /** The room the seek bar leaves under it for what Facebook puts in the video's bottom corners: the speaker, and the tagged people (#326). */
     static final int BAR_LIFT_DP = 40;
     /** The most Lower the seek bar moves the bar and those buttons down, keeping {@link #MARGIN_DP} under the lowest button (#386). */
@@ -131,6 +134,8 @@ public final class FeedVideoControls {
         int position(Object player);
         int length(Object player, Object params);
         void seek(Object player, int positionMs);
+        /** Marks [player] as behind live, or back at it, as Facebook's full player does while you drag (#431). */
+        void rewind(Object player, boolean rewound);
         /** The player's speed, or NaN when the build can't read it. */
         float speed(Object player);
         void speed(Object player, float speed);
@@ -157,6 +162,7 @@ public final class FeedVideoControls {
             return length > 0 ? length : paramsLength(params);
         }
         public void seek(Object player, int positionMs) { seekPlayer(player, null, positionMs); }
+        public void rewind(Object player, boolean rewound) { rewindPlayer(player, rewound); }
         // Hold a reel for 2x fills both: the getter for reels and feed videos alike, the setter for a feed video's hold.
         public float speed(Object player) { return ReelHold.playerSpeed(player); }
         public void speed(Object player, float speed) { FeedVideoHold.setPlayerSpeed(player, speed); }
@@ -189,6 +195,11 @@ public final class FeedVideoControls {
     public static int paramsLength(Object params) { return 0; }
     /** [slot] only lends the patch a register for Facebook's trigger. */
     public static void seekPlayer(Object player, @Nullable Object slot, int positionMs) { }
+    /**
+     * The player's setter of whether a live video is behind live, which also logs "Unable to
+     * grootPlayer.setLiveLatencyMode". Its seek drops a live video's seek until that's true.
+     */
+    public static void rewindPlayer(Object player, boolean rewound) { }
 
     /**
      * Opens [videoId] in Facebook's own player through its link handler, as Recently watched does.
@@ -296,8 +307,14 @@ public final class FeedVideoControls {
         return seekOn() && !edgeOn() && Settings.FEED_VIDEO_SEEK_BAR_LOWER.get();
     }
 
+    /** The bar sits on the video's bottom edge, which the thin line does too. */
     private static boolean edgeOn() {
-        return seekOn() && Settings.FEED_VIDEO_SEEK_BAR_EDGE.get();
+        return seekOn() && (Settings.FEED_VIDEO_SEEK_BAR_EDGE.get() || Settings.FEED_VIDEO_SEEK_BAR_THIN.get());
+    }
+
+    /** The bar is a thin line flush with the video's bottom edge, as on Instagram, live videos included (#431). */
+    private static boolean thinOn() {
+        return seekOn() && Settings.FEED_VIDEO_SEEK_BAR_THIN.get();
     }
 
     private static boolean openOn() {
@@ -565,9 +582,10 @@ public final class FeedVideoControls {
         video.top = Math.max(video.top, at[1]);
         video.bottom = Math.min(video.bottom, at[1] + container.getHeight());
         corners(control, row, video, density, live);
-        Rect bar = !seekOn() ? null : live ? noBar(control, "a live video has no end to seek to", null)
+        // The thin line also shows how far behind live a video that can be rewound is (#431).
+        Rect bar = !seekOn() ? null : live && !thinOn() ? noBar(control, "a live video has no end to seek to", null)
                 : barArea(control, video, list, content, visible, down + size + margin, density);
-        Rect beside = besideSpeaker(control, video, size);
+        Rect beside = live ? null : besideSpeaker(control, video, size);
         boolean besideHidden = beside != null && (!visible.contains(beside) || over(list, content, beside) != null);
         content.getLocationInWindow(at);
         // Margins count from inside the padding, which holds the status bar on an edge to edge screen.
@@ -688,7 +706,7 @@ public final class FeedVideoControls {
     /**
      * Where the seek bar goes in the window, {@link #BAR_LIFT_DP} above [video]'s bottom, less what
      * Lower the seek bar moved Facebook's corner buttons down, or on the bottom edge itself with Seek
-     * bar on the bottom edge (#431), or null when that spot isn't showing in [visible], or something on
+     * bar on the bottom edge or Thin line seek bar (#431), or null when that spot isn't showing in [visible], or something on
      * top of the feed lies across it. The buttons keep [room] of the height.
      */
     @Nullable
@@ -725,13 +743,13 @@ public final class FeedVideoControls {
      * the bottom edge moves them up instead, just clear of the bar along that edge (#431). Full player
      * button by the speaker moves the ones on the speaker's side in by a button's width, and the full
      * player button takes the spot (#431). With the switches off, or on a live video, they're put back
-     * as they were.
+     * as they were, except that the thin line lifts a live video's buttons too (#431).
      */
     private static void corners(Control control, View row, Rect video, float density, boolean live) {
         boolean lower = lowerOn();
         boolean edge = edgeOn();
-        boolean beside = besideOn();
-        if (live || (!lower && !edge && !fadeOn() && !beside)) {
+        boolean beside = !live && besideOn();
+        if (live && !thinOn() || !lower && !edge && !fadeOn() && !beside) {
             control.restoreCorners();
             return;
         }
@@ -995,7 +1013,7 @@ public final class FeedVideoControls {
                 ? control.skipTo : position;
         int to = Math.max(0, Math.min(length, from + by));
         ResumePlayback.placedByYou(player);
-        access.seek(player, to);
+        seekTo(player, params, to, length);
         control.skipTo = to;
         control.skipUntil = now + LANDING_MS;
         Scrub bar = control.bar;
@@ -1007,6 +1025,18 @@ public final class FeedVideoControls {
         control.wake();
         HookStatus.counted(FAMILY, what);
         return true;
+    }
+
+    /**
+     * Seeks [player] to [to] of its [length]. Facebook's player drops a live video's seek unless it's
+     * marked behind live, which its full player does while you drag, so a live one is marked first,
+     * and a seek to the very end marks it back at live (#431).
+     */
+    private static void seekTo(Object player, @Nullable Object params, int to, int length) {
+        boolean live = params != null && access.live(params);
+        if (live) access.rewind(player, true);
+        access.seek(player, to);
+        if (live && to >= length) access.rewind(player, false);
     }
 
     /** Whether [player] has a length a jump can stay inside, which a live video has while it can be rewound (#432). */
@@ -1064,13 +1094,14 @@ public final class FeedVideoControls {
                 return;
             }
             ResumePlayback.placedByYou(player);
-            access.seek(player, bar.getProgress());
+            Object params = bar.params.get();
+            seekTo(player, params, bar.getProgress(), bar.getMax());
             bar.landing = bar.getProgress();
             bar.landingUntil = SystemClock.uptimeMillis() + LANDING_MS;
             // A skip tapped before this lands counts from here, not the old spot the player still reports.
             control.skipTo = bar.landing;
             control.skipUntil = bar.landingUntil;
-            HookStatus.counted(FAMILY, what);
+            HookStatus.counted(FAMILY, params != null && access.live(params) ? what + ", live" : what);
         } catch (Throwable failure) {
             control.remove(true);
             HookStatus.threw(FAMILY, what, failure);
@@ -1116,7 +1147,7 @@ public final class FeedVideoControls {
         final int size, left, step, right, top;
         /** Where the seek bar goes in [content], or null when it has no place. */
         @Nullable final Rect bar;
-        /** A live video, which gets no cast button or seek bar. */
+        /** A live video, which gets no cast button, and no seek bar but the thin line (#431). */
         final boolean live;
         /** The full player button's spot by the speaker in [content], or null for the row at the top (#431). */
         @Nullable final Rect beside;
@@ -1333,6 +1364,8 @@ public final class FeedVideoControls {
         boolean times;
         /** The right end shows the whole length, not the time left. */
         boolean length;
+        /** Thin line seek bar: only the line, flush with the bottom, until a drag (#431). */
+        boolean thin;
         /** A drag on a story's bar paused it, and the let go plays it again. */
         boolean held;
         int landing = -1;
@@ -1380,7 +1413,13 @@ public final class FeedVideoControls {
             setVisibility(length > 0 ? View.VISIBLE : View.GONE);
             if (length <= 0) return;
             if (getMax() != length) setMax(length);
-            boolean shown = !control.story && timesOn();
+            boolean line = !control.story && thinOn();
+            if (line != thin) {
+                thin = line;
+                invalidate();
+            }
+            // The thin line runs the whole width, with no times at its ends.
+            boolean shown = !control.story && !line && timesOn();
             times(shown, shown && lengthOn());
             int position = Math.max(0, Math.min(length, access.position(player)));
             // The player reports the old spot until a seek lands, which would spring the bar back.
@@ -1439,6 +1478,15 @@ public final class FeedVideoControls {
             // The line runs between the paddings, which hold the times when they show.
             float start = getPaddingLeft(), end = getWidth() - getPaddingRight();
             float x = getMax() <= 0 ? start : start + Math.max(0, end - start) * getProgress() / getMax();
+            if (thin && !dragging) {
+                // Instagram's line along the video's bottom edge, the part played in white, and no thumb (#431).
+                float top = getHeight() - THIN_DP * density;
+                paint.setColor(0x66FFFFFF);
+                canvas.drawRect(start, top, end, getHeight(), paint);
+                paint.setColor(0xFFFFFFFF);
+                canvas.drawRect(start, top, x, getHeight(), paint);
+                return;
+            }
             paint.setColor(0x4D000000);
             canvas.drawRect(start, y - half - density, end, y + half + density, paint);
             paint.setColor(0x80FFFFFF);

@@ -70,6 +70,8 @@ public class FeedVideoControlsTest {
     private final List<String> opens = new ArrayList<>();
     private final List<Boolean> wides = new ArrayList<>();
     private final List<Integer> seeks = new ArrayList<>();
+    /** Each mark of the player as behind live or not, and how many seeks had gone before it. */
+    private final List<String> rewinds = new ArrayList<>();
     private boolean fail;
 
     private static final class Media { String id = "video"; boolean ordinary = true; boolean live; }
@@ -123,6 +125,11 @@ public class FeedVideoControlsTest {
                 assertTrue(of == player);
                 seeks.add(positionMs);
             }
+            public void rewind(Object of, boolean rewound) {
+                assertEquals(Looper.getMainLooper(), Looper.myLooper());
+                assertTrue(of == player);
+                rewinds.add(rewound + "@" + seeks.size());
+            }
             public float speed(Object of) { return ((Player) of).speed; }
             public void speed(Object of, float speed) {
                 assertEquals(Looper.getMainLooper(), Looper.myLooper());
@@ -158,6 +165,7 @@ public class FeedVideoControlsTest {
         Settings.FEED_VIDEO_SEEK_BAR_FADE.resetToDefault();
         Settings.FEED_VIDEO_SEEK_BAR_LOWER.resetToDefault();
         Settings.FEED_VIDEO_SEEK_BAR_EDGE.resetToDefault();
+        Settings.FEED_VIDEO_SEEK_BAR_THIN.resetToDefault();
         Settings.STORY_SEEK_BAR.resetToDefault();
         Settings.STORY_SEEK_BAR_FADE.resetToDefault();
         Settings.FEED_VIDEO_FULL_PLAYER_BUTTON.resetToDefault();
@@ -1343,6 +1351,127 @@ public class FeedVideoControlsTest {
             @Override public void drawText(String text, float x, float y, android.graphics.Paint paint) { texts.add(text); }
         });
         return texts;
+    }
+
+    /** What [bar] draws: its rectangles, how many circles, and its text. */
+    private static final class Drawn {
+        final List<android.graphics.RectF> rects = new ArrayList<>();
+        final List<String> texts = new ArrayList<>();
+        int circles;
+    }
+
+    private static Drawn drawn(SeekBar bar) {
+        Drawn drawn = new Drawn();
+        bar.draw(new Canvas(Bitmap.createBitmap(1080, Math.max(1, bar.getHeight()), Bitmap.Config.ARGB_8888)) {
+            @Override public void drawRect(float left, float top, float right, float bottom, android.graphics.Paint paint) {
+                drawn.rects.add(new android.graphics.RectF(left, top, right, bottom));
+            }
+            @Override public void drawCircle(float x, float y, float radius, android.graphics.Paint paint) { drawn.circles++; }
+            @Override public void drawText(String text, float x, float y, android.graphics.Paint paint) { drawn.texts.add(text); }
+        });
+        return drawn;
+    }
+
+    @Test public void thinLineRunsFlushAlongTheBottomEdgeWithNoDotOrTimesUntilADrag() {
+        View speaker = cornerButton(1040, 560, "Unmute sound");
+        layout();
+        barOn();
+        save(Settings.FEED_VIDEO_SEEK_BAR_TIMES, true);
+        save(Settings.FEED_VIDEO_SEEK_BAR_THIN, true);
+        tick();
+        refreshAfterLayout();
+        layout();
+        SeekBar bar = bar();
+        assertEquals("it ends on the video's bottom edge", on(player.view)[1] + 600, on(bar)[1] + bar.getHeight());
+        assertEquals("and keeps the bar's height to touch", FeedVideoControls.BAR_DP, bar.getHeight());
+        assertEquals("it runs the whole width, with no room kept for times", 0, bar.getPaddingLeft());
+        assertEquals(0, bar.getPaddingRight());
+        Drawn drawn = drawn(bar);
+        assertEquals("no times", new ArrayList<String>(), drawn.texts);
+        assertEquals("no dot", 0, drawn.circles);
+        List<android.graphics.RectF> line = new ArrayList<>();
+        for (android.graphics.RectF rect : drawn.rects) {
+            if (rect.top == bar.getHeight() - FeedVideoControls.THIN_DP && rect.bottom == bar.getHeight()) line.add(rect);
+        }
+        assertEquals("the track and the part played, flush with the bottom: " + drawn.rects, 2, line.size());
+        assertEquals(1080f, line.get(0).right, 0f);
+        assertEquals("a quarter played", 270f, line.get(1).right, 0f);
+        assertTrue("the speaker goes up above the bar",
+                on(speaker)[1] + speaker.getHeight() <= on(bar)[1] - FeedVideoControls.MARGIN_DP);
+
+        touch(bar, MotionEvent.ACTION_DOWN, 540);
+        drawn = drawn(bar);
+        assertEquals("a drag shows the dot", 1, drawn.circles);
+        assertEquals("and where the let go lands", java.util.Arrays.asList("0:30"), drawn.texts);
+        touch(bar, MotionEvent.ACTION_UP, 540);
+        assertEquals(java.util.Arrays.asList(30000), seeks);
+        assertTrue("an ordinary video is never marked behind live", rewinds.isEmpty());
+
+        player.position = 30000;
+        save(Settings.FEED_VIDEO_SEEK_BAR_THIN, false);
+        tick();
+        assertTrue("off, the times come back", bar().getPaddingLeft() > 0);
+        assertEquals(java.util.Arrays.asList("0:30", "-0:30"), drawnTexts(bar()));
+    }
+
+    @Test public void aLiveVideoGetsTheThinLineAndItsSeeksMarkThePlayerBehindLiveUntilALetGoAtTheEnd() {
+        View speaker = cornerButton(1040, 560, "Unmute sound");
+        layout();
+        player.params.live = true;
+        barOn();
+        assertNull("without the thin line a live video gets no bar", bar());
+        assertEquals("nor moves Facebook's speaker", 0f, speaker.getTranslationY(), 0f);
+        save(Settings.FEED_VIDEO_SEEK_BAR_THIN, true);
+        tick();
+        refreshAfterLayout();
+        layout();
+        SeekBar bar = bar();
+        assertNotNull("with it, a live video that can be rewound gets the line", bar);
+        assertEquals(on(player.view)[1] + 600, on(bar)[1] + bar.getHeight());
+        assertTrue("and the speaker goes up above it", speaker.getTranslationY() < 0f);
+
+        touch(bar, MotionEvent.ACTION_DOWN, 100);
+        touch(bar, MotionEvent.ACTION_MOVE, 540);
+        touch(bar, MotionEvent.ACTION_UP, 540);
+        assertEquals(java.util.Arrays.asList(30000), seeks);
+        assertEquals("marked behind live before the seek", java.util.Arrays.asList("true@0"), rewinds);
+        touch(bar, MotionEvent.ACTION_DOWN, 540);
+        touch(bar, MotionEvent.ACTION_MOVE, 1080);
+        touch(bar, MotionEvent.ACTION_UP, 1080);
+        assertEquals(java.util.Arrays.asList(30000, 60000), seeks);
+        assertEquals("a let go at the far end goes back to live after the seek",
+                java.util.Arrays.asList("true@0", "true@1", "false@2"), rewinds);
+        String report = String.join("\n", HookStatus.report());
+        assertTrue(report, report.contains("feed video seek, live"));
+
+        player.length = 0;
+        tick();
+        assertTrue("one that can't be rewound shows none", bar() == null || bar().getVisibility() == View.GONE);
+    }
+
+    @Test public void onALiveVideoTheThinLineLiftsTheSpeakerButTheFullPlayerStaysUpTop() {
+        View speaker = cornerButton(1040, 560, "Unmute sound");
+        layout();
+        openOn();
+        barOn();
+        player.params.live = true;
+        save(Settings.FEED_VIDEO_FULL_PLAYER_CORNER, true);
+        save(Settings.FEED_VIDEO_SEEK_BAR_THIN, true);
+        tick();
+        refreshAfterLayout();
+        layout();
+        assertNotNull(bar());
+        assertEquals("the speaker keeps its corner", 0f, speaker.getTranslationX(), 0f);
+        assertTrue("but goes up above the line", speaker.getTranslationY() < 0f);
+        assertEquals("the full player stays in the row at the top", 4 + 40 + 4, at(open()).leftMargin);
+        assertEquals(at(button()).topMargin, at(open()).topMargin);
+    }
+
+    @Test public void theThinLineLeavesAStorysBarAsItIs() {
+        storyShows();
+        save(Settings.FEED_VIDEO_SEEK_BAR_THIN, true);
+        storyBarOn();
+        assertEquals("a story's bar keeps its dot", 1, drawn(bar()).circles);
     }
 
     @Test public void aSurfaceTooNarrowForTwoButtonsGetsNeitherButOneFits() {

@@ -11,6 +11,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
+import app.morphe.patches.facebook.media.progressbar.LIVE_LATENCY_LOG
 import app.morphe.patches.facebook.media.reelspeed.PLAYER_ORIGIN
 import app.morphe.patches.facebook.media.resume.GROOT_RELEASE
 import app.morphe.patches.facebook.media.resume.GROOT_SAFE_SEEK
@@ -247,6 +248,7 @@ class TapToPlayShapesTest {
             method(player, "params", emptyList(), VIDEO_PLAYER_PARAMS, "const/4 v0, 0x0\nreturn-object v0"),
             method(player, "origin", emptyList(), PLAYER_ORIGIN, "const/4 v0, 0x0\nreturn-object v0"),
             method(player, "release", listOf(trigger, "Ljava/lang/String;"), "V", holding(GROOT_RELEASE)),
+            method(player, "rewound", listOf("Z"), "V", holding(LIVE_LATENCY_LOG)),
             method(player, "attach", listOf(VIEW_GROUP, "Ljava/lang/String;", player), "V", """
                 const-string v0, "$ATTACH_VIEW_LOG"
                 iput-object p0, p2, $player->container:$VIEW_GROUP
@@ -462,6 +464,10 @@ class TapToPlayShapesTest {
         assertEquals(listOf(0, 1, 2), seek.first { it.call != null }.registers())
         assertEquals("$trigger->seeker:$trigger", seek.single { it.opcode == Opcode.SGET_OBJECT }
             .let { (it as ReferenceInstruction).reference.toString() })
+        // A live seek marks the player rewound first through the setter that logs the latency message (#431).
+        val rewind = bridge.methods.single { it.name == "rewindPlayer" }.implementation!!.instructions.toList()
+        assertEquals("$player->rewound(Z)V", rewind.firstNotNullOf { it.call }.toString())
+        assertEquals(listOf(0, 1), rewind.first { it.call != null }.registers())
         listOf("playerPosition" to "position", "playerLength" to "length").forEach { (stub, reader) ->
             val code = bridge.methods.single { it.name == stub }.implementation!!.instructions
             assertEquals("$player->$reader()I", code.firstNotNullOf { it.call }.toString())
@@ -489,6 +495,11 @@ class TapToPlayShapesTest {
         val noLength = build()
         noLength.mutableClassDefBy(player).methods.removeAll { it.name == "remaining" }
         assertTrue(refusalWithout(noLength).contains("remaining time reader"))
+        val noRewind = build()
+        noRewind.mutableClassDefBy(player).methods.removeAll { it.name == "rewound" }
+        assertTrue(refusalWithout(noRewind).contains("live rewind setter"))
+        assertTrue(noRewind.mutableClassDefBy(FEED_CONTROLS).methods.single { it.name == "rewindPlayer" }
+            .implementation!!.instructions.none { it.call?.definingClass == player })
         assertTrue(noSeek.mutableClassDefBy(FEED_CONTROLS).methods.single { it.name == "seekPlayer" }
             .implementation!!.instructions.none { it.call?.definingClass == player })
         assertTrue(missing.mutableClassDefBy(FEED_CONTROLS).methods.single { it.name == "commandPlayer" }

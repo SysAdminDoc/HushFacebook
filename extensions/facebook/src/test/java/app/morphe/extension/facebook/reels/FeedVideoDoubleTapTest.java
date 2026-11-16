@@ -53,6 +53,8 @@ public class FeedVideoDoubleTapTest {
     private FrameLayout root;
     private final Player player = new Player();
     private final List<Integer> seeks = new ArrayList<>();
+    /** Each mark of the player as behind live or not, and how many seeks had gone before it. */
+    private final List<String> rewinds = new ArrayList<>();
     private int clicks;
 
     private static final class Media { boolean ordinary = true; boolean live; }
@@ -86,6 +88,10 @@ public class FeedVideoDoubleTapTest {
                 assertEquals(Looper.getMainLooper(), Looper.myLooper());
                 assertTrue(of == player);
                 seeks.add(positionMs);
+            }
+            public void rewind(Object of, boolean rewound) {
+                assertTrue(of == player);
+                rewinds.add(rewound + "@" + seeks.size());
             }
             public float speed(Object of) { return 1f; }
             public void speed(Object of, float speed) { }
@@ -252,6 +258,8 @@ public class FeedVideoDoubleTapTest {
         tap(0.1f);
         tap(0.1f);
         assertEquals(List.of(20000), seeks);
+        // Facebook's player drops a live video's seek unless it's marked behind live first (#431).
+        assertEquals("marked behind live before the seek", List.of("true@0"), rewinds);
         assertTrue(report(), report().contains("double tap skip, live"));
     }
 
