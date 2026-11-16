@@ -60,6 +60,7 @@ import app.morphe.extension.facebook.download.SaveFolder;
 import app.morphe.extension.facebook.download.SaveStorage;
 import app.morphe.extension.facebook.download.SaveTo;
 import app.morphe.extension.facebook.download.SendLink;
+import app.morphe.extension.facebook.feed.CaptionBackdrop;
 import app.morphe.extension.facebook.feed.FeedTypeNames;
 import app.morphe.extension.facebook.feed.PostSources;
 import app.morphe.extension.facebook.feed.PostWords;
@@ -2718,6 +2719,24 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
                     + "to change it.", TranslucentBars.PLAIN_PERCENT, TranslucentBars.FROSTED_PERCENT);
         }
         return L10n.f("The see-through bars keep %1$s percent of their color.", picked);
+    }
+
+    /** Box darkness, for every dark box behind captions and names (#490). */
+    static ValueRows.PercentRow boxDarknessRow(Context context) {
+        return percentRow(context, Settings.TEXT_BOX_DARKNESS, L10n.t("Box darkness"),
+                L10n.f("How dark the boxes behind captions and names are, in percent, from %1$s to %2$s. Leave it "
+                        + "blank for %3$s.", CaptionBackdrop.MIN_DARKNESS, CaptionBackdrop.MAX_DARKNESS,
+                        CaptionBackdrop.DEFAULT_DARKNESS),
+                CaptionBackdrop.DEFAULT_DARKNESS, HushfacebookPreferenceFragment::boxDarknessSummary);
+    }
+
+    /** What the Box darkness row says for [text], the digits typed there. */
+    static String boxDarknessSummary(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return L10n.f("The dark boxes are %1$s percent black. Type a number to change it.",
+                    CaptionBackdrop.DEFAULT_DARKNESS);
+        }
+        return L10n.f("The dark boxes are %1$s percent black.", CaptionBackdrop.darknessPercent(text));
     }
 
     /** Rounded tab bar's Tab bar width row (#425). */

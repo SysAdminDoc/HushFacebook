@@ -3397,6 +3397,37 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_dim_folded_reel_captions", FALSE);
 
     /**
+     * The name at the bottom of a reel sits on the caption's dark box (#490,
+     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forReelName}). Feed posts' names keep
+     * Facebook's look. A change shows from the next reel.
+     */
+    public static final BooleanSetting DIM_REEL_NAMES =
+            new BooleanSetting("hushfacebook_dim_reel_names", FALSE);
+
+    /**
+     * Names in the stories row and on an open story sit on the caption's dark box (#490,
+     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop#forStoryName}). A change shows the
+     * next time the stories load.
+     */
+    public static final BooleanSetting DIM_STORY_NAMES =
+            new BooleanSetting("hushfacebook_dim_story_names", FALSE);
+
+    /**
+     * How dark every dark box behind captions and names is, a percent, digits only, blank for the
+     * subtitle black (#490, {@link app.morphe.extension.facebook.feed.CaptionBackdrop#darknessPercent}).
+     * Not a switch. Read as each box is made.
+     */
+    public static final StringSetting TEXT_BOX_DARKNESS =
+            new StringSetting("hushfacebook_text_box_darkness", "");
+
+    /**
+     * The dark boxes fade out past their edges instead of ending sharp (#490,
+     * {@link app.morphe.extension.facebook.feed.CaptionBackdrop.SoftBox}). Read as each box is made.
+     */
+    public static final BooleanSetting SOFT_TEXT_BOXES =
+            new BooleanSetting("hushfacebook_soft_text_boxes", FALSE);
+
+    /**
      * A post in another language gets a Translate line under its text, and a tap sends the text to
      * Google Translate ({@link app.morphe.extension.facebook.feed.PostTranslation}). A change shows
      * on the posts drawn after it.

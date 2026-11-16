@@ -61,6 +61,18 @@ final class VideoPages {
         return forced != null ? forced.contains(PatchFamily.FULL_POST_TEXT) : CaptionBackdrop.inBuild();
     }
 
+    /** Whether this build carries the dark box behind a reel's name (#490), counted in as the caption's is. */
+    static boolean reelNamesInBuild() {
+        Set<PatchFamily> forced = PatchFamily.inBuildForTests;
+        return forced != null ? forced.contains(PatchFamily.FULL_POST_TEXT) : CaptionBackdrop.reelNamesInBuild();
+    }
+
+    /** Whether this build carries the dark box behind story names (#490), counted in as the caption's is. */
+    static boolean storyNamesInBuild() {
+        Set<PatchFamily> forced = PatchFamily.inBuildForTests;
+        return forced != null ? forced.contains(PatchFamily.FULL_POST_TEXT) : CaptionBackdrop.storyNamesInBuild();
+    }
+
     /** Reels and Watch, in every build, with the map of the four places Reels show up. */
     static void reels(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context,
             Set<PatchFamily> build) {
@@ -304,6 +316,19 @@ final class VideoPages {
                 reels.addPreference(toggle(context, Settings.DIM_FOLDED_REEL_CAPTIONS,
                         L10n.t("A folded reel caption, the short one with more at the end, sits on the same dark box. "
                                 + "Turn on both to box every caption. A change shows from the next reel.")));
+            }
+            // Asked as each reel's name is built (#490).
+            if (reelNamesInBuild()) {
+                reels.addPreference(toggle(context, Settings.DIM_REEL_NAMES,
+                        L10n.t("The name at the bottom of a reel sits on the same dark box, so it's easy to read over a "
+                                + "bright video. A change shows from the next reel.")));
+            }
+            // Every box's look, story names' included, read as each box is made (#490).
+            if (captionBackdropInBuild() || reelNamesInBuild() || storyNamesInBuild()) {
+                reels.addPreference(HushfacebookPreferenceFragment.boxDarknessRow(context));
+                reels.addPreference(toggle(context, Settings.SOFT_TEXT_BOXES,
+                        L10n.t("The dark boxes fade out at their edges instead of ending sharp. A change shows from the "
+                                + "next reel or story.")));
             }
         }
         if (build.contains(PatchFamily.REEL_WATCH_HISTORY)) {

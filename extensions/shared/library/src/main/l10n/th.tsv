@@ -1064,6 +1064,26 @@ Dark box behind open captions	กล่องสีเข้มด้านห�
 An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	คำบรรยาย Reels ที่เปิดอยู่จะอยู่บนกล่องสีเข้มคล้ายคำบรรยายภาพ ช่วยให้อ่านง่ายขึ้นบนวิดีโอที่มีความสว่าง การเปลี่ยนแปลงจะมีผลตั้งแต่ Reel ถัดไป
 Dark box behind folded captions	กล่องสีเข้มด้านหลังคำบรรยายที่ย่ออยู่
 A folded reel caption, the short one with more at the end, sits on the same dark box. Turn on both to box every caption. A change shows from the next reel.	คำบรรยาย Reels ที่ย่ออยู่ ซึ่งเป็นแบบสั้นที่มีคำว่าเพิ่มเติมต่อท้าย จะอยู่บนกล่องสีเข้มแบบเดียวกัน เปิดทั้งสองสวิตช์เพื่อให้คำบรรยายทุกอันมีกล่อง การเปลี่ยนแปลงจะมีผลตั้งแต่ Reel ถัดไป
+# context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
+Dark box behind reel names	กล่องสีเข้มด้านหลังชื่อใน Reels
+# context: summary of that switch
+The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	ชื่อที่ด้านล่างของ Reels จะอยู่บนกล่องสีเข้มเดียวกัน จึงอ่านง่ายบนวิดีโอที่สว่าง การเปลี่ยนแปลงจะมีผลตั้งแต่ Reels ถัดไป
+# context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
+Box darkness	ความเข้มของกล่อง
+# context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
+How dark the boxes behind captions and names are, in percent, from %1$s to %2$s. Leave it blank for %3$s.	ความเข้มของกล่องด้านหลังคำบรรยายและชื่อ เป็นเปอร์เซ็นต์ ตั้งแต่ %1$s ถึง %2$s เว้นว่างไว้เพื่อใช้ %3$s
+# context: that row's summary while it's blank; %1$s is a whole percent
+The dark boxes are %1$s percent black. Type a number to change it.	กล่องสีเข้มเป็นสีดำ %1$s เปอร์เซ็นต์ พิมพ์ตัวเลขเพื่อเปลี่ยน
+# context: that row's summary once a number is typed; %1$s is a whole percent
+The dark boxes are %1$s percent black.	กล่องสีเข้มเป็นสีดำ %1$s เปอร์เซ็นต์
+# context: switch title under Reels and Watch; the dark boxes fade out softly at their edges
+Soft box edges	ขอบกล่องแบบนุ่ม
+# context: summary of that switch
+The dark boxes fade out at their edges instead of ending sharp. A change shows from the next reel or story.	กล่องสีเข้มจะค่อยๆ จางลงที่ขอบแทนที่จะตัดคม การเปลี่ยนแปลงจะมีผลตั้งแต่ Reels หรือสตอรี่ถัดไป
+# context: switch title on the Stories page; the names in the stories row and on an open story get a dark see-through box
+Dark box behind story names	กล่องสีเข้มด้านหลังชื่อในสตอรี่
+# context: summary of that switch; Box darkness is the row title above and Reels and Watch the settings page it's on
+Names in the stories row and on an open story sit on a dark box, so a bright story doesn't hide them. Box darkness under Reels and Watch sets how dark. A change shows the next time the stories load.	ชื่อในแถวสตอรี่และในสตอรี่ที่เปิดอยู่จะอยู่บนกล่องสีเข้ม สตอรี่ที่สว่างจึงไม่บังชื่อ ความเข้มของกล่องใน Reels และ Watch กำหนดว่าเข้มแค่ไหน จะมีผลเมื่อสตอรี่โหลดครั้งถัดไป
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	ดูว่าใครแชร์บ้าง
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	เพิ่ม "ดูว่าใครแชร์บ้าง" ในเมนูของโพสต์ เพื่อเปิดดูรายชื่อผู้ที่แชร์โพสต์บน Facebook

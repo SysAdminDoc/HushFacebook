@@ -950,6 +950,26 @@ Dark box behind open captions	Fundo escuro atrás das legendas abertas
 An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	Uma legenda de reel aberta fica sobre uma caixa escura, como as legendas de filme, para ser fácil de ler sobre um vídeo claro. A mudança vale a partir do próximo reel.
 Dark box behind folded captions	Fundo escuro atrás das legendas recolhidas
 A folded reel caption, the short one with more at the end, sits on the same dark box. Turn on both to box every caption. A change shows from the next reel.	Uma legenda de reel recolhida, a curta com mais no final, fica sobre a mesma caixa escura. Ative as duas para que toda legenda tenha a caixa. A mudança vale a partir do próximo reel.
+# context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
+Dark box behind reel names	Fundo escuro atrás dos nomes nos reels
+# context: summary of that switch
+The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	O nome na parte de baixo de um reel fica sobre a mesma caixa escura, então dá para ler bem sobre um vídeo claro. A mudança vale a partir do próximo reel.
+# context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
+Box darkness	Escuridão das caixas
+# context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
+How dark the boxes behind captions and names are, in percent, from %1$s to %2$s. Leave it blank for %3$s.	O quanto as caixas atrás das legendas e dos nomes são escuras, em porcentagem, de %1$s a %2$s. Deixe em branco para %3$s.
+# context: that row's summary while it's blank; %1$s is a whole percent
+The dark boxes are %1$s percent black. Type a number to change it.	As caixas escuras são %1$s por cento pretas. Digite um número para mudar.
+# context: that row's summary once a number is typed; %1$s is a whole percent
+The dark boxes are %1$s percent black.	As caixas escuras são %1$s por cento pretas.
+# context: switch title under Reels and Watch; the dark boxes fade out softly at their edges
+Soft box edges	Bordas suaves nas caixas
+# context: summary of that switch
+The dark boxes fade out at their edges instead of ending sharp. A change shows from the next reel or story.	As caixas escuras se dissolvem nas bordas em vez de terminar de forma seca. A mudança vale a partir do próximo reel ou story.
+# context: switch title on the Stories page; the names in the stories row and on an open story get a dark see-through box
+Dark box behind story names	Fundo escuro atrás dos nomes nos stories
+# context: summary of that switch; Box darkness is the row title above and Reels and Watch the settings page it's on
+Names in the stories row and on an open story sit on a dark box, so a bright story doesn't hide them. Box darkness under Reels and Watch sets how dark. A change shows the next time the stories load.	Os nomes na linha de stories e em um story aberto ficam sobre uma caixa escura, para que um story claro não os esconda. Escuridão das caixas, em Reels e Watch, define o quanto escurece. A mudança vale na próxima vez que os stories carregarem.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Ver quem compartilhou
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Adiciona Ver quem compartilhou ao menu de uma publicação. Abre a lista do Facebook com as pessoas que a compartilharam.

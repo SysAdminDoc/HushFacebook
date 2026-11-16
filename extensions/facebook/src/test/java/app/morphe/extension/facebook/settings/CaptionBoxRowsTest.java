@@ -49,6 +49,7 @@ public class CaptionBoxRowsTest {
         PatchFamily.inBuildForTests = null;
         ScreenColors.shown = null;
         Settings.DIM_FOLDED_REEL_CAPTIONS.resetToDefault();
+        Settings.TEXT_BOX_DARKNESS.resetToDefault();
     }
 
     @Test
@@ -68,6 +69,60 @@ public class CaptionBoxRowsTest {
         }
     }
 
+    /** #490: reel names get the box from the next row, then the darkness and soft edges every box shares. */
+    @Test
+    public void reelNamesDarknessAndSoftEdgesFollowTheCaptionRows() {
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(page(controller));
+            int folded = indexOfKey(rows, Settings.DIM_FOLDED_REEL_CAPTIONS.key);
+            assertTrue("Dark box behind folded captions is missing", folded >= 0);
+            assertEquals(folded + 1, indexOfKey(rows, Settings.DIM_REEL_NAMES.key));
+            assertEquals(folded + 2, indexOfKey(rows, Settings.TEXT_BOX_DARKNESS.key));
+            assertEquals(folded + 3, indexOfKey(rows, Settings.SOFT_TEXT_BOXES.key));
+
+            SwitchPreference names = (SwitchPreference) rows.get(folded + 1);
+            assertEquals("Dark box behind reel names", String.valueOf(names.getTitle()));
+            assertEquals("The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright "
+                    + "video. A change shows from the next reel.", String.valueOf(names.getSummary()));
+            assertFalse(names.isChecked());
+            assertFalse(Settings.DIM_REEL_NAMES.defaultValue);
+
+            ValueRows.PercentRow darkness = (ValueRows.PercentRow) rows.get(folded + 2);
+            assertEquals("Box darkness", String.valueOf(darkness.getTitle()));
+            assertEquals("The dark boxes are 70 percent black. Type a number to change it.",
+                    String.valueOf(darkness.getSummary()));
+            assertEquals("How dark the boxes behind captions and names are, in percent, from 10 to 100. Leave it "
+                    + "blank for 70.", String.valueOf(darkness.getDialogMessage()));
+            darkness.setText("45");
+            assertEquals("The dark boxes are 45 percent black.", String.valueOf(darkness.getSummary()));
+            darkness.setText("4");
+            assertEquals("The dark boxes are 10 percent black.", String.valueOf(darkness.getSummary()));
+
+            SwitchPreference soft = (SwitchPreference) rows.get(folded + 3);
+            assertEquals("Soft box edges", String.valueOf(soft.getTitle()));
+            assertEquals("The dark boxes fade out at their edges instead of ending sharp. A change shows from the next "
+                    + "reel or story.", String.valueOf(soft.getSummary()));
+            assertFalse(soft.isChecked());
+        }
+    }
+
+    /** #490: story names get their switch on the Stories page, even when no stories patch is in. */
+    @Test
+    public void storyNamesHaveASwitchOnTheStoriesPage() {
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(page(controller));
+            int names = indexOfKey(rows, Settings.DIM_STORY_NAMES.key);
+            assertTrue("Dark box behind story names is missing", names >= 0);
+            SwitchPreference row = (SwitchPreference) rows.get(names);
+            assertEquals("Dark box behind story names", String.valueOf(row.getTitle()));
+            assertEquals("Names in the stories row and on an open story sit on a dark box, so a bright story doesn't "
+                    + "hide them. Box darkness under Reels and Watch sets how dark. A change shows the next time the "
+                    + "stories load.", String.valueOf(row.getSummary()));
+            assertFalse(row.isChecked());
+            assertFalse(Settings.DIM_STORY_NAMES.defaultValue);
+        }
+    }
+
     @Test
     public void withoutTheCaptionHookNeitherShows() {
         PatchFamily.inBuildForTests = EnumSet.noneOf(PatchFamily.class);
@@ -75,6 +130,10 @@ public class CaptionBoxRowsTest {
             List<Preference> rows = rowsOf(page(controller));
             assertEquals(-1, indexOfKey(rows, Settings.DIM_OPEN_REEL_CAPTIONS.key));
             assertEquals(-1, indexOfKey(rows, Settings.DIM_FOLDED_REEL_CAPTIONS.key));
+            assertEquals(-1, indexOfKey(rows, Settings.DIM_REEL_NAMES.key));
+            assertEquals(-1, indexOfKey(rows, Settings.DIM_STORY_NAMES.key));
+            assertEquals(-1, indexOfKey(rows, Settings.TEXT_BOX_DARKNESS.key));
+            assertEquals(-1, indexOfKey(rows, Settings.SOFT_TEXT_BOXES.key));
         }
     }
 

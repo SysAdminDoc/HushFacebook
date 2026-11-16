@@ -1061,6 +1061,26 @@ Dark box behind open captions	展开的说明加深色底框
 An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	展开的短视频说明会显示在深色底框上，像字幕一样，在明亮的视频上也容易看清。更改从下一个短视频开始生效。
 Dark box behind folded captions	收起的说明加深色底框
 A folded reel caption, the short one with more at the end, sits on the same dark box. Turn on both to box every caption. A change shows from the next reel.	收起的短视频说明，也就是结尾带“更多”的短说明，也会显示在同样的深色底框上。两个都开启即可为每条说明加底框。更改从下一个短视频开始生效.
+# context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
+Dark box behind reel names	短视频名字加深色底框
+# context: summary of that switch
+The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	短视频底部的名字也会显示在同样的深色底框上，在明亮的视频上也容易看清。更改从下一个短视频开始生效。
+# context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
+Box darkness	底框深浅
+# context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
+How dark the boxes behind captions and names are, in percent, from %1$s to %2$s. Leave it blank for %3$s.	说明和名字后面底框的深浅，按百分比计，范围 %1$s 到 %2$s。留空则使用 %3$s。
+# context: that row's summary while it's blank; %1$s is a whole percent
+The dark boxes are %1$s percent black. Type a number to change it.	深色底框为百分之 %1$s 的黑色。输入数字即可更改。
+# context: that row's summary once a number is typed; %1$s is a whole percent
+The dark boxes are %1$s percent black.	深色底框为百分之 %1$s 的黑色。
+# context: switch title under Reels and Watch; the dark boxes fade out softly at their edges
+Soft box edges	底框边缘柔和
+# context: summary of that switch
+The dark boxes fade out at their edges instead of ending sharp. A change shows from the next reel or story.	深色底框在边缘渐渐淡出，而不是生硬地截止。更改从下一个短视频或快拍开始生效。
+# context: switch title on the Stories page; the names in the stories row and on an open story get a dark see-through box
+Dark box behind story names	快拍名字加深色底框
+# context: summary of that switch; Box darkness is the row title above and Reels and Watch the settings page it's on
+Names in the stories row and on an open story sit on a dark box, so a bright story doesn't hide them. Box darkness under Reels and Watch sets how dark. A change shows the next time the stories load.	快拍栏和打开的快拍里的名字会显示在深色底框上，明亮的快拍也不会遮住它们。深浅由 Reels 和 Watch 下的“底框深浅”设置。下次加载快拍时生效。
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	查看谁分享了
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	在帖子菜单中添加“查看谁分享了”，打开 Facebook 上分享该帖子的用户列表。

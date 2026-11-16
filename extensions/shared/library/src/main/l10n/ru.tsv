@@ -1090,6 +1090,26 @@ Dark box behind open captions	Темная подложка под открыт�
 An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	Открытая подпись к Reels лежит на темной подложке, как субтитры, и ее легко читать поверх светлого видео. Изменение действует со следующего ролика.
 Dark box behind folded captions	Темная подложка под свернутыми подписями
 A folded reel caption, the short one with more at the end, sits on the same dark box. Turn on both to box every caption. A change shows from the next reel.	Свернутая подпись к Reels, короткая, с «Еще» в конце, лежит на той же темной подложке. Включите оба переключателя, чтобы подложка была под каждой подписью. Изменение действует со следующего ролика.
+# context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
+Dark box behind reel names	Темная подложка под именами в Reels
+# context: summary of that switch
+The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	Имя внизу Reels лежит на той же темной подложке, поэтому его легко читать поверх яркого видео. Изменение применяется со следующего Reels.
+# context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
+Box darkness	Темнота подложек
+# context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
+How dark the boxes behind captions and names are, in percent, from %1$s to %2$s. Leave it blank for %3$s.	Насколько темные подложки под подписями и именами, в процентах, от %1$s до %2$s. Оставьте поле пустым для значения %3$s.
+# context: that row's summary while it's blank; %1$s is a whole percent
+The dark boxes are %1$s percent black. Type a number to change it.	Темные подложки затемнены на %1$s из 100. Введите число, чтобы изменить.
+# context: that row's summary once a number is typed; %1$s is a whole percent
+The dark boxes are %1$s percent black.	Темные подложки затемнены на %1$s из 100.
+# context: switch title under Reels and Watch; the dark boxes fade out softly at their edges
+Soft box edges	Мягкие края подложек
+# context: summary of that switch
+The dark boxes fade out at their edges instead of ending sharp. A change shows from the next reel or story.	Темные подложки плавно растворяются по краям, а не обрываются резко. Изменение применяется со следующего Reels или истории.
+# context: switch title on the Stories page; the names in the stories row and on an open story get a dark see-through box
+Dark box behind story names	Темная подложка под именами в историях
+# context: summary of that switch; Box darkness is the row title above and Reels and Watch the settings page it's on
+Names in the stories row and on an open story sit on a dark box, so a bright story doesn't hide them. Box darkness under Reels and Watch sets how dark. A change shows the next time the stories load.	Имена в строке Историй и в открытой истории лежат на темной подложке, поэтому яркая история их не скрывает. Насколько темно, задает «Темнота подложек» в разделе Reels и Watch. Изменение применяется при следующей загрузке Историй.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Посмотреть, кто поделился
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Добавляет пункт «Посмотреть, кто поделился» в меню публикации. Он открывает список пользователей Facebook, которые поделились ею.

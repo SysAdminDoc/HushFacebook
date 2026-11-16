@@ -1064,6 +1064,26 @@ Dark box behind open captions	Nền tối sau chú thích đang mở
 An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	Chú thích thước phim đang mở nằm trên một khung tối, giống phụ đề, để dễ đọc trên video sáng. Thay đổi áp dụng từ thước phim tiếp theo.
 Dark box behind folded captions	Nền tối sau chú thích đang thu gọn
 A folded reel caption, the short one with more at the end, sits on the same dark box. Turn on both to box every caption. A change shows from the next reel.	Chú thích thước phim đang thu gọn, loại ngắn có Xem thêm ở cuối, nằm trên cùng khung tối đó. Bật cả hai để mọi chú thích đều có khung. Thay đổi áp dụng từ thước phim tiếp theo.
+# context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
+Dark box behind reel names	Nền tối sau tên trên thước phim
+# context: summary of that switch
+The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	Tên ở cuối thước phim nằm trên cùng khung tối đó, nên dễ đọc trên video sáng. Thay đổi áp dụng từ thước phim tiếp theo.
+# context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
+Box darkness	Độ tối của khung
+# context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
+How dark the boxes behind captions and names are, in percent, from %1$s to %2$s. Leave it blank for %3$s.	Độ tối của khung sau chú thích và tên, tính theo phần trăm, từ %1$s đến %2$s. Để trống để dùng %3$s.
+# context: that row's summary while it's blank; %1$s is a whole percent
+The dark boxes are %1$s percent black. Type a number to change it.	Khung tối có độ đen %1$s phần trăm. Nhập một số để thay đổi.
+# context: that row's summary once a number is typed; %1$s is a whole percent
+The dark boxes are %1$s percent black.	Khung tối có độ đen %1$s phần trăm.
+# context: switch title under Reels and Watch; the dark boxes fade out softly at their edges
+Soft box edges	Viền khung mềm
+# context: summary of that switch
+The dark boxes fade out at their edges instead of ending sharp. A change shows from the next reel or story.	Khung tối mờ dần ở viền thay vì kết thúc sắc nét. Thay đổi áp dụng từ thước phim hoặc tin tiếp theo.
+# context: switch title on the Stories page; the names in the stories row and on an open story get a dark see-through box
+Dark box behind story names	Nền tối sau tên trong tin
+# context: summary of that switch; Box darkness is the row title above and Reels and Watch the settings page it's on
+Names in the stories row and on an open story sit on a dark box, so a bright story doesn't hide them. Box darkness under Reels and Watch sets how dark. A change shows the next time the stories load.	Tên trong hàng tin và trên tin đang mở nằm trên một khung tối, nên tin sáng màu không che mất tên. Độ tối của khung trong Reels và Watch đặt mức tối. Thay đổi áp dụng vào lần tới tin được tải.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Xem ai đã chia sẻ
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Thêm Xem ai đã chia sẻ vào menu của bài viết. Mục này mở danh sách của Facebook gồm những người đã chia sẻ bài viết.

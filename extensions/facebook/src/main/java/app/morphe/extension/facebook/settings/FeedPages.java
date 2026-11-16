@@ -758,6 +758,11 @@ final class FeedPages {
         feed.addPreference(forget);
     }
 
+    /** Whether [build] boxes story names: Show full post text with its story-name hook in (#490). */
+    private static boolean storyNamesBoxed(Set<PatchFamily> build) {
+        return build.contains(PatchFamily.FULL_POST_TEXT) && VideoPages.storyNamesInBuild();
+    }
+
     /** Stories. */
     static void stories(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context,
             Set<PatchFamily> build) {
@@ -766,7 +771,8 @@ final class FeedPages {
                 || build.contains(PatchFamily.STORY_DOWNLOAD) || build.contains(PatchFamily.STORY_UPLOAD_HD)
                 || build.contains(PatchFamily.STORY_MUSIC_LENGTH) || build.contains(PatchFamily.STORIES_TRAY_CIRCLES)
                 || build.contains(PatchFamily.STORY_TAPS) || build.contains(PatchFamily.STORY_VIEWER_CLEANUP)
-                || build.contains(PatchFamily.STORY_RINGS) || build.contains(PatchFamily.PINCH_TO_ZOOM)) {
+                || build.contains(PatchFamily.STORY_RINGS) || build.contains(PatchFamily.PINCH_TO_ZOOM)
+                || storyNamesBoxed(build)) {
             PreferenceCategory stories = category(screen, L10n.t("Stories"));
             if (build.contains(PatchFamily.SPONSORED_STORIES)) {
                 stories.addPreference(toggle(context, Settings.HIDE_SPONSORED_STORIES,
@@ -851,6 +857,13 @@ final class FeedPages {
                         L10n.t("Draws the stories row on Home as round pictures, like Instagram. Applies the next time "
                                 + "Home loads its stories.")));
                 stories.addPreference(HushfacebookPreferenceFragment.sizeRow(context));
+            }
+            if (storyNamesBoxed(build)) {
+                // Show full post text's story half (#490), asked as each name is built.
+                stories.addPreference(toggle(context, Settings.DIM_STORY_NAMES,
+                        L10n.t("Names in the stories row and on an open story sit on a dark box, so a bright story "
+                                + "doesn't hide them. Box darkness under Reels and Watch sets how dark. A change shows "
+                                + "the next time the stories load.")));
             }
             if (build.contains(PatchFamily.STORY_TAPS)) {
                 // Read on each tap, so a change shows from the next one.

@@ -1064,6 +1064,26 @@ Dark box behind open captions	Açılan açıklamaların arkasına koyu kutu
 An open reel caption sits on a dark box, like subtitles, so it's easy to read over a bright video. A change shows from the next reel.	Açılan bir reel açıklaması, altyazılar gibi koyu bir kutunun üstünde durur, böylece parlak bir videonun üzerinde kolayca okunur. Değişiklik bir sonraki reel'den itibaren geçerli olur.
 Dark box behind folded captions	Daraltılmış açıklamaların arkasına koyu kutu
 A folded reel caption, the short one with more at the end, sits on the same dark box. Turn on both to box every caption. A change shows from the next reel.	Sonunda devamı yazan kısa, daraltılmış bir reel açıklaması da aynı koyu kutunun üstünde durur. Her açıklama kutulu olsun diye ikisini de aç. Değişiklik bir sonraki reel'den itibaren geçerli olur.
+# context: switch title under Reels and Watch, below the caption boxes; the name of who posted a reel, at its bottom, gets the same dark see-through box
+Dark box behind reel names	Reel adlarının arkasına koyu kutu
+# context: summary of that switch
+The name at the bottom of a reel sits on the same dark box, so it's easy to read over a bright video. A change shows from the next reel.	Bir reel'in altındaki ad da aynı koyu kutunun üstünde durur, böylece parlak bir videonun üstünde kolayca okunur. Değişiklik bir sonraki reel'den itibaren geçerli olur.
+# context: row title under Reels and Watch and its dialog title; how dark every box behind captions and names is, as a percent of black
+Box darkness	Kutu koyuluğu
+# context: the message in that row's dialog; %1$s and %2$s are the lowest and highest percent, %3$s the percent a blank row gives
+How dark the boxes behind captions and names are, in percent, from %1$s to %2$s. Leave it blank for %3$s.	Açıklamaların ve adların arkasındaki kutuların ne kadar koyu olduğu, yüzde olarak, %1$s ile %2$s arası. %3$s için boş bırak.
+# context: that row's summary while it's blank; %1$s is a whole percent
+The dark boxes are %1$s percent black. Type a number to change it.	Koyu kutular yüzde %1$s siyah. Değiştirmek için bir sayı yaz.
+# context: that row's summary once a number is typed; %1$s is a whole percent
+The dark boxes are %1$s percent black.	Koyu kutular yüzde %1$s siyah.
+# context: switch title under Reels and Watch; the dark boxes fade out softly at their edges
+Soft box edges	Yumuşak kutu kenarları
+# context: summary of that switch
+The dark boxes fade out at their edges instead of ending sharp. A change shows from the next reel or story.	Koyu kutular keskin bitmek yerine kenarlarında yavaşça kaybolur. Değişiklik bir sonraki reel'den ya da hikayeden itibaren geçerli olur.
+# context: switch title on the Stories page; the names in the stories row and on an open story get a dark see-through box
+Dark box behind story names	Hikaye adlarının arkasına koyu kutu
+# context: summary of that switch; Box darkness is the row title above and Reels and Watch the settings page it's on
+Names in the stories row and on an open story sit on a dark box, so a bright story doesn't hide them. Box darkness under Reels and Watch sets how dark. A change shows the next time the stories load.	Hikaye satırındaki ve açık bir hikayedeki adlar koyu bir kutunun üstünde durur, böylece parlak bir hikaye onları gizlemez. Ne kadar koyu olacağını Reels ve Watch altındaki Kutu koyuluğu belirler. Değişiklik hikayeler bir sonraki yüklendiğinde geçerli olur.
 # context: switch title under News feed and the row it adds to a post's three-dot menu; it opens the list of people who shared the post
 See who shared	Kimlerin paylaştığını gör
 Adds See who shared to a post's menu. It opens Facebook's list of the people who shared it.	Bir gönderinin menüsüne Kimlerin paylaştığını gör ekler. Facebook'un gönderiyi paylaşan kişiler listesini açar.

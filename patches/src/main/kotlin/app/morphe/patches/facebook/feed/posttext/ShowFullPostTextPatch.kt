@@ -102,7 +102,8 @@ private val SWITCHES = setOf(Opcode.PACKED_SWITCH, Opcode.SPARSE_SWITCH)
  *
  * An open reel caption can also sit on a dark box (#419): right before the caption's text is built,
  * [CAPTION_BACKDROP] gets the builder's line limit and hands back a background for the one built with
- * no limit. See [findCaptionBackdrop].
+ * no limit. See [findCaptionBackdrop]. The names in the stories row, on an open story and on a reel can
+ * get the same box (#490): see [findTrayNames], [findOpenStoryNames] and [findReelNames].
  */
 @Suppress("unused")
 val showFullPostTextPatch = bytecodePatch(
@@ -110,7 +111,8 @@ val showFullPostTextPatch = bytecodePatch(
     name = "Show full post text",
     description = "Shows all of a post's text in the feed, and a reel's caption, so you don't have to tap See more. " +
         "A tap on the text folds it back. Starts off. Turn posts on in Hushfacebook settings > News feed, " +
-        "and reel captions under Reels and Watch, where an open or folded caption can also sit on a dark box like subtitles.",
+        "and reel captions under Reels and Watch, where an open or folded caption can also sit on a dark box like subtitles. " +
+        "The names on reels and stories can get the same box.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -159,11 +161,41 @@ val showFullPostTextPatch = bytecodePatch(
         } catch (missing: PatchException) {
             patchLog.warning("${missing.message}, so the dark box behind open reel captions isn't in this build")
         }
+        // The name boxes are their own switches' too (#490): each place found before any is changed.
+        try {
+            val tray = findTrayNames()
+            val openStory = try {
+                findOpenStoryNames(tray.text)
+            } catch (missing: PatchException) {
+                patchLog.warning("${missing.message}, so an open story's name keeps Facebook's look")
+                emptyList()
+            }
+            val reel = try {
+                findReelNames(tray.text)
+            } catch (missing: PatchException) {
+                patchLog.warning("${missing.message}, so the dark box behind reel names isn't in this build")
+                null
+            }
+            try {
+                addStoryNameBoxes(tray.text, tray.places + openStory)
+            } catch (missing: PatchException) {
+                patchLog.warning("${missing.message}, so the dark box behind story names isn't in this build")
+            }
+            if (reel != null) {
+                try {
+                    addReelNameBoxes(tray.text, reel)
+                } catch (missing: PatchException) {
+                    patchLog.warning("${missing.message}, so the dark box behind reel names isn't in this build")
+                }
+            }
+        } catch (missing: PatchException) {
+            patchLog.warning("${missing.message}, so the dark boxes behind story and reel names aren't in this build")
+        }
         enableStatus("fullPostText")
     }
 }
 
-private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
+internal fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
 
 /**
  * The feed's text cut: its method, where the hook goes (right after the cut's answer lands), the
@@ -181,7 +213,7 @@ internal fun cutShaped(method: Method) =
         method.implementation != null && method.containsLiteralInstruction(LINE_LIMIT_KEY)
 
 /** Whether [instruction] writes [register]. */
-private fun writes(instruction: Instruction, register: Int): Boolean {
+internal fun writes(instruction: Instruction, register: Int): Boolean {
     val target = (instruction as? OneRegisterInstruction)?.registerA ?: return false
     return (instruction.opcode.setsRegister() && target == register) ||
         (instruction.opcode.setsWideRegister() && target + 1 == register)
@@ -488,7 +520,7 @@ private val INVOKES = setOf(
 )
 
 /** The first register [instruction] hands its call, or null. */
-private fun firstArgument(instruction: Instruction): Int? = when (instruction) {
+internal fun firstArgument(instruction: Instruction): Int? = when (instruction) {
     is RegisterRangeInstruction -> instruction.startRegister.takeIf { instruction.registerCount > 0 }
     is FiveRegisterInstruction -> instruction.registerC.takeIf { instruction.registerCount > 0 }
     else -> null
@@ -590,7 +622,7 @@ internal class Backdrop(
     val emptyStyle: String,
 )
 
-private fun descriptor(method: Method) =
+internal fun descriptor(method: Method) =
     "${method.definingClass}->${method.name}(${method.parameterTypes.joinToString("")})${method.returnType}"
 
 private fun isStaticCall(instruction: Instruction) =
@@ -604,17 +636,14 @@ private fun readsPadding(method: Method) = method.implementation?.instructions?.
 } == true
 
 /** Whether [type] is an app class: one a Litho style or builder could be. */
-private fun appClass(type: String) = type.startsWith("L") && !type.startsWith("Ljava/") && !type.startsWith("Landroid/")
+internal fun appClass(type: String) = type.startsWith("L") && !type.startsWith("Ljava/") && !type.startsWith("Landroid/")
 
 /**
  * Finds where an open reel caption gets its dark box. The caption's text is built in the one static
  * method loading [CAPTION_COMPONENT], [CAPTION_ROLE] and [CAPTION_DESCRIPTION] (585 `LX/09Uk;->A01`).
  * It sets one int field, the line limit, on a text builder it makes there and keeps in that register
  * up to the build, the one call handing that builder a [CALLER_CONTEXT] (585 `LX/0IoR;->A1y`). The
- * builder's classes take styles through one-argument setters, and Litho's background style is the one
- * static method taking a drawable and one of those style types, giving one back, that asks for the
- * drawable's padding (585 `LX/02Hx;->A03`). The empty style is that style type's one static field of
- * a subclass of it (585 `LX/01Tv;->A02`).
+ * box goes on through the builder's background style ([findBoxStyle]).
  */
 internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
     val builders = methodsWithString(CAPTION_COMPONENT).filter {
@@ -662,6 +691,55 @@ internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
         refuse("$where sets v$register again on a way back to its caption's build")
     }
 
+    val style = findBoxStyle(builderType)
+    requireReachable(style, host)
+    val extension = classDefByOrNull(CAPTION_BACKDROP) ?: refuse("the extension has no $CAPTION_BACKDROP")
+    if (extension.methods.none { it.name == "inBuild" && it.returnType == "Z" && it.parameterTypes.isEmpty() }) {
+        refuse("the extension has no $CAPTION_BACKDROP->inBuild()")
+    }
+    if (classDefByOrNull(host)!!.methods.any { it.name == BACKDROP_HELPER }) refuse("$host already has $BACKDROP_HELPER")
+    return Backdrop(
+        builder, build, register, builderType,
+        "$builderType->${maxLines.name}:I",
+        style.setter,
+        style.background,
+        style.emptyStyle,
+    )
+}
+
+/**
+ * How Litho puts a background on a [builderType] text builder: [setter] hands the builder a style,
+ * [background] makes a background style from a drawable on top of [emptyStyle].
+ */
+internal class BoxStyle(
+    val setter: String,
+    val background: String,
+    val emptyStyle: String,
+    /** The class and access flags of the setter, the background style and the empty style. */
+    val owners: List<Pair<String, Int>>,
+)
+
+/** Refuses a [host] class that can't call [style]'s setter or background style, or read its empty style. */
+internal fun BytecodePatchContext.requireReachable(style: BoxStyle, host: String) {
+    fun reachable(owner: String, flags: Int): Boolean {
+        val ownerClass = classDefByOrNull(owner) ?: return false
+        val near = owner.substringBeforeLast('/') == host.substringBeforeLast('/')
+        return (AccessFlags.PUBLIC.isSet(ownerClass.accessFlags) || near) &&
+            (AccessFlags.PUBLIC.isSet(flags) || (near && !AccessFlags.PRIVATE.isSet(flags)))
+    }
+    if (!style.owners.all { (owner, flags) -> reachable(owner, flags) }) {
+        refuse("$host can't reach the text builder's style setter, the background style or the empty style")
+    }
+}
+
+/**
+ * Finds how a [builderType] text builder takes a background. The builder's classes take styles
+ * through one-argument setters, and Litho's background style is the one static method taking a
+ * drawable and one of those style types, giving one back, that asks for the drawable's padding (585
+ * `LX/02Hx;->A03`). The empty style is that style type's one static field of a subclass of it (585
+ * `LX/01Tv;->A02`).
+ */
+internal fun BytecodePatchContext.findBoxStyle(builderType: String): BoxStyle {
     val chain = generateSequence(classDefByOrNull(builderType)) { it.superclass?.let(::classDefByOrNull) }.toList()
     if (chain.isEmpty()) refuse("$builderType isn't in this build")
     val setters = chain.flatMap { owner ->
@@ -692,30 +770,12 @@ internal fun BytecodePatchContext.findCaptionBackdrop(): Backdrop {
     val styleClass = classDefByOrNull(style) ?: refuse("$style isn't in this build")
     val empties = styleClass.staticFields.filter { subclassOf(it.type, style) }
     val empty = empties.singleOrNull() ?: refuse("expected $style to keep one empty style, found ${empties.size}")
-
-    // The helper lives on the builder's own class, so all it calls must be reachable from there.
-    fun reachable(owner: String, flags: Int): Boolean {
-        val ownerClass = classDefByOrNull(owner) ?: return false
-        val near = owner.substringBeforeLast('/') == host.substringBeforeLast('/')
-        return (AccessFlags.PUBLIC.isSet(ownerClass.accessFlags) || near) &&
-            (AccessFlags.PUBLIC.isSet(flags) || (near && !AccessFlags.PRIVATE.isSet(flags)))
-    }
-    if (!reachable(setter.definingClass, setter.accessFlags) || !reachable(background.definingClass, background.accessFlags) ||
-        !reachable(style, empty.accessFlags)
-    ) {
-        refuse("$host can't reach $builderType's style setter, the background style or the empty style")
-    }
-    val extension = classDefByOrNull(CAPTION_BACKDROP) ?: refuse("the extension has no $CAPTION_BACKDROP")
-    if (extension.methods.none { it.name == "inBuild" && it.returnType == "Z" && it.parameterTypes.isEmpty() }) {
-        refuse("the extension has no $CAPTION_BACKDROP->inBuild()")
-    }
-    if (classDefByOrNull(host)!!.methods.any { it.name == BACKDROP_HELPER }) refuse("$host already has $BACKDROP_HELPER")
-    return Backdrop(
-        builder, build, register, builderType,
-        "$builderType->${maxLines.name}:I",
+    return BoxStyle(
         descriptor(setter),
         descriptor(background),
         "$style->${empty.name}:${empty.type}",
+        listOf(setter.definingClass to setter.accessFlags, background.definingClass to background.accessFlags,
+            style to empty.accessFlags),
     )
 }
 

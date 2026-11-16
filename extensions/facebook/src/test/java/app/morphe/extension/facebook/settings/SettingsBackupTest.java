@@ -165,6 +165,9 @@ public class SettingsBackupTest {
                 "it is a width in dp picked for this phone's screen, which reads differently on another phone.");
         out.put("hushfacebook_see_through_opacity",
                 "it is picked by eye for this phone's screen, and the same number reads darker on an AMOLED one.");
+        out.put("hushfacebook_text_box_darkness",
+                "it is picked by eye for this phone's screen, like See-through opacity, and the same number reads "
+                        + "darker on an AMOLED one.");
         out.put("hushfacebook_tab_bar_width",
                 "it is a size picked for this phone's screen, which reads differently on another phone.");
         out.put("hushfacebook_tab_bar_height",
