@@ -32,9 +32,12 @@ final class ReportProblemForm {
     static final String REPOSITORY = HushfacebookPreferenceFragment.SOURCE_URL
             .substring(HushfacebookPreferenceFragment.SOURCE_URL.indexOf("github.com/") + "github.com/".length());
 
-    /** The bug form and the ids of the fields filled in. A renamed id in the form has to change here too. */
+    /**
+     * The bug form and the ids of the fields filled in. A renamed id in the form has to change here
+     * too. "What went wrong?" (bug_description) is left for the person to type in.
+     */
     static final ReportProblem.Form FORM = new ReportProblem.Form(REPOSITORY, "bug_report.yml",
-            "versions", "device", "bug_description", "additional_context");
+            "versions", "device", "additional_context");
 
     private ReportProblemForm() {
     }

@@ -21,7 +21,7 @@ import java.util.Map;
 /** The Report a problem link, built from a fixed install rather than the phone running the test. */
 public class ReportProblemTest {
     private static final ReportProblem.Form FORM = new ReportProblem.Form("SysAdminDoc/Hushfacebook", "bug_report.yml",
-            "versions", "device", "bug_description", "additional_context");
+            "versions", "device", "additional_context");
 
     private static ReportProblem.Facts facts(List<String> switchesOn) {
         return new ReportProblem.Facts("Hushfacebook", "0.11.1", "Facebook", "584.0.0.51.56", 475817393L,
@@ -53,15 +53,18 @@ public class ReportProblemTest {
         assertTrue(url, url.startsWith("https://github.com/SysAdminDoc/Hushfacebook/issues/new?template=bug_report.yml&"));
         assertFalse("a space went out as a plus, which GitHub keeps", url.contains("+"));
         Map<String, String> fields = query(url);
-        assertEquals(Arrays.asList("template", "versions", "device", "bug_description", "additional_context"),
+        assertEquals(Arrays.asList("template", "versions", "device", "additional_context"),
                 new ArrayList<>(fields.keySet()));
         assertEquals("Hushfacebook 0.11.1 on Facebook 584.0.0.51.56 (475817393)", fields.get("versions"));
         assertEquals("samsung SM-S901U, Android 16 (SDK 36)", fields.get("device"));
-        assertEquals("What happened:\n\n\nWhat I expected:\n\n", fields.get("bug_description"));
         assertEquals("Switches on: Hide ads, Remove tracking from shared links", fields.get("additional_context"));
+        // The form's own "What went wrong?" box is left empty for the person to type in (#488): filled
+        // with the two questions, it read as answered and most reports came with it blank.
+        assertFalse(url, url.contains("bug_description"));
+        assertFalse(url, url.contains("What%20happened"));
 
         // A repository without a form gets the whole text as the body.
-        ReportProblem.Form plain = new ReportProblem.Form("owner/app", null, null, null, null, null);
+        ReportProblem.Form plain = new ReportProblem.Form("owner/app", null, null, null, null);
         Map<String, String> body = query(ReportProblem.issueUrl(plain, facts(Arrays.asList("Hide ads"))));
         assertEquals(Arrays.asList("body"), new ArrayList<>(body.keySet()));
         assertEquals(ReportProblem.body(facts(Arrays.asList("Hide ads"))), body.get("body"));
@@ -79,13 +82,13 @@ public class ReportProblemTest {
     }
 
     @Test
-    public void aLongListOfSwitchesIsCutSoTheLinkFitsAndTheQuestionsSurvive() throws Exception {
+    public void aLongListOfSwitchesIsCutSoTheLinkFits() throws Exception {
         List<String> many = new ArrayList<>();
         for (int i = 0; i < 600; i++) many.add("A switch with a fairly long title number " + i);
         String url = ReportProblem.issueUrl(FORM, facts(many));
         assertTrue("the link is " + url.length() + " characters", url.length() <= ReportProblem.MAX_LENGTH);
         Map<String, String> fields = query(url);
-        assertEquals("What happened:\n\n\nWhat I expected:\n\n", fields.get("bug_description"));
+        assertFalse(fields.containsKey("bug_description"));
         String switches = fields.get("additional_context");
         assertTrue(switches, switches.startsWith("Switches on: A switch with a fairly long title number 0, "));
         assertTrue(switches, switches.matches(".*, and \\d+ more"));
@@ -102,7 +105,12 @@ public class ReportProblemTest {
                 "Acme", huge.toString(), "16", 36, many);
         String cut = ReportProblem.issueUrl(FORM, odd);
         assertTrue(cut.length() <= ReportProblem.MAX_LENGTH);
-        assertTrue(query(cut).get("bug_description").startsWith("What happened:"));
+        assertTrue(query(cut).get("versions").startsWith("Hushfacebook 0.11.1"));
+
+        // A repository without a form cuts its list the same way, and its body keeps the questions.
+        ReportProblem.Form plain = new ReportProblem.Form("owner/app", null, null, null, null);
+        String body = query(ReportProblem.issueUrl(plain, facts(many))).get("body");
+        assertTrue(body, body.matches("(?s).*, and \\d+ more\n\nWhat happened:\n\n\nWhat I expected:\n\n"));
     }
 
     /** The query's parameters in order, decoded. */

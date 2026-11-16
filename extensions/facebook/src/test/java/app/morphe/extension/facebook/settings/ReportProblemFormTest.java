@@ -27,7 +27,7 @@ public class ReportProblemFormTest {
         File form = new File(root(), ".github/ISSUE_TEMPLATE/bug_report.yml");
         assertTrue("no bug form at " + form, form.isFile());
         String yaml = new String(Files.readAllBytes(form.toPath()), StandardCharsets.UTF_8);
-        for (String id : Arrays.asList("versions", "device", "bug_description", "additional_context")) {
+        for (String id : Arrays.asList("versions", "device", "additional_context")) {
             assertTrue("bug_report.yml has no field " + id,
                     Pattern.compile("(?m)^\\s*id:\\s*" + Pattern.quote(id) + "\\s*$").matcher(yaml).find());
         }

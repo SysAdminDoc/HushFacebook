@@ -107,6 +107,10 @@ body:
     attributes:
       label: What went wrong?
       description: What happened, and what did you expect to happen instead? A screenshot or a screen recording helps a lot. Cover names and private messages first.
+      placeholder: |
+        What happened:
+
+        What I expected:
     validations:
       required: true
   - type: textarea

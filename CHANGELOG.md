@@ -52,6 +52,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* `Report a problem` leaves the "What went wrong?" box empty now, so you can type straight into it. It used to come pre-filled with two questions, and on a phone that box looked done (or wouldn't take typing at all). The questions show in it as a grey hint instead. (#488)
 * `Hide the X on posts` takes the X off the Reels row in your feed too, next to its three-dot menu. The menu stays. (#389)
 * Morphe Manager now treats a copy made with `Clone install under another package name` as a clone, with the Clone chip on its card. If you changed the copy's package name in that patch's options, type it in again before you repatch, because Manager won't carry the old one over. The app name you picked stays. (#474)
 * With `View stories anonymously` and `Hide seen stories` on, a Highlights tile in the Stories tray that you watched all the way through leaves the tray like any other watched story. Highlights don't run on a story's 24 hours, so the check for a newer story never let them go. (#165)

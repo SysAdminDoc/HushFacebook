@@ -21,8 +21,8 @@ import app.morphe.extension.shared.Utils;
 
 /**
  * The "Report a problem" row's GitHub link: a new bug report on the repository's issue form with
- * the versions, the phone and the switches that are on already filled in, and the two questions
- * left for the person to answer.
+ * the versions, the phone and the switches that are on already filled in, and the form's own box
+ * for what went wrong left empty for the person to type in.
  *
  * <p>It carries only what a report needs to be read: version names, the phone's maker and model,
  * Android's version and the titles of the switches that are on. No account, serial number, phone
@@ -32,7 +32,11 @@ import app.morphe.extension.shared.Utils;
  * <p>GitHub fills an issue form's fields from query parameters named by each field's id, and
  * ignores a body parameter once a form is picked, so the text is split across the form's own
  * fields; {@link #body} is what a repository without a form gets instead. The whole address is held to {@link #MAX_LENGTH} characters: the list of switches is
- * shortened first, ending with how many were left out, so the questions always survive.
+ * shortened first, ending with how many were left out.
+ *
+ * <p>The form's free-text box gets nothing (#488). Filled with the two questions, it looked answered
+ * on a phone and most reports came with it blank, so the questions sit in the form as a placeholder
+ * instead. Only a body, which has no placeholder, still ends with them.
  */
 public final class ReportProblem {
     /** The longest address handed to the browser. GitHub and browsers take more, but not much more. */
@@ -81,7 +85,6 @@ public final class ReportProblem {
         final String template;
         final String versionsField;
         final String deviceField;
-        final String descriptionField;
         final String switchesField;
 
         /**
@@ -90,16 +93,14 @@ public final class ReportProblem {
          *                    repository without one, whose report then gets the whole text as its body.
          * @param versionsField the id of the field for the versions line.
          * @param deviceField the id of the field for the phone line.
-         * @param descriptionField the id of the field the two questions go in.
          * @param switchesField the id of the field for the switches that are on.
          */
         public Form(String repository, String template, String versionsField, String deviceField,
-                    String descriptionField, String switchesField) {
+                    String switchesField) {
             this.repository = repository;
             this.template = template;
             this.versionsField = versionsField;
             this.deviceField = deviceField;
-            this.descriptionField = descriptionField;
             this.switchesField = switchesField;
         }
     }
@@ -142,7 +143,7 @@ public final class ReportProblem {
         return line.toString();
     }
 
-    /** The two questions, each on its own line with room under it. */
+    /** The two questions, each on its own line with room under it. A body's last part. */
     public static String questions() {
         return WHAT_HAPPENED + "\n\n\n" + WHAT_EXPECTED + "\n\n";
     }
@@ -171,7 +172,6 @@ public final class ReportProblem {
         }
         put(fields, form.versionsField, versionsLine(facts));
         put(fields, form.deviceField, deviceLine(facts));
-        put(fields, form.descriptionField, questions());
         put(fields, form.switchesField, switchesLine(facts.switchesOn, shown));
         return fields;
     }

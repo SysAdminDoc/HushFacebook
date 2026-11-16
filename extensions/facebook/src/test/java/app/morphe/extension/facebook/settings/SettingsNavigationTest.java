@@ -905,8 +905,9 @@ public class SettingsNavigationTest {
         assertTrue(decoded, decoded.contains("&versions=Hushfacebook "));
         assertTrue(decoded, decoded.contains(" on Facebook "));
         assertTrue(decoded, decoded.contains("&device="));
-        assertTrue(decoded, decoded.contains("What happened:"));
-        assertTrue(decoded, decoded.contains("What I expected:"));
+        // "What went wrong?" stays empty for the person to type in (#488).
+        assertFalse(decoded, decoded.contains("bug_description="));
+        assertFalse(decoded, decoded.contains("What happened:"));
         // Hide sponsored posts starts on, Marketplace only starts off.
         assertTrue(decoded, decoded.contains("Switches on: "));
         assertTrue(decoded, decoded.contains("Hide sponsored posts"));
