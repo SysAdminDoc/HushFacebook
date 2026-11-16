@@ -8,6 +8,7 @@ import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.media.reelspeed.originGetters
 import app.morphe.patches.facebook.media.reelspeed.speedSetters
@@ -25,6 +26,7 @@ import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -92,6 +94,28 @@ class HoldReelFor2xFixtureTest {
     /** The ten instructions before [taken] in [code], as their opcodes with what they reference or load, registers left out. */
     private fun readShape(code: List<Instruction>, taken: Int): List<String> = code.subList(maxOf(0, taken - 10), taken).map {
         "${it.opcode} ${(it as? ReferenceInstruction)?.reference ?: (it as? NarrowLiteralInstruction)?.narrowLiteral ?: ""}"
+    }
+
+    /**
+     * The block an if-eqz on [read]'s value skips, once the value is moved to the register the render
+     * keeps it in: the types it makes and the resource ids (0x7f......) it loads.
+     */
+    private fun gatedBlock(code: List<Instruction>, read: Int): Pair<Set<String>, Set<Int>> {
+        val address = IntArray(code.size + 1)
+        for (index in code.indices) address[index + 1] = address[index] + code[index].codeUnits
+        var register = (code[read] as OneRegisterInstruction).registerA
+        val moved = code[read + 1]
+        if (moved.opcode in setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16) && (moved as TwoRegisterInstruction).registerB == register) {
+            register = moved.registerA
+        }
+        val test = (read + 1 until code.size).first {
+            code[it].opcode == Opcode.IF_EQZ && (code[it] as OneRegisterInstruction).registerA == register
+        }
+        val end = address.indexOf(address[test] + (code[test] as OffsetInstruction).codeOffset)
+        val block = code.subList(test + 1, end)
+        val made = block.filter { it.opcode == Opcode.NEW_INSTANCE }.map { ((it as ReferenceInstruction).reference as TypeReference).type }
+        val strings = block.filter { it.opcode == Opcode.CONST }.map { (it as NarrowLiteralInstruction).narrowLiteral }.filter { it ushr 24 == 0x7f }
+        return made.toSet() to strings.toSet()
     }
 
     private fun declaredBundles(): Map<String, List<File>> {
@@ -294,10 +318,47 @@ class HoldReelFor2xFixtureTest {
                 val nuxRead = if (inlinedNux) holdNuxReads(nuxCheck, nuxHolder).single() else -1
                 val nuxClass = FixtureDex.classes(bundle, setOf(nuxCheck.definingClass)).values.single()
 
+                // Facebook's own feed video hold (#343): the lambda logging its name updates the feed video
+                // component's state with one case, the state container sets one boolean for it, the render reads it once.
+                val chipComponents = FixtureDex.classesHolding(bundle, HOLD_NUX_UPDATE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+                assertEquals("$name: feed video components: ${chipComponents.map { it.type }}", 1, chipComponents.size)
+                val chipComponent = chipComponents.single()
+                val holdLambdas = FixtureDex.classesHolding(bundle, FEED_HOLD_LOG).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+                val chipUpdates = holdLambdas.flatMap { c -> c.methods.flatMap { holdChipUpdates(it, chipComponent.type) } }
+                assertEquals("$name: state updates in Facebook's feed video hold: $chipUpdates", 1, chipUpdates.size)
+                val chipUpdate = chipUpdates.single()
+                val stateClasses = FixtureDex.classes(bundle, madeTypes(chipComponent)).values
+                    .filter { stateUpdateMethod(it, chipUpdate.type) != null }
+                assertEquals("$name: the component's state containers: ${stateClasses.map { it.type }}", 1, stateClasses.size)
+                val stateClass = stateClasses.single()
+                val applyUpdate = stateUpdateMethod(stateClass, chipUpdate.type)!!
+                val chipFlag = caseFlag(applyUpdate, chipUpdate.case)
+                    ?: throw AssertionError("$name: ${stateClass.type} sets no flag for case ${chipUpdate.case}")
+                // The 2x tip's update, made in the component through a static factory, sets another flag of the same state.
+                val tipUpdates = chipComponent.methods.filter { holdsString(it, HOLD_NUX_UPDATE) }.flatMap { stateUpdates(it, chipComponent.type) }
+                assertEquals("$name: the 2x tip's state updates: $tipUpdates", 1, tipUpdates.size)
+                val tipFlag = caseFlag(applyUpdate, tipUpdates.single().case)
+                    ?: throw AssertionError("$name: ${stateClass.type} sets no flag for the 2x tip's case ${tipUpdates.single().case}")
+                assertTrue("$name: the hold's chip and the 2x tip share ${chipFlag.name}", chipFlag.name != tipFlag.name)
+                val chipReads = chipComponent.methods.flatMap { m -> flagReads(m, chipFlag).map { m to it } }
+                assertEquals("$name: reads of the hold's chip flag: ${chipReads.map { key(it.first) + "@" + it.second }}", 1, chipReads.size)
+                val (chipRender, chipRead) = chipReads.single()
+                val tipReads = flagReads(chipRender, tipFlag)
+                assertEquals("$name: ${key(chipRender)}'s reads of the 2x tip's flag", 1, tipReads.size)
+                // Apart from the anchors: each flag skips a block building the same chip from its own string.
+                val chipBlock = gatedBlock(chipRender.code(), chipRead)
+                val tipBlock = gatedBlock(chipRender.code(), tipReads.single())
+                assertTrue("$name: the hold's chip flag gates nothing made", chipBlock.first.isNotEmpty())
+                assertEquals("$name: what the hold's chip and the 2x tip blocks make", tipBlock.first, chipBlock.first)
+                assertEquals("$name: resource strings in the hold's chip block", 1, chipBlock.second.size)
+                assertEquals("$name: resource strings in the 2x tip block", 1, tipBlock.second.size)
+                assertTrue("$name: the hold's chip says what the 2x tip says", chipBlock.second != tipBlock.second)
+
                 val activity = FixtureDex.classes(bundle, setOf(FRAGMENT_ACTIVITY)).values.single()
                 val componentClasses = components.filter { c -> checks.any { it.definingClass == c.type } }
                 val classes: List<ClassDef> = (handlers + listeners + handedClasses + componentClasses + edgeClass + activity + player + configClass +
                     speedUpClasses + listOfNotNull(speedClass) + attachHolders + pillStates + pillClass + reelPillStates + reelPillClass + gestureClass + popupClass + nuxClass + nuxHolder +
+                    chipComponent + holdLambdas + stateClass +
                     FixtureDex.classes(bundle, setOf(showers.single().definingClass)).values.single() + ExtensionDex.classDef(REEL_HOLD) +
                     ExtensionDex.classDef(FEED_VIDEO_HOLD) + ExtensionDex.classDef(SETTINGS_STATUS))
                     .distinctBy { it.type }
@@ -331,6 +392,7 @@ class HoldReelFor2xFixtureTest {
                 assertEquals("$name: the guard hooks the 2x pill", 0, hooks(pill, LOCK_HINT_PILL))
                 assertEquals("$name: the guard hooks the Reels 2x pill", 0, hooks(reelPill, LOCK_HINT_REEL_PILL))
                 assertEquals("$name: the guard hooks the feed video 2x tip", 0, hooks(nuxCheck, HIDES_HOLD_NUX))
+                assertEquals("$name: the guard hooks the hold's 2x chip", 0, hooks(chipRender, HOLD_CHIP_SHOWS))
 
                 // The patcher runs the guard first, as a dependency, then the patch.
                 val context = PatchContexts.of(classes)
@@ -416,6 +478,19 @@ class HoldReelFor2xFixtureTest {
                     assertEquals("$name: the 2x tip check runs as before past the hook",
                         nuxBefore.map { it.opcode }, nuxAfter.drop(5).map { it.opcode })
                 }
+
+                // Right after the render's read of the hold's chip flag, its value through LockHint and back.
+                val renderBefore = chipRender.code()
+                val renderAfter = patched(chipRender)
+                val shows = (renderBefore[chipRead] as OneRegisterInstruction).registerA
+                assertEquals("$name: the chip flag's read stays", renderBefore[chipRead].opcode, renderAfter[chipRead].opcode)
+                assertEquals("$name: the hold's 2x chip asks", HOLD_CHIP_SHOWS, renderAfter[chipRead + 1].call.toString())
+                assertEquals("$name: the hold's 2x chip hands over its flag", listOf(shows), renderAfter[chipRead + 1].registers())
+                assertEquals("$name: the answer takes the flag's place", listOf(Opcode.MOVE_RESULT, shows),
+                    listOf(renderAfter[chipRead + 2].opcode, (renderAfter[chipRead + 2] as OneRegisterInstruction).registerA))
+                assertEquals("$name: the render runs as before past the hook", renderBefore.map { it.opcode },
+                    renderAfter.filterIndexed { at, _ -> at !in chipRead + 1..chipRead + 2 }.map { it.opcode })
+                assertEquals("$name: one ask in the render", 1, renderAfter.count { it.call?.toString() == HOLD_CHIP_SHOWS })
 
                 fun assertAnswers(method: Method, hook: String, flags: Set<String>) {
                     val before = method.code()

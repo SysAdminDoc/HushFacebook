@@ -217,7 +217,8 @@ internal fun BytecodePatchContext.applyFeedVideoHold(anchors: ReelHoldAnchors, f
  * through the extension's LockHint and back, and first in the Reels pill's, its hints flag does.
  * A build where either pill moved keeps the rest of Hold a reel for 2x, with that pill's hint left
  * as Facebook draws it and a warning saying why. Hide the 2x popups hooks the same two pills' renders,
- * the reel gesture's two toasts, the seek bar plugin's component and the feed video "2x speed" tip.
+ * the reel gesture's two toasts, the seek bar plugin's component, the feed video "2x speed" tip and
+ * the "2x speed" chip Facebook's own feed video hold draws while it plays a video at 2x.
  */
 internal fun BytecodePatchContext.applyLockHint() {
     applyVideoLockHint()
@@ -225,6 +226,46 @@ internal fun BytecodePatchContext.applyLockHint() {
     applyReelLockPopups()
     applyVideoLockPopup()
     applyFeedHoldNux()
+    applyFeedHoldChip()
+}
+
+/**
+ * Facebook's own feed video hold (#343) turns on one boolean of the feed video component's state
+ * while it plays the video at 2x, and the component's render draws a "2x speed" chip while that
+ * boolean is on. Right after the render's one read of it, the extension's LockHint answers, so the
+ * chip isn't drawn with Hide the 2x popups on. The hold, its speed and its haptic stay Facebook's.
+ * The boolean is found from the hold itself (see [holdChipUpdates]), never by its name.
+ */
+private fun BytecodePatchContext.applyFeedHoldChip() {
+    fun skip(why: String) = patchLog.warning(
+        "$PATCH: $why. Hide the 2x popups leaves the 2x chip of Facebook's own feed video hold alone in this build",
+    )
+    val components = classDefByStrings(HOLD_NUX_UPDATE, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+    val component = components.singleOrNull() ?: return skip("expected one feed video component, found ${components.size}")
+    val updates = classDefByStrings(FEED_HOLD_LOG, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .flatMap { holder -> holder.methods.flatMap { holdChipUpdates(it, component.type) } }
+        .distinct()
+    val update = updates.singleOrNull() ?: return skip("expected one state update in Facebook's feed video hold, found ${updates.size}")
+    val applies = madeTypes(component).mapNotNull(::classDefByOrNull).mapNotNull { stateUpdateMethod(it, update.type) }
+    val apply = applies.singleOrNull() ?: return skip("expected one state container for that update, found ${applies.size}")
+    val flag = caseFlag(apply, update.case) ?: return skip("its state container sets no flag for case ${update.case}")
+    val reads = component.methods.flatMap { method -> flagReads(method, flag).map { method to it } }
+    val (render, read) = reads.singleOrNull() ?: return skip("expected one read of the 2x chip's flag, found ${reads.size}")
+    val mutable = mutableClassDefBy(component.type).findMutableMethodOf(render)
+    // A branch onto the instruction after the read would go past the extension and draw the chip.
+    if ((mutable.getInstruction(read + 1) as BuilderInstruction).location.labels.isNotEmpty()) {
+        return skip("${render.definingClass}->${render.name} has a jump right after the 2x chip's flag read")
+    }
+    val shows = mutable.getInstruction<OneRegisterInstruction>(read).registerA
+    mutable.addInstructions(
+        read + 1,
+        """
+            invoke-static/range { v$shows .. v$shows }, $HOLD_CHIP_SHOWS
+            move-result v$shows
+        """,
+    )
 }
 
 /**

@@ -84,6 +84,7 @@ Changes in each Hushfacebook version, newest first.
 * Dragging the seek bar on a live video you opened from search results moves the video now, in the reel-style viewer and in full screen. Facebook only seeks a live video once it's marked as behind live, which its full player does while you drag but those viewers never did. Search even opens some lives as if they weren't live at all, and those now land where you let go too. Let go at the far right end and it goes back to live. (#482)
 * Tapping a Threads post in your feed opens that post in Threads now, not the Threads home feed. (#385)
 * `Local profile counts` changes the numbers on your profile now. Facebook draws a count and its word as two separate pieces, and the switch only looked for them together. (#488)
+* `Hide the 2x popups` also hides the "2x speed" chip on feed videos for accounts where Facebook has its own hold for 2x. Holding a video there still plays it at 2x, it just doesn't put the chip over it anymore. (#343)
 
 ## 0.22.0 (2026-11-12)
 

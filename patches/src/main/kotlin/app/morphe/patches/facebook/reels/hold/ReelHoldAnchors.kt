@@ -17,9 +17,11 @@ import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -551,6 +553,128 @@ internal fun holdNuxReads(method: Method, holder: ClassDef, flags: Set<String> =
         val next = (index + 1 until code.size).firstOrNull { code[it].opcode !in CONSTANTS } ?: return@filter false
         (index + 1 until next).none { (code[it] as OneRegisterInstruction).registerA == flag } &&
             code[next].opcode == Opcode.IF_NEZ && (code[next] as OneRegisterInstruction).registerA == flag
+    }
+}
+
+/*
+ * Facebook's own hold on feed videos (#343), on accounts that get it, draws a "2x speed" chip of its
+ * own while it plays the video at 2x: RichVideoAttachmentComponent's long press logs
+ * "LONG_PRESS_2X_SPEED" and turns on one boolean of the component's state (587: LX/0CJC;->invoke,
+ * case 3, LX/05im;->A0U), and the component's render draws the chip while it's on, the same chip the
+ * 2x tip is drawn with right after it. The boolean is found from the hold: the lambda logging that
+ * name updates the component's state with one case number, the component's state container sets one
+ * boolean field for that case, and the render reads that field once. Hide the 2x popups passes that
+ * read through LockHint, so the chip isn't drawn and the hold and its speed stay Facebook's.
+ */
+internal const val FEED_HOLD_LOG = "LONG_PRESS_2X_SPEED"
+internal const val HOLD_NUX_UPDATE = "updateState:RichVideoAttachmentComponent.updateHold2xNuxVisible"
+internal const val HOLD_CHIP_SHOWS = "$LOCK_HINT_CLASS->holdChipShows(Z)Z"
+
+/** A state update of the feed video component: the case number it's made with and the update's type. */
+internal data class StateUpdate(val case: Int, val type: String)
+
+/** The updates of [component]'s state that [method] makes, when it's the feed video hold logging [FEED_HOLD_LOG]. */
+internal fun holdChipUpdates(method: Method, component: String): List<StateUpdate> =
+    if (holdsString(method, FEED_HOLD_LOG)) stateUpdates(method, component) else emptyList()
+
+/**
+ * The updates of [component]'s state that [method] makes: each const-class of [component] handed
+ * straight to a call taking an update, the class and a name, with the update made before it from an
+ * object array and a constant case number, by its constructor (587's hold) or a static factory
+ * (587's 2x tip, LX/04UN;->A0Y).
+ */
+internal fun stateUpdates(method: Method, component: String): List<StateUpdate> {
+    val code = method.code
+    return code.indices.mapNotNull { at ->
+        val load = code[at]
+        if (load.opcode != Opcode.CONST_CLASS || ((load as ReferenceInstruction).reference as TypeReference).type != component) {
+            return@mapNotNull null
+        }
+        val enqueue = code.getOrNull(at + 1) ?: return@mapNotNull null
+        val call = (enqueue as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
+        val parameters = call.parameterTypes.map(CharSequence::toString)
+        if (enqueue.opcode != Opcode.INVOKE_VIRTUAL || call.returnType != "V" || parameters.size != 3 ||
+            parameters[1] != "Ljava/lang/Class;" || parameters[2] != "Ljava/lang/String;"
+        ) return@mapNotNull null
+        val registers = (enqueue as? FiveRegisterInstruction)?.let { listOf(it.registerC, it.registerD, it.registerE) }
+            ?: return@mapNotNull null
+        if (registers[2] != (load as OneRegisterInstruction).registerA) return@mapNotNull null
+        val update = parameters[0]
+        val made = (at - 1 downTo 0).firstOrNull { caseRegister(code, it, update, registers[1]) != null } ?: return@mapNotNull null
+        val caseRegister = caseRegister(code, made, update, registers[1])!!
+        val case = (made - 1 downTo 0).firstOrNull { (code[it] as? OneRegisterInstruction)?.registerA == caseRegister && code[it].opcode.setsRegister() }
+            ?.let { code[it] as? NarrowLiteralInstruction }?.narrowLiteral ?: return@mapNotNull null
+        StateUpdate(case, update)
+    }
+}
+
+/**
+ * The register holding the case number when [code]'s instruction at [at] makes an [update] from an
+ * object array and a number into [register]: its constructor, or a static factory whose answer the
+ * next instruction takes. Null for anything else.
+ */
+private fun caseRegister(code: List<Instruction>, at: Int, update: String, register: Int): Int? {
+    val call = (code[at] as? ReferenceInstruction)?.reference as? MethodReference ?: return null
+    if (call.parameterTypes.map(CharSequence::toString) != listOf("[Ljava/lang/Object;", "I")) return null
+    val made = code[at] as? FiveRegisterInstruction ?: return null
+    val taken = code.getOrNull(at + 1)
+    return when {
+        code[at].opcode == Opcode.INVOKE_DIRECT && call.definingClass == update && call.name == "<init>" &&
+            made.registerC == register -> made.registerE
+        code[at].opcode == Opcode.INVOKE_STATIC && call.returnType == update && taken?.opcode == Opcode.MOVE_RESULT_OBJECT &&
+            (taken as OneRegisterInstruction).registerA == register -> made.registerD
+        else -> null
+    }
+}
+
+/** The types [classDef]'s methods make with new-instance, the component's state container among them. */
+internal fun madeTypes(classDef: ClassDef): Set<String> = classDef.methods.flatMap { it.code }
+    .filter { it.opcode == Opcode.NEW_INSTANCE }
+    .map { ((it as ReferenceInstruction).reference as TypeReference).type }
+    .toSet()
+
+/** [classDef]'s state update: an instance method taking [update] alone, answering nothing, that switches on its case. */
+internal fun stateUpdateMethod(classDef: ClassDef, update: String): Method? = classDef.methods.singleOrNull {
+    !AccessFlags.STATIC.isSet(it.accessFlags) && it.implementation != null && it.returnType == "V" &&
+        it.parameters() == listOf(update) && it.code.any { i -> i.opcode == Opcode.PACKED_SWITCH || i.opcode == Opcode.SPARSE_SWITCH }
+}
+
+/** The opcodes that end a switch case's straight run. */
+private val CASE_ENDS = setOf(
+    Opcode.RETURN_VOID, Opcode.RETURN, Opcode.RETURN_WIDE, Opcode.RETURN_OBJECT,
+    Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32, Opcode.THROW,
+)
+
+/** The boolean field of its own class that [method]'s switch sets for [case], before the case ends, or null. */
+internal fun caseFlag(method: Method, case: Int): FieldReference? {
+    val code = method.code
+    val switch = code.indexOfFirst { it.opcode == Opcode.PACKED_SWITCH || it.opcode == Opcode.SPARSE_SWITCH }
+    if (switch < 0) return null
+    val address = IntArray(code.size + 1)
+    for (index in code.indices) address[index + 1] = address[index] + code[index].codeUnits
+    val payload = code.getOrNull(address.indexOf(address[switch] + (code[switch] as OffsetInstruction).codeOffset)) as? SwitchPayload
+        ?: return null
+    val element = payload.switchElements.singleOrNull { it.key == case } ?: return null
+    val target = address.indexOf(address[switch] + element.offset).takeIf { it in code.indices } ?: return null
+    for (index in target until code.size) {
+        val instruction = code[index]
+        if (instruction.opcode == Opcode.IPUT_BOOLEAN) {
+            val field = (instruction as ReferenceInstruction).reference as FieldReference
+            return field.takeIf { it.definingClass == method.definingClass }
+        }
+        if (instruction.opcode in CASE_ENDS) return null
+    }
+    return null
+}
+
+/** The indices of [method]'s iget-boolean reads of [flag]. */
+internal fun flagReads(method: Method, flag: FieldReference): List<Int> {
+    val code = method.code
+    return code.indices.filter { index ->
+        val read = code[index]
+        val field = (read as? ReferenceInstruction)?.reference as? FieldReference
+        read.opcode == Opcode.IGET_BOOLEAN && field != null && field.definingClass == flag.definingClass &&
+            field.name == flag.name && field.type == flag.type
     }
 }
 

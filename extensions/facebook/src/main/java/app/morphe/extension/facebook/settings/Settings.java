@@ -1466,8 +1466,9 @@ public class Settings extends BaseSettings {
 
     /**
      * Holding a video for 2x draws no pill at all: no speed, no "Release to lock" and no "Locked at 2x
-     * speed" (#289). The hold and its lock work as before. Works without {@link #HOLD_REEL_FOR_2X}.
-     * Starts off.
+     * speed" (#289). Feed videos skip Facebook's "2x speed" tip, and on accounts with Facebook's own
+     * feed video hold, the "2x speed" chip that hold draws (#343). The hold and its lock work as
+     * before. Works without {@link #HOLD_REEL_FOR_2X}. Starts off.
      */
     public static final BooleanSetting HIDE_2X_POPUPS =
             new BooleanSetting("hushfacebook_hide_2x_popups", FALSE);

@@ -28,8 +28,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * when a lock starts or ends, "Locked at 2x speed" and "Back to normal speed", the same way.
  * {@link #hidesHoldNux} keeps the "2x speed" tip off feed videos (#343): Facebook shows it on a
  * timer to teach its own hold, and only stops once that hold is used, which never happens while
- * Hush's hold takes the gesture. The hold, the lock and what they hide on the reel stay Facebook's,
- * since only the drawing is skipped.
+ * Hush's hold takes the gesture. On accounts where Facebook has a hold of its own on feed videos,
+ * {@link #holdChipShows} keeps off the "2x speed" chip that hold draws while it plays a video at 2x
+ * (#343). The hold, the lock and what they hide on the reel stay Facebook's, since only the drawing
+ * is skipped.
  */
 public final class LockHint {
     /** Counted under the patch's name each time a hint is drawn as the plain pill. */
@@ -40,6 +42,8 @@ public final class LockHint {
     static final String POPUP_HIDDEN = "2x lock popup hidden";
     /** Counted under the patch's name each time a feed video skips Facebook's "2x speed" tip. */
     static final String NUX_HIDDEN = "feed video 2x tip hidden";
+    /** Counted under the patch's name each time Facebook's own feed video hold skips its "2x speed" chip. */
+    static final String CHIP_HIDDEN = "feed video 2x chip hidden";
 
     private static final String FAMILY = FamilyNames.HOLD_REEL_FOR_2X;
 
@@ -120,6 +124,17 @@ public final class LockHint {
      */
     public static boolean hidesHoldNux() {
         return hides(NUX_HIDDEN);
+    }
+
+    /**
+     * Injection point, in the feed video's render, on the state Facebook's own feed video hold turns
+     * on while it plays the video at 2x (#343). True draws its "2x speed" chip. Answers false with
+     * the switch on; the hold and its speed stay Facebook's either way. Never throws.
+     *
+     * @param shows the state's answer.
+     */
+    public static boolean holdChipShows(boolean shows) {
+        return shows && !hides(CHIP_HIDDEN);
     }
 
     private static boolean hides(String counted) {
