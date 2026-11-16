@@ -153,6 +153,7 @@ class BackgroundPlayShapesTest {
         player, name, listOf(trigger), "V",
         (if (handsOn) "const/4 v0, 0x0\ninvoke-virtual {p0, p1, v0}, $player->pauseFor($trigger${"Ljava/lang/Object;"})V\n" else "") +
             "return-void",
+        flags = flags,
     )
 
     @Test
