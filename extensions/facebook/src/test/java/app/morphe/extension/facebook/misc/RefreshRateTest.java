@@ -112,6 +112,22 @@ public class RefreshRateTest {
     }
 
     @Test
+    public void aGamingPhoneGets144And165AsChoices() {
+        // A 165 Hz screen in the shape gaming phones report: 165, 144, 120, 90 and 60 Hz at one resolution.
+        Display.Mode[] fast = {
+                mode(1, 1080, 2448, 165.00002f), mode(2, 1080, 2448, 144.00002f), mode(3, 1080, 2448, 120.00001f),
+                mode(4, 1080, 2448, 90.0f), mode(5, 1080, 2448, 60.000004f),
+        };
+        assertEquals(1, RefreshRate.pick(fast, fast[4], Rate.HZ165));
+        assertEquals(2, RefreshRate.pick(fast, fast[4], Rate.HZ144));
+        assertEquals(1, RefreshRate.pick(fast, fast[4], Rate.HIGHEST));
+        assertEquals(Arrays.asList(Rate.FACEBOOK, Rate.HIGHEST, Rate.HZ60, Rate.HZ90, Rate.HZ120, Rate.HZ144, Rate.HZ165),
+                RefreshRate.offered(fast, fast[4], Rate.FACEBOOK));
+        assertEquals("the S25 tops out at 120", 0, RefreshRate.pick(S25, S25_FHD, Rate.HZ165));
+        assertEquals("165 Hz", Rate.HZ165.hertzLabel());
+    }
+
+    @Test
     public void everyChoiceRoundTripsThroughItsFileValue() {
         for (Rate rate : Rate.values()) assertEquals(rate, Rate.fromFile(rate.fileValue));
         assertEquals(null, Rate.fromFile("HZ120"));

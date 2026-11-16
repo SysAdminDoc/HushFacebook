@@ -46,7 +46,8 @@ public final class RefreshRate {
         HZ60(60, "60"),
         HZ90(90, "90"),
         HZ120(120, "120"),
-        HZ144(144, "144");
+        HZ144(144, "144"),
+        HZ165(165, "165");
 
         /** The rate asked for, or 0 for a choice that isn't one fixed rate. */
         public final int hertz;
