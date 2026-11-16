@@ -96,7 +96,8 @@ val hideSuggestedStoriesPatch = bytecodePatch(
     description = "Removes stories Facebook suggests from people and Pages you don't follow, and the \"Find " +
         "friends from contacts\" card, so the Stories tray sticks to people you know. On by default. Turn it off " +
         "in Hushfacebook settings > Stories, where more switches, all off at first, also hide the Create story " +
-        "tile, the Pages you follow and the stories you've already watched, or keep only the ones you've watched.",
+        "tile, the Pages you follow and the stories you've already watched, keep only the ones you've watched, or " +
+        "move the ones you've watched to the end.",
     default = true,
 ) {
     category("Stories")

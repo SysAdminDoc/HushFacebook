@@ -214,6 +214,41 @@ public class SeenStoriesWatchedHereTest {
                 kept(Arrays.asList(before, postedHoursAgo("b1", 3), next)));
     }
 
+    /**
+     * #489: with Move seen stories to the end on and Hide seen stories off, a bucket watched to the end
+     * here moves behind the ones you haven't watched. The bucket on screen keeps its place while the
+     * viewer is open, so the tray doesn't jump under it, and moves after the viewer closes.
+     */
+    @Test
+    public void aBucketWatchedHereMovesToTheEndOnceTheViewerCloses() {
+        Settings.HIDE_SEEN_STORIES.save(false);
+        Settings.SEEN_STORIES_LAST.save(true);
+        try {
+            watch(new Played("b0", "s1"), "s1");
+            Tree before = postedHoursAgo("b0", 3);
+            Tree first = postedHoursAgo("b1", 3);
+            Tree next = postedHoursAgo("b2", 3);
+            assertEquals(Arrays.asList(first, next, before), kept(Arrays.asList(before, first, next)));
+
+            ActivityController<StoryViewerActivity> viewer = Robolectric.buildActivity(StoryViewerActivity.class).setup();
+            SuggestedStories.activityCreated(viewer.get());
+            watch(new Played("b1", "s1", "s2"), "s1", "s2");
+            Tree watched = postedHoursAgo("b1", 3);
+            assertEquals("the bucket on screen moved", Arrays.asList(watched, next, before),
+                    kept(Arrays.asList(before, watched, next)));
+
+            viewer.pause().stop().destroy();
+            SuggestedStories.activityDestroyed(viewer.get());
+            Tree after = postedHoursAgo("b1", 3);
+            assertEquals("it kept its place after the viewer closed", Arrays.asList(next, before, after),
+                    kept(Arrays.asList(before, after, next)));
+            String counters = line(SuggestedStories.ROUTE, FeedFilterCounters.report());
+            assertFalse(counters, counters != null && counters.contains("Removed"));
+        } finally {
+            Settings.SEEN_STORIES_LAST.resetToDefault();
+        }
+    }
+
     /** With Show only watched stories on (#340), a bucket watched to the end here is one it keeps. */
     @Test
     public void aBucketWatchedToTheEndHereStaysWithOnlyWatchedOn() {

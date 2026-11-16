@@ -409,6 +409,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_seen_stories", FALSE);
 
     /**
+     * The buckets of the Stories tray you've watched move to its end, after the ones you haven't, each
+     * group in Facebook's order (#489). Hide seen stories goes first, so with it on they leave instead.
+     * Off until you turn it on.
+     */
+    public static final BooleanSetting SEEN_STORIES_LAST =
+            new BooleanSetting("hushfacebook_seen_stories_last", FALSE);
+
+    /**
      * The other way round from {@link #HIDE_SEEN_STORIES} (#340): the Stories tray keeps only the
      * buckets you've watched, and Hide seen stories waits while this is on. Off until you turn it on.
      */

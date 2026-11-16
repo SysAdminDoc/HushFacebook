@@ -18,7 +18,7 @@ final class L10nTableIn {
     }
 
     static Map<String, String> build() {
-        Map<String, String> table = new HashMap<>(3876);
+        Map<String, String> table = new HashMap<>(3880);
         fill0(table);
         fill1(table);
         fill2(table);
@@ -2187,6 +2187,8 @@ final class L10nTableIn {
                 "Paling relevan");
         table.put("Most viewed on profile Reels",
                 "Paling banyak dilihat di Reels profil");
+        table.put("Move seen stories to the end",
+                "Pindahkan cerita yang sudah dilihat ke akhir");
         table.put("Move the speaker above the three dots",
                 "Pindahkan speaker ke atas tiga titik");
         table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
@@ -2265,11 +2267,11 @@ final class L10nTableIn {
                 "Tidak ada pesan saat penyimpanan dimulai, selesai, atau dibatalkan. Jika gagal, alasannya tetap ditampilkan.");
         table.put("No types seen yet. Scroll Home and come back.",
                 "Belum ada jenis yang terlihat. Gulir Beranda lalu kembali ke sini.");
-        table.put("No words yet, so no post is hidden.",
-                "Belum ada kata, jadi tidak ada postingan yang disembunyikan.");
     }
 
     private static void fill18(Map<String, String> table) {
+        table.put("No words yet, so no post is hidden.",
+                "Belum ada kata, jadi tidak ada postingan yang disembunyikan.");
         table.put("No words yet.",
                 "Belum ada kata.");
         table.put("Nobody listed yet, so no post is hidden.",
@@ -2388,11 +2390,11 @@ final class L10nTableIn {
                 "Buka semua utas balasan");
         table.put("Open feed videos on their own",
                 "Buka video feed tersendiri");
-        table.put("Open full screen videos centered",
-                "Buka video layar penuh di tengah");
     }
 
     private static void fill19(Map<String, String> table) {
+        table.put("Open full screen videos centered",
+                "Buka video layar penuh di tengah");
         table.put("Open in Facebook from the share menu",
                 "Open in Facebook di menu berbagi");
         table.put("Open in another app",
@@ -2511,11 +2513,11 @@ final class L10nTableIn {
                 "Foto akan disimpan ke subfolder bernama %1$s.");
         table.put("Photos will go in the save folder itself.",
                 "Foto akan disimpan langsung di folder simpan.");
-        table.put("Pick Custom color again to change it.",
-                "Pilih Warna kustom lagi untuk mengubahnya.");
     }
 
     private static void fill20(Map<String, String> table) {
+        table.put("Pick Custom color again to change it.",
+                "Pilih Warna kustom lagi untuk mengubahnya.");
         table.put("Pick an app icon",
                 "Pilih ikon aplikasi");
         table.put("Pick one each time",
@@ -2634,11 +2636,11 @@ final class L10nTableIn {
                 "Jam tenang selesai");
         table.put("Quiet hours start",
                 "Jam tenang mulai");
-        table.put("Quiet hours will end at %1$s.",
-                "Jam tenang akan berakhir pukul %1$s.");
     }
 
     private static void fill21(Map<String, String> table) {
+        table.put("Quiet hours will end at %1$s.",
+                "Jam tenang akan berakhir pukul %1$s.");
         table.put("Quiet hours will start at %1$s.",
                 "Jam tenang akan dimulai pukul %1$s.");
         table.put("Quiet saves",
@@ -2757,11 +2759,11 @@ final class L10nTableIn {
                 "Menghapus baris di atas chat kamu yang menampilkan catatan teman dan siapa yang sedang aktif. Kotak catatan milikmu bisa ikut hilang. Chat kamu tetap ada.");
         table.put("Removes the saved font file. Restart Facebook to use your phone's font.",
                 "Menghapus file font tersimpan. Mulai ulang Facebook untuk memakai font ponsel Anda.");
-        table.put("Removes the saved font file. Use the system font stays off.",
-                "Menghapus file font tersimpan. \"Gunakan font sistem\" tetap nonaktif.");
     }
 
     private static void fill22(Map<String, String> table) {
+        table.put("Removes the saved font file. Use the system font stays off.",
+                "Menghapus file font tersimpan. \"Gunakan font sistem\" tetap nonaktif.");
         table.put("Removes this tab from the tab bar. Its page is still in the Menu. Restart Facebook to see the change.",
                 "Menghapus tab ini dari bilah tab. Halamannya masih ada di Menu. Mulai ulang Facebook untuk melihat perubahannya.");
         table.put("Removes tracking tags like mibextid from links you share or copy. A facebook.com/share/ link is unique to each share, so Facebook can still trace it.",
@@ -2880,11 +2882,11 @@ final class L10nTableIn {
                 "Pintasan Tersimpan");
         table.put("Saved to %1$s",
                 "Disimpan ke %1$s");
-        table.put("Saved to %1$s at %2$s, since the bigger file is over 512 MB",
-                "Disimpan ke %1$s dalam %2$s, karena file yang lebih besar lebih dari 512 MB");
     }
 
     private static void fill23(Map<String, String> table) {
+        table.put("Saved to %1$s at %2$s, since the bigger file is over 512 MB",
+                "Disimpan ke %1$s dalam %2$s, karena file yang lebih besar lebih dari 512 MB");
         table.put("Saved to %1$s in lower quality than on Facebook",
                 "Disimpan ke %1$s dengan kualitas lebih rendah daripada di Facebook");
         table.put("Saved to the gallery",
@@ -3003,11 +3005,11 @@ final class L10nTableIn {
                 "Diatur saat menambal, jadi Jeda tidak dapat mematikannya:\n%1$s\nUntuk memastikan salah satunya bukan penyebabnya, tambal ulang tanpa tambalannya.");
         table.put("Settings an update adds get no dot.",
                 "Pengaturan yang ditambahkan pembaruan tidak diberi titik.");
-        table.put("Settings an update adds will get a dot for %1$s from the first time you open their page.",
-                "Pengaturan yang ditambahkan pembaruan akan diberi titik selama %1$s sejak pertama kali kamu membuka halamannya.");
     }
 
     private static void fill24(Map<String, String> table) {
+        table.put("Settings an update adds will get a dot for %1$s from the first time you open their page.",
+                "Pengaturan yang ditambahkan pembaruan akan diberi titik selama %1$s sejak pertama kali kamu membuka halamannya.");
         table.put("Settings an update adds will get a dot until you leave their page.",
                 "Pengaturan yang ditambahkan pembaruan akan diberi titik sampai kamu keluar dari halamannya.");
         table.put("Settings an update adds won't get a dot.",
@@ -3126,11 +3128,11 @@ final class L10nTableIn {
                 "Menampilkan kapan reel atau video yang kamu buka layar penuh diposting, di bawah nama orang yang mempostingnya. Perubahan terlihat mulai reel berikutnya.");
         table.put("Shows your phone's own emoji instead of Facebook's. Reactions and stickers don't change. Restart Facebook to see the change.",
                 "Menampilkan emoji bawaan ponsel, bukan milik Facebook. Reaksi dan stiker tidak berubah. Mulai ulang Facebook untuk melihat perubahannya.");
-        table.put("Silent parts play in this video",
-                "Bagian yang hening diputar di video ini");
     }
 
     private static void fill25(Map<String, String> table) {
+        table.put("Silent parts play in this video",
+                "Bagian yang hening diputar di video ini");
         table.put("Skip \"Are you still watching?\"",
                 "Lewati \"Masih menonton?\"");
         table.put("Skip buttons on feed videos",
@@ -3211,6 +3213,8 @@ final class L10nTableIn {
                 "Cerita selalu mulai tanpa suara setiap kali kamu membuka Facebook. Ketuk ikon speaker atau tekan tombol volume naik untuk mendengarnya, dan suara tetap menyala sampai kamu membisukannya lagi.");
         table.put("Stories you've already watched leave the Stories tray until there's a new one. Applies when Facebook next loads the tray.",
                 "Cerita yang sudah kamu tonton hilang dari baris Cerita sampai ada yang baru. Berlaku saat Facebook memuat baris itu lagi.");
+        table.put("Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.",
+                "Cerita yang sudah kamu tonton pindah ke akhir baris Cerita, setelah yang belum kamu tonton. Selama Sembunyikan cerita yang sudah dilihat aktif, pengaturan itu didahulukan. Berlaku saat Facebook memuat baris itu lagi.");
         table.put("Story",
                 "Cerita");
         table.put("Story play button",
@@ -3247,13 +3251,13 @@ final class L10nTableIn {
                 "Urutan tab");
         table.put("Tab to open on",
                 "Tab saat dibuka");
+    }
+
+    private static void fill26(Map<String, String> table) {
         table.put("Tabs and navigation",
                 "Tab dan navigasi");
         table.put("Tabs to hide",
                 "Tab yang disembunyikan");
-    }
-
-    private static void fill26(Map<String, String> table) {
         table.put("Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.",
                 "Tab, Menu, foto, dan layar yang terbuka di atas Facebook langsung muncul tanpa efek geser atau zoom. Menggeser antar tab tetap berfungsi.");
         table.put("Tag suggestions only after @",
@@ -3370,13 +3374,13 @@ final class L10nTableIn {
                 "Teks postingan");
         table.put("Text size",
                 "Ukuran teks");
+    }
+
+    private static void fill27(Map<String, String> table) {
         table.put("That file is too large to be a settings file. Nothing was changed.",
                 "File itu terlalu besar untuk sebuah file pengaturan. Tidak ada yang diubah.");
         table.put("That file isn't readable text, so it may have been damaged on the way. Nothing was changed.",
                 "File itu bukan teks yang dapat dibaca, jadi mungkin rusak saat ditransfer. Tidak ada yang diubah.");
-    }
-
-    private static void fill27(Map<String, String> table) {
         table.put("That file lists a setting twice, so Hushfacebook can't tell which value to use. Nothing was changed.",
                 "File itu mencantumkan satu pengaturan dua kali, jadi Hushfacebook tidak tahu nilai mana yang dipakai. Tidak ada yang diubah.");
         table.put("That font file is over %1$d MB. Your font didn't change.",
@@ -3493,13 +3497,13 @@ final class L10nTableIn {
                 "Feed tidak akan menyembunyikan postingan berdasarkan jumlah reaksinya.");
         table.put("The file %1$s couldn't be removed. Delete it from %2$s to turn Hushfacebook back on.",
                 "File %1$s tidak dapat dihapus. Hapus file itu dari %2$s untuk mengaktifkan Hushfacebook lagi.");
+    }
+
+    private static void fill28(Map<String, String> table) {
         table.put("The file %1$s couldn't be removed. Delete it from %2$s, then tap Resume again.",
                 "File %1$s tidak dapat dihapus. Hapus file itu dari %2$s, lalu ketuk Lanjutkan lagi.");
         table.put("The file couldn't be copied into your phone's gallery. Try again in a moment.",
                 "File tidak bisa disalin ke galeri ponselmu. Coba lagi sebentar lagi.");
-    }
-
-    private static void fill28(Map<String, String> table) {
         table.put("The hide list is empty, so no post would be hidden.",
                 "\"Kata untuk disembunyikan\" kosong, jadi tidak ada postingan yang akan disembunyikan.");
         table.put("The last way into these settings stays on.",
@@ -3616,13 +3620,13 @@ final class L10nTableIn {
                 "Transkrip");
         table.put("Translate",
                 "Terjemahkan");
+    }
+
+    private static void fill29(Map<String, String> table) {
         table.put("Translate posts by themselves",
                 "Terjemahkan postingan secara otomatis");
         table.put("Translate to",
                 "Terjemahkan ke");
-    }
-
-    private static void fill29(Map<String, String> table) {
         table.put("Translating...",
                 "Menerjemahkan...");
         table.put("Translation",
@@ -3739,13 +3743,13 @@ final class L10nTableIn {
                 "Video tersimpan");
         table.put("Video stories don't start by themselves. Touch and hold a story, then let go, to play it. Works with Tap to play on or off.",
                 "Cerita video tidak mulai sendiri. Tekan lama sebuah cerita, lalu lepaskan, untuk memutarnya. Berfungsi saat \"Ketuk untuk memutar\" menyala maupun mati.");
+    }
+
+    private static void fill30(Map<String, String> table) {
         table.put("Video stories follow the Default quality row.",
                 "Cerita video mengikuti baris Kualitas bawaan.");
         table.put("Video stories wait for a tap",
                 "Cerita video menunggu ketukan");
-    }
-
-    private static void fill30(Map<String, String> table) {
         table.put("Video stories will play at the same quality as other videos.",
                 "Cerita video akan diputar dengan kualitas yang sama seperti video lainnya.");
         table.put("Video subfolder",
@@ -3862,13 +3866,13 @@ final class L10nTableIn {
                 "Mengapa saya melihat postingan ini?");
         table.put("Width in dp, from %1$s to %2$s. Leave it blank for %3$s.",
                 "Lebar dalam dp, dari %1$s sampai %2$s. Biarkan kosong untuk %3$s.");
+    }
+
+    private static void fill31(Map<String, String> table) {
         table.put("With %1$s on, Facebook will open on %2$s.",
                 "Saat %1$s menyala, Facebook akan terbuka di %2$s.");
         table.put("With %1$s on, Home will show the same posts as %2$s in the Feeds tab.",
                 "Saat %1$s menyala, Beranda akan menampilkan postingan yang sama dengan %2$s di tab Feed.");
-    }
-
-    private static void fill31(Map<String, String> table) {
         table.put("With Block Instant Games ads on, a game's rewarded ad counts as watched. No ad plays and the game still gives its reward.",
                 "Saat \u201cBlokir iklan Instant Games\u201d menyala, iklan berhadiah di game dianggap sudah ditonton. Tidak ada iklan yang diputar dan game tetap memberi hadiahnya.");
         table.put("With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.",
@@ -3985,13 +3989,13 @@ final class L10nTableIn {
                 "Ponselmu tidak bisa menyusun video ini. Coba Kualitas unduhan yang lain.");
         table.put("Your phone couldn't write the file. Check your free space and try again.",
                 "Ponselmu tidak bisa menulis filenya. Periksa ruang kosongnya lalu coba lagi.");
+    }
+
+    private static void fill32(Map<String, String> table) {
         table.put("Your profile shows %1$s on this phone.",
                 "Profil Anda menampilkan %1$s di ponsel ini.");
         table.put("Your settings already match a new install.",
                 "Pengaturan kamu sudah sama dengan instalasi baru.");
-    }
-
-    private static void fill32(Map<String, String> table) {
         table.put("Your settings already match that file, so nothing will change.",
                 "Pengaturan Anda sudah sesuai dengan file itu, jadi tidak ada yang akan berubah.");
         table.put("Your settings are back the way they were before the reset.",

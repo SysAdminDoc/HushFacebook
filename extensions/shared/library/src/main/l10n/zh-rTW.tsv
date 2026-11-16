@@ -2899,3 +2899,5 @@ Your settings are back the way they were before the reset.	你的設定已還原
 Couldn't finish, and couldn't put back the settings you had. Check the switches on this screen.	無法完成，也無法還原原有設定。請檢查此畫面上的開關。
 Show every reaction on comments	顯示留言上的所有心情
 Where Facebook shows only a comment's top reaction next to its count, keeps Like, Reply and every reaction instead. A change shows on the comments drawn after it.	在 Facebook 只在數量旁顯示留言最多的那個心情時，改為保留讚、回覆和所有心情。變更對之後顯示的留言生效。
+Move seen stories to the end	將已看過的限時動態移到最後
+Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.	你已看過的限時動態會移到橫幅最後，排在還沒看過的後面。開啟「隱藏已看過的限時動態」時，它優先生效。從 Facebook 下次載入橫幅起生效。

@@ -286,6 +286,8 @@ public final class SuggestedStories {
         final boolean onlyWatched;
         /** Hide stories you scrolled past (#463). */
         final boolean passedStories;
+        /** Move seen stories to the end (#489). */
+        final boolean seenLast;
 
         Switches(boolean suggested, boolean peopleYouMayKnowInBuild, boolean peopleYouMayKnow, boolean contactImport,
                 boolean pageStories, boolean seenStories, boolean onlyWatched) {
@@ -295,6 +297,13 @@ public final class SuggestedStories {
 
         Switches(boolean suggested, boolean peopleYouMayKnowInBuild, boolean peopleYouMayKnow, boolean contactImport,
                 boolean pageStories, boolean seenStories, boolean onlyWatched, boolean passedStories) {
+            this(suggested, peopleYouMayKnowInBuild, peopleYouMayKnow, contactImport, pageStories, seenStories,
+                    onlyWatched, passedStories, false);
+        }
+
+        Switches(boolean suggested, boolean peopleYouMayKnowInBuild, boolean peopleYouMayKnow, boolean contactImport,
+                boolean pageStories, boolean seenStories, boolean onlyWatched, boolean passedStories,
+                boolean seenLast) {
             this.suggested = suggested;
             this.peopleYouMayKnowInBuild = peopleYouMayKnowInBuild;
             this.peopleYouMayKnow = peopleYouMayKnowInBuild && peopleYouMayKnow;
@@ -303,6 +312,8 @@ public final class SuggestedStories {
             this.seenStories = seenStories && !onlyWatched;
             this.onlyWatched = onlyWatched;
             this.passedStories = passedStories;
+            // Hide seen stories takes them out, and Show only watched stories keeps nothing else to pass.
+            this.seenLast = seenLast && !this.seenStories && !onlyWatched;
         }
 
         /** Whether a bucket of this kind leaves the tray. */
@@ -329,9 +340,17 @@ public final class SuggestedStories {
             return passedStories && story(kind);
         }
 
-        /** Whether a bucket leaving as seen or scrolled past stays while a story viewer is open (#438). */
+        /** Whether a bucket of this kind moves to the end of the tray once you've watched it (#489). */
+        boolean movesSeen(String kind) {
+            return seenLast && story(kind);
+        }
+
+        /**
+         * Whether a bucket leaving as seen or scrolled past, or moving to the end, stays where it is while
+         * a story viewer is open (#438, #489).
+         */
         boolean holdsForViewer() {
-            return seenStories || passedStories;
+            return seenStories || passedStories || seenLast;
         }
 
         private static boolean story(String kind) {
@@ -360,7 +379,8 @@ public final class SuggestedStories {
      * Injection point, first in the constructor of the tray data and first in the tray parser that
      * Home's tray and a story shown in the feed go through (#313, #317). Answers the list it was handed,
      * or an ImmutableList of the same buckets in the same order without the ones whose switch is
-     * on, which takes the list's place. Never throws.
+     * on, which takes the list's place. With Move seen stories to the end on, the watched ones follow
+     * the rest in the order they came (#489). Never throws.
      *
      * @param buckets the tray's bucket list, an ImmutableList.
      */
@@ -382,6 +402,7 @@ public final class SuggestedStories {
             List<String> kinds = new ArrayList<>(buckets.size());
             List<String> left = new ArrayList<>();
             ArrayList<Object> kept = null;
+            ArrayList<Object> last = null;
             int held = 0;
             for (int index = 0; index < buckets.size(); index++) {
                 Object bucket = buckets.get(index);
@@ -392,20 +413,38 @@ public final class SuggestedStories {
                         : switches.leavesSeen(kind) && watched(bucket, access) ? SEEN
                         : switches.leavesUnwatched(kind) && unwatched(bucket, access) ? UNWATCHED
                         : switches.leavesPassed(kind) && passed(bucket, access) ? PassedStories.PASSED : null;
+                boolean toEnd = leaving == null && switches.movesSeen(kind) && watched(bucket, access);
                 if (switches.holdsForViewer()
                         && (leaving == null || SEEN.equals(leaving) || PassedStories.PASSED.equals(leaving))
-                        && keptForViewer(bucket, access, leaving != null)) {
+                        && keptForViewer(bucket, access, leaving != null || toEnd)) {
                     leaving = null;
+                    toEnd = false;
                     held++;
                 }
-                if (leaving != null) {
+                if (leaving != null || toEnd) {
                     if (kept == null) {
                         kept = new ArrayList<>(buckets.size());
                         kept.addAll(buckets.subList(0, index));
                     }
-                    left.add(leaving);
+                    if (leaving != null) {
+                        left.add(leaving);
+                    } else {
+                        if (last == null) last = new ArrayList<>();
+                        last.add(bucket);
+                    }
                 } else if (kept != null) {
                     kept.add(bucket);
+                }
+            }
+
+            int moved = 0;
+            if (last != null) {
+                kept.addAll(last);
+                // Watched ones that already came last leave Facebook's list as it was.
+                if (left.isEmpty() && sameOrder(kept, buckets)) {
+                    kept = null;
+                } else {
+                    moved = last.size();
                 }
             }
 
@@ -415,6 +454,7 @@ public final class SuggestedStories {
                 if (copy == null) {
                     HookStatus.missingMember(FamilyNames.SUGGESTED_STORIES, "method", "ImmutableList", "copyOf(Collection)");
                     left.clear();
+                    moved = 0;
                 } else {
                     answer = copy;
                     for (String kind : left) FeedFilterCounters.removed(ROUTE, 1, kind);
@@ -425,9 +465,11 @@ public final class SuggestedStories {
             final int shown = buckets.size() - left.size();
             StoriesTrayPaging.sawTray(shown, left.size());
             final String off = switches.offNote();
-            final String playing = held == 0 ? "" : ". " + held + " seen kept while a story plays.";
+            final String notes = (moved == 0 ? "" : ". " + moved + " seen moved to the end")
+                    + (held == 0 ? "" : ". " + held + " seen kept while a story plays")
+                    + (moved == 0 && held == 0 ? "" : ".");
             Logger.printDebug(() -> "Stories tray: " + buckets.size() + " buckets, " + shown + " kept. Kinds: "
-                    + summary(kinds) + off + playing);
+                    + summary(kinds) + off + notes);
             // Observe the actual delivery, including a refused copy. Diagnostics must not undo a filter.
             final Object delivered = answer;
             try {
@@ -441,6 +483,15 @@ public final class SuggestedStories {
             Logger.printException(() -> "Hide suggested stories: could not read the tray's buckets", failure);
             return buckets;
         }
+    }
+
+    /** Whether two lists hold the very same buckets in the same order. */
+    private static boolean sameOrder(List<?> mine, List<?> theirs) {
+        if (mine.size() != theirs.size()) return false;
+        for (int index = 0; index < mine.size(); index++) {
+            if (mine.get(index) != theirs.get(index)) return false;
+        }
+        return true;
     }
 
     /**
@@ -946,7 +997,8 @@ public final class SuggestedStories {
             return new Switches(Settings.HIDE_SUGGESTED_STORIES.get(), peopleYouMayKnowInBuild(),
                     Settings.HIDE_PEOPLE_YOU_MAY_KNOW.get(), Settings.HIDE_CONTACT_IMPORT_CARD.get(),
                     Settings.HIDE_PAGE_STORIES.get(), Settings.HIDE_SEEN_STORIES.get(),
-                    Settings.SHOW_ONLY_WATCHED_STORIES.get(), Settings.HIDE_PASSED_STORIES.get());
+                    Settings.SHOW_ONLY_WATCHED_STORIES.get(), Settings.HIDE_PASSED_STORIES.get(),
+                    Settings.SEEN_STORIES_LAST.get());
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "switch read", failure);
             return Switches.NONE;

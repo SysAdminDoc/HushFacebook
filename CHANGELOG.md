@@ -31,6 +31,7 @@ Changes in each Hushfacebook version, newest first.
 * `Reset settings`, next to `Import settings`, turns every switch and choice that `Export settings` saves back to how a new install has them, right away. `Undo the reset` below it puts yours back. Pause, debug logging and the update check stay as they are. (#483)
 * `Show every reaction on comments` under Comments and writing brings back the row with Like, Reply and every reaction next to a comment's count, on accounts where Facebook changed it to show only the top reaction. It starts off. (#241)
 * New `Hide the Add friend pop-up on shared reels` under Reels and Watch. When someone who isn't your friend sends you a reel, opening it no longer brings up the sheet asking you to add them. It starts off. (#486)
+* New `Move seen stories to the end` on the Stories page. Stories you've already watched go after the ones you haven't, so the new ones come first in the tray. A story you're watching keeps its place until you close it. It starts off. (#489)
 * **Tooling:** `superpack-unpack.ps1 -Desktop` unpacks Facebook's Android 9+ build on a PC with no phone or emulator attached. (#102)
 
 ### Changed

@@ -66,6 +66,7 @@ public class SuggestedStoriesTest {
         Settings.HIDE_PAGE_STORIES.resetToDefault();
         Settings.HIDE_SEEN_STORIES.resetToDefault();
         Settings.SHOW_ONLY_WATCHED_STORIES.resetToDefault();
+        Settings.SEEN_STORIES_LAST.resetToDefault();
         SuggestedStoriesForTests.peopleYouMayKnowInBuild(null);
         FeedFilterCounters.clear();
         HookStatus.clear();
@@ -649,6 +650,50 @@ public class SuggestedStoriesTest {
         assertEquals(Arrays.asList(create, self, fresh, card), SuggestedStoriesForTests.keptBuckets(tray));
         assertTrue(counterLine(), counterLine().contains("Last reason: " + SuggestedStories.SEEN + "."));
         assertTrue(counterLine(), counterLine().contains("Removed: " + SuggestedStories.SEEN + " 2."));
+    }
+
+    /**
+     * Issue #489: with Move seen stories to the end on, the stories you've watched follow the ones you
+     * haven't, each group in Facebook's order, and nothing leaves. The Add to story tiles and the cards
+     * keep their places whatever their flag says. Hide seen stories goes first, so with both on they leave.
+     */
+    @Test
+    public void watchedStoriesMoveToTheEndWithTheirSwitch() {
+        assertFalse("the switch starts off", Settings.SEEN_STORIES_LAST.get());
+        Bucket watched = new Bucket(false, Label.FAMILY).ownedBy("User").watched();
+        Bucket fresh = new Bucket(false, null).ownedBy("User");
+        Bucket page = new Bucket(false, null).ownedBy(SuggestedStories.PAGE_OWNER).watched();
+        Bucket later = new Bucket(false, null).ownedBy("User");
+        Bucket create = new Bucket(false, null, Type.ADD_TO_STORY).watched();
+        Bucket self = new Bucket(false, null, Type.ADD_TO_STORY_SELF_VIEW).watched();
+        Bucket card = new Bucket(false, null, Type.CONTACT_IMPORTER_STORY).watched();
+        List<Bucket> tray = Arrays.asList(create, self, watched, fresh, page, later, card);
+        Settings.HIDE_CONTACT_IMPORT_CARD.save(false);
+        assertSame("off, Facebook's tray", tray, SuggestedStoriesForTests.keptBuckets(tray));
+
+        Settings.SEEN_STORIES_LAST.save(true);
+        assertEquals(Arrays.asList(create, self, fresh, later, card, watched, page),
+                SuggestedStoriesForTests.keptBuckets(tray));
+        assertFalse(counterLine(), String.valueOf(counterLine()).contains("Removed: " + SuggestedStories.SEEN));
+
+        List<Bucket> inOrder = Arrays.asList(create, fresh, later, watched, page);
+        assertSame("already in order, Facebook's tray", inOrder, SuggestedStoriesForTests.keptBuckets(inOrder));
+
+        Settings.HIDE_SEEN_STORIES.save(true);
+        assertEquals("Hide seen stories didn't go first", Arrays.asList(create, self, fresh, later, card),
+                SuggestedStoriesForTests.keptBuckets(tray));
+    }
+
+    /** Paused, Move seen stories to the end leaves Facebook's order alone. */
+    @Test
+    public void aPauseKeepsTheOrderWithSeenStoriesLast() {
+        Bucket watched = new Bucket(false, null).ownedBy("User").watched();
+        Bucket fresh = new Bucket(false, null).ownedBy("User");
+        List<Bucket> tray = Arrays.asList(watched, fresh);
+        Settings.SEEN_STORIES_LAST.save(true);
+        assertEquals(Arrays.asList(fresh, watched), SuggestedStoriesForTests.keptBuckets(tray));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame("paused, Facebook's tray", tray, SuggestedStoriesForTests.keptBuckets(tray));
     }
 
     /**
