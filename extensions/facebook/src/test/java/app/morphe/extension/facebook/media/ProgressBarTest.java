@@ -71,9 +71,11 @@ public class ProgressBarTest {
         ProgressBar.updateAgainForTests = null;
         ProgressBar.endScrollForTests = null;
         ProgressBar.handOverAgainForTests = null;
+        ProgressBar.liveRewoundForTests = null;
         ProgressBar.forgetWatchesForTests();
         ProgressBar.forgetFootersForTests();
         ProgressBar.forgetHandOversForTests();
+        ProgressBar.forgetLiveSeeksForTests();
         HookStatus.clear();
     }
 
@@ -1044,6 +1046,93 @@ public class ProgressBarTest {
         };
         ProgressBar.barReleased(new Object(), new SeekBar(RuntimeEnvironment.getApplication()));
         idle(ProgressBar.BAR_RELEASE_MS);
+    }
+
+    private static SeekBar barAt(int progress) {
+        SeekBar bar = new SeekBar(RuntimeEnvironment.getApplication());
+        bar.setMax(1000);
+        bar.setProgress(progress);
+        return bar;
+    }
+
+    /** The seek request the reel bar's release makes, let go at [progress] of 1000. */
+    private static Object releasedAt(int progress) {
+        ProgressBar.barReleased(new Object(), barAt(progress));
+        Object request = new Object();
+        ProgressBar.scrubberSeek(request);
+        return request;
+    }
+
+    private static List<String> recordLiveRewinds() {
+        List<String> calls = new ArrayList<>();
+        ProgressBar.liveRewoundForTests = (player, rewound) -> calls.add(player + " " + rewound);
+        return calls;
+    }
+
+    /** #482: the reel bar's seek on a live video goes through, the video marked rewound first, with the switch either way. */
+    @Test
+    public void aLiveSeekFromTheReelBarIsLetThroughRewound() {
+        List<String> calls = recordLiveRewinds();
+        for (boolean kept : new boolean[] {false, true}) {
+            Settings.KEEP_PROGRESS_BAR.save(kept);
+            calls.clear();
+            Object request = releasedAt(400);
+            assertFalse("the seek was still skipped, kept " + kept, ProgressBar.liveSeekRefused(1, request, "player"));
+            assertEquals(Collections.singletonList("player true"), calls);
+            assertTrue("asked again, the request is Facebook's to answer", ProgressBar.liveSeekRefused(1, request, "player"));
+            assertEquals(1, calls.size());
+        }
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.LIVE_SEEK + " 2"));
+    }
+
+    /** #482: let go at the bar's end, the video is marked live again and the skip stands, which takes it back to live. */
+    @Test
+    public void aLiveBarLetGoAtItsEndGoesBackToLive() {
+        List<String> calls = recordLiveRewinds();
+        Object request = releasedAt(1000);
+        assertTrue("a seek to the end went through", ProgressBar.liveSeekRefused(1, request, "player"));
+        assertEquals(Collections.singletonList("player false"), calls);
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.LIVE_EDGE + " 1"));
+    }
+
+    @Test
+    public void theEndOfOneReleaseIsntCarriedToTheNextRequest() {
+        List<String> calls = recordLiveRewinds();
+        releasedAt(1000);
+        Object next = new Object();
+        ProgressBar.scrubberSeek(next);
+        assertFalse(ProgressBar.liveSeekRefused(1, next, "player"));
+        assertEquals(Collections.singletonList("player true"), calls);
+    }
+
+    /** A video that isn't live, and any seek the reel bar's release didn't make, keep Facebook's answer untouched. */
+    @Test
+    public void aSeekThatIsntLiveOrTheReelBarsIsLeftToFacebook() {
+        List<String> calls = recordLiveRewinds();
+        Object request = releasedAt(400);
+        assertFalse(ProgressBar.liveSeekRefused(0, request, "player"));
+        assertTrue("the request kept its mark past an answer", ProgressBar.liveSeekRefused(1, request, "player"));
+        assertTrue(ProgressBar.liveSeekRefused(1, new Object(), "player"));
+        assertTrue(ProgressBar.liveSeekRefused(1, releasedAt(400), null));
+        assertTrue(calls.isEmpty());
+    }
+
+    @Test
+    public void aLiveSeekUnderPauseKeepsFacebooksSkip() {
+        List<String> calls = recordLiveRewinds();
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue(ProgressBar.liveSeekRefused(1, releasedAt(400), "player"));
+        assertTrue(calls.isEmpty());
+    }
+
+    @Test
+    public void aThrowingLiveRewindKeepsFacebooksSkip() {
+        ProgressBar.liveRewoundForTests = (player, rewound) -> {
+            throw new IllegalStateException("Facebook moved");
+        };
+        assertTrue(ProgressBar.liveSeekRefused(1, releasedAt(400), "player"));
     }
 
     @Test

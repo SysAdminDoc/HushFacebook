@@ -71,6 +71,7 @@ Changes in each Hushfacebook version, newest first.
 * The News feed switches of `Show full post text`, `Translate posts`, `Open comments with a gesture`, `See who shared` and `Photo carousel` show up even when that's the only feed patch you picked. The page used to open only for a set list of patches, and those five weren't on it.
 * `Hide Back on opened videos` now also works on a reel or video you open from search results. Before, its arrow stayed, because that player sits in the same part of the screen as the Reels tab's header and only the header got looked at. (#388)
 * `Photo carousel` lets you swipe through every photo a post brought now. Facebook's row stopped at its own limit, 12 for some accounts, so a 76-photo album ended there while tapping into the post showed all 76. (#484)
+* Dragging the seek bar on a live video you opened from search results moves the video now. Facebook only seeks a live video once it's marked as behind live, which its full player does while you drag but that viewer never did. Let go at the far right end and it goes back to live. (#482)
 
 ## 0.22.0 (2026-11-12)
 

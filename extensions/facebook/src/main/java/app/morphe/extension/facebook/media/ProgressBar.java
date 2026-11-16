@@ -8,6 +8,7 @@ import android.content.res.Resources;
 import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -31,6 +32,7 @@ import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.HushfacebookPause;
 
 /**
  * Keeps the progress bar of a video on screen. Two players hide theirs a few seconds in.
@@ -205,6 +207,12 @@ public final class ProgressBar {
     /** How long after the bar is let go its update runs again, so a seek Facebook started has landed. */
     static final long BAR_RELEASE_MS = 300;
 
+    /** Counted each time a live video's bar is let go part way and its seek is let through (#482). */
+    static final String LIVE_SEEK = "Live video bar let go, seek let through";
+
+    /** Counted each time a live video's bar is let go at its end, which takes it back to live (#482). */
+    static final String LIVE_EDGE = "Live video bar let go at its end, back to live";
+
     /** How long after a light mount, and then between checks, a kept bar is checked for having drawn its reel. */
     static final long UPDATE_CHECK_MS = 500;
 
@@ -324,6 +332,29 @@ public final class ProgressBar {
 
     interface UpdateAgain {
         void run(Object scrubber);
+    }
+
+    /**
+     * The seek requests the scrubber's bar release made, each with whether the bar was let go at its
+     * end. Facebook's seek handler asks {@link #liveSeekRefused} about each once (#482).
+     */
+    private static final Map<Object, Boolean> seeks = Collections.synchronizedMap(new WeakHashMap<>());
+
+    /** Whether the bar last let go sat at its end, for the seek request its release goes on to make. */
+    private static volatile boolean releasedAtEnd;
+
+    /** Facebook's live latency setter in its place, for tests, where the stub has nothing behind it. */
+    @Nullable
+    static volatile LiveRewind liveRewoundForTests;
+
+    interface LiveRewind {
+        void run(Object player, boolean rewound);
+    }
+
+    /** Forgets the seek requests the bar's release made, for tests, which share one process. */
+    static void forgetLiveSeeksForTests() {
+        seeks.clear();
+        releasedAtEnd = false;
     }
 
     /** Facebook's end of a scroll in its place, for tests, where the stub has nothing behind it. */
@@ -949,12 +980,15 @@ public final class ProgressBar {
      * update, and on a bar that takes a touch anywhere only a seek starts it again. A tap in the look
      * this switch keeps doesn't seek, so the bar and its time stood still until the reel looped (#120).
      * While the bar is kept this runs the update again just after the release: one more ordinary run
-     * after a real seek, and on a paused reel the update stops itself.
+     * after a real seek, and on a paused reel the update stops itself. Whatever the switch, it notes
+     * whether the bar was let go at its end, for the seek request the release goes on to make (#482).
      */
     public static void barReleased(Object scrubber, View bar) {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, "reel bar release");
+            releasedAtEnd = bar instanceof SeekBar && ((SeekBar) bar).getMax() > 0
+                    && ((SeekBar) bar).getProgress() >= ((SeekBar) bar).getMax();
             if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) return;
             Utils.runOnMainThreadDelayed(() -> updateAfterRelease(scrubber, bar), BAR_RELEASE_MS);
         } catch (Throwable failure) {
@@ -976,6 +1010,61 @@ public final class ProgressBar {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel bar release", failure);
         }
+    }
+
+    /**
+     * The hook in the bar's release, right after it builds the seek request for the spot the bar was
+     * let go at. Notes [request] with whether that spot was the bar's end, for {@link #liveSeekRefused}.
+     */
+    public static void scrubberSeek(Object request) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, "reel bar seek request");
+            if (request != null) seeks.put(request, releasedAtEnd);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel bar seek request", failure);
+        } finally {
+            releasedAtEnd = false;
+        }
+    }
+
+    /**
+     * The hook in Facebook's seek handler, in front of its test of whether the video is live, which
+     * skips the seek for a live one. [refused] is that test's answer, non-zero for live. Facebook's
+     * full player marks a live video as rewound while its bar is dragged back, so the seek goes
+     * through there. The scrubber that search results open a live video with never does, so dragging
+     * its bar did nothing (#482). For a seek request the scrubber's release made, this does what the
+     * full player does: marks the video rewound and lets the seek through, or, let go at the bar's
+     * end, marks it live again and leaves the seek skipped, which takes it back to live. Any other
+     * request, a throw, Pause, or settings that aren't ready yet keep Facebook's answer.
+     */
+    public static boolean liveSeekRefused(int refused, Object request, Object player) {
+        try {
+            Boolean atEnd = seeks.remove(request);
+            if (refused == 0) return false;
+            HookStatus.invoked(FAMILY);
+            if (atEnd == null || player == null || !Utils.settingsReady() || HushfacebookPause.isPaused()) return true;
+            HookStatus.bound(FAMILY, "live seek");
+            LiveRewind forced = liveRewoundForTests;
+            if (forced != null) {
+                forced.run(player, !atEnd);
+            } else {
+                liveRewound(player, !atEnd);
+            }
+            HookStatus.counted(FAMILY, atEnd ? LIVE_EDGE : LIVE_SEEK);
+            return atEnd;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "live seek", failure);
+            return refused != 0;
+        }
+    }
+
+    /**
+     * Filled in by the patch: Facebook's live latency setter on [player], which marks a live video
+     * as rewound behind its live edge, or back at it, as Facebook's full player does while its bar
+     * is dragged. Only a rewound live video takes a seek. Does nothing until filled.
+     */
+    public static void liveRewound(Object player, boolean rewound) {
     }
 
     /**

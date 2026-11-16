@@ -17,6 +17,7 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.layout.theme.branchTargets
+import app.morphe.patches.facebook.media.resume.VIDEO_PLAYER_PARAMS
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -512,6 +513,24 @@ val keepProgressBarPatch = bytecodePatch(
         if (!extendsType(barType, SEEK_BAR) { classDefByOrNull(it)?.superclass }) refuse("$barType, the scrubber's bar, isn't a SeekBar")
         val touch = barTouch(classDefByOrNull(barType) ?: refuse("$barType, the scrubber's SeekBar, isn't in this APK"))
         val release = barRelease(barListeners, progress.base.type)
+        // The bar's seek on a live video, which Facebook skips unless the player was marked rewound (#482).
+        val seekRequest = seekRequest(
+            classDefByStrings(SEEK_REQUEST_FORMAT, StringComparisonType.EQUALS)
+                .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+        )
+        scrubberSeekSite(release.method, seekRequest)
+        val liveChecks = mutableListOf<LiveSeekCheck>()
+        classDefForEachReferencing(types = listOf(seekRequest.type)) { holder ->
+            if (!holder.type.startsWith(EXTENSION_CLASSES)) liveChecks += liveSeekChecks(holder, seekRequest)
+        }
+        val liveCheck = liveChecks.singleOrNull()
+            ?: refuse("${liveChecks.size} seek handlers skip a live video's ${seekRequest.type}, expected one")
+        checkLiveSeekThrough(liveCheck)
+        val liveRewind = liveRewind(
+            classDefByOrNull(liveCheck.live.definingClass) ?: refuse("${liveCheck.live.definingClass}, the player, isn't in this APK"),
+            liveCheck,
+            liveNowField(classDefByOrNull(VIDEO_PLAYER_PARAMS) ?: refuse("VideoPlayerParams isn't in this APK")),
+        )
 
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(scrubber.passive) }
             .activeInstead(scrubber, graph)
@@ -584,7 +603,13 @@ val keepProgressBarPatch = bytecodePatch(
         mutableClassDefBy(extension.type).methods.single { it.sameAs(hide) }.noTimerWhileKept()
         mutableClassDefBy(hider.type).methods.single { it.sameAs(hiderRun) }.noTimerWhileKept()
         mutableClassDefBy(barType).methods.single { it.sameAs(touch) }.takesTapsToSeek()
-        mutableClassDefBy(release.method.definingClass).methods.single { it.sameAs(release.method) }.reportsBarRelease(release)
+        mutableClassDefBy(release.method.definingClass).methods.single { it.sameAs(release.method) }.apply {
+            reportsBarRelease(release)
+            reportsScrubberSeek(seekRequest)
+        }
+        mutableClassDefBy(liveCheck.method.definingClass).methods.single { it.sameAs(liveCheck.method) }
+            .letsLiveSeekThrough(liveCheck)
+        fillLiveRewound(liveRewind)
         enableStatus("keepProgressBar")
     }
 }
