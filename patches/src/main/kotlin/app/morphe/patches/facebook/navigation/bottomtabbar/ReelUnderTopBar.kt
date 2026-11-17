@@ -10,6 +10,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.util.findMutableMethodOf
+import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -301,13 +302,7 @@ internal fun BytecodePatchContext.fillReelsListId(id: Int): Boolean {
     val stub = mutableClassDefBy(TAB_BAR_SCROLL_AWAY).methods.singleOrNull {
         it.name == REELS_LIST_ID_STUB && it.returnType == "I" && AccessFlags.STATIC.isSet(it.accessFlags) && it.parameterTypes.isEmpty()
     } ?: return false
-    stub.addInstructions(
-        0,
-        """
-            const v0, $id
-            return v0
-        """,
-    )
+    stub.returnEarly(id)
     return true
 }
 
