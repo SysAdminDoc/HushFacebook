@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.reels;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -20,6 +21,7 @@ import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -328,5 +330,60 @@ public class ReelMidCardsTest {
         ReelMidCardsForTests.withoutThreadsCards(Collections.singletonList(section));
         assertTrue(section.items.contains(card));
         assertTrue(line(), line().contains(ReelMidCards.NO_TYPE + " 1"));
+    }
+
+    private static Collection<?> items(Collection<?> items, String route) {
+        return ReelMidCards.withoutCardItems(items, ReelMidCardsForTests.MID_CARD, ReelMidCardsForTests.TYPES, route);
+    }
+
+    private static String line(String route) {
+        for (String line : FeedFilterCounters.report()) {
+            if (line.startsWith(route + ": ")) return line;
+        }
+        return null;
+    }
+
+    /**
+     * #85, #441: 587's Reels loader puts a card straight into the item collection, one item at a time
+     * or as a flat page, and no page of sections ever holds it. On, the card comes off there too, each
+     * way counted on a route of its own, and the walk after an insert leaves it out as well.
+     */
+    @Test
+    public void aCardGoingStraightIntoTheItemCollectionComesOff() {
+        Settings.HIDE_REEL_THREADS_CARDS.save(true);
+        Settings.HIDE_REEL_POST_CARDS.save(true);
+        Object reel = new Object();
+        MidCard threads = new MidCard(MidCardType.THREADS_MIDCARD);
+        MidCard people = new MidCard(MidCardType.PYML_MIDCARD);
+        MidCard posts = new MidCard(MidCardType.NEWS_FEED_MIDCARD);
+
+        // The edge swap hands over one card: an empty answer, so the placer returns before it goes in.
+        assertTrue(items(Collections.singletonList(threads), ReelMidCards.ITEMS_ROUTE).isEmpty());
+        // A page append keeps the reel and the other card in order.
+        assertEquals(Arrays.asList(reel, people),
+                new ArrayList<>(items(Arrays.asList(reel, threads, people, posts), ReelMidCards.ITEMS_ROUTE)));
+        // Nothing to take off: the very same collection.
+        List<Object> reels = Collections.singletonList(reel);
+        assertSame(reels, items(reels, ReelMidCards.ITEMS_ROUTE));
+        // The walk after the insert.
+        assertTrue(items(Collections.singletonList(threads), ReelMidCards.ANNOUNCED_ROUTE).isEmpty());
+
+        String inserts = line(ReelMidCards.ITEMS_ROUTE);
+        assertNotNull(FeedFilterCounters.report().toString(), inserts);
+        assertTrue(inserts, inserts.contains("3 removed"));
+        assertTrue(inserts, inserts.contains("mid-card THREADS_MIDCARD 2"));
+        assertTrue(inserts, inserts.contains("mid-card NEWS_FEED_MIDCARD 1"));
+        String announced = line(ReelMidCards.ANNOUNCED_ROUTE);
+        assertNotNull(FeedFilterCounters.report().toString(), announced);
+        assertTrue(announced, announced.contains("1 removed"));
+        assertNull("the section route saw none of it", line());
+    }
+
+    /** Off, the item collection goes on as it came, the card in it. */
+    @Test
+    public void offACardGoingStraightIntoTheItemCollectionStays() {
+        List<Object> card = Collections.singletonList(new MidCard(MidCardType.THREADS_MIDCARD));
+        assertSame(card, items(card, ReelMidCards.ITEMS_ROUTE));
+        assertSame(card, items(card, ReelMidCards.ANNOUNCED_ROUTE));
     }
 }

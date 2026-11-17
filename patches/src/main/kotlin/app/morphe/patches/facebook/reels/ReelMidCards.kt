@@ -8,6 +8,8 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patches.facebook.ads.sponsoredreels.dropItemFirst
+import app.morphe.patches.facebook.ads.sponsoredreels.filterPageFirst
 import app.morphe.patches.facebook.ads.sponsoredreels.filterSectionsFirst
 import app.morphe.patches.facebook.ads.sponsoredreels.reelPages
 import app.morphe.patches.facebook.ads.sponsoredreels.toBinaryName
@@ -54,6 +56,10 @@ internal const val REEL_MID_CARDS = "$EXTENSION_PACKAGE/reels/ReelMidCards;"
 internal const val MID_CARD_TYPE_STUB = "midCardType"
 internal const val THREADS_CARD_SECTION_FILTER =
     "$REEL_MID_CARDS->withoutThreadsCards(Ljava/util/List;Ljava/lang/String;)Ljava/util/List;"
+internal const val THREADS_CARD_ITEM_FILTER =
+    "$REEL_MID_CARDS->withoutThreadsCardItems(Ljava/util/Collection;Ljava/lang/String;)Ljava/util/Collection;"
+internal const val ANNOUNCED_THREADS_CARD_FILTER =
+    "$REEL_MID_CARDS->withoutAnnouncedThreadsCards(Ljava/util/Collection;Ljava/lang/String;)Ljava/util/Collection;"
 
 private const val ENUM = "Ljava/lang/Enum;"
 private const val OBJECT = "Ljava/lang/Object;"
@@ -196,7 +202,8 @@ internal class MidCardScan {
  * carousel, #441) and Hide reel
  * interest prompts (the interest survey, #405), so it goes in once whichever of them is picked. Each
  * page of sections the Reels controller takes goes through the same walk the sponsored reels and
- * GenAI filters use, with the mid-card item's class beside it, and the extension reads each
+ * GenAI filters use, with the mid-card item's class beside it, and so does every item going into
+ * the Reels item collection by any other way, and the extension reads each
  * mid-card's type through the stub this fills. What comes off is the extension's call, by which of
  * the two patches the build carries and their switches.
  */
@@ -209,7 +216,15 @@ internal val reelMidCardsPatch = bytecodePatch {
         val resolved = scan.resolve()
         val card = resolved.found ?: throw PatchException("$MID_CARDS: ${resolved.problem}")
         fillMidCardTypeStub(card)
-        reelPages(MID_CARDS).addPage.filterSectionsFirst(card.item.toBinaryName(), THREADS_CARD_SECTION_FILTER, MID_CARDS)
+        val pages = reelPages(MID_CARDS)
+        val item = card.item.toBinaryName()
+        pages.addPage.filterSectionsFirst(item, THREADS_CARD_SECTION_FILTER, MID_CARDS)
+        // 587's client-side Reels loader puts cards straight into the item collection, never in a
+        // page of sections (#85, #441), so the cards come off every way an item goes in as well, and
+        // off the walk after it so a card left out is never announced.
+        pages.pageInserts.forEach { it.filterPageFirst(item, THREADS_CARD_ITEM_FILTER, MID_CARDS) }
+        pages.announcePage.filterPageFirst(item, ANNOUNCED_THREADS_CARD_FILTER, MID_CARDS)
+        pages.itemInsert.dropItemFirst(item, THREADS_CARD_ITEM_FILTER, MID_CARDS)
     }
 }
 

@@ -9,6 +9,7 @@ import app.morphe.PatchContexts
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.reels.FOLLOWED_REEL_SECTION_FILTER
+import app.morphe.patches.facebook.reels.THREADS_CARD_ITEM_FILTER
 import app.morphe.patches.facebook.reels.THREADS_CARD_SECTION_FILTER
 import app.morphe.patches.facebook.reels.filterSectionsWithControllerFirst
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -216,7 +217,7 @@ class ReelPagesFixtureTest {
                 val append = shapes[1]
                 assertEquals("${bundle.name}: the one-item insert", item, pages.insertItem.implementation!!.let { it.registerCount to it.registerCount - 2 })
                 assertEquals("${bundle.name}: the static append", append, pages.appendPage?.implementation?.let { it.registerCount to it.registerCount - 1 })
-                assertEquals("${bundle.name}: the page inserts", if (append == null) 1 else 2, pages.pageInserts.size)
+                assertEquals("${bundle.name}: the page inserts", if (append == null) 1 else 2, pages.pageInserts.count { it !in pages.appendPages })
 
                 // Hide sponsored reels first, then Hide AI-detected posts in front of it.
                 pages.insertItem.dropItemFirst("fixture.Ad")
@@ -235,5 +236,74 @@ class ReelPagesFixtureTest {
             }
         }
         assertEquals("a declared build has no fixture", inserts.keys, checked)
+    }
+
+    /**
+     * The static placer's registers and its item's register, then the registers and page register
+     * of each static append taking an out-list and a map, by ABI, read from each bundle's dex. 587's
+     * arm64 placer `LX/04vS;->A05` has 7 registers with the item in v4, its appends `A03` 8 (page in
+     * v5) and `A0A` 6 (page in v3); the armeabi build's `LX/04v9;` has the same shapes. The Android 9
+     * bundle isn't in the fixtures folder, so it gets its pin from its own dex when it comes back.
+     */
+    private val placers = mapOf(
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
+            "arm64-v8a" to ((7 to 4) to setOf(8 to 5, 6 to 3)),
+            "armeabi-v7a" to ((7 to 4) to setOf(8 to 5, 6 to 3)),
+        ),
+    )
+
+    /**
+     * #85 and #441: 587's client-side Reels loader swaps a reel or a card in with the static placer
+     * the one-item insert calls, and appends its pages through two static helpers, so neither the
+     * one-item insert's drop nor the controller's section filter ever saw what came in that way.
+     * The one-item drop goes on the placer, and every page filter on both appends, Clean up Reels'
+     * mid-card filter among them.
+     */
+    @Test
+    fun `the client-side loader's placer and both appends carry the reel filters in each declared build`() {
+        val checked = mutableSetOf<String>()
+        for ((version, byAbi) in placers) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val (place, appends) = byAbi[bundle.name.substringAfter("-$version-").substringBefore(".apkm")]
+                    ?: throw AssertionError("${bundle.name} has no pin")
+                forgetMatches()
+                val anchors = FixtureDex.classesHolding(bundle, "VideoHomeDataControllerSfdAdsUtil") +
+                    FixtureDex.classesHolding(bundle, "VideoHomeDataControllerImpl.maybeInsertAds")
+                val taken = anchors.flatMap { it.methods }.filter { it.name == "<init>" }
+                    .flatMap { method -> method.parameterTypes.map { it.toString() } }
+                    .filter { it.startsWith("L") }.toSet()
+                val context = PatchContexts.of(anchors + FixtureDex.classes(bundle, taken).values)
+                val pages = with(context) { reelPages(SPONSORED_REELS_PATCH) }
+
+                val placer = pages.placeItem ?: throw AssertionError("${bundle.name}: no static item placer")
+                assertEquals("${bundle.name}: the placer", place, placer.implementation!!.let { it.registerCount to it.registerCount - 3 })
+                assertEquals("${bundle.name}: the one-item drop goes on the placer", placer, pages.itemInsert)
+                assertEquals(
+                    "${bundle.name}: the appends",
+                    appends,
+                    pages.appendPages.map { it.implementation!!.let { code -> code.registerCount to code.registerCount - 3 } }.toSet(),
+                )
+                assertEquals("${bundle.name}: every page insert", 1 + appends.size, pages.pageInserts.size)
+
+                // Hide sponsored reels first, then Clean up Reels' mid-card filter in front of it.
+                pages.itemInsert.dropItemFirst("fixture.Ad")
+                pages.itemInsert.dropItemFirst("fixture.MidCard", THREADS_CARD_ITEM_FILTER, "Clean up Reels")
+                val where = "${bundle.name}: ${placer.definingClass}->${placer.name}"
+                placer.assertItemDropAt("$where, the mid-card drop", place.second, at = 0, next = 10)
+                placer.assertItemDropAt("$where, the ad drop", place.second, at = 10, next = 20)
+                assertEquals("$where: the mid-card filter", THREADS_CARD_ITEM_FILTER,
+                    ((placer.implementation!!.instructions.toList()[4] as ReferenceInstruction).reference as MethodReference).toString())
+
+                for (method in pages.appendPages) {
+                    val page = method.implementation!!.registerCount - 3
+                    method.filterPageFirst("fixture.Ad")
+                    method.filterPageFirst("fixture.MidCard", THREADS_CARD_ITEM_FILTER, "Clean up Reels")
+                    method.assertFilteredAtTop("${bundle.name}: ${method.name}, the mid-card filter", page, at = 0)
+                    method.assertFilteredAtTop("${bundle.name}: ${method.name}, the ad filter", page, at = 5)
+                }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", placers.keys, checked)
     }
 }

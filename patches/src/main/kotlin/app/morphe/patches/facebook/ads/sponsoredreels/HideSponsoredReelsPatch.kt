@@ -71,7 +71,7 @@ val hideSponsoredReelsPatch = bytecodePatch(
         fillReelItemStubs(items)
         pages.pageInserts.forEach { it.filterPageFirst(adBase) }
         pages.announcePage.filterPageFirst(adBase, ANNOUNCED_AD_FILTER)
-        pages.insertItem.dropItemFirst(adBase)
+        pages.itemInsert.dropItemFirst(adBase)
         pages.addPage.filterSectionsFirst(adBase)
 
         // The Reels tab's story loader draws those ads from Facebook's ad pool one slot at a time,

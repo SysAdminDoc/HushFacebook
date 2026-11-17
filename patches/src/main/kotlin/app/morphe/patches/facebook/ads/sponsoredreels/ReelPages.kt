@@ -24,6 +24,7 @@ internal const val SPONSORED_REELS_PATCH = "Hide sponsored reels"
 
 internal const val COLLECTION = "Ljava/util/Collection;"
 internal const val LIST = "Ljava/util/List;"
+internal const val MAP = "Ljava/util/Map;"
 
 /** The two ad filters the sponsored reels patch sends each page through, one per level. */
 internal const val AD_FILTER = "Lapp/morphe/extension/facebook/ads/ReelsAdFilter;->" +
@@ -64,9 +65,21 @@ internal class ReelPages(
     val insertItem: MutableMethod,
     /** The collection's static append of a page at the end: (collection, Collection)Z. 577 and 585 have none. */
     val appendPage: MutableMethod?,
+    /** The collection's static placer of one item, (item, collection, int)V, which the one-item insert calls. Null where a build has none. */
+    val placeItem: MutableMethod?,
+    /** The collection's static appends of a page with an out-list and a map, (collection, Collection, List, Map). */
+    val appendPages: List<MutableMethod>,
 ) {
-    /** The methods that put a page or an item into the collection's backing list. */
-    val pageInserts get() = listOfNotNull(insertPage, appendPage)
+    /** The methods that put a page into the collection's backing list. */
+    val pageInserts get() = listOfNotNull(insertPage, appendPage) + appendPages
+
+    /**
+     * Where one item goes in: the static placer when the build has one, since the one-item insert
+     * calls it and so does the client-side loader's edge swap, which never goes through the insert.
+     * One drop there sees each item once, and the insert's own walk afterwards meets the announced
+     * filter, which drops it again before any listener hears of it.
+     */
+    val itemInsert get() = placeItem ?: insertItem
 }
 
 /** The reel page methods, resolved for [patch], whose name goes in any refusal. */
@@ -129,6 +142,23 @@ internal fun BytecodePatchContext.reelPages(patch: String): ReelPages {
     }.also { check(it.size <= 1) { "$patch: more than one static page append on $collection: $it" } }
         .singleOrNull()
 
+    // 587's loader goes around both of those (#85, #441). Its edge swap
+    // (createVideoHomeItemFromEdge) puts a reel in with the static placer the one-item insert calls,
+    // then walks it itself, and its page loads append through two static helpers that take an
+    // out-list and a map beside the page. A Threads card reached the Reels tab on 2026-11-17 with
+    // nothing but the walk ever seeing it.
+    val itemType = insertItem.parameterTypes[0].toString()
+    val placeItem = collectionClass.methods.filter {
+        AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
+            it.parameterTypes.map(CharSequence::toString) == listOf(itemType, collection, "I")
+    }.also { check(it.size <= 1) { "$patch: more than one static item placer on $collection: $it" } }
+        .singleOrNull()
+
+    val appendPages = collectionClass.methods.filter {
+        AccessFlags.STATIC.isSet(it.accessFlags) &&
+            it.parameterTypes.map(CharSequence::toString) == listOf(collection, COLLECTION, LIST, MAP)
+    }
+
     // The filter on the collection is not enough. A device round on 2026-09-19 showed why. It
     // caught an ad in a page and logged the drop. The app then showed that ad as the third
     // reel. One step earlier, the controller adds a section wrapper. The wrapper holds its own
@@ -145,7 +175,7 @@ internal fun BytecodePatchContext.reelPages(patch: String): ReelPages {
         it.returnType == "Z" && it.parameterTypes.map(CharSequence::toString) == listOf(LIST)
     }.singleOrPatchException("$patch: the Reels controller's (List)Z method that takes a page of sections")
 
-    return ReelPages(adBase, insertPage, announcePage, addPage, insertItem, appendPage)
+    return ReelPages(adBase, insertPage, announcePage, addPage, insertItem, appendPage, placeItem, appendPages)
 }
 
 /**

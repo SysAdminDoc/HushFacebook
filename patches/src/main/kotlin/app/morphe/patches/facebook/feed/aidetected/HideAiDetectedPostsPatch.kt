@@ -230,6 +230,6 @@ private fun BytecodePatchContext.hideReels() {
     val model = modelType.toBinaryName()
     pages.pageInserts.forEach { it.filterPageFirst(model, REEL_FILTER, PATCH) }
     pages.announcePage.filterPageFirst(model, ANNOUNCED_REEL_FILTER, PATCH)
-    pages.insertItem.dropItemFirst(model, REEL_FILTER, PATCH)
+    pages.itemInsert.dropItemFirst(model, REEL_FILTER, PATCH)
     pages.addPage.filterSectionsFirst(model, REEL_SECTION_FILTER, PATCH)
 }

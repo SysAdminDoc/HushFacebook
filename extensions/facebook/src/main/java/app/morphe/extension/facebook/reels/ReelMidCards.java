@@ -6,6 +6,8 @@ package app.morphe.extension.facebook.reels;
 
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -70,6 +72,12 @@ public final class ReelMidCards {
     /** The diagnostic counter route: each page of sections handed in, and every item read. */
     static final String SECTIONS_ROUTE = "Reel mid-cards";
 
+    /** The route for items going into the Reels item collection: pages, appends and single items. */
+    static final String ITEMS_ROUTE = "Reel mid-card items";
+
+    /** The route for the collection's listener walk, counted apart so the items route counts each item once. */
+    static final String ANNOUNCED_ROUTE = "Reel mid-card announcements";
+
     /** What an item counts as. Only the Threads card, the survey, the groups card and the post carousel come off. */
     static final String MID_CARD = "mid-card ";
     static final String THREADS_CARD = MID_CARD + THREADS_MID_CARD;
@@ -119,67 +127,137 @@ public final class ReelMidCards {
 
     /** {@link #withoutThreadsCards(List, String)} with the type read passed in, so a test can stand in for the stub. */
     static List<?> withoutThreadsCards(List<?> page, String midCardClass, Types types) {
-        Boolean threadsForced = threadsPatchForTests;
-        Boolean promptsForced = promptsPatchForTests;
-        Boolean groupsForced = groupsPatchForTests;
-        boolean threadsPatch = threadsForced != null ? threadsForced : SettingsStatus.reelDeclutter();
-        boolean promptsPatch = promptsForced != null ? promptsForced : SettingsStatus.reelPrompts();
-        boolean groupsPatch = groupsForced != null ? groupsForced : SettingsStatus.suggestedPosts();
-        if (threadsPatch) HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
-        if (promptsPatch) HookStatus.invoked(FamilyNames.REEL_PROMPTS);
+        Plan plan = Plan.now();
         FeedFilterCounters.sawList(SECTIONS_ROUTE, page == null ? 0 : page.size());
-        if (page == null || page.isEmpty()) return page;
-
-        boolean threads = threadsPatch && switchedOn(() -> Settings.HIDE_REEL_THREADS_CARDS, FamilyNames.REEL_DECLUTTER);
-        boolean surveys = promptsPatch && switchedOn(() -> Settings.HIDE_REEL_PROMPTS, FamilyNames.REEL_PROMPTS);
-        boolean groups = groupsPatch && switchedOn(() -> Settings.HIDE_SUGGESTED_GROUPS, FamilyNames.SUGGESTED_POSTS);
-        boolean posts = threadsPatch && switchedOn(() -> Settings.HIDE_REEL_POST_CARDS, FamilyNames.REEL_DECLUTTER);
-        if (!threads && !surveys && !groups && !posts) return page;
-        // The hook's own patch carries the type read's status, whichever switch asked for the walk.
-        String family = threads || posts || (!surveys && threadsPatch) ? FamilyNames.REEL_DECLUTTER : FamilyNames.REEL_PROMPTS;
+        if (page == null || page.isEmpty() || !plan.any()) return page;
 
         try {
-            int[] dropped = new int[4];
             ReelSections.Result result = ReelSections.strip(page, item -> {
-                String kind = kindOf(item, midCardClass, types, family);
+                String kind = kindOf(item, midCardClass, types, plan.family);
                 FeedFilterCounters.sawKind(SECTIONS_ROUTE, kind);
-                if (threads && THREADS_CARD.equals(kind)) {
-                    dropped[0]++;
-                    return true;
-                }
-                if (surveys && SURVEY_CARD.equals(kind)) {
-                    dropped[1]++;
-                    return true;
-                }
-                if (groups && GROUPS_CARD.equals(kind)) {
-                    dropped[2]++;
-                    return true;
-                }
-                if (posts && POSTS_CARD.equals(kind)) {
-                    dropped[3]++;
-                    return true;
-                }
-                return false;
-            }, family, SOURCE);
+                return plan.drops(kind);
+            }, plan.family, SOURCE);
             if (result.dropped == 0) return page;
 
-            FeedFilterCounters.removed(SECTIONS_ROUTE, dropped[0], THREADS_CARD);
-            FeedFilterCounters.removed(SECTIONS_ROUTE, dropped[1], SURVEY_CARD);
-            FeedFilterCounters.removed(SECTIONS_ROUTE, dropped[2], GROUPS_CARD);
-            FeedFilterCounters.removed(SECTIONS_ROUTE, dropped[3], POSTS_CARD);
-            if (dropped[1] > 0) HookStatus.counted(FamilyNames.REEL_PROMPTS, SURVEY_CARD);
-            Logger.diagnosticDebug(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE,
-                    () -> "dropped " + dropped[0] + " Threads card(s), " + dropped[1] + " survey(s), "
-                            + dropped[2] + " groups card(s) and " + dropped[3] + " post card(s) from "
-                            + page.size() + " section(s)");
-
+            plan.count(SECTIONS_ROUTE, page.size() + " section(s)");
             return result.page;
         } catch (Throwable failure) {
             // Anything thrown here would go on into Facebook's Reels page insert.
-            HookStatus.threw(family, "mid-card filter", failure);
+            HookStatus.threw(plan.family, "mid-card filter", failure);
             Logger.diagnosticError(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE,
                     () -> "could not filter a page of sections", failure);
             return page;
+        }
+    }
+
+    /**
+     * Injection point, first thing in each method that puts reels into the Reels item collection: the
+     * page inserts and appends, and the static placer every one-item insert goes through, which hands
+     * its item over as a one-item list. The same items without the cards {@link #withoutThreadsCards}
+     * takes off, or the very same collection when nothing comes off. Never throws.
+     *
+     * <p>587's client-side loader puts reels and cards in here without the controller's page of
+     * sections ever holding them (#85, #441), so the section filter alone let a Threads card through.
+     *
+     * @param items        the items about to go into the collection.
+     * @param midCardClass binary name of the mid-card item class, for example {@code X.8bO}.
+     */
+    public static Collection<?> withoutThreadsCardItems(Collection<?> items, String midCardClass) {
+        return withoutCardItems(items, midCardClass, PATCHED, ITEMS_ROUTE);
+    }
+
+    /**
+     * {@link #withoutThreadsCardItems} for the collection's listener walk after an insert, counted on
+     * {@link #ANNOUNCED_ROUTE}, so a card that came off on its way in isn't announced either.
+     */
+    public static Collection<?> withoutAnnouncedThreadsCards(Collection<?> items, String midCardClass) {
+        return withoutCardItems(items, midCardClass, PATCHED, ANNOUNCED_ROUTE);
+    }
+
+    /** The item filter with the type read and the route passed in, so a test can stand in for the stub. */
+    static Collection<?> withoutCardItems(Collection<?> items, String midCardClass, Types types, String route) {
+        Plan plan = Plan.now();
+        FeedFilterCounters.sawList(route, items == null ? 0 : items.size());
+        if (items == null || items.isEmpty() || !plan.any()) return items;
+
+        try {
+            ArrayList<Object> kept = new ArrayList<>(items.size());
+            for (Object item : items) {
+                String kind = kindOf(item, midCardClass, types, plan.family);
+                FeedFilterCounters.sawKind(route, kind);
+                if (!plan.drops(kind)) kept.add(item);
+            }
+            if (kept.size() == items.size()) return items;
+
+            plan.count(route, items.size() + " item(s)");
+            return kept;
+        } catch (Throwable failure) {
+            // Anything thrown here would go on into Facebook's Reels list.
+            HookStatus.threw(plan.family, "mid-card item filter", failure);
+            Logger.diagnosticError(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE,
+                    () -> "could not filter Reels items", failure);
+            return items;
+        }
+    }
+
+    /** Which cards come off in one call, by the patches in the build and their switches, and how many did. */
+    private static final class Plan {
+        final boolean threads;
+        final boolean surveys;
+        final boolean groups;
+        final boolean posts;
+        /** The hook's own patch, which carries the type read's status whichever switch asked for the walk. */
+        final String family;
+        /** Threads cards, surveys, groups cards and post carousels taken off so far. */
+        final int[] dropped = new int[4];
+
+        private Plan(boolean threadsPatch, boolean promptsPatch, boolean groupsPatch) {
+            threads = threadsPatch && switchedOn(() -> Settings.HIDE_REEL_THREADS_CARDS, FamilyNames.REEL_DECLUTTER);
+            surveys = promptsPatch && switchedOn(() -> Settings.HIDE_REEL_PROMPTS, FamilyNames.REEL_PROMPTS);
+            groups = groupsPatch && switchedOn(() -> Settings.HIDE_SUGGESTED_GROUPS, FamilyNames.SUGGESTED_POSTS);
+            posts = threadsPatch && switchedOn(() -> Settings.HIDE_REEL_POST_CARDS, FamilyNames.REEL_DECLUTTER);
+            family = threads || posts || (!surveys && threadsPatch) ? FamilyNames.REEL_DECLUTTER : FamilyNames.REEL_PROMPTS;
+        }
+
+        /** The plan for a call made now, with the hook marked as reached for each patch in the build. */
+        static Plan now() {
+            Boolean threadsForced = threadsPatchForTests;
+            Boolean promptsForced = promptsPatchForTests;
+            Boolean groupsForced = groupsPatchForTests;
+            boolean threadsPatch = threadsForced != null ? threadsForced : SettingsStatus.reelDeclutter();
+            boolean promptsPatch = promptsForced != null ? promptsForced : SettingsStatus.reelPrompts();
+            boolean groupsPatch = groupsForced != null ? groupsForced : SettingsStatus.suggestedPosts();
+            if (threadsPatch) HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (promptsPatch) HookStatus.invoked(FamilyNames.REEL_PROMPTS);
+            return new Plan(threadsPatch, promptsPatch, groupsPatch);
+        }
+
+        boolean any() {
+            return threads || surveys || groups || posts;
+        }
+
+        /** Whether an item of [kind] comes off, counted when it does. */
+        boolean drops(String kind) {
+            int card = threads && THREADS_CARD.equals(kind) ? 0
+                    : surveys && SURVEY_CARD.equals(kind) ? 1
+                    : groups && GROUPS_CARD.equals(kind) ? 2
+                    : posts && POSTS_CARD.equals(kind) ? 3
+                    : -1;
+            if (card < 0) return false;
+            dropped[card]++;
+            return true;
+        }
+
+        /** Counts what came off on [route] and logs it against [from], what the call was handed. */
+        void count(String route, String from) {
+            FeedFilterCounters.removed(route, dropped[0], THREADS_CARD);
+            FeedFilterCounters.removed(route, dropped[1], SURVEY_CARD);
+            FeedFilterCounters.removed(route, dropped[2], GROUPS_CARD);
+            FeedFilterCounters.removed(route, dropped[3], POSTS_CARD);
+            if (dropped[1] > 0) HookStatus.counted(FamilyNames.REEL_PROMPTS, SURVEY_CARD);
+            Logger.diagnosticDebug(DiagnosticCategory.FEED_AND_NAVIGATION, SOURCE,
+                    () -> route + ": dropped " + dropped[0] + " Threads card(s), " + dropped[1] + " survey(s), "
+                            + dropped[2] + " groups card(s) and " + dropped[3] + " post card(s) from " + from);
         }
     }
 

@@ -135,7 +135,7 @@ internal fun BytecodePatchContext.keepFollowedReels() {
     val model = status.model.toBinaryName()
     pages.pageInserts.forEach { it.filterPageFirst(model, FOLLOWED_REEL_FILTER, PATCH) }
     pages.announcePage.filterPageFirst(model, ANNOUNCED_FOLLOWED_REEL_FILTER, PATCH)
-    pages.insertItem.dropItemFirst(model, FOLLOWED_REEL_FILTER, PATCH)
+    pages.itemInsert.dropItemFirst(model, FOLLOWED_REEL_FILTER, PATCH)
     pages.addPage.filterSectionsWithControllerFirst(model, FOLLOWED_REEL_SECTION_FILTER)
 }
 
