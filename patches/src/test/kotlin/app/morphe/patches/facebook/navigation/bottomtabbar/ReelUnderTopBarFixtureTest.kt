@@ -14,6 +14,7 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
@@ -21,6 +22,7 @@ import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import com.android.tools.smali.dexlib2.util.MethodUtil
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -126,7 +128,9 @@ class ReelUnderTopBarFixtureTest {
      * and stores that register once into an int field of the list section it makes; the hook goes
      * right before that store, on the same register with a register holding the maker, and changes
      * nothing else. The tab bar padding it logs after " tabPad=" is one of its own public int fields,
-     * set in its constructor, and the extension's stub comes out reading exactly that field.
+     * set in its constructor, and the extension's stub comes out reading exactly that field. The one
+     * helper it calls with the Activity for an Integer finds the list by a literal id and reads its
+     * height, and the extension's list id stub comes out answering that id.
      */
     @Test
     fun `each declared build hands the Reels row height to the extension right before storing it`() {
@@ -169,8 +173,21 @@ class ReelUnderTopBarFixtureTest {
                     it.opcode == Opcode.IPUT && ((it as ReferenceInstruction).reference as FieldReference).toString() == padding.toString()
                 })
 
+                // Positive control: the list height helper finds a view by a literal id and reads that view's height.
+                val ask = listHeightHelper(maker) ?: throw AssertionError("$name: ${maker.name} calls no single list height helper")
+                val helperClass = FixtureDex.classes(bundle, setOf(ask.definingClass)).getValue(ask.definingClass)
+                val helper = helperClass.methods.single { MethodUtil.methodSignaturesMatch(it, ask) }
+                val listId = firstViewId(helper) ?: throw AssertionError("$name: $ask finds no view by a literal id first")
+                val helperCode = helper.implementation!!.instructions.toList()
+                val find = helperCode.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.name == "findViewById" }
+                val list = (helperCode[find + 1] as OneRegisterInstruction).registerA
+                assertTrue("$name: $ask reads the height of the view it finds", helperCode.drop(find + 2).take(4).any {
+                    ((it as? ReferenceInstruction)?.reference as? MethodReference)?.name == "getHeight" &&
+                        (it as FiveRegisterInstruction).registerC == list
+                })
+
                 val extension = ExtensionDex.classDef(TAB_BAR_SCROLL_AWAY)
-                val context = PatchContexts.of(listOf(holder, extension))
+                val context = PatchContexts.of(listOf(holder, helperClass, extension))
                 context.hookReelRow { why -> throw AssertionError("$name: $why") }
                 val after = context.mutableClassDefBy(holder.type).methods.single { it.name == maker.name &&
                     it.parameterTypes.map(Any::toString) == maker.parameterTypes.map(Any::toString) }
@@ -187,6 +204,11 @@ class ReelUnderTopBarFixtureTest {
                     listOf(Opcode.CHECK_CAST, holder.type, Opcode.IGET, padding.toString(), Opcode.RETURN),
                     listOf(stub[0].opcode, ((stub[0] as ReferenceInstruction).reference as TypeReference).type,
                         stub[1].opcode, ((stub[1] as ReferenceInstruction).reference as FieldReference).toString(), stub[2].opcode))
+                val idStub = context.mutableClassDefBy(TAB_BAR_SCROLL_AWAY).methods.single { it.name == REELS_LIST_ID_STUB }
+                    .implementation!!.instructions.toList()
+                assertEquals("$name: the list id stub answers the id the helper finds",
+                    listOf(Opcode.CONST, listId, Opcode.RETURN),
+                    listOf(idStub[0].opcode, (idStub[0] as NarrowLiteralInstruction).narrowLiteral, idStub[1].opcode))
                 assertEquals("$name: the answer is what gets stored",
                     listOf(Opcode.MOVE_RESULT, register, Opcode.IPUT, field.toString()),
                     listOf(after[store + 1].opcode, (after[store + 1] as OneRegisterInstruction).registerA,
@@ -209,6 +231,10 @@ class ReelUnderTopBarFixtureTest {
                 it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;")
         }
         assertNotNull("the extension has no static int $TAB_PADDING_STUB(Object) stub", stub)
+        val idStub = ExtensionDex.classDef(type).methods.singleOrNull {
+            it.name == REELS_LIST_ID_STUB && it.returnType == "I" && AccessFlags.STATIC.isSet(it.accessFlags) && it.parameterTypes.isEmpty()
+        }
+        assertNotNull("the extension has no static int $REELS_LIST_ID_STUB() stub", idStub)
     }
 
     @Test

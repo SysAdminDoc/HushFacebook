@@ -16,6 +16,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -152,6 +153,11 @@ internal fun BytecodePatchContext.hookReelsHeader(warn: (String) -> Unit) {
  * the list's bottom inset (S22, 2026-11-17: 2075, then 2316 in a 2199 list). The same log line
  * names " tabPad=", the tab bar padding the maker holds in one public int field (LX/0B2M;->A05)
  * and takes off each row; the extension reads it through a stub the patch fills with that field.
+ * On the S22 that field read -1 on every row, and the maker works the height out once and hands
+ * every row that, the first time before the Reels page is laid out. One of its sources is the list
+ * itself: a helper it calls with the Activity, answering an Integer (LX/0AIZ;->A02), finds the
+ * list by id and reads its height. The patch fills a second stub with that id, so the extension
+ * reads the list the way Facebook does and remembers the list height for rows made before it.
  */
 
 internal const val ROW_HEIGHT_LOG = " recyclerPadTop="
@@ -159,6 +165,7 @@ private const val ROW_HEIGHT_LABEL = " computed="
 private const val TAB_PAD_LABEL = " tabPad="
 internal const val REEL_ROW = "$TAB_BAR_SCROLL_AWAY->reelRow(ILjava/lang/Object;)I"
 internal const val TAB_PADDING_STUB = "tabPadding"
+internal const val REELS_LIST_ID_STUB = "reelsListId"
 
 /**
  * Where the Reels list's maker stores the row height: the index of the one int store into another
@@ -269,11 +276,47 @@ internal fun BytecodePatchContext.fillTabPadding(makerType: String, field: Field
     return true
 }
 
+/** The one helper the maker calls with the Activity that answers an Integer: the list's height. Null unless there's exactly one. */
+internal fun listHeightHelper(maker: Method): MethodReference? {
+    val asks = maker.implementation?.instructions?.mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
+        ?.filter { it.returnType == "Ljava/lang/Integer;" && it.parameterTypes.firstOrNull()?.toString() == ACTIVITY }
+        ?.distinctBy { it.toString() } ?: return null
+    return asks.singleOrNull()
+}
+
+/** The view id [helper] finds first: the literal loaded right before its first Activity.findViewById, into the id register. */
+internal fun firstViewId(helper: Method): Int? {
+    val code = helper.implementation?.instructions?.toList() ?: return null
+    for ((load, find) in code.zipWithNext()) {
+        val ref = (find as? ReferenceInstruction)?.reference as? MethodReference ?: continue
+        if (ref.definingClass != ACTIVITY || ref.name != "findViewById") continue
+        val literal = load as? NarrowLiteralInstruction ?: return null
+        return literal.narrowLiteral.takeIf { (find as FiveRegisterInstruction).registerD == (load as OneRegisterInstruction).registerA }
+    }
+    return null
+}
+
+/** Fills the extension's list id stub with [id]. False, with nothing changed, when the stub isn't there. */
+internal fun BytecodePatchContext.fillReelsListId(id: Int): Boolean {
+    val stub = mutableClassDefBy(TAB_BAR_SCROLL_AWAY).methods.singleOrNull {
+        it.name == REELS_LIST_ID_STUB && it.returnType == "I" && AccessFlags.STATIC.isSet(it.accessFlags) && it.parameterTypes.isEmpty()
+    } ?: return false
+    stub.addInstructions(
+        0,
+        """
+            const v0, $id
+            return v0
+        """,
+    )
+    return true
+}
+
 /**
  * Hands the Reels row height, with the list's maker, to the extension right before the maker stores
- * it, and fills the extension's tab padding stub with the maker's padding field. Warns and does
- * nothing unless there's one maker, one such store, a low register holding the maker and nothing
- * jumping to the store. A padding field that can't be found or read only costs the stub, with a warning.
+ * it, and fills the extension's stubs with the maker's padding field and the list's id. Warns and
+ * does nothing unless there's one maker, one such store, a low register holding the maker and
+ * nothing jumping to the store. A padding field or list id that can't be found or read only costs
+ * its stub, with a warning.
  */
 internal fun BytecodePatchContext.hookReelRow(warn: (String) -> Unit) {
     val holders = classDefByStrings(ROW_HEIGHT_LOG, StringComparisonType.EQUALS)
@@ -300,6 +343,13 @@ internal fun BytecodePatchContext.hookReelRow(warn: (String) -> Unit) {
     when {
         padding == null -> warn("no public tab bar padding field logged in ${holder.type}->${maker.name}, Reels rows grow by the dropped padding alone")
         !fillTabPadding(holder.type, padding) -> warn("$TAB_BAR_SCROLL_AWAY has no $TAB_PADDING_STUB stub, Reels rows grow by the dropped padding alone")
+    }
+    val helper = listHeightHelper(maker)
+    val listId = helper?.let { ask -> classDefByOrNull(ask.definingClass)?.methods?.singleOrNull { MethodUtil.methodSignaturesMatch(it, ask) } }
+        ?.let(::firstViewId)
+    when {
+        listId == null -> warn("no Reels list id read through ${helper ?: "a list height helper"} in ${holder.type}->${maker.name}, Reels rows don't take the list's height")
+        !fillReelsListId(listId) -> warn("$TAB_BAR_SCROLL_AWAY has no $REELS_LIST_ID_STUB stub, Reels rows don't take the list's height")
     }
     maker.addInstructions(
         store,
