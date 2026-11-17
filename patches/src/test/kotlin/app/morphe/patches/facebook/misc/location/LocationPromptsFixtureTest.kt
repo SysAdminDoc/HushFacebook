@@ -10,12 +10,14 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
-import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -23,11 +25,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Issue #498: on each declared build and ABI, Facebook's device location screen has to start with
- * its parent's onActivityCreate and close through one (Intent, boolean) method, which it already
- * calls when there's nothing to ask. The hook goes in right after the parent's call: the screen goes
- * to LocationPrompts.skips, a yes closes it through that method and returns, and a no lands on the
- * method's own next instruction.
+ * Issue #498: on each declared build and ABI, the page "To use Location Services, allow Facebook to
+ * access your location" is a promotion that shows only while Facebook's nxx_location_service_client
+ * filter passes, and exactly one method is that filter: it takes the session, the trigger, the
+ * filter and the promotion, and keeps its count under "location_service". The hook goes first in
+ * it: the trigger goes to LocationPrompts.skips, a yes answers false, and a no lands on the
+ * method's own first instruction.
  */
 class LocationPromptsFixtureTest {
     private val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -36,45 +39,46 @@ class LocationPromptsFixtureTest {
 
     private fun Instruction.method() = (this as? ReferenceInstruction)?.reference as? MethodReference
 
+    /** Every class of [bundle] holding the password-change key, the only ones the patch looks in. */
+    private fun candidates(bundle: java.io.File): List<ClassDef> = FixtureDex.classesHolding(bundle, PASSWORD_CHANGE)
+
     @Test
-    fun `the location screen goes to the extension right after its parent's start, on each declared build`() {
+    fun `the location promotion's filter asks the extension first, on each declared build`() {
         val checked = mutableSetOf<String>()
         var bundles = 0
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val screen = FixtureDex.classes(bundle, setOf(LOCATION_SCREEN))[LOCATION_SCREEN]
-                assertTrue("$name: no $LOCATION_SCREEN", screen != null)
-                val start = screenStart(screen!!)
-                val body = start.method.body()
-                assertEquals("$name: the screen closes through its parent's method", screen.superclass, start.close.definingClass)
-                // Facebook's own "nothing to ask" path calls the close, so the hook's call is one it makes.
-                assertTrue("$name: the method never calls ${start.close}",
-                    body.any { it.opcode == Opcode.INVOKE_VIRTUAL && it.method()?.toString() == start.close.toString() })
-                assertEquals("$name: the screen is the method's first parameter register",
-                    start.method.implementation!!.registerCount - 2, start.self)
+                val classes = candidates(bundle)
+                val filters = classes.flatMap { it.methods.filter(::isLocationPromotionFilter) }
+                assertEquals("$name: one location promotion filter", 1, filters.size)
+                val filter = filters.single()
+                val body = filter.body()
+                val registers = filter.implementation!!.registerCount
+                // Facebook's own filter answers from location access and the count it keeps.
+                assertTrue("$name: the filter doesn't read location access",
+                    body.any { it.opcode == Opcode.INVOKE_VIRTUAL && it.method()?.parameterTypes?.map(CharSequence::toString) == listOf("Ljava/lang/String;") && it.method()?.returnType == "Z" })
 
-                assertThrows("$name: no screen must refuse the patch", PatchException::class.java) {
-                    PatchContexts.of(emptyList()).hookLocationScreen()
+                assertThrows("$name: no filter must refuse the patch", PatchException::class.java) {
+                    PatchContexts.of(emptyList()).skipLocationPromotion()
                 }
-                val context = PatchContexts.of(listOf(screen))
-                with(context) { hookLocationScreen() }
-                val after = context.mutableClassDefBy(LOCATION_SCREEN).methods
-                    .single { it.name == start.method.name && it.parameterTypes == start.method.parameterTypes }.body()
-                assertEquals("$name: the parent's start stays first", body[0].method().toString(), after[0].method().toString())
-                val ask = after[1]
-                assertEquals("$name: the screen goes to LocationPrompts.skips", SKIPS, ask.method().toString())
-                assertEquals("$name: as itself", start.self, (ask as FiveRegisterInstruction).registerC)
-                assertEquals("$name: the answer lands in v0", 0, (after[2] as OneRegisterInstruction).registerA)
-                assertEquals("$name: a no branches", Opcode.IF_EQZ, after[3].opcode)
-                assertEquals("$name: to the method's own next instruction", 8, landing(after, 3))
-                assertEquals("$name: which is the one that followed the parent's start", body[1].opcode, after[8].opcode)
-                val close = after[6] as FiveRegisterInstruction
-                assertEquals("$name: a yes closes through Facebook's own close", start.close.toString(), after[6].method().toString())
-                assertEquals("$name: on the screen with no intent and false", listOf(start.self, 0, 1),
-                    listOf(close.registerC, close.registerD, close.registerE))
-                assertEquals("$name: then returns", Opcode.RETURN_VOID, after[7].opcode)
-                assertEquals("$name: seven instructions added", body.size + 7, after.size)
+                val context = PatchContexts.of(classes)
+                with(context) { skipLocationPromotion() }
+                val after = context.mutableClassDefBy(filter.definingClass).methods
+                    .single { it.name == filter.name && it.parameterTypes == filter.parameterTypes }.body()
+                val ask = after[0]
+                assertEquals("$name: the trigger goes to LocationPrompts.skips first", SKIPS, ask.method().toString())
+                ask as RegisterRangeInstruction
+                assertEquals("$name: one register", 1, ask.registerCount)
+                assertEquals("$name: the trigger, the second parameter after this", registers - 3, ask.startRegister)
+                assertEquals("$name: the answer lands in v0", 0, (after[1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: a no branches", Opcode.IF_EQZ, after[2].opcode)
+                assertEquals("$name: to the filter's own first instruction", 5, landing(after, 2))
+                assertEquals("$name: which is the one it started with", body[0].opcode, after[5].opcode)
+                assertEquals("$name: a yes answers false", 0, (after[3] as NarrowLiteralInstruction).narrowLiteral)
+                assertEquals("$name: in v0", 0, (after[3] as OneRegisterInstruction).registerA)
+                assertEquals("$name: and returns it", Opcode.RETURN, after[4].opcode)
+                assertEquals("$name: five instructions added", body.size + 5, after.size)
                 bundles++
                 checked += version
             }

@@ -4,119 +4,101 @@
  */
 package app.morphe.patches.facebook.misc.location
 
+import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.patches.facebook.updates.CONTEXTUAL_FILTER
+import app.morphe.patches.facebook.updates.PROMOTION_DEFINITION
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.findMutableMethodOf
-import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.iface.Method
-import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
-import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 /*
- * Facebook's device location screen, read from 587 on 2026-11-17 (#498). The obfuscated names are
- * for reviewers; the code finds each by the kept class name and by shape.
+ * Facebook's location page, read from 587 on 2026-11-17 (#498). The obfuscated names are for
+ * reviewers; the code finds the filter by its parameter types (kept class names) and its strings.
  *
- * Facebook asks for your location through one activity, DeviceLocationSettingsOptInActivity, which
- * its link fb://device_location_optin opens with a source and an entry point. Its onActivityCreate
- * calls its parent's (LocationSettingsOptInActivityBase), then asks whether there's anything to ask
- * (A0H). With nothing to ask it closes through the parent's (Intent, boolean) method (A0E), which
- * sends Facebook's own "no" to whatever opened the screen, sets the result and finishes. Otherwise it
- * shows the pre-prompt page "To use Location Services, allow Facebook to access your location"
- * (A0I, a server-drawn page), Android's permission question or Google's location dialog.
+ * The page "To use Location Services, allow Facebook to access your location", with Skip and
+ * Continue, is a Quick Promotion the server sends for the login interstitial trigger
+ * (FACEBOOK_FOR_ANDROID_LOGIN_INTERSTITIAL_QP, promotion 662953529497730, template
+ * consent_flow_interstitial, drawn by QuickPromotionLoginInterstitialBloksActivity). It shows only
+ * while its contextual filters pass, and one of them, nxx_location_service_client, is answered on
+ * the phone: ContextualFilter$Type's NXX_LOCATION_SERVICE_CLIENT maps (LX/098h's ordinal switch) to
+ * LX/098o, whose A04(FbUserSession, InterstitialTrigger, ContextualFilter, QuickPromotionDefinition)
+ * passes while Facebook hasn't been given location and the count it keeps under "location_service"
+ * is under its cap. The same method checks "pass_word_change", and no other method holds both.
  *
- * Right after the parent's onActivityCreate, the screen goes to the extension. A yes closes it
- * through that same (Intent, boolean) method with no intent and false, the way Facebook closes it
- * when there's nothing to ask, and returns before anything shows.
+ * The first build of this patch (e8248c429) closed DeviceLocationSettingsOptInActivity, a different
+ * screen behind fb://device_location_optin. The reported page never goes through it.
+ *
+ * The hook goes first in the filter: the trigger goes to the extension, and a yes answers false, so
+ * the promotion fails its filter and Facebook moves on to Home as if it had never been sent.
  */
 
 internal const val PATCH = "Skip location prompts"
 
-/** The device location screen, a kept class name. */
-internal const val LOCATION_SCREEN = "Lcom/facebook/location/optin/DeviceLocationSettingsOptInActivity;"
+/** The count Facebook keeps for the location promotion, and the key only its filter reads beside it. */
+internal const val LOCATION_COUNT = "location_service"
+internal const val PASSWORD_CHANGE = "pass_word_change"
 
-internal const val SKIPS = "$EXTENSION_PACKAGE/misc/LocationPrompts;->skips(Landroid/app/Activity;)Z"
+private const val USER_SESSION = "Lcom/facebook/auth/usersession/FbUserSession;"
+private const val TRIGGER = "Lcom/facebook/interstitial/triggers/InterstitialTrigger;"
 
-private const val INTENT = "Landroid/content/Intent;"
-private const val BUNDLE = "Landroid/os/Bundle;"
-
-/**
- * Where the hook goes in the screen's onActivityCreate and what it needs there.
- *
- * @property superCall the index of the call to the parent's onActivityCreate, on this screen.
- * @property close the (Intent, boolean) method the screen closes itself with when there's nothing to ask.
- * @property self the register holding the screen.
- */
-internal class ScreenStart(val method: Method, val superCall: Int, val close: MethodReference, val self: Int)
-
-/** onActivityCreate(Bundle), FbFragmentActivity's onCreate for its subclasses. A Method is a MethodReference too. */
-private fun MethodReference.isActivityCreate() =
-    name == "onActivityCreate" && returnType == "V" && parameterTypes.map { it.toString() } == listOf(BUNDLE)
+internal const val SKIPS = "$EXTENSION_PACKAGE/misc/LocationPrompts;->skips(Ljava/lang/Object;)Z"
 
 private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
 
 /**
- * Reads [screen]'s onActivityCreate. It refuses unless the method starts with the parent's
- * onActivityCreate on the screen itself, closes through exactly one (Intent, boolean) void method
- * of the screen or its parent, and has two registers of its own for the snippet.
+ * The nxx_location_service_client filter: an instance method answering a boolean for (session,
+ * trigger, filter, promotion) that holds both [LOCATION_COUNT] and [PASSWORD_CHANGE].
  */
-internal fun screenStart(screen: ClassDef): ScreenStart {
-    val create = screen.methods.filter { it.isActivityCreate() }.singleOrNull()
-        ?: refuse("$LOCATION_SCREEN has no onActivityCreate(Bundle) of its own")
-    val implementation = create.implementation ?: refuse("the screen's onActivityCreate has no code")
-    val code = implementation.instructions.toList()
-    val self = implementation.registerCount - 2
-    val first = code.firstOrNull()
-    val parent = (first as? ReferenceInstruction)?.reference as? MethodReference
-    if (first?.opcode != Opcode.INVOKE_SUPER || parent == null || !parent.isActivityCreate() ||
-        parent.definingClass != screen.superclass || (first as FiveRegisterInstruction).registerC != self
-    ) {
-        refuse("the screen's onActivityCreate doesn't start with its parent's")
-    }
-    val closes = code.filter { it.opcode == Opcode.INVOKE_VIRTUAL }
-        .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
-        .filter { called ->
-            called.returnType == "V" && called.parameterTypes.map { it.toString() } == listOf(INTENT, "Z") &&
-                (called.definingClass == screen.type || called.definingClass == screen.superclass)
-        }
-        .distinctBy { it.toString() }
-    val close = closes.singleOrNull()
-        ?: refuse("expected one way for the screen to close itself, found ${closes.map { it.toString() }}")
-    // v0 and v1 carry the answer and the close call's arguments; invoke-virtual names registers below 16.
-    if (self < 2 || self > 15) refuse("the screen's onActivityCreate has no room for the hook (${implementation.registerCount} registers)")
-    return ScreenStart(create, 0, close, self)
+internal fun isLocationPromotionFilter(method: Method): Boolean =
+    AccessFlags.STATIC.isSet(method.accessFlags).not() &&
+        method.returnType == "Z" &&
+        method.parameterTypes.map { it.toString() } == listOf(USER_SESSION, TRIGGER, CONTEXTUAL_FILTER, PROMOTION_DEFINITION) &&
+        holdsString(method, LOCATION_COUNT) &&
+        holdsString(method, PASSWORD_CHANGE)
+
+/** The one location promotion filter in this build. It refuses when there's none or more than one. */
+internal fun BytecodePatchContext.locationPromotionFilter(): Method {
+    val filters = classDefByStrings(PASSWORD_CHANGE, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .flatMap { owner -> owner.methods.filter(::isLocationPromotionFilter) }
+    return filters.singleOrNull()
+        ?: refuse("expected one location promotion filter, found ${filters.map { "${it.definingClass}->${it.name}" }}")
 }
 
 /**
- * Right after the parent's onActivityCreate, hands the screen to [SKIPS]. A yes closes it through
- * Facebook's own close with no intent and false and returns; a no goes on as the method was.
+ * First in the filter, hands the trigger to [SKIPS]. A yes answers false so the promotion doesn't
+ * show; a no goes on to Facebook's own check.
  */
-internal fun BytecodePatchContext.hookLocationScreen() {
-    val screen = classDefByOrNull(LOCATION_SCREEN) ?: refuse("this Facebook build has no $LOCATION_SCREEN")
-    val start = screenStart(screen)
-    val method = mutableClassDefBy(LOCATION_SCREEN).findMutableMethodOf(start.method)
+internal fun BytecodePatchContext.skipLocationPromotion() {
+    val filter = locationPromotionFilter()
+    val method = mutableClassDefBy(filter.definingClass).findMutableMethodOf(filter)
+    method.requireLocals(PATCH, 1)
+    // Parameters sit at the top: this, session, trigger, filter, promotion.
+    val trigger = method.implementation!!.registerCount - 3
     method.addInstructionsWithLabels(
-        start.superCall + 1,
+        0,
         """
-            invoke-static { v${start.self} }, $SKIPS
+            invoke-static/range { v$trigger .. v$trigger }, $SKIPS
             move-result v0
-            if-eqz v0, :keep
+            if-eqz v0, :facebook
             const/4 v0, 0x0
-            const/4 v1, 0x0
-            invoke-virtual { v${start.self}, v0, v1 }, ${start.close}
-            return-void
+            return v0
         """,
-        ExternalLabel("keep", method.getInstruction(start.superCall + 1)),
+        ExternalLabel("facebook", method.getInstruction(0)),
     )
 }
 
@@ -124,15 +106,15 @@ internal fun BytecodePatchContext.hookLocationScreen() {
 val skipLocationPromptsPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Skip location prompts",
-    description = "Closes Facebook's screen asking you to allow Location Services as soon as it opens, as if you " +
-        "tapped Skip, so it stops getting in your way. On by default. Turn it off in Hushfacebook settings > Privacy.",
+    description = "Stops Facebook from showing its page asking you to allow Location Services, the one with Skip " +
+        "and Continue that comes up after you sign in. On by default. Turn it off in Hushfacebook settings > Privacy.",
 ) {
     category("Privacy")
     dependsOn(settingsPatch, facebookExtensionPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {
-        hookLocationScreen()
+        skipLocationPromotion()
         enableStatus("locationPrompts")
     }
 }

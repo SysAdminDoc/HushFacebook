@@ -1132,10 +1132,10 @@ final class L10nTablePt_rBR {
                 "A tela do pr\u00f3prio Facebook para testes de seguran\u00e7a. Ela pode fazer o Facebook confiar em certificados de seguran\u00e7a que voc\u00ea instalou ou enviar seus dados por um proxy (um servidor intermedi\u00e1rio). O Hushfacebook n\u00e3o muda nada ali.");
         table.put("Facebook's own setting blocks it. Open Settings, Tab bar, Customize the bar and choose Hide next to Reels, which some accounts call Video. If neither is listed, choose the %1$s patch in Morphe Manager and patch again.",
                 "A pr\u00f3pria configura\u00e7\u00e3o do Facebook bloqueia a aba. Abra Configura\u00e7\u00f5es, Barra de abas, Personalizar a barra e escolha Ocultar ao lado de Reels, que em algumas contas se chama V\u00eddeo. Se nenhum dos dois aparecer, escolha o patch %1$s no Morphe Manager e aplique os patches novamente.");
+        table.put("Facebook's page asking you to allow Location Services, the one with Skip and Continue, doesn't show. Location you turn on yourself still works.",
+                "A tela do Facebook que pede para voc\u00ea permitir os Servi\u00e7os de Localiza\u00e7\u00e3o, aquela com Pular e Continuar, n\u00e3o aparece. A localiza\u00e7\u00e3o que voc\u00ea mesmo ativa continua funcionando.");
         table.put("Facebook's real number shows. Type digits to show your own.",
                 "O n\u00famero real do Facebook aparece. Digite n\u00fameros para mostrar o seu.");
-        table.put("Facebook's screen asking you to allow Location Services closes as it opens, as if you tapped Skip. Turn this off when you want to give Facebook your location from inside the app.",
-                "A tela do Facebook que pede para voc\u00ea permitir os Servi\u00e7os de Localiza\u00e7\u00e3o fecha assim que abre, como se voc\u00ea tocasse em Pular. Desative quando quiser dar sua localiza\u00e7\u00e3o ao Facebook pelo app.");
         table.put("Facebook's server didn't send the file. Try again in a moment.",
                 "O servidor do Facebook n\u00e3o enviou o arquivo. Tente de novo em instantes.");
         table.put("Facebook's settings didn't open. You'll find Reaction preferences in its Settings, under Preferences.",

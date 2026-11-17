@@ -1252,7 +1252,7 @@ public class PausedHooksTest {
         // A new picture in the photo library isn't looked at.
         probes.put(PatchFamily.SCREENSHOT_DETECTION, Collections.singletonList(
                 ScreenshotDetection::ignoresChange));
-        // Facebook's device location screen closes as it opens.
+        // Facebook's location page fails its check and doesn't show.
         probes.put(PatchFamily.LOCATION_PROMPTS, Collections.singletonList(
                 () -> LocationPrompts.skips(null)));
         // "Typing" goes out as "not typing", and the chat and comment runnables skip their send.

@@ -1223,9 +1223,9 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_block_screenshot_detection", FALSE);
 
     /**
-     * Facebook's device location screen, "To use Location Services, allow Facebook to access your
-     * location", closes as it opens ({@link app.morphe.extension.facebook.misc.LocationPrompts},
-     * #498). Starts on, as the report asked.
+     * Facebook's location page, "To use Location Services, allow Facebook to access your location",
+     * a promotion shown after sign-in, fails its check and doesn't show
+     * ({@link app.morphe.extension.facebook.misc.LocationPrompts}, #498). Starts on, as the report asked.
      */
     public static final BooleanSetting SKIP_LOCATION_PROMPTS =
             new BooleanSetting("hushfacebook_skip_location_prompts", TRUE);

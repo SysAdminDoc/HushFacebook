@@ -2942,4 +2942,4 @@ Where Facebook shows only a comment's top reaction next to its count, keeps Like
 Move seen stories to the end	ย้ายสตอรี่ที่ดูแล้วไปไว้ท้าย
 Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.	สตอรี่ที่คุณดูแล้วจะย้ายไปอยู่ท้ายถาดสตอรี่ ต่อจากสตอรี่ที่คุณยังไม่ได้ดู ขณะที่เปิด "ซ่อนสตอรี่ที่ดูแล้ว" อยู่ ตัวเลือกนั้นจะมีผลก่อน จะมีผลเมื่อ Facebook โหลดถาดสตอรี่ในครั้งต่อไป
 Skip location prompts	ข้ามคำขอตำแหน่ง
-Facebook's screen asking you to allow Location Services closes as it opens, as if you tapped Skip. Turn this off when you want to give Facebook your location from inside the app.	หน้าจอของ Facebook ที่ขอให้คุณอนุญาตบริการตำแหน่งจะปิดทันทีที่เปิด เหมือนคุณแตะข้าม ปิดตัวเลือกนี้เมื่อคุณต้องการให้ตำแหน่งของคุณกับ Facebook จากในแอป
+Facebook's page asking you to allow Location Services, the one with Skip and Continue, doesn't show. Location you turn on yourself still works.	หน้าจอของ Facebook ที่ขอให้คุณอนุญาตบริการตำแหน่ง ที่มีปุ่มข้ามและดำเนินการต่อ จะไม่แสดง ตำแหน่งที่คุณเปิดเองยังใช้งานได้ตามปกติ

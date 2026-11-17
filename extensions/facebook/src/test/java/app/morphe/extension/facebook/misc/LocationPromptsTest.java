@@ -8,15 +8,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.net.Uri;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
@@ -28,12 +23,16 @@ import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
- * Issue #498: Facebook's device location screen closes as it opens while Skip location prompts is
- * on, which it is from the start, and opens as Facebook meant when it's off or paused.
+ * Issue #498: Facebook's location page, a promotion shown after sign-in, fails its check while Skip
+ * location prompts is on, which it is from the start, and passes as Facebook meant when it's off or
+ * paused.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
 public class LocationPromptsTest {
+    /** The trigger the reported page came with, as Facebook's InterstitialTrigger names itself. */
+    private static final String LOGIN = "FACEBOOK_FOR_ANDROID_LOGIN_INTERSTITIAL_QP";
+
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     @After
@@ -44,12 +43,14 @@ public class LocationPromptsTest {
         HookStatus.clear();
     }
 
-    /** The screen as Facebook's link fb://device_location_optin opens it, with its extras. */
-    private static Activity screen(String source, String entryPoint) {
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        if (source != null) intent.putExtra("source", source);
-        if (entryPoint != null) intent.putExtra("entry_point", entryPoint);
-        return Robolectric.buildActivity(Activity.class, intent).get();
+    /** Stands in for Facebook's trigger, whose toString is its action name. */
+    private static Object trigger(String name) {
+        return new Object() {
+            @Override
+            public String toString() {
+                return name;
+            }
+        };
     }
 
     private static String counterLine() {
@@ -60,40 +61,52 @@ public class LocationPromptsTest {
     }
 
     @Test
-    public void theSwitchStartsOnAndClosesTheScreen() {
+    public void theSwitchStartsOnAndThePageDoesntShow() {
         assertTrue("the switch doesn't start on", Settings.SKIP_LOCATION_PROMPTS.defaultValue);
-        assertTrue(LocationPrompts.skips(screen("feed_upsell", "newsfeed")));
-        assertTrue(LocationPrompts.skips(screen(null, null)));
+        assertTrue(LocationPrompts.skips(trigger(LOGIN)));
+        assertTrue(LocationPrompts.skips(null));
         assertEquals(LocationPrompts.ROUTE + ": 2 lists, 2 items, 2 removed. Last reason: skipped. Removed: skipped 2. "
-                + "Kinds: feed_upsell/newsfeed 1, unknown 1", counterLine());
+                + "Kinds: " + LOGIN + " 1, unknown 1", counterLine());
     }
 
     @Test
-    public void offTheScreenOpens() {
+    public void offThePageShows() {
         Settings.SKIP_LOCATION_PROMPTS.save(false);
-        assertFalse(LocationPrompts.skips(screen("marketplace", "location_picker")));
-        assertEquals(LocationPrompts.ROUTE + ": 1 lists, 1 items, 0 removed. Kinds: marketplace/location_picker 1",
-                counterLine());
+        assertFalse(LocationPrompts.skips(trigger(LOGIN)));
+        assertEquals(LocationPrompts.ROUTE + ": 1 lists, 1 items, 0 removed. Kinds: " + LOGIN + " 1", counterLine());
     }
 
     @Test
-    public void pausedTheScreenOpens() {
+    public void pausedThePageShows() {
         for (HushfacebookPause.Reason why : new HushfacebookPause.Reason[]{
                 HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP,
                 HushfacebookPause.Reason.MARKER_FILE}) {
             PauseForTests.pause(why);
-            assertFalse(why + " closed the screen", LocationPrompts.skips(screen("feed_upsell", "newsfeed")));
+            assertFalse(why + " kept the page from showing", LocationPrompts.skips(trigger(LOGIN)));
         }
         PauseForTests.resume();
-        assertTrue("the switch didn't come back after the pause", LocationPrompts.skips(screen("feed_upsell", "newsfeed")));
+        assertTrue("the switch didn't come back after the pause", LocationPrompts.skips(trigger(LOGIN)));
     }
 
     @Test
-    public void theSourceComesFromTheLinkWhenTheExtrasDontCarryIt() {
-        Intent link = new Intent(Intent.ACTION_VIEW,
-                Uri.parse("fb://device_location_optin?source=hush_probe&entry_point=deep_link"));
-        assertEquals("hush_probe/deep_link", LocationPrompts.openedFrom(Robolectric.buildActivity(Activity.class, link).get()));
-        assertEquals("feed_upsell/unknown", LocationPrompts.openedFrom(screen("feed_upsell", null)));
-        assertEquals("unknown", LocationPrompts.openedFrom(null));
+    public void aTriggerThatThrowsLeavesFacebooksCheckAlone() {
+        Object broken = new Object() {
+            @Override
+            public String toString() {
+                throw new IllegalStateException("no name");
+            }
+        };
+        assertFalse(LocationPrompts.skips(broken));
+    }
+
+    @Test
+    public void theTriggerNameIsKeptShort() {
+        assertEquals(LOGIN, LocationPrompts.triggerName(trigger(LOGIN)));
+        assertEquals("NEWSFEED:extra", LocationPrompts.triggerName(trigger(" NEWSFEED:extra ")));
+        assertEquals("unknown", LocationPrompts.triggerName(trigger("  ")));
+        assertEquals("unknown", LocationPrompts.triggerName(null));
+        StringBuilder longName = new StringBuilder();
+        while (longName.length() < 120) longName.append('X');
+        assertEquals(80, LocationPrompts.triggerName(trigger(longName.toString())).length());
     }
 }

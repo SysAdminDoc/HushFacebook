@@ -353,7 +353,7 @@ public class ColdStartHooksTest {
             }
         }, android.view.HapticFeedbackConstants.LONG_PRESS));
         assertFalse("a screenshot check before the context was blocked", ScreenshotDetection.ignoresChange());
-        assertFalse("the location screen before the context was skipped", LocationPrompts.skips(null));
+        assertFalse("the location page before the context was kept from showing", LocationPrompts.skips(null));
         assertNotNull("a double tap before the context lost its handler", DoubleTapLike.handler(new Object()));
         assertNotNull("a double tap before the context lost its heart", DoubleTapLike.heart(new Object()));
         assertNotNull("a double tap like before the context lost its key", DoubleTapLike.likeKey("reel"));

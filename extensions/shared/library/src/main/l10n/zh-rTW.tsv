@@ -2946,4 +2946,4 @@ Where Facebook shows only a comment's top reaction next to its count, keeps Like
 Move seen stories to the end	將已看過的限時動態移到最後
 Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.	你已看過的限時動態會移到橫幅最後，排在還沒看過的後面。開啟「隱藏已看過的限時動態」時，它優先生效。從 Facebook 下次載入橫幅起生效。
 Skip location prompts	略過位置提示
-Facebook's screen asking you to allow Location Services closes as it opens, as if you tapped Skip. Turn this off when you want to give Facebook your location from inside the app.	Facebook 要求你允許定位服務的畫面一開啟就會關閉，就像你點了略過。想在應用程式內把位置提供給 Facebook 時，請關閉此項。
+Facebook's page asking you to allow Location Services, the one with Skip and Continue, doesn't show. Location you turn on yourself still works.	Facebook 要求你允許定位服務、帶有略過和繼續按鈕的畫面不會再顯示。你自己開啟的定位照常可用。

@@ -2937,4 +2937,4 @@ Where Facebook shows only a comment's top reaction next to its count, keeps Like
 Move seen stories to the end	将已看过的快拍移到末尾
 Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.	你已看过的快拍会移到快拍栏末尾，排在没看过的后面。开启“隐藏已看过的快拍”时，它优先生效。在 Facebook 下次加载快拍栏时生效。
 Skip location prompts	跳过位置提示
-Facebook's screen asking you to allow Location Services closes as it opens, as if you tapped Skip. Turn this off when you want to give Facebook your location from inside the app.	Facebook 请求你允许定位服务的页面一打开就会关闭，就像你点了跳过。想在应用内把位置提供给 Facebook 时，请关闭此项。
+Facebook's page asking you to allow Location Services, the one with Skip and Continue, doesn't show. Location you turn on yourself still works.	Facebook 请求你允许定位服务、带有跳过和继续按钮的页面不会再显示。你自己开启的定位照常可用。

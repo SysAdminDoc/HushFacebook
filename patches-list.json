@@ -4051,7 +4051,7 @@
     },
     {
       "name": "Skip location prompts",
-      "description": "Closes Facebook's screen asking you to allow Location Services as soon as it opens, as if you tapped Skip, so it stops getting in your way. On by default. Turn it off in Hushfacebook settings > Privacy.",
+      "description": "Stops Facebook from showing its page asking you to allow Location Services, the one with Skip and Continue that comes up after you sign in. On by default. Turn it off in Hushfacebook settings > Privacy.",
       "category": "Privacy",
       "use": true,
       "dependencies": [
