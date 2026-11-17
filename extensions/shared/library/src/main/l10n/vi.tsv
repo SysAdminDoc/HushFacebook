@@ -1056,6 +1056,26 @@ Languages to leave alone	Ngôn ngữ không dịch
 None picked. Posts in every language can be translated.	Chưa chọn ngôn ngữ nào. Bài viết bằng mọi ngôn ngữ đều có thể được dịch.
 Left alone: %s	Không dịch: %s
 Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold it back. Reel captions have their own switch under Reels and Watch.	Bài viết trong bảng feed hiện toàn bộ nội dung, nên không cần nhấn Xem thêm. Nhấn vào nội dung để thu gọn lại. Chú thích của thước phim có công tắc riêng trong Reels và Watch.
+# context: title of the list that picks how many lines a long post shows before See more
+Fold long posts	Thu gọn bài viết dài
+# context: one entry in those lists, a single line
+%1$d line	%1$d dòng
+# context: the same entry for two or more lines
+%1$d lines	%1$d dòng
+Long posts fold where Facebook folds them.	Bài viết dài được thu gọn ở chỗ Facebook thu gọn.
+# context: %1$s is a line count such as 3 lines; See more is Facebook's link under a folded post
+A long post shows %1$s before See more.	Bài viết dài hiện %1$s trước Xem thêm.
+# context: Show full post text is the name of the switch just above
+Show full post text comes first while it's on.	Hiện toàn bộ nội dung bài viết được ưu tiên khi đang bật.
+# context: title of the list that picks how many lines a long comment shows before See more
+Fold long comments	Thu gọn bình luận dài
+Long comments fold where Facebook folds them.	Bình luận dài được thu gọn ở chỗ Facebook thu gọn.
+A long comment shows %1$s before See more.	Bình luận dài hiện %1$s trước Xem thêm.
+# context: sentence after a settings import; Fold long posts is the list's title
+Fold long posts will fold posts where Facebook does.	Thu gọn bài viết dài sẽ thu gọn bài viết ở chỗ Facebook thu gọn.
+Fold long posts will show %1$s before See more.	Thu gọn bài viết dài sẽ hiện %1$s trước Xem thêm.
+Fold long comments will fold comments where Facebook does.	Thu gọn bình luận dài sẽ thu gọn bình luận ở chỗ Facebook thu gọn.
+Fold long comments will show %1$s before See more.	Thu gọn bình luận dài sẽ hiện %1$s trước Xem thêm.
 Show full reel captions	Hiện toàn bộ chú thích thước phim
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Chú thích dài của thước phim hiện toàn bộ nội dung ngay từ đầu. Nhấn vào chú thích để thu gọn lại. Thay đổi áp dụng từ thước phim tiếp theo.
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles

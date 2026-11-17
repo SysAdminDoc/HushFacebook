@@ -942,6 +942,26 @@ Languages to leave alone	Idiomas que não são traduzidos
 None picked. Posts in every language can be translated.	Nenhum escolhido. Publicações em qualquer idioma podem ser traduzidas.
 Left alone: %s	Não traduzidos: %s
 Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold it back. Reel captions have their own switch under Reels and Watch.	As publicações do feed mostram todo o texto, então não precisa tocar em Ver mais. Toque no texto para recolhê-lo de novo. As legendas dos reels têm um botão próprio em Reels e Watch.
+# context: title of the list that picks how many lines a long post shows before See more
+Fold long posts	Recolher publicações longas
+# context: one entry in those lists, a single line
+%1$d line	%1$d linha
+# context: the same entry for two or more lines
+%1$d lines	%1$d linhas
+Long posts fold where Facebook folds them.	Publicações longas são recolhidas onde o Facebook as recolhe.
+# context: %1$s is a line count such as 3 lines; See more is Facebook's link under a folded post
+A long post shows %1$s before See more.	Uma publicação longa mostra %1$s antes de Ver mais.
+# context: Show full post text is the name of the switch just above
+Show full post text comes first while it's on.	Mostrar o texto completo das publicações vem primeiro enquanto estiver ativado.
+# context: title of the list that picks how many lines a long comment shows before See more
+Fold long comments	Recolher comentários longos
+Long comments fold where Facebook folds them.	Comentários longos são recolhidos onde o Facebook os recolhe.
+A long comment shows %1$s before See more.	Um comentário longo mostra %1$s antes de Ver mais.
+# context: sentence after a settings import; Fold long posts is the list's title
+Fold long posts will fold posts where Facebook does.	Recolher publicações longas vai recolher as publicações onde o Facebook recolhe.
+Fold long posts will show %1$s before See more.	Recolher publicações longas vai mostrar %1$s antes de Ver mais.
+Fold long comments will fold comments where Facebook does.	Recolher comentários longos vai recolher os comentários onde o Facebook recolhe.
+Fold long comments will show %1$s before See more.	Recolher comentários longos vai mostrar %1$s antes de Ver mais.
 Show full reel captions	Mostrar a legenda completa dos reels
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	Legendas longas dos reels mostram todo o texto logo de cara. Toque na legenda para recolhê-la de novo. A mudança vale a partir do próximo reel.
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles

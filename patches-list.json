@@ -1061,6 +1061,43 @@
       "options": []
     },
     {
+      "name": "Fold long text",
+      "description": "Lets you pick how many lines a long post or comment shows before See more, from 1 to 20, so you can fold sooner or read more before tapping. Starts at Facebook's choice. Pick the lines for posts in Hushfacebook settings > News feed, and for comments under Comments and writing. While Show full post text is on, posts still show whole.",
+      "category": "Comments",
+      "use": true,
+      "dependencies": [
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "587.0.0.39.55"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "587.0.0.39.55",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 707414333,
+                "ARMEABI_V7A": 707414338
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Following feed on Home",
       "description": "Makes Home show the newest posts from the friends, groups and Pages you follow instead of Facebook's ranked feed, so you see what they posted rather than what Facebook picks. Home shows, right below it, asks Facebook for one of the Feeds tab's filters (Friends, Favorites, Groups or Pages) instead. When that filter has nothing new, Facebook can fill Home with suggested posts and reels, so pair it with Hide \"Suggested for you\" posts and Hide Reels in the feed. Starts off. Turn it on in Hushfacebook settings > Opening Facebook.",
       "category": "Navigation",

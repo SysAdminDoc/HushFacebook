@@ -48,6 +48,7 @@ public class NewsFeedPageGateTest {
     public void aFeedPatchAloneStillShowsItsSwitch() {
         Map<PatchFamily, String> rows = new LinkedHashMap<>();
         rows.put(PatchFamily.FULL_POST_TEXT, Settings.SHOW_FULL_POST_TEXT.key);
+        rows.put(PatchFamily.FOLD_LONG_TEXT, Settings.FOLD_POST_TEXT.key);
         rows.put(PatchFamily.TRANSLATE_POSTS, Settings.TRANSLATE_POST_LINK.key);
         rows.put(PatchFamily.REEL_GESTURES, Settings.SELECT_POST_TEXT.key);
         rows.put(PatchFamily.WHO_SHARED, Settings.SEE_WHO_SHARED.key);

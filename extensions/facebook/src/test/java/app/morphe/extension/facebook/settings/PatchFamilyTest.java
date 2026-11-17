@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import app.morphe.extension.facebook.feed.FoldLines;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -427,7 +428,7 @@ public class PatchFamilyTest {
                 "Block background ad prefetch: no switch, stays in while paused: No ads downloaded in advance",
                 "not in this build: Hide suggested and promoted posts, Hide Stories tray, Hide Reels in the feed, "
                         + "Block background-return feed refresh, Hide AI-detected posts, Hide posts by words, Hide "
-                        + "post prompts, Hide profile pictures, Hide seen posts, Hide Meta AI questions under posts, Keep post dates, Show full post text, Translate posts, See who shared, Photo carousel, Turn "
+                        + "post prompts, Hide profile pictures, Hide seen posts, Hide Meta AI questions under posts, Keep post dates, Show full post text, Fold long text, Translate posts, See who shared, Photo carousel, Turn "
                         + "off auto-translation, Hide the Feeds header, Hide sponsored stories, Hide suggested "
                         + "stories, Stop Story auto-advance, View stories anonymously, Upload Stories in HD, Longer music on photo stories, Round stories tray, Story viewer taps, Clean up the story viewer, Hide story rings, Pinch to zoom, Hide sponsored search results, "
                         + "Hide sponsored profile posts, Hide profile notes, Local profile counts, Post action buttons, Hide sponsored Marketplace listings, Block Instant Games "
@@ -452,7 +453,7 @@ public class PatchFamilyTest {
                 "left out of Manager's default selection: Hide suggested and promoted posts, Hide Stories tray, Hide "
                         + "Reels in the feed, Block background-return feed refresh, Hide AI-detected posts, Hide "
                         + "posts by words, Hide post prompts, Hide profile pictures, Hide seen posts, Hide Meta AI questions under posts, "
-                        + "Keep post dates, Show full post text, Translate posts, See who shared, Photo carousel, Turn off auto-translation, Hide the Feeds header, Hide sponsored stories, "
+                        + "Keep post dates, Show full post text, Fold long text, Translate posts, See who shared, Photo carousel, Turn off auto-translation, Hide the Feeds header, Hide sponsored stories, "
                         + "Hide suggested stories, Stop Story auto-advance, View stories anonymously, Upload Stories in HD, Longer music on photo stories, Round stories tray, Story viewer taps, Clean up the story viewer, Hide story rings, Pinch to zoom, Hide sponsored "
                         + "search results, Hide sponsored profile posts, Hide profile notes, Local profile counts, Post action buttons, Hide sponsored Marketplace listings, Block "
                         + "Instant Games ads, Hide affiliate product links, Clean up Reels, Hide reel interest "
@@ -507,6 +508,14 @@ public class PatchFamilyTest {
                         + "hushfacebook_hide_share_group_buttons=on, hushfacebook_hide_share_people_row=off)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.SHARE_SHEET_ITEMS), true).get(0));
         Settings.HIDE_SHARE_GROUP_BUTTONS.resetToDefault();
+        // Fold long text is set by its two lists, and the comments' list is saved beside the posts' (#497).
+        assertEquals("Fold long text: set by its list (hushfacebook_fold_post_text=FACEBOOK, hushfacebook_fold_comments=FACEBOOK)",
+                PatchFamily.reportLines(EnumSet.of(PatchFamily.FOLD_LONG_TEXT), false).get(0));
+        Settings.FOLD_COMMENTS.save(FoldLines.TEN);
+        assertEquals("Fold long text: disabled while paused (saved hushfacebook_fold_post_text=FACEBOOK, "
+                        + "hushfacebook_fold_comments=TEN)",
+                PatchFamily.reportLines(EnumSet.of(PatchFamily.FOLD_LONG_TEXT), true).get(0));
+        Settings.FOLD_COMMENTS.resetToDefault();
         // The theme runs with its switches off, and paused: only Black cards and the lines step back.
         assertEquals("AMOLED black theme: on (hushfacebook_amoled_flat_cards=off, hushfacebook_amoled_feed_gaps=off); "
                         + "stays in while paused: AMOLED black theme",

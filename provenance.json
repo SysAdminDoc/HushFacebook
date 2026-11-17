@@ -1941,6 +1941,17 @@
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
       "changes": "Written for Hushfacebook for issue #498 from Facebook 587: right after the device location screen's onActivityCreate calls its parent's, the screen goes to the extension, and while the switch is on it closes through the parent's own (Intent, boolean) close with no intent and false, the way Facebook closes it when there's nothing to ask, before the pre-prompt, Android's permission question or Google's location dialog shows."
+    },
+    {
+      "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/FoldLines.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/feed/FoldLongText.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/foldtext/FoldLongTextPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #497: Fold long text. The patch finds the feed post text builder by its cut's shape, the line limit it calls (a static int method taking the user session and the story that reads the line limit's config key), the config factory it builds the cut with (a static (II) call whose answer the cut takes), the one maker in the line limit's class that calls both, and the comment sheet's cut config by its CommentBodyTruncationUtil trace string. Each line limit goes through the extension right after it lands, and each config call hands its characters and lines through it first, at the call's label so every jump to the call lands on the hook. The extension answers Facebook's own numbers unless Fold long posts or Fold long comments names a line count, and for posts while Show full post text is on."
     }
   ]
 }

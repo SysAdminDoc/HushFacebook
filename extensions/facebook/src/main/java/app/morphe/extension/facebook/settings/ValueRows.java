@@ -9,6 +9,7 @@ package app.morphe.extension.facebook.settings;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.backgroundSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.burnInWaitSummary;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.foldLinesSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.holdReactionSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.reelDateStyleSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentsHeightSummary;
@@ -84,6 +85,7 @@ import app.morphe.extension.facebook.download.PostDetails;
 import app.morphe.extension.facebook.download.SaveFolder;
 import app.morphe.extension.facebook.download.SaveTo;
 import app.morphe.extension.facebook.download.SendLink;
+import app.morphe.extension.facebook.feed.FoldLines;
 import app.morphe.extension.facebook.feed.PostWords;
 import app.morphe.extension.facebook.feed.ReactionCeiling;
 import app.morphe.extension.facebook.feed.TopicPacks;
@@ -1618,6 +1620,48 @@ final class ValueRows {
                 if (candidate.name().equals(getValue())) wait = candidate;
             }
             setSummary(burnInWaitSummary(wait));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its list takes the screen's colours, as the other rows' dialogs do. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+        }
+    }
+
+    /**
+     * Fold long posts or Fold long comments (#497). Its summary follows its value, as Reaction's
+     * does.
+     */
+    static final class FoldLinesRow extends PlainSummaryList {
+        private final boolean comments;
+
+        FoldLinesRow(Context context, boolean comments) {
+            super(context);
+            this.comments = comments;
+        }
+
+        @Override
+        public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+        }
+
+        void showSummary() {
+            FoldLines lines = FoldLines.FACEBOOK;
+            for (FoldLines candidate : FoldLines.values()) {
+                if (candidate.name().equals(getValue())) lines = candidate;
+            }
+            setSummary(foldLinesSummary(lines, comments));
         }
 
         @Override

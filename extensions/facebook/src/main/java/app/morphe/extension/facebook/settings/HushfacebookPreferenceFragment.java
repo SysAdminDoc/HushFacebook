@@ -62,6 +62,7 @@ import app.morphe.extension.facebook.download.SaveTo;
 import app.morphe.extension.facebook.download.SendLink;
 import app.morphe.extension.facebook.feed.CaptionBackdrop;
 import app.morphe.extension.facebook.feed.FeedTypeNames;
+import app.morphe.extension.facebook.feed.FoldLines;
 import app.morphe.extension.facebook.feed.PostSources;
 import app.morphe.extension.facebook.feed.PostWords;
 import app.morphe.extension.facebook.feed.ReactionCeiling;
@@ -112,6 +113,7 @@ import app.morphe.extension.facebook.settings.ValueRows.PauseLengthRow;
 import app.morphe.extension.facebook.settings.ValueRows.WatchedKeepRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInGuardRow;
 import app.morphe.extension.facebook.settings.ValueRows.BurnInWaitRow;
+import app.morphe.extension.facebook.settings.ValueRows.FoldLinesRow;
 import app.morphe.extension.facebook.settings.ValueRows.HoldReactionRow;
 import app.morphe.extension.facebook.settings.ValueRows.NewRowMarkRow;
 import app.morphe.extension.facebook.settings.ValueRows.ReelDateStyleRow;
@@ -2004,6 +2006,54 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         return L10n.f("%1$s. Holding a post gives it straight away.", holdReactionLabel(reaction));
     }
 
+    /** How many lines a long post shows before See more (#497), under Show full post text. */
+    static FoldLinesRow foldPostsRow(Context context) {
+        return foldLinesRow(context, Settings.FOLD_POST_TEXT, L10n.t("Fold long posts"), false);
+    }
+
+    /** How many lines a long comment shows before See more (#497). */
+    static FoldLinesRow foldCommentsRow(Context context) {
+        return foldLinesRow(context, Settings.FOLD_COMMENTS, L10n.t("Fold long comments"), true);
+    }
+
+    private static FoldLinesRow foldLinesRow(Context context, EnumSetting<FoldLines> setting, String title,
+            boolean comments) {
+        FoldLinesRow row = new FoldLinesRow(context, comments);
+        row.setKey(setting.key);
+        row.setTitle(title);
+        row.setDialogTitle(title);
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        FoldLines[] choices = FoldLines.values();
+        CharSequence[] entries = new CharSequence[choices.length];
+        CharSequence[] values = new CharSequence[choices.length];
+        for (int i = 0; i < choices.length; i++) {
+            entries[i] = foldLinesLabel(choices[i]);
+            values[i] = choices[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(setting.savedValue().name());
+        return row;
+    }
+
+    /** What the lists and the sentences about them call [lines]: Facebook's choice, or a line count. */
+    static String foldLinesLabel(FoldLines lines) {
+        if (lines == FoldLines.FACEBOOK) return L10n.t("Facebook's choice");
+        return L10n.quantity(lines.lines, "%1$d line", "%1$d lines", lines.lines);
+    }
+
+    /** What the choice does, for the row's summary. Show full post text, when in this build, wins for posts. */
+    static String foldLinesSummary(FoldLines lines, boolean comments) {
+        if (comments) {
+            if (lines == FoldLines.FACEBOOK) return L10n.t("Long comments fold where Facebook folds them.");
+            return L10n.f("A long comment shows %1$s before See more.", foldLinesLabel(lines));
+        }
+        if (lines == FoldLines.FACEBOOK) return L10n.t("Long posts fold where Facebook folds them.");
+        String shows = L10n.f("A long post shows %1$s before See more.", foldLinesLabel(lines));
+        if (!PatchFamily.FULL_POST_TEXT.inBuild()) return shows;
+        return shows + " " + L10n.t("Show full post text comes first while it's on.");
+    }
+
     /** How long Show Reels in gray takes to go from full color to gray, right under its switch. */
     static BreakRow grayOverRow(Context context) {
         BreakRow row = new BreakRow(context, value -> grayOverSummary(grayOver(value)), Settings.GRAY_REELS);
@@ -2967,6 +3017,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((BurnInWaitRow) listPreference).showSummary();
         } else if (listPreference instanceof HoldReactionRow) {
             ((HoldReactionRow) listPreference).showSummary();
+        } else if (listPreference instanceof FoldLinesRow) {
+            ((FoldLinesRow) listPreference).showSummary();
         } else if (listPreference instanceof ReelDateStyleRow) {
             ((ReelDateStyleRow) listPreference).showSummary();
         } else if (listPreference instanceof CommentsHeightRow) {

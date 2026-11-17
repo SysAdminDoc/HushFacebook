@@ -1053,6 +1053,26 @@ Languages to leave alone	不翻译的语言
 None picked. Posts in every language can be translated.	未选择。任何语言的帖子都可以翻译。
 Left alone: %s	不翻译：%s
 Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold it back. Reel captions have their own switch under Reels and Watch.	动态中的帖子会显示全部文字，不用再点“展开”。点按文字即可重新折叠。短视频的说明在 Reels 和 Watch 里有单独的开关。
+# context: title of the list that picks how many lines a long post shows before See more
+Fold long posts	折叠长帖子
+# context: one entry in those lists, a single line
+%1$d line	%1$d 行
+# context: the same entry for two or more lines
+%1$d lines	%1$d 行
+Long posts fold where Facebook folds them.	长帖子在 Facebook 折叠的位置折叠.
+# context: %1$s is a line count such as 3 lines; See more is Facebook's link under a folded post
+A long post shows %1$s before See more.	长帖子在“展开”前显示 %1$s.
+# context: Show full post text is the name of the switch just above
+Show full post text comes first while it's on.	“显示完整帖子文字”开启时优先.
+# context: title of the list that picks how many lines a long comment shows before See more
+Fold long comments	折叠长评论
+Long comments fold where Facebook folds them.	长评论在 Facebook 折叠的位置折叠.
+A long comment shows %1$s before See more.	长评论在“展开”前显示 %1$s.
+# context: sentence after a settings import; Fold long posts is the list's title
+Fold long posts will fold posts where Facebook does.	“折叠长帖子”将在 Facebook 折叠的位置折叠帖子.
+Fold long posts will show %1$s before See more.	“折叠长帖子”将在“展开”前显示 %1$s.
+Fold long comments will fold comments where Facebook does.	“折叠长评论”将在 Facebook 折叠的位置折叠评论.
+Fold long comments will show %1$s before See more.	“折叠长评论”将在“展开”前显示 %1$s.
 Show full reel captions	显示完整短视频说明
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	短视频的长说明会直接显示全部文字。点按说明即可重新折叠。更改从下一个短视频开始生效。
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles

@@ -430,6 +430,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean foldLongText() {
+        return false;
+    }
+
     public static boolean translatePosts() {
         return false;
     }

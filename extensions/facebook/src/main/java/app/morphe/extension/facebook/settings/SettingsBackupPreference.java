@@ -62,6 +62,7 @@ import app.morphe.extension.facebook.download.SendLink;
 import app.morphe.extension.facebook.feed.PostSources;
 import app.morphe.extension.facebook.feed.PostWords;
 import app.morphe.extension.facebook.feed.FeedTypeNames;
+import app.morphe.extension.facebook.feed.FoldLines;
 import app.morphe.extension.facebook.menu.MenuTiles;
 import app.morphe.extension.facebook.media.PlaybackQuality;
 import app.morphe.extension.facebook.media.RecentlyWatched;
@@ -456,6 +457,8 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.burnInChange() != null) parts.add(burnInSentence(snapshot.burnInChange()));
             if (snapshot.burnInWaitChange() != null) parts.add(burnInWaitSentence(snapshot.burnInWaitChange()));
             if (snapshot.holdReactionChange() != null) parts.add(holdReactionSentence(snapshot.holdReactionChange()));
+            if (snapshot.foldPostsChange() != null) parts.add(foldPostsSentence(snapshot.foldPostsChange()));
+            if (snapshot.foldCommentsChange() != null) parts.add(foldCommentsSentence(snapshot.foldCommentsChange()));
             if (snapshot.grayOverChange() != null) parts.add(grayOverSentence(snapshot.grayOverChange()));
             if (snapshot.newRowMarkChange() != null) parts.add(newRowMarkSentence(snapshot.newRowMarkChange()));
             if (snapshot.refreshRateChange() != null) parts.add(refreshRateSentence(snapshot.refreshRateChange()));
@@ -675,6 +678,18 @@ public class SettingsBackupPreference extends Preference {
     static String holdReactionSentence(HoldReaction reaction) {
         if (reaction == HoldReaction.PICK) return L10n.t("Holding a post to react will open the reactions to pick from.");
         return L10n.f("Holding a post to react will give %1$s.", HushfacebookPreferenceFragment.holdReactionLabel(reaction));
+    }
+
+    /** The sentence that says where Fold long posts folds after an import (#497). */
+    static String foldPostsSentence(FoldLines lines) {
+        if (lines == FoldLines.FACEBOOK) return L10n.t("Fold long posts will fold posts where Facebook does.");
+        return L10n.f("Fold long posts will show %1$s before See more.", HushfacebookPreferenceFragment.foldLinesLabel(lines));
+    }
+
+    /** The sentence that says where Fold long comments folds after an import (#497). */
+    static String foldCommentsSentence(FoldLines lines) {
+        if (lines == FoldLines.FACEBOOK) return L10n.t("Fold long comments will fold comments where Facebook does.");
+        return L10n.f("Fold long comments will show %1$s before See more.", HushfacebookPreferenceFragment.foldLinesLabel(lines));
     }
 
     /** The sentence that says how Show Reels in gray takes the color out after an import. */
@@ -1158,6 +1173,8 @@ public class SettingsBackupPreference extends Preference {
                     + (snapshot.burnInChange() == null ? "" : " " + burnInSentence(snapshot.burnInChange()))
                     + (snapshot.burnInWaitChange() == null ? "" : " " + burnInWaitSentence(snapshot.burnInWaitChange()))
                     + (snapshot.holdReactionChange() == null ? "" : " " + holdReactionSentence(snapshot.holdReactionChange()))
+                    + (snapshot.foldPostsChange() == null ? "" : " " + foldPostsSentence(snapshot.foldPostsChange()))
+                    + (snapshot.foldCommentsChange() == null ? "" : " " + foldCommentsSentence(snapshot.foldCommentsChange()))
                     + (snapshot.grayOverChange() == null ? "" : " " + grayOverSentence(snapshot.grayOverChange()))
                     + (snapshot.newRowMarkChange() == null ? "" : " " + newRowMarkSentence(snapshot.newRowMarkChange()))
                     + (snapshot.refreshRateChange() == null ? "" : " " + refreshRateSentence(snapshot.refreshRateChange()))

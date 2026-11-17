@@ -82,6 +82,8 @@ public enum PatchFamily {
             Settings.SHOW_FULL_POST_TEXT, Settings.SHOW_FULL_REEL_CAPTIONS, Settings.DIM_OPEN_REEL_CAPTIONS,
             Settings.DIM_FOLDED_REEL_CAPTIONS, Settings.DIM_REEL_NAMES, Settings.DIM_STORY_NAMES,
             Settings.SOFT_TEXT_BOXES),
+    /** Set by its two lists, posts and comments, which start at Facebook's own fold (#497). */
+    FOLD_LONG_TEXT(FamilyNames.FOLD_LONG_TEXT, "foldLongText", Settings.FOLD_POST_TEXT),
     TRANSLATE_POSTS(FamilyNames.TRANSLATE_POSTS, "translatePosts", null,
             Settings.TRANSLATE_POST_LINK, Settings.TRANSLATE_POSTS_BY_THEMSELVES),
     WHO_SHARED(FamilyNames.WHO_SHARED, "whoShared", null,
@@ -589,6 +591,10 @@ public enum PatchFamily {
         StringBuilder line = new StringBuilder(patchName).append(": ");
         if (choice != null) {
             StringBuilder saved = new StringBuilder(choice.key).append('=').append(choice.savedValue());
+            // Fold long text has a second list, for comments (#497).
+            if (this == FOLD_LONG_TEXT) {
+                saved.append(", ").append(Settings.FOLD_COMMENTS.key).append('=').append(Settings.FOLD_COMMENTS.savedValue());
+            }
             for (BooleanSetting setting : switches) {
                 saved.append(", ").append(setting.key).append(setting.savedValue() ? "=on" : "=off");
             }

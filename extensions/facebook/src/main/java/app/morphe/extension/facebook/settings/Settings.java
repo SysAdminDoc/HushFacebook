@@ -16,6 +16,7 @@ import app.morphe.extension.facebook.download.FileNameTemplate;
 import app.morphe.extension.facebook.download.SaveFolder;
 import app.morphe.extension.facebook.download.SaveTo;
 import app.morphe.extension.facebook.download.SendLink;
+import app.morphe.extension.facebook.feed.FoldLines;
 import app.morphe.extension.facebook.feed.SeenPosts;
 import app.morphe.extension.facebook.media.PlaybackQuality;
 import app.morphe.extension.facebook.media.RecentlyWatched;
@@ -3386,6 +3387,22 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting SHOW_FULL_POST_TEXT =
             new BooleanSetting(ReelCaptionSetting.FEED_KEY, FALSE);
+
+    /**
+     * How many lines a long post's text shows before See more (#497,
+     * {@link app.morphe.extension.facebook.feed.FoldLongText}). Facebook's own fold until a count is
+     * picked, and {@link #SHOW_FULL_POST_TEXT} on wins over it. A change shows on the posts drawn
+     * after it.
+     */
+    public static final EnumSetting<FoldLines> FOLD_POST_TEXT =
+            new EnumSetting<>("hushfacebook_fold_post_text", FoldLines.FACEBOOK);
+
+    /**
+     * How many lines a long comment shows before See more (#497), Facebook's own fold until a count
+     * is picked. A change shows on the comments drawn after it.
+     */
+    public static final EnumSetting<FoldLines> FOLD_COMMENTS =
+            new EnumSetting<>("hushfacebook_fold_comments", FoldLines.FACEBOOK);
 
     /**
      * Reel captions start whole instead of cut with "more" (#398, split from

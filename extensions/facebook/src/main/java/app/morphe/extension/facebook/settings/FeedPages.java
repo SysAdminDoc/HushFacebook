@@ -12,6 +12,8 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentOrderRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentsHeightRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.feedsSubtabRow;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.foldCommentsRow;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.foldPostsRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.holdReactionRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.homeFeedRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.info;
@@ -183,6 +185,7 @@ final class FeedPages {
                 || build.contains(PatchFamily.ASK_BEFORE_LIKE)
                 || build.contains(PatchFamily.FEEDS_HEADER)
                 || build.contains(PatchFamily.FULL_POST_TEXT)
+                || build.contains(PatchFamily.FOLD_LONG_TEXT)
                 || build.contains(PatchFamily.TRANSLATE_POSTS)
                 || build.contains(PatchFamily.REEL_GESTURES)
                 || build.contains(PatchFamily.WHO_SHARED)
@@ -353,6 +356,10 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.SHOW_FULL_POST_TEXT,
                         L10n.t("Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold "
                                 + "it back. Reel captions have their own switch under Reels and Watch.")));
+            }
+            if (build.contains(PatchFamily.FOLD_LONG_TEXT)) {
+                // Read as each post's text is cut, so a change shows on the posts drawn after it.
+                feed.addPreference(foldPostsRow(context));
             }
             if (build.contains(PatchFamily.TRANSLATE_POSTS)) {
                 feed.addPreference(toggle(context, Settings.TRANSLATE_POST_LINK,
@@ -953,7 +960,8 @@ final class FeedPages {
         boolean tags = build.contains(PatchFamily.TAG_SUGGESTIONS);
         boolean pictures = build.contains(PatchFamily.PROFILE_PICTURES);
         boolean ask = build.contains(PatchFamily.ASK_BEFORE_LIKE);
-        if (!order && !summaries && !options && !reactions && !fullHeight && !tags && !pictures && !ask) return;
+        boolean fold = build.contains(PatchFamily.FOLD_LONG_TEXT);
+        if (!order && !summaries && !options && !reactions && !fullHeight && !tags && !pictures && !ask && !fold) return;
         PreferenceCategory comments = category(screen, L10n.t("Comments and writing"));
         if (order) {
             comments.addPreference(toggle(context, Settings.DEFAULT_COMMENT_ORDER,
@@ -975,6 +983,10 @@ final class FeedPages {
             comments.addPreference(toggle(context, Settings.HIDE_COMMENT_PROFILE_PICTURES,
                     L10n.t("Takes the profile picture off comments, so the name and text start where the picture "
                             + "was. A change shows on the comments drawn after it.")));
+        }
+        if (fold) {
+            // Read as each comment's text is cut, so a change shows on the comments drawn after it.
+            comments.addPreference(foldCommentsRow(context));
         }
         if (ask) {
             // Read on each tap, so a change shows on the next one.

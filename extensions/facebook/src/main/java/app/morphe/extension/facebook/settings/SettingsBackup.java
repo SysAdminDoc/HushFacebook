@@ -68,6 +68,7 @@ import app.morphe.extension.facebook.theme.MarkColors;
 import app.morphe.extension.facebook.navigation.FeedsSubtab;
 import app.morphe.extension.facebook.navigation.StartTab;
 import app.morphe.extension.facebook.navigation.TabOrder;
+import app.morphe.extension.facebook.feed.FoldLines;
 import app.morphe.extension.facebook.feed.SeenPosts;
 import app.morphe.extension.facebook.notifications.QuietHour;
 import app.morphe.extension.shared.settings.BooleanSetting;
@@ -771,6 +772,13 @@ public final class SettingsBackup {
     static final EnumSetting<SeenPosts.Keep> SEEN_KEEP = Settings.SEEN_POSTS_KEEP;
 
     /**
+     * Fold long text's line counts for posts and for comments (#497), each held in a file as its
+     * {@link FoldLines#fileValue}. Anything else refuses the whole file, as a seen posts time does.
+     */
+    static final EnumSetting<FoldLines> FOLD_POSTS = Settings.FOLD_POST_TEXT;
+    static final EnumSetting<FoldLines> FOLD_COMMENTS = Settings.FOLD_COMMENTS;
+
+    /**
      * How large Facebook's text is, held in a file as its {@link TextSize.Scale#fileValue}, the
      * percentage. Anything else refuses the whole file, as a lock time does.
      */
@@ -840,7 +848,7 @@ public final class SettingsBackup {
 
     /** The settings a file carries that aren't switches, in the order Settings declares them. */
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
-            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, POST_MENU_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
+            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, FEED_TYPES, CEILING, BURN_IN, BURN_IN_WAIT, GRAY_OVER, DATE_STYLE, REELS_ORDER, HOLD_REACTION, COMMENTS_HEIGHT, WATCHED_KEEP, SHARE_ITEMS, POST_MENU_ITEMS, MENU_TILES, HOME_FEED, TAB_ORDER, BACKGROUND, LIGHT_BACKGROUND, HEADER_TEXT, SEEN_KEEP, FOLD_POSTS, FOLD_COMMENTS, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY,
                     QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, PAUSE_LENGTH, BREAK_AFTER, BREAK_LENGTH, TEXT_SIZE, REFRESH_RATE, NEW_ROW_MARK, ACCENT, ACCENT_CUSTOM, LOGO_EMOJI,
                     BADGE, LOGO, TAB));
@@ -970,6 +978,8 @@ public final class SettingsBackup {
         private static final String BURN_IN_NAME = "burn_in_guard";
         private static final String BURN_IN_WAIT_NAME = "burn_in_wait";
         private static final String HOLD_REACTION_NAME = "hold_reaction";
+        private static final String FOLD_POSTS_NAME = "fold_post_text";
+        private static final String FOLD_COMMENTS_NAME = "fold_comments";
         private static final String GRAY_OVER_NAME = "gray_reels_over";
         private static final String NEW_ROW_MARK_NAME = "new_row_mark";
         private static final String REFRESH_RATE_NAME = "refresh_rate";
@@ -1119,6 +1129,12 @@ public final class SettingsBackup {
         /** The Hold to react choice the file holds, the same way. */
         @Nullable
         HoldReaction holdReaction;
+        /** The Fold long posts choice the file holds, the same way. */
+        @Nullable
+        FoldLines foldPosts;
+        /** The Fold long comments choice the file holds, the same way. */
+        @Nullable
+        FoldLines foldComments;
         /** The Turn gray over choice the file holds, the same way. */
         @Nullable
         GrayOver grayOver;
@@ -1384,6 +1400,10 @@ public final class SettingsBackup {
             if (burnInWaitChange != null) changes.put(BURN_IN_WAIT, burnInWaitChange);
             HoldReaction holdReactionChange = holdReactionChange();
             if (holdReactionChange != null) changes.put(HOLD_REACTION, holdReactionChange);
+            FoldLines foldPostsChange = foldPostsChange();
+            if (foldPostsChange != null) changes.put(FOLD_POSTS, foldPostsChange);
+            FoldLines foldCommentsChange = foldCommentsChange();
+            if (foldCommentsChange != null) changes.put(FOLD_COMMENTS, foldCommentsChange);
             GrayOver grayOverChange = grayOverChange();
             if (grayOverChange != null) changes.put(GRAY_OVER, grayOverChange);
             NewRowMark newRowMarkChange = newRowMarkChange();
@@ -1701,6 +1721,18 @@ public final class SettingsBackup {
             return holdReaction == null || holdReaction == HOLD_REACTION.savedValue() ? null : holdReaction;
         }
 
+        /** The Fold long posts choice after this file, the same way. */
+        @Nullable
+        FoldLines foldPostsChange() {
+            return foldPosts == null || foldPosts == FOLD_POSTS.savedValue() ? null : foldPosts;
+        }
+
+        /** The Fold long comments choice after this file, the same way. */
+        @Nullable
+        FoldLines foldCommentsChange() {
+            return foldComments == null || foldComments == FOLD_COMMENTS.savedValue() ? null : foldComments;
+        }
+
         /** The Turn gray over choice after this file, the same way. */
         @Nullable
         GrayOver grayOverChange() {
@@ -1792,6 +1824,8 @@ public final class SettingsBackup {
             if (burnIn != null) state.putString(BURN_IN_NAME, burnIn.fileValue);
             if (burnInWait != null) state.putString(BURN_IN_WAIT_NAME, burnInWait.fileValue);
             if (holdReaction != null) state.putString(HOLD_REACTION_NAME, holdReaction.fileValue);
+            if (foldPosts != null) state.putString(FOLD_POSTS_NAME, foldPosts.fileValue);
+            if (foldComments != null) state.putString(FOLD_COMMENTS_NAME, foldComments.fileValue);
             if (grayOver != null) state.putString(GRAY_OVER_NAME, grayOver.fileValue);
             if (newRowMark != null) state.putString(NEW_ROW_MARK_NAME, newRowMark.fileValue);
             if (refreshRate != null) state.putString(REFRESH_RATE_NAME, refreshRate.fileValue);
@@ -1874,6 +1908,8 @@ public final class SettingsBackup {
             read.burnIn = BurnInMode.fromFile(state.get(BURN_IN_NAME));
             read.burnInWait = BurnInWait.fromFile(state.get(BURN_IN_WAIT_NAME));
             read.holdReaction = HoldReaction.fromFile(state.get(HOLD_REACTION_NAME));
+            read.foldPosts = FoldLines.fromFile(state.get(FOLD_POSTS_NAME));
+            read.foldComments = FoldLines.fromFile(state.get(FOLD_COMMENTS_NAME));
             read.grayOver = GrayOver.fromFile(state.get(GRAY_OVER_NAME));
             read.newRowMark = NewRowMark.fromFile(state.get(NEW_ROW_MARK_NAME));
             read.refreshRate = RefreshRate.Rate.fromFile(state.get(REFRESH_RATE_NAME));
@@ -1955,6 +1991,8 @@ public final class SettingsBackup {
             switches.put(BURN_IN.key, of(BURN_IN).fileValue);
             switches.put(BURN_IN_WAIT.key, of(BURN_IN_WAIT).fileValue);
             switches.put(HOLD_REACTION.key, of(HOLD_REACTION).fileValue);
+            switches.put(FOLD_POSTS.key, of(FOLD_POSTS).fileValue);
+            switches.put(FOLD_COMMENTS.key, of(FOLD_COMMENTS).fileValue);
             switches.put(GRAY_OVER.key, of(GRAY_OVER).fileValue);
             switches.put(DATE_STYLE.key, of(DATE_STYLE).fileValue);
             switches.put(COMMENTS_HEIGHT.key, of(COMMENTS_HEIGHT).fileValue);
@@ -2149,6 +2187,8 @@ public final class SettingsBackup {
         BurnInMode burnIn = null;
         BurnInWait burnInWait = null;
         HoldReaction holdReaction = null;
+        FoldLines foldPosts = null;
+        FoldLines foldComments = null;
         GrayOver grayOver = null;
         NewRowMark newRowMark = null;
         RefreshRate.Rate refreshRate = null;
@@ -2317,6 +2357,16 @@ public final class SettingsBackup {
             if (HOLD_REACTION.key.equals(name)) {
                 holdReaction = HoldReaction.fromFile(values.opt(name));
                 if (holdReaction == null) throw new Rejected(Reason.VALUE, "Not a hold reaction: " + name);
+                continue;
+            }
+            if (FOLD_POSTS.key.equals(name)) {
+                foldPosts = FoldLines.fromFile(values.opt(name));
+                if (foldPosts == null) throw new Rejected(Reason.VALUE, "Not a post fold: " + name);
+                continue;
+            }
+            if (FOLD_COMMENTS.key.equals(name)) {
+                foldComments = FoldLines.fromFile(values.opt(name));
+                if (foldComments == null) throw new Rejected(Reason.VALUE, "Not a comment fold: " + name);
                 continue;
             }
             if (GRAY_OVER.key.equals(name)) {
@@ -2547,6 +2597,8 @@ public final class SettingsBackup {
         read.burnIn = burnIn;
         read.burnInWait = burnInWait;
         read.holdReaction = holdReaction;
+        read.foldPosts = foldPosts;
+        read.foldComments = foldComments;
         read.grayOver = grayOver;
         read.newRowMark = newRowMark;
         read.refreshRate = refreshRate;

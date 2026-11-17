@@ -1056,6 +1056,26 @@ Languages to leave alone	ภาษาที่ไม่ต้องแปล
 None picked. Posts in every language can be translated.	ไม่ได้เลือกไว้ โพสต์ในทุกภาษาจะสามารถแปลได้
 Left alone: %s	ไม่แปล: %s
 Posts in the feed show all of their text, so there's no See more to tap. Tap the text to fold it back. Reel captions have their own switch under Reels and Watch.	โพสต์ในฟีดจะแสดงข้อความทั้งหมด จึงไม่ต้องแตะดูเพิ่มเติม แตะข้อความเพื่อพับเก็บ คำบรรยาย Reels มีสวิตช์แยกต่างหากในส่วน Reels และ Watch
+# context: title of the list that picks how many lines a long post shows before See more
+Fold long posts	พับโพสต์ที่ยาว
+# context: one entry in those lists, a single line
+%1$d line	%1$d บรรทัด
+# context: the same entry for two or more lines
+%1$d lines	%1$d บรรทัด
+Long posts fold where Facebook folds them.	โพสต์ที่ยาวจะพับตรงที่ Facebook พับ
+# context: %1$s is a line count such as 3 lines; See more is Facebook's link under a folded post
+A long post shows %1$s before See more.	โพสต์ที่ยาวจะแสดง %1$s ก่อนดูเพิ่มเติม
+# context: Show full post text is the name of the switch just above
+Show full post text comes first while it's on.	แสดงข้อความโพสต์แบบเต็มจะมาก่อนขณะที่เปิดอยู่
+# context: title of the list that picks how many lines a long comment shows before See more
+Fold long comments	พับความคิดเห็นที่ยาว
+Long comments fold where Facebook folds them.	ความคิดเห็นที่ยาวจะพับตรงที่ Facebook พับ
+A long comment shows %1$s before See more.	ความคิดเห็นที่ยาวจะแสดง %1$s ก่อนดูเพิ่มเติม
+# context: sentence after a settings import; Fold long posts is the list's title
+Fold long posts will fold posts where Facebook does.	พับโพสต์ที่ยาวจะพับโพสต์ตรงที่ Facebook พับ
+Fold long posts will show %1$s before See more.	พับโพสต์ที่ยาวจะแสดง %1$s ก่อนดูเพิ่มเติม
+Fold long comments will fold comments where Facebook does.	พับความคิดเห็นที่ยาวจะพับความคิดเห็นตรงที่ Facebook พับ
+Fold long comments will show %1$s before See more.	พับความคิดเห็นที่ยาวจะแสดง %1$s ก่อนดูเพิ่มเติม
 Show full reel captions	แสดงคำบรรยาย Reels แบบเต็ม
 Long captions on reels show all of their text right away. Tap the caption to fold it back. A change shows from the next reel.	คำบรรยายขนาดยาวบน Reels จะแสดงข้อความทั้งหมดทันที แตะคำบรรยายเพื่อพับเก็บ การเปลี่ยนแปลงจะมีผลตั้งแต่ Reel ถัดไป
 # context: switch title under Reels and Watch, below Show full reel captions; once a reel's caption is opened, a dark see-through box sits behind its text, like movie subtitles
