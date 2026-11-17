@@ -54,7 +54,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
-* With `Keep progress bar` on, a live video's chat shows up again. On Facebook 586 the switch held back more than the controls' hide timer, so the chat folded into a thin strip at the edge of the screen and only came back with Hushfacebook paused. Now it only stops that timer. (#447)
+* With `Keep the progress bar` on, a live video's chat shows up again. On Facebook 586 the switch held back more than the controls' hide timer, so the chat folded into a thin strip at the edge of the screen and only came back with Hushfacebook paused. Now it only stops that timer. (#447)
 * A reel on the Reels tab now reaches the bottom of the screen. With the tab bar at the top it started behind the bar but kept the height of the space under it, so the next reel peeked in at the bottom, even more with `Hide the status bar` on. With the tabs at the bottom, `Hide the status bar` and see-through bars left a black band under the reel with the next one showing below it. (#466, #494)
 * With `Keep feed position on return` on, opening Facebook fresh loads the feed the way it always does. A cold start was treated like coming back to the feed, so it held an old copy of the feed instead of getting new posts, and now and then Home stayed empty until you scrolled. Coming back to Facebook, or to the feed from another screen, still keeps your place. (#493)
 * `Show every reaction on comments` now covers the comments under a post you've opened and the ones shown under posts in your feed. Those rows kept showing only the top reaction even with the switch on, since Facebook picks them in two other places. (#241)
