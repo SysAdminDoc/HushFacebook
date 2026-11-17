@@ -494,6 +494,62 @@ public class TabBarScrollAwayTest {
         TabBarScrollAway.mainScreenCreated(screen);
     }
 
+    /** A new main screen showing [tab], its content laid out [height] tall. */
+    private void onLaidOutTab(Object tab, int height) {
+        screen = Robolectric.buildActivity(FbMainTabActivity.class).setup().get();
+        screen.currentTab = tab;
+        screen.findViewById(android.R.id.content).layout(0, 0, 1080, height);
+        TabBarScrollAway.mainScreenCreated(screen);
+    }
+
+    @Test
+    public void aReelsRowUnderATopTabBarIsAsTallAsTheScreensContent() {
+        // #466: Facebook made each row 2075 tall, the room below the bars, while the reel ran from
+        // the top of a 2199 page, so the next reel showed in the last 124.
+        Settings.TOP_TAB_BAR.save(true);
+        onLaidOutTab(new FeedTab(), 2199);
+        assertEquals("Home keeps Facebook's row", 2075, TabBarScrollAway.reelRow(2075));
+        onLaidOutTab(new WatchTab(), 2199);
+        TabBarScrollAway.topBarsLetGo();
+        assertEquals("the Reels tab's row fills the content", 2199, TabBarScrollAway.reelRow(2075));
+        String line = statusLine();
+        assertTrue(line, line != null && line.contains(TabBarScrollAway.REEL_ROW_FILLED + " 1"));
+        onLaidOutTab(new WatchTab(), 2274);
+        assertEquals("with the status bar hidden the content is taller, and so is the row", 2274,
+                TabBarScrollAway.reelRow(2075));
+        assertEquals("never shorter than Facebook's row", 2300, TabBarScrollAway.reelRow(2300));
+        assertEquals("no row yet", 0, TabBarScrollAway.reelRow(0));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused", 2075, TabBarScrollAway.reelRow(2075));
+    }
+
+    @Test
+    public void aReelsRowGetsBackThePaddingDroppedOverIt() {
+        // Reels first with the bar at the bottom: the title bar's padding goes, so the row gets it back.
+        Settings.BOTTOM_TAB_BAR.save(true);
+        onTab(new WatchTab());
+        assertEquals("nothing dropped yet", 2000, TabBarScrollAway.reelRow(2000));
+        assertEquals(0, TabBarScrollAway.pagesTop(150));
+        assertEquals("the dropped padding goes back on the row", 2150, TabBarScrollAway.reelRow(2000));
+        Settings.KEEP_TOP_BAR.save(true);
+        assertEquals("a kept title bar keeps its padding, and the row its height", 2000, TabBarScrollAway.reelRow(2000));
+        Settings.KEEP_TOP_BAR.save(false);
+        TabBarScrollAway.topBarsLetGo();
+        assertEquals("Reels further along a bottom bar keeps Facebook's row", 2000, TabBarScrollAway.reelRow(2000));
+    }
+
+    @Test
+    public void aReelsRowKeepsItsHeightWhereThePaddingStays() {
+        Settings.TOP_TAB_BAR.save(true);
+        TabBarScrollAway.topBarsLetGo();
+        assertEquals("no main screen", 2075, TabBarScrollAway.reelRow(2075));
+        onLaidOutTab(new NotificationsTab(), 2199);
+        assertEquals("another tab", 2075, TabBarScrollAway.reelRow(2075));
+        Settings.TOP_TAB_BAR.save(false);
+        onLaidOutTab(new WatchTab(), 2199);
+        assertEquals("Reels further along with the top bar off", 2075, TabBarScrollAway.reelRow(2075));
+    }
+
     @Test
     public void thePaddingStaysWithoutATopBarOrWhilePaused() {
         onTab(new WatchTab());

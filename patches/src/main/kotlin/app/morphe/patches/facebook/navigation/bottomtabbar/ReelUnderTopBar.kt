@@ -14,11 +14,13 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 /*
  * The reel under a top tab bar (#264). With the tab bar at the top, the Reels tab's reel started
@@ -131,4 +133,75 @@ internal fun BytecodePatchContext.hookReelsHeader(warn: (String) -> Unit) {
         return warn("$VIDEO_HOME_ROOT_FRAGMENT->onCreateView can't take the header hook")
     }
     onCreateView.addInstructions(store + 1, "invoke-static { v$register }, $REELS_HEADER_MADE")
+}
+
+/*
+ * The Reels row's height under a top tab bar (#466). With the top padding answered 0 the reel ran
+ * from the top of the page, but each row kept the height Facebook gave it, the room below the top
+ * bars, so the next reel showed in a band at the bottom. Read from 587 (2026-11-17): the maker of
+ * the Reels tab's list (arm64 LX/0B2M;->BPc) works the row height out from one of several sources
+ * (a size handed down, the list's own height, the screen less the bars), logs it after
+ * " computed=" in a line that also names " recyclerPadTop=", and stores it in one int field of the
+ * list section it makes (LX/0B2U;->A02), which hands it to every row. The extension takes the
+ * height right before that store.
+ */
+
+internal const val ROW_HEIGHT_LOG = " recyclerPadTop="
+private const val ROW_HEIGHT_LABEL = " computed="
+internal const val REEL_ROW = "$TAB_BAR_SCROLL_AWAY->reelRow(I)I"
+
+/**
+ * Where the Reels list's maker stores the row height: the index of the one int store into another
+ * class of the register its log appends after " computed=", and that register.
+ */
+internal fun reelRowStore(maker: Method): Pair<Int, Int>? {
+    val code = maker.implementation?.instructions?.toList() ?: return null
+    val label = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == ROW_HEIGHT_LABEL }
+    if (label < 0) return null
+    // The label's own append, then the append of the height.
+    val appends = code.drop(label + 1).take(4).filter {
+        it.opcode == Opcode.INVOKE_VIRTUAL && ((it as ReferenceInstruction).reference as MethodReference).let { ref ->
+            ref.definingClass == "Ljava/lang/StringBuilder;" && ref.name == "append"
+        }
+    }
+    val height = appends.getOrNull(1)?.takeIf {
+        ((it as ReferenceInstruction).reference as MethodReference).parameterTypes.singleOrNull()?.toString() == "I"
+    } as? FiveRegisterInstruction ?: return null
+    val register = height.registerD
+    val stores = code.withIndex().filter { (_, instruction) ->
+        val field = (instruction as? ReferenceInstruction)?.reference as? FieldReference
+        instruction.opcode == Opcode.IPUT && field?.type == "I" && field.definingClass != maker.definingClass &&
+            (instruction as TwoRegisterInstruction).registerA == register
+    }
+    val store = stores.singleOrNull() ?: return null
+    return store.index to register
+}
+
+/**
+ * Hands the Reels row height to the extension right before the list's maker stores it. Warns and
+ * does nothing unless there's one maker and one such store, and nothing jumps to the store.
+ */
+internal fun BytecodePatchContext.hookReelRow(warn: (String) -> Unit) {
+    val holders = classDefByStrings(ROW_HEIGHT_LOG, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }.distinctBy { it.type }
+    val holder = holders.singleOrNull() ?: return warn("expected one class logging \"$ROW_HEIGHT_LOG\", found ${holders.size}")
+    val makers = holder.methods.filter { method ->
+        method.implementation?.instructions?.any {
+            ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == ROW_HEIGHT_LOG
+        } == true
+    }
+    val found = makers.singleOrNull() ?: return warn("expected one method of ${holder.type} logging \"$ROW_HEIGHT_LOG\", found ${makers.size}")
+    // The mutable copy, so another patch's additions to the method can't shift the index.
+    val maker = mutableClassDefBy(holder.type).findMutableMethodOf(found)
+    val (store, register) = reelRowStore(maker)
+        ?: return warn("expected one store of the row height logged in ${holder.type}->${maker.name}")
+    val code = maker.implementation!!.instructions.toList()
+    if (register > 15 || store in branchTargets(code)) return warn("${holder.type}->${maker.name} can't take the row hook")
+    maker.addInstructions(
+        store,
+        """
+            invoke-static { v$register }, $REEL_ROW
+            move-result v$register
+        """,
+    )
 }

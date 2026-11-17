@@ -135,6 +135,7 @@ public final class TabBarScrollAway {
         builtKept = null;
         builtSeeThrough = null;
         tabsInTopEntry = false;
+        droppedTop = 0;
     }
 
     /**
@@ -194,10 +195,8 @@ public final class TabBarScrollAway {
             if (padding == 0) return padding;
             HookStatus.invoked(FAMILY);
             if (!Utils.settingsReady() || Setting.isPaused()) return padding;
-            boolean tabsOnTop = tabsInTopEntry || (Settings.TOP_TAB_BAR.get() && !Settings.BOTTOM_TAB_BAR.get());
-            if (offTheFeed && !tabsOnTop) return padding;
-            if (!offTheFeed && Settings.KEEP_TOP_BAR.get()) return padding;
-            if (!onReelsTab()) return padding;
+            if (!reelUnderBars(tabsOnTop())) return padding;
+            if (padding > droppedTop) droppedTop = padding;
             HookStatus.bound(FAMILY, "reel under the top bar");
             HookStatus.counted(FAMILY, REEL_UNDER_BAR);
             Logger.printDebug(() -> "Top bars: the reel runs under them");
@@ -206,6 +205,63 @@ public final class TabBarScrollAway {
             HookStatus.threw(FAMILY, "reel under the top bar", failure);
             return padding;
         }
+    }
+
+    /** The largest top padding {@link #pagesTop} has dropped, which Facebook took off each Reels row. */
+    private static volatile int droppedTop;
+
+    /** Counted each time a Reels row is made as tall as the page the reel runs in under the top bars. */
+    static final String REEL_ROW_FILLED = "Reels row made the page's height";
+
+    /**
+     * The hook on the height Facebook gives each row of the Reels tab, as it makes the tab's list
+     * (#466). Facebook sizes a row to the room left below the top bars, so a reel that {@link
+     * #pagesTop} runs under them ended that much short of the screen's bottom, and the next reel
+     * showed in the gap, more with Hide the status bar on. When {@link #pagesTop} drops the padding
+     * the row is the page's height instead: the main screen's content with the tabs at the top, where
+     * nothing sits below the reels, and otherwise Facebook's row plus the padding dropped. Never
+     * smaller than Facebook's row. Anywhere else, paused, before the settings are ready or on a
+     * failure, it's Facebook's own height.
+     *
+     * @param height the row height Facebook worked out.
+     */
+    public static int reelRow(int height) {
+        try {
+            if (height <= 0) return height;
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || Setting.isPaused()) return height;
+            boolean tabsOnTop = tabsOnTop();
+            if (!reelUnderBars(tabsOnTop)) return height;
+            int page = tabsOnTop ? contentHeight() : 0;
+            int wanted = page > 0 ? page : height + droppedTop;
+            if (wanted <= height) return height;
+            HookStatus.bound(FAMILY, "Reels row under the top bar");
+            HookStatus.counted(FAMILY, REEL_ROW_FILLED);
+            Logger.printDebug(() -> "Top bars: a Reels row of " + height + " made " + wanted);
+            return wanted;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Reels row under the top bar", failure);
+            return height;
+        }
+    }
+
+    /** Whether the tabs sit at the top: in the top bar's entry, or moved there by the switch. */
+    private static boolean tabsOnTop() {
+        return tabsInTopEntry || (Settings.TOP_TAB_BAR.get() && !Settings.BOTTOM_TAB_BAR.get());
+    }
+
+    /** Whether the main screen's Reels tab runs its reel under the top bars, as {@link #pagesTop} decides. */
+    private static boolean reelUnderBars(boolean tabsOnTop) {
+        if (offTheFeed && !tabsOnTop) return false;
+        if (!offTheFeed && Settings.KEEP_TOP_BAR.get()) return false;
+        return onReelsTab();
+    }
+
+    /** The height of the main screen's content, 0 before it's laid out. */
+    private static int contentHeight() {
+        Activity screen = mainScreen.get();
+        View content = screen == null ? null : screen.findViewById(android.R.id.content);
+        return content == null ? 0 : content.getHeight();
     }
 
     /** Whether the main screen shows the tab called Reels or Video. */

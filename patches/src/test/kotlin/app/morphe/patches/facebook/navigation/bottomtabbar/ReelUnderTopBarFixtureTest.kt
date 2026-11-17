@@ -18,6 +18,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -117,6 +118,66 @@ class ReelUnderTopBarFixtureTest {
                     (after.take(store + 1) + after.drop(store + 2)).opcodes())
             }
         }
+    }
+
+    /**
+     * #466: the Reels row height. The list's maker logs the height it worked out after " computed="
+     * and stores that register once into an int field of the list section it makes; the hook goes
+     * right before that store, on the same register, and changes nothing else.
+     */
+    @Test
+    fun `each declared build hands the Reels row height to the extension right before storing it`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val holders = FixtureDex.classesHolding(bundle, ROW_HEIGHT_LOG)
+                    .filterNot { it.type.startsWith(EXTENSION_CLASSES) }.distinctBy { it.type }
+                assertEquals("$name: classes logging \"$ROW_HEIGHT_LOG\"", 1, holders.size)
+                val holder = holders.single()
+                val maker = holder.methods.single { method ->
+                    method.implementation?.instructions?.any {
+                        ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == ROW_HEIGHT_LOG
+                    } == true
+                }
+                val before = maker.implementation!!.instructions.toList()
+                val (store, register) = reelRowStore(maker)
+                    ?: throw AssertionError("$name: ${maker.name} has no single store of the logged row height")
+                // Positive control: the store is into an int field of a section the maker makes itself.
+                val field = (before[store] as ReferenceInstruction).reference as FieldReference
+                assertEquals("$name: the row height's field type", "I", field.type)
+                val made = before.filter { it.opcode == Opcode.NEW_INSTANCE }
+                    .map { ((it as ReferenceInstruction).reference as TypeReference).type }
+                assertTrue("$name: ${field.definingClass} is made in ${maker.name}", field.definingClass in made)
+
+                val context = PatchContexts.of(listOf(holder))
+                context.hookReelRow { why -> throw AssertionError("$name: $why") }
+                val after = context.mutableClassDefBy(holder.type).methods.single { it.name == maker.name &&
+                    it.parameterTypes.map(Any::toString) == maker.parameterTypes.map(Any::toString) }
+                    .implementation!!.instructions.toList()
+                assertEquals("$name: ${maker.name} gained two instructions", before.opcodes().size + 2, after.opcodes().size)
+                val hand = after[store] as FiveRegisterInstruction
+                assertEquals("$name: the row height goes to the extension right before the store",
+                    listOf(Opcode.INVOKE_STATIC, REEL_ROW, 1, register),
+                    listOf(hand.opcode, ((hand as ReferenceInstruction).reference as MethodReference).toString(), hand.registerCount, hand.registerC))
+                assertEquals("$name: the answer is what gets stored",
+                    listOf(Opcode.MOVE_RESULT, register, Opcode.IPUT, field.toString()),
+                    listOf(after[store + 1].opcode, (after[store + 1] as OneRegisterInstruction).registerA,
+                        after[store + 2].opcode, ((after[store + 2] as ReferenceInstruction).reference as FieldReference).toString()))
+                assertEquals("$name: the rest of ${maker.name} is Facebook's", before.opcodes(),
+                    (after.take(store) + after.drop(store + 2)).opcodes())
+            }
+        }
+    }
+
+    @Test
+    fun `the extension has the row hook`() {
+        val type = REEL_ROW.substringBefore("->")
+        val hook = ExtensionDex.classDef(type).methods.singleOrNull { it.name == "reelRow" }
+        assertNotNull("the extension has no TabBarScrollAway.reelRow", hook)
+        assertEquals(REEL_ROW, "${hook!!.definingClass}->${hook.name}(${hook.parameterTypes.joinToString("")})${hook.returnType}")
+        assertTrue("reelRow isn't static", AccessFlags.STATIC.isSet(hook.accessFlags))
     }
 
     @Test

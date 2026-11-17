@@ -143,6 +143,9 @@ internal val tabBarScrollAwayPatch = bytecodePatch {
         hookReelsHeader { why ->
             patchLog.warning("$PATCH: $why, so the Reels header can sit under a top tab bar")
         }
+        hookReelRow { why ->
+            patchLog.warning("$PATCH: $why, so a reel under a top tab bar ends short of the screen's bottom")
+        }
         for ((trace, call) in listOf(DEACTIVATE_SCROLL_AWAY to TOP_BARS_LET_GO, REACTIVATE_SCROLL_AWAY to TOP_BARS_TAKEN_BACK)) {
             val switch = scrollAwaySwitch(
                 classDefByStrings(trace, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) },
