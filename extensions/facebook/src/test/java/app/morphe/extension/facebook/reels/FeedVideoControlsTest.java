@@ -890,6 +890,59 @@ public class FeedVideoControlsTest {
         assertEquals(java.util.Arrays.asList("video"), casts);
     }
 
+    /** Facebook's full screen video player, which the controls know by the end of its activity's name (#182). */
+    public static final class FullscreenVideoPlayerActivity extends Activity { }
+
+    /** Moves the video into the full screen player: a screen of its own, the video across its middle, no feed list. */
+    private void openFullPlayer() {
+        ActivityController<FullscreenVideoPlayerActivity> full =
+                Robolectric.buildActivity(FullscreenVideoPlayerActivity.class).setup();
+        Activity screen = full.get();
+        FrameLayout top = new FrameLayout(screen);
+        FrameLayout box = new FrameLayout(screen);
+        place(top, box, 0, 0, 1080, 2300);
+        place(box, new SurfaceView(screen), 0, 850, 1080, 600);
+        screen.setContentView(top);
+        screen.getWindow().getDecorView().requestLayout();
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100));
+        full.windowFocusChanged(true);
+        player.view = box;
+        attach(player);
+    }
+
+    @Test public void theFullPlayerGetsTheCastButtonAloneInItsTopRightCorner() {
+        castOn();
+        openOn();
+        skipOn();
+        speedOn();
+        barOn();
+        openFullPlayer();
+        assertNotNull("a video in the full screen player gets the cast button", cast());
+        assertTrue("on the full player's own screen", cast().getRootView() == player.view.getRootView());
+        assertNull("Facebook's player has its own play button", button());
+        assertNull(open());
+        assertNull(back());
+        assertNull(ahead());
+        assertNull(speed());
+        assertNull("and its own seek bar", bar());
+        // 1080 px wide at mdpi: a 40 px button 4 px in from the right, 56 px below the player's top.
+        assertEquals(1080 - 4 - 40, at(cast()).leftMargin);
+        assertEquals(56, at(cast()).topMargin);
+        cast().performClick();
+        assertEquals(java.util.Arrays.asList("video"), casts);
+    }
+
+    @Test public void theFullPlayersCastButtonNeedsItsSwitchAndAVideoThatIsntLive() {
+        openFullPlayer();
+        assertNull("off until its switch is on", cast());
+        castOn();
+        assertNotNull(cast());
+        player.params.live = true;
+        FeedVideoControls.changed(player);
+        drain();
+        assertNull("a live video has no file to hand over", cast());
+    }
+
     @Test public void fullPlayerButtonSitsNextToPlayStopsTheFeedCopyAndOpensTheVideo() {
         assertNull("it starts off", open());
         openOn();

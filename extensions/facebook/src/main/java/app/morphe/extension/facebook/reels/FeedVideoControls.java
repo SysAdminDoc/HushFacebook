@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.reels;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -80,6 +81,8 @@ public final class FeedVideoControls {
     static final int SIZE_DP = 40, MARGIN_DP = 4, DISC_DP = 28;
     /** How far below the video's top the buttons sit, clear of the channel picture on a reel style post, which takes their taps otherwise. */
     static final int TOP_DP = 54;
+    /** How far below the full screen player's top edge its cast button sits, clear of Facebook's top row (#182). */
+    static final int FULL_TOP_DP = 56;
     /** The seek bar's touch height, short because a feed video's caption sits right above it, and the room a drag's time takes above it. */
     static final int BAR_DP = 20, TIME_DP = 28;
     /** How thick Thin line seek bar draws its line, flush with the video's bottom edge, as Instagram's is (#431). */
@@ -103,6 +106,8 @@ public final class FeedVideoControls {
     static final String URI_HANDLER = "com.facebook.katana.IntentUriHandler";
     /** The full screen video player's own link, which takes the video id. */
     static final String FULL_SCREEN_LINK = "fb://fullscreen_video/";
+    /** How the full screen video player's activity is named (DeprecatedFullscreenVideoPlayerActivity in 587). */
+    static final String FULL_PLAYER_ACTIVITY = "FullscreenVideoPlayerActivity";
     /** What a [Button] does. */
     static final int PLAY = 0, CAST = 1, OPEN = 2, BACK = 3, AHEAD = 4, SPEED = 5;
     /** How far the skip buttons jump, as Facebook's own player does (#239). */
@@ -365,12 +370,15 @@ public final class FeedVideoControls {
             ViewGroup container = control.expected.get();
             boolean story = player != null && storyPlayer(player);
             control.story = story;
-            boolean play = !story && playOn();
+            // Facebook's full screen player has its own controls, so a video there gets only the cast button (#182).
+            boolean full = !story && container != null && inFullPlayer(container);
+            control.full = full;
+            boolean play = !story && !full && playOn();
             boolean cast = !story && castOn();
-            boolean seek = story ? storySeekOn() : seekOn();
-            boolean open = !story && openOn();
-            boolean skip = !story && skipOn();
-            boolean speed = !story && speedOn();
+            boolean seek = story ? storySeekOn() : !full && seekOn();
+            boolean open = !story && !full && openOn();
+            boolean skip = !story && !full && skipOn();
+            boolean speed = !story && !full && speedOn();
             boolean any = play || cast || seek || open || skip || speed;
             if (!any || control.released || player == null
                     || container == null || access.view(player) != container) {
@@ -386,7 +394,8 @@ public final class FeedVideoControls {
                 control.remove(false);
                 return;
             }
-            Target target = story ? storyTarget(control) : target(control, play, open, cast, skip, speed);
+            Target target = story ? storyTarget(control) : full ? fullTarget(control)
+                    : target(control, play, open, cast, skip, speed);
             if (target == null) {
                 control.remove(false);
                 return;
@@ -690,6 +699,62 @@ public final class FeedVideoControls {
         if (bar != null) bar.offset(-at[0], -at[1]);
         control.missed = null;
         return new Target(params, id, surface, (FrameLayout) content, 0, 0, 0, 0, 0, bar, live, null, false);
+    }
+
+    /** Whether [view] shows in Facebook's full screen video player, by its activity's kept name. */
+    static boolean inFullPlayer(View view) {
+        Context context = view.getContext();
+        while (context instanceof ContextWrapper && !(context instanceof Activity)) {
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        return context instanceof Activity && context.getClass().getName().endsWith(FULL_PLAYER_ACTIVITY);
+    }
+
+    /**
+     * Where the cast button goes on a video in Facebook's full screen player, or null when it can't
+     * go there (#182). That player has its own play, seek and speed controls, so it gets the cast
+     * button alone, in the player's top right corner below Facebook's top row. A live video has no
+     * file to hand over.
+     */
+    @Nullable
+    private static Target fullTarget(Control control) {
+        Object player = control.player.get();
+        ViewGroup container = control.expected.get();
+        if (player == null || container == null || control.released || access.view(player) != container
+                || !container.isAttachedToWindow() || !container.isShown() || !container.hasWindowFocus()) return null;
+        control.restoreCorners();
+        Object params = access.params(player);
+        String id = params == null ? null : access.videoId(params);
+        if (params == null || id == null || id.isEmpty() || !access.eligible(params)) {
+            return miss(control, "no video id, or an ad, audio or GIF");
+        }
+        if (access.live(params)) return miss(control, "a live video has no file to hand over");
+        View content = container.getRootView().findViewById(android.R.id.content);
+        if (!(content instanceof FrameLayout) || !descendant(container, content)) return miss(control, "outside the screen's content");
+        List<View> surfaces = new ArrayList<>(2);
+        surfaces(container, surfaces);
+        if (surfaces.size() > 1) return miss(control, "more than one video surface");
+        View surface = surfaces.isEmpty() ? container : surfaces.get(0);
+        Rect visible = new Rect();
+        Rect clip = new Rect();
+        if (!container.getGlobalVisibleRect(visible) || !content.getGlobalVisibleRect(clip) || !visible.intersect(clip)) {
+            return miss(control, "out of view");
+        }
+        float density = container.getResources().getDisplayMetrics().density;
+        int size = Math.round(SIZE_DP * density);
+        int margin = Math.round(MARGIN_DP * density);
+        int down = Math.round(FULL_TOP_DP * density);
+        if (visible.width() < size + 2 * margin || visible.height() < down + size + margin) {
+            return miss(control, "too little of it shows");
+        }
+        int[] at = new int[2];
+        content.getLocationInWindow(at);
+        at[0] += content.getPaddingLeft();
+        at[1] += content.getPaddingTop();
+        control.missed = null;
+        int right = visible.right - at[0] - margin - size;
+        return new Target(params, id, surface, (FrameLayout) content, size, right, 0, right,
+                visible.top - at[1] + down, null, false, null, false);
     }
 
     /** The story bar's spot in the window along the bottom of [card], the card's visible part. */
@@ -1077,7 +1142,8 @@ public final class FeedVideoControls {
     /** Whether [view], made for [videoId]'s [params] on [surface], still sits on that video. */
     private static boolean stillOver(Control control, View view, WeakReference<Object> params, String videoId,
             WeakReference<View> surface) {
-        Target current = control.story ? storyTarget(control) : target(control, false, false, false, false, false);
+        Target current = control.story ? storyTarget(control) : control.full ? fullTarget(control)
+                : target(control, false, false, false, false, false);
         return current != null && current.params == params.get() && videoId.equals(current.videoId)
                 && current.surface == surface.get() && view.getParent() == current.content;
     }
@@ -1169,6 +1235,8 @@ public final class FeedVideoControls {
         volatile boolean released;
         /** A story's player, which gets only the story seek bar. */
         volatile boolean story;
+        /** A player in Facebook's full screen player, which gets only the cast button (#182). */
+        volatile boolean full;
         /** The last reason the debug log gave for no button, or null since one showed. */
         @Nullable String missed;
         /** The same for the seek bar, which can miss while the buttons show. */
