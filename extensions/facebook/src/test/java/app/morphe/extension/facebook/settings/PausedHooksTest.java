@@ -141,6 +141,7 @@ import app.morphe.extension.facebook.misc.AnalyticsUploads;
 import app.morphe.extension.facebook.misc.AppIcons;
 import app.morphe.extension.facebook.misc.CarrierBanners;
 import app.morphe.extension.facebook.misc.Haptics;
+import app.morphe.extension.facebook.misc.LocationPrompts;
 import app.morphe.extension.facebook.misc.ScreenshotDetection;
 import app.morphe.extension.facebook.misc.ScreenTransitionsForTests;
 import app.morphe.extension.facebook.misc.Screenshots;
@@ -1251,6 +1252,9 @@ public class PausedHooksTest {
         // A new picture in the photo library isn't looked at.
         probes.put(PatchFamily.SCREENSHOT_DETECTION, Collections.singletonList(
                 ScreenshotDetection::ignoresChange));
+        // Facebook's device location screen closes as it opens.
+        probes.put(PatchFamily.LOCATION_PROMPTS, Collections.singletonList(
+                () -> LocationPrompts.skips(null)));
         // "Typing" goes out as "not typing", and the chat and comment runnables skip their send.
         probes.put(PatchFamily.TYPING_INDICATOR, Arrays.asList(
                 () -> !TypingIndicator.chatTyping(true), TypingIndicator::holdsChatTyping,

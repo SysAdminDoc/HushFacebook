@@ -270,6 +270,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean locationPrompts() {
+        return false;
+    }
+
     public static boolean typingIndicator() {
         return false;
     }

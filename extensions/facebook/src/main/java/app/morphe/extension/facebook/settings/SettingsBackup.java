@@ -310,6 +310,7 @@ public final class SettingsBackup {
             Settings.UNLOCK_APP_ICONS,
             Settings.USE_APP_ICON_IN_HEADER,
             Settings.BLOCK_SCREENSHOT_DETECTION,
+            Settings.SKIP_LOCATION_PROMPTS,
             Settings.HIDE_CHAT_TYPING,
             Settings.HIDE_COMMENT_TYPING,
             Settings.HIDE_READ_RECEIPTS,

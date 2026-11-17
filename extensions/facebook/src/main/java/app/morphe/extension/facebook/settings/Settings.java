@@ -1222,6 +1222,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_block_screenshot_detection", FALSE);
 
     /**
+     * Facebook's device location screen, "To use Location Services, allow Facebook to access your
+     * location", closes as it opens ({@link app.morphe.extension.facebook.misc.LocationPrompts},
+     * #498). Starts on, as the report asked.
+     */
+    public static final BooleanSetting SKIP_LOCATION_PROMPTS =
+            new BooleanSetting("hushfacebook_skip_location_prompts", TRUE);
+
+    /**
      * Others see that you're typing, in a chat that opens inside Facebook and in a comment box
      * ({@link app.morphe.extension.facebook.chats.TypingIndicator}). Both start off.
      */

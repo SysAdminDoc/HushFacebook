@@ -2916,3 +2916,5 @@ Show every reaction on comments	显示评论上的所有回应
 Where Facebook shows only a comment's top reaction next to its count, keeps Like, Reply and every reaction instead. A change shows on the comments drawn after it.	在 Facebook 只在数量旁显示评论最多的那个回应时，改为保留赞、回复和所有回应。更改对之后显示的评论生效。
 Move seen stories to the end	将已看过的快拍移到末尾
 Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.	你已看过的快拍会移到快拍栏末尾，排在没看过的后面。开启“隐藏已看过的快拍”时，它优先生效。在 Facebook 下次加载快拍栏时生效。
+Skip location prompts	跳过位置提示
+Facebook's screen asking you to allow Location Services closes as it opens, as if you tapped Skip. Turn this off when you want to give Facebook your location from inside the app.	Facebook 请求你允许定位服务的页面一打开就会关闭，就像你点了跳过。想在应用内把位置提供给 Facebook 时，请关闭此项。

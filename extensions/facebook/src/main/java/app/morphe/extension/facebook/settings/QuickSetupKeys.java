@@ -57,6 +57,7 @@ final class QuickSetupKeys {
             Settings.BLOCK_GAME_ADS,
             Settings.HIDE_AFFILIATE_LINKS,
             Settings.STOP_UPDATE_PROMPTS,
+            Settings.SKIP_LOCATION_PROMPTS,
             Settings.HIDE_GET_MESSENGER_CARD,
             Settings.HIDE_CHAT_PROMOTIONS,
             Settings.HIDE_MENU_UPGRADES,

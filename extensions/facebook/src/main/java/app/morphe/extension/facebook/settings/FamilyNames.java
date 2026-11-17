@@ -130,6 +130,7 @@ public final class FamilyNames {
     public static final String ANALYTICS_UPLOADS = "Hold back analytics uploads";
     public static final String SCREENSHOTS = "Allow screenshots";
     public static final String SCREENSHOT_DETECTION = "Block screenshot detection";
+    public static final String LOCATION_PROMPTS = "Skip location prompts";
     public static final String TYPING_INDICATOR = "Hide typing indicator";
     public static final String READ_RECEIPTS = "Hide read receipts";
     public static final String ORIGINAL_CHAT_MEDIA = "Send chat photos and videos at original quality";

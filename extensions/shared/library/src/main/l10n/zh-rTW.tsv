@@ -2925,3 +2925,5 @@ Show every reaction on comments	顯示留言上的所有心情
 Where Facebook shows only a comment's top reaction next to its count, keeps Like, Reply and every reaction instead. A change shows on the comments drawn after it.	在 Facebook 只在數量旁顯示留言最多的那個心情時，改為保留讚、回覆和所有心情。變更對之後顯示的留言生效。
 Move seen stories to the end	將已看過的限時動態移到最後
 Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.	你已看過的限時動態會移到橫幅最後，排在還沒看過的後面。開啟「隱藏已看過的限時動態」時，它優先生效。從 Facebook 下次載入橫幅起生效。
+Skip location prompts	略過位置提示
+Facebook's screen asking you to allow Location Services closes as it opens, as if you tapped Skip. Turn this off when you want to give Facebook your location from inside the app.	Facebook 要求你允許定位服務的畫面一開啟就會關閉，就像你點了略過。想在應用程式內把位置提供給 Facebook 時，請關閉此項。

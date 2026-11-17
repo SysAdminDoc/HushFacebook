@@ -99,6 +99,7 @@ import app.morphe.extension.facebook.menu.MenuSettingsRow;
 import app.morphe.extension.facebook.misc.AnalyticsUploads;
 import app.morphe.extension.facebook.misc.AppIcons;
 import app.morphe.extension.facebook.misc.HeaderText;
+import app.morphe.extension.facebook.misc.LocationPrompts;
 import app.morphe.extension.facebook.misc.ScreenshotDetection;
 import app.morphe.extension.facebook.misc.CarrierBanners;
 import app.morphe.extension.facebook.misc.Haptics;
@@ -352,6 +353,7 @@ public class ColdStartHooksTest {
             }
         }, android.view.HapticFeedbackConstants.LONG_PRESS));
         assertFalse("a screenshot check before the context was blocked", ScreenshotDetection.ignoresChange());
+        assertFalse("the location screen before the context was skipped", LocationPrompts.skips(null));
         assertNotNull("a double tap before the context lost its handler", DoubleTapLike.handler(new Object()));
         assertNotNull("a double tap before the context lost its heart", DoubleTapLike.heart(new Object()));
         assertNotNull("a double tap like before the context lost its key", DoubleTapLike.likeKey("reel"));

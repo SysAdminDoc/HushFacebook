@@ -327,6 +327,8 @@ public enum PatchFamily {
             Settings.ALLOW_SCREENSHOTS),
     SCREENSHOT_DETECTION(FamilyNames.SCREENSHOT_DETECTION, "screenshotDetection", null,
             Settings.BLOCK_SCREENSHOT_DETECTION),
+    LOCATION_PROMPTS(FamilyNames.LOCATION_PROMPTS, "locationPrompts", null,
+            Settings.SKIP_LOCATION_PROMPTS),
     TYPING_INDICATOR(FamilyNames.TYPING_INDICATOR, "typingIndicator", null,
             Settings.HIDE_CHAT_TYPING, Settings.HIDE_COMMENT_TYPING),
     READ_RECEIPTS(FamilyNames.READ_RECEIPTS, "readReceipts", null,
