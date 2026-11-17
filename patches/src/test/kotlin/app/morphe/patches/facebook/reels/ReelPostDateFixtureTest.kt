@@ -154,6 +154,67 @@ class ReelPostDateFixtureTest {
         assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
     }
 
+    /**
+     * #496: each declared build's reel footer reads the flag that leaves a recommendation reason alone
+     * on the author's line once, and the hook hands that boolean to the extension before Facebook
+     * branches on it.
+     */
+    @Test
+    fun `each declared build hands the reason-alone flag to the extension`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        val abis = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val holders = FixtureDex.classesHolding(bundle, REASON_ALONE_FLAG)
+                val builders = holders.flatMap { owner -> owner.methods.filter { reasonAloneRead(it) >= 0 } }
+                assertEquals("$name: footers reading the flag", 1, builders.size)
+                val builder = builders.single()
+                assertThrows("$name: no footer must refuse the patch", PatchException::class.java) {
+                    PatchContexts.of(emptyList()).keepPostDateBesideReason()
+                }
+                val context = PatchContexts.of(holders)
+                context.keepPostDateBesideReason()
+                val original = builder.code()
+                val read = reasonAloneRead(builder)
+                val flag = (original[read] as OneRegisterInstruction).registerA
+                val unbox = (original[read - 1] as ReferenceInstruction).reference as MethodReference
+                assertEquals("$name: the flag is unboxed right before", "booleanValue", unbox.name)
+                val patched = context.mutableClassDefBy(builder.definingClass).methods.single {
+                    it.name == builder.name &&
+                        it.parameterTypes.map(CharSequence::toString) == builder.parameterTypes.map(CharSequence::toString)
+                }.code()
+                val calls = patched.indices.filter {
+                    ((patched[it] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == REASON_ALONE
+                }
+                assertEquals("$name: one hook", 1, calls.size)
+                val at = calls.single()
+                assertEquals("$name: the hook follows the flag's move-result", Opcode.MOVE_RESULT, patched[at - 1].opcode)
+                assertEquals("$name: of the same register", flag, (patched[at - 1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: the hook passes the flag", flag, (patched[at] as RegisterRangeInstruction).startRegister)
+                assertEquals("$name: and only the flag", 1, (patched[at] as RegisterRangeInstruction).registerCount)
+                assertEquals("$name: the extension's answer comes back", Opcode.MOVE_RESULT, patched[at + 1].opcode)
+                assertEquals("$name: into the flag's register", flag, (patched[at + 1] as OneRegisterInstruction).registerA)
+                // Facebook branches on the flag within the next few instructions, before anything writes it.
+                val branch = (at + 2 until minOf(patched.size, at + 6)).firstOrNull {
+                    patched[it].opcode in setOf(Opcode.IF_EQ, Opcode.IF_NE, Opcode.IF_EQZ, Opcode.IF_NEZ)
+                }
+                assertNotNull("$name: Facebook branches on the flag next", branch)
+                assertEquals("$name: on the flag's register", flag, when (val branching = patched[branch!!]) {
+                    is TwoRegisterInstruction -> branching.registerA
+                    else -> (branching as OneRegisterInstruction).registerA
+                })
+                assertEquals("$name: two executable instructions added",
+                    original.count { it.opcode != Opcode.NOP } + 2, patched.count { it.opcode != Opcode.NOP })
+                checked += version
+                abis += name.substringAfter("-$version-").substringBefore(".apkm")
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
+    }
+
     @Test
     fun `the extension has the hook`() {
         val type = SHOW_POST_DATE.substringBefore("->")
@@ -172,5 +233,10 @@ class ReelPostDateFixtureTest {
         assertEquals("audioLineText's shape", AUDIO_LINE_TEXT,
             "${song!!.definingClass}->${song.name}(${song.parameterTypes.joinToString("")})${song.returnType}")
         assertTrue("audioLineText isn't static", AccessFlags.STATIC.isSet(song.accessFlags))
+        val reason = ExtensionDex.classDef(type).methods.singleOrNull { it.name == "reasonAlone" }
+        assertNotNull("the extension has no ReelDeclutter.reasonAlone", reason)
+        assertEquals("reasonAlone's shape", REASON_ALONE,
+            "${reason!!.definingClass}->${reason.name}(${reason.parameterTypes.joinToString("")})${reason.returnType}")
+        assertTrue("reasonAlone isn't static", AccessFlags.STATIC.isSet(reason.accessFlags))
     }
 }

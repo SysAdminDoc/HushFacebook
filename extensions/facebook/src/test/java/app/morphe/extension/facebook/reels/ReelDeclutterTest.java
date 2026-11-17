@@ -564,6 +564,35 @@ public class ReelDeclutterTest {
         assertTrue(ReelDeclutter.showsPostDate(true));
     }
 
+    /**
+     * A reel's recommendation reason took the whole line under the author when Facebook's flag said so,
+     * date included, so one reel showed its date and the next didn't (#496). With the switch on the
+     * flag reads no and the date stays; off, paused, before the settings are ready and when the switch
+     * can't be read, Facebook's flag stands. A no stays no throughout.
+     */
+    @Test
+    public void aRecommendationReasonKeepsTheDateOnlyWithTheSwitchOn() {
+        assertTrue("the reason took the line with the switch off", ReelDeclutter.reasonAlone(true));
+        assertFalse(ReelDeclutter.reasonAlone(false));
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertFalse("the reason still took the date's line", ReelDeclutter.reasonAlone(true));
+        assertFalse(ReelDeclutter.reasonAlone(false));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue("the reason lost its line while paused", ReelDeclutter.reasonAlone(true));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertTrue("the reason lost its line before the settings were ready", ReelDeclutter.reasonAlone(true)));
+        SettingReadsForTests.breakReads(Settings.SHOW_REEL_POST_DATE);
+        try {
+            assertTrue("a switch that can't be read kept the date", ReelDeclutter.reasonAlone(true));
+            assertFalse(ReelDeclutter.reasonAlone(false));
+        } finally {
+            SettingReadsForTests.mend(Settings.SHOW_REEL_POST_DATE);
+        }
+        Settings.SHOW_REEL_POST_DATE.save(false);
+        assertTrue("turning the switch off didn't give the reason its line back", ReelDeclutter.reasonAlone(true));
+    }
+
     private static final long NOW = 1793620800_000L; // 2026-11-02 12:00 UTC
     private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 

@@ -218,6 +218,8 @@ public final class ReelDeclutter {
     static final String DATE_WORDED = "date worded";
     /** Counted under the date's name each time the date goes in front of a reel's song line (#357). */
     static final String DATE_ON_SONG = "date on song line";
+    /** Counted under the date's name each time a footer keeps its date beside a recommendation reason (#496). */
+    static final String DATE_BESIDE_REASON = "date beside reason";
     /** What goes between the date and the song, the dot Facebook joins the artist and title with. */
     static final String DOT = " " + (char) 0xB7 + " ";
     /** How far ahead of the phone's clock a post time can be and still read as just posted. */
@@ -843,6 +845,26 @@ public final class ReelDeclutter {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, DATE_HIDDEN, failure);
             return shown;
+        }
+    }
+
+    /**
+     * Injection point, in the reel footer's builder, handed the server flag that swaps the line under
+     * a reel's author for its recommendation reason alone, the date and every other label dropped
+     * (#496). So a reel with a reason showed no date and the next one without did. No while the
+     * switch is on, so the date stays on the line. Never throws: anything going wrong answers what it
+     * was handed.
+     */
+    public static boolean reasonAlone(boolean alone) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (!alone || !Utils.settingsReady() || !Settings.SHOW_REEL_POST_DATE.get()) return alone;
+            FeedFilterCounters.removed(DATE_ROUTE, 1, DATE_BESIDE_REASON);
+            logOnce(DATE_BESIDE_REASON, () -> "Reel post date: kept beside a recommendation reason");
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, DATE_BESIDE_REASON, failure);
+            return alone;
         }
     }
 

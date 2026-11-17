@@ -151,6 +151,8 @@ val cleanUpReelsPatch = bytecodePatch(
         val storyType = showReelPostDate()
         // #357: and in front of the song line, which takes that spot on most reels in the Reels tab.
         dateReelsTabAudioLine(audioLine, storyType)
+        // #496: and where a recommendation reason would push the date and every label off that line.
+        keepPostDateBesideReason()
         // #291: the Subscribe pill beside a video's author, in the viewer's row and wherever the shared builder's lands.
         hideSubscribePill()
         // #311: Search and the button beside it at the top of the full-screen player, by the bar's id.

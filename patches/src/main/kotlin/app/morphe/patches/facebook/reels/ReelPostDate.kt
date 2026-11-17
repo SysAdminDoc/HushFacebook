@@ -4,6 +4,7 @@
  */
 package app.morphe.patches.facebook.reels
 
+import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
@@ -250,4 +251,52 @@ internal fun BytecodePatchContext.showReelPostDate(): String {
         """,
     )
     return helper.parameterTypes[1].toString()
+}
+
+/**
+ * The reel footer's server flag that leaves a recommendation reason alone under the author (#496).
+ * The footer builder lists the post date and one label per attribution, slots the reason in, and
+ * with this flag on swaps the whole list for the reason, so a reel with one showed no date and the
+ * next one without did. The builder reads the flag right after naming it in this message.
+ */
+internal const val REASON_ALONE_FLAG = "Rec reason exclusive mode is only supported on Reels Tab surface"
+internal const val REASON_ALONE = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->reasonAlone(Z)Z"
+
+/**
+ * Where [method] holds the reason-alone flag: the move-result of the first Boolean.booleanValue()
+ * past [REASON_ALONE_FLAG], within a few instructions of it. -1 unless the message is there once.
+ */
+internal fun reasonAloneRead(method: Method): Int {
+    val code = method.code
+    val named = code.indices.filter {
+        ((code[it] as? ReferenceInstruction)?.reference as? StringReference)?.string == REASON_ALONE_FLAG
+    }.singleOrNull() ?: return -1
+    val unbox = (named + 1 until minOf(code.size, named + 16)).firstOrNull {
+        val reference = (code[it] as? ReferenceInstruction)?.reference as? MethodReference ?: return@firstOrNull false
+        code[it].opcode == Opcode.INVOKE_VIRTUAL && reference.definingClass == "Ljava/lang/Boolean;" &&
+            reference.name == "booleanValue" && reference.returnType == "Z"
+    } ?: return -1
+    return if (code.getOrNull(unbox + 1)?.opcode == Opcode.MOVE_RESULT) unbox + 1 else -1
+}
+
+/** Hands the reel footer's reason-alone flag to the extension, which says no while the date is on. */
+internal fun BytecodePatchContext.keepPostDateBesideReason() {
+    val builders = classDefByStrings(REASON_ALONE_FLAG, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+        .flatMap { classDef -> classDef.methods.filter { reasonAloneRead(it) >= 0 }.map { classDef.type to it } }
+    val (owner, builder) = builders.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one reel footer that reads \"$REASON_ALONE_FLAG\" as a boolean, found ${builders.size}",
+    )
+    val method = mutableClassDefBy(owner).methods.single {
+        it.name == builder.name && it.parameterTypes.map(CharSequence::toString) == builder.parameterTypes.map(CharSequence::toString)
+    }
+    val read = reasonAloneRead(method)
+    val flag = (method.code[read] as OneRegisterInstruction).registerA
+    method.addInstructions(
+        read + 1,
+        """
+            invoke-static/range { v$flag .. v$flag }, $REASON_ALONE
+            move-result v$flag
+        """,
+    )
 }
