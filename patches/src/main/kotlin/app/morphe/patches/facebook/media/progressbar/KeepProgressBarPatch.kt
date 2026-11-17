@@ -323,7 +323,11 @@ internal const val INVALIDATE = "Landroid/view/View;->invalidate()V"
  * `LX/RbF;`). Its one method that drops its pending callbacks and posts a runnable (581 `A0N`) sets
  * the hide 3 seconds after the controls are touched, 10 with accessibility on. There the hook
  * takes the place of that post alone ([noHidePostWhileKept]), since on 586 the method is shared
- * with fifteen other video extensions (#447).
+ * with fifteen other video extensions (#447). The extension's render also hands the same runnable to
+ * a callback that posts it 3 seconds after the controls mount, the only hide the portrait video
+ * viewer runs (a past live, a reel's details with the panel closed), so the hook also goes first in
+ * that runnable's `run()` ([extensionFadeRunnable]). A tap still hides them, as the tap handler sends
+ * the controls the hide itself.
  *
  * The player the video viewer's Enter fullscreen landscape mode opens on 577 to 581 runs on the
  * Reels controls component instead, whose updater traces [PLAYER_CONTROL_UPDATE] (581
@@ -397,6 +401,7 @@ val keepProgressBarPatch = bytecodePatch(
             classDefByStrings(CONTROLS_EXTENSION, StringComparisonType.EQUALS)
                 .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
         )
+        val (fade, fadeRun) = extensionFadeRunnable(hide) { classDefByOrNull(it) }
         val updater = controlsUpdater(
             classDefByStrings(PLAYER_CONTROL_UPDATE, StringComparisonType.EQUALS)
                 .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
@@ -606,6 +611,7 @@ val keepProgressBarPatch = bytecodePatch(
         }
         mutableClassDefBy(controls.type).methods.single { it.sameAs(timer) }.noTimerWhileKept()
         mutableClassDefBy(extension.type).methods.single { it.sameAs(hide) }.noHidePostWhileKept()
+        mutableClassDefBy(fade.type).methods.single { it.sameAs(fadeRun) }.noTimerWhileKept()
         mutableClassDefBy(hider.type).methods.single { it.sameAs(hiderRun) }.noTimerWhileKept()
         mutableClassDefBy(barType).methods.single { it.sameAs(touch) }.takesTapsToSeek()
         mutableClassDefBy(release.method.definingClass).methods.single { it.sameAs(release.method) }.apply {
@@ -2027,6 +2033,46 @@ internal fun extensionFadeTimer(holders: List<ClassDef>): Pair<ClassDef, Method>
     }
     return timers.singleOrNull()
         ?: refuse("expected one method of the classes loading \"$CONTROLS_EXTENSION\" to post the controls' hide, found ${timers.size}")
+}
+
+/**
+ * The runnable the newer player's controls [hide] posts (587 `LX/0Otp;`, v7a `LX/0KvW;`, kept as
+ * `VideoControlsExtension$getAutoFadeOutRunnable$runnable$1`): the hide builds it once into the
+ * register its [POST_DELAYED] posts and stores it straight into a Runnable field, the cache it reads
+ * first. Where Redex merged the hide with other video extensions' (587 v7a `LX/0Ksp;->A0I`, a dozen
+ * runnables) that cache is what tells it apart. The extension's render (587 `LX/0Oru;->A0G`) gives the
+ * same runnable to a visibility callback (`LX/0f2E;`) that posts it 3 seconds after the controls
+ * mount, which is how the portrait video viewer hides them, so the hook in [hide] alone never reached
+ * that viewer. The hook goes first in its `run()`, so it has to be a runnable of its own: a class with
+ * nothing but constructors and that `run()`, with no switch picking among merged runnables (#447).
+ * [classOf] reads a class of the APK.
+ */
+internal fun extensionFadeRunnable(hide: Method, classOf: (String) -> ClassDef?): Pair<ClassDef, Method> {
+    val code = hide.implementation?.instructions?.toList().orEmpty()
+    val post = code.singleOrNull { (it as? ReferenceInstruction)?.reference?.toString() == POST_DELAYED } as? FiveRegisterInstruction
+        ?: refuse("${hide.definingClass}->${hide.name} has no one invoke-virtual of postDelayed")
+    val types = code.indices.mapNotNull { at ->
+        val build = code[at].takeIf { it.opcode == Opcode.NEW_INSTANCE } ?: return@mapNotNull null
+        val register = (build as OneRegisterInstruction).registerA
+        if (register != post.registerD) return@mapNotNull null
+        val cached = code.subList(at + 1, minOf(code.size, at + 3)).any {
+            it.opcode == Opcode.IPUT_OBJECT && (it as TwoRegisterInstruction).registerA == register &&
+                ((it as ReferenceInstruction).reference as FieldReference).type == RUNNABLE
+        }
+        ((build as ReferenceInstruction).reference as TypeReference).type.takeIf { cached }
+    }.distinct().filter { classOf(it)?.interfaces?.contains(RUNNABLE) == true }
+    val type = types.singleOrNull()
+        ?: refuse("${hide.definingClass}->${hide.name} caches and posts ${types.size} runnables, expected the one controls hide")
+    val runnable = classOf(type)!!
+    val others = runnable.methods.filterNot { it.name == "<init>" || it.name == "run" }
+    val run = runnable.methods.singleOrNull { it.name == "run" && it.returnType == "V" && it.parameterTypes.isEmpty() }
+    if (run == null || others.isNotEmpty() || runnable.methods.count { it.name == "run" } != 1) {
+        refuse("$type, the controls' fade runnable, isn't a class of its own with one run()V")
+    }
+    if (run.implementation?.instructions?.any { it.opcode == Opcode.PACKED_SWITCH || it.opcode == Opcode.SPARSE_SWITCH } != false) {
+        refuse("$type->run picks among merged runnables")
+    }
+    return runnable to run
 }
 
 /**

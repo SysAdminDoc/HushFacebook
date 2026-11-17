@@ -459,6 +459,37 @@ class KeepProgressBarFixtureTest {
     }
 
     @Test
+    fun `each declared build runs no hide the newer player's controls posted as they mount while kept`() = bundles { bundle ->
+        val name = bundle.name
+        fun classOf(type: String) = FixtureDex.classes(bundle, setOf(type)).values.singleOrNull()
+        val holders = FixtureDex.classesHolding(bundle, CONTROLS_EXTENSION).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        val (extension, hide) = extensionFadeTimer(holders)
+        val (runnable, run) = extensionFadeRunnable(hide, ::classOf)
+        val where = "$name: ${runnable.type}->run"
+        // The portrait viewer's hide: the extension's render builds the same runnable for the callback that posts it
+        // as the controls mount, so a hook in the hide's post alone never reaches it.
+        val builders = extension.methods.filter { method ->
+            method.implementation?.instructions?.any { it.opcode == Opcode.NEW_INSTANCE && it.reference() == runnable.type } == true
+        }
+        assertTrue("$where: no method of ${extension.type} but ${hide.name} builds it", builders.any { !it.sameAs(hide) })
+        assertTrue("$where sends the controls nothing", run.code().any { it.opcode == Opcode.INVOKE_INTERFACE })
+        assertTrue("$where has no local register for the hook", run.implementation!!.registerCount - 1 >= 1)
+
+        val context = PatchContexts.of(listOf(runnable))
+        val method = context.mutableClassDefBy(runnable.type).methods.single { it.sameAs(run) }
+        val original = method.code()
+        method.noTimerWhileKept()
+        val patched = method.code()
+        assertEquals("$where gains four instructions", original.size + 4, patched.size)
+        assertEquals("$where: the extension is asked first", KEEPS_CONTROLS, patched[0].reference())
+        val register = (patched[1] as OneRegisterInstruction).registerA
+        assertTrue("$where: the hook writes v$register, which isn't a local", register < method.localRegisterCount())
+        assertEquals("$where: a yes hides nothing", Opcode.RETURN_VOID, patched[3].opcode)
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(4).map { it.opcode })
+        assertEquals("$where: a no lands on Facebook's first instruction", setOf(3, 4), ControlFlow.of(method).normal[2].toSet())
+    }
+
+    @Test
     fun `each declared build runs no hide the landscape player's controller posted while kept`() = bundles { bundle ->
         val name = bundle.name
         fun classOf(type: String) = FixtureDex.classes(bundle, setOf(type)).values.singleOrNull()
