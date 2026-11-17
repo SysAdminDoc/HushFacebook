@@ -88,6 +88,7 @@ Changes in each Hushfacebook version, newest first.
 * Tapping a Threads post in your feed opens that post in Threads now, not the Threads home feed. (#385)
 * `Local profile counts` changes the numbers on your profile now. Facebook draws a count and its word as two separate pieces, and the switch only looked for them together. (#488)
 * `Hide the 2x popups` also hides the "2x speed" chip on feed videos for accounts where Facebook has its own hold for 2x. Holding a video there still plays it at 2x, it just doesn't put the chip over it anymore. (#343)
+* With `Tap to play` on, a video you send to the picture-in-picture window with the `Picture-in-picture button` plays there again. The window used to show a frozen picture, and its play and pause did nothing. Leaving Facebook with Home already worked. (#495)
 
 ## 0.22.0 (2026-11-12)
 

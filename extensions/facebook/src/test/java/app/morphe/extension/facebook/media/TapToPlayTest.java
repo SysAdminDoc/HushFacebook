@@ -16,6 +16,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.MotionEvent;
+import android.widget.FrameLayout;
 
 import org.junit.After;
 import org.junit.Before;
@@ -195,6 +196,59 @@ public class TapToPlayTest {
         long back = SystemClock.uptimeMillis();
         assertFalse("a start long after the window opened back out waits",
                 TapToPlay.decide(late, Trigger.BY_AUTOPLAY.name(), true, back + TapToPlay.BACK_FROM_WINDOW_MS + 1, ""));
+    }
+
+    @Test
+    public void theWindowsButtonLeavesThePageInFrontAndTheReelInTheWindowStillPlays() {
+        WindowScreen page = Robolectric.buildActivity(WindowScreen.class).setup().get();
+        WindowScreen viewer = Robolectric.buildActivity(WindowScreen.class).setup().get();
+        Object reel = new Object();
+        Object pageVideo = new Object();
+        FrameLayout reelView = new FrameLayout(viewer);
+        FrameLayout pageView = new FrameLayout(page);
+        TapToPlay.views = player -> player == reel ? reelView : player == pageVideo ? pageView : null;
+        TapToPlay.activityResumed(viewer);
+        // The button opens the window with Facebook on screen: Android brings the page under the viewer
+        // to the front, and Facebook pauses the reel and starts it again in the window.
+        viewer.inWindow = true;
+        TapToPlay.activityResumed(page);
+        TapToPlay.paused(reel);
+        assertTrue("the reel starting again in the window (#495)",
+                TapToPlay.allowStart(reel, Trigger.BY_SHORT_FORM_VIDEO_FULLY_VISIBLE));
+        TapToPlay.paused(reel);
+        assertTrue("the window's own play after its pause, with no tap in Facebook (#495)",
+                TapToPlay.allowStart(reel, Trigger.BY_USER));
+        assertFalse("a video on the page beside the window still waits for a tap",
+                TapToPlay.allowStart(pageVideo, Trigger.BY_SHORT_FORM_VIDEO_FULLY_VISIBLE));
+
+        // Home stops the page in front, not the window's screen. The window then opens back out and
+        // Facebook pauses the reel and starts it again: it carries on, as from Home (#90).
+        TapToPlay.activityStopped(page);
+        viewer.inWindow = false;
+        TapToPlay.activityResumed(viewer);
+        TapToPlay.paused(reel);
+        assertTrue("the window's reel going on as the window opens back out",
+                TapToPlay.allowStart(reel, Trigger.BY_SHORT_FORM_VIDEO_FULLY_VISIBLE));
+
+        // Closed with its X instead, the window's screen stops and its reel waits.
+        viewer.inWindow = true;
+        TapToPlay.paused(reel);
+        TapToPlay.allowStart(reel, Trigger.BY_USER);
+        viewer.inWindow = false;
+        TapToPlay.paused(reel);
+        TapToPlay.activityStopped(viewer);
+        TapToPlay.activityResumed(viewer);
+        assertFalse("a window closed with its X leaves its reel waiting",
+                TapToPlay.allowStart(reel, Trigger.BY_SHORT_FORM_VIDEO_FULLY_VISIBLE));
+
+        // Leaving Facebook instead leaves the viewer in front, and it reads the same.
+        TapToPlayForTests.forget();
+        TapToPlay.views = player -> player == reel ? reelView : null;
+        viewer.inWindow = true;
+        TapToPlay.activityResumed(viewer);
+        TapToPlay.paused(reel);
+        assertTrue("the reel in the window after leaving Facebook",
+                TapToPlay.allowStart(reel, Trigger.BY_SHORT_FORM_VIDEO_FULLY_VISIBLE));
     }
 
     @Test
