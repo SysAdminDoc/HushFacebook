@@ -15,12 +15,15 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.util.MethodUtil
 
 /*
  * The reel under a top tab bar (#264). With the tab bar at the top, the Reels tab's reel started
@@ -143,12 +146,19 @@ internal fun BytecodePatchContext.hookReelsHeader(warn: (String) -> Unit) {
  * (a size handed down, the list's own height, the screen less the bars), logs it after
  * " computed=" in a line that also names " recyclerPadTop=", and stores it in one int field of the
  * list section it makes (LX/0B2U;->A02), which hands it to every row. The extension takes the
- * height right before that store.
+ * height right before that store, with the maker. Facebook makes the list ahead, while Home shows,
+ * and keeps rows made then (the section diffs), so the first reel kept the short height when the
+ * extension grew only rows made on the Reels tab, and a row grown to the screen's content ran past
+ * the list's bottom inset (S22, 2026-11-17: 2075, then 2316 in a 2199 list). The same log line
+ * names " tabPad=", the tab bar padding the maker holds in one public int field (LX/0B2M;->A05)
+ * and takes off each row; the extension reads it through a stub the patch fills with that field.
  */
 
 internal const val ROW_HEIGHT_LOG = " recyclerPadTop="
 private const val ROW_HEIGHT_LABEL = " computed="
-internal const val REEL_ROW = "$TAB_BAR_SCROLL_AWAY->reelRow(I)I"
+private const val TAB_PAD_LABEL = " tabPad="
+internal const val REEL_ROW = "$TAB_BAR_SCROLL_AWAY->reelRow(ILjava/lang/Object;)I"
+internal const val TAB_PADDING_STUB = "tabPadding"
 
 /**
  * Where the Reels list's maker stores the row height: the index of the one int store into another
@@ -156,18 +166,7 @@ internal const val REEL_ROW = "$TAB_BAR_SCROLL_AWAY->reelRow(I)I"
  */
 internal fun reelRowStore(maker: Method): Pair<Int, Int>? {
     val code = maker.implementation?.instructions?.toList() ?: return null
-    val label = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == ROW_HEIGHT_LABEL }
-    if (label < 0) return null
-    // The label's own append, then the append of the height.
-    val appends = code.drop(label + 1).take(4).filter {
-        it.opcode == Opcode.INVOKE_VIRTUAL && ((it as ReferenceInstruction).reference as MethodReference).let { ref ->
-            ref.definingClass == "Ljava/lang/StringBuilder;" && ref.name == "append"
-        }
-    }
-    val height = appends.getOrNull(1)?.takeIf {
-        ((it as ReferenceInstruction).reference as MethodReference).parameterTypes.singleOrNull()?.toString() == "I"
-    } as? FiveRegisterInstruction ?: return null
-    val register = height.registerD
+    val (_, register) = appendedAfter(code, ROW_HEIGHT_LABEL) ?: return null
     val stores = code.withIndex().filter { (_, instruction) ->
         val field = (instruction as? ReferenceInstruction)?.reference as? FieldReference
         instruction.opcode == Opcode.IPUT && field?.type == "I" && field.definingClass != maker.definingClass &&
@@ -177,9 +176,104 @@ internal fun reelRowStore(maker: Method): Pair<Int, Int>? {
     return store.index to register
 }
 
+/** The int a log line appends right after [label]: the index of that append and the register it appends. */
+private fun appendedAfter(code: List<Instruction>, label: String): Pair<Int, Int>? {
+    val at = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == label }
+    if (at < 0) return null
+    // The label's own append, then the append of the value.
+    val appends = code.withIndex().drop(at + 1).take(4).filter { (_, it) ->
+        it.opcode == Opcode.INVOKE_VIRTUAL && ((it as ReferenceInstruction).reference as MethodReference).let { ref ->
+            ref.definingClass == "Ljava/lang/StringBuilder;" && ref.name == "append"
+        }
+    }
+    val value = appends.getOrNull(1)?.takeIf { (_, it) ->
+        ((it as ReferenceInstruction).reference as MethodReference).parameterTypes.singleOrNull()?.toString() == "I"
+    } ?: return null
+    val append = value.value as? FiveRegisterInstruction ?: return null
+    return value.index to append.registerD
+}
+
+private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+private val INT_MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+
+/** Whether this instruction writes [register], as itself or as the upper half of a wide value. */
+private fun Instruction.writes(register: Int): Boolean {
+    if (!opcode.setsRegister()) return false
+    val target = (this as? OneRegisterInstruction)?.registerA ?: return false
+    return target == register || (opcode.setsWideRegister() && target + 1 == register)
+}
+
 /**
- * Hands the Reels row height to the extension right before the list's maker stores it. Warns and
- * does nothing unless there's one maker and one such store, and nothing jumps to the store.
+ * A register up to v15 that holds the maker itself wherever the method runs: `this` when it's that
+ * low and never written, otherwise the one copy of `this` the method makes before anything branches,
+ * into a register written nowhere else. Null when there's none.
+ */
+internal fun makerRegister(maker: Method): Int? {
+    if (AccessFlags.STATIC.isSet(maker.accessFlags)) return null
+    val implementation = maker.implementation ?: return null
+    val code = implementation.instructions.toList()
+    val self = implementation.registerCount - MethodUtil.getParameterRegisterCount(maker)
+    fun writesTo(register: Int) = code.count { it.writes(register) }
+    if (self <= 15 && writesTo(self) == 0) return self
+    val jumpedTo = branchTargets(code)
+    for ((index, instruction) in code.withIndex()) {
+        if (index in jumpedTo || instruction is OffsetInstruction || !instruction.opcode.canContinue() || instruction.writes(self)) {
+            return null
+        }
+        if (instruction.opcode in OBJECT_MOVES) {
+            val move = instruction as TwoRegisterInstruction
+            if (move.registerB == self && move.registerA <= 15 && writesTo(move.registerA) == 1) return move.registerA
+        }
+    }
+    return null
+}
+
+/**
+ * The maker's own int field its log appends after " tabPad=": the tab bar padding it takes off each
+ * row. Followed back from the append through plain moves to the read of the field. Null when the
+ * value comes from anything else.
+ */
+internal fun tabPadField(maker: Method): FieldReference? {
+    val code = maker.implementation?.instructions?.toList() ?: return null
+    var (at, register) = appendedAfter(code, TAB_PAD_LABEL) ?: return null
+    while (--at >= 0) {
+        val instruction = code[at]
+        if (!instruction.writes(register)) continue
+        if (instruction.opcode in INT_MOVES) {
+            register = (instruction as TwoRegisterInstruction).registerB
+            continue
+        }
+        val field = (instruction as? ReferenceInstruction)?.reference as? FieldReference
+        return field?.takeIf { instruction.opcode == Opcode.IGET && it.type == "I" && it.definingClass == maker.definingClass }
+    }
+    return null
+}
+
+/**
+ * Fills the extension's tab padding stub with a read of [field] from a maker of [makerType]. False,
+ * with nothing changed, when the stub isn't there.
+ */
+internal fun BytecodePatchContext.fillTabPadding(makerType: String, field: FieldReference): Boolean {
+    val stub = mutableClassDefBy(TAB_BAR_SCROLL_AWAY).methods.singleOrNull {
+        it.name == TAB_PADDING_STUB && it.returnType == "I" && AccessFlags.STATIC.isSet(it.accessFlags) &&
+            it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;")
+    } ?: return false
+    stub.addInstructions(
+        0,
+        """
+            check-cast p0, $makerType
+            iget p0, p0, $field
+            return p0
+        """,
+    )
+    return true
+}
+
+/**
+ * Hands the Reels row height, with the list's maker, to the extension right before the maker stores
+ * it, and fills the extension's tab padding stub with the maker's padding field. Warns and does
+ * nothing unless there's one maker, one such store, a low register holding the maker and nothing
+ * jumping to the store. A padding field that can't be found or read only costs the stub, with a warning.
  */
 internal fun BytecodePatchContext.hookReelRow(warn: (String) -> Unit) {
     val holders = classDefByStrings(ROW_HEIGHT_LOG, StringComparisonType.EQUALS)
@@ -195,12 +289,22 @@ internal fun BytecodePatchContext.hookReelRow(warn: (String) -> Unit) {
     val maker = mutableClassDefBy(holder.type).findMutableMethodOf(found)
     val (store, register) = reelRowStore(maker)
         ?: return warn("expected one store of the row height logged in ${holder.type}->${maker.name}")
+    val self = makerRegister(maker) ?: return warn("${holder.type}->${maker.name} keeps itself in no register up to v15")
     val code = maker.implementation!!.instructions.toList()
     if (register > 15 || store in branchTargets(code)) return warn("${holder.type}->${maker.name} can't take the row hook")
+    val padding = tabPadField(maker)?.takeIf { field ->
+        AccessFlags.PUBLIC.isSet(holder.accessFlags) && holder.fields.any {
+            it.name == field.name && it.type == "I" && AccessFlags.PUBLIC.isSet(it.accessFlags) && !AccessFlags.STATIC.isSet(it.accessFlags)
+        }
+    }
+    when {
+        padding == null -> warn("no public tab bar padding field logged in ${holder.type}->${maker.name}, Reels rows grow by the dropped padding alone")
+        !fillTabPadding(holder.type, padding) -> warn("$TAB_BAR_SCROLL_AWAY has no $TAB_PADDING_STUB stub, Reels rows grow by the dropped padding alone")
+    }
     maker.addInstructions(
         store,
         """
-            invoke-static { v$register }, $REEL_ROW
+            invoke-static { v$register, v$self }, $REEL_ROW
             move-result v$register
         """,
     )

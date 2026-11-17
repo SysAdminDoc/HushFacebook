@@ -16,6 +16,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
@@ -123,7 +124,9 @@ class ReelUnderTopBarFixtureTest {
     /**
      * #466: the Reels row height. The list's maker logs the height it worked out after " computed="
      * and stores that register once into an int field of the list section it makes; the hook goes
-     * right before that store, on the same register, and changes nothing else.
+     * right before that store, on the same register with a register holding the maker, and changes
+     * nothing else. The tab bar padding it logs after " tabPad=" is one of its own public int fields,
+     * set in its constructor, and the extension's stub comes out reading exactly that field.
      */
     @Test
     fun `each declared build hands the Reels row height to the extension right before storing it`() {
@@ -150,17 +153,40 @@ class ReelUnderTopBarFixtureTest {
                 val made = before.filter { it.opcode == Opcode.NEW_INSTANCE }
                     .map { ((it as ReferenceInstruction).reference as TypeReference).type }
                 assertTrue("$name: ${field.definingClass} is made in ${maker.name}", field.definingClass in made)
+                // Positive control: the maker register is `this` or its one copy, and the padding a public int field the constructor sets.
+                val self = makerRegister(maker) ?: throw AssertionError("$name: ${maker.name} keeps itself in no low register")
+                val parameters = maker.implementation!!.registerCount - (maker.parameterTypes.size + 1)
+                assertTrue("$name: v$self holds ${maker.name}'s this", self == parameters || before.any {
+                    it.opcode in setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16) &&
+                        (it as TwoRegisterInstruction).registerA == self && it.registerB == parameters
+                })
+                val padding = tabPadField(maker) ?: throw AssertionError("$name: ${maker.name} logs no tab bar padding field")
+                assertTrue("$name: ${padding.name} is a public int field of ${holder.type}", holder.fields.any {
+                    it.name == padding.name && it.type == "I" && AccessFlags.PUBLIC.isSet(it.accessFlags)
+                } && AccessFlags.PUBLIC.isSet(holder.accessFlags))
+                val constructor = holder.methods.single { it.name == "<init>" }.implementation!!.instructions
+                assertTrue("$name: the constructor sets ${padding.name}", constructor.any {
+                    it.opcode == Opcode.IPUT && ((it as ReferenceInstruction).reference as FieldReference).toString() == padding.toString()
+                })
 
-                val context = PatchContexts.of(listOf(holder))
+                val extension = ExtensionDex.classDef(TAB_BAR_SCROLL_AWAY)
+                val context = PatchContexts.of(listOf(holder, extension))
                 context.hookReelRow { why -> throw AssertionError("$name: $why") }
                 val after = context.mutableClassDefBy(holder.type).methods.single { it.name == maker.name &&
                     it.parameterTypes.map(Any::toString) == maker.parameterTypes.map(Any::toString) }
                     .implementation!!.instructions.toList()
                 assertEquals("$name: ${maker.name} gained two instructions", before.opcodes().size + 2, after.opcodes().size)
                 val hand = after[store] as FiveRegisterInstruction
-                assertEquals("$name: the row height goes to the extension right before the store",
-                    listOf(Opcode.INVOKE_STATIC, REEL_ROW, 1, register),
-                    listOf(hand.opcode, ((hand as ReferenceInstruction).reference as MethodReference).toString(), hand.registerCount, hand.registerC))
+                assertEquals("$name: the row height and the maker go to the extension right before the store",
+                    listOf(Opcode.INVOKE_STATIC, REEL_ROW, 2, register, self),
+                    listOf(hand.opcode, ((hand as ReferenceInstruction).reference as MethodReference).toString(), hand.registerCount,
+                        hand.registerC, hand.registerD))
+                val stub = context.mutableClassDefBy(TAB_BAR_SCROLL_AWAY).methods.single { it.name == TAB_PADDING_STUB }
+                    .implementation!!.instructions.toList()
+                assertEquals("$name: the stub reads the maker's padding",
+                    listOf(Opcode.CHECK_CAST, holder.type, Opcode.IGET, padding.toString(), Opcode.RETURN),
+                    listOf(stub[0].opcode, ((stub[0] as ReferenceInstruction).reference as TypeReference).type,
+                        stub[1].opcode, ((stub[1] as ReferenceInstruction).reference as FieldReference).toString(), stub[2].opcode))
                 assertEquals("$name: the answer is what gets stored",
                     listOf(Opcode.MOVE_RESULT, register, Opcode.IPUT, field.toString()),
                     listOf(after[store + 1].opcode, (after[store + 1] as OneRegisterInstruction).registerA,
@@ -178,6 +204,11 @@ class ReelUnderTopBarFixtureTest {
         assertNotNull("the extension has no TabBarScrollAway.reelRow", hook)
         assertEquals(REEL_ROW, "${hook!!.definingClass}->${hook.name}(${hook.parameterTypes.joinToString("")})${hook.returnType}")
         assertTrue("reelRow isn't static", AccessFlags.STATIC.isSet(hook.accessFlags))
+        val stub = ExtensionDex.classDef(type).methods.singleOrNull {
+            it.name == TAB_PADDING_STUB && it.returnType == "I" && AccessFlags.STATIC.isSet(it.accessFlags) &&
+                it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;")
+        }
+        assertNotNull("the extension has no static int $TAB_PADDING_STUB(Object) stub", stub)
     }
 
     @Test

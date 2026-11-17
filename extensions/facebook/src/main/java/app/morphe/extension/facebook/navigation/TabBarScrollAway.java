@@ -11,6 +11,7 @@ import android.view.WindowInsets;
 import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -210,39 +211,59 @@ public final class TabBarScrollAway {
     /** The largest top padding {@link #pagesTop} has dropped, which Facebook took off each Reels row. */
     private static volatile int droppedTop;
 
-    /** Counted each time a Reels row is made as tall as the page the reel runs in under the top bars. */
+    /** Counted each time a Reels row gets back the top padding the reel runs under. */
     static final String REEL_ROW_FILLED = "Reels row made the page's height";
 
     /**
      * The hook on the height Facebook gives each row of the Reels tab, as it makes the tab's list
      * (#466). Facebook sizes a row to the room left below the top bars, so a reel that {@link
-     * #pagesTop} runs under them ended that much short of the screen's bottom, and the next reel
-     * showed in the gap, more with Hide the status bar on. When {@link #pagesTop} drops the padding
-     * the row is the page's height instead: the main screen's content with the tabs at the top, where
-     * nothing sits below the reels, and otherwise Facebook's row plus the padding dropped. Never
-     * smaller than Facebook's row. Anywhere else, paused, before the settings are ready or on a
-     * failure, it's Facebook's own height.
+     * #pagesTop} runs under them ended that much short of the page's bottom, and the next reel
+     * showed in the gap. The row gets that padding back: with the tabs at the top, the padding
+     * Facebook handed the list for the tab bar ({@link #tabPadding}), or else, on the Reels tab, the
+     * padding {@link #pagesTop} dropped. Facebook makes the list ahead, often while Home shows, and keeps the rows it made
+     * then when it makes the list again, so what counts is whether the Reels tab runs its reel under
+     * the bars once it shows, not whether it shows now. Anywhere else, paused, before the settings
+     * are ready or on a failure, it's Facebook's own height.
      *
      * @param height the row height Facebook worked out.
+     * @param maker  the list's maker, which holds the tab bar padding.
      */
-    public static int reelRow(int height) {
+    public static int reelRow(int height, @Nullable Object maker) {
         try {
             if (height <= 0) return height;
             HookStatus.invoked(FAMILY);
             if (!Utils.settingsReady() || Setting.isPaused()) return height;
-            boolean tabsOnTop = tabsOnTop();
-            if (!reelUnderBars(tabsOnTop)) return height;
-            int page = tabsOnTop ? contentHeight() : 0;
-            int wanted = page > 0 ? page : height + droppedTop;
-            if (wanted <= height) return height;
-            HookStatus.bound(FAMILY, "Reels row under the top bar");
-            HookStatus.counted(FAMILY, REEL_ROW_FILLED);
-            Logger.printDebug(() -> "Top bars: a Reels row of " + height + " made " + wanted);
-            return wanted;
+            return rowFor(height, maker == null ? 0 : tabPadding(maker));
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "Reels row under the top bar", failure);
             return height;
         }
+    }
+
+    /** {@link #reelRow} once the settings are ready and Hushfacebook isn't paused. */
+    static int rowFor(int height, int tabPad) {
+        boolean tabsOnTop = tabsOnTop();
+        boolean shown = onReelsTab();
+        boolean under = shown ? reelUnderBars(tabsOnTop) : reelsWillRunUnderBars(tabsOnTop);
+        int dropped = droppedTop;
+        Logger.printDebug(() -> "Top bars: a Reels row of " + height + (shown ? " on the Reels tab" : " made ahead")
+                + ", under the bars " + under + ", tab padding " + tabPad + ", padding dropped " + dropped);
+        if (!under) return height;
+        int pad = tabsOnTop && tabPad > 0 ? tabPad : shown ? dropped : 0;
+        if (pad <= 0) return height;
+        int wanted = height + pad;
+        HookStatus.bound(FAMILY, "Reels row under the top bar");
+        HookStatus.counted(FAMILY, REEL_ROW_FILLED);
+        Logger.printDebug(() -> "Top bars: a Reels row of " + height + " made " + wanted);
+        return wanted;
+    }
+
+    /**
+     * The top padding for the tab bar that Facebook handed the Reels list's maker, which it takes off
+     * each row. The patch fills this in with a read of the maker's field; until then it's 0.
+     */
+    public static int tabPadding(Object maker) {
+        return 0;
     }
 
     /** Whether the tabs sit at the top: in the top bar's entry, or moved there by the switch. */
@@ -257,11 +278,18 @@ public final class TabBarScrollAway {
         return onReelsTab();
     }
 
-    /** The height of the main screen's content, 0 before it's laid out. */
-    private static int contentHeight() {
+    /**
+     * Whether the Reels tab will run its reel under the top bars once it shows, for a list made while
+     * another tab shows, as {@link #reelUnderBars} will decide there. Facebook keeps scroll-away on
+     * for the first tab alone, so Reels further along the bar runs off the feed, under the bars only
+     * with the tabs at the top. False when the main screen's tabs can't be read or have no Reels.
+     */
+    private static boolean reelsWillRunUnderBars(boolean tabsOnTop) {
         Activity screen = mainScreen.get();
-        View content = screen == null ? null : screen.findViewById(android.R.id.content);
-        return content == null ? 0 : content.getHeight();
+        List<Object> tabs = screen == null ? null : StartTabRoute.TabBar.tabs(screen);
+        if (tabs == null || tabs.isEmpty() || !StartTabRoute.TabBar.has(tabs, StartTab.VIDEO)) return false;
+        boolean reelsFirst = StartTab.VIDEO.isTab(tabs.get(0).getClass().getName());
+        return reelsFirst ? !Settings.KEEP_TOP_BAR.get() : tabsOnTop;
     }
 
     /** Whether the main screen shows the tab called Reels or Video. */
