@@ -119,6 +119,33 @@ public class PlayerSourcesTest {
         assertEquals("an id no player was built for", null, PlayerSources.byId("99999999999999999"));
     }
 
+    /**
+     * Facebook's full screen player builds a second player for a video the feed already played,
+     * with only the DASH manifest. The feed player's single file stays, so the cast button in the
+     * full screen player still hands one over (#182). A later player with a file of its own wins.
+     */
+    @Test
+    public void aLaterPlayerWithOnlyAManifestKeepsTheEarlierSingleFile() {
+        Settings.DOWNLOAD_VIDEOS.save(true);
+        String id = "100182000000001";
+        String feedFile = "https://video.xx.fbcdn.net/v/t42.1790-2/hd.mp4?_nc_cat=1";
+        String manifest = "<MPD><Period><AdaptationSet><Representation id=\"1\"/></AdaptationSet></Period></MPD>";
+        PlayerSources.rememberVideo(new PlayerSourcesForTests.Params(id,
+                new PlayerSourcesForTests.HdSource(feedFile, null)), "videoId", "hd", "manifest");
+        PlayerSources.rememberVideo(new PlayerSourcesForTests.Params(id,
+                new PlayerSourcesForTests.HdSource(null, manifest)), "videoId", "hd", "manifest");
+
+        assertEquals(feedFile, PlayerSources.byId(id).hdUrl);
+        assertEquals(manifest, PlayerSources.byId(id).manifest);
+        assertEquals(feedFile, OpenInAnotherApp.bestFile(id, null, null));
+
+        String newerFile = "https://video.xx.fbcdn.net/v/t42.1790-2/hd2.mp4?_nc_cat=1";
+        PlayerSources.rememberVideo(new PlayerSourcesForTests.Params(id,
+                new PlayerSourcesForTests.HdSource(newerFile, null)), "videoId", "hd", "manifest");
+        assertEquals(newerFile, PlayerSources.byId(id).hdUrl);
+        assertEquals("the manifest stays too", manifest, PlayerSources.byId(id).manifest);
+    }
+
     @Test
     public void aPlayerIsRecordedOnlyWhileStorySavesAreOn() {
         Settings.DOWNLOAD_STORIES.save(true);

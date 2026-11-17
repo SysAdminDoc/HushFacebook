@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
@@ -157,6 +158,18 @@ public final class PlayerSources {
             if (hd == null && manifest == null) return;
 
             synchronized (SOURCES) {
+                // Facebook's full screen player builds a second player for a video the feed already
+                // played, and that one can carry only the manifest. The single file the first one had
+                // stays, or the cast button there would have nothing to hand over (#182).
+                Source earlier = SOURCES.get(videoId);
+                if (earlier != null) {
+                    if (hd == null && earlier.hdUrl != null) {
+                        hd = earlier.hdUrl;
+                        Logger.printDebug(() -> "Player sources: a later player of video " + videoId
+                            + " came without a single file, so the earlier one's stays");
+                    }
+                    if (manifest == null) manifest = earlier.manifest;
+                }
                 SOURCES.put(videoId, new Source(videoId, hd, manifest));
             }
             HookStatus.bound(family, "player source");
