@@ -2,7 +2,9 @@
 
 Changes in each Hushfacebook version, newest first.
 
-## Unreleased
+## 0.23.0 (2026-11-17)
+
+* This one moves to Facebook 587.0.0.39.55 and needs Morphe Manager 2.6.0 or newer, so update Manager and grab the new Facebook APK before you repatch. Long posts and comments can fold at however many lines you pick, and a video you started can keep playing after you leave Facebook. Facebook's new Repost button can go too. Reels can fill a tall screen, watched stories can move to the end of the tray, the location page you get after signing in is skipped, and there's a Hushfacebook icon for the home screen and notifications. The settings come in Thai now. On the fix side, reels with a "Popular near you" line show their date again, and a post you hid stays hidden when you refresh.
 
 ### Added
 
