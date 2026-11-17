@@ -102,6 +102,34 @@ public class ProgressBarTest {
                 + ProgressBar.REEL_BAR_KEPT + " 2, " + ProgressBar.CONTROLS_KEPT + " 3", statusLine());
     }
 
+    /**
+     * The newer player's controls hide goes through the extension in place of Facebook's post: off,
+     * the hide is posted with Facebook's delay and runs; on, nothing is posted and the post counts as
+     * kept controls (#447).
+     */
+    @Test
+    public void theNewerPlayersHideIsPostedOnlyWhileTheControlsAreNotKept() {
+        android.os.Handler handler = new android.os.Handler(Looper.getMainLooper());
+        AtomicBoolean hidden = new AtomicBoolean();
+        Runnable hide = () -> hidden.set(true);
+
+        assertTrue("off, the hide wasn't posted", ProgressBar.postsControlsHide(handler, hide, 3000));
+        assertTrue("off, the hide wasn't waiting on the handler", handler.hasCallbacks(hide));
+        shadowOf(Looper.getMainLooper()).idleFor(2999, TimeUnit.MILLISECONDS);
+        assertFalse("the hide ran before Facebook's delay", hidden.get());
+        shadowOf(Looper.getMainLooper()).idleFor(1, TimeUnit.MILLISECONDS);
+        assertTrue("off, the controls weren't hidden after Facebook's delay", hidden.get());
+
+        hidden.set(false);
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        assertFalse("on, the hide was posted", ProgressBar.postsControlsHide(handler, hide, 3000));
+        assertFalse("on, a hide was left waiting on the handler", handler.hasCallbacks(hide));
+        shadowOf(Looper.getMainLooper()).idleFor(10, TimeUnit.SECONDS);
+        assertFalse("on, the controls were hidden", hidden.get());
+        assertTrue("the kept controls weren't counted: " + statusLine(),
+                statusLine().endsWith(ProgressBar.CONTROLS_KEPT + " 1"));
+    }
+
     @Test
     public void offOrPausedFacebookShrinksAndFades() {
         assertFalse("the switch doesn't start off", Settings.KEEP_PROGRESS_BAR.get());

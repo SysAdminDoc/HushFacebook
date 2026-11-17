@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.media;
 
 import android.content.res.Resources;
+import android.os.Handler;
 import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,7 +66,8 @@ import app.morphe.extension.shared.settings.HushfacebookPause;
  * extension, 3 seconds after they show or are touched, and the player that Enter fullscreen
  * landscape mode opens runs on the Reels controls component, whose controller posts a runnable that
  * hides them about 3 seconds after a tap. The patch asks {@link #keepsControls} first in that
- * extension's timer and in that runnable, and a yes hides nothing. A tap still hides them.
+ * runnable, and the extension's post of its hide goes through {@link #postsControlsHide}, so a yes
+ * hides nothing. A tap still hides them.
  *
  * <p>Tap the bar to seek, in the same family, is {@link TapToSeek}.
  *
@@ -1312,6 +1314,18 @@ public final class ProgressBar {
      */
     public static boolean keepsControls() {
         return keeps("video controls", CONTROLS_KEPT);
+    }
+
+    /**
+     * The hook in place of the newer player's one post of its controls hide, in its video controls
+     * extension. Posts {@code hide} on {@code handler} after {@code delayMs} as Facebook does, unless {@link
+     * #keepsControls} says yes, so the controls stay. It takes that one call rather than the top of
+     * the method because on 586 the method is shared with fifteen other video extensions, and a
+     * return there stopped all of them, which left a live video's chat folded away (#447).
+     */
+    public static boolean postsControlsHide(Handler handler, Runnable hide, long delayMs) {
+        if (keepsControls()) return false;
+        return handler.postDelayed(hide, delayMs);
     }
 
     /**

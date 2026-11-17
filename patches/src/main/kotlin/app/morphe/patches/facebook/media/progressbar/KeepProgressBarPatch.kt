@@ -8,6 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
@@ -127,6 +128,7 @@ internal const val SET_VIEW_ALPHA = "Landroid/view/View;->setAlpha(F)V"
 /** 1.0f's bits, the `const/high16` an alpha back to full loads. */
 internal const val FULL_ALPHA = 0x3f800000
 internal const val KEEPS_CONTROLS = "$PROGRESS_BAR->keepsControls()Z"
+internal const val POSTS_CONTROLS_HIDE = "$PROGRESS_BAR->postsControlsHide(Landroid/os/Handler;Ljava/lang/Runnable;J)Z"
 internal const val HIDE_TIME_LABEL = "$PROGRESS_BAR->hideTimeLabel(Landroid/view/ViewGroup;)V"
 internal const val BARS_EVERY_REEL = "$PROGRESS_BAR->barsEveryReel()Z"
 internal const val HAS_BAR = "$PROGRESS_BAR->hasBar(ZI)Z"
@@ -319,8 +321,9 @@ internal const val INVALIDATE = "Landroid/view/View;->invalidate()V"
  *
  * The newer Litho player hides its controls through an extension named [CONTROLS_EXTENSION] (581
  * `LX/RbF;`). Its one method that drops its pending callbacks and posts a runnable (581 `A0N`) sets
- * the hide 3 seconds after the controls are touched, 10 with accessibility on. The same hook goes
- * first there.
+ * the hide 3 seconds after the controls are touched, 10 with accessibility on. There the hook
+ * takes the place of that post alone ([noHidePostWhileKept]), since on 586 the method is shared
+ * with fifteen other video extensions (#447).
  *
  * The player the video viewer's Enter fullscreen landscape mode opens on 577 to 581 runs on the
  * Reels controls component instead, whose updater traces [PLAYER_CONTROL_UPDATE] (581
@@ -602,7 +605,7 @@ val keepProgressBarPatch = bytecodePatch(
                 .fullSizeInstead(plugin.type, sizes.fullSize)
         }
         mutableClassDefBy(controls.type).methods.single { it.sameAs(timer) }.noTimerWhileKept()
-        mutableClassDefBy(extension.type).methods.single { it.sameAs(hide) }.noTimerWhileKept()
+        mutableClassDefBy(extension.type).methods.single { it.sameAs(hide) }.noHidePostWhileKept()
         mutableClassDefBy(hider.type).methods.single { it.sameAs(hiderRun) }.noTimerWhileKept()
         mutableClassDefBy(barType).methods.single { it.sameAs(touch) }.takesTapsToSeek()
         mutableClassDefBy(release.method.definingClass).methods.single { it.sameAs(release.method) }.apply {
@@ -3277,6 +3280,32 @@ internal fun MutableMethod.fullSizeInstead(plugin: String, fullSize: Method) {
         """,
         ExternalLabel("facebook", getInstruction(0)),
     )
+}
+
+/**
+ * The newer player's controls hide: its one [POST_DELAYED] call becomes a call to the extension
+ * with the same registers, which posts the hide unless the controls are kept. Nothing else in the
+ * method changes, so branches that jump there still land on it. On 586 Redex merged the controls
+ * extension's method with fifteen other video extensions' into one that picks the extension by
+ * class (`LX/0YE3;->A0J`), and a return at its top stopped every one of them while the switch was
+ * on, which left a live video's chat folded away (#447).
+ */
+internal fun MutableMethod.noHidePostWhileKept() {
+    val code = implementation!!.instructions.toList()
+    val posts = code.indices.filter { (code[it] as? ReferenceInstruction)?.reference?.toString() == POST_DELAYED }
+    val index = posts.singleOrNull()
+        ?: refuse("$definingClass->$name posts ${posts.size} runnables with a delay, expected the one controls hide")
+    val post = code[index]
+    val call = when (post.opcode) {
+        Opcode.INVOKE_VIRTUAL -> (post as FiveRegisterInstruction).let {
+            "invoke-static { v${it.registerC}, v${it.registerD}, v${it.registerE}, v${it.registerF} }, $POSTS_CONTROLS_HIDE"
+        }
+        Opcode.INVOKE_VIRTUAL_RANGE -> (post as RegisterRangeInstruction).let {
+            "invoke-static/range { v${it.startRegister} .. v${it.startRegister + it.registerCount - 1} }, $POSTS_CONTROLS_HIDE"
+        }
+        else -> refuse("$definingClass->$name posts the controls hide with ${post.opcode}, expected an invoke-virtual")
+    }
+    replaceInstruction(index, call)
 }
 
 /**

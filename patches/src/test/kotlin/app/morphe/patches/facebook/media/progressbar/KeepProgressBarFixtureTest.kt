@@ -412,6 +412,9 @@ class KeepProgressBarFixtureTest {
         // The hook borrows v0: this is the one parameter register.
         assertTrue("$name: ${controls.type}->${timer.name} has no local register for the hook",
             timer.implementation!!.registerCount - 1 >= 1)
+        // The hook returns at the top, so a timer Redex merged with other methods would stop them all (#447).
+        assertTrue("$name: ${controls.type}->${timer.name} picks among merged methods",
+            timer.code().none { it.opcode == Opcode.PACKED_SWITCH || it.opcode == Opcode.SPARSE_SWITCH })
 
         val context = PatchContexts.of(listOf(controls))
         val method = context.mutableClassDefBy(controls.type).methods.single { it.sameAs(timer) }
@@ -437,20 +440,22 @@ class KeepProgressBarFixtureTest {
         val (extension, hide) = extensionFadeTimer(holders)
         val where = "$name: ${extension.type}->${hide.name}"
         assertTrue("$where posts no 3 second hide", hide.code().any { (it as? WideLiteralInstruction)?.wideLiteral == 3000L })
-        // The hook borrows v0, so the method needs a register below its parameters.
-        assertTrue("$where has no local register for the hook",
-            hide.implementation!!.registerCount - hide.parameterTypes.size - 1 >= 1)
 
         val context = PatchContexts.of(listOf(extension))
         val method = context.mutableClassDefBy(extension.type).methods.single { it.sameAs(hide) }
         val original = method.code()
-        method.noTimerWhileKept()
+        val post = original.indexOfFirst { it.reference() == POST_DELAYED }
+        method.noHidePostWhileKept()
         val patched = method.code()
-        assertEquals("$where gains four instructions", original.size + 4, patched.size)
-        assertEquals("$where: the extension is asked first", KEEPS_CONTROLS, patched[0].reference())
-        assertEquals("$where: a yes posts no hide", Opcode.RETURN_VOID, patched[3].opcode)
-        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(4).map { it.opcode })
-        assertEquals("$where: a no lands on Facebook's first instruction", setOf(3, 4), ControlFlow.of(method).normal[2].toSet())
+        assertEquals("$where: the hook adds or drops instructions", original.size, patched.size)
+        assertEquals("$where: the post doesn't go through the extension", POSTS_CONTROLS_HIDE, patched[post].reference())
+        assertEquals("$where: the extension isn't called statically", Opcode.INVOKE_STATIC, patched[post].opcode)
+        assertEquals("$where: the extension gets other registers than the post",
+            (original[post] as FiveRegisterInstruction).let { listOf(it.registerC, it.registerD, it.registerE, it.registerF) },
+            (patched[post] as FiveRegisterInstruction).let { listOf(it.registerC, it.registerD, it.registerE, it.registerF) })
+        val others = original.indices.filter { it != post }
+        assertEquals("$where: Facebook's other code changed", others.map { original[it].opcode }, others.map { patched[it].opcode })
+        assertEquals("$where: Facebook's other calls changed", others.map { original[it].reference() }, others.map { patched[it].reference() })
     }
 
     @Test
@@ -475,6 +480,8 @@ class KeepProgressBarFixtureTest {
             hide.code().any { it.opcode == (if (updater.folded) Opcode.INVOKE_STATIC else if (updater.virtual) Opcode.INVOKE_VIRTUAL else Opcode.INVOKE_INTERFACE) &&
                 it.reference() == updater.update })
         assertTrue("$where has no local register for the hook", run.implementation!!.registerCount - 1 >= 1)
+        // The hook returns at the top, so a run() Redex merged with other runnables' would stop them all (#447).
+        assertTrue("$where picks among merged runnables", run.code().none { it.opcode == Opcode.PACKED_SWITCH || it.opcode == Opcode.SPARSE_SWITCH })
 
         val context = PatchContexts.of(listOf(runnable))
         val method = context.mutableClassDefBy(runnable.type).methods.single { it.sameAs(run) }
