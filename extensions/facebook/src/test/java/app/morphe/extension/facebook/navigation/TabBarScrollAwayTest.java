@@ -64,11 +64,13 @@ public class TabBarScrollAwayTest {
         Settings.BOTTOM_TAB_BAR.resetToDefault();
         Settings.TOP_TAB_BAR.resetToDefault();
         Settings.TRANSLUCENT_BARS.resetToDefault();
+        Settings.HIDE_STATUS_BAR.resetToDefault();
         TabBarScrollAway.topBarsTakenBack();
         TabBarScrollAway.mainScreenCreated(null);
         TabBarScrollAway.forgetBuilt();
         TabBarScrollAway.Stored.ROW_MADE.resetToDefault();
         TabBarScrollAway.Stored.LIST_HEIGHT.resetToDefault();
+        TabBarScrollAway.Stored.ROW_SETUP.resetToDefault();
         HookStatus.clear();
     }
 
@@ -547,7 +549,9 @@ public class TabBarScrollAwayTest {
         assertEquals("a row Facebook worked out another way isn't the one seen", 2150, TabBarScrollAway.rowFor(2150, -1, 0));
         Settings.KEEP_TOP_BAR.save(true);
         Settings.TOP_TAB_BAR.save(false);
-        assertEquals("where Reels won't run under the bars", 2075, TabBarScrollAway.rowFor(2075, -1, 2199));
+        assertEquals("a kept top bar leaves the list padded below it, and the height seen without it stays behind",
+                2075, TabBarScrollAway.rowFor(2075, -1, 2073));
+        assertEquals("made ahead under the kept bar", 2075, TabBarScrollAway.rowFor(2075, -1, 0));
         Settings.KEEP_TOP_BAR.save(false);
         Settings.TOP_TAB_BAR.save(true);
 
@@ -558,6 +562,33 @@ public class TabBarScrollAwayTest {
         onTabOf(new FeedTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
         assertEquals(2274, TabBarScrollAway.rowFor(2075, -1, 0));
         assertEquals("a list shorter than the row is passed over for the one seen", 2274, TabBarScrollAway.rowFor(2075, -1, 1800));
+    }
+
+    @Test
+    public void aReelsRowFillsTheListWithTheTabsAtTheBottomToo() {
+        // #494: tabs at the bottom, see-through and kept, the status bar hidden, on a 2362 tall
+        // screen. Reels sits second, so it runs off the feed and nothing runs under the top bars,
+        // yet Facebook made each row 2071 while the list ran the whole 2362, so the next reel
+        // showed below a black band.
+        Settings.BOTTOM_TAB_BAR.save(true);
+        Settings.KEEP_TAB_BAR.save(true);
+        Settings.TRANSLUCENT_BARS.save(true);
+        Settings.HIDE_STATUS_BAR.save(true);
+        TabBarScrollAway.topBarsLetGo();
+        onTabOf(new WatchTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
+        assertEquals("nothing dropped and no list yet", 2071, TabBarScrollAway.rowFor(2071, -1, 0));
+        assertEquals("a list as tall as the row", 2071, TabBarScrollAway.rowFor(2071, -1, 2071));
+        assertEquals("on the Reels tab the row is the list's height", 2362, TabBarScrollAway.rowFor(2071, -1, 2362));
+
+        TabBarScrollAway.forgetBuilt();
+        TabBarScrollAway.topBarsTakenBack();
+        onTabOf(new FeedTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
+        assertEquals("the next start, made ahead on Home", 2362, TabBarScrollAway.rowFor(2071, -1, 0));
+        Settings.HIDE_STATUS_BAR.save(false);
+        assertEquals("the status bar back: the height seen with it hidden stays behind", 2071,
+                TabBarScrollAway.rowFor(2071, -1, 0));
+        assertEquals("until the list is seen again", 2287, TabBarScrollAway.rowFor(2071, -1, 2287));
+        assertEquals(2287, TabBarScrollAway.rowFor(2071, -1, 0));
     }
 
     @Test

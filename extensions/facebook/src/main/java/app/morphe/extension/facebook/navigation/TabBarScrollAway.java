@@ -222,13 +222,16 @@ public final class TabBarScrollAway {
      * #pagesTop} runs under them ended that much short of the page's bottom, and the next reel
      * showed in the gap. Facebook works the height out once per list and hands every row that, and
      * it makes the list ahead, often while Home shows and before the Reels page is laid out, then
-     * keeps the rows it made then. So what counts is whether the Reels tab runs its reel under the
-     * bars once it shows, not whether it shows now, and the row gets, in order: the Reels list's own
-     * height once it's laid out taller than the row, as Facebook itself reads it; the list height
-     * last seen for a row of this height, kept across starts for the rows made before the list is
-     * laid out; with the tabs at the top, the padding Facebook handed the list for the tab bar
-     * ({@link #tabPadding}); on the Reels tab, the padding {@link #pagesTop} dropped. Anywhere else,
-     * paused, before the settings are ready or on a failure, it's Facebook's own height.
+     * keeps the rows it made then. The same short row shows with the tabs at the bottom, where Hide
+     * the status bar and see-through bars let the list run taller than the room Facebook counted
+     * (#494). Each row is a whole page of that list, so the row gets, in order: the Reels list's own
+     * height once it's laid out taller than the row, as Facebook itself reads it, wherever the bars
+     * sit; the list height last seen for a row of this height under the same bar switches, kept
+     * across starts for the rows made before the list is laid out; where the Reels tab runs its reel
+     * under the bars once it shows, with the tabs at the top, the padding Facebook handed the list
+     * for the tab bar ({@link #tabPadding}), or on the Reels tab, the padding {@link #pagesTop}
+     * dropped. Anywhere else, paused, before the settings are ready or on a failure, it's Facebook's
+     * own height.
      *
      * @param height the row height Facebook worked out.
      * @param maker  the list's maker, which holds the tab bar padding.
@@ -256,16 +259,20 @@ public final class TabBarScrollAway {
         int dropped = droppedTop;
         Logger.printDebug(() -> "Top bars: a Reels row of " + height + (shown ? " on the Reels tab" : " made ahead")
                 + ", under the bars " + under + ", list " + list + ", tab padding " + tabPad + ", padding dropped " + dropped);
-        if (!under) return height;
+        int setup = barSetup();
         int wanted;
         if (list > height) {
             wanted = list;
             if (Stored.ROW_MADE.get() != height) Stored.ROW_MADE.save(height);
             if (Stored.LIST_HEIGHT.get() != list) Stored.LIST_HEIGHT.save(list);
-        } else if (Stored.ROW_MADE.get() == height && Stored.LIST_HEIGHT.get() > height) {
+            if (Stored.ROW_SETUP.get() != setup) Stored.ROW_SETUP.save(setup);
+        } else if (Stored.ROW_MADE.get() == height && Stored.ROW_SETUP.get() == setup
+                && Stored.LIST_HEIGHT.get() > height) {
             wanted = Stored.LIST_HEIGHT.get();
-        } else {
+        } else if (under) {
             wanted = height + (tabsOnTop && tabPad > 0 ? tabPad : shown ? dropped : 0);
+        } else {
+            return height;
         }
         if (wanted <= height) return height;
         HookStatus.bound(FAMILY, "Reels row under the top bar");
@@ -295,8 +302,9 @@ public final class TabBarScrollAway {
 
     /**
      * The Reels list's height inside its padding, or 0 when there's no main screen, no list id, no
-     * list or a list not laid out. Facebook makes rows off the main thread too and reads the list
-     * there itself, so a search that meets the view tree mid-change answers 0 for that row.
+     * list, a list not laid out or a main screen out of sight behind another screen, which may be
+     * making rows of its own. Facebook makes rows off the main thread too and reads the list there
+     * itself, so a search that meets the view tree mid-change answers 0 for that row.
      */
     private static int reelsListHeight() {
         View list = reelsList.get();
@@ -313,20 +321,39 @@ public final class TabBarScrollAway {
             if (list == null) return 0;
             reelsList = new WeakReference<>(list);
         }
+        if (list.getWindowVisibility() != View.VISIBLE) return 0;
         return Math.max(0, list.getHeight() - list.getPaddingTop() - list.getPaddingBottom());
     }
 
     /**
-     * The row height Facebook last worked out for the Reels list and that list's height, seen on a
-     * laid out list. Hushfacebook's own state: kept while paused and never in a settings file. A
-     * class of its own, so nothing here loads a setting before the context is set.
+     * The bar switches that change how tall the Reels list runs while Facebook's row stays the same,
+     * as one number, so a list height seen under one setup isn't handed to rows under another.
+     */
+    static int barSetup() {
+        int bits = 0;
+        if (Settings.TOP_TAB_BAR.get()) bits |= 1;
+        if (Settings.BOTTOM_TAB_BAR.get()) bits |= 1 << 1;
+        if (Settings.TAB_BAR_SCROLL_AWAY.get()) bits |= 1 << 2;
+        if (Settings.KEEP_TOP_BAR.get()) bits |= 1 << 3;
+        if (Settings.KEEP_TAB_BAR.get()) bits |= 1 << 4;
+        if (Settings.TRANSLUCENT_BARS.get()) bits |= 1 << 5;
+        if (Settings.HIDE_STATUS_BAR.get()) bits |= 1 << 6;
+        return bits;
+    }
+
+    /**
+     * The row height Facebook last worked out for the Reels list, that list's height, seen on a laid
+     * out list, and the {@link #barSetup} it was seen under. Hushfacebook's own state: kept while
+     * paused and never in a settings file. A class of its own, so nothing here loads a setting
+     * before the context is set.
      */
     static final class Stored {
         static final IntegerSetting ROW_MADE = new IntegerSetting("hushfacebook_reels_row_made", 0, false, false);
         static final IntegerSetting LIST_HEIGHT = new IntegerSetting("hushfacebook_reels_list_height", 0, false, false);
+        static final IntegerSetting ROW_SETUP = new IntegerSetting("hushfacebook_reels_row_setup", -1, false, false);
 
         static {
-            Setting.keepWhenPaused(ROW_MADE, LIST_HEIGHT);
+            Setting.keepWhenPaused(ROW_MADE, LIST_HEIGHT, ROW_SETUP);
         }
 
         private Stored() {
