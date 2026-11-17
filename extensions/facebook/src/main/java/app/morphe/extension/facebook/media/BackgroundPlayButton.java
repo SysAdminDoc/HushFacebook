@@ -84,7 +84,7 @@ public final class BackgroundPlayButton {
             HookStatus.invoked(FAMILY);
             if (!Utils.settingsReady() || !Settings.BACKGROUND_PLAY_BUTTON.get()) return facebooks;
             Context context = Utils.getContext();
-            if (context == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return facebooks;
+            if (context == null) return facebooks;
             Context application = context.getApplicationContext();
             listen(application);
             List actions = new ArrayList();
