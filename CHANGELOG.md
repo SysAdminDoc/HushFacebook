@@ -58,6 +58,7 @@ Changes in each Hushfacebook version, newest first.
 ### Fixed
 
 * `Show the post date on reels` now dates reels where Facebook says why it suggested them, like "Popular near you". In the Reels tab that reason took the whole line under the poster and pushed the date off, so those reels showed no date with the switch on. The date stays on that line now. (#496)
+* `Show the post date on reels` also dates reels without sound. A silent reel has no song line, and Facebook's "Reel has no sound" label sat in its place with no date. The date goes in front of that label now, the way it does a song's. (#496)
 * With `Keep the progress bar` on, a live video's chat shows up again. On Facebook 586 the switch held back more than the controls' hide timer, so the chat folded into a thin strip at the edge of the screen and only came back with Hushfacebook paused. Now it only stops that timer. (#447)
 * With `Keep the progress bar` on, a video's seek bar and buttons stay up in the portrait full-screen viewer too, like on a past live or a reel's details with the panel closed. There they faded about 3 seconds after you tapped. A second tap still hides them.
 * A reel on the Reels tab now reaches the bottom of the screen. With the tab bar at the top it started behind the bar but kept the height of the space under it, so the next reel peeked in at the bottom, even more with `Hide the status bar` on. With the tabs at the bottom, `Hide the status bar` and see-through bars left a black band under the reel with the next one showing below it. (#466, #494)

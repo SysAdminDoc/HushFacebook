@@ -153,6 +153,12 @@ val cleanUpReelsPatch = bytecodePatch(
         dateReelsTabAudioLine(audioLine, storyType)
         // #496: and where a recommendation reason would push the date and every label off that line.
         keepPostDateBesideReason()
+        // #496: and in front of a silent reel's "Reel has no sound", which takes the song line's place.
+        try {
+            dateSoundLabels(storyType)
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so a reel without sound shows no date beside its sound label.")
+        }
         // #291: the Subscribe pill beside a video's author, in the viewer's row and wherever the shared builder's lands.
         hideSubscribePill()
         // #311: Search and the button beside it at the top of the full-screen player, by the bar's id.

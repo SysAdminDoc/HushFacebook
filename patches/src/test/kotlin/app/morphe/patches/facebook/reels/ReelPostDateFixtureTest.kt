@@ -10,15 +10,19 @@ import app.morphe.PatchContexts
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.RegisterLiveness
+import app.morphe.util.namedRegisters
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
@@ -215,6 +219,127 @@ class ReelPostDateFixtureTest {
         assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
     }
 
+    /**
+     * #496: each declared build's reel footer words every attribution's label with one helper and
+     * builds a ticker label from it, and a second method in the helper's class builds the soundtrack's
+     * ticker label alone. Both labels go to the extension right before the ticker's new-instance, the
+     * footer's with the story it holds and the second one's with the story kept on the way in, and
+     * Facebook's own label comes back into its register right after the ticker's constructor.
+     */
+    @Test
+    fun `each declared build hands a silent reel's sound label to the extension`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        val abis = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val storyType = FixtureDex.methodsWhere(bundle, { true }, ::isReelPostDate).single().parameterTypes[1].toString()
+                val holders = FixtureDex.classesHolding(bundle, REASON_ALONE_FLAG)
+                val footer = holders.flatMap { owner -> owner.methods.filter { reasonAloneRead(it) >= 0 } }.single()
+                val call = subtitleLabelCall(footer, storyType)
+                assertTrue("$name: the footer words its labels in one call", call >= 0)
+                val helper = (footer.code()[call] as ReferenceInstruction).reference as MethodReference
+                val ticker = soundTicker(footer, call)
+                assertNotNull("$name: the footer builds a ticker label from its words", ticker)
+                val story = audioLineStory(footer, ticker!!.first, storyType)
+                assertNotNull("$name: the footer holds the story where it builds the label", story)
+                val helperClasses = FixtureDex.classes(bundle, setOf(helper.definingClass)).values.toList()
+                val soundtracks = soundTickerHelpers(helperClasses.single().methods, helper, storyType)
+                assertEquals("$name: soundtrack ticker labels", 1, soundtracks.size)
+                val soundtrack = soundtracks.single()
+                assertTrue("$name: the second helper is the soundtrack's", soundtrack.code().any {
+                    ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == "XFBFBShortsSoundtrackTitle"
+                })
+                assertThrows("$name: no footer must refuse the patch", PatchException::class.java) {
+                    PatchContexts.of(emptyList()).dateSoundLabels(storyType)
+                }
+                val context = PatchContexts.of(holders + helperClasses)
+                context.dateSoundLabels(storyType)
+
+                val patchedFooter = context.mutableClassDefBy(footer.definingClass).methods.single {
+                    it.name == footer.name &&
+                        it.parameterTypes.map(CharSequence::toString) == footer.parameterTypes.map(CharSequence::toString)
+                }.code()
+                assertSoundHook(name, footer, call, patchedFooter, 0, SOUND_LABEL_TEXT, story)
+
+                val patchedHelper = context.mutableClassDefBy(soundtrack.definingClass).methods.single {
+                    it.name == soundtrack.name &&
+                        it.parameterTypes.map(CharSequence::toString) == soundtrack.parameterTypes.map(CharSequence::toString)
+                }.code()
+                assertEquals("$name: the story is kept on the way in", SOUND_STORY,
+                    ((patchedHelper[0] as ReferenceInstruction).reference as MethodReference).toString())
+                val params = soundtrack.parameterTypes.map(CharSequence::toString)
+                val sizes = params.map { if (it == "J" || it == "D") 2 else 1 }
+                val storyParameter = soundtrack.implementation!!.registerCount - sizes.sum() + sizes.take(params.indexOf(storyType)).sum()
+                assertEquals("$name: from the story parameter's register", listOf(storyParameter), patchedHelper[0].namedRegisters())
+                val worded = soundtrack.code().indices.single {
+                    ((soundtrack.code()[it] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == helper.toString()
+                }
+                assertSoundHook(name, soundtrack, worded, patchedHelper, 1, SOUND_TICKER_TEXT, null)
+                checked += version
+                abis += name.substringAfter("-$version-").substringBefore(".apkm")
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), Fixtures.abisOf(abis))
+    }
+
+    /**
+     * That [patched], [original] after the patch with [shift] instructions put in ahead of [call],
+     * hands the label worded at [call] to [hook] with its attribution and [story] right before the
+     * ticker's new-instance, and puts the label back right after the ticker's constructor.
+     */
+    private fun assertSoundHook(name: String, original: Method, call: Int, patched: List<Instruction>, shift: Int, hook: String, story: Int?) {
+        val code = original.code()
+        assertEquals("$name: the label is a move-result-object", Opcode.MOVE_RESULT_OBJECT, code[call + 1].opcode)
+        val label = (code[call + 1] as OneRegisterInstruction).registerA
+        val attribution = code[call].namedRegisters()[1]
+        val (created, init) = soundTicker(original, call)!!
+        assertEquals("$name: the ticker starts with its new-instance", Opcode.NEW_INSTANCE, code[created].opcode)
+        val hooks = patched.indices.filter { ((patched[it] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == hook }
+        assertEquals("$name: one sound label hook in ${original.definingClass}", 1, hooks.size)
+        val at = hooks.single()
+        val start = created + shift
+        val keep = patched[start] as TwoRegisterInstruction
+        assertEquals("$name: the label is kept first", Opcode.MOVE_OBJECT_FROM16, patched[start].opcode)
+        assertEquals("$name: from its own register", label, keep.registerB)
+        assertTrue("$name: in one nothing reads there", keep.registerA !in RegisterLiveness.of(original).liveInto(created))
+        assertTrue("$name: and nothing writes before the ticker's built",
+            (created..init).none { code[it].opcode.setsRegister() && code[it].namedRegisters().first() == keep.registerA })
+        fun copiedFrom(register: Int) = (start + 1 until at).map { patched[it] }
+            .lastOrNull { it.opcode == Opcode.MOVE_OBJECT_FROM16 && (it as TwoRegisterInstruction).registerA == register }
+            ?.let { (it as TwoRegisterInstruction).registerB } ?: register
+        val passed = patched[at].namedRegisters()
+        assertEquals("$name: the hook passes the label", label, copiedFrom(passed[0]))
+        assertEquals("$name: and its attribution", attribution, copiedFrom(passed[1]))
+        if (story == null) {
+            assertEquals("$name: and nothing else", 2, passed.size)
+        } else {
+            assertEquals("$name: and the story", story, copiedFrom(passed[2]))
+        }
+        assertEquals("$name: the extension's label comes back", Opcode.MOVE_RESULT_OBJECT, patched[at + 1].opcode)
+        assertEquals("$name: into the register passed", passed[0], (patched[at + 1] as OneRegisterInstruction).registerA)
+        var end = at + 2
+        if (passed[0] != label) {
+            assertEquals("$name: and is copied back", Opcode.MOVE_OBJECT_FROM16, patched[end].opcode)
+            assertEquals("$name: into the label's register", label, (patched[end] as TwoRegisterInstruction).registerA)
+            end++
+        }
+        assertEquals("$name: the ticker's new-instance comes next", Opcode.NEW_INSTANCE, patched[end].opcode)
+        assertEquals("$name: into the same register", code[created].namedRegisters(), patched[end].namedRegisters())
+        assertEquals("$name: of the same type",
+            (code[created] as ReferenceInstruction).reference.toString(), (patched[end] as ReferenceInstruction).reference.toString())
+        val patchedInit = end + (init - created)
+        assertTrue("$name: its constructor takes the label", label in patched[patchedInit].namedRegisters().drop(1))
+        val back = patched[patchedInit + 1] as TwoRegisterInstruction
+        assertEquals("$name: Facebook's label comes back after", Opcode.MOVE_OBJECT_FROM16, patched[patchedInit + 1].opcode)
+        assertEquals("$name: into the label's register", label, back.registerA)
+        assertEquals("$name: from where it was kept", keep.registerA, back.registerB)
+        assertEquals("$name: the hook's instructions and the stash added",
+            code.count { it.opcode != Opcode.NOP } + (end - start) + 1 + shift, patched.count { it.opcode != Opcode.NOP })
+    }
+
     @Test
     fun `the extension has the hook`() {
         val type = SHOW_POST_DATE.substringBefore("->")
@@ -238,5 +363,12 @@ class ReelPostDateFixtureTest {
         assertEquals("reasonAlone's shape", REASON_ALONE,
             "${reason!!.definingClass}->${reason.name}(${reason.parameterTypes.joinToString("")})${reason.returnType}")
         assertTrue("reasonAlone isn't static", AccessFlags.STATIC.isSet(reason.accessFlags))
+        for ((method, shape) in listOf("soundLabelText" to SOUND_LABEL_TEXT, "soundStory" to SOUND_STORY, "soundTickerText" to SOUND_TICKER_TEXT)) {
+            val sound = ExtensionDex.classDef(type).methods.singleOrNull { it.name == method }
+            assertNotNull("the extension has no ReelDeclutter.$method", sound)
+            assertEquals("$method's shape", shape,
+                "${sound!!.definingClass}->${sound.name}(${sound.parameterTypes.joinToString("")})${sound.returnType}")
+            assertTrue("$method isn't static", AccessFlags.STATIC.isSet(sound.accessFlags))
+        }
     }
 }

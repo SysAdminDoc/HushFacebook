@@ -703,6 +703,52 @@ public class ReelDeclutterTest {
     }
 
     /**
+     * A reel without sound has no song line, and its soundtrack's "Reel has no sound" label takes that
+     * spot (#496), so the date goes in front of that label, and of no other attribution's. The story
+     * the soundtrack's own helper was handed on the way in dates its label once, and a story that
+     * holds no time, no attribution, the switch off and a pause all keep the label as it was.
+     */
+    @Test
+    public void theDateGoesInFrontOfASilentReelsSoundLabel() {
+        String silent = "Reel has no sound";
+        long threeWeeks = NOW / 1000 - 21L * 24 * 60 * 60;
+        assertEquals("3 weeks ago" + ReelDeclutter.DOT + silent,
+                ReelDeclutter.soundLabel(silent, SONG, threeWeeks, NOW, ReelDateStyle.AGO, Locale.US, UTC));
+        assertEquals("Oct 12" + ReelDeclutter.DOT + silent,
+                ReelDeclutter.soundLabel(silent, SONG, 1791817200L, NOW, ReelDateStyle.DATE, Locale.US, UTC));
+        assertSame("another attribution's label", "Spokane, Washington",
+                ReelDeclutter.soundLabel("Spokane, Washington", LOCATION, threeWeeks, NOW, ReelDateStyle.AGO, Locale.US, UTC));
+        assertSame("an attribution whose type can't be read", silent,
+                ReelDeclutter.soundLabel(silent, null, threeWeeks, NOW, ReelDateStyle.AGO, Locale.US, UTC));
+
+        long posted = System.currentTimeMillis() / 1000 - 21L * 24 * 60 * 60;
+        TreeJNI story = new TreeJNI().with("creation_time", posted);
+        TypedFeedUnit sound = chip(SONG);
+        assertSame("off by default, the label stays", silent, ReelDeclutter.soundLabelText(silent, sound, story));
+        assertNull(line(ReelDeclutter.DATE_ROUTE));
+        Settings.SHOW_REEL_POST_DATE.save(true);
+        assertEquals("3 weeks ago" + ReelDeclutter.DOT + silent, ReelDeclutter.soundLabelText(silent, sound, story));
+        assertTrue(line(ReelDeclutter.DATE_ROUTE), line(ReelDeclutter.DATE_ROUTE).contains(ReelDeclutter.DATE_ON_SOUND));
+        assertSame("a location's label", "Spokane", ReelDeclutter.soundLabelText("Spokane", chip(LOCATION), story));
+        assertSame("no attribution", silent, ReelDeclutter.soundLabelText(silent, null, story));
+        assertSame("a story with no time", silent, ReelDeclutter.soundLabelText(silent, sound, new TreeJNI()));
+        assertSame("no story", silent, ReelDeclutter.soundLabelText(silent, sound, null));
+        assertNull("no label stays no label", ReelDeclutter.soundLabelText(null, sound, story));
+
+        ReelDeclutter.soundStory(story);
+        assertEquals("the kept story", "3 weeks ago" + ReelDeclutter.DOT + silent, ReelDeclutter.soundTickerText(silent, sound));
+        assertSame("kept for one label only", silent, ReelDeclutter.soundTickerText(silent, sound));
+        ReelDeclutter.soundStory(null);
+        assertSame("nothing kept", silent, ReelDeclutter.soundTickerText(silent, sound));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame("dated while paused", silent, ReelDeclutter.soundLabelText(silent, sound, story));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertSame("dated before the settings were ready", silent, ReelDeclutter.soundLabelText(silent, sound, story)));
+    }
+
+    /**
      * A video author's Subscribe pill (#291) goes only with the switch on, from the viewer's row and
      * from a shared row's slot. A Follow pill stays, a slot takes the builder's note once, and the
      * pill comes back paused, before the settings are ready and when the switch can't be read.

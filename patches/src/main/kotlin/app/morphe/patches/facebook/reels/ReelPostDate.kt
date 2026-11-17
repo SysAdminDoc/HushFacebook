@@ -12,6 +12,7 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.util.RegisterLiveness
 import app.morphe.util.classDefForEachReferencing
+import app.morphe.util.namedRegisters
 import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -19,6 +20,7 @@ import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -279,17 +281,22 @@ internal fun reasonAloneRead(method: Method): Int {
     return if (code.getOrNull(unbox + 1)?.opcode == Opcode.MOVE_RESULT) unbox + 1 else -1
 }
 
-/** Hands the reel footer's reason-alone flag to the extension, which says no while the date is on. */
-internal fun BytecodePatchContext.keepPostDateBesideReason() {
+/** The reel footer's builder, the one method that reads [REASON_ALONE_FLAG] as a boolean. */
+private fun BytecodePatchContext.reelFooter(): MutableMethod {
     val builders = classDefByStrings(REASON_ALONE_FLAG, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
         .flatMap { classDef -> classDef.methods.filter { reasonAloneRead(it) >= 0 }.map { classDef.type to it } }
     val (owner, builder) = builders.singleOrNull() ?: throw PatchException(
         "$PATCH: expected one reel footer that reads \"$REASON_ALONE_FLAG\" as a boolean, found ${builders.size}",
     )
-    val method = mutableClassDefBy(owner).methods.single {
+    return mutableClassDefBy(owner).methods.single {
         it.name == builder.name && it.parameterTypes.map(CharSequence::toString) == builder.parameterTypes.map(CharSequence::toString)
     }
+}
+
+/** Hands the reel footer's reason-alone flag to the extension, which says no while the date is on. */
+internal fun BytecodePatchContext.keepPostDateBesideReason() {
+    val method = reelFooter()
     val read = reasonAloneRead(method)
     val flag = (method.code[read] as OneRegisterInstruction).registerA
     method.addInstructions(
@@ -299,4 +306,176 @@ internal fun BytecodePatchContext.keepPostDateBesideReason() {
             move-result v$flag
         """,
     )
+}
+
+/*
+ * The date on a reel without sound (#496, read from 587, 2026-11-17, arm64 and armeabi-v7a).
+ *
+ * - A reel with a song shows the song line under its author, which the hook above dates. A silent
+ *   reel has none: the audio line's render answers null without audio, and the reel's soundtrack
+ *   attribution ("Reel has no sound") shows as one of the footer's ticker labels instead, undated.
+ * - The footer's builder (arm64 LX/08j3;->A19, v7 LX/08ip;->A19) names SUBTITLE_LABEL, then loops
+ *   over the attributions, wording each with one static helper (arm64 LX/09Zl;->A06, v7
+ *   LX/09ZY;->A06) taking the session, the attribution and the story, and builds a ticker label
+ *   (arm64 LX/0CTW, v7 LX/0CSz) of an icon, that String, a Function0 and a flag. The same String
+ *   also goes into a row label, which the date row already sits above, so that copy stays as it was.
+ * - When the ticker comes up empty the builder asks a second helper in the first one's class (arm64
+ *   LX/09Zl;->A08) for the soundtrack's ticker label alone. It words it with the same helper, but
+ *   clears the register holding the story first, so the story is kept for it on the way in.
+ */
+
+/** The id prefix the reel footer gives each label under the author, named right before its attribution loop. */
+internal const val SUBTITLE_LABEL = "FBShortsVideoAugmentSubtitleLabel-"
+internal const val SOUND_LABEL_TEXT =
+    "$EXTENSION_PACKAGE/reels/ReelDeclutter;->soundLabelText(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/String;"
+internal const val SOUND_STORY = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->soundStory(Ljava/lang/Object;)V"
+internal const val SOUND_TICKER_TEXT =
+    "$EXTENSION_PACKAGE/reels/ReelDeclutter;->soundTickerText(Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/String;"
+
+/** Whether [instruction] calls a static (FbUserSession, attribution, [storyType], ...) to String helper. */
+private fun wordsLabel(instruction: Instruction, storyType: String): Boolean {
+    val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    val params = reference.params()
+    return (instruction.opcode == Opcode.INVOKE_STATIC || instruction.opcode == Opcode.INVOKE_STATIC_RANGE) &&
+        reference.returnType == STRING && params.size >= 3 && params[0] == USER_SESSION &&
+        params[1].startsWith("L") && params[2] == storyType
+}
+
+/**
+ * Where [method], the reel footer, words an attribution's label: the one [wordsLabel] call past
+ * [SUBTITLE_LABEL], with its move-result-object right after. -1 unless there's exactly one.
+ */
+internal fun subtitleLabelCall(method: Method, storyType: String): Int {
+    val code = method.code
+    val named = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == SUBTITLE_LABEL }
+    if (named < 0) return -1
+    return code.indices.filter {
+        it > named && wordsLabel(code[it], storyType) && code.getOrNull(it + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+    }.singleOrNull() ?: -1
+}
+
+/**
+ * The ticker label [method] builds from the label it words at [call]: the index of the new-instance
+ * and of its constructor, which takes the label as a String beside a Function0. Null unless the label
+ * reaches that constructor unchanged and nothing branches between the two.
+ */
+internal fun soundTicker(method: Method, call: Int): Pair<Int, Int>? {
+    val code = method.code
+    val label = (code.getOrNull(call + 1) as? OneRegisterInstruction)?.registerA ?: return null
+    val init = (call + 2 until code.size).firstOrNull {
+        val reference = (code[it] as? ReferenceInstruction)?.reference as? MethodReference ?: return@firstOrNull false
+        (code[it].opcode == Opcode.INVOKE_DIRECT || code[it].opcode == Opcode.INVOKE_DIRECT_RANGE) &&
+            reference.name == "<init>" && label in code[it].namedRegisters().drop(1)
+    } ?: return null
+    val params = ((code[init] as ReferenceInstruction).reference as MethodReference).params()
+    val args = code[init].namedRegisters()
+    if (FUNCTION0 !in params || params.getOrNull(args.indexOf(label) - 1) != STRING) return null
+    val created = (call + 2 until init).lastOrNull {
+        code[it].opcode == Opcode.NEW_INSTANCE && (code[it] as OneRegisterInstruction).registerA == args[0]
+    } ?: return null
+    if ((created until init).any { code[it] is OffsetInstruction || !code[it].opcode.canContinue() }) return null
+    if (method.writersReaching(init, label) != listOf(call + 1)) return null
+    return created to init
+}
+
+private fun Instruction.written(): List<Int> {
+    if (!opcode.setsRegister()) return emptyList()
+    val first = namedRegisters().firstOrNull() ?: return emptyList()
+    return if (opcode.setsWideRegister()) listOf(first, first + 1) else listOf(first)
+}
+
+/**
+ * Hands the label [method] words at [call] to the extension right before the ticker label built from
+ * it, [ticker], with its attribution and, in [story], the reel's story, or with null for the one
+ * [SOUND_STORY] kept. Facebook's own label goes back right after the ticker's constructor, for the
+ * row label and anything else built from it. Registers at v16 and up are copied down through ones
+ * nothing reads there.
+ */
+private fun dateSoundTicker(method: MutableMethod, call: Int, ticker: Pair<Int, Int>, story: Int?) {
+    val owner = method.definingClass
+    val code = method.code
+    val (at, init) = ticker
+    val label = (code[call + 1] as OneRegisterInstruction).registerA
+    val attribution = code[call].namedRegisters()[1]
+    if (method.writersReaching(at, attribution) != method.writersReaching(call, attribution)) {
+        throw PatchException("$PATCH: the attribution in $owner changes before its ticker label is built")
+    }
+    val live = RegisterLiveness.of(method).liveInto(at)
+    val held = setOfNotNull(label, attribution, story)
+    val written = (at..init).flatMap { code[it].written() }.toSet()
+    val keep = (0 until minOf(256, method.implementation!!.registerCount))
+        .firstOrNull { it !in live && it !in held && it !in written }
+        ?: throw PatchException("$PATCH: no spare register in $owner to keep the sound label")
+    val spare = (0 until minOf(16, method.implementation!!.registerCount))
+        .filter { it !in live && it !in held && it != keep }.iterator()
+    fun low(register: Int) = if (register < 16) register else if (spare.hasNext()) spare.next() else
+        throw PatchException("$PATCH: no spare register below v16 in $owner for the sound label")
+    val labelLow = low(label)
+    val attributionLow = low(attribution)
+    val storyLow = story?.let(::low)
+    val hook = buildString {
+        appendLine("move-object/from16 v$keep, v$label")
+        if (labelLow != label) appendLine("move-object/from16 v$labelLow, v$label")
+        if (attributionLow != attribution) appendLine("move-object/from16 v$attributionLow, v$attribution")
+        if (storyLow != null && storyLow != story) appendLine("move-object/from16 v$storyLow, v$story")
+        if (storyLow != null) {
+            appendLine("invoke-static { v$labelLow, v$attributionLow, v$storyLow }, $SOUND_LABEL_TEXT")
+        } else {
+            appendLine("invoke-static { v$labelLow, v$attributionLow }, $SOUND_TICKER_TEXT")
+        }
+        appendLine("move-result-object v$labelLow")
+        if (labelLow != label) appendLine("move-object/from16 v$label, v$labelLow")
+    }
+    // The later insert goes in first, so the earlier index still holds.
+    method.addInstructions(init + 1, "move-object/from16 v$label, v$keep")
+    method.addInstructions(at, hook)
+}
+
+/** The register [method]'s parameter of [type] arrives in, or null unless one parameter is of it. */
+private fun parameterRegister(method: Method, type: String): Int? {
+    val params = method.parameterTypes.map(CharSequence::toString)
+    val index = params.indexOf(type).takeIf { it >= 0 && params.lastIndexOf(type) == it } ?: return null
+    val sizes = params.map { if (it == "J" || it == "D") 2 else 1 }
+    return method.implementation!!.registerCount - sizes.sum() + sizes.take(index).sum()
+}
+
+/**
+ * The methods in [helper]'s class, other than [helper] itself, that word one label with it, build a
+ * [soundTicker] from it and take a story of [storyType]: the soundtrack's own ticker label (#496).
+ */
+internal fun soundTickerHelpers(methods: Iterable<Method>, helper: MethodReference, storyType: String): List<Method> =
+    methods.filter { method ->
+        val code = method.code
+        val calls = code.indices.filter { ((code[it] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == helper.toString() }
+        method.name != helper.name && calls.size == 1 && code.getOrNull(calls.single() + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT &&
+            soundTicker(method, calls.single()) != null && parameterRegister(method, storyType) != null
+    }
+
+/**
+ * Puts the post date in front of a silent reel's sound label (#496): in the reel footer's ticker
+ * label for each attribution, and in the soundtrack's own ticker label built when that comes up
+ * empty. The extension leaves every other attribution's label as it was.
+ */
+internal fun BytecodePatchContext.dateSoundLabels(storyType: String) {
+    val footer = reelFooter()
+    val owner = footer.definingClass
+    val call = subtitleLabelCall(footer, storyType)
+    if (call < 0) throw PatchException("$PATCH: the reel footer in $owner doesn't word its labels in one call")
+    val helper = (footer.code[call] as ReferenceInstruction).reference as MethodReference
+    val ticker = soundTicker(footer, call)
+        ?: throw PatchException("$PATCH: the reel footer in $owner builds no ticker label from its words")
+    val story = audioLineStory(footer, ticker.first, storyType)
+        ?: throw PatchException("$PATCH: the reel footer in $owner holds no story of $storyType where it builds a label")
+    dateSoundTicker(footer, call, ticker, story)
+    val helpers = soundTickerHelpers(classDefByOrNull(helper.definingClass)?.methods ?: emptyList(), helper, storyType)
+    val soundtrack = helpers.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one soundtrack ticker label beside ${helper.definingClass}->${helper.name}, found ${helpers.size}",
+    )
+    val method = mutableClassDefBy(helper.definingClass).methods.single {
+        it.name == soundtrack.name && it.parameterTypes.map(CharSequence::toString) == soundtrack.parameterTypes.map(CharSequence::toString)
+    }
+    val worded = method.code.indices.single { ((method.code[it] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == helper.toString() }
+    dateSoundTicker(method, worded, soundTicker(method, worded)!!, null)
+    val kept = parameterRegister(method, storyType)!!
+    method.addInstructions(0, "invoke-static/range { v$kept .. v$kept }, $SOUND_STORY")
 }
