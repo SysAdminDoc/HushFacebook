@@ -30,8 +30,10 @@ import app.morphe.extension.facebook.settings.PatchFamily;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.BaseSettings;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
+import app.morphe.extension.shared.settings.preference.LogBufferManager;
 
 /**
  * Hide the tab bar while scrolling: with the switch on, Facebook's check of whether the bar at the
@@ -71,7 +73,36 @@ public class TabBarScrollAwayTest {
         TabBarScrollAway.Stored.ROW_MADE.resetToDefault();
         TabBarScrollAway.Stored.LIST_HEIGHT.resetToDefault();
         TabBarScrollAway.Stored.ROW_SETUP.resetToDefault();
+        BaseSettings.DEBUG.resetToDefault();
+        LogBufferManager.clearLogBuffer();
         HookStatus.clear();
+    }
+
+    private static int occurrences(String text, String part) {
+        int count = 0;
+        for (int at = text.indexOf(part); at >= 0; at = text.indexOf(part, at + 1)) count++;
+        return count;
+    }
+
+    @Test
+    public void theReelUnderTheBarsIsLoggedOnceEachTimeItStarts() {
+        // Facebook asks for the padding on every layout pass of the Reels tab. A debug line on each
+        // answer put 1,202 copies of it in one S22 log export.
+        TabBarScrollAway.forgetBuilt();
+        BaseSettings.DEBUG.save(true);
+        LogBufferManager.clearLogBuffer();
+        Settings.TOP_TAB_BAR.save(true);
+        for (int visit = 0; visit < 2; visit++) {
+            onTab(new WatchTab());
+            TabBarScrollAway.topBarsLetGo();
+            for (int pass = 0; pass < 5; pass++) assertEquals(0, TabBarScrollAway.pagesTop(150));
+            TabBarScrollAway.topBarsTakenBack();
+            onTab(new FeedTab());
+            assertEquals("back on the feed", 150, TabBarScrollAway.pagesTop(150));
+        }
+        String log = LogBufferManager.buildExportText();
+        assertEquals("one line per visit to the Reels tab: " + log, 2,
+                occurrences(log, "Top bars: the reel runs under them"));
     }
 
     @Test

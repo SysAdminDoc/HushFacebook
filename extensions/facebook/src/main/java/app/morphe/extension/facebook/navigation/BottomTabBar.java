@@ -44,7 +44,18 @@ public final class BottomTabBar {
     /** NO's ordinal, read the first time the top switch is on; -1 until then. */
     private static volatile int no = -1;
 
+    /**
+     * The answer last written to the debug log, -1 before the first. Facebook reads the override on
+     * every layout of the main screen, so it's logged when it changes, not on every read.
+     */
+    private static volatile int logged = -1;
+
     private BottomTabBar() {
+    }
+
+    /** Forgets the logged answer, for a test that counts the debug lines. */
+    static void forgetLogged() {
+        logged = -1;
     }
 
     /**
@@ -61,7 +72,8 @@ public final class BottomTabBar {
             int answer = bottom ? yes() : no();
             HookStatus.bound(FAMILY, "tab bar position");
             HookStatus.counted(FAMILY, bottom ? PUT_AT_BOTTOM : PUT_AT_TOP);
-            if (answer != facebooks) {
+            if (answer != facebooks && answer != logged) {
+                logged = answer;
                 Logger.printDebug(() -> "Tab bar position: the override reads " + (bottom ? "YES" : "NO"));
             }
             return answer;

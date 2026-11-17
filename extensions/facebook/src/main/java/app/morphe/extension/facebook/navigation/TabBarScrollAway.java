@@ -138,6 +138,7 @@ public final class TabBarScrollAway {
         builtSeeThrough = null;
         tabsInTopEntry = false;
         droppedTop = 0;
+        loggedUnder = false;
         reelsList = new WeakReference<>(null);
     }
 
@@ -198,11 +199,17 @@ public final class TabBarScrollAway {
             if (padding == 0) return padding;
             HookStatus.invoked(FAMILY);
             if (!Utils.settingsReady() || Setting.isPaused()) return padding;
-            if (!reelUnderBars(tabsOnTop())) return padding;
+            if (!reelUnderBars(tabsOnTop())) {
+                loggedUnder = false;
+                return padding;
+            }
             if (padding > droppedTop) droppedTop = padding;
             HookStatus.bound(FAMILY, "reel under the top bar");
             HookStatus.counted(FAMILY, REEL_UNDER_BAR);
-            Logger.printDebug(() -> "Top bars: the reel runs under them");
+            if (!loggedUnder) {
+                loggedUnder = true;
+                Logger.printDebug(() -> "Top bars: the reel runs under them");
+            }
             return 0;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel under the top bar", failure);
@@ -212,6 +219,12 @@ public final class TabBarScrollAway {
 
     /** The largest top padding {@link #pagesTop} has dropped, which Facebook took off each Reels row. */
     private static volatile int droppedTop;
+
+    /**
+     * Whether {@link #pagesTop} has logged the reel running under the bars since it last kept
+     * Facebook's padding. Facebook asks on every layout pass, so it's logged once per stretch.
+     */
+    private static volatile boolean loggedUnder;
 
     /** Counted each time a Reels row gets back the top padding the reel runs under. */
     static final String REEL_ROW_FILLED = "Reels row made the page's height";

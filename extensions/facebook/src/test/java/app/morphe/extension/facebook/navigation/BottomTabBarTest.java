@@ -23,8 +23,10 @@ import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
+import app.morphe.extension.shared.settings.BaseSettings;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
+import app.morphe.extension.shared.settings.preference.LogBufferManager;
 
 /**
  * Tab bar at the bottom: with the switch on, every read of Facebook's own override answers YES,
@@ -41,6 +43,7 @@ public class BottomTabBarTest {
     @Before
     public void start() {
         HookStatus.clear();
+        BottomTabBar.forgetLogged();
     }
 
     @After
@@ -49,7 +52,32 @@ public class BottomTabBarTest {
         Settings.BOTTOM_TAB_BAR.resetToDefault();
         Settings.TOP_TAB_BAR.resetToDefault();
         Settings.PHONE_LAYOUT_ON_BIG_SCREENS.resetToDefault();
+        BaseSettings.DEBUG.resetToDefault();
+        LogBufferManager.clearLogBuffer();
         HookStatus.clear();
+    }
+
+    private static int occurrences(String text, String part) {
+        int count = 0;
+        for (int at = text.indexOf(part); at >= 0; at = text.indexOf(part, at + 1)) count++;
+        return count;
+    }
+
+    @Test
+    public void theOverrideIsLoggedOnceUntilItsAnswerChanges() {
+        // Facebook reads the override on every layout of the main screen. A debug line on each read put
+        // 1,213 copies of it in one S22 log export, and with the Reels padding line below it was nine
+        // tenths of the export, crowding out the lines a report needs.
+        BaseSettings.DEBUG.save(true);
+        LogBufferManager.clearLogBuffer();
+        Settings.BOTTOM_TAB_BAR.save(true);
+        for (int read = 0; read < 5; read++) BottomTabBar.override(TriState.NO.ordinal());
+        Settings.BOTTOM_TAB_BAR.save(false);
+        Settings.TOP_TAB_BAR.save(true);
+        for (int read = 0; read < 5; read++) BottomTabBar.override(TriState.YES.ordinal());
+        String log = LogBufferManager.buildExportText();
+        assertEquals(log, 1, occurrences(log, "the override reads YES"));
+        assertEquals(log, 1, occurrences(log, "the override reads NO"));
     }
 
     private static String statusLine() {
