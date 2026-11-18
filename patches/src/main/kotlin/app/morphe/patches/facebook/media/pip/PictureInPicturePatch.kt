@@ -202,7 +202,9 @@ internal const val SHOWN_AGAIN = "$PICTURE_IN_PICTURE->shownAgain(${VIEW}I)V"
  * - Android 12, an activity, ReelsPipUtil's check (answered first by the extension already).
  * - For the deep-dive surface, a flag in the same MobileConfig config as the Reels arming's ad and
  *   live flags (581 0x10107b2 slot 5, 580 0x10107b6 slot 5, 577 0x10107bb slot 5). A no disarms.
- *   The extension answers it.
+ *   The extension answers it. 588 moved the surface's compare and this flag into a method of the
+ *   arming's class ([surfaceFlagChecks]), which answers yes for any other surface, so there the
+ *   extension answers that method's result.
  * - An ad (one with ad info: disarmed unless it's an affiliate ad, `is_affiliate_ad`, and that
  *   config's slot 12 says yes), a live video (`if_video_broadcast.is_live_streaming` disarms unless
  *   slot 8 says yes), no video id, a shape picture-in-picture can't take. These stay Facebook's,
@@ -1023,17 +1025,35 @@ internal fun homeGateAt(home: Method, gate: Method, check: Method): Int {
 }
 
 /**
- * Where the Video tab's arming [home] reads its flag for [VIDEO_TAB_SURFACE]: the move-result of the
- * first MobileConfig boolean read after it loads that name, when an if-nez on it follows and a no
- * falls through into one of ReelsPipUtil's [disarms]. 587 (09Ha.A08 on arm64) loads constants into
- * other registers first and tests with an if-eqz, so its no is the jump, which reaches the disarm
- * past more constant loads. -1 otherwise. Changes nothing.
+ * The methods of [holder] answering the Video tab's flag for a surface: each loads
+ * [VIDEO_TAB_SURFACE], reads a MobileConfig boolean and answers a boolean, yes for any other surface.
+ * 588 moved the compare and the flag out of the arming into one (`shouldEnablePipForCurrentSurface`).
  */
-internal fun homeFlagAt(home: Method, disarms: List<Method>): Int {
+internal fun surfaceFlagChecks(holder: ClassDef): List<Method> = holder.methods.filter { method ->
+    method.returnType == "Z" && holdsString(method, VIDEO_TAB_SURFACE) &&
+        method.implementation?.instructions?.any(::isFlagRead) == true
+}
+
+/** Whether [instruction] calls one of [surfaceChecks]. */
+private fun asksSurfaceCheck(instruction: Instruction, surfaceChecks: List<Method>): Boolean =
+    called(instruction)?.let { call -> surfaceChecks.any { callsCheck(call, it) } } == true
+
+/**
+ * Where the Video tab's arming [home] reads its flag for [VIDEO_TAB_SURFACE]: the move-result of the
+ * first MobileConfig boolean read after it loads that name, or where it loads none, of its first
+ * call of one of [surfaceChecks], when an if-nez on it follows and a no falls through into one of
+ * ReelsPipUtil's [disarms]. 587 (09Ha.A08 on arm64) loads constants into other registers first and
+ * tests with an if-eqz, so its no is the jump, which reaches the disarm past more constant loads.
+ * -1 otherwise. Changes nothing.
+ */
+internal fun homeFlagAt(home: Method, disarms: List<Method>, surfaceChecks: List<Method>): Int {
     val code = home.implementation?.instructions?.toList().orEmpty()
     val named = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == VIDEO_TAB_SURFACE }
-    if (named < 0) return -1
-    val read = (named + 1 until code.size).firstOrNull { isFlagRead(code[it]) } ?: return -1
+    val read = if (named >= 0) {
+        (named + 1 until code.size).firstOrNull { isFlagRead(code[it]) }
+    } else {
+        code.indices.firstOrNull { asksSurfaceCheck(code[it], surfaceChecks) }
+    } ?: return -1
     val result = code.getOrNull(read + 1)
     if (result?.opcode != Opcode.MOVE_RESULT) return -1
     val flag = (result as OneRegisterInstruction).registerA
@@ -1054,9 +1074,15 @@ internal fun homeFlagAt(home: Method, disarms: List<Method>): Int {
     return if (disarming) read + 1 else -1
 }
 
-/** Whether [method] is the Video tab's arming: it loads [VIDEO_TAB_SURFACE] and asks ReelsPipUtil's [check]. */
-internal fun isHome(method: Method, check: Method): Boolean =
-    holdsString(method, VIDEO_TAB_SURFACE) && method.implementation?.instructions?.any { asksCheck(it, check) } == true
+/**
+ * Whether [method] is the Video tab's arming: it asks ReelsPipUtil's [check] and loads
+ * [VIDEO_TAB_SURFACE] or calls one of [surfaceChecks], its class's methods holding that name.
+ */
+internal fun isHome(method: Method, check: Method, surfaceChecks: List<Method>): Boolean {
+    val code = method.implementation?.instructions?.toList() ?: return false
+    return code.any { asksCheck(it, check) } &&
+        (holdsString(method, VIDEO_TAB_SURFACE) || code.any { asksSurfaceCheck(it, surfaceChecks) })
+}
 
 /** The Video tab's arming and the move-results of its copy of the gate and of its flag. */
 internal class Home(val method: Method, val gate: Int, val flag: Int)
@@ -1065,13 +1091,16 @@ internal class Home(val method: Method, val gate: Int, val flag: Int)
 internal fun BytecodePatchContext.findHome(check: Method, gate: Method, disarms: List<Method>): Home {
     val homes = classDefByStrings(VIDEO_TAB_SURFACE, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        .flatMap { holder -> holder.methods.filter { isHome(it, check) } }
-    val home = homes.singleOrNull()
-        ?: refuse("expected one method loading \"$VIDEO_TAB_SURFACE\" that calls the check, found ${homes.size}")
+        .flatMap { holder ->
+            val surfaceChecks = surfaceFlagChecks(holder)
+            holder.methods.filter { isHome(it, check, surfaceChecks) }.map { it to surfaceChecks }
+        }
+    val (home, surfaceChecks) = homes.singleOrNull()
+        ?: refuse("expected one method naming \"$VIDEO_TAB_SURFACE\" that calls the check, found ${homes.size}")
     val where = "${home.definingClass}->${home.name}"
     val gateAt = homeGateAt(home, gate, check)
     if (gateAt < 0) refuse("$where has no copy of ${gate.definingClass}->${gate.name} before it asks ${check.name}")
-    val flagAt = homeFlagAt(home, disarms)
+    val flagAt = homeFlagAt(home, disarms, surfaceChecks)
     if (flagAt < 0) refuse("$where reads no MobileConfig flag after \"$VIDEO_TAB_SURFACE\" whose no disarms")
     val code = home.implementation!!.instructions.toList()
     for (at in listOf(gateAt, flagAt)) {

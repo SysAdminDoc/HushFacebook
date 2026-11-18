@@ -174,13 +174,17 @@ class PictureInPictureFixtureTest {
                     (resumeAt until resumeCheckAt).none { isFlagRead(originalResume[it]) })
 
                 val homeHolders = FixtureDex.classesHolding(bundle, VIDEO_TAB_SURFACE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-                val homes = homeHolders.flatMap { homeHolder -> homeHolder.methods.filter { isHome(it, check) } }
-                assertEquals("$name: methods loading \"$VIDEO_TAB_SURFACE\" that call the check", 1, homes.size)
+                val homes = homeHolders.flatMap { homeHolder ->
+                    val surfaceChecks = surfaceFlagChecks(homeHolder)
+                    homeHolder.methods.filter { isHome(it, check, surfaceChecks) }
+                }
+                assertEquals("$name: methods naming \"$VIDEO_TAB_SURFACE\" that call the check", 1, homes.size)
                 val home = homes.single()
                 val homeClass = homeHolders.single { it.type == home.definingClass }
+                val surfaceChecks = surfaceFlagChecks(homeClass)
                 val originalHome = home.code()
                 val copyAt = homeGateAt(home, gate, check)
-                val homeFlag = homeFlagAt(home, disarms)
+                val homeFlag = homeFlagAt(home, disarms, surfaceChecks)
                 val homeCheckAt = originalHome.indexOfFirst { it.call?.name == check.name && it.call?.definingClass == check.definingClass }
                 assertTrue("$name: ${home.definingClass}->${home.name} has no copy of ${gate.name} before the check",
                     copyAt in 1 until homeCheckAt)
@@ -201,7 +205,10 @@ class PictureInPictureFixtureTest {
                     assertEquals("$name: the copy asks what the gate asks",
                         gate.code()[gateAnswer].call.toString(), originalHome[copyAt - 1].call.toString())
                 }
-                assertTrue("$name: the flag read isn't a MobileConfig boolean read", isFlagRead(originalHome[homeFlag - 1]))
+                // 588 reads the flag in a method of the arming's class, which the arming asks.
+                val homeRead = originalHome[homeFlag - 1]
+                assertTrue("$name: the flag read isn't a MobileConfig boolean read or a surface check", isFlagRead(homeRead) ||
+                    surfaceChecks.any { homeRead.call?.definingClass == it.definingClass && homeRead.call?.name == it.name })
                 val homeGateRegister = (originalHome[copyAt] as OneRegisterInstruction).registerA
                 val homeFlagRegister = (originalHome[homeFlag] as OneRegisterInstruction).registerA
                 assertTrue("$name: the copy's answer v$homeGateRegister isn't a local of ${home.localRegisterCount()}",
