@@ -152,9 +152,10 @@ function Assert-AuditLease {
     $leasePath = Join-Path $LeaseDirectory "$Serial.json"
     # Keep ownership validation and renewal under the same exclusive file handle. Another session
     # waiting for the phone may be reading the lease right now, so a sharing violation is retried
-    # for a few seconds. A missing lease or a lock that outlasts the retries still stops the audit.
+    # for up to half a minute (a 0.23.0 release walk lost 35 minutes to a hold longer than the old
+    # four seconds). A missing lease or a lock that outlasts the retries still stops the audit.
     $stream = $null
-    foreach ($delay in @(100, 250, 500, 1000, 2000, 0)) {
+    foreach ($delay in @(100, 250, 500, 1000, 2000, 4000, 8000, 15000, 0)) {
         try {
             $stream = [IO.File]::Open($leasePath, [IO.FileMode]::Open, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
             break
