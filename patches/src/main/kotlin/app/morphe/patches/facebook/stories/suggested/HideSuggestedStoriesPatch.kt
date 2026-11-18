@@ -10,13 +10,17 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patches.facebook.feed.TREE_JNI
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.treeFieldKey
 import app.morphe.patches.facebook.media.taptoplay.isEnumNaming
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
+import app.morphe.patches.facebook.misc.resignedtrust.FB_USER_SESSION
+import app.morphe.patches.facebook.misc.resignedtrust.sessionLookup
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.classDefForEachReferencing
@@ -40,6 +44,8 @@ internal const val SEEN_STUB = "seen"
 internal const val OWNER_TYPE_STUB = "ownerType"
 internal const val BUCKET_ID_STUB = "bucketId"
 internal const val EXPIRES_STUB = "expires"
+internal const val OWNER_ID_STUB = "ownerId"
+internal const val USER_SESSION_STUB = "userSession"
 
 /** The extension method each tray fetch asks before it sets [SKIP_PROMPT_CARDS]. */
 internal const val SKIP_PROMPT_CARDS_HOOK = "$SUGGESTED_STORIES->skipPromptCards(Z)Z"
@@ -262,8 +268,8 @@ private fun requirePublic(classDef: ClassDef, what: String) {
 /**
  * Fills the extension's stubs: whether an item is a bucket, its type, its suggested flag, its first
  * label, an ImmutableList of what's kept, and, when the build has them, its seen flag, its owner's
- * type name, its id and its expiration_time. Each uses only its parameter registers, so the stub's
- * own register count doesn't matter.
+ * type name and id, the signed-in session, its id and its expiration_time. Each uses only its
+ * parameter registers, so the stub's own register count doesn't matter.
  */
 internal fun BytecodePatchContext.fillBucketStubs(tray: TrayBuckets) {
     val filter = mutableClassDefBy(SUGGESTED_STORIES)
@@ -344,6 +350,39 @@ internal fun BytecodePatchContext.fillBucketStubs(tray: TrayBuckets) {
                 return-object p0
             """,
         )
+        // Your own story keeps its place (#510). Facebook tells it the same way: the owner tree's id
+        // against the session's user id. A build without a lookup leaves the session stub, so no
+        // story counts as yours and the switches work as before.
+        stub(OWNER_ID_STUB, "Ljava/lang/Object;", "Ljava/lang/Object;", "I").addInstructions(
+            0,
+            """
+                check-cast p0, ${tray.bucket}
+                invoke-interface { p0 }, ${tray.bucket}->${tray.owner}()${tray.ownerType}
+                move-result-object p0
+                if-eqz p0, :none
+                check-cast p0, $TREE_JNI
+                const p1, ${treeFieldKey(ID_FIELD)}
+                invoke-virtual { p0, p1 }, $TREE_JNI->getString(I)Ljava/lang/String;
+                move-result-object p0
+                :none
+                return-object p0
+            """,
+        )
+        val lookup = try {
+            sessionLookup()
+        } catch (_: PatchException) {
+            null
+        }
+        if (lookup != null) {
+            stub(USER_SESSION_STUB, "Ljava/lang/Object;", "Landroid/content/Context;").addInstructions(
+                0,
+                """
+                    invoke-static { p0 }, ${lookup.definingClass}->${lookup.name}(Landroid/content/Context;)$FB_USER_SESSION
+                    move-result-object p0
+                    return-object p0
+                """,
+            )
+        }
     }
     if (tray.id) {
         stub(BUCKET_ID_STUB, "Ljava/lang/Object;", "Ljava/lang/Object;").addInstructions(

@@ -34,10 +34,17 @@ public final class SuggestedStoriesForTests {
         FEATURED_HIGHLIGHTS_STORY, HIGHLIGHTED_STORY
     }
 
+    /** The signed-in account the stand-in stubs answer with. */
+    public static final String VIEWER = "100001";
+
+    /** What the stand-in's viewerId() answers: {@link #VIEWER} unless a test changes it. */
+    static String viewer = VIEWER;
+
     /**
      * Stands in for a bucket: its is_story_bucket_suggested flag, its first label, or null for a
      * bucket with none, its story_bucket_type, which is STORY unless a test says otherwise, its
-     * is_bucket_seen_by_viewer flag and its owner's type name, null for a bucket with no owner.
+     * is_bucket_seen_by_viewer flag, its owner's type name, null for a bucket with no owner, and its
+     * owner's id.
      */
     public static final class Bucket {
         public final boolean suggested;
@@ -45,21 +52,23 @@ public final class SuggestedStoriesForTests {
         public final Object type;
         public final boolean seen;
         public final Object owner;
+        public final Object ownerId;
 
         public Bucket(boolean suggested, Object label) {
             this(suggested, label, Type.STORY);
         }
 
         public Bucket(boolean suggested, Object label, Object type) {
-            this(suggested, label, type, false, null);
+            this(suggested, label, type, false, null, null);
         }
 
-        private Bucket(boolean suggested, Object label, Object type, boolean seen, Object owner) {
+        private Bucket(boolean suggested, Object label, Object type, boolean seen, Object owner, Object ownerId) {
             this.suggested = suggested;
             this.label = label;
             this.type = type;
             this.seen = seen;
             this.owner = owner;
+            this.ownerId = ownerId;
         }
 
         /** A bucket of [type] that no flag or label marks. */
@@ -69,17 +78,22 @@ public final class SuggestedStoriesForTests {
 
         /** This bucket, watched to its last story. */
         public Bucket watched() {
-            return new Bucket(suggested, label, type, true, owner);
+            return new Bucket(suggested, label, type, true, owner, ownerId);
         }
 
         /** This bucket, posted by an owner whose type name is [typeName], such as "User" or "Page". */
         public Bucket ownedBy(Object typeName) {
-            return new Bucket(suggested, label, type, seen, typeName);
+            return new Bucket(suggested, label, type, seen, typeName, ownerId);
+        }
+
+        /** This bucket, posted by the owner with this id. */
+        public Bucket postedBy(Object id) {
+            return new Bucket(suggested, label, type, seen, owner, id);
         }
 
         @Override
         public String toString() {
-            return "Bucket(" + suggested + ", " + label + ", " + type + ", " + seen + ", " + owner + ")";
+            return "Bucket(" + suggested + ", " + label + ", " + type + ", " + seen + ", " + owner + ", " + ownerId + ")";
         }
     }
 
@@ -131,6 +145,16 @@ public final class SuggestedStoriesForTests {
         @Override
         public Object ownerType(Object bucket) {
             return ((Bucket) bucket).owner;
+        }
+
+        @Override
+        public Object ownerId(Object bucket) {
+            return ((Bucket) bucket).ownerId;
+        }
+
+        @Override
+        public String viewerId() {
+            return viewer;
         }
     };
 

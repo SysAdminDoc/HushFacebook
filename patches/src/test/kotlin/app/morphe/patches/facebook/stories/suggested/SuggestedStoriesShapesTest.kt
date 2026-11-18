@@ -386,6 +386,8 @@ class SuggestedStoriesShapesTest {
         assertTrue(declares(TYPE_STUB, listOf("Ljava/lang/Object;"), "Ljava/lang/Object;"))
         assertTrue(declares(BUCKET_ID_STUB, listOf("Ljava/lang/Object;"), "Ljava/lang/Object;"))
         assertTrue(declares(EXPIRES_STUB, listOf("Ljava/lang/Object;", "J"), "Ljava/lang/Object;"))
+        assertTrue(declares(OWNER_ID_STUB, listOf("Ljava/lang/Object;", "I"), "Ljava/lang/Object;"))
+        assertTrue(declares(USER_SESSION_STUB, listOf("Landroid/content/Context;"), "Ljava/lang/Object;"))
         assertEquals(ID_FIELD, ExtensionDex.stringConstant(SUGGESTED_STORIES, "ID_FIELD"))
         assertEquals(EXPIRATION_FIELD, ExtensionDex.stringConstant(SUGGESTED_STORIES, "EXPIRATION_FIELD"))
         assertEquals(BUCKET_TYPE_FIELD, ExtensionDex.stringConstant(SUGGESTED_STORIES, "BUCKET_TYPE_FIELD"))

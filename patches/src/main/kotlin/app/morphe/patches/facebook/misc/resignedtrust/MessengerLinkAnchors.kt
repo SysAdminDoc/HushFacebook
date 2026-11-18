@@ -122,6 +122,14 @@ internal fun BytecodePatchContext.findMessengerLinkAnchors(): MessengerLinkAncho
         if (!AccessFlags.PUBLIC.isSet(read.accessFlags)) missing("${reader.type}->${read.name} isn't public")
     }
 
+    return MessengerLinkAnchors(sessionLookup(), reader, optOut, triggered)
+}
+
+/**
+ * One of Facebook's Context-to-session lookups. They all have to end with the same call, or which
+ * one is used would matter and none is taken.
+ */
+internal fun BytecodePatchContext.sessionLookup(): Method {
     val lookups = mutableListOf<Pair<Method, String>>()
     classDefForEach { classDef ->
         classDef.methods.forEach { method -> sessionLookupEnd(classDef, method)?.let { lookups += method to it } }
@@ -129,8 +137,7 @@ internal fun BytecodePatchContext.findMessengerLinkAnchors(): MessengerLinkAncho
     if (lookups.isEmpty()) missing("found no public static (Context) lookup of the FbUserSession")
     val ends = lookups.map { it.second }.toSet()
     if (ends.size != 1) missing("the session lookups end with ${ends.size} different calls: ${ends.joinToString()}")
-    val session = lookups.map { it.first }.minBy { it.definingClass + "->" + it.name }
-    return MessengerLinkAnchors(session, reader, optOut, triggered)
+    return lookups.map { it.first }.minBy { it.definingClass + "->" + it.name }
 }
 
 /**

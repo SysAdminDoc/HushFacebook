@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.stories;
 
 import android.app.Activity;
+import android.content.Context;
 
 import androidx.annotation.Nullable;
 
@@ -137,6 +138,9 @@ public final class SuggestedStories {
     /** What a story that left the tray because you haven't watched it yet is counted under (#340). */
     static final String UNWATCHED = "not watched yet";
 
+    /** The user id Facebook gives a session with nobody signed in, which owns nothing. */
+    private static final String NO_ACCOUNT = "0";
+
     /** Debug intake is bounded and never expands an enum constant into a person's bucket fields. */
     private static final int TYPE_DIAGNOSTIC_ITEMS = 256;
     private static final int TYPE_DIAGNOSTIC_NAMES = 16;
@@ -212,6 +216,18 @@ public final class SuggestedStories {
         default Object expires(Object bucket) {
             return UNPATCHED;
         }
+
+        /** The id of the bucket's owner, null for none, or {@link #UNPATCHED}. */
+        @Nullable
+        default Object ownerId(Object bucket) {
+            return UNPATCHED;
+        }
+
+        /** The signed-in account's user id, or null when it can't be told. */
+        @Nullable
+        default String viewerId() {
+            return null;
+        }
     }
 
     static final Buckets PATCHED = new Buckets() {
@@ -266,6 +282,19 @@ public final class SuggestedStories {
         @Override
         public Object expires(Object bucket) {
             return SuggestedStories.expires(bucket, 0L);
+        }
+
+        @Nullable
+        @Override
+        public Object ownerId(Object bucket) {
+            return SuggestedStories.ownerId(bucket, 0);
+        }
+
+        @Nullable
+        @Override
+        public String viewerId() {
+            Context context = Utils.getContext();
+            return context == null ? null : StorySeen.account(userSession(context));
         }
     };
 
@@ -404,6 +433,8 @@ public final class SuggestedStories {
             ArrayList<Object> kept = null;
             ArrayList<Object> last = null;
             int held = 0;
+            String viewer = null;
+            boolean viewerRead = false;
             for (int index = 0; index < buckets.size(); index++) {
                 Object bucket = buckets.get(index);
                 String kind = kindOf(bucket, access, switches.pageStories);
@@ -414,6 +445,16 @@ public final class SuggestedStories {
                         : switches.leavesUnwatched(kind) && unwatched(bucket, access) ? UNWATCHED
                         : switches.leavesPassed(kind) && passed(bucket, access) ? PassedStories.PASSED : null;
                 boolean toEnd = leaving == null && switches.movesSeen(kind) && watched(bucket, access);
+                if (toEnd || yourStoryStays(leaving)) {
+                    if (!viewerRead) {
+                        viewer = viewerId(access);
+                        viewerRead = true;
+                    }
+                    if (yours(bucket, access, viewer)) {
+                        leaving = null;
+                        toEnd = false;
+                    }
+                }
                 if (switches.holdsForViewer()
                         && (leaving == null || SEEN.equals(leaving) || PassedStories.PASSED.equals(leaving))
                         && keptForViewer(bucket, access, leaving != null || toEnd)) {
@@ -482,6 +523,41 @@ public final class SuggestedStories {
             HookStatus.threw(FamilyNames.SUGGESTED_STORIES, "tray bucket filter", failure);
             Logger.printException(() -> "Hide suggested stories: could not read the tray's buckets", failure);
             return buckets;
+        }
+    }
+
+    /**
+     * Whether your own story is spared this reason for leaving. These switches are about what other
+     * people post, so Your story keeps its place whether you've watched it or not (#510). A suggestion
+     * or a card leaves as before.
+     */
+    private static boolean yourStoryStays(@Nullable String leaving) {
+        return SEEN.equals(leaving) || UNWATCHED.equals(leaving) || PassedStories.PASSED.equals(leaving)
+                || PAGE_STORY.equals(leaving);
+    }
+
+    /** The signed-in account's id, or null, so no story counts as yours and the switches work as before. */
+    @Nullable
+    private static String viewerId(Buckets access) {
+        try {
+            return access.viewerId();
+        } catch (Throwable failure) {
+            Logger.printDebug(() -> "Stories tray: could not read the signed-in account: " + failure);
+            return null;
+        }
+    }
+
+    /**
+     * Whether [viewer] owns [bucket], the test Facebook's own bucket typing makes: the owner's id equals
+     * the session's user id, which is never "0".
+     */
+    private static boolean yours(Object bucket, Buckets access, @Nullable String viewer) {
+        if (viewer == null || viewer.isEmpty() || NO_ACCOUNT.equals(viewer)) return false;
+        try {
+            return viewer.equals(access.ownerId(bucket));
+        } catch (Throwable failure) {
+            Logger.printDebug(() -> "Stories tray: could not read a bucket's owner: " + failure);
+            return false;
         }
     }
 
@@ -945,6 +1021,25 @@ public final class SuggestedStories {
      */
     public static Object expires(Object bucket, long spare) {
         return UNPATCHED;
+    }
+
+    /**
+     * Injection point, filled in by the patch: the id of the bucket's story_bucket_owner, or null when
+     * it has none. The patch replaces this body with the interface's owner accessor and a read of the
+     * owner tree's id field, whose key goes in {@code spare}. Only an item {@link #isBucket} took may
+     * be passed.
+     */
+    public static Object ownerId(Object bucket, int spare) {
+        return UNPATCHED;
+    }
+
+    /**
+     * Injection point, filled in by the patch: Facebook's lookup of the signed-in FbUserSession for a
+     * Context. Null until then, and on a build without one.
+     */
+    @Nullable
+    public static Object userSession(Context context) {
+        return null;
     }
 
     /** "not suggested 9, suggested 3", in the order each kind first came. */

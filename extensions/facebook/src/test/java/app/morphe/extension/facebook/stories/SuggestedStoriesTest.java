@@ -684,6 +684,56 @@ public class SuggestedStoriesTest {
                 SuggestedStoriesForTests.keptBuckets(tray));
     }
 
+    /**
+     * Issue #510: Your story stays first with Move seen stories to the end on, however much of it
+     * you've watched. A friend's watched story still moves.
+     */
+    @Test
+    public void yourOwnStoryKeepsItsPlaceWhenSeenStoriesMove() {
+        Bucket create = new Bucket(false, null, Type.ADD_TO_STORY).watched();
+        Bucket mine = new Bucket(false, null).ownedBy("User").postedBy(SuggestedStoriesForTests.VIEWER).watched();
+        Bucket friend = new Bucket(false, null).ownedBy("User").postedBy("200002").watched();
+        Bucket fresh = new Bucket(false, null).ownedBy("User").postedBy("300003");
+        Settings.SEEN_STORIES_LAST.save(true);
+        assertEquals(Arrays.asList(create, mine, fresh, friend),
+                SuggestedStoriesForTests.keptBuckets(Arrays.asList(create, mine, friend, fresh)));
+    }
+
+    /** Issue #510: Hide seen stories and Show only watched stories leave Your story in the tray too. */
+    @Test
+    public void yourOwnStoryStaysWithTheSeenSwitches() {
+        Bucket watched = new Bucket(false, null).ownedBy("User").postedBy(SuggestedStoriesForTests.VIEWER).watched();
+        Bucket unwatched = new Bucket(false, null).ownedBy("User").postedBy(SuggestedStoriesForTests.VIEWER);
+        Bucket friendWatched = new Bucket(false, null).ownedBy("User").postedBy("200002").watched();
+        Bucket friendFresh = new Bucket(false, null).ownedBy("User").postedBy("300003");
+
+        Settings.HIDE_SEEN_STORIES.save(true);
+        assertEquals(Arrays.asList(watched, friendFresh),
+                SuggestedStoriesForTests.keptBuckets(Arrays.asList(watched, friendWatched, friendFresh)));
+        Settings.HIDE_SEEN_STORIES.resetToDefault();
+
+        Settings.SHOW_ONLY_WATCHED_STORIES.save(true);
+        assertEquals(Arrays.asList(unwatched, friendWatched),
+                SuggestedStoriesForTests.keptBuckets(Arrays.asList(unwatched, friendWatched, friendFresh)));
+    }
+
+    /** With no account to compare, or the id Facebook gives nobody, no story counts as yours. */
+    @Test
+    public void noStoryIsYoursWithoutAnAccount() {
+        Bucket first = new Bucket(false, null).ownedBy("User").postedBy("0").watched();
+        Bucket fresh = new Bucket(false, null).ownedBy("User").postedBy("300003");
+        List<Bucket> tray = Arrays.asList(first, fresh);
+        Settings.SEEN_STORIES_LAST.save(true);
+        try {
+            SuggestedStoriesForTests.viewer = null;
+            assertEquals(Arrays.asList(fresh, first), SuggestedStoriesForTests.keptBuckets(tray));
+            SuggestedStoriesForTests.viewer = "0";
+            assertEquals(Arrays.asList(fresh, first), SuggestedStoriesForTests.keptBuckets(tray));
+        } finally {
+            SuggestedStoriesForTests.viewer = SuggestedStoriesForTests.VIEWER;
+        }
+    }
+
     /** Paused, Move seen stories to the end leaves Facebook's order alone. */
     @Test
     public void aPauseKeepsTheOrderWithSeenStoriesLast() {

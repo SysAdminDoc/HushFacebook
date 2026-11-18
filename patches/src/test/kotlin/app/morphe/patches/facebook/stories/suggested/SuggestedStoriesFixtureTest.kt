@@ -8,7 +8,9 @@ import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.TREE_JNI
 import app.morphe.patches.facebook.feed.methodsHolding
+import app.morphe.patches.facebook.feed.treeFieldKey
 import app.morphe.patches.facebook.media.taptoplay.isEnumNaming
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -17,6 +19,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -220,6 +223,12 @@ class SuggestedStoriesFixtureTest {
                 assertEquals("${tray.bucket}->$owner()$ownerType", reference(ownerStub[1]))
                 assertEquals(Opcode.IF_EQZ, ownerStub[3].opcode)
                 assertEquals("$ownerType->$TYPE_NAME()Ljava/lang/String;", reference(ownerStub[4]))
+                val ownerIdStub = first(OWNER_ID_STUB)
+                assertEquals("${tray.bucket}->$owner()$ownerType", reference(ownerIdStub[1]))
+                assertEquals(Opcode.IF_EQZ, ownerIdStub[3].opcode)
+                assertEquals(TREE_JNI, ((ownerIdStub[4] as ReferenceInstruction).reference as TypeReference).type)
+                assertEquals(treeFieldKey(ID_FIELD), (ownerIdStub[5] as NarrowLiteralInstruction).narrowLiteral)
+                assertEquals("$TREE_JNI->getString(I)Ljava/lang/String;", reference(ownerIdStub[6]))
                 assertEquals("${tray.bucket}->$GET_ID()Ljava/lang/String;", reference(first(BUCKET_ID_STUB)[1]))
                 val expiresStub = first(EXPIRES_STUB)
                 assertEquals("${tray.bucket}->${tray.expires}()J", reference(expiresStub[1]))
