@@ -201,6 +201,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/ReactionBubbles.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook from Facebook 587 (#483): finds the render of the friend bubble row over feed media and has it answer null while a switch is on."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/StoryOverlayVideo.java"
       ],
       "origin": "original",

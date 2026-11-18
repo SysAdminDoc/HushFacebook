@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 ### Added
 
 * `Ask before reacting to a story` under Stories makes a tap on a reaction at the bottom of a story ask "React to this story?" first. The story pauses while the question is up, and only Continue sends the reaction. Cancel, Back or a tap outside sends nothing and the story plays on. It's part of `Ask before a like` and starts off. (#502)
+* `Hide friends' reactions on photos and videos` under News feed takes away the little picture of a friend with their reaction on it that Facebook puts in the corner of a photo or video someone you know reacted to. It's off until you turn it on. (#483)
 
 ### Changed
 

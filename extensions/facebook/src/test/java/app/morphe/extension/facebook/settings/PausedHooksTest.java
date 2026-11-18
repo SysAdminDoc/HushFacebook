@@ -552,7 +552,9 @@ public class PausedHooksTest {
                 PostPrompts::hideReactionPreview,
                 () -> PostPrompts.hideReactionPreview(true),
                 // So is the count beside a post's faces.
-                () -> PostPrompts.reactionCount("56") == null));
+                () -> PostPrompts.reactionCount("56") == null,
+                // The friend bubbles over a post's media are left out.
+                PostPrompts::hideReactionBubbles));
         // A post header gets no person to draw a picture from, and a comment row no picture to add.
         probes.put(PatchFamily.PROFILE_PICTURES, Arrays.asList(
                 () -> ProfilePictures.feedPicture("person") == null,

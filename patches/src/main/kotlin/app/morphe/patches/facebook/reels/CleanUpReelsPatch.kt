@@ -270,9 +270,12 @@ internal fun BytecodePatchContext.reelsTabAudioLine(): MutableMethod {
     return mutableClassDefBy(owner).methods.first { it.sameSignatureAs(row) }
 }
 
-/** Asks [hook] first thing and answers null when it says so. v0 is free there, as in [answerWhen]. */
-internal fun MutableMethod.returnNullWhen(hook: String) {
-    requireLocals(PATCH, 1)
+/**
+ * Asks [hook] first thing and answers null when it says so. v0 is free there, as in [answerWhen].
+ * [patch] names the patch in the refusal when the method has no local to use.
+ */
+internal fun MutableMethod.returnNullWhen(hook: String, patch: String = PATCH) {
+    requireLocals(patch, 1)
     addInstructionsWithLabels(
         0,
         """

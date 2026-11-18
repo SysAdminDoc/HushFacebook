@@ -438,4 +438,33 @@ public final class PostPrompts {
             return text;
         }
     }
+
+    private static volatile boolean bubblesLogged;
+
+    /** Counted under the patch's name each time the friend bubbles over a post's media are left out. */
+    static final String BUBBLES_HIDDEN = "Friend reaction bubbles kept out";
+
+    /**
+     * The hook, first thing in the render of the bubble row Facebook lays over a post's photo or
+     * video: each friend who reacted, as their picture with their reaction on it (#483). True makes
+     * the render answer null, its own answer for a post with no bubbles, so nothing is drawn over the
+     * media. False, which is the answer while the switch is off, paused, before the settings are
+     * ready or when anything here fails, lets Facebook draw the row.
+     */
+    public static boolean hideReactionBubbles() {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.HIDE_REACTION_BUBBLES.get()) return false;
+            HookStatus.bound(FAMILY, "reaction bubbles");
+            HookStatus.counted(FAMILY, BUBBLES_HIDDEN);
+            if (!bubblesLogged) {
+                bubblesLogged = true;
+                Logger.printDebug(() -> "Post prompts: a post's friend reaction bubbles were left out");
+            }
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reaction bubbles", failure);
+            return false;
+        }
+    }
 }

@@ -65,7 +65,9 @@ internal const val STORY_MODEL = "Lcom/facebook/graphql/model/GraphQLStory;"
  * buttons by having their one text builder give its zero answer (PostCounts.kt, #180). The fourth,
  * also off, leaves the reaction faces and the reactions count under a post undrawn, and blanks the
  * count text beside the faces (ReactionPreview.kt, #158). The fifth, also off, takes the X off the top
- * of feed posts by having the check that offers it answer no (PostXButton.kt, #389).
+ * of feed posts by having the check that offers it answer no (PostXButton.kt, #389). The sixth, also
+ * off, leaves out the friend bubbles Facebook lays over a post's photo or video by having their row's
+ * render answer null (ReactionBubbles.kt, #483).
  */
 @Suppress("unused")
 val hidePostPromptsPatch = bytecodePatch(
@@ -73,9 +75,9 @@ val hidePostPromptsPatch = bytecodePatch(
     name = "Hide post prompts",
     description = "Removes the strip Facebook adds to some posts, like \"Are you interested in this post?\", " +
         "\"Show less\" or follow suggestions, so posts look less cluttered. No gap is left. On by default. Turn " +
-        "it off in Hushfacebook settings > News feed. Six more switches there, Hide the Follow link on posts, " +
-        "Hide the Subscribe link on posts, Hide the Join button on posts, Hide the X on posts, Hide counts on posts " +
-        "and Hide the reaction preview on posts, start off.",
+        "it off in Hushfacebook settings > News feed. Seven more switches there, Hide the Follow link on posts, " +
+        "Hide the Subscribe link on posts, Hide the Join button on posts, Hide the X on posts, Hide counts on posts, " +
+        "Hide the reaction preview on posts and Hide friends' reactions on photos and videos, start off.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -88,6 +90,7 @@ val hidePostPromptsPatch = bytecodePatch(
         hidePostCounts()
         hideReactionPreview()
         hideReactionCount()
+        hideReactionBubbles()
         enableStatus("postPrompts")
     }
 }

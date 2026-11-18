@@ -310,6 +310,9 @@ final class FeedPages {
                         L10n.t("Hides the stacked reaction icons and the reactions count under posts. The space stays, "
                                 + "so a tap where they were still opens the list of reactions. To take the number off the Like "
                                 + "button too, turn on Hide counts on posts.")));
+                feed.addPreference(toggle(context, Settings.HIDE_REACTION_BUBBLES,
+                        L10n.t("Takes away the friend's picture with a reaction on it that Facebook puts on a photo or "
+                                + "video when a friend reacted. A change shows on the posts drawn after it.")));
             }
             if (build.contains(PatchFamily.PROFILE_PICTURES)) {
                 // Read as each post's header is built, so a change shows on the posts drawn after it.

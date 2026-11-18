@@ -3333,6 +3333,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_comment_reaction_preview", FALSE);
 
     /**
+     * The friend bubbles over a post's photo or video, each a friend's picture with the reaction they
+     * left, are left out, and the media is drawn as for a post nobody Facebook shows reacted to
+     * ({@link app.morphe.extension.facebook.feed.PostPrompts#hideReactionBubbles}, #483). Off by
+     * default. A change shows on the posts drawn after it.
+     */
+    public static final BooleanSetting HIDE_REACTION_BUBBLES =
+            new BooleanSetting("hushfacebook_hide_reaction_bubbles", FALSE);
+
+    /**
      * The profile picture leaves the top of posts, and the name moves over into its space
      * ({@link app.morphe.extension.facebook.feed.ProfilePictures}, #400). Off by default. Read as each
      * post's header draws.
