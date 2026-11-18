@@ -9,6 +9,10 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 * The README is about half as long. The patch list moved to [docs/patches.md](https://github.com/SysAdminDoc/Hushfacebook/blob/main/docs/patches.md) and the help topics to [docs/help.md](https://github.com/SysAdminDoc/Hushfacebook/blob/main/docs/help.md), and the README links to each topic.
 * The changelog starts at 0.20.0 now, so Morphe Manager has a lot less to download when it shows what changed. Versions 0.1.0 to 0.19.0 are in the [changelog archive](https://github.com/SysAdminDoc/Hushfacebook/blob/main/docs/changelog-archive.md), word for word.
 
+### Fixed
+
+* With `Open comments at` on `Full height` or `Half height`, Comment on the Reels tab now slides the regular sheet straight up over the reel. Before, the reel shrank into the top of the screen first, the way Facebook's split view opens, and at full height the sheet covered it a moment later. (#501)
+
 ## 0.23.0 (2026-11-17)
 
 * This one moves to Facebook 587.0.0.39.55 and needs Morphe Manager 2.6.0 or newer, so update Manager and grab the new Facebook APK before you repatch. Long posts and comments can fold at however many lines you pick, and a video you started can keep playing after you leave Facebook. Facebook's new Repost button can go too. Reels can fill a tall screen, watched stories can move to the end of the tray, the location page you get after signing in is skipped, and there's a Hushfacebook icon for the home screen and notifications. The settings come in Thai now. On the fix side, reels with a "Popular near you" line show their date again, and a post you hid stays hidden when you refresh.

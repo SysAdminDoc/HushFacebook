@@ -47,7 +47,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * alone.
  *
  * <p>A reel's or a feed video's Comment button first tries Facebook's split screen, the video on
- * top and the comments under it, through five launchers that each answer whether they opened it.
+ * top and the comments under it, through six launchers that each answer whether they opened it.
+ * The sixth, which the Reels tab tries last, shrinks the reel into the top of the screen (#501).
  * Each already answers no when its server gate is off, and the button then opens the regular
  * sheet. The patch asks {@link #skipSplitScreen} first in each, so with the switch on they answer
  * no and the regular sheet, at full height, opens instead.

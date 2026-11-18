@@ -68,6 +68,14 @@ internal const val UNIT_NOT_MEASURED = "unit_view_not_measured"
 /** The reason the two watch-and-comment launchers log when they don't open the split screen. */
 internal const val NOT_ENTERED = "split_screen_not_entered"
 
+/** The kept launcher of Facebook's video split screen, which shrinks a reel into the top of the screen above the comments. */
+internal const val VIDEO_SPLIT_SCREEN = "Lcom/facebook/video/platform/splitscreen/launcher/SplitScreenLauncher;"
+
+/** The kept base of what [VIDEO_SPLIT_SCREEN] shows under the video, the comments among them. */
+internal const val SPLIT_SCREEN_VIEW = "Lcom/facebook/video/platform/splitscreen/viewprovider/BaseSplitScreenViewProvider;"
+
+private const val FUNCTION0 = "Lkotlin/jvm/functions/Function0;"
+
 private const val INTENT = "Landroid/content/Intent;"
 
 /** What a reel description's tap logs when it opens the comments of a feed video's reel, held by its click handler. */
@@ -135,6 +143,13 @@ private const val INT_VALUE = "Ljava/lang/Number;->intValue()I"
  * `LX/4Uk;->A08`; 586's Android 9 build asks a string table for the footer, `LX/07hI;->A00(I)` from
  * `LX/0gHt;->A00` and `LX/0grM;->A00`), and two as the boolean methods holding [NOT_ENTERED] (583 `LX/Xv4;->A00`,
  * `LX/Xys;->A01`; 587 asks a string table for it). First thing in each, the extension is asked, and a yes answers false.
+ *
+ * When those say no, the Reels tab's button (587 `LX/0CPs;->A00`) tries a sixth, [VIDEO_SPLIT_SCREEN]'s
+ * opener (587 arm64 `A0f`, x86_64 `A0g`), before the regular sheet. It shrinks the reel into the top of
+ * the screen and opens the comments under it, and a full-height sheet then covers the shrunken reel a
+ * moment later (#501). It's the one instance boolean method of that class taking a [SPLIT_SCREEN_VIEW]
+ * and a Function0, and all six of its callers open the regular sheet (`LX/0OoH;->A01`) on a no or
+ * hand the no back to a caller that does. It's hooked the same way as the five.
  *
  * A tap on a feed video reel's description (585 `LX/0dPx;->A00`, the click handler of
  * `FbShortsViewerDescriptionComponentSpec`) reads a server gate, and when it's open tries the split
@@ -208,7 +223,7 @@ val fullHeightCommentsPatch = bytecodePatch(
         val launchers = splitScreenLaunchers(
             (footerNamers() + holders(UNIT_NOT_MEASURED)).distinctBy { it.type },
             notEnteredNamers(),
-        )
+        ) + videoSplitScreenOpener(classDefByOrNull(VIDEO_SPLIT_SCREEN) ?: refuse("$VIDEO_SPLIT_SCREEN isn't in this build"))
         val popover = classDefByOrNull(SIMPLE_POPOVER) ?: refuse("$SIMPLE_POPOVER isn't in this build")
         val ufiPopover = classDefByOrNull(UFI_POPOVER) ?: refuse("$UFI_POPOVER isn't in this build")
         val fills = fillsScreenSite(popover, ufiPopover)
@@ -316,6 +331,25 @@ internal fun splitScreenLaunchers(factoryHolders: List<ClassDef>, notEntered: Li
         if (launcher.localRegisterCount() < 1) refuse("${launcher.descriptor()} has no local register for the hook")
     }
     return launchers
+}
+
+/**
+ * [VIDEO_SPLIT_SCREEN]'s opener in [launcher]: its one instance method answering a boolean that takes a
+ * [SPLIT_SCREEN_VIEW] and a Function0. It needs a local register for the hook.
+ */
+internal fun videoSplitScreenOpener(launcher: ClassDef): Method {
+    val openers = launcher.methods.filter { method ->
+        val types = method.parameterTypes.map(CharSequence::toString)
+        !AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Z" && method.implementation != null &&
+            SPLIT_SCREEN_VIEW in types && FUNCTION0 in types
+    }
+    val opener = openers.singleOrNull()
+        ?: refuse(
+            "expected one instance boolean method of $VIDEO_SPLIT_SCREEN taking $SPLIT_SCREEN_VIEW and $FUNCTION0, " +
+                "found ${openers.size}: ${openers.joinToString { it.descriptor() }}",
+        )
+    if (opener.localRegisterCount() < 1) refuse("${opener.descriptor()} has no local register for the hook")
+    return opener
 }
 
 /**

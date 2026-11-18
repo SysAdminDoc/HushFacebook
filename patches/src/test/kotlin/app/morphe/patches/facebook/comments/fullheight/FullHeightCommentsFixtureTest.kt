@@ -41,7 +41,8 @@ import java.io.File
  * the one the constructor stores in the parameters' float field. The hook hands that register to
  * the extension as a range call first thing and keeps the answer in it, and nothing of Facebook's
  * code moves. Five split-screen launchers are found, three by the factory Intent they build and
- * two by the reason they log, each a boolean method with a local register; each asks the
+ * two by the reason they log, and a sixth, the video split screen's opener the Reels tab tries
+ * next (#501), by what it takes, each a boolean method with a local register; each asks the
  * extension first, a yes answers false, and a no lands on Facebook's first instruction. The comment
  * sheet's "fill the screen?" answer reads one float of the sheet's fragment, and the hook hands it
  * to the extension first (in the override through 583, right after the popover's cast to the
@@ -134,8 +135,14 @@ class FullHeightCommentsFixtureTest {
         )
         assertEquals("$name: five split-screen launchers", 5, launchers.size)
         assertEquals("$name: three build the split screen's Intent", 3, launchers.count(::buildsSplitScreen))
+        val opener = videoSplitScreenOpener(FixtureDex.classes(bundle, setOf(VIDEO_SPLIT_SCREEN)).values.single())
+        assertEquals("$name: the video split screen's opener is its launcher's own", VIDEO_SPLIT_SCREEN, opener.definingClass)
+        assertTrue(
+            "$name: the video split screen's opener ${opener.descriptor()} is one of the five",
+            launchers.none { it.descriptor() == opener.descriptor() },
+        )
 
-        for (launcher in launchers) {
+        for (launcher in launchers + opener) {
             val where = "$name: ${launcher.descriptor()}"
             assertEquals("$where answers with a boolean", "Z", launcher.returnType)
             val owner = FixtureDex.classes(bundle, setOf(launcher.definingClass)).values.single()
