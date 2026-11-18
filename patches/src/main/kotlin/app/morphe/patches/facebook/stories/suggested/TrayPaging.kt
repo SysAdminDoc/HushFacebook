@@ -11,6 +11,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.shared.readsMobileConfig
 import app.morphe.util.singleOrPatchException
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -58,17 +59,13 @@ internal const val SHOW_PLACEHOLDER_METHOD = "hushShowPlaceholder"
 /** The bucket id the tray's placeholder tiles hand the tile handler. */
 internal const val PLACEHOLDER_BUCKET = "placeholder_bucket_id"
 
-internal const val MOBILE_CONFIG = "Lcom/facebook/mobileconfig/factory/MobileConfigUnsafeContext;"
-
 /**
- * The tray's tile [handler] and its [shown] method, the [flag] read the placeholder path checks
- * before loading and the index of that read's move-result, and the placeholder tile's [hidden]
- * method.
+ * The tray's tile [handler] and its [shown] method, the index of the move-result of the flag the
+ * placeholder path checks before loading, and the placeholder tile's [hidden] method.
  */
 internal class TrayPagingAnchors(
     val handler: String,
     val shown: Method,
-    val flag: MethodReference,
     val flagResult: Int,
     val hidden: Method,
 )
@@ -81,7 +78,8 @@ internal fun isTileShown(method: Method): Boolean =
 /**
  * Reads the tray's tile handler: the one class outside the extension with an [isTileShown] method.
  * In it, the register holding whether the bucket is [PLACEHOLDER_BUCKET], the first branch that
- * skips the placeholder path when it isn't, and the first MobileConfig boolean read after it.
+ * skips the placeholder path when it isn't, and the first MobileConfig boolean read after it, which
+ * 588 makes through a static helper taking the config as an Object.
  * Then the placeholder tile: the class calling the handler's interface method with
  * [PLACEHOLDER_BUCKET], and its other method holding the string, which hands it on as a String.
  */
@@ -102,7 +100,7 @@ internal fun BytecodePatchContext.trayPagingAnchors(): TrayPagingAnchors {
         body[index].opcode == Opcode.IF_EQZ && (body[index] as OneRegisterInstruction).registerA == isPlaceholder
     } ?: throw PatchException("$PATCH: ${handler.type}->${shown.name} has no placeholder path")
     val read = (skip + 1 until body.size).firstOrNull { index ->
-        body[index].methodRef()?.let { it.definingClass == MOBILE_CONFIG && it.returnType == "Z" } == true
+        readsMobileConfig(body[index], "Z") { classDefByOrNull(it) }
     } ?: throw PatchException("$PATCH: ${handler.type}->${shown.name}'s placeholder path reads no MobileConfig flag")
     if (body.getOrNull(read + 1)?.opcode != Opcode.MOVE_RESULT) {
         throw PatchException("$PATCH: ${handler.type}->${shown.name} doesn't keep its placeholder flag")
@@ -122,7 +120,7 @@ internal fun BytecodePatchContext.trayPagingAnchors(): TrayPagingAnchors {
             calls.any { it.parameterTypes.map { p -> p.toString() } == listOf("Ljava/lang/String;") && it.returnType == "V" }
     }.singleOrPatchException("$PATCH: ${tile.type}'s method for a placeholder leaving view")
 
-    return TrayPagingAnchors(handler.type, shown, body[read].methodRef()!!, read + 1, hidden)
+    return TrayPagingAnchors(handler.type, shown, read + 1, hidden)
 }
 
 /**

@@ -8,6 +8,7 @@ import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.shared.readsMobileConfig
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -37,14 +38,14 @@ class TrayPagingFixtureTest {
     /** The tile handler, its tile method and the placeholder tile's leaving method, per build and then by the bundle's ABI. */
     private val expected = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to listOf("LX/02ie;", "Iar", "LX/04hw;->JMN"),
-            "armeabi-v7a" to listOf("LX/02ik;", "Ian", "LX/04hd;->JMI"),
+            "arm64-v8a" to listOf("LX/02uq;", "JTD", "LX/04jS;->KF3"),
+            "armeabi-v7a" to listOf("LX/02uq;", "JTD", "LX/04jS;->KF3"),
             "arm64-v8a-minapi28-storeless" to listOf("LX/02gs;", "ICS", "LX/04gO;->IxQ"),
         ),
     )
 
-    /** The placeholder-load flag the handler reads on 587, both ABIs (586's was 0x101029900041fab, 585's 0x101029900041f52). */
-    private val flagKey = 0x101029600042008L
+    /** The placeholder-load flag the handler reads on 588, both ABIs (587's was 0x101029600042008, 586's 0x101029900041fab). */
+    private val flagKey = 0x101029200042059L
 
     private fun <T> Map<String, Map<String, T>>.pin(version: String, bundle: File): T =
         getValue(version)[bundle.name.substringAfter("-$version-").substringBefore(".apkm")]
@@ -73,15 +74,27 @@ class TrayPagingFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val (handler, shownName, hiddenName) = expected.pin(version, bundle)
-                val context = PatchContexts.of(FixtureDex.classesHolding(bundle, PLACEHOLDER_BUCKET) + ExtensionDex.classDef(TRAY_PAGING))
+                val holders = FixtureDex.classesHolding(bundle, PLACEHOLDER_BUCKET)
+                // 588 reads the flag through a static helper taking the config as an Object.
+                val helpers = FixtureDex.classes(bundle, holders.flatMap { holder ->
+                    holder.methods.flatMap { method ->
+                        method.implementation?.instructions?.toList().orEmpty().mapNotNull { instruction ->
+                            ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.takeIf { called ->
+                                called.returnType == "Z" &&
+                                    called.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;", "J")
+                            }?.definingClass
+                        }
+                    }
+                }.toSet())
+                val context = PatchContexts.of(holders + helpers.values + ExtensionDex.classDef(TRAY_PAGING))
                 val anchors = with(context) { trayPagingAnchors() }
                 assertEquals("${bundle.name}: the tile handler", handler, anchors.handler)
                 assertEquals("${bundle.name}: its tile method", shownName, anchors.shown.name)
                 assertEquals("${bundle.name}: the placeholder leaving view", hiddenName, "${anchors.hidden.definingClass}->${anchors.hidden.name}")
-                assertEquals("${bundle.name}: a MobileConfig boolean", listOf(MOBILE_CONFIG, "Z"), listOf(anchors.flag.definingClass, anchors.flag.returnType))
 
                 val shown = body(anchors.shown)
                 val read = anchors.flagResult - 1
+                assertTrue("${bundle.name}: a MobileConfig boolean", readsMobileConfig(shown[read], "Z", helpers::get))
                 val key = shown.subList(0, read).mapNotNull(::literal).lastOrNull()
                 assertEquals("${bundle.name}: the placeholder-load flag", flagKey, key)
                 val flagRegister = (shown[anchors.flagResult] as OneRegisterInstruction).registerA
