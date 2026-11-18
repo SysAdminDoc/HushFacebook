@@ -311,12 +311,44 @@ class StorySeenMarkingShapesTest {
     private fun starter(vararg methods: Method): ClassDef =
         ImmutableClassDef(starterType, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null, null, methods.toList())
 
+    private fun checkIn(owner: ClassDef): Method? = startCheck(owner) { null }
+
+    private val cardChecksType = "Lfixture/CardChecks;"
+
+    /** 588's start check (arm64 `LX/0BAD;->ILp`): no local, the card cast and handed to a static helper. */
+    private fun bridge(lead: List<Instruction> = emptyList()) = method(
+        starterType, "ILp", listOf("Ljava/lang/Object;"), "Z", 2,
+        lead + listOf(
+            ImmutableInstruction21c(Opcode.CHECK_CAST, 1, ImmutableTypeReference(STORY_CARD)),
+            // Seven code units on, to the const.
+            ImmutableInstruction21t(Opcode.IF_EQZ, 1, 7),
+            invoke(Opcode.INVOKE_STATIC, ImmutableMethodReference(cardChecksType, "A00", listOf(STORY_CARD), "Z"), 1),
+            ImmutableInstruction11x(Opcode.MOVE_RESULT, 0),
+            ImmutableInstruction11x(Opcode.RETURN, 0),
+            ImmutableInstruction11n(Opcode.CONST_4, 0, 0),
+            ImmutableInstruction11x(Opcode.RETURN, 0),
+        ),
+    )
+
+    /** The class of that helper (arm64 `LX/0BAF;`), which asks the card for getMedia() and the seen flag, then [extra]. */
+    private fun cardChecks(extra: List<Instruction> = emptyList()): ClassDef = ImmutableClassDef(
+        cardChecksType, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null, null,
+        listOf(
+            method(
+                cardChecksType, "A00", listOf(STORY_CARD), "Z", 2,
+                listOf(invoke(Opcode.INVOKE_VIRTUAL, getMedia, 1), result(0), invoke(Opcode.INVOKE_VIRTUAL, seenFlag, 1)) + extra +
+                    listOf(ImmutableInstruction11x(Opcode.MOVE_RESULT, 0), ImmutableInstruction11x(Opcode.RETURN, 0)),
+                AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+            ),
+        ),
+    )
+
     @Test
     fun `the start check is the card check beside the bucket index method`() {
-        assertEquals("Cfw", startCheck(starter(check(), bucketIndex()))?.name)
+        assertEquals("Cfw", checkIn(starter(check(), bucketIndex()))?.name)
         // The null check Kotlin puts first in the methods beside it (584 LX/0eX;->A0H) is let by.
         val nullCheck = invoke(Opcode.INVOKE_STATIC, ImmutableMethodReference("Lfixture/Checks;", "A0H", listOf("Ljava/lang/Object;", "I"), "V"), 2, 1)
-        assertEquals("Cfw", startCheck(starter(check(lead = listOf(nullCheck)), bucketIndex()))?.name)
+        assertEquals("Cfw", checkIn(starter(check(lead = listOf(nullCheck)), bucketIndex()))?.name)
     }
 
     @Test
@@ -324,14 +356,43 @@ class StorySeenMarkingShapesTest {
         // Negative controls: the other implementer (584 LX/B6O;) casts its bucket to another type,
         // a check of another card type, a static one, one making a third virtual call, one calling a
         // constructor, and no index method.
-        assertNull(startCheck(starter(check(), bucketIndex(cast = "Lfixture/OtherBucket;"))))
-        assertNull(startCheck(starter(check(cast = "Lfixture/OtherCard;"), bucketIndex())))
-        assertNull(startCheck(starter(check(flags = AccessFlags.PUBLIC.value or AccessFlags.STATIC.value), bucketIndex())))
+        assertNull(checkIn(starter(check(), bucketIndex(cast = "Lfixture/OtherBucket;"))))
+        assertNull(checkIn(starter(check(cast = "Lfixture/OtherCard;"), bucketIndex())))
+        assertNull(checkIn(starter(check(flags = AccessFlags.PUBLIC.value or AccessFlags.STATIC.value), bucketIndex())))
         val third = invoke(Opcode.INVOKE_VIRTUAL, ImmutableMethodReference(STORY_CARD, "A1e", emptyList(), "Z"), 2)
-        assertNull(startCheck(starter(check(extra = listOf(third)), bucketIndex())))
+        assertNull(checkIn(starter(check(extra = listOf(third)), bucketIndex())))
         val made = invoke(Opcode.INVOKE_DIRECT, ImmutableMethodReference("Lfixture/Media;", "<init>", emptyList(), "V"), 0)
-        assertNull(startCheck(starter(check(lead = listOf(made)), bucketIndex())))
-        assertNull(startCheck(starter(check())))
+        assertNull(checkIn(starter(check(lead = listOf(made)), bucketIndex())))
+        assertNull(checkIn(starter(check())))
+    }
+
+    @Test
+    fun `a start check handing its card to a static helper is read through the helper`() {
+        val owner = starter(bridge(), bucketIndex())
+        val classOf = { type: String -> cardChecks().takeIf { it.type == type } }
+        val check = startCheck(owner, classOf)
+        assertEquals("ILp", check?.name)
+        assertEquals(listOf(getMedia.name, seenFlag.name), startCalls(check!!, classOf).map { it.name })
+        // Negative controls: a helper nothing can find, and one asking the card something more.
+        assertNull(checkIn(owner))
+        val third = invoke(Opcode.INVOKE_VIRTUAL, ImmutableMethodReference(STORY_CARD, "A1e", emptyList(), "Z"), 1)
+        assertNull(startCheck(owner) { cardChecks(listOf(third)) })
+    }
+
+    @Test
+    fun `a start check with no local borrows the this it never reads`() {
+        val start = MutableMethod(bridge())
+        start.skipWatchedCards()
+        // Two registers, no local: this is v0 and the card v1.
+        assertEquals(1, (start.at(0) as RegisterRangeInstruction).startRegister)
+        assertEquals(0, (start.at(1) as OneRegisterInstruction).registerA)
+        assertEquals(Opcode.CHECK_CAST, start.at(5).opcode)
+
+        // One that does read this leaves nothing to borrow, so it's refused and left alone.
+        val readsThis = invoke(Opcode.INVOKE_VIRTUAL, ImmutableMethodReference(starterType, "A00", emptyList(), "V"), 0)
+        val refused = MutableMethod(bridge(lead = listOf(readsThis)))
+        assertThrows(PatchException::class.java) { refused.skipWatchedCards() }
+        assertEquals(8, refused.implementation!!.instructions.count())
     }
 
     @Test

@@ -179,11 +179,12 @@ class StorySeenMarkingFixtureTest {
     fun `each declared build has one story start check and it takes the watched-here hook first`() = bundles { bundle ->
         val name = bundle.name
         val owners = mutableListOf<ClassDef>()
+        val classOf = { type: String -> FixtureDex.classes(bundle, setOf(type))[type] }
         FixtureDex.forEach(bundle) { dex ->
-            dex.classes.filter { startCheck(it) != null }.mapTo(owners) { ImmutableClassDef.of(it) }
+            dex.classes.filter { startCheck(it, classOf) != null }.mapTo(owners) { ImmutableClassDef.of(it) }
         }
         assertEquals("$name: story start checks", 1, owners.size)
-        val check = startCheck(owners.single())!!
+        val check = startCheck(owners.single(), classOf)!!
 
         // The viewer asks for it through the interface the check implements.
         val interfaces = owners.single().interfaces.toSet()
@@ -208,6 +209,7 @@ class StorySeenMarkingFixtureTest {
         assertEquals("$name: the start hook", WATCHED_HERE, hook.call!!.smali())
         assertEquals("$name: the start hook reads the card", card, (hook as RegisterRangeInstruction).startRegister)
         assertEquals("$name: the start hook's registers", 1, hook.registerCount)
+        assertTrue("$name: the start hook's answer overwrites the card", (after[1] as OneRegisterInstruction).registerA != card)
         assertEquals(
             "$name: the start hook's answer",
             listOf(Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CONST_4, Opcode.RETURN),
@@ -218,7 +220,7 @@ class StorySeenMarkingFixtureTest {
         }
 
         // Its two calls, getMedia() and the seen flag, are public on StoryCard for the stubs (#218).
-        val calls = startCalls(check)
+        val calls = startCalls(check, classOf)
         assertEquals("$name: the start check's calls", 2, calls.size)
         for (call in calls) assertEquals("$name: ${call.name} isn't on StoryCard", STORY_CARD, call.definingClass)
 

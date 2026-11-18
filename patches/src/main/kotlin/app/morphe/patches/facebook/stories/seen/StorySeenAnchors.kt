@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.requireLocals
@@ -594,33 +595,58 @@ internal fun MutableMethod.answerWatchedFirst() {
  * restart a bucket watched partway opened at card 1 again. The hook goes first in that method and
  * answers no for a card the extension kept as watched, so the viewer starts at the first one that
  * wasn't. The flag isn't touched, so nothing else Facebook reads from it changes.
+ *
+ * 588 moved the check's body into a static helper (arm64 `LX/0BAF;->A00`), and the (Object)Z method
+ * only casts the card and hands it over. The hook stays in that method, which the picker alone asks.
+ * The helper's other callers read the flag for themselves on 587 and were never hooked, so hooking
+ * the helper would change them. One of them is new: `firstToWatch`, which picks the next card when
+ * a story opened from a notification moves on.
  */
 internal const val WATCHED_HERE = "$STORY_SEEN->watchedHere(${OBJECT})Z"
 
 /**
  * Whether [method] is the start check: an instance (Object)Z method that casts its argument to
- * StoryCard once and makes exactly two virtual calls, getMedia() and then one ()Z flag, both on
- * StoryCard. Static calls are let by, since Kotlin puts a null check first in the methods beside it.
+ * StoryCard once and whose [startCalls] are exactly getMedia() and then one ()Z flag, both on
+ * StoryCard. Other static calls are let by, since Kotlin puts a null check first in the methods
+ * beside it.
  */
-internal fun isStartCheck(method: Method): Boolean {
+internal fun isStartCheck(method: Method, classOf: (String) -> ClassDef?): Boolean {
     if (AccessFlags.STATIC.isSet(method.accessFlags) || method.returnType != "Z" ||
         method.parameterTypes.map(Any::toString) != listOf(OBJECT)
     ) return false
     val code = method.implementation?.instructions?.toList() ?: return false
     val casts = code.count { it.opcode == Opcode.CHECK_CAST && ((it as ReferenceInstruction).reference as TypeReference).type == STORY_CARD }
-    val calls = startCalls(method)
     val direct = code.count { it.call(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE, Opcode.INVOKE_SUPER, Opcode.INVOKE_SUPER_RANGE) != null }
-    if (casts != 1 || calls.size != 2 || direct != 0) return false
+    if (casts != 1 || direct != 0) return false
+    val calls = startCalls(method, classOf)
+    if (calls.size != 2) return false
     val (media, flag) = calls
     return media.definingClass == STORY_CARD && media.name == "getMedia" && media.parameterTypes.isEmpty() &&
         flag.definingClass == STORY_CARD && flag.parameterTypes.isEmpty() && flag.returnType == "Z"
 }
 
-/** The start check's virtual calls, in order: on a start check, getMedia() and then the seen flag. */
-internal fun startCalls(check: Method): List<MethodReference> =
-    check.implementation?.instructions?.mapNotNull {
+private fun virtualCalls(method: Method): List<MethodReference> =
+    method.implementation?.instructions?.mapNotNull {
         it.call(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE, Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE)
     }.orEmpty()
+
+/**
+ * The virtual calls that check a card for the start check, in order: on a start check, getMedia() and
+ * then the seen flag. They're its own, or with none of its own those of the one static (StoryCard)Z
+ * helper it hands the card to, whose class [classOf] finds.
+ */
+internal fun startCalls(check: Method, classOf: (String) -> ClassDef?): List<MethodReference> {
+    val own = virtualCalls(check)
+    if (own.isNotEmpty()) return own
+    fun takesCard(parameters: List<CharSequence>) = parameters.map(Any::toString) == listOf(STORY_CARD)
+    val helper = check.implementation?.instructions
+        ?.mapNotNull { it.call(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE) }
+        ?.singleOrNull { it.returnType == "Z" && takesCard(it.parameterTypes) } ?: return emptyList()
+    val body = classOf(helper.definingClass)?.methods?.singleOrNull {
+        AccessFlags.STATIC.isSet(it.accessFlags) && it.name == helper.name && it.returnType == "Z" && takesCard(it.parameterTypes)
+    } ?: return emptyList()
+    return virtualCalls(body)
+}
 
 /** Whether [method] is the interface's (Object, int)I method that casts its first argument to StoryBucket. */
 private fun isBucketIndex(method: Method): Boolean =
@@ -631,27 +657,28 @@ private fun isBucketIndex(method: Method): Boolean =
         } == true
 
 /** [owner]'s start check, when it's StoryBucket's card interface: one start check and one bucket index method. */
-internal fun startCheck(owner: ClassDef): Method? {
-    val check = owner.methods.filter(::isStartCheck).singleOrNull() ?: return null
-    return if (owner.methods.count(::isBucketIndex) == 1) check else null
+internal fun startCheck(owner: ClassDef, classOf: (String) -> ClassDef?): Method? {
+    if (owner.methods.count(::isBucketIndex) != 1) return null
+    return owner.methods.filter { isStartCheck(it, classOf) }.singleOrNull()
 }
 
 /**
  * First thing in the start check: a card the extension kept as watched answers no, and every
- * other card goes on to Facebook's own check. The argument is read before anything writes it, and
- * the one local the check has is free there.
+ * other card goes on to Facebook's own check. The argument is read before anything writes it. The
+ * answer borrows a register nothing reads from here on: the check's local, or on 588, whose check has
+ * none, `this`, which it never reads and overwrites itself.
  */
 internal fun MutableMethod.skipWatchedCards() {
-    requireLocals(PATCH, 1)
+    val answer = freeLocalsAt(PATCH, 0, 1, parameters = true).single()
     val card = parameterRegisterNumber(0)
     addInstructionsWithLabels(
         0,
         """
             invoke-static/range { v$card .. v$card }, $WATCHED_HERE
-            move-result v0
-            if-eqz v0, :facebook
-            const/4 v0, 0x0
-            return v0
+            move-result v$answer
+            if-eqz v$answer, :facebook
+            const/4 v$answer, 0x0
+            return v$answer
         """,
         ExternalLabel("facebook", getInstruction(0)),
     )
@@ -708,8 +735,12 @@ internal fun MutableMethod.nameStartCard(owner: String) {
 }
 
 /** Fills the extension's stubs for Facebook's own start check from [check]'s two calls on the card. */
-internal fun fillStartStubs(stub: (name: String, answer: String, parameters: List<String>) -> MutableMethod, check: Method) {
-    val (media, flag) = startCalls(check)
+internal fun fillStartStubs(
+    stub: (name: String, answer: String, parameters: List<String>) -> MutableMethod,
+    check: Method,
+    classOf: (String) -> ClassDef?,
+) {
+    val (media, flag) = startCalls(check, classOf)
     stub("mediaOf", OBJECT, listOf(OBJECT)).addInstructions(
         0,
         """

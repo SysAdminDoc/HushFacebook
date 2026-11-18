@@ -14,6 +14,7 @@ import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -94,19 +95,19 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
         // callers are where it's looked for.
         val callers = mutableListOf<ClassDef>()
         val startChecks = mutableListOf<Method>()
+        val classOf = { type: String -> classDefByOrNull(type) }
         // A caller names the sender's class, and the start check casts to StoryCard.
         classDefForEachReferencing(types = listOf(sender.definingClass, STORY_CARD)) { classDef ->
             if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
             if (callsSender(classDef, sender)) callers += classDef
-            startCheck(classDef)?.let { startChecks += it }
+            startCheck(classDef, classOf)?.let { startChecks += it }
         }
         val opener = startChecks.singleOrNull() ?: throw PatchException(
             "$PATCH: expected one class with an (Object, int)I method casting to $STORY_BUCKET and an (Object)Z " +
                 "method asking a $STORY_CARD for getMedia() and then a flag, found ${startChecks.size}",
         )
-        if (opener.localRegisterCount() < 1) {
-            throw PatchException("$PATCH: ${opener.definingClass}->${opener.name} has no local register for the start hook")
-        }
+        // The start hook borrows one register; this refuses now if the check has none to spare.
+        opener.freeLocalsAt(PATCH, 0, 1, parameters = true)
         // The start check is asked through the one interface its class implements.
         val cardInterface = classDefByOrNull(opener.definingClass)?.interfaces?.singleOrNull() ?: throw PatchException(
             "$PATCH: ${opener.definingClass} doesn't implement one interface for the start check",
@@ -137,7 +138,7 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
         if (storyCard.methods.none { "${it.definingClass}->${it.name}()${it.returnType}" == CARD_ID && it.parameterTypes.isEmpty() }) {
             throw PatchException("$PATCH: $STORY_CARD has no getId()")
         }
-        for (call in startCalls(opener)) {
+        for (call in startCalls(opener, classOf)) {
             val declared = storyCard.methods.singleOrNull { it.name == call.name && it.parameterTypes.isEmpty() && it.returnType == call.returnType }
             if (declared == null || !AccessFlags.PUBLIC.isSet(declared.accessFlags)) {
                 throw PatchException("$PATCH: ${call.smali()} isn't public, so the extension can't ask it")
@@ -213,7 +214,7 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
         cardIdStub.fillCardId()
         fillEyeStubs(eyeStubs, flag, helper.type, later.session)
         fillSeenStubs(stubs, marking.buckets, marking.publisher)
-        fillStartStubs(stubs, opener)
+        fillStartStubs(stubs, opener, classOf)
         enableStatus("storySeen")
     }
 }
