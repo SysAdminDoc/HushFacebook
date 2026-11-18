@@ -37,6 +37,7 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -283,6 +284,20 @@ class GroupJoinStateFixtureTest {
         assertTrue(refusal, refusal.contains(TREE_REINTERPRET))
     }
 
+    /** Whether [called] is MobileConfig's own, or a static helper whose body casts to it and asks it. */
+    private fun asksMobileConfig(bundle: File, called: MethodReference): Boolean {
+        val config = "/MobileConfigUnsafeContext;"
+        if (called.definingClass.endsWith(config)) return true
+        val helper = FixtureDex.classes(bundle, setOf(called.definingClass))[called.definingClass]?.methods?.singleOrNull {
+            it.name == called.name && it.returnType == called.returnType &&
+                it.parameterTypes.map(CharSequence::toString) == called.parameterTypes.map(CharSequence::toString)
+        } ?: return false
+        val body = helper.implementation?.instructions?.toList() ?: return false
+        return body.any {
+            it.opcode == Opcode.CHECK_CAST && ((it as ReferenceInstruction).reference as TypeReference).type.endsWith(config)
+        } && body.any { it.opcode == Opcode.INVOKE_INTERFACE && it.called()?.definingClass?.endsWith(config) == true }
+    }
+
     @Test
     fun `each declared build asks Home for join states through the extension`() {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -300,13 +315,14 @@ class GroupJoinStateFixtureTest {
                 val answer = joinStateFlagAnswer(method)
                 assertNotNull("$name: the flag isn't set from a boolean answer", answer)
                 val code = method.code()
-                // Positive control: the answer is MobileConfig's (asked of the interface, or of its
-                // static helper since 584), and the name goes to a setter with it.
+                // Positive control: the answer is MobileConfig's (asked of the interface, of its static
+                // helper since 584, or on 588 of an outlined helper that casts to it and asks it), and
+                // the name goes to a setter with it.
                 val asked = code[answer!! - 1]
                 assertTrue("$name: answer asked with ${asked.opcode}",
                     asked.opcode == Opcode.INVOKE_INTERFACE || asked.opcode == Opcode.INVOKE_STATIC)
                 assertTrue("$name: ${asked.called()} isn't MobileConfig",
-                    asked.called()!!.definingClass.endsWith("/MobileConfigUnsafeContext;"))
+                    asksMobileConfig(bundle, asked.called()!!))
                 val register = (code[answer] as OneRegisterInstruction).registerA
                 val setter = code[answer + 2].called()
                 assertEquals("$name: $setter doesn't take the name and the answer",
