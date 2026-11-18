@@ -7,12 +7,14 @@ package app.morphe.patches.facebook.feed.hook
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -36,12 +38,18 @@ class HiddenPostsFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val owners = FixtureDex.classesHolding(bundle, LOCAL_STORY_VISIBILITY)
-                val publishes = owners.flatMap { it.methods.mapNotNull(::hidePublish) }
+                val naming = FixtureDex.classesHolding(bundle, LOCAL_STORY_VISIBILITY).associateBy { it.type }
+                val owners = (naming.values + FixtureDex.classesHolding(bundle, VISIBILITY_BUILDER_CAST)).distinctBy { it.type }
+                val resolve = { call: MethodReference -> naming[call.definingClass]?.let { resolveStatic(it, call) } }
+                val publishes = owners.flatMap { owner -> owner.methods.mapNotNull { hidePublish(it, resolve) } }
                 assertEquals("$name: publishes ${publishes.map { "${it.method.definingClass}->${it.method.name}" }}",
                     2, publishes.size)
-                val byId = publishes.single { it.at == 0 }
+                assertEquals("$name: the publishes' classes", 1, publishes.map { it.method.definingClass }.distinct().size)
+                publishes.single { it.at == 0 }
                 val byStory = publishes.single { it.at > 0 }
+                // Negative control: the by story publish is only found through the string table.
+                assertEquals("$name: publishes found with no string table", listOf(0),
+                    owners.flatMap { owner -> owner.methods.mapNotNull { hidePublish(it) { null } } }.map { it.at })
                 assertEquals("$name: the id's read", Opcode.MOVE_RESULT_OBJECT, byStory.method.body()[byStory.at - 1].opcode)
                 assertTrue("$name: registers a plain call reaches", publishes.all { it.id <= 15 && it.visibility <= 15 })
 

@@ -8,6 +8,8 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
@@ -22,6 +24,10 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 /** Kept literal: the field a post's hide, "Hide all from" and Undo publish, which few methods load. */
 internal const val LOCAL_STORY_VISIBILITY = "local_story_visibility"
+
+/** Kept message of the cast to the typed builder that sets the same field without naming it. */
+internal const val VISIBILITY_BUILDER_CAST =
+    "null cannot be cast to non-null type com.facebook.api.graphql.feed.clientfields.StoryVisibilityLocalFields.Builder"
 
 private const val CONSISTENCY = "Lcom/facebook/graphservice/interfaces/GraphQLConsistency;"
 private const val TREE = "Lcom/facebook/graphservice/interfaces/Tree;"
@@ -54,26 +60,31 @@ private fun writes(body: List<Instruction>, end: Int, register: Int): Boolean =
 
 /**
  * The publish in [method], or null when it isn't one. A publish answers nothing, takes Facebook's
- * visibility as its one Integer, loads [LOCAL_STORY_VISIBILITY] and hands a tree to
- * GraphQLConsistency's publish. 587 has two, in one class:
+ * visibility as its one Integer and sets the field one of two ways: it names
+ * [LOCAL_STORY_VISIBILITY], itself or through a string table [resolve] finds, and hands a tree to
+ * GraphQLConsistency's publish, or it casts to the typed builder ([VISIBILITY_BUILDER_CAST]) and
+ * hands that to publishBuilder. 588 has two, in one class:
  *
- * - by id, taking the post's id as its one String: the hook goes first thing, on the parameters;
- * - by story, taking the post's model: it reads the id off the model's tree with getString("id"),
- *   and the hook goes right after that read, on the register the read filled.
+ * - by id, taking the post's id as its one String, through the typed builder: the hook goes first
+ *   thing, on the parameters;
+ * - by story, taking the post's model, through the string table: it reads the id off the model's
+ *   tree with getString("id"), and the hook goes right after that read, on the register the read
+ *   filled.
  *
  * Both hand Facebook's own value on, which its mapping names VISIBLE, CONTRACTING, HIDDEN or GONE.
- * StoryDeleteMutation's optimistic GONE answers a future, and the tree parsers publish nothing.
+ * StoryDeleteMutation's optimistic GONE answers a future, the tree parsers publish nothing, and the
+ * menu's direct hide and the reel hides take no Integer.
  */
-internal fun hidePublish(method: Method): HidePublish? {
+internal fun hidePublish(method: Method, resolve: (MethodReference) -> Method?): HidePublish? {
     if (method.returnType != "V") return null
     val body = method.implementation?.instructions?.toList() ?: return null
-    if (!holdsString(method, LOCAL_STORY_VISIBILITY)) return null
-    if (body.none { it.call()?.let { call -> call.definingClass == CONSISTENCY && call.name == "publish" } == true }) {
-        return null
-    }
     val parameters = method.parameterTypes.map { it.toString() }
     val visibilityIndex = parameters.indexOf(INTEGER)
     if (visibilityIndex < 0 || parameters.lastIndexOf(INTEGER) != visibilityIndex) return null
+    val published = body.mapNotNull { it.call() }.filter { it.definingClass == CONSISTENCY }.map { it.name }
+    val setsField = "publish" in published && namesString(method, LOCAL_STORY_VISIBILITY, resolve) ||
+        "publishBuilder" in published && holdsString(method, VISIBILITY_BUILDER_CAST)
+    if (!setsField) return null
     val visibility = parameterRegister(method, visibilityIndex)
 
     val strings = parameters.indices.filter { parameters[it] == STRING }
@@ -111,8 +122,11 @@ internal val hiddenPostsPatch = bytecodePatch {
     dependsOn(facebookExtensionPatch)
 
     execute {
-        val publishes = classDefByStrings(LOCAL_STORY_VISIBILITY, StringComparisonType.EQUALS)
-            .flatMap { it.methods.mapNotNull(::hidePublish) }
+        val naming = classDefByStrings(LOCAL_STORY_VISIBILITY, StringComparisonType.EQUALS).associateBy { it.type }
+        val resolve = { call: MethodReference -> naming[call.definingClass]?.let { resolveStatic(it, call) } }
+        val publishes = (naming.values + classDefByStrings(VISIBILITY_BUILDER_CAST, StringComparisonType.EQUALS))
+            .distinctBy { it.type }
+            .flatMap { owner -> owner.methods.mapNotNull { hidePublish(it, resolve) } }
             .filter { it.id <= 15 && it.visibility <= 15 }
         if (publishes.isEmpty()) {
             patchLog.warning("Hidden posts: no publish of $LOCAL_STORY_VISIBILITY found. A refresh can bring a hidden post back.")
