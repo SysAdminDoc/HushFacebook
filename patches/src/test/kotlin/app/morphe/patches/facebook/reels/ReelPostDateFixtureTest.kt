@@ -10,8 +10,10 @@ import app.morphe.PatchContexts
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
 import app.morphe.util.namedRegisters
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -297,14 +299,35 @@ class ReelPostDateFixtureTest {
         val attribution = code[call].namedRegisters()[1]
         val (created, init) = soundTicker(original, call)!!
         assertEquals("$name: the ticker starts with its new-instance", Opcode.NEW_INSTANCE, code[created].opcode)
+        // Where the attribution's register is reused before the ticker, a copy made right after the wording stands in.
+        val carried = original.writersReaching(created, attribution) != original.writersReaching(call, attribution)
+        val added = if (carried) 1 else 0
+        val carrier = if (!carried) attribution else {
+            val copy = patched[call + shift + 2]
+            assertEquals("$name: the attribution is copied right after the wording", Opcode.MOVE_OBJECT_FROM16, copy.opcode)
+            assertEquals("$name: from its own register", attribution, (copy as TwoRegisterInstruction).registerB)
+            val held = copy.registerA
+            assertTrue("$name: into one nothing reads from there on", held !in RegisterLiveness.of(original).liveInto(call + 2))
+            assertTrue("$name: and nothing writes before the ticker's built", (call + 2..init).none { at ->
+                code[at].opcode.setsRegister() && code[at].namedRegisters().first().let { written ->
+                    written == held || (code[at].opcode.setsWideRegister() && written + 1 == held)
+                }
+            })
+            val flow = ControlFlow.of(original)
+            assertTrue("$name: nothing jumps in past the copy", code.indices.none { from ->
+                (flow.normal[from] + flow.exceptional[from]).any { it in call + 2..created && it != from + 1 }
+            })
+            held
+        }
         val hooks = patched.indices.filter { ((patched[it] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == hook }
         assertEquals("$name: one sound label hook in ${original.definingClass}", 1, hooks.size)
         val at = hooks.single()
-        val start = created + shift
+        val start = created + shift + added
         val keep = patched[start] as TwoRegisterInstruction
         assertEquals("$name: the label is kept first", Opcode.MOVE_OBJECT_FROM16, patched[start].opcode)
         assertEquals("$name: from its own register", label, keep.registerB)
         assertTrue("$name: in one nothing reads there", keep.registerA !in RegisterLiveness.of(original).liveInto(created))
+        assertTrue("$name: and not the attribution's carrier", keep.registerA != carrier)
         assertTrue("$name: and nothing writes before the ticker's built",
             (created..init).none { code[it].opcode.setsRegister() && code[it].namedRegisters().first() == keep.registerA })
         fun copiedFrom(register: Int) = (start + 1 until at).map { patched[it] }
@@ -312,7 +335,7 @@ class ReelPostDateFixtureTest {
             ?.let { (it as TwoRegisterInstruction).registerB } ?: register
         val passed = patched[at].namedRegisters()
         assertEquals("$name: the hook passes the label", label, copiedFrom(passed[0]))
-        assertEquals("$name: and its attribution", attribution, copiedFrom(passed[1]))
+        assertEquals("$name: and its attribution", carrier, copiedFrom(passed[1]))
         if (story == null) {
             assertEquals("$name: and nothing else", 2, passed.size)
         } else {
@@ -337,7 +360,7 @@ class ReelPostDateFixtureTest {
         assertEquals("$name: into the label's register", label, back.registerA)
         assertEquals("$name: from where it was kept", keep.registerA, back.registerB)
         assertEquals("$name: the hook's instructions and the stash added",
-            code.count { it.opcode != Opcode.NOP } + (end - start) + 1 + shift, patched.count { it.opcode != Opcode.NOP })
+            code.count { it.opcode != Opcode.NOP } + (end - start) + 1 + shift + added, patched.count { it.opcode != Opcode.NOP })
     }
 
     @Test

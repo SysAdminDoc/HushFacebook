@@ -10,6 +10,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.namedRegisters
@@ -322,6 +323,9 @@ internal fun BytecodePatchContext.keepPostDateBesideReason() {
  * - When the ticker comes up empty the builder asks a second helper in the first one's class (arm64
  *   LX/09Zl;->A08) for the soundtrack's ticker label alone. It words it with the same helper, but
  *   clears the register holding the story first, so the story is kept for it on the way in.
+ * - 588's footer (arm64 LX/08yM;->A1B, v7 LX/08yP;->A1B, read 2026-11-18) puts the attribution's type
+ *   name in the attribution's own register before the ticker label, so the hook carries the
+ *   attribution there in a register nothing is using.
  */
 
 /** The id prefix the reel footer gives each label under the author, named right before its attribution loop. */
@@ -385,11 +389,33 @@ private fun Instruction.written(): List<Int> {
 }
 
 /**
+ * A register to carry the attribution from the wording at [call] to the ticker label at [at], whose
+ * constructor runs at [init]: nothing reads it from right after the wording on, and nothing writes
+ * it up to that constructor. Refuses unless the code between runs straight down, nothing jumping in,
+ * so the copy always happens on the way to the ticker.
+ */
+private fun attributionCarrier(method: Method, call: Int, at: Int, init: Int, label: Int, attribution: Int, story: Int?): Int {
+    val owner = method.definingClass
+    val code = method.code
+    val from = call + 2
+    val flow = ControlFlow.of(method)
+    val straight = label != attribution && (from until at).all { (it + 1) in flow.normal[it] } &&
+        code.indices.none { source -> (flow.normal[source] + flow.exceptional[source]).any { it in from..at && it != source + 1 } }
+    if (!straight) throw PatchException("$PATCH: the attribution in $owner changes before its ticker label is built")
+    val live = RegisterLiveness.of(method).liveInto(from)
+    val written = (from..init).flatMap { code[it].written() }.toSet()
+    return (0 until minOf(256, method.implementation!!.registerCount)).firstOrNull {
+        it !in live && it !in written && it != label && it != attribution && it != story
+    } ?: throw PatchException("$PATCH: no spare register in $owner to carry the attribution")
+}
+
+/**
  * Hands the label [method] words at [call] to the extension right before the ticker label built from
  * it, [ticker], with its attribution and, in [story], the reel's story, or with null for the one
  * [SOUND_STORY] kept. Facebook's own label goes back right after the ticker's constructor, for the
  * row label and anything else built from it. Registers at v16 and up are copied down through ones
- * nothing reads there.
+ * nothing reads there, and an attribution whose register is reused first comes in a copy made right
+ * after the wording ([attributionCarrier]).
  */
 private fun dateSoundTicker(method: MutableMethod, call: Int, ticker: Pair<Int, Int>, story: Int?) {
     val owner = method.definingClass
@@ -397,11 +423,13 @@ private fun dateSoundTicker(method: MutableMethod, call: Int, ticker: Pair<Int, 
     val (at, init) = ticker
     val label = (code[call + 1] as OneRegisterInstruction).registerA
     val attribution = code[call].namedRegisters()[1]
-    if (method.writersReaching(at, attribution) != method.writersReaching(call, attribution)) {
-        throw PatchException("$PATCH: the attribution in $owner changes before its ticker label is built")
+    val carrier = if (method.writersReaching(at, attribution) == method.writersReaching(call, attribution)) {
+        attribution
+    } else {
+        attributionCarrier(method, call, at, init, label, attribution, story)
     }
     val live = RegisterLiveness.of(method).liveInto(at)
-    val held = setOfNotNull(label, attribution, story)
+    val held = setOfNotNull(label, carrier, story)
     val written = (at..init).flatMap { code[it].written() }.toSet()
     val keep = (0 until minOf(256, method.implementation!!.registerCount))
         .firstOrNull { it !in live && it !in held && it !in written }
@@ -411,12 +439,12 @@ private fun dateSoundTicker(method: MutableMethod, call: Int, ticker: Pair<Int, 
     fun low(register: Int) = if (register < 16) register else if (spare.hasNext()) spare.next() else
         throw PatchException("$PATCH: no spare register below v16 in $owner for the sound label")
     val labelLow = low(label)
-    val attributionLow = low(attribution)
+    val attributionLow = low(carrier)
     val storyLow = story?.let(::low)
     val hook = buildString {
         appendLine("move-object/from16 v$keep, v$label")
         if (labelLow != label) appendLine("move-object/from16 v$labelLow, v$label")
-        if (attributionLow != attribution) appendLine("move-object/from16 v$attributionLow, v$attribution")
+        if (attributionLow != carrier) appendLine("move-object/from16 v$attributionLow, v$carrier")
         if (storyLow != null && storyLow != story) appendLine("move-object/from16 v$storyLow, v$story")
         if (storyLow != null) {
             appendLine("invoke-static { v$labelLow, v$attributionLow, v$storyLow }, $SOUND_LABEL_TEXT")
@@ -429,6 +457,7 @@ private fun dateSoundTicker(method: MutableMethod, call: Int, ticker: Pair<Int, 
     // The later insert goes in first, so the earlier index still holds.
     method.addInstructions(init + 1, "move-object/from16 v$label, v$keep")
     method.addInstructions(at, hook)
+    if (carrier != attribution) method.addInstructions(call + 2, "move-object/from16 v$carrier, v$attribution")
 }
 
 /** The register [method]'s parameter of [type] arrives in, or null unless one parameter is of it. */
