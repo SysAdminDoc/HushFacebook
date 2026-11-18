@@ -156,6 +156,8 @@ internal const val FB_USER_SESSION = "Lcom/facebook/auth/usersession/FbUserSessi
  *   the key through a string table where it stores it, so the hook moves to the one method that reads
  *   it back to pick the banner (arm64 `LX/0Bb0;->A01(Bundle)`, answering the banner's model or null):
  *   each read goes through the extension, and a null matches neither tag, so the method answers null.
+ *   588 folds that reader into the void method that goes through the profile's tabs (arm64
+ *   `LX/0AXq;->A02`), where a null matches neither tag either and the loop moves on without a banner.
  *
  * Every answer of those four goes through the extension, which turns a yes into a no, an id or a
  * model into null, and a list of reel cards into one without the shop kinds while the switch is on.
@@ -400,12 +402,11 @@ internal fun profileEntryReads(method: Method): List<Pair<Int, Int>> {
 private val RETURNS = setOf(Opcode.RETURN_VOID, Opcode.RETURN, Opcode.RETURN_WIDE, Opcode.RETURN_OBJECT)
 
 /**
- * Whether [method] is where a profile picks its shop banner from [PROFILE_ENTRY_POINT] (587): it answers
- * something, and a value it reads under that key goes to `String.equals` against [REEL_ENTRY_POINT]
- * before anything writes its register again.
+ * Whether [method] is where a profile picks its shop banner from [PROFILE_ENTRY_POINT] (587 on): a
+ * value it reads under that key goes to `String.equals` against [REEL_ENTRY_POINT] before anything
+ * writes its register again.
  */
 internal fun isProfileEntryReader(method: Method): Boolean {
-    if (method.returnType == "V") return false
     val code = method.implementation?.instructions?.toList() ?: return false
     return profileEntryReads(method).any { (after, value) ->
         for (at in after until code.size) {
