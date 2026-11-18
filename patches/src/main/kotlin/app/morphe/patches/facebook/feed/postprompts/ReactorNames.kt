@@ -51,20 +51,16 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  *   pictures alone, so it answers no as well. The gate is the one method in the app taking (Context,
  *   FbUserSession, GraphQLFeedback, GraphQLStory) to a boolean that calls the builder; its callers
  *   all leave the row out on a no.
- * - The bling bar (BlingBarComponent, arm64 LX/03iG;, armv7 LX/03iE;), in the layout that keeps the
- *   reaction count in a line above the buttons. Two of its plugins, whose class names Facebook
- *   keeps, name people: CompactSocialContextBlingBarReactionCountPlugin ("Name and others reacted",
- *   its one instance boolean method A06 says whether a post needs it) and
- *   SocialSentenceBlingBarReactionCountPlugin ("Name and 20 others", its one static (object,
- *   boolean, boolean) -> boolean A01). The bar's render and the static that asks whether the bar
- *   has anything to show (arm64 LX/0BNz;->A00, armv7 LX/0BNR;->A00) are their only callers, so a no
- *   leaves the names out and the bar keeps its plain count.
+ * - The bling bar (BlingBarComponent, LX/03Ah;), in the layout that keeps the reaction count in a
+ *   line above the buttons. Its SocialSentenceBlingBarReactionCountPlugin, whose class name Facebook
+ *   keeps, names people ("Name and 20 others", its one static (object, boolean, boolean) -> boolean).
+ *   The bar's render and the static that asks whether the bar has anything to show are that check's
+ *   only callers, so a no leaves the names out and the bar keeps its plain count. 588 dropped the
+ *   bar's other naming plugin, the compact social context one, on both ABIs.
  * Hide the reaction preview on posts only skips the bar's pill view and the faces at the end of the
  * buttons, and neither of those is this line.
  */
 
-internal const val COMPACT_SOCIAL_CONTEXT =
-    "Lcom/facebook/feedback/reactions/plugins/blingbar/compactsocialcontext/CompactSocialContextBlingBarReactionCountPlugin;"
 internal const val SOCIAL_SENTENCE =
     "Lcom/facebook/feedback/reactions/plugins/blingbar/socialsentence/SocialSentenceBlingBarReactionCountPlugin;"
 internal const val HIDE_REACTOR_NAMES = "$POST_PROMPTS->hideReactorNames()Z"
@@ -138,12 +134,6 @@ internal fun BytecodePatchContext.findServerReactorRowCheck(): Method {
     return check
 }
 
-/** The compact line's check: [plugin]'s one instance method answering a boolean from two arguments. */
-internal fun compactLineCheck(plugin: ClassDef): Method? =
-    plugin.methods.filter {
-        !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" && it.parameterTypes.size == 2 && it.hasCode()
-    }.singleOrNull()
-
 /** The sentence's check: [plugin]'s one static method answering a boolean from an object and two booleans. */
 internal fun sentenceCheck(plugin: ClassDef): Method? =
     plugin.methods.filter {
@@ -179,13 +169,13 @@ internal fun BytecodePatchContext.findReactorRowGate(): Method {
         ?: throw PatchException("$PATCH: expected one gate for the row naming who reacted, found ${found.size}")
 }
 
-/** The row's gate, then the bar's two checks, the compact line's first. Refuses unless each is there once. Changes nothing. */
-internal fun BytecodePatchContext.findReactorChecks(): List<Method> =
-    listOf(findReactorRowGate()) +
-        listOf(COMPACT_SOCIAL_CONTEXT to ::compactLineCheck, SOCIAL_SENTENCE to ::sentenceCheck).map { (type, find) ->
-            val plugin = classDefByOrNull(type) ?: throw PatchException("$PATCH: $type isn't in this build")
-            find(plugin) ?: throw PatchException("$PATCH: $type has no single check of the expected shape")
-        }
+/** The row's gate, then the bar's sentence check. Refuses unless each is there once. Changes nothing. */
+internal fun BytecodePatchContext.findReactorChecks(): List<Method> {
+    val plugin = classDefByOrNull(SOCIAL_SENTENCE) ?: throw PatchException("$PATCH: $SOCIAL_SENTENCE isn't in this build")
+    val sentence = sentenceCheck(plugin)
+        ?: throw PatchException("$PATCH: $SOCIAL_SENTENCE has no single check of the expected shape")
+    return listOf(findReactorRowGate(), sentence)
+}
 
 /** The sentence builder [gate] calls, as a method of its class. Refuses unless the gate calls one. Changes nothing. */
 internal fun BytecodePatchContext.findReactorSentenceBuilder(gate: Method): Method {

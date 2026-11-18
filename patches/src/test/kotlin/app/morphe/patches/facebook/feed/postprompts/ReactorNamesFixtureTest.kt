@@ -25,12 +25,16 @@ import org.junit.Test
  * declares (arm64 and armv7): the whole app has one model and one builder for the server-written
  * reactor row, whose class has one config check of the expected shape among its static boolean
  * methods; one gate for the app-built row naming who reacted, which calls one sentence builder; and
- * the compact social context plugin and the social sentence plugin each have one check of the
- * expected shape among their other boolean methods. After the hook each check asks the extension
+ * the social sentence plugin has one check of the expected shape among its other boolean methods.
+ * The compact social context plugin, which also named people, is gone since 588, and a build bringing
+ * it back fails here so its check gets hooked again. After the hook each check asks the extension
  * first and answers false (the builder null) when told to. Reads the fixture bundles from
  * HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class ReactorNamesFixtureTest {
+    private val droppedCompactPlugin =
+        "Lcom/facebook/feedback/reactions/plugins/blingbar/compactsocialcontext/CompactSocialContextBlingBarReactionCountPlugin;"
+
     private fun Method.body(): List<Instruction> = implementation?.instructions?.toList().orEmpty()
 
     private fun Instruction.called() = ((this as? ReferenceInstruction)?.reference as? MethodReference)?.toString()
@@ -82,9 +86,11 @@ class ReactorNamesFixtureTest {
                 assertEquals("$name: the server row's builders", 1, rowBuilders.size)
                 val rowType = rowBuilders.single().definingClass
 
-                val wanted = setOf(gateType, builderType, COMPACT_SOCIAL_CONTEXT, SOCIAL_SENTENCE, modelType, rowType)
+                assertTrue("$name: the compact line's plugin is back, so its check needs the hook again",
+                    FixtureDex.classes(bundle, setOf(droppedCompactPlugin)).isEmpty())
+                val wanted = setOf(gateType, builderType, SOCIAL_SENTENCE, modelType, rowType)
                 val classes = FixtureDex.classes(bundle, wanted)
-                assertEquals("$name: the gate's and builders' classes, the row model and the two plugins", wanted, classes.keys)
+                assertEquals("$name: the gate's and builders' classes, the row model and the plugin", wanted, classes.keys)
                 val context = PatchContexts.of(classes.values.toList())
 
                 val serverCheck = with(context) { findServerReactorRowCheck() }
@@ -105,13 +111,11 @@ class ReactorNamesFixtureTest {
                     .filter { it.returnType.startsWith("L") && it.implementation != null && !it.sameAs(builder) }
                 assertTrue("$name: the builder's class has no other object method, so the pick proves nothing",
                     otherBuilders.isNotEmpty())
-                assertEquals("$name: three checks", 3, checks.size)
+                assertEquals("$name: two checks", 2, checks.size)
                 assertTrue("$name: the row's gate first", checks[0].sameAs(gates.single()) && checks[0].definingClass == gateType)
-                assertEquals("$name: the compact line's check", COMPACT_SOCIAL_CONTEXT, checks[1].definingClass)
-                assertEquals("$name: the sentence's check", SOCIAL_SENTENCE, checks[2].definingClass)
+                assertEquals("$name: the sentence's check", SOCIAL_SENTENCE, checks[1].definingClass)
                 assertTrue("$name: the row's gate isn't static", !AccessFlags.STATIC.isSet(checks[0].accessFlags))
-                assertTrue("$name: the compact check isn't static", !AccessFlags.STATIC.isSet(checks[1].accessFlags))
-                assertTrue("$name: the sentence check is static", AccessFlags.STATIC.isSet(checks[2].accessFlags))
+                assertTrue("$name: the sentence check is static", AccessFlags.STATIC.isSet(checks[1].accessFlags))
                 // Negative control: each class has another boolean method the shape leaves out.
                 for (check in checks) {
                     val others = classes.getValue(check.definingClass).methods
