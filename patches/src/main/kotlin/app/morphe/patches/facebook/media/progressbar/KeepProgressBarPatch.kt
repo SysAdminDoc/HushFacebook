@@ -439,7 +439,7 @@ val keepProgressBarPatch = bytecodePatch(
         val load = scrubberLoad(progress.base, another, returns)
         load.method.freeLocalsAt(PATCH, load.at, 3)
         val holderClear = holderClear(progress.base, returns)
-        holderClear.method.freeLocalsAt(PATCH, holderClear.clear, 2, targets = listOf(holderClear.store + 1))
+        holderClear.method.freeLocalsAt(PATCH, holderClear.store, 2, targets = listOf(holderClear.store + 1))
         // Only a mount of the base's own is run virtually, so only then can a class extending it skip it.
         val baseMount = another.mount.definingClass == progress.base.type
         val delay = frameDelay(progress)
@@ -1204,25 +1204,25 @@ internal fun scrubberLoad(base: ClassDef, another: AnotherVideo, returns: Regist
 
 /**
  * Where the scrubber base's unload clears the registry's default holder ([method], 585
- * `LX/0AE0;->onUnload`): the `const` of null ([clear]), the store right after it ([store]) and the
- * register holding the registry ([registry]).
+ * `LX/0AE0;->onUnload`): the store of null ([store]) and the register holding the registry
+ * ([registry]). 588 loads that null well ahead of the store and shares it with an earlier clear
+ * (arm64 `LX/0Cng;->onUnload`, `const/4 v3` at 18, the store at 54), so the store is the place to hook.
  */
-internal class HolderClear(val method: Method, val clear: Int, val store: Int, val registry: Int)
+internal class HolderClear(val method: Method, val store: Int, val registry: Int)
 
 /**
  * Finds the [HolderClear] in [base]. Refuses unless exactly one store of the registry's default
- * holder comes right after loading null into the stored register, and nothing jumps onto the store.
+ * holder stores a register only a null constant reaches, and nothing jumps onto the store.
  */
 internal fun holderClear(base: ClassDef, returns: RegistryReturns): HolderClear {
     val clears = base.methods.flatMap { method ->
         val code = method.implementation?.instructions?.toList().orEmpty()
         code.indices.filter { index ->
             val store = code[index]
-            val zero = code.getOrNull(index - 1)
-            store.opcode == Opcode.IPUT_OBJECT && zero?.opcode == Opcode.CONST_4 &&
+            store.opcode == Opcode.IPUT_OBJECT &&
                 ((store as ReferenceInstruction).reference as FieldReference).toString() == returns.defaultHolder &&
-                (zero as OneRegisterInstruction).registerA == (store as TwoRegisterInstruction).registerA &&
-                (zero as NarrowLiteralInstruction).narrowLiteral == 0
+                method.writersReaching(index, (store as TwoRegisterInstruction).registerA).singleOrNull()
+                    ?.let { isNullConstant(code.getOrNull(it)) } == true
         }.map { method to it }
     }
     val (method, store) = clears.singleOrNull()
@@ -1232,7 +1232,7 @@ internal fun holderClear(base: ClassDef, returns: RegistryReturns): HolderClear 
     val code = method.implementation!!.instructions.toList()
     if (code.indices.any { it != store - 1 && store in flow.normal[it] }) refuse("$where has a jump onto its clear of the default holder")
     if (store + 1 >= code.size) refuse("$where ends at its clear of the default holder")
-    return HolderClear(method, store - 1, store, (code[store] as TwoRegisterInstruction).registerB)
+    return HolderClear(method, store, (code[store] as TwoRegisterInstruction).registerB)
 }
 
 /**
@@ -2475,14 +2475,14 @@ internal fun MutableMethod.keepsOverlayOnPress(seek: FooterSeek, visibility: Foo
 }
 
 /**
- * Ahead of the scrubber's unload clearing the registry's default holder ([HolderClear.clear]): ask the
+ * Ahead of the scrubber's unload clearing the registry's default holder ([HolderClear.store]): ask the
  * extension about what the registry holds and the scrubber's own holder. A yes skips Facebook's clear,
  * so a scrubber unloading late leaves the holder of the one loaded after it.
  */
 internal fun MutableMethod.keepsNewerHolder(clear: HolderClear, load: ScrubberLoad, returns: RegistryReturns) {
-    val (current, own) = freeLocalsAt(PATCH, clear.clear, 2, targets = listOf(clear.store + 1))
+    val (current, own) = freeLocalsAt(PATCH, clear.store, 2, targets = listOf(clear.store + 1))
     addInstructionsWithLabels(
-        clear.clear,
+        clear.store,
         """
             iget-object v$current, v${clear.registry}, ${returns.defaultHolder}
             move-object/from16 v$own, p0
