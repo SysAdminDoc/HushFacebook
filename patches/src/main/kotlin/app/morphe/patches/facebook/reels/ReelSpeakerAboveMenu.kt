@@ -15,6 +15,7 @@ import app.morphe.patches.facebook.downloads.reel.isSidebarBuilder
 import app.morphe.patches.facebook.downloads.reel.sidebarAssemblyIndex
 import app.morphe.patches.facebook.downloads.reel.sidebarRender
 import app.morphe.patches.facebook.feed.methodsHolding
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.util.addInstructionsAtControlFlowLabel
@@ -63,6 +64,10 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * - 585's Android 9 build (minapi28, read 2026-11-07) splits the side column: its builder
  *   (LX/09f2;->A03) holds the assembly, and the component the reel's builder news up (LX/0B9q) holds
  *   the reel and reads the layout's flag in the render that calls the builder ([sidebarRender]).
+ * - 588 (read 2026-11-18) makes the side column in a static the reel's builder calls (arm64
+ *   LX/09rY;->A00, [sideColumnMaker]), so the mark goes in there. The builder's lighter layout reaches
+ *   the same static through a lambda and makes no corner, so its reel's mark holds none and the reel
+ *   keeps Facebook's speaker.
  * - The corner and the video controls then drop theirs for a marked reel ([REEL_SPEAKER_STAYS]), and
  *   the builder is told to build the speaker while the side column asks ([REEL_FOOTER_LEAVES_SPEAKER]),
  *   since a server flag can leave it to the controls. Its other caller, the video settings row, isn't
@@ -159,6 +164,18 @@ internal fun sideColumnExitAsk(builder: Method, render: Method, assemblyIndex: I
 private fun oneOf(code: List<Instruction>, what: String, picks: (Instruction) -> Boolean): Int =
     code.indices.filter { picks(code[it]) }.singleOrNull()
         ?: throw PatchException("$PATCH: expected one $what, found ${code.count(picks)}")
+
+/**
+ * Where the side column [component] gets made for [method], a reel's builder: [method] itself, or
+ * from 588 on the one static it calls that news the column up. Null when that's neither.
+ */
+private fun BytecodePatchContext.sideColumnMaker(method: Method, component: String): Method? {
+    if (component in newInstanceTypes(method)) return method
+    return staticOrVirtualCalls(method)
+        .mapNotNull { call -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
+        .filter { component in newInstanceTypes(it) }
+        .singleOrNull()
+}
 
 /**
  * The register in front of the reel among the arguments of the build at [site]: the slot its hook
@@ -279,13 +296,15 @@ internal fun BytecodePatchContext.moveReelSpeakerAboveMenu(footer: SpeakerSite, 
     val askField = asks?.let { ask -> corner.fields.singleOrNull { it.type.toString() == ask.definingClass } }
     if (asks != null && askField == null) throw PatchException("$PATCH: the corner doesn't hold ${asks.definingClass}")
 
-    val (builderOwner, reelBuilder) = classDefByStrings(FOOTER_COMPONENT, StringComparisonType.EQUALS)
+    val (reelBuilder, columnMaker) = classDefByStrings(FOOTER_COMPONENT, StringComparisonType.EQUALS)
         .filter { outsideExtension(it.type) }.distinctBy { it.type }
-        .flatMap { owner -> methodsHolding(owner, FOOTER_COMPONENT).map { owner.type to it } }
-        .filter { (_, method) -> newInstanceTypes(method).containsAll(listOf(corner.type, componentType)) }
-        .singleOrNull() ?: throw PatchException("$PATCH: expected one method of \"$FOOTER_COMPONENT\" to new up the corner and the side column")
+        .flatMap { owner -> methodsHolding(owner, FOOTER_COMPONENT) }
+        .filter { corner.type in newInstanceTypes(it) }
+        .mapNotNull { method -> sideColumnMaker(method, componentType)?.let { method to it } }
+        .singleOrNull() ?: throw PatchException("$PATCH: expected one method of \"$FOOTER_COMPONENT\" to new up the corner and have the side column made")
     val reelBuilderCode = reelBuilder.code()
-    val marked = oneOf(reelBuilderCode, "write of the side column's reel") { instruction ->
+    val columnMakerCode = columnMaker.code()
+    val marked = oneOf(columnMakerCode, "write of the side column's reel") { instruction ->
         instruction.opcode == Opcode.IPUT_OBJECT && ((instruction as ReferenceInstruction).reference as FieldReference).let {
             it.definingClass == componentType && it.type == item
         }
@@ -296,7 +315,7 @@ internal fun BytecodePatchContext.moveReelSpeakerAboveMenu(footer: SpeakerSite, 
     }
     val madeRegister = (reelBuilderCode[made] as? RegisterRangeInstruction)?.startRegister
         ?: (reelBuilderCode[made] as FiveRegisterInstruction).registerC
-    val markedRegister = (reelBuilderCode[marked] as TwoRegisterInstruction).registerA
+    val markedRegister = (columnMakerCode[marked] as TwoRegisterInstruction).registerA
 
     val footerSlot = reelSlot(footer, item)
     val controlsSlot = controls?.let { reelSlot(it, item) }
@@ -393,13 +412,14 @@ internal fun BytecodePatchContext.moveReelSpeakerAboveMenu(footer: SpeakerSite, 
     }
     corner.methods.add(side)
 
-    val reelBuilderMutable = mutableClassDefBy(builderOwner).methods.single { isCalledBy(it, reelBuilder) }
-    // The later place first, so the earlier one's index still holds.
+    // The later place first, so the earlier one's index still holds when both are in one method.
     val places = listOf(
-        made + 1 to "invoke-static/range { v$madeRegister .. v$madeRegister }, $cornerType->$OFFER_SPEAKER($cornerType)V",
-        marked + 1 to "invoke-static/range { v$markedRegister .. v$markedRegister }, $REEL_SIDE_COLUMN_COMING",
-    ).sortedByDescending { it.first }
-    places.forEach { (index, call) -> reelBuilderMutable.addInstructions(index, call) }
+        Triple(reelBuilder, made + 1, "invoke-static/range { v$madeRegister .. v$madeRegister }, $cornerType->$OFFER_SPEAKER($cornerType)V"),
+        Triple(columnMaker, marked + 1, "invoke-static/range { v$markedRegister .. v$markedRegister }, $REEL_SIDE_COLUMN_COMING"),
+    ).sortedByDescending { it.second }
+    places.forEach { (method, index, call) ->
+        mutableClassDefBy(method.definingClass).methods.single { isCalledBy(it, method) }.addInstructions(index, call)
+    }
 
     // Last into the list, so it lands behind every other button, the Download one included.
     val sidebarBuilder = mutableClassDefBy(sidebarClass.type).methods.single { isCalledBy(it, render) }

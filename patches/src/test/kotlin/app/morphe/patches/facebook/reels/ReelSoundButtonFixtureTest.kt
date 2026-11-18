@@ -16,10 +16,12 @@ import app.morphe.patches.facebook.downloads.reel.sidebarAssemblyIndex
 import app.morphe.patches.facebook.downloads.reel.sidebarRender
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.methodsHolding
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.search.branchTarget
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.ControlFlow
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -344,12 +346,15 @@ class ReelSoundButtonFixtureTest {
         val footers = owned(FOOTER_COMPONENT)
         val controls = owned(SPEAKER_CONTROLS)
         val sidebars = owned(SIDEBAR)
-        val pieceTypes = footers.flatMap { methodsHolding(it, FOOTER_COMPONENT) }.flatMap(::newInstanceTypes).filter(::outsideExtension).toSet()
+        val footerMethods = footers.flatMap { methodsHolding(it, FOOTER_COMPONENT) }
+        val pieceTypes = footerMethods.flatMap(::newInstanceTypes).filter(::outsideExtension).toSet()
         val pieces = FixtureDex.classes(bundle, pieceTypes).values.toList()
-        val calledTypes = (pieces + controls).flatMap { it.methods }.flatMap(::staticOrVirtualCalls).map { it.definingClass }.toSet()
+        // The footer's own calls too: 588's reel builder has a static make the side column.
+        val calledTypes = ((pieces + controls).flatMap { it.methods } + footerMethods).flatMap(::staticOrVirtualCalls).map { it.definingClass }.toSet()
+        val called = FixtureDex.classes(bundle, calledTypes)
         val context = PatchContexts.of(
             (footers + controls + sidebars + pieces + owned(SOUND_TOGGLE_STRING) + owned(VERTICAL_UFI_FLAG) + owned(SOUND_BUTTON_KEY) +
-                FixtureDex.classes(bundle, calledTypes).values).distinctBy { it.type },
+                called.values).distinctBy { it.type },
         )
         val (sidebar, originalRender) = sidebars.flatMap { owner -> owner.methods.filter { isSidebarBuilder(it, owner.methods) }.map { owner to it } }.single()
         val originalAssembly = originalRender.code()[sidebarAssemblyIndex(originalRender.code())]
@@ -440,19 +445,35 @@ class ReelSoundButtonFixtureTest {
         assertEquals("$name: what the offer calls", listOf(leaves.toString(), REEL_REMEMBER_CORNER), offer)
 
         // The reel's builder offers each corner as it's made and marks each reel it gives this side column.
+        fun columnMakers(method: Method) = if (component.type in newInstanceTypes(method)) listOf(method) else
+            staticOrVirtualCalls(method).mapNotNull { call -> called[call.definingClass]?.let { resolveStatic(it, call) } }
+                .filter { component.type in newInstanceTypes(it) }
         val (owner, holder) = footers.flatMap { o -> methodsHolding(o, FOOTER_COMPONENT).map { o to it } }
-            .single { (_, method) -> newInstanceTypes(method).containsAll(listOf(cornerType, component.type)) }
+            .single { (_, method) -> cornerType in newInstanceTypes(method) && columnMakers(method).isNotEmpty() }
+        val maker = columnMakers(holder).single()
         val reel = context.mutableClassDefBy(owner.type).methods.single { isCalledBy(it, holder) }.code()
         val made = reel.indices.single { reel[it].called()?.let { call -> call.definingClass == cornerType && call.name == "<init>" } == true }
         assertEquals("$name: the corner isn't offered as it's made", OFFER_SPEAKER, reel[made + 1].called()?.name)
         assertEquals("$name: another object is offered", reel[made].firstRegister(), reel[made + 1].firstRegister())
-        val marked = reel.indices.single { reel[it].called()?.toString() == REEL_SIDE_COLUMN_COMING }
-        val written = reel[marked - 1]
+        val marking = context.mutableClassDefBy(maker.definingClass).methods.single { isCalledBy(it, maker) }.code()
+        val marked = marking.indices.single { marking[it].called()?.toString() == REEL_SIDE_COLUMN_COMING }
+        val written = marking[marked - 1]
         assertEquals("$name: the mark isn't after a field write", Opcode.IPUT_OBJECT, written.opcode)
         val field = (written as ReferenceInstruction).reference as FieldReference
         assertEquals("$name: the mark isn't the side column's", component.type, field.definingClass)
         assertEquals("$name: the mark isn't the reel's", item, field.type)
-        assertEquals("$name: the mark reads another register", (written as TwoRegisterInstruction).registerA, reel[marked].firstRegister())
+        assertEquals("$name: the mark reads another register", (written as TwoRegisterInstruction).registerA, marking[marked].firstRegister())
+        // The corner is only remembered for a reel already marked, so a static making the column has to run first.
+        if (maker !== holder) {
+            val stock = holder.code()
+            val flow = ControlFlow.of(holder)
+            val asked = stock.indices.single { at -> stock[at].called()?.let { it.definingClass == maker.definingClass && isCalledBy(maker, it) } == true }
+            val cornerMade = stock.indices.single { at -> stock[at].called()?.let { it.definingClass == cornerType && it.name == "<init>" } == true }
+            val seen = mutableSetOf(asked)
+            val pending = ArrayDeque(listOf(asked))
+            while (pending.isNotEmpty()) flow.normal[pending.removeFirst()].filter(seen::add).forEach(pending::addLast)
+            assertTrue("$name: the side column isn't made on the way to the corner", cornerMade in seen)
+        }
 
         // The builder asks before it leaves the speaker to the controls.
         val toggles = owned(SOUND_TOGGLE_STRING).map { it.type }.toSet()
