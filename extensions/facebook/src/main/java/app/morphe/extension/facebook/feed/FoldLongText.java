@@ -4,6 +4,13 @@
  */
 package app.morphe.extension.facebook.feed;
 
+import android.graphics.Paint;
+import android.text.Layout;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
+
 import androidx.annotation.Nullable;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -30,6 +37,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * keeps Facebook's numbers. Show full post text, while on, wins for posts: their numbers stay
  * Facebook's, and that switch shows them whole.
  *
+ * <p>Those numbers alone missed many posts and comments (#506). A post can come with a fixed place
+ * to cut, which beats the line limit, so with a count picked that place is dropped ({@link #postCut}).
+ * A feed post Facebook has chosen to show whole folds again ({@link #hoisted}). A comment's "lines"
+ * only count line breaks, so its characters decide, and they're measured for the comment's own text
+ * instead of guessed. A video's caption has a limit of its own, which takes the count picked for
+ * posts ({@link #captionLines}).
+ *
  * <p>Facebook's choice, paused, before the settings are ready, or when anything here fails, the
  * numbers are Facebook's own.
  */
@@ -45,6 +59,15 @@ public final class FoldLongText {
 
     /** The member the report names once a comment's character budget has gone through here. */
     static final String COMMENT_CHARS = "comment character budget";
+
+    /** The member the report names once a post's fixed cut has gone through here. */
+    static final String POST_CUT = "post fixed cut";
+
+    /** The member the report names once a feed post shown whole has gone through here. */
+    static final String POST_HOISTED = "post shown whole in the feed";
+
+    /** The member the report names once a video caption's line limit has gone through here. */
+    static final String CAPTION_LINES = "video caption line limit";
 
     /** Counted each time a post's line limit becomes the one picked. */
     static final String POST_FOLDED = "post folded at the picked lines";
@@ -63,6 +86,18 @@ public final class FoldLongText {
 
     /** Room left on the last line for the " ... See more" Facebook adds. */
     static final int SEE_MORE_ROOM = 10;
+
+    /** The screen's width a comment's text doesn't get: the picture beside it and the bubble's sides. */
+    static final int COMMENT_SIDE_DP = 92;
+
+    /** The size of a comment's text. */
+    static final int COMMENT_TEXT_SP = 15;
+
+    /** How much of a long comment is measured for each line asked for, so its length costs nothing. */
+    static final int COMMENT_MEASURED_CHARS_PER_LINE = 200;
+
+    /** What the last line has to leave room for, with a wide letter to spare for rounding. */
+    static final String COMMENT_SEE_MORE = "... See moreW";
 
     private static final String FAMILY = FamilyNames.FOLD_LONG_TEXT;
 
@@ -136,19 +171,109 @@ public final class FoldLongText {
     }
 
     /**
-     * The hook on a comment's character budget, handed it and the line limit beside it (before
-     * that goes through {@link #commentLines}). Answers about the picked count's worth, or Facebook's.
+     * The hook on a comment's character budget, handed it, the line limit beside it (before that
+     * goes through {@link #commentLines}) and the comment's text. Facebook's line limit only counts
+     * line breaks, so these characters are what really folds a comment: answers where the picked
+     * count of lines ends for this text, or Facebook's.
      */
-    public static int commentChars(int chars, int lines) {
+    public static int commentChars(int chars, int lines, @Nullable CharSequence text) {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, COMMENT_CHARS);
             int picked = commentPick();
             if (picked <= 0 || !folds(lines, picked) || chars <= 0) return chars;
-            return budget(picked, COMMENT_CHARS_PER_LINE);
+            return commentBudget(picked, text);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, COMMENT_CHARS, failure);
             return chars;
+        }
+    }
+
+    /**
+     * The hook on the fixed place a post's text may be cut at, which Facebook prefers to any line
+     * limit. Answers null with a count picked, so the count decides, or Facebook's place.
+     */
+    @Nullable
+    public static Integer postCut(@Nullable Integer position) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, POST_CUT);
+            return postPick() > 0 ? null : position;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, POST_CUT, failure);
+            return position;
+        }
+    }
+
+    /**
+     * The hook on Facebook's choice to show a feed post whole, handed it as non-zero for yes.
+     * Answers no with a count picked, so the post folds like the others, or Facebook's.
+     */
+    public static int hoisted(int whole) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, POST_HOISTED);
+            return postPick() > 0 ? 0 : whole;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, POST_HOISTED, failure);
+            return whole;
+        }
+    }
+
+    /**
+     * The hook on the lines a video's folded caption shows, handed Facebook's. Answers the count
+     * picked for posts, or Facebook's. Show full post text has no say here, since captions have a
+     * switch of their own.
+     */
+    public static int captionLines(int lines) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, CAPTION_LINES);
+            if (!Utils.settingsReady()) return lines;
+            int picked = Settings.FOLD_POST_TEXT.get().lines;
+            return picked > 0 ? picked : lines;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, CAPTION_LINES, failure);
+            return lines;
+        }
+    }
+
+    /**
+     * The characters that end [picked] laid out lines of [text], leaving room for See more, or at
+     * least the whole text when it fits. A line that ends in a line break answers that line's end, so
+     * Facebook's own count of line breaks stops at the same place. Without the text, or when it can't
+     * be measured, about that many lines' worth.
+     */
+    private static int commentBudget(int picked, @Nullable CharSequence text) {
+        int fallback = budget(picked, COMMENT_CHARS_PER_LINE);
+        if (text == null) return fallback;
+        try {
+            DisplayMetrics metrics = Utils.getContext().getResources().getDisplayMetrics();
+            int side = Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, COMMENT_SIDE_DP, metrics));
+            int width = metrics.widthPixels - side;
+            if (width <= 0) return fallback;
+
+            TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, COMMENT_TEXT_SP, metrics));
+            String whole = text.toString();
+            int length = whole.length();
+            int end = Math.min(length, (picked + 1) * COMMENT_MEASURED_CHARS_PER_LINE);
+            StaticLayout layout = StaticLayout.Builder.obtain(whole, 0, end, paint, width)
+                    .setIncludePad(false).build();
+            int count = layout.getLineCount();
+            if (count <= picked && end == length) return Math.max(length, fallback);
+
+            int last = Math.min(picked, count) - 1;
+            float room = paint.measureText(COMMENT_SEE_MORE);
+            float x = layout.getParagraphDirection(last) == Layout.DIR_RIGHT_TO_LEFT ? room : width - room;
+            int lineStart = layout.getLineStart(last);
+            int lineEnd = layout.getLineEnd(last);
+            int offset = Math.max(lineStart, Math.min(lineEnd, layout.getOffsetForHorizontal(last, x)));
+            if (offset >= lineEnd - 1) return lineEnd;
+            return Math.max(1, offset);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, COMMENT_CHARS, failure);
+            return fallback;
         }
     }
 

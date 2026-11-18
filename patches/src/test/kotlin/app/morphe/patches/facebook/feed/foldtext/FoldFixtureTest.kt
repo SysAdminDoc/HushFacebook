@@ -12,8 +12,11 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.posttext.CHARACTER_STYLE
 import app.morphe.patches.facebook.feed.posttext.CUT
+import app.morphe.patches.facebook.feed.posttext.SPANNABLE_STRING
 import app.morphe.patches.facebook.feed.posttext.TRANSLATION_TEXT
+import app.morphe.patches.facebook.feed.posttext.captionComponents
 import app.morphe.patches.facebook.feed.posttext.captionMarked
 import app.morphe.patches.facebook.feed.posttext.captionTypes
 import app.morphe.patches.facebook.feed.posttext.cutShaped
@@ -24,6 +27,7 @@ import app.morphe.patches.facebook.feed.posttext.translatePostsPatch
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -42,13 +46,14 @@ import java.io.File
 
 /**
  * Fold long text's places on every Facebook build the bundle declares: the post text builder's
- * line limit and cut config, the line limit's class's maker, and the comment sheet's cut config.
- * Then the patch on them: each line limit goes through the extension right after it lands, each
- * config call hands its characters and lines through it first at the call's label, so every jump
- * that went to the call lands on the hook, and the comment's hook sits in the call's try block. It
- * also checks that Show full post text's and Translate posts' hooks keep their places in the
- * builder, whatever order the three run in. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR
- * and skips without it.
+ * line limit, cut config and two cuts, the line limit's class's maker, the comment sheet's cut
+ * config, the feed's choice to show a post whole, and a video caption's limit. Then the patch on
+ * them: each line limit goes through the extension right after it lands, each config call hands its
+ * characters and lines through it first at the call's label, so every jump that went to the call
+ * lands on the hook, and the comment's hook sits in the call's try block and hands over the text the
+ * cut reads. It also checks that Show full post text's and Translate posts' hooks keep their places
+ * in the builder, whatever order the three run in. Reads the fixture bundles from
+ * HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class FoldFixtureTest {
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
@@ -113,7 +118,7 @@ class FoldFixtureTest {
         val config = patched[at + 4]
         assertTrue("$name: the config call doesn't follow its hook", factories(patched).contains(at + 4))
         val (charsRegister, linesRegister) = arguments(config)
-        assertEquals("$name: the numbers handed over", listOf(charsRegister, linesRegister), arguments(patched[at]))
+        assertEquals("$name: the numbers handed over", listOf(charsRegister, linesRegister), arguments(patched[at]).take(2))
         assertEquals(Opcode.MOVE_RESULT, patched[at + 1].opcode)
         assertEquals(charsRegister, (patched[at + 1] as OneRegisterInstruction).registerA)
         assertTrue(patched[at + 2].names(lines))
@@ -125,6 +130,63 @@ class FoldFixtureTest {
         return at
     }
 
+    /** Each hook on a fixed cut: through the range form into the same register, with the cut taking it next. */
+    private fun assertCutHooks(name: String, code: List<Instruction>) {
+        val hooks = code.indices.filter { code[it].names(POST_CUT) }
+        assertEquals("$name: the fixed cut hooks", 2, hooks.size)
+        for (at in hooks) {
+            val register = (code[at] as RegisterRangeInstruction).let {
+                assertEquals("$name: the fixed cut hook's registers", 1, it.registerCount)
+                it.startRegister
+            }
+            assertEquals(Opcode.MOVE_RESULT_OBJECT, code[at + 1].opcode)
+            assertEquals(register, (code[at + 1] as OneRegisterInstruction).registerA)
+            val cut = code[at + 2].call()
+            assertEquals("$name: no cut after the hook", SPANNABLE_STRING, cut?.returnType)
+            assertEquals(CHARACTER_STYLE, cut!!.parameterTypes.first().toString())
+            assertEquals("$name: the cut's fixed place", register, arguments(code[at + 2])[4])
+        }
+    }
+
+    /** The hook right after [at] passing the int [at] left in its register through [hook]. */
+    private fun assertPassedOn(name: String, code: List<Instruction>, at: Int, hook: String) {
+        val register = (code[at] as OneRegisterInstruction).registerA
+        assertTrue("$name: no hook right after index $at", code[at + 1].names(hook))
+        assertEquals(register to 1, (code[at + 1] as RegisterRangeInstruction).let { it.startRegister to it.registerCount })
+        assertEquals(Opcode.MOVE_RESULT, code[at + 2].opcode)
+        assertEquals(register, (code[at + 2] as OneRegisterInstruction).registerA)
+    }
+
+    /** The caption's two hooks: on the limit where its ways in meet, and on the server number. */
+    private fun assertCaptionHooks(name: String, context: BytecodePatchContext, component: String) {
+        val hooked = context.mutableClassDefBy(component).methods.filter { method ->
+            method.implementation?.instructions?.any { it.names(CAPTION_LINES) } == true
+        }
+        assertEquals("$name: caption methods hooked", 1, hooked.size)
+        val code = hooked.single().code()
+        val hooks = code.indices.filter { code[it].names(CAPTION_LINES) }
+        assertEquals("$name: the caption's hooks", 2, hooks.size)
+
+        val first = hooks.first()
+        assertPassedOn("$name caption limit", code, first - 1, CAPTION_LINES)
+        assertTrue("$name: nothing jumps to the limit's hook", jumpsInto(code, first) > 0)
+        assertEquals("$name: a jump skips the limit's hook", 0, jumpsInto(code, first + 2))
+        val measure = code.indices.single { at ->
+            code[at].opcode in setOf(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE) && code[at].call()?.let { call ->
+                call.name == "<init>" && call.definingClass != component &&
+                    call.parameterTypes.map(CharSequence::toString) == listOf("I", "I", "Z", "Z")
+            } == true
+        }
+        val limit = (code[first - 1] as OneRegisterInstruction).registerA
+        assertEquals("$name: the measure's limit", limit, arguments(code[measure])[2])
+        assertEquals("$name: the hook's answer is the only limit the measure can get",
+            listOf(first + 1), hooked.single().writersReaching(measure, limit))
+
+        val second = hooks.last()
+        assertEquals("$name: the server number before its hook", Opcode.LONG_TO_INT, code[second - 1].opcode)
+        assertPassedOn("$name caption server number", code, second - 1, CAPTION_LINES)
+    }
+
     @Test
     fun `each declared build folds a post's text and a comment through the extension`() {
         val checked = mutableSetOf<String>()
@@ -132,12 +194,16 @@ class FoldFixtureTest {
             for (bundle in bundles) {
                 val name = bundle.name
                 val found = FixtureDex.methodsWhere(bundle, { true }) {
-                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (cutShaped(it) || foldMarked(it) || captionMarked(it) || traced(it))
+                    !it.definingClass.startsWith(EXTENSION_CLASSES) && (cutShaped(it) || foldMarked(it) || captionMarked(it) ||
+                        traced(it) || hoistedAnswers(it.implementation?.instructions?.toList().orEmpty()).isNotEmpty())
                 }
                 val builder = found.filter(::cutShaped).single()
                 val commentMethods = found.filter(::traced)
                 assertEquals("$name: methods naming the comment's trace", 1, commentMethods.size)
                 val comment = commentMethods.single()
+                val hoistedMethods = found.filter { hoistedAnswers(it.code()).isNotEmpty() }
+                assertEquals("$name: methods asking whether a post shows whole", 1, hoistedMethods.size)
+                val hoisted = hoistedMethods.single()
                 val builderCode = builder.code()
                 val limits = builderCode.mapNotNull { it.call() }.filter { lineLimitShaped(it) }
                 val limit = limits.distinctBy { it.toString() }.singleOrNull()
@@ -145,7 +211,7 @@ class FoldFixtureTest {
                 // Show full post text's fold and reel caption classes, for running it after or before.
                 val folds = foldTypes(found) + captionTypes(bundle, found)
                 val classes = FixtureDex.classes(bundle,
-                    setOf(builder.definingClass, limit.definingClass, comment.definingClass, FRAGMENT_ACTIVITY) + folds)
+                    setOf(builder.definingClass, limit.definingClass, comment.definingClass, hoisted.definingClass, FRAGMENT_ACTIVITY) + folds)
                 val commentCode = comment.code()
                 val stock = { PatchContexts.of((classes.values + ExtensionDex.classDef(SETTINGS_STATUS)).toList()) }
 
@@ -172,11 +238,21 @@ class FoldFixtureTest {
                 val makerCode = maker.code()
 
                 val post = context.after(builder).code()
-                assertEquals("$name: the builder's hooks", builderCode.size + 6, post.size)
+                assertEquals("$name: the builder's hooks", builderCode.size + 10, post.size)
                 assertEquals(2, post.count { it.names(POST_LINES) })
                 assertEquals(1, post.count { it.names(POST_CHARS) })
                 assertLineHook("$name builder", post, limit, POST_LINES)
                 assertConfigHook("$name builder", builderCode, post, POST_CHARS, POST_LINES)
+                assertCutHooks("$name builder", post)
+
+                val whole = context.after(hoisted).code()
+                val answer = hoistedAnswers(whole).single()
+                assertPassedOn("$name post shown whole", whole, answer, POST_HOISTED)
+                assertEquals("$name: the hook on a post shown whole", hoisted.code().size + 2, whole.size)
+
+                val components = captionComponents(found)
+                assertEquals("$name: the caption's component", 1, components.size)
+                assertCaptionHooks(name, context, components.single())
 
                 val made = context.after(maker).code()
                 assertEquals("$name: the maker's hooks", makerCode.size + 6, made.size)
@@ -190,6 +266,11 @@ class FoldFixtureTest {
                 assertEquals("$name: the comment's hook", commentCode.size + 4, folded.size)
                 assertEquals(0, folded.count { it.names(POST_LINES) || it.names(POST_CHARS) })
                 val commentHook = assertConfigHook("$name comment", commentCode, folded, COMMENT_CHARS, COMMENT_LINES)
+                val commentCut = (commentHook + 4 until folded.size).first { index ->
+                    folded[index].call()?.let { it.returnType == SPANNABLE_STRING && it.parameterTypes.first().toString() == CHARACTER_STYLE } == true
+                }
+                assertEquals("$name: the text handed over is the one the cut reads",
+                    arguments(folded[commentCut])[2], arguments(folded[commentHook])[2])
                 val stockConfig = commentCode.indexOfFirst { it.call()?.toString() == folded[commentHook + 4].call().toString() }
                 val tries = catching(comment, stockConfig)
                 assertTrue("$name: the comment's config call isn't in a try block", tries.isNotEmpty())
@@ -220,7 +301,8 @@ class FoldFixtureTest {
                     assertTrue("$name: the text's hook after $names", all[0].names(TRANSLATION_TEXT))
                     assertLineHook("$name after $names", all, limit, POST_LINES)
                     assertConfigHook("$name after $names", builderCode, all, POST_CHARS, POST_LINES)
-                    assertEquals("$name: hooks after $names", builderCode.size + 2 * (returns + 2) + 6, all.size)
+                    assertCutHooks("$name after $names", all)
+                    assertEquals("$name: hooks after $names", builderCode.size + 2 * (returns + 2) + 10, all.size)
                     assertEquals(made.size, together.after(maker).code().size)
                 }
                 checked += version

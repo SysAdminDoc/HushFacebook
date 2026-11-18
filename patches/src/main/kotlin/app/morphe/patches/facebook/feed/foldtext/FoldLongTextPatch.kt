@@ -10,22 +10,31 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.ads.affiliate.FB_USER_SESSION
+import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.isStringTable
 import app.morphe.patches.facebook.feed.methodsNaming
+import app.morphe.patches.facebook.feed.posttext.CAPTION_TOGGLE
 import app.morphe.patches.facebook.feed.posttext.CHARACTER_STYLE
 import app.morphe.patches.facebook.feed.posttext.GRAPHQL_STORY
 import app.morphe.patches.facebook.feed.posttext.LINE_LIMIT_KEY
 import app.morphe.patches.facebook.feed.posttext.SPANNABLE_STRING
 import app.morphe.patches.facebook.feed.posttext.appClass
 import app.morphe.patches.facebook.feed.posttext.findPostTextBuilder
+import app.morphe.patches.facebook.feed.posttext.sendersOf
+import app.morphe.patches.facebook.feed.posttext.toggled
+import app.morphe.patches.facebook.feed.posttext.writes
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.ControlFlow
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.containsLiteralInstruction
 import app.morphe.util.findMutableMethodOf
+import app.morphe.util.readsAfter
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -34,18 +43,35 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 internal const val FOLD_PATCH = "Fold long text"
 
 internal const val FOLD_LONG_TEXT = "Lapp/morphe/extension/facebook/feed/FoldLongText;"
 internal const val POST_LINES = "$FOLD_LONG_TEXT->postLines(I)I"
 internal const val POST_CHARS = "$FOLD_LONG_TEXT->postChars(II)I"
+internal const val POST_CUT = "$FOLD_LONG_TEXT->postCut(Ljava/lang/Integer;)Ljava/lang/Integer;"
+internal const val POST_HOISTED = "$FOLD_LONG_TEXT->hoisted(I)I"
 internal const val COMMENT_LINES = "$FOLD_LONG_TEXT->commentLines(I)I"
-internal const val COMMENT_CHARS = "$FOLD_LONG_TEXT->commentChars(II)I"
+internal const val COMMENT_CHARS = "$FOLD_LONG_TEXT->commentChars(IILjava/lang/CharSequence;)I"
+internal const val CAPTION_LINES = "$FOLD_LONG_TEXT->captionLines(I)I"
 
 /** The trace Facebook opens around its cut of a comment's text in the comment sheet (587). */
 internal const val COMMENT_TRACE = "CommentBodyTruncationUtil.maybeTruncateCommentBody"
+
+/** The kept class Facebook names beside its choice to show a feed post's text whole (588). */
+internal const val ATTACHED_STORY_COMPONENTS =
+    "Lcom/facebook/feedplugins/plugins/content/textcontent/interfaces/NewsFeedAttachedStoryComponents;"
+
+/** Where a text cut takes the fixed place it may cut at, and that place's type. */
+private const val FIXED_CUT_ARGUMENT = 4
+private const val FIXED_CUT_TYPE = "Ljava/lang/Integer;"
+
+/** The ints and booleans of the class a video caption's measure lands in: lines, limit, overflow, long. */
+private val CAPTION_MEASURE = listOf("I", "I", "Z", "Z")
 
 /**
  * A long post's text and a long comment fold after the number of lines the reader picks (#497).
@@ -63,6 +89,13 @@ internal const val COMMENT_TRACE = "CommentBodyTruncationUtil.maybeTruncateComme
  * Each line limit goes through the extension right after it's answered, and each factory call hands
  * its two numbers through it first, at the call's label, so a branch to the call (587's maker has
  * three) passes the hooks too. The extension answers Facebook's own numbers until a count is picked.
+ *
+ * Four more places decide a fold without those numbers (#506). The cuts also take a fixed position
+ * that beats the config, so it goes through the extension at each cut's label. The feed component
+ * decides to show some posts whole, right beside [ATTACHED_STORY_COMPONENTS], and that answer goes
+ * through it too. The comment's character budget gets the comment's text, since Facebook's line limit
+ * there only counts line breaks. And a video's caption folds by a limit of its own in the component
+ * [CAPTION_TOGGLE] names, from the component's field or a server number, which both go through it.
  */
 @Suppress("unused")
 val foldLongTextPatch = bytecodePatch(
@@ -71,7 +104,7 @@ val foldLongTextPatch = bytecodePatch(
     description = "Lets you pick how many lines a long post or comment shows before See more, from 1 to 20, " +
         "so you can fold sooner or read more before tapping. Starts at Facebook's choice. Pick the lines for " +
         "posts in Hushfacebook settings > News feed, and for comments under Comments and writing. " +
-        "While Show full post text is on, posts still show whole.",
+        "A video's caption follows the count for posts. While Show full post text is on, posts still show whole.",
 ) {
     // Feed already holds the most a group may, and the comment half lives under Comments and writing in settings.
     category("Comments")
@@ -81,8 +114,8 @@ val foldLongTextPatch = bytecodePatch(
     execute {
         requireStatusMethod("foldLongText")
         // Every place is found before any is changed, so a build missing one keeps Facebook's as it is.
-        val hooks = findPostFolds() + findCommentFold()
-        addFolds(hooks)
+        val inserts = findPostFolds() + findHoistedPost() + findCommentFold() + findCaptionFolds()
+        addFolds(inserts)
         enableStatus("foldLongText")
     }
 }
@@ -90,14 +123,16 @@ val foldLongTextPatch = bytecodePatch(
 private fun refuse(detail: String): Nothing = throw PatchException("$FOLD_PATCH: $detail")
 
 /**
- * One hook: in [method], [lines] is a line limit and [chars], when there is one, the character
- * budget beside it. Without [chars], [index] is right after the line limit's answer lands, and the
- * hook goes there. With it, [index] is the factory call that takes both, and the hook goes at its
- * label. [comment] picks the comment's hooks over the post's.
+ * One hook: [code] goes in at [index] of [method]. With [atLabel], the instruction there is a call
+ * something may branch to, and the branches land on the hook. Without it, nothing branches there.
  */
-internal class FoldHook(val method: Method, val index: Int, val lines: Int, val chars: Int?, val comment: Boolean)
+internal class FoldInsert(val method: Method, val index: Int, val code: String, val atLabel: Boolean)
 
 private val STATIC_CALLS = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
+private val DIRECT_CALLS = setOf(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE)
+private val ZERO_BRANCHES = setOf(Opcode.IF_EQZ, Opcode.IF_NEZ)
+private val INT_MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+private val GOTOS = setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32)
 
 /** The method a static call names, or null for any other instruction. */
 private fun staticCall(instruction: Instruction): MethodReference? =
@@ -139,38 +174,97 @@ private fun Method.code(): List<Instruction> = implementation?.instructions?.toL
 private fun callsOf(code: List<Instruction>, call: MethodReference): List<Int> =
     code.indices.filter { staticCall(code[it])?.toString() == call.toString() }
 
+/** The instructions that pass the int in [register] through [call] and keep its answer there. */
+private fun through(register: Int, call: String) = """
+    invoke-static/range {v$register .. v$register}, $call
+    move-result v$register
+"""
+
+/** The instructions that can go on to [index] of [flow], thrown exceptions included. */
+private fun comesFrom(flow: ControlFlow, index: Int): List<Int> =
+    flow.instructions.indices.filter { index in flow.normal[it] || index in flow.exceptional[it] }
+
 /** The hook after the line limit [method] asks for at [at]: its answer has to be kept right after the call. */
-private fun lineHook(method: Method, code: List<Instruction>, at: Int, comment: Boolean): FoldHook {
+private fun lineHook(method: Method, code: List<Instruction>, at: Int, linesCall: String): FoldInsert {
     val answer = code.getOrNull(at + 1)
     if (answer?.opcode != Opcode.MOVE_RESULT) refuse("${where(method)} doesn't keep its line limit right after asking at $at")
     val register = (answer as OneRegisterInstruction).registerA
     if (at + 2 >= code.size) refuse("${where(method)} ends right after its line limit")
-    return FoldHook(method, at + 2, register, null, comment)
+    // After the answer lands: a branch to the next instruction still finds it there.
+    return FoldInsert(method, at + 2, through(register, linesCall), atLabel = false)
 }
 
 /**
- * The hook on the factory call at [at] in [method]. Its numbers are handed to the extension in the
- * short call form, or the range form when they sit side by side, so both have to be named that way.
+ * The hook on the factory call at [at] in [method], with [text], when there is one, handed over
+ * after its two numbers. They go to the extension in the short call form, or the range form when they
+ * sit side by side, so all of them have to be named that way.
  */
-private fun configHook(method: Method, code: List<Instruction>, at: Int, comment: Boolean): FoldHook {
+private fun configHook(
+    method: Method,
+    code: List<Instruction>,
+    at: Int,
+    charsCall: String,
+    linesCall: String,
+    text: Int? = null,
+): FoldInsert {
     val registers = arguments(code[at])
     if (registers.size != 2) refuse("${where(method)} makes its cut config at $at from ${registers.size} registers")
     val (chars, lines) = registers
     if (chars == lines) refuse("${where(method)} makes its cut config at $at from one register twice")
-    if ((chars > 15 || lines > 15) && lines != chars + 1) {
-        refuse("${where(method)} makes its cut config at $at from v$chars and v$lines, which no call can hand on")
+    val handed = registers + listOfNotNull(text)
+    val sideBySide = handed.zipWithNext().all { (first, next) -> next == first + 1 }
+    if (handed.any { it > 15 } && !sideBySide) {
+        refuse("${where(method)} makes its cut config at $at from $handed, which no call can hand on")
     }
-    if (chars > 255 || lines > 255) refuse("${where(method)} keeps its cut config's numbers past v255")
-    return FoldHook(method, at, lines, chars, comment)
+    if (handed.any { it > 255 }) refuse("${where(method)} keeps its cut config's numbers past v255")
+    val handOver = if (handed.all { it <= 15 }) {
+        "invoke-static {${handed.joinToString { "v$it" }}}, $charsCall"
+    } else {
+        "invoke-static/range {v${handed.first()} .. v${handed.last()}}, $charsCall"
+    }
+    // The characters first, while the line limit beside them is still Facebook's.
+    return FoldInsert(
+        method,
+        at,
+        """
+            $handOver
+            move-result v$chars
+            ${through(lines, linesCall)}
+        """,
+        atLabel = true,
+    )
+}
+
+/** Whether [call] cuts a text and takes a fixed place to cut at. */
+private fun takesFixedCut(call: MethodReference) =
+    call.returnType == SPANNABLE_STRING && call.parameterTypes.size > FIXED_CUT_ARGUMENT &&
+        call.parameterTypes[0].toString() == CHARACTER_STYLE &&
+        call.parameterTypes[FIXED_CUT_ARGUMENT].toString() == FIXED_CUT_TYPE
+
+/** The hook on the fixed place the cut at [at] in [method] is handed, at the cut's label. */
+private fun fixedCutHook(method: Method, code: List<Instruction>, at: Int): FoldInsert {
+    val register = arguments(code[at]).getOrNull(FIXED_CUT_ARGUMENT)
+        ?: refuse("${where(method)} hands the cut at $at no fixed place")
+    if (register > 255) refuse("${where(method)} keeps the cut's fixed place past v255")
+    return FoldInsert(
+        method,
+        at,
+        """
+            invoke-static/range {v$register .. v$register}, $POST_CUT
+            move-result-object v$register
+        """,
+        atLabel = true,
+    )
 }
 
 /**
- * The four post hooks. In the builder, the line limit is the one static call shaped like it
- * ([lineLimitShaped]) whose method reads [LINE_LIMIT_KEY], and the factory is the one static `(II)`
- * call making a config a cut there takes ([cutConfigs]). The maker is the one static method of the
- * line limit's class that answers that config and calls both, once each.
+ * The post hooks. In the builder, the line limit is the one static call shaped like it
+ * ([lineLimitShaped]) whose method reads [LINE_LIMIT_KEY], the factory is the one static `(II)` call
+ * making a config a cut there takes ([cutConfigs]), and the two cuts, one for each way of folding,
+ * take the fixed place. The maker is the one static method of the line limit's class that answers
+ * that config and calls both, once each.
  */
-internal fun BytecodePatchContext.findPostFolds(): List<FoldHook> {
+internal fun BytecodePatchContext.findPostFolds(): List<FoldInsert> {
     val builder = mutable(findPostTextBuilder(FOLD_PATCH))
     val code = builder.code()
     val readsLineLimit = { call: MethodReference ->
@@ -186,6 +280,8 @@ internal fun BytecodePatchContext.findPostFolds(): List<FoldHook> {
     val factoryAt = factories.singleOrNull()
         ?: refuse("expected ${where(builder)} to make one cut config from characters and lines, found ${factories.size}")
     val factory = staticCall(code[factoryAt])!!
+    val cuts = code.indices.filter { at -> staticCall(code[at])?.let(::takesFixedCut) == true }
+    if (cuts.size != 2) refuse("expected ${where(builder)} to hand a fixed place to two cuts, found ${cuts.size}")
 
     val owner = classDefByOrNull(limit.definingClass) ?: refuse("${limit.definingClass} isn't in this build")
     val makers = owner.methods.filter { method ->
@@ -198,15 +294,58 @@ internal fun BytecodePatchContext.findPostFolds(): List<FoldHook> {
     )
     val makerCode = maker.code()
     return listOf(
-        lineHook(builder, code, limitAt, comment = false),
-        configHook(builder, code, factoryAt, comment = false),
-        lineHook(maker, makerCode, callsOf(makerCode, limit).single(), comment = false),
-        configHook(maker, makerCode, callsOf(makerCode, factory).single(), comment = false),
-    )
+        lineHook(builder, code, limitAt, POST_LINES),
+        configHook(builder, code, factoryAt, POST_CHARS, POST_LINES),
+        lineHook(maker, makerCode, callsOf(makerCode, limit).single(), POST_LINES),
+        configHook(maker, makerCode, callsOf(makerCode, factory).single(), POST_CHARS, POST_LINES),
+    ) + cuts.map { fixedCutHook(builder, code, it) }
 }
 
-/** The comment hook: the one factory call in the one method naming [COMMENT_TRACE]. */
-internal fun BytecodePatchContext.findCommentFold(): FoldHook {
+/**
+ * Where [code] keeps the answer to whether a feed post shows whole: a boolean asked from the user
+ * session right after [ATTACHED_STORY_COMPONENTS] is named and a null check.
+ */
+internal fun hoistedAnswers(code: List<Instruction>): List<Int> = code.indices.filter { at ->
+    code[at].opcode == Opcode.CONST_CLASS &&
+        ((code[at] as ReferenceInstruction).reference as? TypeReference)?.type == ATTACHED_STORY_COMPONENTS &&
+        code.getOrNull(at + 1)?.opcode == Opcode.IF_EQZ &&
+        code.getOrNull(at + 2)?.let(::staticCall)?.let { call ->
+            call.returnType == "Z" && call.parameterTypes.firstOrNull()?.toString() == FB_USER_SESSION
+        } == true &&
+        code.getOrNull(at + 3)?.opcode == Opcode.MOVE_RESULT
+}.map { it + 3 }
+
+/**
+ * The hook on the one answer [hoistedAnswers] finds. An int goes back where a boolean was, so
+ * everything reading it has to be a check against zero.
+ */
+internal fun BytecodePatchContext.findHoistedPost(): FoldInsert {
+    val found = mutableListOf<Method>()
+    classDefForEachReferencing(types = listOf(ATTACHED_STORY_COMPONENTS)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
+        classDef.methods.filterTo(found) { hoistedAnswers(it.code()).isNotEmpty() }
+    }
+    val stock = found.singleOrNull()
+        ?: refuse("expected one method asking whether a feed post shows whole, found ${found.size}")
+    val method = mutable(stock)
+    val code = method.code()
+    val answer = hoistedAnswers(code).singleOrNull() ?: refuse("${where(method)} asks more than once whether a post shows whole")
+    val register = (code[answer] as OneRegisterInstruction).registerA
+    val readers = method.readsAfter(answer, register)
+    if (readers.isEmpty() || readers.any { code[it].opcode !in ZERO_BRANCHES }) {
+        refuse("${where(method)} reads whether a post shows whole other than by checking it, at $readers")
+    }
+    val next = answer + 1
+    if (comesFrom(ControlFlow.of(method), next) != listOf(answer)) refuse("${where(method)} jumps in right after that answer")
+    return FoldInsert(method, next, through(register, POST_HOISTED), atLabel = false)
+}
+
+/**
+ * The comment hook: the one factory call in the one method naming [COMMENT_TRACE], which hands the
+ * extension the comment's text too. That's what the cut taking this config reads, so the register
+ * has to hold it already at the factory call.
+ */
+internal fun BytecodePatchContext.findCommentFold(): FoldInsert {
     val methods = methodsNaming(COMMENT_TRACE) { it.implementation != null && !isStringTable(it) }
     val found = methods.singleOrNull() ?: refuse("expected one method naming \"$COMMENT_TRACE\", found ${methods.size}")
     val method = mutable(found)
@@ -215,40 +354,119 @@ internal fun BytecodePatchContext.findCommentFold(): FoldHook {
     val factories = code.indices.filter { at -> staticCall(code[at])?.let { makesConfig(it, configs) } == true }
     val at = factories.singleOrNull()
         ?: refuse("expected ${where(method)} to make one cut config from characters and lines, found ${factories.size}")
-    return configHook(method, code, at, comment = true)
+
+    val made = code.getOrNull(at + 1)
+    if (made?.opcode != Opcode.MOVE_RESULT_OBJECT) refuse("${where(method)} doesn't keep its cut config right after making it")
+    val config = (made as OneRegisterInstruction).registerA
+    val cut = (at + 1 until code.size).firstOrNull { index ->
+        staticCall(code[index])?.let { it.returnType == SPANNABLE_STRING && it.parameterTypes.firstOrNull()?.toString() == CHARACTER_STYLE } == true
+    } ?: refuse("${where(method)} doesn't cut a comment after making its config")
+    val handed = arguments(code[cut])
+    if (handed.getOrNull(1) != config) refuse("${where(method)} cuts a comment with something other than the config it made")
+    val text = handed.getOrNull(2) ?: refuse("${where(method)} hands its cut no text")
+
+    val flow = ControlFlow.of(method)
+    for (index in at until cut) {
+        if (flow.normal[index] != listOf(index + 1) || writes(code[index], text)) {
+            refuse("${where(method)} doesn't hold the comment's text in v$text from its config to its cut")
+        }
+    }
+    return configHook(method, code, at, COMMENT_CHARS, COMMENT_LINES, text)
 }
 
-/** Adds [hooks], from the last one up in each method, so each index still holds when its turn comes. */
-internal fun BytecodePatchContext.addFolds(hooks: List<FoldHook>) {
-    for (inMethod in hooks.groupBy { it.method.toString() }.values) {
+/** Where [code] makes the class a caption's measure lands in, which isn't [component] itself. */
+private fun captionMeasures(code: List<Instruction>, component: String): List<Int> = code.indices.filter { at ->
+    code[at].opcode in DIRECT_CALLS && ((code[at] as ReferenceInstruction).reference as? MethodReference)?.let { call ->
+        call.name == "<init>" && call.returnType == "V" && call.definingClass != component &&
+            call.parameterTypes.map { it.toString() } == CAPTION_MEASURE
+    } == true
+}
+
+/**
+ * Where [code] picks a caption's limit between a server number and the measure's: a `long-to-int`
+ * moved into a register, a goto, then an int field of [measure] moved into the same register and a
+ * goto to the same place.
+ */
+private fun captionLimitChoices(code: List<Instruction>, flow: ControlFlow, measure: String): List<Int> =
+    (0 until code.size - 5).filter { at ->
+        val number = code[at] as? TwoRegisterInstruction
+        val moved = code[at + 1] as? TwoRegisterInstruction
+        val field = code[at + 3] as? TwoRegisterInstruction
+        val kept = code[at + 4] as? TwoRegisterInstruction
+        val read = (code[at + 3] as? ReferenceInstruction)?.reference as? FieldReference
+        number != null && moved != null && field != null && kept != null && read != null &&
+            code[at].opcode == Opcode.LONG_TO_INT &&
+            code[at + 1].opcode in INT_MOVES && moved.registerB == number.registerA &&
+            code[at + 2].opcode in GOTOS &&
+            code[at + 3].opcode == Opcode.IGET && read.type == "I" && read.definingClass == measure &&
+            code[at + 4].opcode in INT_MOVES && kept.registerB == field.registerA && kept.registerA == moved.registerA &&
+            code[at + 5].opcode in GOTOS && flow.normal[at + 2] == flow.normal[at + 5]
+    }
+
+/**
+ * The two hooks of a video's caption, in the method of the component [CAPTION_TOGGLE] names that
+ * measures it. The limit handed to the measure starts as the component's field, and Facebook can
+ * swap it for a fixed number or one worked out from the text. All of those meet right after the
+ * last of them in the code, and the first hook goes there. Past the measure, a server number can
+ * take the measure's limit's place, and it goes through the second.
+ */
+internal fun BytecodePatchContext.findCaptionFolds(): List<FoldInsert> {
+    val components = sendersOf(CAPTION_TOGGLE).flatMap { toggled(it, CAPTION_TOGGLE) }.toSet()
+    val component = components.singleOrNull() ?: refuse("expected one component after \"$CAPTION_TOGGLE\", found $components")
+    val owner = classDefByOrNull(component) ?: refuse("$component isn't in this build")
+    val measuring = owner.methods.filter { captionMeasures(it.code(), component).isNotEmpty() }
+    val method = mutable(measuring.singleOrNull() ?: refuse("expected one method of $component measuring its caption, found ${measuring.size}"))
+    val code = method.code()
+    val at = captionMeasures(code, component).singleOrNull() ?: refuse("${where(method)} measures its caption more than once")
+    val measure = ((code[at] as ReferenceInstruction).reference as MethodReference).definingClass
+
+    // The arguments start with the new object: lines, then the limit.
+    val limit = arguments(code[at]).getOrNull(2) ?: refuse("${where(method)} hands its caption's measure no limit")
+    if (limit > 255) refuse("${where(method)} keeps its caption's limit past v255")
+    val writers = method.writersReaching(at, limit)
+    val startsFromField = writers.any { writer ->
+        writer >= 0 && code[writer].opcode == Opcode.IGET &&
+            ((code[writer] as ReferenceInstruction).reference as FieldReference).let { field ->
+                field.type == "I" && field.definingClass == component
+            }
+    }
+    if (!startsFromField || -1 in writers) refuse("${where(method)} sets its caption's limit from $writers")
+    val join = (writers.filter { it < at }.maxOrNull() ?: refuse("${where(method)} sets its caption's limit from $writers")) + 1
+
+    // Every value the limit can take has to pass the place the hook goes on its way to the measure.
+    val flow = ControlFlow.of(method)
+    val seen = writers.toMutableSet()
+    val waiting = ArrayDeque(writers)
+    while (waiting.isNotEmpty()) {
+        val from = waiting.removeLast()
+        for (next in flow.normal[from] + flow.exceptional[from]) {
+            if (next == join) continue
+            if (next == at) refuse("${where(method)} reaches its caption's measure around index $join")
+            if (seen.add(next)) waiting.addLast(next)
+        }
+    }
+
+    val choice = captionLimitChoices(code, flow, measure).singleOrNull()
+        ?: refuse("expected ${where(method)} to pick its caption's limit between a server number and the measure's once")
+    val moved = choice + 1
+    if (comesFrom(flow, moved) != listOf(choice)) refuse("${where(method)} jumps in right after its caption's server number")
+    val number = (code[choice] as OneRegisterInstruction).registerA
+    return listOf(
+        FoldInsert(method, join, through(limit, CAPTION_LINES), atLabel = true),
+        FoldInsert(method, moved, through(number, CAPTION_LINES), atLabel = false),
+    )
+}
+
+/** Adds [inserts], from the last one up in each method, so each index still holds when its turn comes. */
+internal fun BytecodePatchContext.addFolds(inserts: List<FoldInsert>) {
+    for (inMethod in inserts.groupBy { it.method.toString() }.values) {
         val method = mutable(inMethod.first().method)
-        for (hook in inMethod.sortedByDescending { it.index }) {
-            val linesCall = if (hook.comment) COMMENT_LINES else POST_LINES
-            val lines = """
-                invoke-static/range {v${hook.lines} .. v${hook.lines}}, $linesCall
-                move-result v${hook.lines}
-            """
-            val chars = hook.chars
-            if (chars == null) {
-                // After the answer lands: a branch to the next instruction still finds it there.
-                method.addInstructions(hook.index, lines)
-                continue
-            }
-            val charsCall = if (hook.comment) COMMENT_CHARS else POST_CHARS
-            val handOver = if (chars <= 15 && hook.lines <= 15) {
-                "invoke-static {v$chars, v${hook.lines}}, $charsCall"
+        for (insert in inMethod.sortedByDescending { it.index }) {
+            if (insert.atLabel) {
+                method.addInstructionsAtControlFlowLabel(insert.index, insert.code)
             } else {
-                "invoke-static/range {v$chars .. v${hook.lines}}, $charsCall"
+                method.addInstructions(insert.index, insert.code)
             }
-            // The characters first, while the line limit beside them is still Facebook's.
-            method.addInstructionsAtControlFlowLabel(
-                hook.index,
-                """
-                    $handOver
-                    move-result v$chars
-                    $lines
-                """,
-            )
         }
     }
 }
