@@ -39,8 +39,9 @@ import org.junit.Test
 
 /**
  * The Recent list's put in Don't save search history (#196), without a Facebook build: the one
- * Map.put whose map was just loaded from a Map field of the save method's own class goes to the
- * extension with the same registers in the same call form, and any other put is left alone. And
+ * Map.put whose map was just loaded from a Map field of the save method's own class, or 588's
+ * AbstractMap.put of an EnumMap field, goes to the extension with the same registers in the same
+ * call form, and any other put is left alone. And
  * the analytics event factory (#221): only a private method taking details and a name, reading a
  * privacy context and answering one static of its own class is one, and the hook asks with the name.
  */
@@ -55,6 +56,12 @@ class DontSaveSearchHistoryShapesTest {
 
     private fun putInto(map: Int, key: Int = 1, value: Int = 4) =
         ImmutableInstruction35c(Opcode.INVOKE_INTERFACE, 3, map, key, value, 0, 0, put)
+
+    private val enumMap = "Ljava/util/EnumMap;"
+    private val abstractPut = ImmutableMethodReference("Ljava/util/AbstractMap;", "put", listOf(objectType, objectType), objectType)
+
+    private fun virtualPutInto(map: Int, key: Int = 1, value: Int = 4) =
+        ImmutableInstruction35c(Opcode.INVOKE_VIRTUAL, 3, map, key, value, 0, 0, abstractPut)
 
     private fun save(vararg body: Instruction, registers: Int = 8): Method = ImmutableMethod(
         owner,
@@ -96,6 +103,44 @@ class DontSaveSearchHistoryShapesTest {
         assertEquals(KEEP_RECENT, (call as ReferenceInstruction).reference.toString())
         assertEquals(12, (call as RegisterRangeInstruction).startRegister)
         assertEquals(3, call.registerCount)
+    }
+
+    @Test
+    fun `588's put of an EnumMap field goes to the extension with the same registers`() {
+        val method = save(loadMap(2, type = enumMap), virtualPutInto(2))
+        assertEquals(1, recentListPut(method))
+        val mutable = MutableMethod(method)
+        mutable.keepRecentAt(1)
+        val call = mutable.implementation!!.instructions.toList()[1]
+        assertEquals(Opcode.INVOKE_STATIC, call.opcode)
+        assertEquals(KEEP_RECENT, (call as ReferenceInstruction).reference.toString())
+        call as FiveRegisterInstruction
+        assertEquals("the map, the filter and the list", listOf(2, 1, 4), listOf(call.registerC, call.registerD, call.registerE))
+        assertEquals(3, call.registerCount)
+    }
+
+    @Test
+    fun `a range put of an EnumMap field stays a range call`() {
+        val rangePut = ImmutableInstruction3rc(Opcode.INVOKE_VIRTUAL_RANGE, 12, 3, abstractPut)
+        val method = save(loadMap(12, type = enumMap), rangePut, registers = 16)
+        assertEquals(1, recentListPut(method))
+        val mutable = MutableMethod(method)
+        mutable.keepRecentAt(1)
+        val call = mutable.implementation!!.instructions.toList()[1]
+        assertEquals(Opcode.INVOKE_STATIC_RANGE, call.opcode)
+        assertEquals(12, (call as RegisterRangeInstruction).startRegister)
+    }
+
+    @Test
+    fun `a put that doesn't go with its field's type is left alone`() {
+        assertNull("an EnumMap field through Map.put", recentListPut(save(loadMap(2, type = enumMap), putInto(2))))
+        assertNull("a Map field through AbstractMap.put", recentListPut(save(loadMap(2), virtualPutInto(2))))
+        assertNull("a HashMap field through AbstractMap.put",
+            recentListPut(save(loadMap(2, type = "Ljava/util/HashMap;"), virtualPutInto(2))))
+        assertNull("an EnumMap of another class",
+            recentListPut(save(loadMap(2, fieldOwner = "Lfixture/Other;", type = enumMap), virtualPutInto(2))))
+        val interfaceForm = ImmutableInstruction35c(Opcode.INVOKE_INTERFACE, 3, 2, 1, 4, 0, 0, abstractPut)
+        assertNull("AbstractMap.put asked as an interface", recentListPut(save(loadMap(2, type = enumMap), interfaceForm)))
     }
 
     @Test

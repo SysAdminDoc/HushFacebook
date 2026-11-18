@@ -52,6 +52,8 @@ internal const val PROFILE_VISIT = "profile_engagement"
 
 private const val MAP = "Ljava/util/Map;"
 private const val MAP_PUT = "$MAP->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"
+private const val ENUM_MAP = "Ljava/util/EnumMap;"
+private const val ABSTRACT_MAP_PUT = "Ljava/util/AbstractMap;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"
 
 /** How far before the put the load of its map may sit. */
 internal const val MAP_LOAD_REACH = 4
@@ -168,10 +170,23 @@ internal fun skipRegister(save: Method): Int {
 }
 
 /**
- * Where [save] puts the Recent list into its own class's map: the one `Map.put` whose map register
- * was last loaded, at most [MAP_LOAD_REACH] instructions before, from a Map field of [save]'s class,
- * with no jump or handler landing in between, and whose answer nothing reads. Null unless there's
- * exactly one.
+ * The type a map field must have for [call] to be a put into it: a Map asked through `Map.put`, or,
+ * from 588, an EnumMap, whose put is called on AbstractMap. Null when [call] is neither.
+ */
+private fun recentMapFieldFor(call: Instruction): String? {
+    val reference = (call as? ReferenceInstruction)?.reference?.toString() ?: return null
+    return when (call.opcode) {
+        Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE -> MAP.takeIf { reference == MAP_PUT }
+        Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE -> ENUM_MAP.takeIf { reference == ABSTRACT_MAP_PUT }
+        else -> null
+    }
+}
+
+/**
+ * Where [save] puts the Recent list into its own class's map: the one put whose map register was
+ * last loaded, at most [MAP_LOAD_REACH] instructions before, from a field of [save]'s class of the
+ * type that put goes with ([recentMapFieldFor]), with no jump or handler landing in between, and
+ * whose answer nothing reads. Null unless there's exactly one.
  */
 internal fun recentListPut(save: Method): Int? {
     val instructions = save.implementation?.instructions?.toList() ?: return null
@@ -179,8 +194,7 @@ internal fun recentListPut(save: Method): Int? {
     val landings = instructions.indices.flatMap { from -> flow.normal[from].filter { it != from + 1 } + flow.exceptional[from] }.toSet()
     val puts = instructions.indices.filter { index ->
         val put = instructions[index]
-        if (put.opcode != Opcode.INVOKE_INTERFACE && put.opcode != Opcode.INVOKE_INTERFACE_RANGE) return@filter false
-        if ((put as ReferenceInstruction).reference.toString() != MAP_PUT) return@filter false
+        val fieldType = recentMapFieldFor(put) ?: return@filter false
         if (instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT) return@filter false
         val map = callRegisters(put).first()
         val load = (index - 1 downTo maxOf(0, index - MAP_LOAD_REACH)).firstOrNull { before ->
@@ -193,7 +207,7 @@ internal fun recentListPut(save: Method): Int? {
         if ((load + 1..index).any { it in landings }) return@filter false
         val field = (instructions[load] as? ReferenceInstruction)?.reference as? FieldReference
         instructions[load].opcode == Opcode.IGET_OBJECT && field != null &&
-            field.definingClass == save.definingClass && field.type == MAP
+            field.definingClass == save.definingClass && field.type == fieldType
     }
     return puts.singleOrNull()
 }
