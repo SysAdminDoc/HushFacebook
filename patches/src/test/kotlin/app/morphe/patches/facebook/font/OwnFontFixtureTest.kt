@@ -138,8 +138,21 @@ class OwnFontFixtureTest {
             .filter { (at, instruction) -> defaultRead(instruction) in DEFAULT_TYPEFACES && method.onlyCompared(at, isEquality) }.map { it.index }
         val kept = readers.flatMap { method -> keptIn(method).map { method } }
         assertTrue("${bundle.name}: no read is only compared", kept.isNotEmpty())
+        // 588 has one text paint builder shared per typeface: it keeps its compare with Typeface.DEFAULT
+        // and sets any other typeface on the paint, and the callers handing it one ask defaultFromStyle.
         assertTrue("${bundle.name}: no text paint builder keeps its compare with Typeface.DEFAULT", kept.any { method ->
-            method.returnType == TEXT_PAINT && method.implementation!!.instructions.any { defaultRead(it) == DEFAULT_FROM_STYLE }
+            val code = method.implementation!!.instructions.toList()
+            method.returnType == TEXT_PAINT &&
+                keptIn(method).any { defaultRead(code[it]) == "$TYPEFACE->DEFAULT:$TYPEFACE" } &&
+                code.any { (it as? ReferenceInstruction)?.reference?.toString() == "Landroid/graphics/Paint;->setTypeface($TYPEFACE)$TYPEFACE" } &&
+                readers.any { caller ->
+                    val body = caller.implementation!!.instructions
+                    body.any { defaultRead(it) == DEFAULT_FROM_STYLE } && body.any { instruction ->
+                        val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                        call?.definingClass == method.definingClass && call.name == method.name &&
+                            call.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
+                    }
+                }
         })
         val context = PatchContexts.of(owners.values)
         assertEquals("${bundle.name}: reads sent", reads.size - kept.size, context.hookDefaultTypefaces())
@@ -279,9 +292,10 @@ class OwnFontFixtureTest {
     /**
      * Use the system emoji's typeface: each declared build's emoji typeface provider hands its
      * answer to Facebook's emoji spans and drawings, which set it on a paint themselves, and to the
-     * quick emoji picker's holder. On the way it goes through nothing the font rewrite sends to the
-     * extension, and the rewrite changes nothing in those spans and drawings, so the phone's emoji
-     * draw as they did whatever font file is picked.
+     * quick emoji picker's holder. 588's picker also keeps it in a small object that only compares it
+     * to notice a change. On the way it goes through nothing the font rewrite sends to the extension,
+     * and the rewrite changes nothing in those classes, so the phone's emoji draw as they did whatever
+     * font file is picked.
      */
     @Test
     fun `the emoji typeface reaches its paints with nothing of the font rewrite's in the way`() = bundles { bundle ->
@@ -321,10 +335,26 @@ class OwnFontFixtureTest {
 
         val owners = FixtureDex.classes(bundle, consumers)
         val context = PatchContexts.of(owners.values)
-        for ((type, consumer) in owners) {
-            assertTrue("${bundle.name}: $type sets a typeface on a paint", consumer.methods.any {
-                holds(it, "Landroid/graphics/Paint;->setTypeface($TYPEFACE)$TYPEFACE")
-            })
+        val setTypeface = "Landroid/graphics/Paint;->setTypeface($TYPEFACE)$TYPEFACE"
+        val (painters, others) = owners.values.partition { consumer -> consumer.methods.any { holds(it, setTypeface) } }
+        assertTrue("${bundle.name}: ${painters.size} of them set it on a paint", painters.size >= 2)
+        for (keeper in others) {
+            val fields = keeper.fields.filter { it.type == TYPEFACE }
+            assertEquals("${bundle.name}: ${keeper.type} neither paints with it nor keeps one", 1, fields.size)
+            val field = "${keeper.type}->${fields.single().name}:$TYPEFACE"
+            var compared = 0
+            for (reader in FixtureDex.methodsWhere(bundle, { true }) { holds(it, field) }) {
+                val code = reader.implementation!!.instructions.toList()
+                for (at in code.indices.filter { code[it].opcode == Opcode.IGET_OBJECT && (code[it] as ReferenceInstruction).reference.toString() == field }) {
+                    val uses = reader.literalReads(at)
+                    assertTrue("${bundle.name}: ${reader.definingClass}->${reader.name} does more than compare $field",
+                        uses.isNotEmpty() && uses.all { code[it].opcode == Opcode.IF_EQ || code[it].opcode == Opcode.IF_NE })
+                    compared++
+                }
+            }
+            assertTrue("${bundle.name}: nothing compares $field", compared > 0)
+        }
+        for (type in owners.keys) {
             for (method in context.mutableClassDefBy(type).methods) {
                 assertEquals("${bundle.name}: $type->${method.name}: default reads sent", 0, method.sendDefaultReads(context.equalityChecks()))
                 assertEquals("${bundle.name}: $type->${method.name}: text views sent", 0, method.sendTextViews())
@@ -611,18 +641,24 @@ class OwnFontFixtureTest {
     /**
      * The resolver reads React Native's font manager: a singleton, held in a static field of its own
      * class, whose static initializer lists the style suffixes and file extensions it tries on the
-     * app's font assets. Facebook's font prefetcher registers Meta's families there.
+     * app's font assets. Facebook's font prefetcher registers Meta's families there. 588's resolver
+     * also reads a stateless Function singleton, the one it hands computeIfAbsent, which isn't a manager.
      */
     private fun checkFontManager(bundle: File, resolver: Method) {
         // A singleton of the app's own, which Typeface.DEFAULT, read there too, is not.
-        val managers = resolver.implementation!!.instructions.mapNotNull { instruction ->
+        val singletons = resolver.implementation!!.instructions.mapNotNull { instruction ->
             ((instruction as? ReferenceInstruction)?.reference as? FieldReference)?.takeIf {
                 instruction.opcode == Opcode.SGET_OBJECT && it.type == it.definingClass &&
                     !it.definingClass.startsWith("Landroid/") && !it.definingClass.startsWith("Ljava/")
             }?.definingClass
         }.distinct()
+        val classes = FixtureDex.classes(bundle, singletons.toSet())
+        val managers = singletons.filterNot { type ->
+            val singleton = classes.getValue(type)
+            "Ljava/util/function/Function;" in singleton.interfaces.map(CharSequence::toString) && singleton.instanceFields.none()
+        }
         assertEquals("${bundle.name}: the font manager singletons the resolver reads", 1, managers.size)
-        val manager = FixtureDex.classes(bundle, managers.toSet()).getValue(managers.single())
+        val manager = classes.getValue(managers.single())
         val initializer = manager.methods.single { it.name == "<clinit>" }
         for (literal in listOf("_bold", "_italic", "_bold_italic", ".ttf", ".otf")) {
             assertTrue("${bundle.name}: the font manager doesn't list \"$literal\"", holdsString(initializer, literal))
