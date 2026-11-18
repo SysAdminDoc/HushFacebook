@@ -42,6 +42,7 @@ class ReelAnchorsFixtureTest {
         var immutableList: ClassDef? = null
         val dumpers = mutableListOf<Method>()
         val hotComments = mutableListOf<Method>()
+        val captionRows = mutableListOf<ClassDef>()
         val captionComments = mutableListOf<Method>()
         val bubbles = mutableListOf<Method>()
         var footerHelperClasses = 0
@@ -76,11 +77,19 @@ class ReelAnchorsFixtureTest {
                     classDef.methods.filter { holdsString(it, WATCH_FEED_DUMP) }.mapTo(found.dumpers) { ImmutableMethod.of(it) }
                 }
                 namedRunnable(classDef, HOT_COMMENT_RUNNABLE)?.let { found.hotComments += ImmutableMethod.of(it) }
-                captionCommentRunnable(classDef)?.let { found.captionComments += ImmutableMethod.of(it) }
+                if (namedRunnable(classDef, CAPTION_ROW_RUNNABLE) != null) found.captionRows += ImmutableClassDef.of(classDef)
                 if (VIDEO_ID in present) {
                     footerRunnable(classDef, SOCIAL_BUBBLES_RUNNABLE, VIDEO_ID)?.let { found.bubbles += ImmutableMethod.of(it) }
                 }
             }
+        }
+        // 588's caption runnable asks a string table for its query's name.
+        val captionTables = FixtureDex.classes(bundle, found.captionRows.flatMap { it.methods }.flatMap { method ->
+            method.implementation?.instructions?.toList().orEmpty().filter(::isStringTableCall)
+                .mapNotNull { ((it as ReferenceInstruction).reference as? MethodReference)?.definingClass }
+        }.toSet())
+        found.captionRows.mapNotNullTo(found.captionComments) { row ->
+            captionCommentRunnable(row) { call -> captionTables[call.definingClass]?.let { resolveStatic(it, call) } }
         }
         // The builder can ask a string table for a chip (582's armeabi-v7a one does), so the tables
         // the candidates call are read before the builder is picked, the way the patch reads them.

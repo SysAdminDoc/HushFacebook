@@ -6,6 +6,7 @@ package app.morphe.patches.facebook.reels
 
 import app.morphe.patches.facebook.feed.addressed
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.switchTarget
 import app.morphe.patches.facebook.feed.tableStringsAsked
 import app.morphe.patches.facebook.shared.redexOriginalName
@@ -764,9 +765,12 @@ internal fun namedRunnable(classDef: ClassDef, redexName: String): Method? {
     }
 }
 
-/** The caption row's comment runnable (#464): one of [CAPTION_ROW_RUNNABLE]'s holding a comment query. */
-internal fun captionCommentRunnable(classDef: ClassDef): Method? =
-    namedRunnable(classDef, CAPTION_ROW_RUNNABLE)?.takeIf { run -> CAPTION_COMMENT_QUERIES.any { holdsString(run, it) } }
+/**
+ * The caption row's comment runnable (#464): one of [CAPTION_ROW_RUNNABLE]'s naming a comment query.
+ * 588's starts the plain query alone and asks a string table for its name, which [resolve] finds.
+ */
+internal fun captionCommentRunnable(classDef: ClassDef, resolve: (MethodReference) -> Method? = { null }): Method? =
+    namedRunnable(classDef, CAPTION_ROW_RUNNABLE)?.takeIf { run -> CAPTION_COMMENT_QUERIES.any { namesString(run, it, resolve) } }
 
 /** Whether Redex's [name] is [redexName], or, for a [redexName] ending in `$`, that and a number. */
 internal fun footerRunnableNamed(name: String?, redexName: String): Boolean {

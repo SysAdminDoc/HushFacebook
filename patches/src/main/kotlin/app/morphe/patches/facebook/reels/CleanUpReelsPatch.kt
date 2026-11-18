@@ -447,11 +447,15 @@ private fun BytecodePatchContext.skipFooterQueries() {
     )
     // Found by their kept names, which reads no code, and changed once the walk is done.
     val hotComments = mutableListOf<Pair<ClassDef, Method>>()
-    val captionComments = mutableListOf<Pair<ClassDef, Method>>()
+    val captionRows = mutableListOf<ClassDef>()
     classDefForEach { classDef ->
         if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
         namedRunnable(classDef, HOT_COMMENT_RUNNABLE)?.let { hotComments += classDef to it }
-        captionCommentRunnable(classDef)?.let { captionComments += classDef to it }
+        if (namedRunnable(classDef, CAPTION_ROW_RUNNABLE) != null) captionRows += classDef
+    }
+    // Read after the walk, since 588's asks a string table for its query's name.
+    val captionComments = captionRows.mapNotNull { owner ->
+        captionCommentRunnable(owner) { call -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }?.let { owner to it }
     }
     if (hotComments.isEmpty()) throw PatchException("$PATCH: expected a Runnable named $HOT_COMMENT_RUNNABLE and a number, found none")
     val caption = captionComments.singleOrNull() ?: throw PatchException(
