@@ -1574,7 +1574,10 @@ private fun hideInSender(sender: Method, senderKind: SenderKind): Pair<Int, List
     val (wanted) = lowFreeRegisters(sender, switch, 1, setOf(on))
     // 585's Android 9 build sends from a merged lambda (`LX/0D8q;->invoke`) with one low register
     // free there, so the number is then compared by subtracting it, which needs no second register.
-    val free = lowRegistersFree(sender, build, setOf(number, self))
+    // 588's arm (arm64 `LX/0HFT;->A0I`) has all three locals in use, but the switch's own number is
+    // spent by then, so that argument can hold the kind.
+    val spent = listOf(on).filter { it != number && it != self && it !in RegisterLiveness.of(sender).liveInto(build) }
+    val free = (lowRegistersFree(sender, build, setOf(number, self)) + spent).distinct()
     val read = free.firstOrNull() ?: refuse("$where has no free low register at instruction $build")
     val compare = free.getOrNull(1)?.let { sent ->
         """
