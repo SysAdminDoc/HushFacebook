@@ -50,13 +50,6 @@ internal object RefShareAppenderFingerprint : Fingerprint(
     strings = listOf("ref", "share"),
 )
 
-/** A group's share link: `mibextid` added directly, `controlMsg` for Messenger and `controlTwi`. */
-internal object GroupShareLinkFingerprint : Fingerprint(
-    returnType = "Ljava/lang/String;",
-    parameters = listOf(FB_USER_SESSION, "Ljava/lang/Integer;", "Ljava/lang/String;"),
-    strings = listOf("controlMsg", "controlTwi"),
-)
-
 /**
  * The live video share dialog's link, with `sfnsn` added. The class is kept and its method is
  * renamed each build (`COD` in 580, `COZ` in 577), so only its shape and the key find it.
