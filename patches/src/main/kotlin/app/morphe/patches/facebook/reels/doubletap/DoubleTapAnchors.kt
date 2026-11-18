@@ -36,7 +36,10 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  *   and returns when there's none. With one it hands the double tap to the reel's sidebar, which
  *   likes the reel and animates its Like button, and on 580 it likes the reel itself, logging
  *   "like_double_tap", when no sidebar is listening. Every double-tap handler of the reel players
- *   ends here (580 has seven callers, 577 seven), and nothing but a double tap calls it.
+ *   ends here (580 has seven callers, 577 seven), and nothing but a double tap calls it. 588 adds a
+ *   second method of that shape (arm64 `LX/09Qg;->A05`) where a sidebar registers its handler under
+ *   the key, so the double-tap like is the one of the two logging "like_double_tap" (`A04`). It runs
+ *   a registered handler and returns, which still comes after the key the hook takes away.
  * - GestureReactionComponent, the Litho component that lays a gesture view over nearly every reel
  *   and video player: the Reels tab, reels opened from the feed, Watch and the video viewer, photo
  *   reels and the ad players. It's the one class whose constructor holds that name (580 LX/88v;,
@@ -104,6 +107,9 @@ private const val POINT_F = "Landroid/graphics/PointF;"
 /** The trace the reel like helper's like opens: the helper's own name, which Redex keeps. */
 internal const val MUTATE_LIKE = "FbShortsMutationUtil.mutateViewerLikeReaction"
 
+/** What the helper's double-tap like logs when it likes the reel itself. */
+private const val LIKE_DOUBLE_TAP = "like_double_tap"
+
 /** The name the gesture component's constructor gives it. */
 internal const val GESTURE_REACTION = "GestureReactionComponent"
 
@@ -139,11 +145,11 @@ internal fun isReelLike(method: Method): Boolean =
     !method.isStatic() && method.returnType == "V" && method.parameters().firstOrNull() == FB_USER_SESSION &&
         likeSource(method) != null && holdsString(method, MUTATE_LIKE)
 
-/** [helper]'s double-tap likes: instance methods with a body taking two objects and a boolean, returning nothing. */
+/** [helper]'s double-tap likes: instance methods taking two objects and a boolean, returning nothing and logging [LIKE_DOUBLE_TAP]. */
 internal fun doubleTapLikes(helper: ClassDef): List<Method> = helper.methods.filter { method ->
     !method.isStatic() && method.returnType == "V" && method.implementation != null && method.parameters().let {
         it.size == 3 && it[0].startsWith("L") && it[1].startsWith("L") && it[2] == "Z"
-    }
+    } && holdsString(method, LIKE_DOUBLE_TAP)
 }
 
 /** Whether [call] asks [helper]'s static key maker, (object, boolean)String, for a reel's key. */
