@@ -1806,9 +1806,13 @@ internal class ReelBarReturn(val at: Int, val register: Int, val barClass: Strin
 /**
  * The render's return of the bar it made (585 index 360, `return-object v19` of a
  * `new-instance LX/0Ayx;` built on the render's video data), the one `return-object` whose register
- * only a `new-instance` writes. Refuses unless there's exactly one, it comes after the read, the
- * bar's class has exactly one instance field of the video data's type, and the render's return type
- * declares Litho's `setKey`.
+ * only a `new-instance` writes. 588 returns no bar through the same instruction, the register null
+ * until the `new-instance` (arm64 `LX/09G8;->render`, `if-nez v0` at 338 jumps onto the return at 360),
+ * so null constants are let through when the bar's constructor is the instruction right before the
+ * return: only the built bar comes in from there, and [borrowsReelVideo]'s code in front of the return
+ * is what the jump skips. Refuses unless there's exactly one, it comes after the read, the bar's class
+ * has exactly one instance field of the video data's type, and the render's return type declares
+ * Litho's `setKey`.
  */
 internal fun reelBarReturn(read: ReelVideoRead, classDef: (String) -> ClassDef?): ReelBarReturn {
     val method = read.method
@@ -1820,9 +1824,14 @@ internal fun reelBarReturn(read: ReelVideoRead, classDef: (String) -> ClassDef?)
     val found = code.indices.mapNotNull { at ->
         if (code[at].opcode != Opcode.RETURN_OBJECT) return@mapNotNull null
         val register = (code[at] as OneRegisterInstruction).registerA
-        val made = method.writersReaching(at, register).singleOrNull() ?: return@mapNotNull null
-        if (code[made].opcode != Opcode.NEW_INSTANCE) return@mapNotNull null
+        val writers = method.writersReaching(at, register)
+        val made = writers.singleOrNull { code.getOrNull(it)?.opcode == Opcode.NEW_INSTANCE } ?: return@mapNotNull null
         val barClass = ((code[made] as ReferenceInstruction).reference as TypeReference).type
+        if (writers.size > 1) {
+            if (!writers.all { it == made || isNullConstant(code.getOrNull(it)) }) return@mapNotNull null
+            val built = ((code[at - 1] as? ReferenceInstruction)?.reference as? MethodReference) ?: return@mapNotNull null
+            if (built.definingClass != barClass || built.name != "<init>") return@mapNotNull null
+        }
         val data = classDef(barClass)?.fields?.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == read.dataType }
             ?.singleOrNull() ?: return@mapNotNull null
         ReelBarReturn(at, register, barClass, "$barClass->${data.name}:${data.type}", component)
@@ -1832,6 +1841,11 @@ internal fun reelBarReturn(read: ReelVideoRead, classDef: (String) -> ClassDef?)
     if (bar.at <= read.at + 1) refuse("the scrubber render returns its bar before it reads the video data")
     return bar
 }
+
+/** Whether [instruction] loads the int constant 0, which is also how dex loads null. */
+private fun isNullConstant(instruction: Instruction?) =
+    instruction != null && instruction.opcode in setOf(Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST) &&
+        (instruction as NarrowLiteralInstruction).narrowLiteral == 0
 
 /** The Reels footer's seek bar status enum and its HIDDEN and VISIBLE values, as `class->name:type`. */
 internal class SeekBarStatus(val type: String, val hidden: String, val visible: String, val dragging: String)
