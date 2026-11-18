@@ -671,6 +671,40 @@ public class TabBarScrollAwayTest {
         assertEquals("a bar at the top", 0, TabBarScrollAway.underTabBar(list, bar, 2400));
     }
 
+    /** A main screen that says whether it shows in a picture in picture window. */
+    public static class WindowedMainTab extends FbMainTabActivity {
+        boolean inWindow;
+
+        @Override
+        public boolean isInPictureInPictureMode() {
+            return inWindow;
+        }
+    }
+
+    @Test
+    public void aReelsRowInAPictureInPictureWindowKeepsFacebooksHeight() {
+        // #495 on 588 (emulator 1080x2400, 2026-11-18): after unlocking with a reel in the window,
+        // Facebook made the Reels rows again for the 451 px window while the list still read its
+        // full 2062, and a row grown to that ran the reel mostly outside the window, so Facebook
+        // let its video go and the sound stopped.
+        Settings.BOTTOM_TAB_BAR.save(true);
+        Settings.TRANSLUCENT_BARS.save(true);
+        Settings.HIDE_STATUS_BAR.save(true);
+        TabBarScrollAway.topBarsLetGo();
+        WindowedMainTab windowed = Robolectric.buildActivity(WindowedMainTab.class).get();
+        windowed.currentTab = new WatchTab();
+        screen = windowed;
+        TabBarScrollAway.mainScreenCreated(windowed);
+        StartTabRouteForTests.tabBar(windowed,
+                StartTabRouteForTests.tabs(new FeedTab(), new WatchTab(), new NotificationsTab()), null);
+        assertEquals("full screen, the row fills the list", 2062, TabBarScrollAway.rowFor(1900, -1, 2062));
+        windowed.inWindow = true;
+        assertEquals("in the window the row stays Facebook's", 451, TabBarScrollAway.rowFor(451, -1, 2062));
+        windowed.inWindow = false;
+        assertEquals("full screen again, the row seen before the window is still the one kept", 2062,
+                TabBarScrollAway.rowFor(1900, -1, 0));
+    }
+
     private static void place(FrameLayout parent, View child, int top, int bottom) {
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(1080, bottom - top, Gravity.LEFT | Gravity.TOP);
         params.topMargin = top;

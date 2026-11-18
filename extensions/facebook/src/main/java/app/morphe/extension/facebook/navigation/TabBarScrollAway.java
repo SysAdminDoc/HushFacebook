@@ -244,8 +244,8 @@ public final class TabBarScrollAway {
      * made before the list is laid out; where the Reels tab runs its reel
      * under the bars once it shows, with the tabs at the top, the padding Facebook handed the list
      * for the tab bar ({@link #tabPadding}), or on the Reels tab, the padding {@link #pagesTop}
-     * dropped. Anywhere else, paused, before the settings are ready or on a failure, it's Facebook's
-     * own height.
+     * dropped. Anywhere else, in a picture in picture window, paused, before the settings are ready
+     * or on a failure, it's Facebook's own height.
      *
      * @param height the row height Facebook worked out.
      * @param maker  the list's maker, which holds the tab bar padding.
@@ -268,6 +268,11 @@ public final class TabBarScrollAway {
      * out.
      */
     static int rowFor(int height, int tabPad, int list) {
+        if (inWindow()) {
+            Logger.printDebug(() -> "Top bars: a Reels row of " + height
+                    + " in a picture in picture window, left as Facebook made it");
+            return height;
+        }
         boolean tabsOnTop = tabsOnTop();
         boolean shown = onReelsTab();
         boolean under = shown ? reelUnderBars(tabsOnTop) : reelsWillRunUnderBars(tabsOnTop);
@@ -294,6 +299,17 @@ public final class TabBarScrollAway {
         HookStatus.counted(FAMILY, REEL_ROW_FILLED);
         Logger.printDebug(() -> "Top bars: a Reels row of " + height + " made " + wanted);
         return wanted;
+    }
+
+    /**
+     * Whether the main screen shows in a picture in picture window. Facebook makes the Reels rows
+     * again for the window's height there while the list still reads its full screen height, so a
+     * row grown to it ran the reel mostly outside the window and Facebook let its video go (#495).
+     * It also kept the window's row as the one seen, so the next start's rows came out short.
+     */
+    private static boolean inWindow() {
+        Activity screen = mainScreen.get();
+        return screen != null && screen.isInPictureInPictureMode();
     }
 
     /**
