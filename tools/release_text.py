@@ -3,8 +3,7 @@
   py -3.13 tools/release_text.py cut --version 0.9.0 --summary FILE [--date 2026-10-09]
   py -3.13 tools/release_text.py bump --version 0.9.0
   py -3.13 tools/release_text.py check-translations
-  py -3.13 tools/release_text.py github-notes --version 0.9.0 --checked FILE --out FILE
-  py -3.13 tools/release_text.py github-notes --version 0.9.0 --draft --out FILE
+  py -3.13 tools/release_text.py github-notes --version 0.9.0 --out FILE
   py -3.13 tools/release_text.py index --version 0.9.0 --created 2026-10-09T17:03:42
         --bundle-summary FILE --readme-summary FILE --runtime N --patch N
 
@@ -19,11 +18,11 @@ bump         The version in gradle.properties and the README's version badge.
 check-translations
              Every table in extensions/shared/library/src/main/l10n translates the same strings,
              and L10nTranslations.java is what scripts/gen-l10n.py makes of them.
-github-notes The notes for a GitHub release, from the whole CHANGELOG section: every bullet kept,
-             any leftover Facebook label taken off, bold turned into backticks, Tooling bullets under
-             "Behind the scenes". The in-app update check (ReleaseCheck.java) reads the Facebook
-             build a release targets from the notes, so the first sentence it would read has to
-             name the newest declared build.
+github-notes The notes for a GitHub release, from the CHANGELOG section: every Facebook bullet kept,
+             any leftover Facebook label taken off, bold turned into backticks, Tooling bullets left
+             in the CHANGELOG only. The in-app update check (ReleaseCheck.java) reads the Facebook
+             build a release targets from the notes, so How to update opens with "This release
+             targets Facebook <newest declared build>." and no earlier sentence may name another.
 index        patches-bundle.json, the README's latest-release sentence and the bug form's version
              placeholder, for the release that was just published. The bundle description is
              the release facts, then the section's ### groups, which Morphe Manager shows for the
@@ -56,7 +55,6 @@ BULLET = re.compile(r"^\* (?:\*\*(?P<scope>Facebook(?: - [^*]+)?|Tooling):\*\* )
 OTHER_LABEL = re.compile(r"^\* \*\*[^*]+:\*\* ")
 GROUPS = {"Added": "New in this release", "Fixed": "Fixes", "Changed": "Other changes", "Removed": "Removed",
           "Reported issues": "Reported issues"}
-TOOLING_GROUP = "Behind the scenes"
 ABI_NAMES = {"ARM64_V8A": "arm64-v8a", "ARMEABI_V7A": "armeabi-v7a", "X86_64": "x86_64", "X86": "x86"}
 
 # ReleaseCheck.java's reading of release notes, kept in step with it: the first sentence holding a
@@ -305,7 +303,7 @@ def update_steps(root: Path) -> str:
     ])
 
 
-def github_notes(root: Path, version: str, checked: str | None, draft: bool = False) -> tuple[str, str]:
+def github_notes(root: Path, version: str) -> tuple[str, str]:
     text = read(root / "CHANGELOG.md")
     match = re.search(rf"^## {re.escape(version)} \(\d{{4}}-\d{{2}}-\d{{2}}\)$", text, re.MULTILINE)
     if not match:
@@ -316,11 +314,13 @@ def github_notes(root: Path, version: str, checked: str | None, draft: bool = Fa
         fail(f"the {version} section opens with {len(loose)} bullets before its first ### heading, and the notes "
              "open with one, the Facebook summary cut writes")
     intro = plain(BULLET.match(loose[0]).group("text"))
-    blocks = {name: [] for name in list(GROUPS.values()) + [TOOLING_GROUP]}
+    blocks = {name: [] for name in GROUPS.values()}
+    shown = 0
     for heading, scope, bullet in grouped:
         if scope == "Tooling":
-            blocks[TOOLING_GROUP].append(plain(bullet))
-        elif heading in GROUPS:
+            continue
+        shown += 1
+        if heading in GROUPS:
             blocks[GROUPS[heading]].append(plain(bullet))
         else:
             fail(f"the {version} section has a ### {heading} heading the notes have no place for "
@@ -333,37 +333,27 @@ def github_notes(root: Path, version: str, checked: str | None, draft: bool = Fa
     parts.append(f"The [changelog](https://github.com/{REPOSITORY}/blob/main/CHANGELOG.md) has every earlier release "
                  f"too, and the oldest ones are in its "
                  f"[archive](https://github.com/{REPOSITORY}/blob/main/docs/changelog-archive.md).")
+    _, targets = catalog_targets(root)
+    newest = targets[0][0]
     parts.append("How to update")
+    # The sentence installed builds read the target from (TARGET_PHRASE), so it keeps that wording.
+    parts.append(f"This release targets Facebook {newest}.")
     parts.append(update_steps(root))
     parts.append(f"The `.mpp` download is a patch bundle, not a Facebook APK. "
                  f"[Installation instructions](https://github.com/{REPOSITORY}#install).")
     parts.append("Look over a diagnostic report before you share it. The filter can still miss private text it "
                  "doesn't recognize.")
-    if checked:
-        parts.append("What was checked")
-        parts.append(checked)
-    elif not draft:
-        fail("--checked is the What was checked paragraph, and only a --draft goes without it")
     notes = "\n\n".join(parts) + "\n"
     if any(d in notes for d in DASHES):
         fail("the notes have an em or en dash")
     kept = sum(1 for line in notes.split("\n") if line.startswith("- "))
-    if kept != len(grouped):
-        fail(f"{kept} of the section's {len(grouped)} bullets made it into the notes")
-    _, targets = catalog_targets(root)
-    newest = targets[0][0]
+    if kept != shown:
+        fail(f"{kept} of the section's {shown} Facebook bullets made it into the notes")
     said, sentence = target_in(notes)
-    if said is None and not draft:
-        fail(f"nothing in the notes says which Facebook build this release targets, and the app's update check "
-             f"reads it from them. Say \"All N patches applied ... to Facebook {newest}\" in the checked paragraph, "
-             f"with \"Facebook\" right after \"to\" (\"to both Facebook {newest} builds\" isn't read: installed "
-             f"builds parse the same phrase, so the checker can't loosen it).")
-    if said is not None and said != newest:
+    if said != newest:
         fail(f"the app's update check would read Facebook {said} as this release's target, from \"{sentence}\". "
              f"It's {newest}: reword that sentence, or say {newest} first.")
-    summary = (f"notes for {version}: the summary and {kept} bullets, "
-               + (f"target Facebook {said}" if said else "no target sentence yet (draft)"))
-    return notes, summary
+    return notes, f"notes for {version}: the summary and {kept} bullets, target Facebook {said}"
 
 
 def changelog_groups(root: Path, version: str) -> str:
@@ -548,8 +538,6 @@ def main() -> None:
     sub.add_parser("check-translations")
     p = sub.add_parser("github-notes")
     p.add_argument("--version", required=True)
-    p.add_argument("--checked")
-    p.add_argument("--draft", action="store_true")
     p.add_argument("--out", required=True)
     p = sub.add_parser("index")
     for name in ("--version", "--created", "--bundle-summary", "--readme-summary"):
@@ -565,8 +553,7 @@ def main() -> None:
     elif args.command == "check-translations":
         said = check_translations(root)
     elif args.command == "github-notes":
-        checked = read_paragraph(args.checked, "The checked paragraph") if args.checked else None
-        notes, said = github_notes(root, args.version, checked, args.draft)
+        notes, said = github_notes(root, args.version)
         write(Path(args.out), notes)
     else:
         said = index(root, args.version, args.created, read_paragraph(args.bundle_summary, "The bundle summary"),

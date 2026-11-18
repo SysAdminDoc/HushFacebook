@@ -35,10 +35,8 @@
                as well: the verifier-receipt.json scripts/verify-injected-registers.ps1 -Serial
                -ReceiptPath left for an APK patched from it, whose device verifier raised exactly
                the messages Meta's build raises, and a refusal names the ones that differ. Then
-               notes from the whole CHANGELOG section with -Checked as What was checked, a
-               lightweight tag, and the GitHub release with that checked copy, each file downloaded
-               back and compared. -Checked must say "applied ... to Facebook <version>" with
-               "Facebook" right after "to": the app's update check reads the target from that phrase.
+               notes from the CHANGELOG section's Facebook bullets, a lightweight tag, and the
+               GitHub release with that checked copy, each file downloaded back and compared.
     index      patches-bundle.json, the README's latest-release sentence and the bug form, from the
                published release and the gate's test results, and the repository description. Then
                commit "chore(release): point Manager to the verified X.Y.Z bundle" and push.
@@ -53,7 +51,7 @@
     scripts/release/release.ps1 -Stage preflight -Version 0.9.0
     scripts/release/release.ps1 -Stage bundle -Version 0.9.0
     scripts/release/release.ps1 -Stage rebuild -Version 0.9.0
-    scripts/release/release.ps1 -Stage publish -Version 0.9.0 -Checked checked.txt -Walk <audit folder>/walk-receipt.json -Verifier verifier-receipt.json
+    scripts/release/release.ps1 -Stage publish -Version 0.9.0 -Walk <audit folder>/walk-receipt.json -Verifier verifier-receipt.json
     scripts/release/release.ps1 -Stage index -Version 0.9.0 -ReadmeSummary readme.txt -BundleSummary bundle.txt
 #>
 [CmdletBinding()]
@@ -63,8 +61,6 @@ param(
     # source: a file holding the release's one-paragraph summary, and the CHANGELOG date if not today.
     [string]$Summary,
     [string]$Date,
-    # publish: a file holding the What was checked paragraph.
-    [string]$Checked,
     # publish: the walk-receipt.json of the whole-app walk on an APK patched from the staged bundle.
     [string]$Walk,
     # publish: the verifier-receipt.json of the device register check on an APK patched from it.
@@ -253,7 +249,7 @@ try {
             # build/ is ignored, so the draft leaves the tree clean. It needs the cut heading only,
             # and shows the notes this release will open with before anything is built.
             New-Item -ItemType Directory -Force -Path $assets | Out-Null
-            Invoke-ReleaseText 'The notes draft' @('github-notes', '--version', $Version, '--draft', '--out', (Join-Path $assets 'notes-draft.md'))
+            Invoke-ReleaseText 'The notes draft' @('github-notes', '--version', $Version, '--out', (Join-Path $assets 'notes-draft.md'))
 
             # One Gradle run: the patch tests without the fixture partition and its selection check,
             # the extension tests a release's text depends on, and both lints. The pre-push gate's
@@ -390,11 +386,10 @@ try {
                     }
                 }
             } finally { $hold.Dispose() }
-            Step 'the staged bundle is what the commit builds. Write the What was checked paragraph, then run -Stage publish'
+            Step 'the staged bundle is what the commit builds. Walk it, then run -Stage publish'
         }
         'publish' {
             $head = Assert-PushedHead
-            Assert-File $Checked '-Checked, the file holding the What was checked paragraph,'
             Assert-File $Walk '-Walk, the walk-receipt.json the whole-app walk of this bundle left,'
             Assert-File $Verifier '-Verifier, the verifier-receipt.json the device register check of this bundle left,'
             foreach ($name in $assetNames + 'SHA256SUMS.txt') {
@@ -469,7 +464,7 @@ try {
                 Step "verified on $($verified.Receipt.device): the patched build's verifier raised $($verified.Receipt.patchedMessages) message(s), as Meta's does"
 
                 $notes = Join-Path $assets 'notes.md'
-                Invoke-ReleaseText 'The release notes' @('github-notes', '--version', $Version, '--checked', $Checked, '--out', $notes)
+                Invoke-ReleaseText 'The release notes' @('github-notes', '--version', $Version, '--out', $notes)
                 if (-not (& git -C $root tag --list $tag)) { Invoke-Native 'The tag' { & git -C $root tag $tag $head } }
                 if (([string](& git -C $root rev-parse "$tag^{commit}")).Trim() -ne $head) { throw "$tag doesn't point at $head." }
                 Invoke-Native 'The tag push' { & git -C $root push --quiet origin $tag }

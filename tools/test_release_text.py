@@ -191,9 +191,6 @@ class BumpTest(Repo):
 
 
 class NotesTest(Repo):
-    CHECKED = ("Local checks passed. All 3 patches applied without forcing to Facebook 581.0.0.45.58 (both builds) "
-               "and 580.0.0.51.74.")
-
     def test_notes_and_description_take_a_labeled_bullet_without_its_label(self):
         write(self.root / "CHANGELOG.md", CHANGELOG.replace(
             "* New patch, `Hide x`", "* **Facebook:** New patch, `Hide x`"))
@@ -203,45 +200,34 @@ class NotesTest(Repo):
         self.assertIn("- New patch, `Hide x`", self.notes())
         self.assertNotIn("Facebook:", self.notes())
 
-    def notes(self, checked=CHECKED, draft=False):
-        return release_text.github_notes(self.root, "0.2.0", checked, draft)[0]
+    def notes(self):
+        return release_text.github_notes(self.root, "0.2.0")[0]
 
-    def test_keeps_every_bullet_and_takes_the_labels_off(self):
+    def test_keeps_every_facebook_bullet_and_takes_the_labels_off(self):
         self.cut()
         notes = self.notes()
         self.assertTrue(notes.startswith("Two new switches for Facebook 581.0.0.45.58.\n\nNew in this release\n\n"
                                          "- New patch, `Hide x`, with a switch under `News feed`.\n\nOther changes\n\n"
-                                         "- Reels open on the `first` frame.\n\nBehind the scenes\n\n"
-                                         "- The gate runs twice.\n\nThe [changelog]"))
+                                         "- Reels open on the `first` frame.\n\nThe [changelog]"))
         self.assertNotIn("**", notes)
         self.assertNotIn("Facebook:", notes)
         self.assertIn("2. Patch Facebook `581.0.0.45.58`. On most phones that's build `475215365`, the arm64-v8a "
                       "one. Phones with a 32-bit processor take build `475215364`, the armeabi-v7a one. Facebook "
                       "`580.0.0.51.74` (build `475019344`) still works.", notes)
         self.assertIn("1. Update Morphe Manager to 1.34.0 or newer", notes)
-        self.assertTrue(notes.endswith("What was checked\n\n" + self.CHECKED + "\n"))
+        self.assertIn("How to update\n\nThis release targets Facebook 581.0.0.45.58.\n\n1. ", notes)
         self.assertEqual(release_text.target_in(notes)[0], "581.0.0.45.58")
 
     def test_the_update_check_reads_the_newest_build(self):
-        self.cut()
         older = "All 3 patches applied to Facebook 580.0.0.51.74 and later to 581.0.0.45.58 too."
-        self.assertEqual(release_text.target_in(self.notes(checked=older))[0], "581.0.0.45.58")
-        self.refused(lambda: self.notes(checked="All 3 patches applied to Facebook 580.0.0.51.74."),
-                     "read Facebook 580.0.0.51.74", "It's 581.0.0.45.58")
+        self.assertEqual(release_text.target_in(older)[0], "581.0.0.45.58")
+        # 0.10.0's first try: a word between "to" and "Facebook", which installed builds don't read either.
+        self.assertIsNone(release_text.target_in("All 3 patches applied to both Facebook 581.0.0.45.58 builds.")[0])
 
-    def test_an_earlier_sentence_wins_over_the_checked_one(self):
+    def test_an_earlier_sentence_wins_over_the_generated_one(self):
         write(self.root / "CHANGELOG.md", CHANGELOG.replace("Reels open on", "This targets Facebook 580.0.0.51.74. Reels open on"))
         self.cut()
-        self.refused(self.notes, "read Facebook 580.0.0.51.74")
-
-    def test_a_draft_needs_no_target_but_a_release_does(self):
-        self.cut()
-        self.assertNotIn("What was checked", self.notes(checked=None, draft=True))
-        self.refused(lambda: self.notes(checked=None), "--checked")
-        self.refused(lambda: self.notes(checked="Local checks passed."), "nothing in the notes says")
-        # 0.10.0's first try: a word between "to" and "Facebook", which installed builds don't read either.
-        self.refused(lambda: self.notes(checked="All 3 patches applied to both Facebook 581.0.0.45.58 builds."),
-                     "nothing in the notes says", "with \"Facebook\" right after \"to\"")
+        self.refused(self.notes, "read Facebook 580.0.0.51.74", "It's 581.0.0.45.58")
 
     def test_refuses_a_section_cut_did_not_write(self):
         self.refused(self.notes, "no dated 0.2.0 heading")
@@ -259,11 +245,7 @@ class NotesTest(Repo):
         self.cut()
         notes = self.notes()
         self.assertIn("- Reels open on the `first` frame.\n\nReported issues\n\n"
-                      "- #12 Reels froze: fixed, see Other changes.\n\nBehind the scenes\n\n", notes)
-
-    def test_refuses_a_dash_in_the_checked_paragraph(self):
-        self.cut()
-        self.refused(lambda: self.notes(checked=self.CHECKED + " Done – all of it."), "dash")
+                      "- #12 Reels froze: fixed, see Other changes.\n\nThe [changelog]", notes)
 
 
 class IndexTest(Repo):
@@ -484,13 +466,10 @@ class CommandLineTest(Repo):
         write(summary, "Two new switches for Facebook 581.0.0.45.58.\n")
         self.assertEqual(self.run_tool("cut", "--version", "0.2.0", "--summary", str(summary)).returncode, 0)
         self.assertEqual(self.run_tool("bump", "--version", "0.2.0").returncode, 0)
-        checked = self.root / "checked.txt"
-        write(checked, NotesTest.CHECKED + "\n")
         out = self.root / "notes.md"
-        done = self.run_tool("github-notes", "--version", "0.2.0", "--checked", str(checked), "--out", str(out))
+        done = self.run_tool("github-notes", "--version", "0.2.0", "--out", str(out))
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertIn("target Facebook 581.0.0.45.58", done.stdout)
-        self.assertIn("What was checked", out.read_text(encoding="utf-8"))
         write(self.root / "readme.txt", "two new switches\n")
         write(self.root / "bundle.txt", "Two new switches and faster Reels.\n")
         done = self.run_tool("index", "--version", "0.2.0", "--created", "2026-02-03T17:04:05", "--bundle-summary",

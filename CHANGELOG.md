@@ -13,6 +13,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Changed
 
+* **Tooling:** The GitHub release notes leave out the Tooling bullets and the What was checked paragraph. How to update opens with the Facebook build the release targets, which is the sentence the in-app update check reads.
 * The README is about half as long. The patch list moved to [docs/patches.md](https://github.com/SysAdminDoc/Hushfacebook/blob/main/docs/patches.md) and the help topics to [docs/help.md](https://github.com/SysAdminDoc/Hushfacebook/blob/main/docs/help.md), and the README links to each topic.
 * The changelog starts at 0.20.0 now, so Morphe Manager has a lot less to download when it shows what changed. Versions 0.1.0 to 0.19.0 are in the [changelog archive](https://github.com/SysAdminDoc/Hushfacebook/blob/main/docs/changelog-archive.md), word for word.
 
