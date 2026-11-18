@@ -50,7 +50,8 @@ import java.util.EnumSet
  *   An open post's comment list (arm64 `LX/0Cud;->A19`) and several renders around the row ask the
  *   same check, so the extension is asked right after its read, through topReactionCheck, and they
  *   all hear no together, the answer the check gives where the gate is closed. The check is the one
- *   such call whose code has a single id-fed boolean read with a gated branch before it.
+ *   such call whose code has a single id-fed boolean read with a gated branch before it. 588 makes
+ *   it an instance method of a final singleton (arm64 `LX/05Gm;->A04`), called with `invoke-virtual`.
  * - The comment list also reads a MobileConfig int past the same gate (587 id 0x010208d300000dc9):
  *   any of 1 to 3 changes how it lays out a comment's row, and 2 or 3 build the component whatever
  *   the check says. It's the one gate call in a method making the component whose answer an
@@ -93,6 +94,12 @@ private const val READ_REACH = 3
 
 private val BRANCHES = EnumSet.of(Opcode.IF_EQZ, Opcode.IF_NEZ)
 private val STATIC_CALLS = EnumSet.of(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
+private val CHECK_CALLS = EnumSet.of(
+    Opcode.INVOKE_STATIC,
+    Opcode.INVOKE_STATIC_RANGE,
+    Opcode.INVOKE_VIRTUAL,
+    Opcode.INVOKE_VIRTUAL_RANGE,
+)
 private val WIDE_CONSTS = EnumSet.of(Opcode.CONST_WIDE, Opcode.CONST_WIDE_32, Opcode.CONST_WIDE_16, Opcode.CONST_WIDE_HIGH16)
 
 private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
@@ -231,11 +238,13 @@ private fun pluginReads(picks: List<Pick>): List<TopReactionRead> {
 internal fun topReactionReads(classes: Iterable<ClassDef>): List<TopReactionRead> = pluginReads(picks(builders(classes)))
 
 /**
- * The shared check: of the static booleans the picks test that are passed no id, the one whose code
- * holds a single boolean read of an id, behind a branch on another static boolean's answer, the gate.
+ * The shared check: of the booleans the picks test that are passed no id, static or virtual, the one
+ * whose code holds a single boolean read of an id, behind a branch on a static boolean's answer, the gate.
  */
 private fun sharedCheck(classes: Iterable<ClassDef>, picks: List<Pick>): SharedCheck {
-    val asked = picks.filter { it.call.isStaticCall("Z") && it.builder.code.idLoadFor(it.result - 1) == null }
+    val asked = picks.filter {
+        it.call.opcode in CHECK_CALLS && it.call.callee()?.returnType == "Z" && it.builder.code.idLoadFor(it.result - 1) == null
+    }
         .mapNotNull { it.call.callee() }.distinctBy { it.toString() }
     val checks = asked.mapNotNull { callee ->
         val method = classes.firstOrNull { it.type == callee.definingClass }?.methods?.firstOrNull { it.sameAs(callee) }

@@ -12,6 +12,7 @@ import app.morphe.patches.facebook.comments.summaries.descriptor
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.shared.compat.AppCompatibilities
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -132,10 +133,16 @@ class CommentReactionRowFixtureTest {
                 val tested = inlineCode[branch].register()
                 val writer = (branch - 1 downTo 1).first { writesRegister(inlineCode[it], tested) }
                 assertEquals("$name: the inline branch tests a call's answer", Opcode.MOVE_RESULT, inlineCode[writer].opcode)
-                assertEquals("$name: that call is static", Opcode.INVOKE_STATIC, inlineCode[writer - 1].opcode)
+                val checkCall = inlineCode[writer - 1].opcode
                 val check = inlineCode[writer - 1].method()!!
                 assertEquals("$name: the shared check answers a boolean", "Z", check.returnType)
                 val checkClass = FixtureDex.classes(bundle, setOf(check.definingClass)).values.single()
+                // 587 calls a static. 588 calls a method of a final singleton, which nothing can override.
+                assertTrue(
+                    "$name: that call can only reach the check",
+                    checkCall == Opcode.INVOKE_STATIC ||
+                        (checkCall == Opcode.INVOKE_VIRTUAL && AccessFlags.FINAL.isSet(checkClass.accessFlags)),
+                )
                 val checkCode = checkClass.methods.single { it.sameAs(check) }.code()
                 val checkIds = checkCode.indices.filter { checkCode[it].opcode in WIDE_CONSTS }
                 assertEquals("$name: ids the shared check reads", 1, checkIds.size)
