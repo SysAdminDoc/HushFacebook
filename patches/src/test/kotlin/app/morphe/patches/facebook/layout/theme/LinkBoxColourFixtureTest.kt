@@ -7,7 +7,7 @@ package app.morphe.patches.facebook.layout.theme
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
-import app.morphe.patches.facebook.shared.MOBILE_CONFIG
+import app.morphe.patches.facebook.shared.readsMobileConfig
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -63,13 +63,18 @@ class LinkBoxColourFixtureTest {
                 assertTrue("$name: the footer and FDS's link attachment, at least, read the link box's colour (${readers.size})",
                     readers.size >= 2)
 
+                // 588 reads the string through a static helper taking the config as an Object.
+                val helpers = FixtureDex.classes(bundle, readers.flatMap { reader ->
+                    reader.body().mapNotNull { it.call() }.filter { call ->
+                        call.returnType == "Ljava/lang/String;" &&
+                            call.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;", "J")
+                    }.map { it.definingClass }
+                }.toSet())
                 val parses = readers.associate { reader ->
                     val calls = reader.body().withIndex().filter { it.value.call()?.toString() == PARSE_COLOR }
                     assertEquals("$name: ${reader.descriptor()} parses one colour", 1, calls.size)
                     assertTrue("$name: ${reader.descriptor()} reads the config as a string", reader.body().any { instruction ->
-                        val call = instruction.call() ?: return@any false
-                        call.definingClass == MOBILE_CONFIG && call.returnType == "Ljava/lang/String;" &&
-                            call.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;", "J")
+                        readsMobileConfig(instruction, "Ljava/lang/String;", helpers::get)
                     })
                     reader.descriptor() to calls.single()
                 }

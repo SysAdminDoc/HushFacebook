@@ -584,12 +584,14 @@ val materialYouThemePatch = bytecodePatch(
  * `LX/0N8x;->A17` and five more) and the attachment footer's `LX/05X5;->A0B(FbUserSession, LX/01PR, Z)I`.
  * 586 had it at `0x1030731000203a8`, read 2026-11-08 by the same nine methods (arm64
  * `LX/099J;->render`, `LX/0OCK;->render`, `LX/0TJY;->A1E` and five more renders, and the footer's
- * `LX/09Ce;->A00`), each reading it through `MobileConfigUnsafeContext.A0H`. 587 moved it to the id
- * below, the same on both ABIs, read 2026-11-12 by nine methods again (arm64 `LX/0Hgy;->render`,
- * `LX/0HFH;->render`, `LX/0Pb1;->A19` and five more renders, and the footer's `LX/094a;->A00`; v7's
- * footer is `LX/094N;->A00`), found as the one config whose string seven `Color.parseColor` calls parse.
+ * `LX/09Ce;->A00`), each reading it through `MobileConfigUnsafeContext.A0H`. 587 had it at
+ * `0x1030725000203a4`, read by nine methods again. 588 moved it to the id below, the same on both
+ * ABIs, read 2026-11-18 by eight renders (arm64 `LX/08oV;->render`, `LX/0R9e;->render`,
+ * `LX/0RKt;->A1B` and five more) and the footer's `LX/082r;->A00` (v7's is `LX/082u;->A00`), each
+ * through a static helper (`LX/01BP;->A0z`) that casts the config and asks it. It's the one config
+ * whose string seven `Color.parseColor` calls parse.
  */
-internal const val LINK_BOX_COLOUR_CONFIG = 0x1030725000203a4L
+internal const val LINK_BOX_COLOUR_CONFIG = 0x103071f000203a2L
 
 /**
  * Every id the declared builds give the link box's colour config. Only declared builds' ids belong
