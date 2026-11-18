@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.reels.prompts.INTEREST_PROMPT
 import app.morphe.patches.facebook.reels.prompts.isOverlayEnum
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -78,14 +79,14 @@ class HideAffiliateLinksFixtureTest {
     )
 
     /**
-     * Whether a build's banner tag is hooked where the profile reads it back (587, which names the key
-     * through a string table where it stores it, arm64 `LX/0Bb0;->A01`) rather than in its one store.
+     * Whether a build's banner tag is hooked where the profile reads it back (587 on, which names the
+     * key through a string table where it stores it; 588 arm64 `LX/0AXq;->A02`) rather than in its one store.
      */
     private val profileEntryRead = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to true,
     )
 
-    /** Per build and ABI, how many times the profile's reader reads the banner tag (arm64 587: `LX/0Bb0;->A01` twice). */
+    /** Per build and ABI, how many times the profile's reader reads the banner tag (arm64 588: `LX/0AXq;->A02` twice). */
     private val profileEntryReadCount = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2),
     )
@@ -242,8 +243,8 @@ class HideAffiliateLinksFixtureTest {
     }
 
     /** Right after the flag's read keeps its answer, that answer goes through the extension and comes back to it. */
-    private fun assertLabelHooked(name: String, method: Method, flag: Long) {
-        val call = flagReads(method).single { it.second == flag }.first
+    private fun assertLabelHooked(name: String, method: Method, flag: Long, classOf: (String) -> ClassDef?) {
+        val call = flagReads(method, classOf).single { it.second == flag }.first
         val code = method.code()
         val answer = (code[call + 1] as OneRegisterInstruction).registerA
         val hook = code[call + 2] as RegisterRangeInstruction
@@ -373,10 +374,14 @@ class HideAffiliateLinksFixtureTest {
                     }
                     assertEquals("$name: plugin gate cases for the floating card", 1, gateCases.size)
                 }
+                // 588's render reads its flag through a static helper, which the patch reads to know that.
+                val configHelpers = labelRender.code().mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
+                    .filter { it.returnType == "Z" && it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;", "J") }
+                    .map { it.definingClass }
                 val types = (builders + footerChecks).map { it.definingClass }.toSet() + reelCheck.map { it.definingClass } +
                     setOf(footerId.definingClass, FLOATING_CARD_PLUGIN, ctaFilter.definingClass, labelRender.definingClass,
                         labelGate!!.definingClass, entryWriter.definingClass) + labelTables.keys +
-                    gateCases.map { it.first.definingClass }
+                    gateCases.map { it.first.definingClass } + configHelpers
                 val classes = FixtureDex.classes(bundle, types)
                 assertEquals("$name: classes read", types, classes.keys)
                 val plugin = classes.getValue(FLOATING_CARD_PLUGIN)
@@ -416,18 +421,20 @@ class HideAffiliateLinksFixtureTest {
                 }
                 assertCtaFiltered("$name CTA filter", originals[2], patched(ctaFilter), list)
                 // The flag is read in the render and its check up to 585, and on 586 in one static
-                // helper of the check's class that both call; 587 reads it in both again, by MobileConfig id.
+                // helper of the check's class that both call; 587 and 588 read it in both again, by MobileConfig id.
+                val classOf: (String) -> ClassDef? = { classes[it] }
                 val gateMethod = classes.getValue(labelGate.definingClass).methods.single { MethodUtil.methodSignaturesMatch(it, labelGate) }
-                val labelReaders: List<MethodReference> = if (flagReads(labelRender).isNotEmpty()) listOf(labelRender, gateMethod) else
+                val rendersFlag = flagReads(labelRender, classOf).isNotEmpty()
+                val labelReaders: List<MethodReference> = if (rendersFlag) listOf(labelRender, gateMethod) else
                     listOfNotNull(sharedFlagReader(labelRender, gateMethod) { call ->
                         classes[call.definingClass]?.methods?.firstOrNull { MethodUtil.methodSignaturesMatch(it, call) }
                     })
-                assertEquals("$name: methods reading the label's flag", if (flagReads(labelRender).isNotEmpty()) 2 else 1, labelReaders.size)
-                val labelFlag = flagReads(labelReaders.first() as Method).single().second
+                assertEquals("$name: methods reading the label's flag", if (rendersFlag) 2 else 1, labelReaders.size)
+                val labelFlag = flagReads(labelReaders.first() as Method, classOf).single().second
                 for (read in labelReaders) {
                     val hooked = context.mutableClassDefBy(read.definingClass).methods
                         .single { MethodUtil.methodSignaturesMatch(it, read) }
-                    assertLabelHooked("$name label ${read.definingClass}", hooked, labelFlag)
+                    assertLabelHooked("$name label ${read.definingClass}", hooked, labelFlag, classOf)
                 }
                 val entryPatched = context.mutableClassDefBy(entryWriter.definingClass).methods
                     .single { MethodUtil.methodSignaturesMatch(it, entryWriter) }.code()

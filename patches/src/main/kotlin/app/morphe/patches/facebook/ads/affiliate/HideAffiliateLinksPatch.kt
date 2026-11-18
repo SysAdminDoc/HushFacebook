@@ -179,7 +179,8 @@ val hideAffiliateLinksPatch = bytecodePatch(
         val anchors = findAffiliateAnchors()
         val label = findCommissionLabel()
         for (read in label.readers) {
-            mutableClassDefBy(read.definingClass).findMutableMethodOf(read).hookCommissionFlag(label.flag)
+            mutableClassDefBy(read.definingClass).findMutableMethodOf(read)
+                .hookCommissionFlag(label.flag) { classDefByOrNull(it) }
         }
         for (check in anchors.reelCardChecks) {
             mutableClassDefBy(check.definingClass).findMutableMethodOf(check).filterBooleanReturns(PATCH, KEEP_REEL_CARD)
@@ -224,6 +225,8 @@ internal class AffiliateAnchors(
  * holding that read: the render and the check up to 585, and on 586 the one static helper both of
  * them call for it (arm64 `LX/09Du;->A03`, beside the check `LX/09Du;->A00`). 587 is back to the
  * render and the check each reading it, as a MobileConfig id (arm64 `LX/0CTS;->render` and `LX/09ZE;->A00`).
+ * 588 keeps both reads, with the render's going through a static helper that only casts the config
+ * and asks it (arm64 `LX/0C37;->render` calling `LX/01BN;->A1b`, beside the check `LX/09GJ;->A00`).
  */
 internal class CommissionLabelAnchors(val render: Method, val gate: Method, val flag: Long, val readers: List<Method>)
 
@@ -271,9 +274,11 @@ internal fun disclosureGate(render: Method): MethodReference? =
 /**
  * Each read in [method] of a reel's boolean flag by its number, as the read's index and the number:
  * up to 586 `getBooleanValue(int)`, and on 587 a MobileConfig boolean asked by its long id, the
- * render through a static of [MOBILE_CONFIG] and the check through the config's interface.
+ * render through a static of [MOBILE_CONFIG] and the check through the config's interface. [classOf]
+ * lets a read through 588's helper on a utility class count, since only the helper's body shows it
+ * reads the config.
  */
-internal fun flagReads(method: Method): List<Pair<Int, Long>> {
+internal fun flagReads(method: Method, classOf: ((String) -> ClassDef?)? = null): List<Pair<Int, Long>> {
     val code = method.implementation?.instructions?.toList() ?: return emptyList()
     return code.indices.mapNotNull { at ->
         val call = (code[at] as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
@@ -285,7 +290,7 @@ internal fun flagReads(method: Method): List<Pair<Int, Long>> {
             } as? NarrowLiteralInstruction
             return@mapNotNull number?.let { at to it.narrowLiteral.toLong() }
         }
-        if (!readsMobileConfig(code[at], "Z") && !readsConfigStatic(code[at], call, parameters)) return@mapNotNull null
+        if (!readsMobileConfig(code[at], "Z", classOf) && !readsConfigStatic(code[at], call, parameters)) return@mapNotNull null
         val id = idRegister(code[at]) ?: return@mapNotNull null
         // The last write of the id's register before the read, which has to be its literal.
         val writer = (at - 1 downTo 0).map(code::get).firstOrNull {
@@ -322,7 +327,8 @@ internal fun BytecodePatchContext.findCommissionLabel(): CommissionLabelAnchors 
     val gateCall = disclosureGate(render) ?: refuse("${render.definingClass}->render asks no session check first")
     val gate = classDefBy(gateCall.definingClass).methods.firstOrNull { MethodUtil.methodSignaturesMatch(it, gateCall) }
         ?: refuse("${gateCall.definingClass} has no ${gateCall.name}")
-    val renderReads = flagReads(render)
+    val classOf: (String) -> ClassDef? = { classDefByOrNull(it) }
+    val renderReads = flagReads(render, classOf)
     val readers = when (renderReads.size) {
         1 -> listOf(render, gate)
         0 -> listOf(
@@ -332,9 +338,9 @@ internal fun BytecodePatchContext.findCommissionLabel(): CommissionLabelAnchors 
         )
         else -> refuse("expected one flag read in ${render.definingClass}->render, found ${renderReads.size}")
     }
-    val flag = flagReads(readers.first()).single().second
+    val flag = flagReads(readers.first(), classOf).single().second
     for (method in readers) {
-        val read = flagReads(method).singleOrNull { it.second == flag }?.first
+        val read = flagReads(method, classOf).singleOrNull { it.second == flag }?.first
             ?: refuse("expected one read of the flag in ${method.definingClass}->${method.name}")
         val answer = method.implementation!!.instructions.elementAt(read + 1)
         if (answer.opcode != Opcode.MOVE_RESULT) refuse("the flag read in ${method.definingClass}->${method.name} keeps no answer")
@@ -347,8 +353,8 @@ internal fun BytecodePatchContext.findCommissionLabel(): CommissionLabelAnchors 
  * jump that lands right after the read comes from a path that never read the flag, and it stays on
  * Facebook's next instruction with its own answer.
  */
-private fun MutableMethod.hookCommissionFlag(flag: Long) {
-    val read = flagReads(this).single { it.second == flag }.first
+private fun MutableMethod.hookCommissionFlag(flag: Long, classOf: (String) -> ClassDef?) {
+    val read = flagReads(this, classOf).single { it.second == flag }.first
     val answer = (getInstruction(read + 1) as OneRegisterInstruction).registerA
     addInstructions(
         read + 2,
