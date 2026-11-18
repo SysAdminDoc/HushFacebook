@@ -179,8 +179,9 @@ class ReelAnchorsFixtureTest {
                         "586.0.0.52.53 arm64-v8a" to "LX/0A3w;:134:A18 LX/0A3h;:198:A0Q",
                         "586.0.0.52.53 armeabi-v7a" to "LX/0A3w;:134:A18 LX/0A3h;:198:A0Q",
                         "586.0.0.52.53 arm64-v8a-minapi28-storeless" to "LX/0A5H;:52:A0A LX/0A4q;:118:invoke",
-                        "588.0.0.42.55 arm64-v8a" to "LX/0CxW;:19:A0N LX/0A59;:120:A0V",
-                        "588.0.0.42.55 armeabi-v7a" to "LX/0A4x;:67:A0G LX/0A4w;:96:A0W",
+                        // 588 puts both flags back in one lambda class, as 583 and 584 did.
+                        "588.0.0.42.55 arm64-v8a" to "LX/09w5;:56:A08 LX/09w5;:57:A0f",
+                        "588.0.0.42.55 armeabi-v7a" to "LX/09w8;:56:A08 LX/09w8;:57:A0f",
                     )["$version $abi"]
                     assertEquals(name, pinned, follow.flags.joinToString(" ") { "${it.lambda}:${it.key}:${it.reader.name}" })
                 } else {
