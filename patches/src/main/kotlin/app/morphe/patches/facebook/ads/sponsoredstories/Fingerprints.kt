@@ -8,8 +8,31 @@
 package app.morphe.patches.facebook.ads.sponsoredstories
 
 import app.morphe.patcher.Fingerprint
+import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 internal const val IMMUTABLE_LIST = "Lcom/google/common/collect/ImmutableList;"
+internal const val JAVA_LIST = "Ljava/util/List;"
+
+internal const val INORGANIC_CLASH = "handling_inorganic_clash"
+internal const val UNINSERTED_ADS = "uninsertedMainAdsQueue"
+internal const val PAGINATING_BUCKETS = "AdPaginatingBucketStaticInsertionDataSource.getBuckets"
+internal const val MID_CARD_BUCKETS = "StoryViewerMidCardDataSource.getBuckets"
+
+/** A bucket data source's interleave method: it takes the organic list last and returns a list. */
+internal fun isBucketSource(method: Method) =
+    method.returnType == IMMUTABLE_LIST && method.parameterTypes.lastOrNull()?.toString() == IMMUTABLE_LIST
+
+/** Whether [method] calls [placement]. */
+internal fun handsOffTo(method: Method, placement: Method): Boolean {
+    val signature = placement.parameterTypes.map(CharSequence::toString)
+    return method.implementation?.instructions?.any { instruction ->
+        val called = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        called != null && called.definingClass == placement.definingClass && called.name == placement.name &&
+            called.returnType == placement.returnType && called.parameterTypes.map(CharSequence::toString) == signature
+    } ?: false
+}
 
 /**
  * Story buckets do not pass through one inserter. `StoryviewerBucketDataController.processBucketData`
@@ -21,8 +44,8 @@ internal const val IMMUTABLE_LIST = "Lcom/google/common/collect/ImmutableList;"
  * four share one signature: `(FbUserSession, <flags>, ImmutableList) -> ImmutableList`. Returning the
  * input unchanged is the result Facebook itself produces when a source contributes nothing.
  *
- * Each is anchored on a string literal that is unique in the APK. The class and method names are
- * Redex names that change every release, so none is named here.
+ * Three are anchored on a string literal that is unique in the APK, and the fourth on the helper it
+ * calls. The class and method names are Redex names that change every release, so none is named here.
  */
 
 /**
@@ -31,30 +54,31 @@ internal const val IMMUTABLE_LIST = "Lcom/google/common/collect/ImmutableList;"
  */
 internal object InorganicClashResolverFingerprint : Fingerprint(
     returnType = IMMUTABLE_LIST,
-    strings = listOf("handling_inorganic_clash"),
+    strings = listOf(INORGANIC_CLASH),
 )
 
 /**
- * `AdBucketDataSourceUtil` — the main ad placement engine, and by far the largest of the four. It
- * keeps its own queues of inserted and pending ads alongside a model of the organic stream, then
- * decides where each ad lands.
+ * The placement step of `AdBucketDataSourceUtil`, the main ad placement engine and by far the largest
+ * of the four sources. It keeps queues of inserted and pending ads alongside a model of the organic
+ * stream, then decides where each ad lands. Since 588 that work sits in a helper over plain lists, so
+ * the source itself holds no string and is found as this helper's caller (`adBucketDataSource`).
  *
- * `"uninsertedMainAdsQueue"` also appears in the placement-rule helper it calls, so the return type
- * is what selects the interleave method: the helper's two methods return `void` and `boolean`.
+ * `"uninsertedMainAdsQueue"` also appears in the placement-rule helper, so the return type is what
+ * selects this method: the rule helper's two methods return `void` and `boolean`.
  */
-internal object AdBucketDataSourceFingerprint : Fingerprint(
-    returnType = IMMUTABLE_LIST,
-    strings = listOf("uninsertedMainAdsQueue"),
+internal object AdBucketPlacementFingerprint : Fingerprint(
+    returnType = JAVA_LIST,
+    strings = listOf(UNINSERTED_ADS),
 )
 
 /**
  * `AdPaginatingBucketStaticInsertionDataSource` — drains a queue of pending ad buckets as the viewer
- * paginates. A factory picks this or [AdBucketDataSourceFingerprint] by flag, so both ship in the
- * APK and both need neutering.
+ * paginates. A factory picks this or the main engine by flag, so both ship in the APK and both need
+ * neutering.
  */
 internal object AdPaginatingBucketInserterFingerprint : Fingerprint(
     returnType = IMMUTABLE_LIST,
-    strings = listOf("AdPaginatingBucketStaticInsertionDataSource.getBuckets"),
+    strings = listOf(PAGINATING_BUCKETS),
 )
 
 /**
@@ -63,5 +87,5 @@ internal object AdPaginatingBucketInserterFingerprint : Fingerprint(
  */
 internal object StoryViewerMidCardFingerprint : Fingerprint(
     returnType = IMMUTABLE_LIST,
-    strings = listOf("StoryViewerMidCardDataSource.getBuckets"),
+    strings = listOf(MID_CARD_BUCKETS),
 )

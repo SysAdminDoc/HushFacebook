@@ -10,8 +10,10 @@ package app.morphe.patches.facebook.ads.sponsoredstories
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
+import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -20,8 +22,31 @@ import app.morphe.patches.facebook.misc.extension.parameterRegister
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.util.classDefForEachReferencing
+import com.android.tools.smali.dexlib2.iface.Method
 
 private const val SWITCH = "$EXTENSION_PACKAGE/feed/FeedFilter;->hideSponsoredStories()Z"
+
+/** The bucket source that hands its ads to [placement], read from the mutable class. */
+internal fun BytecodePatchContext.adBucketDataSource(placement: Method): MutableMethod {
+    val found = mutableListOf<Pair<String, Method>>()
+    classDefForEachReferencing(types = listOf(placement.definingClass)) { classDef ->
+        classDef.methods.filter { isBucketSource(it) && handsOffTo(it, placement) }
+            .forEach { found += classDef.type to it }
+    }
+    if (found.size != 1) {
+        throw PatchException(
+            "Expected 1 story bucket source calling ${placement.definingClass}->${placement.name}, found " +
+                "${found.size}: " + found.joinToString { "${it.first}->${it.second.name}" },
+        )
+    }
+    val (type, stock) = found.single()
+    val signature = stock.parameterTypes.map(CharSequence::toString)
+    return mutableClassDefBy(type).methods.single {
+        it.name == stock.name && it.returnType == stock.returnType &&
+            it.parameterTypes.map(CharSequence::toString) == signature
+    }
+}
 
 @Suppress("unused")
 val hideSponsoredStoriesPatch = bytecodePatch(
@@ -45,13 +70,11 @@ val hideSponsoredStoriesPatch = bytecodePatch(
     // which is the ad that survives into a session and disappears on the next cold start.
     execute {
         listOf(
-            InorganicClashResolverFingerprint,
-            AdBucketDataSourceFingerprint,
-            AdPaginatingBucketInserterFingerprint,
-            StoryViewerMidCardFingerprint,
-        ).forEach { fingerprint ->
-            val method = fingerprint.method
-
+            InorganicClashResolverFingerprint.method,
+            adBucketDataSource(AdBucketPlacementFingerprint.method),
+            AdPaginatingBucketInserterFingerprint.method,
+            StoryViewerMidCardFingerprint.method,
+        ).forEach { method ->
             val listParameter = method.parameterTypes.indexOfLast { it.toString() == IMMUTABLE_LIST }
             if (listParameter < 0) {
                 throw PatchException(
