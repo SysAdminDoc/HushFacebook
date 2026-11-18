@@ -24,6 +24,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.patches.facebook.shared.readsMobileConfig
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.RegisterLiveness
 import app.morphe.util.classDefForEachReferencing
@@ -85,10 +86,6 @@ private const val STRING = "Ljava/lang/String;"
 
 /** The kinds a filter declares, as the enum's constants are named; the kind class holds all of them. */
 internal val FILTER_KINDS = listOf("DATE_RANGE_PICKER", "MULTI_CHOICE", "TIME_PICKER")
-
-internal const val MOBILE_CONFIG = "Lcom/facebook/mobileconfig/factory/MobileConfigUnsafeContext;"
-
-private const val OBJECT = "Ljava/lang/Object;"
 
 /** How far after the kind may Facebook read the bottom sheet flag. */
 internal const val FLAG_REACH = 12
@@ -259,10 +256,7 @@ internal fun kindRead(method: Method, classOf: (String) -> ClassDef?): KindRead?
         if (!categoryNames(kindClass).containsAll(FILTER_KINDS)) return@mapNotNull null
         val flagCall = (index + 2..minOf(code.size - 3, index + FLAG_REACH)).firstOrNull { at ->
             val candidate = code[at]
-            if (candidate.opcode != Opcode.INVOKE_STATIC) return@firstOrNull false
-            val target = (candidate as ReferenceInstruction).reference as? MethodReference ?: return@firstOrNull false
-            target.definingClass == MOBILE_CONFIG && target.returnType == "Z" &&
-                target.parameterTypes.map(CharSequence::toString) == listOf(OBJECT, "J") &&
+            candidate.opcode == Opcode.INVOKE_STATIC && readsMobileConfig(candidate, "Z", classOf) &&
                 code[at + 1].opcode == Opcode.MOVE_RESULT && code[at + 2].opcode == Opcode.IF_NEZ &&
                 (code[at + 1] as OneRegisterInstruction).registerA == (code[at + 2] as OneRegisterInstruction).registerA
         } ?: return@mapNotNull null

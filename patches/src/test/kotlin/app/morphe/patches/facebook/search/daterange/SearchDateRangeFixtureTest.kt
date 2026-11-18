@@ -54,10 +54,16 @@ class SearchDateRangeFixtureTest {
         val holders = FixtureDex.classesHolding(bundle, TAP_FILTER).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         // The kind enum lives in another dex of the bundle, so every class the tap handlers name is fetched. String and
         // the other framework types they answer stay out of the pool, as they are out of Facebook's, and the patch's
-        // own lookup has to pass over them.
+        // own lookup has to pass over them. 588 reads the flag through a static helper taking the config as an
+        // Object, so that helper's class comes along.
         val named = holders.flatMap { methodsHolding(it, TAP_FILTER) }.flatMap { method ->
             method.implementation!!.instructions
-                .mapNotNull { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.returnType }
+                .mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
+                .flatMap { call ->
+                    val asksFlag = call.returnType == "Z" &&
+                        call.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;", "J")
+                    if (asksFlag) listOf(call.returnType, call.definingClass) else listOf(call.returnType)
+                }
         }.filter { it.startsWith("L") }.toSet()
         val found = PatchContexts.of((holders + FixtureDex.classes(bundle, named).values).distinctBy { it.type })
             .kindReads(holders)
