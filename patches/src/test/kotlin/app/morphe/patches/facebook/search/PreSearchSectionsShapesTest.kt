@@ -112,7 +112,7 @@ class PreSearchSectionsShapesTest {
             ImmutableInstruction10x(Opcode.RETURN_VOID), // 12, address 20
         ))
 
-    private fun sectionClass(itemCase: Method): ClassDef = ImmutableClassDef(
+    private fun sectionClass(itemCase: Method, more: List<Method> = emptyList()): ClassDef = ImmutableClassDef(
         section, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null, null,
         listOf(
             method(section, "<init>", listOf(
@@ -120,7 +120,7 @@ class PreSearchSectionsShapesTest {
                 ImmutableInstruction10x(Opcode.RETURN_VOID),
             )),
             itemCase,
-        ),
+        ) + more,
     )
 
     /** The list reader naming the entry class right before the list's name. */
@@ -373,6 +373,71 @@ class PreSearchSectionsShapesTest {
             hookedQuery(listOf(queryClass(queryBody(query, accessorRead(name = "ALd"))), accessorClass()))
         }
         assertTrue(refusal.message, refusal.message!!.contains("0 places"))
+    }
+
+    /**
+     * 588's render: the list asked of v[asked] and kept in v[kept], its null test jumping to [end], then
+     * [next] and the section's name ([named]). [jumpToTest] adds a jump straight to the null test.
+     */
+    private fun renderCase(
+        name: String = "A0l",
+        asked: Int = 0,
+        kept: Int = 1,
+        next: Instruction = ImmutableInstruction21c(Opcode.CONST_STRING, 0, ImmutableStringReference("next")),
+        end: Instruction = ImmutableInstruction10x(Opcode.RETURN_VOID),
+        named: Boolean = true,
+        jumpToTest: Boolean = false,
+    ) = method(section, name, listOfNotNull(
+        ImmutableInstruction21t(Opcode.IF_EQZ, 3, 6).takeIf { jumpToTest }, // address 0, to the list's test
+        call(Opcode.INVOKE_INTERFACE, ref("Lfixture/Rows;", "FNa", emptyList(), PRE_SEARCH_PAGINABLE), asked), // 3 units
+        ImmutableInstruction11x(Opcode.MOVE_RESULT_OBJECT, kept), // 1 unit
+        ImmutableInstruction21t(Opcode.IF_EQZ, kept, 6), // 2 units, to end
+        next, // 2 units
+        ImmutableInstruction21c(Opcode.CONST_STRING, 2, ImmutableStringReference(if (named) PRE_SEARCH_SECTION else "Other")), // 2 units
+        end,
+    ))
+
+    private fun listSites(render: Method) = preSearchListSites(sectionClass(accessorItemCase(), listOf(render)))
+
+    @Test
+    fun `588's render hands over its list ahead of the null test`() {
+        val site = listSites(renderCase()).single()
+        assertEquals(listOf<Any>("A0l", 1, 1, 0), listOf(site.method.name, site.read, site.list, site.scratch))
+        val context = PatchContexts.of(listOf(sectionClass(accessorItemCase(), listOf(renderCase())), listClass()))
+        context.hookPreSearchList()
+        val code = context.mutableClassDefBy(section).methods.single { it.name == "A0l" }.implementation!!.instructions.toList()
+        assertEquals("the accessor's name in the asked register", listOf(Opcode.CONST_STRING, 0),
+            listOf(code[2].opcode, (code[2] as OneRegisterInstruction).registerA))
+        val hand = code[3] as FiveRegisterInstruction
+        assertEquals(listOf(Opcode.INVOKE_STATIC, PRE_SEARCH_LIST_HOOK, 2, 1, 0),
+            listOf(hand.opcode, code[3].call(), hand.registerCount, hand.registerC, hand.registerD))
+        assertEquals("the answer is kept as the list", listOf(Opcode.MOVE_RESULT_OBJECT, 1),
+            listOf(code[4].opcode, (code[4] as OneRegisterInstruction).registerA))
+        assertEquals("and cast back", listOf(Opcode.CHECK_CAST, 1, PRE_SEARCH_PAGINABLE),
+            listOf(code[5].opcode, (code[5] as OneRegisterInstruction).registerA, ((code[5] as ReferenceInstruction).reference as TypeReference).type))
+        assertEquals("the null test follows", listOf(Opcode.IF_EQZ, 1),
+            listOf(code[6].opcode, (code[6] as OneRegisterInstruction).registerA))
+    }
+
+    @Test
+    fun `a list read whose asked register is still needed, or that isn't the render's, is no site`() {
+        assertEquals("control", 1, listSites(renderCase()).size)
+        assertEquals("the asked register is read after the test", 0,
+            listSites(renderCase(next = ImmutableInstruction21c(Opcode.CHECK_CAST, 0, ImmutableTypeReference(tree)))).size)
+        assertEquals("the asked register is read on the null path", 0,
+            listSites(renderCase(end = ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0))).size)
+        assertEquals("a method not naming the section", 0, listSites(renderCase(named = false)).size)
+        assertEquals("the list kept in the asked register", 0, listSites(renderCase(kept = 0)).size)
+        assertEquals("a jump straight to the hook's place", 0, listSites(renderCase(jumpToTest = true)).size)
+    }
+
+    @Test
+    fun `two renders reading the list are refused`() {
+        val context = PatchContexts.of(listOf(
+            sectionClass(accessorItemCase(), listOf(renderCase(), renderCase(name = "A0m"))), listClass(),
+        ))
+        val refusal = assertThrows(PatchException::class.java) { context.hookPreSearchList() }
+        assertTrue(refusal.message, refusal.message!!.contains("2 places"))
     }
 
     @Test

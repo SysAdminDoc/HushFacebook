@@ -12,6 +12,7 @@ import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.util.RegisterLiveness
 import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -424,19 +425,24 @@ internal const val PRE_SEARCH_PAGINABLE = "Lcom/facebook/graphservice/interfaces
 internal const val PRE_SEARCH_LIST_HOOK =
     "$EXTENSION_PACKAGE/search/PreSearchSections;->list(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
 
-/** Where the section keeps the paginated list it was just handed: the [list] register, set at [read]. */
+/**
+ * Where the section keeps the paginated list it was just handed: the [list] register, set at [read],
+ * and [scratch], the register of the object asked for it, which nothing reads from there on.
+ */
 internal data class PreSearchListSite(val method: Method, val read: Int, val list: Int, val scratch: Int)
 
 /**
- * Each place in [section]'s own methods that asks something with no arguments for the paginated
- * list (an invoke answering [PRE_SEARCH_PAGINABLE]) and keeps the answer, with the asked object's register
- * written again by the very next instruction, so it can carry the hook's string meanwhile (#235).
- * Static methods count: 586's Android 9 build moves the render into one (LX/0E3L;->A00) that its
- * instance method calls.
+ * Each place in the method of [section] naming the section, its render, that asks something with no
+ * arguments for the paginated list (an invoke answering [PRE_SEARCH_PAGINABLE]) and keeps the answer,
+ * with the asked object's register read by nothing from there on, on any path, so it can carry the
+ * hook's string (#235). The section's event handler reads the same list and holds no name. A place
+ * something jumps straight to is no site, since that path has a different list or none.
  */
 internal fun preSearchListSites(section: ClassDef): List<PreSearchListSite> =
-    section.methods.flatMap { method ->
+    section.methods.filter { it.name != "<init>" && holds(it, PRE_SEARCH_SECTION) }.flatMap { method ->
         val code = method.implementation?.instructions?.toList() ?: return@flatMap emptyList()
+        val targets = branchTargets(code)
+        val liveness by lazy { RegisterLiveness.of(method) }
         code.indices.mapNotNull { at ->
             val call = code[at].takeIf { it.opcode == Opcode.INVOKE_INTERFACE || it.opcode == Opcode.INVOKE_VIRTUAL }
                 as? FiveRegisterInstruction ?: return@mapNotNull null
@@ -445,10 +451,9 @@ internal fun preSearchListSites(section: ClassDef): List<PreSearchListSite> =
             if (code.getOrNull(at + 1)?.opcode != Opcode.MOVE_RESULT_OBJECT) return@mapNotNull null
             val list = (code[at + 1] as OneRegisterInstruction).registerA
             val scratch = call.registerC
-            val next = code.getOrNull(at + 2) as? OneRegisterInstruction ?: return@mapNotNull null
-            val writes = code[at + 2].opcode in setOf(Opcode.CONST, Opcode.CONST_WIDE, Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST_WIDE_16,
-                Opcode.CONST_WIDE_32, Opcode.CONST_HIGH16, Opcode.CONST_WIDE_HIGH16)
-            if (!writes || next.registerA != scratch || scratch == list || scratch > 15 || list > 15) return@mapNotNull null
+            if (scratch == list || scratch > 15 || list > 15) return@mapNotNull null
+            val next = at + 2
+            if (next !in code.indices || next in targets || scratch in liveness.liveInto(next)) return@mapNotNull null
             PreSearchListSite(method, at + 1, list, scratch)
         }
     }
@@ -456,8 +461,8 @@ internal fun preSearchListSites(section: ClassDef): List<PreSearchListSite> =
 /**
  * Right after the section keeps its paginated list, hand the list and the entry's node accessor name
  * to the extension and keep its answer as the list, so a list of only hidden rows says it has no
- * next page (#235). A jump onto the next instruction (the null-list path) keeps its target there and
- * skips the call, which is right: it has no list. Refuses unless the section and one site are found.
+ * next page (#235). From 588 this lands ahead of the section's own null test, and a null list comes
+ * back null. Refuses unless the section and one site are found.
  */
 internal fun BytecodePatchContext.hookPreSearchList() {
     val entry = preSearchEntryType() ?: throw PatchException("no single entry class for \"$PRE_SEARCH_LIST\"")

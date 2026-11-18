@@ -12,6 +12,7 @@ import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.RegisterLiveness
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -343,9 +344,13 @@ class PreSearchSectionsFixtureTest {
             it.call()?.parameterTypes?.map(CharSequence::toString)?.contains(PRE_SEARCH_PAGINABLE) == true ||
                 it.call() != null && site.list in it.argumentRegisters()
         })
-        // The register the hook borrows is written again right after, on every path.
-        assertTrue("$name: the borrowed register is written next", code[site.read + 1] is OneRegisterInstruction &&
-            (code[site.read + 1] as OneRegisterInstruction).registerA == site.scratch)
+        // The hook goes in ahead of the section's null test of the list, nothing jumps to that place,
+        // and the register it borrows is read by nothing after, on either side of the test.
+        assertEquals("$name: the list's null test comes next", listOf(Opcode.IF_EQZ, site.list),
+            listOf(code[site.read + 1].opcode, (code[site.read + 1] as OneRegisterInstruction).registerA))
+        assertTrue("$name: something jumps to the hook's place", site.read + 1 !in branchTargets(code))
+        assertTrue("$name: the borrowed register is read later",
+            site.scratch !in RegisterLiveness.of(site.method).liveInto(site.read + 1))
         context.hookPreSearchList()
         val patched = patched(context, section.type, site.method)
         assertEquals("$name: four instructions added", code.opcodes().size + 4, patched.opcodes().size)
