@@ -12,6 +12,8 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -48,9 +50,10 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   controller. Held at A0B alone, the like stayed off but the button showed liked until the post
  *   loaded again, so the lambda asks first too: the one invoke(Object) returning Object that calls
  *   A0B.
- * - The footer built from UFI plugins likes through a merged Kotlin lambda (LX/04CD;->invoke). Its
- *   int field picks the arm right at the top, and the LikeButtonFeedUFIFooterItemPlugin trace name
- *   sits in the Like arm, so the hook only asks when the field picks that arm.
+ * - The footer built from UFI plugins likes through a Kotlin lambda holding the
+ *   LikeButtonFeedUFIFooterItemPlugin trace name (LX/03CB;->invoke). 588 gave it a class of its
+ *   own, so all of it is the Like. While it was merged with others (587's LX/04Dk;) an int field
+ *   picked the arm at the top, and the hook only asks when the field picks the Like arm.
  * - The same footer's touch and click handlers like through a static helper holding that trace
  *   name too (LX/04LZ;->A02, taking the session, the feedback and the component context). It takes
  *   no view, so the extension finds the screen in a context one of its arguments keeps.
@@ -225,8 +228,8 @@ internal fun isReelLike(method: Method) =
     AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" &&
         method.parameterTypes.map(Any::toString) == listOf(VIEW, method.definingClass, "Z")
 
-/** The plugin footer's merged lambda: invoke(Object, Object) returning Object. */
-internal fun isMergedLambda(method: Method) =
+/** A Kotlin lambda of two arguments, merged with others or not: invoke(Object, Object) returning Object. */
+internal fun isTwoArgumentLambda(method: Method) =
     method.name == "invoke" && method.returnType == OBJECT &&
         method.parameterTypes.map(Any::toString) == listOf(OBJECT, OBJECT)
 
@@ -264,6 +267,15 @@ internal fun indexOfAddress(code: List<Instruction>): Map<Int, Int> =
  * asks on the arm holding [marker], so a tap on the lambda's other arms stays Facebook's own.
  */
 internal fun armOf(method: Method, marker: String): Arm = switchArmOf(method, marker, parameter = null)
+
+/**
+ * [armOf] for a lambda that may have a class of its own: with no int field in its class nothing
+ * picks an arm, so the whole lambda is [marker]'s and it needs no guard.
+ */
+private fun BytecodePatchContext.armIfMerged(method: Method, marker: String): Arm? {
+    val owner = classDefByOrNull(method.definingClass) ?: refuse("no class ${method.definingClass}")
+    return if (owner.instanceFields.any { it.type == "I" }) armOf(method, marker) else null
+}
 
 /**
  * The guard for a litho event dispatcher, (handler, event) returning Object: the int id it reads
@@ -365,22 +377,23 @@ internal fun BytecodePatchContext.likeHandlers(): List<LikeHandler> {
     }
     val click = clicks.singleOrNull()
         ?: refuse("expected one click lambda calling ${descriptorOf(footer)}, found ${clicks.size}")
-    val plugins = methodsHolding(PLUGIN_FOOTER_TRACE)
-    val plugin = plugins.filter(::isMergedLambda).singleOrNull()
+    // 588's sender asks a string table for the name; the lambda still holds it.
+    val plugins = methodsNaming(PLUGIN_FOOTER_TRACE) { !isStringTable(it) }
+    val plugin = plugins.filter(::isTwoArgumentLambda).singleOrNull()
     val touch = plugins.filter(::isLikeSender).singleOrNull()
     if (plugin == null || touch == null || plugins.size != 2) {
-        refuse("expected the plugin footer's lambda and its static like sender holding \"$PLUGIN_FOOTER_TRACE\", " +
+        refuse("expected the plugin footer's lambda and its static like sender naming \"$PLUGIN_FOOTER_TRACE\", " +
             "found ${plugins.joinToString { descriptorOf(it) }}")
     }
     val reels = methodsHolding(REEL_LIKE_NAME).filter(::isReelLike)
     val reel = reels.singleOrNull() ?: refuse("expected one reel Like holding \"$REEL_LIKE_NAME\", found ${reels.size}")
     val comment = methodHolding(COMMENT_LIKE_TRACE, "comment Like")
-    val inlines = methodsHolding(INLINE_COMMENT_LIKE_TRACE).filter(::isMergedLambda)
+    val inlines = methodsHolding(INLINE_COMMENT_LIKE_TRACE).filter(::isTwoArgumentLambda)
     val inline = inlines.singleOrNull()
         ?: refuse("expected one merged lambda holding \"$INLINE_COMMENT_LIKE_TRACE\", found ${inlines.size}")
     val handlers = listOf(
         LikeHandler(POST_FOOTER, footer),
-        LikeHandler(POST_PLUGIN, plugin, armOf(plugin, PLUGIN_FOOTER_TRACE)),
+        LikeHandler(POST_PLUGIN, plugin, armIfMerged(plugin, PLUGIN_FOOTER_TRACE)),
         LikeHandler(REEL, reel),
         LikeHandler(COMMENT, comment),
         LikeHandler(POST_TOUCH, touch),
