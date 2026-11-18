@@ -10,6 +10,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.facebook.ads.sponsoredsearch.enumConstantFields
 import app.morphe.patches.facebook.ads.sponsoredsearch.invokeRegisters
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.util.ControlFlow
 import app.morphe.util.addInstructionsAtControlFlowLabel
@@ -41,11 +42,10 @@ internal val PLAYBACK_STATE_NAMES = listOf("UNINITIALIZED", "PREPARED", "ATTEMPT
  */
 internal fun BytecodePatchContext.hookReelPlayback() {
     fun refuse(detail: String): Nothing = throw PatchException("$PATCH: Reels playback controls: $detail")
-    val handler = classDefByStrings(REELS_PLAYBACK_STARTED, StringComparisonType.EQUALS)
-        .flatMap { it.methods }.filter {
-            !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
-                it.parameterTypes.size == 1 && holdsString(it, REELS_PLAYBACK_STARTED)
-        }.singleOrNull() ?: refuse("expected one playback event listener")
+    // 588 moved the event's name into a string table, which the listener asks for it.
+    val handler = methodsNaming(REELS_PLAYBACK_STARTED) {
+        !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" && it.parameterTypes.size == 1
+    }.singleOrNull() ?: refuse("expected one playback event listener")
     val code = handler.implementation!!.instructions.toList()
     val fields = code.map { ((it as? ReferenceInstruction)?.reference as? FieldReference) }
     val stateReads = code.indices.filter { index ->

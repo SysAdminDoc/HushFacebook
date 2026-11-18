@@ -10,6 +10,8 @@ import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.ads.sponsoredsearch.enumConstantFields
 import app.morphe.patches.facebook.media.progressbar.LIVE_LATENCY_LOG
 import app.morphe.patches.facebook.media.resume.POSITION_STUB
@@ -139,10 +141,18 @@ class TapToPlayFixtureTest {
                 assertTrue("$name: the Reels check doesn't ask the Autoplay settings checker",
                     asksWithSession(reelCheck!!, checker.type))
 
-                val playbackOwner = holders.getValue(REELS_PLAYBACK_STARTED).single { owner ->
-                    owner.methods.any { it.returnType == "V" && it.parameterTypes.size == 1 && holdsString(it, REELS_PLAYBACK_STARTED) }
+                // 588 moved the event's name into a string table, which the listener asks for it.
+                val playbackTables = holders.getValue(REELS_PLAYBACK_STARTED).associateBy { it.type }
+                val playbackResolve: (MethodReference) -> Method? = { call ->
+                    playbackTables[call.definingClass]?.let { resolveStatic(it, call) }
                 }
-                val playback = playbackOwner.methods.single { holdsString(it, REELS_PLAYBACK_STARTED) }
+                val playbacks = FixtureDex.methodsWhere(fixture, { dex -> dex.typeSection.any { it in playbackTables } }) {
+                    !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" && it.parameterTypes.size == 1 &&
+                        !it.definingClass.startsWith(EXTENSION_CLASSES) && namesString(it, REELS_PLAYBACK_STARTED, playbackResolve)
+                }
+                assertEquals("$name: playback event listeners naming \"$REELS_PLAYBACK_STARTED\"", 1, playbacks.size)
+                val playback = playbacks.single()
+                val playbackOwner = FixtureDex.classes(fixture, setOf(playback.definingClass)).getValue(playback.definingClass)
                 fun disabledHandler(method: Method) = !AccessFlags.STATIC.isSet(method.accessFlags) &&
                     method.returnType == "V" && method.parameterTypes.size == 1 && holdsString(method, REELS_AUTOPLAY_DISABLED)
                 val disabledOwner = holders.getValue(REELS_AUTOPLAY_DISABLED).single { owner ->
@@ -160,6 +170,7 @@ class TapToPlayFixtureTest {
                     }.filter { it.startsWith("L") }.toSet() - playbackClasses.keys
                     playbackClasses.putAll(FixtureDex.classes(fixture, references))
                 }
+                playbackClasses.putAll(playbackTables)
 
                 // The player's interfaces, where the position reader is declared (#90).
                 val grootInterfaces = FixtureDex.classes(fixture, groot.interfaces.toSet())
