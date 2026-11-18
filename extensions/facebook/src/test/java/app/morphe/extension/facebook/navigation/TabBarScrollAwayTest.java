@@ -8,7 +8,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
 
+import android.app.Activity;
+import android.os.Looper;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.FrameLayout;
+
+import java.time.Duration;
 import java.util.Arrays;
 
 import org.junit.After;
@@ -22,6 +30,7 @@ import org.robolectric.annotation.Config;
 
 import com.facebook.feed.tab.FeedTab;
 import com.facebook.katana.activity.FbMainTabActivity;
+import com.facebook.navigation.tabbar.ui.TabBarContainerLayout;
 import com.facebook.notifications.tab.NotificationsTab;
 import com.facebook.video.videohome.tab.WatchTab;
 
@@ -71,7 +80,7 @@ public class TabBarScrollAwayTest {
         TabBarScrollAway.mainScreenCreated(null);
         TabBarScrollAway.forgetBuilt();
         TabBarScrollAway.Stored.ROW_MADE.resetToDefault();
-        TabBarScrollAway.Stored.LIST_HEIGHT.resetToDefault();
+        TabBarScrollAway.Stored.LIST_ROOM.resetToDefault();
         TabBarScrollAway.Stored.ROW_SETUP.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         LogBufferManager.clearLogBuffer();
@@ -620,6 +629,57 @@ public class TabBarScrollAwayTest {
                 TabBarScrollAway.rowFor(2071, -1, 0));
         assertEquals("until the list is seen again", 2287, TabBarScrollAway.rowFor(2071, -1, 2287));
         assertEquals(2287, TabBarScrollAway.rowFor(2071, -1, 0));
+    }
+
+    @Test
+    public void aReelsRowStopsAtTheTopOfATabBarAlongTheBottom() {
+        // #503 on 587 (1080x2400, 2026-11-18): tabs at the bottom with See-through bars, Rounded
+        // tab bar and the status bar hidden ran the Reels list the whole 2400 under the 210 px
+        // bar. Facebook made each row 2062, and a row grown to the whole list put the reel's
+        // name, caption and buttons behind the bar.
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        FrameLayout window = new FrameLayout(activity);
+        View list = new View(activity);
+        place(window, list, 0, 2400);
+        TabBarContainerLayout bar = new TabBarContainerLayout(activity);
+        place(window, bar, 2190, 2400);
+        activity.setContentView(window);
+        layOut(activity);
+        assertEquals("the part of the list under the bar", 210, TabBarScrollAway.underTabBar(list, bar, 2400));
+        Settings.BOTTOM_TAB_BAR.save(true);
+        Settings.TRANSLUCENT_BARS.save(true);
+        Settings.HIDE_STATUS_BAR.save(true);
+        TabBarScrollAway.topBarsLetGo();
+        onTabOf(new WatchTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
+        assertEquals("the row fills the list down to the bar's top", 2190, TabBarScrollAway.rowFor(2062, -1, 2400 - 210));
+        onTabOf(new FeedTab(), new FeedTab(), new WatchTab(), new NotificationsTab());
+        assertEquals("and rows made ahead on Home take the same", 2190, TabBarScrollAway.rowFor(2062, -1, 0));
+
+        bar.setTranslationY(210);
+        assertEquals("a bar sliding away keeps the room it's laid out with", 210, TabBarScrollAway.underTabBar(list, bar, 2400));
+        bar.setTranslationY(0);
+        bar.setVisibility(View.GONE);
+        assertEquals("a hidden bar covers nothing", 0, TabBarScrollAway.underTabBar(list, bar, 2400));
+        bar.setVisibility(View.VISIBLE);
+        assertEquals("no bar", 0, TabBarScrollAway.underTabBar(list, null, 2400));
+        list.setPadding(0, 0, 0, 210);
+        assertEquals("a list padded clear of the bar", 0, TabBarScrollAway.underTabBar(list, bar, 2400));
+        list.setPadding(0, 0, 0, 0);
+        ((FrameLayout.LayoutParams) bar.getLayoutParams()).topMargin = 0;
+        bar.requestLayout();
+        layOut(activity);
+        assertEquals("a bar at the top", 0, TabBarScrollAway.underTabBar(list, bar, 2400));
+    }
+
+    private static void place(FrameLayout parent, View child, int top, int bottom) {
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(1080, bottom - top, Gravity.LEFT | Gravity.TOP);
+        params.topMargin = top;
+        parent.addView(child, params);
+    }
+
+    private static void layOut(Activity activity) {
+        activity.getWindow().getDecorView().requestLayout();
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100));
     }
 
     @Test

@@ -35,7 +35,7 @@ public final class ReelsHeaderClear implements View.OnAttachStateChangeListener,
     static final String CLEARED = "Reels header kept below the top tab bar";
     private static final String TAB_BAR = "com.facebook.navigation.tabbar.ui.TabBarContainerLayout";
     /** How deep under the window's root to look for the tab bar. */
-    private static final int TAB_BAR_LEVELS = 20;
+    static final int TAB_BAR_LEVELS = 20;
 
     /** The headers being kept clear, each with its listener, which holds the header weakly. */
     private static final Map<View, ReelsHeaderClear> held = new WeakHashMap<>();
@@ -152,8 +152,9 @@ public final class ReelsHeaderClear implements View.OnAttachStateChangeListener,
         return tabBar;
     }
 
+    /** The tab bar under [view], looked for [levels] deep. */
     @Nullable
-    private static View tabBarIn(View view, int levels) {
+    static View tabBarIn(View view, int levels) {
         if (TAB_BAR.equals(view.getClass().getName())) return view;
         if (levels == 0 || !(view instanceof ViewGroup)) return null;
         ViewGroup group = (ViewGroup) view;

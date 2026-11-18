@@ -18,6 +18,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 ### Fixed
 
 * With `Open comments at` on `Full height` or `Half height`, Comment on the Reels tab now slides the regular sheet straight up over the reel. Before, the reel shrank into the top of the screen first, the way Facebook's split view opens, and at full height the sheet covered it a moment later. (#501)
+* With the tab bar at the bottom and `See-through bars` or `Rounded tab bar` on, a reel's buttons and caption sit above the tab bar again instead of behind it. Each reel stops at the top of the bar now, and the strip under the bar stays black, so the next reel still doesn't peek out there. (#503)
 
 ## 0.23.0 (2026-11-17)
 
