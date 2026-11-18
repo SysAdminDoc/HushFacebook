@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.classDefForEachReferencing
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -30,18 +31,19 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 /*
- * Profile pictures at the top of posts and beside comments (#400). Read from 585, 2026-11-06,
+ * Profile pictures at the top of posts and beside comments (#400). Read from 588, 2026-11-18,
  * arm64; the obfuscated names here are for reviewers, the code never writes one down.
  *
- * - A post header is built by the one static holding the FeedStoryBaseHeader.shell.fds trace name
- *   (LX/02mf;->A0F). It first switches on the header's actor type (ACTOR, DUAL_ACTOR, ACTOR_CHAT and
- *   the rest) to build the model the picture is drawn from (LX/0ctA;), and every case jumps to one
- *   merge with the model in one register. The switch's default sets that register to null and falls
- *   into the same merge, Facebook's own header with no picture. From there the model goes into each
- *   header shell's constructor (ContextChain first, the model second). Right at the merge the model
- *   goes through the extension, which answers null with the switch on.
+ * - The header shells sit in a Kotlin lambda holding the FeedStoryBaseHeader.shell.fds trace name
+ *   (LX/02tj;->invoke), and each takes ContextChain first and the picture's model second (LX/0agy;).
+ *   The one method making that lambda (LX/02mf;->A02) is the post header builder. It first switches
+ *   on the header's actor type (ACTOR, DUAL_ACTOR, ACTOR_CHAT and the rest) to build the model, and
+ *   every case jumps to one merge with the model in one register. The switch's default sets that
+ *   register to null and falls into the same merge, Facebook's own header with no picture. From
+ *   there the model goes into the lambda. Right at the merge the model goes through the extension,
+ *   which answers null with the switch on.
  * - A comment row is built by the one render holding the comment_profile_picture test tag
- *   (LX/0A8d;->A17). The tag names the builder of the picture's wrapper, whose one build call (an
+ *   (LX/0DoQ;->A1B). The tag names the builder of the picture's wrapper, whose one build call (an
  *   instance call with no arguments answering the render's own component type) is added to the row
  *   before the bubble. The add skips null, and the row already hands it null on a path of its own.
  *   Right after the build the built picture goes through the extension, which answers null with the
@@ -54,7 +56,7 @@ internal const val PROFILE_PICTURES = "$EXTENSION_PACKAGE/feed/ProfilePictures;"
 internal const val FEED_PICTURE = "$PROFILE_PICTURES->feedPicture(Ljava/lang/Object;)Ljava/lang/Object;"
 internal const val COMMENT_PICTURE = "$PROFILE_PICTURES->commentPicture(Ljava/lang/Object;)Ljava/lang/Object;"
 
-/** The trace name the post header builder opens its design system shell with. */
+/** The trace name the post header's lambda opens its design system shell with. */
 internal const val HEADER_TRACE = "FeedStoryBaseHeader.shell.fds"
 
 /** The test tag the comment render gives its picture. */
@@ -65,6 +67,9 @@ internal const val CONTEXT_CHAIN = "Lcom/facebook/common/callercontext/ContextCh
 
 private val GOTOS = setOf(Opcode.GOTO, Opcode.GOTO_16, Opcode.GOTO_32)
 private val CONST_STRINGS = setOf(Opcode.CONST_STRING, Opcode.CONST_STRING_JUMBO)
+
+// The null default is const/16 once the model's register is above v15 (588).
+private val NULL_LOADS = setOf(Opcode.CONST_4, Opcode.CONST_16)
 
 /**
  * Takes the profile picture off the top of posts and off comments, with a switch for each (#400).
@@ -109,15 +114,18 @@ internal data class HeaderSite(val merge: Int, val register: Int, val type: Stri
 /** Where the comment's picture is built: the index right after the build, its register and its type. */
 internal data class CommentSite(val at: Int, val register: Int, val type: String)
 
-/** Finds the merge after the header builder's actor switch, from Facebook's own null default. */
-internal fun headerSite(method: Method): HeaderSite {
-    val code = method.code()
+/**
+ * Finds the merge after the header [builder]'s actor switch, from Facebook's own null default. The
+ * model's type comes from the constructors of the header shells, which [shells] calls.
+ */
+internal fun headerSite(builder: Method, shells: Method): HeaderSite {
+    val code = builder.code()
     val switchAt = code.indexOfFirst { it.opcode == Opcode.SPARSE_SWITCH }
     if (switchAt < 0) refuse("the post header builder has no actor switch")
     val gotos = gotoTargets(code)
     val fallback = gotos[switchAt + 1] ?: refuse("the actor switch has no default jump")
     val none = code[fallback]
-    if (none.opcode != Opcode.CONST_4 || (none as NarrowLiteralInstruction).narrowLiteral != 0) {
+    if (none.opcode !in NULL_LOADS || (none as NarrowLiteralInstruction).narrowLiteral != 0) {
         refuse("the actor switch's default doesn't set null")
     }
     val register = (none as OneRegisterInstruction).registerA
@@ -128,7 +136,7 @@ internal fun headerSite(method: Method): HeaderSite {
             (code[from - 1] as OneRegisterInstruction).registerA == register
     }
     if (arrivals.size < 5) refuse("only ${arrivals.size} actor types bring a picture model to the merge")
-    val types = code.filter { it.opcode == Opcode.INVOKE_DIRECT || it.opcode == Opcode.INVOKE_DIRECT_RANGE }
+    val types = shells.code().filter { it.opcode == Opcode.INVOKE_DIRECT || it.opcode == Opcode.INVOKE_DIRECT_RANGE }
         .map { (it as ReferenceInstruction).reference as MethodReference }
         .filter { it.name == "<init>" && it.definingClass != CONTEXT_CHAIN && it.parameterTypes.size >= 2 && it.parameterTypes[0].toString() == CONTEXT_CHAIN }
         .map { it.parameterTypes[1].toString() }
@@ -185,14 +193,34 @@ private fun BytecodePatchContext.methodHolding(string: String, what: String): Me
     return found.singleOrNull() ?: refuse("expected one $what holding \"$string\", found ${found.size}")
 }
 
-/** The post header builder and the comment render. */
-internal fun BytecodePatchContext.profilePictureMethods(): Pair<Method, Method> =
-    methodHolding(HEADER_TRACE, "post header builder") to methodHolding(COMMENT_PICTURE_TAG, "comment render")
+/** The one method of the app making a new [type]. */
+private fun BytecodePatchContext.methodMaking(type: String, what: String): Method {
+    val found = mutableListOf<Method>()
+    classDefForEachReferencing(types = listOf(type)) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
+        classDef.methods.filterTo(found) { method ->
+            method.code().any { it.opcode == Opcode.NEW_INSTANCE && (it as ReferenceInstruction).reference.toString() == type }
+        }
+    }
+    return found.singleOrNull() ?: refuse("expected one $what making $type, found ${found.size}")
+}
+
+/** The methods the patch reads: the header's lambda body, the builder making that lambda and the comment render. */
+internal data class ProfilePictureMethods(val headerShells: Method, val headerBuilder: Method, val comment: Method)
+
+internal fun BytecodePatchContext.profilePictureMethods(): ProfilePictureMethods {
+    val shells = methodHolding(HEADER_TRACE, "post header lambda")
+    return ProfilePictureMethods(
+        shells,
+        methodMaking(shells.definingClass, "post header builder"),
+        methodHolding(COMMENT_PICTURE_TAG, "comment render"),
+    )
+}
 
 /** Finds both places first, so a build without one refuses before any code changes. */
 internal fun BytecodePatchContext.hideProfilePictures() {
-    val (header, comment) = profilePictureMethods()
-    val headerSite = headerSite(header)
+    val (shells, header, comment) = profilePictureMethods()
+    val headerSite = headerSite(header, shells)
     val commentSite = commentSite(comment)
 
     // Every actor type jumps to the merge, so the hook goes on the merge's own label.

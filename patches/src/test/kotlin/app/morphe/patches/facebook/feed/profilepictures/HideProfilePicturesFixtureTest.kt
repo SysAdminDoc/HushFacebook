@@ -47,6 +47,14 @@ class HideProfilePicturesFixtureTest {
     private fun holding(bundle: File, string: String): List<ClassDef> =
         FixtureDex.classesHolding(bundle, string).filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
 
+    /** The classes making a new [type]: the header's lambda is made outside the class holding its trace name. */
+    private fun making(bundle: File, type: String): Collection<ClassDef> {
+        val makers = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it == type } }) { method ->
+            method.implementation?.instructions?.any { it.opcode == Opcode.NEW_INSTANCE && it.reference() == type } == true
+        }
+        return FixtureDex.classes(bundle, makers.map { it.definingClass }.toSet()).values
+    }
+
     private fun BytecodePatchContext.patched(method: Method) = mutableClassDefBy(method.definingClass).methods.single {
         it.name == method.name && it.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
     }.code()
@@ -73,30 +81,41 @@ class HideProfilePicturesFixtureTest {
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
                 val name = bundle.name
-                val holders = (holding(bundle, HEADER_TRACE) + holding(bundle, COMMENT_PICTURE_TAG)).distinctBy { it.type }
+                val lambdas = holding(bundle, HEADER_TRACE)
+                assertEquals("$name: classes holding the header's trace name", 1, lambdas.size)
+                val holders = (lambdas + making(bundle, lambdas.single().type) + holding(bundle, COMMENT_PICTURE_TAG))
+                    .distinctBy { it.type }
                 val context = PatchContexts.of(holders + ExtensionDex.classDef(SETTINGS_STATUS))
-                val (header, comment) = context.profilePictureMethods()
-                val headerSite = headerSite(header)
+                val (shells, header, comment) = context.profilePictureMethods()
+                val headerSite = headerSite(header, shells)
                 val commentSite = commentSite(comment)
                 val headerBefore = header.code()
                 val commentBefore = comment.code()
 
-                // Positive controls: the header shells take the very model the merge holds, so the
-                // merge is where the picture is decided; and the comment row's own null picture jumps
-                // to the instruction right after the build, so that instruction is the row's add.
-                val shells = headerBefore.indices.filter { index ->
+                // Positive controls: the header's lambda takes the very model the merge holds, right
+                // after its ContextChain, so the merge is where the picture is decided; and the comment
+                // row's own null picture jumps to the instruction right after the build, so that
+                // instruction is the row's add.
+                val making = headerBefore.indices.filter { index ->
                     headerBefore[index].opcode == Opcode.INVOKE_DIRECT_RANGE &&
                         ((headerBefore[index] as ReferenceInstruction).reference as MethodReference).let {
-                            it.name == "<init>" && it.parameterTypes.firstOrNull()?.toString() == CONTEXT_CHAIN
+                            it.name == "<init>" && it.definingClass == shells.definingClass
                         }
                 }
-                assertTrue("$name: no header shell takes the picture model from the merge", shells.any { at ->
-                    val model = (headerBefore[at] as RegisterRangeInstruction).startRegister + 2
-                    val load = (at - 1 downTo headerSite.merge).firstOrNull { index ->
-                        headerBefore[index].opcode in moves && (headerBefore[index] as TwoRegisterInstruction).registerA == model
-                    }
-                    load != null && (headerBefore[load] as TwoRegisterInstruction).registerB == headerSite.register
-                })
+                assertEquals("$name: the builder makes the header's lambda once", 1, making.size)
+                val at = making.single()
+                val parameters = ((headerBefore[at] as ReferenceInstruction).reference as MethodReference)
+                    .parameterTypes.map { it.toString() }
+                val slot = parameters.indexOf(CONTEXT_CHAIN) + 1
+                assertTrue("$name: the header's lambda takes no ContextChain", slot > 0)
+                assertEquals("$name: the lambda's argument after ContextChain", headerSite.type, parameters[slot])
+                val model = (headerBefore[at] as RegisterRangeInstruction).startRegister + 1 +
+                    slot + parameters.take(slot).count { it == "J" || it == "D" }
+                val load = (at - 1 downTo headerSite.merge).firstOrNull { index ->
+                    headerBefore[index].opcode in moves && (headerBefore[index] as TwoRegisterInstruction).registerA == model
+                }
+                assertEquals("$name: the header's lambda doesn't take the picture model from the merge", headerSite.register,
+                    load?.let { (headerBefore[it] as TwoRegisterInstruction).registerB } ?: model)
                 val arrivals = gotoTargets(headerBefore).count { it.value == headerSite.merge }
                 val nullPaths = gotoTargets(commentBefore).filter { (from, to) ->
                     to == commentSite.at && commentBefore[from - 1].opcode == Opcode.CONST_4 &&
@@ -113,7 +132,7 @@ class HideProfilePicturesFixtureTest {
                 assertHook(name, headerAfter, headerSite.merge, FEED_PICTURE, headerSite.register, headerSite.type)
                 assertEquals("$name: the merge's own code moved", headerBefore[headerSite.merge].opcode, headerAfter[headerSite.merge + 3].opcode)
                 assertEquals("$name: Facebook's null default no longer falls into the hook",
-                    Opcode.CONST_4, headerAfter[headerSite.merge - 1].opcode)
+                    headerBefore[headerSite.merge - 1].opcode, headerAfter[headerSite.merge - 1].opcode)
                 val landings = patchedGotos(headerAfter).values
                 assertEquals("$name: an actor type skips the hook", arrivals, landings.count { it == headerSite.merge })
                 assertEquals("$name: a jump lands past the hook", 0, landings.count { it == headerSite.merge + 3 })
