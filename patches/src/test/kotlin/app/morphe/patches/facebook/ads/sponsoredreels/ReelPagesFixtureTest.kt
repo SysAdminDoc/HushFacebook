@@ -46,14 +46,14 @@ class ReelPagesFixtureTest {
     /**
      * Registers and the page's register of the page insert, the announcement and the controller's
      * page method, by build and ABI. 585's arm64 controller page method has 11 registers (584's 13),
-     * which still keeps its page in range of the filter call. 586's Android 9 page insert has one
-     * register more than the phone builds', with the page in the last.
+     * which still keeps its page in range of the filter call, and 588's has 13 again on both ABIs.
+     * 586's Android 9 page insert has one register more than the phone builds', with the page in the
+     * last.
      */
     private val expected = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to listOf(6 to 5, 7 to 6, 11 to 10),
-            "armeabi-v7a" to listOf(6 to 5, 7 to 6, 11 to 10),
-            "arm64-v8a-minapi28-storeless" to listOf(7 to 6, 7 to 6, 11 to 10),
+            "arm64-v8a" to listOf(6 to 5, 7 to 6, 13 to 12),
+            "armeabi-v7a" to listOf(6 to 5, 7 to 6, 13 to 12),
         ),
     )
 
