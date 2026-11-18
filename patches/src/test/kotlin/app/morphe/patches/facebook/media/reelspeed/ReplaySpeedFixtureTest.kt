@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.media.resume.VIDEO_PLAYER_PARAMS
 import app.morphe.patches.facebook.media.resume.reportedValues
+import app.morphe.patches.facebook.shared.MOBILE_CONFIG
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import app.morphe.util.writersReaching
@@ -144,13 +145,25 @@ class ReplaySpeedFixtureTest {
                 val flagTest = site.test - 1
 
                 // The if-nez reads a MobileConfig flag, freshly read or cached in a boolean field.
+                // 588 reads it through a static helper that only casts the config and asks it (LX/01BN;->A1a).
+                fun readsConfig(call: MethodReference?): Boolean {
+                    if (call == null) return false
+                    if (call.definingClass.contains("mobileconfig")) return true
+                    val helper = FixtureDex.classes(bundle, setOf(call.definingClass)).values.singleOrNull()?.methods?.singleOrNull {
+                        it.name == call.name && it.returnType == call.returnType &&
+                            it.parameterTypes.map(CharSequence::toString) == call.parameterTypes.map(CharSequence::toString)
+                    } ?: return false
+                    val body = helper.implementation?.instructions?.toList().orEmpty()
+                    return AccessFlags.STATIC.isSet(helper.accessFlags) && body.size <= 4 &&
+                        body.any { it.opcode == Opcode.CHECK_CAST && ((it as ReferenceInstruction).reference as TypeReference).type == MOBILE_CONFIG } &&
+                        body.any { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.definingClass == MOBILE_CONFIG }
+                }
                 val flagWriters = builder.writersReaching(flagTest, site.scratch)
                 assertTrue("$name: the flag at $flagTest has no writer", flagWriters.isNotEmpty())
                 for (writer in flagWriters) {
                     val instruction = code[writer]
                     val mobileConfig = instruction.opcode == Opcode.MOVE_RESULT &&
-                        ((code[writer - 1] as? ReferenceInstruction)?.reference as? MethodReference)
-                            ?.definingClass?.contains("mobileconfig") == true
+                        readsConfig((code[writer - 1] as? ReferenceInstruction)?.reference as? MethodReference)
                     assertTrue("$name: the flag's writer at $writer is ${instruction.opcode}",
                         mobileConfig || instruction.opcode == Opcode.IGET_BOOLEAN)
                 }
