@@ -64,13 +64,13 @@ class NewestReelsFirstFixtureTest {
                 // long over the register late on one branch, which the start hook doesn't mind.
                 assertEquals("$name: the list register is the List parameter",
                     rerank.implementation!!.registerCount - 2, list)
-                if (holdsString(rerank, RANKER_TAG)) {
-                    assertTrue("$name: the rerank has no (List, Comparator) sort", rerank.code().any { it.isListSort() })
+                if (rerank.code().any { it.isListSort() }) {
+                    assertTrue("$name: the rerank sorting the list loads the tag", holdsString(rerank, RANKER_TAG))
                     assertTrue("$name: the rerank never writes its List parameter", rerank.code().none { instruction ->
                         instruction.opcode.setsRegister() && (instruction as? OneRegisterInstruction)?.registerA == list
                     })
                 } else {
-                    // 587: the rerank keeps the list in one List field of a state object it builds, and one
+                    // From 587: the rerank keeps the list in one List field of a state object it builds, and one
                     // method of its class loads the tag and sorts a list read from that field. The rerank
                     // reuses the parameter's register for a call argument later, after the start hook took it.
                     val fields = listStateFields(rerank, list, classOf)

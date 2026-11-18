@@ -53,6 +53,9 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * sorts the state's list in place, or a copy of a side list when there is one. The hook stays on
  * JnY, the method the callers call, found by following its list into the state and on to that sort.
  *
+ * 588 keeps that split (0612.Kh7 on both ABIs, its private A05 sorting), but the rerank loads the tag
+ * itself now while still sorting nothing, so holding the tag no longer tells the two shapes apart.
+ *
  * The list holds ranking signals, one per reel, which Facebook makes from each pool item with
  * createSignalForModel(model). The signal carries a key and scores but no posting time. The model
  * does: its edge (the interface's one no-argument Object getter) is the reel's GraphQL edge, whose
@@ -146,13 +149,10 @@ internal fun rerankList(method: Method, classOf: (String) -> ClassDef? = { null 
     // this, the context, then the list.
     val listParameter = method.localRegisterCount() + 2
     if (code.none { it.opcode == Opcode.RETURN_VOID }) return null
-    if (!holdsString(method, RANKER_TAG)) {
-        return if (handsListToRanker(method, code, listParameter, classOf)) listParameter else null
-    }
-    val sortsParameter = code.indices.filter { code[it].isListSort() }.any { index ->
+    val sortsParameter = holdsString(method, RANKER_TAG) && code.indices.filter { code[it].isListSort() }.any { index ->
         method.holdsListParameter(code, index, code[index].callRegisters().first(), listParameter, 3)
     }
-    return if (sortsParameter) listParameter else null
+    return if (sortsParameter || handsListToRanker(method, code, listParameter, classOf)) listParameter else null
 }
 
 /**
@@ -243,7 +243,7 @@ internal fun listStateFields(method: Method, listParameter: Int, classOf: (Strin
 }
 
 /**
- * Whether [method], which loads no [RANKER_TAG] itself, hands its List parameter to the ranker: 587's
+ * Whether [method], which doesn't sort it itself, hands its List parameter to the ranker: 587's
  * rerank (04xj.JnY on arm64) builds a state object from its three parameters, whose constructor keeps
  * the list in a List field, and calls the private method of its own class that loads the tag and
  * sorts that field's list in place (A06; it sorts a copy of a side list instead when there is one).
