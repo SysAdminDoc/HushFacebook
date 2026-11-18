@@ -92,6 +92,12 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * arm64 the config is `LX/0B2h;->A0C:LX/0AUE;` in v13 and the band height `LX/0B1u;->A01` (armv7
  * `LX/0B1M;->A00`), read at 998 and 1357 after the merge and at 682 on the way to the first pick,
  * which stays Facebook's.
+ *
+ * 588 (read 2026-11-18) keeps 587's picker (arm64 `LX/0Alc;->A0A`, armv7 `LX/0Alf;->A0A`) and builds
+ * the same bar in a second root, the photo or text post chained into the viewer (arm64
+ * `LX/0aXH;->render`, armv7 `LX/0aXI;->render`). There a goto at 1559 takes the bar in v8 to 1561, and
+ * the root's no-bar path arrives from 1560 with v8 null. That root reads no band height and has no
+ * pick to report, so only its bar is dropped, the way 586's was.
  */
 
 internal const val DROPS_SHORTS_COMMENT_BAR = "$COMMENT_SHEET_OPTIONS->dropsShortsCommentBar()Z"
@@ -392,6 +398,7 @@ internal fun commentBarAnswer(
  * keeps its answer at [kept] - 1. On 586 ([jumps]) the builder is the root, [at] is the goto that
  * takes the bar to where the picks meet, and [kept] is just after that. On 587 the builder is a
  * method of its own again, and [kept] is just after the spot where the root's picks of it meet.
+ * [chained] holds the other roots building the bar for themselves.
  */
 internal class VideoCommentBand(
     val owner: ClassDef,
@@ -406,11 +413,38 @@ internal class VideoCommentBand(
     val list: Method,
     val listRead: Int,
     val jumps: Boolean,
+    val chained: List<ChainedCommentBar>,
 )
 
 /**
+ * A comment bar another root of the viewer builds for itself: the goto at [at] in [render] takes it
+ * in register [bar] to a spot the root's no-bar path also reaches, and [free] can take the answer.
+ */
+internal class ChainedCommentBar(val owner: ClassDef, val render: Method, val at: Int, val bar: Int, val free: Int)
+
+/** The bar [render] in [owner] takes on by the goto at [at]. Refuses unless null is already what its own no-bar path brings there. */
+private fun chainedCommentBar(owner: ClassDef, render: Method, at: Int): ChainedCommentBar {
+    val where = render.descriptor()
+    val code = render.implementation!!.instructions.toList()
+    val flow = ControlFlow.of(render)
+    val merge = flow.normal[at].single()
+    val live = RegisterLiveness.of(render).liveInto(merge)
+    val holders = videoBarHolders(render, at)
+    val bar = holders.filter { it in live }.singleOrNull()
+        ?: refuse("$where doesn't go on with the bar it builds at ${at - 1} in one register, held in $holders")
+    if (bar > 15) refuse("$where keeps its bar in v$bar, past v15")
+    val bringsNull = code.indices.any { from ->
+        from != at && merge in flow.normal[from] && code[from].opcode == Opcode.CONST_4 &&
+            (code[from] as OneRegisterInstruction).registerA == bar && (code[from] as NarrowLiteralInstruction).narrowLiteral == 0
+    }
+    if (!bringsNull) refuse("$where has no path of its own bringing null to $merge in v$bar")
+    return ChainedCommentBar(owner, render, at, bar, commentBarAnswer(render, at, bar))
+}
+
+/**
  * Finds every spot of the Shorts viewer's comment band (#375) and refuses unless there's exactly one
- * bar return, one caller of its picker that calls it once or from branches meeting at one spot, one
+ * bar return (or, with none, one bar jump), each other bar jump being a root of its own whose no-bar
+ * path brings null to the same spot, one caller of its picker that calls it once or from branches meeting at one spot, one
  * caller of one height function, the
  * root reads one band height at least once after the pick with one config it loads before the pick,
  * and the list reads that same band height exactly once. Every register the hooks name is checked
@@ -434,10 +468,12 @@ internal fun BytecodePatchContext.videoCommentBand(): VideoCommentBand {
         if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
         classDef.methods.filterTo(lists) { videoSlotCalls(it).isNotEmpty() }
     }
-    val handOffs = returns + jumps
+    // A picker returning the bar is the root's. Without one, 586's root jumps with the bar it builds.
+    val handOffs = returns.ifEmpty { jumps }
     val (owner, builder, at) = handOffs.singleOrNull()
         ?: refuse("expected one method handing on a comment bar it just built, found ${handOffs.size}")
-    val inline = jumps.isNotEmpty()
+    val inline = returns.isEmpty()
+    val chained = if (inline) emptyList() else jumps.map { (holder, render, jump) -> chainedCommentBar(holder, render, jump) }
     val list = lists.singleOrNull() ?: refuse("expected one caller of $VDD_SLOT_HEIGHT(IIZ Function0)I, found ${lists.size}")
     val slotCall = videoSlotCalls(list).singleOrNull()
         ?: refuse("${list.descriptor()} calls $VDD_SLOT_HEIGHT more than once")
@@ -450,6 +486,7 @@ internal fun BytecodePatchContext.videoCommentBand(): VideoCommentBand {
     // them, but for 586's root, which builds the bar itself and takes all of its hooks at once.
     val methods = setOf(builder.descriptor(), root.descriptor(), list.descriptor())
     if (methods.size != if (inline) 2 else 3) refuse("${builder.descriptor()}, ${root.descriptor()} and ${list.descriptor()} overlap")
+    chained.firstOrNull { it.render.descriptor() in methods }?.let { refuse("${it.render.descriptor()} builds a second comment bar") }
     val rootCode = root.implementation!!.instructions.toList()
     // Where the bar lands: the move-result after the root's one call of the picker up to 585, on 586
     // the register the bar was built in, at the spot the goto takes it to, and on 587 the register
@@ -519,7 +556,7 @@ internal fun BytecodePatchContext.videoCommentBand(): VideoCommentBand {
     }
     bandHandOff(list, listRead)
     if (inline) commentBarAnswer(builder, at, bar) else commentBarAnswer(builder, at)
-    return VideoCommentBand(owner, builder, at, root, kept, bar, config, reads, slot, list, listRead, inline)
+    return VideoCommentBand(owner, builder, at, root, kept, bar, config, reads, slot, list, listRead, inline, chained)
 }
 
 /**
@@ -543,6 +580,9 @@ internal fun BytecodePatchContext.dropVideoCommentBand(band: VideoCommentBand) {
     }
     mutableClassDefBy(band.list.definingClass).findMutableMethodOf(band.list)
         .handBandToExtension(listOf(band.listRead), SHORTS_VIDEO_BAND, withConfig = true)
+    for (bar in band.chained) {
+        mutableClassDefBy(bar.owner.type).findMutableMethodOf(bar.render).dropVideoCommentBarJump(bar.at, bar.bar, bar.free)
+    }
 }
 
 /**

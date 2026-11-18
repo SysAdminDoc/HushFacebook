@@ -77,11 +77,11 @@ class VideoCommentBandFixtureTest {
 
     /**
      * How many times each declared build's root writes its config's register besides the load, read
-     * 2026-11-13: none on 587's arm64 root, once on its armv7 root (LX/0B29;->render 1380,
-     * `move-object v13, v7` for a builder argument on the way to a return).
+     * 2026-11-18: once on both 588 roots (arm64 LX/0Alc;->render 1387, armv7 LX/0Alf;->render 1386,
+     * `move-object v13, v0` for a builder argument on the way to a return).
      */
     private val configOverwrites = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 1),
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to 1, "armeabi-v7a" to 1),
     )
 
     private fun configOverwrites(version: String, bundle: String): Int {
@@ -189,13 +189,17 @@ class VideoCommentBandFixtureTest {
                 assertTrue("$name: no class names \"$VIDEO_COMMENT_BAR\"", bars.isNotEmpty())
                 val held = holders(bundle, bars)
 
-                val handOffs = held.flatMap { classDef ->
-                    classDef.methods.flatMap { method ->
-                        (videoCommentBarReturns(method, bars) + videoCommentBarJumps(method, bars)).map { Triple(classDef, method, it) }
-                    }
+                fun handOffs(find: (Method, Set<String>) -> List<Int>) = held.flatMap { classDef ->
+                    classDef.methods.flatMap { method -> find(method, bars).map { Triple(classDef, method, it) } }
                 }
-                assertEquals("$name: methods handing on a comment bar they just built", 1, handOffs.size)
-                val (builderOwner, builder, at) = handOffs.single()
+                val returned = handOffs(::videoCommentBarReturns)
+                val jumped = handOffs(::videoCommentBarJumps)
+                val handOff = returned.ifEmpty { jumped }
+                assertEquals("$name: methods handing on a comment bar they just built", 1, handOff.size)
+                val (builderOwner, builder, at) = handOff.single()
+                // 588 builds the bar in a second root too, the post chained into the viewer.
+                val chained = if (returned.isEmpty()) emptyList() else jumped
+                assertEquals("$name: other roots building the bar for themselves", 1, chained.size)
                 // 586 builds the bar inside the root's render and jumps to where the picks meet.
                 val inline = builder.body()[at].opcode != Opcode.RETURN_OBJECT
                 assertTrue("$name: the bar the builder hands on is one it makes",
@@ -358,7 +362,44 @@ class VideoCommentBandFixtureTest {
                 assertEquals("$name: the patch found another height", slot.descriptor(), band.slot.descriptor())
                 assertEquals("$name: the patch found another list", list.descriptor(), band.list.descriptor())
                 assertEquals("$name: the patch found another list read", listRead, band.listRead)
+                assertEquals("$name: the patch found other roots building the bar",
+                    chained.map { it.second.descriptor() to it.third }, band.chained.map { it.render.descriptor() to it.at })
                 with(context) { dropVideoCommentBand(band) }
+
+                for (found in band.chained) {
+                    val where = "$name: ${found.render.descriptor()}"
+                    val original = found.render.body()
+                    val hooked = context.mutableClassDefBy(found.owner.type).methods.single { it.descriptor() == found.render.descriptor() }
+                    val patched = hooked.body()
+                    val flow = ControlFlow.of(hooked)
+                    val hook = found.at
+                    val free = found.free
+                    val barThere = found.bar
+                    val merge = ControlFlow.of(found.render).normal[hook].single()
+                    assertEquals("$where: it asks right before the bar goes on", DROPS_SHORTS_COMMENT_BAR, patched[hook].called())
+                    assertEquals("$where: only the bar's constructor reaches the ask", listOf(hook - 1),
+                        patched.indices.filter { hook in flow.normal[it] || hook in flow.exceptional[it] })
+                    assertEquals("$where: its answer is kept", listOf(Opcode.MOVE_RESULT, free),
+                        (patched[hook + 1] as OneRegisterInstruction).let { listOf(it.opcode, it.registerA) })
+                    assertNotEquals("$where: the answer overwrote the bar", barThere, free)
+                    assertTrue("$where: the hook writes v$free, which isn't a local", free < hooked.localRegisterCount())
+                    assertFalse("$where: it reads v$free after the goto", free in RegisterLiveness.of(found.render).liveInto(hook))
+                    assertEquals("$where: tests the answer", listOf(Opcode.IF_EQZ, free),
+                        (patched[hook + 2] as OneRegisterInstruction).let { listOf(it.opcode, it.registerA) })
+                    assertEquals("$where: a yes leaves null in the bar's register", listOf(Opcode.CONST_4, barThere, 0),
+                        patched[hook + 3].let { listOf(it.opcode, (it as OneRegisterInstruction).registerA, (it as NarrowLiteralInstruction).narrowLiteral) })
+                    assertEquals("$where: a no goes straight to Facebook's goto", setOf(hook + 3, hook + 4), flow.normal[hook + 2].toSet())
+                    assertEquals("$where: the goto still lands where it did", setOf(if (merge > hook) merge + 4 else merge), flow.normal[hook + 4].toSet())
+                    assertEquals("$where: the rest is Facebook's", original.opcodes(),
+                        (patched.subList(0, hook) + patched.drop(hook + 4)).opcodes())
+                    // Facebook's own no-bar path brings null to the same spot in the same register.
+                    val before = ControlFlow.of(found.render)
+                    assertTrue("$where: no path of its own brings null to $merge in v$barThere", original.indices.any { nulled ->
+                        nulled != hook && merge in before.normal[nulled] && original[nulled].opcode == Opcode.CONST_4 &&
+                            (original[nulled] as OneRegisterInstruction).registerA == barThere &&
+                            (original[nulled] as NarrowLiteralInstruction).narrowLiteral == 0
+                    })
+                }
 
                 if (!inline) {
                     val hookedBuilder = context.mutableClassDefBy(builderOwner.type).methods

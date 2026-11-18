@@ -475,7 +475,7 @@ val commentSheetOptionsPatch = bytecodePatch(
             replyRow.render, feedReplyRow.render, threadPager.render, viewer.render, videoBar, inlineBar?.render,
             filter?.build, filter?.apply, filter?.listEqual, filter?.equal,
         ).map { it.descriptor() }.toSet()
-        listOf(band.builder, band.root, band.list).firstOrNull { it.descriptor() in hooked }?.let {
+        (listOf(band.builder, band.root, band.list) + band.chained.map { it.render }).firstOrNull { it.descriptor() in hooked }?.let {
             refuse("${it.descriptor()} holds the video comment band and another hook")
         }
 
