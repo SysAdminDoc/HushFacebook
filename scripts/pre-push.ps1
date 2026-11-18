@@ -478,13 +478,13 @@ try {
     }
 
     # The files outside the source trees that the runtime tests read. ReadmePatchNamesTest holds the
-    # README's patch rows to the catalog, ProvenanceTest holds NOTICE and every source's header to
+    # patch rows in docs/patches.md to the catalog, ProvenanceTest holds NOTICE and every source's header to
     # provenance.json, PatchFamilyTest and LicenseNoticeTest read the catalog and NOTICE, and
     # ShortcutCallsTest holds the settings patch's shortcut rewrite to the no-call rules in the
     # mutation contracts. The Gradle files declare them as test inputs, so the tests rerun when one
     # moves, but a push of one alone never started them: a README patch row went out with
     # ReadmePatchNamesTest never run on it.
-    $runtimeTestInputs = @('README.md', 'NOTICE', 'provenance.json', 'patches-list.json',
+    $runtimeTestInputs = @('README.md', 'docs/patches.md', 'NOTICE', 'provenance.json', 'patches-list.json',
         'scripts/injected-mutation-contracts.txt')
     $toolingClasspathInputs = @(
         'build.gradle.kts', 'settings.gradle.kts', 'patches/build.gradle.kts',

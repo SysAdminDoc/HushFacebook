@@ -1266,10 +1266,13 @@ val verifyPatchTestSelection = tasks.register("verifyPatchTestSelection") {
 
 // The raw files the patch tests read beyond their classpath, for both partitions.
 tasks.withType<Test>().matching { it.name == "test" || it.name == "fixtureTest" }.configureEach {
-    // The README tests read the README and the patch list, both outside this module. Declare
-    // those inputs so Gradle reruns them when either changes.
+    // The README tests read the README, the patch table in docs/patches.md and the patch list,
+    // all outside this module. Declare those inputs so Gradle reruns them when one changes.
     inputs.file(rootProject.file("README.md"))
         .withPropertyName("readme")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file(rootProject.file("docs/patches.md"))
+        .withPropertyName("patchTable")
         .withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.file(rootProject.file("patches-list.json"))
         .withPropertyName("patchList")

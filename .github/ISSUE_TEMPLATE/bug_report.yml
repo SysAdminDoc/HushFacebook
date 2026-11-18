@@ -12,7 +12,7 @@ body:
 
         - **Check whether it's already reported.** Search the [open and closed bug reports](https://github.com/SysAdminDoc/Hushfacebook/issues?q=is%3Aissue%20label%3Abug). If yours was closed and it still happens, comment on it and we'll reopen it. GitHub doesn't let the person who reported something reopen it.
         - **Not sure it's a bug?** Ask in [Discussions](https://github.com/SysAdminDoc/Hushfacebook/discussions) instead.
-        - **Patching stopped with an error?** Include the full error and its Source lines. Check the [patch-selection guide](https://github.com/SysAdminDoc/Hushfacebook#patching-stops-on-one-patch) if you use more than one Facebook patch source.
+        - **Patching stopped with an error?** Include the full error and its Source lines. Check the [patch-selection guide](https://github.com/SysAdminDoc/Hushfacebook/blob/main/docs/help.md#patching-stops-on-one-patch) if you use more than one Facebook patch source.
   - type: input
     id: versions
     attributes:

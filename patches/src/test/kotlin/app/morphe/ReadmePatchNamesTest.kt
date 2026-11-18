@@ -12,11 +12,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The patch table in the README against the catalog Morphe Manager actually reads.
+ * The patch table in docs/patches.md against the catalog Morphe Manager actually reads.
  *
  * <p>A patch is chosen by name in Morphe Manager, while its description comes from the generated
- * patch list. The README is the public lookup table before patching, so both fields have to agree
- * with what the Manager presents.
+ * patch list. The table (moved out of the README, which links to it) is the public lookup table
+ * before patching, so both fields have to agree with what the Manager presents.
  */
 class ReadmePatchNamesTest {
     private data class ReadmeRow(val name: String, val description: String)
@@ -90,10 +90,10 @@ class ReadmePatchNamesTest {
         return root.walkTopDown().filter { it.extension == "kt" }.map { it.readText() }.toList()
     }
 
-    /** Every patch row in the README, with escaped table pipes restored in its description. */
+    /** Every patch row in docs/patches.md, with escaped table pipes restored in its description. */
     private fun readmePatchRows(): List<ReadmeRow> {
-        val readme = File("../README.md").takeIf { it.isFile } ?: File("README.md")
-        assertTrue("could not find the README from ${File(".").absolutePath}", readme.isFile)
+        val readme = File("../docs/patches.md").takeIf { it.isFile } ?: File("docs/patches.md")
+        assertTrue("could not find docs/patches.md from ${File(".").absolutePath}", readme.isFile)
         return readme.readLines().mapNotNull { line ->
             ROW.find(line)?.let { match ->
                 ReadmeRow(
@@ -118,7 +118,7 @@ class ReadmePatchNamesTest {
     }
 
     @Test
-    fun `the README patch table and shipped catalog say the same thing`() {
+    fun `the patch table and shipped catalog say the same thing`() {
         var factories = 0
         val declared = mutableSetOf<String>()
         patchSources().forEach { source ->
@@ -132,16 +132,16 @@ class ReadmePatchNamesTest {
         val listed = rows.map { it.name }.toSet()
         val shipped = shippedPatchDescriptions()
         assertTrue("the scan found no patches", factories > 10)
-        assertEquals("the README has a duplicate patch row", rows.size, listed.size)
+        assertEquals("docs/patches.md has a duplicate patch row", rows.size, listed.size)
 
         assertEquals(
-            "the README lists a patch by a name no patch carries, so a reader cannot find it " +
+            "docs/patches.md lists a patch by a name no patch carries, so a reader cannot find it " +
                 "in Morphe Manager",
             emptyList<String>(),
             (listed - declared).sorted(),
         )
         assertEquals(
-            "a patch ships with no row in the README table",
+            "a patch ships with no row in the docs/patches.md table",
             emptyList<String>(),
             (declared - listed).sorted(),
         )
@@ -151,7 +151,7 @@ class ReadmePatchNamesTest {
             shipped.keys.sorted(),
         )
         assertEquals(
-            "a README description differs from the description shipped to Morphe Manager",
+            "a docs/patches.md description differs from the description shipped to Morphe Manager",
             shipped.toSortedMap(),
             rows.associate { it.name to it.description }.toSortedMap(),
         )
