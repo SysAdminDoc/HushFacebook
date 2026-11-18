@@ -4,10 +4,12 @@
  */
 package app.morphe.extension.facebook.media;
 
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.ViewTreeObserver;
+import android.view.WindowInsets;
 
 import androidx.annotation.Nullable;
 
@@ -52,9 +54,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>The same move lifts the bar when its line would sit behind the tab bar (#282). One reporter's
  * Reels tab runs the whole reel about 60 px lower than ours, so Facebook's own line and the kept
  * bar's thumb both went under the tabs. On the S22 and the emulator the line clears the tab bar by
- * 8 dp or more, so nothing moves there. Nor under a viewer drawn over the tab bar, as the reels
- * opened from a feed video play in, where the tabs are hidden and the lift put the line on the
- * caption (#469). See-through bars and Rounded tab bar stretch the reel under
+ * 8 dp or more, so nothing moves there. A viewer drawn over the tab bar, as the reels opened from a
+ * feed video play in, hides the tabs, so there, and wherever no tab bar shows, the line only has to
+ * clear the phone's navigation strip, which an edge-to-edge reel leaves it under (#469).
+ * See-through bars and Rounded tab bar stretch the reel under
  * the tabs, which takes Facebook's own scrubber, shown while a reel is paused, behind them too, so
  * with either one on the lift runs with Keep the progress bar off as well (#412), without the follow.
  */
@@ -80,6 +83,9 @@ final class ReelBarFollow {
     private static final Map<View, Follow> follows = new WeakHashMap<>();
     /** Labels with no list of reels beside them, as under a feed video, so an update doesn't look again. */
     private static final Set<View> noReels = Collections.newSetFromMap(new WeakHashMap<>());
+    /** What a test's window reports, as Robolectric's has no navigation bar. */
+    @Nullable
+    static WindowInsets insetsForTests;
 
     private ReelBarFollow() {
     }
@@ -112,6 +118,7 @@ final class ReelBarFollow {
     static void resetForTests() {
         follows.clear();
         noReels.clear();
+        insetsForTests = null;
     }
 
     private static boolean keeps() {
@@ -225,6 +232,16 @@ final class ReelBarFollow {
         return at[1] + reelSide.getHeight() > tabTop;
     }
 
+    /** How much of the window's bottom the navigation bar or gesture strip takes, whatever the keyboard does. */
+    private static int navigationInset(View root) {
+        WindowInsets insets = insetsForTests != null ? insetsForTests : root.getRootWindowInsets();
+        if (insets == null) return 0;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+        }
+        return insets.getStableInsetBottom();
+    }
+
     private static int depth(View view) {
         int levels = 0;
         for (View up = parentOf(view); up != null; up = parentOf(up)) levels++;
@@ -328,7 +345,10 @@ final class ReelBarFollow {
             applied = offset;
         }
 
-        /** How far the line, where it would be without this class's move, has to rise to clear the tab bar. */
+        /**
+         * How far the line, where it would be without this class's move, has to rise to clear the
+         * tab bar in front of it and the phone's navigation strip.
+         */
         private int liftOver() {
             View tabBar = heldTabBar == null ? null : heldTabBar.get();
             View label = heldLabel.get();
@@ -338,19 +358,29 @@ final class ReelBarFollow {
                 tabBar = tabBarIn(label.getRootView(), TAB_BAR_LEVELS);
                 heldTabBar = tabBar == null ? null : new WeakReference<>(tabBar);
             }
-            if (tabBar == null || !tabBar.isShown() || !opaque(tabBar)) return 0;
             View bar = barBeside(label);
             if (bar == null) return 0;
+            View root = label.getRootView();
             int[] at = new int[2];
-            tabBar.getLocationInWindow(at);
-            int tabTop = at[1];
-            if (tabTop < tabBar.getRootView().getHeight() / 2) return 0;
-            ViewGroup pager = heldPager.get();
-            if (pager != null && underReels(tabBar, pager, tabTop, at)) return 0;
             bar.getLocationInWindow(at);
             int line = at[1] + bar.getHeight() / 2 - applied;
+            int limit = tabTopOverReels(tabBar, root, at);
+            // A line past the window's end belongs to a viewer still sliding in, which brings it up.
+            if (line < root.getHeight()) limit = Math.min(limit, root.getHeight() - navigationInset(root));
+            if (limit == Integer.MAX_VALUE) return 0;
             int clearance = Math.round(LINE_CLEARANCE_DP * bar.getResources().getDisplayMetrics().density);
-            return Math.max(0, line + clearance - tabTop);
+            return Math.max(0, line + clearance - limit);
+        }
+
+        /** The top of a tab bar showing in front of the reels low in the window, or MAX_VALUE without one. */
+        private int tabTopOverReels(@Nullable View tabBar, View root, int[] at) {
+            if (tabBar == null || !tabBar.isShown() || !opaque(tabBar)) return Integer.MAX_VALUE;
+            tabBar.getLocationInWindow(at);
+            int tabTop = at[1];
+            if (tabTop < root.getHeight() / 2) return Integer.MAX_VALUE;
+            ViewGroup pager = heldPager.get();
+            if (pager != null && underReels(tabBar, pager, tabTop, at)) return Integer.MAX_VALUE;
+            return tabTop;
         }
 
         /** How far the page the bar belongs to is from its place, and 0 once a reel has settled. */

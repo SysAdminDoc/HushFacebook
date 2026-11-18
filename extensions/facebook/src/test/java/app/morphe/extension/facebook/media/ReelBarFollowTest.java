@@ -10,10 +10,12 @@ import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
+import android.graphics.Insets;
 import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.widget.FrameLayout;
 
 import com.facebook.litho.LithoView;
@@ -390,6 +392,103 @@ public class ReelBarFollowTest {
         frame();
 
         assertEquals(0f, host.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void aViewerOverTheTabBarStillKeepsTheLineAboveTheNavigationStrip() {
+        // The reel from a feed video runs edge to edge, so the line sat under the gesture pill (#469).
+        addTabBar(1980);
+        viewer.bringToFront();
+        layOut();
+        navigationStripFrom(2000);
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        assertEquals(-liftOver(2000), host.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void withNoTabBarTheLineStillClearsTheNavigationStrip() {
+        navigationStripFrom(2000);
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        assertEquals(-liftOver(2000), host.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void aHiddenTabBarLeavesTheNavigationStripToClear() {
+        addTabBar(1900);
+        tabBar.setVisibility(View.GONE);
+        navigationStripFrom(2000);
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        assertEquals(-liftOver(2000), host.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void aTabBarHigherThanTheStripIsTheOneTheLineClears() {
+        addTabBar(1900);
+        navigationStripFrom(2000);
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        assertEquals(-liftOver(1900), host.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void aStripBelowTheLineLeavesItWhereFacebookPutsIt() {
+        navigationStripFrom(2300);
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        assertEquals(0f, host.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void theKeyboardDoesNotCountAsTheStrip() {
+        ReelBarFollow.insetsForTests = new WindowInsets.Builder()
+                .setInsets(WindowInsets.Type.ime(), Insets.of(0, 0, 0, 900))
+                .build();
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        assertEquals(0f, host.getTranslationY(), 0f);
+    }
+
+    @Test
+    public void aViewerStillSlidingInBelowTheWindowIsLeftToArrive() {
+        navigationStripFrom(2000);
+        viewer.setTranslationY(activity.getWindow().getDecorView().getHeight());
+
+        ReelBarFollow.updated(label);
+        frame();
+
+        assertEquals(0f, host.getTranslationY(), 0f);
+    }
+
+    /** How far the line, at 2018, rises for its thumb to show above [limit]. */
+    private float liftOver(int limit) {
+        return 2018 + 6 * activity.getResources().getDisplayMetrics().density - limit;
+    }
+
+    /** Starts the strip at [top] on {@link #screen}, which the test activity's title bar sits lower in the window. */
+    private void navigationStripFrom(int top) {
+        int height = activity.getWindow().getDecorView().getHeight();
+        int[] at = new int[2];
+        screen.getLocationInWindow(at);
+        int inWindow = at[1] + top;
+        assertTrue("the window has to reach below the strip", height > inWindow);
+        ReelBarFollow.insetsForTests = new WindowInsets.Builder()
+                .setInsets(WindowInsets.Type.navigationBars(), Insets.of(0, 0, 0, height - inWindow))
+                .build();
     }
 
     private void addTabBar(int top) {
