@@ -53,7 +53,8 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * are named FCg. One static int method taking a GraphQLStory holds the key as well, so the reader's
  * argument has to be something other than a GraphQL model class. Some arm64 getters (0ma6.FCg) call
  * the reader instead of holding the key. 587's armeabi-v7a build has no reader at all: each of its
- * getters (FCe) holds the key, so the extension gets the getter alone there.
+ * getters (FCe) holds the key, so the extension gets the getter alone there. Neither 588 build has
+ * one (read 2026-11-18): only the getters and methods taking a GraphQL model hold the key.
  */
 
 private const val PROFILE_SORT = "Newest reels first (profile reels order)"
@@ -110,8 +111,8 @@ internal class PlayCount(val holder: String, val names: String)
 
 /**
  * What a build with no reader hands over as the reader's class: one the extension finds no reader on,
- * so it reads the getter alone. 587's armeabi-v7a build has no reader: Redex folded it into each
- * getter, and every getter holds the key itself.
+ * so it reads the getter alone. 587's armeabi-v7a build and both 588 builds have no reader: Redex
+ * folded it into each getter, and every getter holds the key itself.
  */
 internal const val NO_READER = "Ljava/lang/Object;"
 
