@@ -12,6 +12,7 @@ import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.PatchLogCapture
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -100,7 +101,21 @@ class PlaybackFormatEvidenceFixtureTest {
             layer = FixtureDex.classes(bundle, layer).values.mapNotNull { it.superclass }
                 .filter { it !in lineage && !it.startsWith("Ljava/") && !it.startsWith("Landroid/") }.toSet()
         }
-        assertTrue("$name: the Hero video renderer reaches this adapter interface", configured.any { it.definingClass in lineage })
+        // 588 moves the call into a static the renderers share, so a static they call counts too.
+        val lineageClasses = FixtureDex.classes(bundle, lineage).values
+        fun calledFromLineage(target: Method) = lineageClasses.any { owner ->
+            owner.methods.any { method ->
+                method.implementation?.instructions?.any { instruction ->
+                    instruction.call?.let { call ->
+                        call.definingClass == target.definingClass && call.name == target.name && call.returnType == target.returnType &&
+                            call.parameterTypes.map(CharSequence::toString) == target.parameterTypes.map(CharSequence::toString)
+                    } == true
+                } == true
+            }
+        }
+        assertTrue("$name: the Hero video renderer reaches this adapter interface", configured.any {
+            it.definingClass in lineage || (AccessFlags.STATIC.isSet(it.accessFlags) && calledFromLineage(it))
+        })
 
         val context = PatchContexts.of(listOf(dav1d, platform, adapterInterface, ExtensionDex.classDef(FORMAT_EVIDENCE)))
         val anchors = context.findPlaybackEvidenceAnchors()
