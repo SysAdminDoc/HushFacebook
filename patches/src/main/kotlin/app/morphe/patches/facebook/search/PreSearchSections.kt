@@ -293,8 +293,9 @@ internal data class PreSearchQuerySite(val method: Method, val test: Int, val no
  * Each place in a loop body that reads a node of the entries' type, keeps it, maybe casts it, tests it
  * for null, and then adds to a list builder: read inline with [CONCRETE_READER] and the type's key
  * (584), or through an accessor holding both (585), asked of its class or an interface it declares.
- * The body was a static (Builder, Iterator) method up to 586 and is inlined into the result callbacks
- * from 587. The entry class's own accessor isn't one, since the section and the head read that.
+ * The body is a static (Builder, Iterator) method up to 586, on 587's v7 and on 588; 587's arm64
+ * inlines it into the result callbacks. The entry class's own accessor isn't one, since the section
+ * and the head read that.
  */
 internal fun BytecodePatchContext.preSearchQuerySites(entry: String): List<PreSearchQuerySite> {
     val sites = mutableListOf<PreSearchQuerySite>()

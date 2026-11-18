@@ -226,13 +226,12 @@ class PreSearchSectionsFixtureTest {
         }.code()
 
     /**
-     * Per build, the places the null-state query reads an entry's node, counted per method. Up to 586
-     * that was one static loop body. 587's arm64 inlines the loop into the callbacks taking the query's
-     * result, and one reads the node once and another twice (LX/0A6l;->HRJ and LX/0U4t;->HRJ). 587's
-     * v7 keeps the one static body (LX/0fHm;->A00).
+     * Per build, the places the null-state query reads an entry's node, counted per method. 588 has
+     * one static loop body on each ABI (arm64 and v7 LX/0Zdk;->A00), called from the loops of the
+     * result callbacks. 587's arm64 had inlined it into those callbacks.
      */
     private val querySites = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to listOf(1, 2), "armeabi-v7a" to listOf(1)),
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to listOf(1), "armeabi-v7a" to listOf(1)),
     )
 
     /** Asserts [patched] is [code] with [hook]'s three instructions at [at], keeping [kept] cast back to [type]. */
@@ -279,8 +278,8 @@ class PreSearchSectionsFixtureTest {
         }
         val holderClasses = FixtureDex.classes(bundle, holders.map { it.definingClass }.toSet()).values.toList()
         val owners = holderClasses.filter { it.type != entry }.flatMap { it.interfaces + it.type }.toSet()
-        // Up to 586 the loop body was one static (Builder, Iterator) method; 587 inlines it into each
-        // instance callback taking the query's result (arm64 LX/0A6l;->HRJ once, LX/0U4t;->HRJ twice).
+        // The loop body is one static (Builder, Iterator) method on 588; 587's arm64 inlined it into
+        // each instance callback taking the query's result, so callers of either kind are loaded.
         val callers = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it in owners } }) { method ->
             method.implementation?.instructions?.any { it.call()?.definingClass in owners } == true
         }
