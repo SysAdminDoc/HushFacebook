@@ -87,6 +87,8 @@ public final class FeedVideoControls {
     static final int BAR_DP = 20, TIME_DP = 28;
     /** How thick Thin line seek bar draws its line, flush with the video's bottom edge, as Instagram's is (#431). */
     static final int THIN_DP = 2;
+    /** How far from its list's top a row can start and still count as a viewer's page (#505). */
+    private static final int FILLS_LIST_SLOP_DP = 2;
     /** The room the seek bar leaves under it for what Facebook puts in the video's bottom corners: the speaker, and the tagged people (#326). */
     static final int BAR_LIFT_DP = 40;
     /** The most Lower the seek bar moves the bar and those buttons down, keeping {@link #MARGIN_DP} under the lowest button (#386). */
@@ -533,14 +535,15 @@ public final class FeedVideoControls {
         boolean live = access.live(params);
         // Any feed counts, so a page's, a group's or a profile's videos get them too (#239).
         if (origin == null || !FeedVideoAlone.fromFeed(origin.toString())) return miss(control, "origin", origin);
+        // Facebook's viewer has its own bar, and a video opened from a feed still names that feed (#505).
+        if (FeedVideoAlone.inViewer(origin.toString())) return miss(control, "it plays in Facebook's viewer", origin);
         View row = container;
         View list = null;
         for (ViewParent parent = container.getParent(); parent instanceof View; parent = parent.getParent()) {
             View view = (View) parent;
             if (PostLongPress.isNamed(view, PostLongPress.LIST)) {
-                if ((!view.canScrollVertically(1) && !view.canScrollVertically(-1))
-                        || (row.getWidth() == view.getWidth() && row.getHeight() == view.getHeight())) {
-                    return miss(control, "its list doesn't scroll or the video fills it");
+                if ((!view.canScrollVertically(1) && !view.canScrollVertically(-1)) || fillsList(row, view)) {
+                    return miss(control, "its list doesn't scroll or the video fills it", origin);
                 }
                 list = view;
                 break;
@@ -968,6 +971,18 @@ public final class FeedVideoControls {
             return null;
         }
         return view.getClass() == View.class && view.getBackground() == null ? null : view;
+    }
+
+    /**
+     * Whether [row] takes up its [list] the way a viewer's page does: exactly, or from the list's top
+     * down through nearly all of it. A viewer pages one video at a time, and a thin header row can
+     * leave its page a pixel short of the list (#505).
+     */
+    private static boolean fillsList(View row, View list) {
+        if (row.getWidth() != list.getWidth()) return false;
+        if (row.getHeight() == list.getHeight()) return true;
+        int slop = Math.round(FILLS_LIST_SLOP_DP * row.getResources().getDisplayMetrics().density);
+        return Math.abs(row.getTop()) <= slop && row.getHeight() * 10 >= list.getHeight() * 9;
     }
 
     @Nullable

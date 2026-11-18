@@ -382,6 +382,15 @@ public final class FeedVideoAlone {
     }
 
     /**
+     * Whether [origin] is a player in one of Facebook's viewers, whichever surface opened it, as in
+     * "newsfeed::fb_shorts_viewer" or "profile::fb_shorts_profile_viewer" (#505). {@link #fromFeed}
+     * reads only the surface, so it says yes to those.
+     */
+    static boolean inViewer(String origin) {
+        return origin.contains("::") && origin.endsWith("_viewer");
+    }
+
+    /**
      * Injection point, as Facebook's video fragment reads whether it's a Warion viewer while it's
      * created. Never throws.
      *

@@ -686,6 +686,47 @@ public class FeedVideoControlsTest {
         assertNull(bar());
     }
 
+    private void originIs(String origin) {
+        player.origin = origin;
+        FeedVideoControls.changed(player);
+        drain();
+    }
+
+    /** #505: a video opened from a feed keeps the feed in its origin, and the viewer has its own bar. */
+    @Test public void aVideoInFacebooksViewerGetsNoSecondBarWhicheverFeedOpenedIt() {
+        barOn();
+        for (String viewer : new String[] {"newsfeed::fb_shorts_viewer", "group::fb_shorts_viewer",
+                "profile::fb_shorts_profile_viewer"}) {
+            originIs(viewer);
+            assertNull(viewer, bar());
+        }
+        for (String feed : new String[] {"newsfeed::feed_story", "newsfeed::fb_shorts_native_in_feed_unit",
+                "group::fb_shorts_reshare_feed_unit", "newsfeed"}) {
+            originIs(feed);
+            assertNotNull(feed, bar());
+        }
+    }
+
+    /** #505: the viewer pages one video at a time, so its row starts at the list's top and nearly fills it. */
+    @Test public void aRowNearlyFillingTheListFromItsTopIsTheViewerNotAPost() {
+        barOn();
+        assertNotNull(bar());
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) row.getLayoutParams();
+        params.height = 2000;
+        row.setLayoutParams(params);
+        layout();
+        FeedVideoControls.changed(player);
+        drain();
+        assertNull("a video paging in the viewer kept the feed's bar", bar());
+
+        params.topMargin = 200;
+        row.setLayoutParams(params);
+        layout();
+        FeedVideoControls.changed(player);
+        drain();
+        assertNotNull("a tall post scrolled partway lost its bar", bar());
+    }
+
     @Test public void aVideoCutOffAtTheBottomKeepsItsButtonsAndGetsTheBarWhenItsEdgeShows() {
         barOn();
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) row.getLayoutParams();
