@@ -55,10 +55,11 @@ class ReturnRefreshFixtureTest {
 
     /**
      * Per build, the methods of the executor's class that ask the hot-start check and hand the executor
-     * its decision, by their parameters and answer. Up to 586 there was none; 587 has one.
+     * its decision, by their parameters and answer. 587 had one; 588 has none again, since
+     * NewsFeedFragment's onSetUserVisibleHint calls both itself.
      */
     private val relayShapes = mapOf(
-        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to listOf("(ZZ)V"), "armeabi-v7a" to listOf("(ZZ)V")),
+        AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf("arm64-v8a" to emptyList<String>(), "armeabi-v7a" to emptyList()),
     )
 
     private fun Method.body(): List<Instruction> = implementation!!.instructions.toList()
@@ -197,10 +198,10 @@ class ReturnRefreshFixtureTest {
         // The tab's visibility change and the worker the feed posts on pause hand the executor their
         // decision, and the visibility change and the revisit refresh ask the hot-start check.
         val targets = setOf(signature(executor), signature(hotStart))
-        // 587 moved the visibility change's half into the executor's own class: NewsFeedFragment's
-        // onSetUserVisibleHint calls a (ZZ)V there (arm64 `LX/02gj;->A0N`) that asks the hot-start
-        // check and hands the executor its decision. A call to a method of the executor's class
-        // calling both counts as a call to each.
+        // 587 moved the visibility change's half into the executor's own class, a (ZZ)V there that
+        // asked the hot-start check and handed the executor its decision, and 588 put it back in
+        // NewsFeedFragment's onSetUserVisibleHint. Where there is one, a call to a method of the
+        // executor's class calling both counts as a call to each.
         val relays = FixtureDex.classes(bundle, setOf(executor.definingClass)).getValue(executor.definingClass).methods
             .filter { method ->
                 val calls = method.implementation?.instructions?.map { it.call() }.orEmpty()
