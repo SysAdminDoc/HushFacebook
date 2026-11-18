@@ -175,7 +175,7 @@ internal fun MutableMethod.unlockFirst() {
     addInstructionsWithLabels(
         0,
         """
-            invoke-static { p1 }, $UNLOCKED
+            invoke-static/range { p1 .. p1 }, $UNLOCKED
             move-result v0
             if-eqz v0, :check
             const/4 v0, 0x1
