@@ -8,6 +8,7 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.liveAcrossInjection
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -245,7 +246,7 @@ class KeepProgressBarFixtureTest {
             } == true
         })
         val base = FixtureDex.classes(bundle, setOf(scrubberBase(looks))).values.single()
-        val info = barInfo(base, scrubberLengthChecks(lengthCheckOwner(scrubber, base))?.minimum)
+        val info = barInfo(base, lengthChecksOf(bundle, scrubber, base)?.minimum)
         val (another, owner) = lightMount(bundle, base, info.builder.returnType)
         val mountCode = another.mount.code()
         // A match skips the reset of the bar's state, and both videos get the bar info's rebuild: 582 runs
@@ -314,7 +315,7 @@ class KeepProgressBarFixtureTest {
         val graph = graphHide(looks) { type -> FixtureDex.classes(bundle, setOf(type))[type] }
         val (chapters, _) = chapters(bundle, scrubber, looks)
         val base = FixtureDex.classes(bundle, setOf(scrubberBase(looks))).values.single()
-        val (another, owner) = lightMount(bundle, base, barInfo(base, scrubberLengthChecks(lengthCheckOwner(scrubber, base))?.minimum).builder.returnType)
+        val (another, owner) = lightMount(bundle, base, barInfo(base, lengthChecksOf(bundle, scrubber, base)?.minimum).builder.returnType)
         assertTrue("$name: the views holder isn't ${base.type}'s, so the base can't read it", looks.viewsField.startsWith("${base.type}->"))
 
         val context = PatchContexts.of(listOf(owner))
@@ -388,16 +389,26 @@ class KeepProgressBarFixtureTest {
         val name = bundle.name
         val holders = FixtureDex.classesHolding(bundle, SCRUBBER_PASSIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val looks = vddScrubber(holders, FixtureDex.classesHolding(bundle, SCRUBBER_ACTIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) })
-        // The passive look sets the label INVISIBLE (4) through the same fields the hook reads.
-        val code = looks.passive.code()
+        // The passive look, or from 588 its static helper, sets the label INVISIBLE (4) through the same fields the hook reads.
+        val code = looks.labelHide.code()
         val read = code.indexOfFirst { it.reference() == looks.labelField }
         assertTrue("$name: the passive look doesn't read ${looks.labelField}", read > 0)
         assertEquals("$name: the views holder is read first", looks.viewsField, code[read - 1].reference())
         assertTrue("$name: the passive look doesn't make the label invisible",
             code.drop(read).take(8).any { (it as? WideLiteralInstruction)?.wideLiteral == 4L })
-        // The active look reads the same label field, to show it.
+        // The active look reads the same label field to show it, itself or from 588 in a static helper of the scrubber.
+        val scrubber = holders.single { it.type == looks.type }
+        val helpers = looks.active.code().mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
+            .filter { it.definingClass == scrubber.type }.mapNotNull { resolveStatic(scrubber, it) }
         assertTrue("$name: the active look doesn't read ${looks.labelField}",
-            looks.active.code().any { it.reference() == looks.labelField })
+            (helpers + looks.active).any { method -> method.code().any { it.reference() == looks.labelField } })
+    }
+
+    /** The length checks of [scrubber] or [base], whichever declares them, asking the bundle's string tables. */
+    private fun lengthChecksOf(bundle: File, scrubber: ClassDef, base: ClassDef): LengthChecks? {
+        val tables = FixtureDex.classesHolding(bundle, LENGTH_CHECK_SURFACE).associateBy { it.type }
+        val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+        return scrubberLengthChecks(lengthCheckOwner(scrubber, base, resolve), resolve)
     }
 
     @Test

@@ -9,6 +9,8 @@ import app.morphe.Fixtures
 import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.media.resume.VIDEO_PLAYER_PARAMS
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -81,9 +83,15 @@ class KeepProgressBarReelsFixtureTest {
 
     private fun Instruction.reference() = (this as? ReferenceInstruction)?.reference?.toString()
 
-    private class Scrubber(val looks: ScrubberLooks, val scrubber: ClassDef, val progress: ProgressUpdate) {
+    private class Scrubber(
+        val looks: ScrubberLooks,
+        val scrubber: ClassDef,
+        val progress: ProgressUpdate,
+        val tables: (MethodReference) -> Method?,
+    ) {
         /** The class with the length checks: the scrubber, or on 585's Android 9 build the base it extends. */
-        val checksOn: ClassDef = lengthCheckOwner(scrubber, progress.base)
+        val checksOn: ClassDef = lengthCheckOwner(scrubber, progress.base, tables)
+        val lengthChecks: LengthChecks? = scrubberLengthChecks(checksOn, tables)
     }
 
     private fun scrubber(bundle: File): Scrubber {
@@ -96,7 +104,9 @@ class KeepProgressBarReelsFixtureTest {
         // Up to 583 the update is on the base the scrubber extends, on 584 on the scrubber itself.
         assertEquals("${bundle.name}: the progress update isn't on the class holding the views", scrubberBase(looks), progress.base.type)
         assertTrue("${bundle.name}: ${progress.base.type} isn't the scrubber or its base", progress.base.type in listOfNotNull(scrubber.type, scrubber.superclass))
-        return Scrubber(looks, scrubber, progress)
+        // 588 asks a string table for the length checks' surface name.
+        val tables = FixtureDex.classesHolding(bundle, LENGTH_CHECK_SURFACE).associateBy { it.type }
+        return Scrubber(looks, scrubber, progress) { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
     }
 
     private fun Instruction.calls(method: Method): Boolean {
@@ -131,7 +141,7 @@ class KeepProgressBarReelsFixtureTest {
         val name = bundle.name
         val found = scrubber(bundle)
         val scrubber = found.checksOn
-        val check = scrubberLengthChecks(scrubber)?.minimum
+        val check = found.lengthChecks?.minimum
         if (check == null) {
             // 584 has none of its own: the bar info builder works it out, and its hook answers it there.
             assertNotNull("$name: ${scrubber.type} has no length check, and its bar info builder doesn't work one out",
@@ -139,7 +149,7 @@ class KeepProgressBarReelsFixtureTest {
             return@bundles
         }
         val where = "$name: ${scrubber.type}->${check.name}"
-        assertTrue("$where doesn't load \"$LENGTH_CHECK_SURFACE\"", check.code().any { it.reference() == LENGTH_CHECK_SURFACE })
+        assertTrue("$where doesn't name \"$LENGTH_CHECK_SURFACE\"", namesString(check, LENGTH_CHECK_SURFACE, found.tables))
         // The hook borrows v0: this, the length and the boolean are the parameter registers.
         assertTrue("$where has no local register for the hook", check.implementation!!.registerCount - 3 >= 1)
 
@@ -163,9 +173,10 @@ class KeepProgressBarReelsFixtureTest {
     @Test
     fun `each declared build hooks the length checks a scrubber subclass overrides`() = bundles { bundle ->
         val name = bundle.name
-        val scrubber = scrubber(bundle).checksOn
+        val found = scrubber(bundle)
+        val scrubber = found.checksOn
         // 584 inlined the Reels tab's checks into the bar info builder, which the bar info test covers.
-        val lengthChecks = scrubberLengthChecks(scrubber) ?: return@bundles
+        val lengthChecks = found.lengthChecks ?: return@bundles
         val minimum = lengthChecks.minimum
         val checks = listOf(minimum, lengthChecks.short)
         val superclasses = mutableMapOf<String, String?>()
@@ -207,7 +218,7 @@ class KeepProgressBarReelsFixtureTest {
         val name = bundle.name
         val found = scrubber(bundle)
         val base = found.progress.base
-        val info = barInfo(base, scrubberLengthChecks(found.checksOn)?.minimum)
+        val info = barInfo(base, found.lengthChecks?.minimum)
         val where = "$name: ${base.type}->${info.builder.name}"
         val code = info.builder.code()
         val init = code[info.call] as RegisterRangeInstruction
@@ -483,7 +494,7 @@ class KeepProgressBarReelsFixtureTest {
         val name = bundle.name
         val found = scrubber(bundle)
         val scrubber = found.checksOn
-        val checks = scrubberLengthChecks(scrubber)
+        val checks = found.lengthChecks
         if (checks == null) {
             // 584 has none of its own: the bar info builder works it out, and its hook answers it there.
             assertNotNull("$name: ${scrubber.type} has no short reel check, and its bar info builder doesn't work one out",
@@ -631,8 +642,8 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$where: which stops there", Opcode.RETURN_VOID, patched[store + 9].opcode)
         assertEquals("$where: Facebook's code after it stays", original.drop(store + 1).map { it.opcode },
             patched.drop(store + 10).map { it.opcode })
-        assertTrue("$where: Facebook's Function1 call after the hook went missing",
-            patched.drop(store + 10).any { it.reference() == FUNCTION1_INVOKE })
+        assertTrue("$where: Facebook's hand-on of the status after the hook went missing",
+            patched.drop(store + 10).any { it.reference() == holder.handOn })
         val flow = ControlFlow.of(update)
         for (branch in listOf(store + 2, store + 5, store + 8)) {
             assertTrue("$where: a no at $branch doesn't land on Facebook's code", store + 10 in flow.normal[branch])
@@ -655,7 +666,7 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$where: $STATUS_VISIBLE goes back", status.visible, pressed[store + 8].reference())
         assertEquals("$where: in the new status' register", holder.new, (pressed[store + 8] as OneRegisterInstruction).registerA)
         assertEquals("$where: and is stored", holder.field, pressed[store + 9].reference())
-        assertEquals("$where: which stops there, before the Function1 hears of it", Opcode.RETURN_VOID, pressed[store + 10].opcode)
+        assertEquals("$where: which stops there, before the status is handed on", Opcode.RETURN_VOID, pressed[store + 10].opcode)
         // The longer method can need a wider goto than Facebook's, which changes nothing else.
         fun Instruction.widened() = if (opcode == Opcode.GOTO) Opcode.GOTO_16 else opcode
         assertEquals("$where: the code behind it stays", patched.drop(store + 1).map { it.widened() }, pressed.drop(store + 11).map { it.widened() })
@@ -718,8 +729,14 @@ class KeepProgressBarReelsFixtureTest {
         checkFooterLift(owner, holder)
         // Facebook's update tells its events apart by class first, so one handed none does nothing.
         val original = holder.update.code()
-        assertEquals("$where: the update doesn't test its event first", Opcode.INSTANCE_OF, original[0].opcode)
-        assertEquals("$where: on the event", holder.self + 1, (original[0] as TwoRegisterInstruction).registerB)
+        val event = holder.receiver + 1
+        val test = original.indexOfFirst { it.opcode == Opcode.INSTANCE_OF }
+        assertTrue("$where: the update doesn't test its event first", test in 0..1)
+        val tested = (original[test] as TwoRegisterInstruction).registerB
+        // 588 copies the event into a low local just before.
+        val source = if (test == 0) tested else (original[0] as TwoRegisterInstruction).registerB
+        assertEquals("$where: on the event", event, source)
+        if (test == 1) assertEquals("$where: through its copy", tested, (original[0] as TwoRegisterInstruction).registerA)
 
         val context = PatchContexts.of(listOf(owner, ExtensionDex.classDef(PROGRESS_BAR)))
         val methods = context.mutableClassDefBy(holder.type).methods
@@ -739,24 +756,39 @@ class KeepProgressBarReelsFixtureTest {
         val stayed = update.code()
         update.liftsWhenAsked(holder, status)
         val patched = update.code()
-        val entry = 10
+        // Where the update keeps `this` in a local (588), the entry fills that local, as the jump passes Facebook's copy.
+        val copy = if (holder.self == holder.receiver) 0 else 1
+        val entry = 10 + copy
         assertEquals("$where: the entry's code",
-            listOf(Opcode.IF_NEZ, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.IGET_OBJECT, Opcode.SGET_OBJECT,
-                Opcode.IF_NE, Opcode.SGET_OBJECT, Opcode.GOTO, Opcode.RETURN_VOID),
+            listOf(Opcode.IF_NEZ, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ) +
+                List(copy) { Opcode.MOVE_OBJECT_FROM16 } +
+                listOf(Opcode.IGET_OBJECT, Opcode.SGET_OBJECT, Opcode.IF_NE, Opcode.SGET_OBJECT, Opcode.GOTO, Opcode.RETURN_VOID),
             patched.take(entry).map { if (it.opcode == Opcode.GOTO_16 || it.opcode == Opcode.GOTO_32) Opcode.GOTO else it.opcode })
+        assertEquals("$where: the event is what's tested", event, (patched[0] as OneRegisterInstruction).registerA)
         assertEquals("$where: the extension is asked", LIFTS_FOOTER, patched[1].reference())
-        assertEquals("$where: the status now is read", holder.field, patched[4].reference())
-        assertEquals("$where: into the old status' register", holder.old, (patched[4] as TwoRegisterInstruction).registerA)
-        assertEquals("$where: compared with $STATUS_HIDDEN", status.hidden, patched[5].reference())
-        assertEquals("$where: $STATUS_VISIBLE is the new status", status.visible, patched[7].reference())
-        assertEquals("$where: in the new status' register", holder.new, (patched[7] as OneRegisterInstruction).registerA)
+        if (copy == 1) {
+            val move = patched[4] as TwoRegisterInstruction
+            assertEquals("$where: the update's `this` goes where the store reads it", listOf(holder.self, holder.receiver),
+                listOf(move.registerA, move.registerB))
+        }
+        val read = 4 + copy
+        assertEquals("$where: the status now is read", holder.field, patched[read].reference())
+        assertEquals("$where: into the old status' register", holder.old, (patched[read] as TwoRegisterInstruction).registerA)
+        assertEquals("$where: off the update itself", holder.self, (patched[read] as TwoRegisterInstruction).registerB)
+        assertEquals("$where: compared with $STATUS_HIDDEN", status.hidden, patched[read + 1].reference())
+        assertEquals("$where: $STATUS_VISIBLE is the new status", status.visible, patched[read + 3].reference())
+        assertEquals("$where: in the new status' register", holder.new, (patched[read + 3] as OneRegisterInstruction).registerA)
         assertEquals("$where: Facebook's code after the entry stays", stayed.map { it.opcode }, patched.drop(entry).map { it.opcode })
         val flow = ControlFlow.of(update)
         assertEquals("$where: an event goes to Facebook's code", setOf(1, entry), flow.normal[0].toSet())
         val store = holder.store + entry
         assertEquals("$where: the goto lands on Facebook's store", holder.field, patched[store].reference())
-        assertEquals("$where: from the goto", setOf(store), flow.normal[8].toSet())
-        for (no in listOf(3, 6)) assertTrue("$where: a no at $no returns", 9 in flow.normal[no])
+        assertEquals("$where: from the goto", setOf(store), flow.normal[read + 4].toSet())
+        for (no in listOf(3, read + 2)) assertTrue("$where: a no at $no returns", read + 5 in flow.normal[no])
+        // The jump skips everything Facebook sets before its store, so nothing past the store may read that.
+        val filled = setOf(holder.new, holder.old, holder.self, holder.receiver, event)
+        assertEquals("$where: Facebook's code past the store reads a register the jump leaves unset", emptySet<Int>(),
+            RegisterLiveness.of(holder.update).liveInto(holder.store) - filled)
 
         context.fillFooterLift(holder)
         val helper = context.mutableClassDefBy(holder.type).methods.single { it.name == FOOTER_LIFT_HELPER }
@@ -824,6 +856,14 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$where: the render's own test moved", Opcode.IF_NEZ, patched[read.at + 3].opcode)
         assertEquals("$where: Facebook's code stays", original.map { it.opcode },
             patched.filterIndexed { at, _ -> at != read.at + 1 && at != read.at + 2 && at != keyed }.map { it.opcode })
+        // Only the built bar reaches the key helper. 588 also returns null through this return, by a jump that has to skip it.
+        val patchedFlow = ControlFlow.of(owner.methods.single { it.sameAs(render) })
+        assertEquals("$where: something other than the bar's constructor reaches the key helper", setOf(keyed - 1),
+            patched.indices.filter { keyed in patchedFlow.normal[it] }.toSet())
+        val originalFlow = ControlFlow.of(render)
+        assertEquals("$where: a jump onto Facebook's return no longer lands on it",
+            original.indices.count { it != bar.at - 1 && bar.at in originalFlow.normal[it] },
+            patched.indices.count { it != keyed && keyed + 1 in patchedFlow.normal[it] })
 
         val helper = owner.methods.single { it.name == REEL_VIDEO_HELPER }
         assertEquals("$where: the helper isn't the one called", read.helper,
@@ -872,7 +912,7 @@ class KeepProgressBarReelsFixtureTest {
         val base = found.progress.base
         val holders = FixtureDex.classesHolding(bundle, NEW_REELS_UNIT_SHOWN).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val handOver = reelHandOver(holders, base.type)
-        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.checksOn)?.minimum).builder.returnType, handOver)
+        val another = anotherVideo(base, barInfo(base, found.lengthChecks?.minimum).builder.returnType, handOver)
         val owner = holders.single { it.type == handOver.method.definingClass }
         val where = "$name: ${owner.type}->${handOver.method.name}"
         val original = handOver.method.code()
@@ -1034,7 +1074,7 @@ class KeepProgressBarReelsFixtureTest {
         val holders = FixtureDex.classesHolding(bundle, NEW_REELS_UNIT_SHOWN).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val handOver = reelHandOver(holders, base.type)
         val returns = registry(bundle, handOver).returns
-        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.checksOn)?.minimum).builder.returnType, handOver)
+        val another = anotherVideo(base, barInfo(base, found.lengthChecks?.minimum).builder.returnType, handOver)
         val load = scrubberLoad(base, another, returns)
         val clear = holderClear(base, returns)
         assertTrue("$name: the load's trace is gone", load.method.code().any {
@@ -1076,20 +1116,22 @@ class KeepProgressBarReelsFixtureTest {
         val unloading = context.mutableClassDefBy(base.type).methods.single { it.sameAs(clear.method) }
         where = "$name: ${base.type}->${unloading.name}"
         val unloadCode = unloading.code()
-        val liveThere = RegisterLiveness.of(clear.method).liveInto(clear.clear) + RegisterLiveness.of(clear.method).liveInto(clear.store + 1)
+        val liveThere = RegisterLiveness.of(clear.method).liveInto(clear.store) + RegisterLiveness.of(clear.method).liveInto(clear.store + 1)
+        val cleared = (unloadCode[clear.store] as TwoRegisterInstruction).registerA
+        val nulled = clear.method.writersReaching(clear.store, cleared).map { unloadCode[it] }.single()
+        assertEquals("$where: what the store clears with", Opcode.CONST_4 to 0, nulled.opcode to (nulled as NarrowLiteralInstruction).narrowLiteral)
         unloading.keepsNewerHolder(clear, load, returns)
         val unloaded = unloading.code()
-        val at = clear.clear
+        val at = clear.store
         assertEquals("$where: the hook's code",
             listOf(Opcode.IGET_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.IGET_OBJECT, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_NEZ),
             unloaded.subList(at, at + 6).map { it.opcode })
-        assertEquals("$where: Facebook's clear follows", Opcode.CONST_4, unloaded[at + 6].opcode)
         assertEquals("$where: what the registry holds", returns.defaultHolder, unloaded[at].reference())
         assertEquals("$where: off the registry", clear.registry, (unloaded[at] as TwoRegisterInstruction).registerB)
         assertEquals("$where: the scrubber's own holder", load.ownHolder, unloaded[at + 2].reference())
         assertEquals("$where: the extension is asked", KEEPS_DEFAULT_HOLDER, unloaded[at + 3].reference())
-        assertEquals("$where: Facebook's clear is the default holder's", returns.defaultHolder, unloaded[at + 7].reference())
-        assertEquals("$where: a yes skips only the clear", setOf(at + 6, at + 8), ControlFlow.of(unloading).normal[at + 5].toSet())
+        assertEquals("$where: Facebook's clear follows", Opcode.IPUT_OBJECT to returns.defaultHolder, unloaded[at + 6].opcode to unloaded[at + 6].reference())
+        assertEquals("$where: a yes skips only the clear", setOf(at + 6, at + 7), ControlFlow.of(unloading).normal[at + 5].toSet())
         val asked = unloaded[at + 3] as FiveRegisterInstruction
         for (register in listOf(asked.registerC, asked.registerD)) {
             assertTrue("$where: the hook borrows v$register, which Facebook reads on", register !in liveThere)
@@ -1107,7 +1149,7 @@ class KeepProgressBarReelsFixtureTest {
         val looks = found.looks
         val base = found.progress.base
         val holders = FixtureDex.classesHolding(bundle, NEW_REELS_UNIT_SHOWN).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.checksOn)?.minimum).builder.returnType, reelHandOver(holders, base.type))
+        val another = anotherVideo(base, barInfo(base, found.lengthChecks?.minimum).builder.returnType, reelHandOver(holders, base.type))
         // Up to 582 the mount is the base's own, on 583 the Reels scrubber registry's hand-over runs it inline.
         val owner = if (another.mount.definingClass == base.type) base else holders.single { it.type == another.mount.definingClass }
         val context = PatchContexts.of(listOf(base, owner).distinctBy { it.type })
@@ -1524,7 +1566,7 @@ class KeepProgressBarReelsFixtureTest {
         val holders = FixtureDex.classesHolding(bundle, NEW_REELS_UNIT_SHOWN).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val handOver = reelHandOver(holders, base.type)
         val (returns) = registry(bundle, handOver)
-        val another = anotherVideo(base, barInfo(base, scrubberLengthChecks(found.checksOn)?.minimum).builder.returnType, handOver)
+        val another = anotherVideo(base, barInfo(base, found.lengthChecks?.minimum).builder.returnType, handOver)
         val registry = returns.method
         val where = "$name: ${registry.definingClass}->${registry.name}"
         val named = listOf(registry.definingClass, another.info.substringBefore("->"), another.info.substringAfter(":")) +

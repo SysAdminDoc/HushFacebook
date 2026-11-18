@@ -1928,9 +1928,11 @@ internal fun footerSeek(owners: List<ClassDef>, visibility: FooterVisibility): F
 /**
  * The class keeping the footer's status (582 `LX/AGv;`): [update], its one store of a new status
  * into [field] at [store], from register [new] into the object in [self], with the status before it
- * in [old]; and [constructor], whose one store of the starting status is at [initialStore], done
- * with that status at [started]: right after the store, or on 584 (`LX/AEI;`), which copies the
- * start into a second field it never reads, after that copy too.
+ * in [old]; [receiver], the register `this` arrives in, which is [self] unless the update copies it
+ * into a local first (588); [handOn], the call the new status goes to after the store; and
+ * [constructor], whose one store of the starting status is at [initialStore], done with that status
+ * at [started]: right after the store, or on 584 (`LX/AEI;`), which copies the start into a second
+ * field it never reads, after that copy too.
  */
 internal class StatusHolder(
     val type: String,
@@ -1940,6 +1942,8 @@ internal class StatusHolder(
     val new: Int,
     val old: Int,
     val self: Int,
+    val receiver: Int,
+    val handOn: String,
     val constructor: Method,
     val initialStore: Int,
     val started: Int,
@@ -1953,35 +1957,62 @@ private fun stores(method: Method, field: String) = method.code().withIndex().fi
 
 /**
  * The status holder among [owners], the classes with a field of [status]' type: the one whose
- * instance `V` method stores a status into its own field once, hands that same register to
- * [FUNCTION1_INVOKE] after the store, and reads the field once before it, into a register no
- * instruction between the read and the store writes. Its one constructor stores the starting status
- * into that field once, with no branch anywhere in it. Refuses unless there's exactly one.
+ * instance `V` method stores a status into its own field once, hands that same register on after the
+ * store ([statusHandOn]), and reads the field once before it, into a register no instruction between
+ * the read and the store writes. Its one constructor stores the starting status into that field
+ * once, with no branch anywhere in it. Refuses unless there's exactly one.
  */
 internal fun statusHolder(owners: List<ClassDef>, status: SeekBarStatus): StatusHolder {
     val found = owners.distinctBy { it.type }.flatMap { owner ->
         owner.fields.filter { it.type == status.type && !AccessFlags.STATIC.isSet(it.accessFlags) }.flatMap { declared ->
             val field = "${owner.type}->${declared.name}:${status.type}"
             owner.methods.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" && it.name != "<init>" }
-                .mapNotNull { update -> holderOf(owner, field, update) }
+                .mapNotNull { update -> holderOf(owner, field, update, status) }
         }
     }
     return found.singleOrNull()
-        ?: refuse("expected one class storing a ${status.type} and handing it to a Function1, found ${found.size}")
+        ?: refuse("expected one class storing a ${status.type} and handing it on, found ${found.size}")
 }
 
-private fun holderOf(owner: ClassDef, field: String, update: Method): StatusHolder? {
+private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
+
+/**
+ * Whether [register], at instruction [at], can only hold a copy of [receiver] that was made while
+ * [receiver] was still the `this` the method got. 588's update copies itself into a low local first
+ * (arm64 `LX/09ql;->A00`: `move-object/from16 v1, v19`).
+ */
+private fun Method.holdsReceiver(at: Int, register: Int, receiver: Int): Boolean {
+    val copy = writersReaching(at, register).singleOrNull()?.takeIf { it >= 0 } ?: return false
+    val move = code()[copy]
+    return move.opcode in OBJECT_MOVES && (move as TwoRegisterInstruction).registerB == receiver &&
+        writersReaching(copy, receiver) == listOf(-1)
+}
+
+/**
+ * The call [code] hands the status in [register] to after its store: [FUNCTION1_INVOKE], or from 588,
+ * where that call was inlined, the constructor of the event it builds on the status alone (arm64
+ * `new LX/09IN;(LX/09qm;)`). Null when it does neither.
+ */
+private fun statusHandOn(code: List<Instruction>, register: Int, status: String): String? = code.firstNotNullOfOrNull {
+    val call = it as? FiveRegisterInstruction ?: return@firstNotNullOfOrNull null
+    val reference = (it as? ReferenceInstruction)?.reference as? MethodReference ?: return@firstNotNullOfOrNull null
+    val handsOn = call.registerCount == 2 && call.registerD == register && when (it.opcode) {
+        Opcode.INVOKE_INTERFACE -> reference.toString() == FUNCTION1_INVOKE
+        Opcode.INVOKE_DIRECT -> reference.name == "<init>" && reference.parameterTypes.map(CharSequence::toString) == listOf(status)
+        else -> false
+    }
+    reference.toString().takeIf { handsOn }
+}
+
+private fun holderOf(owner: ClassDef, field: String, update: Method, status: SeekBarStatus): StatusHolder? {
     val code = update.code()
     val store = stores(update, field).singleOrNull() ?: return null
     val put = code[store] as TwoRegisterInstruction
     // `this` sits right after the locals.
-    val self = update.localRegisterCount()
-    if (put.registerB != self) return null
-    val handed = code.drop(store + 1).any {
-        it.opcode == Opcode.INVOKE_INTERFACE && (it as ReferenceInstruction).reference.toString() == FUNCTION1_INVOKE &&
-            (it as FiveRegisterInstruction).registerCount == 2 && it.registerD == put.registerA
-    }
-    if (!handed) return null
+    val receiver = update.localRegisterCount()
+    val self = put.registerB
+    if (self != receiver && !update.holdsReceiver(store, self, receiver)) return null
+    val handOn = statusHandOn(code.drop(store + 1), put.registerA, status.type) ?: return null
     val read = code.withIndex().filter { (index, it) ->
         index < store && it.opcode == Opcode.IGET_OBJECT && ((it as ReferenceInstruction).reference as FieldReference).toString() == field
     }.singleOrNull() ?: return null
@@ -2005,7 +2036,7 @@ private fun holderOf(owner: ClassDef, field: String, update: Method): StatusHold
         target != null && (it.opcode.setsRegister() && target == holder || it.opcode.setsWideRegister() && target + 1 == holder)
     }
     if (rewritten) return null
-    return StatusHolder(owner.type, field, update, store, put.registerA, old, self, constructor, initialStore, started)
+    return StatusHolder(owner.type, field, update, store, put.registerA, old, self, receiver, handOn, constructor, initialStore, started)
 }
 
 /** The plugin's two size methods. */
@@ -3243,9 +3274,11 @@ internal fun checkFooterLift(owner: ClassDef, holder: StatusHolder) {
 /**
  * First thing in the status holder's update: when it's handed no event, which only the extension's
  * [FOOTER_LIFT_HELPER] does (Facebook's code returns at once for one), and the extension keeps the
- * bar, take a HIDDEN status to VISIBLE through Facebook's own store, Function1 call and event, by
- * jumping to the store with VISIBLE as the new status and the status now as the old one. Anything
- * else returns, and an update with an event runs Facebook's code from its first instruction.
+ * bar, take a HIDDEN status to VISIBLE through Facebook's own store, hand-on and event, by jumping
+ * to the store with VISIBLE as the new status and the status now as the old one. Where the update
+ * keeps `this` in a local (588) the code fills that local first, as the jump passes Facebook's copy.
+ * Anything else returns, and an update with an event runs Facebook's code from its first instruction.
+ * Refuses if Facebook's code past the store reads any other local, which the jump would leave unset.
  * [staysLifted] goes in first, after the store, so the store keeps its index.
  */
 internal fun MutableMethod.liftsWhenAsked(holder: StatusHolder, status: SeekBarStatus) {
@@ -3257,7 +3290,10 @@ internal fun MutableMethod.liftsWhenAsked(holder: StatusHolder, status: SeekBarS
         refuse("$definingClass->$name has no store of its new status at ${holder.store} any more")
     }
     if (listOf(holder.new, holder.old, holder.self).any { it > 15 }) refuse("$definingClass->$name keeps the status past v15")
-    val event = holder.self + 1
+    val event = holder.receiver + 1
+    val unset = liveAcrossInjection(holder.store) - setOf(holder.new, holder.old, holder.self, holder.receiver, event)
+    if (unset.isNotEmpty()) refuse("$definingClass->$name reads $unset past its status store, which a jump there leaves unset")
+    val takeSelf = if (holder.self == holder.receiver) "" else "move-object/from16 v${holder.self}, v${holder.receiver}"
     addInstructionsWithLabels(
         0,
         """
@@ -3265,6 +3301,7 @@ internal fun MutableMethod.liftsWhenAsked(holder: StatusHolder, status: SeekBarS
             invoke-static { }, $LIFTS_FOOTER
             move-result v${holder.new}
             if-eqz v${holder.new}, :stays
+            $takeSelf
             iget-object v${holder.old}, v${holder.self}, ${holder.field}
             sget-object v${holder.new}, ${status.hidden}
             if-ne v${holder.old}, v${holder.new}, :stays
