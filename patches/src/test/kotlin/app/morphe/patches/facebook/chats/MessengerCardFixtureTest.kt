@@ -44,11 +44,14 @@ class MessengerCardFixtureTest {
      * 0x7f143dfe and then 0x3dfb and 0x3dfc, the same offsets as 586's 0x3d45, 0x3d42 and 0x3d43; in
      * the locale packs both builds ship, the ids around it moved 0xb8 below (0x3d19, 84 packs) and 0xba
      * above (0x3d7c to 0x3d92, 66 to 88 packs), and 0xb9 lies between. Both ABIs load the same id.
+     * 588's render tagging the dismiss button loads 0x7f143e48 and then 0x3e45 and 0x3e46, the same
+     * offsets as 587's three, on both ABIs. The locale packs hold none of these ids, so the text
+     * itself couldn't be read there.
      * The test below only passes on the one card class that loads it, and an unpacked table is the
      * check still owed.
      */
     private val upsellText = mapOf(
-        "588.0.0.42.55" to 0x7f143dfe,
+        "588.0.0.42.55" to 0x7f143e48,
     )
 
     private val packageManager = "Landroid/content/pm/PackageManager;"
