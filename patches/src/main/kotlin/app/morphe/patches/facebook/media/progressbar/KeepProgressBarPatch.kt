@@ -156,7 +156,7 @@ internal const val REGISTRY_ASKS = "$PROGRESS_BAR->registryAsks(ZLjava/lang/Inte
 internal const val NO_SCRUBBER = "$PROGRESS_BAR->noScrubber()V"
 internal const val MISSES_HAND_OVER = "$PROGRESS_BAR->missesHandOver(" +
     "Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;" +
-    "Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Integer;I)V"
+    "Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Integer;I)V"
 
 /** The extension's stub the patch fills with a call of the registry's hand-over. */
 internal const val HAND_OVER_AGAIN_STUB = "handOverAgain"
@@ -2697,7 +2697,7 @@ internal fun BytecodePatchContext.fillEndScroll(progress: ProgressUpdate, scroll
 }
 
 /** The registry's hand-over takes this many arguments, the reel's key and an int last, after its own instance. */
-internal const val HAND_OVER_PARAMETERS = 9
+internal const val HAND_OVER_PARAMETERS = 8
 
 /** Whether [method] is the extension's [HAND_OVER_AGAIN_STUB]: static, void, on [MISSES_HAND_OVER]'s arguments. */
 internal fun isHandOverAgainStub(method: Method) = method.name == HAND_OVER_AGAIN_STUB &&

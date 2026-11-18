@@ -422,7 +422,7 @@ public final class ProgressBar {
         Object swapBarInfo(Object scrubber, @Nullable Object info);
 
         void handOver(Object registry, Object context, Object session, Object reel, Object host, Object surface,
-                      Object origin, Object store, @Nullable Integer key, int index);
+                      Object origin, @Nullable Integer key, int index);
     }
 
     /** The hand-over {@link #missesHandOver} is holding for a scrubber's load. */
@@ -715,16 +715,16 @@ public final class ProgressBar {
      */
     public static void missesHandOver(@Nullable Object registry, @Nullable Object context, @Nullable Object session,
                                       @Nullable Object reel, @Nullable Object host, @Nullable Object surface,
-                                      @Nullable Object origin, @Nullable Object store, @Nullable Integer key, int index) {
+                                      @Nullable Object origin, @Nullable Integer key, int index) {
         try {
             missedHandOver = null;
             if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) return;
             Runnable again = () -> {
                 HandOverAgain forced = handOverAgainForTests;
                 if (forced != null) {
-                    forced.handOver(registry, context, session, reel, host, surface, origin, store, key, index);
+                    forced.handOver(registry, context, session, reel, host, surface, origin, key, index);
                 } else {
-                    handOverAgain(registry, context, session, reel, host, surface, origin, store, key, index);
+                    handOverAgain(registry, context, session, reel, host, surface, origin, key, index);
                 }
             };
             missedHandOver = again;
@@ -741,7 +741,7 @@ public final class ProgressBar {
      * #missesHandOver} kept. Does nothing until filled.
      */
     public static void handOverAgain(Object registry, Object context, Object session, Object reel, Object host, Object surface,
-                                     Object origin, Object store, @Nullable Integer key, int index) {
+                                     Object origin, @Nullable Integer key, int index) {
     }
 
     /** Filled in by the patch: [scrubber]'s bar info. Answers null until filled. */

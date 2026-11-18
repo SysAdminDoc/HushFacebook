@@ -819,18 +819,18 @@ public class ProgressBarTest {
 
         @Override
         public void handOver(Object registry, Object context, Object session, Object reel, Object host, Object surface,
-                             Object origin, Object store, Integer key, int index) {
-            handOvers.add(new Object[] {registry, context, session, reel, host, surface, origin, store, key, index});
+                             Object origin, Integer key, int index) {
+            handOvers.add(new Object[] {registry, context, session, reel, host, surface, origin, key, index});
             assertNull("the registry would skip the reel the bar info holds", info);
             if (builds != null) info = builds;
         }
     }
 
-    private static final Object[] HAND_OVER = {"registry", "context", "session", "reel", "host", "surface", "origin", "store", 7, 3};
+    private static final Object[] HAND_OVER = {"registry", "context", "session", "reel", "host", "surface", "origin", 7, 3};
 
     private static void missesHandOver() {
         ProgressBar.missesHandOver(HAND_OVER[0], HAND_OVER[1], HAND_OVER[2], HAND_OVER[3], HAND_OVER[4], HAND_OVER[5],
-                HAND_OVER[6], HAND_OVER[7], (Integer) HAND_OVER[8], (Integer) HAND_OVER[9]);
+                HAND_OVER[6], (Integer) HAND_OVER[7], (Integer) HAND_OVER[8]);
     }
 
     @Test
@@ -876,7 +876,7 @@ public class ProgressBarTest {
             }
 
             @Override
-            public void handOver(Object r, Object c, Object s, Object u, Object h, Object f, Object o, Object t, Integer k, int i) {
+            public void handOver(Object r, Object c, Object s, Object u, Object h, Object f, Object o, Integer k, int i) {
                 throw new IllegalStateException("Facebook threw");
             }
         };
