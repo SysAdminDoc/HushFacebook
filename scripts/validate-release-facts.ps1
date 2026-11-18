@@ -894,12 +894,21 @@ function Test-ChangelogHere {
         Held against the file as it stood at the most recent tag reachable from HEAD, which is
         read with git. A checkout with no tag, or one where that tag carried no CHANGELOG, is
         still held to naming the version it builds; there is simply nothing older to compare.
+        Versions 0.1.0 to 0.19.0 live in docs/changelog-archive.md, so Morphe Manager, which
+        fetches CHANGELOG.md from main, loads a quarter of what it did. The record is both files
+        together, at the tag as now; the Manager entry is read from CHANGELOG.md alone.
     #>
     $path = Join-Path $rootPath 'CHANGELOG.md'
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "There is no CHANGELOG.md at $path, so no release can be described."
     }
     $current = Get-Content -LiteralPath $path -Raw
+    $archive = 'docs/changelog-archive.md'
+    $archivePath = Join-Path $rootPath $archive
+    $record = $current
+    if (Test-Path -LiteralPath $archivePath -PathType Leaf) {
+        $record += "`n" + (Get-Content -LiteralPath $archivePath -Raw)
+    }
 
     $previous = $null
     $label = 'the last release'
@@ -910,12 +919,14 @@ function Test-ChangelogHere {
         # existed is a legitimate miss rather than a failure, so the text is what decides.
         $text = (Invoke-RepoGit -Root $rootPath -Arguments @('show', "${tag}:CHANGELOG.md")) -join "`n"
         if (-not [string]::IsNullOrWhiteSpace($text)) {
-            $previous = $text
+            # A tag from before the archive existed has no such file, and that miss is fine too.
+            $archived = (Invoke-RepoGit -Root $rootPath -Arguments @('show', "${tag}:$archive")) -join "`n"
+            $previous = if ([string]::IsNullOrWhiteSpace($archived)) { $text } else { $text + "`n" + $archived }
             $label = "tag $tag"
         }
     }
 
-    $arguments = @{ Current = $current; ExpectedVersion = $releaseVersion }
+    $arguments = @{ Current = $record; ExpectedVersion = $releaseVersion }
     if ($null -ne $previous) {
         $arguments['Previous'] = $previous
         $arguments['PreviousLabel'] = $label
@@ -928,7 +939,7 @@ function Test-ChangelogHere {
     Write-Host ("[release] Morphe Manager can read the $releaseVersion entry: dated " +
         "$($manager.Date), $($manager.Bullets) bullets scoped Facebook")
 
-    $described = @(Get-ChangelogVersions -Text $current)
+    $described = @(Get-ChangelogVersions -Text $record)
     if ($null -eq $previous) {
         Write-Host ("[release] the CHANGELOG describes $releaseVersion and " +
             "$($described.Count) versions in all; there is no earlier tag to compare with")

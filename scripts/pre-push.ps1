@@ -634,6 +634,8 @@ try {
         # A released version's heading is the only record a reader has that it shipped, and one
         # was renamed away by a post-release commit that no gate read.
         $_ -eq 'CHANGELOG.md' -or
+        # Versions 0.1.0 to 0.19.0 moved there, and the same check holds both files together.
+        $_ -eq 'docs/changelog-archive.md' -or
         # Its version placeholders are held to the target and the published index.
         $_ -eq '.github/ISSUE_TEMPLATE/bug_report.yml' -or
         # It names the pinned patcher and the Manager floor, which the release check holds it to.

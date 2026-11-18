@@ -330,7 +330,9 @@ def github_notes(root: Path, version: str, checked: str | None, draft: bool = Fa
         if bullets:
             parts.append(name)
             parts.extend("- " + bullet for bullet in bullets)
-    parts.append(f"The [changelog](https://github.com/{REPOSITORY}/blob/main/CHANGELOG.md) has every earlier release too.")
+    parts.append(f"The [changelog](https://github.com/{REPOSITORY}/blob/main/CHANGELOG.md) has every earlier release "
+                 f"too, and the oldest ones are in its "
+                 f"[archive](https://github.com/{REPOSITORY}/blob/main/docs/changelog-archive.md).")
     parts.append("How to update")
     parts.append(update_steps(root))
     parts.append(f"The `.mpp` download is a patch bundle, not a Facebook APK. "
