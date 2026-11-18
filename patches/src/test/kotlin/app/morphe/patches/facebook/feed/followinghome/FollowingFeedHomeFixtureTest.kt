@@ -9,6 +9,9 @@ import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.isStringTable
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -58,7 +61,12 @@ class FollowingFeedHomeFixtureTest {
         assertEquals("$where: the feed type isn't second", HOME_FEED_TYPE_CLASS, builder.parameterTypes[1].toString())
         assertTrue("$where reads the feed type before \"$PAGED_NEWSFEED_PARAMS\"", !readsFeedTypeBeforeTrace(builder))
         // The feed style it sets for the most recent feed is what makes the swap a most recent request.
-        assertTrue("$where sets no $MOST_RECENT_STYLE style", holdsString(builder, MOST_RECENT_STYLE))
+        // 588 keeps the style's name in a string table.
+        val tables = FixtureDex.classesHolding(bundle, MOST_RECENT_STYLE)
+            .filter { owner -> owner.methods.any { isStringTable(it) && holdsString(it, MOST_RECENT_STYLE) } }
+            .associateBy { it.type }
+        val resolve = { call: MethodReference -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
+        assertTrue("$where sets no $MOST_RECENT_STYLE style", namesString(builder, MOST_RECENT_STYLE, resolve))
         assertTrue("$where has no local register for the hook", builder.localRegisterCount() >= 1)
 
         val feedTypes = FixtureDex.classes(bundle, setOf(HOME_FEED_TYPE_CLASS)).values.single()
