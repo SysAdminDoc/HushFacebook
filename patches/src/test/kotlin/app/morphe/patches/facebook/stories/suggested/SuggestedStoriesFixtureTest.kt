@@ -53,12 +53,12 @@ class SuggestedStoriesFixtureTest {
     /**
      * The bucket interface's type accessor and the enum it answers, per build and then by the
      * bundle's ABI. On 583 and 585 the two builds share the enum but not the accessor's name; on
-     * 586 they share both. On 587 they share neither.
+     * 586 they share both, on 587 neither, and on 588 both again.
      */
     private val expectedType = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to ("GEF" to "LX/02d0;"),
-            "armeabi-v7a" to ("GED" to "LX/02d6;"),
+            "arm64-v8a" to ("Grm" to "LX/02Ev;"),
+            "armeabi-v7a" to ("Grm" to "LX/02Ev;"),
             "arm64-v8a-minapi28-storeless" to ("Fuy" to "LX/02bk;"),
         ),
     )
@@ -69,8 +69,8 @@ class SuggestedStoriesFixtureTest {
      */
     private val expectedOwner = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to Triple("EAr", "GE7", "LX/03Yv;"),
-            "armeabi-v7a" to Triple("EAp", "GE5", "LX/03Z5;"),
+            "arm64-v8a" to Triple("EXJ", "Gre", "LX/03Yn;"),
+            "armeabi-v7a" to Triple("EXJ", "Gre", "LX/03Yn;"),
             "arm64-v8a-minapi28-storeless" to Triple("Dyt", "Fur", "LX/03Yu;"),
         ),
     )
@@ -81,8 +81,8 @@ class SuggestedStoriesFixtureTest {
      */
     private val expectedExpires = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to "DGa",
-            "armeabi-v7a" to "DGa",
+            "arm64-v8a" to "DY9",
+            "armeabi-v7a" to "DY9",
             "arm64-v8a-minapi28-storeless" to "D7p",
         ),
     )
@@ -102,8 +102,8 @@ class SuggestedStoriesFixtureTest {
     /** The query builders that set skip_srtt_item_list, per build and then by ABI (issue #21). */
     private val expectedSkips = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to setOf("LX/01w4;->A03", "LX/01w4;->A07"),
-            "armeabi-v7a" to setOf("LX/01w9;->A03", "LX/01w9;->A07"),
+            "arm64-v8a" to setOf("LX/025J;->A03", "LX/025J;->A08"),
+            "armeabi-v7a" to setOf("LX/025J;->A03", "LX/025J;->A08"),
             "arm64-v8a-minapi28-storeless" to setOf("LX/01s9;->A02", "LX/01s9;->A06"),
         ),
     )
