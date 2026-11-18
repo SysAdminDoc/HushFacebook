@@ -111,7 +111,11 @@ public final class PostDownloadButton implements Function1<Object, Object> {
             }
             if (!savesPhotos()) return null;
             List<PhotoMenuItem.Photo> photos = PhotoMenuItem.photosOf(post, attachments, media, attachedStory, subattachments);
-            if (!photos.isEmpty()) PhotoMenuItem.save(context, photos, "under a post");
+            if (photos.isEmpty()) return null;
+            // With Ask before downloading on, only Continue starts the save (#511).
+            if (!AskBeforeDownload.ask(context, () -> PhotoMenuItem.save(context, photos, "under a post"))) {
+                PhotoMenuItem.save(context, photos, "under a post");
+            }
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.POST_ACTION_BUTTONS, "post download tap", t);
             Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "the Download tap under a post failed", t);

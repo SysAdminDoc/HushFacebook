@@ -409,6 +409,13 @@ public final class ReelDownload implements Function1<Object, Object> {
             return;
         }
 
+        // With Ask before downloading on, only Continue goes on to the save (#511).
+        if (AskBeforeDownload.askForVideo(context, () -> saveFrom(source))) return;
+        saveFrom(source);
+    }
+
+    /** The save of this reel from [source], through the queue or the list of qualities when they're on. */
+    private void saveFrom(Object source) {
         String videoId = videoIdOf(playerParams);
         PostDetails details = PostDetails.read(videoId, story);
         // With Queue reel saves on, the tap adds the reel to the queue, which saves it in its turn

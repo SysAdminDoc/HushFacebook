@@ -2959,3 +2959,8 @@ The address and port of an HTTP proxy for Facebook's connections, like %1$s. The
 Type an HTTP proxy's address and port, like %1$s.	Ketik alamat dan port proxy HTTP, misalnya %1$s.
 Facebook connects the way your phone does. Type a proxy's address and port to send its connections through it.	Facebook terhubung seperti biasa di ponselmu. Ketik alamat dan port proxy agar koneksinya lewat proxy itu.
 Facebook's connections go through the proxy at %1$s.	Koneksi Facebook lewat proxy %1$s.
+# context: switch title on the Downloads page; on, a tap on a download button asks first
+Ask before downloading	Tanya sebelum mengunduh
+A reel's Download button, the Download button under a post and a video's Download to phone ask first, so a stray tap saves nothing. With Choose quality on each save on, a video's list of qualities does the asking.	Tombol Unduh pada reel, tombol Unduh di bawah postingan, dan "Unduh ke ponsel" pada video bertanya dulu, jadi ketukan tak sengaja tidak menyimpan apa pun. Saat "Pilih kualitas setiap menyimpan" aktif, daftar kualitas video yang bertanya.
+# context: the question over the screen after a tap on a download button, answered Continue or Cancel
+Start this download?	Mulai unduhan ini?

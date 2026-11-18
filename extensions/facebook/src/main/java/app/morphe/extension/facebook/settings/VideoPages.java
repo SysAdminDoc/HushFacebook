@@ -678,6 +678,10 @@ final class VideoPages {
             }
             // Every save reads these, a story's and a reel's as much as a feed video's, so they're here
             // whichever download patch is in, the compatible ones above the quality they keep within.
+            downloads.addPreference(toggle(context, Settings.ASK_BEFORE_DOWNLOAD,
+                    L10n.t("A reel's Download button, the Download button under a post and a video's Download to phone "
+                            + "ask first, so a stray tap saves nothing. With Choose quality on each save on, a video's "
+                            + "list of qualities does the asking.")));
             downloads.addPreference(toggle(context, Settings.DOWNLOAD_QUIET,
                     L10n.t("No toast when a save starts, finishes or is canceled. A save that fails still says why.")));
             downloads.addPreference(toggle(context, Settings.DOWNLOAD_COMPATIBLE,

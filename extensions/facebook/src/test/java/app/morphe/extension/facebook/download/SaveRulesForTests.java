@@ -49,4 +49,9 @@ public final class SaveRulesForTests {
     public static boolean asksForTheQuality() {
         return QualityChooser.on();
     }
+
+    /** Whether a tap on a download button would ask first, as Ask before downloading does. */
+    public static boolean asksBeforeDownloading() {
+        return AskBeforeDownload.on();
+    }
 }

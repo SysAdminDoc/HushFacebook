@@ -443,6 +443,7 @@ public final class SettingsBackup {
             Settings.DOWNLOAD_CONVERT,
             Settings.DOWNLOAD_QUIET,
             Settings.DOWNLOAD_QUALITY_ASK,
+            Settings.ASK_BEFORE_DOWNLOAD,
             Settings.OPEN_ON_CHOSEN_TAB,
             Settings.FOLLOWING_FEED_HOME,
             Settings.SAVED_SHORTCUT,

@@ -2959,3 +2959,8 @@ The address and port of an HTTP proxy for Facebook's connections, like %1$s. The
 Type an HTTP proxy's address and port, like %1$s.	พิมพ์ที่อยู่และพอร์ตของพร็อกซี HTTP เช่น %1$s
 Facebook connects the way your phone does. Type a proxy's address and port to send its connections through it.	Facebook เชื่อมต่อตามปกติของโทรศัพท์ พิมพ์ที่อยู่และพอร์ตของพร็อกซีเพื่อให้การเชื่อมต่อผ่านพร็อกซีนั้น
 Facebook's connections go through the proxy at %1$s.	การเชื่อมต่อของ Facebook ผ่านพร็อกซี %1$s
+# context: switch title on the Downloads page; on, a tap on a download button asks first
+Ask before downloading	ถามก่อนดาวน์โหลด
+A reel's Download button, the Download button under a post and a video's Download to phone ask first, so a stray tap saves nothing. With Choose quality on each save on, a video's list of qualities does the asking.	ปุ่มดาวน์โหลดของ Reel ปุ่มดาวน์โหลดใต้โพสต์ และ "ดาวน์โหลดลงโทรศัพท์" ของวิดีโอจะถามก่อน การแตะโดยไม่ตั้งใจจึงไม่บันทึกอะไร เมื่อเปิด "เลือกคุณภาพทุกครั้งที่บันทึก" รายการคุณภาพของวิดีโอจะเป็นตัวถามแทน
+# context: the question over the screen after a tap on a download button, answered Continue or Cancel
+Start this download?	เริ่มดาวน์โหลดนี้ไหม

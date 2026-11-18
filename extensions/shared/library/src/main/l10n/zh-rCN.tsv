@@ -2954,3 +2954,8 @@ The address and port of an HTTP proxy for Facebook's connections, like %1$s. The
 Type an HTTP proxy's address and port, like %1$s.	请输入 HTTP 代理的地址和端口，例如 %1$s。
 Facebook connects the way your phone does. Type a proxy's address and port to send its connections through it.	Facebook 按手机自己的方式连接。输入代理的地址和端口，让它的连接经过该代理。
 Facebook's connections go through the proxy at %1$s.	Facebook 的连接经过代理 %1$s。
+# context: switch title on the Downloads page; on, a tap on a download button asks first
+Ask before downloading	下载前先询问
+A reel's Download button, the Download button under a post and a video's Download to phone ask first, so a stray tap saves nothing. With Choose quality on each save on, a video's list of qualities does the asking.	Reels 的下载按钮、帖子下方的下载按钮和视频的“下载到手机”会先询问，误触不会保存任何内容。开启“每次保存时选择画质”后，视频由画质列表来询问。
+# context: the question over the screen after a tap on a download button, answered Continue or Cancel
+Start this download?	要开始这次下载吗？

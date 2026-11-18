@@ -2959,3 +2959,8 @@ The address and port of an HTTP proxy for Facebook's connections, like %1$s. The
 Type an HTTP proxy's address and port, like %1$s.	Escribe la dirección y el puerto de un proxy HTTP, como %1$s.
 Facebook connects the way your phone does. Type a proxy's address and port to send its connections through it.	Facebook se conecta como lo hace tu teléfono. Escribe la dirección y el puerto de un proxy para que sus conexiones pasen por él.
 Facebook's connections go through the proxy at %1$s.	Las conexiones de Facebook pasan por el proxy %1$s.
+# context: switch title on the Downloads page; on, a tap on a download button asks first
+Ask before downloading	Preguntar antes de descargar
+A reel's Download button, the Download button under a post and a video's Download to phone ask first, so a stray tap saves nothing. With Choose quality on each save on, a video's list of qualities does the asking.	El botón Descargar de un reel, el botón Descargar bajo una publicación y «Descargar en el teléfono» de un video preguntan primero, para que un toque sin querer no guarde nada. Con «Elegir la calidad en cada descarga» activado, en los videos pregunta la lista de calidades.
+# context: the question over the screen after a tap on a download button, answered Continue or Cancel
+Start this download?	¿Iniciar esta descarga?

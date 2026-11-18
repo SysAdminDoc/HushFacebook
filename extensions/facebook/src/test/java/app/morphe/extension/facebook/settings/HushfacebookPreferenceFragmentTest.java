@@ -1255,6 +1255,12 @@ public class HushfacebookPreferenceFragmentTest {
                 assertEquals("Quiet saves", String.valueOf(quiet.getTitle()));
                 assertEquals("No toast when a save starts, finishes or is canceled. A save that fails still says why.",
                         String.valueOf(quiet.getSummary()));
+                // Ask before downloading (issue #511) covers every save's button too, right above that.
+                Preference askFirst = rows.get(compatible - 2);
+                assertEquals(download + ": ask before downloading isn't above quiet saves",
+                        Settings.ASK_BEFORE_DOWNLOAD.key, askFirst.getKey());
+                assertFalse(((SwitchPreference) askFirst).isChecked());
+                assertEquals("Ask before downloading", String.valueOf(askFirst.getTitle()));
                 // Choose quality on each save (issue #448) asks with Download quality's list, right above it
                 // (Save on stays right below the quality), so Convert, the ask and the quality run in that order.
                 Preference ask = rows.get(compatible + 2);
@@ -1275,6 +1281,8 @@ public class HushfacebookPreferenceFragmentTest {
             assertEquals("a convert row with no download in the build", -1, indexOfKey(rows, Settings.DOWNLOAD_CONVERT.key));
             assertEquals("a choose-quality row with no download in the build",
                     -1, indexOfKey(rows, Settings.DOWNLOAD_QUALITY_ASK.key));
+            assertEquals("an ask-first row with no download in the build",
+                    -1, indexOfKey(rows, Settings.ASK_BEFORE_DOWNLOAD.key));
         }
     }
 

@@ -1943,6 +1943,15 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/AskBeforeDownload.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #511: Ask before downloading. With the switch on, a reel's Download button, the Download button under a post and a video's Download to phone ask first, and only Continue starts the save."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/QualityChooser.java"
       ],
       "origin": "original",

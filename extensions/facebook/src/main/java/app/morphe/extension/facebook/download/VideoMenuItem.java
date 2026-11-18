@@ -167,6 +167,8 @@ public final class VideoMenuItem {
             }
             Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "Download to phone tapped");
             if (MediaDownload.busy(application)) return;
+            // With Ask before downloading on, only Continue starts the save (#511).
+            if (AskBeforeDownload.askForVideo(context, () -> save(application, video))) return;
             // With Choose quality on each save on, the list asks first and its pick starts the save (#448).
             if (QualityChooser.ask(context, () -> save(application, video))) return;
             save(application, video);

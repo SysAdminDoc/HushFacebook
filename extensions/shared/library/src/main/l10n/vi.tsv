@@ -2959,3 +2959,8 @@ The address and port of an HTTP proxy for Facebook's connections, like %1$s. The
 Type an HTTP proxy's address and port, like %1$s.	Nhập địa chỉ và cổng của một proxy HTTP, ví dụ %1$s.
 Facebook connects the way your phone does. Type a proxy's address and port to send its connections through it.	Facebook kết nối như điện thoại vẫn làm. Nhập địa chỉ và cổng của một proxy để các kết nối đi qua proxy đó.
 Facebook's connections go through the proxy at %1$s.	Các kết nối của Facebook đi qua proxy %1$s.
+# context: switch title on the Downloads page; on, a tap on a download button asks first
+Ask before downloading	Hỏi trước khi tải xuống
+A reel's Download button, the Download button under a post and a video's Download to phone ask first, so a stray tap saves nothing. With Choose quality on each save on, a video's list of qualities does the asking.	Nút Tải xuống của reel, nút Tải xuống dưới bài viết và mục Tải về điện thoại của video sẽ hỏi trước, nên lỡ chạm cũng không lưu gì. Khi bật Chọn chất lượng mỗi lần lưu, danh sách chất lượng của video sẽ thay câu hỏi này.
+# context: the question over the screen after a tap on a download button, answered Continue or Cancel
+Start this download?	Bắt đầu tải xuống này?

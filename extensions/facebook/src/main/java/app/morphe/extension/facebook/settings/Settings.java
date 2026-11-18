@@ -3619,6 +3619,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_download_quality_ask", FALSE);
 
     /**
+     * A reel's Download button, the Download button under a post and a video's Download to phone
+     * ask first, and only Continue starts the save (issue #511). Off by default, so a tap saves at
+     * once. Every download patch has it ({@link PatchFamily#DOWNLOAD_SWITCHES}).
+     */
+    public static final BooleanSetting ASK_BEFORE_DOWNLOAD =
+            new BooleanSetting("hushfacebook_download_ask_first", FALSE);
+
+    /**
      * Video saves keep to what other apps open: H.264 video with AAC-LC or HE-AAC sound, within
      * {@link #DOWNLOAD_QUALITY}, or Facebook's single MP4 file when the manifest has no such pair.
      * The sharpest version Facebook streams is often AV1 with xHE-AAC sound, which Gallery and VLC

@@ -90,7 +90,7 @@ public final class QualityChooser {
 
     /** The activity a view's context wraps, or null. The depth guards against a wrapper that wraps itself. */
     @Nullable
-    private static Activity activityOf(@Nullable Context context) {
+    static Activity activityOf(@Nullable Context context) {
         for (int depth = 0; context != null && depth < 20; depth++) {
             if (context instanceof Activity) return (Activity) context;
             if (!(context instanceof ContextWrapper)) return null;

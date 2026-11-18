@@ -380,6 +380,8 @@ public class PausedHooksTest {
         probes.put(Settings.DOWNLOAD_QUIET, SaveRulesForTests::finishesQuietly);
         // A reel's or a video's save asks for the quality before it starts.
         probes.put(Settings.DOWNLOAD_QUALITY_ASK, SaveRulesForTests::asksForTheQuality);
+        // A tap on a download button asks before it saves.
+        probes.put(Settings.ASK_BEFORE_DOWNLOAD, SaveRulesForTests::asksBeforeDownloading);
         return probes;
     }
 

@@ -2959,3 +2959,8 @@ The address and port of an HTTP proxy for Facebook's connections, like %1$s. The
 Type an HTTP proxy's address and port, like %1$s.	Bir HTTP proxy'nin adresini ve bağlantı noktasını yazın, örneğin %1$s.
 Facebook connects the way your phone does. Type a proxy's address and port to send its connections through it.	Facebook telefonunuzun bağlandığı gibi bağlanır. Bağlantılarını bir proxy üzerinden göndermek için proxy'nin adresini ve bağlantı noktasını yazın.
 Facebook's connections go through the proxy at %1$s.	Facebook'un bağlantıları %1$s proxy'si üzerinden gider.
+# context: switch title on the Downloads page; on, a tap on a download button asks first
+Ask before downloading	İndirmeden önce sor
+A reel's Download button, the Download button under a post and a video's Download to phone ask first, so a stray tap saves nothing. With Choose quality on each save on, a video's list of qualities does the asking.	Bir Reels videosunun İndir düğmesi, gönderinin altındaki İndir düğmesi ve bir videonun Telefona indir seçeneği önce sorar, böylece yanlışlıkla dokunmak hiçbir şey kaydetmez. Her kaydetmede kaliteyi seç açıkken videolarda soruyu kalite listesi sorar.
+# context: the question over the screen after a tap on a download button, answered Continue or Cancel
+Start this download?	Bu indirme başlatılsın mı?
