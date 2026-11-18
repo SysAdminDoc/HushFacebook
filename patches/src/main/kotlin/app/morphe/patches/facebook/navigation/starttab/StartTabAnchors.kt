@@ -175,16 +175,17 @@ internal fun picksStartTab(method: Method): Boolean =
  *
  * The method takes one boolean, returns nothing and opens the trace section [START_POSITION]. The
  * gate is its first MobileConfig boolean read (a static call up to 581, the config's interface
- * method on a cast in 582's `LX/2Fo;->A06`). Its answer goes into a register the next
+ * method on a cast in 582's `LX/2Fo;->A06`, a static helper of another class on 588, which only
+ * [classOf] can see into). Its answer goes into a register the next
  * instruction branches on, and when the answer is yes, the code reads the start tab its own class
  * was built with, a long, and hands that long to a lookup that answers the tab's position as an
  * Integer. That's what the extension's yes turns on.
  */
-internal fun startPositionGate(method: Method): Int? {
+internal fun startPositionGate(method: Method, classOf: ((String) -> ClassDef?)? = null): Int? {
     if (method.returnType != "V" || method.parameterTypes.map { it.toString() } != listOf("Z")) return null
     if (!holdsString(method, START_POSITION)) return null
     val code = method.implementation?.instructions?.toList() ?: return null
-    val call = code.indexOfFirst { readsMobileConfig(it, "Z") }
+    val call = code.indexOfFirst { readsMobileConfig(it, "Z", classOf) }
     if (call < 0) return null
     val result = code.getOrNull(call + 1)
     if (result?.opcode != Opcode.MOVE_RESULT) return null

@@ -97,7 +97,9 @@ val openOnChosenTabPatch = bytecodePatch(
         )
         val gate = exactlyOne(
             classDefByStrings(START_POSITION, StringComparisonType.EQUALS).flatMap { owner ->
-                owner.methods.mapNotNull { method -> startPositionGate(method)?.let { method to it } }
+                owner.methods.mapNotNull { method ->
+                    startPositionGate(method) { type -> classDefByOrNull(type) }?.let { method to it }
+                }
             },
             "tab bar start position (\"$START_POSITION\") whose MobileConfig check guards the start tab it was given",
         )

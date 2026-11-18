@@ -146,7 +146,7 @@ class StartTabFixtureTest {
 
                 // The three start-up steps the patch hooks, one of each, found in one pass.
                 val handOvers = mutableListOf<Pair<Method, Int>>()
-                val gates = mutableListOf<Pair<Method, Int>>()
+                val traced = mutableListOf<Method>()
                 val checks = mutableListOf<Method>()
                 val inlineChecks = mutableListOf<Pair<Method, Int>>()
                 val queues = mutableSetOf<String>()
@@ -168,7 +168,7 @@ class StartTabFixtureTest {
                                 calls.forEach { stepCalls += classDef.type to ImmutableMethodReference.of(it) }
                                 if (calls.isNotEmpty()) cases += ImmutableMethod.of(method)
                             }
-                            if (traces) startPositionGate(method)?.let { gates += ImmutableMethod.of(method) to it }
+                            if (traces && holdsString(method, START_POSITION)) traced += ImmutableMethod.of(method)
                             if (targets && keepsAskedStartTab(method)) checks += ImmutableMethod.of(method)
                             if (targets) inlineKeepReset(method)?.let { inlineChecks += ImmutableMethod.of(method) to it }
                         }
@@ -217,6 +217,14 @@ class StartTabFixtureTest {
                     assertEquals("$name: dispatchers whose \"$SANITIZE_INTENT\" case calls the step's body or the copy's maker", 1, dispatchers.size)
                 }
                 assertEquals("$name: start-up steps that sanitize the main screen's intent", 1, handOvers.size)
+                // 588 reads the gate through a static helper of another class, taking the config as an Object.
+                val helpers = FixtureDex.classes(fixture, traced.flatMap { method ->
+                    code(method).mapNotNull { it.call }.filter { called ->
+                        called.returnType == "Z" &&
+                            called.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;", "J")
+                    }.map { it.definingClass }
+                }.toSet())
+                val gates = traced.mapNotNull { method -> startPositionGate(method, helpers::get)?.let { method to it } }
                 assertEquals("$name: tab bar start position gates", 1, gates.size)
                 // Up to 584 a static check; 585 runs it inline in the start-up dispatcher, and the patch looks there only without one.
                 val inline = if (checks.isEmpty()) inlineChecks else emptyList()
@@ -238,7 +246,7 @@ class StartTabFixtureTest {
 
                 val kept = setOf(MAIN_TAB_ACTIVITY, fragmentActivity, delegate, navigationConfig, TAB_TAG,
                     STARTUP_DESTINATION_ROUTER, picker.definingClass, sanitizer.definingClass, position.definingClass,
-                    checkOwner, FEED_FILTERS_FRAGMENT, FEED_TYPE) + offered.keys + dispatchers + makers
+                    checkOwner, FEED_FILTERS_FRAGMENT, FEED_TYPE) + offered.keys + dispatchers + makers + helpers.keys
                 val classes = FixtureDex.classes(fixture, kept)
                 assertEquals("$name: classes missing", emptySet<String>(), kept - classes.keys)
 
@@ -308,7 +316,8 @@ class StartTabFixtureTest {
                 // The patch, on this build's main screen classes, picker and start-up steps.
                 val context = PatchContexts.of(
                     listOf(MAIN_TAB_ACTIVITY, fragmentActivity, picker.definingClass, sanitizer.definingClass,
-                        position.definingClass, checkOwner, FEED_FILTERS_FRAGMENT).plus(dispatchers).plus(makers).distinct()
+                        position.definingClass, checkOwner, FEED_FILTERS_FRAGMENT).plus(dispatchers).plus(makers)
+                        .plus(helpers.keys).distinct()
                         .map(classes::getValue) +
                         ExtensionDex.classDef(SETTINGS_STATUS),
                 )
