@@ -52,7 +52,10 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  *   turn and the heart has played, and in an event subscriber the component makes on mount (580
  *   LX/S0Z;, 577 LX/SXB;), which takes the double taps a parent overlay forwards. Each read is
  *   followed by a null check, and without a handler the tap goes no further. Nothing else in
- *   either build reads the field.
+ *   either build reads the field. 588 moves the subscriber's body up into one big method of a
+ *   base class every event subscriber shares (arm64 `LX/0fSl;->A0f`), which picks its case by
+ *   instance-of and the subscriber's kind, so the read now sits on an ancestor of the class the
+ *   component makes.
  * - The feed's multi-format attachment, which chains into Reels, has a double-tap listener of its
  *   own (580 LX/RwO;, 577 LX/STv;). It asks the helper's double-tap like and then animates a heart
  *   it adds to the screen, and it's the one onDoubleTap in either build loading "translationY".
@@ -206,6 +209,13 @@ internal fun readsOf(method: Method, field: FieldReference): List<Int> = method.
 internal fun typesMadeBy(owner: ClassDef): Set<String> = owner.methods.flatMap { method ->
     method.code().filter { it.opcode == Opcode.NEW_INSTANCE }.map { (it as ReferenceInstruction).reference.toString() }
 }.toSet()
+
+/**
+ * [types] and every class they inherit from that [classOf] knows. Redex can lift a small class's
+ * code into a shared ancestor, so what a made class runs isn't always on the class itself.
+ */
+internal fun withAncestors(types: Set<String>, classOf: (String) -> ClassDef?): Set<String> =
+    types.flatMapTo(linkedSetOf()) { type -> generateSequence(type) { classOf(it)?.superclass } }
 
 /**
  * Whether the read at [read] in [method] leads straight into a null check of what it read, and

@@ -22,6 +22,7 @@ import app.morphe.patches.facebook.reels.doubletap.GESTURE_REACTION
 import app.morphe.patches.facebook.reels.doubletap.HEART_RISE
 import app.morphe.patches.facebook.reels.doubletap.MUTATE_LIKE
 import app.morphe.patches.facebook.reels.doubletap.doubleTapLikes
+import app.morphe.patches.facebook.reels.doubletap.classesWithAncestors
 import app.morphe.patches.facebook.reels.doubletap.feedPhotoFixtureClasses
 import app.morphe.patches.facebook.reels.doubletap.hearts
 import app.morphe.patches.facebook.reels.doubletap.isAttachmentDoubleTap
@@ -116,7 +117,7 @@ class OpenCommentsFixtureTest {
         val view = FixtureDex.classes(bundle, setOf(viewType)).getValue(viewType)
         val heart = hearts(view).also { assertEquals("$name: hearts", 1, it.size) }.single()
         val ownerTypes = setOf(viewType) + typesMadeBy(view) + typesMadeBy(component)
-        val owners = FixtureDex.classes(bundle, ownerTypes).values.toList()
+        val owners = classesWithAncestors(bundle, ownerTypes).values.toList()
 
         val buttons = FixtureDex.classesHolding(bundle, COMMENT_TAP).mapNotNull { owner ->
             owner.methods.singleOrNull { isCommentClick(it, owner) }?.let { owner to it }

@@ -12,6 +12,7 @@ import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.isStringTable
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -184,8 +185,11 @@ class DoubleTapLikeFixtureTest {
         val everywhere = FixtureDex.methodsWhere(bundle, dexFilter = { dex ->
             dex.fieldSection.any { it.definingClass == handler.definingClass && it.name == handler.name }
         }) { readsOf(it, handler).isNotEmpty() }
-        val owners = (setOf(viewType) + typesMadeBy(view) + typesMadeBy(component))
-        val readerClasses = FixtureDex.classes(bundle, everywhere.map { it.definingClass }.toSet()).values.toList()
+        val made = setOf(viewType) + typesMadeBy(view) + typesMadeBy(component)
+        val known = classesWithAncestors(bundle, made)
+        val owners = withAncestors(made) { known[it] }
+        // The patch walks from the made classes up to the reader, so it needs the ones between too.
+        val readerClasses = known.values.toList()
         assertTrue("$name: a class the patch doesn't look in reads the handler: " +
             everywhere.filter { it.definingClass !in owners }.map(::key), everywhere.all { it.definingClass in owners })
         assertEquals("$name: readers of the handler", 3, everywhere.size)
@@ -222,8 +226,9 @@ class DoubleTapLikeFixtureTest {
 
     /**
      * The players with a double-tap listener of their own like through the helper's like with the
-     * literal "DOUBLE_TAP" as its source, which is what the hook in the like holds back, and the
-     * Like button's handler passes something else.
+     * string "DOUBLE_TAP" as its source, which is what the hook in the like holds back, and the
+     * Like button's handler passes something else. 588 loads it in one of the three and asks a
+     * string table for it in the other two.
      */
     @Test
     fun `on each declared build three players' own double taps send the reel like with the source DOUBLE_TAP`() {
@@ -231,10 +236,11 @@ class DoubleTapLikeFixtureTest {
         for ((version, bundles) in declaredBundles()) {
             for (bundle in bundles) {
                 val like = FixtureDex.classesHolding(bundle, MUTATE_LIKE).flatMap { it.methods }.single(::isReelLike)
+                val tables = FixtureDex.classesHolding(bundle, DOUBLE_TAP).associateBy { it.type }
+                val resolve: (MethodReference) -> Method? = { call -> tables[call.definingClass]?.let { resolveStatic(it, call) } }
                 val senders = FixtureDex.methodsWhere(bundle, dexFilter = { dex ->
-                    dex.stringSection.any { it == DOUBLE_TAP } &&
-                        dex.methodSection.any { it.definingClass == like.definingClass && it.name == like.name }
-                }) { calls(it, like) && holdsString(it, DOUBLE_TAP) }
+                    dex.methodSection.any { it.definingClass == like.definingClass && it.name == like.name }
+                }) { calls(it, like) && namesString(it, DOUBLE_TAP, resolve) }
                 val listeners = senders.filter { it.name == "onDoubleTap" }
                 assertEquals("${bundle.name}: onDoubleTaps sending the reel like from a double tap", 3, listeners.size)
                 for (listener in listeners) {
@@ -242,12 +248,17 @@ class DoubleTapLikeFixtureTest {
                     val send = code.indexOfLast { it.call?.let(::key) == key(like) }
                     // The helper first, then the like's arguments in order.
                     val source = code[send].registers()[1 + likeSource(like)!!]
-                    val loaded = code.subList(0, send).last {
+                    val at = code.subList(0, send).indexOfLast {
                         it.opcode.setsRegister() && (it as? OneRegisterInstruction)?.registerA == source
                     }
-                    assertEquals("${bundle.name}: ${key(listener)} passes another source", Opcode.CONST_STRING, loaded.opcode)
-                    assertEquals("${bundle.name}: ${key(listener)} passes another source", DOUBLE_TAP,
-                        ((loaded as ReferenceInstruction).reference as StringReference).string)
+                    val loaded = code[at]
+                    val passed = if (loaded.opcode == Opcode.MOVE_RESULT_OBJECT) {
+                        tableStringAt(code, at - 1, resolve)
+                    } else {
+                        assertEquals("${bundle.name}: ${key(listener)} passes another source", Opcode.CONST_STRING, loaded.opcode)
+                        ((loaded as ReferenceInstruction).reference as StringReference).string
+                    }
+                    assertEquals("${bundle.name}: ${key(listener)} passes another source", DOUBLE_TAP, passed)
                 }
                 checked += version
             }
@@ -384,6 +395,18 @@ internal fun feedPhotoFixtureClasses(bundle: File): List<ClassDef> {
     val listeners = FixtureDex.classes(bundle, makers.flatMap(::typesMadeBy).toSet()).values
         .filter { it.superclass == GESTURE_LISTENER }
     return (listOf(helper) + makers + listeners + found.tables).distinctBy { it.type }
+}
+
+/** [types] in [bundle] and every class they inherit from that the bundle holds. */
+internal fun classesWithAncestors(bundle: File, types: Set<String>): Map<String, ClassDef> {
+    val known = mutableMapOf<String, ClassDef>()
+    var wanted = types
+    while (wanted.isNotEmpty()) {
+        val found = FixtureDex.classes(bundle, wanted)
+        known += found
+        wanted = found.values.mapNotNull { it.superclass }.filterTo(mutableSetOf()) { it !in known }
+    }
+    return known
 }
 
 /**

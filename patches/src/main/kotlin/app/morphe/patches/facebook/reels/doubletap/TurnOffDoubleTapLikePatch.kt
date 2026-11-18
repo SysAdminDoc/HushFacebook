@@ -168,9 +168,10 @@ private fun BytecodePatchContext.findGestureViewAnchors(): GestureViewAnchors {
     val handler = handlerField(heart) ?: refuse("the gesture view's heart reads none of the view's fields")
 
     // The view, what the view makes (its gesture listener) and what the component makes (its event
-    // subscriber): nothing else in 577 or 580 reads the handler.
-    val owners = (sequenceOf(viewType) + typesMadeBy(view) + typesMadeBy(component)).distinct()
-        .mapNotNull(::classDefByOrNull).toList()
+    // subscriber), with what those inherit from, since 588 keeps the subscriber's code on a shared
+    // base class: nothing else reads the handler.
+    val owners = withAncestors(setOf(viewType) + typesMadeBy(view) + typesMadeBy(component)) { classDefByOrNull(it) }
+        .mapNotNull(::classDefByOrNull)
     val readers = owners.flatMap { owner -> owner.methods.filter { readsOf(it, handler).isNotEmpty() } }
     if (readers.none { it.isSameAs(heart) && it.definingClass == heart.definingClass }) {
         refuse("the gesture view's heart doesn't read $handler")
