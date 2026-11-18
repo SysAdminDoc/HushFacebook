@@ -16,6 +16,8 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.os.Looper;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import org.junit.After;
 import org.junit.Before;
@@ -57,6 +59,11 @@ public class AskBeforeLikeTest {
     private static final String INLINE = OWN + "->inline(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
     private static final String HEADER_FOLLOW = OWN + "->onClick(Landroid/view/View;)V";
     private static final String COLLAB_FOLLOW = OWN + "->dispatch(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
+    private static final String BAR = "Lapp/morphe/extension/facebook/feed/AskBeforeLikeTest$StoryBar;";
+    private static final String STORY = BAR + "->react(Landroid/view/View;Landroid/view/ViewGroup;Ljava/lang/Object;"
+            + "Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;I)V";
+    private static final String SINGLE = "Lapp/morphe/extension/facebook/feed/AskBeforeLikeTest$SingleReaction;"
+            + "->invoke(Ljava/lang/Object;)Ljava/lang/Object;";
 
     /** A stand-in for the component context the plugin footer's sender takes: it keeps a context, it isn't one. */
     static final class Kept {
@@ -138,9 +145,50 @@ public class AskBeforeLikeTest {
         }
     }
 
+    /**
+     * A stand-in for the story viewer's reaction bar handler, with the hook first as the patch puts
+     * it: the int is boxed into the call, and the story viewer's environment sits in a field.
+     */
+    static final class StoryBar {
+        final Object environment;
+        int reactions;
+        String lastReaction;
+        int lastPosition = -1;
+
+        StoryBar(Object environment) {
+            this.environment = environment;
+        }
+
+        void react(View view, ViewGroup bar, Object bucket, Object card, Object reaction, String source, int position) {
+            if (AskBeforeLike.hold(AskBeforeLike.STORY_REACTION, STORY,
+                    new Object[] {this, view, bar, bucket, card, reaction, source, position})) return;
+            reactions++;
+            lastReaction = (String) reaction;
+            lastPosition = position;
+        }
+    }
+
+    /** A stand-in for the single reaction button's lambda: it keeps the environment and returns Unit either way. */
+    static final class SingleReaction {
+        final Object environment;
+        int reactions;
+
+        SingleReaction(Object environment) {
+            this.environment = environment;
+        }
+
+        Object invoke(Object event) {
+            if (AskBeforeLike.hold(AskBeforeLike.STORY_SINGLE_REACTION, SINGLE, new Object[] {this, event})) return "unit";
+            reactions++;
+            return "unit";
+        }
+    }
+
     private Activity screen;
     private View button;
     private Footer footer;
+    private Object environment;
+    private StoryBar bar;
 
     @Before
     public void setUp() {
@@ -148,6 +196,8 @@ public class AskBeforeLikeTest {
         screen = Robolectric.buildActivity(Activity.class).setup().get();
         button = new View(screen);
         footer = new Footer();
+        environment = new Object();
+        bar = new StoryBar(environment);
     }
 
     @After
@@ -161,6 +211,9 @@ public class AskBeforeLikeTest {
         Settings.ASK_BEFORE_LIKING_COMMENTS.resetToDefault();
         Settings.ASK_BEFORE_FOLLOWING_POSTS.resetToDefault();
         Settings.ASK_BEFORE_FOLLOWING_REELS.resetToDefault();
+        Settings.ASK_BEFORE_REACTING_TO_STORIES.resetToDefault();
+        AskBeforeLike.pauserForTests = null;
+        AskBeforeLike.pausedForTests = 0;
         HookStatus.clear();
     }
 
@@ -193,6 +246,7 @@ public class AskBeforeLikeTest {
         assertFalse(Settings.ASK_BEFORE_LIKING_COMMENTS.defaultValue);
         assertFalse(Settings.ASK_BEFORE_FOLLOWING_POSTS.defaultValue);
         assertFalse(Settings.ASK_BEFORE_FOLLOWING_REELS.defaultValue);
+        assertFalse(Settings.ASK_BEFORE_REACTING_TO_STORIES.defaultValue);
         footer.like(button, "post", true);
         Footer.reel(button, footer, false);
         assertEquals("liked", footer.comment(button, "post"));
@@ -386,6 +440,87 @@ public class AskBeforeLikeTest {
         assertEquals(0, footer.likes);
         assertTrue(statusLine(), statusLine().contains(AskBeforeLike.ASKED_FOLLOW + " 3"));
         assertFalse("a follow counted as a like", statusLine().contains(AskBeforeLike.ASKED + " "));
+    }
+
+    @Test
+    public void aStoryReactionAsksWithTheStoryPausedAndOnlyContinueSendsIt() {
+        Settings.ASK_BEFORE_REACTING_TO_STORIES.save(true);
+        AskBeforeLike.pauserForTests = environment;
+        bar.react(button, new FrameLayout(screen), "bucket", "card", "love", "reply_bar", 3);
+        assertEquals("the tap reacted before the answer", 0, bar.reactions);
+        AlertDialog question = showing();
+        assertTrue("no question went up", question != null);
+        assertEquals("React to this story?", shadowOf(question).getMessage().toString());
+        assertEquals("the story kept playing under the question", 1, AskBeforeLike.pausedForTests);
+
+        press(question, AlertDialog.BUTTON_POSITIVE);
+        assertEquals("Continue didn't send the reaction", 1, bar.reactions);
+        assertEquals("love", bar.lastReaction);
+        assertEquals("the reaction went out at another position", 3, bar.lastPosition);
+        assertEquals("the story stayed paused after Continue", 0, AskBeforeLike.pausedForTests);
+        assertNull(showing());
+        assertTrue(statusLine(), statusLine().contains(AskBeforeLike.ASKED_STORY + " 1"));
+        assertFalse("a story reaction counted as a like", statusLine().contains(AskBeforeLike.ASKED + " "));
+    }
+
+    @Test
+    public void cancelSendsNoReactionAndTheStoryPlaysOn() {
+        Settings.ASK_BEFORE_REACTING_TO_STORIES.save(true);
+        AskBeforeLike.pauserForTests = environment;
+        bar.react(button, new FrameLayout(screen), "bucket", "card", "haha", "long_press", 0);
+        assertEquals(1, AskBeforeLike.pausedForTests);
+        press(showing(), AlertDialog.BUTTON_NEGATIVE);
+        assertEquals("Cancel sent the reaction", 0, bar.reactions);
+        assertEquals("the story stayed paused after Cancel", 0, AskBeforeLike.pausedForTests);
+        assertNull(showing());
+    }
+
+    @Test
+    public void offOrUnderTheOtherSwitchesAStoryReactionGoesOutAsBefore() {
+        AskBeforeLike.pauserForTests = environment;
+        Settings.ASK_BEFORE_LIKING_POSTS.save(true);
+        Settings.ASK_BEFORE_LIKING_REELS.save(true);
+        Settings.ASK_BEFORE_FOLLOWING_REELS.save(true);
+        bar.react(button, new FrameLayout(screen), "bucket", "card", "wow", "reply_bar", 2);
+        assertEquals("another switch held a story reaction", 1, bar.reactions);
+        assertEquals(2, bar.lastPosition);
+        assertNull(showing());
+        assertEquals("the story paused with its switch off", 0, AskBeforeLike.pausedForTests);
+
+        Settings.ASK_BEFORE_LIKING_POSTS.save(false);
+        Settings.ASK_BEFORE_REACTING_TO_STORIES.save(true);
+        footer.like(button, "post", false);
+        assertEquals("the story switch held a post like", 1, footer.likes);
+        assertNull(showing());
+    }
+
+    @Test
+    public void withNoPauserTheStoryQuestionStillGoesUp() {
+        Settings.ASK_BEFORE_REACTING_TO_STORIES.save(true);
+        bar.react(button, new FrameLayout(screen), "bucket", "card", "care", "reply_bar", 1);
+        AlertDialog question = showing();
+        assertTrue("no question went up without a pauser", question != null);
+        assertEquals(0, AskBeforeLike.pausedForTests);
+        press(question, AlertDialog.BUTTON_POSITIVE);
+        assertEquals(1, bar.reactions);
+        assertEquals(0, AskBeforeLike.pausedForTests);
+    }
+
+    @Test
+    public void theSingleReactionButtonAsksAndContinueSendsItOnce() {
+        Settings.ASK_BEFORE_REACTING_TO_STORIES.save(true);
+        AskBeforeLike.pauserForTests = environment;
+        SingleReaction single = new SingleReaction(environment);
+        assertEquals("a held tap didn't return Unit at once", "unit", single.invoke(new Event(button)));
+        assertEquals(0, single.reactions);
+        AlertDialog question = showing();
+        assertTrue("no question went up over the screen the event's view is on", question != null);
+        assertEquals("React to this story?", shadowOf(question).getMessage().toString());
+        assertEquals(1, AskBeforeLike.pausedForTests);
+        press(question, AlertDialog.BUTTON_POSITIVE);
+        assertEquals("Continue didn't send it once", 1, single.reactions);
+        assertEquals(0, AskBeforeLike.pausedForTests);
+        assertNull(showing());
     }
 
     @Test

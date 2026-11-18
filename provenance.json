@@ -956,6 +956,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/confirm/StoryReactions.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook for issue #502: a question before a tap on a story reaction goes through. In Facebook 587 every reaction from the story viewer's reply bar, its long press, the suggested footer, a swipe up and the single reaction button goes through one instance method of the shape taking the view, the view group, the StoryBucket, the StoryCard, the reaction, a source name and an int, the one of that shape holding the story_reaction name. The single reaction button's own click is the arm of a merged Kotlin lambda holding the single_entry_reaction_component name. The patch hooks both the way Ask before a like hooks its handlers. Facebook pauses a story for its own dialogs through small toggles that get the pauser from the story viewer's environment and pause or resume it under the ALERT_DIALOG_OPEN reason, and the patch reads that route off those toggles to fill three extension stubs, so the question pauses the story the same way."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostJoinButton.kt"
       ],
       "origin": "original",

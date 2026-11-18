@@ -779,7 +779,7 @@ final class FeedPages {
                 || build.contains(PatchFamily.STORY_MUSIC_LENGTH) || build.contains(PatchFamily.STORIES_TRAY_CIRCLES)
                 || build.contains(PatchFamily.STORY_TAPS) || build.contains(PatchFamily.STORY_VIEWER_CLEANUP)
                 || build.contains(PatchFamily.STORY_RINGS) || build.contains(PatchFamily.PINCH_TO_ZOOM)
-                || storyNamesBoxed(build)) {
+                || build.contains(PatchFamily.ASK_BEFORE_LIKE) || storyNamesBoxed(build)) {
             PreferenceCategory stories = category(screen, L10n.t("Stories"));
             if (build.contains(PatchFamily.SPONSORED_STORIES)) {
                 stories.addPreference(toggle(context, Settings.HIDE_SPONSORED_STORIES,
@@ -881,6 +881,12 @@ final class FeedPages {
                         L10n.t("Stories change only on a double tap, the left side for the one before and anywhere else "
                                 + "for the next. A single tap pauses or plays the story, or shows the play button when "
                                 + "that's on.")));
+            }
+            if (build.contains(PatchFamily.ASK_BEFORE_LIKE)) {
+                // Read on each tap, so a change shows on the next one.
+                stories.addPreference(toggle(context, Settings.ASK_BEFORE_REACTING_TO_STORIES,
+                        L10n.t("A tap on a reaction at the bottom of a story asks first, and the story waits. Only "
+                                + "Continue sends the reaction.")));
             }
             if (build.contains(PatchFamily.STORY_VIEWER_CLEANUP)) {
                 // Read each time the part draws, so a change shows from the next story.

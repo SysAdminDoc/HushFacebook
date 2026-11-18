@@ -1299,6 +1299,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_ask_before_following_reels", FALSE);
 
     /**
+     * A tap on a reaction at the bottom of a story asks "React to this story?" first, with the story
+     * paused while it's up, and only Continue sends the reaction
+     * ({@link app.morphe.extension.facebook.feed.AskBeforeLike}, #502). Starts off. Read on each tap.
+     */
+    public static final BooleanSetting ASK_BEFORE_REACTING_TO_STORIES =
+            new BooleanSetting("hushfacebook_ask_before_reacting_to_stories", FALSE);
+
+    /**
      * Facebook's own double-tap skip on reels and videos, which a server test keeps off for most
      * accounts: a double tap on the left or right edge skips back or forward 10 seconds, or 5 on a
      * video under 30 seconds ({@link app.morphe.extension.facebook.reels.DoubleTapSkip}, #225).

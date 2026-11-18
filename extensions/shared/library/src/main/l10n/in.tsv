@@ -2943,3 +2943,9 @@ Move seen stories to the end	Pindahkan cerita yang sudah dilihat ke akhir
 Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.	Cerita yang sudah kamu tonton pindah ke akhir baris Cerita, setelah yang belum kamu tonton. Selama Sembunyikan cerita yang sudah dilihat aktif, pengaturan itu didahulukan. Berlaku saat Facebook memuat baris itu lagi.
 Skip location prompts	Lewati permintaan lokasi
 Facebook's page asking you to allow Location Services, the one with Skip and Continue, doesn't show. Location you turn on yourself still works.	Layar Facebook yang memintamu mengizinkan Layanan Lokasi, yang ada Lewati dan Lanjutkan, tidak muncul. Lokasi yang kamu nyalakan sendiri tetap berfungsi.
+# context: switch title under Stories; on, a tap on a reaction at the bottom of a story asks first
+Ask before reacting to a story	Tanya sebelum bereaksi ke cerita
+# context: summary of that switch
+A tap on a reaction at the bottom of a story asks first, and the story waits. Only Continue sends the reaction.	Mengetuk reaksi di bagian bawah cerita akan bertanya dulu, dan cerita menunggu. Hanya Lanjutkan yang mengirim reaksinya.
+# context: the question shown after a tap on a reaction at the bottom of a story; Continue sends the reaction, Cancel leaves it
+React to this story?	Bereaksi ke cerita ini?

@@ -2943,3 +2943,9 @@ Move seen stories to the end	Mover las historias vistas al final
 Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.	Las historias que ya viste pasan al final de la bandeja de historias, después de las que no has visto. Mientras Ocultar historias vistas esté activado, va primero. Se aplica cuando Facebook cargue la bandeja de nuevo.
 Skip location prompts	Omitir avisos de ubicación
 Facebook's page asking you to allow Location Services, the one with Skip and Continue, doesn't show. Location you turn on yourself still works.	La pantalla de Facebook que te pide permitir los Servicios de ubicación, la de Omitir y Continuar, no aparece. La ubicación que actives tú sigue funcionando.
+# context: switch title under Stories; on, a tap on a reaction at the bottom of a story asks first
+Ask before reacting to a story	Preguntar antes de reaccionar a una historia
+# context: summary of that switch
+A tap on a reaction at the bottom of a story asks first, and the story waits. Only Continue sends the reaction.	Tocar una reacción en la parte inferior de una historia pregunta primero, y la historia espera. Solo Continuar envía la reacción.
+# context: the question shown after a tap on a reaction at the bottom of a story; Continue sends the reaction, Cancel leaves it
+React to this story?	¿Reaccionar a esta historia?

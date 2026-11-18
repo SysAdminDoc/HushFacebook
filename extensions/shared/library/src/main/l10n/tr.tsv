@@ -2943,3 +2943,9 @@ Move seen stories to the end	İzlenen hikayeleri sona taşı
 Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.	İzlediğiniz hikayeler, Hikayeler çubuğunda izlemediklerinizin arkasına, sona geçer. İzlenen hikayeleri gizle açıkken önce o uygulanır. Facebook çubuğu bir sonraki yüklediğinde geçerli olur.
 Skip location prompts	Konum isteklerini atla
 Facebook's page asking you to allow Location Services, the one with Skip and Continue, doesn't show. Location you turn on yourself still works.	Facebook'un Konum Hizmetleri'ne izin vermenizi isteyen, Atla ve Devam Et düğmeli ekranı gösterilmez. Kendiniz açtığınız konum çalışmaya devam eder.
+# context: switch title under Stories; on, a tap on a reaction at the bottom of a story asks first
+Ask before reacting to a story	Hikayeye tepki vermeden önce sor
+# context: summary of that switch
+A tap on a reaction at the bottom of a story asks first, and the story waits. Only Continue sends the reaction.	Bir hikayenin altındaki bir tepkiye dokunmak önce sorar ve hikaye bekler. Tepkiyi yalnızca Devam gönderir.
+# context: the question shown after a tap on a reaction at the bottom of a story; Continue sends the reaction, Cancel leaves it
+React to this story?	Bu hikayeye tepki verilsin mi?

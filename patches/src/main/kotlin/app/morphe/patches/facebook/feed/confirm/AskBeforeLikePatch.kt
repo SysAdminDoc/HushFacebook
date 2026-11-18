@@ -83,6 +83,9 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   The armv7 build's has two arms, so there it branches with if-nez instead, and the guard takes
  *   that branch's way past the Follow arm.
  *
+ * The story reaction handlers (#502) and how a story is paused under the question are in
+ * StoryReactions.kt.
+ *
  * Each hook goes first thing. It hands the extension the handler's own descriptor, the instance and
  * the arguments, and returns at once when the extension holds the tap. Continue calls the same
  * handler again by reflection, which the extension lets through.
@@ -114,6 +117,8 @@ internal const val REEL_FOLLOW = 7
 internal const val REEL_COLLAB_FOLLOW = 8
 internal const val POST_FOLLOW = 9
 internal const val POST_ATTACHMENT_FOLLOW = 10
+internal const val STORY_REACTION = 11
+internal const val STORY_SINGLE_REACTION = 12
 
 private const val VIEW = "Landroid/view/View;"
 private const val SESSION = "Lcom/facebook/auth/usersession/FbUserSession;"
@@ -123,6 +128,12 @@ private const val UNIT = "Lkotlin/Unit;"
 
 /** Registers the hook borrows: v0 to v4, free before the handler's own first instruction. */
 private const val BORROWED = 5
+
+/**
+ * The primitive parameters the hook can hand over, each with the class it boxes into: one register
+ * wide, so a /range call of that one register boxes it. Replay unboxes them by reflection.
+ */
+private val BOXED = mapOf("Z" to "Ljava/lang/Boolean;", "I" to "Ljava/lang/Integer;")
 
 private val CONST_STRINGS = setOf(Opcode.CONST_STRING, Opcode.CONST_STRING_JUMBO)
 
@@ -152,18 +163,20 @@ internal data class LikeHandler(val kind: Int, val method: Method, val arm: Arm?
 
 /**
  * Asks "Like or unlike this post?" before a tap on Like goes through, with a switch each for posts,
- * reels and comments (#437, #443), and "Follow or unfollow this account?" before a tap on Follow in
- * a post or beside a reel, with a switch each for posts and reels (#477).
+ * reels and comments (#437, #443), "Follow or unfollow this account?" before a tap on Follow in a
+ * post or beside a reel, with a switch each for posts and reels (#477), and "React to this story?"
+ * before a tap on a reaction at the bottom of a story, which pauses the story while it's up (#502).
  *
- * In the default selection with all five switches off, so nothing changes until one is turned on.
- * A build missing a Follow handler keeps the Like questions and warns.
+ * In the default selection with all six switches off, so nothing changes until one is turned on.
+ * A build missing a Follow or story reaction handler keeps the Like questions and warns.
  */
 @Suppress("unused")
 val askBeforeLikePatch = bytecodePatch(
     name = "Ask before a like",
-    description = "Switches that make a tap on Like under a post, beside a reel or under a comment, or on Follow in a " +
-        "post or beside a reel, ask first, and only Continue goes ahead, so a stray tap doesn't like or follow. All " +
-        "five start off. Turn them on in Hushfacebook settings > News feed, Reels and Watch, and Comments and writing.",
+    description = "Switches that make a tap on Like under a post, beside a reel or under a comment, on Follow in a " +
+        "post or beside a reel, or on a reaction at the bottom of a story, ask first, and only Continue goes ahead, " +
+        "so a stray tap doesn't like, follow or react. The story waits while the question is up. All six start off. " +
+        "Turn them on in Hushfacebook settings > News feed, Reels and Watch, Stories, and Comments and writing.",
 ) {
     // Feed holds 15 already. A like is public, so the guard sits with the other switches that keep a
     // stray tap or a glance from showing up for someone else.
@@ -179,19 +192,24 @@ val askBeforeLikePatch = bytecodePatch(
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so a tap on Follow goes through without asking.")
         }
+        try {
+            askBeforeStoryReaction()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so a story reaction goes through without asking.")
+        }
         enableStatus("askBeforeLike")
     }
 }
 
-private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
+internal fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
 
-private fun Method.code() = implementation?.instructions?.toList() ?: emptyList()
+internal fun Method.code() = implementation?.instructions?.toList() ?: emptyList()
 
 private fun Instruction.loads(string: String) =
     opcode in CONST_STRINGS && ((this as ReferenceInstruction).reference as StringReference).string == string
 
 /** The methods of the app holding [string]. */
-private fun BytecodePatchContext.methodsHolding(string: String): List<Method> =
+internal fun BytecodePatchContext.methodsHolding(string: String): List<Method> =
     classDefByStrings(string, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
         .flatMap { classDef -> classDef.methods.filter { holdsString(it, string) } }
@@ -235,7 +253,7 @@ internal fun descriptorOf(method: Method) =
     "${method.definingClass}->${method.name}(${method.parameterTypes.joinToString("")})${method.returnType}"
 
 /** Each instruction's index from its code address. */
-private fun indexOfAddress(code: List<Instruction>): Map<Int, Int> =
+internal fun indexOfAddress(code: List<Instruction>): Map<Int, Int> =
     code.runningFold(0) { address, it -> address + it.codeUnits }.withIndex().associate { (index, address) -> address to index }
 
 /**
@@ -315,12 +333,12 @@ private fun switchArmOf(method: Method, marker: String, parameter: Int?): Arm {
 }
 
 /** Throws unless the hook can go first thing in [handler]'s method. */
-private fun checkHandler(handler: LikeHandler, what: String) {
+internal fun checkHandler(handler: LikeHandler, what: String) {
     val method = handler.method
     val name = "$what ${method.definingClass}->${method.name}"
     if (method.localRegisterCount() < BORROWED) refuse("$name has fewer than $BORROWED locals")
     method.parameterTypes.forEachIndexed { index, type ->
-        if (type.toString() != "Z" && !type.startsWith("L") && !type.startsWith("[")) {
+        if (type.toString() !in BOXED && !type.startsWith("L") && !type.startsWith("[")) {
             refuse("$name takes a ${type}, which the hook can't hand over")
         }
         if (method.parameterRegisterNumber(index) > 255) refuse("$name keeps parameter $index out of reach of an array store")
@@ -432,8 +450,9 @@ internal fun likeHook(handler: LikeHandler): String {
         method.parameterTypes.forEachIndexed { index, type ->
             val p = method.parameterRegister(index)
             appendLine("const/16 v3, ${index + 1}")
-            if (type.toString() == "Z") {
-                appendLine("invoke-static/range { $p .. $p }, Ljava/lang/Boolean;->valueOf(Z)Ljava/lang/Boolean;")
+            val box = BOXED[type.toString()]
+            if (box != null) {
+                appendLine("invoke-static/range { $p .. $p }, $box->valueOf(${type})$box")
                 appendLine("move-result-object v4")
                 appendLine("aput-object v4, v2, v3")
             } else {
@@ -474,7 +493,7 @@ internal fun BytecodePatchContext.askBeforeLike() = hookAll(likeHandlers())
 /** Finds all four Follow handlers first, so a build missing one refuses before any code changes. */
 internal fun BytecodePatchContext.askBeforeFollow() = hookAll(followHandlers())
 
-private fun BytecodePatchContext.hookAll(handlers: List<LikeHandler>) {
+internal fun BytecodePatchContext.hookAll(handlers: List<LikeHandler>) {
     handlers.forEach { handler ->
         mutableClassDefBy(handler.method.definingClass).findMutableMethodOf(handler.method).apply {
             addInstructionsWithLabels(0, likeHook(handler), ExternalLabel("facebook", getInstruction(0)))

@@ -2938,3 +2938,9 @@ Move seen stories to the end	将已看过的快拍移到末尾
 Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.	你已看过的快拍会移到快拍栏末尾，排在没看过的后面。开启“隐藏已看过的快拍”时，它优先生效。在 Facebook 下次加载快拍栏时生效。
 Skip location prompts	跳过位置提示
 Facebook's page asking you to allow Location Services, the one with Skip and Continue, doesn't show. Location you turn on yourself still works.	Facebook 请求你允许定位服务、带有跳过和继续按钮的页面不会再显示。你自己开启的定位照常可用。
+# context: switch title under Stories; on, a tap on a reaction at the bottom of a story asks first
+Ask before reacting to a story	回应快拍前先询问
+# context: summary of that switch
+A tap on a reaction at the bottom of a story asks first, and the story waits. Only Continue sends the reaction.	点按快拍底部的回应会先询问，快拍会暂停等待。只有点“继续”才会发送回应。
+# context: the question shown after a tap on a reaction at the bottom of a story; Continue sends the reaction, Cancel leaves it
+React to this story?	要回应这条快拍吗？

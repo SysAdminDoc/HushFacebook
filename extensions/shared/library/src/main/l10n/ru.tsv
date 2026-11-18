@@ -3001,3 +3001,9 @@ Move seen stories to the end	Перемещать просмотренные И�
 Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.	Уже просмотренные Истории переходят в конец панели Историй, после непросмотренных. Пока включено «Скрывать просмотренные Истории», оно действует первым. Применяется при следующей загрузке панели Facebook.
 Skip location prompts	Пропускать запросы геолокации
 Facebook's page asking you to allow Location Services, the one with Skip and Continue, doesn't show. Location you turn on yourself still works.	Экран Facebook с просьбой разрешить службы геолокации, тот, где «Пропустить» и «Продолжить», не показывается. Геолокация, которую вы включаете сами, по-прежнему работает.
+# context: switch title under Stories; on, a tap on a reaction at the bottom of a story asks first
+Ask before reacting to a story	Спрашивать перед реакцией на Историю
+# context: summary of that switch
+A tap on a reaction at the bottom of a story asks first, and the story waits. Only Continue sends the reaction.	Нажатие на реакцию внизу Истории сначала спрашивает, и История ждёт. Только «Продолжить» отправляет реакцию.
+# context: the question shown after a tap on a reaction at the bottom of a story; Continue sends the reaction, Cancel leaves it
+React to this story?	Отреагировать на эту Историю?

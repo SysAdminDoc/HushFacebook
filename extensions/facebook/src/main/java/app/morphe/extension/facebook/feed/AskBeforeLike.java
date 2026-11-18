@@ -33,15 +33,22 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.BooleanSetting;
 
 /**
- * Asks "Like or unlike this post?" before a tap on Like goes through (#437, #443), and "Follow or
- * unfollow this account?" before a tap on Follow (#477). The hook sits first in each of Facebook's
- * Like handlers: the feed footer's four, the Reels sidebar's Like and a comment's two (the comment
- * list's and the one drawn inline under a feed post). It sits first in four Follow handlers too: a
- * reel's author row, a collaborator reel's author row, the Follow link beside a poster's name and a
- * post attachment's Follow button. It hands over the handler's own descriptor and arguments, and
- * while the switch for that kind is on, the handler returns without liking or following and a
- * question goes up. Continue runs the same handler again with the same arguments, which this time
- * passes, so the like or follow is Facebook's own. Cancel, Back or a tap outside leaves it untouched.
+ * Asks "Like or unlike this post?" before a tap on Like goes through (#437, #443), "Follow or
+ * unfollow this account?" before a tap on Follow (#477), and "React to this story?" before a tap on
+ * a story's reaction (#502). The hook sits first in each of Facebook's Like handlers: the feed
+ * footer's four, the Reels sidebar's Like and a comment's two (the comment list's and the one drawn
+ * inline under a feed post). It sits first in four Follow handlers too: a reel's author row, a
+ * collaborator reel's author row, the Follow link beside a poster's name and a post attachment's
+ * Follow button. And in the story viewer's two reaction handlers: the reaction bar's, which the
+ * reply bar, its long press, the suggested footer and a swipe up all send through, and the single
+ * reaction button's. It hands over the handler's own descriptor and arguments, and while the switch
+ * for that kind is on, the handler returns without liking, following or reacting and a question goes
+ * up. Continue runs the same handler again with the same arguments, which this time passes, so the
+ * like, follow or reaction is Facebook's own. Cancel, Back or a tap outside leaves it untouched.
+ *
+ * <p>A story keeps playing under a plain dialog, so the story question pauses it the way Facebook
+ * pauses a story for its own dialogs, under their reason, and lets it play again as the question
+ * goes. The patch fills in the three stubs that reach the story viewer's pauser.
  *
  * <p>One question is up at a time; a tap that comes while it's showing over the same screen is held
  * without a second one. Off, paused, before the settings are ready, with no screen to ask on, or
@@ -76,14 +83,28 @@ public final class AskBeforeLike {
     public static final int POST_FOLLOW = 9;
     /** The Follow button on a post's attachment, a click listener's onClick. */
     public static final int POST_ATTACHMENT_FOLLOW = 10;
+    /**
+     * The story viewer's reaction bar handler, which the reply bar, its long press, the suggested
+     * footer, a swipe up and the single reaction button all send a reaction through.
+     */
+    public static final int STORY_REACTION = 11;
+    /** The single reaction button's own click, a merged lambda's arm that sends the reaction straight away. */
+    public static final int STORY_SINGLE_REACTION = 12;
 
     private static final String[] KINDS = {"post footer like", "post plugin footer like", "reel like", "comment like",
             "post footer touch like", "post footer click like", "inline comment like", "reel follow", "collaborator reel follow",
-            "post header follow", "post attachment follow"};
+            "post header follow", "post attachment follow", "story reaction", "story single reaction"};
     private static final int CONTEXT_DEPTH = 10;
     static final String ASKED = "asked before a like";
     static final String ASKED_FOLLOW = "asked before a follow";
+    static final String ASKED_STORY = "asked before a story reaction";
     static final String HELD = "held a tap while asking";
+
+    /** What {@link #storyPauserOf} answers before the patch fills it, for tests: itself when handed it. */
+    @Nullable
+    static Object pauserForTests;
+    /** Pauses less resumes, counted by the stubs before the patch fills them, for tests. */
+    static int pausedForTests;
 
     /** Each handler the hooks name, found once. */
     private static final Map<String, Method> HANDLERS = new ConcurrentHashMap<>();
@@ -121,7 +142,7 @@ public final class AskBeforeLike {
                 return false;
             }
             open = new WeakReference<>(question);
-            HookStatus.counted(FamilyNames.ASK_BEFORE_LIKE, follows(kind) ? ASKED_FOLLOW : ASKED);
+            HookStatus.counted(FamilyNames.ASK_BEFORE_LIKE, story(kind) ? ASKED_STORY : follows(kind) ? ASKED_FOLLOW : ASKED);
             Logger.printDebug(() -> "Ask before a like: asked before a " + KINDS[kind]);
             return true;
         } catch (Throwable failure) {
@@ -149,6 +170,9 @@ public final class AskBeforeLike {
             case POST_FOLLOW:
             case POST_ATTACHMENT_FOLLOW:
                 return Settings.ASK_BEFORE_FOLLOWING_POSTS;
+            case STORY_REACTION:
+            case STORY_SINGLE_REACTION:
+                return Settings.ASK_BEFORE_REACTING_TO_STORIES;
             default:
                 return null;
         }
@@ -159,7 +183,13 @@ public final class AskBeforeLike {
         return kind >= REEL_FOLLOW && kind <= POST_ATTACHMENT_FOLLOW;
     }
 
+    /** Whether [kind] is a story reaction handler's. */
+    static boolean story(int kind) {
+        return kind == STORY_REACTION || kind == STORY_SINGLE_REACTION;
+    }
+
     private static String questionOf(Context context, int kind) {
+        if (story(kind)) return L10n.t(context, "React to this story?");
         if (follows(kind)) return L10n.t(context, "Follow or unfollow this account?");
         if (kind == REEL) return L10n.t(context, "Like or unlike this reel?");
         if (kind == COMMENT || kind == COMMENT_INLINE) return L10n.t(context, "Like or unlike this comment?");
@@ -220,9 +250,98 @@ public final class AskBeforeLike {
                 .setPositiveButton(L10n.t(activity, "Continue"), (shown, which) -> again(kind, descriptor, held))
                 .setNegativeButton(L10n.t(activity, "Cancel"), null)
                 .create();
-        question.setOnDismissListener(gone -> forget(question));
-        question.show();
+        Object pauser = story(kind) ? storyPauser(call) : null;
+        boolean paused = pauser != null && holdStory(pauser);
+        if (story(kind) && !paused) Logger.printDebug(() -> "Ask before a like: the story plays on under the question");
+        question.setOnDismissListener(gone -> {
+            forget(question);
+            if (paused) letStoryPlay(pauser);
+        });
+        try {
+            question.show();
+        } catch (RuntimeException failure) {
+            if (paused) letStoryPlay(pauser);
+            throw failure;
+        }
         return question;
+    }
+
+    /**
+     * The story viewer's pauser for a story reaction's [call]: the first of its values, or of the
+     * values one keeps in an instance field, that {@link #storyPauserOf} leads to one from. Both
+     * reaction handlers keep the story viewer's environment in a field. Null when none does or the
+     * search fails, and the question goes up over a playing story.
+     */
+    @Nullable
+    static Object storyPauser(Object[] call) {
+        try {
+            for (Object value : call) {
+                Object pauser = value == null ? null : storyPauserOf(value);
+                if (pauser != null) return pauser;
+            }
+            for (Object value : call) {
+                if (value == null) continue;
+                for (Class<?> type = value.getClass(); type != null && type != Object.class && !framework(type);
+                        type = type.getSuperclass()) {
+                    for (Field field : type.getDeclaredFields()) {
+                        if (Modifier.isStatic(field.getModifiers()) || field.getType().isPrimitive()) continue;
+                        field.setAccessible(true);
+                        Object kept = field.get(value);
+                        Object pauser = kept == null ? null : storyPauserOf(kept);
+                        if (pauser != null) return pauser;
+                    }
+                }
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.ASK_BEFORE_LIKE, "story pauser", failure);
+        }
+        return null;
+    }
+
+    /** Whether [type] is Android's or Java's own, whose fields keep nothing of the story viewer's. */
+    private static boolean framework(Class<?> type) {
+        String name = type.getName();
+        return name.startsWith("android.") || name.startsWith("java.") || name.startsWith("androidx.");
+    }
+
+    /** Pauses the story [pauser] belongs to. False when the pause failed, so nothing waits to resume. Never throws. */
+    private static boolean holdStory(Object pauser) {
+        try {
+            pauseStory(pauser);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.ASK_BEFORE_LIKE, "story pause while asking", failure);
+            return false;
+        }
+    }
+
+    /** Lets the story [pauser] belongs to play again. Never throws. */
+    private static void letStoryPlay(Object pauser) {
+        try {
+            resumeStory(pauser);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.ASK_BEFORE_LIKE, "story play after asking", failure);
+        }
+    }
+
+    /**
+     * Filled in by the patch: the story viewer's pauser when [environment] is the story viewer's
+     * environment, else null. Answers [environment] itself when it's {@link #pauserForTests} until
+     * filled.
+     */
+    @Nullable
+    public static Object storyPauserOf(Object environment) {
+        return environment == pauserForTests ? environment : null;
+    }
+
+    /** Filled in by the patch: Facebook's pause, under the reason it pauses a story for its own dialogs. */
+    public static void pauseStory(Object pauser) {
+        pausedForTests++;
+    }
+
+    /** Filled in by the patch: Facebook's resume from that reason. */
+    public static void resumeStory(Object pauser) {
+        pausedForTests--;
     }
 
     /** Runs the held handler again, which its hook lets through this time. Never throws. */
@@ -232,7 +351,8 @@ public final class AskBeforeLike {
             handler(descriptor).invoke(call[0], Arrays.copyOfRange(call, 1, call.length));
             Logger.printDebug(() -> "Ask before a like: the " + KINDS[kind] + " went through");
         } catch (Throwable failure) {
-            HookStatus.threw(FamilyNames.ASK_BEFORE_LIKE, follows(kind) ? "follow after asking" : "like after asking", failure);
+            HookStatus.threw(FamilyNames.ASK_BEFORE_LIKE,
+                    story(kind) ? "reaction after asking" : follows(kind) ? "follow after asking" : "like after asking", failure);
         } finally {
             replaying = false;
         }

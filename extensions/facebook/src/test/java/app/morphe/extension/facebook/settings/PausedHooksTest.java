@@ -809,15 +809,16 @@ public class PausedHooksTest {
                 DoubleTapLike::holdBackTap,
                 () -> DoubleTapLike.holdBackFeedTap(null),
                 DoubleTapLike::holdBackFeedLike));
-        // A tap on Like under a post, beside a reel or under a comment, or on Follow in a post or
-        // beside a reel, is held while a question goes up.
+        // A tap on Like under a post, beside a reel or under a comment, on Follow in a post or
+        // beside a reel, or on a story's reaction, is held while a question goes up.
         probes.put(PatchFamily.ASK_BEFORE_LIKE, Arrays.asList(
                 () -> asksBeforeALike(AskBeforeLike.POST_FOOTER),
                 () -> asksBeforeALike(AskBeforeLike.REEL),
                 () -> asksBeforeALike(AskBeforeLike.COMMENT),
                 () -> asksBeforeALike(AskBeforeLike.POST_TOUCH),
                 () -> asksBeforeALike(AskBeforeLike.POST_FOLLOW),
-                () -> asksBeforeALike(AskBeforeLike.REEL_COLLAB_FOLLOW)));
+                () -> asksBeforeALike(AskBeforeLike.REEL_COLLAB_FOLLOW),
+                () -> asksBeforeALike(AskBeforeLike.STORY_REACTION)));
         // Facebook's double-tap skip test, read as off, is answered on, and the seconds it shows stay hidden.
         probes.put(PatchFamily.DOUBLE_TAP_SKIP, Arrays.asList(
                 () -> DoubleTapSkip.flag(false),

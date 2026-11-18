@@ -4,6 +4,10 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ## Unreleased
 
+### Added
+
+* `Ask before reacting to a story` under Stories makes a tap on a reaction at the bottom of a story ask "React to this story?" first. The story pauses while the question is up, and only Continue sends the reaction. Cancel, Back or a tap outside sends nothing and the story plays on. It's part of `Ask before a like` and starts off. (#502)
+
 ### Changed
 
 * The README is about half as long. The patch list moved to [docs/patches.md](https://github.com/SysAdminDoc/Hushfacebook/blob/main/docs/patches.md) and the help topics to [docs/help.md](https://github.com/SysAdminDoc/Hushfacebook/blob/main/docs/help.md), and the README links to each topic.

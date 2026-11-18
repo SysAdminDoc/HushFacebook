@@ -2947,3 +2947,9 @@ Move seen stories to the end	將已看過的限時動態移到最後
 Stories you've already watched move to the end of the Stories tray, after the ones you haven't. Hide seen stories goes first while it's on. Applies when Facebook next loads the tray.	你已看過的限時動態會移到橫幅最後，排在還沒看過的後面。開啟「隱藏已看過的限時動態」時，它優先生效。從 Facebook 下次載入橫幅起生效。
 Skip location prompts	略過位置提示
 Facebook's page asking you to allow Location Services, the one with Skip and Continue, doesn't show. Location you turn on yourself still works.	Facebook 要求你允許定位服務、帶有略過和繼續按鈕的畫面不會再顯示。你自己開啟的定位照常可用。
+# context: switch title under Stories; on, a tap on a reaction at the bottom of a story asks first
+Ask before reacting to a story	對限時動態留下心情前先詢問
+# context: summary of that switch
+A tap on a reaction at the bottom of a story asks first, and the story waits. Only Continue sends the reaction.	點按限時動態底部的心情會先詢問，限時動態會暫停等待。只有點「繼續」才會送出心情。
+# context: the question shown after a tap on a reaction at the bottom of a story; Continue sends the reaction, Cancel leaves it
+React to this story?	要對這則限時動態留下心情嗎？
