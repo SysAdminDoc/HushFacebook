@@ -38,14 +38,14 @@ class HideFeedsHeaderFixtureTest {
      * Each declared build's container type, the controller's type, and the controller's and the
      * container's registers, by ABI. 585 handed the container over in v0; 586 hands it over in v12,
      * the last of a range call. Both of 586's builds share the container's type and the registers,
-     * not the controller, and its Android 9 build keeps the registers with types of its own. 587
-     * keeps the registers on both phone ABIs and names the container and the controller apart on
-     * each (read 2026-11-13).
+     * not the controller, and its Android 9 build keeps the registers with types of its own. 588
+     * hands the controller over in v5 and the container in v10, the ends of a range call, on both
+     * phone ABIs, with one container type and a controller of each ABI's own (read 2026-11-18).
      */
     private val expected = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to Triple("LX/0207;", "LX/0Vo1;", 7 to 12),
-            "armeabi-v7a" to Triple("LX/020C;", "LX/0I3Z;", 7 to 12),
+            "arm64-v8a" to Triple("LX/01yH;", "LX/0XyT;", 5 to 10),
+            "armeabi-v7a" to Triple("LX/01yH;", "LX/0XyV;", 5 to 10),
             "arm64-v8a-minapi28-storeless" to Triple("LX/03tJ;", "LX/0giD;", 7 to 12),
         ),
     )
@@ -53,15 +53,15 @@ class HideFeedsHeaderFixtureTest {
     /** Each declared build's container controller and the runnable it posts with whether the filters show, by ABI. */
     private val room = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to ("LX/0W6z;" to "LX/0WGR;"),
-            "armeabi-v7a" to ("LX/0eJA;" to "LX/0eZS;"),
+            "arm64-v8a" to ("LX/0YQC;" to "LX/0YcD;"),
+            "armeabi-v7a" to ("LX/0YQE;" to "LX/0YcF;"),
             "arm64-v8a-minapi28-storeless" to ("LX/0hLt;" to "LX/0hZb;"),
         ),
     )
 
     /**
      * Where each declared build's runnable reads whether the filters show, and the register it lands
-     * in, by ABI. 586 read it at 9; 587's run() reads it at 4 on both phone ABIs (read 2026-11-13).
+     * in, by ABI. 586 read it at 9; 587's and 588's run() read it at 4 on both phone ABIs (read 2026-11-18).
      */
     private val roomReadAt = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(

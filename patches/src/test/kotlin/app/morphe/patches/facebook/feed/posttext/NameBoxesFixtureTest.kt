@@ -53,15 +53,14 @@ class NameBoxesFixtureTest {
 
     /** Each declared build's places, by ABI, read from the dex with the probe. */
     private val expected = mapOf(
-        // 587, read 2026-11-16: `LX/03CI;->render` names two builders "profile_name", `LX/0C8e;` hands its
-        // title to a container in two methods (`render` for a name alone, `A07` for a name over its line),
-        // the title an open story shows (`LX/0C8Y;`, StoryViewerTitleComponent) wraps its name in one
-        // style in `render`, and `LX/08j3;->A19` makes the header's `LX/03J1;` props as a `LX/09Y8;` or,
-        // for a long name, a `LX/039q;`.
+        // 588, read 2026-11-18: `LX/03rh;->render` names two builders "profile_name", `LX/0BF0;` hands its
+        // title to a container in two methods (`render` and `A0A`), the title an open story shows
+        // (`LX/0BEu;`, StoryViewerTitleComponent) wraps its name in one style in `render`, and
+        // `LX/08yM;->A1B` makes the header's `LX/03GS;` props as a `LX/09BT;` or a `LX/02pb;`.
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
             "arm64-v8a" to Hosts(
-                "LX/03CI;", 2, setOf("LX/0C8e;", "LX/0C8Y;"), 3, "LX/09Y7;", "LX/03J1;", setOf("LX/09Y8;", "LX/039q;"),
-                setOf("A08/p1", "A0A/p2"),
+                "LX/03rh;", 2, setOf("LX/0BEu;", "LX/0BF0;"), 3, "LX/09BS;", "LX/03GS;", setOf("LX/09BT;", "LX/02pb;"),
+                setOf("A0B/p1", "A0D/p2"),
             ),
         ),
     )

@@ -40,9 +40,9 @@ class CaptionBackdropFixtureTest {
 
     /** Each declared build's places, by ABI, read from the dex with the probe. */
     private val expected = mapOf(
-        // 587, read 2026-11-12: the builder method is `A02` on its class, its line limit `LX/03GY;->A01:I`.
+        // 588, read 2026-11-18: the builder method is `A02` on its class, its line limit `LX/0458;->A01:I`.
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to Place("LX/08hz;", "LX/03GY;", "LX/01PD;", "LX/02H4;"),
+            "arm64-v8a" to Place("LX/09GM;", "LX/0458;", "LX/01SY;", "LX/02FS;"),
         ),
     )
 
@@ -52,8 +52,8 @@ class CaptionBackdropFixtureTest {
      */
     private val expectedHost = mapOf(
         AppCompatibilities.FACEBOOK_TARGET_VERSION to mapOf(
-            "arm64-v8a" to "LX/08hz;",
-            "armeabi-v7a" to "LX/08hl;",
+            "arm64-v8a" to "LX/09GM;",
+            "armeabi-v7a" to "LX/09GP;",
         ),
     )
 
