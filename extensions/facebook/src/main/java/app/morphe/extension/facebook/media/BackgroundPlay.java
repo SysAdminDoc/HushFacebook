@@ -63,6 +63,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *       plain one ({@link #title}). Every other video gets a no at once.</li>
  *   <li>The notification's own server flag reads on while that one video continues
  *       ({@link #notificationAllowed}), until the handler's return to Facebook has hidden it.</li>
+ *   <li>A video playing in the picture-in-picture window counts as yours when the phone locks
+ *       ({@link #windowLocked}), since you left it playing there.</li>
  * </ul>
  *
  * <p>Off, paused, before the settings are ready, for any handler of Facebook's own, or when anything
@@ -372,6 +374,18 @@ public final class BackgroundPlay {
         }
         if (manager == null && MANAGER_ASKED.compareAndSet(false, true)) makeManager(context);
         if (player != null) pauseForLeave(player);
+    }
+
+    /**
+     * The phone locked with [player] playing in the window (#495). Android stops the window's screen
+     * without a pause, the same gap the headphones button closes, so with Keep playing in the
+     * background on this takes the same way out. A video you paused there stays paused.
+     */
+    static void windowLocked(@Nullable Object player, Context context) throws Exception {
+        if (player == null || !Utils.settingsReady() || !Settings.KEEP_PLAYING_IN_BACKGROUND.get()) return;
+        if (!reader.playing(player)) return;
+        leaveWindow(player, context);
+        Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> "Background play: window locked");
     }
 
     /** Pauses the window's video while it plays, so Facebook records the pause its manager reads. */
