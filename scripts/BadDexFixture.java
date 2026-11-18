@@ -85,7 +85,8 @@ import java.util.Set;
  * selector's name, with Keep the reel speed's call to {@code ReelSpeed.picked} first. And the tab
  * bar's jewel count, holding its log name, with Hide the Reels tab dot's call to
  * {@code ReelsTabDot.clear} first. And the three places Facebook asks its configured tabs about a
- * link, holding "extra_launch_uri", "DEEPLINK" and "target_tab_id", each asking {@code TabBarFilter}
+ * link, two holding "extra_launch_uri" and "target_tab_id" and the Friends link in the helper class
+ * its rule names, each asking {@code TabBarFilter}
  * once, as the tab links patch has them. And a launcher badge writer of 18 registers, whose count
  * parameter sits in v17, with Hide tab badges' call to {@code TabBadges.iconCount} first as a range
  * call, as the patch has to make it there. Beside each
@@ -194,6 +195,7 @@ public class BadDexFixture {
     private static final ImmutableMethodReference ICON_COUNT = method(TAB_BADGES, "iconCount", "I", "I");
     private static final ImmutableMethodReference STORE_COUNT = method(ICON_BADGER, "store", "V", "I");
     private static final String TAB_LINKS = "Lfixture/TabLinks;";
+    private static final String FRIENDS_LINKS = "Lcom/facebook/friending/jewel/uri/FriendsUriMapHelper;";
     private static final String INTENT = "Landroid/content/Intent;";
     private static final String TAB_BAR_FILTER = "Lapp/morphe/extension/facebook/navigation/TabBarFilter;";
     private static final ImmutableMethodReference LAUNCHED_TAB = method(TAB_BAR_FILTER, "launchedTab", OBJECT, OBJECT);
@@ -1159,27 +1161,36 @@ public class BadDexFixture {
     /**
      * The three places Facebook asks its configured tabs about a link, each holding its strings in v0
      * with no tab in v1: the startActivity lookup, an instance method of a singleton on 582, taking
-     * an Intent and a session and returning a TabTag; the Friends link and the target_tab_id check,
-     * instance methods taking a context, an Intent and a session and returning the Intent. The
-     * target_tab_id check also holds the /menu/bookmarks path its rule names, since arm64 582 reads
-     * "target_tab_id" through a string table. Each asks the extension when its flag says so, as the
-     * tab links patch does.
+     * an Intent and a session and returning a TabTag; the target_tab_id check, an instance method
+     * taking a context, an Intent and a session and returning the Intent. The target_tab_id check
+     * also holds the /menu/bookmarks path its rule names, since arm64 582 reads "target_tab_id"
+     * through a string table. Each asks the extension when its flag says so, as the tab links patch
+     * does. {@link #friendsLinks} is the third.
      */
-    private static ClassDef tabLinks(boolean launched, boolean friends, boolean configured) {
-        return tabLinks(launched, friends, configured, true);
+    private static ClassDef tabLinks(boolean launched, boolean configured) {
+        return tabLinks(launched, configured, true);
     }
 
     /** The same, with the launch lookup handing back the extension's Object answer uncast unless [castBack]. */
-    private static ClassDef tabLinks(boolean launched, boolean friends, boolean configured, boolean castBack) {
+    private static ClassDef tabLinks(boolean launched, boolean configured, boolean castBack) {
         return new ImmutableClassDef(TAB_LINKS, AccessFlags.PUBLIC.getValue(), OBJECT, null, null, null, null,
                 Arrays.asList(
                         define(TAB_LINKS, "launchTab", TAB_TAG, false,
                                 tabLinkBody("extra_launch_uri", launched ? LAUNCHED_TAB : null, 5, 1, castBack),
                                 INTENT, FB_USER_SESSION),
-                        define(TAB_LINKS, "friendsLink", INTENT, false,
-                                tabLinkBody("DEEPLINK", friends ? FRIENDS_TAB : null, 6, 4, true), CONTEXT, INTENT, FB_USER_SESSION),
                         define(TAB_LINKS, "targetTabLink", INTENT, false, configuredTabBody(configured),
                                 CONTEXT, INTENT, FB_USER_SESSION)));
+    }
+
+    /**
+     * The Friends link, the one link method of the helper class Redex keeps the name of, its rule
+     * naming that class since 588 reads the method's strings through string tables. It asks the
+     * extension when [friends] says so.
+     */
+    private static ClassDef friendsLinks(boolean friends) {
+        return new ImmutableClassDef(FRIENDS_LINKS, AccessFlags.PUBLIC.getValue(), OBJECT, null, null, null, null,
+                Arrays.asList(define(FRIENDS_LINKS, "friendsLink", INTENT, false,
+                        tabLinkBody("friends", friends ? FRIENDS_TAB : null, 6, 4, true), CONTEXT, INTENT, FB_USER_SESSION)));
     }
 
     /**
@@ -1790,7 +1801,7 @@ public class BadDexFixture {
                 attachmentTap(tapHook(), Collections.<Instruction>emptyList()), doubleTapLike(),
                 speedToast(runHook(), Collections.<Instruction>emptyList()), reelSpeed(),
                 jewelController(dotHook(4), Collections.<Instruction>emptyList()), reelsTabDot(),
-                tabLinks(true, true, true), tabBarFilter(), postText(FILLED_STUB, FILLED_STUB),
+                tabLinks(true, true), friendsLinks(true), tabBarFilter(), postText(FILLED_STUB, FILLED_STUB),
                 postSources(FILLED_STUB, FILLED_STUB), mailbox(typingHook(), 1), iconBadger(iconHook()), tabBadges()));
         classes.addAll(chatStubs());
         return classes;
@@ -1812,7 +1823,7 @@ public class BadDexFixture {
                 attachmentTap(Collections.<Instruction>emptyList(), Collections.<Instruction>emptyList()),
                 speedToast(Collections.<Instruction>emptyList(), Collections.<Instruction>emptyList()),
                 jewelController(Collections.<Instruction>emptyList(), Collections.<Instruction>emptyList()),
-                tabLinks(false, false, false), mailbox(Collections.<Instruction>emptyList(), 0),
+                tabLinks(false, false), friendsLinks(false), mailbox(Collections.<Instruction>emptyList(), 0),
                 iconBadger(Collections.<Instruction>emptyList())));
         return classes;
     }
@@ -2420,12 +2431,12 @@ public class BadDexFixture {
 
         // contract: each place Facebook asks its configured tabs about a link left without the tab
         // links patch's call.
-        dexes.put("bad-tab-links-launch-hook-missing", replaced(good(), tabLinks(false, true, true)));
-        dexes.put("bad-tab-links-friends-hook-missing", replaced(good(), tabLinks(true, false, true)));
-        dexes.put("bad-tab-links-check-hook-missing", replaced(good(), tabLinks(true, true, false)));
+        dexes.put("bad-tab-links-launch-hook-missing", replaced(good(), tabLinks(false, true)));
+        dexes.put("bad-tab-links-friends-hook-missing", replaced(good(), friendsLinks(false)));
+        dexes.put("bad-tab-links-check-hook-missing", replaced(good(), tabLinks(true, false)));
         // type: the launch lookup returns the extension's Object answer without casting it back to
         // the TabTag it's declared to return, the shape that failed Comment sheet options in 0.16.0.
-        dexes.put("bad-uncast-return", replaced(good(), tabLinks(true, true, true, false)));
+        dexes.put("bad-uncast-return", replaced(good(), tabLinks(true, true, false)));
         // type: a register holding another class passed where the host is taken, the shape that
         // failed the comment faces lambda's class on Facebook 585; one of the host's fields read
         // off it; and the host taken on the branch where an instance-of said v0 isn't one.

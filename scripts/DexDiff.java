@@ -201,6 +201,9 @@ public class DexDiff {
      *       once, anywhere in its body, and no other host method calls it. For a hook that has to
      *       read what the method made first, so it can't come first, and follows no one call.
      * </ul>
+     * For those same four, a &lt;string&gt; written as a class descriptor is held by the methods that
+     * class defines, for a method of a class Redex keeps the name of whose own strings went to
+     * string tables (Facebook 588's FriendsUriMapHelper loads none).
      * For start-call, next-call, sole-call and once-call, a method that loads some of the strings
      * also holds the ones a constructor it calls loads, since a build can move a string into the
      * class the method builds (Facebook 584 builds the seen-state mutation's input, field name and
@@ -1987,12 +1990,17 @@ public class DexDiff {
      * Adds [m] to each rule whose strings it loads, every one of them. A method loading only part of
      * them and calling a constructor is added too, and goes to [partial] with the constructors it
      * calls, which [resolvePartial] reads once every constructor's strings are in [builtWith]. Each
-     * constructor's strings go there as it's read.
+     * constructor's strings go there as it's read. A rule's class descriptor counts as loaded by
+     * the methods of that class.
      */
     private static void recordHolders(String s, Method m, List<Contract> rules, Set<String> wanted,
             Map<Contract, List<Holder>> holders, Map<String, Set<String>> builtWith, List<Partial> partial) {
         if (m.getImplementation() == null) return;
         Set<String> held = null;
+        if (wanted.contains(m.getDefiningClass())) {
+            held = new HashSet<>();
+            held.add(m.getDefiningClass());
+        }
         List<String> builds = null;
         for (Instruction i : m.getImplementation().getInstructions()) {
             if (!(i instanceof ReferenceInstruction)) continue;

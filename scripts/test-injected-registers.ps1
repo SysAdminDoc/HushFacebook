@@ -940,12 +940,13 @@ try {
     $session = 'Lcom/facebook/auth/usersession/FbUserSession;'
     $linkShape = '(Landroid/content/Context;Landroid/content/Intent;*)Landroid/content/Intent;'
     $linkSite = "(Landroid/content/Context;Landroid/content/Intent;$session)Landroid/content/Intent;"
+    $friendsHelper = 'Lcom/facebook/friending/jewel/uri/FriendsUriMapHelper;'
     $tabLinkRules = [ordered]@{
         ("once-call $tabFilter->launchedTab(Ljava/lang/Object;)Ljava/lang/Object; in instance " +
             "(Landroid/content/Intent;$session)$tabTag holding extra_launch_uri") =
             "Lfixture/TabLinks;->launchTab(Landroid/content/Intent;$session)$tabTag"
-        "once-call $tabFilter->friendsTab(Ljava/lang/Object;)Ljava/lang/Object; in instance $linkShape holding DEEPLINK" =
-            "Lfixture/TabLinks;->friendsLink$linkSite"
+        "once-call $tabFilter->friendsTab(Ljava/lang/Object;)Ljava/lang/Object; in instance $linkShape holding $friendsHelper" =
+            "$friendsHelper->friendsLink$linkSite"
         "once-call $tabFilter->configuresTab(ZLjava/lang/Object;)Z in instance $linkShape holding /menu/bookmarks" =
             "Lfixture/TabLinks;->targetTabLink$linkSite"
     }
