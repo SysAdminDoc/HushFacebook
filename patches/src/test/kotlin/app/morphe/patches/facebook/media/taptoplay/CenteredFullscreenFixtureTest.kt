@@ -129,6 +129,14 @@ class CenteredFullscreenFixtureTest {
                 assertEquals("$name: the notice", Opcode.INVOKE_STATIC, notify[2].opcode)
                 val tell = (notify[2] as ReferenceInstruction).reference as MethodReference
                 assertEquals("$name: the notice's target", "${manager.type}->${notice.name}", "${tell.definingClass}->${tell.name}")
+                assertEquals("$name: the notice's parameters", notice.parameterTypes.map(CharSequence::toString),
+                    tell.parameterTypes.map(CharSequence::toString))
+                // Each argument in the slot the notice declares for it, whichever way round this build has them.
+                val p0 = told.implementation!!.registerCount - 2
+                val reasonAt = notice.parameterTypes.map(CharSequence::toString).indexOfFirst { it != manager.type }
+                val arguments = (notify[2] as FiveRegisterInstruction).let { listOf(it.registerC, it.registerD) }
+                assertEquals("$name: the notice's manager argument", p0, arguments[1 - reasonAt])
+                assertEquals("$name: the notice's reason argument", p0 + 1, arguments[reasonAt])
                 assertEquals("$name: the notice stub answers", Opcode.CONST_4, notify[3].opcode)
                 assertEquals("$name: the notice stub returns", Opcode.RETURN, notify[4].opcode)
 

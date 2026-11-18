@@ -45,7 +45,6 @@ internal const val GROOT_FULLSCREEN = "GrootFullscreenVideoPlayer"
 
 private const val ATOMIC_BOOLEAN = "Ljava/util/concurrent/atomic/AtomicBoolean;"
 private const val CONTEXT = "Landroid/content/Context;"
-private const val INTEGER = "Ljava/lang/Integer;"
 
 /** The quiet mode manager's setup: an instance (Context, session, ..., Z)V holding its double-setup complaint. */
 internal fun quietSetups(classDef: ClassDef): List<Method> = classDef.methods.filter {
@@ -69,11 +68,20 @@ internal fun setupCalls(classDef: ClassDef, setup: Method): List<Pair<Method, In
     }?.map { method to it.index }.orEmpty()
 }
 
-/** The manager's static (manager, Integer)V, which tells its listeners quiet mode changed and why. */
-internal fun quietNotices(manager: ClassDef): List<Method> = manager.methods.filter {
-    AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
-        it.parameterTypes.map(CharSequence::toString) == listOf(manager.type, INTEGER)
+/**
+ * The manager's static two-argument void, which tells its listeners quiet mode changed and why: the
+ * manager and the reason, in either order. Up to 587 that's (manager, Integer)V. 588 made the reason
+ * an enum and hands it first (LX/0Bl2;->A00(LX/0uHO;LX/0Bl2;)V on arm64).
+ */
+internal fun quietNotices(manager: ClassDef): List<Method> = manager.methods.filter { method ->
+    val parameters = method.parameterTypes.map(CharSequence::toString)
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" && parameters.size == 2 &&
+        parameters.count { it == manager.type } == 1 && parameters.all { it.startsWith("L") }
 }
+
+/** Which of [notice]'s two parameters is the reason: the one that isn't the manager declaring it. */
+internal fun quietReasonIndex(notice: Method): Int =
+    if (notice.parameterTypes.first().toString() == notice.definingClass) 1 else 0
 
 /** The manager's instance (listener)V that puts a listener in its list: the one calling List.add. */
 internal fun quietListenerAdds(manager: ClassDef): List<Method> = manager.methods.filter { method ->
@@ -88,11 +96,13 @@ internal fun quietListenerAdds(manager: ClassDef): List<Method> = manager.method
 
 /**
  * The reasons [classDef]'s Hide chevron hands [notice]: in each method that logs [QUIET_TAP_LOG],
- * the static Integer last read into the notice call's reason register, as "Class->field".
+ * the static of the reason's type last read into the notice call's reason register, as "Class->field".
  */
 internal fun tapReasons(classDef: ClassDef, notice: Method): List<String> = classDef.methods
     .filter { holdsString(it, QUIET_TAP_LOG) }
     .flatMap { method ->
+        val reasonAt = quietReasonIndex(notice)
+        val reasonType = notice.parameterTypes[reasonAt].toString()
         val code = method.implementation?.instructions?.toList().orEmpty()
         code.indices.mapNotNull { index ->
             val call = code[index]
@@ -101,12 +111,13 @@ internal fun tapReasons(classDef: ClassDef, notice: Method): List<String> = clas
                 target.name != notice.name ||
                 target.parameterTypes.map(CharSequence::toString) != notice.parameterTypes.map(CharSequence::toString)
             ) return@mapNotNull null
-            val register = (call as FiveRegisterInstruction).registerD
+            val arguments = call as FiveRegisterInstruction
+            val register = if (reasonAt == 0) arguments.registerC else arguments.registerD
             val write = (index - 1 downTo 0).map(code::get).firstOrNull {
                 it.opcode.setsRegister() && (it as? OneRegisterInstruction)?.registerA == register
             } ?: return@mapNotNull null
             val read = (write as? ReferenceInstruction)?.reference as? FieldReference
-            if (write.opcode != Opcode.SGET_OBJECT || read == null || read.type != INTEGER) return@mapNotNull null
+            if (write.opcode != Opcode.SGET_OBJECT || read == null || read.type != reasonType) return@mapNotNull null
             "${read.definingClass}->${read.name}"
         }
     }.distinct()
@@ -118,7 +129,7 @@ internal fun tapReasons(classDef: ClassDef, notice: Method): List<String> = clas
  * away and the video centered. The extension's flag stub reads the manager's one AtomicBoolean,
  * the flag the setup and the player's chevron both set. The flag alone folds the panel but leaves
  * the video at the top, so the extension's notice stub then has the manager tell its listeners,
- * through its static (manager, Integer)V, with the reason the Hide chevron gives when it's tapped.
+ * through its static notice ([quietNotices]), with the reason the Hide chevron gives when it's tapped.
  * Not the orientation reason: the listener that slides the video to the middle skips that one,
  * since turning the phone lays everything out again anyway. The player's own component and the
  * comment bar read the flag before the setup and start listening after it, so the manager's
@@ -143,16 +154,18 @@ internal fun BytecodePatchContext.hookCenteredFullscreen() {
     // How the manager tells its listeners, and the reason its orientation subscriber gives.
     val notices = quietNotices(manager)
     val notice = notices.singleOrNull()
-        ?: refuse("expected one static (manager, Integer)V in ${manager.type}, found ${notices.size}")
+        ?: refuse("expected one static notice taking the manager and a reason in ${manager.type}, found ${notices.size}")
     if (!AccessFlags.PUBLIC.isSet(notice.accessFlags)) refuse("${manager.type}->${notice.name} isn't public")
     val reasons = classDefByStrings(QUIET_TAP_LOG, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         .flatMap { tapReasons(it, notice) }.distinct()
     val reason = reasons.singleOrNull()
         ?: refuse("expected the Hide chevron to give one reason, found ${reasons.size}")
+    val reasonAt = quietReasonIndex(notice)
+    val reasonType = notice.parameterTypes[reasonAt].toString()
     val reasonClass = classDefBy(reason.substringBefore("->"))
-    val reasonField = reasonClass.fields.singleOrNull { it.name == reason.substringAfter("->") && it.type == INTEGER }
-        ?: refuse("$reason isn't an Integer field")
+    val reasonField = reasonClass.fields.singleOrNull { it.name == reason.substringAfter("->") && it.type == reasonType }
+        ?: refuse("$reason isn't a $reasonType field")
     if (!AccessFlags.PUBLIC.isSet(reasonClass.accessFlags) || !AccessFlags.PUBLIC.isSet(reasonField.accessFlags)) {
         refuse("$reason isn't public")
     }
@@ -201,8 +214,8 @@ internal fun BytecodePatchContext.hookCenteredFullscreen() {
         0,
         """
             check-cast p0, ${manager.type}
-            sget-object p1, $reason:$INTEGER
-            invoke-static { p0, p1 }, ${manager.type}->${notice.name}(${manager.type}$INTEGER)V
+            sget-object p1, $reason:$reasonType
+            invoke-static { ${if (reasonAt == 0) "p1, p0" else "p0, p1"} }, ${manager.type}->${notice.name}(${notice.parameterTypes.joinToString("")})V
             const/4 p1, 0x1
             return p1
         """,
