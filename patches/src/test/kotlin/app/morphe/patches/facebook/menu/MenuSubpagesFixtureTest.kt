@@ -46,7 +46,7 @@ class MenuSubpagesFixtureTest {
      * shared body into one static taking the stack (`LX/0B3f;->A00` on arm64, `LX/0B37;->A00` on
      * 32-bit), so it has one where earlier builds have two.
      */
-    private val pageChangeCounts = mapOf("587.0.0.39.55" to 1)
+    private val pageChangeCounts = mapOf("588.0.0.42.55" to 1)
 
     private fun pageChangeCount(bundle: String): Int =
         pageChangeCounts.entries.singleOrNull { bundle.contains("-${it.key}-") }?.value ?: 2

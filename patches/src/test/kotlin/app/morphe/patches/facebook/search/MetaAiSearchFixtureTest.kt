@@ -65,7 +65,7 @@ class MetaAiSearchFixtureTest {
      */
     private val directPageCall = mapOf(
         "586.0.0.52.53" to true,
-        "587.0.0.39.55" to true,
+        "588.0.0.42.55" to true,
     )
 
     /** Whether the parser reads the route flag through the suggestion model's accessor, per build: 585 does, not TreeJNI itself. */

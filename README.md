@@ -4,7 +4,7 @@
   <a href="https://github.com/SysAdminDoc/Hushfacebook/releases"><img src="https://img.shields.io/badge/version-0.23.0-0866FF" alt="Version 0.23.0"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License GPL-3.0"></a>
   <img src="https://img.shields.io/badge/platform-Android%2011%2B-3DDC84" alt="Platform Android 11+">
-  <img src="https://img.shields.io/badge/Facebook-587.0.0.39.55-0866FF" alt="Facebook 587.0.0.39.55">
+  <img src="https://img.shields.io/badge/Facebook-588.0.0.42.55-0866FF" alt="Facebook 588.0.0.42.55">
   <img src="https://img.shields.io/badge/for-Morphe%20Manager%202.6.0%2B-8A2BE2" alt="For Morphe Manager 2.6.0 or newer">
 </p>
 
@@ -22,7 +22,7 @@ Each row in the [patch table](docs/patches.md) says how its switch starts. The a
 
 This project has no connection to Meta or to the Morphe project. Neither endorses it, and neither wrote it.
 
-The latest release is [v0.23.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.23.0), with 126 patches. It includes all changes since v0.22.0, among them folding long posts and comments at the length you pick, background play for a video you started, switches for Facebook's new Repost button, watched stories moving to the end of the tray, and the move to Facebook 587.0.0.39.55, as the [changelog](CHANGELOG.md) describes.
+The latest release is [v0.23.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.23.0), with 126 patches. It includes all changes since v0.22.0, among them folding long posts and comments at the length you pick, background play for a video you started, switches for Facebook's new Repost button, watched stories moving to the end of the tray, and the move to Facebook 588.0.0.42.55, as the [changelog](CHANGELOG.md) describes.
 
 [Add to Morphe](https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook) | [Download a release](https://github.com/SysAdminDoc/Hushfacebook/releases/latest) | [Browse the patches](docs/patches.md)
 
@@ -33,7 +33,7 @@ The latest release is [v0.23.0](https://github.com/SysAdminDoc/Hushfacebook/rele
 
 1. Install [Morphe Manager](https://github.com/MorpheApp/morphe-manager) 2.6.0 or newer.
 2. Add Hushfacebook as a patch source: https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook
-3. Download Facebook 587.0.0.39.55 from [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/). Take the bundle labelled (arm64-v8a) (240-640dpi) (Android 11+), build 707414333, or on a phone with only a 32-bit processor the one labelled (arm-v7a) (320dpi) (Android 11+), build 707414338. Both are .apkm files. Take the 64-bit one whenever your phone can run it. The 32-bit one only has images for 320 dpi screens, so on a sharper screen some icons look soft.
+3. Download Facebook 588.0.0.42.55 from [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/). Take the bundle labelled (arm64-v8a) (120-480dpi) (Android 11+), build 707615136, or on a phone with only a 32-bit processor the one labelled (arm-v7a) (320dpi) (Android 11+), build 707615135. Both are .apkm files. Take the 64-bit one whenever your phone can run it. The 32-bit one only has images for 320 dpi screens, so on a sharper screen some icons look soft.
 4. In Morphe Manager, tap **Select other apps**, then **Open APK file**, and pick that file. Android may ask for file access the first time.
 5. Patch with the default selection and install. If Meta's own Facebook is on the phone, Android makes you uninstall it first, as [Package conflict](docs/help.md#package-conflict) explains.
 
@@ -147,19 +147,19 @@ A few rows hand a link to another app instead of going online themselves. **Send
 | Field | Value |
 |---|---|
 | Package | `com.facebook.katana` |
-| Version | `587.0.0.39.55` |
-| 64-bit phones | build `707414333`, the (arm64-v8a) (240-640dpi) (Android 11+) bundle |
-| 32-bit phones | build `707414338`, the (arm-v7a) (320dpi) (Android 11+) bundle |
+| Version | `588.0.0.42.55` |
+| 64-bit phones | build `707615136`, the (arm64-v8a) (120-480dpi) (Android 11+) bundle |
+| 32-bit phones | build `707615135`, the (arm-v7a) (320dpi) (Android 11+) bundle |
 | Minimum Android version | Android 11 |
 | Download | [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/) |
 
-There are 126 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to that build. Older Facebook versions like 586 and 585 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched as they come, since their code sits in a compressed archive the patcher can't read. Hush Unpacker (`helper/`) unpacks the Android 9 and 10 build on the phone. A copy patched from what it makes loads Home and Reels with the patches working on Android 16, though it hasn't been tried on an Android 9 or 10 phone yet. Releases after 0.21.0 attach it as `hush-unpacker-<version>.apk`. On a PC, `scripts/superpack-unpack.ps1` does the same over adb, and with `-Desktop` it doesn't need a phone or emulator at all. For 587 the 64-bit bundle to take is the 240-640dpi one.
+There are 126 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to that build. Older Facebook versions like 587 and 586 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched as they come, since their code sits in a compressed archive the patcher can't read. Hush Unpacker (`helper/`) unpacks the Android 9 and 10 build on the phone. A copy patched from what it makes loads Home and Reels with the patches working on Android 16, though it hasn't been tried on an Android 9 or 10 phone yet. Releases after 0.21.0 attach it as `hush-unpacker-<version>.apk`. On a PC, `scripts/superpack-unpack.ps1` does the same over adb, and with `-Desktop` it doesn't need a phone or emulator at all. For 587 the 64-bit bundle to take is the 120-480dpi one.
 
 SHA-256 of the .apkm files the patches are checked against:
 
 ```text
-707414333  68f371141240729db1efb03be34498b870a4b211d2ce3f707f950774ac59f498  arm64-v8a
-707414338  c7fd78bf39d7e009da6c5ebcfcbfe33a55accc1d8e5e933b6d4f7864f0b031e7  armeabi-v7a
+707615136  6c769c7365274f17350274729ed79872f5b54284ea6fcfc1fd055d0bc23c9e53  arm64-v8a
+707615135  857dc940616ae82b12df9487f4d5e4c8e939f5c2c2d224a34179d32f87a25d18  armeabi-v7a
 ```
 
 On Windows, compare yours with `Get-FileHash -Algorithm SHA256 .\facebook.apkm`, or use `sha256sum facebook.apkm` on Linux and macOS.

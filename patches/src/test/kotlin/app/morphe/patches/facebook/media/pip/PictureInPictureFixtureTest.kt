@@ -66,7 +66,7 @@ class PictureInPictureFixtureTest {
         get() = (this as? ReferenceInstruction)?.reference as? MethodReference
 
     /** Builds whose Reels surface gate reads its answer straight off the settings, with no lambda cases. */
-    private val caselessGate = setOf("586.0.0.52.53", "587.0.0.39.55")
+    private val caselessGate = setOf("586.0.0.52.53", "588.0.0.42.55")
 
     private fun declaredBundles(): Map<String, List<File>> {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()

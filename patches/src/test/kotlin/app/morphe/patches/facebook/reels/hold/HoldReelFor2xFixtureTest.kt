@@ -83,13 +83,13 @@ class HoldReelFor2xFixtureTest {
      * The builds whose speed-up inlines the hold speed's getter, and how many reads of it it makes:
      * 587's arm64-v8a LX/08kZ;->A0X sets the speed from one and compares the player's with two.
      */
-    private val inlinedHoldSpeeds = mapOf("587.0.0.39.55-arm64-v8a" to 3)
+    private val inlinedHoldSpeeds = mapOf("588.0.0.42.55-arm64-v8a" to 3)
 
     /**
      * The phone builds that inline the feed video 2x tip's check into the player's setup, as 586's
      * Android 9 build does: 587 dropped LX/05dZ;->A00 and reads the flag in LX/05iD;->A1D.
      */
-    private val inlinedHoldNux = setOf("587.0.0.39.55-arm64-v8a", "587.0.0.39.55-armeabi-v7a")
+    private val inlinedHoldNux = setOf("588.0.0.42.55-arm64-v8a", "588.0.0.42.55-armeabi-v7a")
 
     /** The ten instructions before [taken] in [code], as their opcodes with what they reference or load, registers left out. */
     private fun readShape(code: List<Instruction>, taken: Int): List<String> = code.subList(maxOf(0, taken - 10), taken).map {

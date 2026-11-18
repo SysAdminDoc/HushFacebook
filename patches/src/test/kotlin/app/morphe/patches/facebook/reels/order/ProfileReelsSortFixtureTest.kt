@@ -57,7 +57,7 @@ class ProfileReelsSortFixtureTest {
      * Bundles with no play count reader: Redex folded it into every getter, which each hold the key
      * (587 armeabi-v7a, whose getters are FCe), so the extension is handed the getter alone.
      */
-    private val noReader = setOf("facebook-587.0.0.39.55-armeabi-v7a.apkm")
+    private val noReader = setOf("facebook-588.0.0.42.55-armeabi-v7a.apkm")
 
     /** Whether [getter] is `this` handed to [reader] and its answer returned, and nothing else. */
     private fun onlyAsks(getter: Method, reader: Method): Boolean {
@@ -70,7 +70,7 @@ class ProfileReelsSortFixtureTest {
     }
 
     /** Builds whose PaginableList extends a Kotlin base that the grid and the tab pass it around as (587: LX/0U1A;). */
-    private val paginatedBase = setOf("587.0.0.39.55")
+    private val paginatedBase = setOf("588.0.0.42.55")
 
     private fun paginated(bundle: File): Set<String> {
         val types = paginatedTypes(FixtureDex.classes(bundle, setOf(PAGINABLE))[PAGINABLE])

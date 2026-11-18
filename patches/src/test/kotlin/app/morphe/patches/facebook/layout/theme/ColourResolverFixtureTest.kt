@@ -48,7 +48,7 @@ class ColourResolverFixtureTest {
     }
 
     /** Builds that make the navigation bar's view in more than one method. */
-    private val navigationBarMakers = mapOf("586.0.0.52.53" to 2, "587.0.0.39.55" to 2)
+    private val navigationBarMakers = mapOf("586.0.0.52.53" to 2, "588.0.0.42.55" to 2)
 
     /** The call the FdsColorScheme wrapper hands the context and token to: the view resolver. */
     private fun viewResolver(scheme: ClassDef): MethodReference = scheme.methods.mapNotNull { method ->

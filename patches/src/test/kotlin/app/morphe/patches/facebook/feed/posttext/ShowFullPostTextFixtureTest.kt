@@ -121,7 +121,7 @@ class ShowFullPostTextFixtureTest {
             "arm64-v8a-minapi28-storeless" to Place("LX/042d;", 5, 0, "LX/030M;", "LX/041X;"),
         ),
         // 587, read 2026-11-12 from this test's output: the cut's answer is in v4 now (v5 before) on both ABIs.
-        "587.0.0.39.55" to mapOf(
+        "588.0.0.42.55" to mapOf(
             "arm64-v8a" to Place("LX/03GO;", 4, 2, "LX/02sT;", "LX/03Ex;"),
             "armeabi-v7a" to Place("LX/03GU;", 4, 2, "LX/02sZ;", "LX/03F3;"),
         ),
@@ -133,7 +133,7 @@ class ShowFullPostTextFixtureTest {
             "arm64-v8a-minapi28-storeless" to "LX/09bQ;"),
         "586.0.0.52.53" to mapOf("arm64-v8a" to "LX/09Dk;", "armeabi-v7a" to "LX/09Dk;",
             "arm64-v8a-minapi28-storeless" to "LX/09FO;"),
-        "587.0.0.39.55" to mapOf("arm64-v8a" to "LX/09Z2;", "armeabi-v7a" to "LX/09Yp;"),
+        "588.0.0.42.55" to mapOf("arm64-v8a" to "LX/09Z2;", "armeabi-v7a" to "LX/09Yp;"),
     )
 
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()

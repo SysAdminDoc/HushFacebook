@@ -41,7 +41,7 @@ class ReelSaveButtonFixtureTest {
     private fun Method.code() = implementation!!.instructions.toList()
 
     /** Static factory callers by build, where it isn't both list builders. */
-    private val staticListBuilders = mapOf("586.0.0.52.53" to 1, "587.0.0.39.55" to 1)
+    private val staticListBuilders = mapOf("586.0.0.52.53" to 1, "588.0.0.42.55" to 1)
 
     /** Classes holding the four callers by bundle, where each isn't in its own. 586's Android 9 build puts two in one. */
     private val callerOwners = mapOf("facebook-586.0.0.52.53-arm64-v8a-minapi28-storeless.apkm" to 3)

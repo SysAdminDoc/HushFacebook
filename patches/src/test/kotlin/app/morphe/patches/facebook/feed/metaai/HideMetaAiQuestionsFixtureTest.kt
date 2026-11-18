@@ -199,7 +199,7 @@ class HideMetaAiQuestionsFixtureTest {
      */
     private val expectedPill = mapOf(
         "586.0.0.52.53" to (2 to 0),
-        "587.0.0.39.55" to (2 to 1),
+        "588.0.0.42.55" to (2 to 1),
     )
 
     /**

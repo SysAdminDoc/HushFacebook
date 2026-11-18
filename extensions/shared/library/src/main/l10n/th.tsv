@@ -2726,9 +2726,9 @@ Hide pictures on the Blocked list	ซ่อนรูปภาพในราย�
 People you've blocked show without their profile pictures on the Blocking page in Facebook's settings. Reopen the page if it's already open.	บุคคลที่คุณบล็อกจะแสดงโดยไม่มีรูปโปรไฟล์ในหน้าการบล็อกในการตั้งค่าของ Facebook โปรดเปิดหน้านี้ใหม่อีกครั้งหากเปิดค้างไว้อยู่แล้ว
 Hide Up next on videos	ซ่อน "เรื่องถัดไป" ในวิดีโอ
 Takes the UP NEXT bar with the next video off the bottom of a video you open from the feed, and the empty space kept for it, so the seek bar stays at the bottom. A change shows from the next video you open.	นำแถบ "เรื่องถัดไป" (UP NEXT) พร้อมวิดีโอถัดไปออกจากด้านล่างของวิดีโอที่คุณเปิดจากฟีด รวมถึงพื้นที่ว่างที่เว้นไว้ เพื่อให้แถบเลื่อนยังคงอยู่ที่ด้านล่าง การเปลี่ยนแปลงจะมีผลตั้งแต่วิดีโอถัดไปที่คุณเปิด
-Icons look soft on this screen. Repatch with the 240-640dpi bundle.	ไอคอนดูไม่คมชัดบนหน้าจอนี้ โปรดแพตช์ใหม่อีกครั้งด้วยบันเดิล 240-640dpi
+Icons look soft on this screen. Repatch with the 120-480dpi bundle.	ไอคอนดูไม่คมชัดบนหน้าจอนี้ โปรดแพตช์ใหม่อีกครั้งด้วยบันเดิล 120-480dpi
 Icons look soft on this screen	ไอคอนดูไม่คมชัดบนหน้าจอนี้
-The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (240-640dpi) bundle on APKMirror, which has images for every screen.	Facebook ที่คุณแพตช์ไม่มีรูปภาพที่สร้างมาสำหรับหน้าจอนี้ ไอคอนบางส่วนจึงถูกขยายขนาด โปรดแพตช์ Facebook ใหม่อีกครั้งจากบันเดิล (arm64-v8a) (240-640dpi) บน APKMirror ซึ่งมีรูปภาพสำหรับทุกขนาดหน้าจอ
+The Facebook you patched has no images made for this screen, so some icons are enlarged. Patch Facebook again from the (arm64-v8a) (120-480dpi) bundle on APKMirror, which has images for every screen.	Facebook ที่คุณแพตช์ไม่มีรูปภาพที่สร้างมาสำหรับหน้าจอนี้ ไอคอนบางส่วนจึงถูกขยายขนาด โปรดแพตช์ Facebook ใหม่อีกครั้งจากบันเดิล (arm64-v8a) (120-480dpi) บน APKMirror ซึ่งมีรูปภาพสำหรับทุกขนาดหน้าจอ
 Let each post come back once	อนุญาตให้แต่ละโพสต์แสดงซ้ำได้หนึ่งครั้ง
 A post you scrolled past shows up one more time, and scrolling past it again hides it. Fewer posts go missing after a quick scroll.	โพสต์ที่คุณเลื่อนผ่านจะปรากฏขึ้นอีกหนึ่งครั้ง และการเลื่อนผ่านอีกครั้งจะซ่อนโพสต์นั้น ช่วยลดการพลาดโพสต์เมื่อเลื่อนดูอย่างรวดเร็ว
 There's no Facebook link in what you shared.	ไม่มีลิงก์ Facebook ในสิ่งที่คุณแชร์

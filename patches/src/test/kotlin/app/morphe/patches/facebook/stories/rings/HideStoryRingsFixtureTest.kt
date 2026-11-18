@@ -44,7 +44,7 @@ class HideStoryRingsFixtureTest {
      * plugin names, and its Android 9 build has a prefetch lambda in the table's place. 587's two are
      * the default profile picture plugin's lookup static and the table.
      */
-    private val pluginHolders = mapOf("587.0.0.39.55" to 2)
+    private val pluginHolders = mapOf("588.0.0.42.55" to 2)
 
     private fun Method.code() = implementation!!.instructions.toList()
     private fun Instruction.reference() = (this as ReferenceInstruction).reference.toString()

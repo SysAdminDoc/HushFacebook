@@ -54,7 +54,7 @@ class ReelAnchorsFixtureTest {
      * picks over the plain query's, and 587's `$2` (arm64 LX/0CT7;) hands a lambda the plain or XAR
      * query beside the MFC `$1` (LX/0WKq;), with no query name of its own (#464).
      */
-    private val hotCommentRunnables = mapOf("586.0.0.52.53" to 2, "587.0.0.39.55" to 2)
+    private val hotCommentRunnables = mapOf("586.0.0.52.53" to 2, "588.0.0.42.55" to 2)
 
     /** One pass over the bundle for everything but the Follow getter's readers. */
     private fun scan(bundle: File): Found {
@@ -170,8 +170,8 @@ class ReelAnchorsFixtureTest {
                         "586.0.0.52.53 arm64-v8a" to "LX/0A3w;:134:A18 LX/0A3h;:198:A0Q",
                         "586.0.0.52.53 armeabi-v7a" to "LX/0A3w;:134:A18 LX/0A3h;:198:A0Q",
                         "586.0.0.52.53 arm64-v8a-minapi28-storeless" to "LX/0A5H;:52:A0A LX/0A4q;:118:invoke",
-                        "587.0.0.39.55 arm64-v8a" to "LX/0CxW;:19:A0N LX/0A59;:120:A0V",
-                        "587.0.0.39.55 armeabi-v7a" to "LX/0A4x;:67:A0G LX/0A4w;:96:A0W",
+                        "588.0.0.42.55 arm64-v8a" to "LX/0CxW;:19:A0N LX/0A59;:120:A0V",
+                        "588.0.0.42.55 armeabi-v7a" to "LX/0A4x;:67:A0G LX/0A4w;:96:A0W",
                     )["$version $abi"]
                     assertEquals(name, pinned, follow.flags.joinToString(" ") { "${it.lambda}:${it.key}:${it.reader.name}" })
                 } else {

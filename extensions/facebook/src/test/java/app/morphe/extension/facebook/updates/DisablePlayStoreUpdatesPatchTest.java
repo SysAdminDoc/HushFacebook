@@ -26,7 +26,7 @@ import java.lang.reflect.Modifier;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
 public class DisablePlayStoreUpdatesPatchTest {
-    private static final int FACEBOOK_587 = 707414333;
+    private static final int FACEBOOK_588 = 707615136;
     private static final long MAJOR = 5L << 32;
 
     private static PackageInfo withCode(long code) {
@@ -45,9 +45,9 @@ public class DisablePlayStoreUpdatesPatchTest {
 
     @Test
     public void everyOtherCodeReadsAsItIs() {
-        assertEquals(FACEBOOK_587, DisablePlayStoreUpdatesPatch.getVersionCode(withCode(FACEBOOK_587)));
-        assertEquals(FACEBOOK_587, DisablePlayStoreUpdatesPatch.getVersionCodeLong(withCode(FACEBOOK_587)));
-        assertEquals(MAJOR | FACEBOOK_587, DisablePlayStoreUpdatesPatch.getVersionCodeLong(withCode(MAJOR | FACEBOOK_587)));
+        assertEquals(FACEBOOK_588, DisablePlayStoreUpdatesPatch.getVersionCode(withCode(FACEBOOK_588)));
+        assertEquals(FACEBOOK_588, DisablePlayStoreUpdatesPatch.getVersionCodeLong(withCode(FACEBOOK_588)));
+        assertEquals(MAJOR | FACEBOOK_588, DisablePlayStoreUpdatesPatch.getVersionCodeLong(withCode(MAJOR | FACEBOOK_588)));
         assertEquals(Integer.MAX_VALUE - 1,
                 DisablePlayStoreUpdatesPatch.getVersionCode(withCode(Integer.MAX_VALUE - 1)));
     }

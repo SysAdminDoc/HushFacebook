@@ -53,7 +53,7 @@ class LinkBoxFallbackFixtureTest {
      */
     private val unboxingsByVersion = mapOf(
         // 587's footer (arm64 `LX/094a;->A00`) and renders read the grey the way 586's did.
-        "587.0.0.39.55" to listOf("intValue", "intValue"),
+        "588.0.0.42.55" to listOf("intValue", "intValue"),
         "586.0.0.52.53" to listOf("intValue", "intValue"),
     )
     private val unboxingsAndroid9 = mapOf(
@@ -65,7 +65,7 @@ class LinkBoxFallbackFixtureTest {
      * static null-safe (Number, int) call too, as 586's Android 9 build did.
      */
     private val unboxingsByAbi = mapOf(
-        "587.0.0.39.55" to mapOf("armeabi-v7a" to listOf("intValue", "static (Number, int)")),
+        "588.0.0.42.55" to mapOf("armeabi-v7a" to listOf("intValue", "static (Number, int)")),
     )
 
     @Test

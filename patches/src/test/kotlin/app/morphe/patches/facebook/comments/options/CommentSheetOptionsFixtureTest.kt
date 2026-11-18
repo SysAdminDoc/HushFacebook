@@ -90,7 +90,7 @@ import java.io.File
 private const val LIKE_PLUGIN = "com.facebook.feedback.comments.plugins.commentufi.like.LikePlugin"
 
 /** The update a tap on View replies sends, where a build numbers it other than 1 (587 arm64 2). */
-private val EXPAND_NUMBERS = mapOf("587.0.0.39.55" to 2)
+private val EXPAND_NUMBERS = mapOf("588.0.0.42.55" to 2)
 
 class CommentSheetOptionsFixtureTest {
     private fun bundles(check: (File) -> Unit) {

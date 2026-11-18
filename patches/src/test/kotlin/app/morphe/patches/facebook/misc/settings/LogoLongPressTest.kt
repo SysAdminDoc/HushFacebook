@@ -343,7 +343,7 @@ class LogoLongPressTest {
      * title bar's constructor that builds it returns.
      */
     private val pins = mapOf(
-        "587.0.0.39.55" to mapOf(
+        "588.0.0.42.55" to mapOf(
             "arm64-v8a" to Pin(135, listOf(5, 3), 140, listOf(5, 9), listOf(120)),
             "armeabi-v7a" to Pin(135, listOf(5, 3), 140, listOf(5, 9), listOf(118)),
         ),

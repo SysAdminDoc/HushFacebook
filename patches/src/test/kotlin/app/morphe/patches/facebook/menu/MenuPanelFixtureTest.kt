@@ -40,7 +40,7 @@ class MenuPanelFixtureTest {
     private val bloksPanelFlags = mapOf(
         "585.0.0.47.54" to 0x101019f0058167fL,
         "586.0.0.52.53" to 0x101019f005816c8L,
-        "587.0.0.39.55" to 0x101019f00581702L,
+        "588.0.0.42.55" to 0x101019f00581702L,
     )
 
     /** The flag [bundle]'s build asks, by the version in its name. */

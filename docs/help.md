@@ -4,7 +4,7 @@ Questions about setting up, or about whether a Facebook build works, go in [Disc
 
 ## Unsupported Version
 
-Manager shows this before it patches, usually with "This is a different build of the same version". Facebook 587.0.0.39.55 comes in several builds, each compiled separately, and Hushfacebook declares only the two its patches are checked against, 707414333 for 64-bit phones and 707414338 for 32-bit ones. Download one of those as [Install](../README.md#install) describes and the warning goes away. **Proceed anyway** patches the build you have, but other builds haven't been tried, and if a patch can't find what it changes, patching stops and names it. The same check is why Manager won't offer the Facebook you installed from Google Play unless it's that exact build.
+Manager shows this before it patches, usually with "This is a different build of the same version". Facebook 588.0.0.42.55 comes in several builds, each compiled separately, and Hushfacebook declares only the two its patches are checked against, 707615136 for 64-bit phones and 707615135 for 32-bit ones. Download one of those as [Install](../README.md#install) describes and the warning goes away. **Proceed anyway** patches the build you have, but other builds haven't been tried, and if a patch can't find what it changes, patching stops and names it. The same check is why Manager won't offer the Facebook you installed from Google Play unless it's that exact build.
 
 ## Patching stops on one patch
 

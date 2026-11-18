@@ -50,7 +50,7 @@ class SettingsRowFixtureTest {
     private val loggerCount = mapOf(
         "585.0.0.47.54" to mapOf("arm64-v8a" to 0, "armeabi-v7a" to 0, "arm64-v8a-minapi28-storeless" to 0),
         "586.0.0.52.53" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2, "arm64-v8a-minapi28-storeless" to 0),
-        "587.0.0.39.55" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2),
+        "588.0.0.42.55" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 2),
     )
 
     private fun Method.instructionList() = implementation?.instructions?.toList().orEmpty()

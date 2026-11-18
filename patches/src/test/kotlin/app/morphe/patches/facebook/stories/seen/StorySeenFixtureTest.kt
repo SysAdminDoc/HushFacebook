@@ -128,10 +128,10 @@ class StorySeenFixtureTest {
 }
 
 /** Builds where the story viewer's controller calls the seen sender beside the helper's flush (587 arm64 LX/0CBG;). */
-private val SENDER_CALLERS = mapOf("587.0.0.39.55" to 2)
+private val SENDER_CALLERS = mapOf("588.0.0.42.55" to 2)
 
 /** Builds whose seen request builder makes the query itself, with no query class of its own (586 on; 587 arm64 LX/0CE7;->getRequest). */
-internal val SEEN_QUERY_IN_BUILDER = setOf("587.0.0.39.55")
+internal val SEEN_QUERY_IN_BUILDER = setOf("588.0.0.42.55")
 
 /**
  * The seen mutation's query class in [bundle], one class whose constructor names it, or null on a

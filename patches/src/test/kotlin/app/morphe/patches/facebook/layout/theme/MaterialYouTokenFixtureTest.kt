@@ -118,7 +118,7 @@ class MaterialYouTokenFixtureTest {
          * holding 0x1010097, 0x101015d and 0x7f040f99 (586's `LX/01ic;->A30` held 0x7f040fc6 third).
          */
         val LIKES_LINE_ATTRIBUTE = mapOf(
-            "585.0.0.47.54" to 0x7f040fcf, "586.0.0.52.53" to 0x7f040fc6, "587.0.0.39.55" to 0x7f040f99,
+            "585.0.0.47.54" to 0x7f040fcf, "586.0.0.52.53" to 0x7f040fc6, "588.0.0.42.55" to 0x7f040f99,
         )
         /**
          * The seven tokens 584 dropped from 583's 324 (all of them named in MaterialYouTheme's
@@ -278,7 +278,7 @@ class MaterialYouTokenFixtureTest {
             "585.0.0.47.54" to mapOf("arm64-v8a" to SHAPES_585, "armeabi-v7a" to SHAPES_585),
             "586.0.0.52.53" to mapOf("arm64-v8a" to SHAPES_586, "armeabi-v7a" to SHAPES_586,
                 "arm64-v8a-minapi28-storeless" to SHAPES_586_ANDROID_9),
-            "587.0.0.39.55" to mapOf("arm64-v8a" to SHAPES_587, "armeabi-v7a" to SHAPES_587_V7),
+            "588.0.0.42.55" to mapOf("arm64-v8a" to SHAPES_587, "armeabi-v7a" to SHAPES_587_V7),
         )
 
         /** A class name Redex made up for one build, or a merged lambda group's. */
