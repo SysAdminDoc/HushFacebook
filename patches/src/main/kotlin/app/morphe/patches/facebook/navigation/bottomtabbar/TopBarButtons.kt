@@ -13,10 +13,12 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.postprompts.QUANTITY_STRING
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.appicons.logoDressSite
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.settings.CREATE_WORDMARK_VIEW
 import app.morphe.patches.facebook.misc.settings.WORDMARK_NAVIGATION_BAR
 import app.morphe.patches.facebook.misc.settings.settingsPatch
@@ -510,12 +512,51 @@ internal fun MutableMethod.gateGlyphCountFirst(register: Int) {
 /** Where a method hands a glyph its count: the index of the setter call, the glyph's register and the count's. */
 internal class CountLabelSite(val call: Int, val glyph: Int, val count: Int)
 
+/** The int parameter [helper] hands getQuantityString as the quantity and never writes, if any. */
+private fun quantityParameter(helper: Method): Int? {
+    val code = helper.implementation?.instructions?.toList() ?: return null
+    return helper.parameterTypes.indices.firstOrNull { index ->
+        if (helper.parameterTypes[index].toString() != "I") return@firstOrNull false
+        val register = helper.parameterRegisterNumber(index)
+        code.none { writesRegister(it, register) } &&
+            code.any { it.signature() == QUANTITY_STRING && (it as? FiveRegisterInstruction)?.registerE == register }
+    }
+}
+
+/**
+ * The method [instruction] calls when that is a static one answering a String that words a label
+ * from an int parameter of its own, as [resolve] finds it. 588 moved the bar's wording out of its
+ * count observer into such a helper (NavigationBar's `A06`, handed the bar, the spec and the count).
+ */
+internal fun labelHelperCalled(instruction: Instruction, resolve: (MethodReference) -> Method?): Method? {
+    if (instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) return null
+    val call = instruction.reference() as? MethodReference ?: return null
+    if (call.returnType != STRING) return null
+    return resolve(call)?.takeIf { quantityParameter(it) != null }
+}
+
+/**
+ * Whether [instruction] words a label from the int in [count]: getQuantityString taking it as the
+ * quantity, or a [labelHelperCalled] handed it as the parameter that helper takes its quantity from.
+ */
+internal fun wordsLabelFrom(instruction: Instruction, count: Int, resolve: (MethodReference) -> Method?): Boolean {
+    if (instruction.signature() == QUANTITY_STRING) return (instruction as? FiveRegisterInstruction)?.registerE == count
+    val parameter = labelHelperCalled(instruction, resolve)?.let(::quantityParameter) ?: return false
+    val types = (instruction.reference() as MethodReference).parameterTypes.map(CharSequence::toString)
+    return instruction.argumentRegister(parameter + types.take(parameter).count { it == "J" || it == "D" }) == count
+}
+
 /**
  * The calls in [method] that hand a glyph of [glyphType] its count through one of [counts] after
- * which the same int is the quantity of a getQuantityString call and that glyph gets a
- * setContentDescription. The run read after each call ends at a way out or a write to either register.
+ * which the same int words a label ([wordsLabelFrom]) and that glyph gets a setContentDescription.
+ * The run read after each call ends at a way out or a write to either register.
  */
-internal fun countLabelSites(method: Method, glyphType: String, counts: List<CountMethod>): List<CountLabelSite> {
+internal fun countLabelSites(
+    method: Method,
+    glyphType: String,
+    counts: List<CountMethod>,
+    resolve: (MethodReference) -> Method? = { null },
+): List<CountLabelSite> {
     val setters = counts.associateBy { "$glyphType->${it.name}(${it.parameters.joinToString("")})V" }
     val code = method.implementation?.instructions?.toList() ?: return emptyList()
     return code.indices.mapNotNull { index ->
@@ -530,7 +571,7 @@ internal fun countLabelSites(method: Method, glyphType: String, counts: List<Cou
         var worded = false
         for (next in code.subList(index + 1, code.size)) {
             val five = next as? FiveRegisterInstruction
-            if (five != null && next.signature() == QUANTITY_STRING && five.registerE == count) worded = true
+            if (wordsLabelFrom(next, count, resolve)) worded = true
             val described = (next.reference() as? MethodReference)?.let {
                 it.name == "setContentDescription" && it.parameterTypes.map(CharSequence::toString) == listOf(CHAR_SEQUENCE)
             } == true
@@ -546,12 +587,16 @@ internal fun countLabelSites(method: Method, glyphType: String, counts: List<Cou
  * bar's count observer words a button's label from its spec's plural. 587's profile top bar words its
  * For You glyph's label from a plural of its own (arm64 LX/0BXC;->A05, armv7 LX/0BWe;->A05), which
  * [countLabelSites] takes too, so only a method that also reads the spec's plural gets the count hook.
+ * From 588 the read sits in the [labelHelperCalled] the observer hands the spec and the count.
  */
-internal fun readsSpecPlural(method: Method, spec: String): Boolean =
-    method.implementation?.instructions?.any { instruction ->
+internal fun readsSpecPlural(method: Method, spec: String, resolve: (MethodReference) -> Method? = { null }): Boolean {
+    fun reads(candidate: Method) = candidate.implementation?.instructions?.any { instruction ->
         val field = instruction.reference() as? FieldReference
         instruction.opcode == Opcode.IGET_OBJECT && field?.definingClass == spec && field.type == "Ljava/lang/Integer;"
     } == true
+    return reads(method) ||
+        method.implementation?.instructions?.any { call -> labelHelperCalled(call, resolve)?.let(::reads) == true } == true
+}
 
 /**
  * Sends the count and the glyph through the extension right before the setter, so the label worded
@@ -907,8 +952,10 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
             ?: refuse("this Facebook has no $WORDMARK_NAVIGATION_BAR, the home feed's top bar")
         homeBarScreenCalls(wordmark, bar, searchGlyphSite(bar, spec.glyphType))
         val specType = spec.nameField.definingClass
-        fun labelSites(method: Method) =
-            if (readsSpecPlural(method, specType)) countLabelSites(method, spec.glyphType, counts) else emptyList()
+        // 588 words the label in a static helper of the bar, read through this.
+        val resolve: (MethodReference) -> Method? = { call -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
+        fun labelSites(method: Method) = countLabelSites(method, spec.glyphType, counts, resolve)
+            .takeIf { it.isNotEmpty() && readsSpecPlural(method, specType, resolve) }.orEmpty()
         val labellers = mutableListOf<String>()
         classDefForEachReferencing(types = listOf(spec.glyphType)) { classDef ->
             if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing

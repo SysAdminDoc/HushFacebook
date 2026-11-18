@@ -8,6 +8,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
@@ -379,6 +380,48 @@ class TopBarButtonsShapesTest {
         """,
         parameters = listOf("Lfixture/Spec;"),
     )
+
+    /** 588's label helper: reads [plural] and words the label with [quantity] as the quantity. */
+    private fun labelHelper(plural: String, quantity: String = "p2") = method(
+        """
+            $plural
+            const/4 v0, 0x0
+            invoke-virtual { v0, v0, $quantity, v0 }, Landroid/content/res/Resources;->getQuantityString(II[Ljava/lang/Object;)Ljava/lang/String;
+            return-void
+        """,
+        parameters = listOf("Lfixture/Spec;", "I"),
+    )
+
+    /** 588's count observer: hands the helper the spec in p1 and the count in v0. */
+    private fun labelHelperCaller() = method(
+        """
+            const/4 v0, 0x1
+            invoke-static { p1, v0 }, Lfixture/BadgeListener;->A06(Lfixture/Spec;I)Ljava/lang/String;
+            move-result-object v1
+            return-void
+        """,
+        parameters = listOf("Lfixture/Spec;"),
+    )
+
+    private val helperPlural = "iget-object v1, p1, Lfixture/Spec;->A0B:Ljava/lang/Integer;"
+
+    @Test
+    fun `a label worder can read the spec's plural in the helper wording its label`() {
+        fun reads(helper: Method?) = readsSpecPlural(labelHelperCaller(), "Lfixture/Spec;") { helper }
+        assertTrue(reads(labelHelper(helperPlural)))
+        assertTrue("no helper found", !reads(null))
+        assertTrue("another class's plural", !reads(labelHelper("iget-object v1, p0, Lfixture/BadgeListener;->A0B:Ljava/lang/Integer;")))
+        assertTrue("a quantity that isn't its parameter", !reads(labelHelper(helperPlural, quantity = "v0")))
+    }
+
+    @Test
+    fun `a helper words a label only from the argument it takes its quantity from`() {
+        val call = labelHelperCaller().implementation!!.instructions.toList()[1]
+        val helper = labelHelper(helperPlural)
+        assertTrue("the count", wordsLabelFrom(call, 0) { helper })
+        assertTrue("the spec's register", !wordsLabelFrom(call, 5) { helper })
+        assertTrue("no helper found", !wordsLabelFrom(call, 0) { null })
+    }
 
     @Test
     fun `a label worder reading the spec's plural counts`() {
