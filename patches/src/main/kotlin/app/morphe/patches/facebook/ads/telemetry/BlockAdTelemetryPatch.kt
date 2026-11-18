@@ -14,12 +14,11 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.handleTargets
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.patchLog
-import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
-import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.feed.methodsNaming
 import app.morphe.util.findMutableMethodOf
 import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.iface.Method
@@ -57,7 +56,8 @@ internal val AD_ID_JOBS = listOf(
  * advertising ID to Facebook as a GraphQL mutation, the advertising ID, App Manager id and device
  * id in a launch event, an ad view or click registered with Android's attribution, and the
  * advertising ID with the preinstall metadata in the first login screen's install event. The method
- * names are Redex's, so the strings find them.
+ * names are Redex's, so the strings find them. 588 moves the launch event's string into a string
+ * table the sender asks by number.
  */
 internal val AD_ID_SENDERS = listOf(
     "ReportAdvertiserIDMutation",
@@ -128,16 +128,11 @@ val blockAdTelemetryPatch = bytecodePatch(
     }
 }
 
-/** Whether [method] is a sender [marker] picks: a void method loading exactly that string. */
-internal fun isAdIdSender(method: Method, marker: String) = method.returnType == "V" && holdsString(method, marker)
-
-/** Null once the one void method holding exactly [marker] returns at once, or why nothing changed. */
+/** Null once the one void method naming exactly [marker] returns at once, or why nothing changed. */
 internal fun BytecodePatchContext.stopSenderOrReason(marker: String): String? {
-    val senders = classDefByStrings(marker, StringComparisonType.EQUALS).flatMap { classDef ->
-        classDef.methods.filter { isAdIdSender(it, marker) }
-    }
+    val senders = methodsNaming(marker) { it.returnType == "V" }
     val sender = senders.singleOrNull()
-        ?: return "${senders.size} void methods hold \"$marker\", expected 1, so that send keeps running"
+        ?: return "${senders.size} void methods name \"$marker\", expected 1, so that send keeps running"
     val mutable = mutableClassDefBy(sender.definingClass).methods.filter {
         it.name == sender.name && it.returnType == sender.returnType &&
             it.parameterTypes.map(Any::toString) == sender.parameterTypes.map(Any::toString)
