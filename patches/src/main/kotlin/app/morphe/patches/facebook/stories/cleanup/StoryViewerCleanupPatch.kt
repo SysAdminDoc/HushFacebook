@@ -115,6 +115,7 @@ internal const val HIDE_SONG_PILL = "$STORY_VIEWER_CLEANUP->hideSongPill()Z"
 /** What the song pill under the poster's name keys its "Try it" button's transition with. */
 internal const val SONG_PILL_BUTTON = "pill_cta_button_transition_key"
 
+private const val STORY_BUCKET = "Lcom/facebook/stories/model/StoryBucket;"
 private const val STORY_CARD = "Lcom/facebook/stories/model/StoryCard;"
 
 private const val IMMUTABLE_LIST = "Lcom/google/common/collect/ImmutableList;"
@@ -377,11 +378,17 @@ internal fun BytecodePatchContext.dropCredits(name: String) {
     )
 }
 
-/** Whether [classDef] is the song pill: a component built for a story card whose render keys its button [SONG_PILL_BUTTON]. */
+/**
+ * Whether [classDef] is the song pill: a component built from a story's bucket and card, whose render
+ * keys its button [SONG_PILL_BUTTON]. The chips of the row under the name key theirs the same way
+ * (588 arm64 `LX/0X3v;`, 587 loaded the key from its string table), but the row builds those from a
+ * chip's config first, and [DROP_CREDIT] already skips them there.
+ */
 internal fun isSongPill(classDef: ClassDef): Boolean {
     val render = renderOf(classDef) ?: return false
-    return holdsString(render, SONG_PILL_BUTTON) &&
-        classDef.methods.any { it.name == "<init>" && it.parameterTypes.any { type -> type.toString() == STORY_CARD } }
+    return holdsString(render, SONG_PILL_BUTTON) && classDef.methods.any { method ->
+        method.name == "<init>" && method.parameterTypes.map { it.toString() }.take(2) == listOf(STORY_BUCKET, STORY_CARD)
+    }
 }
 
 /** Hooks the song pill's render to answer null, as it does itself for a song with no title. */
