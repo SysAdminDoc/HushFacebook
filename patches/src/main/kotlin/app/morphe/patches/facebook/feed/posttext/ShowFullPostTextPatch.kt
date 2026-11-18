@@ -526,12 +526,33 @@ internal fun firstArgument(instruction: Instruction): Int? = when (instruction) 
     else -> null
 }
 
-/** Whether [method] reads [field] as a boolean, stores it, and flips a value with `xor 1`: a state update toggling it. */
+/**
+ * Whether [register] holds the boolean [field] right before instruction [at]: read straight into it,
+ * or passed through the `Boolean` it was boxed in.
+ */
+private fun holdsField(code: List<Instruction>, at: Int, register: Int, field: String): Boolean {
+    val write = (at - 1 downTo 0).firstOrNull { writes(code[it], register) } ?: return false
+    val source = code[write]
+    if (source.opcode == Opcode.IGET_BOOLEAN) return (source as ReferenceInstruction).reference.toString() == field
+    if ((source.opcode != Opcode.MOVE_RESULT && source.opcode != Opcode.MOVE_RESULT_OBJECT) || write == 0) return false
+    val call = code[write - 1]
+    if (!calls(call, BOOLEAN_VALUE) && !calls(call, BOOLEAN_OF)) return false
+    return holdsField(code, write - 1, firstArgument(call) ?: return false, field)
+}
+
+/**
+ * Whether [method] is a state update toggling [field]: it stores the field and flips the field's own
+ * value with `xor 1`. 588's state class runs all its updates in one method (`LX/09Os;->A01`), which
+ * reads and stores its other booleans too, so the `xor` has to start from this one.
+ */
 private fun toggles(method: Method, field: String): Boolean {
     val code = method.implementation?.instructions?.toList() ?: return false
-    fun touches(opcode: Opcode) = code.any { it.opcode == opcode && (it as ReferenceInstruction).reference.toString() == field }
-    return touches(Opcode.IGET_BOOLEAN) && touches(Opcode.IPUT_BOOLEAN) &&
-        code.any { it.opcode == Opcode.XOR_INT_LIT8 && (it as NarrowLiteralInstruction).narrowLiteral == 1 }
+    if (code.none { it.opcode == Opcode.IPUT_BOOLEAN && (it as ReferenceInstruction).reference.toString() == field }) return false
+    return code.indices.any { at ->
+        val flip = code[at]
+        flip.opcode == Opcode.XOR_INT_LIT8 && (flip as NarrowLiteralInstruction).narrowLiteral == 1 &&
+            holdsField(code, at, (flip as TwoRegisterInstruction).registerB, field)
+    }
 }
 
 /**
@@ -539,9 +560,10 @@ private fun toggles(method: Method, field: String): Boolean {
  * [CAPTION_TOGGLE] wherever it's sent, and one of its methods sets its state's first values. The
  * caption's "expanded" is the one boolean stored there straight from a Boolean's `booleanValue()`,
  * into a field a method of the state's class reads, flips (`xor 1`) and stores. That Boolean is the
- * one `Boolean.valueOf` boxed last before it, and what it boxes starts as the component's one boolean
- * prop the method reads, right there or through the move after it. The hook goes right after that
- * read, so Facebook's own memory of a caption tapped before, which may replace it, still wins.
+ * one `Boolean.valueOf` boxed last before it, and what it boxes starts as the one boolean prop of the
+ * component read into it, right there or through the move after it (588 reads four of them here). The
+ * hook goes right after that read, so Facebook's own memory of a caption tapped before, which may
+ * replace it, still wins.
  */
 internal fun BytecodePatchContext.findCaptionStart(): CaptionStart {
     val components = sendersOf(CAPTION_TOGGLE).flatMap { toggled(it, CAPTION_TOGGLE) }.toSet()
@@ -575,15 +597,18 @@ internal fun BytecodePatchContext.findCaptionStart(): CaptionStart {
     }
     val value = firstArgument(code[boxing - 1])!!
     val props = code.indices.filter { index ->
-        code[index].opcode == Opcode.IGET_BOOLEAN &&
-            ((code[index] as ReferenceInstruction).reference as FieldReference).definingClass == component
+        val instruction = code[index]
+        if (instruction.opcode != Opcode.IGET_BOOLEAN ||
+            ((instruction as ReferenceInstruction).reference as FieldReference).definingClass != component
+        ) return@filter false
+        val register = (instruction as TwoRegisterInstruction).registerA
+        val next = code.getOrNull(index + 1)
+        register == value || (next != null && next.opcode in MOVES &&
+            (next as TwoRegisterInstruction).registerB == register && next.registerA == value)
     }
-    val read = props.singleOrNull() ?: refuse("expected $where to read one boolean prop of $component, found ${props.size}")
+    val read = props.singleOrNull()
+        ?: refuse("expected $where to read one boolean prop of $component into its first state's v$value, found ${props.size}")
     val register = (code[read] as TwoRegisterInstruction).registerA
-    val next = code.getOrNull(read + 1)
-    val carried = register == value || (next != null && next.opcode in MOVES &&
-        (next as TwoRegisterInstruction).registerB == register && next.registerA == value)
-    if (!carried) refuse("$where doesn't box its caption prop in v$register as its first state")
     if (read + 1 in Flow(code, where).targets) refuse("$where jumps straight past where it reads its caption prop")
     return CaptionStart(method, read, register)
 }
