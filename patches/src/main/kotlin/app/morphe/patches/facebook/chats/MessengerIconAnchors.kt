@@ -4,7 +4,6 @@
  */
 package app.morphe.patches.facebook.chats
 
-import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
@@ -108,24 +107,25 @@ internal fun isButtonHandlerShaped(method: Method): Boolean =
 
 /**
  * Where [handler], a method of [owner], loads "long_press": the handler itself up to 582, and on
- * 583 the one static helper of [owner] it calls with a flag that loads it. The helper isn't
- * handler-shaped itself, so a method that only calls the handler doesn't log through it. Null when
- * neither does.
+ * 583 the one static helper of [owner] it calls with a flag that loads it. 588's helper asks a
+ * string table for it (`LX/07cx;->A00` on arm64, from `LX/04S4;->A00`), which [resolve] finds. The
+ * helper isn't handler-shaped itself, so a method that only calls the handler doesn't log through
+ * it. Null when neither does.
  */
-internal fun longPressLog(handler: Method, owner: ClassDef): Method? {
-    if (holdsString(handler, LONG_PRESS)) return handler
+internal fun longPressLog(handler: Method, owner: ClassDef, resolve: (MethodReference) -> Method? = { null }): Method? {
+    if (namesString(handler, LONG_PRESS, resolve)) return handler
     return handler.implementation?.instructions?.toList().orEmpty().filter { it.opcode in STATIC_CALLS }
         .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
         .filter { it.definingClass == owner.type && it.parameterTypes.any { type -> type.toString() == "Z" } }
         .distinctBy { it.toString() }
         .mapNotNull { resolveStatic(owner, it) }
-        .filter { !isButtonHandlerShaped(it) && holdsString(it, LONG_PRESS) }
+        .filter { !isButtonHandlerShaped(it) && namesString(it, LONG_PRESS, resolve) }
         .singleOrNull()
 }
 
 /** The Messenger button handler: shaped like one ([isButtonHandlerShaped]) and logging a long press ([longPressLog]). */
-internal fun isButtonHandler(method: Method, owner: ClassDef): Boolean =
-    isButtonHandlerShaped(method) && longPressLog(method, owner) != null
+internal fun isButtonHandler(method: Method, owner: ClassDef, resolve: (MethodReference) -> Method? = { null }): Boolean =
+    isButtonHandlerShaped(method) && longPressLog(method, owner, resolve) != null
 
 private val STATIC_CALLS = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
 
@@ -188,16 +188,16 @@ internal fun buttonHandlerCalls(tap: Method): List<MethodReference> =
  * exactly one static call of a handler's shape into [owner], the method that call names. 582's tap
  * calls such a wrapper on a singleton (LX/eh9;->A01), which waits out a MobileConfig cooldown and
  * then calls the static handler (LX/eh9;->A00) with its own arguments. 583's wrapper adds a null
- * String to them.
+ * String to them. [resolve] reads the string table [longPressLog] may have to ask.
  */
-internal fun buttonHandler(owner: ClassDef, call: MethodReference): Method? {
+internal fun buttonHandler(owner: ClassDef, call: MethodReference, resolve: (MethodReference) -> Method? = { null }): Method? {
     val named = owner.methods.firstOrNull {
         it.name == call.name && it.returnType == call.returnType &&
             it.parameters() == call.parameterTypes.map { type -> type.toString() }
     } ?: return null
-    if (isButtonHandler(named, owner)) return named
+    if (isButtonHandler(named, owner, resolve)) return named
     if (AccessFlags.STATIC.isSet(named.accessFlags)) return null
     val inner = handlerShapedCalls(named, STATIC_CALLS, HANDLER_SHAPES).filter { it.definingClass == owner.type }
         .distinctBy { it.toString() }
-    return inner.singleOrNull()?.let { resolveStatic(owner, it) }?.takeIf { isButtonHandler(it, owner) }
+    return inner.singleOrNull()?.let { resolveStatic(owner, it) }?.takeIf { isButtonHandler(it, owner, resolve) }
 }

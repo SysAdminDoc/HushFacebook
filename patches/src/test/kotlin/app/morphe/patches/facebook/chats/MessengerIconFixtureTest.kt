@@ -10,6 +10,7 @@ import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.feed.resolveStatic
+import app.morphe.patches.facebook.feed.tableStringAt
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
 import app.morphe.patches.facebook.media.taptoplay.touchDispatches
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
@@ -293,9 +294,9 @@ class MessengerIconFixtureTest {
                 val handlerCalls = buttonHandlerCalls(tap).distinctBy(::key)
                 assertEquals("$name: button handlers the tap calls", 1, handlerCalls.size)
                 val owner = FixtureDex.classes(bundle, setOf(handlerCalls.single().definingClass)).values.single()
-                val handler = buttonHandler(owner, handlerCalls.single())
+                val handler = buttonHandler(owner, handlerCalls.single(), resolve)
                     ?: throw AssertionError("$name: ${key(handlerCalls.single())} doesn't reach a button handler in its class")
-                assertTrue("$name: ${key(handler)} isn't the button handler", isButtonHandler(handler, owner))
+                assertTrue("$name: ${key(handler)} isn't the button handler", isButtonHandler(handler, owner, resolve))
                 assertTrue("$name: the button handler has fewer than two locals", locals(handler) >= 2)
                 val tapCode = tap.implementation!!.instructions.toList()
                 val at = tapCode.indexOfFirst { it.call?.let(::key) == key(handlerCalls.single()) }
@@ -309,8 +310,9 @@ class MessengerIconFixtureTest {
                 assertEquals("$name: the tap's long press the patch reads", longPress, tapLongPress(tap, handlerCalls.single()))
 
                 // "long_press" is logged only behind a branch on the long press: in the handler up
-                // to 582, and from 583 in a helper the handler hands its long press to.
-                val log = longPressLog(handler, owner)
+                // to 582, and from 583 in a helper the handler hands its long press to, which
+                // from 588 asks a string table for it.
+                val log = longPressLog(handler, owner, resolve)
                     ?: throw AssertionError("$name: ${key(handler)} logs no long press")
                 val logFlag = if (log === handler) buttonLongPress(handler) else {
                     val flags = log.parameterTypes.indices.filter { log.parameterTypes[it].toString() == "Z" }
@@ -324,8 +326,9 @@ class MessengerIconFixtureTest {
                     flags.single()
                 }
                 val logCode = log.implementation!!.instructions.toList()
-                val logged = logCode.indexOfFirst {
-                    ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == LONG_PRESS
+                val logged = logCode.indices.first { index ->
+                    ((logCode[index] as? ReferenceInstruction)?.reference as? StringReference)?.string == LONG_PRESS ||
+                        tableStringAt(logCode, index, resolve) == LONG_PRESS
                 }
                 val flagRegister = log.parameterRegisterNumber(logFlag)
                 assertTrue("$name: ${key(log)} logs a long press without asking v$flagRegister",
@@ -334,9 +337,13 @@ class MessengerIconFixtureTest {
                     })
 
                 // What the contracts pick the handler by: no other static method of a handler's
-                // shape logs "long_press" through its class.
-                val shaped = FixtureDex.classesHolding(bundle, LONG_PRESS).flatMap { classDef ->
-                    classDef.methods.filter { isButtonHandler(it, classDef) }
+                // shape logs "long_press" through its class. A table's caller holds no literal, so
+                // this reads every class with a method of that shape.
+                val shapedOwners = FixtureDex.methodsWhere(bundle, dexFilter = { dex ->
+                    dex.typeSection.any { it == "Lcom/facebook/auth/usersession/FbUserSession;" }
+                }) { isButtonHandlerShaped(it) }.map { it.definingClass }.toSet()
+                val shaped = FixtureDex.classes(bundle, shapedOwners).values.flatMap { classDef ->
+                    classDef.methods.filter { isButtonHandler(it, classDef, resolve) }
                 }
                 assertEquals("$name: static Messenger button handlers logging \"$LONG_PRESS\"",
                     listOf(key(handler)), shaped.map(::key))

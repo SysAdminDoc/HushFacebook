@@ -108,7 +108,7 @@ val openMessengerFromTopBarPatch = bytecodePatch(
             "$ICON_PATCH: expected the tap to call one Messenger button handler " +
                 "(Context, FbUserSession, String, [String,] Z, Z)V, found ${calls.size}",
         )
-        val handler = classDefByOrNull(call.definingClass)?.let { buttonHandler(it, call) }
+        val handler = classDefByOrNull(call.definingClass)?.let { buttonHandler(it, call, resolve) }
             ?: throw PatchException(
                 "$ICON_PATCH: the tap's call to $call doesn't reach a static Messenger button handler loading \"$LONG_PRESS\"",
             )
