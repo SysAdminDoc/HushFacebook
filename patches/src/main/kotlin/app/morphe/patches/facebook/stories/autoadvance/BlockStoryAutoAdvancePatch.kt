@@ -21,6 +21,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.writersReaching
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
@@ -185,12 +186,14 @@ internal data class LastCardBranch(val index: Int, val reason: Int, val autoAdva
 /**
  * The branch Facebook's forward navigation takes on a bucket's last card: it asks a boolean method
  * whether to move to the next bucket, and when that answers true the branch starts by comparing the
- * navigation's reason with [autoAdvance], the reason a story's own completion moves on with. Null
- * unless exactly one comparison sits right where such an answer branches.
+ * navigation's reason with [autoAdvance], the reason a story's own completion moves on with. 588
+ * asks well before that branch and jumps to it, so the answer is traced from the branch's register
+ * back to the call that wrote it. Null unless exactly one comparison sits right where such an answer
+ * branches.
  */
 internal fun lastCardBranch(navigation: Method, autoAdvance: String): LastCardBranch? {
     val body = navigation.implementation?.instructions?.toList() ?: return null
-    val sites = (3 until body.size - 1).mapNotNull { i ->
+    val sites = (1 until body.size - 1).mapNotNull { i ->
         val load = body[i]
         if (load.opcode != Opcode.SGET_OBJECT || (load as ReferenceInstruction).reference.toString() != autoAdvance) {
             return@mapNotNull null
@@ -202,10 +205,11 @@ internal fun lastCardBranch(navigation: Method, autoAdvance: String): LastCardBr
             compare.registerB -> compare.registerA
             else -> return@mapNotNull null
         }
-        val asked = (body[i - 3] as? ReferenceInstruction)?.reference as? MethodReference
-        val answered = body[i - 2].opcode == Opcode.MOVE_RESULT && body[i - 1].opcode == Opcode.IF_EQZ &&
-            (body[i - 2] as OneRegisterInstruction).registerA == (body[i - 1] as OneRegisterInstruction).registerA
-        if (asked?.returnType == "Z" && answered) LastCardBranch(i, reason, autoAdvance) else null
+        if (body[i - 1].opcode != Opcode.IF_EQZ) return@mapNotNull null
+        val answer = navigation.writersReaching(i - 1, (body[i - 1] as OneRegisterInstruction).registerA).singleOrNull()
+            ?.takeIf { it > 0 && body[it].opcode == Opcode.MOVE_RESULT } ?: return@mapNotNull null
+        val asked = (body[answer - 1] as? ReferenceInstruction)?.reference as? MethodReference
+        if (asked?.returnType == "Z") LastCardBranch(i, reason, autoAdvance) else null
     }
     return sites.singleOrNull()
 }
