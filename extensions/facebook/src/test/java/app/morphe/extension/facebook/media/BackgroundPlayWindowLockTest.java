@@ -4,14 +4,19 @@
  */
 package app.morphe.extension.facebook.media;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.KeyguardManager;
 import android.content.Context;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemClock;
+
+import java.time.Duration;
 
 import org.junit.After;
 import org.junit.Before;
@@ -141,5 +146,289 @@ public class BackgroundPlayWindowLockTest {
         screenOff();
         other.pause().stop();
         assertTrue(player.playing);
+    }
+
+    /** The trigger Facebook's background player starts with, by name as the hook reads it. */
+    private enum BackgroundTrigger { BY_BACKGROUND_PLAY }
+
+    /** The phone locks and Facebook's background player takes the window's video on. */
+    private Player lockedAndCarriedOn() {
+        screenOff();
+        controller.stop();
+        assertFalse(refused());
+        BackgroundPlay.answered(true);
+        // A player of its own for the same video, which starts as any player does.
+        Player background = new Player();
+        background.video = player.video;
+        BackgroundPlay.started(background, BackgroundTrigger.BY_BACKGROUND_PLAY);
+        PictureInPicture.playerPlaying(background);
+        return background;
+    }
+
+    private void phoneInUse() {
+        PowerManager power = (PowerManager) screen.getSystemService(Context.POWER_SERVICE);
+        shadowOf(power).setIsInteractive(true);
+    }
+
+    /** Runs out every later try at starting the window's video. */
+    private void allTriesPass() {
+        shadowOf(Looper.getMainLooper())
+                .idleFor(Duration.ofMillis(BackgroundPlay.WINDOW_RESUME_MS * (BackgroundPlay.WINDOW_RESUME_TRIES + 1)));
+    }
+
+    /** Facebook's handler gives the video back: its player and notification go, then it returns. */
+    private void handedBack(Player background) {
+        BackgroundPlay.returning(handler);
+        background.playing = false;
+        BackgroundPlay.returned();
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(BackgroundPlay.WINDOW_RESUME_MS));
+    }
+
+    @Test
+    public void unlockingPlaysTheWindowsVideoOn() {
+        Player background = lockedAndCarriedOn();
+        phoneInUse();
+        handedBack(background);
+        assertEquals("the window came back paused", 1, player.plays);
+        assertTrue(player.playing);
+
+        handedBack(background);
+        assertEquals("one lock, one start", 1, player.plays);
+    }
+
+    @Test
+    public void itGoesOnWhenTheBackgroundPlayerIsTheWindowsOwnToo() {
+        screenOff();
+        controller.stop();
+        assertFalse(refused());
+        BackgroundPlay.answered(true);
+        player.playing = true;
+        BackgroundPlay.started(player, BackgroundTrigger.BY_BACKGROUND_PLAY);
+        phoneInUse();
+        handedBack(player);
+        assertEquals(1, player.plays);
+    }
+
+    @Test
+    public void aVideoPausedFromTheLockScreenStaysPaused() {
+        Player background = lockedAndCarriedOn();
+        background.playing = false;
+        phoneInUse();
+        handedBack(background);
+        assertEquals(0, player.plays);
+        assertFalse(player.playing);
+    }
+
+    @Test
+    public void nothingStartsWhileThePhoneIsStillLocked() {
+        handedBack(lockedAndCarriedOn());
+        allTriesPass();
+        assertEquals(0, player.plays);
+    }
+
+    /** Facebook hands the video back as the lock screen goes, and the phone reads locked a moment longer. */
+    @Test
+    public void itStartsOnceAnUnlockUnderWayIsDone() {
+        handedBack(lockedAndCarriedOn());
+        assertEquals(0, player.plays);
+        phoneInUse();
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(BackgroundPlay.WINDOW_RESUME_MS));
+        assertEquals(1, player.plays);
+    }
+
+    @Test
+    public void itStopsTryingAfterAWhile() {
+        handedBack(lockedAndCarriedOn());
+        allTriesPass();
+        phoneInUse();
+        allTriesPass();
+        assertEquals(0, player.plays);
+    }
+
+    /** Facebook's background player plays no view, so it never becomes the window's video. */
+    @Test
+    public void theWindowKeepsItsOwnVideoWhileTheBackgroundPlayerRuns() {
+        lockedAndCarriedOn();
+        assertSame(player, PictureInPicture.currentPlayer());
+    }
+
+    /** That player ran on while the window's sat still, so the window picks up from there. */
+    @Test
+    public void theWindowPicksUpWhereTheBackgroundPlayerGotTo() {
+        player.position = 12_000;
+        Player background = lockedAndCarriedOn();
+        background.position = 41_000;
+        phoneInUse();
+        handedBack(background);
+        assertEquals(41_000, player.positionAtPlay);
+    }
+
+    @Test
+    public void anotherVideosPlaceIsNotCarriedOver() {
+        player.position = 12_000;
+        Player background = lockedAndCarriedOn();
+        background.video = "another video";
+        background.position = 41_000;
+        phoneInUse();
+        handedBack(background);
+        assertEquals(1, player.plays);
+        assertEquals(12_000, player.positionAtPlay);
+    }
+
+    /** A player started after the background player's session is an ordinary reel again. */
+    @Test
+    public void afterTheHandBackThatPlayerCountsAsAnyOther() {
+        Player background = lockedAndCarriedOn();
+        phoneInUse();
+        handedBack(background);
+        assertFalse(BackgroundPlay.isBackgroundPlayer(background));
+    }
+
+    @Test
+    public void aWindowClosedMeanwhileStaysQuiet() {
+        Player background = lockedAndCarriedOn();
+        phoneInUse();
+        screen.inWindow = false;
+        handedBack(background);
+        allTriesPass();
+        assertEquals(0, player.plays);
+    }
+
+    @Test
+    public void aVideoAlreadyPlayingAgainIsLeftAlone() {
+        Player background = lockedAndCarriedOn();
+        phoneInUse();
+        player.playing = true;
+        handedBack(background);
+        assertEquals(0, player.plays);
+    }
+
+    @Test
+    public void turningTheSwitchOffMeanwhileLeavesItPaused() {
+        Player background = lockedAndCarriedOn();
+        phoneInUse();
+        Settings.KEEP_PLAYING_IN_BACKGROUND.save(false);
+        handedBack(background);
+        assertEquals(0, player.plays);
+    }
+
+    /** The phone unlocked and the window's video playing again. */
+    private void backInTheWindow() {
+        Player background = lockedAndCarriedOn();
+        phoneInUse();
+        handedBack(background);
+        assertEquals(1, player.plays);
+    }
+
+    private void looksPass(int looks) {
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(BackgroundPlay.WINDOW_KEEP_MS * looks));
+    }
+
+    /** Back from a lock, Facebook's restart at the end of the reel dies with no pause, every loop. */
+    @Test
+    public void aWindowVideoThatStopsByItselfAfterALockStartsAgain() {
+        backInTheWindow();
+        player.playing = false;
+        looksPass(1);
+        assertEquals("the loop ended the sound", 2, player.plays);
+        assertTrue(player.playing);
+
+        player.playing = false;
+        looksPass(1);
+        assertEquals("and so did the next one", 3, player.plays);
+    }
+
+    @Test
+    public void aVideoStillPlayingIsNotPressedAgain() {
+        backInTheWindow();
+        looksPass(4);
+        assertEquals(1, player.plays);
+    }
+
+    /** #495 on 588: Facebook let the window's player go, and play was pressed on it twice a second for over a minute. */
+    @Test
+    public void aPlayerThatWontStartIsLeftAloneAfterAFewPresses() {
+        backInTheWindow();
+        player.stuck = true;
+        player.playing = false;
+        looksPass(BackgroundPlay.WINDOW_KEEP_MISSES * 3);
+        assertEquals("a few presses, then it's left alone", 1 + BackgroundPlay.WINDOW_KEEP_MISSES, player.plays);
+        assertFalse(player.playing);
+    }
+
+    @Test
+    public void aVideoThatStartsBetweenStopsIsStillLookedAfter() {
+        backInTheWindow();
+        for (int loop = 0; loop < BackgroundPlay.WINDOW_KEEP_MISSES * 2; loop++) {
+            player.playing = false;
+            looksPass(1);
+            assertTrue("loop " + loop + " started again", player.playing);
+            // The reel plays to its end before the next restart, so a look sees it going.
+            looksPass(1);
+        }
+        assertEquals(1 + BackgroundPlay.WINDOW_KEEP_MISSES * 2, player.plays);
+    }
+
+    @Test
+    public void aVideoThatWasAlreadyPlayingIsLookedAfterToo() {
+        Player background = lockedAndCarriedOn();
+        phoneInUse();
+        player.playing = true;
+        handedBack(background);
+        assertEquals(0, player.plays);
+        player.playing = false;
+        looksPass(1);
+        assertEquals(1, player.plays);
+    }
+
+    @Test
+    public void aPauseInTheWindowStaysAPause() {
+        backInTheWindow();
+        player.pause(Trigger.BY_USER);
+        looksPass(4);
+        assertEquals(1, player.plays);
+        assertFalse(player.playing);
+    }
+
+    @Test
+    public void aClosedWindowIsNotStartedAgainEvenIfItReopens() {
+        backInTheWindow();
+        screen.inWindow = false;
+        player.playing = false;
+        looksPass(2);
+        screen.inWindow = true;
+        looksPass(2);
+        assertEquals(1, player.plays);
+    }
+
+    @Test
+    public void anotherVideoInTheWindowEndsTheLookingAfter() {
+        backInTheWindow();
+        Player next = new Player();
+        PictureInPicture.armed(screen, next, null);
+        player.playing = false;
+        looksPass(2);
+        assertEquals(1, player.plays);
+    }
+
+    @Test
+    public void turningTheSwitchOffEndsTheLookingAfter() {
+        backInTheWindow();
+        Settings.KEEP_PLAYING_IN_BACKGROUND.save(false);
+        player.playing = false;
+        looksPass(2);
+        assertEquals(1, player.plays);
+    }
+
+    /** The headphones button leaves the window on purpose, so its video isn't brought back. */
+    @Test
+    public void leavingByTheHeadphonesButtonIsNotALock() throws Exception {
+        BackgroundPlay.leaveWindow(player, screen);
+        assertFalse(refused());
+        BackgroundPlay.answered(true);
+        Player background = new Player();
+        BackgroundPlay.started(background, BackgroundTrigger.BY_BACKGROUND_PLAY);
+        handedBack(background);
+        assertEquals(0, player.plays);
     }
 }

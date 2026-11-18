@@ -279,6 +279,21 @@ public class BackgroundPlayTest {
             public void pause(Object player, String trigger) {
                 throw new IllegalStateException("unpausable");
             }
+
+            @Override
+            public void play(Object player) {
+                throw new IllegalStateException("unplayable");
+            }
+
+            @Override
+            public int position(Object player) {
+                throw new IllegalStateException("no position");
+            }
+
+            @Override
+            public void seek(Object player, int positionMs) {
+                throw new IllegalStateException("unseekable");
+            }
         };
         Player player = playThenLeave(Trigger.BY_USER, 3000);
         assertTrue(asked(player));

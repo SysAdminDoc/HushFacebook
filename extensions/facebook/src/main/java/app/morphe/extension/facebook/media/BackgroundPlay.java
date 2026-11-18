@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import app.morphe.extension.facebook.reels.FeedVideoControls;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.L10n;
@@ -90,6 +91,17 @@ public final class BackgroundPlay {
     /** How long after the window's headphones button its leave still carries the video on. */
     static final long WINDOW_BUTTON_MS = 5000;
 
+    /** How long after Facebook's background player hands a locked window's video back it plays on. */
+    static final long WINDOW_RESUME_MS = 400;
+    /** How many times, that far apart, it looks for an open window on an unlocked phone. */
+    static final int WINDOW_RESUME_TRIES = 5;
+    /** How often the window's video is looked at once it's back from a lock. */
+    static final long WINDOW_KEEP_MS = 500;
+    /** How many presses of play in a row may fail to start the window's video before it's left alone. */
+    static final int WINDOW_KEEP_MISSES = 4;
+    private static final String WINDOW_RESUME = "window resume";
+    private static final int NO_POSITION = -1;
+
     /** The most players followed at once; the oldest goes first. */
     static final int FOLLOWED = 8;
 
@@ -127,6 +139,15 @@ public final class BackgroundPlay {
 
         /** Pauses [player] through its own pause with the trigger named [trigger]. */
         void pause(Object player, String trigger) throws Exception;
+
+        /** Starts [player] again, as Tap to play lets a start it armed through. */
+        void play(Object player) throws Exception;
+
+        /** Where [player] is, in milliseconds. */
+        int position(Object player) throws Exception;
+
+        /** Moves [player] to [positionMs]. */
+        void seek(Object player, int positionMs) throws Exception;
     }
 
     static final PlayerReader PATCHED = new Reflected();
@@ -157,6 +178,20 @@ public final class BackgroundPlay {
     static volatile boolean closing;
     /** When the window's headphones button was last tapped, or 0. */
     private static volatile long windowLeftAt;
+    /** The window's video a lock handed to Facebook's background player (#495), until that ends. */
+    private static volatile WeakReference<Object> lockedPlayer = new WeakReference<>(null);
+    /** The player Facebook's background player started last. */
+    private static volatile WeakReference<Object> backgroundPlayer = new WeakReference<>(null);
+    /** Whether that player was still playing as the handler's return began. */
+    private static volatile boolean keptPlaying;
+    /** Where it had got to in the locked window's video by then, or {@link #NO_POSITION}. */
+    private static volatile int keptPosition = NO_POSITION;
+    /** The window's video back from a lock, until it's paused or the window closes. */
+    private static volatile WeakReference<Object> keptGoing = new WeakReference<>(null);
+    /** Which round of looks at that video is the live one, so an old round stops by itself. */
+    private static volatile int keptLook;
+    /** How many looks in a row found that video stopped after it was pressed to play. */
+    private static int keptMisses;
 
     /** Makes the next hook throw, once. For tests. */
     @Nullable
@@ -193,7 +228,9 @@ public final class BackgroundPlay {
             throwIfAsked();
             if (!on()) return;
             HookStatus.bound(FamilyNames.BACKGROUND_PLAY, "player start");
-            if (start(player, name(trigger), SystemClock.uptimeMillis())) ensureManager();
+            String started = name(trigger);
+            if (BACKGROUND_TRIGGER.equals(started)) backgroundPlayer = new WeakReference<>(player);
+            if (start(player, started, SystemClock.uptimeMillis())) ensureManager();
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.BACKGROUND_PLAY, "player start", failure);
         }
@@ -204,6 +241,7 @@ public final class BackgroundPlay {
         try {
             HookStatus.invoked(FamilyNames.BACKGROUND_PLAY);
             throwIfAsked();
+            if (player == keptGoing.get()) keptGoing = new WeakReference<>(null);
             if (!on()) return;
             Followed followed = followed(player);
             if (followed == null) return;
@@ -313,7 +351,11 @@ public final class BackgroundPlay {
 
     /** First thing in the handler's return to Facebook. */
     public static void returning(Object returning) {
-        if (returning != null && returning == handler && session) ending = true;
+        if (returning != null && returning == handler && session) {
+            ending = true;
+            keptPlaying = backgroundPlaying();
+            keptPosition = keptPlaying ? backgroundPosition() : NO_POSITION;
+        }
     }
 
     /** Before each of the return's own returns, once its player and notification are gone. */
@@ -322,6 +364,141 @@ public final class BackgroundPlay {
         ending = false;
         session = false;
         handledVideo = null;
+        Object player = lockedPlayer.get();
+        boolean goOn = keptPlaying;
+        int position = keptPosition;
+        lockedPlayer = new WeakReference<>(null);
+        backgroundPlayer = new WeakReference<>(null);
+        keptPlaying = false;
+        keptPosition = NO_POSITION;
+        Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> "Background play: handed back, "
+                + (player == null ? "no locked window" : goOn ? "playing at " + position : "paused"));
+        if (player == null || !goOn) return;
+        resumeLater(player, position, WINDOW_RESUME_TRIES);
+    }
+
+    private static void resumeLater(Object player, int position, int tries) {
+        try {
+            Utils.runOnMainThreadDelayed(() -> resumeWindow(player, position, tries), WINDOW_RESUME_MS);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_RESUME, failure);
+        }
+    }
+
+    /** Whether Facebook's background player is playing, so a video paused from the lock screen isn't. */
+    private static boolean backgroundPlaying() {
+        try {
+            Object player = backgroundPlayer.get();
+            return player != null && reader.playing(player);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_RESUME, failure);
+            return false;
+        }
+    }
+
+    /**
+     * How far Facebook's background player got in the locked window's video. It's a player of its
+     * own, so the window's stood still all the while. Nothing when it's playing something else.
+     */
+    private static int backgroundPosition() {
+        try {
+            Object background = backgroundPlayer.get();
+            Object window = lockedPlayer.get();
+            if (background == null || window == null || background == window) return NO_POSITION;
+            String video = reader.videoId(window);
+            if (video == null || !video.equals(reader.videoId(background))) return NO_POSITION;
+            return reader.position(background);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_RESUME, failure);
+            return NO_POSITION;
+        }
+    }
+
+    /**
+     * Unlocking gives the video back to the window, which Android resumes and pauses again, so it sat
+     * paused though it had been playing all along (#495). Plays it on from where the background player
+     * got to, if the window is open and nothing has started it since. The phone can still read as
+     * locked just after the hand back, so a closed or locked window gets a few more looks.
+     */
+    private static void resumeWindow(Object player, int position, int tries) {
+        try {
+            if (!Utils.settingsReady() || !Settings.KEEP_PLAYING_IN_BACKGROUND.get()) return;
+            if (!PictureInPicture.inOpenWindow(player)) {
+                if (tries > 1) {
+                    resumeLater(player, position, tries - 1);
+                } else {
+                    Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
+                            () -> "Background play: no open window on an unlocked phone to go on in");
+                }
+                return;
+            }
+            if (reader.playing(player)) {
+                Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
+                        () -> "Background play: the window's video is playing already");
+                keepGoing(player);
+                return;
+            }
+            if (position > 0) reader.seek(player, position);
+            reader.play(player);
+            Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
+                    () -> "Background play: the window's video goes on from " + position);
+            keepGoing(player);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_RESUME, failure);
+        }
+    }
+
+    private static void keepGoing(Object player) {
+        keptGoing = new WeakReference<>(player);
+        keptMisses = 0;
+        lookLater(player, ++keptLook);
+    }
+
+    private static void lookLater(Object player, int look) {
+        try {
+            Utils.runOnMainThreadDelayed(() -> lookAtWindow(player, look), WINDOW_KEEP_MS);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_RESUME, failure);
+        }
+    }
+
+    /**
+     * Back from a lock, Facebook's restart at the end of a reel starts the window's video and it stops
+     * again moments later without any pause, so the sound ended at the first loop (#495). What stops
+     * it sits below the player's pause and isn't known, but pressing play again holds. Anything that
+     * does pause the video ends this, so a Pause in the window stays a pause. A player Facebook has
+     * let go doesn't start whatever is pressed, so after {@link #WINDOW_KEEP_MISSES} presses in a row
+     * that didn't take, it's left alone.
+     */
+    private static void lookAtWindow(Object player, int look) {
+        try {
+            if (look != keptLook || keptGoing.get() != player) return;
+            if (!Utils.settingsReady() || !Settings.KEEP_PLAYING_IN_BACKGROUND.get()
+                    || !PictureInPicture.inOpenWindow(player)) {
+                keptGoing = new WeakReference<>(null);
+                return;
+            }
+            if (reader.playing(player)) {
+                keptMisses = 0;
+            } else if (++keptMisses > WINDOW_KEEP_MISSES) {
+                keptGoing = new WeakReference<>(null);
+                Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
+                        () -> "Background play: the window's video won't start again, left as it is");
+                return;
+            } else {
+                reader.play(player);
+                Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE,
+                        () -> "Background play: the window's video stopped by itself, started again");
+            }
+            lookLater(player, look);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.BACKGROUND_PLAY, WINDOW_RESUME, failure);
+        }
+    }
+
+    /** Whether [player] is the one Facebook's background player is running a carried video on now. */
+    static boolean isBackgroundPlayer(@Nullable Object player) {
+        return player != null && playingOn() && player == backgroundPlayer.get();
     }
 
     /**
@@ -364,6 +541,7 @@ public final class BackgroundPlay {
     static void leaveWindow(@Nullable Object player, Context context) throws Exception {
         long now = SystemClock.uptimeMillis();
         windowLeftAt = now;
+        lockedPlayer = new WeakReference<>(null);
         if (player != null) {
             synchronized (FOLLOWING) {
                 Followed followed = find(player);
@@ -385,6 +563,7 @@ public final class BackgroundPlay {
         if (player == null || !Utils.settingsReady() || !Settings.KEEP_PLAYING_IN_BACKGROUND.get()) return;
         if (!reader.playing(player)) return;
         leaveWindow(player, context);
+        lockedPlayer = new WeakReference<>(player);
         Logger.diagnosticDebug(DiagnosticCategory.OTHER, SOURCE, () -> "Background play: window locked");
     }
 
@@ -669,6 +848,22 @@ public final class BackgroundPlay {
             Class type = method.getParameterTypes()[0];
             method.invoke(player, Enum.valueOf(type, trigger));
         }
+
+        @Override
+        public void play(Object player) {
+            TapToPlay.armForResume(player);
+            FeedVideoControls.commandPlayer(player, true);
+        }
+
+        @Override
+        public int position(Object player) {
+            return FeedVideoControls.playerPosition(player);
+        }
+
+        @Override
+        public void seek(Object player, int positionMs) {
+            FeedVideoControls.seekPlayer(player, null, positionMs);
+        }
     }
 
     /** Forgets every followed player, the decision and the handler. For tests. */
@@ -684,6 +879,13 @@ public final class BackgroundPlay {
         handledAt = 0;
         closing = false;
         windowLeftAt = 0;
+        lockedPlayer = new WeakReference<>(null);
+        backgroundPlayer = new WeakReference<>(null);
+        keptPlaying = false;
+        keptPosition = NO_POSITION;
+        keptGoing = new WeakReference<>(null);
+        keptLook = 0;
+        keptMisses = 0;
         handler = null;
         manager = null;
         MANAGER_ASKED.set(false);

@@ -750,6 +750,17 @@ public final class PictureInPicture {
         return current.get();
     }
 
+    /** Whether [player] is the video of a window still open, with the phone unlocked. */
+    static boolean inOpenWindow(Object player) {
+        Activity screen;
+        synchronized (PictureInPicture.class) {
+            if (player == null || player != current.get()) return false;
+            screen = armedScreen.get();
+        }
+        return screen != null && !screen.isFinishing() && !screen.isDestroyed()
+                && screen.isInPictureInPictureMode() && !phoneLocked(screen);
+    }
+
     /** A start while a reel floats got a task of its own at [now]. */
     static synchronized void sentAway(long now) {
         sentAwayAt = now;
@@ -1040,6 +1051,8 @@ public final class PictureInPicture {
      * armed again for it. Unless that other player's video is off screen: Facebook getting the next
      * reel ready plays it for a moment, and the window then opened on that reel (#126). Or unless it
      * plays on another screen, such as Home beside a floating viewer ({@link #onAnotherScreen}).
+     * Facebook's background player counts as off screen too: it has no view, and the window's own
+     * video is what comes back at unlock (#495).
      */
     public static void playerPlaying(Object player) {
         try {
@@ -1049,7 +1062,7 @@ public final class PictureInPicture {
                 Logger.printDebug(() -> "Picture-in-picture: player " + System.identityHashCode(player) + " plays on another screen, left out");
                 return;
             }
-            if (anotherReel(player) && offScreen(player)) {
+            if (anotherReel(player) && (offScreen(player) || BackgroundPlay.isBackgroundPlayer(player))) {
                 HookStatus.counted(FAMILY, OFF_SCREEN);
                 Logger.printDebug(() -> "Picture-in-picture: player " + System.identityHashCode(player) + " plays off screen, left out");
                 return;

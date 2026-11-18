@@ -18,6 +18,14 @@ public final class BackgroundPlayForTests {
         private static final AtomicInteger NEXT = new AtomicInteger(1000);
 
         public boolean playing = true;
+        /** A player Facebook let go: pressing play counts, but it doesn't start. */
+        public boolean stuck;
+        /** How many times something other than Facebook started this player. */
+        public int plays;
+        /** Where the video is, in milliseconds. */
+        public int position;
+        /** Where it was as something other than Facebook last started it, or -1. */
+        public int positionAtPlay = -1;
         /** A video id no other player here has. */
         public String video = String.valueOf(NEXT.incrementAndGet());
 
@@ -51,6 +59,24 @@ public final class BackgroundPlayForTests {
         @Override
         public void pause(Object player, String trigger) {
             ((Player) player).pause(Trigger.valueOf(trigger));
+        }
+
+        @Override
+        public void play(Object player) {
+            Player started = (Player) player;
+            started.plays++;
+            started.positionAtPlay = started.position;
+            started.playing = !started.stuck;
+        }
+
+        @Override
+        public int position(Object player) {
+            return ((Player) player).position;
+        }
+
+        @Override
+        public void seek(Object player, int positionMs) {
+            ((Player) player).position = positionMs;
         }
     };
 

@@ -23,7 +23,7 @@ Changes in each Hushfacebook version, newest first. Versions 0.1.0 to 0.19.0 are
 
 ### Fixed
 
-* With `Keep playing in the background` on, a video playing in the picture-in-picture window keeps its sound when you lock the phone. (#495)
+* With `Keep playing in the background` on, a video playing in the picture-in-picture window keeps its sound when you lock the phone and plays on in the window when you unlock it. (#495)
 * With `Open comments at` on `Full height` or `Half height`, Comment on the Reels tab now slides the regular sheet straight up over the reel. Before, the reel shrank into the top of the screen first, the way Facebook's split view opens, and at full height the sheet covered it a moment later. (#501)
 * With the tab bar at the bottom and `See-through bars` or `Rounded tab bar` on, a reel's buttons and caption sit above the tab bar again instead of behind it. Each reel stops at the top of the bar now, and the strip under the bar stays black, so the next reel still doesn't peek out there. (#503)
 * `Fold long text` now holds to the number of lines you picked on posts it used to miss, including the first ones in the feed. Comments fold by how they actually wrap on your screen, so 8 lines means about 8 lines, and a video's caption follows the count you picked for posts. (#506)
