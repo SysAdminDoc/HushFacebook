@@ -1199,8 +1199,10 @@ internal fun barColourHelpers(method: Method, painters: Set<String>): Set<String
 /**
  * Hooks FDS's colour resolver, the [fdsColourSource]. 588 folded `FDSColors`' Integer source, its
  * instance resolvers and their static copies into this one method: Litho's resolver, Compose's and
- * the palette readers only return its answer, so hooking it here reaches every colour, a server
- * palette's and a DSP theme's included (#141).
+ * the palette readers only return its answer, so hooking it here reaches their colours, a server
+ * palette's and a DSP theme's included (#141). Two places read a token's colour data themselves and
+ * stay outside, as they did on 587: a rounded background (`LX/0ZfZ;->A01`, behind two server flags)
+ * and three colours of a text style (a case of `LX/0bnO;->invoke`).
  */
 internal fun BytecodePatchContext.hookFdsColorsResolvers(target: String) {
     val colors = mutableClassDefBy(fdsColors())

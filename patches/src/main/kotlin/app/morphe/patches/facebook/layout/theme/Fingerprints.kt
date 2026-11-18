@@ -65,8 +65,8 @@ internal fun BytecodePatchContext.fdsColors(): String = fdsColorsTypes.getOrPut(
  * FDS's colour resolver in [classDef], else null: the static method answering an int from a Context,
  * a token and a palette, which hands the token to a static method taking the token, an int and a
  * boolean, the step reading the palette's colour. 588 (`LX/02IY;->A00`) folded the old `Integer`
- * colour source and its instance resolvers into this one method, so every colour passes it. The
- * token type is its second parameter.
+ * colour source and its instance resolvers into this one method, which the resolvers' callers now
+ * all reach. The token type is its second parameter.
  */
 internal fun fdsColourSource(classDef: ClassDef): Method? = classDef.methods.singleOrNull { method ->
     val parameters = method.parameterTypes.map { it.toString() }
