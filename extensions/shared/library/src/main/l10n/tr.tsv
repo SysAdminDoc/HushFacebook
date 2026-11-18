@@ -1358,6 +1358,8 @@ Save photo	Fotoğrafı kaydet
 Save video	Videoyu kaydet
 # context: menu item in a post's three-dot menu that saves every photo of a post with several photos
 Save all photos	Tüm fotoğrafları kaydet
+# context: menu item in a post's three-dot menu that saves every video of a post with several videos
+Save all videos	Tüm videoları kaydet
 # context: short message shown when the photos of a post could not start saving
 Couldn't save this post's photos. Try again in a moment.	Bu gönderinin fotoğrafları kaydedilemedi. Birazdan tekrar dene.
 # context: row in a comment's long-press sheet that saves the GIF the comment holds; keep it short like Save photo

@@ -1358,6 +1358,8 @@ Save photo	Foto speichern
 Save video	Video speichern
 # context: menu item in a post's three-dot menu that saves every photo of a post with several photos
 Save all photos	Alle Fotos speichern
+# context: menu item in a post's three-dot menu that saves every video of a post with several videos
+Save all videos	Alle Videos speichern
 # context: short message shown when the photos of a post could not start saving
 Couldn't save this post's photos. Try again in a moment.	Die Fotos dieses Beitrags ließen sich nicht speichern. Versuche es gleich noch einmal.
 # context: row in a comment's long-press sheet that saves the GIF the comment holds; keep it short like Save photo

@@ -106,7 +106,7 @@ internal fun BytecodePatchContext.hookTypes(row: ActionRow) {
 
 /**
  * Download: where the row's walk over its types ends, the extension is asked whether this post
- * holds a video or photos, and when it does, an item built like Save's (Facebook's Download icon,
+ * holds videos or photos, and when it does, an item built like Save's (Facebook's Download icon,
  * the label as text and description, the extension as the click) joins the row's list. The list is
  * held above v15 (588's v16), so it's copied first into a low register nothing reads from there on.
  */

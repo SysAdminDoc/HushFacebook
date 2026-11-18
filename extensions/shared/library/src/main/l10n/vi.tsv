@@ -1358,6 +1358,8 @@ Save photo	Lưu ảnh
 Save video	Lưu video
 # context: menu item in a post's three-dot menu that saves every photo of a post with several photos
 Save all photos	Lưu tất cả ảnh
+# context: menu item in a post's three-dot menu that saves every video of a post with several videos
+Save all videos	Lưu tất cả video
 # context: short message shown when the photos of a post could not start saving
 Couldn't save this post's photos. Try again in a moment.	Không thể lưu ảnh của bài viết này. Hãy thử lại sau giây lát.
 # context: row in a comment's long-press sheet that saves the GIF the comment holds; keep it short like Save photo

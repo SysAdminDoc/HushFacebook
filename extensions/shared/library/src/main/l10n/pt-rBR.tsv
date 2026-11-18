@@ -1244,6 +1244,8 @@ Save photo	Salvar foto
 Save video	Salvar vídeo
 # context: menu item in a post's three-dot menu that saves every photo of a post with several photos
 Save all photos	Salvar todas as fotos
+# context: menu item in a post's three-dot menu that saves every video of a post with several videos
+Save all videos	Salvar todos os vídeos
 # context: short message shown when the photos of a post could not start saving
 Couldn't save this post's photos. Try again in a moment.	Não foi possível salvar as fotos desta publicação. Tente de novo em instantes.
 # context: row in a comment's long-press sheet that saves the GIF the comment holds; keep it short like Save photo

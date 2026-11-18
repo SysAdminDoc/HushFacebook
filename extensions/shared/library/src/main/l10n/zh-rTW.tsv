@@ -1360,6 +1360,8 @@ Couldn't get this photo. Try again in a moment.	無法取得這張相片。請�
 Save photo	儲存相片
 # context: menu item in a post's three-dot menu that saves every photo of a post with several photos
 Save all photos	儲存所有相片
+# context: menu item in a post's three-dot menu that saves every video of a post with several videos
+Save all videos	儲存所有影片
 # context: short message shown when the photos of a post could not start saving
 Couldn't save this post's photos. Try again in a moment.	無法儲存這則貼文的相片。請稍後再試。
 # context: row in a comment's long-press sheet that saves the GIF the comment holds; keep it short like Save photo

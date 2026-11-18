@@ -352,16 +352,99 @@ public final class MediaDownload {
         return turn.ended;
     }
 
-    /** The save a reel queue turn started: its worker, its number for Cancel, and how it ended. */
+    /**
+     * The save a turn started: its worker, its number for Cancel, and how it ended. A reel queue's
+     * turn has no [postCancelled]. A turn of {@link #savePost} has one, which a cancelled save sets
+     * so the rest of that post stays unsaved.
+     */
     static final class Turn {
+        final AtomicBoolean postCancelled;
         volatile Thread worker;
         volatile int saveId = -1;
         volatile Downloader.Status ended;
         volatile boolean interrupted;
+
+        Turn() {
+            this(null);
+        }
+
+        Turn(AtomicBoolean postCancelled) {
+            this.postCancelled = postCancelled;
+        }
     }
 
-    /** The turn the reel queue is starting on this thread, or null for a tap's own save. */
+    /** The turn being started on this thread, or null for a tap's own save. */
     private static final ThreadLocal<Turn> QUEUED = new ThreadLocal<>();
+
+    /**
+     * Saves [photos] and then [videos] of one post, one at a time (#509): each is the usual save with
+     * its notification and Cancel button, the next waits for it to end and for a free save slot, and
+     * cancelling one leaves the rest unsaved, as for an album's photos. The videos keep the quality
+     * this call was made under. Answers the thread running them, or null when it couldn't start.
+     * Never throws: a question's Continue can call this straight from a button.
+     */
+    static Thread savePost(Context context, List<PhotoMenuItem.Photo> photos, List<VideoMenuItem.Video> videos) {
+        try {
+            Context safe = ready(context);
+            if (safe == null) return null;
+            DownloadQuality quality = quality();
+            info(() -> "saving a post's " + photos.size() + " photo(s) and " + videos.size() + " video(s), one after another");
+            Thread chain = thread(() -> {
+                AtomicBoolean cancelled = new AtomicBoolean();
+                for (PhotoMenuItem.Photo photo : photos) {
+                    if (saveInTurn(cancelled, () -> savePhoto(safe, photo.url, photo.details)) == TurnEnd.STOP) return;
+                }
+                boolean missed = false;
+                for (VideoMenuItem.Video video : videos) {
+                    TurnEnd end = saveInTurn(cancelled,
+                        () -> withQuality(quality, () -> saveFeedVideo(safe, video.details, video.hd, video.sd)));
+                    if (end == TurnEnd.STOP) return;
+                    missed |= end == TurnEnd.NOT_STARTED;
+                }
+                if (missed) {
+                    Feedback.show(safe,
+                        L10n.t(safe, "Couldn't save this video. Play it for a moment, then try again."), true);
+                }
+            }, "hushfacebook-post-saves");
+            chain.setDaemon(true);
+            chain.setPriority(Thread.NORM_PRIORITY - 1);
+            chain.start();
+            return chain;
+        } catch (Throwable t) {
+            failure(() -> "a post's saves could not start", t);
+            return null;
+        }
+    }
+
+    private enum TurnEnd { DONE, NOT_STARTED, STOP }
+
+    /** One save of {@link #savePost}, started by [save] and waited for on this thread. */
+    private static TurnEnd saveInTurn(AtomicBoolean cancelled, QualityChooser.Save save) {
+        if (cancelled.get()) return TurnEnd.STOP;
+        Turn turn = new Turn(cancelled);
+        QUEUED.set(turn);
+        try {
+            save.start();
+        } catch (Throwable t) {
+            // Nothing can leave this thread; the post's next save still gets its turn.
+            failure(() -> "a save of the post could not start", t);
+        } finally {
+            QUEUED.remove();
+        }
+        if (turn.interrupted) {
+            Thread.currentThread().interrupt();
+            return TurnEnd.STOP;
+        }
+        Thread worker = turn.worker;
+        if (worker == null) return TurnEnd.NOT_STARTED;
+        try {
+            worker.join();
+        } catch (InterruptedException stop) {
+            Thread.currentThread().interrupt();
+            return TurnEnd.STOP;
+        }
+        return cancelled.get() ? TurnEnd.STOP : TurnEnd.DONE;
+    }
 
     /**
      * Save the video of a post in the feed or in Watch: the item the video patch adds to the
@@ -1266,7 +1349,7 @@ public final class MediaDownload {
             Reservation reservation = reserveNow();
             return reservation == null ? null : startReserved(application, video, details, job, reservation, null, null);
         }
-        // A reel queue turn waits for a slot: the queue is how a reel gets saved when slots are full.
+        // A turn waits for a slot: that's how a reel queue or a whole post saves when slots are full.
         Reservation reservation;
         try {
             reservation = awaitReservation();
@@ -1274,7 +1357,7 @@ public final class MediaDownload {
             turn.interrupted = true;
             return null;
         }
-        Thread worker = startReserved(application, video, details, job, reservation, null, turn);
+        Thread worker = startReserved(application, video, details, job, reservation, turn.postCancelled, turn);
         turn.worker = worker;
         return worker;
     }
@@ -1299,12 +1382,14 @@ public final class MediaDownload {
             if (turn != null) turn.saveId = save.id;
             final boolean quiet = quietSaves();
             // A queue turn ends as a quiet save does, toasting only a failure: the queue's card counts
-            // the rest, and a toast per reel would bury the screen for a long queue.
-            final boolean hushed = quiet || turn != null;
+            // the rest, and a toast per reel would bury the screen for a long queue. A post's saves
+            // have no card, so they speak as an album's photos do.
+            final boolean queued = turn != null && turn.postCancelled == null;
+            final boolean hushed = quiet || queued;
             // With no notification to cancel it from, the list of saves in the settings is the only way
             // to stop it, so the start says where that is, for long enough to read. A queue turn's start
             // says nothing: the reel said "Added to the queue" when it was tapped.
-            if (turn != null) {
+            if (queued) {
                 info(() -> "a queued reel's turn: no toast as it starts");
             } else if (quiet) {
                 info(() -> "quiet saves: no toast as the save starts or ends, unless it fails");

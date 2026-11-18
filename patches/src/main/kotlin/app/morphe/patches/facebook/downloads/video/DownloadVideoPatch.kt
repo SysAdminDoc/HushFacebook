@@ -11,6 +11,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
+import app.morphe.patches.facebook.downloads.photo.SUBATTACHMENTS_FIELD
 import app.morphe.patches.facebook.downloads.photo.commentSheetDialogPatch
 import app.morphe.patches.facebook.downloads.photo.commentSheetVideoRow
 import app.morphe.patches.facebook.downloads.story.rememberPlayerSources
@@ -46,7 +47,7 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 /** The extension call that adds the item to a post's menu once Facebook has filled it. */
 private const val ADD_ITEM = "Lapp/morphe/extension/facebook/download/VideoMenuItem;->add(" +
     "Landroid/view/Menu;Landroid/view/View;Ljava/lang/Object;I" +
-    "Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
+    "Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
 
 /** The video patch's own recorder of player sources, behind its own switch. */
 private const val REMEMBER_VIDEO_SOURCE = "Lapp/morphe/extension/facebook/download/PlayerSources;->" +
@@ -82,8 +83,9 @@ private const val REMEMBER_HELPER = "hushfacebookRememberVideoSource"
 val downloadVideoPatch = bytecodePatch(
     name = "Download any video",
     description = "Adds Download to phone to the menu of videos in the feed and in Watch, so you can save them " +
-        "to watch later. A video comment gets Save video when you long-press it. Videos save at the quality you " +
-        "set, best by default. Starts off. Turn it on in Hushfacebook settings > Downloads.",
+        "to watch later. A post with several videos gets Save all videos. A video comment gets Save video when " +
+        "you long-press it. Videos save at the quality you set, best by default. Starts off. Turn it on in " +
+        "Hushfacebook settings > Downloads.",
 ) {
     category("Downloads")
     dependsOn(settingsPatch)
@@ -96,7 +98,17 @@ val downloadVideoPatch = bytecodePatch(
         val addCommentVideoRow = commentSheetVideoRow()
         callAfterMenuFill(
             menu,
-            postMenuHelper(menu, MENU_HELPER, ADD_ITEM, listOf(menu.attachments, menu.media, menu.attachedStory)),
+            postMenuHelper(
+                menu,
+                MENU_HELPER,
+                ADD_ITEM,
+                listOf(
+                    menu.attachments,
+                    menu.media,
+                    menu.attachedStory,
+                    graphQlGetter(GRAPHQL_STORY_ATTACHMENT, IMMUTABLE_LIST, SUBATTACHMENTS_FIELD, "subattachments"),
+                ),
+            ),
         )
 
         // ---- the players' sources, for the manifest a post's media doesn't carry -------------------

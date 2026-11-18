@@ -81,7 +81,7 @@ public class OpenInAnotherAppTest {
     private Menu filled(Object post) {
         Menu menu = VideoMenuItemForTests.facebooksMenu(context);
         VideoMenuItem.add(menu, new View(context), post, VideoMenuItemForTests.ICON,
-                VideoMenuItemForTests.ATTACHMENTS, VideoMenuItemForTests.MEDIA, VideoMenuItemForTests.ATTACHED_STORY);
+                VideoMenuItemForTests.ATTACHMENTS, VideoMenuItemForTests.MEDIA, VideoMenuItemForTests.ATTACHED_STORY, PhotoMenuItemForTests.SUBATTACHMENTS);
         return menu;
     }
 

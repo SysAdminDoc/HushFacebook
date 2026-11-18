@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.download;
 
 import android.content.Context;
 
+import java.util.Collections;
 import java.util.List;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -30,9 +31,10 @@ import kotlin.jvm.functions.Function1;
  *
  * <p>A video post saves its video the way Download to phone does from the post's menu, so it
  * needs Download feed and Watch videos on and honors Send to app. A photo post saves its photo,
- * or every photo of an album, the way Save photo does, and needs Save any photo on. A post with
- * neither, or with the switch off, paused, or before the settings are ready, gets Facebook's own
- * row. The post's getters are found by the GraphQL field each one reads and handed over by name.
+ * or every photo of an album, the way Save photo does, and needs Save any photo on. A post mixing
+ * them, or holding several videos, saves all of it one after another (#509). A post with neither,
+ * or with the switch off, paused, or before the settings are ready, gets Facebook's own row. The
+ * post's getters are found by the GraphQL field each one reads and handed over by name.
  */
 public final class PostDownloadButton implements Function1<Object, Object> {
 
@@ -73,7 +75,7 @@ public final class PostDownloadButton implements Function1<Object, Object> {
             if (post == null || !Utils.settingsReady() || !Settings.POST_DOWNLOAD_BUTTON.get()) return null;
             HookStatus.invoked(FamilyNames.POST_ACTION_BUTTONS);
             PostDownloadButton button = null;
-            if (savesVideos() && VideoMenuItem.holdsVideo(VideoMenuItem.mediaOf(post, attachments, media, attachedStory))) {
+            if (savesVideos() && VideoMenuItem.holdsVideo(post, attachments, media, attachedStory, subattachments)) {
                 button = new PostDownloadButton(context, post, true, attachments, media, attachedStory, subattachments);
             } else if (savesPhotos() && PhotoMenuItem.holdsPhoto(post, attachments, media, attachedStory, subattachments)) {
                 button = new PostDownloadButton(context, post, false, attachments, media, attachedStory, subattachments);
@@ -103,10 +105,15 @@ public final class PostDownloadButton implements Function1<Object, Object> {
                 return null;
             }
             if (video) {
-                Object found = VideoMenuItem.mediaOf(post, attachments, media, attachedStory);
-                if (found != null) {
-                    VideoMenuItem.tap(context, VideoMenuItem.Video.of(found, VideoMenuItem.postOf(post, attachedStory)));
-                }
+                List<VideoMenuItem.Video> videos =
+                    VideoMenuItem.videosOf(post, attachments, media, attachedStory, subattachments);
+                if (videos.isEmpty()) return null;
+                // A link goes for a video only, so the post's photos come along only for a save.
+                List<PhotoMenuItem.Photo> photos = savesPhotos() && !SendLink.sending()
+                    ? PhotoMenuItem.photosOf(post, attachments, media, attachedStory, subattachments)
+                    : Collections.emptyList();
+                if (videos.size() == 1 && photos.isEmpty()) VideoMenuItem.tap(context, videos.get(0));
+                else VideoMenuItem.tapAll(context, videos, photos);
                 return null;
             }
             if (!savesPhotos()) return null;

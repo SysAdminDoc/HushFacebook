@@ -1358,6 +1358,8 @@ Save photo	บันทึกรูปภาพ
 Save video	บันทึกวิดีโอ
 # context: menu item in a post's three-dot menu that saves every photo of a post with several photos
 Save all photos	บันทึกรูปภาพทั้งหมด
+# context: menu item in a post's three-dot menu that saves every video of a post with several videos
+Save all videos	บันทึกวิดีโอทั้งหมด
 # context: short message shown when the photos of a post could not start saving
 Couldn't save this post's photos. Try again in a moment.	ไม่สามารถบันทึกรูปภาพของโพสต์นี้ได้ โปรดลองอีกครั้งในอีกสักครู่
 # context: row in a comment's long-press sheet that saves the GIF the comment holds; keep it short like Save photo

@@ -10,7 +10,11 @@ import android.view.MenuItem;
 import android.view.View;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import app.morphe.extension.facebook.media.PostMenuSpeed;
 import app.morphe.extension.facebook.media.SkipSilence;
@@ -30,8 +34,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * after that call returns. The item goes below Facebook's own and none of them changes, its own
  * Download video included on the posts where it offers one. With the switch off, paused, or
  * before the settings are ready, the menu is Facebook's own. While links are sent instead of saved
- * ({@link SendLink}), the item is Send to app and hands over the video's facebook.com link.
- * While Skip silent parts is on and a video has started, the same call adds that patch's row below
+ * ({@link SendLink}), the item is Send to app and hands over the video's facebook.com link. A post
+ * holding several videos, as an album of them does, gets Save all videos, which saves them one
+ * after another (#509). While Skip silent parts is on and a video has started, the same call adds that patch's row below
  * Facebook's ({@link SkipSilence}), so it shows only where Download any video is patched too.
  * Playback speed in the post menu adds its Playback speed row the same way ({@link PostMenuSpeed}).
  *
@@ -64,17 +69,21 @@ public final class VideoMenuItem {
     /** How many shared posts deep the video is looked for, as Facebook's own menu does. */
     private static final int MAX_SHARE_DEPTH = 4;
 
+    /** The most videos one tap saves, as a tap saves at most {@link PhotoMenuItem#MAX_PHOTOS} photos. */
+    static final int MAX_VIDEOS = 50;
+
     /**
      * Adds the item to [menu] when the post Facebook filled it for holds a video.
      *
      * <p>[item] is what the menu was built for: the post, or one of its attachments.
-     * [attachmentsGetter], [mediaGetter] and [attachedStoryGetter] are the real names of the
-     * post's attachment list, an attachment's media and the post a share wraps. [icon] is the
-     * drawable Facebook's own Download video row uses in this build. Never throws: this runs
-     * inside Facebook's menu code, and false is always Facebook's own menu.
+     * [attachmentsGetter], [mediaGetter], [attachedStoryGetter] and [subattachmentsGetter] are the
+     * real names of the post's attachment list, an attachment's media, the post a share wraps and
+     * an attachment's own list of attachments. [icon] is the drawable Facebook's own Download video
+     * row uses in this build. Never throws: this runs inside Facebook's menu code, and false is
+     * always Facebook's own menu.
      */
-    public static void add(Menu menu, View anchor, Object item, int icon,
-                           String attachmentsGetter, String mediaGetter, String attachedStoryGetter) {
+    public static void add(Menu menu, View anchor, Object item, int icon, String attachmentsGetter,
+                           String mediaGetter, String attachedStoryGetter, String subattachmentsGetter) {
         try {
             if (!Utils.settingsReady()) return;
             boolean download = Settings.DOWNLOAD_VIDEOS.get();
@@ -86,19 +95,22 @@ public final class VideoMenuItem {
             if (menu == null) return;
             if (saving) HookStatus.invoked(FamilyNames.VIDEO_DOWNLOAD);
 
-            Object media = mediaOf(item, attachmentsGetter, mediaGetter, attachedStoryGetter);
-            if (media == null) return;
+            List<Video> videos = videosOf(item, attachmentsGetter, mediaGetter, attachedStoryGetter, subattachmentsGetter);
+            if (videos.isEmpty()) return;
 
-            Video video = Video.of(media, postOf(item, attachedStoryGetter));
-            if (!video.offered()) return;
-
+            // The rows that act on one video act on the post's first, the one its menu always meant.
+            Video video = videos.get(0);
+            boolean several = videos.size() > 1;
             Context context = anchor == null ? null : anchor.getContext();
             if (download) {
-                MenuItem entry = MenuTop.add(menu, SendLink.sending() ? L10n.t("Send to app") : L10n.t("Download to phone"));
+                String title = SendLink.sending() ? L10n.t("Send to app")
+                    : several ? L10n.t("Save all videos") : L10n.t("Download to phone");
+                MenuItem entry = MenuTop.add(menu, title);
                 if (entry != null) {
                     if (icon != 0) entry.setIcon(icon);
                     entry.setOnMenuItemClickListener(tapped -> {
-                        tap(context, video);
+                        if (several) tapAll(context, videos, Collections.emptyList());
+                        else tap(context, video);
                         return true;
                     });
                 }
@@ -188,21 +200,119 @@ public final class VideoMenuItem {
     }
 
     /**
-     * The media of [item], or {@code null} when it has none. A post that shares another post
-     * carries the video in the shared one, so that's followed first, the way Facebook's own menu
-     * finds a post's media. Then the first attachment's media, again as Facebook does it.
+     * A tap that saves several things of one post: [videos], and [photos] when the tap came from
+     * the button under the post, which saves all of it (#509). One question and one quality pick
+     * cover the lot. While links are sent instead, the videos' links go over together.
      */
-    static Object mediaOf(Object item, String attachmentsGetter, String mediaGetter, String attachedStoryGetter) {
-        if (item == null) return null;
+    static void tapAll(Context context, List<Video> videos, List<PhotoMenuItem.Photo> photos) {
+        try {
+            if (!Utils.settingsReady() || !Settings.DOWNLOAD_VIDEOS.get()) {
+                Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE,
+                    () -> "Save all videos tapped after its switch went off");
+                return;
+            }
+            Context application = context == null ? Utils.getContext() : context.getApplicationContext();
+            if (SendLink.sending()) {
+                sendAll(application, videos);
+                return;
+            }
+            Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE,
+                () -> "Save all tapped, " + videos.size() + " video(s) and " + photos.size() + " photo(s)");
+            if (MediaDownload.busy(application)) return;
+            QualityChooser.Save save = () -> saveAll(application, videos, photos);
+            if (AskBeforeDownload.askForVideo(context, save::start)) return;
+            if (QualityChooser.ask(context, save)) return;
+            save.start();
+        } catch (Throwable t) {
+            // It runs inside Facebook's click dispatch, on the thread that draws the app.
+            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "video menu tap", t);
+            Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "the Save all videos tap failed", t);
+        }
+    }
 
-        if (isA(item, GRAPHQL_STORY_ATTACHMENT)) return call(item, mediaGetter);
+    private static void sendAll(Context application, List<Video> videos) {
+        List<String> links = new ArrayList<>();
+        for (Video video : videos) {
+            String link = SendLink.videoLink(video.id);
+            if (link != null) links.add(link);
+        }
+        Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "Send to app tapped, " + links.size() + " link(s)");
+        if (links.isEmpty()) {
+            Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "no video of the post names an id", null);
+            Feedback.show(application, L10n.t(application, "Couldn't find this video's link"), true);
+            return;
+        }
+        SendLink.send(application, String.join("\n", links));
+    }
+
+    private static boolean saveAll(Context application, List<Video> videos, List<PhotoMenuItem.Photo> photos) {
+        if (MediaDownload.savePost(application, photos, videos) != null) return true;
+        Feedback.show(application,
+            L10n.t(application, "Couldn't save this video. Play it for a moment, then try again."), true);
+        return false;
+    }
+
+    /**
+     * The videos of [item], in the order the post shows them, at most {@link #MAX_VIDEOS}: for each
+     * attachment of the post, the videos among its own attachments, or else its own media when
+     * that's one (#509). A post sharing another post is followed to the shared one first, the way
+     * Facebook's own menu finds a post's media, and an attachment's menu reads that attachment only.
+     * A video the post lists twice counts once.
+     */
+    static List<Video> videosOf(Object item, String attachmentsGetter, String mediaGetter,
+                                String attachedStoryGetter, String subattachmentsGetter) {
         Object story = postOf(item, attachedStoryGetter);
-        if (story == null) return null;
+        List<Video> videos = new ArrayList<>();
+        for (Object media : videoMedia(item, attachmentsGetter, mediaGetter, attachedStoryGetter,
+                subattachmentsGetter, MAX_VIDEOS)) {
+            videos.add(Video.of(media, story));
+        }
+        return videos;
+    }
 
-        Object attachments = call(story, attachmentsGetter);
-        if (!(attachments instanceof List) || ((List<?>) attachments).isEmpty()) return null;
-        Object first = ((List<?>) attachments).get(0);
-        return first == null ? null : call(first, mediaGetter);
+    /**
+     * Whether [item] holds a video {@link #videosOf} would find, read without what the file name
+     * needs, for a check that runs each time a post's row is built.
+     */
+    static boolean holdsVideo(Object item, String attachmentsGetter, String mediaGetter,
+                              String attachedStoryGetter, String subattachmentsGetter) {
+        return !videoMedia(item, attachmentsGetter, mediaGetter, attachedStoryGetter, subattachmentsGetter, 1).isEmpty();
+    }
+
+    private static List<Object> videoMedia(Object item, String attachmentsGetter, String mediaGetter,
+                                           String attachedStoryGetter, String subattachmentsGetter, int max) {
+        if (item == null) return Collections.emptyList();
+        List<Object> attachments = new ArrayList<>();
+        if (isA(item, GRAPHQL_STORY_ATTACHMENT)) {
+            attachments.add(item);
+        } else {
+            Object story = postOf(item, attachedStoryGetter);
+            if (story == null) return Collections.emptyList();
+            Object list = call(story, attachmentsGetter);
+            if (list instanceof List) attachments.addAll((List<?>) list);
+        }
+
+        List<Object> found = new ArrayList<>();
+        Set<String> ids = new HashSet<>();
+        for (Object attachment : attachments) {
+            if (attachment == null) continue;
+            int before = found.size();
+            Object subattachments = call(attachment, subattachmentsGetter);
+            if (subattachments instanceof List) {
+                for (Object sub : (List<?>) subattachments) {
+                    if (sub != null) addVideo(found, ids, call(sub, mediaGetter), max);
+                }
+            }
+            // An album's own media is often its cover, so it only counts when the list held no video.
+            if (found.size() == before) addVideo(found, ids, call(attachment, mediaGetter), max);
+        }
+        return found;
+    }
+
+    private static void addVideo(List<Object> found, Set<String> ids, Object media, int max) {
+        if (found.size() >= max || !holdsVideo(media)) return;
+        String id = cachedString(media, ID);
+        if (id == null || ids.add(id)) found.add(media);
     }
 
     /**
@@ -261,11 +371,8 @@ public final class VideoMenuItem {
         }
     }
 
-    /**
-     * Whether [media] holds a video the item is offered for, read without what the file name
-     * needs, for a check that runs each time a post's row is built.
-     */
-    static boolean holdsVideo(Object media) {
+    /** Whether [media] is a video the item is offered for, read without what the file name needs. */
+    private static boolean holdsVideo(Object media) {
         return media != null && offers(VIDEO_TYPE.equals(typeName(media)), cachedString(media, HD_PLAYABLE_URL),
             cachedString(media, PLAYABLE_URL), cachedString(media, ID));
     }

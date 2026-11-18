@@ -116,7 +116,7 @@ public class VideoMenuItemTest {
 
     private Menu filled(Object post) {
         Menu menu = VideoMenuItemForTests.facebooksMenu(context);
-        VideoMenuItem.add(menu, new View(context), post, ICON, ATTACHMENTS, MEDIA, ATTACHED_STORY);
+        VideoMenuItem.add(menu, new View(context), post, ICON, ATTACHMENTS, MEDIA, ATTACHED_STORY, PhotoMenuItemForTests.SUBATTACHMENTS);
         return menu;
     }
 
@@ -184,7 +184,7 @@ public class VideoMenuItemTest {
     public void downloadFirstTopsFacebooksOwnSortedMenu() {
         Settings.POST_MENU_DOWNLOAD_FIRST.save(true);
         Menu menu = VideoMenuItemForTests.facebooksSortedMenu();
-        VideoMenuItem.add(menu, new View(context), VideoMenuItemForTests.videoPost(), ICON, ATTACHMENTS, MEDIA, ATTACHED_STORY);
+        VideoMenuItem.add(menu, new View(context), VideoMenuItemForTests.videoPost(), ICON, ATTACHMENTS, MEDIA, ATTACHED_STORY, PhotoMenuItemForTests.SUBATTACHMENTS);
 
         assertEquals(3, menu.size());
         assertEquals("Download to phone", String.valueOf(menu.getItem(0).getTitle()));
@@ -193,7 +193,7 @@ public class VideoMenuItemTest {
 
         Settings.POST_MENU_DOWNLOAD_FIRST.save(false);
         Menu below = VideoMenuItemForTests.facebooksSortedMenu();
-        VideoMenuItem.add(below, new View(context), VideoMenuItemForTests.videoPost(), ICON, ATTACHMENTS, MEDIA, ATTACHED_STORY);
+        VideoMenuItem.add(below, new View(context), VideoMenuItemForTests.videoPost(), ICON, ATTACHMENTS, MEDIA, ATTACHED_STORY, PhotoMenuItemForTests.SUBATTACHMENTS);
         assertEquals("Download to phone", String.valueOf(below.getItem(2).getTitle()));
     }
 
@@ -307,7 +307,7 @@ public class VideoMenuItemTest {
     public void aGetterThisBuildMovedIsAMissNamedInHookStatus() {
         Menu menu = VideoMenuItemForTests.facebooksMenu(context);
         VideoMenuItem.add(menu, new View(context), VideoMenuItemForTests.videoPost(), ICON, "A9z", MEDIA,
-                ATTACHED_STORY);
+                ATTACHED_STORY, PhotoMenuItemForTests.SUBATTACHMENTS);
 
         assertEquals(2, menu.size());
         assertEquals(java.util.Collections.singletonList("Download any video: invoked 1, 0 found, 1 missing. "
@@ -323,7 +323,7 @@ public class VideoMenuItemTest {
                     return null;
                 });
         VideoMenuItem.add(refusing, new View(context), VideoMenuItemForTests.videoPost(), ICON, ATTACHMENTS, MEDIA,
-                ATTACHED_STORY);
+                ATTACHED_STORY, PhotoMenuItemForTests.SUBATTACHMENTS);
 
         assertTrue(LogBufferManager.buildExportText().contains("could not add Download to phone to a post's menu"));
     }
