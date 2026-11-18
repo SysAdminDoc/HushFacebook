@@ -17,6 +17,8 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMuta
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.methodsHolding
+import app.morphe.patches.facebook.feed.namesString
+import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.media.resume.VIDEO_PLAYER_PARAMS
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
@@ -415,8 +417,9 @@ val keepProgressBarPatch = bytecodePatch(
         if (progress.base.type != scrubberBase(scrubber) || progress.base.type !in listOfNotNull(scrubberClass.type, scrubberClass.superclass)) {
             refuse("${progress.base.type}, which updates the progress, isn't the class holding ${scrubber.type}'s views")
         }
-        val checksOwner = lengthCheckOwner(scrubberClass, progress.base)
-        val lengthChecks = scrubberLengthChecks(checksOwner)
+        val stringTables: (MethodReference) -> Method? = { call -> classDefByOrNull(call.definingClass)?.let { resolveStatic(it, call) } }
+        val checksOwner = lengthCheckOwner(scrubberClass, progress.base, stringTables)
+        val lengthChecks = scrubberLengthChecks(checksOwner, stringTables)
         progress.body.freeLocalsAt(PATCH, dragCheck(progress.body, progress), 2)
         val info = barInfo(progress.base, lengthChecks?.minimum)
         val handOver = reelHandOver(
@@ -1265,13 +1268,14 @@ private val MINIMUM_COMPARES = arrayOf(Opcode.IF_LT, Opcode.IF_GE)
 private val SHORT_COMPARES = arrayOf(Opcode.IF_GT, Opcode.IF_LE)
 
 /**
- * The scrubber's instance length checks loading [LENGTH_CHECK_SURFACE] that compare the reel's
- * length, their int parameter, first in an [opcode] against Facebook's minimum.
+ * The scrubber's instance length checks naming [LENGTH_CHECK_SURFACE] that compare the reel's
+ * length, their int parameter, first in an [opcode] against Facebook's minimum. 588 asks a string
+ * table for the name (arm64 `LX/04eH;->A00`), which [tables] resolves.
  */
-private fun lengthChecks(scrubber: ClassDef, vararg opcodes: Opcode): List<Method> =
-    methodsHolding(scrubber, LENGTH_CHECK_SURFACE).filter {
-        !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
-            isLengthCheckShape(it.parameterTypes.map(CharSequence::toString))
+private fun lengthChecks(scrubber: ClassDef, tables: (MethodReference) -> Method?, vararg opcodes: Opcode): List<Method> =
+    scrubber.methods.filter {
+        !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" && it.implementation != null &&
+            isLengthCheckShape(it.parameterTypes.map(CharSequence::toString)) && namesString(it, LENGTH_CHECK_SURFACE, tables)
     }.filter { check ->
         val implementation = check.implementation!!
         // The parameters take the last three registers: this, then the length and the boolean in their order.
@@ -1307,9 +1311,9 @@ internal class LengthChecks(val minimum: Method, val short: Method)
  * into the bar info builder, the Reels tab scrubber's own minimum with them (an `instance-of
  * LX/7lL;` branch there), and [barInfo] finds their answers in it instead.
  */
-internal fun scrubberLengthChecks(scrubber: ClassDef): LengthChecks? {
-    if (lengthChecks(scrubber, *MINIMUM_COMPARES).isEmpty() && lengthChecks(scrubber, *SHORT_COMPARES).isEmpty()) return null
-    return LengthChecks(minimumLengthCheck(scrubber), shortReelCheck(scrubber))
+internal fun scrubberLengthChecks(scrubber: ClassDef, tables: (MethodReference) -> Method?): LengthChecks? {
+    if (lengthChecks(scrubber, tables, *MINIMUM_COMPARES).isEmpty() && lengthChecks(scrubber, tables, *SHORT_COMPARES).isEmpty()) return null
+    return LengthChecks(minimumLengthCheck(scrubber, tables), shortReelCheck(scrubber, tables))
 }
 
 /**
@@ -1317,17 +1321,17 @@ internal fun scrubberLengthChecks(scrubber: ClassDef): LengthChecks? {
  * scrubber extends it and only the base has them. 585's Android 9 build moved the looks into a class
  * extending the base (`LX/0AFM;` below `LX/0AEa;`) and left the checks on the base (`A1M`, `A1N`).
  */
-internal fun lengthCheckOwner(scrubber: ClassDef, base: ClassDef): ClassDef =
-    if (base.type == scrubber.superclass && scrubberLengthChecks(scrubber) == null && scrubberLengthChecks(base) != null) base else scrubber
+internal fun lengthCheckOwner(scrubber: ClassDef, base: ClassDef, tables: (MethodReference) -> Method?): ClassDef =
+    if (base.type == scrubber.superclass && scrubberLengthChecks(scrubber, tables) == null && scrubberLengthChecks(base, tables) != null) base else scrubber
 
 /**
  * The scrubber's check that a reel is long enough for a bar (583 `LX/9h9;->A1U`). The scrubber has
- * two instance length checks, each loading [LENGTH_CHECK_SURFACE] first. This one answers no
+ * two instance length checks, each naming [LENGTH_CHECK_SURFACE] first. This one answers no
  * through an `if-lt` of the reel's length against Facebook's minimum, and its answer decides between
  * the passive look and no bar at all. Refuses unless there's exactly one such check.
  */
-internal fun minimumLengthCheck(scrubber: ClassDef): Method {
-    val minimum = lengthChecks(scrubber, *MINIMUM_COMPARES)
+internal fun minimumLengthCheck(scrubber: ClassDef, tables: (MethodReference) -> Method?): Method {
+    val minimum = lengthChecks(scrubber, tables, *MINIMUM_COMPARES)
     return minimum.singleOrNull()
         ?: refuse("${scrubber.type} has ${minimum.size} length check(s) failing a reel shorter than a minimum, expected one")
 }
@@ -1338,8 +1342,8 @@ internal fun minimumLengthCheck(scrubber: ClassDef): Method {
  * The scrubber asks it first, and its yes gives the reel the look that sets the bar's alpha to 0,
  * so a short reel's bar showed for a moment and went. Refuses unless there's exactly one.
  */
-internal fun shortReelCheck(scrubber: ClassDef): Method {
-    val short = lengthChecks(scrubber, *SHORT_COMPARES)
+internal fun shortReelCheck(scrubber: ClassDef, tables: (MethodReference) -> Method?): Method {
+    val short = lengthChecks(scrubber, tables, *SHORT_COMPARES)
     return short.singleOrNull()
         ?: refuse("${scrubber.type} has ${short.size} length check(s) passing only a reel at most a minimum long, expected one")
 }
