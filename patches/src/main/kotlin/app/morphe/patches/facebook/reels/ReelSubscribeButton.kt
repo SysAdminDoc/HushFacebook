@@ -61,7 +61,8 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   a way for an author with no pill, an if-eqz whose target lies past the tag. Its hook turns the
  *   owner answer into 1, 0, or -1 for a Subscribe that goes, and -1 takes that way. The patch checks
  *   nothing on that way reads a register the row wrote since its own branch there, so the two ways
- *   in agree on every register it uses.
+ *   in agree on every register it uses. 588 (arm64 LX/0QSP;->render, read 2026-11-18) lays that way
+ *   out ahead of the tag, so it's known by never coming to the tag, wherever it sits.
  * - Some Pages get a fan-subscription pill instead, which says Subscribe whoever the owner is. A
  *   builder in the shared builder's class (LX/09bY;->A09) loads its tag "fubs_video_subscribe_button"
  *   and returns it without asking the owner check, and only the viewer row calls it, twice: once into
@@ -210,9 +211,9 @@ internal class FooterPill(val method: Method, val answerAt: Int, val answer: Int
 /**
  * [method]'s own pill, or null unless it loads [FOOTER_PILL_TAG] once ([tagLoads], with string tables
  * found by [resolve]), asks the owner check ([isOwnerCheck]) once before the tag and branches on the
- * answer with an `if-eqz`, and has an `if-eqz` before that check whose target lies past the tag. Null
- * too if the answer is read after that branch, or if the way for no pill reads a register written
- * since the row's branch to it.
+ * answer with an `if-eqz`, and has an `if-eqz` leading to that check whose target can't come to the
+ * tag. Null too if the answer is read after that branch, or if the way for no pill reads a register
+ * written since the row's branch to it.
  */
 internal fun footerPill(
     method: Method,
@@ -227,11 +228,13 @@ internal fun footerPill(
     val branch = code.getOrNull(check + 2)?.takeIf { it.opcode == Opcode.IF_EQZ } as? OneRegisterInstruction ?: return null
     if (branch.registerA != answer.registerA) return null
     val at = addresses(code)
+    fun target(branch: Int) = at.indexOf(at[branch] + (code[branch] as OffsetInstruction).codeOffset)
     val skip = (check - 1 downTo 0).firstOrNull {
-        code[it].opcode == Opcode.IF_EQZ && at[it] + (code[it] as OffsetInstruction).codeOffset > at[tag]
+        code[it].opcode == Opcode.IF_EQZ && target(it) in code.indices &&
+            !comesTo(method, target(it), tag) && comesTo(method, it + 1, check)
     } ?: return null
-    val noPill = at.indexOf(at[skip] + (code[skip] as OffsetInstruction).codeOffset)
-    if (noPill !in code.indices || method.readsAfter(check + 2, answer.registerA).isNotEmpty()) return null
+    val noPill = target(skip)
+    if (method.readsAfter(check + 2, answer.registerA).isNotEmpty()) return null
     val live = RegisterLiveness.of(method).liveInto(noPill)
     val written = (skip + 1..check + 1).filter { code[it].opcode.setsRegister() }.map { code[it].namedRegisters().first() }
     if (written.any { it in live }) return null
@@ -338,6 +341,22 @@ private fun firstMet(method: Method, site: Int, stops: (Instruction) -> Boolean)
 
 /** The methods loading [FAN_PILL_TAG] that return an object: the fan-subscription pill's builder. */
 internal fun fanPillBuilders(holders: List<Method>): List<Method> = holders.filter { it.returnType.startsWith("L") }
+
+/** Whether [method] can get from [from] to [target], through handlers too. */
+private fun comesTo(method: Method, from: Int, target: Int): Boolean {
+    val flow = ControlFlow.of(method)
+    val seen = BooleanArray(flow.instructions.size)
+    val pending = ArrayDeque(listOf(from))
+    while (pending.isNotEmpty()) {
+        val at = pending.removeFirst()
+        if (at == target) return true
+        if (seen[at]) continue
+        seen[at] = true
+        pending += flow.normal[at]
+        pending += flow.exceptional[at]
+    }
+    return false
+}
 
 /** Whether [method] can get from its start to [target] without passing [avoid], through handlers too. */
 private fun reachableWithout(method: Method, target: Int, avoid: Int): Boolean {
