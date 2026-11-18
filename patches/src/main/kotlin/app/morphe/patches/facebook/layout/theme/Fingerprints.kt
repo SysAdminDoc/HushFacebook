@@ -31,7 +31,7 @@ import java.util.WeakHashMap
  *
  * R8 keeps the owner class names but renames the methods on every release. Thus each fingerprint
  * uses the class, the return type, the parameters and the shape of the body, and never a name.
- * 584 renamed `FDSColors` too, so it's found by its shape ([fdsColors]).
+ * 584 renamed `FDSColors` and 588 split it up, so its resolver is found by its shape ([fdsColors]).
  */
 
 internal const val DARK_COLOR_SCHEME = "Lcom/facebook/mig/scheme/schemes/DarkColorScheme;"
@@ -47,8 +47,9 @@ private val fdsColorsTypes = WeakHashMap<BytecodePatchContext, String>()
 
 /**
  * `FDSColors`, the class answering Litho's colour tokens. Redex kept its name up to 583
- * (`Lcom/facebook/fds/core/theme/component/FDSColors;`) and renamed it on 584 (`LX/29y`), so it's
- * found by its shape ([fdsColourSource]), which hasn't moved. One class has it, or the lookup fails.
+ * (`Lcom/facebook/fds/core/theme/component/FDSColors;`) and renamed it on 584 (`LX/29y`). 588 took it
+ * apart: its resolver is a static method on a class of its own, so what's looked for here is the
+ * class holding that method ([fdsColourSource]). One class has it, or the lookup fails.
  */
 internal fun BytecodePatchContext.fdsColors(): String = fdsColorsTypes.getOrPut(this) {
     val found = mutableListOf<String>()
@@ -56,29 +57,26 @@ internal fun BytecodePatchContext.fdsColors(): String = fdsColorsTypes.getOrPut(
         if (!classDef.type.startsWith(EXTENSION_PACKAGE) && fdsColourSource(classDef) != null) found += classDef.type
     }
     found.singleOrNull() ?: throw PatchException(
-        "expected one FDSColors (a singleton whose static Integer colour source hands a token to its own switch), found $found",
+        "expected one FDS colour resolver (a static int method taking a Context, a token and a palette that hands the token to the palette's colour step), found $found",
     )
 }
 
 /**
- * The static `Integer` colour source of [classDef] when the class is `FDSColors`, else null. The
- * class holds a singleton of its own type, and the source takes a Context, a token and a palette and
- * hands the token on to a static method of the same class taking the token, an int and a boolean
- * (583 `A04` to `A05`, 584 `A05` to `A06`). The token type is the source's second parameter.
+ * FDS's colour resolver in [classDef], else null: the static method answering an int from a Context,
+ * a token and a palette, which hands the token to a static method taking the token, an int and a
+ * boolean, the step reading the palette's colour. 588 (`LX/02IY;->A00`) folded the old `Integer`
+ * colour source and its instance resolvers into this one method, so every colour passes it. The
+ * token type is its second parameter.
  */
-internal fun fdsColourSource(classDef: ClassDef): Method? {
-    if (classDef.fields.none { AccessFlags.STATIC.isSet(it.accessFlags) && it.type == classDef.type }) return null
-    return classDef.methods.singleOrNull { method ->
-        val parameters = method.parameterTypes.map { it.toString() }
-        AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Ljava/lang/Integer;" &&
-            parameters.size == 3 && parameters[0] == "Landroid/content/Context;" &&
-            method.implementation?.instructions?.any { instruction ->
-                val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-                instruction.opcode == Opcode.INVOKE_STATIC && call?.definingClass == classDef.type &&
-                    call.returnType == "Ljava/lang/Integer;" &&
-                    call.parameterTypes.map { it.toString() } == listOf(parameters[1], "I", "Z")
-            } == true
-    }
+internal fun fdsColourSource(classDef: ClassDef): Method? = classDef.methods.singleOrNull { method ->
+    val parameters = method.parameterTypes.map { it.toString() }
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "I" &&
+        parameters.size == 3 && parameters[0] == "Landroid/content/Context;" &&
+        method.implementation?.instructions?.any { instruction ->
+            val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            instruction.opcode == Opcode.INVOKE_STATIC && call?.returnType == "Ljava/lang/Integer;" &&
+                call.parameterTypes.map { it.toString() } == listOf(parameters[1], "I", "Z")
+        } == true
 }
 
 /**

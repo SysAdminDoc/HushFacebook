@@ -965,7 +965,7 @@ internal fun BytecodePatchContext.hookFeedGaps() {
 
 /**
  * Route one: the Mig dark scheme's resolver sends its colours to [mig], and the FDS resolvers send
- * theirs to [fds]: each resolver on FDSColors, its static copies and the [fdsThemeResolver]. Both themes run it, AMOLED
+ * theirs to [fds]: FDS's colour resolver and the [fdsThemeResolver]. Both themes run it, AMOLED
  * from its execute block and Material You after it.
  */
 internal fun BytecodePatchContext.hookColourResolvers(mig: String, fds: String) {
@@ -1197,65 +1197,17 @@ internal fun barColourHelpers(method: Method, painters: Set<String>): Set<String
 }
 
 /**
- * Hooks every FDS colour resolver on `FDSColors`: each instance method answering an int that takes
- * the colour token and asks the Integer-answering source itself.
- *
- * <p>577 had two of them, one for Litho and one from a Context. 580 split the Litho one into a
- * thin wrapper and a second Context resolver, so a fingerprint per resolver matched the wrong one
- * or none. The token type is read off the source's own signature, the one static method answering
- * `Integer` from a Context, the token and a palette. 586 (arm64 `LX/02LL`, read 2026-11-09) merged
- * the two Context resolvers into one (`A0A`), and the Litho one (`A0B`) only returns that one's
- * answer, so one resolver is hooked there and every colour still passes it. The [fdsStaticResolvers]
- * outside the class take the same hook.
+ * Hooks FDS's colour resolver, the [fdsColourSource]. 588 folded `FDSColors`' Integer source, its
+ * instance resolvers and their static copies into this one method: Litho's resolver, Compose's and
+ * the palette readers only return its answer, so hooking it here reaches every colour, a server
+ * palette's and a DSP theme's included (#141).
  */
 internal fun BytecodePatchContext.hookFdsColorsResolvers(target: String) {
-    val type = fdsColors()
-    val colors = mutableClassDefBy(type)
-    val tokenType = fdsColourSource(colors)!!.parameterTypes[1].toString()
-
-    val resolvers = colors.methods.filter { method ->
-        !AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "I" &&
-            method.parameterTypes.any { it.toString() == tokenType } &&
-            method.implementation?.instructions?.any { instruction ->
-                val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-                reference != null && reference.definingClass == type && reference.returnType == "Ljava/lang/Integer;"
-            } == true
-    }
-    check(resolvers.isNotEmpty()) { "No FDSColors resolver asks the Integer colour source" }
-    (resolvers + fdsStaticResolvers()).forEach { method ->
-        method.hookColorReturns(
-            tokenParameterIndex = method.parameterTypes.indexOfFirst { it.toString() == tokenType },
-            target = target,
-        )
-    }
-}
-
-/**
- * The static methods outside `FDSColors` that ask its colour source themselves and answer an int
- * from the token: a copy of its resolver (586 arm64 `LX/03A3;->A00`, read 2026-11-11, which Compose's
- * text fields and two Litho components call). It returns the source's answer or a DSP theme's own
- * colour as they are, so only its last fallback, the [fdsThemeResolver], went through route one
- * (#141's light mode reads DSP colours). None on a build without one.
- */
-internal fun BytecodePatchContext.fdsStaticResolvers(): List<MutableMethod> {
-    val type = fdsColors()
-    val source = fdsColourSource(classDefBy(type))!!
+    val colors = mutableClassDefBy(fdsColors())
+    val source = fdsColourSource(colors)!!
     val parameters = source.parameterTypes.map(CharSequence::toString)
-    val signature = { method: Method -> "${method.name}(${method.parameterTypes.joinToString("")})${method.returnType}" }
-    val found = mutableListOf<Pair<String, String>>()
-    classDefForEachReferencing(types = listOf(type)) { classDef ->
-        if (classDef.type == type || classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEachReferencing
-        classDef.methods.filter { method ->
-            AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "I" &&
-                method.parameterTypes.any { it.toString() == parameters[1] } &&
-                method.implementation?.instructions?.any { instruction ->
-                    val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-                    call?.definingClass == type && call.name == source.name &&
-                        call.parameterTypes.map(CharSequence::toString) == parameters
-                } == true
-        }.mapTo(found) { classDef.type to signature(it) }
-    }
-    return found.map { (owner, wanted) -> mutableClassDefBy(owner).methods.single { signature(it) == wanted } }
+    colors.methods.single { it.name == source.name && it.parameterTypes.map(CharSequence::toString) == parameters }
+        .hookColorReturns(tokenParameterIndex = 1, target = target)
 }
 
 /**

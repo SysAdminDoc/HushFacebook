@@ -74,9 +74,8 @@ class ColourResolverFixtureTest {
         .filter { it.returnType == "I" }
 
     /**
-     * Every class route one reads in [bundle]: the Mig dark scheme, FDSColors, the FdsColorScheme
-     * wrapper, the view resolver's class, the class of the resolver the view resolver asks and the
-     * classes of the [staticResolvers].
+     * Every class route one reads in [bundle]: the Mig dark scheme, FDS's colour resolver, the
+     * FdsColorScheme wrapper, the view resolver's class and the class of the resolver it asks.
      */
     private fun routeOneClasses(bundle: File): Map<String, ClassDef> {
         val colors = fdsColorsOf(bundle)
@@ -84,25 +83,11 @@ class ColourResolverFixtureTest {
         val view = viewResolver(named.getValue(FDS_COLOR_SCHEME))
         val viewClass = FixtureDex.classes(bundle, setOf(view.definingClass))
         val asked = intCalls(viewClass.getValue(view.definingClass).methods.single { it.descriptor() == view.toString() }).single()
-        return named + viewClass + FixtureDex.classes(bundle, setOf(asked.definingClass)) +
-            FixtureDex.classes(bundle, staticResolvers(bundle, colors).map { it.definingClass }.toSet())
-    }
-
-    /**
-     * Every static int method outside FDSColors in [bundle] that asks its colour source itself (586
-     * arm64 `LX/03A3;->A00`, which Compose's text fields call): a copy of its resolver.
-     */
-    private fun staticResolvers(bundle: File, colors: ClassDef): List<Method> {
-        val source = fdsColourSource(colors)!!
-        val descriptor = "${colors.type}->${source.name}(${source.parameterTypes.joinToString("")})${source.returnType}"
-        return FixtureDex.methodsWhere(bundle, { dex -> dex.methodSection.any { it.toString() == descriptor } }) { method ->
-            method.definingClass != colors.type && AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "I" &&
-                method.implementation?.instructions?.any { (it as? ReferenceInstruction)?.reference?.toString() == descriptor } == true
-        }
+        return named + viewClass + FixtureDex.classes(bundle, setOf(asked.definingClass))
     }
 
     @Test
-    fun `route one hooks four resolvers and six returns, each token intact, on each declared build`() =
+    fun `route one hooks three resolvers and four returns, each token intact, on each declared build`() =
         routeOneIsHooked(mig = APPLY, fds = APPLY)
 
     /** The Accent color patch hooks the same seams with its own targets, on the same builds. */
@@ -129,34 +114,23 @@ class ColourResolverFixtureTest {
                         } ?: 0)
                     }
                     .filterValues { it > 0 }
-                assertEquals("${bundle.name}: resolvers hooked, $hooked", 4, hooked.size)
-                assertEquals("${bundle.name}: returns hooked, $hooked", 6, hooked.values.sum())
+                assertEquals("${bundle.name}: resolvers hooked, $hooked", 3, hooked.size)
+                assertEquals("${bundle.name}: returns hooked, $hooked", 4, hooked.values.sum())
 
-                // Every FDSColors resolver taking the token is hooked, or returns a hooked one's answer as it is.
-                val colors = fdsColorsOf(bundle)
-                val token = fdsColourSource(colors)!!.parameterTypes[1].toString()
+                // FDS's resolver is hooked, and the step reading a palette's colour has no other caller,
+                // so no palette colour gets past the hook (#141).
+                val source = fdsColourSource(fdsColorsOf(bundle))!!
+                val token = source.parameterTypes[1].toString()
                 val signature = { method: Method -> "${method.definingClass}->${method.name}(${method.parameterTypes.joinToString("")})" }
-                // And so is every static copy of it outside the class, which answers DSP colours route one didn't see (#141).
-                val copies = staticResolvers(bundle, colors)
-                if (version == "586.0.0.52.53") assertEquals("${bundle.name}: static copies of the resolver", 1, copies.size)
-                copies.forEach { copy ->
-                    assertTrue("${bundle.name}: ${signature(copy)} asks FDSColors' colour source and isn't hooked, $hooked", signature(copy) in hooked)
+                assertTrue("${bundle.name}: ${signature(source)} isn't hooked, $hooked", signature(source) in hooked)
+                val step = source.implementation!!.instructions
+                    .mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
+                    .single { it.returnType == "Ljava/lang/Integer;" && it.parameterTypes.map(CharSequence::toString) == listOf(token, "I", "Z") }
+                    .toString()
+                val askers = FixtureDex.methodsWhere(bundle, { dex -> dex.methodSection.any { it.toString() == step } }) { method ->
+                    method.implementation?.instructions?.any { (it as? ReferenceInstruction)?.reference?.toString() == step } == true
                 }
-                colors.methods.filter { method ->
-                    !AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "I" &&
-                        method.parameterTypes.any { it.toString() == token } && signature(method) !in hooked
-                }.forEach { wrapper ->
-                    val code = wrapper.implementation!!.instructions.toList()
-                    val returned = code.indices.filter { code[it].opcode == Opcode.RETURN }
-                    assertTrue("${bundle.name}: ${signature(wrapper)} returns", returned.isNotEmpty())
-                    for (at in returned) {
-                        val call = (code[at - 2] as? ReferenceInstruction)?.reference as? MethodReference
-                        assertTrue("${bundle.name}: ${signature(wrapper)} returns something other than a hooked resolver's answer",
-                            call != null && "${call.definingClass}->${call.name}(${call.parameterTypes.joinToString("")})" in hooked &&
-                                code[at - 1].opcode == Opcode.MOVE_RESULT &&
-                                (code[at - 1] as OneRegisterInstruction).registerA == (code[at] as OneRegisterInstruction).registerA)
-                    }
-                }
+                assertEquals("${bundle.name}: what asks the palette's colour step", listOf(signature(source)), askers.map(signature))
                 checked += version
             }
         }
@@ -259,13 +233,14 @@ class ColourResolverFixtureTest {
 
                 // The path back from Recent Apps: the controller's apply step, which skips a config
                 // "same as current for window", paints through the hooked painter and asks the same
-                // dark check for the bar's icons, but no route-one resolver for the colour.
+                // dark check for the bar's icons. A config holding only a token gets its colour from
+                // the view resolver, which ends at the hooked theme resolver.
                 val apply = classes.getValue(systemBarsController).methods.single {
                     holdsString(it, "applyConfig: skipped (same as current for window)")
                 }
                 assertTrue("$name: the controller doesn't paint through the hooked painter", apply.calls(painter.descriptor()))
                 assertTrue("$name: the controller doesn't ask $darkCheck", apply.calls(darkCheck))
-                assertFalse("$name: the controller now asks the hooked view resolver", apply.calls(resolver))
+                assertTrue("$name: the controller doesn't read a token through the view resolver", apply.calls(resolver))
                 checked += version
             }
         }
