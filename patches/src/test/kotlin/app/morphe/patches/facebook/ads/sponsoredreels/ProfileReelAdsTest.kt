@@ -29,14 +29,15 @@ import org.junit.Test
 
 /**
  * The query a profile's Reels tab sends for its ads, found in each declared build the way the patch
- * finds it, and held first thing with a local of its own to ask in. Reads the fixture bundles from
- * HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * finds it, and held first thing, with a local of its own to ask in, in each method sending it. Reads
+ * the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class ProfileReelAdsTest {
     private val hold = "Lapp/morphe/extension/facebook/ads/ReelsAdFilter;->holdProfileReelAds()Z"
     private val shape = listOf(
         "Lcom/facebook/auth/usersession/FbUserSession;", "Ljava/lang/Integer;", "Ljava/lang/Integer;", "Z",
     )
+    private val DISPATCH = setOf(Opcode.PACKED_SWITCH, Opcode.SPARSE_SWITCH, Opcode.INSTANCE_OF)
 
     private fun method(returnType: String, registers: Int, static: Boolean = false, smali: String): MutableMethod =
         MutableMethod(
@@ -48,31 +49,47 @@ class ProfileReelAdsTest {
         ).apply { addInstructionsWithLabels(0, smali) }
 
     @Test
-    fun `the profile Reels ad query is held first in each declared build`() {
+    fun `the profile Reels ad query is held first in both methods sending it in each declared build`() {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
         val checked = mutableSetOf<String>()
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
-                val context = PatchContexts.of(FixtureDex.classesHolding(bundle, PROFILE_REELS_ADS))
-                val fetch = with(context) { profileReelAdFetch() }
-                assertEquals("${bundle.name}: $fetch", shape, fetch.parameterTypes.map { it.toString() })
+                val holders = FixtureDex.classesHolding(bundle, PROFILE_REELS_ADS)
+                val builder = holders.flatMap { it.methods.filter(::isProfileReelAdBuilder) }.single()
+                val senders = FixtureDex.methodsWhere(bundle, { dex ->
+                    dex.methodSection.any { it.definingClass == builder.definingClass && it.name == builder.name }
+                }) { callsProfileReelAdBuilder(it, builder) }
+                val owners = FixtureDex.classes(bundle, senders.map { it.definingClass }.toSet()).values
+                val context = PatchContexts.of((holders + owners).distinctBy { it.type })
+                val fetches = with(context) { profileReelAdFetches() }
+                assertEquals("${bundle.name}: methods sending the query $fetches", 2, fetches.size)
 
-                val before = fetch.implementation!!.instructions.toList()
-                fetch.holdProfileReelAdsFirst()
-                val body = fetch.implementation!!.instructions.toList()
-                assertEquals("${bundle.name}: four added", before.size + 4, body.size)
-                assertEquals("${bundle.name}: the ask", hold, ((body[0] as ReferenceInstruction).reference as MethodReference).toString())
-                assertEquals("${bundle.name}: the answer", listOf(Opcode.MOVE_RESULT, 0),
-                    listOf(body[1].opcode, (body[1] as OneRegisterInstruction).registerA))
-                assertEquals("${bundle.name}: no hold", Opcode.IF_EQZ, body[2].opcode)
-                assertSame("${bundle.name}: no hold goes on with Facebook's first instruction", body[4],
-                    (body[2] as BuilderOffsetInstruction).target.location.instruction)
-                assertEquals("${bundle.name}: held", Opcode.RETURN_VOID, body[3].opcode)
-                // v0 is a local, not a parameter, so asking in it before Facebook's first
-                // instruction overwrites nothing Facebook reads.
-                val implementation = fetch.implementation!!
-                assertTrue("${bundle.name}: no local for the ask",
-                    implementation.registerCount - fetch.parameterTypes.size - 1 >= 1)
+                val (static, instance) = fetches.partition { AccessFlags.STATIC.isSet(it.accessFlags) }
+                assertEquals("${bundle.name}: the tab's fetch", shape, instance.single().parameterTypes.map { it.toString() })
+                assertEquals("${bundle.name}: the newer fetch", listOf(static.single().definingClass, "Ljava/lang/Integer;"),
+                    static.single().parameterTypes.map { it.toString() })
+
+                for (fetch in fetches) {
+                    val before = fetch.implementation!!.instructions.toList()
+                    // Returning at the top stops everything in the method, so it can't be sibling
+                    // classes' code merged behind a dispatch (#447).
+                    assertTrue("${bundle.name}: $fetch dispatches", before.none { it.opcode in DISPATCH })
+                    fetch.holdProfileReelAdsFirst()
+                    val body = fetch.implementation!!.instructions.toList()
+                    assertEquals("${bundle.name}: four added", before.size + 4, body.size)
+                    assertEquals("${bundle.name}: the ask", hold, ((body[0] as ReferenceInstruction).reference as MethodReference).toString())
+                    assertEquals("${bundle.name}: the answer", listOf(Opcode.MOVE_RESULT, 0),
+                        listOf(body[1].opcode, (body[1] as OneRegisterInstruction).registerA))
+                    assertEquals("${bundle.name}: no hold", Opcode.IF_EQZ, body[2].opcode)
+                    assertSame("${bundle.name}: no hold goes on with Facebook's first instruction", body[4],
+                        (body[2] as BuilderOffsetInstruction).target.location.instruction)
+                    assertEquals("${bundle.name}: held", Opcode.RETURN_VOID, body[3].opcode)
+                    // v0 is a local, not a parameter, so asking in it before Facebook's first
+                    // instruction overwrites nothing Facebook reads.
+                    val receiver = if (AccessFlags.STATIC.isSet(fetch.accessFlags)) 0 else 1
+                    assertTrue("${bundle.name}: no local for the ask",
+                        fetch.implementation!!.registerCount - fetch.parameterTypes.size - receiver >= 1)
+                }
                 checked += version
             }
         }
@@ -80,13 +97,21 @@ class ProfileReelAdsTest {
     }
 
     @Test
-    fun `a fetch is an instance method returning nothing that names the query`() {
-        val smali = "const-string v0, \"$PROFILE_REELS_ADS\"\nreturn-void"
-        assertTrue(isProfileReelAdFetch(method("V", 3, smali = smali)))
-        assertFalse("static", isProfileReelAdFetch(method("V", 3, static = true, smali = smali)))
-        assertFalse("hands something back", isProfileReelAdFetch(method("Ljava/lang/Object;", 3,
-            smali = "const-string v0, \"$PROFILE_REELS_ADS\"\nreturn-object v0")))
-        assertFalse("another query", isProfileReelAdFetch(method("V", 3, smali = smali.replace(PROFILE_REELS_ADS, "${PROFILE_REELS_ADS}2"))))
+    fun `the builder answers something and names the query`() {
+        val named = "const-string v0, \"$PROFILE_REELS_ADS\"\n"
+        assertTrue(isProfileReelAdBuilder(method("Ljava/lang/Object;", 3, smali = named + "return-object v0")))
+        assertFalse("returns nothing", isProfileReelAdBuilder(method("V", 3, smali = named + "return-void")))
+        assertFalse("another query", isProfileReelAdBuilder(method("Ljava/lang/Object;", 3,
+            smali = named.replace(PROFILE_REELS_ADS, "${PROFILE_REELS_ADS}2") + "return-object v0")))
+    }
+
+    @Test
+    fun `a sender is a method calling the builder`() {
+        val builder = method("Ljava/lang/Object;", 3, static = true, smali = "const/4 v0, 0x0\nreturn-object v0")
+        fun calling(name: String) = method("V", 3, smali =
+            "const/4 v0, 0x0\ninvoke-static { v0 }, Lfixture/ProfileReels;->$name(I)Ljava/lang/Object;\nreturn-void")
+        assertTrue(callsProfileReelAdBuilder(calling("fetch"), builder))
+        assertFalse("another method", callsProfileReelAdBuilder(calling("other"), builder))
     }
 
     @Test
